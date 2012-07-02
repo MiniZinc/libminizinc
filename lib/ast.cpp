@@ -2,6 +2,17 @@
 
 namespace MiniZinc {
 
+  Location
+  Location::a(void) {
+    Location l;
+    l.filename = NULL;
+    l.first_line = 0;
+    l.first_column = 0;
+    l.last_line = 0;
+    l.last_column = 0;
+    return l;
+  }
+
   Annotation*
   Annotation::a(const ASTContext& ctx, const Location& loc,
                 Expression* e) {
@@ -324,8 +335,8 @@ namespace MiniZinc {
   }
 
   BoolTiExpr*
-  BoolTiExpr::a(const ASTContext& ctx) {
-    return new (ctx) BoolTiExpr();
+  BoolTiExpr::a(const ASTContext& ctx, const BoolDomain& domain) {
+    return new (ctx) BoolTiExpr(domain);
   }
 
   FloatTiExpr*
