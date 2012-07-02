@@ -1,0 +1,1102 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+/*
+ *  Main authors:
+ *     Guido Tack <tack@gecode.org>
+ *
+ *  Copyright:
+ *     Guido Tack, 2007
+ *
+ *  Last modified:
+ *     $Date: 2012-04-23 09:36:15 +1000 (Mon, 23 Apr 2012) $ by $Author: tack $
+ *     $Revision: 1318 $
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+%pure-parser
+%parse-param {void *parm}
+%{
+#define YYPARSE_PARAM parm
+#define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
+#include <minizinc/parser.hh>
+#include <iostream>
+#include <fstream>
+#include <map>
+
+using namespace std;
+using namespace MiniZinc;
+
+namespace MiniZinc{ class Location; }
+#define YYLTYPE MiniZinc::Location
+#define YYLTYPE_IS_DECLARED 1
+
+#define YYLLOC_DEFAULT(Current, Rhs, N) \
+  Current.filename = Rhs[1].filename; \
+  Current.first_line = Rhs[1].first_line; \
+  Current.first_column = Rhs[1].first_column; \
+  Current.last_line = Rhs[N].last_line; \
+  Current.last_column = Rhs[N].last_column;
+
+int yyparse(void*);
+int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
+int yylex_init (void** scanner);
+int yylex_destroy (void* scanner);
+int yyget_lineno (void* scanner);
+void yyset_extra (void* user_defined ,void* yyscanner );
+
+extern int yydebug;
+
+void yyerror(YYLTYPE* location, void* parm, const string& str) {
+  ParserState* pp = static_cast<ParserState*>(parm);
+  Model* m = pp->model;
+  while (m->parent() != NULL) {
+    m = m->parent();
+    pp->err << "(included from file " << m->filename() << ")" << endl;
+  }
+  pp->err << "In file " << location->filename << ", line "
+          << location->first_line << ":" << endl;
+  pp->printCurrentLine();
+  for (int i=0; i<location->first_column-1; i++)
+    pp->err << " ";
+  for (int i=location->first_column; i<=location->last_column; i++)
+    pp->err << "^";
+  pp->err << std::endl << "Error: " << str << std::endl << std::endl;
+  pp->hadError = true;
+}
+
+bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
+  ParserState* pp = static_cast<ParserState*>(parm);
+  if (pp->isDatafile) {
+    yyerror(location,parm,item+" item not allowed in data file");
+    return false;
+  }
+  return true;
+}
+
+void filepath(const string& f, string& dirname, string& basename) {
+  dirname = ""; basename = f;
+  for (size_t p=basename.find_first_of('/');
+       p!=string::npos;
+       dirname+=basename.substr(0,p+1),
+       basename=basename.substr(p+1),
+       p=basename.find_first_of('/')
+       ) {}
+}
+
+#define GETCTX() static_cast<ParserState*>(parm)->ctx
+
+namespace MiniZinc {
+
+  Model* parse(const ASTContext& ctx,
+               const string& filename,
+               const vector<string>& datafiles,
+               const vector<string>& ip,
+               bool ignoreStdlib,
+               ostream& err) {
+
+    string fileDirname; string fileBasename;
+    filepath(filename, fileDirname, fileBasename);
+
+    vector<string> includePaths;
+    for (unsigned int i=0; i<ip.size(); i++)
+      includePaths.push_back(ip[i]);
+    
+    vector<pair<string,Model*> > files;
+    map<string,Model*> seenModels;
+    
+    Model* model = new Model;
+    model->_filename = ctx.alloc(fileBasename);
+
+    if (!ignoreStdlib) {
+      Model* stdlib = new Model;
+      stdlib->_filename = ctx.alloc("stdlib.mzn");
+      files.push_back(pair<string,Model*>("./",stdlib));
+      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
+      Location stdlibloc;
+      stdlibloc.filename=ctx.alloc(filename);
+      IncludeI* stdlibinc = IncludeI::a(ctx,stdlibloc,stdlib->_filename);
+      stdlibinc->setModel(stdlib,true);
+      model->addItem(stdlibinc);
+    }
+    
+    files.push_back(pair<string,Model*>("",model));
+        
+    while (!files.empty()) {
+      pair<string,Model*>& np = files.back();
+      string parentPath = np.first;
+      Model* m = np.second;
+      files.pop_back();
+      string f(m->_filename);
+            
+      for (Model* p=m->_parent; p; p=p->_parent) {
+        if (f == p->_filename) {
+          err << "Error: cyclic includes: " << std::endl;
+          for (Model* pe=m; pe; pe=pe->_parent) {
+            err << "  " << pe->_filename << std::endl;
+          }
+          goto error;
+        }
+      }
+      ifstream file;
+      string fullname;
+      if (parentPath=="") {
+        fullname = filename;
+        file.open(fullname.c_str());
+      } else {
+        includePaths.push_back(parentPath);
+        for (unsigned int i=0; i<includePaths.size(); i++) {
+          fullname = includePaths[i]+f;
+          file.open(fullname.c_str());
+          if (file.is_open())
+            break;
+        }
+        includePaths.pop_back();
+      }
+      if (!file.is_open()) {
+        err << "Error: cannot open file " << f << endl;
+        goto error;
+      }
+      std::string s = string(istreambuf_iterator<char>(file),
+                             istreambuf_iterator<char>());
+
+      m->_filepath = ctx.alloc(fullname);
+      ParserState pp(ctx, fullname,s, err, files, seenModels, m, false);
+      yylex_init(&pp.yyscanner);
+      yyset_extra(&pp, pp.yyscanner);
+      yyparse(&pp);
+      if (pp.yyscanner)
+        yylex_destroy(pp.yyscanner);
+      if (pp.hadError) {
+        goto error;
+      }
+    }
+    
+    for (unsigned int i=0; i<datafiles.size(); i++) {
+      string f = datafiles[i];
+      std::ifstream file;
+      file.open(f.c_str());
+      if (!file.is_open()) {
+        err << "Error: cannot open data file " << f << endl;
+        goto error;
+      }
+      std::string s = string(istreambuf_iterator<char>(file),
+                             istreambuf_iterator<char>());
+
+      ParserState pp(ctx, f, s, err, files, seenModels, model, true);
+      yylex_init(&pp.yyscanner);
+      yyset_extra(&pp, pp.yyscanner);
+      yyparse(&pp);
+      if (pp.yyscanner)
+        yylex_destroy(pp.yyscanner);
+      if (pp.hadError) {
+        goto error;
+      }
+    }
+    
+    return model;
+  error:
+    for (unsigned int i=0; i<files.size(); i++)
+      delete files[i].second;
+    return NULL;
+  }
+}
+
+%}
+
+%union { int iValue; char* sValue; bool bValue; double dValue;
+         MiniZinc::Item* item;
+         MiniZinc::VarDecl* vardeclexpr;
+         std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
+         MiniZinc::TiExpr* tiexpr;
+         std::vector<MiniZinc::TiExpr*>* tiexpr_v;
+         MiniZinc::IntTiExpr* inttiexpr;
+         std::vector<MiniZinc::IntTiExpr*>* inttiexpr_v;
+         MiniZinc::BaseTiExpr* basetiexpr;
+         MiniZinc::Expression* expression;
+         std::vector<MiniZinc::Expression*>* expression_v;
+         std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
+         MiniZinc::Generator* generator;
+         std::vector<MiniZinc::Generator*>* generator_v;
+         std::vector<std::string>* string_v;
+         std::pair<std::vector<MiniZinc::Expression*>,
+                   MiniZinc::Expression*>* expression_p;
+         MiniZinc::Annotation* annotation;
+         MiniZinc::Generators* generators;
+       }
+
+%locations
+%error-verbose
+
+%initial-action
+{
+  @$.filename = static_cast<ParserState*>(parm)->model->filepath();
+}
+
+%token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
+%token <dValue> MZN_FLOAT_LITERAL
+%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_TI_IDENTIFIER
+
+%token MZN_VAR MZN_PAR MZN_SVAR
+
+%token MZN_ANN
+%token MZN_ANNOTATION
+%token MZN_ANY
+%token MZN_ARRAY
+%token MZN_BOOL
+%token MZN_CASE
+%token MZN_CONSTRAINT
+%token MZN_DEFAULT 
+%token MZN_ELSE
+%token MZN_ELSEIF
+%token MZN_ENDIF
+%token MZN_ENUM
+%token MZN_FLOAT
+%token MZN_FUNCTION
+%token MZN_IF
+%token MZN_INCLUDE
+%token MZN_INT
+%token MZN_LET
+%token <bValue> MZN_MAXIMIZE
+%token <bValue> MZN_MINIMIZE
+%token MZN_OF
+%token MZN_SATISFY
+%token MZN_OUTPUT
+%token MZN_PREDICATE
+%token MZN_RECORD
+%token MZN_SET
+%token MZN_SOLVE
+%token MZN_STRING
+%token MZN_TEST
+%token MZN_THEN
+%token MZN_TUPLE
+%token MZN_TYPE
+%token MZN_UNDERSCORE
+%token MZN_VARIANT_RECORD
+%token MZN_WHERE
+
+%token MZN_LEFT_BRACKET
+%token MZN_LEFT_2D_BRACKET
+%token MZN_RIGHT_BRACKET
+%token MZN_RIGHT_2D_BRACKET
+
+%token UNKNOWN_CHAR
+
+%right PREC_ANNO
+%left MZN_EQUIV
+%left MZN_IMPL MZN_RIMPL
+%left MZN_OR MZN_XOR
+%left MZN_AND
+%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ
+%nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
+%left MZN_UNION MZN_DIFF MZN_SYMDIFF
+%nonassoc MZN_DOTDOT
+%left MZN_PLUS MZN_MINUS
+%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_INTERSECT
+%left MZN_NOT
+%left MZN_COLONCOLON
+%right MZN_PLUSPLUS
+%left MZN_QUOTED_IDENTIFIER
+
+%token MZN_EQUIV_QUOTED
+%token MZN_IMPL_QUOTED MZN_RIMPL_QUOTED
+%token MZN_OR_QUOTED MZN_XOR_QUOTED
+%token MZN_AND_QUOTED
+%token MZN_LE_QUOTED MZN_GR_QUOTED MZN_LQ_QUOTED MZN_GQ_QUOTED MZN_EQ_QUOTED MZN_NQ_QUOTED
+%token MZN_IN_QUOTED MZN_SUBSET_QUOTED MZN_SUPERSET_QUOTED
+%token MZN_UNION_QUOTED MZN_DIFF_QUOTED MZN_SYMDIFF_QUOTED
+%token MZN_DOTDOT_QUOTED
+%token MZN_PLUS_QUOTED MZN_MINUS_QUOTED
+%token MZN_MULT_QUOTED MZN_DIV_QUOTED MZN_IDIV_QUOTED MZN_MOD_QUOTED MZN_INTERSECT_QUOTED
+%token MZN_NOT_QUOTED
+%token MZN_COLONCOLON_QUOTED
+%token MZN_PLUSPLUS_QUOTED
+
+%type <item> item include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
+
+%type <vardeclexpr> ti_expr_and_id let_vardecl_item
+//%type <vardeclexpr> slet_vardecl_item
+%type <vardeclexpr_v> params params_list params_list_head
+//%type <vardeclexpr_v> slet_vardecl_item_list
+%type <tiexpr> ti_expr base_ti_expr
+%type <tiexpr_v> ti_expr_list ti_expr_list_head
+%type <basetiexpr> base_ti_expr_tail
+
+%type <expression> expr expr_atom_head num_expr num_expr_atom_head simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
+
+%type <expression_v> expr_list expr_list_head array_access_tail elseif_list let_vardecl_item_list
+%type <expression_vv> simple_array_literal_2d_list
+
+%type <generators> comp_tail
+%type <generator> generator
+%type <generator_v> generator_list generator_list_head
+%type <string_v> id_list id_list_head
+
+%type <expression_p> comp_or_expr
+
+%type <annotation> annotations ne_annotations
+
+%type <inttiexpr> int_ti_expr
+%type <inttiexpr_v> int_ti_expr_list int_ti_expr_list_head
+
+%type <iValue> quoted_op
+
+%%
+
+/********************************/
+/* main goal and item lists     */
+/********************************/
+
+model : item_list
+
+item_list :
+      /* empty */
+    | item_list_head semi_or_none
+
+item_list_head:
+      item
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        pp->model->addItem($1);
+      }
+    | item_list_head ';' item
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        pp->model->addItem($3);
+      }
+
+semi_or_none : | ';'
+
+item :
+      include_item
+      { $$=notInDatafile(&@$,parm,"include") ? $1 : NULL; }
+    | vardecl_item
+      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : NULL; }
+    | assign_item
+    | constraint_item
+      { $$=notInDatafile(&@$,parm,"constraint") ? $1 : NULL; }
+    | solve_item
+      { $$=notInDatafile(&@$,parm,"solve") ? $1 : NULL; }
+    | output_item
+      { $$=notInDatafile(&@$,parm,"output") ? $1 : NULL; }
+    | predicate_item
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+    | function_item
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+    | annotation_item
+      { $$=notInDatafile(&@$,parm,"annotation") ? $1 : NULL; }
+
+include_item :
+      MZN_INCLUDE MZN_STRING_LITERAL
+      { ParserState* pp = static_cast<ParserState*>(parm);
+        map<string,Model*>::iterator ret = pp->seenModels.find($2);
+        IncludeI* ii = IncludeI::a(pp->ctx,@$,$2);
+        $$ = ii;
+        if (ret == pp->seenModels.end()) {
+          Model* im = new Model;
+          im->setParent(pp->model);
+          im->setFilename(pp->ctx,$2);
+          string fpath, fbase; filepath(pp->filename, fpath, fbase);
+          if (fpath=="")
+            fpath="./";
+          pair<string,Model*> pm(fpath, im);
+          pp->files.push_back(pm);
+          ii->setModel(im);
+          pp->seenModels.insert(pair<string,Model*>($2,im));
+        } else {
+          ii->setModel(ret->second, false);
+        }
+        free($2);
+      }
+
+vardecl_item :
+      ti_expr_and_id annotations
+      { $1->annotate($2);
+        $$ = VarDeclI::a(GETCTX(),@$,$1);
+      }
+    | ti_expr_and_id annotations MZN_EQ expr
+      { $1->_e = $4;
+        $1->annotate($2);
+        $$ = VarDeclI::a(GETCTX(),@$,$1);
+      }
+
+assign_item :
+      MZN_IDENTIFIER MZN_EQ expr
+      { $$ = AssignI::a(GETCTX(),@$,$1,$3);
+        free($1);
+      }
+
+constraint_item :
+      MZN_CONSTRAINT expr
+      { $$ = ConstraintI::a(GETCTX(),@$,$2);}
+
+solve_item :
+      MZN_SOLVE annotations MZN_SATISFY
+      { $$ = SolveI::sat(GETCTX(),@$,$2); }
+    | MZN_SOLVE annotations MZN_MINIMIZE expr
+      { $$ = SolveI::min(GETCTX(),@$,$4, $2); }
+    | MZN_SOLVE annotations MZN_MAXIMIZE expr
+      { $$ = SolveI::max(GETCTX(),@$,$4, $2); }
+
+output_item :
+      MZN_OUTPUT expr
+      { $$ = OutputI::a(GETCTX(),@$,$2);}
+
+predicate_item :
+        MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
+      { $$ = PredicateI::a(GETCTX(),@$,$2,*$3,$5,$4,false);
+        free($2);
+        delete $3;
+      }
+      | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
+      { $$ = PredicateI::a(GETCTX(),@$,$2,*$3,$5,$4,true);
+        free($2);
+        delete $3;
+      }
+
+function_item :
+        MZN_FUNCTION ti_expr ':' MZN_IDENTIFIER params annotations operation_item_tail
+      { $$ = FunctionI::a(GETCTX(),@$,$4,$2,*$5,$7,$6);
+        free($4);
+        delete $5;
+      }
+      | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
+      { $$ = FunctionI::a(GETCTX(),@$,$3,$1,*$5,$8,$7);
+        free($3);
+        delete $5;
+      }
+
+annotation_item :
+        MZN_ANNOTATION MZN_IDENTIFIER params
+      {
+        TiExpr* ti=TiExpr::par(GETCTX(),@1,AnnTiExpr::a(GETCTX()));
+        $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,NULL,NULL);
+        free($2);
+        delete $3;
+      }
+    | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
+      { TiExpr* ti=TiExpr::par(GETCTX(),@1,AnnTiExpr::a(GETCTX()));
+        $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,$5,NULL);
+        delete $3;
+      }
+
+operation_item_tail :
+      /*empty*/
+      { $$=NULL; }
+    | MZN_EQ expr
+      { $$=$2; }
+
+params :
+      /* empty */
+      { $$=new vector<VarDecl*>(); }
+    | '(' params_list ')'
+      { $$=$2; }
+    | '(' error ')'
+      { $$=NULL; }
+
+params_list : params_list_head comma_or_none
+      { $$=$1; }
+
+params_list_head :
+      ti_expr_and_id
+      { $$=new vector<VarDecl*>(); $$->push_back($1); }
+    | params_list_head ',' ti_expr_and_id
+      { $$=$1; $1->push_back($3); }
+
+comma_or_none : | ','
+
+ti_expr_and_id :
+      ti_expr ':' MZN_IDENTIFIER
+      { $$ = VarDecl::a(GETCTX(),@$, $1, $3);
+        free($3);
+      }
+
+ti_expr_list : ti_expr_list_head comma_or_none
+      { $$=$1; }
+
+ti_expr_list_head :
+      ti_expr
+      { $$=new vector<TiExpr*>(); $$->push_back($1); }
+    | ti_expr_list_head ',' ti_expr
+      { $$=$1; $1->push_back($3); }
+
+ti_expr :
+      base_ti_expr
+    | MZN_ARRAY MZN_LEFT_BRACKET int_ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
+      {
+        $$ = $6;
+        $$->addRanges(GETCTX(),*$3);
+        delete $3;
+      }
+
+int_ti_expr_list : int_ti_expr_list_head comma_or_none
+
+int_ti_expr_list_head :
+      int_ti_expr
+      { $$=new std::vector<IntTiExpr*>; $$->push_back($1); }
+    | int_ti_expr_list_head ',' int_ti_expr
+      { $$=$1; $$->push_back($3); }
+
+int_ti_expr :
+      MZN_INT
+      { $$ = IntTiExpr::a(GETCTX()); }
+    | MZN_IDENTIFIER
+      { $$ = IntTiExpr::a(GETCTX(),Id::a(GETCTX(),@1,$1,NULL)); free($1); }
+    | num_expr MZN_DOTDOT num_expr
+      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@$,$1,$3)); }
+    | MZN_DOTDOT_QUOTED '(' num_expr ',' num_expr ')'
+      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@$,$3,$5)); }
+    | '{' expr_list '}'
+      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@2,*$2));
+        delete $2;
+      }
+    
+base_ti_expr :
+      base_ti_expr_tail
+      { $$ = TiExpr::par(GETCTX(),@$,$1); }
+    | MZN_PAR base_ti_expr_tail
+      { $$ = TiExpr::par(GETCTX(),@$,$2); }
+    | MZN_VAR base_ti_expr_tail
+      { $$ = TiExpr::var(GETCTX(),@$,$2); }
+    | MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = TiExpr::parset(GETCTX(),@$,$3); }
+    | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = TiExpr::parset(GETCTX(),@$,$4); }
+    | MZN_VAR MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = TiExpr::varset(GETCTX(),@$,$4); }
+    | MZN_TUPLE '(' ti_expr_list ')'
+      { $$ = NULL; }
+
+base_ti_expr_tail :
+      MZN_BOOL
+      { $$ = BoolTiExpr::a(GETCTX()); }
+    | MZN_FLOAT
+      { $$ = FloatTiExpr::a(GETCTX()); }
+    | MZN_STRING
+      { $$ = StringTiExpr::a(GETCTX()); }
+    | MZN_ANN
+      { $$ = AnnTiExpr::a(GETCTX()); }
+    | '{' '}'
+      { $$ = IntTiExpr::a(GETCTX()); }
+    | int_ti_expr
+      { $$ = $1; }
+
+expr_list : expr_list_head comma_or_none
+
+expr_list_head :
+      expr
+      { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
+    | expr_list_head ',' expr
+      { $$=$1; $$->push_back($3); }
+
+///
+
+num_expr :
+      num_expr_atom_head
+    | num_expr MZN_COLONCOLON num_expr_atom_head
+      { $1->annotate(Annotation::a(GETCTX(),@3,$3)); $$=$1; }
+    | num_expr MZN_PLUS num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_PLUS, $3); }
+    | num_expr MZN_MINUS num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MINUS, $3); }
+    | num_expr MZN_MULT num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MULT, $3); }
+    | num_expr MZN_DIV num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_DIV, $3); }
+    | num_expr MZN_IDIV num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_IDIV, $3); }
+    | num_expr MZN_MOD num_expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MOD, $3); }
+    | MZN_PLUS num_expr %prec MZN_NOT
+      { $$=UnOp::a(GETCTX(),@$, UOT_PLUS, $2); }
+    | MZN_MINUS num_expr %prec MZN_NOT
+      { $$=UnOp::a(GETCTX(),@$, UOT_MINUS, $2); }
+
+num_expr_atom_head :
+      '(' expr ')'
+      { $$=$2; }
+    | '(' expr ')' array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $2, *$4); delete $4; }
+    | MZN_IDENTIFIER
+      { $$=Id::a(GETCTX(), @$, $1, NULL);
+        free($1);
+      }
+    | MZN_IDENTIFIER array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, Id::a(GETCTX(),@1,$1,NULL), *$2);
+        free($1); delete $2; }
+    // | '_'
+    | MZN_BOOL_LITERAL
+      { $$=BoolLit::a(GETCTX(), @$, $1); }
+    | MZN_INTEGER_LITERAL
+      { $$=IntLit::a(GETCTX(), @$, $1); }
+    | MZN_FLOAT_LITERAL
+      { $$=FloatLit::a(GETCTX(), @$, $1); }
+    | MZN_STRING_LITERAL
+      { $$=StringLit::a(GETCTX(), @$, $1); free($1); }
+    | simple_array_literal
+    | simple_array_literal array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | simple_array_literal_2d
+    | simple_array_literal_2d array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | simple_array_comp
+    | simple_array_comp array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | if_then_else_expr
+    | if_then_else_expr array_access_tail
+      { $$=ArrayAccess::a(GETCTX(),@$, $1, *$2);
+        delete $2; }
+    | let_expr
+    | call_expr
+
+///
+
+expr :
+      expr_atom_head
+    | expr MZN_COLONCOLON expr_atom_head
+      { $1->annotate(Annotation::a(GETCTX(),@3,$3)); $$=$1; }
+    | expr MZN_EQUIV expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_EQUIV, $3); }
+    | expr MZN_IMPL expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_IMPL, $3); }
+    | expr MZN_RIMPL expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_RIMPL, $3); }
+    | expr MZN_OR expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_OR, $3); }
+    | expr MZN_XOR expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_XOR, $3); }
+    | expr MZN_AND expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_AND, $3); }
+    | expr MZN_LE expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_LE, $3); }
+    | expr MZN_GR expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_GR, $3); }
+    | expr MZN_LQ expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_LQ, $3); }
+    | expr MZN_GQ expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_GQ, $3); }
+    | expr MZN_EQ expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_EQ, $3); }
+    | expr MZN_NQ expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_NQ, $3); }
+    | expr MZN_IN expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_IN, $3); }
+    | expr MZN_SUBSET expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_SUBSET, $3); }
+    | expr MZN_SUPERSET expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_SUPERSET, $3); }
+    | expr MZN_UNION expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_UNION, $3); }
+    | expr MZN_DIFF expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_DIFF, $3); }
+    | expr MZN_SYMDIFF expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_SYMDIFF, $3); }
+    | expr MZN_DOTDOT expr
+      { $$=SetLit::a(GETCTX(), @$, $1, $3); }
+    | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
+      { $$=SetLit::a(GETCTX(), @$, $3, $5); }
+    | expr MZN_INTERSECT expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_INTERSECT, $3); }
+    | expr MZN_PLUSPLUS expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_PLUSPLUS, $3); }
+    | expr MZN_PLUS expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_PLUS, $3); }
+    | expr MZN_MINUS expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MINUS, $3); }
+    | expr MZN_MULT expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MULT, $3); }
+    | expr MZN_DIV expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_DIV, $3); }
+    | expr MZN_IDIV expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_IDIV, $3); }
+    | expr MZN_MOD expr
+      { $$=BinOp::a(GETCTX(),@$, $1, BOT_MOD, $3); }
+    | expr MZN_QUOTED_IDENTIFIER expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=Call::a(GETCTX(), @$, $2, args);
+        free($2);
+      }
+    | MZN_NOT expr %prec MZN_NOT
+      { $$=UnOp::a(GETCTX(), @$, UOT_NOT, $2); }
+    | MZN_PLUS expr %prec MZN_NOT
+      { $$=UnOp::a(GETCTX(), @$, UOT_PLUS, $2); }
+    | MZN_MINUS expr %prec MZN_NOT
+      { $$=UnOp::a(GETCTX(), @$, UOT_MINUS, $2); }
+
+expr_atom_head :
+      '(' expr ')'
+      { $$=$2; }
+    | '(' expr ')' array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $2, *$4); delete $4; }
+    | MZN_IDENTIFIER
+      { $$=Id::a(GETCTX(), @$, $1, NULL); free($1); }
+    | MZN_IDENTIFIER array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, Id::a(GETCTX(), @1,$1,NULL), *$2);
+        free($1); delete $2; }
+    | MZN_UNDERSCORE
+      { $$=AnonVar::a(GETCTX(),@$); }
+    | MZN_UNDERSCORE array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, AnonVar::a(GETCTX(), @$), *$2);
+        delete $2; }
+    | MZN_BOOL_LITERAL
+      { $$=BoolLit::a(GETCTX(), @$, $1); }
+    | MZN_INTEGER_LITERAL
+      { $$=IntLit::a(GETCTX(), @$, $1); }
+    | MZN_FLOAT_LITERAL
+      { $$=FloatLit::a(GETCTX(), @$, $1); }
+    | MZN_STRING_LITERAL
+      { $$=StringLit::a(GETCTX(), @$, $1); free($1); }
+    | set_literal
+    | set_comp
+    | simple_array_literal
+    | simple_array_literal array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | simple_array_literal_2d
+    | simple_array_literal_2d array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | simple_array_comp
+    | simple_array_comp array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | if_then_else_expr
+    | if_then_else_expr array_access_tail
+      { $$=ArrayAccess::a(GETCTX(), @$, $1, *$2);
+        delete $2; }
+    | let_expr
+    | call_expr
+
+array_access_tail :
+      MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+      { $$=$2; }
+
+set_literal :
+      '{' '}'
+      { $$ = SetLit::a(GETCTX(), @$, std::vector<Expression*>()); }
+    | '{' expr_list '}'
+      { $$ = SetLit::a(GETCTX(), @$, *$2); delete $2; }
+
+set_comp :
+      '{' expr '|' comp_tail '}'
+      { $$ = Comprehension::a(GETCTX(), @$, $2, *$4, true);
+        delete $4;
+      }
+
+comp_tail :
+      generator_list
+      { $$=new Generators; $$->_g = *$1; $$->_w = NULL; delete $1; }
+    | generator_list MZN_WHERE expr
+      { $$=new Generators; $$->_g = *$1; $$->_w = $3; delete $1; }
+
+generator_list : generator_list_head comma_or_none
+
+generator_list_head :
+      generator
+      { $$=new std::vector<Generator*>; $$->push_back($1); }
+    | generator_list_head ',' generator
+      { $$=$1; $$->push_back($3); }
+
+generator : 
+      id_list MZN_IN expr
+      { $$=Generator::a(GETCTX(),*$1,$3); delete $1; }
+
+id_list : id_list_head comma_or_none
+
+id_list_head :
+      MZN_IDENTIFIER
+      { $$=new std::vector<std::string>; $$->push_back($1); free($1); }
+    | id_list_head ',' MZN_IDENTIFIER
+      { $$=$1; $$->push_back($3); free($3); }
+
+simple_array_literal : 
+      MZN_LEFT_BRACKET MZN_RIGHT_BRACKET
+      { $$=ArrayLit::a(GETCTX(), @$, std::vector<MiniZinc::Expression*>()); }
+    | MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+      { $$=ArrayLit::a(GETCTX(), @$, *$2); delete $2; }
+
+simple_array_literal_2d :
+      MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
+      { $$=ArrayLit::a(GETCTX(), @$, *$2);
+        for (unsigned int i=1; i<$2->size(); i++)
+          if ((*$2)[i].size() != (*$2)[i-1].size())
+            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+        delete $2;
+      }
+    | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
+      { $$=ArrayLit::a(GETCTX(), @$, *$2);
+        for (unsigned int i=1; i<$2->size(); i++)
+          if ((*$2)[i].size() != (*$2)[i-1].size())
+            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+        delete $2;
+      }
+
+simple_array_literal_2d_list :
+      expr_list
+      { $$=new std::vector<std::vector<MiniZinc::Expression*> >;
+        $$->push_back(*$1);
+        delete $1;
+      }
+    | simple_array_literal_2d_list '|' expr_list
+      { $$=$1; $$->push_back(*$3); delete $3; }
+
+simple_array_comp :
+      MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
+      { $$=Comprehension::a(GETCTX(), @$, $2, *$4, false);
+        delete $4;
+      }
+
+if_then_else_expr :
+      MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
+      {
+        std::vector<ITE::IfThen> iexps;
+        iexps.push_back(ITE::IfThen($2,$4));
+        for (unsigned int i=0; i<$5->size(); i+=2) {
+          iexps.push_back(ITE::IfThen((*$5)[i],(*$5)[i+1]));
+        }
+        $$=ITE::a(GETCTX(), @$, iexps,$7);
+        delete $5;
+      }
+
+elseif_list :
+      { $$=new std::vector<MiniZinc::Expression*>; }
+    | elseif_list MZN_ELSEIF expr MZN_THEN expr
+      { $$=$1; $$->push_back($3); $$->push_back($5); }
+
+quoted_op :
+      MZN_EQUIV_QUOTED
+      { $$=BOT_EQUIV; }
+    | MZN_IMPL_QUOTED
+      { $$=BOT_IMPL; }
+    | MZN_RIMPL_QUOTED
+      { $$=BOT_RIMPL; }
+    | MZN_OR_QUOTED
+      { $$=BOT_OR; }
+    | MZN_XOR_QUOTED
+      { $$=BOT_XOR; }
+    | MZN_AND_QUOTED
+      { $$=BOT_AND; }
+    | MZN_LE_QUOTED
+      { $$=BOT_LE; }
+    | MZN_GR_QUOTED
+      { $$=BOT_GR; }
+    | MZN_LQ_QUOTED
+      { $$=BOT_LQ; }
+    | MZN_GQ_QUOTED
+      { $$=BOT_GQ; }
+    | MZN_EQ_QUOTED
+      { $$=BOT_EQ; }
+    | MZN_NQ_QUOTED
+      { $$=BOT_NQ; }
+    | MZN_IN_QUOTED
+      { $$=BOT_IN; }
+    | MZN_SUBSET_QUOTED
+      { $$=BOT_SUBSET; }
+    | MZN_SUPERSET_QUOTED
+      { $$=BOT_SUPERSET; }
+    | MZN_UNION_QUOTED
+      { $$=BOT_UNION; }
+    | MZN_DIFF_QUOTED
+      { $$=BOT_DIFF; }
+    | MZN_SYMDIFF_QUOTED
+      { $$=BOT_SYMDIFF; }
+    | MZN_PLUS_QUOTED
+      { $$=BOT_PLUS; }
+    | MZN_MINUS_QUOTED
+      { $$=BOT_MINUS; }
+    | MZN_MULT_QUOTED
+      { $$=BOT_MULT; }
+    | MZN_DIV_QUOTED
+      { $$=BOT_DIV; }
+    | MZN_IDIV_QUOTED
+      { $$=BOT_IDIV; }
+    | MZN_MOD_QUOTED
+      { $$=BOT_MOD; }
+    | MZN_INTERSECT_QUOTED
+      { $$=BOT_INTERSECT; }
+    | MZN_PLUSPLUS_QUOTED
+      { $$=BOT_PLUSPLUS; }
+    | MZN_NOT_QUOTED
+      { $$=-1; }
+
+quoted_op_call :
+      quoted_op '(' expr ',' expr ')'
+      { if ($1==-1) {
+          $$=NULL;
+          yyerror(&@3, parm, "syntax error, unary operator with two arguments");
+        } else {
+          $$=BinOp::a(GETCTX(), @$, $3,static_cast<BinOpType>($1),$5);
+        }
+      }
+    | quoted_op '(' expr ')'
+      { int uot=-1;
+        switch ($1) {
+        case -1:
+          uot = UOT_NOT;
+          break;
+        case BOT_MINUS:
+          uot = UOT_MINUS;
+          break;
+        case BOT_PLUS:
+          uot = UOT_PLUS;
+          break;
+        default:
+          yyerror(&@3, parm, "syntax error, binary operator with unary argument list");
+          break;
+        }
+        if (uot==-1)
+          $$=NULL;
+        else
+          $$=UnOp::a(GETCTX(), @$, static_cast<UnOpType>(uot),$3);
+      }
+
+call_expr :
+      MZN_IDENTIFIER '(' ')'
+      { $$=Call::a(GETCTX(), @$, $1, std::vector<Expression*>()); free($1); }
+    | quoted_op_call
+    | MZN_IDENTIFIER '(' comp_or_expr ')'
+      { 
+        if ($3->second) {
+          yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
+          $$=NULL;
+        } else {
+          $$=Call::a(GETCTX(), @$, $1, $3->first);
+        }
+        free($1);
+        delete $3;
+      }
+    | MZN_IDENTIFIER '(' comp_or_expr ')' '(' expr ')'
+      { 
+        vector<Generator*> gens;
+        vector<string> ids;
+        for (unsigned int i=0; i<$3->first.size(); i++) {
+          if (Id* id = $3->first[i]->dyn_cast<Id>()) {
+            ids.push_back(id->_v);
+          } else {
+            if (BinOp* boe = $3->first[i]->dyn_cast<BinOp>()) {
+              Id* id = boe->_e0->dyn_cast<Id>();
+              if (id && boe->_op == BOT_IN) {
+                ids.push_back(id->_v);
+                gens.push_back(Generator::a(GETCTX(),ids,boe->_e1));
+                ids = vector<string>();
+              } else {
+                yyerror(&@3, parm, "illegal expression in generator call");
+              }
+            } else {
+              yyerror(&@3, parm, "illegal expression in generator call");
+            }
+          }
+        }
+        if (ids.size() != 0) {
+          yyerror(&@3, parm, "illegal expression in generator call");
+        }
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if (pp->hadError) {
+          $$=NULL;
+        } else {
+          Generators g; g._g = gens; g._w = $3->second;
+          Comprehension* ac = Comprehension::a(GETCTX(), @$, $6,g,false);
+          vector<Expression*> args; args.push_back(ac);
+          $$=Call::a(GETCTX(), @$, $1, args);
+        }
+        free($1);
+        delete $3;
+      }
+
+comp_or_expr :
+      expr_list
+      { $$=new pair<vector<Expression*>,Expression*>;
+        $$->first=*$1; $$->second=NULL;
+        delete $1;
+      }
+    | expr_list MZN_WHERE expr
+      { $$=new pair<vector<Expression*>,Expression*>;
+        $$->first=*$1; $$->second=$3;
+        delete $1;
+      }
+
+let_expr :
+      MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
+      { $$=Let::a(GETCTX(), @$, *$3, $6); delete $3; }
+    | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
+      { $$=Let::a(GETCTX(), @$, *$3, $7); delete $3; }
+//    | MZN_LET '{' slet_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
+//      { $$=new SLetExpr(@$, *$3, $6); delete $3; }
+//    | MZN_LET '{' slet_vardecl_item_list ',' '}' MZN_IN expr %prec PREC_ANNO
+//      { $$=new SLetExpr(@$, *$3, $7); delete $3; }
+
+//slet_vardecl_item_list :
+//      slet_vardecl_item
+//      { $$=new vector<VardeclExpr*>; $$->push_back($1); }
+//    | slet_vardecl_item_list ',' slet_vardecl_item
+//      { $$=$1; $$->push_back($3); }
+
+//slet_vardecl_item :
+//      MZN_SVAR MZN_INT ':' MZN_IDENTIFIER MZN_EQ expr
+//      { $$=new VardeclExpr(@$,TiExpr::svar(@$),$4,$6);
+//        free($4);
+//      }
+
+let_vardecl_item_list :
+      let_vardecl_item
+      { $$=new vector<Expression*>; $$->push_back($1); }
+    | constraint_item
+      { $$=new vector<Expression*>;
+        ConstraintI* ce = $1->cast<ConstraintI>();
+        $$->push_back(ce->_e);
+        ce->_e=NULL;
+      }
+    | let_vardecl_item_list comma_or_semi let_vardecl_item
+      { $$=$1; $$->push_back($3); }
+    | let_vardecl_item_list comma_or_semi constraint_item
+      { $$=$1;
+        ConstraintI* ce = $3->cast<ConstraintI>();
+        $$->push_back(ce->_e);
+        ce->_e=NULL;
+      }
+
+comma_or_semi : ',' | ';'
+
+let_vardecl_item :
+      ti_expr_and_id annotations
+      { $$ = $1;
+        $$->annotate($2);
+      }
+    | ti_expr_and_id annotations MZN_EQ expr
+      { $1->_e = $4;
+        $$ = $1;
+        $$->_loc = @$;
+        $$->annotate($2);
+      }
+
+annotations :
+      /* empty */
+      { $$=NULL; }
+    | ne_annotations
+
+ne_annotations :
+      MZN_COLONCOLON expr_atom_head
+      { $$=Annotation::a(GETCTX(), @2, $2); }
+    | ne_annotations MZN_COLONCOLON expr_atom_head
+      { $$=$1; $$->merge(Annotation::a(GETCTX(), @3, $3)); }
