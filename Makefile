@@ -4,7 +4,7 @@ TARGETS=mzn2fzn
 
 GENERATE=yes
 
-SOURCES=allocator lexer.yy parser.tab
+SOURCES=allocator lexer.yy parser.tab ast
 
 HEADERS=allocator ast context model parser parser.tab
 
