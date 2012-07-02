@@ -36,6 +36,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
+#include <minizinc/print.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
 
     if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
+      print(std::cout, m);
       Model* flat=NULL;
       // try {
         if (verbose)

@@ -3084,12 +3084,12 @@ yyreduce:
 
   case 54:
 #line 563 "lib/parser.yxx"
-    { (yyval.inttiexpr) = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),(yyloc),(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression))); ;}
+    { (yyval.inttiexpr) = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),(yyloc),(yyvsp[(1) - (3)].expression),BOT_DOTDOT,(yyvsp[(3) - (3)].expression))); ;}
     break;
 
   case 55:
 #line 565 "lib/parser.yxx"
-    { (yyval.inttiexpr) = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),(yyloc),(yyvsp[(3) - (6)].expression),(yyvsp[(5) - (6)].expression))); ;}
+    { (yyval.inttiexpr) = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),(yyloc),(yyvsp[(3) - (6)].expression),BOT_DOTDOT,(yyvsp[(5) - (6)].expression))); ;}
     break;
 
   case 56:
@@ -3383,12 +3383,12 @@ yyreduce:
 
   case 121:
 #line 715 "lib/parser.yxx"
-    { (yyval.expression)=SetLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
+    { (yyval.expression)=BinOp::a(GETCTX(), (yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 122:
 #line 717 "lib/parser.yxx"
-    { (yyval.expression)=SetLit::a(GETCTX(), (yyloc), (yyvsp[(3) - (6)].expression), (yyvsp[(5) - (6)].expression)); ;}
+    { (yyval.expression)=BinOp::a(GETCTX(), (yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression)); ;}
     break;
 
   case 123:

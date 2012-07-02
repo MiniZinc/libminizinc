@@ -560,9 +560,9 @@ int_ti_expr :
     | MZN_IDENTIFIER
       { $$ = IntTiExpr::a(GETCTX(),Id::a(GETCTX(),@1,$1,NULL)); free($1); }
     | num_expr MZN_DOTDOT num_expr
-      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@$,$1,$3)); }
+      { $$ = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),@$,$1,BOT_DOTDOT,$3)); }
     | MZN_DOTDOT_QUOTED '(' num_expr ',' num_expr ')'
-      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@$,$3,$5)); }
+      { $$ = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),@$,$3,BOT_DOTDOT,$5)); }
     | '{' expr_list '}'
       { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@2,*$2));
         delete $2;
@@ -712,9 +712,9 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=BinOp::a(GETCTX(),@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { $$=SetLit::a(GETCTX(), @$, $1, $3); }
+      { $$=BinOp::a(GETCTX(), @$, $1, BOT_DOTDOT, $3); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=SetLit::a(GETCTX(), @$, $3, $5); }
+      { $$=BinOp::a(GETCTX(), @$, $3, BOT_DOTDOT, $5); }
     | expr MZN_INTERSECT expr
       { $$=BinOp::a(GETCTX(),@$, $1, BOT_INTERSECT, $3); }
     | expr MZN_PLUSPLUS expr

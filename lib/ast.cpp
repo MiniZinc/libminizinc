@@ -51,17 +51,6 @@ namespace MiniZinc {
     // sl->_rs = NULL;
     return sl;
   }
-  SetLit*
-  SetLit::a(const ASTContext& ctx,
-            const Location& loc,
-            Expression* m, Expression* n) {
-    SetLit* sl = new (ctx) SetLit(loc);
-    // sl->_v = ASTVec<Expression*>::a(ctx,v);
-    /// TODO
-    sl->_v = NULL;
-    // sl->_rs = NULL;
-    return sl;
-  }
 
   BoolLit*
   BoolLit::a(const ASTContext& ctx, const Location& loc,

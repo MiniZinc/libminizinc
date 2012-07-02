@@ -96,6 +96,18 @@ namespace MiniZinc {
 
     /// Test if vector is empty
     bool empty(void) const { return _n==0; }
+    
+    /// Return size of vector
+    unsigned int size(void) const { return _n; }
+    
+    /// Element access
+    T& operator[] (int i) {
+      assert(i<static_cast<int>(_n)); return _v[i];
+    }
+    /// Element access
+    const T& operator[] (int i) const {
+      assert(i<static_cast<int>(_n)); return _v[i];
+    }
   };
 
   /// %Location of an expression in the source code
@@ -237,17 +249,14 @@ namespace MiniZinc {
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
-    /// The value of this expression
+    /// The value of this expression, or NULL
     ASTVec<Expression*>* _v;
+    /// TODO
     // RangeSet* _rs;
     /// Allocate set \$f\{v1,\dots,vn\}\$f from context
     static SetLit* a(const ASTContext& ctx,
                      const Location& loc,
                      const std::vector<Expression*>& v);
-    /// Allocate set \$f\{m,\dots,n\}\$f from context
-    static SetLit* a(const ASTContext& ctx,
-                     const Location& loc,
-                     Expression* m, Expression* n);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
@@ -434,6 +443,7 @@ namespace MiniZinc {
     BOT_INTERSECT,
     BOT_PLUSPLUS,
     BOT_EQUIV, BOT_IMPL, BOT_RIMPL, BOT_OR, BOT_AND, BOT_XOR,
+    BOT_DOTDOT
   };
   /// \brief Binary-operator expression
   class BinOp : public Expression {
@@ -628,6 +638,15 @@ namespace MiniZinc {
     /// Add \a ranges to expression
     void addRanges(const ASTContext& ctx,
                    const std::vector<IntTiExpr*>& ranges);
+    
+    bool ispar(void) const { return _vartype==VT_PAR; }
+    bool isvar(void) const { return _vartype==VT_VAR; }
+    bool isset(void) const { return _set; }
+    bool isarray(void) const { return !_ranges->empty(); }
+    bool isann(void) const {
+      return ispar() && (!isarray()) && (!isset()) &&
+        _ti->_tiid == BaseTiExpr::TI_ANN;
+    }
   };
 
   /// \brief Basic integer type-inst

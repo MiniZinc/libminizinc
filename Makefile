@@ -4,9 +4,9 @@ TARGETS=mzn2fzn
 
 GENERATE=yes
 
-SOURCES=allocator lexer.yy parser.tab ast
+SOURCES=allocator lexer.yy parser.tab ast print
 
-HEADERS=allocator ast context model parser parser.tab
+HEADERS=allocator ast context model parser parser.tab print
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
