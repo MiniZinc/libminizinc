@@ -319,7 +319,13 @@ namespace MiniZinc {
       return oss.str();
     }
     ret mapAnnotation(const Annotation& an) {
-      return "";
+      std::ostringstream oss;
+      const Annotation* a = &an;
+      while (a) {
+        oss << " :: " << expressionToString(a->_e);
+        a = a->_a;
+      }
+      return oss.str();
     }
     ret mapTiExpr(const TiExpr& ti) {
       std::ostringstream oss;
@@ -344,7 +350,10 @@ namespace MiniZinc {
   std::string expressionToString(Expression* e) {
     ExpressionStringMapper esm;
     ExpressionMapper<ExpressionStringMapper> em(esm);
-    return em.map(e);
+    std::string s = em.map(e);
+    if (e->_ann)
+      s += em.map(e->_ann);
+    return s;
   }
 
   template<class T>
@@ -402,14 +411,16 @@ namespace MiniZinc {
     }
     ret mapSolveI(const SolveI& si) {
       std::ostringstream oss;
-      oss << "solve ";
+      oss << "solve";
+      if (si._ann)
+        oss << expressionToString(si._ann);
       switch (si._st) {
-      case SolveI::ST_SAT: oss << "satisfy"; break;
+      case SolveI::ST_SAT: oss << " satisfy"; break;
       case SolveI::ST_MIN:
-        oss << "minimize " << expressionToString(si._e); 
+        oss << " minimize " << expressionToString(si._e); 
         break;
       case SolveI::ST_MAX:
-        oss << "maximize " << expressionToString(si._e); 
+        oss << " maximize " << expressionToString(si._e); 
         break;
       }
       oss << ";";
@@ -433,6 +444,8 @@ namespace MiniZinc {
         }
         oss << ")";
       }
+      if (pi._ann)
+        oss << expressionToString(pi._ann);
       if (pi._e) {
         oss << " = " << expressionToString(pi._e);
       }
@@ -455,6 +468,8 @@ namespace MiniZinc {
         }
         oss << ")";
       }
+      if (fi._ann)
+        oss << expressionToString(fi._ann);
       if (fi._e) {
         oss << " = " << expressionToString(fi._e);
       }
