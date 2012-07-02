@@ -5,9 +5,7 @@
  *      Author: pwilke
  */
 
-#include "DocumentList.h"
-#include "StringDocument.h"
-#include "BreakPoint.h"
+#include "Document.h"
 
 DocumentList::DocumentList(std::string _beginToken, std::string _separator, std::string _endToken, bool _alignment){
 	beginToken = _beginToken;
@@ -16,18 +14,3 @@ DocumentList::DocumentList(std::string _beginToken, std::string _separator, std:
 	alignment = _alignment;
 }
 
-DocumentList::~DocumentList() {
-}
-
-
-void DocumentList::addDocumentToList(Document* d){
-	docs.push_back(d);
-
-}
-
-void DocumentList::addStringToList(std::string s){
-	addDocumentToList(new StringDocument(s));
-}
-void DocumentList::addBreakPoint(){
-	addDocumentToList(new BreakPoint());
-}

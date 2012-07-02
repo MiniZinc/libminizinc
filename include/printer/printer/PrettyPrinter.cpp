@@ -14,25 +14,42 @@
 #include <map>
 
 using namespace std;
+
+void PrettyPrinter::print(Document* d) {
+	addItem();
+	addLine(0);
+	printDocument(d, true, 0);
+	simplifyItem(currentItem);
+}
+
 PrettyPrinter::PrettyPrinter(int _maxwidth, string _indentationBase) {
 	maxwidth = _maxwidth;
 	indentationBase = _indentationBase;
-	addLine(0);
-	currentLine = 0;
+	currentLine = -1;
+	currentItem = -1;
 }
-const std::vector<Line>& PrettyPrinter::getLines() const {
-	return lines;
+const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
+	return items[currentItem];
 }
 
 void PrettyPrinter::addLine(int indentation) {
-	lines.push_back(Line(indentation));
+	items[currentItem].push_back(Line(indentation));
 	currentLine++;
+}
+void PrettyPrinter::addItem() {
+	items.push_back(std::vector<Line>());
+	currentItem++;
+	currentLine = -1;
 }
 
 std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp) {
 	std::vector<Line>::const_iterator it;
-	for (it = pp.getLines().begin(); it != pp.getLines().end(); it++) {
-		os << (*it);
+	int nItems = pp.items.size();
+	for (int item = 0; item < nItems; item++) {
+		for (it = pp.items[item].begin(); it != pp.items[item].end(); it++) {
+			os << (*it);
+		}
+		os << "\n";
 	}
 	return os;
 }
@@ -44,7 +61,7 @@ string PrettyPrinter::printSpaces(int n) {
 	return result;
 }
 
-void PrettyPrinter::print(Document* d, bool alignment, int alignmentCol,
+void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 		string before, string after) {
 	string s;
 	if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
@@ -67,7 +84,7 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 	if (d != NULL)
 		s = d->getString();
 	s = before + s + after;
-	Line& l = lines[currentLine];
+	Line& l = items[currentItem][currentLine];
 	int size = s.size();
 	if (size <= l.getSpaceLeft(maxwidth)) {
 		l.addString(s);
@@ -76,7 +93,7 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 				alignment && maxwidth - alignmentCol > size ?
 						alignmentCol : indentationBase.size();
 		addLine(col);
-		lines[currentLine].addString(s);
+		items[currentItem][currentLine].addString(s);
 	}
 
 }
@@ -89,8 +106,8 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 	string endToken = d->getEndToken();
 	bool _alignment = d->getAlignment();
 
-	int currentCol = lines[currentLine].getIndentation()
-			+ lines[currentLine].getLength();
+	int currentCol = items[currentItem][currentLine].getIndentation()
+			+ items[currentItem][currentLine].getLength();
 	int newAlignmentCol =
 			_alignment ? currentCol + beginToken.size() : alignmentCol;
 	int vectorSize = ld.size();
@@ -121,19 +138,27 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 		} else {
 			be = "";
 		}
-		print(subdoc, _alignment, newAlignmentCol, be, af);
+		printDocument(subdoc, _alignment, newAlignmentCol, be, af);
 	}
 
 }
 
 void PrettyPrinter::simplify() {
-	int nLines = lines.size();
-	for (int i = nLines - 1; i > 0; i--) {
-		if (lines[i].getLength() > lines[i - 1].getSpaceLeft(maxwidth))
+	int nItems = items.size();
+	for (int item = 0; item < nItems; item++) {
+		simplifyItem(item);
+	}
+}
+void PrettyPrinter::simplifyItem(int item) {
+	int nLines = items[item].size();
+	for (int line = nLines - 1; line > 0; line--) {
+		if (items[item][line].getLength()
+				> items[item][line - 1].getSpaceLeft(maxwidth))
 			break;
 		else {
-			lines[i - 1].concatenateLines(lines[i]);
-			lines.pop_back();
+			items[item][line - 1].concatenateLines(items[item][line]);
+			items[item].pop_back();
 		}
 	}
+
 }
