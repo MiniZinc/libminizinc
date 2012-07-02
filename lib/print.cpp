@@ -685,7 +685,7 @@ public:
 		DocumentList* generators = new DocumentList("", ", ", "");
 		for (unsigned int i = 0; i < c._g->size(); i++) {
 			Generator* g = (*c._g)[i];
-			DocumentList* gen = new DocumentList("", ", ", "");
+			DocumentList* gen = new DocumentList("", "", "");
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
 				gen->addStringToList((*g->_v)[j]->_id);
 
@@ -821,7 +821,7 @@ public:
 			opRight = new DocumentList("(", " ", ")");
 		else
 			opRight = new DocumentList("", "", "");
-		opRight->addDocumentToList(expressionToDocument(bo._e0));
+		opRight->addDocumentToList(expressionToDocument(bo._e1));
 		dl->addDocumentToList(opLeft);
 		dl->addDocumentToList(opRight);
 
@@ -917,10 +917,12 @@ public:
 Document* expressionToDocument(Expression* e) {
 	ExpressionDocumentMapper esm;
 	ExpressionMapper<ExpressionDocumentMapper> em(esm);
-	DocumentList* s = (DocumentList*)em.map(e);
+	DocumentList* dl = new DocumentList("","","");
+	Document* s = em.map(e);
+	dl->addDocumentToList(s);
 	if (e->_ann)
-		s->addDocumentToList(em.map(e->_ann));
-	return s;
+		dl->addDocumentToList(em.map(e->_ann));
+	return dl;
 }
 
 class ItemDocumentMapper {
@@ -975,7 +977,7 @@ public:
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test" : "predicate") , " ",
+		dl = new DocumentList((pi._test ? "test " : "predicate ") , " ",
 				";");
 		dl->addStringToList(pi._id);
 		if (!pi._params->empty()) {
@@ -1028,9 +1030,11 @@ public:
 void printDoc(std::ostream& os, Model* m) {
 	ItemDocumentMapper ism;
 	ItemMapper<ItemDocumentMapper> im(ism);
+	PrettyPrinter* printer = new PrettyPrinter();
 	for (unsigned int i = 0; i < m->_items.size(); i++) {
-		os << im.map(m->_items[i]) << std::endl;
+		printer->print(im.map(m->_items[i]));
 	}
+	os << *printer;
 }
 
 }

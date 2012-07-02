@@ -3,6 +3,7 @@
 
 #include <minizinc/model.hh>
 #include <printer/document/Document.h>
+#include <printer/printer/PrettyPrinter.h>
 
 namespace MiniZinc {
   

@@ -94,7 +94,8 @@ int main(int argc, char** argv) {
 
     if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
-      printDoc(std::cout, m);
+      //print(std::cout, m);
+    	printDoc(std::cout, m);
       Model* flat=NULL;
       // try {
         if (verbose)
