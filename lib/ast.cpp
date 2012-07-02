@@ -360,9 +360,9 @@ namespace MiniZinc {
 
   AssignI*
   AssignI::a(const ASTContext& ctx, const Location& loc,
-             char* id, Expression* e) {
+             const std::string& id, Expression* e) {
     AssignI* ai = new (ctx) AssignI(loc);
-    ai->_id = id;
+    ai->_id = ctx.alloc(id);
     ai->_e = e;
     return ai;
   }

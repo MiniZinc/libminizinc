@@ -811,7 +811,7 @@ namespace MiniZinc {
     Expression* _e;
     /// Allocate from context
     static AssignI* a(const ASTContext& ctx, const Location& loc,
-                      char* id, Expression* e);
+                      const std::string& id, Expression* e);
   };
   /// \brief Constraint item
   class ConstraintI : public Item {
