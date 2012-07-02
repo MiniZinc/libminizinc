@@ -1,0 +1,6 @@
+lib/allocator.o
+lib/ast.o
+lib/lexer.yy.o
+lib/parser.tab.o
+mzn2fzn
+mzn2fzn.o
