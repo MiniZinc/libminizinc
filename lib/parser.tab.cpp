@@ -2874,7 +2874,7 @@ yyreduce:
 #line 408 "lib/parser.yxx"
     { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find((yyvsp[(2) - (2)].sValue));
-        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),(yyvsp[(2) - (2)].sValue));
+        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),pp->ctx.alloc((yyvsp[(2) - (2)].sValue)));
         (yyval.item) = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
