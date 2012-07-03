@@ -822,7 +822,7 @@ public:
 			opRight = new DocumentList("", "", "");
 		opRight->addDocumentToList(expressionToDocument(bo._e1));
 		dl->addDocumentToList(opLeft);
-		if(linebreak)
+		if (linebreak)
 			dl->addBreakPoint();
 		dl->addDocumentToList(opRight);
 
@@ -922,29 +922,35 @@ public:
 		DocumentList* inexpr = new DocumentList("", "", "");
 
 		for (unsigned int i = 0; i < l._let->size(); i++) {
+			lets->addBreakPoint();
 			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
 				exp->addStringToList("constraint ");
 			exp->addDocumentToList(expressionToDocument(li));
 			lets->addDocumentToList(exp);
-			lets->addBreakPoint();
+			/*if(i != l._let->size()-1)
+				lets->addBreakPoint();*/
 		}
 
 		inexpr->addDocumentToList(expressionToDocument(l._in));
 
-		letin->addStringToList("let {");
-		letin->addBreakPoint();
 		letin->addDocumentToList(lets);
 
-		DocumentList* letin2 = new DocumentList("","","",false);
-		letin2->addStringToList("} in (");
+		DocumentList* letin2 = new DocumentList("", "", "", true);
+
 		letin2->addBreakPoint();
 		letin2->addDocumentToList(inexpr);
 
-		DocumentList* dl = new DocumentList("","","");
+		DocumentList* dl = new DocumentList("", "", "");
+		dl->addStringToList("let {");
+		//dl->addBreakPoint();
 		dl->addDocumentToList(letin);
+		dl->addBreakPoint();
+		dl->addStringToList("} in (");
 		dl->addDocumentToList(letin2);
+		dl->addBreakPoint();
+		dl->addStringToList(")");
 		return dl;
 	}
 	ret mapAnnotation(const Annotation& an) {
@@ -1045,7 +1051,7 @@ public:
 		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";");
 		dl->addStringToList(pi._id);
 		if (!pi._params->empty()) {
-			DocumentList* params = new DocumentList("(", "; ", ")");
+			DocumentList* params = new DocumentList("(", ", ", ")");
 			for (unsigned int i = 0; i < pi._params->size(); i++) {
 				params->addDocumentToList(
 						expressionToDocument((*pi._params)[i]));

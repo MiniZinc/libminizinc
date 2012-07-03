@@ -19,7 +19,7 @@ void PrettyPrinter::print(Document* d) {
 	addItem();
 	addLine(0);
 	printDocument(d, true, 0);
-	simplifyItem(currentItem);
+	//simplifyItem(currentItem);
 }
 
 PrettyPrinter::PrettyPrinter(int _maxwidth, string _indentationBase) {
@@ -73,7 +73,7 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 		printStringDoc(sd, alignment, alignmentCol, before, after);
 	} else if (dynamic_cast<BreakPoint*>(d)) {
 		printStringDoc(NULL, alignment, alignmentCol, before, "");
-		addLine(alignmentCol, true);
+		addLine(alignmentCol, false);
 		printStringDoc(NULL, alignment, alignmentCol, "", after);
 	} else {
 		cerr << "PrettyPrinter::print : Wrong type of document" << endl;
@@ -154,7 +154,7 @@ void PrettyPrinter::simplifyItem(int item) {
 	int nLines = items[item].size();
 	linesToSimplify[item].push_back(nLines - 1);
 	int nLinesToSimplify = linesToSimplify[item].size();
-	for (int l = nLinesToSimplify - 1; l > 0; l--) {
+	for (int l = nLinesToSimplify - 1; l >= 0; l--) {
 		for (int line = linesToSimplify[item][l]; line > 0; line--) {
 			if (items[item][line].getLength()
 					> items[item][line - 1].getSpaceLeft(maxwidth))
