@@ -49,7 +49,7 @@ std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp) {
 		for (it = pp.items[item].begin(); it != pp.items[item].end(); it++) {
 			os << (*it);
 		}
-		os << "\n";
+		//os << "\n";
 	}
 	return os;
 }

@@ -655,32 +655,29 @@ public:
 	}
 	ret mapArrayLit(const ArrayLit& al) {
 		/// TODO: handle multi-dimensional arrays
-		std::ostringstream oss;
-		oss << "[";
 		DocumentList* dl = new DocumentList("[", ", ", "]");
 		for (unsigned int i = 0; i < al._v->size(); i++)
 			dl->addDocumentToList(expressionToDocument((*al._v)[i]));
 		return dl;
 	}
 	ret mapArrayAccess(const ArrayAccess& aa) {
-		std::ostringstream oss;
-		oss << expressionToString(aa._v);
-		oss << "[";
+		DocumentList* dl = new DocumentList("", "", "");
+
+		dl->addDocumentToList(expressionToDocument(aa._v));
+		DocumentList* args = new DocumentList("[", ", ", "]");
 		for (unsigned int i = 0; i < aa._idx->size(); i++) {
-			oss << expressionToString((*aa._idx)[i]);
-			if (i < aa._idx->size() - 1)
-				oss << ", ";
+			args->addDocumentToList(expressionToDocument((*aa._idx)[i]));
 		}
-		oss << "]";
-		return new StringDocument(oss.str());
+		dl->addDocumentToList(args);
+		return dl;
 	}
 	ret mapComprehension(const Comprehension& c) {
 		std::ostringstream oss;
 		DocumentList* dl;
 		if (c._set)
-			dl = new DocumentList("{", "|", "}");
+			dl = new DocumentList("{ ", " | ", " }");
 		else
-			dl = new DocumentList("[", "|", "]");
+			dl = new DocumentList("[ ", " | ", " ]");
 		dl->addDocumentToList(expressionToDocument(c._e));
 		DocumentList* generators = new DocumentList("", ", ", "");
 		for (unsigned int i = 0; i < c._g->size(); i++) {
@@ -705,10 +702,10 @@ public:
 	}
 	ret mapITE(const ITE& ite) {
 		std::ostringstream oss;
-		DocumentList* dl = new DocumentList("if ", " else ", " endif");
+		DocumentList* dl = new DocumentList(" ", " else ", " endif");
 		for (unsigned int i = 0; i < ite._e_if->size(); i++) {
-			std::string deb = (i == 0 ? "if " : " elseif ");
-			DocumentList* ifelseif = new DocumentList(deb, " then ", "");
+			std::string beg = (i == 0 ? "if " : " elseif ");
+			DocumentList* ifelseif = new DocumentList(beg, " then ", "");
 			ifelseif->addDocumentToList(
 					expressionToDocument((*ite._e_if)[i].first));
 			ifelseif->addDocumentToList(
@@ -856,13 +853,72 @@ public:
 		return dl;
 	}
 	ret mapCall(const Call& c) {
-		std::string deb = std::string(c._id) + "(";
-		DocumentList* dl = new DocumentList(deb, ", ", ")");
+		if (c._args->size() == 1) {
+			/*
+			 * if we have only one argument, and this is an array comprehension,
+			 * we convert it into the following syntax
+			 * forall (f(i,j) | i in 1..10)
+			 * -->
+			 * forall (i in 1..10) (f(i,j))
+			 */
+
+			Expression* e = (*c._args)[0];
+			if (e->isa<Comprehension>()) {
+				Comprehension* com = e->cast<Comprehension>();
+				if (!com->_set) {
+					DocumentList* dl = new DocumentList("", " ", "");
+					dl->addStringToList(std::string(c._id));
+					DocumentList* args = new DocumentList(""," ","");
+					DocumentList* generators = new DocumentList("(", ", ", ")");
+					for (unsigned int i = 0; i < com->_g->size(); i++) {
+						Generator* g = (*com->_g)[i];
+						DocumentList* gen = new DocumentList("", "", "");
+						for (unsigned int j = 0; j < g->_v->size(); j++) {
+							gen->addStringToList((*g->_v)[j]->_id);
+						}
+						gen->addStringToList(" in ");
+						gen->addDocumentToList(expressionToDocument(g->_in));
+						generators->addDocumentToList(gen);
+					}
+					args->addDocumentToList(generators);
+					args->addBreakPoint();
+					DocumentList* exp = new DocumentList("(", ", ", ")");
+					exp->addDocumentToList(expressionToDocument(com->_e));
+					args->addDocumentToList(exp);
+					dl->addDocumentToList(args);
+
+					return dl;
+				}
+			}
+
+		}
+		std::string beg = std::string(c._id) + " (";
+		DocumentList* dl = new DocumentList(beg, ", ", ")");
 		for (unsigned int i = 0; i < c._args->size(); i++) {
 			dl->addDocumentToList(expressionToDocument((*c._args)[i]));
 		}
 		return dl;
+
 	}
+	/*dl->addDocumentToList(expressionToDocument(c._e));
+	 DocumentList* generators = new DocumentList("", ", ", "");
+	 for (unsigned int i = 0; i < c._g->size(); i++) {
+	 Generator* g = (*c._g)[i];
+	 DocumentList* gen = new DocumentList("", "", "");
+	 for (unsigned int j = 0; j < g->_v->size(); j++) {
+	 gen->addStringToList((*g->_v)[j]->_id);
+
+	 }
+	 gen->addStringToList(" in ");
+	 gen->addDocumentToList(expressionToDocument(g->_in));
+	 generators->addDocumentToList(gen);
+	 }
+	 dl->addDocumentToList(generators);
+	 if (c._where != NULL) {
+
+	 dl->addStringToList(" where ");
+	 dl->addDocumentToList(expressionToDocument(c._where));
+	 }*/
 	ret mapVarDecl(const VarDecl& vd) {
 		std::ostringstream oss;
 		DocumentList* dl = new DocumentList("", " ", "");
@@ -877,21 +933,33 @@ public:
 	}
 	ret mapLet(const Let& l) {
 		std::ostringstream oss;
-		DocumentList* dl = new DocumentList("let {", "} in (", ")");
-
+		DocumentList* dl = new DocumentList("let {", "} in ", "");
+		DocumentList* letin = new DocumentList("", " ", "");
+		letin->addBreakPoint();
 		for (unsigned int i = 0; i < l._let->size(); i++) {
 			DocumentList* exp = new DocumentList("", "; ", "");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
 				exp->addStringToList("constraint ");
 			exp->addDocumentToList(expressionToDocument(li));
-			dl->addDocumentToList(exp);
+			letin->addDocumentToList(exp);
+			letin->addBreakPoint();
 		}
-		dl->addDocumentToList(expressionToDocument(l._in));
+		dl->addDocumentToList(letin);
+		DocumentList* exp = new DocumentList("(", "", ")");
+		exp->addBreakPoint();
+		exp->addDocumentToList(expressionToDocument(l._in));
+		dl->addDocumentToList(exp);
 		return dl;
 	}
 	ret mapAnnotation(const Annotation& an) {
-		return new StringDocument("");
+		const Annotation* a = &an;
+		DocumentList* dl = new DocumentList(" :: ", " :: ", "");
+		while (a) {
+			dl->addDocumentToList(expressionToDocument(a->_e));
+			a = a->_a;
+		}
+		return dl;
 	}
 	ret mapTiExpr(const TiExpr& ti) {
 		DocumentList* dl = new DocumentList("", "", "");
@@ -917,11 +985,12 @@ public:
 Document* expressionToDocument(Expression* e) {
 	ExpressionDocumentMapper esm;
 	ExpressionMapper<ExpressionDocumentMapper> em(esm);
-	DocumentList* dl = new DocumentList("","","");
+	DocumentList* dl = new DocumentList("", "", "");
 	Document* s = em.map(e);
 	dl->addDocumentToList(s);
-	if (e->_ann)
+	if (e->_ann) {
 		dl->addDocumentToList(em.map(e->_ann));
+	}
 	return dl;
 }
 
@@ -929,9 +998,9 @@ class ItemDocumentMapper {
 public:
 	typedef Document* ret;
 	ret mapIncludeI(const IncludeI& ii) {
-		DocumentList* dl = new DocumentList("include", " ", ";");
-		dl->addStringToList(std::string(ii._f));
-		return dl;
+		std::ostringstream oss;
+		oss << "include \"" << ii._f << "\";";
+		return new StringDocument(oss.str());
 	}
 	ret mapVarDeclI(const VarDeclI& vi) {
 		DocumentList* dl = new DocumentList("", " ", ";");
@@ -950,8 +1019,8 @@ public:
 		return dl;
 	}
 	ret mapSolveI(const SolveI& si) {
-		DocumentList* dl = new DocumentList("solve", " ", ";");
-
+		DocumentList* dl = new DocumentList("", " ", ";");
+		dl->addStringToList("solve");
 		if (si._ann)
 			dl->addDocumentToList(expressionToDocument(si._ann));
 		switch (si._st) {
@@ -971,14 +1040,13 @@ public:
 
 	}
 	ret mapOutputI(const OutputI& oi) {
-		DocumentList* dl = new DocumentList("output", " ", ";");
+		DocumentList* dl = new DocumentList("output ", " ", ";");
 		dl->addDocumentToList(expressionToDocument(oi._e));
 		return dl;
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test " : "predicate ") , " ",
-				";");
+		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";");
 		dl->addStringToList(pi._id);
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", "; ", ")");
@@ -1001,7 +1069,7 @@ public:
 	ret mapFunctionI(const FunctionI& fi) {
 		DocumentList* dl;
 		if (fi._ti->isann() && fi._e == NULL) {
-			dl = new DocumentList("annotation", " ", ";");
+			dl = new DocumentList("annotation ", " ", ";");
 			dl->addStringToList(fi._id);
 		} else {
 			dl = new DocumentList("function ", " ", ";");
@@ -1015,6 +1083,7 @@ public:
 				params->addDocumentToList(
 						expressionToDocument((*fi._params)[i]));
 			}
+			dl->addDocumentToList(params);
 		}
 		if (fi._ann)
 			dl->addDocumentToList(expressionToDocument(fi._ann));
