@@ -1,4 +1,4 @@
-#include "Line.h"
+#include <printer/Line.h>
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, const Line& l) {

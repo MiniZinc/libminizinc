@@ -5,7 +5,7 @@
  *      Author: pwilke
  */
 
-#include "Document.h"
+#include <printer/Document.h>
 
 DocumentList::DocumentList(std::string _beginToken, std::string _separator, std::string _endToken, bool _alignment){
 	beginToken = _beginToken;

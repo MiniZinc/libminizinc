@@ -13,27 +13,35 @@
 #include <iostream>
 #include <sstream>
 
-#include "../document/Document.h"
+#include "Document.h"
 #include "Line.h"
-
 
 class PrettyPrinter {
 public:
-	PrettyPrinter(int _maxwidth = 80, std::string _indentationBase = "    ");
+	/*
+	 * \brief Constructor for class Pretty Printer
+	 * \param maxwidth (default 80) : number of rows
+	 * \param indentationBase : spaces that represent the atomic number of spaces
+	 * \param sim : whether we want to simplify the result
+	 * \param deepSimp : whether we want to simplify at each breakpoint or not
+	 */
+	PrettyPrinter(int _maxwidth = 80, int _indentationBase = 4,
+			bool sim = false, bool deepSimp = false);
 
 	void print(Document* d);
 
 	virtual ~PrettyPrinter() {
 	}
 
-
 private:
-	int maxwidth; //max width of lines, in rows
-	std::string indentationBase; //could be "    " e.g. - Represents the style of indentation desired
+	int maxwidth;
+	int indentationBase;
 	int currentLine;
 	int currentItem;
 	std::vector<std::vector<Line> > items;
 	std::vector<std::vector<int> > linesToSimplify;
+	bool simp;
+	bool deeplySimp;
 
 	void addItem();
 	void addLine(int indentation, bool bp = false);

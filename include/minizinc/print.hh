@@ -2,8 +2,8 @@
 #define __MINIZINC_PRINT_HH__
 
 #include <minizinc/model.hh>
-#include <printer/document/Document.h>
-#include <printer/printer/PrettyPrinter.h>
+#include <printer/Document.h>
+#include <printer/PrettyPrinter.h>
 
 namespace MiniZinc {
   

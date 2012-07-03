@@ -132,6 +132,7 @@ public:
 			return _t.mapTiExpr(*e->cast<TiExpr>());
 		default:
 			assert(false);
+			break;
 		}
 	}
 };
@@ -161,6 +162,7 @@ std::string tiexpressionToString(BaseTiExpr* e) {
 		return "ann";
 	default:
 		assert(false);
+		break;
 	}
 }
 
@@ -352,6 +354,7 @@ public:
 			break;
 		default:
 			assert(false);
+			break;
 		}
 		if (ps & PN_RIGHT)
 			oss << "(";
@@ -374,6 +377,7 @@ public:
 			break;
 		default:
 			assert(false);
+			break;
 		}
 		bool needParen = (uo._e0->isa<BinOp>() || uo._e0->isa<UnOp>());
 		if (needParen)
@@ -483,6 +487,7 @@ public:
 			return _t.mapFunctionI(*i->cast<FunctionI>());
 		default:
 			assert(false);
+			break;
 		}
 	}
 };
@@ -614,6 +619,7 @@ Document* tiexpressionToDocument(BaseTiExpr* e) {
 		return new StringDocument("ann");
 	default:
 		assert(false);
+		break;
 	}
 }
 
@@ -813,6 +819,7 @@ public:
 			break;
 		default:
 			assert(false);
+			break;
 		}
 		dl = new DocumentList("", op, "");
 
@@ -843,6 +850,7 @@ public:
 			break;
 		default:
 			assert(false);
+			break;
 		}
 		dl->addStringToList(op);
 		DocumentList* unop;
@@ -944,7 +952,6 @@ public:
 
 		DocumentList* dl = new DocumentList("", "", "");
 		dl->addStringToList("let {");
-		//dl->addBreakPoint();
 		dl->addDocumentToList(letin);
 		dl->addBreakPoint();
 		dl->addStringToList("} in (");

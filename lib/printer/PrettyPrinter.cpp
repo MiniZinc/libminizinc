@@ -5,7 +5,7 @@
  *      Author: pwilke
  */
 
-#include "PrettyPrinter.h"
+#include <printer/PrettyPrinter.h>
 #include <iostream>
 #include <cstdlib>
 #include <sstream>
@@ -19,14 +19,17 @@ void PrettyPrinter::print(Document* d) {
 	addItem();
 	addLine(0);
 	printDocument(d, true, 0);
-	//simplifyItem(currentItem);
+	if(simp)
+		simplifyItem(currentItem);
 }
 
-PrettyPrinter::PrettyPrinter(int _maxwidth, string _indentationBase) {
+PrettyPrinter::PrettyPrinter(int _maxwidth, int _indentationBase, bool sim, bool deepsim) {
 	maxwidth = _maxwidth;
 	indentationBase = _indentationBase;
 	currentLine = -1;
 	currentItem = -1;
+	simp = sim;
+	deeplySimp = deepsim;
 }
 const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
 	return items[currentItem];
@@ -35,7 +38,7 @@ const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
 void PrettyPrinter::addLine(int indentation, bool bp) {
 	items[currentItem].push_back(Line(indentation));
 	currentLine++;
-	if (bp)
+	if (bp && deeplySimp)
 		linesToSimplify[currentItem].push_back(currentLine);
 }
 void PrettyPrinter::addItem() {
@@ -94,7 +97,7 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 	} else {
 		int col =
 				alignment && maxwidth - alignmentCol >= size ?
-						alignmentCol : indentationBase.size();
+						alignmentCol : indentationBase;
 		addLine(col);
 		items[currentItem][currentLine].addString(s);
 	}
@@ -128,7 +131,7 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 		bool bp = false;
 		if (dynamic_cast<BreakPoint*>(subdoc)) {
 			if (!_alignment)
-				newAlignmentCol += indentationBase.size();
+				newAlignmentCol += indentationBase;
 			bp = true;
 		}
 		string af, be;
