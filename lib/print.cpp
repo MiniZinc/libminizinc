@@ -720,7 +720,7 @@ public:
 		DocumentList* opLeft;
 		DocumentList* dl;
 		DocumentList* opRight;
-
+		bool linebreak = false;
 		if (ps & PN_LEFT)
 			opLeft = new DocumentList("(", " ", ")");
 		else
@@ -799,9 +799,11 @@ public:
 			break;
 		case BOT_OR:
 			op = " \\/ ";
+			linebreak = true;
 			break;
 		case BOT_AND:
 			op = " /\\ ";
+			linebreak = true;
 			break;
 		case BOT_XOR:
 			op = " xor ";
@@ -820,12 +822,14 @@ public:
 			opRight = new DocumentList("", "", "");
 		opRight->addDocumentToList(expressionToDocument(bo._e1));
 		dl->addDocumentToList(opLeft);
+		if(linebreak)
+			dl->addBreakPoint();
 		dl->addDocumentToList(opRight);
 
 		return dl;
 	}
 	ret mapUnOp(const UnOp& uo) {
-		DocumentList* dl;
+		DocumentList* dl = new DocumentList("", "", "");
 		std::string op;
 		switch (uo._op) {
 		case UOT_NOT:
@@ -868,7 +872,7 @@ public:
 				if (!com->_set) {
 					DocumentList* dl = new DocumentList("", " ", "");
 					dl->addStringToList(std::string(c._id));
-					DocumentList* args = new DocumentList(""," ","");
+					DocumentList* args = new DocumentList("", " ", "");
 					DocumentList* generators = new DocumentList("(", ", ", ")");
 					for (unsigned int i = 0; i < com->_g->size(); i++) {
 						Generator* g = (*com->_g)[i];
@@ -892,7 +896,7 @@ public:
 			}
 
 		}
-		std::string beg = std::string(c._id) + " (";
+		std::string beg = std::string(c._id) + "(";
 		DocumentList* dl = new DocumentList(beg, ", ", ")");
 		for (unsigned int i = 0; i < c._args->size(); i++) {
 			dl->addDocumentToList(expressionToDocument((*c._args)[i]));
@@ -900,28 +904,9 @@ public:
 		return dl;
 
 	}
-	/*dl->addDocumentToList(expressionToDocument(c._e));
-	 DocumentList* generators = new DocumentList("", ", ", "");
-	 for (unsigned int i = 0; i < c._g->size(); i++) {
-	 Generator* g = (*c._g)[i];
-	 DocumentList* gen = new DocumentList("", "", "");
-	 for (unsigned int j = 0; j < g->_v->size(); j++) {
-	 gen->addStringToList((*g->_v)[j]->_id);
-
-	 }
-	 gen->addStringToList(" in ");
-	 gen->addDocumentToList(expressionToDocument(g->_in));
-	 generators->addDocumentToList(gen);
-	 }
-	 dl->addDocumentToList(generators);
-	 if (c._where != NULL) {
-
-	 dl->addStringToList(" where ");
-	 dl->addDocumentToList(expressionToDocument(c._where));
-	 }*/
 	ret mapVarDecl(const VarDecl& vd) {
 		std::ostringstream oss;
-		DocumentList* dl = new DocumentList("", " ", "");
+		DocumentList* dl = new DocumentList("", "", "");
 		dl->addDocumentToList(expressionToDocument(vd._ti));
 		dl->addStringToList(": ");
 		dl->addStringToList(vd._id);
@@ -932,31 +917,42 @@ public:
 		return dl;
 	}
 	ret mapLet(const Let& l) {
-		std::ostringstream oss;
-		DocumentList* dl = new DocumentList("let {", "} in ", "");
-		DocumentList* letin = new DocumentList("", " ", "");
-		letin->addBreakPoint();
+		DocumentList* letin = new DocumentList("", "", "", false);
+		DocumentList* lets = new DocumentList("", " ", "");
+		DocumentList* inexpr = new DocumentList("", "", "");
+
 		for (unsigned int i = 0; i < l._let->size(); i++) {
-			DocumentList* exp = new DocumentList("", "; ", "");
+			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
 				exp->addStringToList("constraint ");
 			exp->addDocumentToList(expressionToDocument(li));
-			letin->addDocumentToList(exp);
-			letin->addBreakPoint();
+			lets->addDocumentToList(exp);
+			lets->addBreakPoint();
 		}
+
+		inexpr->addDocumentToList(expressionToDocument(l._in));
+
+		letin->addStringToList("let {");
+		letin->addBreakPoint();
+		letin->addDocumentToList(lets);
+
+		DocumentList* letin2 = new DocumentList("","","",false);
+		letin2->addStringToList("} in (");
+		letin2->addBreakPoint();
+		letin2->addDocumentToList(inexpr);
+
+		DocumentList* dl = new DocumentList("","","");
 		dl->addDocumentToList(letin);
-		DocumentList* exp = new DocumentList("(", "", ")");
-		exp->addBreakPoint();
-		exp->addDocumentToList(expressionToDocument(l._in));
-		dl->addDocumentToList(exp);
+		dl->addDocumentToList(letin2);
 		return dl;
 	}
 	ret mapAnnotation(const Annotation& an) {
 		const Annotation* a = &an;
-		DocumentList* dl = new DocumentList(" :: ", " :: ", "");
+		DocumentList* dl = new DocumentList(":: ", " :: ", "");
 		while (a) {
-			dl->addDocumentToList(expressionToDocument(a->_e));
+			Document* ann = expressionToDocument(a->_e);
+			dl->addDocumentToList(ann);
 			a = a->_a;
 		}
 		return dl;

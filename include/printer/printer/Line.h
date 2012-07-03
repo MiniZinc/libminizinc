@@ -27,6 +27,9 @@ public:
 			indentation(indent), length(0), text(0) {
 		//std::cout << "constructor(" << indent << ") for line" << std::endl;
 	}
+	bool operator==(const Line& l){
+		return &l == this;
+	}
 
 	void setIndentation(int i) {
 		indentation = i;

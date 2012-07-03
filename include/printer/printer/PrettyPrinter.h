@@ -33,9 +33,10 @@ private:
 	int currentLine;
 	int currentItem;
 	std::vector<std::vector<Line> > items;
+	std::vector<std::vector<int> > linesToSimplify;
 
 	void addItem();
-	void addLine(int indentation);
+	void addLine(int indentation, bool bp = false);
 	static std::string printSpaces(int n);
 	const std::vector<Line>& getCurrentItemLines() const;
 

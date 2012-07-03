@@ -32,12 +32,15 @@ const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
 	return items[currentItem];
 }
 
-void PrettyPrinter::addLine(int indentation) {
+void PrettyPrinter::addLine(int indentation, bool bp) {
 	items[currentItem].push_back(Line(indentation));
 	currentLine++;
+	if (bp)
+		linesToSimplify[currentItem].push_back(currentLine);
 }
 void PrettyPrinter::addItem() {
 	items.push_back(std::vector<Line>());
+	linesToSimplify.push_back(std::vector<int>());
 	currentItem++;
 	currentLine = -1;
 }
@@ -49,7 +52,7 @@ std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp) {
 		for (it = pp.items[item].begin(); it != pp.items[item].end(); it++) {
 			os << (*it);
 		}
-		//os << "\n";
+		os << endl;
 	}
 	return os;
 }
@@ -70,7 +73,7 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 		printStringDoc(sd, alignment, alignmentCol, before, after);
 	} else if (dynamic_cast<BreakPoint*>(d)) {
 		printStringDoc(NULL, alignment, alignmentCol, before, "");
-		addLine(alignmentCol);
+		addLine(alignmentCol, true);
 		printStringDoc(NULL, alignment, alignmentCol, "", after);
 	} else {
 		cerr << "PrettyPrinter::print : Wrong type of document" << endl;
@@ -90,7 +93,7 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 		l.addString(s);
 	} else {
 		int col =
-				alignment && maxwidth - alignmentCol > size ?
+				alignment && maxwidth - alignmentCol >= size ?
 						alignmentCol : indentationBase.size();
 		addLine(col);
 		items[currentItem][currentLine].addString(s);
@@ -115,6 +118,10 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 	for (int i = 0; i < vectorSize; i++) {
 		if (!dynamic_cast<BreakPoint*>(ld[i]))
 			lastVisibleElementIndex = i;
+	}
+	if (vectorSize == 0) {
+		printStringDoc(NULL, true, newAlignmentCol, super_before + beginToken,
+				endToken + super_after);
 	}
 	for (int i = 0; i < vectorSize; i++) {
 		Document* subdoc = ld[i];
@@ -143,22 +150,24 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 
 }
 
-void PrettyPrinter::simplify() {
-	int nItems = items.size();
-	for (int item = 0; item < nItems; item++) {
-		simplifyItem(item);
-	}
-}
 void PrettyPrinter::simplifyItem(int item) {
 	int nLines = items[item].size();
-	for (int line = nLines - 1; line > 0; line--) {
-		if (items[item][line].getLength()
-				> items[item][line - 1].getSpaceLeft(maxwidth))
-			break;
-		else {
-			items[item][line - 1].concatenateLines(items[item][line]);
-			items[item].pop_back();
+	linesToSimplify[item].push_back(nLines - 1);
+	int nLinesToSimplify = linesToSimplify[item].size();
+	for (int l = nLinesToSimplify - 1; l > 0; l--) {
+		for (int line = linesToSimplify[item][l]; line > 0; line--) {
+			if (items[item][line].getLength()
+					> items[item][line - 1].getSpaceLeft(maxwidth))
+				break;
+			else {
+				items[item][line - 1].concatenateLines(items[item][line]);
+				items[item].erase(items[item].begin() + line);
+				//replace line by line - 1 in linesToSimplify[item]
+				replace(linesToSimplify[item].begin(),
+						linesToSimplify[item].end(), line, line - 1);
+			}
 		}
+		linesToSimplify[item].pop_back();
 	}
-
 }
+
