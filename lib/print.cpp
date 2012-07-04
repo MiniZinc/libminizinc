@@ -707,18 +707,30 @@ public:
 		return dl;
 	}
 	ret mapITE(const ITE& ite) {
-		std::ostringstream oss;
-		DocumentList* dl = new DocumentList(" ", " else ", " endif");
+
+		DocumentList* dl = new DocumentList("", "", "");
 		for (unsigned int i = 0; i < ite._e_if->size(); i++) {
 			std::string beg = (i == 0 ? "if " : " elseif ");
-			DocumentList* ifelseif = new DocumentList(beg, " then ", "");
-			ifelseif->addDocumentToList(
-					expressionToDocument((*ite._e_if)[i].first));
-			ifelseif->addDocumentToList(
+			dl->addStringToList(beg);
+			dl->addDocumentToList(expressionToDocument((*ite._e_if)[i].first));
+			dl->addStringToList(" then ");
+
+			DocumentList* ifdoc = new DocumentList("", "", "", false);
+			ifdoc->addBreakPoint();
+			ifdoc->addDocumentToList(
 					expressionToDocument((*ite._e_if)[i].second));
-			dl->addDocumentToList(ifelseif);
+			dl->addDocumentToList(ifdoc);
 		}
-		dl->addDocumentToList(expressionToDocument(ite._e_else));
+		dl->addBreakPoint();
+		dl->addStringToList("else ");
+
+		DocumentList* elsedoc = new DocumentList("", "", "", false);
+		elsedoc->addBreakPoint();
+		elsedoc->addDocumentToList(expressionToDocument(ite._e_else));
+		dl->addDocumentToList(elsedoc);
+		dl->addBreakPoint();
+		dl->addStringToList("endif");
+
 		return dl;
 	}
 	ret mapBinOp(const BinOp& bo) {
@@ -893,10 +905,11 @@ public:
 						generators->addDocumentToList(gen);
 					}
 					args->addDocumentToList(generators);
-          args->addStringToList("(");
-          args->addBreakPoint();
-          args->addDocumentToList(expressionToDocument(com->_e));
-          args->addStringToList(")");
+					args->addStringToList("(");
+					args->addBreakPoint();
+					args->addDocumentToList(expressionToDocument(com->_e));
+					args->addBreakPoint();
+					args->addStringToList(")");
 					dl->addDocumentToList(args);
 
 					return dl;
@@ -926,11 +939,12 @@ public:
 	}
 	ret mapLet(const Let& l) {
 		DocumentList* letin = new DocumentList("", "", "", false);
-		DocumentList* lets = new DocumentList("", " ", "");
+		DocumentList* lets = new DocumentList("", " ", "", true);
 		DocumentList* inexpr = new DocumentList("", "", "");
 
 		for (unsigned int i = 0; i < l._let->size(); i++) {
-			lets->addBreakPoint();
+			if (i != 0)
+				lets->addBreakPoint();
 			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
@@ -938,14 +952,14 @@ public:
 			exp->addDocumentToList(expressionToDocument(li));
 			lets->addDocumentToList(exp);
 			/*if(i != l._let->size()-1)
-				lets->addBreakPoint();*/
+			 lets->addBreakPoint();*/
 		}
 
 		inexpr->addDocumentToList(expressionToDocument(l._in));
-
+		letin->addBreakPoint();
 		letin->addDocumentToList(lets);
 
-		DocumentList* letin2 = new DocumentList("", "", "", true);
+		DocumentList* letin2 = new DocumentList("", "", "", false);
 
 		letin2->addBreakPoint();
 		letin2->addDocumentToList(inexpr);
@@ -1055,8 +1069,8 @@ public:
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";", 
-		                      false);
+		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";",
+				false);
 		dl->addStringToList(pi._id->str());
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
@@ -1082,9 +1096,9 @@ public:
 			dl = new DocumentList("annotation ", " ", ";", false);
 			dl->addStringToList(fi._id->str());
 		} else {
-			dl = new DocumentList("function ", " ", ";", false);
+			dl = new DocumentList("function ", "", ";", false);
 			dl->addDocumentToList(expressionToDocument(fi._ti));
-			dl->addStringToList(" : ");
+			dl->addStringToList(": ");
 			dl->addStringToList(fi._id->str());
 		}
 		if (!fi._params->empty()) {
@@ -1095,11 +1109,13 @@ public:
 			}
 			dl->addDocumentToList(params);
 		}
-		if (fi._ann)
+		if (fi._ann){
+			dl->addStringToList(" ");
 			dl->addDocumentToList(expressionToDocument(fi._ann));
+		}
 		if (fi._e) {
-			dl->addStringToList("=");
-      dl->addBreakPoint();
+			dl->addStringToList(" =");
+			dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(fi._e));
 		}
 
