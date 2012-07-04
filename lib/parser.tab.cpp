@@ -383,15 +383,15 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
     
     Model* model = new Model;
-    model->_filename = ctx.alloc(fileBasename);
+    model->_filename = CtxString::a(ctx,fileBasename);
 
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
-      stdlib->_filename = ctx.alloc("stdlib.mzn");
+      stdlib->_filename = CtxString::a(ctx,"stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
-      stdlibloc.filename=ctx.alloc(filename);
+      stdlibloc.filename=CtxString::a(ctx,filename);
       IncludeI* stdlibinc = IncludeI::a(ctx,stdlibloc,stdlib->_filename);
       stdlibinc->setModel(stdlib,true);
       model->addItem(stdlibinc);
@@ -404,13 +404,13 @@ namespace MiniZinc {
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
-      string f(m->_filename);
+      string f(m->_filename->str());
             
       for (Model* p=m->_parent; p; p=p->_parent) {
-        if (f == p->_filename) {
+        if (f == p->_filename->c_str()) {
           err << "Error: cyclic includes: " << std::endl;
           for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename << std::endl;
+            err << "  " << pe->_filename->c_str() << std::endl;
           }
           goto error;
         }
@@ -437,7 +437,7 @@ namespace MiniZinc {
       std::string s = string(istreambuf_iterator<char>(file),
                              istreambuf_iterator<char>());
 
-      m->_filepath = ctx.alloc(fullname);
+      m->_filepath = CtxString::a(ctx,fullname);
       ParserState pp(ctx, fullname,s, err, files, seenModels, m, false);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
@@ -2874,7 +2874,7 @@ yyreduce:
 #line 408 "lib/parser.yxx"
     { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find((yyvsp[(2) - (2)].sValue));
-        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),pp->ctx.alloc((yyvsp[(2) - (2)].sValue)));
+        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),CtxString::a(pp->ctx,(yyvsp[(2) - (2)].sValue)));
         (yyval.item) = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -3854,7 +3854,7 @@ yyreduce:
 #line 990 "lib/parser.yxx"
     { 
         vector<Generator*> gens;
-        vector<string> ids;
+        vector<CtxString*> ids;
         for (unsigned int i=0; i<(yyvsp[(3) - (7)].expression_p)->first.size(); i++) {
           if (Id* id = (yyvsp[(3) - (7)].expression_p)->first[i]->dyn_cast<Id>()) {
             ids.push_back(id->_v);
@@ -3864,7 +3864,7 @@ yyreduce:
               if (id && boe->_op == BOT_IN) {
                 ids.push_back(id->_v);
                 gens.push_back(Generator::a(GETCTX(),ids,boe->_e1));
-                ids = vector<string>();
+                ids = vector<CtxString*>();
               } else {
                 yyerror(&(yylsp[(3) - (7)]), parm, "illegal expression in generator call");
               }

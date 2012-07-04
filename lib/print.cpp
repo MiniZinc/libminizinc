@@ -199,7 +199,7 @@ public:
 		return oss.str();
 	}
 	ret mapId(const Id& id) {
-		return id._v;
+		return id._v->str();
 	}
 	ret mapAnonVar(const AnonVar& av) {
 		return "_";
@@ -654,7 +654,7 @@ public:
 
 	}
 	ret mapId(const Id& id) {
-		return new StringDocument(id._v);
+		return new StringDocument(id._v->str());
 	}
 	ret mapAnonVar(const AnonVar& av) {
 		return new StringDocument("_");
@@ -690,7 +690,7 @@ public:
 			Generator* g = (*c._g)[i];
 			DocumentList* gen = new DocumentList("", "", "");
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
-				gen->addStringToList((*g->_v)[j]->_id);
+				gen->addStringToList((*g->_v)[j]->_id->str());
 
 			}
 			gen->addStringToList(" in ");
@@ -879,14 +879,14 @@ public:
 				Comprehension* com = e->cast<Comprehension>();
 				if (!com->_set) {
 					DocumentList* dl = new DocumentList("", " ", "");
-					dl->addStringToList(std::string(c._id));
+					dl->addStringToList(c._id->str());
 					DocumentList* args = new DocumentList("", " ", "", false);
 					DocumentList* generators = new DocumentList("(", ", ", ")");
 					for (unsigned int i = 0; i < com->_g->size(); i++) {
 						Generator* g = (*com->_g)[i];
 						DocumentList* gen = new DocumentList("", "", "");
 						for (unsigned int j = 0; j < g->_v->size(); j++) {
-							gen->addStringToList((*g->_v)[j]->_id);
+							gen->addStringToList((*g->_v)[j]->_id->str());
 						}
 						gen->addStringToList(" in ");
 						gen->addDocumentToList(expressionToDocument(g->_in));
@@ -904,7 +904,7 @@ public:
 			}
 
 		}
-		std::string beg = std::string(c._id) + "(";
+		std::string beg = c._id->str() + "(";
 		DocumentList* dl = new DocumentList(beg, ", ", ")");
 		for (unsigned int i = 0; i < c._args->size(); i++) {
 			dl->addDocumentToList(expressionToDocument((*c._args)[i]));
@@ -917,7 +917,7 @@ public:
 		DocumentList* dl = new DocumentList("", "", "");
 		dl->addDocumentToList(expressionToDocument(vd._ti));
 		dl->addStringToList(": ");
-		dl->addStringToList(vd._id);
+		dl->addStringToList(vd._id->str());
 		if (vd._e) {
 			dl->addStringToList(" = ");
 			dl->addDocumentToList(expressionToDocument(vd._e));
@@ -1018,7 +1018,7 @@ public:
 	}
 	ret mapAssignI(const AssignI& ai) {
 		DocumentList* dl = new DocumentList("", " = ", ";");
-		dl->addStringToList(ai._id);
+		dl->addStringToList(ai._id->str());
 		dl->addDocumentToList(expressionToDocument(ai._e));
 		return dl;
 	}
@@ -1057,7 +1057,7 @@ public:
 		DocumentList* dl;
 		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";", 
 		                      false);
-		dl->addStringToList(pi._id);
+		dl->addStringToList(pi._id->str());
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
 			for (unsigned int i = 0; i < pi._params->size(); i++) {
@@ -1080,12 +1080,12 @@ public:
 		DocumentList* dl;
 		if (fi._ti->isann() && fi._e == NULL) {
 			dl = new DocumentList("annotation ", " ", ";", false);
-			dl->addStringToList(fi._id);
+			dl->addStringToList(fi._id->str());
 		} else {
 			dl = new DocumentList("function ", " ", ";", false);
 			dl->addDocumentToList(expressionToDocument(fi._ti));
 			dl->addStringToList(" : ");
-			dl->addStringToList(fi._id);
+			dl->addStringToList(fi._id->str());
 		}
 		if (!fi._params->empty()) {
 			DocumentList* params = new DocumentList("(", "; ", ")");
