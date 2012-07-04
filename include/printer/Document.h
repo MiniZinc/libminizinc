@@ -80,6 +80,12 @@ public:
 	std::string getSeparator() {
 		return separator;
 	}
+	bool getUnbreakable(){
+		return unbreakable;
+	}
+	void setUnbreakable(bool b){
+		unbreakable = b;
+	}
 	bool getAlignment() {
 		return alignment;
 	}
@@ -89,6 +95,7 @@ private:
 	std::string beginToken;
 	std::string separator;
 	std::string endToken;
+	bool unbreakable;
 	bool alignment;
 };
 

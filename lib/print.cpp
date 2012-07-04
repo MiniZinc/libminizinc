@@ -908,9 +908,11 @@ public:
 					args->addStringToList("(");
 					args->addBreakPoint();
 					args->addDocumentToList(expressionToDocument(com->_e));
-					args->addBreakPoint();
-					args->addStringToList(")");
+
+
 					dl->addDocumentToList(args);
+					dl->addBreakPoint();
+					dl->addStringToList(")");
 
 					return dl;
 				}
@@ -1074,9 +1076,12 @@ public:
 		dl->addStringToList(pi._id->str());
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
+
 			for (unsigned int i = 0; i < pi._params->size(); i++) {
-				params->addDocumentToList(
-						expressionToDocument((*pi._params)[i]));
+				DocumentList* par = new DocumentList("", "", "");
+				par->setUnbreakable(true);
+				par->addDocumentToList(expressionToDocument((*pi._params)[i]));
+				params->addDocumentToList(par);
 			}
 			dl->addDocumentToList(params);
 		}
@@ -1104,12 +1109,14 @@ public:
 		if (!fi._params->empty()) {
 			DocumentList* params = new DocumentList("(", "; ", ")");
 			for (unsigned int i = 0; i < fi._params->size(); i++) {
-				params->addDocumentToList(
-						expressionToDocument((*fi._params)[i]));
+				DocumentList* par = new DocumentList("", "", "");
+				par->setUnbreakable(true);
+				par->addDocumentToList(expressionToDocument((*fi._params)[i]));
+				params->addDocumentToList(par);
 			}
 			dl->addDocumentToList(params);
 		}
-		if (fi._ann){
+		if (fi._ann) {
 			dl->addDocumentToList(expressionToDocument(fi._ann));
 		}
 		if (fi._e) {

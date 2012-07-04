@@ -55,7 +55,8 @@ private:
 	void printStringDoc(StringDocument* d, bool alignment,
 			int startColAlignment, std::string before = "", std::string after =
 					"");
-	void simplify();
+	void printString(std::string s, bool alignment, int startColAlignment);
+	bool simplify(int item, int line);
 	void simplifyItem(int item);
 
 	friend std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp);
