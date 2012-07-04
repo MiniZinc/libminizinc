@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <functional>
 
 namespace MiniZinc {
 
@@ -100,6 +101,7 @@ namespace MiniZinc {
     const char* c_str(void) const { return _s; }
     std::string str(void) const { return std::string(c_str()); }
     unsigned int size(void) const { return _n; }
+    char operator[](int i) { assert(i<_n); return _s[i]; }
   };
 
   /**
@@ -113,7 +115,10 @@ namespace MiniZinc {
     /// Default constructor
     CtxStringH(void) : _s(NULL) {}
     /// Constructor
-    explicit CtxStringH(CtxString* s) : _s(s) {}
+    CtxStringH(CtxString* s) : _s(s) {}
+    /// Constructor
+    CtxStringH(const ASTContext& ctx, const std::string& s)
+      : _s(CtxString::a(ctx,s)) {}
     /// Copy constructor
     CtxStringH(const CtxStringH& s) : _s(s._s) {}
     /// Assignment operator
@@ -127,13 +132,42 @@ namespace MiniZinc {
     unsigned int size(void) const {
       return _s ? _s->size() : 0;
     }
+    const char* c_str(void) const { return _s ? _s->c_str() : NULL; }
+    std::string str(void) const { return _s ? _s->str() : std::string(""); }
+    CtxString* ctxstr(void) const { return _s; }
 
     bool operator== (const CtxStringH& s) const {
       return size()==s.size() &&
         (size()==0 || strncmp(_s->c_str(),s._s->c_str(),size())==0);
     }
+    
+    size_t hash(void) const {
+      size_t h = 0;
+      for (unsigned int i = 0, e=size(); i != e; ++i)
+        h = h*33 + (*_s)[i];
+      return h;
+    }
+    
   };
 
+}
+
+namespace std {
+  template<>
+  struct hash<MiniZinc::CtxStringH> {
+  public:
+    size_t operator()(const MiniZinc::CtxStringH& s) const {
+      return s.hash();
+    }
+  };
+  template<>
+  struct equal_to<MiniZinc::CtxStringH> {
+  public:
+    bool operator()(const MiniZinc::CtxStringH& s0,
+                    const MiniZinc::CtxStringH& s1) const {
+      return s0==s1;
+    }
+  };
 }
 
 #endif

@@ -229,13 +229,13 @@ namespace MiniZinc {
   class StringLit : public Expression {
   protected:
     /// Constructor
-    StringLit(const Location& loc, CtxString* v)
+    StringLit(const Location& loc, CtxStringH v)
       : Expression(loc,E_STRINGLIT), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_STRINGLIT;
     /// The value of this expression (context-allocated)
-    CtxString* _v;
+    CtxStringH _v;
     /// Allocate from context
     static StringLit* a(const ASTContext& ctx, const Location& loc,
                         const std::string& v);
@@ -244,13 +244,13 @@ namespace MiniZinc {
   class Id : public Expression {
   protected:
     /// Constructor
-    Id(const Location& loc, CtxString* v, VarDecl* decl)
+    Id(const Location& loc, CtxStringH v, VarDecl* decl)
       : Expression(loc,E_ID), _v(v), _decl(decl) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ID;
     /// The string identifier (context-allocated)
-    CtxString* _v;
+    CtxStringH _v;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
     /// Allocate from context (\a decl may be NULL)
@@ -338,7 +338,7 @@ namespace MiniZinc {
                         Expression* in);
     /// Allocate from context
     static Generator* a(const ASTContext& ctx,
-                        const std::vector<CtxString*>& v,
+                        const std::vector<CtxStringH>& v,
                         Expression* in);
   };
   /// \brief A list of generators with one where-expression
@@ -452,7 +452,7 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
     /// Identifier of called predicate or function (context-allocated)
-    CtxString* _id;
+    CtxStringH _id;
     /// Arguments to the call
     CtxVec<Expression*>* _args;
     /// The predicate or function declaration (or NULL)
@@ -473,7 +473,7 @@ namespace MiniZinc {
     /// Type-inst of the declared variable
     TiExpr* _ti;
     /// Identifier (context-allocated)
-    CtxString* _id;
+    CtxStringH _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
     /// Allocate from context
@@ -481,7 +481,7 @@ namespace MiniZinc {
                       TiExpr* ti, const std::string& id, Expression* e=NULL);
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
-                      TiExpr* ti, CtxString* id, Expression* e=NULL);
+                      TiExpr* ti, const CtxStringH& id, Expression* e=NULL);
   };
   /// \brief %Let expression
   class Let : public Expression {
@@ -731,13 +731,14 @@ namespace MiniZinc {
     /// The identifier of this item type
     static const ItemId iid = II_INC;
     /// Filename to include (context-allocated)
-    CtxString* _f;
+    CtxStringH _f;
     /// Model for that file
     Model* _m;
     /// Whether this include-item owns the model
     bool _own;
     /// Allocate from context
-    static IncludeI* a(const ASTContext& ctx, const Location& loc, CtxString* f);
+    static IncludeI* a(const ASTContext& ctx, const Location& loc,
+                       const CtxStringH& f);
     /// Set the model
     void setModel(Model* m, bool own=true) {
       assert(_m==NULL); _m = m; _own = own;
@@ -765,7 +766,7 @@ namespace MiniZinc {
     /// The identifier of this item type
     static const ItemId iid = II_ASN;
     /// Identifier of variable to assign to (context-allocated)
-    CtxString* _id;
+    CtxStringH _id;
     /// Expression to assign to the variable
     Expression* _e;
     /// Allocate from context
@@ -833,7 +834,7 @@ namespace MiniZinc {
     /// The identifier of this item type
     static const ItemId iid = II_PRED;
     /// Identifier of this predicate (context-allocated)
-    CtxString* _id;
+    CtxStringH _id;
     /// List of parameter declarations
     CtxVec<VarDecl*>* _params;
     /// Annotation
@@ -858,7 +859,7 @@ namespace MiniZinc {
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
     /// Identifier of this function (context-allocated)
-    CtxString* _id;
+    CtxStringH _id;
     /// Type-inst of the return value
     TiExpr* _ti;
     /// List of parameter declarations

@@ -8,8 +8,8 @@ namespace MiniZinc {
   
   class Model {
   public:
-    CtxString* _filename;
-    CtxString* _filepath;
+    CtxStringH _filename;
+    CtxStringH _filepath;
     Model* _parent;
     std::vector<Item*> _items;
     
@@ -20,16 +20,16 @@ namespace MiniZinc {
     Model* parent(void) const { return _parent; }
     void setParent(Model* p) { assert(_parent==NULL); _parent = p; }
     
-    CtxString* filename(void) const { return _filename; }
-    CtxString* filepath(void) const { return _filepath; }
+    CtxStringH filename(void) const { return _filename; }
+    CtxStringH filepath(void) const { return _filepath; }
     
     void setFilename(const ASTContext& ctx, const std::string& f) {
-      assert(_filename==NULL);
-      _filename = CtxString::a(ctx,f);
+      assert(_filename.size()==0);
+      _filename = CtxStringH(ctx,f);
     }
     void setFilepath(const ASTContext& ctx, const std::string& f) {
-      assert(_filepath==NULL);
-      _filepath = CtxString::a(ctx,f);
+      assert(_filepath.size()==0);
+      _filepath = CtxStringH(ctx,f);
     }
   };
   

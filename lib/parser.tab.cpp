@@ -329,9 +329,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file " << m->filename() << ")" << endl;
+    pp->err << "(included from file " << m->filename().str() << ")" << endl;
   }
-  pp->err << "In file " << location->filename << ", line "
+  pp->err << "In file " << location->filename->str() << ", line "
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
   for (int i=0; i<location->first_column-1; i++)
@@ -383,11 +383,11 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
     
     Model* model = new Model;
-    model->_filename = CtxString::a(ctx,fileBasename);
+    model->_filename = CtxStringH(ctx,fileBasename);
 
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
-      stdlib->_filename = CtxString::a(ctx,"stdlib.mzn");
+      stdlib->_filename = CtxStringH(ctx,"stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
@@ -404,13 +404,13 @@ namespace MiniZinc {
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
-      string f(m->_filename->str());
+      string f(m->_filename.str());
             
       for (Model* p=m->_parent; p; p=p->_parent) {
-        if (f == p->_filename->c_str()) {
+        if (f == p->_filename.c_str()) {
           err << "Error: cyclic includes: " << std::endl;
           for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename->c_str() << std::endl;
+            err << "  " << pe->_filename.c_str() << std::endl;
           }
           goto error;
         }
@@ -437,7 +437,7 @@ namespace MiniZinc {
       std::string s = string(istreambuf_iterator<char>(file),
                              istreambuf_iterator<char>());
 
-      m->_filepath = CtxString::a(ctx,fullname);
+      m->_filepath = CtxStringH(ctx,fullname);
       ParserState pp(ctx, fullname,s, err, files, seenModels, m, false);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
@@ -2627,7 +2627,7 @@ YYLTYPE yylloc;
   /* User initialization code.  */
 #line 249 "lib/parser.yxx"
 {
-  yylloc.filename = static_cast<ParserState*>(parm)->model->filepath();
+  yylloc.filename = static_cast<ParserState*>(parm)->model->filepath().ctxstr();
 }
 /* Line 1078 of yacc.c.  */
 #line 2634 "lib/parser.tab.cpp"
@@ -2874,7 +2874,7 @@ yyreduce:
 #line 408 "lib/parser.yxx"
     { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find((yyvsp[(2) - (2)].sValue));
-        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),CtxString::a(pp->ctx,(yyvsp[(2) - (2)].sValue)));
+        IncludeI* ii = IncludeI::a(pp->ctx,(yyloc),CtxStringH(pp->ctx,(yyvsp[(2) - (2)].sValue)));
         (yyval.item) = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -3854,7 +3854,7 @@ yyreduce:
 #line 990 "lib/parser.yxx"
     { 
         vector<Generator*> gens;
-        vector<CtxString*> ids;
+        vector<CtxStringH> ids;
         for (unsigned int i=0; i<(yyvsp[(3) - (7)].expression_p)->first.size(); i++) {
           if (Id* id = (yyvsp[(3) - (7)].expression_p)->first[i]->dyn_cast<Id>()) {
             ids.push_back(id->_v);
@@ -3864,7 +3864,7 @@ yyreduce:
               if (id && boe->_op == BOT_IN) {
                 ids.push_back(id->_v);
                 gens.push_back(Generator::a(GETCTX(),ids,boe->_e1));
-                ids = vector<CtxString*>();
+                ids = vector<CtxStringH>();
               } else {
                 yyerror(&(yylsp[(3) - (7)]), parm, "illegal expression in generator call");
               }

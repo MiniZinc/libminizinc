@@ -61,13 +61,13 @@ namespace MiniZinc {
   StringLit*
   StringLit::a(const ASTContext& ctx, const Location& loc,
                const std::string& v) {
-    return new (ctx) StringLit(loc,CtxString::a(ctx,v));
+    return new (ctx) StringLit(loc,CtxStringH(ctx,v));
   }
 
   Id*
   Id::a(const ASTContext& ctx, const Location& loc,
         const std::string& v, VarDecl* decl) {
-    return new (ctx) Id(loc,CtxString::a(ctx,v),decl);
+    return new (ctx) Id(loc,CtxStringH(ctx,v),decl);
   }
 
   AnonVar*
@@ -120,7 +120,7 @@ namespace MiniZinc {
 
   Generator*
   Generator::a(const ASTContext& ctx,
-               const std::vector<CtxString*>& v,
+               const std::vector<CtxStringH>& v,
                Expression* in) {
     Generator* g = new (ctx) Generator();
     std::vector<VarDecl*> vd(v.size());
@@ -135,9 +135,9 @@ namespace MiniZinc {
   Generator::a(const ASTContext& ctx,
                const std::vector<std::string>& v,
                Expression* in) {
-    std::vector<CtxString*> vv(v.size());
+    std::vector<CtxStringH> vv(v.size());
     for (unsigned int i=0; i<v.size(); i++)
-      vv[i] = CtxString::a(ctx,v[i]);
+      vv[i] = CtxStringH(ctx,v[i]);
     return a(ctx,vv,in);
   }
 
@@ -182,7 +182,7 @@ namespace MiniZinc {
           const std::vector<Expression*>& args,
           Item* decl) {
     Call* c = new (ctx) Call(loc);
-    c->_id = CtxString::a(ctx,id);
+    c->_id = CtxStringH(ctx,id);
     c->_args = CtxVec<Expression*>::a(ctx,args);
     c->_decl = decl;
     return c;
@@ -190,7 +190,7 @@ namespace MiniZinc {
 
   VarDecl*
   VarDecl::a(const ASTContext& ctx, const Location& loc,
-             TiExpr* ti, CtxString* id, Expression* e) {
+             TiExpr* ti, const CtxStringH& id, Expression* e) {
     VarDecl* v = new (ctx) VarDecl(loc);
     v->_ti = ti;
     v->_id = id;
@@ -200,7 +200,7 @@ namespace MiniZinc {
   VarDecl*
   VarDecl::a(const ASTContext& ctx, const Location& loc,
              TiExpr* ti, const std::string& id, Expression* e) {
-    return a(ctx,loc,ti,CtxString::a(ctx,id));
+    return a(ctx,loc,ti,CtxStringH(ctx,id));
   }
 
   Let*
@@ -358,7 +358,8 @@ namespace MiniZinc {
   }
 
   IncludeI*
-  IncludeI::a(const ASTContext& ctx, const Location& loc, CtxString* f) {
+  IncludeI::a(const ASTContext& ctx, const Location& loc,
+              const CtxStringH& f) {
     IncludeI* i = new (ctx) IncludeI(loc);
     i->_f = f;
     return i;
@@ -376,7 +377,7 @@ namespace MiniZinc {
   AssignI::a(const ASTContext& ctx, const Location& loc,
              const std::string& id, Expression* e) {
     AssignI* ai = new (ctx) AssignI(loc);
-    ai->_id = CtxString::a(ctx,id);
+    ai->_id = CtxStringH(ctx,id);
     ai->_e = e;
     return ai;
   }
@@ -430,7 +431,7 @@ namespace MiniZinc {
                 const std::vector<VarDecl*>& params,
                 Expression* e, Annotation* ann, bool test) {
     PredicateI* pi = new (ctx) PredicateI(loc);
-    pi->_id = CtxString::a(ctx,id);
+    pi->_id = CtxStringH(ctx,id);
     pi->_params = CtxVec<VarDecl*>::a(ctx,params);
     pi->_ann = ann;
     pi->_e = e;
@@ -444,7 +445,7 @@ namespace MiniZinc {
                const std::vector<VarDecl*>& params,
                Expression* e, Annotation* ann) {
     FunctionI* fi = new (ctx) FunctionI(loc);
-    fi->_id = CtxString::a(ctx,id);
+    fi->_id = CtxStringH(ctx,id);
     fi->_ti = ti;
     fi->_params = CtxVec<VarDecl*>::a(ctx,params);
     fi->_ann = ann;

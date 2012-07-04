@@ -69,9 +69,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file " << m->filename() << ")" << endl;
+    pp->err << "(included from file " << m->filename().str() << ")" << endl;
   }
-  pp->err << "In file " << location->filename << ", line "
+  pp->err << "In file " << location->filename->str() << ", line "
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
   for (int i=0; i<location->first_column-1; i++)
@@ -123,11 +123,11 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
     
     Model* model = new Model;
-    model->_filename = CtxString::a(ctx,fileBasename);
+    model->_filename = CtxStringH(ctx,fileBasename);
 
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
-      stdlib->_filename = CtxString::a(ctx,"stdlib.mzn");
+      stdlib->_filename = CtxStringH(ctx,"stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
@@ -144,13 +144,13 @@ namespace MiniZinc {
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
-      string f(m->_filename->str());
+      string f(m->_filename.str());
             
       for (Model* p=m->_parent; p; p=p->_parent) {
-        if (f == p->_filename->c_str()) {
+        if (f == p->_filename.c_str()) {
           err << "Error: cyclic includes: " << std::endl;
           for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename->c_str() << std::endl;
+            err << "  " << pe->_filename.c_str() << std::endl;
           }
           goto error;
         }
@@ -177,7 +177,7 @@ namespace MiniZinc {
       std::string s = string(istreambuf_iterator<char>(file),
                              istreambuf_iterator<char>());
 
-      m->_filepath = CtxString::a(ctx,fullname);
+      m->_filepath = CtxStringH(ctx,fullname);
       ParserState pp(ctx, fullname,s, err, files, seenModels, m, false);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
@@ -247,7 +247,7 @@ namespace MiniZinc {
 
 %initial-action
 {
-  @$.filename = static_cast<ParserState*>(parm)->model->filepath();
+  @$.filename = static_cast<ParserState*>(parm)->model->filepath().ctxstr();
 }
 
 %token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
@@ -407,7 +407,7 @@ include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
       { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find($2);
-        IncludeI* ii = IncludeI::a(pp->ctx,@$,CtxString::a(pp->ctx,$2));
+        IncludeI* ii = IncludeI::a(pp->ctx,@$,CtxStringH(pp->ctx,$2));
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -989,7 +989,7 @@ call_expr :
     | MZN_IDENTIFIER '(' comp_or_expr ')' '(' expr ')'
       { 
         vector<Generator*> gens;
-        vector<CtxString*> ids;
+        vector<CtxStringH> ids;
         for (unsigned int i=0; i<$3->first.size(); i++) {
           if (Id* id = $3->first[i]->dyn_cast<Id>()) {
             ids.push_back(id->_v);
@@ -999,7 +999,7 @@ call_expr :
               if (id && boe->_op == BOT_IN) {
                 ids.push_back(id->_v);
                 gens.push_back(Generator::a(GETCTX(),ids,boe->_e1));
-                ids = vector<CtxString*>();
+                ids = vector<CtxStringH>();
               } else {
                 yyerror(&@3, parm, "illegal expression in generator call");
               }

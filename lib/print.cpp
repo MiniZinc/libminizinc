@@ -195,11 +195,11 @@ public:
 	}
 	ret mapStringLit(const StringLit& sl) {
 		std::ostringstream oss;
-		oss << "\"" << sl._v << "\"";
+		oss << "\"" << sl._v.str() << "\"";
 		return oss.str();
 	}
 	ret mapId(const Id& id) {
-		return id._v->str();
+		return id._v.str();
 	}
 	ret mapAnonVar(const AnonVar& av) {
 		return "_";
@@ -236,7 +236,7 @@ public:
 		for (unsigned int i = 0; i < c._g->size(); i++) {
 			Generator* g = (*c._g)[i];
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
-				oss << (*g->_v)[j]->_id;
+				oss << (*g->_v)[j]->_id.str();
 				if (j < g->_v->size() - 1)
 					oss << ", ";
 			}
@@ -389,7 +389,7 @@ public:
 	}
 	ret mapCall(const Call& c) {
 		std::ostringstream oss;
-		oss << c._id << "(";
+		oss << c._id.str() << "(";
 		for (unsigned int i = 0; i < c._args->size(); i++) {
 			oss << expressionToString((*c._args)[i]);
 			if (i < c._args->size() - 1)
@@ -401,7 +401,7 @@ public:
 	ret mapVarDecl(const VarDecl& vd) {
 		std::ostringstream oss;
 		oss << expressionToString(vd._ti);
-		oss << ": " << vd._id;
+		oss << ": " << vd._id.str();
 		if (vd._e)
 			oss << " = " << expressionToString(vd._e);
 		return oss.str();
@@ -497,7 +497,7 @@ public:
 	typedef std::string ret;
 	ret mapIncludeI(const IncludeI& ii) {
 		std::ostringstream oss;
-		oss << "include \"" << ii._f << "\";";
+		oss << "include \"" << ii._f.str() << "\";";
 		return oss.str();
 	}
 	ret mapVarDeclI(const VarDeclI& vi) {
@@ -507,7 +507,7 @@ public:
 	}
 	ret mapAssignI(const AssignI& ai) {
 		std::ostringstream oss;
-		oss << ai._id << " = " << expressionToString(ai._e) << ";";
+		oss << ai._id.str() << " = " << expressionToString(ai._e) << ";";
 		return oss.str();
 	}
 	ret mapConstraintI(const ConstraintI& ci) {
@@ -542,7 +542,7 @@ public:
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		std::ostringstream oss;
-		oss << (pi._test ? "test " : "predicate ") << pi._id;
+		oss << (pi._test ? "test " : "predicate ") << pi._id.str();
 		if (!pi._params->empty()) {
 			oss << "(";
 			for (unsigned int i = 0; i < pi._params->size(); i++) {
@@ -563,9 +563,10 @@ public:
 	ret mapFunctionI(const FunctionI& fi) {
 		std::ostringstream oss;
 		if (fi._ti->isann() && fi._e == NULL) {
-			oss << "annotation " << fi._id;
+			oss << "annotation " << fi._id.str();
 		} else {
-			oss << "function " << expressionToString(fi._ti) << " : " << fi._id;
+			oss << "function " << expressionToString(fi._ti) << " : "
+			    << fi._id.str();
 		}
 		if (!fi._params->empty()) {
 			oss << "(";
@@ -649,12 +650,12 @@ public:
 	}
 	ret mapStringLit(const StringLit& sl) {
 		std::ostringstream oss;
-		oss << "\"" << sl._v << "\"";
+		oss << "\"" << sl._v.str() << "\"";
 		return new StringDocument(oss.str());
 
 	}
 	ret mapId(const Id& id) {
-		return new StringDocument(id._v->str());
+		return new StringDocument(id._v.str());
 	}
 	ret mapAnonVar(const AnonVar& av) {
 		return new StringDocument("_");
@@ -690,7 +691,7 @@ public:
 			Generator* g = (*c._g)[i];
 			DocumentList* gen = new DocumentList("", "", "");
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
-				gen->addStringToList((*g->_v)[j]->_id->str());
+				gen->addStringToList((*g->_v)[j]->_id.str());
 
 			}
 			gen->addStringToList(" in ");
@@ -891,14 +892,14 @@ public:
 				Comprehension* com = e->cast<Comprehension>();
 				if (!com->_set) {
 					DocumentList* dl = new DocumentList("", " ", "");
-					dl->addStringToList(c._id->str());
+					dl->addStringToList(c._id.str());
 					DocumentList* args = new DocumentList("", " ", "", false);
 					DocumentList* generators = new DocumentList("(", ", ", ")");
 					for (unsigned int i = 0; i < com->_g->size(); i++) {
 						Generator* g = (*com->_g)[i];
 						DocumentList* gen = new DocumentList("", "", "");
 						for (unsigned int j = 0; j < g->_v->size(); j++) {
-							gen->addStringToList((*g->_v)[j]->_id->str());
+							gen->addStringToList((*g->_v)[j]->_id.str());
 						}
 						gen->addStringToList(" in ");
 						gen->addDocumentToList(expressionToDocument(g->_in));
@@ -917,7 +918,7 @@ public:
 			}
 
 		}
-		std::string beg = c._id->str() + "(";
+		std::string beg = c._id.str() + "(";
 		DocumentList* dl = new DocumentList(beg, ", ", ")");
 		for (unsigned int i = 0; i < c._args->size(); i++) {
 			dl->addDocumentToList(expressionToDocument((*c._args)[i]));
@@ -930,7 +931,7 @@ public:
 		DocumentList* dl = new DocumentList("", "", "");
 		dl->addDocumentToList(expressionToDocument(vd._ti));
 		dl->addStringToList(": ");
-		dl->addStringToList(vd._id->str());
+		dl->addStringToList(vd._id.str());
 		if (vd._e) {
 			dl->addStringToList(" = ");
 			dl->addDocumentToList(expressionToDocument(vd._e));
@@ -1022,7 +1023,7 @@ public:
 	typedef Document* ret;
 	ret mapIncludeI(const IncludeI& ii) {
 		std::ostringstream oss;
-		oss << "include \"" << ii._f << "\";";
+		oss << "include \"" << ii._f.str() << "\";";
 		return new StringDocument(oss.str());
 	}
 	ret mapVarDeclI(const VarDeclI& vi) {
@@ -1032,7 +1033,7 @@ public:
 	}
 	ret mapAssignI(const AssignI& ai) {
 		DocumentList* dl = new DocumentList("", " = ", ";");
-		dl->addStringToList(ai._id->str());
+		dl->addStringToList(ai._id.str());
 		dl->addDocumentToList(expressionToDocument(ai._e));
 		return dl;
 	}
@@ -1071,7 +1072,7 @@ public:
 		DocumentList* dl;
 		dl = new DocumentList((pi._test ? "test " : "predicate "), "", ";",
 				false);
-		dl->addStringToList(pi._id->str());
+		dl->addStringToList(pi._id.str());
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
 			for (unsigned int i = 0; i < pi._params->size(); i++) {
@@ -1094,12 +1095,12 @@ public:
 		DocumentList* dl;
 		if (fi._ti->isann() && fi._e == NULL) {
 			dl = new DocumentList("annotation ", " ", ";", false);
-			dl->addStringToList(fi._id->str());
+			dl->addStringToList(fi._id.str());
 		} else {
 			dl = new DocumentList("function ", "", ";", false);
 			dl->addDocumentToList(expressionToDocument(fi._ti));
 			dl->addStringToList(": ");
-			dl->addStringToList(fi._id->str());
+			dl->addStringToList(fi._id.str());
 		}
 		if (!fi._params->empty()) {
 			DocumentList* params = new DocumentList("(", "; ", ")");

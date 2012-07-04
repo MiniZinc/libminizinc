@@ -19,7 +19,9 @@ CXX=cl
 OBJ=obj
 EXE=.exe
 else
-CXXFLAGS=-Wall -g -Iinclude
+CXX=clang++
+CC=clang
+CXXFLAGS=-stdlib=libc++ -Wall -g -Iinclude
 #CXXFLAGS=-Wall -g -O2 -DNDEBUG -Iinclude
 INPUTSRC=
 OUTPUTOBJ=-c -o 
