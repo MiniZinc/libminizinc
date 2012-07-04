@@ -44,7 +44,7 @@ private:
 	bool deeplySimp;
 
 	void addItem();
-	void addLine(int indentation, bool bp = false);
+	void addLine(int indentation, bool bp = false, int level = 0);
 	static std::string printSpaces(int n);
 	const std::vector<Line>& getCurrentItemLines() const;
 
@@ -60,6 +60,19 @@ private:
 	void simplifyItem(int item);
 
 	friend std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp);
+};
+
+class ShiftLineNumber {
+	int line;
+public:
+	ShiftLineNumber(int l) :
+			line(l) {
+	}
+	int operator()(int i) {
+		if (i >= line)
+			i--;
+		return i;
+	}
 };
 
 #endif

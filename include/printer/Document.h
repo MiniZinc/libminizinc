@@ -14,9 +14,18 @@
 class Document {
 public:
 	Document() {
+		level = 0;
 	}
 	virtual ~Document() {
 	}
+	int getLevel() {
+		return level;
+	}
+	void setLevel(int l) {
+		level = l;
+	}
+private:
+	int level;
 };
 
 class BreakPoint: public Document {
@@ -25,6 +34,7 @@ public:
 	}
 	virtual ~BreakPoint() {
 	}
+
 };
 
 class StringDocument: public Document {
@@ -51,13 +61,14 @@ class DocumentList: public Document {
 public:
 	DocumentList() {
 	}
-	virtual ~DocumentList(){
+	virtual ~DocumentList() {
 
 	}
 	DocumentList(std::string _beginToken = "", std::string _separator = "",
 			std::string _endToken = "", bool _alignment = true);
 	void addDocumentToList(Document* d) {
 		docs.push_back(d);
+		d->setLevel(getLevel() + 1);
 	}
 	void addStringToList(std::string s) {
 		addDocumentToList(new StringDocument(s));
@@ -80,10 +91,10 @@ public:
 	std::string getSeparator() {
 		return separator;
 	}
-	bool getUnbreakable(){
+	bool getUnbreakable() {
 		return unbreakable;
 	}
-	void setUnbreakable(bool b){
+	void setUnbreakable(bool b) {
 		unbreakable = b;
 	}
 	bool getAlignment() {
@@ -98,7 +109,5 @@ private:
 	bool unbreakable;
 	bool alignment;
 };
-
-
 
 #endif /* DOCUMENTLIST_H_ */

@@ -13,5 +13,6 @@ DocumentList::DocumentList(std::string _beginToken, std::string _separator, std:
 	endToken = _endToken;
 	alignment = _alignment;
 	unbreakable = false;
+
 }
 
