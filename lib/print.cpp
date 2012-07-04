@@ -976,7 +976,7 @@ public:
 	}
 	ret mapAnnotation(const Annotation& an) {
 		const Annotation* a = &an;
-		DocumentList* dl = new DocumentList(":: ", " :: ", "");
+		DocumentList* dl = new DocumentList(" :: ", " :: ", "");
 		while (a) {
 			Document* ann = expressionToDocument(a->_e);
 			dl->addDocumentToList(ann);
@@ -1069,7 +1069,7 @@ public:
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";",
+		dl = new DocumentList((pi._test ? "test " : "predicate "), "", ";",
 				false);
 		dl->addStringToList(pi._id->str());
 		if (!pi._params->empty()) {
@@ -1083,7 +1083,7 @@ public:
 		if (pi._ann)
 			dl->addDocumentToList(expressionToDocument(pi._ann));
 		if (pi._e) {
-			dl->addStringToList("=");
+			dl->addStringToList(" =");
 			dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(pi._e));
 		}
@@ -1110,7 +1110,6 @@ public:
 			dl->addDocumentToList(params);
 		}
 		if (fi._ann){
-			dl->addStringToList(" ");
 			dl->addDocumentToList(expressionToDocument(fi._ann));
 		}
 		if (fi._e) {
