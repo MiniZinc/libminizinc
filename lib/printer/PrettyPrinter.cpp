@@ -19,11 +19,12 @@ void PrettyPrinter::print(Document* d) {
 	addItem();
 	addLine(0);
 	printDocument(d, true, 0);
-	if(simp)
+	if (simp)
 		simplifyItem(currentItem);
 }
 
-PrettyPrinter::PrettyPrinter(int _maxwidth, int _indentationBase, bool sim, bool deepsim) {
+PrettyPrinter::PrettyPrinter(int _maxwidth, int _indentationBase, bool sim,
+		bool deepsim) {
 	maxwidth = _maxwidth;
 	indentationBase = _indentationBase;
 	currentLine = -1;
@@ -90,6 +91,12 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 	if (d != NULL)
 		s = d->getString();
 	s = before + s + after;
+	printString(s, alignment, alignmentCol);
+
+}
+
+void PrettyPrinter::printString(std::string s, bool alignment,
+		int alignmentCol) {
 	Line& l = items[currentItem][currentLine];
 	int size = s.size();
 	if (size <= l.getSpaceLeft(maxwidth)) {
@@ -101,7 +108,6 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 		addLine(col);
 		items[currentItem][currentLine].addString(s);
 	}
-
 }
 
 void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
@@ -111,7 +117,9 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 	string separator = d->getSeparator();
 	string endToken = d->getEndToken();
 	bool _alignment = d->getAlignment();
-
+	if (d->getUnbreakable()) {
+		addLine(alignmentCol);
+	}
 	int currentCol = items[currentItem][currentLine].getIndentation()
 			+ items[currentItem][currentLine].getLength();
 	int newAlignmentCol =
@@ -150,6 +158,9 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 		}
 		printDocument(subdoc, _alignment, newAlignmentCol, be, af);
 	}
+	if (d->getUnbreakable()) {
+		simplify(currentItem, currentLine);
+	}
 
 }
 
@@ -159,18 +170,26 @@ void PrettyPrinter::simplifyItem(int item) {
 	int nLinesToSimplify = linesToSimplify[item].size();
 	for (int l = nLinesToSimplify - 1; l >= 0; l--) {
 		for (int line = linesToSimplify[item][l]; line > 0; line--) {
-			if (items[item][line].getLength()
-					> items[item][line - 1].getSpaceLeft(maxwidth))
+			if (!simplify(item, line))
 				break;
-			else {
-				items[item][line - 1].concatenateLines(items[item][line]);
-				items[item].erase(items[item].begin() + line);
-				//replace line by line - 1 in linesToSimplify[item]
-				replace(linesToSimplify[item].begin(),
-						linesToSimplify[item].end(), line, line - 1);
-			}
 		}
 		linesToSimplify[item].pop_back();
 	}
 }
 
+bool PrettyPrinter::simplify(int item, int line) {
+	if (line == 0)
+		return false;
+	if (items[item][line].getLength()
+			> items[item][line - 1].getSpaceLeft(maxwidth))
+		return false;
+	else {
+		items[item][line - 1].concatenateLines(items[item][line]);
+		items[item].erase(items[item].begin() + line);
+		//replace line by line - 1 in linesToSimplify[item]
+		replace(linesToSimplify[item].begin(), linesToSimplify[item].end(),
+				line, line - 1);
+		currentLine--;
+	}
+	return true;
+}
