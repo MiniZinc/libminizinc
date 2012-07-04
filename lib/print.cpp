@@ -880,7 +880,7 @@ public:
 				if (!com->_set) {
 					DocumentList* dl = new DocumentList("", " ", "");
 					dl->addStringToList(std::string(c._id));
-					DocumentList* args = new DocumentList("", " ", "");
+					DocumentList* args = new DocumentList("", " ", "", false);
 					DocumentList* generators = new DocumentList("(", ", ", ")");
 					for (unsigned int i = 0; i < com->_g->size(); i++) {
 						Generator* g = (*com->_g)[i];
@@ -893,10 +893,10 @@ public:
 						generators->addDocumentToList(gen);
 					}
 					args->addDocumentToList(generators);
-					args->addBreakPoint();
-					DocumentList* exp = new DocumentList("(", ", ", ")");
-					exp->addDocumentToList(expressionToDocument(com->_e));
-					args->addDocumentToList(exp);
+          args->addStringToList("(");
+          args->addBreakPoint();
+          args->addDocumentToList(expressionToDocument(com->_e));
+          args->addStringToList(")");
 					dl->addDocumentToList(args);
 
 					return dl;
@@ -1055,7 +1055,8 @@ public:
 	}
 	ret mapPredicateI(const PredicateI& pi) {
 		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";");
+		dl = new DocumentList((pi._test ? "test " : "predicate "), " ", ";", 
+		                      false);
 		dl->addStringToList(pi._id);
 		if (!pi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
@@ -1078,10 +1079,10 @@ public:
 	ret mapFunctionI(const FunctionI& fi) {
 		DocumentList* dl;
 		if (fi._ti->isann() && fi._e == NULL) {
-			dl = new DocumentList("annotation ", " ", ";");
+			dl = new DocumentList("annotation ", " ", ";", false);
 			dl->addStringToList(fi._id);
 		} else {
-			dl = new DocumentList("function ", " ", ";");
+			dl = new DocumentList("function ", " ", ";", false);
 			dl->addDocumentToList(expressionToDocument(fi._ti));
 			dl->addStringToList(" : ");
 			dl->addStringToList(fi._id);
@@ -1098,6 +1099,7 @@ public:
 			dl->addDocumentToList(expressionToDocument(fi._ann));
 		if (fi._e) {
 			dl->addStringToList("=");
+      dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(fi._e));
 		}
 
@@ -1108,7 +1110,7 @@ public:
 void printDoc(std::ostream& os, Model* m) {
 	ItemDocumentMapper ism;
 	ItemMapper<ItemDocumentMapper> im(ism);
-	PrettyPrinter* printer = new PrettyPrinter();
+	PrettyPrinter* printer = new PrettyPrinter(80);
 	for (unsigned int i = 0; i < m->_items.size(); i++) {
 		printer->print(im.map(m->_items[i]));
 	}

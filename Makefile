@@ -4,7 +4,7 @@ TARGETS=mzn2fzn
 
 GENERATE=yes
 
-SOURCES=allocator lexer.yy parser.tab ast print
+SOURCES=allocator lexer.yy parser.tab ast print printer/DocumentList printer/Line printer/PrettyPrinter
 
 HEADERS=allocator ast context model parser parser.tab print
 
