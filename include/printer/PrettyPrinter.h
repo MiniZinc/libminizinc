@@ -39,7 +39,7 @@ private:
 	int currentLine;
 	int currentItem;
 	std::vector<std::vector<Line> > items;
-	std::vector<std::vector<int> > linesToSimplify;
+	std::vector<LinesToSimplify> linesToSimplify;
 	bool simp;
 	bool deeplySimp;
 
@@ -49,30 +49,17 @@ private:
 	const std::vector<Line>& getCurrentItemLines() const;
 
 	void printDocument(Document* d, bool alignment, int startColAlignment,
-			std::string before = "", std::string after = "");
+			const std::string& before = "", const std::string& after = "");
 	void printDocList(DocumentList* d, bool alignment, int startColAlignment,
-			std::string before = "", std::string after = "");
+			const std::string& before = "", const std::string& after = "");
 	void printStringDoc(StringDocument* d, bool alignment,
-			int startColAlignment, std::string before = "", std::string after =
+			int startColAlignment, const std::string& before = "", const std::string& after =
 					"");
-	void printString(std::string s, bool alignment, int startColAlignment);
-	bool simplify(int item, int line);
+	void printString(const std::string& s, bool alignment, int startColAlignment);
+	bool simplify(int item, int line, std::vector<int>* vec);
 	void simplifyItem(int item);
 
 	friend std::ostream& operator<<(std::ostream& os, const PrettyPrinter& pp);
-};
-
-class ShiftLineNumber {
-	int line;
-public:
-	ShiftLineNumber(int l) :
-			line(l) {
-	}
-	int operator()(int i) {
-		if (i >= line)
-			i--;
-		return i;
-	}
 };
 
 #endif

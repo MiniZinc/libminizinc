@@ -1133,7 +1133,7 @@ public:
 void printDoc(std::ostream& os, Model* m) {
 	ItemDocumentMapper ism;
 	ItemMapper<ItemDocumentMapper> im(ism);
-	PrettyPrinter* printer = new PrettyPrinter(80, 4, false, true);
+	PrettyPrinter* printer = new PrettyPrinter(80, 4, true, true);
 	for (unsigned int i = 0; i < m->_items.size(); i++) {
 		printer->print(im.map(m->_items[i]));
 	}

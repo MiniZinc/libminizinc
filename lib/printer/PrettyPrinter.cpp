@@ -36,15 +36,16 @@ const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
 	return items[currentItem];
 }
 
-void PrettyPrinter::addLine(int indentation, bool bp) {
+void PrettyPrinter::addLine(int indentation, bool bp, int level) {
 	items[currentItem].push_back(Line(indentation));
 	currentLine++;
-	if (bp && deeplySimp)
-		linesToSimplify[currentItem].push_back(currentLine);
+	if (bp && deeplySimp) {
+		linesToSimplify[currentItem].addLine(level, currentLine);
+	}
 }
 void PrettyPrinter::addItem() {
 	items.push_back(std::vector<Line>());
-	linesToSimplify.push_back(std::vector<int>());
+	linesToSimplify.push_back(LinesToSimplify());
 	currentItem++;
 	currentLine = -1;
 }
@@ -69,16 +70,16 @@ string PrettyPrinter::printSpaces(int n) {
 }
 
 void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
-		string before, string after) {
+		const std::string& before, const std::string& after) {
 	string s;
 	if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
 		printDocList(dl, alignment, alignmentCol, before, after);
 	} else if (StringDocument* sd = dynamic_cast<StringDocument*>(d)) {
 		printStringDoc(sd, alignment, alignmentCol, before, after);
 	} else if (dynamic_cast<BreakPoint*>(d)) {
-		printStringDoc(NULL, alignment, alignmentCol, before, "");
-		addLine(alignmentCol, false);
-		printStringDoc(NULL, alignment, alignmentCol, "", after);
+		printString(before, alignment, alignmentCol);
+		addLine(alignmentCol, deeplySimp, d->getLevel());
+		printString(after, alignment, alignmentCol);
 	} else {
 		cerr << "PrettyPrinter::print : Wrong type of document" << endl;
 		exit(0);
@@ -86,7 +87,7 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 }
 
 void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
-		int alignmentCol, std::string before, std::string after) {
+		int alignmentCol, const std::string& before, const std::string& after) {
 	string s;
 	if (d != NULL)
 		s = d->getString();
@@ -95,7 +96,7 @@ void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment,
 
 }
 
-void PrettyPrinter::printString(std::string s, bool alignment,
+void PrettyPrinter::printString(const std::string& s, bool alignment,
 		int alignmentCol) {
 	Line& l = items[currentItem][currentLine];
 	int size = s.size();
@@ -111,7 +112,8 @@ void PrettyPrinter::printString(std::string s, bool alignment,
 }
 
 void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
-		int alignmentCol, std::string super_before, std::string super_after) {
+		int alignmentCol, const std::string& super_before,
+		const std::string& super_after) {
 	vector<Document*> ld = d->getDocs();
 	string beginToken = d->getBeginToken();
 	string separator = d->getSeparator();
@@ -159,37 +161,47 @@ void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
 		printDocument(subdoc, _alignment, newAlignmentCol, be, af);
 	}
 	if (d->getUnbreakable()) {
-		simplify(currentItem, currentLine);
+		simplify(currentItem, currentLine, NULL);
 	}
 
 }
-
-void PrettyPrinter::simplifyItem(int item) {
-	int nLines = items[item].size();
-	linesToSimplify[item].push_back(nLines - 1);
-	int nLinesToSimplify = linesToSimplify[item].size();
-	for (int l = nLinesToSimplify - 1; l >= 0; l--) {
-		for (int line = linesToSimplify[item][l]; line > 0; line--) {
-			if (!simplify(item, line))
-				break;
+void showVector(std::vector<int>* vec) {
+	if (vec != NULL) {
+		std::vector<int>::iterator it;
+		for (it = vec->begin(); it != vec->end(); it++) {
+			std::cout << *it << " ";
 		}
-		linesToSimplify[item].pop_back();
+		std::cout << std::endl;
+	}
+}
+void PrettyPrinter::simplifyItem(int item) {
+	std::vector<int>* vec = (linesToSimplify[item].getLinesToSimplify());
+
+	int line;
+	while (!vec->empty()) {
+		line = (*vec)[0];
+		bool b = simplify(item, line, vec);
+//		if (!b)
+//			break;
 	}
 }
 
-bool PrettyPrinter::simplify(int item, int line) {
+bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
+	linesToSimplify[item].remove(vec, line);
 	if (line == 0)
 		return false;
 	if (items[item][line].getLength()
 			> items[item][line - 1].getSpaceLeft(maxwidth))
 		return false;
 	else {
+//		std::cout << "Simplifying item " << item << ", lines " << line - 1
+//				<< " - " << line << std::endl;
 		items[item][line - 1].concatenateLines(items[item][line]);
 		items[item].erase(items[item].begin() + line);
-		//replace line by line - 1 in linesToSimplify[item]
-		replace(linesToSimplify[item].begin(), linesToSimplify[item].end(),
-				line, line - 1);
+
+		linesToSimplify[item].decrementLine(vec, line);
 		currentLine--;
 	}
+
 	return true;
 }

@@ -4,9 +4,9 @@ TARGETS=mzn2fzn
 
 GENERATE=yes
 
-SOURCES=allocator lexer.yy parser.tab ast print printer/DocumentList printer/Line printer/PrettyPrinter
+SOURCES=allocator lexer.yy parser.tab ast print printer/DocumentList printer/Line printer/PrettyPrinter 
 
-HEADERS=allocator ast context model parser parser.tab print
+HEADERS=allocator ast context model parser parser.tab print 
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
@@ -21,7 +21,7 @@ EXE=.exe
 else
 CXX=clang++
 CC=clang
-CXXFLAGS=-stdlib=libc++ -Wall -g -Iinclude
+CXXFLAGS=-std=c++11 -Wall -g -Iinclude
 #CXXFLAGS=-Wall -g -O2 -DNDEBUG -Iinclude
 INPUTSRC=
 OUTPUTOBJ=-c -o 

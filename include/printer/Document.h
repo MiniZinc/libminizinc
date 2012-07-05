@@ -10,7 +10,7 @@
 
 #include <vector>
 #include <string>
-
+#include <iostream>
 class Document {
 public:
 	Document() {
@@ -18,11 +18,11 @@ public:
 	}
 	virtual ~Document() {
 	}
-	int getLevel() {
+	int getLevel(){
 		return level;
 	}
-	void setLevel(int l) {
-		level = l;
+	void setParent(Document* d){
+		level = d->level + 1;
 	}
 private:
 	int level;
@@ -68,7 +68,19 @@ public:
 			std::string _endToken = "", bool _alignment = true);
 	void addDocumentToList(Document* d) {
 		docs.push_back(d);
-		d->setLevel(getLevel() + 1);
+		d->setParent(this);
+		if(DocumentList* dl = dynamic_cast<DocumentList*>(d)){
+			dl->setParent(this);
+		}
+	}
+	void setParent(Document* d){
+		std::vector<Document*>::iterator it;
+		for(it = docs.begin(); it != docs.end(); it++){
+			(*it)->setParent(this);
+			if(DocumentList* dl = dynamic_cast<DocumentList*>(*it)){
+				dl->setParent(this);
+			}
+		}
 	}
 	void addStringToList(std::string s) {
 		addDocumentToList(new StringDocument(s));
