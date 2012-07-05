@@ -29,6 +29,7 @@ PrettyPrinter::PrettyPrinter(int _maxwidth, int _indentationBase, bool sim,
 	indentationBase = _indentationBase;
 	currentLine = -1;
 	currentItem = -1;
+
 	simp = sim;
 	deeplySimp = deepsim;
 }
@@ -175,27 +176,38 @@ void showVector(std::vector<int>* vec) {
 	}
 }
 void PrettyPrinter::simplifyItem(int item) {
+	/*std::cout << "Item " << item << std::endl;
+	linesToSimplify[item].showMostRecentlyAdded();
+	linesToSimplify[item].showParents();*/
 	std::vector<int>* vec = (linesToSimplify[item].getLinesToSimplify());
 
 	int line;
 	while (!vec->empty()) {
 		line = (*vec)[0];
 		bool b = simplify(item, line, vec);
-//		if (!b)
-//			break;
+		if (!b) {
+			/*
+			 * remove from vec lines that relied on the simplification on line `line`
+			 */
+
+			break;
+		}
 	}
 }
 
 bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
-	linesToSimplify[item].remove(vec, line);
-	if (line == 0)
+
+	if (line == 0){
+		linesToSimplify[item].remove(vec, line, false);
 		return false;
+	}
 	if (items[item][line].getLength()
-			> items[item][line - 1].getSpaceLeft(maxwidth))
+			> items[item][line - 1].getSpaceLeft(maxwidth)){
+		linesToSimplify[item].remove(vec, line,false);
 		return false;
+	}
 	else {
-//		std::cout << "Simplifying item " << item << ", lines " << line - 1
-//				<< " - " << line << std::endl;
+		linesToSimplify[item].remove(vec, line, true);
 		items[item][line - 1].concatenateLines(items[item][line]);
 		items[item].erase(items[item].begin() + line);
 

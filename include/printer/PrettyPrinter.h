@@ -38,12 +38,15 @@ private:
 	int indentationBase;
 	int currentLine;
 	int currentItem;
+	int currentSubItem;
 	std::vector<std::vector<Line> > items;
 	std::vector<LinesToSimplify> linesToSimplify;
+	//linesToSimplify[item][part_of_item]
 	bool simp;
 	bool deeplySimp;
 
 	void addItem();
+
 	void addLine(int indentation, bool bp = false, int level = 0);
 	static std::string printSpaces(int n);
 	const std::vector<Line>& getCurrentItemLines() const;
@@ -53,9 +56,10 @@ private:
 	void printDocList(DocumentList* d, bool alignment, int startColAlignment,
 			const std::string& before = "", const std::string& after = "");
 	void printStringDoc(StringDocument* d, bool alignment,
-			int startColAlignment, const std::string& before = "", const std::string& after =
-					"");
-	void printString(const std::string& s, bool alignment, int startColAlignment);
+			int startColAlignment, const std::string& before = "",
+			const std::string& after = "");
+	void printString(const std::string& s, bool alignment,
+			int startColAlignment);
 	bool simplify(int item, int line, std::vector<int>* vec);
 	void simplifyItem(int item);
 

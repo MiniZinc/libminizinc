@@ -59,16 +59,35 @@ private:
 
 class LinesToSimplify {
 	std::map<int, std::vector<int> > lines;
+	std::vector<std::pair<int, int> > parent; // (i,j) in parent <=> j can only be simplified if i is simplified
+	/*
+	 * if i can't simplify, remove j and his parents
+	 */
+	std::map<int, int> mostRecentlyAdded; //mostRecentlyAdded[level] = line of the most recently added
 public:
-	void showMap() {
-		std::map<int, std::vector<int> >::iterator it;
-		for (it = lines.begin(); it != lines.end(); it++) {
-			std::cout << it->first << " : ";
-			showVector(&(it->second));
-			//std::cout << std::endl;
-		}
-		std::cout << std::endl;
-	}
+//	void showMostRecentlyAdded() {
+//
+//		std::map<int, int>::iterator it;
+//		for (it = mostRecentlyAdded.begin(); it != mostRecentlyAdded.end();
+//				it++) {
+//			std::cout << it->first << " : " << (it->second) << std::endl;
+//		}
+//	}
+//	void showParents() {
+//		std::vector<std::pair<int, int> >::iterator it;
+//		for (it = parent.begin(); it != parent.end(); it++) {
+//			std::cout << it->first << " | " << it->second << std::endl;
+//		}
+//	}
+//	void showMap() {
+//		std::map<int, std::vector<int> >::iterator it;
+//		for (it = lines.begin(); it != lines.end(); it++) {
+//			std::cout << it->first << " : ";
+//			showVector(&(it->second));
+//			//std::cout << std::endl;
+//		}
+//		std::cout << std::endl;
+//	}
 	std::vector<int>* getLinesForPriority(int p) {
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
@@ -77,7 +96,21 @@ public:
 		}
 		return NULL;
 	}
-	void addLine(int p, int l) {
+	void addLine(int p, int l, int par = -1) {
+		//std::cout << "addLine : level = " << p << std::endl;
+		//showMostRecentlyAdded();
+		if (par == -1) {
+			for (int i = p - 1; i >= 0; i--) {
+				std::map<int, int>::iterator it = mostRecentlyAdded.find(i);
+				if (it != mostRecentlyAdded.end()) {
+					par = it->second;
+					break;
+				}
+			}
+		}
+		if (par != -1)
+			parent.push_back(std::pair<int, int>(l, par));
+		mostRecentlyAdded.insert(std::pair<int,int>(p,l));
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
 			if (it->first == p) {
@@ -88,6 +121,7 @@ public:
 		std::vector<int> v;
 		v.push_back(l);
 		lines.insert(std::pair<int, std::vector<int> >(p, v));
+
 	}
 	void decrementLine(std::vector<int>* vec, int l) {
 		std::vector<int>::iterator vit;
@@ -107,36 +141,54 @@ public:
 					*vit = *vit - 1;
 			}
 		}
-	}
-	void showVector(std::vector<int>* vec) {
-		if (vec != NULL) {
-			std::vector<int>::iterator it;
-			for (it = vec->begin(); it != vec->end(); it++) {
-				std::cout << *it << " ";
-			}
-			std::cout << std::endl;
+
+		//And the parent table
+		std::vector<std::pair<int, int> >::iterator vpit;
+		for (vpit = parent.begin(); vpit != parent.end(); vpit++) {
+			if (vpit->first >= l)
+				vpit->first--;
+			if (vpit->second >= l)
+				vpit->second--;
 		}
+
 	}
-	void remove(std::vector<int>* v, int l) {
+//	void showVector(std::vector<int>* vec) {
+//		if (vec != NULL) {
+//			std::vector<int>::iterator it;
+//			for (it = vec->begin(); it != vec->end(); it++) {
+//				std::cout << *it << " ";
+//			}
+//			std::cout << std::endl;
+//		}
+//	}
+	void remove(std::vector<int>* v, int i, bool success = true) {
 		if (v != NULL) {
-			v->erase(std::remove(v->begin(), v->end(), l), v->end());
+			v->erase(std::remove(v->begin(), v->end(), i), v->end());
 		}
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
 			std::vector<int>* v = &(it->second);
-			v->erase(std::remove(v->begin(), v->end(), l), v->end());
+			v->erase(std::remove(v->begin(), v->end(), i), v->end());
+		}
+		//Call on its parent
+		if (!success) {
+			std::vector<std::pair<int, int> >::iterator vpit;
+			for (vpit = parent.begin(); vpit != parent.end(); vpit++) {
+				if (vpit->first == i && vpit->second != i
+						&& vpit->second != -1) {
+					//std::cout << vpit->first << " failed so I removed " << vpit->second << std::endl;
+					remove(v, vpit->second, false);
+				}
+			}
 		}
 	}
 	std::vector<int>* getLinesToSimplify() {
-//		showMap();
 		std::vector<int>* vec = new std::vector<int>();
-
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
 			std::vector<int>& svec = it->second;
 			vec->insert(vec->begin(), svec.begin(), svec.end());
 		}
-//		showVector(vec);
 		return vec;
 	}
 };
