@@ -186,6 +186,7 @@ void PrettyPrinter::simplifyItem(int item) {
 		if (!simplify(item, (*vec)[0], vec))
 			break;
 	}
+	delete vec;
 }
 
 bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {

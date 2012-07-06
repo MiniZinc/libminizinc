@@ -38,7 +38,7 @@ public:
 	BreakPoint() {
 		dontSimplify = false;
 	}
-	BreakPoint(bool ds){
+	BreakPoint(bool ds) {
 		dontSimplify = ds;
 	}
 	virtual ~BreakPoint() {
@@ -79,7 +79,10 @@ public:
 	DocumentList() {
 	}
 	virtual ~DocumentList() {
-
+		std::vector<Document*>::iterator it;
+		for (it = docs.begin(); it != docs.end(); it++) {
+			delete *it;
+		}
 	}
 	DocumentList(std::string _beginToken = "", std::string _separator = "",
 			std::string _endToken = "", bool _alignment = true);

@@ -65,29 +65,6 @@ class LinesToSimplify {
 	 */
 	std::map<int, int> mostRecentlyAdded; //mostRecentlyAdded[level] = line of the most recently added
 public:
-//	void showMostRecentlyAdded() {
-//
-//		std::map<int, int>::iterator it;
-//		for (it = mostRecentlyAdded.begin(); it != mostRecentlyAdded.end();
-//				it++) {
-//			std::cout << it->first << " : " << (it->second) << std::endl;
-//		}
-//	}
-//	void showParents() {
-//		std::vector<std::pair<int, int> >::iterator it;
-//		for (it = parent.begin(); it != parent.end(); it++) {
-//			std::cout << it->first << " | " << it->second << std::endl;
-//		}
-//	}
-	void showMap() {
-		std::map<int, std::vector<int> >::iterator it;
-		for (it = lines.begin(); it != lines.end(); it++) {
-			std::cout << it->first << " : ";
-			showVector(&(it->second));
-			//std::cout << std::endl;
-		}
-		std::cout << std::endl;
-	}
 	std::vector<int>* getLinesForPriority(int p) {
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
@@ -97,8 +74,6 @@ public:
 		return NULL;
 	}
 	void addLine(int p, int l, int par = -1) {
-		//std::cout << "addLine : level = " << p << std::endl;
-		//showMostRecentlyAdded();
 		if (par == -1) {
 			for (int i = p - 1; i >= 0; i--) {
 				std::map<int, int>::iterator it = mostRecentlyAdded.find(i);
@@ -121,18 +96,15 @@ public:
 		std::vector<int> v;
 		v.push_back(l);
 		lines.insert(std::pair<int, std::vector<int> >(p, v));
-
 	}
 	void decrementLine(std::vector<int>* vec, int l) {
 		std::vector<int>::iterator vit;
-
 		if (vec != NULL) {
 			for (vit = vec->begin(); vit != vec->end(); vit++) {
 				if (*vit >= l)
 					*vit = *vit - 1;
 			}
 		}
-
 		//Now the map
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
@@ -141,7 +113,6 @@ public:
 					*vit = *vit - 1;
 			}
 		}
-
 		//And the parent table
 		std::vector<std::pair<int, int> >::iterator vpit;
 		for (vpit = parent.begin(); vpit != parent.end(); vpit++) {
@@ -149,16 +120,6 @@ public:
 				vpit->first--;
 			if (vpit->second >= l)
 				vpit->second--;
-		}
-
-	}
-	void showVector(std::vector<int>* vec) {
-		if (vec != NULL) {
-			std::vector<int>::iterator it;
-			for (it = vec->begin(); it != vec->end(); it++) {
-				std::cout << *it << " ";
-			}
-			std::cout << std::endl;
 		}
 	}
 	void remove(LinesToSimplify& lts){
