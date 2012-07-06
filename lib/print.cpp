@@ -948,22 +948,21 @@ public:
 		DocumentList* letin = new DocumentList("", "", "", false);
 		DocumentList* lets = new DocumentList("", " ", "", true);
 		DocumentList* inexpr = new DocumentList("", "", "");
-		lets->setDontSimplify(l._let->size() > 1);
+		bool ds = l._let->size() > 1;
+
 		for (unsigned int i = 0; i < l._let->size(); i++) {
 			if (i != 0)
-				lets->addBreakPoint();
+				lets->addBreakPoint(ds);
 			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
 				exp->addStringToList("constraint");
 			exp->addDocumentToList(expressionToDocument(li));
 			lets->addDocumentToList(exp);
-			/*if(i != l._let->size()-1)
-			 lets->addBreakPoint();*/
 		}
 
 		inexpr->addDocumentToList(expressionToDocument(l._in));
-		letin->addBreakPoint();
+		letin->addBreakPoint(ds);
 		letin->addDocumentToList(lets);
 
 		DocumentList* letin2 = new DocumentList("", "", "", false);
@@ -974,7 +973,7 @@ public:
 		DocumentList* dl = new DocumentList("", "", "");
 		dl->addStringToList("let {");
 		dl->addDocumentToList(letin);
-		dl->addBreakPoint();
+		dl->addBreakPoint(ds);
 		dl->addStringToList("} in ");
 		dl->addDocumentToList(letin2);
 		//dl->addBreakPoint();
@@ -1093,7 +1092,7 @@ public:
 		if (pi._ann)
 			dl->addDocumentToList(expressionToDocument(pi._ann));
 		if (pi._e) {
-			dl->addStringToList(" =");
+			dl->addStringToList(" = ");
 			dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(pi._e));
 		}
@@ -1125,7 +1124,7 @@ public:
 			dl->addDocumentToList(expressionToDocument(fi._ann));
 		}
 		if (fi._e) {
-			dl->addStringToList(" =");
+			dl->addStringToList(" = ");
 			dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(fi._e));
 		}

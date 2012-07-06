@@ -79,15 +79,15 @@ public:
 //			std::cout << it->first << " | " << it->second << std::endl;
 //		}
 //	}
-//	void showMap() {
-//		std::map<int, std::vector<int> >::iterator it;
-//		for (it = lines.begin(); it != lines.end(); it++) {
-//			std::cout << it->first << " : ";
-//			showVector(&(it->second));
-//			//std::cout << std::endl;
-//		}
-//		std::cout << std::endl;
-//	}
+	void showMap() {
+		std::map<int, std::vector<int> >::iterator it;
+		for (it = lines.begin(); it != lines.end(); it++) {
+			std::cout << it->first << " : ";
+			showVector(&(it->second));
+			//std::cout << std::endl;
+		}
+		std::cout << std::endl;
+	}
 	std::vector<int>* getLinesForPriority(int p) {
 		std::map<int, std::vector<int> >::iterator it;
 		for (it = lines.begin(); it != lines.end(); it++) {
@@ -152,15 +152,24 @@ public:
 		}
 
 	}
-//	void showVector(std::vector<int>* vec) {
-//		if (vec != NULL) {
-//			std::vector<int>::iterator it;
-//			for (it = vec->begin(); it != vec->end(); it++) {
-//				std::cout << *it << " ";
-//			}
-//			std::cout << std::endl;
-//		}
-//	}
+	void showVector(std::vector<int>* vec) {
+		if (vec != NULL) {
+			std::vector<int>::iterator it;
+			for (it = vec->begin(); it != vec->end(); it++) {
+				std::cout << *it << " ";
+			}
+			std::cout << std::endl;
+		}
+	}
+	void remove(LinesToSimplify& lts){
+		std::map<int, std::vector<int> >::iterator it;
+		for(it = lts.lines.begin(); it != lts.lines.end(); it++){
+			std::vector<int>::iterator vit;
+			for(vit = it->second.begin(); vit != it->second.end(); vit++){
+				remove(NULL, *vit, false);
+			}
+		}
+	}
 	void remove(std::vector<int>* v, int i, bool success = true) {
 		if (v != NULL) {
 			v->erase(std::remove(v->begin(), v->end(), i), v->end());

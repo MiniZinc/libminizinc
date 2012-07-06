@@ -23,22 +23,34 @@ public:
 	}
 	void setParent(Document* d) {
 		level = d->level + 1;
-		parent = d;
+//		parent = d;
 	}
-	/*Document* getParent(){
-		return parent;
-	}*/
+//	Document* getParent(){
+//		return parent;
+//	}
 private:
 	int level;
-	Document* parent;
+//	Document* parent;
 };
 
 class BreakPoint: public Document {
 public:
 	BreakPoint() {
+		dontSimplify = false;
+	}
+	BreakPoint(bool ds){
+		dontSimplify = ds;
 	}
 	virtual ~BreakPoint() {
 	}
+	void setDontSimplify(bool b) {
+		dontSimplify = b;
+	}
+	bool getDontSimplify() {
+		return dontSimplify;
+	}
+private:
+	bool dontSimplify;
 
 };
 
@@ -90,8 +102,8 @@ public:
 	void addStringToList(std::string s) {
 		addDocumentToList(new StringDocument(s));
 	}
-	void addBreakPoint() {
-		addDocumentToList(new BreakPoint());
+	void addBreakPoint(bool b = false) {
+		addDocumentToList(new BreakPoint(b));
 	}
 	std::vector<Document*> getDocs() {
 		return docs;
@@ -117,12 +129,12 @@ public:
 	bool getAlignment() {
 		return alignment;
 	}
-	void setDontSimplify(bool b) {
-		dontSimplify = b;
-	}
-	bool getDontSimplify() {
-		return dontSimplify;
-	}
+//	void setDontSimplify(bool b) {
+//		dontSimplify = b;
+//	}
+//	bool getDontSimplify() {
+//		return dontSimplify;
+//	}
 
 private:
 	std::vector<Document*> docs;
@@ -131,7 +143,7 @@ private:
 	std::string endToken;
 	bool unbreakable;
 	bool alignment;
-	bool dontSimplify;
+//	bool dontSimplify;
 };
 
 #endif /* DOCUMENTLIST_H_ */

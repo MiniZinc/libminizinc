@@ -41,13 +41,14 @@ private:
 	int currentSubItem;
 	std::vector<std::vector<Line> > items;
 	std::vector<LinesToSimplify> linesToSimplify;
+	std::vector<LinesToSimplify> linesNotToSimplify;
 	//linesToSimplify[item][part_of_item]
 	bool simp;
 	bool deeplySimp;
 
 	void addItem();
 
-	void addLine(int indentation, bool bp = false, int level = 0);
+	void addLine(int indentation, bool bp = false, bool ds = false, int level = 0);
 	static std::string printSpaces(int n);
 	const std::vector<Line>& getCurrentItemLines() const;
 
