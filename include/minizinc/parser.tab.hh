@@ -271,11 +271,8 @@ typedef union YYSTYPE
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
          std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
-         MiniZinc::TiExpr* tiexpr;
-         std::vector<MiniZinc::TiExpr*>* tiexpr_v;
-         MiniZinc::IntTiExpr* inttiexpr;
-         std::vector<MiniZinc::IntTiExpr*>* inttiexpr_v;
-         MiniZinc::BaseTiExpr* basetiexpr;
+         MiniZinc::TypeInst* tiexpr;
+         std::vector<MiniZinc::TypeInst*>* tiexpr_v;
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expression_v;
          std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
@@ -288,7 +285,7 @@ typedef union YYSTYPE
          MiniZinc::Generators* generators;
        }
 /* Line 1529 of yacc.c.  */
-#line 292 "include/minizinc/parser.tab.hh"
+#line 289 "include/minizinc/parser.tab.hh"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

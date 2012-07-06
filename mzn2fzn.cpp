@@ -37,6 +37,8 @@
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/print.hh>
+#include <minizinc/typecheck.hh>
+#include <minizinc/exception.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -95,14 +97,14 @@ int main(int argc, char** argv) {
     if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
       //print(std::cout, m);
-    	printDoc(std::cout, m);
-      Model* flat=NULL;
-      // try {
+      try {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
-        // TypeMap tm;
-        // if (typecheck)
-        //   m->typecheck(tm,true);
+        if (typecheck) {
+          MiniZinc::addOperatorTypes(ctx);
+          MiniZinc::typecheck(ctx,m);
+        }
+        printDoc(std::cout, m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
         // flat = m->flatten(tm);
@@ -124,15 +126,16 @@ int main(int argc, char** argv) {
         //   }
         //   flat->print(os,outputFundecls);
         // }
-      // } catch (TypeError& e) {
-      //   std::cerr << "Error: " << e.msg() << std::endl;
-      //   std::cerr << "In file " << e.loc().filename << ":"
-      //       << e.loc().first_line << "c"
-      //       << e.loc().first_column << "-"
-      //       << e.loc().last_line << "c"
-      //       << e.loc().last_column
-      //       << endl;
-      //   exit(EXIT_FAILURE);
+      } catch (TypeError& e) {
+        std::cerr << "Error: " << e.msg() << std::endl;
+        std::cerr << "In file " << e.loc().filename->str() << ":"
+            << e.loc().first_line << "c"
+            << e.loc().first_column << "-"
+            << e.loc().last_line << "c"
+            << e.loc().last_column
+            << endl;
+        exit(EXIT_FAILURE);
+      }
       // } catch (EvalError& e) {
       //   std::cerr << "Error: " << e.msg() << std::endl;
       //   std::cerr << "In file " << e.loc().filename << ":"
@@ -143,6 +146,7 @@ int main(int argc, char** argv) {
       //       << endl;
       //   exit(EXIT_FAILURE);
       // }
+      delete m;
     }
   }
   return 0;

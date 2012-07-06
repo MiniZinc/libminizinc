@@ -21,7 +21,7 @@ EXE=.exe
 else
 CXX=clang++
 CC=clang
-CXXFLAGS=-std=c++11 -Wall -g -Iinclude
+CXXFLAGS=-std=c++11 -stdlib=libc++ -Wall -g -Iinclude
 #CXXFLAGS=-Wall -g -O2 -DNDEBUG -Iinclude
 INPUTSRC=
 OUTPUTOBJ=-c -o 

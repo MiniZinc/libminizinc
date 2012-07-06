@@ -126,7 +126,7 @@ namespace MiniZinc {
     std::vector<VarDecl*> vd(v.size());
     for (unsigned int i=0; i<v.size(); i++)
       vd[i] = VarDecl::a(ctx,in->_loc,
-        TiExpr::par(ctx,in->_loc,IntTiExpr::a(ctx)),v[i]);
+        TypeInst::a(ctx,in->_loc,Type::parint()),v[i]);
     g->_v = CtxVec<VarDecl*>::a(ctx,vd);
     g->_in = in;
     return g;
@@ -170,17 +170,128 @@ namespace MiniZinc {
     return new (ctx) BinOp(loc,e0,op,e1);
   }
 
+  namespace {
+    class OpToString {
+    public:
+      ASTContext ctx;
+      
+      CtxStringH sBOT_PLUS;
+      CtxStringH sBOT_MINUS;
+      CtxStringH sBOT_MULT;
+      CtxStringH sBOT_DIV;
+      CtxStringH sBOT_IDIV;
+      CtxStringH sBOT_MOD;
+      CtxStringH sBOT_LE;
+      CtxStringH sBOT_LQ;
+      CtxStringH sBOT_GR;
+      CtxStringH sBOT_GQ;
+      CtxStringH sBOT_EQ;
+      CtxStringH sBOT_NQ;
+      CtxStringH sBOT_IN;
+      CtxStringH sBOT_SUBSET;
+      CtxStringH sBOT_SUPERSET;
+      CtxStringH sBOT_UNION;
+      CtxStringH sBOT_DIFF;
+      CtxStringH sBOT_SYMDIFF;
+      CtxStringH sBOT_INTERSECT;
+      CtxStringH sBOT_PLUSPLUS;
+      CtxStringH sBOT_EQUIV;
+      CtxStringH sBOT_IMPL;
+      CtxStringH sBOT_RIMPL;
+      CtxStringH sBOT_OR;
+      CtxStringH sBOT_AND;
+      CtxStringH sBOT_XOR;
+      CtxStringH sBOT_DOTDOT;
+      CtxStringH sBOT_NOT;
+      
+      OpToString(void) {
+        sBOT_PLUS = CtxStringH(ctx, "+");
+        sBOT_MINUS = CtxStringH(ctx, "-");
+        sBOT_MULT = CtxStringH(ctx, "*");
+        sBOT_DIV = CtxStringH(ctx, "/");
+        sBOT_IDIV = CtxStringH(ctx, "div");
+        sBOT_MOD = CtxStringH(ctx, "mod");
+        sBOT_LE = CtxStringH(ctx, "<");
+        sBOT_LQ = CtxStringH(ctx, "<=");
+        sBOT_GR = CtxStringH(ctx, ">");
+        sBOT_GQ = CtxStringH(ctx, ">=");
+        sBOT_EQ = CtxStringH(ctx, "=");
+        sBOT_NQ = CtxStringH(ctx, "!=");
+        sBOT_IN = CtxStringH(ctx, "in");
+        sBOT_SUBSET = CtxStringH(ctx, "subset");
+        sBOT_SUPERSET = CtxStringH(ctx, "superset");
+        sBOT_UNION = CtxStringH(ctx, "union");
+        sBOT_DIFF = CtxStringH(ctx, "diff");
+        sBOT_SYMDIFF = CtxStringH(ctx, "symdiff");
+        sBOT_INTERSECT = CtxStringH(ctx, "intersect");
+        sBOT_PLUSPLUS = CtxStringH(ctx, "++");
+        sBOT_EQUIV = CtxStringH(ctx, "<->");
+        sBOT_IMPL = CtxStringH(ctx, "->");
+        sBOT_RIMPL = CtxStringH(ctx, "<-");
+        sBOT_OR = CtxStringH(ctx, "\\/");
+        sBOT_AND = CtxStringH(ctx, "/\\");
+        sBOT_XOR = CtxStringH(ctx, "xor");
+        sBOT_DOTDOT = CtxStringH(ctx, "..");
+        sBOT_NOT = CtxStringH(ctx, "not");
+      }
+    } _opToString;
+  }
+
+  CtxStringH
+  BinOp::opToString(void) const {
+    switch (_op) {
+    case BOT_PLUS: return _opToString.sBOT_PLUS;
+    case BOT_MINUS: return _opToString.sBOT_MINUS;
+    case BOT_MULT: return _opToString.sBOT_MULT;
+    case BOT_DIV: return _opToString.sBOT_DIV;
+    case BOT_IDIV: return _opToString.sBOT_IDIV;
+    case BOT_MOD: return _opToString.sBOT_MOD;
+    case BOT_LE: return _opToString.sBOT_LE;
+    case BOT_LQ: return _opToString.sBOT_LQ;
+    case BOT_GR: return _opToString.sBOT_GR;
+    case BOT_GQ: return _opToString.sBOT_GQ;
+    case BOT_EQ: return _opToString.sBOT_EQ;
+    case BOT_NQ: return _opToString.sBOT_NQ;
+    case BOT_IN: return _opToString.sBOT_IN;
+    case BOT_SUBSET: return _opToString.sBOT_SUBSET;
+    case BOT_SUPERSET: return _opToString.sBOT_SUPERSET;
+    case BOT_UNION: return _opToString.sBOT_UNION;
+    case BOT_DIFF: return _opToString.sBOT_DIFF;
+    case BOT_SYMDIFF: return _opToString.sBOT_SYMDIFF;
+    case BOT_INTERSECT: return _opToString.sBOT_INTERSECT;
+    case BOT_PLUSPLUS: return _opToString.sBOT_PLUSPLUS;
+    case BOT_EQUIV: return _opToString.sBOT_EQUIV;
+    case BOT_IMPL: return _opToString.sBOT_IMPL;
+    case BOT_RIMPL: return _opToString.sBOT_RIMPL;
+    case BOT_OR: return _opToString.sBOT_OR;
+    case BOT_AND: return _opToString.sBOT_AND;
+    case BOT_XOR: return _opToString.sBOT_XOR;
+    case BOT_DOTDOT: return _opToString.sBOT_DOTDOT;
+    default: assert(false);
+    }
+  }
+
   UnOp*
   UnOp::a(const ASTContext& ctx, const Location& loc,
           UnOpType op, Expression* e) {
     return new (ctx) UnOp(loc,op,e);
   }
 
+  CtxStringH
+  UnOp::opToString(void) const {
+    switch (_op) {
+    case UOT_PLUS: return _opToString.sBOT_PLUS;
+    case UOT_MINUS: return _opToString.sBOT_MINUS;
+    case UOT_NOT: return _opToString.sBOT_NOT;
+    default: assert(false);
+    }
+  }
+
   Call*
   Call::a(const ASTContext& ctx, const Location& loc,
           const std::string& id,
           const std::vector<Expression*>& args,
-          Item* decl) {
+          FunctionI* decl) {
     Call* c = new (ctx) Call(loc);
     c->_id = CtxStringH(ctx,id);
     c->_args = CtxVec<Expression*>::a(ctx,args);
@@ -190,8 +301,8 @@ namespace MiniZinc {
 
   VarDecl*
   VarDecl::a(const ASTContext& ctx, const Location& loc,
-             TiExpr* ti, const CtxStringH& id, Expression* e) {
-    VarDecl* v = new (ctx) VarDecl(loc);
+             TypeInst* ti, const CtxStringH& id, Expression* e) {
+    VarDecl* v = new (ctx) VarDecl(loc,ti->_type);
     v->_ti = ti;
     v->_id = id;
     v->_e = e;
@@ -199,7 +310,7 @@ namespace MiniZinc {
   }
   VarDecl*
   VarDecl::a(const ASTContext& ctx, const Location& loc,
-             TiExpr* ti, const std::string& id, Expression* e) {
+             TypeInst* ti, const std::string& id, Expression* e) {
     return a(ctx,loc,ti,CtxStringH(ctx,id));
   }
 
@@ -212,149 +323,18 @@ namespace MiniZinc {
     return l;
   }
 
-  TiExpr*
-  TiExpr::var(const ASTContext& ctx, const Location& loc,
-              const std::vector<IntTiExpr*>& ranges,
-              BaseTiExpr* ti) {
-    return new (ctx) TiExpr(loc,CtxVec<IntTiExpr*>::a(ctx,ranges),
-                            VT_VAR,false,ti);                     
-  }
-  TiExpr*
-  TiExpr::par(const ASTContext& ctx, const Location& loc,
-              const std::vector<IntTiExpr*>& ranges,
-              BaseTiExpr* ti) {
-    return new (ctx) TiExpr(loc,CtxVec<IntTiExpr*>::a(ctx,ranges),
-                            VT_PAR,false,ti);                     
-  }
-  TiExpr*
-  TiExpr::varset(const ASTContext& ctx, const Location& loc, 
-                 const std::vector<IntTiExpr*>& ranges,
-                 BaseTiExpr* ti) {
-    return new (ctx) TiExpr(loc,CtxVec<IntTiExpr*>::a(ctx,ranges),
-                            VT_VAR,true,ti);                     
-  }
-  TiExpr*
-  TiExpr::parset(const ASTContext& ctx, const Location& loc,
-                 const std::vector<IntTiExpr*>& ranges,
-                 BaseTiExpr* ti) {
-    return new (ctx) TiExpr(loc,CtxVec<IntTiExpr*>::a(ctx,ranges),
-                            VT_PAR,true,ti);                     
-  }
-  TiExpr*
-  TiExpr::var(const ASTContext& ctx, const Location& loc,
-              BaseTiExpr* ti) {
-    return var(ctx,loc,std::vector<IntTiExpr*>(), ti);
-  }
-  TiExpr*
-  TiExpr::par(const ASTContext& ctx, const Location& loc,
-              BaseTiExpr* ti) {
-    return par(ctx,loc,std::vector<IntTiExpr*>(), ti);
-  }
-  TiExpr*
-  TiExpr::varset(const ASTContext& ctx, const Location& loc, 
-                 BaseTiExpr* ti) {
-    return varset(ctx,loc,std::vector<IntTiExpr*>(), ti);
-  }
-  TiExpr*
-  TiExpr::parset(const ASTContext& ctx, const Location& loc, 
-                 BaseTiExpr* ti) {
-    return parset(ctx,loc,std::vector<IntTiExpr*>(), ti);
-  }
-  TiExpr*
-  TiExpr::var(const ASTContext& ctx, const Location& loc,
-              IntTiExpr* range0, BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    return var(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::par(const ASTContext& ctx, const Location& loc,
-              IntTiExpr* range0, BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    return par(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::varset(const ASTContext& ctx, const Location& loc,
-                 IntTiExpr* range0, BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    return varset(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::parset(const ASTContext& ctx, const Location& loc,
-                 IntTiExpr* range0, BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    return parset(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::var(const ASTContext& ctx, const Location& loc,
-              IntTiExpr* range0, IntTiExpr* range1,
-              BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    ranges.push_back(range1);
-    return var(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::par(const ASTContext& ctx, const Location& loc,
-              IntTiExpr* range0, IntTiExpr* range1,
-              BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    ranges.push_back(range1);
-    return par(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::varset(const ASTContext& ctx, const Location& loc,
-                 IntTiExpr* range0, IntTiExpr* range1,
-                 BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    ranges.push_back(range1);
-    return varset(ctx, loc, ranges, ti);
-  }
-  TiExpr*
-  TiExpr::parset(const ASTContext& ctx, const Location& loc,
-                 IntTiExpr* range0, IntTiExpr* range1,
-                 BaseTiExpr* ti) {
-    std::vector<IntTiExpr*> ranges;
-    ranges.push_back(range0);
-    ranges.push_back(range1);
-    return parset(ctx, loc, ranges, ti);
+  TypeInst*
+  TypeInst::a(const ASTContext& ctx, const Location& loc,
+              const Type& type, Expression* domain,
+              CtxVec<Expression*>* ranges) {
+    return new (ctx) TypeInst(loc,type,domain,ranges);                     
   }
 
   void
-  TiExpr::addRanges(const ASTContext& ctx,
-                    const std::vector<IntTiExpr*>& ranges) {
-    assert(_ranges->empty());
-    _ranges = CtxVec<IntTiExpr*>::a(ctx,ranges);
-  }
-
-  IntTiExpr*
-  IntTiExpr::a(const ASTContext& ctx, Expression* domain) {
-    return new (ctx) IntTiExpr(domain);
-  }
-
-  BoolTiExpr*
-  BoolTiExpr::a(const ASTContext& ctx, const BoolDomain& domain) {
-    return new (ctx) BoolTiExpr(domain);
-  }
-
-  FloatTiExpr*
-  FloatTiExpr::a(const ASTContext& ctx, Expression* domain) {
-    return new (ctx) FloatTiExpr(domain);
-  }
-
-  StringTiExpr*
-  StringTiExpr::a(const ASTContext& ctx) {
-    return new (ctx) StringTiExpr();
-  }
-
-  AnnTiExpr*
-  AnnTiExpr::a(const ASTContext& ctx) {
-    return new (ctx) AnnTiExpr();
+  TypeInst::addRanges(const ASTContext& ctx,
+                      const std::vector<Expression*>& ranges) {
+    assert(_ranges == NULL);
+    _ranges = CtxVec<Expression*>::a(ctx,ranges);
   }
 
   IncludeI*
@@ -425,23 +405,9 @@ namespace MiniZinc {
     return oi;
   }
 
-  PredicateI*
-  PredicateI::a(const ASTContext& ctx, const Location& loc,
-                const std::string& id,
-                const std::vector<VarDecl*>& params,
-                Expression* e, Annotation* ann, bool test) {
-    PredicateI* pi = new (ctx) PredicateI(loc);
-    pi->_id = CtxStringH(ctx,id);
-    pi->_params = CtxVec<VarDecl*>::a(ctx,params);
-    pi->_ann = ann;
-    pi->_e = e;
-    pi->_test = test;
-    return pi;
-  }
-
   FunctionI*
   FunctionI::a(const ASTContext& ctx, const Location& loc,
-               const std::string& id, TiExpr* ti,
+               const std::string& id, TypeInst* ti,
                const std::vector<VarDecl*>& params,
                Expression* e, Annotation* ann) {
     FunctionI* fi = new (ctx) FunctionI(loc);
@@ -451,6 +417,17 @@ namespace MiniZinc {
     fi->_ann = ann;
     fi->_e = e;
     return fi;
+  }
+
+  bool
+  FunctionI::match(const std::vector<Type>& ta) {
+    if (_params->size() != ta.size())
+      return false;
+    for (unsigned int i=0; i<ta.size(); i++)
+      if (!ta[i].isSubtypeOf((*_params)[i]->_type))
+        return false;
+    return true;
+    
   }
 
 }
