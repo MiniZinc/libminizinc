@@ -534,7 +534,11 @@ namespace MiniZinc {
             for (unsigned int i=0; i<fi->_params->size(); i++)
               ts.run((*fi->_params)[i]);
             ts.run(fi->_ann);
+            for (unsigned int i=0; i<fi->_params->size(); i++)
+              ts.add((*fi->_params)[i],false);
             ts.run(fi->_e);
+            for (unsigned int i=0; i<fi->_params->size(); i++)
+              ts.remove((*fi->_params)[i]);
           }
           break;      
         }
