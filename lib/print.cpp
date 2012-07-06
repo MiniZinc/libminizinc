@@ -668,10 +668,11 @@ public:
 		for (unsigned int i = 0; i < c._g->size(); i++) {
 			Generator* g = (*c._g)[i];
 			DocumentList* gen = new DocumentList("", "", "");
+			DocumentList* idents = new DocumentList("",", ","");
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
-				gen->addStringToList((*g->_v)[j]->_id.str());
-
+				idents->addStringToList((*g->_v)[j]->_id.str());
 			}
+			gen->addDocumentToList(idents);
 			gen->addStringToList(" in ");
 			gen->addDocumentToList(expressionToDocument(g->_in));
 			generators->addDocumentToList(gen);
@@ -699,6 +700,7 @@ public:
 			ifdoc->addDocumentToList(
 					expressionToDocument((*ite._e_if)[i].second));
 			dl->addDocumentToList(ifdoc);
+			dl->addStringToList(" ");
 		}
 		dl->addBreakPoint();
 		dl->addStringToList("else ");
@@ -785,6 +787,7 @@ public:
 			break;
 		case BOT_PLUSPLUS:
 			op = "++";
+			linebreak = true;
 			break;
 		case BOT_EQUIV:
 			op = " <-> ";
@@ -922,22 +925,21 @@ public:
 		DocumentList* letin = new DocumentList("", "", "", false);
 		DocumentList* lets = new DocumentList("", " ", "", true);
 		DocumentList* inexpr = new DocumentList("", "", "");
-		lets->setDontSimplify(l._let->size() > 1);
+		bool ds = l._let->size() > 1;
+
 		for (unsigned int i = 0; i < l._let->size(); i++) {
 			if (i != 0)
-				lets->addBreakPoint();
+				lets->addBreakPoint(ds);
 			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
 				exp->addStringToList("constraint");
 			exp->addDocumentToList(expressionToDocument(li));
 			lets->addDocumentToList(exp);
-			/*if(i != l._let->size()-1)
-			 lets->addBreakPoint();*/
 		}
 
 		inexpr->addDocumentToList(expressionToDocument(l._in));
-		letin->addBreakPoint();
+		letin->addBreakPoint(ds);
 		letin->addDocumentToList(lets);
 
 		DocumentList* letin2 = new DocumentList("", "", "", false);
@@ -948,7 +950,7 @@ public:
 		DocumentList* dl = new DocumentList("", "", "");
 		dl->addStringToList("let {");
 		dl->addDocumentToList(letin);
-		dl->addBreakPoint();
+		dl->addBreakPoint(ds);
 		dl->addStringToList("} in ");
 		dl->addDocumentToList(letin2);
 		//dl->addBreakPoint();
@@ -1019,20 +1021,20 @@ public:
 		return dl;
 	}
 	ret mapSolveI(const SolveI& si) {
-		DocumentList* dl = new DocumentList("", " ", ";");
+		DocumentList* dl = new DocumentList("", "", ";");
 		dl->addStringToList("solve");
 		if (si._ann)
 			dl->addDocumentToList(expressionToDocument(si._ann));
 		switch (si._st) {
 		case SolveI::ST_SAT:
-			dl->addStringToList("satisfy");
+			dl->addStringToList(" satisfy");
 			break;
 		case SolveI::ST_MIN:
-			dl->addStringToList("minimize");
+			dl->addStringToList(" minimize ");
 			dl->addDocumentToList(expressionToDocument(si._e));
 			break;
 		case SolveI::ST_MAX:
-			dl->addStringToList("maximize");
+			dl->addStringToList(" maximize ");
 			dl->addDocumentToList(expressionToDocument(si._e));
 			break;
 		}
@@ -1072,7 +1074,7 @@ public:
 			dl->addDocumentToList(expressionToDocument(fi._ann));
 		}
 		if (fi._e) {
-			dl->addStringToList(" =");
+			dl->addStringToList(" = ");
 			dl->addBreakPoint();
 			dl->addDocumentToList(expressionToDocument(fi._e));
 		}
@@ -1086,9 +1088,12 @@ void printDoc(std::ostream& os, Model* m) {
 	ItemMapper<ItemDocumentMapper> im(ism);
 	PrettyPrinter* printer = new PrettyPrinter(80, 4, true, true);
 	for (unsigned int i = 0; i < m->_items.size(); i++) {
-		printer->print(im.map(m->_items[i]));
+		Document* d = im.map(m->_items[i]);
+		printer->print(d);
+		delete d;
 	}
 	os << *printer;
+	delete printer;
 }
 
 }

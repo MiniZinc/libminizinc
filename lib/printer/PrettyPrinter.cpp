@@ -37,16 +37,19 @@ const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const {
 	return items[currentItem];
 }
 
-void PrettyPrinter::addLine(int indentation, bool bp, int level) {
+void PrettyPrinter::addLine(int indentation, bool bp, bool simpl, int level) {
 	items[currentItem].push_back(Line(indentation));
 	currentLine++;
 	if (bp && deeplySimp) {
 		linesToSimplify[currentItem].addLine(level, currentLine);
+		if (!simpl)
+			linesNotToSimplify[currentItem].addLine(0, currentLine);
 	}
 }
 void PrettyPrinter::addItem() {
 	items.push_back(std::vector<Line>());
 	linesToSimplify.push_back(LinesToSimplify());
+	linesNotToSimplify.push_back(LinesToSimplify());
 	currentItem++;
 	currentLine = -1;
 }
@@ -77,10 +80,9 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 		printDocList(dl, alignment, alignmentCol, before, after);
 	} else if (StringDocument* sd = dynamic_cast<StringDocument*>(d)) {
 		printStringDoc(sd, alignment, alignmentCol, before, after);
-	} else if (dynamic_cast<BreakPoint*>(d)) {
+	} else if (BreakPoint* bp = dynamic_cast<BreakPoint*>(d)) {
 		printString(before, alignment, alignmentCol);
-		addLine(alignmentCol, deeplySimp
-		/*&& !((DocumentList*) (d->getParent()))->getDontSimplify()*/,
+		addLine(alignmentCol, deeplySimp, !bp->getDontSimplify(),
 				d->getLevel());
 		printString(after, alignment, alignmentCol);
 	} else {
@@ -178,11 +180,13 @@ void showVector(std::vector<int>* vec) {
 	}
 }
 void PrettyPrinter::simplifyItem(int item) {
+	linesToSimplify[item].remove(linesNotToSimplify[item]);
 	std::vector<int>* vec = (linesToSimplify[item].getLinesToSimplify());
 	while (!vec->empty()) {
 		if (!simplify(item, (*vec)[0], vec))
 			break;
 	}
+	delete vec;
 }
 
 bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
