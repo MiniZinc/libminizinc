@@ -665,10 +665,45 @@ public:
 		return new StringDocument("_");
 	}
 	ret mapArrayLit(const ArrayLit& al) {
-		/// TODO: handle multi-dimensional arrays
-		DocumentList* dl = new DocumentList("[", ", ", "]");
-		for (unsigned int i = 0; i < al._v->size(); i++)
-			dl->addDocumentToList(expressionToDocument((*al._v)[i]));
+		/// TODO: test multi-dimensional arrays handling
+		DocumentList* dl;
+		int n = al._dims->size();
+		if (n == 1 && (*al._dims)[0].first == 1) {
+			dl = new DocumentList("[", ", ", "]");
+			for (unsigned int i = 0; i < al._v->size(); i++)
+				dl->addDocumentToList(expressionToDocument((*al._v)[i]));
+		} else if (n == 2 && (*al._dims)[0].first == 1
+				&& (*al._dims)[1].first == 1) {
+			dl = new DocumentList("[| ", " | ", " |]");
+			for (int i = 0; i < (*al._dims)[0].second; i++) {
+				DocumentList* row = new DocumentList("", ", ", "");
+				for (int j = 0; j < (*al._dims)[1].second; j++) {
+					row->addDocumentToList(
+							expressionToDocument(
+									(*al._v)[i * (*al._dims)[0].second + j]));
+				}
+				dl->addDocumentToList(row);
+				if (i != (*al._dims)[0].second - 1)
+					dl->addBreakPoint(true); // dont simplify
+			}
+		} else {
+			dl = new DocumentList("", "", "");
+			std::stringstream oss;
+			oss << "array" << n << "d";
+			dl->addStringToList(oss.str());
+			DocumentList* args = new DocumentList("(", ", ", ")");
+
+			for (int i = 0; i < al._dims->size(); i++) {
+				oss.str("");
+				oss << (*al._dims)[i].first << ".." << (*al._dims)[i].second;
+				args->addStringToList(oss.str());
+			}
+			DocumentList* array = new DocumentList("[", ", ", "]");
+			for (unsigned int i = 0; i < al._v->size(); i++)
+				array->addDocumentToList(expressionToDocument((*al._v)[i]));
+			args->addDocumentToList(array);
+			dl->addDocumentToList(args);
+		}
 		return dl;
 	}
 	ret mapArrayAccess(const ArrayAccess& aa) {
@@ -694,7 +729,7 @@ public:
 		for (unsigned int i = 0; i < c._g->size(); i++) {
 			Generator* g = (*c._g)[i];
 			DocumentList* gen = new DocumentList("", "", "");
-			DocumentList* idents = new DocumentList("",", ","");
+			DocumentList* idents = new DocumentList("", ", ", "");
 			for (unsigned int j = 0; j < g->_v->size(); j++) {
 				idents->addStringToList((*g->_v)[j]->_id.str());
 			}
