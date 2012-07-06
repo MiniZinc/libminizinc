@@ -10,13 +10,22 @@
 
 #include <vector>
 #include <string>
-
+#include <iostream>
 class Document {
 public:
 	Document() {
+		level = 0;
 	}
 	virtual ~Document() {
 	}
+	int getLevel(){
+		return level;
+	}
+	void setParent(Document* d){
+		level = d->level + 1;
+	}
+private:
+	int level;
 };
 
 class BreakPoint: public Document {
@@ -25,6 +34,7 @@ public:
 	}
 	virtual ~BreakPoint() {
 	}
+
 };
 
 class StringDocument: public Document {
@@ -51,13 +61,26 @@ class DocumentList: public Document {
 public:
 	DocumentList() {
 	}
-	virtual ~DocumentList(){
+	virtual ~DocumentList() {
 
 	}
 	DocumentList(std::string _beginToken = "", std::string _separator = "",
 			std::string _endToken = "", bool _alignment = true);
 	void addDocumentToList(Document* d) {
 		docs.push_back(d);
+		d->setParent(this);
+		if(DocumentList* dl = dynamic_cast<DocumentList*>(d)){
+			dl->setParent(this);
+		}
+	}
+	void setParent(Document* d){
+		std::vector<Document*>::iterator it;
+		for(it = docs.begin(); it != docs.end(); it++){
+			(*it)->setParent(this);
+			if(DocumentList* dl = dynamic_cast<DocumentList*>(*it)){
+				dl->setParent(this);
+			}
+		}
 	}
 	void addStringToList(std::string s) {
 		addDocumentToList(new StringDocument(s));
@@ -80,10 +103,10 @@ public:
 	std::string getSeparator() {
 		return separator;
 	}
-	bool getUnbreakable(){
+	bool getUnbreakable() {
 		return unbreakable;
 	}
-	void setUnbreakable(bool b){
+	void setUnbreakable(bool b) {
 		unbreakable = b;
 	}
 	bool getAlignment() {
@@ -98,7 +121,5 @@ private:
 	bool unbreakable;
 	bool alignment;
 };
-
-
 
 #endif /* DOCUMENTLIST_H_ */

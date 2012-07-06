@@ -568,7 +568,7 @@ public:
 			oss << "annotation " << fi._id.str();
 		} else {
 			oss << "function " << expressionToString(fi._ti) << " : "
-			    << fi._id.str();
+					<< fi._id.str();
 		}
 		if (!fi._params->empty()) {
 			oss << "(";
@@ -731,6 +731,7 @@ public:
 		elsedoc->addBreakPoint();
 		elsedoc->addDocumentToList(expressionToDocument(ite._e_else));
 		dl->addDocumentToList(elsedoc);
+		dl->addStringToList(" ");
 		dl->addBreakPoint();
 		dl->addStringToList("endif");
 
@@ -911,7 +912,6 @@ public:
 					args->addStringToList("(");
 					args->addBreakPoint();
 					args->addDocumentToList(expressionToDocument(com->_e));
-
 
 					dl->addDocumentToList(args);
 					dl->addBreakPoint();
@@ -1110,7 +1110,7 @@ public:
 			dl->addStringToList(fi._id.str());
 		}
 		if (!fi._params->empty()) {
-			DocumentList* params = new DocumentList("(", "; ", ")");
+			DocumentList* params = new DocumentList("(", ", ", ")");
 			for (unsigned int i = 0; i < fi._params->size(); i++) {
 				DocumentList* par = new DocumentList("", "", "");
 				par->setUnbreakable(true);
@@ -1135,7 +1135,7 @@ public:
 void printDoc(std::ostream& os, Model* m) {
 	ItemDocumentMapper ism;
 	ItemMapper<ItemDocumentMapper> im(ism);
-	PrettyPrinter* printer = new PrettyPrinter(80);
+	PrettyPrinter* printer = new PrettyPrinter(80, 4, true, true);
 	for (unsigned int i = 0; i < m->_items.size(); i++) {
 		printer->print(im.map(m->_items[i]));
 	}
