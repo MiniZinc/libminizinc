@@ -4,3 +4,9 @@ lib/lexer.yy.o
 lib/parser.tab.o
 mzn2fzn
 mzn2fzn.o
+lib/context.o
+lib/printer/Document.o
+lib/printer/DocumentList.o
+lib/printer/Line.o
+lib/printer/PrettyPrinter.o
+lib/typecheck.o
