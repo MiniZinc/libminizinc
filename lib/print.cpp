@@ -65,6 +65,8 @@ int precedence(const Expression* e) {
 			assert(false);
 			return -1;
 		}
+	} else if (e->isa<Let>()) {
+    return 1300;
 	} else {
 		return 0;
 	}
@@ -80,7 +82,7 @@ Parentheses needParens(const BinOp* bo, const Expression* left,
 	int pl = precedence(left);
 	int pr = precedence(right);
 	int ret = (pbo < pl) || (pbo == pl && pbo == 200);
-	ret += (pbo < pr) || (pbo == pr && pbo != 200);
+	ret += 2*((pbo < pr) || (pbo == pr && pbo != 200));
 	return static_cast<Parentheses>(ret);
 }
 
