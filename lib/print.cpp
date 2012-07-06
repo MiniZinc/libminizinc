@@ -1146,6 +1146,7 @@ void printDoc(std::ostream& os, Model* m) {
 		delete d;
 	}
 	os << *printer;
+	delete printer;
 }
 
 }
