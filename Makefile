@@ -4,9 +4,11 @@ TARGETS=mzn2fzn
 
 GENERATE=yes
 
-SOURCES=allocator lexer.yy parser.tab ast print printer/Document printer/Line printer/PrettyPrinter 
+SOURCES=allocator ast context lexer.yy parser.tab  \
+	print printer/Document printer/Line printer/PrettyPrinter \
+	typecheck
 
-HEADERS=allocator ast context model parser parser.tab print 
+HEADERS=allocator ast context exception model parser parser.tab print type typecheck
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
