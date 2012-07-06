@@ -18,14 +18,19 @@ public:
 	}
 	virtual ~Document() {
 	}
-	int getLevel(){
+	int getLevel() {
 		return level;
 	}
-	void setParent(Document* d){
+	void setParent(Document* d) {
 		level = d->level + 1;
+		parent = d;
 	}
+	/*Document* getParent(){
+		return parent;
+	}*/
 private:
 	int level;
+	Document* parent;
 };
 
 class BreakPoint: public Document {
@@ -69,15 +74,15 @@ public:
 	void addDocumentToList(Document* d) {
 		docs.push_back(d);
 		d->setParent(this);
-		if(DocumentList* dl = dynamic_cast<DocumentList*>(d)){
+		if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
 			dl->setParent(this);
 		}
 	}
-	void setParent(Document* d){
+	void setParent(Document* d) {
 		std::vector<Document*>::iterator it;
-		for(it = docs.begin(); it != docs.end(); it++){
+		for (it = docs.begin(); it != docs.end(); it++) {
 			(*it)->setParent(this);
-			if(DocumentList* dl = dynamic_cast<DocumentList*>(*it)){
+			if (DocumentList* dl = dynamic_cast<DocumentList*>(*it)) {
 				dl->setParent(this);
 			}
 		}
@@ -112,6 +117,12 @@ public:
 	bool getAlignment() {
 		return alignment;
 	}
+	void setDontSimplify(bool b) {
+		dontSimplify = b;
+	}
+	bool getDontSimplify() {
+		return dontSimplify;
+	}
 
 private:
 	std::vector<Document*> docs;
@@ -120,6 +131,7 @@ private:
 	std::string endToken;
 	bool unbreakable;
 	bool alignment;
+	bool dontSimplify;
 };
 
 #endif /* DOCUMENTLIST_H_ */

@@ -65,6 +65,8 @@ int precedence(const Expression* e) {
 			assert(false);
 			return -1;
 		}
+	} else if (e->isa<Let>())	{
+		return 1300;
 	} else {
 		return 0;
 	}
@@ -944,14 +946,14 @@ public:
 		DocumentList* letin = new DocumentList("", "", "", false);
 		DocumentList* lets = new DocumentList("", " ", "", true);
 		DocumentList* inexpr = new DocumentList("", "", "");
-
+		lets->setDontSimplify(l._let->size()>1);
 		for (unsigned int i = 0; i < l._let->size(); i++) {
 			if (i != 0)
 				lets->addBreakPoint();
 			DocumentList* exp = new DocumentList("", " ", ";");
 			Expression* li = (*l._let)[i];
 			if (!li->isa<VarDecl>())
-				exp->addStringToList("constraint ");
+				exp->addStringToList("constraint");
 			exp->addDocumentToList(expressionToDocument(li));
 			lets->addDocumentToList(exp);
 			/*if(i != l._let->size()-1)
@@ -971,10 +973,10 @@ public:
 		dl->addStringToList("let {");
 		dl->addDocumentToList(letin);
 		dl->addBreakPoint();
-		dl->addStringToList("} in (");
+		dl->addStringToList("} in ");
 		dl->addDocumentToList(letin2);
-		dl->addBreakPoint();
-		dl->addStringToList(")");
+		//dl->addBreakPoint();
+		//dl->addStringToList(")");
 		return dl;
 	}
 	ret mapAnnotation(const Annotation& an) {

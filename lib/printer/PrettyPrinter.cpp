@@ -79,7 +79,9 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 		printStringDoc(sd, alignment, alignmentCol, before, after);
 	} else if (dynamic_cast<BreakPoint*>(d)) {
 		printString(before, alignment, alignmentCol);
-		addLine(alignmentCol, deeplySimp, d->getLevel());
+		addLine(alignmentCol, deeplySimp
+		/*&& !((DocumentList*) (d->getParent()))->getDontSimplify()*/,
+				d->getLevel());
 		printString(after, alignment, alignmentCol);
 	} else {
 		cerr << "PrettyPrinter::print : Wrong type of document" << endl;
@@ -176,37 +178,24 @@ void showVector(std::vector<int>* vec) {
 	}
 }
 void PrettyPrinter::simplifyItem(int item) {
-	/*std::cout << "Item " << item << std::endl;
-	linesToSimplify[item].showMostRecentlyAdded();
-	linesToSimplify[item].showParents();*/
 	std::vector<int>* vec = (linesToSimplify[item].getLinesToSimplify());
-
-	int line;
 	while (!vec->empty()) {
-		line = (*vec)[0];
-		bool b = simplify(item, line, vec);
-		if (!b) {
-			/*
-			 * remove from vec lines that relied on the simplification on line `line`
-			 */
-
+		if (!simplify(item, (*vec)[0], vec))
 			break;
-		}
 	}
 }
 
 bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
 
-	if (line == 0){
+	if (line == 0) {
 		linesToSimplify[item].remove(vec, line, false);
 		return false;
 	}
 	if (items[item][line].getLength()
-			> items[item][line - 1].getSpaceLeft(maxwidth)){
-		linesToSimplify[item].remove(vec, line,false);
+			> items[item][line - 1].getSpaceLeft(maxwidth)) {
+		linesToSimplify[item].remove(vec, line, false);
 		return false;
-	}
-	else {
+	} else {
 		linesToSimplify[item].remove(vec, line, true);
 		items[item][line - 1].concatenateLines(items[item][line]);
 		items[item].erase(items[item].begin() + line);
