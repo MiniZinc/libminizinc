@@ -2,9 +2,12 @@
 #define __MINIZINC_AST_HH__
 
 #include <minizinc/context.hh>
+#include <minizinc/type.hh>
 
 #include <utility>
 #include <vector>
+
+#include <iostream>
 
 namespace MiniZinc {
 
@@ -27,7 +30,7 @@ namespace MiniZinc {
   class Call;
   class VarDecl;
   class Let;
-  class TiExpr;
+  class TypeInst;
 
   class Item;
 
@@ -109,10 +112,13 @@ namespace MiniZinc {
       E_ANN, E_TI
     } _eid;
 
+    /// The %MiniZinc type of the expression
+    Type _type;
+
   protected:
     /// Constructor
-    Expression(const Location& loc, const ExpressionId& eid)
-      : _ann(NULL), _loc(loc), _eid(eid) {}
+    Expression(const Location& loc, const ExpressionId& eid, const Type& t)
+      : _ann(NULL), _loc(loc), _eid(eid), _type(t) {}
 
   public:
 
@@ -150,7 +156,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     Annotation(const Location& loc, Expression* e)
-     : Expression(loc,E_ANN), _e(e), _a(NULL) {}
+     : Expression(loc,E_ANN,Type::ann()), _e(e), _a(NULL) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANN;
@@ -170,7 +176,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     IntLit(const Location& loc, int v)
-      : Expression(loc,E_INTLIT), _v(v) {}
+      : Expression(loc,E_INTLIT,Type::parint()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
@@ -184,7 +190,7 @@ namespace MiniZinc {
   class FloatLit : public Expression {
   protected:
     FloatLit(const Location& loc, double v)
-      : Expression(loc,E_FLOATLIT), _v(v) {}
+      : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
@@ -197,7 +203,7 @@ namespace MiniZinc {
   /// \brief Set literal expression
   class SetLit : public Expression {
   protected:
-    SetLit(const Location& loc) : Expression(loc,E_SETLIT) {}
+    SetLit(const Location& loc) : Expression(loc,E_SETLIT,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
@@ -215,7 +221,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     BoolLit(const Location& loc, bool v)
-      : Expression(loc,E_BOOLLIT), _v(v) {}
+      : Expression(loc,E_BOOLLIT,Type::parbool()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BOOLLIT;
@@ -230,7 +236,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     StringLit(const Location& loc, CtxStringH v)
-      : Expression(loc,E_STRINGLIT), _v(v) {}
+      : Expression(loc,E_STRINGLIT,Type::parstring()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_STRINGLIT;
@@ -245,7 +251,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     Id(const Location& loc, CtxStringH v, VarDecl* decl)
-      : Expression(loc,E_ID), _v(v), _decl(decl) {}
+      : Expression(loc,E_ID,Type()), _v(v), _decl(decl) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ID;
@@ -261,7 +267,7 @@ namespace MiniZinc {
   class AnonVar : public Expression {
   protected:
     /// Constructor
-    AnonVar(const Location& loc) : Expression(loc,E_ANON) {}
+    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::any()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANON;
@@ -272,7 +278,7 @@ namespace MiniZinc {
   class ArrayLit : public Expression {
   protected:
     /// Constructor
-    ArrayLit(const Location& loc) : Expression(loc,E_ARRAYLIT) {}
+    ArrayLit(const Location& loc) : Expression(loc,E_ARRAYLIT,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
@@ -298,7 +304,7 @@ namespace MiniZinc {
   class ArrayAccess : public Expression {
   protected:
     /// Constructor
-    ArrayAccess(const Location& loc) : Expression(loc,E_ARRAYACCESS) {}
+    ArrayAccess(const Location& loc) : Expression(loc,E_ARRAYACCESS,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYACCESS;
@@ -352,7 +358,7 @@ namespace MiniZinc {
   class Comprehension : public Expression {
   protected:
     /// Constructor
-    Comprehension(const Location& loc) : Expression(loc,E_COMP) {}
+    Comprehension(const Location& loc) : Expression(loc,E_COMP,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_COMP;
@@ -380,7 +386,7 @@ namespace MiniZinc {
     typedef pair<Expression*,Expression*> IfThen;
   protected:
     /// Constructor
-    ITE(const Location& loc) : Expression(loc,E_ITE) {}
+    ITE(const Location& loc) : Expression(loc,E_ITE,Type()) {}
   public:
     /// List of if-then-pairs
     CtxVec<IfThen>* _e_if;
@@ -406,7 +412,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-     : Expression(loc,E_BINOP), _e0(e0), _e1(e1), _op(op) {}
+     : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1), _op(op) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BINOP;
@@ -419,6 +425,7 @@ namespace MiniZinc {
     /// Allocate from context
     static BinOp* a(const ASTContext& ctx, const Location& loc,
                     Expression* e0, BinOpType op, Expression* e1);
+    CtxStringH opToString(void) const;
   };
 
   /// Type of unary operators
@@ -430,7 +437,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     UnOp(const Location& loc, UnOpType op, Expression* e)
-     : Expression(loc,E_UNOP), _e0(e), _op(op) {}
+     : Expression(loc,E_UNOP,Type()), _e0(e), _op(op) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_UNOP;
@@ -441,13 +448,14 @@ namespace MiniZinc {
     /// Allocate from context
     static UnOp* a(const ASTContext& ctx, const Location& loc,
                    UnOpType op, Expression* e);
+    CtxStringH opToString(void) const;
   };
   
   /// \brief A predicate or function call expression
   class Call : public Expression {
   protected:
     /// Constructor
-    Call(const Location& loc) : Expression(loc, E_CALL) {}
+    Call(const Location& loc) : Expression(loc, E_CALL,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
@@ -456,38 +464,39 @@ namespace MiniZinc {
     /// Arguments to the call
     CtxVec<Expression*>* _args;
     /// The predicate or function declaration (or NULL)
-    Item* _decl;
+    FunctionI* _decl;
     static Call* a(const ASTContext& ctx, const Location& loc,
                    const std::string& id,
                    const std::vector<Expression*>& args,
-                   Item* decl=NULL);
+                   FunctionI* decl=NULL);
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
   protected:
     /// Constructor
-    VarDecl(const Location& loc) : Expression(loc,E_VARDECL) {}
+    VarDecl(const Location& loc, const Type& t)
+     : Expression(loc,E_VARDECL,t) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
     /// Type-inst of the declared variable
-    TiExpr* _ti;
+    TypeInst* _ti;
     /// Identifier (context-allocated)
     CtxStringH _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
-                      TiExpr* ti, const std::string& id, Expression* e=NULL);
+                      TypeInst* ti, const std::string& id, Expression* e=NULL);
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
-                      TiExpr* ti, const CtxStringH& id, Expression* e=NULL);
+                      TypeInst* ti, const CtxStringH& id, Expression* e=NULL);
   };
   /// \brief %Let expression
   class Let : public Expression {
   protected:
     /// Constructor
-    Let(const Location& loc) : Expression(loc,E_LET) {}
+    Let(const Location& loc) : Expression(loc,E_LET,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_LET;
@@ -500,181 +509,30 @@ namespace MiniZinc {
                   const std::vector<Expression*>& let, Expression* in);
   };
 
-  /// \brief Base class for type-inst expressions
-  class BaseTiExpr : public ASTNode {
-  public:
-    /// Type of the expression
-    enum TiExprId { TI_INT, TI_FLOAT, TI_BOOL, TI_STRING, TI_ANN } _tiid;
-  protected:
-    /// Constructor
-    BaseTiExpr(const TiExprId& tiid) : _tiid(tiid) {}
-  };
-  class IntTiExpr;
-
   /// \brief Type-inst expression
-  class TiExpr : public Expression {
-  public:
-    /// Declared type
-    enum VarType {
-      VT_PAR, //< Parameter
-      VT_VAR, //< Variable
-      VT_SVAR //< Search variable
-    };
+  class TypeInst : public Expression {
   protected:
     /// Constructor
-    TiExpr(const Location& loc, CtxVec<IntTiExpr*>* ranges,
-           const VarType& vartype, bool set, BaseTiExpr* ti)
-     : Expression(loc,E_TI), _ranges(ranges), _vartype(vartype),
-       _set(set), _ti(ti) {}
+    TypeInst(const Location& loc, const Type& type,
+             Expression* domain=NULL,
+             CtxVec<Expression*>* ranges=NULL)
+     : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TI;
     /// Ranges of an array expression
-    CtxVec<IntTiExpr*>* _ranges;
-    /// Declared type inst
-    VarType _vartype;
-    /// Whether it is a set
-    bool _set;
-    /// Basic type
-    BaseTiExpr* _ti;
-    /// Allocate var ti from context
-    static TiExpr* var(const ASTContext& ctx, const Location& loc,
-                       const std::vector<IntTiExpr*>& ranges,
-                       BaseTiExpr* ti);
-    /// Allocate par ti from context
-    static TiExpr* par(const ASTContext& ctx, const Location& loc,
-                       const std::vector<IntTiExpr*>& ranges,
-                       BaseTiExpr* ti);
-    /// Allocate var set ti from context
-    static TiExpr* varset(const ASTContext& ctx, const Location& loc, 
-                          const std::vector<IntTiExpr*>& ranges,
-                          BaseTiExpr* ti);
-    /// Allocate par set ti from context
-    static TiExpr* parset(const ASTContext& ctx, const Location& loc,
-                          const std::vector<IntTiExpr*>& ranges,
-                          BaseTiExpr* ti);
-    /// Allocate var ti from context
-    static TiExpr* var(const ASTContext& ctx, const Location& loc,
-                       BaseTiExpr* ti);
-    /// Allocate par ti from context
-    static TiExpr* par(const ASTContext& ctx, const Location& loc,
-                       BaseTiExpr* ti);
-    /// Allocate var set ti from context
-    static TiExpr* varset(const ASTContext& ctx, const Location& loc, 
-                          BaseTiExpr* ti);
-    /// Allocate par set ti from context
-    static TiExpr* parset(const ASTContext& ctx, const Location& loc, 
-                          BaseTiExpr* ti);
-    /// Allocate var ti from context
-    static TiExpr* var(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, BaseTiExpr* ti);
-    /// Allocate par ti from context
-    static TiExpr* par(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, BaseTiExpr* ti);
-    /// Allocate var set ti from context
-    static TiExpr* varset(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, BaseTiExpr* ti);
-    /// Allocate par set ti from context
-    static TiExpr* parset(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, BaseTiExpr* ti);
-    /// Allocate var ti from context
-    static TiExpr* var(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, IntTiExpr* range1,
-                       BaseTiExpr* ti);
-    /// Allocate par ti from context
-    static TiExpr* par(const ASTContext& ctx, const Location& loc,
-                       IntTiExpr* range0, IntTiExpr* range1,
-                       BaseTiExpr* ti);
-    /// Allocate var set ti from context
-    static TiExpr* varset(const ASTContext& ctx, const Location& loc,
-                          IntTiExpr* range0, IntTiExpr* range1,
-                          BaseTiExpr* ti);
-    /// Allocate par set ti from context
-    static TiExpr* parset(const ASTContext& ctx, const Location& loc,
-                          IntTiExpr* range0, IntTiExpr* range1,
-                          BaseTiExpr* ti);
+    CtxVec<Expression*>* _ranges;
+    /// Declared domain (or NULL)
+    Expression* _domain;
+    /// Allocate from context
+    static TypeInst* a(const ASTContext& ctx, const Location& loc,
+                       const Type& t, Expression* domain=NULL,
+                       CtxVec<Expression*>* ranges=NULL);
     
     /// Add \a ranges to expression
     void addRanges(const ASTContext& ctx,
-                   const std::vector<IntTiExpr*>& ranges);
-    
-    bool ispar(void) const { return _vartype==VT_PAR; }
-    bool isvar(void) const { return _vartype==VT_VAR; }
-    bool isset(void) const { return _set; }
-    bool isarray(void) const { return !_ranges->empty(); }
-    bool isann(void) const {
-      return ispar() && (!isarray()) && (!isset()) &&
-        _ti->_tiid == BaseTiExpr::TI_ANN;
-    }
-  };
-
-  /// \brief Basic integer type-inst
-  class IntTiExpr : public BaseTiExpr {
-  protected:
-    /// Constructor
-    IntTiExpr(Expression* domain)
-     : BaseTiExpr(TI_INT), _domain(domain) {}
-  public:
-    /// The identifier of this expression type
-    static const TiExprId tiid = TI_INT;
-    /// Declared domain (can be NULL)
-    Expression* _domain;
-    /// Allocate from context
-    static IntTiExpr* a(const ASTContext& ctx, Expression* domain=NULL);
-  };
-  /// \brief Basic Boolean type-inst
-  class BoolTiExpr : public BaseTiExpr  {
-  public:
-    /// Possible declared Boolean domains
-    enum BoolDomain { BD_TRUE, BD_FALSE, BD_NONE };
-  protected:
-    /// Constructor
-    BoolTiExpr(const BoolDomain& domain)
-     : BaseTiExpr(TI_BOOL), _domain(domain) {}
-  public:
-    /// The identifier of this expression type
-    static const TiExprId tiid = TI_BOOL;
-    /// Declared domain
-    BoolDomain _domain;
-    /// Allocate from context
-    static BoolTiExpr* a(const ASTContext& ctx,
-                         const BoolDomain& domain = BD_NONE);
-  };
-  /// \brief Basic float type-inst
-  class FloatTiExpr : public BaseTiExpr {
-  protected:
-    /// Constructor
-    FloatTiExpr(Expression* domain)
-     : BaseTiExpr(TI_FLOAT), _domain(domain) {}
-  public:
-    /// The identifier of this expression type
-    static const TiExprId tiid = TI_FLOAT;
-    /// Declared domain (can be NULL)
-    Expression* _domain;
-    /// Allocate from context
-    static FloatTiExpr* a(const ASTContext& ctx, Expression* domain=NULL);
-  };
-  /// \brief Basic string type-inst
-  class StringTiExpr : public BaseTiExpr  {
-  protected:
-    /// Constructor
-    StringTiExpr(void) : BaseTiExpr(TI_STRING) {}
-  public:
-    /// The identifier of this expression type
-    static const TiExprId tiid = TI_STRING;
-    /// Allocate from context
-    static StringTiExpr* a(const ASTContext& ctx);
-  };
-  /// \brief Anonymous variable type-inst
-  class AnnTiExpr : public BaseTiExpr  {
-  protected:
-    /// Constructor
-    AnnTiExpr(void) : BaseTiExpr(TI_ANN) {}
-  public:
-    /// The identifier of this expression type
-    static const TiExprId tiid = TI_ANN;
-    /// Allocate from context
-    static AnnTiExpr* a(const ASTContext& ctx);
+                   const std::vector<Expression*>& ranges);
+    bool isarray(void) const { return _ranges && _ranges->size()>0; }
   };
 
   /**
@@ -687,7 +545,7 @@ namespace MiniZinc {
     /// Identifier of the concrete item type
     enum ItemId {
       II_INC, II_VD, II_ASN, II_CON, II_SOL,
-      II_OUT, II_PRED, II_FUN
+      II_OUT, II_FUN
     } _iid;
     
   protected:
@@ -825,31 +683,6 @@ namespace MiniZinc {
     static OutputI* a(const ASTContext& ctx, const Location& loc,
                       Expression* e);
   };
-  /// \brief Predicate declaration item
-  class PredicateI : public Item {
-  protected:
-    /// Constructor
-    PredicateI(const Location& loc) : Item(loc, II_PRED) {}
-  public:
-    /// The identifier of this item type
-    static const ItemId iid = II_PRED;
-    /// Identifier of this predicate (context-allocated)
-    CtxStringH _id;
-    /// List of parameter declarations
-    CtxVec<VarDecl*>* _params;
-    /// Annotation
-    Annotation* _ann;
-    /// Parameter body (or NULL)
-    Expression* _e;
-    /// Whether this is a test predicate
-    bool _test;
-    /// Allocate from context
-    static PredicateI* a(const ASTContext& ctx, const Location& loc,
-                         const std::string& id,
-                         const std::vector<VarDecl*>& params,
-                         Expression* e = NULL, Annotation* ann = NULL,
-                         bool test = false);
-  };
   /// \brief Function declaration item
   class FunctionI : public Item {
   protected:
@@ -861,7 +694,7 @@ namespace MiniZinc {
     /// Identifier of this function (context-allocated)
     CtxStringH _id;
     /// Type-inst of the return value
-    TiExpr* _ti;
+    TypeInst* _ti;
     /// List of parameter declarations
     CtxVec<VarDecl*>* _params;
     /// Annotation
@@ -870,9 +703,14 @@ namespace MiniZinc {
     Expression* _e;
     /// Allocate from context
     static FunctionI* a(const ASTContext& ctx, const Location& loc,
-                        const std::string& id, TiExpr* ti,
+                        const std::string& id, TypeInst* ti,
                         const std::vector<VarDecl*>& params,
                         Expression* e = NULL, Annotation* ann = NULL);
+    
+    /** \brief Check if a function call with argument types \a ta
+     * matches this function.
+     */
+    bool match(const std::vector<Type>& ta);
   };
 
   /**
@@ -915,16 +753,6 @@ namespace MiniZinc {
     void vLet(const Let&) {}
     /// Visit variable declaration
     void vVarDecl(const VarDecl&) {}
-  };
-
-  template<class Visitor>
-  class BottomUpVisitor {
-  
-  };
-
-  template<class Visitor>
-  class TopDownVisitor {
-  
   };
 
 }

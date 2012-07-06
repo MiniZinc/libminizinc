@@ -225,11 +225,8 @@ namespace MiniZinc {
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
          std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
-         MiniZinc::TiExpr* tiexpr;
-         std::vector<MiniZinc::TiExpr*>* tiexpr_v;
-         MiniZinc::IntTiExpr* inttiexpr;
-         std::vector<MiniZinc::IntTiExpr*>* inttiexpr_v;
-         MiniZinc::BaseTiExpr* basetiexpr;
+         MiniZinc::TypeInst* tiexpr;
+         std::vector<MiniZinc::TypeInst*>* tiexpr_v;
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expression_v;
          std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
@@ -335,9 +332,9 @@ namespace MiniZinc {
 //%type <vardeclexpr> slet_vardecl_item
 %type <vardeclexpr_v> params params_list params_list_head
 //%type <vardeclexpr_v> slet_vardecl_item_list
-%type <tiexpr> ti_expr base_ti_expr
-%type <tiexpr_v> ti_expr_list ti_expr_list_head
-%type <basetiexpr> base_ti_expr_tail
+%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
+//%type <tiexpr_v> ti_expr_list ti_expr_list_head
+//%type <basetiexpr> base_ti_expr_tail
 
 %type <expression> expr expr_atom_head num_expr num_expr_atom_head simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
@@ -353,8 +350,8 @@ namespace MiniZinc {
 
 %type <annotation> annotations ne_annotations
 
-%type <inttiexpr> int_ti_expr
-%type <inttiexpr_v> int_ti_expr_list int_ti_expr_list_head
+%type <expression> num_ti_expr int_ti_expr
+%type <expression_v> int_ti_expr_list int_ti_expr_list_head
 
 %type <iValue> quoted_op
 
@@ -461,12 +458,14 @@ output_item :
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = PredicateI::a(GETCTX(),@$,$2,*$3,$5,$4,false);
+      { $$ = FunctionI::a(GETCTX(),@$,$2,TypeInst::a(GETCTX(),@$,
+                          Type::varbool()),*$3,$5,$4);
         free($2);
         delete $3;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = PredicateI::a(GETCTX(),@$,$2,*$3,$5,$4,true);
+      { $$ = FunctionI::a(GETCTX(),@$,$2,TypeInst::a(GETCTX(),@$,
+                          Type::parbool()),*$3,$5,$4);
         free($2);
         delete $3;
       }
@@ -486,13 +485,13 @@ function_item :
 annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
-        TiExpr* ti=TiExpr::par(GETCTX(),@1,AnnTiExpr::a(GETCTX()));
+        TypeInst* ti=TypeInst::a(GETCTX(),@1,Type::ann());
         $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,NULL,NULL);
         free($2);
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
-      { TiExpr* ti=TiExpr::par(GETCTX(),@1,AnnTiExpr::a(GETCTX()));
+      { TypeInst* ti=TypeInst::a(GETCTX(),@1,Type::ann());
         $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,$5,NULL);
         delete $3;
       }
@@ -509,7 +508,7 @@ params :
     | '(' params_list ')'
       { $$=$2; }
     | '(' error ')'
-      { $$=NULL; }
+      { $$=new vector<VarDecl*>(); }
 
 params_list : params_list_head comma_or_none
       { $$=$1; }
@@ -528,14 +527,14 @@ ti_expr_and_id :
         free($3);
       }
 
-ti_expr_list : ti_expr_list_head comma_or_none
-      { $$=$1; }
-
-ti_expr_list_head :
-      ti_expr
-      { $$=new vector<TiExpr*>(); $$->push_back($1); }
-    | ti_expr_list_head ',' ti_expr
-      { $$=$1; $1->push_back($3); }
+// ti_expr_list : ti_expr_list_head comma_or_none
+//       { $$=$1; }
+// 
+// ti_expr_list_head :
+//       ti_expr
+//       { $$=new vector<TypeInst*>(); $$->push_back($1); }
+//     | ti_expr_list_head ',' ti_expr
+//       { $$=$1; $1->push_back($3); }
 
 ti_expr :
       base_ti_expr
@@ -550,53 +549,62 @@ int_ti_expr_list : int_ti_expr_list_head comma_or_none
 
 int_ti_expr_list_head :
       int_ti_expr
-      { $$=new std::vector<IntTiExpr*>; $$->push_back($1); }
+      { $$=new std::vector<Expression*>; $$->push_back($1); }
     | int_ti_expr_list_head ',' int_ti_expr
       { $$=$1; $$->push_back($3); }
 
-int_ti_expr :
-      MZN_INT
-      { $$ = IntTiExpr::a(GETCTX()); }
-    | MZN_IDENTIFIER
-      { $$ = IntTiExpr::a(GETCTX(),Id::a(GETCTX(),@1,$1,NULL)); free($1); }
+int_ti_expr : num_ti_expr
+      { $$=$1; }
+    | MZN_INT
+      { $$=NULL; }
+
+num_ti_expr :
+      MZN_IDENTIFIER
+      { $$ = Id::a(GETCTX(),@1,$1,NULL); free($1); }
     | num_expr MZN_DOTDOT num_expr
-      { $$ = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),@$,$1,BOT_DOTDOT,$3)); }
+      { $$ = BinOp::a(GETCTX(),@$,$1,BOT_DOTDOT,$3); }
     | MZN_DOTDOT_QUOTED '(' num_expr ',' num_expr ')'
-      { $$ = IntTiExpr::a(GETCTX(),BinOp::a(GETCTX(),@$,$3,BOT_DOTDOT,$5)); }
+      { $$ = BinOp::a(GETCTX(),@$,$3,BOT_DOTDOT,$5); }
     | '{' expr_list '}'
-      { $$ = IntTiExpr::a(GETCTX(),SetLit::a(GETCTX(),@2,*$2));
+      { $$ = SetLit::a(GETCTX(),@2,*$2);
         delete $2;
       }
     
 base_ti_expr :
       base_ti_expr_tail
-      { $$ = TiExpr::par(GETCTX(),@$,$1); }
+      { $$ = $1; }
     | MZN_PAR base_ti_expr_tail
-      { $$ = TiExpr::par(GETCTX(),@$,$2); }
+      { $$ = $2; }
     | MZN_VAR base_ti_expr_tail
-      { $$ = TiExpr::var(GETCTX(),@$,$2); }
+      { $$ = $2; $$->_type._ti = Type::TI_VAR; }
     | MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = TiExpr::parset(GETCTX(),@$,$3); }
+      { $$ = $3; $$->_type._st = Type::ST_SET; }
     | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = TiExpr::parset(GETCTX(),@$,$4); }
+      { $$ = $4; $$->_type._st = Type::ST_SET; }
     | MZN_VAR MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = TiExpr::varset(GETCTX(),@$,$4); }
-    | MZN_TUPLE '(' ti_expr_list ')'
-      { $$ = NULL; }
+      { $$ = $4; $$->_type._ti = Type::TI_VAR;
+        $$->_type._st = Type::ST_SET;
+      }
+    // | MZN_TUPLE '(' ti_expr_list ')'
+    //   { $$ = NULL; }
 
 base_ti_expr_tail :
-      MZN_BOOL
-      { $$ = BoolTiExpr::a(GETCTX()); }
+      MZN_INT
+      { $$ = TypeInst::a(GETCTX(),@$,Type::parint()); }
+    | MZN_BOOL
+      { $$ = TypeInst::a(GETCTX(),@$,Type::parbool()); }
     | MZN_FLOAT
-      { $$ = FloatTiExpr::a(GETCTX()); }
+      { $$ = TypeInst::a(GETCTX(),@$,Type::parfloat()); }
     | MZN_STRING
-      { $$ = StringTiExpr::a(GETCTX()); }
+      { $$ = TypeInst::a(GETCTX(),@$,Type::parstring()); }
     | MZN_ANN
-      { $$ = AnnTiExpr::a(GETCTX()); }
+      { $$ = TypeInst::a(GETCTX(),@$,Type::ann()); }
     | '{' '}'
-      { $$ = IntTiExpr::a(GETCTX()); }
-    | int_ti_expr
-      { $$ = $1; }
+      { $$ = TypeInst::a(GETCTX(),@$,Type::bot(),
+                         SetLit::a(GETCTX(), @$, std::vector<Expression*>())); 
+      }
+    | num_ti_expr
+      { $$ = TypeInst::a(GETCTX(),@$,Type(),$1); }
 
 expr_list : expr_list_head comma_or_none
 
@@ -1054,7 +1062,7 @@ let_expr :
 
 //slet_vardecl_item :
 //      MZN_SVAR MZN_INT ':' MZN_IDENTIFIER MZN_EQ expr
-//      { $$=new VardeclExpr(@$,TiExpr::svar(@$),$4,$6);
+//      { $$=new VardeclExpr(@$,TypeInst::svar(@$),$4,$6);
 //        free($4);
 //      }
 

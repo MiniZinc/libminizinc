@@ -96,7 +96,7 @@ public:
 	ExpressionMapper(T& t) :
 			_t(t) {
 	}
-	typename T::ret map(Expression* e) {
+	typename T::ret map(const Expression* e) {
 		switch (e->_eid) {
 		case Expression::E_INTLIT:
 			return _t.mapIntLit(*e->cast<IntLit>());
@@ -133,7 +133,7 @@ public:
 		case Expression::E_ANN:
 			return _t.mapAnnotation(*e->cast<Annotation>());
 		case Expression::E_TI:
-			return _t.mapTiExpr(*e->cast<TiExpr>());
+			return _t.mapTypeInst(*e->cast<TypeInst>());
 		default:
 			assert(false);
 			break;
@@ -141,33 +141,31 @@ public:
 	}
 };
 
-std::string expressionToString(Expression* e);
-std::string tiexpressionToString(BaseTiExpr* e) {
-	switch (e->_tiid) {
-	case BaseTiExpr::TI_INT: {
-		IntTiExpr* ie = static_cast<IntTiExpr*>(e);
-		if (ie->_domain)
-			return expressionToString(ie->_domain);
-		else
-			return "int";
-	}
-	case BaseTiExpr::TI_FLOAT: {
-		FloatTiExpr* fe = static_cast<FloatTiExpr*>(e);
-		if (fe->_domain)
-			return expressionToString(fe->_domain);
-		else
-			return "float";
-	}
-	case BaseTiExpr::TI_BOOL:
-		return "bool";
-	case BaseTiExpr::TI_STRING:
-		return "string";
-	case BaseTiExpr::TI_ANN:
-		return "ann";
-	default:
-		assert(false);
-		break;
-	}
+std::string expressionToString(const Expression* e);
+std::string tiexpressionToString(const Type& type, const Expression* e) {
+  std::ostringstream oss;
+  switch (type._ti) {
+    case Type::TI_PAR: break;
+    case Type::TI_VAR: oss << "var "; break;
+    case Type::TI_SVAR: oss << "svar "; break;
+    case Type::TI_ANY: oss << "any "; break;
+  }
+  if (type._st==Type::ST_SET)
+    oss << "set of ";
+  if (e==NULL) {
+    switch (type._bt) {
+      case Type::BT_INT: oss << "int"; break;
+      case Type::BT_BOOL: oss << "bool"; break;
+      case Type::BT_FLOAT: oss << "float"; break;
+      case Type::BT_STRING: oss << "string"; break;
+      case Type::BT_ANN: oss << "ann"; break;
+      case Type::BT_BOT: oss << "bot"; break;
+      case Type::BT_UNKNOWN: oss << "???"; break;
+    }
+  } else {
+    oss << expressionToString(e);
+  }
+  return oss.str();
 }
 
 class ExpressionStringMapper {
@@ -434,27 +432,23 @@ public:
 		}
 		return oss.str();
 	}
-	ret mapTiExpr(const TiExpr& ti) {
+	ret mapTypeInst(const TypeInst& ti) {
 		std::ostringstream oss;
 		if (ti.isarray()) {
 			oss << "array[";
 			for (unsigned int i = 0; i < ti._ranges->size(); i++) {
-				oss << tiexpressionToString((*ti._ranges)[i]);
+				oss << tiexpressionToString(Type::parint(),(*ti._ranges)[i]);
 				if (i < ti._ranges->size() - 1)
 					oss << ", ";
 			}
 			oss << "] of ";
 		}
-		if (ti.isvar())
-			oss << "var ";
-		if (ti.isset())
-			oss << "set of ";
-		oss << tiexpressionToString(ti._ti);
+		oss << tiexpressionToString(ti._type,ti._domain);
 		return oss.str();
 	}
 };
 
-std::string expressionToString(Expression* e) {
+std::string expressionToString(const Expression* e) {
 	ExpressionStringMapper esm;
 	ExpressionMapper<ExpressionStringMapper> em(esm);
 	std::string s = em.map(e);
@@ -485,8 +479,6 @@ public:
 			return _t.mapSolveI(*i->cast<SolveI>());
 		case Item::II_OUT:
 			return _t.mapOutputI(*i->cast<OutputI>());
-		case Item::II_PRED:
-			return _t.mapPredicateI(*i->cast<PredicateI>());
 		case Item::II_FUN:
 			return _t.mapFunctionI(*i->cast<FunctionI>());
 		default:
@@ -544,30 +536,14 @@ public:
 		oss << "output " << expressionToString(oi._e) << ";";
 		return oss.str();
 	}
-	ret mapPredicateI(const PredicateI& pi) {
-		std::ostringstream oss;
-		oss << (pi._test ? "test " : "predicate ") << pi._id.str();
-		if (!pi._params->empty()) {
-			oss << "(";
-			for (unsigned int i = 0; i < pi._params->size(); i++) {
-				oss << expressionToString((*pi._params)[i]);
-				if (i < pi._params->size() - 1)
-					oss << "; ";
-			}
-			oss << ")";
-		}
-		if (pi._ann)
-			oss << expressionToString(pi._ann);
-		if (pi._e) {
-			oss << " = " << expressionToString(pi._e);
-		}
-		oss << ";";
-		return oss.str();
-	}
 	ret mapFunctionI(const FunctionI& fi) {
 		std::ostringstream oss;
-		if (fi._ti->isann() && fi._e == NULL) {
+		if (fi._ti->_type.isann() && fi._e == NULL) {
 			oss << "annotation " << fi._id.str();
+		} else if (fi._ti->_type == Type::parbool()) {
+		  oss << "test " << fi._id.str();
+		} else if (fi._ti->_type == Type::varbool()) {
+		  oss << "predicate " << fi._id.str();
 		} else {
 			oss << "function " << expressionToString(fi._ti) << " : "
 					<< fi._id.str();
@@ -599,33 +575,31 @@ void print(std::ostream& os, Model* m) {
 	}
 }
 
-Document* expressionToDocument(Expression* e);
-Document* tiexpressionToDocument(BaseTiExpr* e) {
-	switch (e->_tiid) {
-	case BaseTiExpr::TI_INT: {
-		IntTiExpr* ie = static_cast<IntTiExpr*>(e);
-		if (ie->_domain)
-			return expressionToDocument(ie->_domain);
-		else
-			return new StringDocument("int");
-	}
-	case BaseTiExpr::TI_FLOAT: {
-		FloatTiExpr* fe = static_cast<FloatTiExpr*>(e);
-		if (fe->_domain)
-			return expressionToDocument(fe->_domain);
-		else
-			return new StringDocument("float");
-	}
-	case BaseTiExpr::TI_BOOL:
-		return new StringDocument("bool");
-	case BaseTiExpr::TI_STRING:
-		return new StringDocument("string");
-	case BaseTiExpr::TI_ANN:
-		return new StringDocument("ann");
-	default:
-		assert(false);
-		break;
-	}
+Document* expressionToDocument(const Expression* e);
+Document* tiexpressionToDocument(const Type& type, const Expression* e) {
+  DocumentList* dl = new DocumentList("","","",false);
+  switch (type._ti) {
+    case Type::TI_PAR: break;
+    case Type::TI_VAR: dl->addStringToList("var "); break;
+    case Type::TI_SVAR: dl->addStringToList("svar "); break;
+    case Type::TI_ANY: dl->addStringToList("any "); break;
+  }
+  if (type._st==Type::ST_SET)
+    dl->addStringToList("set of ");
+  if (e==NULL) {
+    switch (type._bt) {
+      case Type::BT_INT: dl->addStringToList("int"); break;
+      case Type::BT_BOOL: dl->addStringToList("bool"); break;
+      case Type::BT_FLOAT: dl->addStringToList("float"); break;
+      case Type::BT_STRING: dl->addStringToList("string"); break;
+      case Type::BT_ANN: dl->addStringToList("ann"); break;
+      case Type::BT_BOT: dl->addStringToList("bot"); break;
+      case Type::BT_UNKNOWN: dl->addStringToList("???"); break;
+    }
+  } else {
+    dl->addDocumentToList(expressionToDocument(e));
+  }
+  return dl;
 }
 
 class ExpressionDocumentMapper {
@@ -991,28 +965,24 @@ public:
 		}
 		return dl;
 	}
-	ret mapTiExpr(const TiExpr& ti) {
+	ret mapTypeInst(const TypeInst& ti) {
 		DocumentList* dl = new DocumentList("", "", "");
 		if (ti.isarray()) {
 			dl->addStringToList("array[");
 			DocumentList* ran = new DocumentList("", ", ", "");
 			for (unsigned int i = 0; i < ti._ranges->size(); i++) {
 				ran->addDocumentToList(
-						tiexpressionToDocument((*ti._ranges)[i]));
+						tiexpressionToDocument(Type::parint(), (*ti._ranges)[i]));
 			}
 			dl->addDocumentToList(ran);
 			dl->addStringToList("] of ");
 		}
-		if (ti.isvar())
-			dl->addStringToList("var ");
-		if (ti.isset())
-			dl->addStringToList("set of ");
-		dl->addDocumentToList(tiexpressionToDocument(ti._ti));
+		dl->addDocumentToList(tiexpressionToDocument(ti._type,ti._domain));
 		return dl;
 	}
 };
 
-Document* expressionToDocument(Expression* e) {
+Document* expressionToDocument(const Expression* e) {
 	ExpressionDocumentMapper esm;
 	ExpressionMapper<ExpressionDocumentMapper> em(esm);
 	DocumentList* dl = new DocumentList("", "", "");
@@ -1074,43 +1044,20 @@ public:
 		dl->addDocumentToList(expressionToDocument(oi._e));
 		return dl;
 	}
-	ret mapPredicateI(const PredicateI& pi) {
-		DocumentList* dl;
-		dl = new DocumentList((pi._test ? "test " : "predicate "), "", ";",
-				false);
-		dl->addStringToList(pi._id.str());
-		if (!pi._params->empty()) {
-			DocumentList* params = new DocumentList("(", ", ", ")");
-
-			for (unsigned int i = 0; i < pi._params->size(); i++) {
-				DocumentList* par = new DocumentList("", "", "");
-				par->setUnbreakable(true);
-				par->addDocumentToList(expressionToDocument((*pi._params)[i]));
-				params->addDocumentToList(par);
-			}
-			dl->addDocumentToList(params);
-		}
-		if (pi._ann)
-			dl->addDocumentToList(expressionToDocument(pi._ann));
-		if (pi._e) {
-			dl->addStringToList(" =");
-			dl->addBreakPoint();
-			dl->addDocumentToList(expressionToDocument(pi._e));
-		}
-
-		return dl;
-	}
 	ret mapFunctionI(const FunctionI& fi) {
 		DocumentList* dl;
-		if (fi._ti->isann() && fi._e == NULL) {
+		if (fi._ti->_type.isann() && fi._e == NULL) {
 			dl = new DocumentList("annotation ", " ", ";", false);
-			dl->addStringToList(fi._id.str());
+		} else if (fi._ti->_type == Type::parbool()) {
+			dl = new DocumentList("test ", "", ";", false);
+		} else if (fi._ti->_type == Type::varbool()) {
+			dl = new DocumentList("predicate ", "", ";", false);
 		} else {
 			dl = new DocumentList("function ", "", ";", false);
 			dl->addDocumentToList(expressionToDocument(fi._ti));
 			dl->addStringToList(": ");
-			dl->addStringToList(fi._id.str());
 		}
+		dl->addStringToList(fi._id.str());
 		if (!fi._params->empty()) {
 			DocumentList* params = new DocumentList("(", ", ", ")");
 			for (unsigned int i = 0; i < fi._params->size(); i++) {
