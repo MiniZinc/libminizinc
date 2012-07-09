@@ -6,7 +6,7 @@ GENERATE=yes
 
 SOURCES=allocator ast context lexer.yy parser.tab  \
 	print printer/Document printer/Line printer/PrettyPrinter \
-	typecheck
+	typecheck solver_interface/solver_interface
 
 HEADERS=allocator ast context exception model parser parser.tab print type typecheck
 
@@ -21,9 +21,24 @@ CXX=cl
 OBJ=obj
 EXE=.exe
 else
-CXX=clang++
+CXX=g++
 CC=clang
-CXXFLAGS=-std=c++11 -stdlib=libc++ -Wall -g -Iinclude
+#cplex options
+CPLEXDIR = /usr/ilog/cplex121
+CONCERTDIR = /usr/ilog/concert29
+CCOPT = -m64 -O -fPIC -fexceptions -DNDEBUG -DIL_STD
+CPLEXBINDIR   = $(CPLEXDIR)/bin/$(BINDIST)
+CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
+CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
+SYSTEM     = x86-64_debian4.0_4.1
+LIBFORMAT  = static_pic
+CCLNFLAGS = -L$(CPLEXLIBDIR) -lilocplex -lcplex -L$(CONCERTLIBDIR) -lconcert -lm -pthread
+
+CONCERTINCDIR = $(CONCERTDIR)/include
+CPLEXINCDIR   = $(CPLEXDIR)/include
+
+CCFLAGS = $(CCOPT) -I$(CPLEXINCDIR) -I$(CONCERTINCDIR) $(CCLNFLAGS)
+CXXFLAGS=-std=c++0x -Wall -g -Iinclude $(CCFLAGS)
 #CXXFLAGS=-Wall -g -O2 -DNDEBUG -Iinclude
 INPUTSRC=
 OUTPUTOBJ=-c -o 

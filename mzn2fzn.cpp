@@ -39,7 +39,7 @@
 #include <minizinc/print.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
-
+#include <minizinc/solver_interface/cplex_interface.h>
 using namespace MiniZinc;
 using namespace std;
 
@@ -104,7 +104,9 @@ int main(int argc, char** argv) {
           MiniZinc::addOperatorTypes(ctx);
           MiniZinc::typecheck(ctx,m);
         }
-        printDoc(std::cout, m);
+        // printDoc(std::cout, m);
+        CplexInterface ci;
+        ci.fromFlatZinc(*m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
         // flat = m->flatten(tm);

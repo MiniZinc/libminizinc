@@ -612,7 +612,7 @@ public:
 			DocumentList* ran = new DocumentList("", ", ", "");
 			for (unsigned int i = 0; i < ti._ranges->size(); i++) {
 				ran->addDocumentToList(
-						tiexpressionToDocument(Type::parint(), (*ti._ranges)[i]));
+	    	tiexpressionToDocument(Type::parint(), (*ti._ranges)[i]));
 			}
 			dl->addDocumentToList(ran);
 			dl->addStringToList("] of ");
