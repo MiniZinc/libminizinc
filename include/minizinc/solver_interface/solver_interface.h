@@ -34,20 +34,40 @@ namespace MiniZinc{
 	  addVar(item->cast<VarDeclI>()->_e);
 	} else if (item->isa<ConstraintI>()){
 	  postConstraint(*item->cast<ConstraintI>());
+	} else if (item->isa<SolveI>()){	  
+	  solve(item->cast<SolveI>());
+	} else {
+	  
+	  //  std::cerr << "This type of item should not appear in a FlatZinc file"<<item->_iid << std::endl;
+	  //std::exit(-1);
 	}
       }
     }
 	
-	
+    virtual void* getEnv()=0;
+    void* lookupVar(VarDecl* vd);
+    void* lookupVar(std::string s);	
   protected:
     typedef void (*poster) (SolverInterface&, const ConstraintI&);
     virtual void* addSolverVar(VarDecl*) = 0;
-    virtual void solve() = 0;
-    void addConstraintMapping(std::string& mzn_constraint,
+    virtual void solve(SolveI* s) = 0;
+    void addConstraintMapping(std::string mzn_constraint,
 			      poster func);
-    void* lookupVar(VarDecl* vd);
+    static std::pair<double,double> getFloatBounds(Expression* e){
+      BinOp* bo = e->cast<BinOp>();
+      double b, u;
+      b = bo->_e0->cast<FloatLit>()->_v;
+      u = bo->_e1->cast<FloatLit>()->_v;
+      return std::pair<double,double>(b,u);
+    }
+    static std::pair<double,double> getIntBounds(Expression* e){
+      BinOp* bo = e->cast<BinOp>();
+      int b, u;
+      b = bo->_e0->cast<IntLit>()->_v;
+      u = bo->_e1->cast<IntLit>()->_v;
+      return std::pair<int,int>(b,u);
+    }
     poster lookupConstraint(std::string& s);
-  private:
     std::map<VarDecl*, void*> variableMap;
     std::map<std::string, poster> constraintMap;
   };

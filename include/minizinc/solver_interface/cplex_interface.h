@@ -13,17 +13,8 @@ namespace MiniZinc {
     CplexInterface();
     virtual ~CplexInterface();
     void* addSolverVar(VarDecl* vd);
-
-    static std::pair<double,double> getBounds(Expression* e){
-      BinOp* bo = e->cast<BinOp>();
-      int b; int u;
-      b = bo->_e0->cast<IntLit>()->_v;
-      u = bo->_e1->cast<IntLit>()->_v;
-      return std::pair<int,int>(b,u);
-    }
-    void solve(){
-      std::cout << "Solving !" << std::endl;
-    }
+    void* getEnv();
+    void solve(SolveI* s);
   };
 };
 #endif

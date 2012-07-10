@@ -12,6 +12,17 @@ namespace MiniZinc {
       throw -1;	    
     }
   }
+  void* SolverInterface::lookupVar(std::string s){
+    std::map<VarDecl*,void*>::iterator it;
+    for(it = variableMap.begin(); it != variableMap.end(); it++){
+      if(it->first->_id.str() == s){
+	return it->second;
+      }
+    }
+    std::cerr << "Error : couldn't find variable " << s
+	      << " in constraints map." << std::endl;
+    throw -1;	    
+  }
 
   SolverInterface::poster SolverInterface::lookupConstraint(std::string& s){
     std::map<std::string, SolverInterface::poster>::iterator it 
@@ -23,7 +34,7 @@ namespace MiniZinc {
     } else return it->second;
   }
 
-  void SolverInterface::addConstraintMapping(std::string& mzn_constraint,
+  void SolverInterface::addConstraintMapping(std::string mzn_constraint,
 					     SolverInterface::poster func){
     constraintMap[mzn_constraint] = func;
   }
