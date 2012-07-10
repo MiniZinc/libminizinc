@@ -6,7 +6,7 @@ GENERATE=yes
 
 SOURCES=allocator ast context lexer.yy parser.tab  \
 	print printer/Document printer/Line printer/PrettyPrinter \
-	typecheck solver_interface/solver_interface
+	typecheck solver_interface/solver_interface solver_interface/cplex_interface
 
 HEADERS=allocator ast context exception model parser parser.tab print type typecheck
 
@@ -26,7 +26,7 @@ CC=clang
 #cplex options
 CPLEXDIR = /usr/ilog/cplex121
 CONCERTDIR = /usr/ilog/concert29
-CCOPT = -m64 -O -fPIC -fexceptions -DNDEBUG -DIL_STD
+CCOPT = -m64 -O0 -fPIC -fexceptions -DNDEBUG -DIL_STD
 CPLEXBINDIR   = $(CPLEXDIR)/bin/$(BINDIST)
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
@@ -62,7 +62,7 @@ mzn2fzn$(EXE): mzn2fzn.$(OBJ) $(SOURCES:%=lib/%.$(OBJ))
 	mt.exe -nologo -manifest $@.manifest -outputresource:$@\;1
 else
 mzn2fzn$(EXE): mzn2fzn.$(OBJ) $(SOURCES:%=lib/%.$(OBJ))
-	$(CXX) $(CXXFLAGS) $(OUTPUTEXE)$@ $^
+	$(CXX) $^ $(CXXFLAGS) $(OUTPUTEXE)$@ 
 endif
 
 ifeq ($(GENERATE), yes)

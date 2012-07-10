@@ -1,24 +1,23 @@
-/* A Bison parser, made by GNU Bison 2.3.  */
+
+/* A Bison parser, made by GNU Bison 2.4.1.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
-
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   
+      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
    Free Software Foundation, Inc.
-
-   This program is free software; you can redistribute it and/or modify
+   
+   This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
-
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
+   
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -29,7 +28,7 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-
+   
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
@@ -47,7 +46,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.3"
+#define YYBISON_VERSION "2.4.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -55,243 +54,20 @@
 /* Pure parsers.  */
 #define YYPURE 1
 
+/* Push parsers.  */
+#define YYPUSH 0
+
+/* Pull parsers.  */
+#define YYPULL 1
+
 /* Using locations.  */
 #define YYLSP_NEEDED 1
 
 
 
-/* Tokens.  */
-#ifndef YYTOKENTYPE
-# define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     MZN_INTEGER_LITERAL = 258,
-     MZN_BOOL_LITERAL = 259,
-     MZN_FLOAT_LITERAL = 260,
-     MZN_IDENTIFIER = 261,
-     MZN_QUOTED_IDENTIFIER = 262,
-     MZN_STRING_LITERAL = 263,
-     MZN_TI_IDENTIFIER = 264,
-     MZN_VAR = 265,
-     MZN_PAR = 266,
-     MZN_SVAR = 267,
-     MZN_ANN = 268,
-     MZN_ANNOTATION = 269,
-     MZN_ANY = 270,
-     MZN_ARRAY = 271,
-     MZN_BOOL = 272,
-     MZN_CASE = 273,
-     MZN_CONSTRAINT = 274,
-     MZN_DEFAULT = 275,
-     MZN_ELSE = 276,
-     MZN_ELSEIF = 277,
-     MZN_ENDIF = 278,
-     MZN_ENUM = 279,
-     MZN_FLOAT = 280,
-     MZN_FUNCTION = 281,
-     MZN_IF = 282,
-     MZN_INCLUDE = 283,
-     MZN_INT = 284,
-     MZN_LET = 285,
-     MZN_MAXIMIZE = 286,
-     MZN_MINIMIZE = 287,
-     MZN_OF = 288,
-     MZN_SATISFY = 289,
-     MZN_OUTPUT = 290,
-     MZN_PREDICATE = 291,
-     MZN_RECORD = 292,
-     MZN_SET = 293,
-     MZN_SOLVE = 294,
-     MZN_STRING = 295,
-     MZN_TEST = 296,
-     MZN_THEN = 297,
-     MZN_TUPLE = 298,
-     MZN_TYPE = 299,
-     MZN_UNDERSCORE = 300,
-     MZN_VARIANT_RECORD = 301,
-     MZN_WHERE = 302,
-     MZN_LEFT_BRACKET = 303,
-     MZN_LEFT_2D_BRACKET = 304,
-     MZN_RIGHT_BRACKET = 305,
-     MZN_RIGHT_2D_BRACKET = 306,
-     UNKNOWN_CHAR = 307,
-     PREC_ANNO = 308,
-     MZN_EQUIV = 309,
-     MZN_RIMPL = 310,
-     MZN_IMPL = 311,
-     MZN_XOR = 312,
-     MZN_OR = 313,
-     MZN_AND = 314,
-     MZN_NQ = 315,
-     MZN_EQ = 316,
-     MZN_GQ = 317,
-     MZN_LQ = 318,
-     MZN_GR = 319,
-     MZN_LE = 320,
-     MZN_SUPERSET = 321,
-     MZN_SUBSET = 322,
-     MZN_IN = 323,
-     MZN_SYMDIFF = 324,
-     MZN_DIFF = 325,
-     MZN_UNION = 326,
-     MZN_DOTDOT = 327,
-     MZN_MINUS = 328,
-     MZN_PLUS = 329,
-     MZN_INTERSECT = 330,
-     MZN_MOD = 331,
-     MZN_IDIV = 332,
-     MZN_DIV = 333,
-     MZN_MULT = 334,
-     MZN_NOT = 335,
-     MZN_COLONCOLON = 336,
-     MZN_PLUSPLUS = 337,
-     MZN_EQUIV_QUOTED = 338,
-     MZN_IMPL_QUOTED = 339,
-     MZN_RIMPL_QUOTED = 340,
-     MZN_OR_QUOTED = 341,
-     MZN_XOR_QUOTED = 342,
-     MZN_AND_QUOTED = 343,
-     MZN_LE_QUOTED = 344,
-     MZN_GR_QUOTED = 345,
-     MZN_LQ_QUOTED = 346,
-     MZN_GQ_QUOTED = 347,
-     MZN_EQ_QUOTED = 348,
-     MZN_NQ_QUOTED = 349,
-     MZN_IN_QUOTED = 350,
-     MZN_SUBSET_QUOTED = 351,
-     MZN_SUPERSET_QUOTED = 352,
-     MZN_UNION_QUOTED = 353,
-     MZN_DIFF_QUOTED = 354,
-     MZN_SYMDIFF_QUOTED = 355,
-     MZN_DOTDOT_QUOTED = 356,
-     MZN_PLUS_QUOTED = 357,
-     MZN_MINUS_QUOTED = 358,
-     MZN_MULT_QUOTED = 359,
-     MZN_DIV_QUOTED = 360,
-     MZN_IDIV_QUOTED = 361,
-     MZN_MOD_QUOTED = 362,
-     MZN_INTERSECT_QUOTED = 363,
-     MZN_NOT_QUOTED = 364,
-     MZN_COLONCOLON_QUOTED = 365,
-     MZN_PLUSPLUS_QUOTED = 366
-   };
-#endif
-/* Tokens.  */
-#define MZN_INTEGER_LITERAL 258
-#define MZN_BOOL_LITERAL 259
-#define MZN_FLOAT_LITERAL 260
-#define MZN_IDENTIFIER 261
-#define MZN_QUOTED_IDENTIFIER 262
-#define MZN_STRING_LITERAL 263
-#define MZN_TI_IDENTIFIER 264
-#define MZN_VAR 265
-#define MZN_PAR 266
-#define MZN_SVAR 267
-#define MZN_ANN 268
-#define MZN_ANNOTATION 269
-#define MZN_ANY 270
-#define MZN_ARRAY 271
-#define MZN_BOOL 272
-#define MZN_CASE 273
-#define MZN_CONSTRAINT 274
-#define MZN_DEFAULT 275
-#define MZN_ELSE 276
-#define MZN_ELSEIF 277
-#define MZN_ENDIF 278
-#define MZN_ENUM 279
-#define MZN_FLOAT 280
-#define MZN_FUNCTION 281
-#define MZN_IF 282
-#define MZN_INCLUDE 283
-#define MZN_INT 284
-#define MZN_LET 285
-#define MZN_MAXIMIZE 286
-#define MZN_MINIMIZE 287
-#define MZN_OF 288
-#define MZN_SATISFY 289
-#define MZN_OUTPUT 290
-#define MZN_PREDICATE 291
-#define MZN_RECORD 292
-#define MZN_SET 293
-#define MZN_SOLVE 294
-#define MZN_STRING 295
-#define MZN_TEST 296
-#define MZN_THEN 297
-#define MZN_TUPLE 298
-#define MZN_TYPE 299
-#define MZN_UNDERSCORE 300
-#define MZN_VARIANT_RECORD 301
-#define MZN_WHERE 302
-#define MZN_LEFT_BRACKET 303
-#define MZN_LEFT_2D_BRACKET 304
-#define MZN_RIGHT_BRACKET 305
-#define MZN_RIGHT_2D_BRACKET 306
-#define UNKNOWN_CHAR 307
-#define PREC_ANNO 308
-#define MZN_EQUIV 309
-#define MZN_RIMPL 310
-#define MZN_IMPL 311
-#define MZN_XOR 312
-#define MZN_OR 313
-#define MZN_AND 314
-#define MZN_NQ 315
-#define MZN_EQ 316
-#define MZN_GQ 317
-#define MZN_LQ 318
-#define MZN_GR 319
-#define MZN_LE 320
-#define MZN_SUPERSET 321
-#define MZN_SUBSET 322
-#define MZN_IN 323
-#define MZN_SYMDIFF 324
-#define MZN_DIFF 325
-#define MZN_UNION 326
-#define MZN_DOTDOT 327
-#define MZN_MINUS 328
-#define MZN_PLUS 329
-#define MZN_INTERSECT 330
-#define MZN_MOD 331
-#define MZN_IDIV 332
-#define MZN_DIV 333
-#define MZN_MULT 334
-#define MZN_NOT 335
-#define MZN_COLONCOLON 336
-#define MZN_PLUSPLUS 337
-#define MZN_EQUIV_QUOTED 338
-#define MZN_IMPL_QUOTED 339
-#define MZN_RIMPL_QUOTED 340
-#define MZN_OR_QUOTED 341
-#define MZN_XOR_QUOTED 342
-#define MZN_AND_QUOTED 343
-#define MZN_LE_QUOTED 344
-#define MZN_GR_QUOTED 345
-#define MZN_LQ_QUOTED 346
-#define MZN_GQ_QUOTED 347
-#define MZN_EQ_QUOTED 348
-#define MZN_NQ_QUOTED 349
-#define MZN_IN_QUOTED 350
-#define MZN_SUBSET_QUOTED 351
-#define MZN_SUPERSET_QUOTED 352
-#define MZN_UNION_QUOTED 353
-#define MZN_DIFF_QUOTED 354
-#define MZN_SYMDIFF_QUOTED 355
-#define MZN_DOTDOT_QUOTED 356
-#define MZN_PLUS_QUOTED 357
-#define MZN_MINUS_QUOTED 358
-#define MZN_MULT_QUOTED 359
-#define MZN_DIV_QUOTED 360
-#define MZN_IDIV_QUOTED 361
-#define MZN_MOD_QUOTED 362
-#define MZN_INTERSECT_QUOTED 363
-#define MZN_NOT_QUOTED 364
-#define MZN_COLONCOLON_QUOTED 365
-#define MZN_PLUSPLUS_QUOTED 366
-
-
-
-
 /* Copy the first part of user declarations.  */
+
+/* Line 189 of yacc.c  */
 #line 36 "lib/parser.yxx"
 
 #define YYPARSE_PARAM parm
@@ -481,6 +257,9 @@ namespace MiniZinc {
 
 
 
+/* Line 189 of yacc.c  */
+#line 262 "lib/parser.tab.cpp"
+
 /* Enabling traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 1
@@ -499,10 +278,134 @@ namespace MiniZinc {
 # define YYTOKEN_TABLE 0
 #endif
 
+
+/* Tokens.  */
+#ifndef YYTOKENTYPE
+# define YYTOKENTYPE
+   /* Put the tokens into the symbol table, so that GDB and other debuggers
+      know about them.  */
+   enum yytokentype {
+     MZN_INTEGER_LITERAL = 258,
+     MZN_BOOL_LITERAL = 259,
+     MZN_FLOAT_LITERAL = 260,
+     MZN_IDENTIFIER = 261,
+     MZN_QUOTED_IDENTIFIER = 262,
+     MZN_STRING_LITERAL = 263,
+     MZN_TI_IDENTIFIER = 264,
+     MZN_VAR = 265,
+     MZN_PAR = 266,
+     MZN_SVAR = 267,
+     MZN_ANN = 268,
+     MZN_ANNOTATION = 269,
+     MZN_ANY = 270,
+     MZN_ARRAY = 271,
+     MZN_BOOL = 272,
+     MZN_CASE = 273,
+     MZN_CONSTRAINT = 274,
+     MZN_DEFAULT = 275,
+     MZN_ELSE = 276,
+     MZN_ELSEIF = 277,
+     MZN_ENDIF = 278,
+     MZN_ENUM = 279,
+     MZN_FLOAT = 280,
+     MZN_FUNCTION = 281,
+     MZN_IF = 282,
+     MZN_INCLUDE = 283,
+     MZN_INT = 284,
+     MZN_LET = 285,
+     MZN_MAXIMIZE = 286,
+     MZN_MINIMIZE = 287,
+     MZN_OF = 288,
+     MZN_SATISFY = 289,
+     MZN_OUTPUT = 290,
+     MZN_PREDICATE = 291,
+     MZN_RECORD = 292,
+     MZN_SET = 293,
+     MZN_SOLVE = 294,
+     MZN_STRING = 295,
+     MZN_TEST = 296,
+     MZN_THEN = 297,
+     MZN_TUPLE = 298,
+     MZN_TYPE = 299,
+     MZN_UNDERSCORE = 300,
+     MZN_VARIANT_RECORD = 301,
+     MZN_WHERE = 302,
+     MZN_LEFT_BRACKET = 303,
+     MZN_LEFT_2D_BRACKET = 304,
+     MZN_RIGHT_BRACKET = 305,
+     MZN_RIGHT_2D_BRACKET = 306,
+     UNKNOWN_CHAR = 307,
+     PREC_ANNO = 308,
+     MZN_EQUIV = 309,
+     MZN_RIMPL = 310,
+     MZN_IMPL = 311,
+     MZN_XOR = 312,
+     MZN_OR = 313,
+     MZN_AND = 314,
+     MZN_NQ = 315,
+     MZN_EQ = 316,
+     MZN_GQ = 317,
+     MZN_LQ = 318,
+     MZN_GR = 319,
+     MZN_LE = 320,
+     MZN_SUPERSET = 321,
+     MZN_SUBSET = 322,
+     MZN_IN = 323,
+     MZN_SYMDIFF = 324,
+     MZN_DIFF = 325,
+     MZN_UNION = 326,
+     MZN_DOTDOT = 327,
+     MZN_MINUS = 328,
+     MZN_PLUS = 329,
+     MZN_INTERSECT = 330,
+     MZN_MOD = 331,
+     MZN_IDIV = 332,
+     MZN_DIV = 333,
+     MZN_MULT = 334,
+     MZN_NOT = 335,
+     MZN_COLONCOLON = 336,
+     MZN_PLUSPLUS = 337,
+     MZN_EQUIV_QUOTED = 338,
+     MZN_IMPL_QUOTED = 339,
+     MZN_RIMPL_QUOTED = 340,
+     MZN_OR_QUOTED = 341,
+     MZN_XOR_QUOTED = 342,
+     MZN_AND_QUOTED = 343,
+     MZN_LE_QUOTED = 344,
+     MZN_GR_QUOTED = 345,
+     MZN_LQ_QUOTED = 346,
+     MZN_GQ_QUOTED = 347,
+     MZN_EQ_QUOTED = 348,
+     MZN_NQ_QUOTED = 349,
+     MZN_IN_QUOTED = 350,
+     MZN_SUBSET_QUOTED = 351,
+     MZN_SUPERSET_QUOTED = 352,
+     MZN_UNION_QUOTED = 353,
+     MZN_DIFF_QUOTED = 354,
+     MZN_SYMDIFF_QUOTED = 355,
+     MZN_DOTDOT_QUOTED = 356,
+     MZN_PLUS_QUOTED = 357,
+     MZN_MINUS_QUOTED = 358,
+     MZN_MULT_QUOTED = 359,
+     MZN_DIV_QUOTED = 360,
+     MZN_IDIV_QUOTED = 361,
+     MZN_MOD_QUOTED = 362,
+     MZN_INTERSECT_QUOTED = 363,
+     MZN_NOT_QUOTED = 364,
+     MZN_COLONCOLON_QUOTED = 365,
+     MZN_PLUSPLUS_QUOTED = 366
+   };
+#endif
+
+
+
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
+{
+
+/* Line 214 of yacc.c  */
 #line 224 "lib/parser.yxx"
-{ int iValue; char* sValue; bool bValue; double dValue;
+ int iValue; char* sValue; bool bValue; double dValue;
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
          std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
@@ -518,13 +421,15 @@ typedef union YYSTYPE
                    MiniZinc::Expression*>* expression_p;
          MiniZinc::Annotation* annotation;
          MiniZinc::Generators* generators;
-       }
-/* Line 193 of yacc.c.  */
-#line 524 "lib/parser.tab.cpp"
-	YYSTYPE;
+       
+
+
+/* Line 214 of yacc.c  */
+#line 429 "lib/parser.tab.cpp"
+} YYSTYPE;
+# define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
-# define YYSTYPE_IS_TRIVIAL 1
 #endif
 
 #if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
@@ -544,8 +449,8 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 
-/* Line 216 of yacc.c.  */
-#line 549 "lib/parser.tab.cpp"
+/* Line 264 of yacc.c  */
+#line 454 "lib/parser.tab.cpp"
 
 #ifdef short
 # undef short
@@ -595,7 +500,7 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
 
 #ifndef YY_
-# if defined YYENABLE_NLS && YYENABLE_NLS
+# if YYENABLE_NLS
 #  if ENABLE_NLS
 #   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
 #   define YY_(msgid) dgettext ("bison-runtime", msgid)
@@ -620,14 +525,14 @@ typedef short int yytype_int16;
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static int
-YYID (int i)
+YYID (int yyi)
 #else
 static int
-YYID (i)
-    int i;
+YYID (yyi)
+    int yyi;
 #endif
 {
-  return i;
+  return yyi;
 }
 #endif
 
@@ -709,9 +614,9 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  yytype_int16 yyss;
-  YYSTYPE yyvs;
-    YYLTYPE yyls;
+  yytype_int16 yyss_alloc;
+  YYSTYPE yyvs_alloc;
+  YYLTYPE yyls_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
@@ -746,12 +651,12 @@ union yyalloc
    elements in the stack, and YYPTR gives the new location of the
    stack.  Advance YYPTR to a properly aligned location for the next
    stack.  */
-# define YYSTACK_RELOCATE(Stack)					\
+# define YYSTACK_RELOCATE(Stack_alloc, Stack)				\
     do									\
       {									\
 	YYSIZE_T yynewbytes;						\
-	YYCOPY (&yyptr->Stack, Stack, yysize);				\
-	Stack = &yyptr->Stack;						\
+	YYCOPY (&yyptr->Stack_alloc, Stack, yysize);			\
+	Stack = &yyptr->Stack_alloc;					\
 	yynewbytes = yystacksize * sizeof (*Stack) + YYSTACK_GAP_MAXIMUM; \
 	yyptr += yynewbytes / sizeof (*yyptr);				\
       }									\
@@ -2024,7 +1929,7 @@ while (YYID (0))
    we won't break user code: when these are the locations we know.  */
 
 #ifndef YY_LOCATION_PRINT
-# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+# if YYLTYPE_IS_TRIVIAL
 #  define YY_LOCATION_PRINT(File, Loc)			\
      fprintf (File, "%d.%d-%d.%d",			\
 	      (Loc).first_line, (Loc).first_column,	\
@@ -2143,17 +2048,20 @@ yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp, parm)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_stack_print (yytype_int16 *bottom, yytype_int16 *top)
+yy_stack_print (yytype_int16 *yybottom, yytype_int16 *yytop)
 #else
 static void
-yy_stack_print (bottom, top)
-    yytype_int16 *bottom;
-    yytype_int16 *top;
+yy_stack_print (yybottom, yytop)
+    yytype_int16 *yybottom;
+    yytype_int16 *yytop;
 #endif
 {
   YYFPRINTF (stderr, "Stack now");
-  for (; bottom <= top; ++bottom)
-    YYFPRINTF (stderr, " %d", *bottom);
+  for (; yybottom <= yytop; yybottom++)
+    {
+      int yybot = *yybottom;
+      YYFPRINTF (stderr, " %d", yybot);
+    }
   YYFPRINTF (stderr, "\n");
 }
 
@@ -2189,11 +2097,11 @@ yy_reduce_print (yyvsp, yylsp, yyrule, parm)
   /* The symbols being reduced.  */
   for (yyi = 0; yyi < yynrhs; yyi++)
     {
-      fprintf (stderr, "   $%d = ", yyi + 1);
+      YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr, yyrhs[yyprhs[yyrule] + yyi],
 		       &(yyvsp[(yyi + 1) - (yynrhs)])
 		       , &(yylsp[(yyi + 1) - (yynrhs)])		       , parm);
-      fprintf (stderr, "\n");
+      YYFPRINTF (stderr, "\n");
     }
 }
 
@@ -2477,10 +2385,8 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, parm)
 	break;
     }
 }
-
 
 /* Prevent warnings from -Wmissing-prototypes.  */
-
 #ifdef YYPARSE_PARAM
 #if defined __STDC__ || defined __cplusplus
 int yyparse (void *YYPARSE_PARAM);
@@ -2499,10 +2405,9 @@ int yyparse ();
 
 
 
-
-/*----------.
-| yyparse.  |
-`----------*/
+/*-------------------------.
+| yyparse or yypush_parse.  |
+`-------------------------*/
 
 #ifdef YYPARSE_PARAM
 #if (defined __STDC__ || defined __C99__FUNC__ \
@@ -2526,24 +2431,59 @@ yyparse (parm)
 #endif
 #endif
 {
-  /* The look-ahead symbol.  */
+/* The lookahead symbol.  */
 int yychar;
 
-/* The semantic value of the look-ahead symbol.  */
+/* The semantic value of the lookahead symbol.  */
 YYSTYPE yylval;
 
-/* Number of syntax errors so far.  */
-int yynerrs;
-/* Location data for the look-ahead symbol.  */
+/* Location data for the lookahead symbol.  */
 YYLTYPE yylloc;
 
-  int yystate;
+    /* Number of syntax errors so far.  */
+    int yynerrs;
+
+    int yystate;
+    /* Number of tokens to shift before error messages enabled.  */
+    int yyerrstatus;
+
+    /* The stacks and their tools:
+       `yyss': related to states.
+       `yyvs': related to semantic values.
+       `yyls': related to locations.
+
+       Refer to the stacks thru separate pointers, to allow yyoverflow
+       to reallocate them elsewhere.  */
+
+    /* The state stack.  */
+    yytype_int16 yyssa[YYINITDEPTH];
+    yytype_int16 *yyss;
+    yytype_int16 *yyssp;
+
+    /* The semantic value stack.  */
+    YYSTYPE yyvsa[YYINITDEPTH];
+    YYSTYPE *yyvs;
+    YYSTYPE *yyvsp;
+
+    /* The location stack.  */
+    YYLTYPE yylsa[YYINITDEPTH];
+    YYLTYPE *yyls;
+    YYLTYPE *yylsp;
+
+    /* The locations where the error started and ended.  */
+    YYLTYPE yyerror_range[2];
+
+    YYSIZE_T yystacksize;
+
   int yyn;
   int yyresult;
-  /* Number of tokens to shift before error messages enabled.  */
-  int yyerrstatus;
-  /* Look-ahead token as an internal (translated) token number.  */
-  int yytoken = 0;
+  /* Lookahead token as an internal (translated) token number.  */
+  int yytoken;
+  /* The variables used to return semantic value and location from the
+     action routines.  */
+  YYSTYPE yyval;
+  YYLTYPE yyloc;
+
 #if YYERROR_VERBOSE
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
@@ -2551,74 +2491,51 @@ YYLTYPE yylloc;
   YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
 #endif
 
-  /* Three stacks and their tools:
-     `yyss': related to states,
-     `yyvs': related to semantic values,
-     `yyls': related to locations.
-
-     Refer to the stacks thru separate pointers, to allow yyoverflow
-     to reallocate them elsewhere.  */
-
-  /* The state stack.  */
-  yytype_int16 yyssa[YYINITDEPTH];
-  yytype_int16 *yyss = yyssa;
-  yytype_int16 *yyssp;
-
-  /* The semantic value stack.  */
-  YYSTYPE yyvsa[YYINITDEPTH];
-  YYSTYPE *yyvs = yyvsa;
-  YYSTYPE *yyvsp;
-
-  /* The location stack.  */
-  YYLTYPE yylsa[YYINITDEPTH];
-  YYLTYPE *yyls = yylsa;
-  YYLTYPE *yylsp;
-  /* The locations where the error started and ended.  */
-  YYLTYPE yyerror_range[2];
-
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
-
-  YYSIZE_T yystacksize = YYINITDEPTH;
-
-  /* The variables used to return semantic value and location from the
-     action routines.  */
-  YYSTYPE yyval;
-  YYLTYPE yyloc;
 
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
+
+  yytoken = 0;
+  yyss = yyssa;
+  yyvs = yyvsa;
+  yyls = yylsa;
+  yystacksize = YYINITDEPTH;
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
   yystate = 0;
   yyerrstatus = 0;
   yynerrs = 0;
-  yychar = YYEMPTY;		/* Cause a token to be read.  */
+  yychar = YYEMPTY; /* Cause a token to be read.  */
 
   /* Initialize stack pointers.
      Waste one element of value and location stack
      so that they stay on the same level as the state stack.
      The wasted elements are never initialized.  */
-
   yyssp = yyss;
   yyvsp = yyvs;
   yylsp = yyls;
-#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+
+#if YYLTYPE_IS_TRIVIAL
   /* Initialize the default location before parsing starts.  */
   yylloc.first_line   = yylloc.last_line   = 1;
-  yylloc.first_column = yylloc.last_column = 0;
+  yylloc.first_column = yylloc.last_column = 1;
 #endif
 
+/* User initialization code.  */
 
-  /* User initialization code.  */
+/* Line 1242 of yacc.c  */
 #line 246 "lib/parser.yxx"
 {
   yylloc.filename = static_cast<ParserState*>(parm)->model->filepath().ctxstr();
 }
-/* Line 1078 of yacc.c.  */
-#line 2621 "lib/parser.tab.cpp"
+
+/* Line 1242 of yacc.c  */
+#line 2537 "lib/parser.tab.cpp"
   yylsp[0] = yylloc;
+
   goto yysetstate;
 
 /*------------------------------------------------------------.
@@ -2655,6 +2572,7 @@ YYLTYPE yylloc;
 		    &yyvs1, yysize * sizeof (*yyvsp),
 		    &yyls1, yysize * sizeof (*yylsp),
 		    &yystacksize);
+
 	yyls = yyls1;
 	yyss = yyss1;
 	yyvs = yyvs1;
@@ -2676,9 +2594,9 @@ YYLTYPE yylloc;
 	  (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
 	if (! yyptr)
 	  goto yyexhaustedlab;
-	YYSTACK_RELOCATE (yyss);
-	YYSTACK_RELOCATE (yyvs);
-	YYSTACK_RELOCATE (yyls);
+	YYSTACK_RELOCATE (yyss_alloc, yyss);
+	YYSTACK_RELOCATE (yyvs_alloc, yyvs);
+	YYSTACK_RELOCATE (yyls_alloc, yyls);
 #  undef YYSTACK_RELOCATE
 	if (yyss1 != yyssa)
 	  YYSTACK_FREE (yyss1);
@@ -2699,6 +2617,9 @@ YYLTYPE yylloc;
 
   YYDPRINTF ((stderr, "Entering state %d\n", yystate));
 
+  if (yystate == YYFINAL)
+    YYACCEPT;
+
   goto yybackup;
 
 /*-----------.
@@ -2707,16 +2628,16 @@ YYLTYPE yylloc;
 yybackup:
 
   /* Do appropriate processing given the current state.  Read a
-     look-ahead token if we need one and don't already have one.  */
+     lookahead token if we need one and don't already have one.  */
 
-  /* First try to decide what to do without reference to look-ahead token.  */
+  /* First try to decide what to do without reference to lookahead token.  */
   yyn = yypact[yystate];
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-  /* Not known => get a look-ahead token if don't already have one.  */
+  /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid look-ahead symbol.  */
+  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token: "));
@@ -2748,20 +2669,16 @@ yybackup:
       goto yyreduce;
     }
 
-  if (yyn == YYFINAL)
-    YYACCEPT;
-
   /* Count tokens shifted since error; after three, turn off error
      status.  */
   if (yyerrstatus)
     yyerrstatus--;
 
-  /* Shift the look-ahead token.  */
+  /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
 
-  /* Discard the shifted token unless it is eof.  */
-  if (yychar != YYEOF)
-    yychar = YYEMPTY;
+  /* Discard the shifted token.  */
+  yychar = YYEMPTY;
 
   yystate = yyn;
   *++yyvsp = yylval;
@@ -2802,6 +2719,8 @@ yyreduce:
   switch (yyn)
     {
         case 5:
+
+/* Line 1455 of yacc.c  */
 #line 372 "lib/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2810,6 +2729,8 @@ yyreduce:
     break;
 
   case 6:
+
+/* Line 1455 of yacc.c  */
 #line 377 "lib/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2818,46 +2739,64 @@ yyreduce:
     break;
 
   case 9:
+
+/* Line 1455 of yacc.c  */
 #line 386 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"include") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 10:
+
+/* Line 1455 of yacc.c  */
 #line 388 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"variable declaration") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 12:
+
+/* Line 1455 of yacc.c  */
 #line 391 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"constraint") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 13:
+
+/* Line 1455 of yacc.c  */
 #line 393 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"solve") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 14:
+
+/* Line 1455 of yacc.c  */
 #line 395 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"output") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 15:
+
+/* Line 1455 of yacc.c  */
 #line 397 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 16:
+
+/* Line 1455 of yacc.c  */
 #line 399 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 17:
+
+/* Line 1455 of yacc.c  */
 #line 401 "lib/parser.yxx"
     { (yyval.item)=notInDatafile(&(yyloc),parm,"annotation") ? (yyvsp[(1) - (1)].item) : NULL; ;}
     break;
 
   case 18:
+
+/* Line 1455 of yacc.c  */
 #line 405 "lib/parser.yxx"
     { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find((yyvsp[(2) - (2)].sValue));
@@ -2882,6 +2821,8 @@ yyreduce:
     break;
 
   case 19:
+
+/* Line 1455 of yacc.c  */
 #line 428 "lib/parser.yxx"
     { (yyvsp[(1) - (2)].vardeclexpr)->annotate((yyvsp[(2) - (2)].annotation));
         (yyval.item) = VarDeclI::a(GETCTX(),(yyloc),(yyvsp[(1) - (2)].vardeclexpr));
@@ -2889,6 +2830,8 @@ yyreduce:
     break;
 
   case 20:
+
+/* Line 1455 of yacc.c  */
 #line 432 "lib/parser.yxx"
     { (yyvsp[(1) - (4)].vardeclexpr)->_e = (yyvsp[(4) - (4)].expression);
         (yyvsp[(1) - (4)].vardeclexpr)->annotate((yyvsp[(2) - (4)].annotation));
@@ -2897,6 +2840,8 @@ yyreduce:
     break;
 
   case 21:
+
+/* Line 1455 of yacc.c  */
 #line 439 "lib/parser.yxx"
     { (yyval.item) = AssignI::a(GETCTX(),(yyloc),(yyvsp[(1) - (3)].sValue),(yyvsp[(3) - (3)].expression));
         free((yyvsp[(1) - (3)].sValue));
@@ -2904,31 +2849,43 @@ yyreduce:
     break;
 
   case 22:
+
+/* Line 1455 of yacc.c  */
 #line 445 "lib/parser.yxx"
     { (yyval.item) = ConstraintI::a(GETCTX(),(yyloc),(yyvsp[(2) - (2)].expression));;}
     break;
 
   case 23:
+
+/* Line 1455 of yacc.c  */
 #line 449 "lib/parser.yxx"
     { (yyval.item) = SolveI::sat(GETCTX(),(yyloc),(yyvsp[(2) - (3)].annotation)); ;}
     break;
 
   case 24:
+
+/* Line 1455 of yacc.c  */
 #line 451 "lib/parser.yxx"
     { (yyval.item) = SolveI::min(GETCTX(),(yyloc),(yyvsp[(4) - (4)].expression), (yyvsp[(2) - (4)].annotation)); ;}
     break;
 
   case 25:
+
+/* Line 1455 of yacc.c  */
 #line 453 "lib/parser.yxx"
     { (yyval.item) = SolveI::max(GETCTX(),(yyloc),(yyvsp[(4) - (4)].expression), (yyvsp[(2) - (4)].annotation)); ;}
     break;
 
   case 26:
+
+/* Line 1455 of yacc.c  */
 #line 457 "lib/parser.yxx"
     { (yyval.item) = OutputI::a(GETCTX(),(yyloc),(yyvsp[(2) - (2)].expression));;}
     break;
 
   case 27:
+
+/* Line 1455 of yacc.c  */
 #line 461 "lib/parser.yxx"
     { (yyval.item) = FunctionI::a(GETCTX(),(yyloc),(yyvsp[(2) - (5)].sValue),TypeInst::a(GETCTX(),(yyloc),
                           Type::varbool()),*(yyvsp[(3) - (5)].vardeclexpr_v),(yyvsp[(5) - (5)].expression),(yyvsp[(4) - (5)].annotation));
@@ -2938,6 +2895,8 @@ yyreduce:
     break;
 
   case 28:
+
+/* Line 1455 of yacc.c  */
 #line 467 "lib/parser.yxx"
     { (yyval.item) = FunctionI::a(GETCTX(),(yyloc),(yyvsp[(2) - (5)].sValue),TypeInst::a(GETCTX(),(yyloc),
                           Type::parbool()),*(yyvsp[(3) - (5)].vardeclexpr_v),(yyvsp[(5) - (5)].expression),(yyvsp[(4) - (5)].annotation));
@@ -2947,6 +2906,8 @@ yyreduce:
     break;
 
   case 29:
+
+/* Line 1455 of yacc.c  */
 #line 475 "lib/parser.yxx"
     { (yyval.item) = FunctionI::a(GETCTX(),(yyloc),(yyvsp[(4) - (7)].sValue),(yyvsp[(2) - (7)].tiexpr),*(yyvsp[(5) - (7)].vardeclexpr_v),(yyvsp[(7) - (7)].expression),(yyvsp[(6) - (7)].annotation));
         free((yyvsp[(4) - (7)].sValue));
@@ -2955,6 +2916,8 @@ yyreduce:
     break;
 
   case 30:
+
+/* Line 1455 of yacc.c  */
 #line 480 "lib/parser.yxx"
     { (yyval.item) = FunctionI::a(GETCTX(),(yyloc),(yyvsp[(3) - (8)].sValue),(yyvsp[(1) - (8)].tiexpr),*(yyvsp[(5) - (8)].vardeclexpr_v),(yyvsp[(8) - (8)].expression),(yyvsp[(7) - (8)].annotation));
         free((yyvsp[(3) - (8)].sValue));
@@ -2963,6 +2926,8 @@ yyreduce:
     break;
 
   case 31:
+
+/* Line 1455 of yacc.c  */
 #line 487 "lib/parser.yxx"
     {
         TypeInst* ti=TypeInst::a(GETCTX(),(yylsp[(1) - (3)]),Type::ann());
@@ -2973,6 +2938,8 @@ yyreduce:
     break;
 
   case 32:
+
+/* Line 1455 of yacc.c  */
 #line 494 "lib/parser.yxx"
     { TypeInst* ti=TypeInst::a(GETCTX(),(yylsp[(1) - (5)]),Type::ann());
         (yyval.item) = FunctionI::a(GETCTX(),(yyloc),(yyvsp[(2) - (5)].sValue),ti,*(yyvsp[(3) - (5)].vardeclexpr_v),(yyvsp[(5) - (5)].expression),NULL);
@@ -2981,46 +2948,64 @@ yyreduce:
     break;
 
   case 33:
+
+/* Line 1455 of yacc.c  */
 #line 501 "lib/parser.yxx"
     { (yyval.expression)=NULL; ;}
     break;
 
   case 34:
+
+/* Line 1455 of yacc.c  */
 #line 503 "lib/parser.yxx"
     { (yyval.expression)=(yyvsp[(2) - (2)].expression); ;}
     break;
 
   case 35:
+
+/* Line 1455 of yacc.c  */
 #line 507 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); ;}
     break;
 
   case 36:
+
+/* Line 1455 of yacc.c  */
 #line 509 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=(yyvsp[(2) - (3)].vardeclexpr_v); ;}
     break;
 
   case 37:
+
+/* Line 1455 of yacc.c  */
 #line 511 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); ;}
     break;
 
   case 38:
+
+/* Line 1455 of yacc.c  */
 #line 514 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=(yyvsp[(1) - (2)].vardeclexpr_v); ;}
     break;
 
   case 39:
+
+/* Line 1455 of yacc.c  */
 #line 518 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); (yyval.vardeclexpr_v)->push_back((yyvsp[(1) - (1)].vardeclexpr)); ;}
     break;
 
   case 40:
+
+/* Line 1455 of yacc.c  */
 #line 520 "lib/parser.yxx"
     { (yyval.vardeclexpr_v)=(yyvsp[(1) - (3)].vardeclexpr_v); (yyvsp[(1) - (3)].vardeclexpr_v)->push_back((yyvsp[(3) - (3)].vardeclexpr)); ;}
     break;
 
   case 43:
+
+/* Line 1455 of yacc.c  */
 #line 526 "lib/parser.yxx"
     { (yyval.vardeclexpr) = VarDecl::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].tiexpr), (yyvsp[(3) - (3)].sValue));
         free((yyvsp[(3) - (3)].sValue));
@@ -3028,6 +3013,8 @@ yyreduce:
     break;
 
   case 45:
+
+/* Line 1455 of yacc.c  */
 #line 542 "lib/parser.yxx"
     {
         (yyval.tiexpr) = (yyvsp[(6) - (6)].tiexpr);
@@ -3037,41 +3024,57 @@ yyreduce:
     break;
 
   case 47:
+
+/* Line 1455 of yacc.c  */
 #line 552 "lib/parser.yxx"
     { (yyval.expression_v)=new std::vector<Expression*>; (yyval.expression_v)->push_back((yyvsp[(1) - (1)].expression)); ;}
     break;
 
   case 48:
+
+/* Line 1455 of yacc.c  */
 #line 554 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(1) - (3)].expression_v); (yyval.expression_v)->push_back((yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 49:
+
+/* Line 1455 of yacc.c  */
 #line 557 "lib/parser.yxx"
     { (yyval.expression)=(yyvsp[(1) - (1)].expression); ;}
     break;
 
   case 50:
+
+/* Line 1455 of yacc.c  */
 #line 559 "lib/parser.yxx"
     { (yyval.expression)=NULL; ;}
     break;
 
   case 51:
+
+/* Line 1455 of yacc.c  */
 #line 563 "lib/parser.yxx"
     { (yyval.expression) = Id::a(GETCTX(),(yylsp[(1) - (1)]),(yyvsp[(1) - (1)].sValue),NULL); free((yyvsp[(1) - (1)].sValue)); ;}
     break;
 
   case 52:
+
+/* Line 1455 of yacc.c  */
 #line 565 "lib/parser.yxx"
     { (yyval.expression) = BinOp::a(GETCTX(),(yyloc),(yyvsp[(1) - (3)].expression),BOT_DOTDOT,(yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 53:
+
+/* Line 1455 of yacc.c  */
 #line 567 "lib/parser.yxx"
     { (yyval.expression) = BinOp::a(GETCTX(),(yyloc),(yyvsp[(3) - (6)].expression),BOT_DOTDOT,(yyvsp[(5) - (6)].expression)); ;}
     break;
 
   case 54:
+
+/* Line 1455 of yacc.c  */
 #line 569 "lib/parser.yxx"
     { (yyval.expression) = SetLit::a(GETCTX(),(yylsp[(2) - (3)]),*(yyvsp[(2) - (3)].expression_v));
         delete (yyvsp[(2) - (3)].expression_v);
@@ -3079,31 +3082,43 @@ yyreduce:
     break;
 
   case 55:
+
+/* Line 1455 of yacc.c  */
 #line 575 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(1) - (1)].tiexpr); ;}
     break;
 
   case 56:
+
+/* Line 1455 of yacc.c  */
 #line 577 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(2) - (2)].tiexpr); ;}
     break;
 
   case 57:
+
+/* Line 1455 of yacc.c  */
 #line 579 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(2) - (2)].tiexpr); (yyval.tiexpr)->_type._ti = Type::TI_VAR; ;}
     break;
 
   case 58:
+
+/* Line 1455 of yacc.c  */
 #line 581 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(3) - (3)].tiexpr); (yyval.tiexpr)->_type._st = Type::ST_SET; ;}
     break;
 
   case 59:
+
+/* Line 1455 of yacc.c  */
 #line 583 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(4) - (4)].tiexpr); (yyval.tiexpr)->_type._st = Type::ST_SET; ;}
     break;
 
   case 60:
+
+/* Line 1455 of yacc.c  */
 #line 585 "lib/parser.yxx"
     { (yyval.tiexpr) = (yyvsp[(4) - (4)].tiexpr); (yyval.tiexpr)->_type._ti = Type::TI_VAR;
         (yyval.tiexpr)->_type._st = Type::ST_SET;
@@ -3111,31 +3126,43 @@ yyreduce:
     break;
 
   case 61:
+
+/* Line 1455 of yacc.c  */
 #line 593 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::parint()); ;}
     break;
 
   case 62:
+
+/* Line 1455 of yacc.c  */
 #line 595 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::parbool()); ;}
     break;
 
   case 63:
+
+/* Line 1455 of yacc.c  */
 #line 597 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::parfloat()); ;}
     break;
 
   case 64:
+
+/* Line 1455 of yacc.c  */
 #line 599 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::parstring()); ;}
     break;
 
   case 65:
+
+/* Line 1455 of yacc.c  */
 #line 601 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::ann()); ;}
     break;
 
   case 66:
+
+/* Line 1455 of yacc.c  */
 #line 603 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type::bot(),
                          SetLit::a(GETCTX(), (yyloc), std::vector<Expression*>())); 
@@ -3143,76 +3170,106 @@ yyreduce:
     break;
 
   case 67:
+
+/* Line 1455 of yacc.c  */
 #line 607 "lib/parser.yxx"
     { (yyval.tiexpr) = TypeInst::a(GETCTX(),(yyloc),Type(),(yyvsp[(1) - (1)].expression)); ;}
     break;
 
   case 69:
+
+/* Line 1455 of yacc.c  */
 #line 613 "lib/parser.yxx"
     { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[(1) - (1)].expression)); ;}
     break;
 
   case 70:
+
+/* Line 1455 of yacc.c  */
 #line 615 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(1) - (3)].expression_v); (yyval.expression_v)->push_back((yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 72:
+
+/* Line 1455 of yacc.c  */
 #line 622 "lib/parser.yxx"
     { (yyvsp[(1) - (3)].expression)->annotate(Annotation::a(GETCTX(),(yylsp[(3) - (3)]),(yyvsp[(3) - (3)].expression))); (yyval.expression)=(yyvsp[(1) - (3)].expression); ;}
     break;
 
   case 73:
+
+/* Line 1455 of yacc.c  */
 #line 624 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_PLUS, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 74:
+
+/* Line 1455 of yacc.c  */
 #line 626 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MINUS, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 75:
+
+/* Line 1455 of yacc.c  */
 #line 628 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MULT, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 76:
+
+/* Line 1455 of yacc.c  */
 #line 630 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_DIV, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 77:
+
+/* Line 1455 of yacc.c  */
 #line 632 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_IDIV, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 78:
+
+/* Line 1455 of yacc.c  */
 #line 634 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MOD, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 79:
+
+/* Line 1455 of yacc.c  */
 #line 636 "lib/parser.yxx"
     { (yyval.expression)=UnOp::a(GETCTX(),(yyloc), UOT_PLUS, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 80:
+
+/* Line 1455 of yacc.c  */
 #line 638 "lib/parser.yxx"
     { (yyval.expression)=UnOp::a(GETCTX(),(yyloc), UOT_MINUS, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 81:
+
+/* Line 1455 of yacc.c  */
 #line 642 "lib/parser.yxx"
     { (yyval.expression)=(yyvsp[(2) - (3)].expression); ;}
     break;
 
   case 82:
+
+/* Line 1455 of yacc.c  */
 #line 644 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(2) - (4)].expression), *(yyvsp[(4) - (4)].expression_v)); delete (yyvsp[(4) - (4)].expression_v); ;}
     break;
 
   case 83:
+
+/* Line 1455 of yacc.c  */
 #line 646 "lib/parser.yxx"
     { (yyval.expression)=Id::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].sValue), NULL);
         free((yyvsp[(1) - (1)].sValue));
@@ -3220,201 +3277,279 @@ yyreduce:
     break;
 
   case 84:
+
+/* Line 1455 of yacc.c  */
 #line 650 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), Id::a(GETCTX(),(yylsp[(1) - (2)]),(yyvsp[(1) - (2)].sValue),NULL), *(yyvsp[(2) - (2)].expression_v));
         free((yyvsp[(1) - (2)].sValue)); delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 85:
+
+/* Line 1455 of yacc.c  */
 #line 654 "lib/parser.yxx"
     { (yyval.expression)=BoolLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 86:
+
+/* Line 1455 of yacc.c  */
 #line 656 "lib/parser.yxx"
     { (yyval.expression)=IntLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 87:
+
+/* Line 1455 of yacc.c  */
 #line 658 "lib/parser.yxx"
     { (yyval.expression)=FloatLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].dValue)); ;}
     break;
 
   case 88:
+
+/* Line 1455 of yacc.c  */
 #line 660 "lib/parser.yxx"
     { (yyval.expression)=StringLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].sValue)); free((yyvsp[(1) - (1)].sValue)); ;}
     break;
 
   case 90:
+
+/* Line 1455 of yacc.c  */
 #line 663 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 92:
+
+/* Line 1455 of yacc.c  */
 #line 667 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 94:
+
+/* Line 1455 of yacc.c  */
 #line 671 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 96:
+
+/* Line 1455 of yacc.c  */
 #line 675 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(),(yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 100:
+
+/* Line 1455 of yacc.c  */
 #line 685 "lib/parser.yxx"
     { (yyvsp[(1) - (3)].expression)->annotate(Annotation::a(GETCTX(),(yylsp[(3) - (3)]),(yyvsp[(3) - (3)].expression))); (yyval.expression)=(yyvsp[(1) - (3)].expression); ;}
     break;
 
   case 101:
+
+/* Line 1455 of yacc.c  */
 #line 687 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_EQUIV, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 102:
+
+/* Line 1455 of yacc.c  */
 #line 689 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_IMPL, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 103:
+
+/* Line 1455 of yacc.c  */
 #line 691 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_RIMPL, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 104:
+
+/* Line 1455 of yacc.c  */
 #line 693 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_OR, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 105:
+
+/* Line 1455 of yacc.c  */
 #line 695 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_XOR, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 106:
+
+/* Line 1455 of yacc.c  */
 #line 697 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_AND, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 107:
+
+/* Line 1455 of yacc.c  */
 #line 699 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_LE, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 108:
+
+/* Line 1455 of yacc.c  */
 #line 701 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_GR, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 109:
+
+/* Line 1455 of yacc.c  */
 #line 703 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_LQ, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 110:
+
+/* Line 1455 of yacc.c  */
 #line 705 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_GQ, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 111:
+
+/* Line 1455 of yacc.c  */
 #line 707 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_EQ, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 112:
+
+/* Line 1455 of yacc.c  */
 #line 709 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_NQ, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 113:
+
+/* Line 1455 of yacc.c  */
 #line 711 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_IN, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 114:
+
+/* Line 1455 of yacc.c  */
 #line 713 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_SUBSET, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 115:
+
+/* Line 1455 of yacc.c  */
 #line 715 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_SUPERSET, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 116:
+
+/* Line 1455 of yacc.c  */
 #line 717 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_UNION, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 117:
+
+/* Line 1455 of yacc.c  */
 #line 719 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_DIFF, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 118:
+
+/* Line 1455 of yacc.c  */
 #line 721 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_SYMDIFF, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 119:
+
+/* Line 1455 of yacc.c  */
 #line 723 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(), (yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 120:
+
+/* Line 1455 of yacc.c  */
 #line 725 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(), (yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression)); ;}
     break;
 
   case 121:
+
+/* Line 1455 of yacc.c  */
 #line 727 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_INTERSECT, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 122:
+
+/* Line 1455 of yacc.c  */
 #line 729 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_PLUSPLUS, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 123:
+
+/* Line 1455 of yacc.c  */
 #line 731 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_PLUS, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 124:
+
+/* Line 1455 of yacc.c  */
 #line 733 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MINUS, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 125:
+
+/* Line 1455 of yacc.c  */
 #line 735 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MULT, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 126:
+
+/* Line 1455 of yacc.c  */
 #line 737 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_DIV, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 127:
+
+/* Line 1455 of yacc.c  */
 #line 739 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_IDIV, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 128:
+
+/* Line 1455 of yacc.c  */
 #line 741 "lib/parser.yxx"
     { (yyval.expression)=BinOp::a(GETCTX(),(yyloc), (yyvsp[(1) - (3)].expression), BOT_MOD, (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 129:
+
+/* Line 1455 of yacc.c  */
 #line 743 "lib/parser.yxx"
     { vector<Expression*> args;
         args.push_back((yyvsp[(1) - (3)].expression)); args.push_back((yyvsp[(3) - (3)].expression));
@@ -3424,112 +3559,154 @@ yyreduce:
     break;
 
   case 130:
+
+/* Line 1455 of yacc.c  */
 #line 749 "lib/parser.yxx"
     { (yyval.expression)=UnOp::a(GETCTX(), (yyloc), UOT_NOT, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 131:
+
+/* Line 1455 of yacc.c  */
 #line 751 "lib/parser.yxx"
     { (yyval.expression)=UnOp::a(GETCTX(), (yyloc), UOT_PLUS, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 132:
+
+/* Line 1455 of yacc.c  */
 #line 753 "lib/parser.yxx"
     { (yyval.expression)=UnOp::a(GETCTX(), (yyloc), UOT_MINUS, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 133:
+
+/* Line 1455 of yacc.c  */
 #line 757 "lib/parser.yxx"
     { (yyval.expression)=(yyvsp[(2) - (3)].expression); ;}
     break;
 
   case 134:
+
+/* Line 1455 of yacc.c  */
 #line 759 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(2) - (4)].expression), *(yyvsp[(4) - (4)].expression_v)); delete (yyvsp[(4) - (4)].expression_v); ;}
     break;
 
   case 135:
+
+/* Line 1455 of yacc.c  */
 #line 761 "lib/parser.yxx"
     { (yyval.expression)=Id::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].sValue), NULL); free((yyvsp[(1) - (1)].sValue)); ;}
     break;
 
   case 136:
+
+/* Line 1455 of yacc.c  */
 #line 763 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), Id::a(GETCTX(), (yylsp[(1) - (2)]),(yyvsp[(1) - (2)].sValue),NULL), *(yyvsp[(2) - (2)].expression_v));
         free((yyvsp[(1) - (2)].sValue)); delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 137:
+
+/* Line 1455 of yacc.c  */
 #line 766 "lib/parser.yxx"
     { (yyval.expression)=AnonVar::a(GETCTX(),(yyloc)); ;}
     break;
 
   case 138:
+
+/* Line 1455 of yacc.c  */
 #line 768 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), AnonVar::a(GETCTX(), (yyloc)), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 139:
+
+/* Line 1455 of yacc.c  */
 #line 771 "lib/parser.yxx"
     { (yyval.expression)=BoolLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 140:
+
+/* Line 1455 of yacc.c  */
 #line 773 "lib/parser.yxx"
     { (yyval.expression)=IntLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 141:
+
+/* Line 1455 of yacc.c  */
 #line 775 "lib/parser.yxx"
     { (yyval.expression)=FloatLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].dValue)); ;}
     break;
 
   case 142:
+
+/* Line 1455 of yacc.c  */
 #line 777 "lib/parser.yxx"
     { (yyval.expression)=StringLit::a(GETCTX(), (yyloc), (yyvsp[(1) - (1)].sValue)); free((yyvsp[(1) - (1)].sValue)); ;}
     break;
 
   case 146:
+
+/* Line 1455 of yacc.c  */
 #line 782 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 148:
+
+/* Line 1455 of yacc.c  */
 #line 786 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 150:
+
+/* Line 1455 of yacc.c  */
 #line 790 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 152:
+
+/* Line 1455 of yacc.c  */
 #line 794 "lib/parser.yxx"
     { (yyval.expression)=ArrayAccess::a(GETCTX(), (yyloc), (yyvsp[(1) - (2)].expression), *(yyvsp[(2) - (2)].expression_v));
         delete (yyvsp[(2) - (2)].expression_v); ;}
     break;
 
   case 155:
+
+/* Line 1455 of yacc.c  */
 #line 801 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(2) - (3)].expression_v); ;}
     break;
 
   case 156:
+
+/* Line 1455 of yacc.c  */
 #line 805 "lib/parser.yxx"
     { (yyval.expression) = SetLit::a(GETCTX(), (yyloc), std::vector<Expression*>()); ;}
     break;
 
   case 157:
+
+/* Line 1455 of yacc.c  */
 #line 807 "lib/parser.yxx"
     { (yyval.expression) = SetLit::a(GETCTX(), (yyloc), *(yyvsp[(2) - (3)].expression_v)); delete (yyvsp[(2) - (3)].expression_v); ;}
     break;
 
   case 158:
+
+/* Line 1455 of yacc.c  */
 #line 811 "lib/parser.yxx"
     { (yyval.expression) = Comprehension::a(GETCTX(), (yyloc), (yyvsp[(2) - (5)].expression), *(yyvsp[(4) - (5)].generators), true);
         delete (yyvsp[(4) - (5)].generators);
@@ -3537,51 +3714,71 @@ yyreduce:
     break;
 
   case 159:
+
+/* Line 1455 of yacc.c  */
 #line 817 "lib/parser.yxx"
     { (yyval.generators)=new Generators; (yyval.generators)->_g = *(yyvsp[(1) - (1)].generator_v); (yyval.generators)->_w = NULL; delete (yyvsp[(1) - (1)].generator_v); ;}
     break;
 
   case 160:
+
+/* Line 1455 of yacc.c  */
 #line 819 "lib/parser.yxx"
     { (yyval.generators)=new Generators; (yyval.generators)->_g = *(yyvsp[(1) - (3)].generator_v); (yyval.generators)->_w = (yyvsp[(3) - (3)].expression); delete (yyvsp[(1) - (3)].generator_v); ;}
     break;
 
   case 162:
+
+/* Line 1455 of yacc.c  */
 #line 825 "lib/parser.yxx"
     { (yyval.generator_v)=new std::vector<Generator*>; (yyval.generator_v)->push_back((yyvsp[(1) - (1)].generator)); ;}
     break;
 
   case 163:
+
+/* Line 1455 of yacc.c  */
 #line 827 "lib/parser.yxx"
     { (yyval.generator_v)=(yyvsp[(1) - (3)].generator_v); (yyval.generator_v)->push_back((yyvsp[(3) - (3)].generator)); ;}
     break;
 
   case 164:
+
+/* Line 1455 of yacc.c  */
 #line 831 "lib/parser.yxx"
     { (yyval.generator)=Generator::a(GETCTX(),*(yyvsp[(1) - (3)].string_v),(yyvsp[(3) - (3)].expression)); delete (yyvsp[(1) - (3)].string_v); ;}
     break;
 
   case 166:
+
+/* Line 1455 of yacc.c  */
 #line 837 "lib/parser.yxx"
     { (yyval.string_v)=new std::vector<std::string>; (yyval.string_v)->push_back((yyvsp[(1) - (1)].sValue)); free((yyvsp[(1) - (1)].sValue)); ;}
     break;
 
   case 167:
+
+/* Line 1455 of yacc.c  */
 #line 839 "lib/parser.yxx"
     { (yyval.string_v)=(yyvsp[(1) - (3)].string_v); (yyval.string_v)->push_back((yyvsp[(3) - (3)].sValue)); free((yyvsp[(3) - (3)].sValue)); ;}
     break;
 
   case 168:
+
+/* Line 1455 of yacc.c  */
 #line 843 "lib/parser.yxx"
     { (yyval.expression)=ArrayLit::a(GETCTX(), (yyloc), std::vector<MiniZinc::Expression*>()); ;}
     break;
 
   case 169:
+
+/* Line 1455 of yacc.c  */
 #line 845 "lib/parser.yxx"
     { (yyval.expression)=ArrayLit::a(GETCTX(), (yyloc), *(yyvsp[(2) - (3)].expression_v)); delete (yyvsp[(2) - (3)].expression_v); ;}
     break;
 
   case 170:
+
+/* Line 1455 of yacc.c  */
 #line 849 "lib/parser.yxx"
     { (yyval.expression)=ArrayLit::a(GETCTX(), (yyloc), *(yyvsp[(2) - (3)].expression_vv));
         for (unsigned int i=1; i<(yyvsp[(2) - (3)].expression_vv)->size(); i++)
@@ -3592,6 +3789,8 @@ yyreduce:
     break;
 
   case 171:
+
+/* Line 1455 of yacc.c  */
 #line 856 "lib/parser.yxx"
     { (yyval.expression)=ArrayLit::a(GETCTX(), (yyloc), *(yyvsp[(2) - (4)].expression_vv));
         for (unsigned int i=1; i<(yyvsp[(2) - (4)].expression_vv)->size(); i++)
@@ -3602,6 +3801,8 @@ yyreduce:
     break;
 
   case 172:
+
+/* Line 1455 of yacc.c  */
 #line 865 "lib/parser.yxx"
     { (yyval.expression_vv)=new std::vector<std::vector<MiniZinc::Expression*> >;
         (yyval.expression_vv)->push_back(*(yyvsp[(1) - (1)].expression_v));
@@ -3610,11 +3811,15 @@ yyreduce:
     break;
 
   case 173:
+
+/* Line 1455 of yacc.c  */
 #line 870 "lib/parser.yxx"
     { (yyval.expression_vv)=(yyvsp[(1) - (3)].expression_vv); (yyval.expression_vv)->push_back(*(yyvsp[(3) - (3)].expression_v)); delete (yyvsp[(3) - (3)].expression_v); ;}
     break;
 
   case 174:
+
+/* Line 1455 of yacc.c  */
 #line 874 "lib/parser.yxx"
     { (yyval.expression)=Comprehension::a(GETCTX(), (yyloc), (yyvsp[(2) - (5)].expression), *(yyvsp[(4) - (5)].generators), false);
         delete (yyvsp[(4) - (5)].generators);
@@ -3622,6 +3827,8 @@ yyreduce:
     break;
 
   case 175:
+
+/* Line 1455 of yacc.c  */
 #line 880 "lib/parser.yxx"
     {
         std::vector<ITE::IfThen> iexps;
@@ -3635,151 +3842,211 @@ yyreduce:
     break;
 
   case 176:
+
+/* Line 1455 of yacc.c  */
 #line 891 "lib/parser.yxx"
     { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; ;}
     break;
 
   case 177:
+
+/* Line 1455 of yacc.c  */
 #line 893 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(1) - (5)].expression_v); (yyval.expression_v)->push_back((yyvsp[(3) - (5)].expression)); (yyval.expression_v)->push_back((yyvsp[(5) - (5)].expression)); ;}
     break;
 
   case 178:
+
+/* Line 1455 of yacc.c  */
 #line 897 "lib/parser.yxx"
     { (yyval.iValue)=BOT_EQUIV; ;}
     break;
 
   case 179:
+
+/* Line 1455 of yacc.c  */
 #line 899 "lib/parser.yxx"
     { (yyval.iValue)=BOT_IMPL; ;}
     break;
 
   case 180:
+
+/* Line 1455 of yacc.c  */
 #line 901 "lib/parser.yxx"
     { (yyval.iValue)=BOT_RIMPL; ;}
     break;
 
   case 181:
+
+/* Line 1455 of yacc.c  */
 #line 903 "lib/parser.yxx"
     { (yyval.iValue)=BOT_OR; ;}
     break;
 
   case 182:
+
+/* Line 1455 of yacc.c  */
 #line 905 "lib/parser.yxx"
     { (yyval.iValue)=BOT_XOR; ;}
     break;
 
   case 183:
+
+/* Line 1455 of yacc.c  */
 #line 907 "lib/parser.yxx"
     { (yyval.iValue)=BOT_AND; ;}
     break;
 
   case 184:
+
+/* Line 1455 of yacc.c  */
 #line 909 "lib/parser.yxx"
     { (yyval.iValue)=BOT_LE; ;}
     break;
 
   case 185:
+
+/* Line 1455 of yacc.c  */
 #line 911 "lib/parser.yxx"
     { (yyval.iValue)=BOT_GR; ;}
     break;
 
   case 186:
+
+/* Line 1455 of yacc.c  */
 #line 913 "lib/parser.yxx"
     { (yyval.iValue)=BOT_LQ; ;}
     break;
 
   case 187:
+
+/* Line 1455 of yacc.c  */
 #line 915 "lib/parser.yxx"
     { (yyval.iValue)=BOT_GQ; ;}
     break;
 
   case 188:
+
+/* Line 1455 of yacc.c  */
 #line 917 "lib/parser.yxx"
     { (yyval.iValue)=BOT_EQ; ;}
     break;
 
   case 189:
+
+/* Line 1455 of yacc.c  */
 #line 919 "lib/parser.yxx"
     { (yyval.iValue)=BOT_NQ; ;}
     break;
 
   case 190:
+
+/* Line 1455 of yacc.c  */
 #line 921 "lib/parser.yxx"
     { (yyval.iValue)=BOT_IN; ;}
     break;
 
   case 191:
+
+/* Line 1455 of yacc.c  */
 #line 923 "lib/parser.yxx"
     { (yyval.iValue)=BOT_SUBSET; ;}
     break;
 
   case 192:
+
+/* Line 1455 of yacc.c  */
 #line 925 "lib/parser.yxx"
     { (yyval.iValue)=BOT_SUPERSET; ;}
     break;
 
   case 193:
+
+/* Line 1455 of yacc.c  */
 #line 927 "lib/parser.yxx"
     { (yyval.iValue)=BOT_UNION; ;}
     break;
 
   case 194:
+
+/* Line 1455 of yacc.c  */
 #line 929 "lib/parser.yxx"
     { (yyval.iValue)=BOT_DIFF; ;}
     break;
 
   case 195:
+
+/* Line 1455 of yacc.c  */
 #line 931 "lib/parser.yxx"
     { (yyval.iValue)=BOT_SYMDIFF; ;}
     break;
 
   case 196:
+
+/* Line 1455 of yacc.c  */
 #line 933 "lib/parser.yxx"
     { (yyval.iValue)=BOT_PLUS; ;}
     break;
 
   case 197:
+
+/* Line 1455 of yacc.c  */
 #line 935 "lib/parser.yxx"
     { (yyval.iValue)=BOT_MINUS; ;}
     break;
 
   case 198:
+
+/* Line 1455 of yacc.c  */
 #line 937 "lib/parser.yxx"
     { (yyval.iValue)=BOT_MULT; ;}
     break;
 
   case 199:
+
+/* Line 1455 of yacc.c  */
 #line 939 "lib/parser.yxx"
     { (yyval.iValue)=BOT_DIV; ;}
     break;
 
   case 200:
+
+/* Line 1455 of yacc.c  */
 #line 941 "lib/parser.yxx"
     { (yyval.iValue)=BOT_IDIV; ;}
     break;
 
   case 201:
+
+/* Line 1455 of yacc.c  */
 #line 943 "lib/parser.yxx"
     { (yyval.iValue)=BOT_MOD; ;}
     break;
 
   case 202:
+
+/* Line 1455 of yacc.c  */
 #line 945 "lib/parser.yxx"
     { (yyval.iValue)=BOT_INTERSECT; ;}
     break;
 
   case 203:
+
+/* Line 1455 of yacc.c  */
 #line 947 "lib/parser.yxx"
     { (yyval.iValue)=BOT_PLUSPLUS; ;}
     break;
 
   case 204:
+
+/* Line 1455 of yacc.c  */
 #line 949 "lib/parser.yxx"
     { (yyval.iValue)=-1; ;}
     break;
 
   case 205:
+
+/* Line 1455 of yacc.c  */
 #line 953 "lib/parser.yxx"
     { if ((yyvsp[(1) - (6)].iValue)==-1) {
           (yyval.expression)=NULL;
@@ -3791,6 +4058,8 @@ yyreduce:
     break;
 
   case 206:
+
+/* Line 1455 of yacc.c  */
 #line 961 "lib/parser.yxx"
     { int uot=-1;
         switch ((yyvsp[(1) - (4)].iValue)) {
@@ -3815,11 +4084,15 @@ yyreduce:
     break;
 
   case 207:
+
+/* Line 1455 of yacc.c  */
 #line 984 "lib/parser.yxx"
     { (yyval.expression)=Call::a(GETCTX(), (yyloc), (yyvsp[(1) - (3)].sValue), std::vector<Expression*>()); free((yyvsp[(1) - (3)].sValue)); ;}
     break;
 
   case 209:
+
+/* Line 1455 of yacc.c  */
 #line 987 "lib/parser.yxx"
     { 
         if ((yyvsp[(3) - (4)].expression_p)->second) {
@@ -3834,6 +4107,8 @@ yyreduce:
     break;
 
   case 210:
+
+/* Line 1455 of yacc.c  */
 #line 998 "lib/parser.yxx"
     { 
         vector<Generator*> gens;
@@ -3874,6 +4149,8 @@ yyreduce:
     break;
 
   case 211:
+
+/* Line 1455 of yacc.c  */
 #line 1037 "lib/parser.yxx"
     { (yyval.expression_p)=new pair<vector<Expression*>,Expression*>;
         (yyval.expression_p)->first=*(yyvsp[(1) - (1)].expression_v); (yyval.expression_p)->second=NULL;
@@ -3882,6 +4159,8 @@ yyreduce:
     break;
 
   case 212:
+
+/* Line 1455 of yacc.c  */
 #line 1042 "lib/parser.yxx"
     { (yyval.expression_p)=new pair<vector<Expression*>,Expression*>;
         (yyval.expression_p)->first=*(yyvsp[(1) - (3)].expression_v); (yyval.expression_p)->second=(yyvsp[(3) - (3)].expression);
@@ -3890,21 +4169,29 @@ yyreduce:
     break;
 
   case 213:
+
+/* Line 1455 of yacc.c  */
 #line 1049 "lib/parser.yxx"
     { (yyval.expression)=Let::a(GETCTX(), (yyloc), *(yyvsp[(3) - (6)].expression_v), (yyvsp[(6) - (6)].expression)); delete (yyvsp[(3) - (6)].expression_v); ;}
     break;
 
   case 214:
+
+/* Line 1455 of yacc.c  */
 #line 1051 "lib/parser.yxx"
     { (yyval.expression)=Let::a(GETCTX(), (yyloc), *(yyvsp[(3) - (7)].expression_v), (yyvsp[(7) - (7)].expression)); delete (yyvsp[(3) - (7)].expression_v); ;}
     break;
 
   case 215:
+
+/* Line 1455 of yacc.c  */
 #line 1071 "lib/parser.yxx"
     { (yyval.expression_v)=new vector<Expression*>; (yyval.expression_v)->push_back((yyvsp[(1) - (1)].vardeclexpr)); ;}
     break;
 
   case 216:
+
+/* Line 1455 of yacc.c  */
 #line 1073 "lib/parser.yxx"
     { (yyval.expression_v)=new vector<Expression*>;
         ConstraintI* ce = (yyvsp[(1) - (1)].item)->cast<ConstraintI>();
@@ -3914,11 +4201,15 @@ yyreduce:
     break;
 
   case 217:
+
+/* Line 1455 of yacc.c  */
 #line 1079 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(1) - (3)].expression_v); (yyval.expression_v)->push_back((yyvsp[(3) - (3)].vardeclexpr)); ;}
     break;
 
   case 218:
+
+/* Line 1455 of yacc.c  */
 #line 1081 "lib/parser.yxx"
     { (yyval.expression_v)=(yyvsp[(1) - (3)].expression_v);
         ConstraintI* ce = (yyvsp[(3) - (3)].item)->cast<ConstraintI>();
@@ -3928,6 +4219,8 @@ yyreduce:
     break;
 
   case 221:
+
+/* Line 1455 of yacc.c  */
 #line 1091 "lib/parser.yxx"
     { (yyval.vardeclexpr) = (yyvsp[(1) - (2)].vardeclexpr);
         (yyval.vardeclexpr)->annotate((yyvsp[(2) - (2)].annotation));
@@ -3935,6 +4228,8 @@ yyreduce:
     break;
 
   case 222:
+
+/* Line 1455 of yacc.c  */
 #line 1095 "lib/parser.yxx"
     { (yyvsp[(1) - (4)].vardeclexpr)->_e = (yyvsp[(4) - (4)].expression);
         (yyval.vardeclexpr) = (yyvsp[(1) - (4)].vardeclexpr);
@@ -3944,23 +4239,30 @@ yyreduce:
     break;
 
   case 223:
+
+/* Line 1455 of yacc.c  */
 #line 1103 "lib/parser.yxx"
     { (yyval.annotation)=NULL; ;}
     break;
 
   case 225:
+
+/* Line 1455 of yacc.c  */
 #line 1108 "lib/parser.yxx"
     { (yyval.annotation)=Annotation::a(GETCTX(), (yylsp[(2) - (2)]), (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 226:
+
+/* Line 1455 of yacc.c  */
 #line 1110 "lib/parser.yxx"
     { (yyval.annotation)=(yyvsp[(1) - (3)].annotation); (yyval.annotation)->merge(Annotation::a(GETCTX(), (yylsp[(3) - (3)]), (yyvsp[(3) - (3)].expression))); ;}
     break;
 
 
-/* Line 1267 of yacc.c.  */
-#line 3964 "lib/parser.tab.cpp"
+
+/* Line 1455 of yacc.c  */
+#line 4266 "lib/parser.tab.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -4036,7 +4338,7 @@ yyerrlab:
 
   if (yyerrstatus == 3)
     {
-      /* If just tried and failed to reuse look-ahead token after an
+      /* If just tried and failed to reuse lookahead token after an
 	 error, discard it.  */
 
       if (yychar <= YYEOF)
@@ -4053,7 +4355,7 @@ yyerrlab:
 	}
     }
 
-  /* Else will try to reuse look-ahead token after shifting the error
+  /* Else will try to reuse lookahead token after shifting the error
      token.  */
   goto yyerrlab1;
 
@@ -4111,14 +4413,11 @@ yyerrlab1:
       YY_STACK_PRINT (yyss, yyssp);
     }
 
-  if (yyn == YYFINAL)
-    YYACCEPT;
-
   *++yyvsp = yylval;
 
   yyerror_range[1] = yylloc;
   /* Using YYLLOC is tempting, but would change the location of
-     the look-ahead.  YYLOC is available though.  */
+     the lookahead.  YYLOC is available though.  */
   YYLLOC_DEFAULT (yyloc, (yyerror_range - 1), 2);
   *++yylsp = yyloc;
 
@@ -4143,7 +4442,7 @@ yyabortlab:
   yyresult = 1;
   goto yyreturn;
 
-#ifndef yyoverflow
+#if !defined(yyoverflow) || YYERROR_VERBOSE
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
@@ -4154,7 +4453,7 @@ yyexhaustedlab:
 #endif
 
 yyreturn:
-  if (yychar != YYEOF && yychar != YYEMPTY)
+  if (yychar != YYEMPTY)
      yydestruct ("Cleanup: discarding lookahead",
 		 yytoken, &yylval, &yylloc, parm);
   /* Do not reclaim the symbols of the rule which action triggered
