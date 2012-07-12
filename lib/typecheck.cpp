@@ -72,6 +72,8 @@ namespace MiniZinc {
     void run(Expression* e) {
       if (e==NULL)
         return;
+      if (e->_ann)
+        run(e->_ann);
       switch (e->_eid) {
       case Expression::E_INTLIT:
       case Expression::E_FLOATLIT:
