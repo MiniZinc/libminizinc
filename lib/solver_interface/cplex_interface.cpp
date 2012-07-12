@@ -2,14 +2,14 @@
 #include <minizinc/solver_interface/cplex_interface.h>
 #include <ilcplex/ilocplex.h>
 namespace MiniZinc {
-
-  void p_int_lin(SolverInterface& si, const Call* c,
-		 CplexInterface::LIN_CON_TYPE lt){
+  template<typename T, typename S>
+  void p_lin(SolverInterface& si, const Call* c,
+	     CplexInterface::LIN_CON_TYPE lt){
     IloModel* model = (IloModel*)(si.getModel());
 
     CtxVec<Expression*> *coeff = ((*c->_args)[0]->cast<ArrayLit>()->_v);
     CtxVec<Expression*> *vars =  ((*c->_args)[1]->cast<ArrayLit>()->_v);
-    int res = (*c->_args)[2]->cast<IntLit>()->_v;
+    T res = (*c->_args)[2]->cast<S>()->_v;
 
     IloNum lb,ub;
     lb = -IloInfinity;
@@ -20,7 +20,7 @@ namespace MiniZinc {
     }
     IloRange range(model->getEnv(),lb,ub);
     for(unsigned int i = 0; i < coeff->size(); i++){
-      int co = ((*coeff)[i]->cast<IntLit>())->_v;
+      T co = ((*coeff)[i]->cast<S>())->_v;
 
       IloNumVar* v = (IloNumVar*)(si.resolveVar(si,(*vars)[i]));
       range.setLinearCoef(*v,co);
@@ -29,8 +29,27 @@ namespace MiniZinc {
     model->add(range);
   }
 
+  void p_int_lin(SolverInterface& si, const Call* c,
+		 CplexInterface::LIN_CON_TYPE lt){
+    p_lin<int,IntLit>(si,c,lt);
+  }
+  void p_int_lin_lq(SolverInterface& si, const Call* c){
+    p_int_lin(si,c,CplexInterface::LQ);
+  }
+  void p_float_lin(SolverInterface& si, const Call* c,
+		   CplexInterface::LIN_CON_TYPE lt){
+    p_lin<float,FloatLit>(si,c,lt);
+  }
+  void p_float_lin_lq(SolverInterface& si, const Call* c){
+    p_float_lin(si,c,CplexInterface::LQ);
+  }
+ 
+  CplexInterface::CplexInterface() {
+    model = new IloModel(env);
+    addConstraintMapping(std::string("float_lin_le"),p_float_lin_lq);
+    addConstraintMapping(std::string("int_lin_lq"),p_int_lin_lq);
+  }
   void* CplexInterface::resolveVar(SolverInterface& si, Expression* e){
-    IloNumVar* v;
     if(e->isa<Id>()){
       return si.lookupVar(e->cast<Id>()->_v.str());
     }else if(e->isa<ArrayAccess>()){
@@ -39,11 +58,13 @@ namespace MiniZinc {
 	static_cast<IloNumVarArray*>(resolveVar(si,aa->_v));
       int index = (*aa->_idx)[0]->cast<IntLit>()->_v;
       return (void*)(&((*inva)[index]));
+    }else{
+      std::cerr << "Variables should be identificators or array accesses."
+		<< std::endl;
+      return NULL;
     }
   }
-  void p_int_lin_lq(SolverInterface& si, const Call* c){
-    p_int_lin(si,c,CplexInterface::LQ);
-  }
+ 
   void CplexInterface::solve(SolveI* s){
     if(s->_st != SolveI::SolveType::ST_SAT){
       IloObjective obj;
@@ -59,8 +80,8 @@ namespace MiniZinc {
   
     // Optimize the problem and obtain solution.
     if ( !cplex.solve() ) {
-      std::cerr << "Failed to optimize LP" << std::endl;
-      throw(-1);
+      std::cout << "Failed to optimize LP" << std::endl;
+      return;
     }
 
     std::cout << "Solution status = " << cplex.getStatus() << std::endl;
@@ -68,7 +89,26 @@ namespace MiniZinc {
     std::cout << showVariables(cplex);
     
   }
-
+  std::string CplexInterface::showVariable(IloCplex& cplex, IloNumVar& v){
+    std::ostringstream oss;
+    try{
+      IloNum num = cplex.getValue(v);
+      oss << num;
+    } catch(IloAlgorithm::NotExtractedException& e) {
+      oss << "_";
+      // TODO : show possible values ?
+      /*IloNumArray posval(env);
+      v.getPossibleValues(posval);
+      int size = posval.getSize();
+      oss << "{" ;
+      for(int j = 0; j < size; j++){
+	oss << posval[j];
+	if(j != size - 1) oss << ", ";
+      }
+      oss << "}";*/
+    }
+    return oss.str();
+  }
   std::string CplexInterface::showVariables(IloCplex& cplex){
     std::ostringstream oss;
     std::map<VarDecl*, void*>::iterator it;
@@ -80,27 +120,18 @@ namespace MiniZinc {
 	int size = varray->getSize();
 	for(int i = 0; i < size; i++){
 	  IloNumVar& v = (*varray)[i];
-	  try{
-	    IloNum num = cplex.getValue(v);
-	    oss << num;
-	  } catch(IloAlgorithm::NotExtractedException& e) {
-	    oss << "_";
-	  }
+	  oss << showVariable(cplex,v);
 	  if(i != size -1) oss << ", ";
 	}
 	oss << "]";
       } else {
-	oss << cplex.getValue(*(IloNumVar*)(it->second));
+	oss << showVariable(cplex,*(IloNumVar*)(it->second));
       }
       oss << std::endl;     
     }
     return oss.str();
   }
 
-  CplexInterface::CplexInterface() {
-    model = new IloModel(env);
-    addConstraintMapping(std::string("int_lin_lq"),p_int_lin_lq);
-  }
   CplexInterface::~CplexInterface(){
     model->end();
     delete model;
@@ -109,14 +140,14 @@ namespace MiniZinc {
   void* CplexInterface::getModel(){
     return (void*)(model);
   }
-  static  std::string typeToString(IloNumVar::Type type){
-    switch(type){
-    case ILOFLOAT: return "ilofloat";
-    case ILOINT: return "iloint";
-    case ILOBOOL: return "ilobool";
-    }
-    return "unknown";
-  }
+  // static  std::string typeToString(IloNumVar::Type type){
+  //   switch(type){
+  //   case ILOFLOAT: return "ilofloat";
+  //   case ILOINT: return "iloint";
+  //   case ILOBOOL: return "ilobool";
+  //   }
+  //   return "unknown";
+  // }
   void* CplexInterface::addSolverVar(VarDecl* vd){
     MiniZinc::TypeInst* ti = vd->_ti;
     IloNumVar::Type type;

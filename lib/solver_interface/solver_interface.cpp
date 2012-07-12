@@ -6,7 +6,7 @@ namespace MiniZinc {
   SolverInterface::~SolverInterface(){
   }
   void SolverInterface::fromFlatZinc(MiniZinc::Model& m){
-    for(int i = 0; i < m._items.size(); i++){
+    for(unsigned int i = 0; i < m._items.size(); i++){
       Item* item = m._items[i];
       if(item->isa<VarDeclI>()){
 	addVar(item->cast<VarDeclI>()->_e);

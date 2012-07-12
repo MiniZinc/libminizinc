@@ -21,6 +21,7 @@ namespace MiniZinc {
     void* getModel();
     void solve(SolveI* s);
     std::string showVariables(IloCplex& cplex);
+    std::string showVariable(IloCplex& cplex, IloNumVar& v);
     enum LIN_CON_TYPE {LQ,GQ};
   };
 };
