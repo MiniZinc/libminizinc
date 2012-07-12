@@ -17,12 +17,12 @@ namespace MiniZinc {
     CplexInterface();
     virtual ~CplexInterface();
 
-    void* resolveVar(SolverInterface& si, Expression* e);
+    void* resolveVar(Expression* e);
     void* getModel();
     void solve(SolveI* s);
     std::string showVariables(IloCplex& cplex);
     std::string showVariable(IloCplex& cplex, IloNumVar& v);
-    enum LIN_CON_TYPE {LQ,GQ};
+    enum LIN_CON_TYPE {LQ,EQ,GQ};
   };
 };
 #endif

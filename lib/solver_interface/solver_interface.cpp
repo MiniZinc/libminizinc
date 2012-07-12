@@ -34,7 +34,7 @@ namespace MiniZinc {
 		<< " in constraints map." << std::endl;
       throw -1;
     }
-    it->second(*this,c);
+    it->second(*this,*(c->_args));
   }
   void* SolverInterface::lookupVar(VarDecl* vd){
     std::map<VarDecl*,void*>::iterator it;

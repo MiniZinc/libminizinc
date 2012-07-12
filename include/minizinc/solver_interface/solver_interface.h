@@ -15,7 +15,7 @@ namespace MiniZinc{
     virtual void solve(SolveI* s) = 0;
     void addVar(VarDecl* vd);
     void postConstraint(ConstraintI& constraint);
-    virtual void* resolveVar(SolverInterface&, Expression*)=0;
+    virtual void* resolveVar(Expression*)=0;
 	
     void fromFlatZinc(MiniZinc::Model& m);
     void* lookupVar(VarDecl* vd);
@@ -24,7 +24,7 @@ namespace MiniZinc{
     virtual void* addSolverVar(VarDecl*) = 0;
    
 
-    typedef void (*poster) (SolverInterface&, const Call*);
+    typedef void (*poster) (SolverInterface&, const CtxVec<Expression*>&);
     
     void addConstraintMapping(std::string mzn_constraint,
 			      poster func);
