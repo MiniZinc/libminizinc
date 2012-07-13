@@ -25,7 +25,7 @@ namespace MiniZinc {
     }
   public:
     static Type any(unsigned int dim=0) {
-      return Type(TI_ANY,BT_INT,ST_PLAIN,dim);
+      return Type(TI_ANY,BT_BOT,ST_PLAIN,dim);
     }
     static Type parint(unsigned int dim=0) {
       return Type(TI_PAR,BT_INT,ST_PLAIN,dim);
@@ -101,18 +101,23 @@ namespace MiniZinc {
     }
 
     bool isSubtypeOf(const Type& t) const {
-      if ((*this)==t)
+      // either same dimension or t has variable dimension
+      if (_dim!=t._dim && t._dim!=-1)
+        return false;
+      // same type
+      if (_ti==t._ti && _bt==t._bt && _st==t._st)
         return true;
-      if (isany() && !t.ispar())
+      // this is par or svar, other than that same type as t
+      if ((_ti==TI_PAR || _ti==TI_SVAR) && _bt==t._bt && _st==t._st)
         return true;
-      if ((_ti==TI_PAR || _ti==TI_SVAR) && _bt==t._bt &&
-          _dim==t._dim && _st==t._st)
+      // t is svar, other than that same type as this
+      if (t._ti==TI_SVAR && _bt==t._bt && _st==t._st)
         return true;
-      if (t._ti==TI_SVAR && _bt==t._bt && _dim==t._dim && _st==t._st)
+      if (t._ti==TI_ANY)
         return true;
-      if (t.isany() && (t._dim==0 || _dim==t._dim))
+      if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
         return true;
-      if ( (_ti==TI_PAR || _ti==t._ti) && _bt==BT_BOT && _dim==t._dim)
+      if ( _bt==BT_BOT && _st==t._st)
         return true;
       return false;
     }

@@ -94,6 +94,9 @@ namespace MiniZinc {
         case Expression::E_TI:
           _t.vTypeInst(*c._e->template cast<TypeInst>());
           break;
+        case Expression::E_TIID:
+          _t.vTIId(*c._e->template cast<TIId>());
+          break;
         default:
           assert(false);
           break;
@@ -112,6 +115,7 @@ namespace MiniZinc {
         case Expression::E_STRINGLIT:
         case Expression::E_ANON:
         case Expression::E_ID:
+        case Expression::E_TIID:
           break;
         case Expression::E_SETLIT:
           pushVec(stack, ce->template cast<SetLit>()->_v);

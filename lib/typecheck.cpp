@@ -203,6 +203,8 @@ namespace MiniZinc {
           run(ti->_domain);
         }
         break;
+      case Expression::E_TIID:
+        break;
       case Expression::E_LET:
         {
           Let* let = e->cast<Let>();
@@ -395,7 +397,7 @@ namespace MiniZinc {
       for (unsigned int i=call._args->size(); i--;)
         args[i] = (*call._args)[i];
       if (FunctionI* fi = _ctx.matchFn(call._id,args)) {
-        call._type = fi->_ti->_type;
+        call._type = fi->rtype(args);
         call._decl = fi;
       } else {
         throw TypeError(call._loc,
@@ -436,14 +438,15 @@ namespace MiniZinc {
       if (ti._ranges) {
         for (unsigned int i=0; i<ti._ranges->size(); i++) {
           Expression* ri = (*ti._ranges)[i];
-          if (ri && ri->_type != Type::parsetint())
+          if (ri && ri->_type != Type::parsetint() &&
+              !ri->isa<TIId>())
             throw TypeError(ri->_loc,
               "expected set of int for array index, but got\n"+
               ri->_type.toString());
         }
         ti._type._dim = ti._ranges->size();
       }
-      if (ti._domain) {
+      if (ti._domain && !ti._domain->isa<TIId>()) {
         if (ti._domain->_type._ti != Type::TI_PAR ||
             ti._domain->_type._st != Type::ST_SET)
           throw TypeError(ti._domain->_loc,
@@ -467,9 +470,10 @@ namespace MiniZinc {
         }
         ti._type._bt = ti._domain->_type._bt;
       } else {
-        assert(ti._domain==NULL);
+        assert(ti._domain==NULL || ti._domain->isa<TIId>());
       }
     }
+    void vTIId(TIId& id) {}
   };
   
   void typecheck(ASTContext& ctx, Model* m) {

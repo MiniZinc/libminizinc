@@ -134,6 +134,8 @@ public:
 			return _t.mapAnnotation(*e->cast<Annotation>());
 		case Expression::E_TI:
 			return _t.mapTypeInst(*e->cast<TypeInst>());
+		case Expression::E_TIID:
+			return _t.mapTIId(*e->cast<TIId>());
 		default:
 			assert(false);
 			break;
@@ -237,6 +239,9 @@ public:
 	}
 	ret mapId(const Id& id) {
 		return new StringDocument(id._v.str());
+	}
+	ret mapTIId(const TIId& id) {
+		return new StringDocument("$"+id._v.str());
 	}
 	ret mapAnonVar(const AnonVar& av) {
 		return new StringDocument("_");

@@ -109,7 +109,7 @@ namespace MiniZinc {
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
       E_ARRAYACCESS, E_COMP, E_ITE,
       E_BINOP, E_UNOP, E_CALL, E_VARDECL, E_LET,
-      E_ANN, E_TI
+      E_ANN, E_TI, E_TIID
     } _eid;
 
     /// The %MiniZinc type of the expression
@@ -262,6 +262,21 @@ namespace MiniZinc {
     /// Allocate from context (\a decl may be NULL)
     static Id* a(const ASTContext& ctx, const Location& loc,
                  const std::string& v, VarDecl* decl);
+  };
+  /// \brief Type-inst identifier expression
+  class TIId : public Expression {
+  protected:
+    /// Constructor
+    TIId(const Location& loc, CtxStringH v)
+      : Expression(loc,E_TIID,Type()), _v(v) {}
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_TIID;
+    /// The string identifier (context-allocated)
+    CtxStringH _v;
+    /// Allocate from context
+    static TIId* a(const ASTContext& ctx, const Location& loc,
+                   const std::string& v);
   };
   /// \brief Anonymous variable expression
   class AnonVar : public Expression {
@@ -533,6 +548,7 @@ namespace MiniZinc {
     void addRanges(const ASTContext& ctx,
                    const std::vector<Expression*>& ranges);
     bool isarray(void) const { return _ranges && _ranges->size()>0; }
+    bool hasTiVariable(void) const;
   };
 
   /**
@@ -709,10 +725,9 @@ namespace MiniZinc {
                         const std::vector<VarDecl*>& params,
                         Expression* e = NULL, Annotation* ann = NULL);
     
-    /** \brief Check if a function call with argument types \a ta
-     * matches this function.
+    /** \brief Compute return type given argument types \a ta
      */
-    bool match(const std::vector<Type>& ta);
+    Type rtype(const std::vector<Expression*>& ta);
   };
 
   /**
