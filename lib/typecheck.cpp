@@ -69,6 +69,23 @@ namespace MiniZinc {
         env.erase(vdi);
     }
     
+    VarDecl* checkId(const CtxStringH& id, const Location& loc) {
+      DeclMap::iterator decl = env.find(id);
+      if (decl==env.end()) {
+        throw TypeError(loc,"undefined identifier "+id.str());
+      }
+      PosMap::iterator pi = pos.find(decl->second.back());
+      if (pi==pos.end()) {
+        // new id
+        run(decl->second.back());
+      } else {
+        // previously seen, check if circular
+        if (pi->second==-1)
+          throw TypeError(loc,"circular definition of "+id.str());
+      }
+      return decl->second.back();
+    }
+    
     void run(Expression* e) {
       if (e==NULL)
         return;
@@ -90,21 +107,7 @@ namespace MiniZinc {
         break;
       case Expression::E_ID:
         {
-          Id* ie = e->cast<Id>();
-          DeclMap::iterator decl = env.find(ie->_v);
-          if (decl==env.end()) {
-            throw TypeError(e->_loc,"undefined identifier "+ie->_v.str());
-          }
-          PosMap::iterator pi = pos.find(decl->second.back());
-          if (pi==pos.end()) {
-            // new id
-            run(decl->second.back());
-          } else {
-            // previously seen, check if circular
-            if (pi->second==-1)
-              throw TypeError(e->_loc,"circular definition of "+ie->_v.str());
-          }
-          ie->_decl = decl->second.back();
+          e->cast<Id>()->_decl = checkId(e->cast<Id>()->_v,e->_loc);
         }
         break;
       case Expression::E_ARRAYLIT:
@@ -517,7 +520,11 @@ namespace MiniZinc {
           ts.run(cm->_items[i]->cast<VarDeclI>()->_e);
           break;
         case Item::II_ASN:
-          ts.run(cm->_items[i]->cast<AssignI>()->_e);
+          {
+            AssignI* ai = cm->_items[i]->cast<AssignI>();
+            ts.run(ai->_e);
+            ai->_decl = ts.checkId(ai->_id,ai->_loc);
+          }
           break;
         case Item::II_CON:
           ts.run(cm->_items[i]->cast<ConstraintI>()->_e);
@@ -572,8 +579,14 @@ namespace MiniZinc {
           case Item::II_VD:
             break;
           case Item::II_ASN:
-            bu_ty.run(cm->_items[i]->cast<AssignI>()->_e);
-            /// TODO: check assignment
+            {
+              AssignI* ai = cm->_items[i]->cast<AssignI>();
+              bu_ty.run(ai->_e);
+              if (!ai->_e->_type.isSubtypeOf(ai->_decl->_ti->_type)) {
+                throw TypeError(ai->_e->_loc,
+                  "RHS of assignment does not agree with LHS");
+              }
+            }
             break;
           case Item::II_CON:
             bu_ty.run(cm->_items[i]->cast<ConstraintI>()->_e);

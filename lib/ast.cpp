@@ -359,6 +359,7 @@ namespace MiniZinc {
     AssignI* ai = new (ctx) AssignI(loc);
     ai->_id = CtxStringH(ctx,id);
     ai->_e = e;
+    ai->_decl = NULL;
     return ai;
   }
 

@@ -627,6 +627,8 @@ namespace MiniZinc {
     CtxStringH _id;
     /// Expression to assign to the variable
     Expression* _e;
+    /// Declaration of the variable to assign to
+    VarDecl* _decl;
     /// Allocate from context
     static AssignI* a(const ASTContext& ctx, const Location& loc,
                       const std::string& id, Expression* e);
