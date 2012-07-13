@@ -659,10 +659,20 @@ namespace MiniZinc {
     makeFn(ctx,"+",tparfloat,2,Type::parfloat());
     makeFn(ctx,"+",tvarfloat,2,Type::varfloat());
 
+    makeFn(ctx,"+",tparint,1,Type::parint());
+    makeFn(ctx,"+",tvarint,1,Type::varint());
+    makeFn(ctx,"+",tparfloat,1,Type::parfloat());
+    makeFn(ctx,"+",tvarfloat,1,Type::varfloat());
+
     makeFn(ctx,"-",tparint,2,Type::parint());
     makeFn(ctx,"-",tvarint,2,Type::varint());
     makeFn(ctx,"-",tparfloat,2,Type::parfloat());
     makeFn(ctx,"-",tvarfloat,2,Type::varfloat());
+
+    makeFn(ctx,"-",tparint,1,Type::parint());
+    makeFn(ctx,"-",tvarint,1,Type::varint());
+    makeFn(ctx,"-",tparfloat,1,Type::parfloat());
+    makeFn(ctx,"-",tvarfloat,1,Type::varfloat());
 
     makeFn(ctx,"*",tparint,2,Type::parint());
     makeFn(ctx,"*",tvarint,2,Type::varint());
@@ -819,6 +829,9 @@ namespace MiniZinc {
 
     makeFn(ctx,"xor",tparbool,2,Type::parbool());
     makeFn(ctx,"xor",tvarbool,2,Type::varbool());
+    
+    makeFn(ctx,"not",tparbool,1,Type::parbool());
+    makeFn(ctx,"not",tvarbool,1,Type::varbool());
   }
   
 }
