@@ -24,6 +24,7 @@ namespace MiniZinc {
     std::string showVariable(IloCplex& cplex, IloNumVar& v);
     enum LIN_CON_TYPE {LQ,EQ,GQ};
     template<typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);
+    //    template<typename T, typename S> T getNumber(Expression* e);
   };
 };
 #endif

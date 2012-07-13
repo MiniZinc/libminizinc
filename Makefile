@@ -5,7 +5,7 @@ TARGETS=mzn2fzn
 GENERATE=yes
 
 SOURCES=allocator ast context lexer.yy parser.tab  \
-	print printer/Document printer/Line printer/PrettyPrinter \
+	print printer/Document printer/Line printer/PrettyPrinter printer \
 	typecheck solver_interface/solver_interface solver_interface/cplex_interface
 
 HEADERS=allocator ast context exception model parser parser.tab print type typecheck

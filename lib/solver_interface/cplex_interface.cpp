@@ -1,15 +1,28 @@
 #include <minizinc/ast.hh>
 #include <minizinc/solver_interface/cplex_interface.h>
 #include <ilcplex/ilocplex.h>
+#include <minizinc/printer.h>
+
 namespace MiniZinc {
+  template<typename T, typename S>
+  T getNumber(Expression* e){
+    if(e->isa<S>())
+      return e->cast<S>()->_v;
+    if(e->isa<UnOp>())
+      return getNumber<T,S>(e->cast<UnOp>()->_e0) * 
+	(e->cast<UnOp>()->_op == UOT_MINUS ? -1 : 1);
+    return 0;
+  }
+ static int cptr = 0;
   template<typename T, typename S>
   void p_lin(SolverInterface& si, const CtxVec<Expression*>& args,
 	     CplexInterface::LIN_CON_TYPE lt,bool reif=false){
     IloModel* model = (IloModel*)(si.getModel());
-
+   
+    cptr++;
     CtxVec<Expression*> *coeff = args[0]->cast<ArrayLit>()->_v;
     CtxVec<Expression*> *vars =  args[1]->cast<ArrayLit>()->_v;
-    T res = args[2]->cast<S>()->_v;
+    T res = getNumber<T,S>(args[2]);
 
     IloNum lb,ub;
     lb = -IloInfinity;
@@ -20,9 +33,11 @@ namespace MiniZinc {
     case CplexInterface::EQ: ub = res; lb = res; break;
     }
     IloRange range(model->getEnv(),lb,ub);
+    std::cout << "cptr = " << cptr << std::endl;
     for(unsigned int i = 0; i < coeff->size(); i++){
-      T co = ((*coeff)[i]->cast<S>())->_v;
+      T co = getNumber<T,S>((*coeff)[i]);
       IloNumVar* v = (IloNumVar*)(si.resolveVar((*vars)[i]));
+      std::cout << "i = " << i << ", co = "<<co << std::endl;
       range.setLinearCoef(*v,co);
     }if(reif){
       IloNumVar* varr = (IloNumVar*)(si.resolveVar(args[2]));
@@ -31,14 +46,15 @@ namespace MiniZinc {
     model->add(range);
   }
 
+  
 
 
   void p_array_element(SolverInterface& si, const CtxVec<Expression*>& vars){
-    IloNumVar* varb = (IloNumVar*)(si.resolveVar(vars[0]));
-    IloNumArray* varas = (IloNumArray*)(si.resolveVar(vars[1]));
-    IloNumVar* varc = (IloNumVar*)(si.resolveVar(vars[2]));
+    IloNumVar& varb = *(IloNumVar*)(si.resolveVar(vars[0]));
+    IloNumArray& varas = *(IloNumArray*)(si.resolveVar(vars[1]));
+    IloNumVar& varc = *(IloNumVar*)(si.resolveVar(vars[2]));
 
-    /*    IloConstraint constraint((*varas)[*varb] == *varc);
+    /*    IloConstraint constraint(varas[b] == varc);
 	  ((IloModel*)(si.getModel()))->add(constraint);*/
   }
   void p_array_bool_and(SolverInterface& si, const CtxVec<Expression*>& args){
@@ -215,8 +231,24 @@ namespace MiniZinc {
     IloConstraint constraint(*varc == (*vara !=  *varb));
     model->add(constraint);
   }
-  
- 
+
+  void* CplexInterface::resolveVar(Expression* e){
+    if(e->isa<Id>()){
+      return lookupVar(e->cast<Id>()->_v.str());
+    }else if(e->isa<ArrayAccess>()){
+      ArrayAccess* aa = e->cast<ArrayAccess>();
+      IloNumVarArray *inva = 
+	static_cast<IloNumVarArray*>(resolveVar(aa->_v));
+      int index = (*aa->_idx)[0]->cast<IntLit>()->_v - 1 ;
+      return (void*)(&((*inva)[index]));
+    }
+    std::cerr << "Error " << e->_loc << std::endl
+	      << "Variables should be identificators or array accesses." << std::endl;
+    Printer::getInstance()->print(e);
+    throw -1;
+    return NULL;
+    
+  }
   CplexInterface::CplexInterface() {
     model = new IloModel(env);
 
@@ -235,11 +267,11 @@ namespace MiniZinc {
     addConstraintMapping(std::string("int_plus"), p_plus);
     addConstraintMapping(std::string("int_times"), p_times);
     addConstraintMapping(std::string("array_bool_and"), p_array_bool_and);
-    // addConstraintMapping(std::string("array_bool_element"), p_array_bool_element);
+    addConstraintMapping(std::string("array_bool_element"), p_array_element);
     // addConstraintMapping(std::string("array_bool_or"), p_array_bool_or);
     // addConstraintMapping(std::string("array_bool_xor"), p_array_bool_xor);
-    // addConstraintMapping(std::string("array_float_element"), p_array_float_element);
-    // addConstraintMapping(std::string("array_int_element"), p_array_int_element);
+    addConstraintMapping(std::string("array_float_element"), p_array_element);
+    addConstraintMapping(std::string("array_int_element"), p_array_element);
     // addConstraintMapping(std::string("array_set_element"), p_array_set_element);
     // addConstraintMapping(std::string("array_var_bool_element"), p_array_var_bool_element);
     // addConstraintMapping(std::string("array_var_float_element"), p_array_var_float_element);
@@ -272,21 +304,7 @@ namespace MiniZinc {
     addConstraintMapping(std::string("float_plus"), p_plus);
 
   }
-  void* CplexInterface::resolveVar(Expression* e){
-    if(e->isa<Id>()){
-      return lookupVar(e->cast<Id>()->_v.str());
-    }else if(e->isa<ArrayAccess>()){
-      ArrayAccess* aa = e->cast<ArrayAccess>();
-      IloNumVarArray *inva = 
-	static_cast<IloNumVarArray*>(resolveVar(aa->_v));
-      int index = (*aa->_idx)[0]->cast<IntLit>()->_v;
-      return (void*)(&((*inva)[index]));
-    }
-    std::cerr << "Variables should be identificators or array accesses."
-	      << std::endl;
-    return NULL;
-    
-  }
+ 
  
   void CplexInterface::solve(SolveI* s){
     if(s->_st != SolveI::SolveType::ST_SAT){

@@ -1,5 +1,5 @@
 #include <minizinc/solver_interface/solver_interface.h>
-
+#include <minizinc/printer.h>
 namespace MiniZinc {
   SolverInterface::SolverInterface(){
   }
@@ -17,6 +17,7 @@ namespace MiniZinc {
       } else {
 	  
 	//  std::cerr << "This type of item should not appear in a FlatZinc file"<<item->_iid << std::endl;
+ Printer::getInstance()->print(item);
 	//std::exit(-1);
       }
     }
@@ -32,6 +33,7 @@ namespace MiniZinc {
     if(it == constraintMap.end()){
       std::cerr << "Error : couldn't find constraint " << con_id 
 		<< " in constraints map." << std::endl;
+      Printer::getInstance()->print(&constraint);
       throw -1;
     }
     it->second(*this,*(c->_args));
