@@ -411,6 +411,16 @@ namespace MiniZinc {
       std::pair<int,int> rangebounds = getIntBounds(range);
       int rangesize = rangebounds.second - rangebounds.first;
       IloNumVarArray* res = new IloNumVarArray(env,rangesize+1,lb,ub,type);
+      Expression* init = vd->_e;
+      if(init){
+	ArrayLit* initarray = init->cast<ArrayLit>();
+	CtxVec<Expression*>& ar = *(initarray->_v);
+	switch(type){
+	case ILOINT:	initArray<IntLit>(*res,ar); break;
+	case ILOFLOAT:  initArray<FloatLit>(*res,ar); break;
+	case ILOBOOL:   initArray<BoolLit>(*res,ar); break;
+	}
+      }
       return (void*)res;
     }
     else{
@@ -418,5 +428,13 @@ namespace MiniZinc {
       return (void*)res;
     }
   }
+  template<typename T>
+  void CplexInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar){
 
+    for(unsigned int i = 0; i < ar.size(); i++){
+      T* v = ar[i]->cast<T>();
+      model->add(IloConstraint(res[i] == v->_v));
+	  
+    }
+  }
 };
