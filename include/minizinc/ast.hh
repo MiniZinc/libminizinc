@@ -89,7 +89,7 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Location& loc) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    s << " in file " << loc.filename << "." << loc.first_line;
+    s << " in file " << loc.filename->str() << ":" << loc.first_line;
     return os << s.str();
   }
 
@@ -213,7 +213,7 @@ namespace MiniZinc {
     // RangeSet* _rs;
     /// Allocate set \$f\{v1,\dots,vn\}\$f from context
     static SetLit* a(const ASTContext& ctx,
-                     const Location& loc,
+		     const Location& loc,
                      const std::vector<Expression*>& v);
   };
   /// \brief Boolean literal expression
