@@ -486,7 +486,12 @@ annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
         TypeInst* ti=TypeInst::a(GETCTX(),@1,Type::ann());
-        $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,NULL,NULL);
+        if ($3->empty()) {
+          VarDecl* vd = VarDecl::a(GETCTX(),@$,ti,$2);
+          $$ = VarDeclI::a(GETCTX(),@$,vd);
+        } else {
+          $$ = FunctionI::a(GETCTX(),@$,$2,ti,*$3,NULL,NULL);
+        }
         free($2);
         delete $3;
       }

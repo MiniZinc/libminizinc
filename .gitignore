@@ -10,3 +10,6 @@ lib/printer/DocumentList.o
 lib/printer/Line.o
 lib/printer/PrettyPrinter.o
 lib/typecheck.o
+include/minizinc/parser.tab.hh
+lib/lexer.yy.cpp
+lib/parser.tab.cpp

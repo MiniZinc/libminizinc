@@ -42,7 +42,7 @@ namespace MiniZinc {
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef std::unordered_map<CtxStringH,Decls> DeclMap;
+    typedef CtxStringMap<Decls>::t DeclMap;
     typedef std::unordered_map<VarDecl*,int> PosMap;
     
     Decls decls;
@@ -422,7 +422,6 @@ namespace MiniZinc {
     void vVarDecl(VarDecl& vd) {
       if (ignoreVarDecl) {
         assert(!vd._type.isunknown());
-      } else {
         if (vd._e) {
           if (! vd._e->_type.isSubtypeOf(vd._ti->_type))
             throw TypeError(vd._loc,
@@ -430,21 +429,30 @@ namespace MiniZinc {
               vd._ti->_type.toString()+"\nbut RHS is\n  "+
               vd._e->_type.toString());
         }
+      } else {
         vd._type = vd._ti->_type;
       }
     }
     /// Visit type inst
     void vTypeInst(TypeInst& ti) {
       if (ti._ranges) {
+        bool foundTIId=false;
         for (unsigned int i=0; i<ti._ranges->size(); i++) {
           Expression* ri = (*ti._ranges)[i];
-          if (ri && ri->_type != Type::parsetint() &&
-              !ri->isa<TIId>())
+          if (ri && ri->isa<TIId>()) {
+            if (foundTIId) {
+              throw TypeError(ri->_loc,
+                "only one type-inst variable allowed in array index");
+            } else {
+              foundTIId = true;
+            }
+          } else if (ri && ri->_type != Type::parsetint()) {
             throw TypeError(ri->_loc,
               "expected set of int for array index, but got\n"+
               ri->_type.toString());
+          }
         }
-        ti._type._dim = ti._ranges->size();
+        ti._type._dim = foundTIId ? -1 : ti._ranges->size();
       }
       if (ti._domain && !ti._domain->isa<TIId>()) {
         if (ti._domain->_type._ti != Type::TI_PAR ||
@@ -581,6 +589,7 @@ namespace MiniZinc {
               models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
             break;
           case Item::II_VD:
+            bu_ty.run(cm->_items[i]->cast<VarDeclI>()->_e);
             break;
           case Item::II_ASN:
             {
@@ -652,7 +661,30 @@ namespace MiniZinc {
               TypeInst* ret, int n, const Type& param) {
     ctx.registerFn(FunctionI::a(ctx,Location::a(),id,ret,params(ctx,n,param)));
   }
-
+  void makeArrayXD(ASTContext& ctx, int n) {
+    std::vector<VarDecl*> params(n+1);
+    for (unsigned int i=0; i<n; i++) {
+      std::ostringstream oss;
+      oss << "x" << i;
+      params[i] = param(ctx,oss.str(),Type::parsetint());
+    }
+    std::vector<Expression*> rvec(1);
+    rvec[0] = TIId::a(ctx,Location::a(),"U");
+    CtxVec<Expression*>* ranges = CtxVec<Expression*>::a(ctx,rvec);
+    params[n] = VarDecl::a(ctx,Location::a(),
+      TypeInst::a(ctx,Location::a(),Type::any(-1),TIId::a(ctx,Location::a(),
+        "V"),ranges),"a");
+    std::vector<Expression*> nullvec(n);
+    for (unsigned int i=n; i--;)
+      nullvec[i]=NULL;
+    ranges = CtxVec<Expression*>::a(ctx,nullvec);
+    TypeInst* ret = TypeInst::a(ctx,Location::a(),Type::any(n),
+      TIId::a(ctx,Location::a(),"V"),ranges);
+    std::ostringstream oss;
+    oss << "array" << n << "d";
+    ctx.registerFn(FunctionI::a(ctx,Location::a(),oss.str(),ret,params));
+  }
+  
   void addOperatorTypes(ASTContext& ctx) {
     TypeInst* tparint = TypeInst::a(ctx,Location::a(),Type::parint());
     TypeInst* tvarint = TypeInst::a(ctx,Location::a(),Type::varint());
@@ -849,6 +881,13 @@ namespace MiniZinc {
     
     makeFn(ctx,"not",tparbool,1,Type::parbool());
     makeFn(ctx,"not",tvarbool,1,Type::varbool());
+    
+    makeArrayXD(ctx,1);
+    makeArrayXD(ctx,2);
+    makeArrayXD(ctx,3);
+    makeArrayXD(ctx,4);
+    makeArrayXD(ctx,5);
+    makeArrayXD(ctx,6);
   }
   
 }
