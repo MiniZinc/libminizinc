@@ -69,6 +69,23 @@ namespace MiniZinc {
         env.erase(vdi);
     }
     
+    VarDecl* checkId(const CtxStringH& id, const Location& loc) {
+      DeclMap::iterator decl = env.find(id);
+      if (decl==env.end()) {
+        throw TypeError(loc,"undefined identifier "+id.str());
+      }
+      PosMap::iterator pi = pos.find(decl->second.back());
+      if (pi==pos.end()) {
+        // new id
+        run(decl->second.back());
+      } else {
+        // previously seen, check if circular
+        if (pi->second==-1)
+          throw TypeError(loc,"circular definition of "+id.str());
+      }
+      return decl->second.back();
+    }
+    
     void run(Expression* e) {
       if (e==NULL)
         return;
@@ -90,21 +107,7 @@ namespace MiniZinc {
         break;
       case Expression::E_ID:
         {
-          Id* ie = e->cast<Id>();
-          DeclMap::iterator decl = env.find(ie->_v);
-          if (decl==env.end()) {
-            throw TypeError(e->_loc,"undefined identifier "+ie->_v.str());
-          }
-          PosMap::iterator pi = pos.find(decl->second.back());
-          if (pi==pos.end()) {
-            // new id
-            run(decl->second.back());
-          } else {
-            // previously seen, check if circular
-            if (pi->second==-1)
-              throw TypeError(e->_loc,"circular definition of "+ie->_v.str());
-          }
-          ie->_decl = decl->second.back();
+          e->cast<Id>()->_decl = checkId(e->cast<Id>()->_v,e->_loc);
         }
         break;
       case Expression::E_ARRAYLIT:
@@ -199,6 +202,8 @@ namespace MiniZinc {
               run((*ti->_ranges)[i]);
           run(ti->_domain);
         }
+        break;
+      case Expression::E_TIID:
         break;
       case Expression::E_LET:
         {
@@ -392,7 +397,7 @@ namespace MiniZinc {
       for (unsigned int i=call._args->size(); i--;)
         args[i] = (*call._args)[i];
       if (FunctionI* fi = _ctx.matchFn(call._id,args)) {
-        call._type = fi->_ti->_type;
+        call._type = fi->rtype(args);
         call._decl = fi;
       } else {
         throw TypeError(call._loc,
@@ -433,14 +438,15 @@ namespace MiniZinc {
       if (ti._ranges) {
         for (unsigned int i=0; i<ti._ranges->size(); i++) {
           Expression* ri = (*ti._ranges)[i];
-          if (ri && ri->_type != Type::parsetint())
+          if (ri && ri->_type != Type::parsetint() &&
+              !ri->isa<TIId>())
             throw TypeError(ri->_loc,
               "expected set of int for array index, but got\n"+
               ri->_type.toString());
         }
         ti._type._dim = ti._ranges->size();
       }
-      if (ti._domain) {
+      if (ti._domain && !ti._domain->isa<TIId>()) {
         if (ti._domain->_type._ti != Type::TI_PAR ||
             ti._domain->_type._st != Type::ST_SET)
           throw TypeError(ti._domain->_loc,
@@ -464,9 +470,10 @@ namespace MiniZinc {
         }
         ti._type._bt = ti._domain->_type._bt;
       } else {
-        assert(ti._domain==NULL);
+        assert(ti._domain==NULL || ti._domain->isa<TIId>());
       }
     }
+    void vTIId(TIId& id) {}
   };
   
   void typecheck(ASTContext& ctx, Model* m) {
@@ -517,7 +524,11 @@ namespace MiniZinc {
           ts.run(cm->_items[i]->cast<VarDeclI>()->_e);
           break;
         case Item::II_ASN:
-          ts.run(cm->_items[i]->cast<AssignI>()->_e);
+          {
+            AssignI* ai = cm->_items[i]->cast<AssignI>();
+            ts.run(ai->_e);
+            ai->_decl = ts.checkId(ai->_id,ai->_loc);
+          }
           break;
         case Item::II_CON:
           ts.run(cm->_items[i]->cast<ConstraintI>()->_e);
@@ -572,8 +583,14 @@ namespace MiniZinc {
           case Item::II_VD:
             break;
           case Item::II_ASN:
-            bu_ty.run(cm->_items[i]->cast<AssignI>()->_e);
-            /// TODO: check assignment
+            {
+              AssignI* ai = cm->_items[i]->cast<AssignI>();
+              bu_ty.run(ai->_e);
+              if (!ai->_e->_type.isSubtypeOf(ai->_decl->_ti->_type)) {
+                throw TypeError(ai->_e->_loc,
+                  "RHS of assignment does not agree with LHS");
+              }
+            }
             break;
           case Item::II_CON:
             bu_ty.run(cm->_items[i]->cast<ConstraintI>()->_e);

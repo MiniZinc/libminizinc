@@ -1,4 +1,5 @@
 #include <minizinc/ast.hh>
+#include <minizinc/exception.hh>
 
 namespace MiniZinc {
 
@@ -68,6 +69,12 @@ namespace MiniZinc {
   Id::a(const ASTContext& ctx, const Location& loc,
         const std::string& v, VarDecl* decl) {
     return new (ctx) Id(loc,CtxStringH(ctx,v),decl);
+  }
+
+  TIId*
+  TIId::a(const ASTContext& ctx, const Location& loc,
+          const std::string& v) {
+    return new (ctx) TIId(loc,CtxStringH(ctx,v));
   }
 
   AnonVar*
@@ -337,6 +344,16 @@ namespace MiniZinc {
     _ranges = CtxVec<Expression*>::a(ctx,ranges);
   }
 
+  bool
+  TypeInst::hasTiVariable(void) const {
+    if (_domain && _domain->isa<TIId>())
+      return true;
+    if (_ranges && _ranges->size()==1 &&
+        (*_ranges)[0]->isa<TIId>())
+      return true;
+    return false;
+  }
+
   IncludeI*
   IncludeI::a(const ASTContext& ctx, const Location& loc,
               const CtxStringH& f) {
@@ -359,6 +376,7 @@ namespace MiniZinc {
     AssignI* ai = new (ctx) AssignI(loc);
     ai->_id = CtxStringH(ctx,id);
     ai->_e = e;
+    ai->_decl = NULL;
     return ai;
   }
 
@@ -419,15 +437,14 @@ namespace MiniZinc {
     return fi;
   }
 
-  bool
-  FunctionI::match(const std::vector<Type>& ta) {
-    if (_params->size() != ta.size())
-      return false;
-    for (unsigned int i=0; i<ta.size(); i++)
-      if (!ta[i].isSubtypeOf((*_params)[i]->_type))
-        return false;
-    return true;
-    
+  Type
+  FunctionI::rtype(const std::vector<Expression*>& ta) {
+    Type ret = _ti->_type;
+    if (_ti->hasTiVariable()) {
+      throw TypeError(_loc,"not supported");
+    } else {
+      return ret;
+    }
   }
 
 }

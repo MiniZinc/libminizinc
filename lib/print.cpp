@@ -88,6 +88,7 @@ namespace MiniZinc {
     return static_cast<Parentheses>(ret);
   }
 
+<<<<<<< HEAD
   template<class T>
   class ExpressionMapper {
   protected:
@@ -141,6 +142,62 @@ namespace MiniZinc {
       return NULL;
     }
   };
+=======
+template<class T>
+class ExpressionMapper {
+protected:
+	T& _t;
+public:
+	ExpressionMapper(T& t) :
+			_t(t) {
+	}
+	typename T::ret map(const Expression* e) {
+		switch (e->_eid) {
+		case Expression::E_INTLIT:
+			return _t.mapIntLit(*e->cast<IntLit>());
+		case Expression::E_FLOATLIT:
+			return _t.mapFloatLit(*e->cast<FloatLit>());
+		case Expression::E_SETLIT:
+			return _t.mapSetLit(*e->cast<SetLit>());
+		case Expression::E_BOOLLIT:
+			return _t.mapBoolLit(*e->cast<BoolLit>());
+		case Expression::E_STRINGLIT:
+			return _t.mapStringLit(*e->cast<StringLit>());
+		case Expression::E_ID:
+			return _t.mapId(*e->cast<Id>());
+		case Expression::E_ANON:
+			return _t.mapAnonVar(*e->cast<AnonVar>());
+		case Expression::E_ARRAYLIT:
+			return _t.mapArrayLit(*e->cast<ArrayLit>());
+		case Expression::E_ARRAYACCESS:
+			return _t.mapArrayAccess(*e->cast<ArrayAccess>());
+		case Expression::E_COMP:
+			return _t.mapComprehension(*e->cast<Comprehension>());
+		case Expression::E_ITE:
+			return _t.mapITE(*e->cast<ITE>());
+		case Expression::E_BINOP:
+			return _t.mapBinOp(*e->cast<BinOp>());
+		case Expression::E_UNOP:
+			return _t.mapUnOp(*e->cast<UnOp>());
+		case Expression::E_CALL:
+			return _t.mapCall(*e->cast<Call>());
+		case Expression::E_VARDECL:
+			return _t.mapVarDecl(*e->cast<VarDecl>());
+		case Expression::E_LET:
+			return _t.mapLet(*e->cast<Let>());
+		case Expression::E_ANN:
+			return _t.mapAnnotation(*e->cast<Annotation>());
+		case Expression::E_TI:
+			return _t.mapTypeInst(*e->cast<TypeInst>());
+		case Expression::E_TIID:
+			return _t.mapTIId(*e->cast<TIId>());
+		default:
+			assert(false);
+			break;
+		}
+	}
+};
+>>>>>>> origin/master
 
 
 
@@ -206,6 +263,7 @@ namespace MiniZinc {
       oss << "\"" << sl._v.str() << "\"";
       return new StringDocument(oss.str());
 
+<<<<<<< HEAD
     }
     ret mapId(const Id& id) {
       return new StringDocument(id._v.str());
@@ -517,6 +575,322 @@ namespace MiniZinc {
 	dl->addDocumentToList(expressionToDocument((*c._args)[i]));
       }
       return dl;
+=======
+	}
+	ret mapId(const Id& id) {
+		return new StringDocument(id._v.str());
+	}
+	ret mapTIId(const TIId& id) {
+		return new StringDocument("$"+id._v.str());
+	}
+	ret mapAnonVar(const AnonVar& av) {
+		return new StringDocument("_");
+	}
+	ret mapArrayLit(const ArrayLit& al) {
+		/// TODO: test multi-dimensional arrays handling
+		DocumentList* dl;
+		int n = al._dims->size();
+		if (n == 1 && (*al._dims)[0].first == 1) {
+			dl = new DocumentList("[", ", ", "]");
+			for (unsigned int i = 0; i < al._v->size(); i++)
+				dl->addDocumentToList(expressionToDocument((*al._v)[i]));
+		} else if (n == 2 && (*al._dims)[0].first == 1
+				&& (*al._dims)[1].first == 1) {
+			dl = new DocumentList("[| ", " | ", " |]");
+			for (int i = 0; i < (*al._dims)[0].second; i++) {
+				DocumentList* row = new DocumentList("", ", ", "");
+				for (int j = 0; j < (*al._dims)[1].second; j++) {
+					row->addDocumentToList(
+							expressionToDocument(
+									(*al._v)[i * (*al._dims)[0].second + j]));
+				}
+				dl->addDocumentToList(row);
+				if (i != (*al._dims)[0].second - 1)
+					dl->addBreakPoint(true); // dont simplify
+			}
+		} else {
+			dl = new DocumentList("", "", "");
+			std::stringstream oss;
+			oss << "array" << n << "d";
+			dl->addStringToList(oss.str());
+			DocumentList* args = new DocumentList("(", ", ", ")");
+
+			for (int i = 0; i < al._dims->size(); i++) {
+				oss.str("");
+				oss << (*al._dims)[i].first << ".." << (*al._dims)[i].second;
+				args->addStringToList(oss.str());
+			}
+			DocumentList* array = new DocumentList("[", ", ", "]");
+			for (unsigned int i = 0; i < al._v->size(); i++)
+				array->addDocumentToList(expressionToDocument((*al._v)[i]));
+			args->addDocumentToList(array);
+			dl->addDocumentToList(args);
+		}
+		return dl;
+	}
+	ret mapArrayAccess(const ArrayAccess& aa) {
+		DocumentList* dl = new DocumentList("", "", "");
+
+		dl->addDocumentToList(expressionToDocument(aa._v));
+		DocumentList* args = new DocumentList("[", ", ", "]");
+		for (unsigned int i = 0; i < aa._idx->size(); i++) {
+			args->addDocumentToList(expressionToDocument((*aa._idx)[i]));
+		}
+		dl->addDocumentToList(args);
+		return dl;
+	}
+	ret mapComprehension(const Comprehension& c) {
+		std::ostringstream oss;
+		DocumentList* dl;
+		if (c._set)
+			dl = new DocumentList("{ ", " | ", " }");
+		else
+			dl = new DocumentList("[ ", " | ", " ]");
+		dl->addDocumentToList(expressionToDocument(c._e));
+		DocumentList* generators = new DocumentList("", ", ", "");
+		for (unsigned int i = 0; i < c._g->size(); i++) {
+			Generator* g = (*c._g)[i];
+			DocumentList* gen = new DocumentList("", "", "");
+			DocumentList* idents = new DocumentList("", ", ", "");
+			for (unsigned int j = 0; j < g->_v->size(); j++) {
+				idents->addStringToList((*g->_v)[j]->_id.str());
+			}
+			gen->addDocumentToList(idents);
+			gen->addStringToList(" in ");
+			gen->addDocumentToList(expressionToDocument(g->_in));
+			generators->addDocumentToList(gen);
+		}
+		dl->addDocumentToList(generators);
+		if (c._where != NULL) {
+
+			dl->addStringToList(" where ");
+			dl->addDocumentToList(expressionToDocument(c._where));
+		}
+
+		return dl;
+	}
+	ret mapITE(const ITE& ite) {
+
+		DocumentList* dl = new DocumentList("", "", "");
+		for (unsigned int i = 0; i < ite._e_if->size(); i++) {
+			std::string beg = (i == 0 ? "if " : " elseif ");
+			dl->addStringToList(beg);
+			dl->addDocumentToList(expressionToDocument((*ite._e_if)[i].first));
+			dl->addStringToList(" then ");
+
+			DocumentList* ifdoc = new DocumentList("", "", "", false);
+			ifdoc->addBreakPoint();
+			ifdoc->addDocumentToList(
+					expressionToDocument((*ite._e_if)[i].second));
+			dl->addDocumentToList(ifdoc);
+			dl->addStringToList(" ");
+		}
+		dl->addBreakPoint();
+		dl->addStringToList("else ");
+
+		DocumentList* elsedoc = new DocumentList("", "", "", false);
+		elsedoc->addBreakPoint();
+		elsedoc->addDocumentToList(expressionToDocument(ite._e_else));
+		dl->addDocumentToList(elsedoc);
+		dl->addStringToList(" ");
+		dl->addBreakPoint();
+		dl->addStringToList("endif");
+
+		return dl;
+	}
+	ret mapBinOp(const BinOp& bo) {
+		Parentheses ps = needParens(&bo, bo._e0, bo._e1);
+		DocumentList* opLeft;
+		DocumentList* dl;
+		DocumentList* opRight;
+		bool linebreak = false;
+		if (ps & PN_LEFT)
+			opLeft = new DocumentList("(", " ", ")");
+		else
+			opLeft = new DocumentList("", " ", "");
+		opLeft->addDocumentToList(expressionToDocument(bo._e0));
+		std::string op;
+		switch (bo._op) {
+		case BOT_PLUS:
+			op = "+";
+			break;
+		case BOT_MINUS:
+			op = "-";
+			break;
+		case BOT_MULT:
+			op = "*";
+			break;
+		case BOT_DIV:
+			op = "/";
+			break;
+		case BOT_IDIV:
+			op = " div ";
+			break;
+		case BOT_MOD:
+			op = " mod ";
+			break;
+		case BOT_LE:
+			op = "<";
+			break;
+		case BOT_LQ:
+			op = "<=";
+			break;
+		case BOT_GR:
+			op = ">";
+			break;
+		case BOT_GQ:
+			op = ">=";
+			break;
+		case BOT_EQ:
+			op = "==";
+			break;
+		case BOT_NQ:
+			op = "!=";
+			break;
+		case BOT_IN:
+			op = " in ";
+			break;
+		case BOT_SUBSET:
+			op = " subset ";
+			break;
+		case BOT_SUPERSET:
+			op = " superset ";
+			break;
+		case BOT_UNION:
+			op = " union ";
+			break;
+		case BOT_DIFF:
+			op = " diff ";
+			break;
+		case BOT_SYMDIFF:
+			op = " symdiff ";
+			break;
+		case BOT_INTERSECT:
+			op = " intersect ";
+			break;
+		case BOT_PLUSPLUS:
+			op = "++";
+			linebreak = true;
+			break;
+		case BOT_EQUIV:
+			op = " <-> ";
+			break;
+		case BOT_IMPL:
+			op = " -> ";
+			break;
+		case BOT_RIMPL:
+			op = " <- ";
+			break;
+		case BOT_OR:
+			op = " \\/ ";
+			linebreak = true;
+			break;
+		case BOT_AND:
+			op = " /\\ ";
+			linebreak = true;
+			break;
+		case BOT_XOR:
+			op = " xor ";
+			break;
+		case BOT_DOTDOT:
+			op = "..";
+			break;
+		default:
+			assert(false);
+			break;
+		}
+		dl = new DocumentList("", op, "");
+
+		if (ps & PN_RIGHT)
+			opRight = new DocumentList("(", " ", ")");
+		else
+			opRight = new DocumentList("", "", "");
+		opRight->addDocumentToList(expressionToDocument(bo._e1));
+		dl->addDocumentToList(opLeft);
+		if (linebreak)
+			dl->addBreakPoint();
+		dl->addDocumentToList(opRight);
+
+		return dl;
+	}
+	ret mapUnOp(const UnOp& uo) {
+		DocumentList* dl = new DocumentList("", "", "");
+		std::string op;
+		switch (uo._op) {
+		case UOT_NOT:
+			op = "not ";
+			break;
+		case UOT_PLUS:
+			op = "+";
+			break;
+		case UOT_MINUS:
+			op = "-";
+			break;
+		default:
+			assert(false);
+			break;
+		}
+		dl->addStringToList(op);
+		DocumentList* unop;
+		bool needParen = (uo._e0->isa<BinOp>() || uo._e0->isa<UnOp>());
+		if (needParen)
+			unop = new DocumentList("(", " ", ")");
+		else
+			unop = new DocumentList("", " ", "");
+
+		unop->addDocumentToList(expressionToDocument(uo._e0));
+		dl->addDocumentToList(unop);
+		return dl;
+	}
+	ret mapCall(const Call& c) {
+		if (c._args->size() == 1) {
+			/*
+			 * if we have only one argument, and this is an array comprehension,
+			 * we convert it into the following syntax
+			 * forall (f(i,j) | i in 1..10)
+			 * -->
+			 * forall (i in 1..10) (f(i,j))
+			 */
+
+			Expression* e = (*c._args)[0];
+			if (e->isa<Comprehension>()) {
+				Comprehension* com = e->cast<Comprehension>();
+				if (!com->_set) {
+					DocumentList* dl = new DocumentList("", " ", "");
+					dl->addStringToList(c._id.str());
+					DocumentList* args = new DocumentList("", " ", "", false);
+					DocumentList* generators = new DocumentList("(", ", ", ")");
+					for (unsigned int i = 0; i < com->_g->size(); i++) {
+						Generator* g = (*com->_g)[i];
+						DocumentList* gen = new DocumentList("", "", "");
+						for (unsigned int j = 0; j < g->_v->size(); j++) {
+							gen->addStringToList((*g->_v)[j]->_id.str());
+						}
+						gen->addStringToList(" in ");
+						gen->addDocumentToList(expressionToDocument(g->_in));
+						generators->addDocumentToList(gen);
+					}
+					args->addDocumentToList(generators);
+					args->addStringToList("(");
+					args->addBreakPoint();
+					args->addDocumentToList(expressionToDocument(com->_e));
+
+					dl->addDocumentToList(args);
+					dl->addBreakPoint();
+					dl->addStringToList(")");
+
+					return dl;
+				}
+			}
+
+		}
+		std::string beg = c._id.str() + "(";
+		DocumentList* dl = new DocumentList(beg, ", ", ")");
+		for (unsigned int i = 0; i < c._args->size(); i++) {
+			dl->addDocumentToList(expressionToDocument((*c._args)[i]));
+		}
+		return dl;
+>>>>>>> origin/master
 
     }
     ret mapVarDecl(const VarDecl& vd) {

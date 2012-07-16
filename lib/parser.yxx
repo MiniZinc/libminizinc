@@ -332,7 +332,7 @@ namespace MiniZinc {
 //%type <vardeclexpr> slet_vardecl_item
 %type <vardeclexpr_v> params params_list params_list_head
 //%type <vardeclexpr_v> slet_vardecl_item_list
-%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
+%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail ti_variable_expr_tail
 //%type <tiexpr_v> ti_expr_list ti_expr_list_head
 //%type <basetiexpr> base_ti_expr_tail
 
@@ -557,6 +557,8 @@ int_ti_expr : num_ti_expr
       { $$=$1; }
     | MZN_INT
       { $$=NULL; }
+    | MZN_TI_IDENTIFIER
+      { $$=TIId::a(GETCTX(),@1,$1); free($1); }
 
 num_ti_expr :
       MZN_IDENTIFIER
@@ -605,6 +607,19 @@ base_ti_expr_tail :
       }
     | num_ti_expr
       { $$ = TypeInst::a(GETCTX(),@$,Type(),$1); }
+    | ti_variable_expr_tail
+
+ti_variable_expr_tail :
+      MZN_TI_IDENTIFIER
+      { $$ = TypeInst::a(GETCTX(),@$,Type::bot(),
+                         TIId::a(GETCTX(), @$, $1));
+        free($1);
+      }
+    | MZN_ANY MZN_TI_IDENTIFIER
+      { $$ = TypeInst::a(GETCTX(),@$,Type::any(),
+                         TIId::a(GETCTX(), @$, $2));
+        free($2);
+      }
 
 expr_list : expr_list_head comma_or_none
 
