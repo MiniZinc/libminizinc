@@ -1,6 +1,7 @@
 annotation is_defined_var;
 annotation var_is_introduced;
 annotation defines_var(var int: c);
+annotation output_array(array[int] of set of int:a);
 
 %Predicate definitions for stdlib.fzn
 predicate int2float(var int:a, var float:b);

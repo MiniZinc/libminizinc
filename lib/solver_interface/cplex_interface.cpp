@@ -77,7 +77,7 @@ namespace MiniZinc {
 	if(i==0){
 	  constraint = IloConstraint(*array_element == true);
 	}else {
-	  constraint == constraint && IloConstraint(*array_element == true);
+	  constraint = constraint && IloConstraint(*array_element == true);
 	}
       }
     }
@@ -461,7 +461,7 @@ namespace MiniZinc {
       return (void*)res;
     }
     else{
-      IloNumVar* res = new IloNumVar(env, lb, ub, type);
+      IloNumVar* res = new IloNumVar(env, lb, ub, type,vd->_id.c_str());
       return (void*)res;
     }
   }
