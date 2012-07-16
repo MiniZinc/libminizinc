@@ -259,9 +259,7 @@ namespace MiniZinc {
       IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOINT);
       return (void*)var;
     }else if(e->isa<BoolLit>()){
-      BoolLit* bl = e->cast<BoolLit>();
-      bool v = bl->_v;
-
+      bool v = getNumber<bool,BoolLit>(e);
       IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOBOOL);
       return (void*)var;
     }else if(e->isa<FloatLit>()){
@@ -269,209 +267,256 @@ namespace MiniZinc {
       float v = fl->_v;
       IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOFLOAT);
       return (void*)var;
+    }else if(e->isa<UnOp>()){
+      e = e->cast<UnOp>()->_e0;
+      if(e->isa<IntLit>()){
+	IntLit* il = e->cast<IntLit>();
+	int v = il->_v;
+	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOINT);
+	return (void*)var;
+      }else if(e->isa<BoolLit>()){
+	bool v = getNumber<bool,BoolLit>(e);
+	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOBOOL);
+	return (void*)var;
+      }else if(e->isa<FloatLit>()){
+	FloatLit* fl = e->cast<FloatLit>();
+	float v = fl->_v;
+	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOFLOAT);
+	return (void*)var;
+      }
     }
-    std::cerr << "Error " << e->_loc << std::endl
-	      << "Variables should be identificators or array accesses." << std::endl;
-    Printer::getInstance()->print(e);
-    throw -1;
-    return NULL;
+      std::cerr << "Error " << e->_loc << std::endl
+		<< "Variables should be identificators or array accesses." << std::endl;
+      Printer::getInstance()->print(e);
+      throw -1;
+      return NULL;
     
-  }
-  CplexInterface::CplexInterface() {
-    model = new IloModel(env);
-    addConstraintMapping(std::string("int2float"), p_eq);
-    addConstraintMapping(std::string("int_abs"), p_abs);
-    addConstraintMapping(std::string("int_eq"), p_eq);
-    addConstraintMapping(std::string("int_eq_reif"), p_eq_reif);
-    addConstraintMapping(std::string("int_le"), p_le);
-    addConstraintMapping(std::string("int_le_reif"), p_le_reif);
-    addConstraintMapping(std::string("int_lin_eq"), p_int_lin_eq_noreif);//
-    addConstraintMapping(std::string("int_lin_eq_reif"), p_int_lin_eq_reif);
-    addConstraintMapping(std::string("int_lin_le"), p_int_lin_le_noreif);//
-    addConstraintMapping(std::string("int_lin_le_reif"), p_int_lin_le_reif);
-    addConstraintMapping(std::string("int_ne"), p_ne);
-    addConstraintMapping(std::string("int_ne_reif"), p_ne_reif);
-    addConstraintMapping(std::string("int_plus"), p_plus);
-    addConstraintMapping(std::string("int_times"), p_times);
-    addConstraintMapping(std::string("array_bool_and"), p_array_bool_and);
-    // addConstraintMapping(std::string("array_bool_or"), p_array_bool_or);
-    // addConstraintMapping(std::string("array_bool_xor"), p_array_bool_xor);
-    addConstraintMapping(std::string("bool2int"), p_eq);
-    addConstraintMapping(std::string("bool_and"), p_bool_and);
-    //    addConstraintMapping(std::string("bool_clause"), p_bool_clause);
-    addConstraintMapping(std::string("bool_eq"), p_eq);
-    addConstraintMapping(std::string("bool_eq_reif"), p_eq_reif);
-    addConstraintMapping(std::string("bool_le"), p_le);
-    addConstraintMapping(std::string("bool_le_reif"), p_le_reif);
-    addConstraintMapping(std::string("bool_lin_eq"), p_bool_lin_eq);
-    addConstraintMapping(std::string("bool_lin_le"), p_bool_lin_le);
-    addConstraintMapping(std::string("bool_not"), p_bool_not);
-    addConstraintMapping(std::string("bool_or"), p_bool_or);
-    addConstraintMapping(std::string("bool_xor"), p_bool_xor);
-    addConstraintMapping(std::string("float_abs"), p_abs);
-    addConstraintMapping(std::string("float_eq"), p_eq);
-    addConstraintMapping(std::string("float_eq_reif"), p_eq_reif);
-    addConstraintMapping(std::string("float_le"), p_le);
-    addConstraintMapping(std::string("float_le_reif"), p_le_reif);
-    addConstraintMapping(std::string("float_lin_eq"), p_float_lin_eq_noreif);//
-    addConstraintMapping(std::string("float_lin_eq_reif"), p_float_lin_eq_reif);
-    addConstraintMapping(std::string("float_lin_le"), p_float_lin_le_noreif);//
-    addConstraintMapping(std::string("float_lin_le_reif"), p_float_lin_le_reif);
-
-    addConstraintMapping(std::string("float_ne"), p_ne);
-    addConstraintMapping(std::string("float_ne_reif"), p_ne_reif);
-    addConstraintMapping(std::string("float_plus"), p_plus);
-
-  }
- 
- 
-  void CplexInterface::solve(SolveI* s){
-    if(s->_st != SolveI::SolveType::ST_SAT){
-      IloObjective obj;
-      if(s->_st == SolveI::SolveType::ST_MAX) obj = IloMaximize(env);
-      else obj = IloMinimize(env);
-      //Let's assume that the expression is a var
-      IloNumVar* v = (IloNumVar*)lookupVar(s->_e->cast<Id>()->_v.str());
-      obj.setLinearCoef(*v,1);
-      model->add(obj);
     }
+    CplexInterface::CplexInterface() {
+      model = new IloModel(env);
+      addConstraintMapping(std::string("int2float"), p_eq);
+      addConstraintMapping(std::string("int_abs"), p_abs);
+      addConstraintMapping(std::string("int_eq"), p_eq);
+      addConstraintMapping(std::string("int_eq_reif"), p_eq_reif);
+      addConstraintMapping(std::string("int_le"), p_le);
+      addConstraintMapping(std::string("int_le_reif"), p_le_reif);
+      addConstraintMapping(std::string("int_lin_eq"), p_int_lin_eq_noreif);//
+      addConstraintMapping(std::string("int_lin_eq_reif"), p_int_lin_eq_reif);
+      addConstraintMapping(std::string("int_lin_le"), p_int_lin_le_noreif);//
+      addConstraintMapping(std::string("int_lin_le_reif"), p_int_lin_le_reif);
+      addConstraintMapping(std::string("int_ne"), p_ne);
+      addConstraintMapping(std::string("int_ne_reif"), p_ne_reif);
+      addConstraintMapping(std::string("int_plus"), p_plus);
+      addConstraintMapping(std::string("int_times"), p_times);
+      //    addConstraintMapping(std::string("float_times"), p_times);
+      addConstraintMapping(std::string("array_bool_and"), p_array_bool_and);
+      // addConstraintMapping(std::string("array_bool_or"), p_array_bool_or);
+      // addConstraintMapping(std::string("array_bool_xor"), p_array_bool_xor);
+      addConstraintMapping(std::string("bool2int"), p_eq);
+      addConstraintMapping(std::string("bool_and"), p_bool_and);
+      //    addConstraintMapping(std::string("bool_clause"), p_bool_clause);
+      addConstraintMapping(std::string("bool_eq"), p_eq);
+      addConstraintMapping(std::string("bool_eq_reif"), p_eq_reif);
+      addConstraintMapping(std::string("bool_le"), p_le);
+      addConstraintMapping(std::string("bool_le_reif"), p_le_reif);
+      addConstraintMapping(std::string("bool_lin_eq"), p_bool_lin_eq);
+      addConstraintMapping(std::string("bool_lin_le"), p_bool_lin_le);
+      addConstraintMapping(std::string("bool_not"), p_bool_not);
+      addConstraintMapping(std::string("bool_or"), p_bool_or);
+      addConstraintMapping(std::string("bool_xor"), p_bool_xor);
+      addConstraintMapping(std::string("float_abs"), p_abs);
+      addConstraintMapping(std::string("float_eq"), p_eq);
+      addConstraintMapping(std::string("float_eq_reif"), p_eq_reif);
+      addConstraintMapping(std::string("float_le"), p_le);
+      addConstraintMapping(std::string("float_le_reif"), p_le_reif);
+      addConstraintMapping(std::string("float_lin_eq"), p_float_lin_eq_noreif);//
+      addConstraintMapping(std::string("float_lin_eq_reif"), p_float_lin_eq_reif);
+      addConstraintMapping(std::string("float_lin_le"), p_float_lin_le_noreif);//
+      addConstraintMapping(std::string("float_lin_le_reif"), p_float_lin_le_reif);
 
-    IloCplex cplex(*model);
+      addConstraintMapping(std::string("float_ne"), p_ne);
+      addConstraintMapping(std::string("float_ne_reif"), p_ne_reif);
+      addConstraintMapping(std::string("float_plus"), p_plus);
+
+    }
+ 
+ 
+    void CplexInterface::solve(SolveI* s){
+      if(s->_st != SolveI::SolveType::ST_SAT){
+	IloObjective obj;
+	if(s->_st == SolveI::SolveType::ST_MAX) obj = IloMaximize(env);
+	else obj = IloMinimize(env);
+	//Let's assume that the expression is a var
+	IloNumVar* v = (IloNumVar*)lookupVar(s->_e->cast<Id>()->_v.str());
+	obj.setLinearCoef(*v,1);
+	model->add(obj);
+      }
+
+      IloCplex cplex(*model);
   
-    // Optimize the problem and obtain solution.
-    if ( !cplex.solve() ) {
-      std::cout << "Failed to optimize LP" << std::endl;
-      return;
-    }
+      // Optimize the problem and obtain solution.
+      if ( !cplex.solve() ) {
+	std::cout << "Failed to optimize LP" << std::endl;
+	return;
+      }
 
-    std::cout << "Solution status = " << cplex.getStatus() << std::endl;
-    std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
-    std::cout << showVariables(cplex);
+      std::cout << "Solution status = " << cplex.getStatus() << std::endl;
+      std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
+      std::cout << showVariables(cplex);
     
-  }
-  std::string CplexInterface::showVariable(IloCplex& cplex, IloNumVar& v){
-    std::ostringstream oss;
-    try{
-      IloNum num = cplex.getValue(v);
-      oss << num;
-    } catch(IloAlgorithm::NotExtractedException& e) {
-      oss << "_";
-      // TODO : show possible values ?
-      /*IloNumArray posval(env);
-	v.getPossibleValues(posval);
-	int size = posval.getSize();
-	oss << "{" ;
-	for(int j = 0; j < size; j++){
-	oss << posval[j];
-	if(j != size - 1) oss << ", ";
-	}
-	oss << "}";*/
     }
-    return oss.str();
-  }
-  std::string CplexInterface::showVariables(IloCplex& cplex){
-    std::ostringstream oss;
-    std::map<VarDecl*, void*>::iterator it;
-    for(it = variableMap.begin(); it != variableMap.end(); it++){
-      oss <<  it->first->_id.str() << " = ";
-      if(it->first->_ti->isarray()){
-	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
-	oss << "array[";
-	int size = varray->getSize();
-	for(int i = 0; i < size; i++){
-	  IloNumVar& v = (*varray)[i];
-	  oss << showVariable(cplex,v);
-	  if(i != size -1) oss << ", ";
-	}
-	oss << "]";
-      } else {
-	oss << showVariable(cplex,*(IloNumVar*)(it->second));
+    std::string CplexInterface::showVariable(IloCplex& cplex, IloNumVar& v){
+      std::ostringstream oss;
+      try{
+	IloNum num = cplex.getValue(v);
+	oss << num;
+      } catch(IloAlgorithm::NotExtractedException& e) {
+	oss << "_";
+	// TODO : show possible values ?
+	/*IloNumArray posval(env);
+	  v.getPossibleValues(posval);
+	  int size = posval.getSize();
+	  oss << "{" ;
+	  for(int j = 0; j < size; j++){
+	  oss << posval[j];
+	  if(j != size - 1) oss << ", ";
+	  }
+	  oss << "}";*/
       }
-      oss << std::endl;     
+      return oss.str();
     }
-    return oss.str();
-  }
+    std::string CplexInterface::showVariables(IloCplex& cplex){
+      std::ostringstream oss;
+      std::map<VarDecl*, void*>::iterator it;
+      for(it = variableMap.begin(); it != variableMap.end(); it++){
+	oss <<  it->first->_id.str() << " = ";
+	if(it->first->_ti->isarray()){
+	  IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
+	  oss << "array[";
+	  int size = varray->getSize();
+	  for(int i = 0; i < size; i++){
+	    IloNumVar& v = (*varray)[i];
+	    oss << showVariable(cplex,v);
+	    if(i != size -1) oss << ", ";
+	  }
+	  oss << "]";
+	} else {
+	  oss << showVariable(cplex,*(IloNumVar*)(it->second));
+	}
+	oss << std::endl;     
+      }
+      return oss.str();
+    }
 
-  CplexInterface::~CplexInterface(){
-    model->end();
-    delete model;
-    env.end();
-  }
-  void* CplexInterface::getModel(){
-    return (void*)(model);
-  }
-  // static  std::string typeToString(IloNumVar::Type type){
-  //   switch(type){
-  //   case ILOFLOAT: return "ilofloat";
-  //   case ILOINT: return "iloint";
-  //   case ILOBOOL: return "ilobool";
-  //   }
-  //   return "unknown";
-  // }
-  void* CplexInterface::addSolverVar(VarDecl* vd){
-    MiniZinc::TypeInst* ti = vd->_ti;
-    IloNumVar::Type type;
-    switch(ti->_type._bt){
-    case Type::BT_INT:
-      type = ILOINT;
-      break;
-    case Type::BT_BOOL:
-      type = ILOBOOL;
-      break;
-    case Type::BT_FLOAT:
-      type = ILOFLOAT;
-      break;
-    default:
-      std::cerr << "This type of var is not handled by CPLEX."
-		<< std::endl;
-      std::exit(-1);
+    CplexInterface::~CplexInterface(){
+      model->end();
+      delete model;
+      env.end();
     }
-    Expression* domain = ti->_domain;
-    IloNum lb, ub;
-    if(domain){
-      std::pair<double,double> bounds;
-      if(type == ILOFLOAT){	 
-	bounds = getFloatBounds(domain);
-      } else if (type == ILOINT){
-	bounds = getIntBounds(domain);
+    void* CplexInterface::getModel(){
+      return (void*)(model);
+    }
+    // static  std::string typeToString(IloNumVar::Type type){
+    //   switch(type){
+    //   case ILOFLOAT: return "ilofloat";
+    //   case ILOINT: return "iloint";
+    //   case ILOBOOL: return "ilobool";
+    //   }
+    //   return "unknown";
+    // }
+    void* CplexInterface::addSolverVar(VarDecl* vd){
+      MiniZinc::TypeInst* ti = vd->_ti;
+      IloNumVar::Type type;
+      switch(ti->_type._bt){
+      case Type::BT_INT:
+	type = ILOINT;
+	break;
+      case Type::BT_BOOL:
+	type = ILOBOOL;
+	break;
+      case Type::BT_FLOAT:
+	type = ILOFLOAT;
+	break;
+      default:
+	std::cerr << "This type of var is not handled by CPLEX."
+		  << std::endl;
+	std::exit(-1);
       }
-      lb = IloNum(bounds.first);
-      ub = IloNum(bounds.second);
-    }
-    else {
-      lb = -IloInfinity;
-      ub = IloInfinity;	  
-    }
-    if(ti->isarray()){
-      assert(ti->_ranges->size() == 1);
-      Expression* range = (*(ti->_ranges))[0];
-      std::pair<int,int> rangebounds = getIntBounds(range);
-      int rangesize = rangebounds.second - rangebounds.first;
-      IloNumVarArray* res = new IloNumVarArray(env,rangesize+1,lb,ub,type);
-      Expression* init = vd->_e;
-      if(init){
-	ArrayLit* initarray = init->cast<ArrayLit>();
-	CtxVec<Expression*>& ar = *(initarray->_v);
-	switch(type){
-	case ILOINT:	initArray<IntLit>(*res,ar); break;
-	case ILOFLOAT:  initArray<FloatLit>(*res,ar); break;
-	case ILOBOOL:   initArray<BoolLit>(*res,ar); break;
+      Expression* domain = ti->_domain;
+      IloNum lb, ub;
+      if(domain){
+	std::pair<double,double> bounds;
+	if(type == ILOFLOAT){	 
+	  bounds = getFloatBounds(domain);
+	} else if (type == ILOINT){
+	  bounds = getIntBounds(domain);
 	}
+	lb = IloNum(bounds.first);
+	ub = IloNum(bounds.second);
       }
-      return (void*)res;
+      else {
+	lb = -IloInfinity;
+	ub = IloInfinity;	  
+      }
+      if(ti->isarray()){
+	assert(ti->_ranges->size() == 1);
+	Expression* range = (*(ti->_ranges))[0];
+	std::pair<int,int> rangebounds = getIntBounds(range);
+	int rangesize = rangebounds.second - rangebounds.first;
+	IloNumVarArray* res = new IloNumVarArray(env,rangesize+1,lb,ub,type);
+	Expression* init = vd->_e;
+	if(init){
+	  ArrayLit* initarray = init->cast<ArrayLit>();
+	  CtxVec<Expression*>& ar = *(initarray->_v);
+	  switch(type){
+	  case ILOINT:	initArray<IntLit>(*res,ar); break;
+	  case ILOFLOAT:  initArray<FloatLit>(*res,ar); break;
+	  case ILOBOOL:   initArray<BoolLit>(*res,ar); break;
+	  }
+	}
+	return (void*)res;
+      }
+      else{
+	IloNumVar* var = NULL;
+	if(vd->_e){
+	  Expression* init = vd->_e;
+	
+	  if(init->isa<Id>()){
+	    var = (IloNumVar*)(resolveVar(init));
+	  } else {
+	    switch(type){
+	    case ILOINT:
+	      lb = init->cast<IntLit>()->_v;
+	      ub = lb;
+	      break;
+	    case ILOFLOAT:
+	      lb = init->cast<FloatLit>()->_v;
+	      ub = lb;
+	      break;
+	    case ILOBOOL:
+	      lb = init->cast<BoolLit>()->_v;
+	      ub = lb;
+	      break;
+	    default:
+	      std::cerr << "tiens tiens tiens !" << std::endl;
+	      break;
+	    }
+	  }
+	}
+	IloNumVar* res = new IloNumVar(env, lb, ub, type,vd->_id.c_str());
+	if(var){
+	  model->add(IloConstraint(*res == *var));
+	}
+	return (void*)res;
+      }
     }
-    else{
-      IloNumVar* res = new IloNumVar(env, lb, ub, type,vd->_id.c_str());
-      return (void*)res;
-    }
-  }
-  template<typename T>
-  void CplexInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar){
+    template<typename T>
+      void CplexInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar){
 
-    for(unsigned int i = 0; i < ar.size(); i++){
-      T* v = ar[i]->cast<T>();
-      model->add(IloConstraint(res[i] == v->_v));
+      for(unsigned int i = 0; i < ar.size(); i++){
+	T* v = ar[i]->cast<T>();
+	model->add(IloConstraint(res[i] == v->_v));
 	  
+      }
     }
-  }
-};
+  };

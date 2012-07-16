@@ -1,7 +1,9 @@
 annotation is_defined_var;
 annotation var_is_introduced;
-annotation defines_var(var int: c);
-annotation output_array(array[int] of set of int:a);
+annotation defines_var(any $t: c);
+annotation output_array(array[$u] of set of int:a);
+annotation output_var;
+annotation domain;
 
 %Predicate definitions for stdlib.fzn
 predicate int2float(var int:a, var float:b);
@@ -19,6 +21,7 @@ predicate int_ne(var int: a, var int: b);
 predicate int_ne_reif(var int: a, var int: b, var bool: r);
 predicate int_plus(var int: a, var int: b, var int: c);
 predicate int_times(var int: a, var int: b, var int: c);
+predicate float_times(var float: a, var float: b, var float: c);
 
 predicate array_bool_and(array [int] of var bool: as, var bool: r);
 
