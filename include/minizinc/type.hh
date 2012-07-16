@@ -15,14 +15,12 @@ namespace MiniZinc {
     TypeInst _ti : 3;
     BaseType _bt : 3;
     SetType _st  : 1;
-    unsigned int _dim : 20;
+    int _dim : 20;
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN), _dim(0) {}
   protected:
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
          unsigned int dim)
-      : _ti(ti), _bt(bt), _st(st), _dim(dim) {
-      assert(dim < 1<<20);
-    }
+      : _ti(ti), _bt(bt), _st(st), _dim(dim) {}
   public:
     static Type any(unsigned int dim=0) {
       return Type(TI_ANY,BT_BOT,ST_PLAIN,dim);
@@ -100,6 +98,39 @@ namespace MiniZinc {
       return !this->operator==(t);
     }
 
+  // protected:
+    unsigned int toInt(void) const {
+      return
+        (static_cast<unsigned>(_ti)<<24)
+      + (static_cast<unsigned>(_bt)<<21)
+      + (static_cast<unsigned>(_st)<<20)
+      + _dim;
+    }
+    std::string toString(void) const {
+      std::ostringstream oss;
+      if (_dim>0)
+        oss<<"array["<<_dim<<"] of ";
+      if (_dim<0)
+        oss<<"array[$_] of ";
+      switch (_ti) {
+        case TI_PAR: oss<<"par "; break;
+        case TI_VAR: oss<<"var "; break;
+        case TI_SVAR: oss<<"svar "; break;
+        case TI_ANY: oss<<"any "; break;
+      }
+      if (_st==ST_SET) oss<<"set of ";
+      switch (_bt) {
+        case BT_INT: oss<<"int"; break;
+        case BT_BOOL: oss<<"bool"; break;
+        case BT_FLOAT: oss<<"float"; break;
+        case BT_STRING: oss<<"string"; break;
+        case BT_ANN: oss<<"ann"; break;
+        case BT_BOT: oss<<"bot"; break;
+        case BT_UNKNOWN: oss<<"??? "; break;
+      }
+      return oss.str();
+    }
+  public:
     bool isSubtypeOf(const Type& t) const {
       // either same dimension or t has variable dimension
       if (_dim!=t._dim && t._dim!=-1)
@@ -121,37 +152,7 @@ namespace MiniZinc {
         return true;
       return false;
     }
-  // protected:
-    unsigned int toInt(void) const {
-      return
-        (static_cast<unsigned>(_ti)<<24)
-      + (static_cast<unsigned>(_bt)<<21)
-      + (static_cast<unsigned>(_st)<<20)
-      + _dim;
-    }
-    std::string toString(void) const {
-      std::ostringstream oss;
-      if (_dim>0)
-        oss<<"array["<<_dim<<"]";
-      switch (_ti) {
-        case TI_PAR: oss<<"par "; break;
-        case TI_VAR: oss<<"var "; break;
-        case TI_SVAR: oss<<"svar "; break;
-        case TI_ANY: oss<<"any "; break;
-      }
-      if (_st==ST_SET) oss<<"set of ";
-      switch (_bt) {
-        case BT_INT: oss<<"int"; break;
-        case BT_BOOL: oss<<"bool"; break;
-        case BT_FLOAT: oss<<"float"; break;
-        case BT_STRING: oss<<"string"; break;
-        case BT_ANN: oss<<"ann"; break;
-        case BT_BOT: oss<<"bot"; break;
-        case BT_UNKNOWN: oss<<"??? "; break;
-      }
-      return oss.str();
-    }
-  public:
+
     int cmp(const Type& t) const {
       return toInt()<t.toInt() ? -1 : (toInt()>t.toInt() ? 1 : 0);
     }

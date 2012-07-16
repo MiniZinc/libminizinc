@@ -65,6 +65,12 @@ namespace std {
 
 namespace MiniZinc {
 
+  template<typename T>
+  struct CtxStringMap {
+    typedef std::unordered_map<CtxStringH,T> t;
+  };
+  
+
   /**
    * \brief Context for AST operations
    *
@@ -74,7 +80,7 @@ namespace MiniZinc {
   class ASTContext {
   protected:
     mutable BlockAllocator balloc;
-    typedef std::unordered_map<CtxStringH,std::vector<FunctionI*> > FnMap;
+    typedef CtxStringMap<std::vector<FunctionI*> >::t FnMap;
     FnMap fnmap;
   public:
     void* alloc(size_t size) const {

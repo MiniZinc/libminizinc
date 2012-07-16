@@ -440,11 +440,48 @@ namespace MiniZinc {
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {
     Type ret = _ti->_type;
-    if (_ti->hasTiVariable()) {
-      throw TypeError(_loc,"not supported");
-    } else {
-      return ret;
+    CtxStringH dh;
+    if (_ti->_domain && _ti->_domain->isa<TIId>())
+      dh = _ti->_domain->cast<TIId>()->_v;
+    CtxStringH rh;
+    if (_ti->_ranges && _ti->_ranges->size()==1 &&
+        (*_ti->_ranges)[0] && (*_ti->_ranges)[0]->isa<TIId>())
+      rh = (*_ti->_ranges)[0]->cast<TIId>()->_v;
+    if (dh.size() != 0 || rh.size() != 0) {
+      CtxStringMap<Type>::t tmap;
+      for (unsigned int i=0; i<ta.size(); i++) {
+        TypeInst* tii = (*_params)[i]->_ti;
+        if (tii->_domain && tii->_domain->isa<TIId>()) {
+          CtxStringH tiid = tii->_domain->cast<TIId>()->_v;
+          Type tiit = ta[i]->_type;
+          tiit._dim=0;
+          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+        }
+        if (tii->_ranges && tii->_ranges->size()==1 &&
+            (*tii->_ranges)[0] && (*tii->_ranges)[0]->isa<TIId>()) {
+          CtxStringH tiid = (*tii->_ranges)[0]->cast<TIId>()->_v;
+          Type tiit = Type::any(ta[i]->_type._dim);
+          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+        }
+      }
+      if (dh.size() != 0) {
+        CtxStringMap<Type>::t::iterator it = tmap.find(dh);
+        if (it==tmap.end())
+          throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
+        ret._bt = it->second._bt;
+        if (ret._ti==Type::TI_ANY)
+          ret._ti = it->second._ti;
+        if (ret._st==Type::ST_PLAIN)
+          ret._st = it->second._st;
+      } 
+      if (rh.size() != 0) {
+        CtxStringMap<Type>::t::iterator it = tmap.find(rh);
+        if (it==tmap.end())
+          throw TypeError(_loc,"type-inst variable $"+rh.str()+" used but not defined");
+        ret._dim = it->second._dim;
+      }
     }
+    return ret;
   }
 
 }
