@@ -20,17 +20,16 @@ predicate int_plus(var int: a, var int: b, var int: c);
 predicate int_times(var int: a, var int: b, var int: c);
 
 predicate array_bool_and(array [int] of var bool: as, var bool: r);
-predicate array_bool_element(var int: b, array [int] of bool: as, var bool: c);
+
 predicate array_bool_or(array [int] of var bool: as, var bool: r);
 predicate array_bool_xor(array [int] of var bool: as);
-predicate array_float_element(var int: b, array [int] of float: as, var float: c);
-predicate array_int_element(var int: b, array [int] of int: as, var int: c);
-predicate array_set_element(var int: b, array [int] of set of int: as,
-set of int: c);
-predicate array_var_bool_element(var int: b, array [int] of var bool: as, var bool: c);
-predicate array_var_float_element(var int: b, array [int] of var float: as, var float: c);
-predicate array_var_int_element(var int: b, array [int] of var int: as, var int: c);
-predicate array_var_set_element(var int: b, array [int] of var set of int: as,var set of int: c);
+
+
+
+
+
+
+
 
 predicate bool2int(var bool: a, var int: b);
 predicate bool_and(var bool: a, var bool: b, var bool: r);
