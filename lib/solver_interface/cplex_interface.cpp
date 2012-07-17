@@ -36,11 +36,15 @@ namespace MiniZinc {
     for(unsigned int i = 0; i < coeff->size(); i++){
       T co = getNumber<T,S>((*coeff)[i]);
       IloNumVar* v = (IloNumVar*)(si.resolveVar((*vars)[i]));
+      /*std::cout << i << " : " << co <<" "
+	<< " [" << v->getLB() << ";"<<v->getUB()<<"]"<< std::endl;*/
       range.setLinearCoef(*v,co);
     }if(reif){
       IloNumVar* varr = (IloNumVar*)(si.resolveVar(args[2]));
       model->add(IloConstraint(range == *varr));
     }
+    /*    std::cout << "id : " << range.getId() << " : "
+	  << (*coeff)[0]->_loc.first_line << std::endl;*/
     model->add(range);
   }
 
@@ -268,19 +272,17 @@ namespace MiniZinc {
       IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOFLOAT);
       return (void*)var;
     }else if(e->isa<UnOp>()){
-      e = e->cast<UnOp>()->_e0;
-      if(e->isa<IntLit>()){
-	IntLit* il = e->cast<IntLit>();
-	int v = il->_v;
+      Expression* uo = e->cast<UnOp>()->_e0;
+      if(uo->isa<IntLit>()){
+	int v = getNumber<int,IntLit>(e);
 	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOINT);
 	return (void*)var;
-      }else if(e->isa<BoolLit>()){
+      }else if(uo->isa<BoolLit>()){
 	bool v = getNumber<bool,BoolLit>(e);
 	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOBOOL);
 	return (void*)var;
-      }else if(e->isa<FloatLit>()){
-	FloatLit* fl = e->cast<FloatLit>();
-	float v = fl->_v;
+      }else if(uo->isa<FloatLit>()){
+	float v = getNumber<float,FloatLit>(e);
 	IloNumVar* var = new IloNumVar(model->getEnv(),v,v,ILOFLOAT);
 	return (void*)var;
       }
@@ -353,7 +355,7 @@ namespace MiniZinc {
       }
 
       IloCplex cplex(*model);
-  
+      // cplex.getRow("id217");
       // Optimize the problem and obtain solution.
       if ( !cplex.solve() ) {
 	std::cout << "Failed to optimize LP" << std::endl;
@@ -388,7 +390,22 @@ namespace MiniZinc {
     std::string CplexInterface::showVariables(IloCplex& cplex){
       std::ostringstream oss;
       std::map<VarDecl*, void*>::iterator it;
+      bool output;
       for(it = variableMap.begin(); it != variableMap.end(); it++){
+	output = false;
+	Annotation* ann = it->first->_ann;
+	while(ann){
+	  if(ann->_e->isa<Id>() && ann->_e->cast<Id>()->_v.str() =="output_var"){
+	    output = true;
+	    break;
+	  } else if (ann->_e->isa<Call>() && 
+		     ann->_e->cast<Call>()->_id.str() == "output_array"){
+	    output = true;
+	    break;
+	  }
+	  ann = ann->_ann;
+	}
+	if(!output) continue;
 	oss <<  it->first->_id.str() << " = ";
 	if(it->first->_ti->isarray()){
 	  IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
@@ -469,9 +486,9 @@ namespace MiniZinc {
 	  ArrayLit* initarray = init->cast<ArrayLit>();
 	  CtxVec<Expression*>& ar = *(initarray->_v);
 	  switch(type){
-	  case ILOINT:	initArray<IntLit>(*res,ar); break;
-	  case ILOFLOAT:  initArray<FloatLit>(*res,ar); break;
-	  case ILOBOOL:   initArray<BoolLit>(*res,ar); break;
+	  case ILOINT:	initArray<int,IntLit>(*res,ar); break;
+	  case ILOFLOAT:  initArray<float,FloatLit>(*res,ar); break;
+	  case ILOBOOL:   initArray<bool,BoolLit>(*res,ar); break;
 	  }
 	}
 	return (void*)res;
@@ -510,13 +527,11 @@ namespace MiniZinc {
 	return (void*)res;
       }
     }
-    template<typename T>
+  template<typename S, typename T>
       void CplexInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar){
-
       for(unsigned int i = 0; i < ar.size(); i++){
-	T* v = ar[i]->cast<T>();
-	model->add(IloConstraint(res[i] == v->_v));
-	  
+	S v = getNumber<S,T>(ar[i]);
+	model->add(IloConstraint(res[i] == v));
       }
     }
   };

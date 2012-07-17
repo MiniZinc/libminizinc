@@ -4,6 +4,10 @@ annotation defines_var(any $t: c);
 annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation domain;
+annotation input_order;
+annotation indomain_min;
+annotation complete;
+annotation int_search(array[$u] of var $s:a, ann:b, ann:c, ann:d);
 
 %Predicate definitions for stdlib.fzn
 predicate int2float(var int:a, var float:b);
