@@ -108,9 +108,9 @@ namespace MiniZinc {
     dims.push_back(pair<int,int>(1,v.size()));
     dims.push_back(pair<int,int>(1,v[0].size()));
     std::vector<Expression*> vv;
-    for (unsigned int i=0; i<v.size(); i++)
-      for (unsigned int j=0; j<v[i].size(); j++)
-        vv.push_back(v[i][j]);
+    for (const std::vector<Expression*>& evi : v)
+      for (Expression* ei : evi)
+        vv.push_back(ei);
     return a(ctx,loc,vv,dims);
   }
 
@@ -130,10 +130,10 @@ namespace MiniZinc {
                const std::vector<CtxStringH>& v,
                Expression* in) {
     Generator* g = new (ctx) Generator();
-    std::vector<VarDecl*> vd(v.size());
-    for (unsigned int i=0; i<v.size(); i++)
-      vd[i] = VarDecl::a(ctx,in->_loc,
-        TypeInst::a(ctx,in->_loc,Type::parint()),v[i]);
+    std::vector<VarDecl*> vd;
+    for (const CtxStringH& vdi : v)
+      vd.push_back(VarDecl::a(ctx,in->_loc,
+        TypeInst::a(ctx,in->_loc,Type::parint()),vdi));
     g->_v = CtxVec<VarDecl*>::a(ctx,vd);
     g->_in = in;
     return g;
@@ -142,9 +142,9 @@ namespace MiniZinc {
   Generator::a(const ASTContext& ctx,
                const std::vector<std::string>& v,
                Expression* in) {
-    std::vector<CtxStringH> vv(v.size());
-    for (unsigned int i=0; i<v.size(); i++)
-      vv[i] = CtxStringH(ctx,v[i]);
+    std::vector<CtxStringH> vv;
+    for (const std::string& si : v)
+      vv.push_back(CtxStringH(ctx,si));
     return a(ctx,vv,in);
   }
 
