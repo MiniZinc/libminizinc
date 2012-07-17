@@ -101,8 +101,8 @@ namespace MiniZinc {
       case Expression::E_SETLIT:
         {
           SetLit* sl = e->cast<SetLit>();
-          for (unsigned int i=0; i<sl->_v->size(); i++)
-            run((*sl->_v)[i]);
+          for (Expression* ei : *sl->_v)
+            run(ei);
         }
         break;
       case Expression::E_ID:
@@ -113,40 +113,40 @@ namespace MiniZinc {
       case Expression::E_ARRAYLIT:
         {
           ArrayLit* al = e->cast<ArrayLit>();
-          for (unsigned int i=0; i<al->_v->size(); i++)
-            run((*al->_v)[i]);
+          for (Expression* ei : *al->_v)
+            run(ei);
         }
         break;
       case Expression::E_ARRAYACCESS:
         {
           ArrayAccess* ae = e->cast<ArrayAccess>();
           run(ae->_v);
-          for (unsigned int i=0; i<ae->_idx->size(); i++)
-            run((*ae->_idx)[i]);
+          for (Expression* ei : *ae->_idx)
+            run(ei);
         }
         break;
       case Expression::E_COMP:
         {
           Comprehension* ce = e->cast<Comprehension>();
-          for (unsigned int i=0; i<ce->_g->size(); i++)
-            for (unsigned int j=0; j<(*ce->_g)[i]->_v->size(); j++)
-              add((*(*ce->_g)[i]->_v)[j],false);
-          for (unsigned int i=0; i<ce->_g->size(); i++)
-            run((*ce->_g)[i]->_in);
+          for (Generator* g : *ce->_g)
+            for (VarDecl* vd : *g->_v)
+              add(vd,false);
+          for (Generator* g : *ce->_g)
+            run(g->_in);
           if (ce->_where)
             run(ce->_where);
           run(ce->_e);
-          for (unsigned int i=0; i<ce->_g->size(); i++)
-            for (unsigned int j=0; j<(*ce->_g)[i]->_v->size(); j++)
-              remove((*(*ce->_g)[i]->_v)[j]);
+          for (Generator* g : *ce->_g)
+            for (VarDecl* vd : *g->_v)
+              remove(vd);
         }
         break;
       case Expression::E_ITE:
         {
           ITE* ite = e->cast<ITE>();
-          for (unsigned int i=0; i<ite->_e_if->size(); i++) {
-            run((*ite->_e_if)[i].first);
-            run((*ite->_e_if)[i].second);
+          for (ITE::IfThen& ie : *ite->_e_if) {
+            run(ie.first);
+            run(ie.second);
           }
           run(ite->_e_else);
         }
@@ -167,8 +167,8 @@ namespace MiniZinc {
       case Expression::E_CALL:
         {
           Call* ce = e->cast<Call>();
-          for (unsigned int i=0; i<ce->_args->size(); i++)
-            run((*ce->_args)[i]);
+          for (Expression* ei : *ce->_args)
+            run(ei);
         }
         break;
       case Expression::E_VARDECL:
@@ -198,8 +198,8 @@ namespace MiniZinc {
         {
           TypeInst* ti = e->cast<TypeInst>();
           if (ti->_ranges)
-            for (unsigned int i=0; i<ti->_ranges->size(); i++)
-              run((*ti->_ranges)[i]);
+            for (Expression* ei : *ti->_ranges)
+              run(ei);
           run(ti->_domain);
         }
         break;
@@ -208,19 +208,19 @@ namespace MiniZinc {
       case Expression::E_LET:
         {
           Let* let = e->cast<Let>();
-          for (unsigned int i=0; i<let->_let->size(); i++) {
-            if (VarDecl* vd = (*let->_let)[i]->dyn_cast<VarDecl>()) {
+          for (Expression* ei : *let->_let) {
+            if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
               add(vd,false);
             }
           }
-          for (unsigned int i=0; i<let->_let->size(); i++) {
-            run((*let->_let)[i]);
+          for (Expression* ei : *let->_let) {
+            run(ei);
           }
           run(let->_in);
           VarDeclCmp poscmp(pos);
           std::stable_sort(let->_let->begin(), let->_let->end(), poscmp);
-          for (unsigned int i=0; i<let->_let->size(); i++) {
-            if (VarDecl* vd = (*let->_let)[i]->dyn_cast<VarDecl>()) {
+          for (Expression* ei : *let->_let) {
+            if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
               remove(vd);
             }
           }
@@ -245,13 +245,13 @@ namespace MiniZinc {
     /// Visit set literal
     void vSetLit(SetLit& sl) {
       Type ty; ty._st = Type::ST_SET;
-      for (unsigned int i=0; i<sl._v->size(); i++) {
-        if ((*sl._v)[i]->_type.isvar())
+      for (Expression* ei : *sl._v) {
+        if (ei->_type.isvar())
           ty._ti = Type::TI_VAR;
-        if (ty._bt!=(*sl._v)[i]->_type._bt) {
+        if (ty._bt!=ei->_type._bt) {
           if (ty._bt!=Type::BT_UNKNOWN)
             throw TypeError(sl._loc,"non-uniform set literal");
-          ty._bt = (*sl._v)[i]->_type._bt;
+          ty._bt = ei->_type._bt;
         }
       }
       if (ty._bt == Type::BT_UNKNOWN)
@@ -270,16 +270,15 @@ namespace MiniZinc {
     /// Visit array literal
     void vArrayLit(ArrayLit& al) {
       Type ty; ty._dim = al._dims->size();
-      for (unsigned int i=0; i<al._v->size(); i++) {
-        Expression* vi = (*al._v)[i];
+      for (Expression* vi : *al._v) {
         if (vi->_type.isvar() || vi->_type.isany())
           ty._ti = Type::TI_VAR;
         if (ty._bt==Type::BT_UNKNOWN) {
-          ty._bt = (*al._v)[i]->_type._bt;
+          ty._bt = vi->_type._bt;
           assert(ty._bt != Type::BT_UNKNOWN);
-          ty._st = (*al._v)[i]->_type._st;
-        } else if (ty._bt != (*al._v)[i]->_type._bt ||
-                   ty._st != (*al._v)[i]->_type._st) {
+          ty._st = vi->_type._st;
+        } else if (ty._bt != vi->_type._bt ||
+                   ty._st != vi->_type._st) {
           throw TypeError(al._loc,"non-uniform array literal");
         }
       }
@@ -294,8 +293,7 @@ namespace MiniZinc {
       if (aa._v->_type._dim != aa._idx->size())
         throw TypeError(aa._v->_loc,"array dimensions do not match");
       bool allpar=true;
-      for (unsigned int i=0; i<aa._idx->size(); i++) {
-        Expression* aai = (*aa._idx)[i];
+      for (Expression* aai : *aa._idx) {
         if (aai->_type==Type::varint() || aai->_type==Type::any()) {
           allpar=false;
         } else if (aai->_type!=Type::parint()) {
@@ -309,10 +307,10 @@ namespace MiniZinc {
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
-      for (unsigned int i=0; i<c._g->size(); i++) {
-        const Type& ty_in = (*c._g)[i]->_in->_type;
+      for (Generator* g : *c._g) {
+        const Type& ty_in = g->_in->_type;
         if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
-          throw TypeError((*c._g)[i]->_in->_loc,
+          throw TypeError(g->_in->_loc,
             "generator expression must be par set of int or array[int] of int, but is "+ty_in.toString());
         }
       }
@@ -340,9 +338,9 @@ namespace MiniZinc {
     void vITE(ITE& ite) {
       Type& telse = ite._e_else->_type;
       bool allpar = !(telse.isvar());
-      for (unsigned int i=0; i<ite._e_if->size(); i++) {
-        Expression* eif = (*ite._e_if)[i].first;
-        Expression* ethen = (*ite._e_if)[i].second;
+      for (ITE::IfThen& it : *ite._e_if) {
+        Expression* eif = it.first;
+        Expression* ethen = it.second;
         if (eif->_type != Type::parbool())
           throw TypeError(eif->_loc,
             "expected par bool conditional expression, got\n  "+
@@ -395,8 +393,7 @@ namespace MiniZinc {
     /// Visit call
     void vCall(Call& call) {
       std::vector<Expression*> args(call._args->size());
-      for (unsigned int i=call._args->size(); i--;)
-        args[i] = (*call._args)[i];
+      std::copy(call._args->begin(),call._args->end(),args.begin());
       if (FunctionI* fi = _ctx.matchFn(call._id,args)) {
         call._type = fi->rtype(args);
         call._decl = fi;
@@ -407,8 +404,7 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(Let& let) {
-      for (unsigned int i=0; i<let._let->size(); i++) {
-        Expression* li = (*let._let)[i];
+      for (Expression* li : *let._let) {
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->_type.ispar() && vdi->_e == NULL)
             throw TypeError(vdi->_loc,
@@ -438,8 +434,7 @@ namespace MiniZinc {
     void vTypeInst(TypeInst& ti) {
       if (ti._ranges) {
         bool foundTIId=false;
-        for (unsigned int i=0; i<ti._ranges->size(); i++) {
-          Expression* ri = (*ti._ranges)[i];
+        for (Expression* ri : *ti._ranges) {
           if (ri && ri->isa<TIId>()) {
             if (foundTIId) {
               throw TypeError(ri->_loc,
@@ -496,14 +491,14 @@ namespace MiniZinc {
       Model* cm = models.back();
       models.pop_back();
       // Register types of all declared functions
-      for (unsigned int i=0; i<cm->_items.size(); i++) {
-        switch (cm->_items[i]->_iid) {
+      for (Item* it : cm->_items) {
+        switch (it->_iid) {
         case Item::II_INC:
-          if (cm->_items[i]->cast<IncludeI>()->_own)
-            models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
+          if (it->cast<IncludeI>()->_own)
+            models.push_back(it->cast<IncludeI>()->_m);
           break;
         case Item::II_VD:
-          ts.add(cm->_items[i]->cast<VarDeclI>()->_e,true);
+          ts.add(it->cast<VarDeclI>()->_e,true);
           break;
         case Item::II_ASN:
           break;
@@ -514,8 +509,8 @@ namespace MiniZinc {
         case Item::II_OUT:
           break;
         case Item::II_FUN:
-          ctx.registerFn(cm->_items[i]->cast<FunctionI>());
-          functionItems.push_back(cm->_items[i]->cast<FunctionI>());
+          ctx.registerFn(it->cast<FunctionI>());
+          functionItems.push_back(it->cast<FunctionI>());
           break;      
         }
       }
@@ -526,35 +521,35 @@ namespace MiniZinc {
       Model* cm = models.back();
       models.pop_back();
       // Run toposort for all expressions
-      for (unsigned int i=0; i<cm->_items.size(); i++) {
-        switch (cm->_items[i]->_iid) {
+      for (Item* it : cm->_items) {
+        switch (it->_iid) {
         case Item::II_INC:
-          if (cm->_items[i]->cast<IncludeI>()->_own)
-            models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
+          if (it->cast<IncludeI>()->_own)
+            models.push_back(it->cast<IncludeI>()->_m);
           break;
         case Item::II_VD:
-          ts.run(cm->_items[i]->cast<VarDeclI>()->_e);
+          ts.run(it->cast<VarDeclI>()->_e);
           break;
         case Item::II_ASN:
           {
-            AssignI* ai = cm->_items[i]->cast<AssignI>();
+            AssignI* ai = it->cast<AssignI>();
             ts.run(ai->_e);
             ai->_decl = ts.checkId(ai->_id,ai->_loc);
           }
           break;
         case Item::II_CON:
-          ts.run(cm->_items[i]->cast<ConstraintI>()->_e);
+          ts.run(it->cast<ConstraintI>()->_e);
           break;
         case Item::II_SOL:
-          ts.run(cm->_items[i]->cast<SolveI>()->_ann);
-          ts.run(cm->_items[i]->cast<SolveI>()->_e);
+          ts.run(it->cast<SolveI>()->_ann);
+          ts.run(it->cast<SolveI>()->_e);
           break;
         case Item::II_OUT:
-          ts.run(cm->_items[i]->cast<OutputI>()->_e);
+          ts.run(it->cast<OutputI>()->_e);
           break;
         case Item::II_FUN:
           {
-            FunctionI* fi = cm->_items[i]->cast<FunctionI>();
+            FunctionI* fi = it->cast<FunctionI>();
             ts.run(fi->_ti);
             for (unsigned int i=0; i<fi->_params->size(); i++)
               ts.run((*fi->_params)[i]);
@@ -592,18 +587,18 @@ namespace MiniZinc {
         Model* cm = models.back();
         models.pop_back();
         // Run type checking for all expressions
-        for (unsigned int i=0; i<cm->_items.size(); i++) {
-          switch (cm->_items[i]->_iid) {
+        for (Item* it : cm->_items) {
+          switch (it->_iid) {
           case Item::II_INC:
-            if (cm->_items[i]->cast<IncludeI>()->_own)
-              models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
+            if (it->cast<IncludeI>()->_own)
+              models.push_back(it->cast<IncludeI>()->_m);
             break;
           case Item::II_VD:
-            bu_ty.run(cm->_items[i]->cast<VarDeclI>()->_e);
+            bu_ty.run(it->cast<VarDeclI>()->_e);
             break;
           case Item::II_ASN:
             {
-              AssignI* ai = cm->_items[i]->cast<AssignI>();
+              AssignI* ai = it->cast<AssignI>();
               bu_ty.run(ai->_e);
               if (!ai->_e->_type.isSubtypeOf(ai->_decl->_ti->_type)) {
                 throw TypeError(ai->_e->_loc,
@@ -612,34 +607,34 @@ namespace MiniZinc {
             }
             break;
           case Item::II_CON:
-            bu_ty.run(cm->_items[i]->cast<ConstraintI>()->_e);
-            if (!cm->_items[i]->cast<ConstraintI>()->
+            bu_ty.run(it->cast<ConstraintI>()->_e);
+            if (!it->cast<ConstraintI>()->
               _e->_type.isSubtypeOf(Type::varbool()))
-              throw TypeError(cm->_items[i]->cast<ConstraintI>()->_e->_loc,
+              throw TypeError(it->cast<ConstraintI>()->_e->_loc,
                 "constraint must be var bool");
             break;
           case Item::II_SOL:
             {
-              bu_ty.run(cm->_items[i]->cast<SolveI>()->_ann);
-              bu_ty.run(cm->_items[i]->cast<SolveI>()->_e);
-              if (cm->_items[i]->cast<SolveI>()->_e) {
-                Type et = cm->_items[i]->cast<SolveI>()->_e->_type;
+              bu_ty.run(it->cast<SolveI>()->_ann);
+              bu_ty.run(it->cast<SolveI>()->_e);
+              if (it->cast<SolveI>()->_e) {
+                Type et = it->cast<SolveI>()->_e->_type;
                 if (! (et.isSubtypeOf(Type::varint()) || 
                        et.isSubtypeOf(Type::varfloat())))
-                  throw TypeError(cm->_items[i]->cast<SolveI>()->_e->_loc,
+                  throw TypeError(it->cast<SolveI>()->_e->_loc,
                     "objective must be int or float");
               }
             }
             break;
           case Item::II_OUT:
-            bu_ty.run(cm->_items[i]->cast<OutputI>()->_e);
-            if (cm->_items[i]->cast<OutputI>()->_e->_type != Type::parstring(1))
-              throw TypeError(cm->_items[i]->cast<OutputI>()->_e->_loc,
+            bu_ty.run(it->cast<OutputI>()->_e);
+            if (it->cast<OutputI>()->_e->_type != Type::parstring(1))
+              throw TypeError(it->cast<OutputI>()->_e->_loc,
                 "output item needs string array");
             break;
           case Item::II_FUN:
             {
-              FunctionI* fi = cm->_items[i]->cast<FunctionI>();
+              FunctionI* fi = it->cast<FunctionI>();
               bu_ty.run(fi->_ann);
               bu_ty.run(fi->_e);
             }

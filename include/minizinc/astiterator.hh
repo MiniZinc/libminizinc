@@ -19,8 +19,8 @@ namespace MiniZinc {
     template<class E>
     void pushVec(std::vector<C>& stack, CtxVec<E>* v) {
       if (v)
-        for (unsigned int i=v->size(); i--;)
-          stack.push_back(C((*v)[i]));
+        for (Expression* ei : *v)
+          stack.push_back(C(ei));
     }
     
   public:
@@ -131,9 +131,9 @@ namespace MiniZinc {
           {
             Comprehension* comp = ce->template cast<Comprehension>();
             stack.push_back(C(comp->_where));
-            for (unsigned int i=comp->_g->size(); i--;) {
-              pushVec(stack, (*comp->_g)[i]->_v);
-              stack.push_back(C((*comp->_g)[i]->_in));
+            for (Generator* g : *comp->_g) {
+              pushVec(stack, g->_v);
+              stack.push_back(C(g->_in));
             }
             stack.push_back(C(comp->_e));
           }
@@ -142,9 +142,9 @@ namespace MiniZinc {
           {
             ITE* ite = ce->template cast<ITE>();
             stack.push_back(C(ite->_e_else));
-            for (unsigned int i=0; i<ite->_e_if->size(); i++) {
-              stack.push_back(C((*ite->_e_if)[i].second));
-              stack.push_back(C((*ite->_e_if)[i].first));
+            for (ITE::IfThen& it : *ite->_e_if) {
+              stack.push_back(C(it.second));
+              stack.push_back(C(it.first));
             }
           }
           break;
