@@ -57,19 +57,6 @@ namespace MiniZinc {
     for (FnMap::iterator it=fnmap.begin(); it!=fnmap.end(); ++it) {
       std::sort(it->second.begin(),it->second.end(),funsort);
     }
-
-    // for (FnMap::iterator it=fnmap.begin(); it!=fnmap.end(); ++it) {
-    //   for (unsigned int i=0; i<it->second.size(); i++) {
-    //     std::cerr << "function ";
-    //     std::cerr << it->second[i]->_ti->_type.toString() << " : ";
-    //     std::cerr << it->second[i]->_id.str() << " (";
-    //     for (unsigned int j=0; j<it->second[i]->_params->size(); j++) {
-    //       std::cerr << (*it->second[i]->_params)[j]->_type.toString();
-    //       if (j<it->second[i]->_params->size()-1) std::cerr<<",";
-    //     }
-    //     std::cerr << ")" << std::endl;
-    //   }
-    // }
   }
 
   FunctionI*

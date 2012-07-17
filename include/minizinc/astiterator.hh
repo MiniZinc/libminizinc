@@ -105,7 +105,7 @@ namespace MiniZinc {
       } else {
         c._done=true;
         Expression* ce = c._e;
-        if (ce->_ann) {
+        if (_t.visitAnnotation && ce->_ann) {
           stack.push_back(C(ce->_ann));
         }
         switch (ce->_eid) {
