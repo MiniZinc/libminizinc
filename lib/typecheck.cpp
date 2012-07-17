@@ -233,6 +233,7 @@ namespace MiniZinc {
   template<bool ignoreVarDecl>
   class Typer {
   public:
+    static const bool visitAnnotation = ignoreVarDecl;
     ASTContext& _ctx;
     Typer(ASTContext& ctx) : _ctx(ctx) {}
     /// Visit integer literal
@@ -487,6 +488,8 @@ namespace MiniZinc {
   void typecheck(ASTContext& ctx, Model* m) {
     TopoSorter ts;
     
+    std::vector<FunctionI*> functionItems;
+    
     std::vector<Model*> models;
     models.push_back(m);
     while (!models.empty()) {
@@ -512,6 +515,7 @@ namespace MiniZinc {
           break;
         case Item::II_FUN:
           ctx.registerFn(cm->_items[i]->cast<FunctionI>());
+          functionItems.push_back(cm->_items[i]->cast<FunctionI>());
           break;      
         }
       }
@@ -566,12 +570,18 @@ namespace MiniZinc {
       }
     }
 
+    ctx.sortFn();
+
     {
       Typer<false> ty(ctx);
       BottomUpIterator<Typer<false> > bu_ty(ty);
-      for (TopoSorter::Decls::iterator it=ts.decls.begin(); it!=ts.decls.end(); 
-           ++it)
-        bu_ty.run(*it);
+      for (VarDecl* vd : ts.decls)
+        bu_ty.run(vd);
+      for (FunctionI* fi : functionItems) {
+        bu_ty.run(fi->_ti);
+        for (VarDecl* vd : *fi->_params)
+          bu_ty.run(vd);
+      }
     }
     
     {
@@ -630,9 +640,6 @@ namespace MiniZinc {
           case Item::II_FUN:
             {
               FunctionI* fi = cm->_items[i]->cast<FunctionI>();
-              bu_ty.run(fi->_ti);
-              for (unsigned int i=0; i<fi->_params->size(); i++)
-                bu_ty.run((*fi->_params)[i]);
               bu_ty.run(fi->_ann);
               bu_ty.run(fi->_e);
             }
@@ -641,7 +648,6 @@ namespace MiniZinc {
         }
       }
     }
-    ctx.sortFn();
     
   }
 

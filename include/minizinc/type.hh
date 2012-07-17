@@ -19,52 +19,52 @@ namespace MiniZinc {
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN), _dim(0) {}
   protected:
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
-         unsigned int dim)
+         int dim)
       : _ti(ti), _bt(bt), _st(st), _dim(dim) {}
   public:
-    static Type any(unsigned int dim=0) {
+    static Type any(int dim=0) {
       return Type(TI_ANY,BT_BOT,ST_PLAIN,dim);
     }
-    static Type parint(unsigned int dim=0) {
+    static Type parint(int dim=0) {
       return Type(TI_PAR,BT_INT,ST_PLAIN,dim);
     }
-    static Type parbool(unsigned int dim=0) {
+    static Type parbool(int dim=0) {
       return Type(TI_PAR,BT_BOOL,ST_PLAIN,dim);
     }
-    static Type parfloat(unsigned int dim=0) {
+    static Type parfloat(int dim=0) {
       return Type(TI_PAR,BT_FLOAT,ST_PLAIN,dim);
     }
-    static Type parstring(unsigned int dim=0) {
+    static Type parstring(int dim=0) {
       return Type(TI_PAR,BT_STRING,ST_PLAIN,dim);
     }
-    static Type ann(unsigned int dim=0) {
+    static Type ann(int dim=0) {
       return Type(TI_PAR,BT_ANN,ST_PLAIN,dim);
     }
-    static Type parsetint(unsigned int dim=0) {
+    static Type parsetint(int dim=0) {
       return Type(TI_PAR,BT_INT,ST_SET,dim);
     }
-    static Type parsetbool(unsigned int dim=0) {
+    static Type parsetbool(int dim=0) {
       return Type(TI_PAR,BT_BOOL,ST_SET,dim);
     }
-    static Type parsetfloat(unsigned int dim=0) {
+    static Type parsetfloat(int dim=0) {
       return Type(TI_PAR,BT_FLOAT,ST_SET,dim);
     }
-    static Type parsetstring(unsigned int dim=0) {
+    static Type parsetstring(int dim=0) {
       return Type(TI_PAR,BT_STRING,ST_SET,dim);
     }
-    static Type varint(unsigned int dim=0) {
+    static Type varint(int dim=0) {
       return Type(TI_VAR,BT_INT,ST_PLAIN,dim);
     }
-    static Type varbool(unsigned int dim=0) {
+    static Type varbool(int dim=0) {
       return Type(TI_VAR,BT_BOOL,ST_PLAIN,dim);
     }
-    static Type varfloat(unsigned int dim=0) {
+    static Type varfloat(int dim=0) {
       return Type(TI_VAR,BT_FLOAT,ST_PLAIN,dim);
     }
-    static Type varsetint(unsigned int dim=0) {
+    static Type varsetint(int dim=0) {
       return Type(TI_VAR,BT_INT,ST_SET,dim);
     }
-    static Type bot(unsigned int dim=0) {
+    static Type bot(int dim=0) {
       return Type(TI_PAR,BT_BOT,ST_PLAIN,dim);
     }
 
