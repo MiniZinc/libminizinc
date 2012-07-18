@@ -14,6 +14,13 @@ namespace MiniZinc {
     return l;
   }
 
+  std::string
+  Location::toString(void) const {
+    std::ostringstream oss;
+    oss << (filename ? filename->str() : "") << ":" << first_line << "." << first_column;
+    return oss.str();
+  }
+
   Annotation*
   Annotation::a(const ASTContext& ctx, const Location& loc,
                 Expression* e) {
@@ -212,34 +219,34 @@ namespace MiniZinc {
       CtxStringH sBOT_NOT;
       
       OpToString(void) {
-        sBOT_PLUS = CtxStringH(ctx, "+");
-        sBOT_MINUS = CtxStringH(ctx, "-");
-        sBOT_MULT = CtxStringH(ctx, "*");
-        sBOT_DIV = CtxStringH(ctx, "/");
-        sBOT_IDIV = CtxStringH(ctx, "div");
-        sBOT_MOD = CtxStringH(ctx, "mod");
-        sBOT_LE = CtxStringH(ctx, "<");
-        sBOT_LQ = CtxStringH(ctx, "<=");
-        sBOT_GR = CtxStringH(ctx, ">");
-        sBOT_GQ = CtxStringH(ctx, ">=");
-        sBOT_EQ = CtxStringH(ctx, "=");
-        sBOT_NQ = CtxStringH(ctx, "!=");
-        sBOT_IN = CtxStringH(ctx, "in");
-        sBOT_SUBSET = CtxStringH(ctx, "subset");
-        sBOT_SUPERSET = CtxStringH(ctx, "superset");
-        sBOT_UNION = CtxStringH(ctx, "union");
-        sBOT_DIFF = CtxStringH(ctx, "diff");
-        sBOT_SYMDIFF = CtxStringH(ctx, "symdiff");
-        sBOT_INTERSECT = CtxStringH(ctx, "intersect");
-        sBOT_PLUSPLUS = CtxStringH(ctx, "++");
-        sBOT_EQUIV = CtxStringH(ctx, "<->");
-        sBOT_IMPL = CtxStringH(ctx, "->");
-        sBOT_RIMPL = CtxStringH(ctx, "<-");
-        sBOT_OR = CtxStringH(ctx, "\\/");
-        sBOT_AND = CtxStringH(ctx, "/\\");
-        sBOT_XOR = CtxStringH(ctx, "xor");
-        sBOT_DOTDOT = CtxStringH(ctx, "..");
-        sBOT_NOT = CtxStringH(ctx, "not");
+        sBOT_PLUS = CtxStringH(ctx, "@+");
+        sBOT_MINUS = CtxStringH(ctx, "@-");
+        sBOT_MULT = CtxStringH(ctx, "@*");
+        sBOT_DIV = CtxStringH(ctx, "@/");
+        sBOT_IDIV = CtxStringH(ctx, "@div");
+        sBOT_MOD = CtxStringH(ctx, "@mod");
+        sBOT_LE = CtxStringH(ctx, "@<");
+        sBOT_LQ = CtxStringH(ctx, "@<=");
+        sBOT_GR = CtxStringH(ctx, "@>");
+        sBOT_GQ = CtxStringH(ctx, "@>=");
+        sBOT_EQ = CtxStringH(ctx, "@=");
+        sBOT_NQ = CtxStringH(ctx, "@!=");
+        sBOT_IN = CtxStringH(ctx, "@in");
+        sBOT_SUBSET = CtxStringH(ctx, "@subset");
+        sBOT_SUPERSET = CtxStringH(ctx, "@superset");
+        sBOT_UNION = CtxStringH(ctx, "@union");
+        sBOT_DIFF = CtxStringH(ctx, "@diff");
+        sBOT_SYMDIFF = CtxStringH(ctx, "@symdiff");
+        sBOT_INTERSECT = CtxStringH(ctx, "@intersect");
+        sBOT_PLUSPLUS = CtxStringH(ctx, "@++");
+        sBOT_EQUIV = CtxStringH(ctx, "@<->");
+        sBOT_IMPL = CtxStringH(ctx, "@->");
+        sBOT_RIMPL = CtxStringH(ctx, "@<-");
+        sBOT_OR = CtxStringH(ctx, "@\\/");
+        sBOT_AND = CtxStringH(ctx, "@/\\");
+        sBOT_XOR = CtxStringH(ctx, "@xor");
+        sBOT_DOTDOT = CtxStringH(ctx, "@..");
+        sBOT_NOT = CtxStringH(ctx, "@not");
       }
     } _opToString;
   }
@@ -333,15 +340,19 @@ namespace MiniZinc {
   TypeInst*
   TypeInst::a(const ASTContext& ctx, const Location& loc,
               const Type& type, Expression* domain,
-              CtxVec<Expression*>* ranges) {
+              CtxVec<TypeInst*>* ranges) {
     return new (ctx) TypeInst(loc,type,domain,ranges);                     
   }
 
   void
   TypeInst::addRanges(const ASTContext& ctx,
-                      const std::vector<Expression*>& ranges) {
+                      const std::vector<TypeInst*>& ranges) {
     assert(_ranges == NULL);
-    _ranges = CtxVec<Expression*>::a(ctx,ranges);
+    _ranges = CtxVec<TypeInst*>::a(ctx,ranges);
+    if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TIId>())
+      _type._dim=-1;
+    else
+      _type._dim=ranges.size();
   }
 
   bool
@@ -447,39 +458,53 @@ namespace MiniZinc {
     if (_ti->_ranges && _ti->_ranges->size()==1 &&
         (*_ti->_ranges)[0] && (*_ti->_ranges)[0]->isa<TIId>())
       rh = (*_ti->_ranges)[0]->cast<TIId>()->_v;
-    if (dh.size() != 0 || rh.size() != 0) {
-      CtxStringMap<Type>::t tmap;
-      for (unsigned int i=0; i<ta.size(); i++) {
-        TypeInst* tii = (*_params)[i]->_ti;
-        if (tii->_domain && tii->_domain->isa<TIId>()) {
-          CtxStringH tiid = tii->_domain->cast<TIId>()->_v;
-          Type tiit = ta[i]->_type;
-          tiit._dim=0;
+
+    CtxStringMap<Type>::t tmap;
+    for (unsigned int i=0; i<ta.size(); i++) {
+      TypeInst* tii = (*_params)[i]->_ti;
+      if (tii->_domain && tii->_domain->isa<TIId>()) {
+        CtxStringH tiid = tii->_domain->cast<TIId>()->_v;
+        Type tiit = ta[i]->_type;
+        tiit._dim=0;
+        CtxStringMap<Type>::t::iterator it = tmap.find(tiid);
+        if (it==tmap.end()) {
           tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
-        }
-        if (tii->_ranges && tii->_ranges->size()==1 &&
-            (*tii->_ranges)[0] && (*tii->_ranges)[0]->isa<TIId>()) {
-          CtxStringH tiid = (*tii->_ranges)[0]->cast<TIId>()->_v;
-          Type tiit = Type::any(ta[i]->_type._dim);
-          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+        } else {
+          if (it->second._dim > 0) {
+            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+              tiid.str()+" used in both array and non-array position");
+          } else if (it->second!=tiit) {
+            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+              tiid.str()+" instantiated with different types");
+          }
         }
       }
-      if (dh.size() != 0) {
-        CtxStringMap<Type>::t::iterator it = tmap.find(dh);
-        if (it==tmap.end())
-          throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
-        ret._bt = it->second._bt;
-        if (ret._ti==Type::TI_ANY)
-          ret._ti = it->second._ti;
-        if (ret._st==Type::ST_PLAIN)
-          ret._st = it->second._st;
-      } 
-      if (rh.size() != 0) {
-        CtxStringMap<Type>::t::iterator it = tmap.find(rh);
-        if (it==tmap.end())
-          throw TypeError(_loc,"type-inst variable $"+rh.str()+" used but not defined");
-        ret._dim = it->second._dim;
+      if (tii->_ranges && tii->_ranges->size()==1 &&
+          (*tii->_ranges)[0] && (*tii->_ranges)[0]->isa<TIId>()) {
+        CtxStringH tiid = (*tii->_ranges)[0]->cast<TIId>()->_v;
+        if (ta[i]->_type._dim<=0) {
+          throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
+            " must be an array index");
+        }
+        Type tiit = Type::any(ta[i]->_type._dim);
+        tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
       }
+    }
+    if (dh.size() != 0) {
+      CtxStringMap<Type>::t::iterator it = tmap.find(dh);
+      if (it==tmap.end())
+        throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
+      ret._bt = it->second._bt;
+      if (ret._ti==Type::TI_ANY)
+        ret._ti = it->second._ti;
+      if (ret._st==Type::ST_PLAIN)
+        ret._st = it->second._st;
+    } 
+    if (rh.size() != 0) {
+      CtxStringMap<Type>::t::iterator it = tmap.find(rh);
+      if (it==tmap.end())
+        throw TypeError(_loc,"type-inst variable $"+rh.str()+" used but not defined");
+      ret._dim = it->second._dim;
     }
     return ret;
   }

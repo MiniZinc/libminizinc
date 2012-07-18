@@ -4,8 +4,6 @@
 #include <minizinc/model.hh>
 
 namespace MiniZinc {
-
-  void addOperatorTypes(ASTContext& ctx);
   
   void typecheck(ASTContext& ctx, Model* m);
   
