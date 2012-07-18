@@ -28,25 +28,26 @@ namespace MiniZinc {
       }
       return _singleton;
     }
-    void print(Expression* e){
+    
+    void print(Expression* e, std::ostream& os = std::cout){
       Document* d = expressionToDocument(e);
-      print(d);
+      print(d,os);
       delete d;
     }
-    void print(Document* d){
+    void print(Document* d, std::ostream& os = std::cout){
       printer->print(d);
-      std::cout << *printer << std::endl;
+      os << *printer;
       printer = new PrettyPrinter(80,4,true,true);
     }
-    void print(Item* i){
+    void print(Item* i, std::ostream& os = std::cout){
       Document* d = im.map(i);
-      print(d);
+      print(d,os);
       delete d;
     }
-    void print(Model* m){
+    void print(Model* m, std::ostream& os = std::cout){
       for (unsigned int i = 0; i < m->_items.size(); i++) {
 	Document* d = im.map(m->_items[i]);
-	print(d);
+	print(d,os);
 	delete d;
       }
     }
@@ -60,5 +61,23 @@ namespace MiniZinc {
     } 
   };
  
+
+
+  std::ostream& operator<<(std::ostream& os, Expression* e){
+    Printer::getInstance()->print(e,os);
+    return os;
+  }
+  std::ostream& operator<<(std::ostream& os, Document* e){
+    Printer::getInstance()->print(e,os);
+    return os;
+  }
+  std::ostream& operator<<(std::ostream& os, Item* e){
+    Printer::getInstance()->print(e,os);
+    return os;
+  }
+  std::ostream& operator<<(std::ostream& os, Model* e){
+    Printer::getInstance()->print(e,os);
+    return os;
+  }
 };
 #endif

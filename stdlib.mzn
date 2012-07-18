@@ -6,8 +6,11 @@ annotation output_var;
 annotation domain;
 annotation input_order;
 annotation indomain_min;
+annotation indomain_max;
 annotation complete;
-annotation int_search(array[$u] of var $s:a, ann:b, ann:c, ann:d);
+annotation first_fail;
+
+annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
 
 %Predicate definitions for stdlib.fzn
 predicate int2float(var int:a, var float:b);

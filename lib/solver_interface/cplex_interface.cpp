@@ -392,14 +392,16 @@ namespace MiniZinc {
       std::map<VarDecl*, void*>::iterator it;
       bool output;
       for(it = variableMap.begin(); it != variableMap.end(); it++){
-	output = false;
+	output = true;
 	Annotation* ann = it->first->_ann;
+	ArrayLit* al_dims = NULL;
 	while(ann){
 	  if(ann->_e->isa<Id>() && ann->_e->cast<Id>()->_v.str() =="output_var"){
 	    output = true;
 	    break;
 	  } else if (ann->_e->isa<Call>() && 
 		     ann->_e->cast<Call>()->_id.str() == "output_array"){
+	    al_dims = (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
 	    output = true;
 	    break;
 	  }
