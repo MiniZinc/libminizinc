@@ -6,6 +6,15 @@
 #include <minizinc/parser.hh>
 #include <minizinc/model.hh>
 namespace MiniZinc{
+  template<typename T, typename S>
+    T getNumber(Expression* e) {
+    if (e->isa<S>())
+      return e->cast<S>()->_v;
+    if (e->isa<UnOp>())
+      return getNumber<T, S>(e->cast<UnOp>()->_e0)
+	* (e->cast<UnOp>()->_op == UOT_MINUS ? -1 : 1);
+    return 0;
+  }
   class SolverInterface {
   public:
     SolverInterface();
@@ -31,20 +40,21 @@ namespace MiniZinc{
     static std::pair<double,double> getFloatBounds(Expression* e){
       BinOp* bo = e->cast<BinOp>();
       double b, u;
-      b = bo->_e0->cast<FloatLit>()->_v;
-      u = bo->_e1->cast<FloatLit>()->_v;
+      b = getNumber<double,FloatLit>(bo->_e0);
+      u = getNumber<double,FloatLit>(bo->_e1);
       return std::pair<double,double>(b,u);
     }
     static std::pair<double,double> getIntBounds(Expression* e){
       BinOp* bo = e->cast<BinOp>();
       int b, u;
-      b = bo->_e0->cast<IntLit>()->_v;
-      u = bo->_e1->cast<IntLit>()->_v;
+      b = getNumber<int,IntLit>(bo->_e0);
+      u = getNumber<int,IntLit>(bo->_e1);
       return std::pair<int,int>(b,u);
     }
     poster lookupConstraint(std::string& s);
     std::map<VarDecl*, void*> variableMap;
     std::map<std::string, poster> constraintMap;
+    
   };
 };
 #endif
