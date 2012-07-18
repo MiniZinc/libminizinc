@@ -138,6 +138,7 @@ function     set of $T:  'symdiff'(    set of $T,      set of $T);
 function var set of int: 'symdiff'(var set of int, var set of int);
 
 function set of int: '..'(int,int);
+function set of float: '..'(float,float);
 
 function     int: card(    set of $T);
 function var int: card(var set of int);

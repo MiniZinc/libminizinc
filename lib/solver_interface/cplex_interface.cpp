@@ -578,19 +578,19 @@ namespace MiniZinc {
 	} else {
 	  switch (type) {
 	  case ILOINT:
-	    lb = init->cast<IntLit>()->_v;
+	    lb = getNumber<int,IntLit>(init);
 	    ub = lb;
 	    break;
 	  case ILOFLOAT:
-	    lb = init->cast<FloatLit>()->_v;
+	    lb = getNumber<float,FloatLit>(init);
 	    ub = lb;
 	    break;
 	  case ILOBOOL:
-	    lb = init->cast<BoolLit>()->_v;
+	    lb = getNumber<bool,BoolLit>(init);
 	    ub = lb;
 	    break;
 	  default:
-	    std::cerr << "tiens tiens tiens !" << std::endl;
+	    std::cerr << "addSolverVar : init : This var has no type." << std::endl;
 	    break;
 	  }
 	}
