@@ -47,15 +47,6 @@ namespace MiniZinc {
     model->add(range);
   }
 
-  // Cplex doesn't seem to support array access with variable index
-  // void p_array_var_element(SolverInterface& si, const CtxVec<Expression*>& vars){
-  //   IloNumVar& varb = *(IloNumVar*)(si.resolveVar(vars[0]));
-  //   IloNumVarArray& varas = *(IloNumVarArray*)(si.resolveVar(vars[1]));
-  //   IloNumVar& varc = *(IloNumVar*)(si.resolveVar(vars[2]));
-
-  //   IloConstraint constraint(varas[varb] == varc);
-  //   ((IloModel*)(si.getModel()))->add(constraint);
-  // }
   void p_array_bool_and(SolverInterface& si, const CtxVec<Expression*>& args) {
     IloNumVar* var = (IloNumVar*) (si.resolveVar(args[1]));
     IloModel* model = (IloModel*) si.getModel();
@@ -387,61 +378,131 @@ namespace MiniZinc {
     } catch (IloAlgorithm::NotExtractedException& e) {
       oss << "_";
       // TODO : show possible values ?
-      /*IloNumArray posval(env);
-	v.getPossibleValues(posval);
-	int size = posval.getSize();
-	oss << "{" ;
-	for(int j = 0; j < size; j++){
-	oss << posval[j];
-	if(j != size - 1) oss << ", ";
-	}
-	oss << "}";*/
+      
     }
     return oss.str();
   }
-  std::string CplexInterface::showVariables(IloCplex& cplex) {
+  std::string CplexInterface::showVariables(IloCplex& cplex){
+    ASTContext context;
     std::ostringstream oss;
     std::map<VarDecl*, void*>::iterator it;
     bool output;
-    for (it = variableMap.begin(); it != variableMap.end(); it++) {
+    for(it = variableMap.begin(); it != variableMap.end(); it++){
       output = false;
       Annotation* ann = it->first->_ann;
       ArrayLit* al_dims = NULL;
-      while (ann) {
-	if (ann->_e->isa<Id>()
-	    && ann->_e->cast<Id>()->_v.str() == "output_var") {
+      while(ann){
+	if(ann->_e->isa<Id>() && ann->_e->cast<Id>()->_v.str() =="output_var"){
 	  output = true;
 	  break;
-	} else if (ann->_e->isa<Call>()
-		   && ann->_e->cast<Call>()->_id.str() == "output_array") {
-	  al_dims =
-	    (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
+	} else if (ann->_e->isa<Call>() && 
+		   ann->_e->cast<Call>()->_id.str() == "output_array"){
+	  al_dims = (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
 	  output = true;
 	  break;
 	}
 	ann = ann->_ann;
       }
-      if (!output)
-	continue;
-      oss << it->first->_id.str() << " = ";
-      if (it->first->_ti->isarray()) {
+      if(!output) continue;
+      oss <<  it->first->_id.str() << " = ";
+
+      
+      if(it->first->_ti->isarray()){
 	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
-	oss << "array[";
-	int size = varray->getSize();
-	for (int i = 0; i < size; i++) {
+	Location loc;
+	int sizeDims = al_dims->_v->size();
+	int size = varray->getSize();	
+	std::vector<Expression*>* _vec = new std::vector<Expression*>(size);
+	std::vector<std::pair<int,int> >* _dims = new std::vector<std::pair<int,int> >(sizeDims);
+	std::vector<Expression*>& vec = *_vec;
+	auto& dims = *_dims;
+	
+	for(int i = 0; i < size; i++){
 	  IloNumVar& v = (*varray)[i];
-	  oss << showVariable(cplex, v);
-	  if (i != size - 1)
-	    oss << ", ";
+	  try{
+	    IloNum num = cplex.getValue(v);
+	    switch(v.getType()){
+	    case ILOINT:
+	      vec[i] = IntLit::a(context,loc,(int)num);
+	      break;
+	    case ILOFLOAT:
+	      vec[i] = FloatLit::a(context,loc,(double)num);
+	      break;
+	    case ILOBOOL:
+	      vec[i] = BoolLit::a(context,loc,(bool)num);
+	      break;
+	    default:
+	      std::cerr << "Wrong type of var" << std::endl;
+	    }
+	  } catch(IloAlgorithm::NotExtractedException& e){
+	    vec[i] = StringLit::a(context, loc, "_");
+	  }
 	}
-	oss << "]";
+	for(int i = 0; i < sizeDims; i++){
+	  BinOp* bo = (*al_dims->_v)[i]->cast<BinOp>();
+	  assert(bo->_op == BOT_DOTDOT);
+	  IntLit* lb;
+	  IntLit* ub;
+
+	  lb = bo->_e0->cast<IntLit>();
+	  ub = bo->_e1->cast<IntLit>();
+	   
+	  dims[i] = std::pair<int,int>(lb->_v,ub->_v);
+	}
+	ArrayLit* al = ArrayLit::a(context,loc,vec, dims);
+	oss << al;
       } else {
-	oss << showVariable(cplex, *(IloNumVar*) (it->second));
+	oss << showVariable(cplex,*(IloNumVar*)(it->second));
       }
-      oss << std::endl;
+      oss << std::endl;     
     }
     return oss.str();
   }
+
+  // std::string CplexInterface::showVariables(IloCplex& cplex) {
+  // ASTContext context;
+  //   std::ostringstream oss;
+  //   std::map<VarDecl*, void*>::iterator it;
+  //   bool output;
+  //   for (it = variableMap.begin(); it != variableMap.end(); it++) {
+  //     output = false;
+  //     Annotation* ann = it->first->_ann;
+  //     ArrayLit* al_dims = NULL;
+  //     while (ann) {
+  // 	if (ann->_e->isa<Id>()
+  // 	    && ann->_e->cast<Id>()->_v.str() == "output_var") {
+  // 	  output = true;
+  // 	  break;
+  // 	} else if (ann->_e->isa<Call>()
+  // 		   && ann->_e->cast<Call>()->_id.str() == "output_array") {
+  // 	  al_dims =
+  // 	    (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
+  // 	  output = true;
+  // 	  break;
+  // 	}
+  // 	ann = ann->_ann;
+  //     }
+  //     if (!output)
+  // 	continue;
+  //     oss << it->first->_id.str() << " = ";
+  //     if (it->first->_ti->isarray()) {
+  // 	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
+  // 	oss << "array[";
+  // 	int size = varray->getSize();
+  // 	for (int i = 0; i < size; i++) {
+  // 	  IloNumVar& v = (*varray)[i];
+  // 	  oss << showVariable(cplex, v);
+  // 	  if (i != size - 1)
+  // 	    oss << ", ";
+  // 	}
+  // 	oss << "]";
+  //     } else {
+  // 	oss << showVariable(cplex, *(IloNumVar*) (it->second));
+  //     }
+  //     oss << std::endl;
+  //   }
+  //   return oss.str();
+  // }
 
   CplexInterface::~CplexInterface() {
     model->end();
