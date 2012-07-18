@@ -363,7 +363,7 @@ namespace MiniZinc {
       std::vector<Expression*> args(2);
       args[0] = bop._e0; args[1] = bop._e1;
       if (FunctionI* fi = _ctx.matchFn(bop.opToString(),args)) {
-        bop._type = fi->_ti->_type;
+        bop._type = fi->rtype(args);
       } else if (bop._op==BOT_PLUSPLUS &&
         bop._e0->_type._dim==1 && bop._e1->_type._dim==1 &&
         bop._e0->_type._st==bop._e1->_type._st &&
@@ -383,7 +383,7 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = uop._e0;
       if (FunctionI* fi = _ctx.matchFn(uop.opToString(),args)) {
-        uop._type = fi->_ti->_type;
+        uop._type = fi->rtype(args);
       } else {
         throw TypeError(uop._loc,
           std::string("type error in operator application for ")+
@@ -434,15 +434,21 @@ namespace MiniZinc {
     void vTypeInst(TypeInst& ti) {
       if (ti._ranges) {
         bool foundTIId=false;
-        for (Expression* ri : *ti._ranges) {
-          if (ri && ri->isa<TIId>()) {
+        for (TypeInst* ri : *ti._ranges) {
+          assert(ri != NULL);
+          if (ri->_type == Type::bot()) {
+//            std::cerr << "tiid " << ri->cast<TIId>()->_v.str() << "\n";
             if (foundTIId) {
               throw TypeError(ri->_loc,
                 "only one type-inst variable allowed in array index");
             } else {
               foundTIId = true;
             }
-          } else if (ri && ri->_type != Type::parsetint()) {
+          } else if (ri->_type != Type::parint()) {
+            assert(ri->isa<TypeInst>());
+            std::cerr << "expected set of int for array index, but got " <<
+              ri->_type.toString() << "\n";
+            assert(false);
             throw TypeError(ri->_loc,
               "expected set of int for array index, but got\n"+
               ri->_type.toString());
@@ -474,7 +480,7 @@ namespace MiniZinc {
         }
         ti._type._bt = ti._domain->_type._bt;
       } else {
-        assert(ti._domain==NULL || ti._domain->isa<TIId>());
+//        assert(ti._domain==NULL || ti._domain->isa<TIId>());
       }
     }
     void vTIId(TIId& id) {}
@@ -644,251 +650,6 @@ namespace MiniZinc {
       }
     }
     
-  }
-
-  VarDecl* param(ASTContext& ctx, const std::string& id, const Type& type) {
-    return VarDecl::a(ctx,Location::a(),TypeInst::a(ctx,Location::a(),type),id);
-  }
-  std::vector<VarDecl*> params(ASTContext& ctx, int n, const Type& type) {
-    std::vector<VarDecl*> ret(n);
-    for (unsigned int i=0; i<n; i++) {
-      std::ostringstream oss;
-      oss << "x" << i;
-      ret[i] = param(ctx,oss.str(),type);
-    }
-    return ret;
-  }
-  void makeFn(ASTContext& ctx, const std::string& id,
-              TypeInst* ret, int n, const Type& param) {
-    ctx.registerFn(FunctionI::a(ctx,Location::a(),id,ret,params(ctx,n,param)));
-  }
-  void makeArrayXD(ASTContext& ctx, int n) {
-    std::vector<VarDecl*> params(n+1);
-    for (unsigned int i=0; i<n; i++) {
-      std::ostringstream oss;
-      oss << "x" << i;
-      params[i] = param(ctx,oss.str(),Type::parsetint());
-    }
-    std::vector<Expression*> rvec(1);
-    rvec[0] = TIId::a(ctx,Location::a(),"U");
-    CtxVec<Expression*>* ranges = CtxVec<Expression*>::a(ctx,rvec);
-    params[n] = VarDecl::a(ctx,Location::a(),
-      TypeInst::a(ctx,Location::a(),Type::any(-1),TIId::a(ctx,Location::a(),
-        "V"),ranges),"a");
-    std::vector<Expression*> nullvec(n);
-    for (unsigned int i=n; i--;)
-      nullvec[i]=NULL;
-    ranges = CtxVec<Expression*>::a(ctx,nullvec);
-    TypeInst* ret = TypeInst::a(ctx,Location::a(),Type::any(n),
-      TIId::a(ctx,Location::a(),"V"),ranges);
-    std::ostringstream oss;
-    oss << "array" << n << "d";
-    ctx.registerFn(FunctionI::a(ctx,Location::a(),oss.str(),ret,params));
-  }
-  
-  void addOperatorTypes(ASTContext& ctx) {
-    TypeInst* tparint = TypeInst::a(ctx,Location::a(),Type::parint());
-    TypeInst* tvarint = TypeInst::a(ctx,Location::a(),Type::varint());
-    TypeInst* tparfloat = TypeInst::a(ctx,Location::a(),Type::parfloat());
-    TypeInst* tvarfloat = TypeInst::a(ctx,Location::a(),Type::varfloat());
-    TypeInst* tparbool = TypeInst::a(ctx,Location::a(),Type::parbool());
-    TypeInst* tvarbool = TypeInst::a(ctx,Location::a(),Type::varbool());
-    TypeInst* tparstring = TypeInst::a(ctx,Location::a(),Type::parstring());    
-    TypeInst* tparsetint = TypeInst::a(ctx,Location::a(),Type::parsetint());
-    TypeInst* tvarsetint = TypeInst::a(ctx,Location::a(),Type::varsetint());
-    TypeInst* tparsetfloat = TypeInst::a(ctx,Location::a(),Type::parsetfloat());
-    TypeInst* tparsetbool = TypeInst::a(ctx,Location::a(),Type::parsetbool());
-    TypeInst* tparsetstring = 
-      TypeInst::a(ctx,Location::a(),Type::parsetstring());
-
-    makeFn(ctx,"..",tparsetint,2,Type::parint());
-    makeFn(ctx,"..",tparsetfloat,2,Type::parfloat());
-
-    makeFn(ctx,"+",tparint,2,Type::parint());
-    makeFn(ctx,"+",tvarint,2,Type::varint());
-    makeFn(ctx,"+",tparfloat,2,Type::parfloat());
-    makeFn(ctx,"+",tvarfloat,2,Type::varfloat());
-
-    makeFn(ctx,"+",tparint,1,Type::parint());
-    makeFn(ctx,"+",tvarint,1,Type::varint());
-    makeFn(ctx,"+",tparfloat,1,Type::parfloat());
-    makeFn(ctx,"+",tvarfloat,1,Type::varfloat());
-
-    makeFn(ctx,"-",tparint,2,Type::parint());
-    makeFn(ctx,"-",tvarint,2,Type::varint());
-    makeFn(ctx,"-",tparfloat,2,Type::parfloat());
-    makeFn(ctx,"-",tvarfloat,2,Type::varfloat());
-
-    makeFn(ctx,"-",tparint,1,Type::parint());
-    makeFn(ctx,"-",tvarint,1,Type::varint());
-    makeFn(ctx,"-",tparfloat,1,Type::parfloat());
-    makeFn(ctx,"-",tvarfloat,1,Type::varfloat());
-
-    makeFn(ctx,"*",tparint,2,Type::parint());
-    makeFn(ctx,"*",tvarint,2,Type::varint());
-    makeFn(ctx,"*",tparfloat,2,Type::parfloat());
-    makeFn(ctx,"*",tvarfloat,2,Type::varfloat());
-
-    makeFn(ctx,"/",tparfloat,2,Type::parfloat());
-    makeFn(ctx,"/",tvarfloat,2,Type::varfloat());
-
-    makeFn(ctx,"div",tparint,2,Type::parint());
-    makeFn(ctx,"div",tvarint,2,Type::varint());
-
-    makeFn(ctx,"mod",tparint,2,Type::parint());
-    makeFn(ctx,"mod",tvarint,2,Type::varint());
-
-    makeFn(ctx,"<",tparbool,2,Type::parint());
-    makeFn(ctx,"<",tvarbool,2,Type::varint());
-    makeFn(ctx,"<",tparbool,2,Type::parfloat());
-    makeFn(ctx,"<",tvarbool,2,Type::varfloat());
-    makeFn(ctx,"<",tparbool,2,Type::parsetint());
-    makeFn(ctx,"<",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"<",tparbool,2,Type::parbool());
-    makeFn(ctx,"<",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"<=",tparbool,2,Type::parint());
-    makeFn(ctx,"<=",tvarbool,2,Type::varint());
-    makeFn(ctx,"<=",tparbool,2,Type::parfloat());
-    makeFn(ctx,"<=",tvarbool,2,Type::varfloat());
-    makeFn(ctx,"<=",tparbool,2,Type::parsetint());
-    makeFn(ctx,"<=",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"<=",tparbool,2,Type::parbool());
-    makeFn(ctx,"<=",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,">",tparbool,2,Type::parint());
-    makeFn(ctx,">",tvarbool,2,Type::varint());
-    makeFn(ctx,">",tparbool,2,Type::parfloat());
-    makeFn(ctx,">",tvarbool,2,Type::varfloat());
-    makeFn(ctx,">",tparbool,2,Type::parsetint());
-    makeFn(ctx,">",tvarbool,2,Type::varsetint());
-    makeFn(ctx,">",tparbool,2,Type::parbool());
-    makeFn(ctx,">",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,">=",tparbool,2,Type::parint());
-    makeFn(ctx,">=",tvarbool,2,Type::varint());
-    makeFn(ctx,">=",tparbool,2,Type::parfloat());
-    makeFn(ctx,">=",tvarbool,2,Type::varfloat());
-    makeFn(ctx,">=",tparbool,2,Type::parsetint());
-    makeFn(ctx,">=",tvarbool,2,Type::varsetint());
-    makeFn(ctx,">=",tparbool,2,Type::parbool());
-    makeFn(ctx,">=",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"=",tparbool,2,Type::parint());
-    makeFn(ctx,"=",tvarbool,2,Type::varint());
-    makeFn(ctx,"=",tparbool,2,Type::parfloat());
-    makeFn(ctx,"=",tvarbool,2,Type::varfloat());
-    makeFn(ctx,"=",tparbool,2,Type::parsetint());
-    makeFn(ctx,"=",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"=",tparbool,2,Type::parbool());
-    makeFn(ctx,"=",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"!=",tparbool,2,Type::parint());
-    makeFn(ctx,"!=",tvarbool,2,Type::varint());
-    makeFn(ctx,"!=",tparbool,2,Type::parfloat());
-    makeFn(ctx,"!=",tvarbool,2,Type::varfloat());
-    makeFn(ctx,"!=",tparbool,2,Type::parsetint());
-    makeFn(ctx,"!=",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"!=",tparbool,2,Type::parbool());
-    makeFn(ctx,"!=",tvarbool,2,Type::varbool());
-
-    {
-      std::vector<VarDecl*> params(2);
-      params[0] = param(ctx,"x0",Type::parint());
-      params[1] = param(ctx,"x1",Type::parsetint());
-      ctx.registerFn(FunctionI::a(ctx,Location::a(),"in",tparbool,params));
-    }
-    {
-      std::vector<VarDecl*> params(2);
-      params[0] = param(ctx,"x0",Type::parfloat());
-      params[1] = param(ctx,"x1",Type::parsetfloat());
-      ctx.registerFn(FunctionI::a(ctx,Location::a(),"in",tparbool,params));
-    }
-    {
-      std::vector<VarDecl*> params(2);
-      params[0] = param(ctx,"x0",Type::parbool());
-      params[1] = param(ctx,"x1",Type::parsetbool());
-      ctx.registerFn(FunctionI::a(ctx,Location::a(),"in",tparbool,params));
-    }
-    {
-      std::vector<VarDecl*> params(2);
-      params[0] = param(ctx,"x0",Type::parstring());
-      params[1] = param(ctx,"x1",Type::parsetstring());
-      ctx.registerFn(FunctionI::a(ctx,Location::a(),"in",tparbool,params));
-    }
-    {
-      std::vector<VarDecl*> params(2);
-      params[0] = param(ctx,"x0",Type::varint());
-      params[1] = param(ctx,"x1",Type::varsetint());
-      ctx.registerFn(FunctionI::a(ctx,Location::a(),"in",tvarbool,params));
-    }
-
-    
-    makeFn(ctx,"subset",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"subset",tparbool,2,Type::parsetint());
-    makeFn(ctx,"subset",tparbool,2,Type::parsetfloat());
-    makeFn(ctx,"subset",tparbool,2,Type::parsetbool());
-    makeFn(ctx,"subset",tparbool,2,Type::parsetstring());
-
-    makeFn(ctx,"superset",tvarbool,2,Type::varsetint());
-    makeFn(ctx,"superset",tparbool,2,Type::parsetint());
-    makeFn(ctx,"superset",tparbool,2,Type::parsetfloat());
-    makeFn(ctx,"superset",tparbool,2,Type::parsetbool());
-    makeFn(ctx,"superset",tparbool,2,Type::parsetstring());
-
-    makeFn(ctx,"union",tvarsetint,2,Type::varsetint());
-    makeFn(ctx,"union",tparsetint,2,Type::parsetint());
-    makeFn(ctx,"union",tparsetfloat,2,Type::parsetfloat());
-    makeFn(ctx,"union",tparsetbool,2,Type::parsetbool());
-    makeFn(ctx,"union",tparsetstring,2,Type::parsetstring());
-
-    makeFn(ctx,"diff",tvarsetint,2,Type::varsetint());
-    makeFn(ctx,"diff",tparsetint,2,Type::parsetint());
-    makeFn(ctx,"diff",tparsetfloat,2,Type::parsetfloat());
-    makeFn(ctx,"diff",tparsetbool,2,Type::parsetbool());
-    makeFn(ctx,"diff",tparsetstring,2,Type::parsetstring());
-
-    makeFn(ctx,"symdiff",tvarsetint,2,Type::varsetint());
-    makeFn(ctx,"symdiff",tparsetint,2,Type::parsetint());
-    makeFn(ctx,"symdiff",tparsetfloat,2,Type::parsetfloat());
-    makeFn(ctx,"symdiff",tparsetbool,2,Type::parsetbool());
-    makeFn(ctx,"symdiff",tparsetstring,2,Type::parsetstring());
-
-    makeFn(ctx,"intersect",tvarsetint,2,Type::varsetint());
-    makeFn(ctx,"intersect",tparsetint,2,Type::parsetint());
-    makeFn(ctx,"intersect",tparsetfloat,2,Type::parsetfloat());
-    makeFn(ctx,"intersect",tparsetbool,2,Type::parsetbool());
-    makeFn(ctx,"intersect",tparsetstring,2,Type::parsetstring());
-
-    makeFn(ctx,"++",tparstring,2,Type::parstring());
-    
-    makeFn(ctx,"<->",tparbool,2,Type::parbool());
-    makeFn(ctx,"<->",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"->",tparbool,2,Type::parbool());
-    makeFn(ctx,"->",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"<-",tparbool,2,Type::parbool());
-    makeFn(ctx,"<-",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"\\/",tparbool,2,Type::parbool());
-    makeFn(ctx,"\\/",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"/\\",tparbool,2,Type::parbool());
-    makeFn(ctx,"/\\",tvarbool,2,Type::varbool());
-
-    makeFn(ctx,"xor",tparbool,2,Type::parbool());
-    makeFn(ctx,"xor",tvarbool,2,Type::varbool());
-    
-    makeFn(ctx,"not",tparbool,1,Type::parbool());
-    makeFn(ctx,"not",tvarbool,1,Type::varbool());
-    
-    makeArrayXD(ctx,1);
-    makeArrayXD(ctx,2);
-    makeArrayXD(ctx,3);
-    makeArrayXD(ctx,4);
-    makeArrayXD(ctx,5);
-    makeArrayXD(ctx,6);
   }
   
 }

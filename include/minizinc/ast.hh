@@ -81,6 +81,9 @@ namespace MiniZinc {
     
     /// Allocate empty location
     static Location a(void);
+    
+    /// Return string representation
+    std::string toString(void) const;
   };
 
   /// Output operator for locations
@@ -530,23 +533,23 @@ namespace MiniZinc {
     /// Constructor
     TypeInst(const Location& loc, const Type& type,
              Expression* domain=NULL,
-             CtxVec<Expression*>* ranges=NULL)
+             CtxVec<TypeInst*>* ranges=NULL)
      : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TI;
     /// Ranges of an array expression
-    CtxVec<Expression*>* _ranges;
+    CtxVec<TypeInst*>* _ranges;
     /// Declared domain (or NULL)
     Expression* _domain;
     /// Allocate from context
     static TypeInst* a(const ASTContext& ctx, const Location& loc,
                        const Type& t, Expression* domain=NULL,
-                       CtxVec<Expression*>* ranges=NULL);
+                       CtxVec<TypeInst*>* ranges=NULL);
     
     /// Add \a ranges to expression
     void addRanges(const ASTContext& ctx,
-                   const std::vector<Expression*>& ranges);
+                   const std::vector<TypeInst*>& ranges);
     bool isarray(void) const { return _ranges && _ranges->size()>0; }
     bool hasTiVariable(void) const;
   };

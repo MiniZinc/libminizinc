@@ -101,7 +101,6 @@ int main(int argc, char** argv) {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
-          MiniZinc::addOperatorTypes(ctx);
           MiniZinc::typecheck(ctx,m);
         }
         printDoc(std::cout, m);
