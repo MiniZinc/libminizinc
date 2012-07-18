@@ -62,22 +62,25 @@ namespace MiniZinc {
   };
  
 
-/*
+  inline
   std::ostream& operator<<(std::ostream& os, Expression* e){
     Printer::getInstance()->print(e,os);
     return os;
   }
+  inline
   std::ostream& operator<<(std::ostream& os, Document* e){
     Printer::getInstance()->print(e,os);
     return os;
   }
+  inline
   std::ostream& operator<<(std::ostream& os, Item* e){
     Printer::getInstance()->print(e,os);
     return os;
   }
+  inline
   std::ostream& operator<<(std::ostream& os, Model* e){
     Printer::getInstance()->print(e,os);
     return os;
-  }*/
+  }
 };
 #endif

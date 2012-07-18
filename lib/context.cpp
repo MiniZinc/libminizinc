@@ -23,9 +23,11 @@ namespace MiniZinc {
               alleq=false; break;
             }
           }
-          if (alleq)
+          if (alleq) {
             throw TypeError(fi->_loc,
-              "function with the same type already defined");
+              "function with the same type already defined in "
+              +v[i]->_loc.toString());
+          }
         }
       }
       v.push_back(fi);

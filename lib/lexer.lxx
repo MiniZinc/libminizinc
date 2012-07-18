@@ -120,6 +120,8 @@ void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
                     return *yytext; }
 \.\.              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_DOTDOT; }
+"'\.\.'"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_DOTDOT_QUOTED; }
 ::                { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_COLONCOLON; }
 _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -216,9 +218,9 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SUPERSET_QUOTED; }
 "svar"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SVAR; }
-"symmdiff"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+"symdiff"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SYMDIFF; }
-"'symmdiff'"      { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+"'symdiff'"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SYMDIFF_QUOTED; }
 "test"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_TEST; }
