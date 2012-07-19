@@ -27,8 +27,8 @@ predicate int_lin_le_reif(array [int] of int: as, array [int] of var int: bs,int
 predicate int_ne(var int: a, var int: b);
 predicate int_ne_reif(var int: a, var int: b, var bool: r);
 predicate int_plus(var int: a, var int: b, var int: c);
-predicate int_times(var int: a, var int: b, var int: c);
-predicate float_times(var float: a, var float: b, var float: c);
+predicate int_times_le(var int: a, var int: b, var int: c);
+predicate float_times_le(var float: a, var float: b, var float: c);
 
 predicate array_bool_and(array [int] of var bool: as, var bool: r);
 

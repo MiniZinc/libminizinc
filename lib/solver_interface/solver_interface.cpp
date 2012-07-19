@@ -15,9 +15,8 @@ namespace MiniZinc {
       } else if (item->isa<SolveI>()){	  
 	solve(item->cast<SolveI>());
       } else {
-	  
 	//  std::cerr << "This type of item should not appear in a FlatZinc file"<<item->_iid << std::endl;
- Printer::getInstance()->print(item);
+	// Printer::getInstance()->print(item);
 	//std::exit(-1);
       }
     }

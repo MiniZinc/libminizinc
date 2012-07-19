@@ -35,9 +35,6 @@ namespace MiniZinc {
     for (unsigned int i = 0; i < coeff->size(); i++) {
       T co = getNumber<T, S>((*coeff)[i]);
       IloNumVar* v = (IloNumVar*) (si.resolveVar((*vars)[i]));
-      // if((*coeff)[i]->_loc.first_line == 16586)
-      // 	std::cout << co <<" : ["<< v->getLB() <<";"<< v->getUB() << "]"<< std::endl;
-    
       range.setLinearCoef(*v, co);
     }
     if (reif) {
@@ -204,12 +201,12 @@ namespace MiniZinc {
     model->add(constraint);
 
   }
-  void p_times(SolverInterface& si, const CtxVec<Expression*>& vars) {
+  void p_times_le(SolverInterface& si, const CtxVec<Expression*>& vars) {
     IloNumVar* vara = (IloNumVar*) (si.resolveVar(vars[0]));
     IloNumVar* varb = (IloNumVar*) (si.resolveVar(vars[1]));
     IloNumVar* varc = (IloNumVar*) (si.resolveVar(vars[2]));
     IloModel* model = (IloModel*) si.getModel();
-    IloConstraint constraint(*varc == (*vara * *varb));
+    IloConstraint constraint((*vara * *varb) <= *varc);
     model->add(constraint);
   }
   void p_bool_and(SolverInterface& si, const CtxVec<Expression*>& vars) {
@@ -289,12 +286,10 @@ namespace MiniZinc {
       }
     }
     std::cerr << "Error " << e->_loc << std::endl
-	      << "Variables should be identificators or array accesses."
-	      << std::endl;
-    Printer::getInstance()->print(e);
-    throw -1;
-    return NULL;
-
+	      << "Variables should be identificators or array accesses." << std::endl
+	      << "in : " << e;
+    // Printer::getInstance()->print(e);
+    std::exit(-1);
   }
   CplexInterface::CplexInterface() {
     model = new IloModel(env);
@@ -311,10 +306,10 @@ namespace MiniZinc {
     addConstraintMapping(std::string("int_ne"), p_ne);
     addConstraintMapping(std::string("int_ne_reif"), p_ne_reif);
     addConstraintMapping(std::string("int_plus"), p_plus);
-    addConstraintMapping(std::string("int_times"), p_times);
-    //    addConstraintMapping(std::string("float_times"), p_times);
+    addConstraintMapping(std::string("int_times_le"), p_times_le);
+    addConstraintMapping(std::string("float_times_le"), p_times_le);
     addConstraintMapping(std::string("array_bool_and"), p_array_bool_and);
-    // addConstraintMapping(std::string("array_bool_or"), p_array_bool_or);
+    //    addConstraintMapping(std::string("array_bool_or"), p_array_bool_or);
     // addConstraintMapping(std::string("array_bool_xor"), p_array_bool_xor);
     addConstraintMapping(std::string("bool2int"), p_eq);
     addConstraintMapping(std::string("bool_and"), p_bool_and);
@@ -351,19 +346,24 @@ namespace MiniZinc {
 	obj = IloMaximize(env);
       else
 	obj = IloMinimize(env);
-      //Let's assume that the expression is a var
       IloNumVar* v = (IloNumVar*) lookupVar(s->_e->cast<Id>()->_v.str());
       obj.setLinearCoef(*v, 1);
       model->add(obj);
     }
 
     IloCplex cplex(*model);
-    // cplex.getRow("id217");
     // Optimize the problem and obtain solution.
-    if (!cplex.solve()) {
-      std::cout << "Failed to optimize LP" << std::endl;
-      return;
+    try{
+      if (!cplex.solve()) {
+	std::cerr << "Failed to optimize LP" << std::endl;
+	return;
+      }
+    } catch(IloCplex::Exception& e){
+      std::cerr << "Caught IloCplex::Exception while solving : " << std::endl
+		<< e << std::endl;
+      std::exit(0);
     }
+   
 
     std::cout << "Solution status = " << cplex.getStatus() << std::endl;
     std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
@@ -377,8 +377,6 @@ namespace MiniZinc {
       oss << num;
     } catch (IloAlgorithm::NotExtractedException& e) {
       oss << "_";
-      // TODO : show possible values ?
-      
     }
     return oss.str();
   }
@@ -450,7 +448,7 @@ namespace MiniZinc {
 	  dims[i] = std::pair<int,int>(lb->_v,ub->_v);
 	}
 	ArrayLit* al = ArrayLit::a(context,loc,vec, dims);
-	oss << al;
+	oss << std::endl << al;
       } else {
 	oss << showVariable(cplex,*(IloNumVar*)(it->second));
       }
