@@ -439,13 +439,11 @@ namespace MiniZinc {
 	for(int i = 0; i < sizeDims; i++){
 	  BinOp* bo = (*al_dims->_v)[i]->cast<BinOp>();
 	  assert(bo->_op == BOT_DOTDOT);
-	  IntLit* lb;
-	  IntLit* ub;
-
-	  lb = bo->_e0->cast<IntLit>();
-	  ub = bo->_e1->cast<IntLit>();
+	  int lb, ub;
+	  lb = getNumber<int,IntLit>(bo->_e0);
+	  ub = getNumber<int,IntLit>(bo->_e1);
 	   
-	  dims[i] = std::pair<int,int>(lb->_v,ub->_v);
+	  dims[i] = std::pair<int,int>(lb,ub);
 	}
 	ArrayLit* al = ArrayLit::a(context,loc,vec, dims);
 	oss << std::endl << al;
@@ -457,50 +455,6 @@ namespace MiniZinc {
     return oss.str();
   }
 
-  // std::string CplexInterface::showVariables(IloCplex& cplex) {
-  // ASTContext context;
-  //   std::ostringstream oss;
-  //   std::map<VarDecl*, void*>::iterator it;
-  //   bool output;
-  //   for (it = variableMap.begin(); it != variableMap.end(); it++) {
-  //     output = false;
-  //     Annotation* ann = it->first->_ann;
-  //     ArrayLit* al_dims = NULL;
-  //     while (ann) {
-  // 	if (ann->_e->isa<Id>()
-  // 	    && ann->_e->cast<Id>()->_v.str() == "output_var") {
-  // 	  output = true;
-  // 	  break;
-  // 	} else if (ann->_e->isa<Call>()
-  // 		   && ann->_e->cast<Call>()->_id.str() == "output_array") {
-  // 	  al_dims =
-  // 	    (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
-  // 	  output = true;
-  // 	  break;
-  // 	}
-  // 	ann = ann->_ann;
-  //     }
-  //     if (!output)
-  // 	continue;
-  //     oss << it->first->_id.str() << " = ";
-  //     if (it->first->_ti->isarray()) {
-  // 	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
-  // 	oss << "array[";
-  // 	int size = varray->getSize();
-  // 	for (int i = 0; i < size; i++) {
-  // 	  IloNumVar& v = (*varray)[i];
-  // 	  oss << showVariable(cplex, v);
-  // 	  if (i != size - 1)
-  // 	    oss << ", ";
-  // 	}
-  // 	oss << "]";
-  //     } else {
-  // 	oss << showVariable(cplex, *(IloNumVar*) (it->second));
-  //     }
-  //     oss << std::endl;
-  //   }
-  //   return oss.str();
-  // }
 
   CplexInterface::~CplexInterface() {
     model->end();

@@ -172,7 +172,7 @@ namespace MiniZinc {
     const char* c_str(void) const { return _s; }
     std::string str(void) const { return std::string(c_str()); }
     unsigned int size(void) const { return _n; }
-    char operator[](int i) { assert(i<_n); return _s[i]; }
+    char operator[](unsigned int i) { assert(i<_n); return _s[i]; }
   };
 
   inline

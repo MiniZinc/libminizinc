@@ -248,7 +248,7 @@ namespace MiniZinc {
 	dl->addStringToList(oss.str());
 	DocumentList* args = new DocumentList("(", ", ", ")");
 
-	for (int i = 0; i < al._dims->size(); i++) {
+	for (unsigned int i = 0; i < al._dims->size(); i++) {
 	  oss.str("");
 	  oss << (*al._dims)[i].first << ".." << (*al._dims)[i].second;
 	  args->addStringToList(oss.str());
