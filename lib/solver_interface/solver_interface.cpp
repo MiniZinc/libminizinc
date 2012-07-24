@@ -23,7 +23,11 @@ namespace MiniZinc {
   }
   void SolverInterface::addVar(VarDecl* vd){
     void* solverVar = addSolverVar(vd);
-    variableMap.insert(std::pair<VarDecl*, void*>(vd,solverVar));
+    addVar(vd,solverVar);
+  }
+  void SolverInterface::addVar(VarDecl* vd, void* ptr){
+    variableMap.erase(vd);
+    variableMap.insert(std::pair<VarDecl*, void*>(vd,ptr));
   }
   void SolverInterface::postConstraint(ConstraintI& constraint){
     Call* c = constraint._e->cast<Call>();
@@ -35,7 +39,7 @@ namespace MiniZinc {
       Printer::getInstance()->print(&constraint);
       throw -1;
     }
-    it->second(*this,*(c->_args));
+    it->second(*this,c);
   }
   void* SolverInterface::lookupVar(VarDecl* vd){
     std::map<VarDecl*,void*>::iterator it;

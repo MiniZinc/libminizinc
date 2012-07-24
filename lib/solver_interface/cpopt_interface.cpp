@@ -1,14 +1,14 @@
 #include <minizinc/ast.hh>
-#include <minizinc/solver_interface/cplex_interface.hh>
-#include <ilcplex/ilocplex.h>
+#include <minizinc/solver_interface/cpopt_interface.hh>
+#include <ilcp/cp.h>
 #include <minizinc/printer.hh>
 
 namespace MiniZinc {
   
-  namespace CplexConstraints{
+  namespace CpOptConstraints{
     template<typename T, typename S>
     void p_lin(SolverInterface& si, const Call* call,
-	       CplexInterface::LIN_CON_TYPE lt, bool reif = false) {
+	       CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
       IloModel* model = (IloModel*) (si.getModel());
       CtxVec<Expression*>& args = *(call->_args);
       CtxVec<Expression*> *coeff = args[0]->cast<ArrayLit>()->_v;
@@ -19,13 +19,13 @@ namespace MiniZinc {
       lb = -IloInfinity;
       ub = IloInfinity;
       switch (lt) {
-      case CplexInterface::LQ:
+      case CpOptInterface::LQ:
 	ub = res;
 	break;
-      case CplexInterface::GQ:
+      case CpOptInterface::GQ:
 	lb = res;
 	break;
-      case CplexInterface::EQ:
+      case CpOptInterface::EQ:
 	ub = res;
 	lb = res;
 	break;
@@ -78,23 +78,23 @@ namespace MiniZinc {
     }
 
     void p_bool_lin(SolverInterface& si, const Call* call,
-		    CplexInterface::LIN_CON_TYPE lt, bool reif = false) {
+		    CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
       p_lin<bool, BoolLit>(si, call, lt, reif);
     }
     void p_bool_lin_le(SolverInterface& si, const Call* call) {
-      p_bool_lin(si, call, CplexInterface::LQ);
+      p_bool_lin(si, call, CpOptInterface::LQ);
     }
 
     void p_bool_lin_eq(SolverInterface& si, const Call* call) {
-      p_bool_lin(si, call, CplexInterface::EQ);
+      p_bool_lin(si, call, CpOptInterface::EQ);
     }
     void p_int_lin(SolverInterface& si, const Call* call,
-		   CplexInterface::LIN_CON_TYPE lt, bool reif = false) {
+		   CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
       p_lin<int, IntLit>(si, call, lt, reif);
     }
     void p_int_lin_le(SolverInterface& si, const Call* call,
 		      bool reif = false) {
-      p_int_lin(si, call, CplexInterface::LQ, reif);
+      p_int_lin(si, call, CpOptInterface::LQ, reif);
     }
     void p_int_lin_le_noreif(SolverInterface& si, const Call* call) {
       p_int_lin_le(si, call);
@@ -104,7 +104,7 @@ namespace MiniZinc {
     }
     void p_int_lin_eq(SolverInterface& si, const Call* call,
 		      bool reif = false) {
-      p_int_lin(si, call, CplexInterface::EQ, reif);
+      p_int_lin(si, call, CpOptInterface::EQ, reif);
     }
     void p_int_lin_eq_noreif(SolverInterface& si, const Call* call) {
       p_int_lin_eq(si, call);
@@ -113,12 +113,12 @@ namespace MiniZinc {
       p_int_lin_eq(si, call, true);
     }
     void p_float_lin(SolverInterface& si, const Call* call,
-		     CplexInterface::LIN_CON_TYPE lt, bool reif = false) {
+		     CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
       p_lin<double, FloatLit>(si, call, lt, reif);
     }
     void p_float_lin_le(SolverInterface& si, const Call* call,
 			bool reif = false) {
-      p_float_lin(si, call, CplexInterface::LQ, reif);
+      p_float_lin(si, call, CpOptInterface::LQ, reif);
     }
     void p_float_lin_le_reif(SolverInterface& si, const Call* call) {
       p_float_lin_le(si, call, true);
@@ -129,7 +129,7 @@ namespace MiniZinc {
     }
     void p_float_lin_eq(SolverInterface& si, const Call* call,
 			bool reif = false) {
-      p_float_lin(si, call, CplexInterface::EQ, reif);
+      p_float_lin(si, call, CpOptInterface::EQ, reif);
     }
     void p_float_lin_eq_reif(SolverInterface& si, const Call* call) {
       p_float_lin_eq(si, call, true);
@@ -283,53 +283,70 @@ namespace MiniZinc {
       IloConstraint constraint(*varc == (*vara != *varb));
       model->add(constraint);
     }
+    void p_lt(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
+      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*vara < *varb));
+    }
+    void p_lt_reif(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
+      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*varc == (*vara < *varb)));
+    }
   }
-  
-  CplexInterface::CplexInterface() {
+  CpOptInterface::CpOptInterface() {
     model = new IloModel(env);
-    addConstraintMapping(std::string("int2float"), CplexConstraints::p_eq);
-    addConstraintMapping(std::string("int_abs"), CplexConstraints::p_abs);
-    addConstraintMapping(std::string("int_eq"), CplexConstraints::p_eq);
-    addConstraintMapping(std::string("int_eq_reif"), CplexConstraints::p_eq_reif);
-    addConstraintMapping(std::string("int_le"), CplexConstraints::p_le);
-    addConstraintMapping(std::string("int_le_reif"), CplexConstraints::p_le_reif);
-    addConstraintMapping(std::string("int_lin_eq"), CplexConstraints::p_int_lin_eq_noreif); //
-    addConstraintMapping(std::string("int_lin_eq_reif"), CplexConstraints::p_int_lin_eq_reif);
-    addConstraintMapping(std::string("int_lin_le"), CplexConstraints::p_int_lin_le_noreif); //
-    addConstraintMapping(std::string("int_lin_le_reif"), CplexConstraints::p_int_lin_le_reif);
-    addConstraintMapping(std::string("int_ne"), CplexConstraints::p_ne);
-    addConstraintMapping(std::string("int_ne_reif"), CplexConstraints::p_ne_reif);
-    addConstraintMapping(std::string("int_plus"), CplexConstraints::p_plus);
-    addConstraintMapping(std::string("int_times_le"), CplexConstraints::p_times_le);
-    addConstraintMapping(std::string("float_times_le"), CplexConstraints::p_times_le); // must be convex
-    addConstraintMapping(std::string("array_bool_and"), CplexConstraints::p_array_bool_and);
-    addConstraintMapping(std::string("bool2int"), CplexConstraints::p_eq);
-    addConstraintMapping(std::string("bool_and"), CplexConstraints::p_bool_and);
-    addConstraintMapping(std::string("bool_eq"), CplexConstraints::p_eq);
-    addConstraintMapping(std::string("bool_eq_reif"), CplexConstraints::p_eq_reif);
-    addConstraintMapping(std::string("bool_le"), CplexConstraints::p_le);
-    addConstraintMapping(std::string("bool_le_reif"), CplexConstraints::p_le_reif);
-    addConstraintMapping(std::string("bool_lin_eq"), CplexConstraints::p_bool_lin_eq);
-    addConstraintMapping(std::string("bool_lin_le"), CplexConstraints::p_bool_lin_le);
-    addConstraintMapping(std::string("bool_not"), CplexConstraints::p_bool_not);
-    addConstraintMapping(std::string("bool_or"), CplexConstraints::p_bool_or);
-    addConstraintMapping(std::string("bool_xor"), CplexConstraints::p_bool_xor);
-    addConstraintMapping(std::string("float_abs"), CplexConstraints::p_abs);
-    addConstraintMapping(std::string("float_eq"), CplexConstraints::p_eq);
-    addConstraintMapping(std::string("float_eq_reif"), CplexConstraints::p_eq_reif);
-    addConstraintMapping(std::string("float_le"), CplexConstraints::p_le);
-    addConstraintMapping(std::string("float_le_reif"), CplexConstraints::p_le_reif);
-    addConstraintMapping(std::string("float_lin_eq"), CplexConstraints::p_float_lin_eq_noreif);
-    addConstraintMapping(std::string("float_lin_eq_reif"), CplexConstraints::p_float_lin_eq_reif);
-    addConstraintMapping(std::string("float_lin_le"), CplexConstraints::p_float_lin_le_noreif);
-    addConstraintMapping(std::string("float_lin_le_reif"), CplexConstraints::p_float_lin_le_reif);
-    addConstraintMapping(std::string("float_ne"), CplexConstraints::p_ne);
-    addConstraintMapping(std::string("float_ne_reif"), CplexConstraints::p_ne_reif);
-    addConstraintMapping(std::string("float_plus"), CplexConstraints::p_plus);
+    addConstraintMapping(std::string("int2float"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("int_abs"), CpOptConstraints::p_abs);
+    addConstraintMapping(std::string("int_eq"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("int_eq_reif"), CpOptConstraints::p_eq_reif);
+    addConstraintMapping(std::string("int_le"), CpOptConstraints::p_le);
+    addConstraintMapping(std::string("int_le_reif"), CpOptConstraints::p_le_reif);
+    addConstraintMapping(std::string("int_lin_eq"), CpOptConstraints::p_int_lin_eq_noreif); //
+    addConstraintMapping(std::string("int_lin_eq_reif"), CpOptConstraints::p_int_lin_eq_reif);
+    addConstraintMapping(std::string("int_lin_le"), CpOptConstraints::p_int_lin_le_noreif); //
+    addConstraintMapping(std::string("int_lin_le_reif"), CpOptConstraints::p_int_lin_le_reif);
+    addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
+    addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
+    addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
+    addConstraintMapping(std::string("int_times_le"), CpOptConstraints::p_times_le);
+    addConstraintMapping(std::string("float_times_le"), CpOptConstraints::p_times_le); // must be convex
+    addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
+    addConstraintMapping(std::string("bool2int"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("bool_and"), CpOptConstraints::p_bool_and);
+    addConstraintMapping(std::string("bool_eq"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("bool_eq_reif"), CpOptConstraints::p_eq_reif);
+    addConstraintMapping(std::string("bool_le"), CpOptConstraints::p_le);
+    addConstraintMapping(std::string("bool_le_reif"), CpOptConstraints::p_le_reif);
+    addConstraintMapping(std::string("bool_lin_eq"), CpOptConstraints::p_bool_lin_eq);
+    addConstraintMapping(std::string("bool_lin_le"), CpOptConstraints::p_bool_lin_le);
+    addConstraintMapping(std::string("bool_not"), CpOptConstraints::p_bool_not);
+    addConstraintMapping(std::string("bool_or"), CpOptConstraints::p_bool_or);
+    addConstraintMapping(std::string("bool_xor"), CpOptConstraints::p_bool_xor);
+    addConstraintMapping(std::string("float_abs"), CpOptConstraints::p_abs);
+    addConstraintMapping(std::string("float_eq"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("float_eq_reif"), CpOptConstraints::p_eq_reif);
+    addConstraintMapping(std::string("float_le"), CpOptConstraints::p_le);
+    addConstraintMapping(std::string("float_le_reif"), CpOptConstraints::p_le_reif);
+    addConstraintMapping(std::string("float_lin_eq"), CpOptConstraints::p_float_lin_eq_noreif);
+    addConstraintMapping(std::string("float_lin_eq_reif"), CpOptConstraints::p_float_lin_eq_reif);
+    addConstraintMapping(std::string("float_lin_le"), CpOptConstraints::p_float_lin_le_noreif);
+    addConstraintMapping(std::string("float_lin_le_reif"), CpOptConstraints::p_float_lin_le_reif);
+    addConstraintMapping(std::string("float_ne"), CpOptConstraints::p_ne);
+    addConstraintMapping(std::string("float_ne_reif"), CpOptConstraints::p_ne_reif);
+    addConstraintMapping(std::string("float_plus"), CpOptConstraints::p_plus);
+    addConstraintMapping(std::string("float_lt"), CpOptConstraints::p_lt);
+    addConstraintMapping(std::string("int_lt"), CpOptConstraints::p_lt);
+    addConstraintMapping(std::string("bool_lt"), CpOptConstraints::p_lt);
 
   }
 
-  void CplexInterface::solve(SolveI* s) {
+  void CpOptInterface::solve(SolveI* s) {
     if (s->_st != SolveI::SolveType::ST_SAT) {
       IloObjective obj;
       if (s->_st == SolveI::SolveType::ST_MAX)
@@ -341,14 +358,14 @@ namespace MiniZinc {
       model->add(obj);
     }
 
-    IloCplex cplex(*model);
+    IloCP cplex(*model);
     try{
       if (!cplex.solve()) {
 	std::cerr << "Failed to optimize LP" << std::endl;
 	return;
       }
-    } catch(IloCplex::Exception& e){
-      std::cerr << "Caught IloCplex::Exception while solving : " << std::endl
+    } catch(IloCP::Exception& e){
+      std::cerr << "Caught IloCP::Exception while solving : " << std::endl
 		<< e << std::endl;
       std::exit(0);
     }
@@ -358,16 +375,18 @@ namespace MiniZinc {
     std::cout << showVariables(cplex);
 
   }
-  std::string CplexInterface::showVariable(IloCplex& cplex, IloNumVar& v) {
+  std::string CpOptInterface::showVariable(IloCP& cplex, IloNumVar& v) {
     std::ostringstream oss;
     try {
-      oss << cplex.getValue(v);
+      if(cplex.isExtracted(v) && cplex.isFixed(v))
+	oss << cplex.getValue(v);
+      else oss << "_";
     } catch (IloAlgorithm::NotExtractedException& e) {
       oss << "_";
     }
     return oss.str();
   }
-  std::string CplexInterface::showVariables(IloCplex& cplex){
+  std::string CpOptInterface::showVariables(IloCP& cplex){
     ASTContext context;
     std::ostringstream oss;
     std::map<VarDecl*, void*>::iterator it;
@@ -405,20 +424,22 @@ namespace MiniZinc {
 	for(int i = 0; i < size; i++){
 	  IloNumVar& v = (*varray)[i];
 	  try{
-	    IloNum num = cplex.getValue(v);
-	    switch(v.getType()){
-	    case ILOINT:
-	      vec[i] = IntLit::a(context,loc,(int)num);
-	      break;
-	    case ILOFLOAT:
-	      vec[i] = FloatLit::a(context,loc,(double)num);
-	      break;
-	    case ILOBOOL:
-	      vec[i] = BoolLit::a(context,loc,(bool)num);
-	      break;
-	    default:
-	      std::cerr << "Wrong type of var" << std::endl;
-	    }
+	    if(cplex.isExtracted(v) && cplex.isFixed(v)){
+	      IloNum num = cplex.getValue(v);
+	      switch(v.getType()){
+	      case ILOINT:
+		vec[i] = IntLit::a(context,loc,(int)num);
+		break;
+	      case ILOFLOAT:
+		vec[i] = FloatLit::a(context,loc,(double)num);
+		break;
+	      case ILOBOOL:
+		vec[i] = BoolLit::a(context,loc,(bool)num);
+		break;
+	      default:
+		std::cerr << "Wrong type of var" << std::endl;
+	      }
+	    } else vec[i] = StringLit::a(context, loc, "_");
 	  } catch(IloAlgorithm::NotExtractedException& e){
 	    vec[i] = StringLit::a(context, loc, "_");
 	  }
@@ -443,15 +464,15 @@ namespace MiniZinc {
   }
 
 
-  CplexInterface::~CplexInterface() {
+  CpOptInterface::~CpOptInterface() {
     model->end();
     delete model;
     env.end();
   }
-  void* CplexInterface::getModel() {
+  void* CpOptInterface::getModel() {
     return (void*) (model);
   }
-  void* CplexInterface::addSolverVar(VarDecl* vd) {
+  void* CpOptInterface::addSolverVar(VarDecl* vd) {
     MiniZinc::TypeInst* ti = vd->_ti;
     IloNumVar::Type type;
     switch (ti->_type._bt) {
@@ -542,7 +563,7 @@ namespace MiniZinc {
     }
   }
   template<typename S, typename T>
-  void CplexInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar) {
+  void CpOptInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar) {
     for (unsigned int i = 0; i < ar.size(); i++) {
       IloNumVar* v = (IloNumVar*)resolveVar(ar[i]);
       model->add(IloConstraint(res[i] == *v));

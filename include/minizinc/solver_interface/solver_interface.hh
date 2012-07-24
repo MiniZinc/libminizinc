@@ -21,20 +21,58 @@ namespace MiniZinc{
     SolverInterface();
     virtual ~SolverInterface();
 
+    /* virtual void* fromFlatZinc(Model*); */
     virtual void* getModel()=0;
     virtual void solve(SolveI* s) = 0;
+    virtual void* resolveArrayAccess(void* array, int index)=0;
+    virtual void* resolveIntLit(int v)=0;
+    virtual void* resolveBoolLit(bool v)=0;
+    virtual void* resolveFloatLit(double v)=0;
+
     void addVar(VarDecl* vd);
+    void addVar(VarDecl* vd, void* ptr);
     void postConstraint(ConstraintI& constraint);
-    virtual void* resolveVar(Expression*)=0;
-	
     void fromFlatZinc(MiniZinc::Model& m);
     void* lookupVar(VarDecl* vd);
     void* lookupVar(std::string s);
+    void* resolveVar(Expression* e) {
+      if (e->isa<Id>()) {
+	return lookupVar(e->cast<Id>()->_v.str());
+      } else if (e->isa<ArrayAccess>()) {
+	ArrayAccess* aa = e->cast<ArrayAccess>();
+	void* var = resolveVar(aa->_v);
+	int index = ((*aa->_idx)[0])->cast<IntLit>()->_v - 1;
+	return resolveArrayAccess(var,index);
+      } else if (e->isa<IntLit>()) {
+	return resolveIntLit(e->cast<IntLit>()->_v);
+      } else if (e->isa<BoolLit>()) {
+	return resolveBoolLit(e->cast<BoolLit>()->_v);
+      } else if (e->isa<FloatLit>()) {
+	return resolveFloatLit(e->cast<FloatLit>()->_v);
+      } else if (e->isa<UnOp>()) {
+	Expression* uo = e->cast<UnOp>()->_e0;
+	if (uo->isa<IntLit>()) {
+	  int v = getNumber<int, IntLit>(e);
+	  return resolveIntLit(v);
+	} else if (uo->isa<BoolLit>()) {
+	  bool v = getNumber<bool, BoolLit>(e);
+	  return resolveBoolLit(v);
+	} else if (uo->isa<FloatLit>()) {
+	  double v = getNumber<double, FloatLit>(e);
+	  return resolveFloatLit(v);
+	}
+      }
+      std::cerr << "Error " << e->_loc << std::endl
+		<< "Variables should be identificators, array accesses, int literals, float literals, or bool literals." << std::endl 
+		<< "Got : " << printEID(e->_eid) << std::endl
+		<< "in : " << e;
+      std::exit(-1);
+    }
   protected:
     virtual void* addSolverVar(VarDecl*) = 0;
    
 
-    typedef void (*poster) (SolverInterface&, const CtxVec<Expression*>&);
+    typedef void (*poster) (SolverInterface&, const Call* call);
     
     void addConstraintMapping(std::string mzn_constraint,
 			      poster func);
@@ -73,7 +111,7 @@ namespace MiniZinc{
     /*enum ExpressionId {
 
       } _eid;*/
-
+  public:
     static std::string printEID(Expression::ExpressionId eid){
       switch(eid){
       case Expression::ExpressionId::E_INTLIT: return "INTLIT";

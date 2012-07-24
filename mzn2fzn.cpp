@@ -39,7 +39,9 @@
 #include <minizinc/print.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
-#include <minizinc/solver_interface/cplex_interface.h>
+#include <minizinc/solver_interface/cplex_interface.hh>
+#include <minizinc/solver_interface/cpopt_interface.hh>
+
 using namespace MiniZinc;
 using namespace std;
 
@@ -104,8 +106,9 @@ int main(int argc, char** argv) {
           MiniZinc::typecheck(ctx,m);
         }
         // printDoc(std::cout, m);
-        CplexInterface ci;
-        ci.fromFlatZinc(*m);
+        SolverInterface* si;
+        si = new CpOptInterface;
+        si->fromFlatZinc(*m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
         // flat = m->flatten(tm);
