@@ -1,7 +1,7 @@
 #ifndef __CPOPT_INTERFACE_H
 #define __CPOPT_INTERFACE_H
 
-#include "solver_interface.h"
+#include "solver_interface.hh"
 #include <ilcp/cp.h>
 #include <string>
 
@@ -29,7 +29,7 @@ namespace MiniZinc {
       return (void*) (&((*inva)[index]));
     }
     template<typename T> void* resolveLit(T v, IloNumVar::Type type){
-      IloNumVar* var = new IloNumVar(model->getEnv(), v, v, type);
+      IloExpr* var = new IloExpr(model->getEnv(), v);
       return (void*) var;
     }
     void* resolveIntLit(int v){

@@ -5,7 +5,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/model.hh>
-#include <minizinc/printer.h>
+#include <minizinc/printer.hh>
 namespace MiniZinc{
   template<typename T, typename S>
     T getNumber(Expression* e) {

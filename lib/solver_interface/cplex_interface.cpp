@@ -38,7 +38,7 @@ namespace MiniZinc {
 	range.setLinearCoef(*v, co);
       }
       if (reif) {
-	IloNumVar* varr = (IloNumVar*) (si.resolveVar(args[2]));
+	IloExpr* varr = (IloExpr*) (si.resolveVar(args[2]));
 	model->add(IloConstraint(range == *varr));
       }
       model->add(range);
@@ -46,13 +46,13 @@ namespace MiniZinc {
 
     void p_array_bool_and(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* var = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* var = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint;
       if (args[0]->isa<ArrayLit>()) {
 	CtxVec<Expression*>& array = *(args[0]->cast<ArrayLit>()->_v);
 	for (unsigned int i = 0; i < array.size(); i++) {
-	  IloNumVar* array_element = (IloNumVar*) (si.resolveVar(array[i]));
+	  IloExpr* array_element = (IloExpr*) (si.resolveVar(array[i]));
 	  if (i == 0) {
 	    constraint = IloConstraint(*array_element == true);
 	  } else {
@@ -61,10 +61,10 @@ namespace MiniZinc {
 	  }
 	}
       } else if (args[0]->isa<Id>()) {
-	IloNumVarArray* array = (IloNumVarArray*) si.resolveVar(args[0]);
+	IloExprArray* array = (IloExprArray*) si.resolveVar(args[0]);
 
 	for (unsigned int i = 0; i < array->getSize(); i++) {
-	  IloNumVar* array_element = (IloNumVar*) (&(*array)[i]);
+	  IloExpr* array_element = (IloExpr*) (&(*array)[i]);
 	  if (i == 0) {
 	    constraint = IloConstraint(*array_element == true);
 	  } else {
@@ -140,8 +140,8 @@ namespace MiniZinc {
     }
     void p_eq(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       Expression* ann = call->_ann;
       while(ann){
@@ -151,7 +151,7 @@ namespace MiniZinc {
 	  if(c->_id.str() == "defines_var"){
 	    Expression* arg = (*(c->_args))[0];
 	    if(arg->isa<Id>()){
-	      IloNumVar* var_defined = (IloNumVar*)(si.resolveVar(arg));
+	      IloExpr* var_defined = (IloExpr*)(si.resolveVar(arg));
 	      if(var_defined == vara){
 		si.addVar(arg->cast<Id>()->_decl,(void*)varb);
 		return;
@@ -170,9 +170,9 @@ namespace MiniZinc {
     }
     void p_eq_reif(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varr = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varr = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varr == (*vara == *varb));
       model->add(constraint);
@@ -182,51 +182,51 @@ namespace MiniZinc {
     }
     void p_abs(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(IloAbs(*vara) == *varb);
       model->add(constraint);
     }
     void p_le(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*vara <= *varb);
       model->add(constraint);
     }
     void p_le_reif(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varr = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varr = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varr == (*vara <= *varb));
       model->add(constraint);
     }
     void p_ne(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*vara != *varb);
       model->add(constraint);
     }
     void p_ne_reif(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varr = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varr = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varr == (*vara != *varb));
       model->add(constraint);
     }
     void p_plus(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varc == (*vara + *varb));
       model->add(constraint);
@@ -234,18 +234,18 @@ namespace MiniZinc {
     }
     void p_times_le(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint((*vara * *varb) <= *varc);
       model->add(constraint);
     }
     void p_bool_and(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(
 			       *varc
@@ -255,17 +255,17 @@ namespace MiniZinc {
     }
     void p_bool_not(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint((*vara) == *varb);
       model->add(!constraint);
     }
     void p_bool_or(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(
 			       *varc
@@ -276,9 +276,9 @@ namespace MiniZinc {
 
     void p_bool_xor(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
-      IloNumVar* vara = (IloNumVar*) (si.resolveVar(args[0]));
-      IloNumVar* varb = (IloNumVar*) (si.resolveVar(args[1]));
-      IloNumVar* varc = (IloNumVar*) (si.resolveVar(args[2]));
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varc == (*vara != *varb));
       model->add(constraint);

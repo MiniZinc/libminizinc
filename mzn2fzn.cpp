@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   bool output = true;
   bool outputFundecls = false;
   bool verbose = false;
-
+  string solver = "cpopt";
   if (argc < 2)
     goto error;
 
@@ -79,6 +79,9 @@ int main(int argc, char** argv) {
       eval = false;
     } else if (string(argv[i])==string("--verbose")) {
       verbose = true;
+    } else if (string(argv[i])==string("--solver")) {
+      i++;
+      solver = string(argv[i]);
     } else {
       break;
     }
@@ -107,7 +110,13 @@ int main(int argc, char** argv) {
         }
         // printDoc(std::cout, m);
         SolverInterface* si;
-        si = new CpOptInterface;
+
+        if(solver == string("cpopt"))
+          si = new CpOptInterface;
+        else if (solver == string("cplex"))
+          si = new CplexInterface;
+        else // default
+          si = new CpOptInterface;
         si->fromFlatZinc(*m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;

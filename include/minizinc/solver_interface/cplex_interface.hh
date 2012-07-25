@@ -1,7 +1,7 @@
 #ifndef __CPLEX_INTERFACE_H
 #define __CPLEX_INTERFACE_H
 
-#include "solver_interface.h"
+#include "solver_interface.hh"
 #include <ilcplex/ilocplex.h>
 #include <string>
 
