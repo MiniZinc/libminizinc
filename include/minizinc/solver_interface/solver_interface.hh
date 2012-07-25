@@ -28,6 +28,7 @@ namespace MiniZinc{
     virtual void* resolveIntLit(int v)=0;
     virtual void* resolveBoolLit(bool v)=0;
     virtual void* resolveFloatLit(double v)=0;
+    virtual void* resolveArrayLit(ArrayLit* a)=0;
 
     void addVar(VarDecl* vd);
     void addVar(VarDecl* vd, void* ptr);
@@ -43,6 +44,8 @@ namespace MiniZinc{
 	void* var = resolveVar(aa->_v);
 	int index = ((*aa->_idx)[0])->cast<IntLit>()->_v - 1;
 	return resolveArrayAccess(var,index);
+      } else if(e->isa<ArrayLit>()){
+	return resolveArrayLit(e->cast<ArrayLit>());
       } else if (e->isa<IntLit>()) {
 	return resolveIntLit(e->cast<IntLit>()->_v);
       } else if (e->isa<BoolLit>()) {
@@ -63,7 +66,7 @@ namespace MiniZinc{
 	}
       }
       std::cerr << "Error " << e->_loc << std::endl
-		<< "Variables should be identificators, array accesses, int literals, float literals, or bool literals." << std::endl 
+		<< "Variables should be identificators, array accesses, array literals, int literals, float literals, or bool literals." << std::endl 
 		<< "Got : " << printEID(e->_eid) << std::endl
 		<< "in : " << e;
       std::exit(-1);
@@ -84,10 +87,19 @@ namespace MiniZinc{
 	u = getNumber<double,FloatLit>(bo->_e1);
 	return std::pair<double,double>(b,u);
       }
+      else if(e->isa<TypeInst>()){
+	TypeInst* ti = e->cast<TypeInst>();
+	e = ti->_domain;
+	if(e)
+	  return getFloatBounds(e);
+	else
+	  throw -1;
+      } 
       else {
-	std::cerr << "getFloatBounds : Expected BinOp, got this : " << e->_eid;
+	std::cerr << "getIntBounds : Expected BinOp or TypeInst, got this : " << printEID(e->_eid);
 	Printer::getInstance()->print(e);
 	std::exit(0);
+    
       }
     }
     static std::pair<double,double> getIntBounds(Expression* e){
@@ -98,9 +110,16 @@ namespace MiniZinc{
 	u = getNumber<int,IntLit>(bo->_e1);
 	return std::pair<int,int>(b,u);
       }
+      else if(e->isa<TypeInst>()){
+	TypeInst* ti = e->cast<TypeInst>();
+	e = ti->_domain;
+	if(e)
+	  return getIntBounds(e);
+	else
+	  throw -1;
+      } 
       else {
-	return getIntBounds(e->cast<TypeInst>()->_domain);
-	std::cerr << "getIntBounds : Expected BinOp, got this : " << printEID(e->_eid);
+	std::cerr << "getIntBounds : Expected BinOp or TypeInst, got this : " << printEID(e->_eid);
 	Printer::getInstance()->print(e);
 	std::exit(0);
       }

@@ -29,7 +29,7 @@ namespace MiniZinc {
       return (void*) (&((*inva)[index]));
     }
     template<typename T> void* resolveLit(T v, IloNumVar::Type type){
-      IloNumVar* var = new IloNumVar(model->getEnv(), v, v, type);
+      IloExpr* var = new IloExpr(model->getEnv(), v);
       return (void*) var;
     }
     void* resolveIntLit(int v){
@@ -40,6 +40,14 @@ namespace MiniZinc {
     }
     void* resolveFloatLit(double v){
       return resolveLit<double>(v,ILOFLOAT);
+    } 
+    void* resolveArrayLit(ArrayLit* al){
+      unsigned int size = (*al->_dims)[0].second;
+      IloArray<IloExpr*>* res = new IloArray<IloExpr*>(model->getEnv(), size);
+      for(unsigned int i = 0; i < size; i++){
+	(*res)[i] = (IloExpr*)resolveVar((*al->_v)[i]);
+      }
+      return (void*) res;
     }
   };
 };

@@ -38,13 +38,12 @@ namespace MiniZinc {
 	range.setLinearCoef(*v, co);
       }
       if (reif) {
-	IloExpr* varr = (IloExpr*) (si.resolveVar(args[2]));
+	IloExpr* varr = (IloExpr*) (si.resolveVar(args[3]));
 	model->add(IloConstraint(range == *varr));
-      }
-      model->add(range);
+      } else model->add(range);
     }
 
-    void p_array_bool_and(SolverInterface& si, const Call* call) {
+    void p_array_bool_op(SolverInterface& si, const Call* call, IloConstraint (*op)(IloConstraint,IloConstraint)) {
       CtxVec<Expression*>& args = *(call->_args);
       IloExpr* var = (IloExpr*) (si.resolveVar(args[1]));
       IloModel* model = (IloModel*) si.getModel();
@@ -56,8 +55,7 @@ namespace MiniZinc {
 	  if (i == 0) {
 	    constraint = IloConstraint(*array_element == true);
 	  } else {
-	    constraint == constraint
-	      && IloConstraint(*array_element == true);
+	    constraint = op(constraint,IloConstraint(*array_element == true));
 	  }
 	}
       } else if (args[0]->isa<Id>()) {
@@ -68,14 +66,25 @@ namespace MiniZinc {
 	  if (i == 0) {
 	    constraint = IloConstraint(*array_element == true);
 	  } else {
-	    constraint = constraint
-	      && IloConstraint(*array_element == true);
+	    constraint = op(constraint,IloConstraint(*array_element == true));
 	  }
 	}
       }
 
       model->add(IloConstraint(*var == constraint));
     }
+
+    void p_array_bool_and(SolverInterface& si, const Call* call){
+      p_array_bool_op(si,call,[](IloConstraint c1, IloConstraint c2) {
+	  return IloConstraint(c1 && c2);
+	});
+    }
+    void p_array_bool_or(SolverInterface& si, const Call* call){
+      p_array_bool_op(si,call,[](IloConstraint c1, IloConstraint c2) {
+	  return IloConstraint(c1 || c2);
+	});
+    }
+   
 
     void p_bool_lin(SolverInterface& si, const Call* call,
 		    CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
@@ -111,32 +120,6 @@ namespace MiniZinc {
     }
     void p_int_lin_eq_reif(SolverInterface& si, const Call* call) {
       p_int_lin_eq(si, call, true);
-    }
-    void p_float_lin(SolverInterface& si, const Call* call,
-		     CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
-      p_lin<double, FloatLit>(si, call, lt, reif);
-    }
-    void p_float_lin_le(SolverInterface& si, const Call* call,
-			bool reif = false) {
-      p_float_lin(si, call, CpOptInterface::LQ, reif);
-    }
-    void p_float_lin_le_reif(SolverInterface& si, const Call* call) {
-      p_float_lin_le(si, call, true);
-    }
-    void p_float_lin_le_noreif(SolverInterface& si,
-			       const Call* call) {
-      p_float_lin_le(si, call);
-    }
-    void p_float_lin_eq(SolverInterface& si, const Call* call,
-			bool reif = false) {
-      p_float_lin(si, call, CpOptInterface::EQ, reif);
-    }
-    void p_float_lin_eq_reif(SolverInterface& si, const Call* call) {
-      p_float_lin_eq(si, call, true);
-    }
-    void p_float_lin_eq_noreif(SolverInterface& si,
-			       const Call* call) {
-      p_float_lin_eq(si, call);
     }
     void p_eq(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
@@ -176,9 +159,6 @@ namespace MiniZinc {
       IloModel* model = (IloModel*) si.getModel();
       IloConstraint constraint(*varr == (*vara == *varb));
       model->add(constraint);
-    }
-    void p_int2float(SolverInterface& si, const Call* call) {
-      p_eq(si, call);
     }
     void p_abs(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
@@ -298,17 +278,85 @@ namespace MiniZinc {
       IloModel* model = (IloModel*)si.getModel();
       model->add(IloConstraint(*varc == (*vara < *varb)));
     }
-    void p_acos(SolverInterface& si, const Call* call){
+    void p_div(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntExpr* vara = (IloIntExpr*) (si.resolveVar(args[0]));
+      IloIntExpr* varb = (IloIntExpr*) (si.resolveVar(args[1]));
+      IloIntExpr* varc = (IloIntExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*varc == IloDiv(*vara, *varb)));
+    }
+    void p_min(SolverInterface& si, const Call* call){
       CtxVec<Expression*>& args = *(call->_args);
       IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
       IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*)si.getModel();
-      model->add(IloConstraint(IloArcCos(*vara) == *varb));
+      model->add(IloConstraint(*varc == IloMin(*vara, *varb)));
     }
+    void p_max(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloExpr* vara = (IloExpr*) (si.resolveVar(args[0]));
+      IloExpr* varb = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* varc = (IloExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*varc == IloMax(*vara, *varb)));
+    }
+    void p_mod(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntExpr* vara = (IloIntExpr*) (si.resolveVar(args[0]));
+      IloIntExpr* varb = (IloIntExpr*) (si.resolveVar(args[1]));
+      IloIntExpr* varc = (IloIntExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*varc == (*vara % *varb)));
+    }
+    void p_times(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntExpr* vara = (IloIntExpr*) (si.resolveVar(args[0]));
+      IloIntExpr* varb = (IloIntExpr*) (si.resolveVar(args[1]));
+      IloIntExpr* varc = (IloIntExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloConstraint(*varc == (*vara * *varb)));
+    }
+    void p_array_element(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntExpr* var_index = (IloIntExpr*) (si.resolveVar(args[0]));
+      IloIntArray* var_array = (IloIntArray*) (si.resolveVar(args[1]));
+      IloIntExpr* var_res = (IloIntExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloElement(*var_array,*var_index) == *var_res);
+    }
+    void p_array_var_element(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntExpr* var_index = (IloIntExpr*) (si.resolveVar(args[0]));
+      IloIntVarArray* var_array = (IloIntVarArray*) (si.resolveVar(args[1]));
+      IloIntExpr* var_res = (IloIntExpr*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)si.getModel();
+      model->add(IloElement(*var_array,*var_index) == *var_res);
+    }
+    void p_bool_clause(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloExprArray* vara = (IloExprArray*) (si.resolveVar(args[0]));
+      IloExprArray* varb = (IloExprArray*) (si.resolveVar(args[1]));
+      IloModel* model = (IloModel*)si.getModel();
+      IloOr constraint(model->getEnv());
+      unsigned int sizeA = vara->getSize();
+      unsigned int sizeB = varb->getSize();
+      for(unsigned int i = 0; i < sizeA; i++){
+	IloExpr e = (*vara)[i];
+	constraint.add(e == IloTrue);
+      }
+      for(unsigned int i = 0; i < sizeB; i++){
+	IloExpr e = (*varb)[i];
+	constraint.add(e == IloFalse);
+      }
+      model->add(constraint);
+    }
+    
+
   }
   CpOptInterface::CpOptInterface() {
     model = new IloModel(env);
-    addConstraintMapping(std::string("int2float"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("int_abs"), CpOptConstraints::p_abs);
     addConstraintMapping(std::string("int_eq"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("int_eq_reif"), CpOptConstraints::p_eq_reif);
@@ -322,8 +370,10 @@ namespace MiniZinc {
     addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
     addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
     addConstraintMapping(std::string("int_times_le"), CpOptConstraints::p_times_le);
-    addConstraintMapping(std::string("float_times_le"), CpOptConstraints::p_times_le); // must be convex
     addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
+    addConstraintMapping(std::string("array_bool_or"), CpOptConstraints::p_array_bool_or);
+   
+
     addConstraintMapping(std::string("bool2int"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("bool_and"), CpOptConstraints::p_bool_and);
     addConstraintMapping(std::string("bool_eq"), CpOptConstraints::p_eq);
@@ -335,23 +385,22 @@ namespace MiniZinc {
     addConstraintMapping(std::string("bool_not"), CpOptConstraints::p_bool_not);
     addConstraintMapping(std::string("bool_or"), CpOptConstraints::p_bool_or);
     addConstraintMapping(std::string("bool_xor"), CpOptConstraints::p_bool_xor);
-    addConstraintMapping(std::string("float_abs"), CpOptConstraints::p_abs);
-    addConstraintMapping(std::string("float_eq"), CpOptConstraints::p_eq);
-    addConstraintMapping(std::string("float_eq_reif"), CpOptConstraints::p_eq_reif);
-    addConstraintMapping(std::string("float_le"), CpOptConstraints::p_le);
-    addConstraintMapping(std::string("float_le_reif"), CpOptConstraints::p_le_reif);
-    addConstraintMapping(std::string("float_lin_eq"), CpOptConstraints::p_float_lin_eq_noreif);
-    addConstraintMapping(std::string("float_lin_eq_reif"), CpOptConstraints::p_float_lin_eq_reif);
-    addConstraintMapping(std::string("float_lin_le"), CpOptConstraints::p_float_lin_le_noreif);
-    addConstraintMapping(std::string("float_lin_le_reif"), CpOptConstraints::p_float_lin_le_reif);
-    addConstraintMapping(std::string("float_ne"), CpOptConstraints::p_ne);
-    addConstraintMapping(std::string("float_ne_reif"), CpOptConstraints::p_ne_reif);
-    addConstraintMapping(std::string("float_plus"), CpOptConstraints::p_plus);
-    addConstraintMapping(std::string("float_lt"), CpOptConstraints::p_lt);
-    addConstraintMapping(std::string("int_lt"), CpOptConstraints::p_lt);
-    addConstraintMapping(std::string("bool_lt"), CpOptConstraints::p_lt);
 
-    addConstraintMapping(std::string("float_acos"),CpOptConstraints::p_acos);
+    addConstraintMapping(std::string("int_lt"), CpOptConstraints::p_lt);
+    addConstraintMapping(std::string("int_lt_reif"), CpOptConstraints::p_lt_reif);
+
+    addConstraintMapping(std::string("bool_lt"), CpOptConstraints::p_lt);
+    addConstraintMapping(std::string("bool_lt_reif"), CpOptConstraints::p_lt_reif);
+    addConstraintMapping(std::string("int_div"),CpOptConstraints::p_div);
+    addConstraintMapping(std::string("int_min"),CpOptConstraints::p_min);
+    addConstraintMapping(std::string("int_max"),CpOptConstraints::p_max);
+    addConstraintMapping(std::string("int_mod"),CpOptConstraints::p_mod);
+    addConstraintMapping(std::string("int_times"), CpOptConstraints::p_times);
+    addConstraintMapping(std::string("array_bool_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_var_bool_element"), CpOptConstraints::p_array_var_element);
+    addConstraintMapping(std::string("array_int_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
+    addConstraintMapping(std::string("bool_clause"),CpOptConstraints::p_bool_clause);
 
   }
 
@@ -422,48 +471,28 @@ namespace MiniZinc {
       
       if(it->first->_ti->isarray()){
 	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
-	Location loc;
 	int sizeDims = al_dims->_v->size();
+	oss << "array" << sizeDims << "d(";
 	int size = varray->getSize();	
-	std::vector<Expression*>* _vec = new std::vector<Expression*>(size);
-	std::vector<std::pair<int,int> >* _dims = new std::vector<std::pair<int,int> >(sizeDims);
-	std::vector<Expression*>& vec = *_vec;
-	auto& dims = *_dims;
-	
+	for(Expression* e : *(al_dims->_v)){
+	  BinOp* bo = e->cast<BinOp>();
+	  oss << getNumber<int,IntLit>(bo->_e0) << ".." 
+	      << getNumber<int,IntLit>(bo->_e1) << ", ";
+	}
+	oss << "[";
 	for(int i = 0; i < size; i++){
+	  if(i!=0)oss << ", ";
 	  IloNumVar& v = (*varray)[i];
 	  try{
 	    if(cplex.isExtracted(v) && cplex.isFixed(v)){
 	      IloNum num = cplex.getValue(v);
-	      switch(v.getType()){
-	      case ILOINT:
-		vec[i] = IntLit::a(context,loc,(int)num);
-		break;
-	      case ILOFLOAT:
-		vec[i] = FloatLit::a(context,loc,(double)num);
-		break;
-	      case ILOBOOL:
-		vec[i] = BoolLit::a(context,loc,(bool)num);
-		break;
-	      default:
-		std::cerr << "Wrong type of var" << std::endl;
-	      }
-	    } else vec[i] = StringLit::a(context, loc, "_");
+	      oss << num;
+	    } else oss << "_";
 	  } catch(IloAlgorithm::NotExtractedException& e){
-	    vec[i] = StringLit::a(context, loc, "_");
+	    oss << "_";
 	  }
 	}
-	for(int i = 0; i < sizeDims; i++){
-	  BinOp* bo = (*al_dims->_v)[i]->cast<BinOp>();
-	  assert(bo->_op == BOT_DOTDOT);
-	  int lb, ub;
-	  lb = getNumber<int,IntLit>(bo->_e0);
-	  ub = getNumber<int,IntLit>(bo->_e1);
-	   
-	  dims[i] = std::pair<int,int>(lb,ub);
-	}
-	ArrayLit* al = ArrayLit::a(context,loc,vec, dims);
-	oss << std::endl << al;
+	oss << "]);";
       } else {
 	oss << showVariable(cplex,*(IloNumVar*)(it->second));
       }
@@ -491,24 +520,24 @@ namespace MiniZinc {
     case Type::BT_BOOL:
       type = ILOBOOL;
       break;
-    case Type::BT_FLOAT:
-      type = ILOFLOAT;
-      break;
     default:
-      std::cerr << "This type of var is not handled by CPLEX." << std::endl;
+      std::cerr << "This type of var is not handled by CP Optimizer." << std::endl;
       std::exit(-1);
     }
     Expression* domain = ti->_domain;
     IloNum lb, ub;
     if (domain) {
-      std::pair<double, double> bounds;
-      if (type == ILOFLOAT) {
-	bounds = getFloatBounds(domain);
-      } else if (type == ILOINT) {
-	bounds = getIntBounds(domain);
+      std::pair<int,int> bounds;
+      try{
+	if (type == ILOINT) {
+	  bounds = getIntBounds(domain);
+	}
+	lb = IloNum(bounds.first);
+	ub = IloNum(bounds.second);
+      }catch(int e){
+	lb = -IloInfinity;
+	ub = IloInfinity;
       }
-      lb = IloNum(bounds.first);
-      ub = IloNum(bounds.second);
     } else {
       lb = -IloInfinity;
       ub = IloInfinity;
@@ -516,7 +545,8 @@ namespace MiniZinc {
     if (ti->isarray()) {
       assert(ti->_ranges->size() == 1);
       Expression* range = (*(ti->_ranges))[0];
-      std::pair<int, int> rangebounds = getIntBounds(range);
+      std::pair<int, int> rangebounds;
+      rangebounds = getIntBounds(range);
       int rangesize = rangebounds.second - rangebounds.first;
       IloNumVarArray* res = new IloNumVarArray(env, rangesize + 1, lb, ub,
 					       type);
@@ -527,9 +557,6 @@ namespace MiniZinc {
 	switch (type) {
 	case ILOINT:
 	  initArray<int, IntLit>(*res, ar);
-	  break;
-	case ILOFLOAT:
-	  initArray<double, FloatLit>(*res, ar);
 	  break;
 	case ILOBOOL:
 	  initArray<bool, BoolLit>(*res, ar);
@@ -548,10 +575,6 @@ namespace MiniZinc {
 	  switch (type) {
 	  case ILOINT:
 	    lb = getNumber<int,IntLit>(init);
-	    ub = lb;
-	    break;
-	  case ILOFLOAT:
-	    lb = getNumber<float,FloatLit>(init);
 	    ub = lb;
 	    break;
 	  case ILOBOOL:

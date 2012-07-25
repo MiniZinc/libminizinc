@@ -1,5 +1,5 @@
-#include <minizinc/solver_interface/solver_interface.h>
-#include <minizinc/printer.h>
+#include <minizinc/solver_interface/solver_interface.hh>
+#include <minizinc/printer.hh>
 namespace MiniZinc {
   SolverInterface::SolverInterface(){
   }
@@ -37,7 +37,7 @@ namespace MiniZinc {
       std::cerr << "Error : couldn't find constraint " << con_id 
 		<< " in constraints map." << std::endl;
       Printer::getInstance()->print(&constraint);
-      throw -1;
+      std::exit(-1);
     }
     it->second(*this,c);
   }

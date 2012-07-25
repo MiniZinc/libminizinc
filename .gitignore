@@ -6,3 +6,5 @@ Makefile
 include/minizinc/parser.tab.hh
 lib/lexer.yy.cpp
 lib/parser.tab.cpp
+core
+res/
