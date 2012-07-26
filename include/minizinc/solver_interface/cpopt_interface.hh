@@ -22,14 +22,15 @@ namespace MiniZinc {
     std::string showVariables(IloCP& cplex);
     std::string showVariable(IloCP& cplex, IloNumVar& v);
     enum LIN_CON_TYPE {LQ,EQ,GQ};
-    template<typename S, typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);
+    template<typename S, typename T> void initArray(IloNumExprArray& res, CtxVec<Expression*>& ar);
+   template<typename S, typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);
    
     void* resolveArrayAccess(void* array, int index){
       IloNumVarArray *inva = static_cast<IloNumVarArray*>(array);    
       return (void*) (&((*inva)[index]));
     }
     template<typename T> void* resolveLit(T v, IloNumVar::Type type){
-      IloExpr* var = new IloExpr(model->getEnv(), v);
+      IloNumExpr* var = new IloNumExpr(model->getEnv(),v);
       return (void*) var;
     }
     void* resolveIntLit(int v){
@@ -55,9 +56,10 @@ namespace MiniZinc {
 	}
 	return (void*) res;
       } else {
-	IloIntArray* res = new IloIntArray(model->getEnv(), size);
+	IloNumExprArray* res = new IloNumExprArray(model->getEnv(), size);
 	for(unsigned int i = 0; i < size; i++){
-	  (*res)[i] = (*((IloInt*)resolveVar((*al->_v)[i])));
+	  IloNumExpr* v = (IloNumExpr*)resolveVar((*al->_v)[i]);
+	  res->add(*v);
 	}
 	return (void*) res;
       }

@@ -5,10 +5,14 @@ annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation domain;
 annotation input_order;
+annotation smallest;
+annotation indomain;
 annotation indomain_min;
 annotation indomain_max;
+annotation indomain_split;
 annotation complete;
 annotation first_fail;
+annotation bounds;
 
 annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
 
