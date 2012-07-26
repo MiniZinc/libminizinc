@@ -12,6 +12,19 @@ function var bool: '='(any $T,any $T);
 function     bool: '!='(    $T,    $T);
 function var bool: '!='(any $T,any $T);
 
+function     bool: '<'(array[$U] of     $T,array[$U] of     $T);
+function var bool: '<'(array[$U] of any $T,array[$U] of any $T);
+function     bool: '>'(array[$U] of     $T,array[$U] of     $T);
+function var bool: '>'(array[$U] of any $T,array[$U] of any $T);
+function     bool: '<='(array[$U] of     $T,array[$U] of     $T);
+function var bool: '<='(array[$U] of any $T,array[$U] of any $T);
+function     bool: '>='(array[$U] of     $T,array[$U] of     $T);
+function var bool: '>='(array[$U] of any $T,array[$U] of any $T);
+function     bool: '='(array[$U] of     $T,array[$U] of     $T);
+function var bool: '='(array[$U] of any $T,array[$U] of any $T);
+function     bool: '!='(array[$U] of     $T,array[$U] of     $T);
+function var bool: '!='(array[$U] of any $T,array[$U] of any $T);
+
 % Arithmetic operations
 function     int:   '+'(    int,     int);
 function var int:   '+'(var int,  var int);
