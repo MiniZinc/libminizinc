@@ -23,7 +23,7 @@ namespace MiniZinc {
     std::string showVariable(IloCP& cplex, IloNumVar& v);
     enum LIN_CON_TYPE {LQ,EQ,GQ};
     template<typename S, typename T> void initArray(IloNumExprArray& res, CtxVec<Expression*>& ar);
-   template<typename S, typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);
+   // template<typename S, typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);
    
     void* resolveArrayAccess(void* array, int index){
       IloNumVarArray *inva = static_cast<IloNumVarArray*>(array);    
@@ -49,7 +49,7 @@ namespace MiniZinc {
       }
 
       Expression* e = (*al->_v)[0];
-      if(e->isa<Id>()){
+      if(e->isa<Id>() || e->isa<ArrayAccess>()){
 	IloIntVarArray* res = new IloIntVarArray(model->getEnv(), size);
 	for(unsigned int i = 0; i < size; i++){
 	  (*res)[i] = (*((IloIntVar*)resolveVar((*al->_v)[i])));
@@ -64,6 +64,9 @@ namespace MiniZinc {
 	return (void*) res;
       }
     }
+
+    IloGoal searchGoal(Annotation* ann);
+    void setObjective(SolveI* s);
     
   
   };

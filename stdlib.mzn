@@ -4,17 +4,32 @@ annotation defines_var(any $t: c);
 annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation domain;
+
+
+annotation complete;
+
+
+
+annotation bounds;
+
+annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+%Variable choice
 annotation input_order;
 annotation smallest;
+annotation largest;
+annotation first_fail;
+annotation anti_first_fail;
+
+%Value choice
 annotation indomain;
 annotation indomain_min;
 annotation indomain_max;
 annotation indomain_split;
-annotation complete;
-annotation first_fail;
-annotation bounds;
-
-annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+annotation indomain_reverse_split;
+annotation indomain_middle;
+annotation indomain_median;
+annotation indomain_random;
+annotation indomain_interval;
 
 %Predicate definitions for stdlib.fzn
 
@@ -27,6 +42,9 @@ predicate int_le(var int: a, var int: b);
 predicate int_le_reif(var int: a, var int: b, var bool: r);
 predicate int_lin_eq(array[int] of int: as, array[int] of var int: bs, int: c);
 predicate int_lin_eq_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
+predicate int_lin_ne(array[int] of int: as, array[int] of var int: bs, int: c);
+predicate int_lin_ne_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
+
 predicate int_lin_le(array[int] of int: as, array[int] of var int: bs, int: c);
 predicate int_lin_le_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
 predicate int_ne(var int: a, var int: b);
@@ -67,3 +85,8 @@ predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
 
+%CPOPTIMIZER constraints
+
+predicate cpoptimizer_nooverlap(array[int] of var int: s, array[int] of int: d);
+predicate cpoptimizer_cumul(array[int] of var int: s, array[int] of int: r,
+	  			       array[int] of int: d, int: c);

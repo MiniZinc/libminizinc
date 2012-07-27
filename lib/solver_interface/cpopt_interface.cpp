@@ -1,6 +1,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/solver_interface/cpopt_interface.hh>
 #include <ilcp/cp.h>
+#include <ilcp/cpext.h>
 #include <minizinc/printer.hh>
 
 namespace MiniZinc {
@@ -8,7 +9,7 @@ namespace MiniZinc {
   namespace CpOptConstraints{
     template<typename T, typename S>
     void p_lin(SolverInterface& si, const Call* call,
-	       CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
+	       CpOptInterface::LIN_CON_TYPE lt, bool reif = false, bool mustBe = true) {
       IloModel* model = (IloModel*) (si.getModel());
       CtxVec<Expression*>& args = *(call->_args);
       CtxVec<Expression*> *coeff = args[0]->cast<ArrayLit>()->_v;
@@ -39,8 +40,8 @@ namespace MiniZinc {
       }
       if (reif) {
 	IloExpr* varr = (IloExpr*) (si.resolveVar(args[3]));
-	model->add(IloConstraint(range == *varr));
-      } else model->add(range);
+	model->add(IloConstraint((range == *varr) == mustBe));
+      } else model->add(range == mustBe);
     }
 
     void p_array_bool_op(SolverInterface& si, const Call* call, IloConstraint (*op)(IloConstraint,IloConstraint)) {
@@ -98,8 +99,8 @@ namespace MiniZinc {
       p_bool_lin(si, call, CpOptInterface::EQ);
     }
     void p_int_lin(SolverInterface& si, const Call* call,
-		   CpOptInterface::LIN_CON_TYPE lt, bool reif = false) {
-      p_lin<int, IntLit>(si, call, lt, reif);
+		   CpOptInterface::LIN_CON_TYPE lt, bool reif = false, bool mustBe = true) {
+      p_lin<int, IntLit>(si, call, lt, reif, mustBe);
     }
     void p_int_lin_le(SolverInterface& si, const Call* call,
 		      bool reif = false) {
@@ -112,14 +113,20 @@ namespace MiniZinc {
       p_int_lin_le(si, call, true);
     }
     void p_int_lin_eq(SolverInterface& si, const Call* call,
-		      bool reif = false) {
-      p_int_lin(si, call, CpOptInterface::EQ, reif);
+		      bool reif = false, bool mustBe = true) {
+      p_int_lin(si, call, CpOptInterface::EQ, reif, mustBe);
     }
     void p_int_lin_eq_noreif(SolverInterface& si, const Call* call) {
       p_int_lin_eq(si, call);
     }
     void p_int_lin_eq_reif(SolverInterface& si, const Call* call) {
       p_int_lin_eq(si, call, true);
+    }
+    void p_int_lin_ne_noreif(SolverInterface& si, const Call* call) {
+      p_int_lin_eq(si, call, false, false);
+    }
+    void p_int_lin_ne_reif(SolverInterface& si, const Call* call) {
+      p_int_lin_eq(si, call, true, false);
     }
     void p_eq(SolverInterface& si, const Call* call) {
       CtxVec<Expression*>& args = *(call->_args);
@@ -323,7 +330,7 @@ namespace MiniZinc {
       IloIntExpr* var_index = (IloIntExpr*) (si.resolveVar(args[0]));
       IloNumExprArray* var_array = (IloNumExprArray*) (si.resolveVar(args[1]));
       IloNumExpr* var_res = (IloNumExpr*) (si.resolveVar(args[2]));
-      std::cout << *var_index << " -- " << *var_array << " -- " << *var_res << std::endl;
+      //std::cout << *var_index << " -- " << *var_array << " -- " << *var_res << std::endl;
 
       IloModel* model = (IloModel*)si.getModel();
       //creating an array with dummy value
@@ -361,8 +368,18 @@ namespace MiniZinc {
       }
       model->add(constraint);
     }
-    
-
+    void p_no_overlap(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloExprArray* vara = (IloExprArray*) (si.resolveVar(args[0]));
+      IloExprArray* varb = (IloExprArray*) (si.resolveVar(args[1]));
+      //TODO
+    }
+    void p_cumul(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloExprArray* vara = (IloExprArray*) (si.resolveVar(args[0]));
+      IloExprArray* varb = (IloExprArray*) (si.resolveVar(args[1]));
+      //TODO
+    }
   }
   CpOptInterface::CpOptInterface() {
     model = new IloModel(env);
@@ -375,7 +392,9 @@ namespace MiniZinc {
     addConstraintMapping(std::string("int_lin_eq_reif"), CpOptConstraints::p_int_lin_eq_reif);
     addConstraintMapping(std::string("int_lin_le"), CpOptConstraints::p_int_lin_le_noreif); //
     addConstraintMapping(std::string("int_lin_le_reif"), CpOptConstraints::p_int_lin_le_reif);
-
+    addConstraintMapping(std::string("int_lin_ne"), CpOptConstraints::p_int_lin_ne_noreif); //
+    addConstraintMapping(std::string("int_lin_ne_reif"), CpOptConstraints::p_int_lin_ne_reif);
+    
     addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
     addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
     addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
@@ -412,11 +431,88 @@ namespace MiniZinc {
     addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
     addConstraintMapping(std::string("bool_clause"),CpOptConstraints::p_bool_clause);
 
+    addConstraintMapping(std::string("cpoptimizer_nooverlap",CpOptConstraints::p_no_overlap));
+    addConstraintMapping(std::string("cpoptimizer_cumul",CpOptConstraints::p_cumul));    
+
+  }
+ 
+
+  ILCGOAL3(SearchGoal, IlcIntVarArray, vars, std::string, varSel, std::string,valSel){
+    IloInt index = -1;
+    if(varSel == std::string("input_order")){
+      index = IlcChooseFirstNonFixedInt(vars);
+    } else if(varSel == std::string("first_fail")){
+      index = IlcChooseMinSizeInt(vars);
+    } else if(varSel == std::string("anti_first_fail")){
+      index = IlcChooseMaxSizeInt(vars);
+    } else if(varSel == std::string("smallest")){
+      index = IlcChooseMinMinInt(vars);
+    } else if(varSel == std::string("largest")){
+      index = IlcChooseMaxMaxInt(vars);
+    } else {
+      std::cerr << "Unimplemented variable selection : " << varSel << std::endl;
+      std::exit(0);
+    }
+    if(index == -1) return 0;
+    IlcIntVar var = vars[index];
+    //    std::cout << "chose " << var << std::endl;
+    if(valSel == std::string("indomain_min")){
+      IlcInt value = var.getMin();
+      return IlcOr( IlcAnd( var == value,
+			    SearchGoal(getCP(), vars, varSel, valSel)), 
+		    IlcAnd( var != value,
+			    SearchGoal(getCP(), vars, varSel, valSel)));
+    } else if(valSel == std::string("indomain_max")){
+      IlcInt value = var.getMax();
+      return IlcOr( IlcAnd( var == value,
+			    SearchGoal(getCP(), vars, varSel, valSel)), 
+		    IlcAnd( var != value,
+			    SearchGoal(getCP(), vars, varSel, valSel)));
+    } else if(valSel == std::string("indomain_median")){
+      IloInt mid = (var.getMax()+var.getMin()) / 2;
+      IlcInt value;
+      if(var.isInDomain(mid))
+	value = mid;
+      else {
+	IlcInt valueh = var.getNextHigher( mid );
+	IlcInt valuel = var.getNextLower( mid );
+	value = (valueh - mid > mid - valuel ? valuel : valueh);
+      }
+      if(var.isInDomain(value))
+	return IlcOr( IlcAnd( var == value,
+			      SearchGoal(getCP(), vars, varSel, valSel)), 
+		      IlcAnd( var != value,
+			      SearchGoal(getCP(), vars, varSel, valSel)));
+      else
+	return 0;
+    } else if(valSel == std::string("indomain_split")){
+      IloInt value = (var.getMin() + var.getMax())/2;
+      return IlcOr( IlcAnd(var <= value,
+			   SearchGoal(getCP(),vars,varSel,valSel)),
+		    IlcAnd( var > value,
+			    SearchGoal(getCP(), vars, varSel, valSel)));      
+    } else if(valSel == std::string("indomain_reverse_split")){
+      IloInt value = (var.getMin() + var.getMax())/2;
+      return IlcOr( IlcAnd( var > value,
+			    SearchGoal(getCP(), vars, varSel, valSel)),
+		    IlcAnd( var <= value,
+			    SearchGoal(getCP(), vars, varSel, valSel))); 
+    } else {
+      std::cerr << "Unimplemented value selection : " << valSel << std::endl;
+      std::exit(0);
+    }
+  }
+  ILOCPGOALWRAPPER3(oSearchGoal, cp, IloIntVarArray, vars, std::string, varSel, std::string,valSel){
+    try{
+      return SearchGoal(cp, cp.getIntVarArray(vars), varSel, valSel);
+    } catch(IloCP::Exception& e) {
+      std::cerr << "CP.getintvar..." << std::endl << e;
+    }
   }
 
-  void CpOptInterface::solve(SolveI* s) {
+  void CpOptInterface::setObjective(SolveI* s){
+    IloObjective obj;
     if (s->_st != SolveI::SolveType::ST_SAT) {
-      IloObjective obj;
       if (s->_st == SolveI::SolveType::ST_MAX)
 	obj = IloMaximize(env);
       else
@@ -424,33 +520,66 @@ namespace MiniZinc {
       IloNumVar* v = (IloNumVar*) resolveVar(s->_e);
       obj.setLinearCoef(*v, 1);
       model->add(obj);
-    }
-
-    IloCP cplex(*model);
-    try{
-      if (!cplex.solve()) {
-	std::cerr << "Failed to optimize LP" << std::endl;
-	return;
+    } 
+  }
+  IloGoal CpOptInterface::searchGoal(Annotation* ann){
+    IloGoal goal;
+    while(ann){
+      Expression* e = ann->_e;
+      if(e->isa<Call>()){
+	Call* c = e->cast<Call>();
+	std::string call_id = c->_id.str();
+	if(call_id == std::string("int_search")){
+	  CtxVec<Expression*>& args = *(c->_args);
+	  IloIntVarArray* vars = (IloIntVarArray*)resolveVar(args[0]);
+	  std::string varSelectId = args[1]->cast<Id>()->_v.str();
+	  std::string valSelectId = args[2]->cast<Id>()->_v.str();
+	  model->add(*vars);
+	  goal = oSearchGoal(env,*vars,varSelectId,valSelectId);
+	  assert(args[3]->cast<Id>()->_v.str() == std::string("complete"));
+	} else {
+	  std::cerr << "Must implement " << call_id << "!" << std::endl;
+	  std::exit(0);
+	}
       }
+      ann = e->_ann;
+    }
+    return goal;
+  }
+  void CpOptInterface::solve(SolveI* s) {
+    setObjective(s);
+    IloCP cplex(*model);
+    cplex.setParameter(IloCP::LogVerbosity,IloCP::Quiet);
+    cplex.setParameter(IloCP::Workers,1);
+
+    Annotation* ann = s->_ann;
+    IloGoal g = searchGoal(ann);
+    cplex.startNewSearch(g);
+    try{
+      while(cplex.next()) {
+	if(cplex.hasObjective())
+	  std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
+	std::cout << showVariables(cplex);
+	std::cout << "----------" << std::endl;
+      }
+
+      std::cerr << "==========" << std::endl;
+      return;
+      
     } catch(IloCP::Exception& e){
       std::cerr << "Caught IloCP::Exception while solving : " << std::endl
 		<< e << std::endl;
       std::exit(0);
     }
-   
-    std::cout << "Solution status = " << cplex.getStatus() << std::endl;
-    std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
-    std::cout << showVariables(cplex);
-
   }
   std::string CpOptInterface::showVariable(IloCP& cplex, IloNumVar& v) {
     std::ostringstream oss;
     try {
       if(cplex.isExtracted(v) && cplex.isFixed(v))
 	oss << cplex.getValue(v);
-      else oss << "_";
+      else oss << v;
     } catch (IloAlgorithm::NotExtractedException& e) {
-      oss << "_";
+      oss << v;
     }
     return oss.str();
   }
@@ -480,7 +609,7 @@ namespace MiniZinc {
 
       
       if(it->first->_ti->isarray()){
-	IloNumVarArray* varray = static_cast<IloNumVarArray*>(it->second);
+	IloNumVarArray* varray = (IloNumVarArray*)(it->second);
 	int sizeDims = al_dims->_v->size();
 	oss << "array" << sizeDims << "d(";
 	int size = varray->getSize();	
@@ -497,9 +626,11 @@ namespace MiniZinc {
 	    if(cplex.isExtracted(v) && cplex.isFixed(v)){
 	      IloNum num = cplex.getValue(v);
 	      oss << num;
-	    } else oss << "_";
+	    } else {
+	      oss << (IloNumExpr)v;
+	    }
 	  } catch(IloAlgorithm::NotExtractedException& e){
-	    oss << "_";
+	    oss << (IloNumExpr)v;
 	  }
 	}
 	oss << "]);";
@@ -627,12 +758,12 @@ namespace MiniZinc {
       res[i] = *v;
     }
   }
-  template<typename S, typename T>
-  void CpOptInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar) {
-    for (unsigned int i = 0; i < ar.size(); i++) {
-      IloNumVar* v = (IloNumVar*)resolveVar(ar[i]);
-      model->add(IloConstraint(res[i] == *v));
-    }
-  }
+  // template<typename S, typename T>
+  // void CpOptInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar) {
+  //   for (unsigned int i = 0; i < ar.size(); i++) {
+  //     IloNumVar* v = (IloNumVar*)resolveVar(ar[i]);
+  //     model->add(IloConstraint(res[i] == *v));
+  //   }
+  // }
 }
 ;
