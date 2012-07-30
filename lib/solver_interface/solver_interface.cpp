@@ -1,8 +1,6 @@
 #include <minizinc/solver_interface/solver_interface.hh>
 #include <minizinc/printer.hh>
 namespace MiniZinc {
-  SolverInterface::SolverInterface(){
-  }
   SolverInterface::~SolverInterface(){
   }
   void SolverInterface::fromFlatZinc(MiniZinc::Model& m){

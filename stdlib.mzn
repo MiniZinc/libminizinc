@@ -13,6 +13,10 @@ annotation complete;
 annotation bounds;
 
 annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+annotation bool_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+annotation seq_search(array[int] of ann:a);
+
+
 %Variable choice
 annotation input_order;
 annotation smallest;
@@ -85,8 +89,13 @@ predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
 
+
 %CPOPTIMIZER constraints
 
-predicate cpoptimizer_nooverlap(array[int] of var int: s, array[int] of int: d);
-predicate cpoptimizer_cumul(array[int] of var int: s, array[int] of int: r,
-	  			       array[int] of int: d, int: c);
+%predicate cpoptimizer_nooverlap(array[int] of var int: s, array[int] of int: d);
+%predicate cpoptimizer_cumul(array[int] of var int: s, array[int] of int: r,
+%	  			       array[int] of int: d, int: c);
+predicate cpoptimizer_alldifferent(array[int] of var int: a);
+predicate global_cardinality(array[int] of var int: x,
+	  		     array[int] of int: cover,
+                             array[int] of var int: counts);

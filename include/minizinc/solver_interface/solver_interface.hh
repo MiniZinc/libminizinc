@@ -17,10 +17,16 @@ namespace MiniZinc{
     return 0;
   }
   class SolverInterface {
+  protected:
+    bool free;
+    bool allSolutions;
+    bool nbThreads;
   public:
-    SolverInterface();
+    SolverInterface() : free(false), allSolutions(false), nbThreads(1) {}
     virtual ~SolverInterface();
-
+    void setFree(bool f) { free = f; }
+    void setAllSolutions(bool as) { allSolutions = as; }
+    void setNbThreads(int n) { nbThreads = n; }
     /* virtual void* fromFlatZinc(Model*); */
     virtual void* getModel()=0;
     virtual void solve(SolveI* s) = 0;

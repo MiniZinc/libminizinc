@@ -3,7 +3,7 @@
 #include <ilcp/cp.h>
 #include <ilcp/cpext.h>
 #include <minizinc/printer.hh>
-
+#include <ilconcert/ilosmodel.h>
 namespace MiniZinc {
   
   namespace CpOptConstraints{
@@ -370,16 +370,64 @@ namespace MiniZinc {
     }
     void p_no_overlap(SolverInterface& si, const Call* call){
       CtxVec<Expression*>& args = *(call->_args);
-      IloExprArray* vara = (IloExprArray*) (si.resolveVar(args[0]));
-      IloExprArray* varb = (IloExprArray*) (si.resolveVar(args[1]));
-      //TODO
+      IloExprArray* startTimes = (IloExprArray*) (si.resolveVar(args[0]));
+      IloExprArray* durations = (IloExprArray*) (si.resolveVar(args[1]));
+      IloModel* model = (IloModel*)(si.getModel());
+      IloIntervalVarArray array(model->getEnv());
+      unsigned int size = startTimes->getSize();
+      for(unsigned int i = 0; i < size; i++){
+	IloExpr d = ((*durations)[i]);
+	IloIntervalVar ivar(model->getEnv());
+	model->add(IloStartOf(ivar) == (*startTimes)[i]);
+	model->add(IloEndOf(ivar) == (*startTimes)[i]+d);
+	array.add(ivar);
+      }
+      model->add(IloNoOverlap(model->getEnv(), array));
     }
     void p_cumul(SolverInterface& si, const Call* call){
       CtxVec<Expression*>& args = *(call->_args);
-      IloExprArray* vara = (IloExprArray*) (si.resolveVar(args[0]));
-      IloExprArray* varb = (IloExprArray*) (si.resolveVar(args[1]));
-      //TODO
+      IloIntVarArray* startTimes = (IloIntVarArray*) (si.resolveVar(args[0]));
+      IloNumExprArray* resources = (IloNumExprArray*) (si.resolveVar(args[2]));
+      IloNumExprArray* durations = (IloNumExprArray*) (si.resolveVar(args[1]));
+
+      IloExpr* capacity = (IloExpr*) (si.resolveVar(args[3]));
+      unsigned int size = startTimes->getSize();
+      IloModel* model = (IloModel*)(si.getModel());
+      IloIntervalVarArray ivar(model->getEnv(),size);
+      IloCumulFunctionExpr res(model->getEnv());
+      for (unsigned int i=0; i<size; i++)  {
+	ivar[i] = IloIntervalVar(model->getEnv());
+	IloIntVar s = (*startTimes)[i];
+	IloExpr d = (*durations)[i];
+	IloExpr r = (*resources)[i];
+	model->add(IloStartOf(ivar[i]) == s);
+	model->add(IloLengthOf(ivar[i]) == d);
+	res += IloPulse(ivar[i],r.getConstant());  
+      }
+      model->add(res <= (IloInt)capacity->getConstant());
     }
+    void p_alldifferent(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntVarArray* vars = (IloIntVarArray*) (si.resolveVar(args[0]));
+      IloModel* model = (IloModel*)(si.getModel());
+      model->add(IloAllDiff(model->getEnv(),*vars));
+    }
+    void p_distribute(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloIntVarArray* vars = (IloIntVarArray*) (si.resolveVar(args[0]));
+      IloNumExprArray* _values = (IloNumExprArray*) (si.resolveVar(args[1]));
+      IloIntVarArray* cards = (IloIntVarArray*) (si.resolveVar(args[2]));
+      IloModel* model = (IloModel*)(si.getModel());
+      IloIntArray values(model->getEnv());
+      unsigned int size = _values->getSize();
+      for(unsigned int i = 0; i < size; i++){
+	IloExpr e = (*_values)[i];
+	values.add(e.getConstant());
+      }
+      
+      model->add(IloDistribute(model->getEnv(),*cards,values,*vars));
+    }
+    
   }
   CpOptInterface::CpOptInterface() {
     model = new IloModel(env);
@@ -431,8 +479,10 @@ namespace MiniZinc {
     addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
     addConstraintMapping(std::string("bool_clause"),CpOptConstraints::p_bool_clause);
 
-    addConstraintMapping(std::string("cpoptimizer_nooverlap",CpOptConstraints::p_no_overlap));
-    addConstraintMapping(std::string("cpoptimizer_cumul",CpOptConstraints::p_cumul));    
+    addConstraintMapping(std::string("ilogcp_disjunctive"),CpOptConstraints::p_no_overlap);
+    addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);    
+    addConstraintMapping(std::string("cpoptimizer_alldifferent"),CpOptConstraints::p_alldifferent);    
+    addConstraintMapping(std::string("global_cardinality"),CpOptConstraints::p_distribute);
 
   }
  
@@ -522,48 +572,53 @@ namespace MiniZinc {
       model->add(obj);
     } 
   }
-  IloGoal CpOptInterface::searchGoal(Annotation* ann){
-    IloGoal goal;
-    while(ann){
-      Expression* e = ann->_e;
-      if(e->isa<Call>()){
-	Call* c = e->cast<Call>();
-	std::string call_id = c->_id.str();
-	if(call_id == std::string("int_search")){
-	  CtxVec<Expression*>& args = *(c->_args);
-	  IloIntVarArray* vars = (IloIntVarArray*)resolveVar(args[0]);
-	  std::string varSelectId = args[1]->cast<Id>()->_v.str();
-	  std::string valSelectId = args[2]->cast<Id>()->_v.str();
-	  model->add(*vars);
-	  goal = oSearchGoal(env,*vars,varSelectId,valSelectId);
-	  assert(args[3]->cast<Id>()->_v.str() == std::string("complete"));
-	} else {
-	  std::cerr << "Must implement " << call_id << "!" << std::endl;
-	  std::exit(0);
-	}
+  void CpOptInterface::searchGoal(Call* c, IloCP& cp){
+    std::string call_id = c->_id.str();
+    CtxVec<Expression*>& args = *(c->_args);
+    if(call_id == std::string("int_search") || call_id == std::string("bool_search")){
+      IloIntVarArray* vars = (IloIntVarArray*)resolveVar(args[0]);
+      std::string varSelectId = args[1]->cast<Id>()->_v.str();
+      std::string valSelectId = args[2]->cast<Id>()->_v.str();
+      //      model->add(*vars);
+      cp.startNewSearch(oSearchGoal(env,*vars,varSelectId,valSelectId));
+      assert(args[3]->cast<Id>()->_v.str() == std::string("complete"));
+    } else if(call_id == std::string("seq_search")){
+      ArrayLit* ar = args[0]->cast<ArrayLit>();
+      unsigned int size = ar->_v->size();
+      for(unsigned int i = 0; i < size; i++){
+	Call* s = (*ar->_v)[i]->cast<Call>();
+	searchGoal(s,cp);
       }
-      ann = e->_ann;
+    } else {
+      std::cerr << "Must implement " << call_id << "!" << std::endl;
+      std::exit(0);
     }
-    return goal;
   }
   void CpOptInterface::solve(SolveI* s) {
     setObjective(s);
     IloCP cplex(*model);
     cplex.setParameter(IloCP::LogVerbosity,IloCP::Quiet);
-    cplex.setParameter(IloCP::Workers,1);
+    cplex.setParameter(IloCP::Workers,nbThreads);
+    cplex.setParameter(IloCP::TimeLimit,60);
+    cplex.setParameter(IloCP::DefaultInferenceLevel,IloCP::Extended);
 
     Annotation* ann = s->_ann;
-    IloGoal g = searchGoal(ann);
-    cplex.startNewSearch(g);
+    if(ann)
+	  searchGoal(ann->_e->cast<Call>(),cplex);//free ?
+    cplex.startNewSearch();
     try{
-      while(cplex.next()) {
+      unsigned int nbSol = 0;
+      while(cplex.next() && (nbSol < 1 || allSolutions)) {
+	nbSol++;
+	std::cout << "Solution status : " << cplex.getStatus() << std::endl;
+	/*
 	if(cplex.hasObjective())
-	  std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;
+	std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;*/
 	std::cout << showVariables(cplex);
 	std::cout << "----------" << std::endl;
       }
 
-      std::cerr << "==========" << std::endl;
+      // std::cerr << "==========" << std::endl;
       return;
       
     } catch(IloCP::Exception& e){
@@ -581,6 +636,7 @@ namespace MiniZinc {
     } catch (IloAlgorithm::NotExtractedException& e) {
       oss << v;
     }
+    oss << ";";
     return oss.str();
   }
   std::string CpOptInterface::showVariables(IloCP& cplex){
@@ -590,6 +646,7 @@ namespace MiniZinc {
     bool output;
     for(it = variableMap.begin(); it != variableMap.end(); it++){
       output = false;
+      if(!it->first) continue;
       Annotation* ann = it->first->_ann;
       ArrayLit* al_dims = NULL;
       while(ann){
@@ -706,6 +763,7 @@ namespace MiniZinc {
 	    initArray<bool, BoolLit>(*res, ar);
 	    break;
 	  }
+	  model->add(*res);
 	  return (void*)res;
 	} else {
 	  IloNumExprArray* res2 = new IloNumExprArray(env, rangesize + 1);
@@ -717,10 +775,13 @@ namespace MiniZinc {
 	    initArray<bool, BoolLit>(*res2, ar);
 	    break;
 	  }
+	  model->add(*res2);
 	  return (void*)res2;
 	}
 
-      } return (void*)res;
+      }
+      model->add(*res);
+      return (void*)res;
     } else {
       IloNumVar* var = NULL;
       if (vd->_e) {
@@ -748,6 +809,7 @@ namespace MiniZinc {
       if (var) {
 	model->add(IloConstraint(*res == *var));
       }
+      model->add(*res);
       return (void*) res;
     }
   }
@@ -762,7 +824,8 @@ namespace MiniZinc {
   // void CpOptInterface::initArray(IloNumVarArray& res, CtxVec<Expression*>& ar) {
   //   for (unsigned int i = 0; i < ar.size(); i++) {
   //     IloNumVar* v = (IloNumVar*)resolveVar(ar[i]);
-  //     model->add(IloConstraint(res[i] == *v));
+  //     std::cout << "initArray var " << *v<<std::endl;
+  //     model->add(res[i] == *v);
   //   }
   // }
 }

@@ -57,6 +57,9 @@ int main(int argc, char** argv) {
   bool outputFundecls = false;
   bool verbose = false;
   string solver = "cpopt";
+  bool allSolutions = false;
+  bool free = false;
+  int nbThreads = 1;
   if (argc < 2)
     goto error;
 
@@ -82,6 +85,13 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])==string("--solver")) {
       i++;
       solver = string(argv[i]);
+    } else if (string(argv[i])==string("-a")) {
+      allSolutions = true;
+    } else if (string(argv[i])==string("-f")) {
+      free = true;
+    } else if (string(argv[i])==string("-p")) {
+      i++;
+      nbThreads = atoi(argv[i]);
     } else {
       break;
     }
@@ -117,6 +127,9 @@ int main(int argc, char** argv) {
           si = new CplexInterface;
         else // default
           si = new CpOptInterface;
+        si->setNbThreads(nbThreads);
+        si->setFree(free);
+        si->setAllSolutions(allSolutions);
         si->fromFlatZinc(*m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
