@@ -158,6 +158,7 @@ namespace MiniZinc{
       case Expression::ExpressionId::E_ANN: return "ANN"; 
       case Expression::ExpressionId::E_TI: return "TI"; 
       case Expression::ExpressionId::E_TIID: return "TIID";
+      default: return "UNKNOWN";
       }
     }
   };

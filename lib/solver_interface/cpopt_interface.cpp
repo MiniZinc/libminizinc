@@ -429,7 +429,6 @@ namespace MiniZinc {
       IloIntVarArray* cards = (IloIntVarArray*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*)(si.getModel());
       IloIntArray values = toIntArray(_values,model->getEnv());
-      
       model->add(IloDistribute(model->getEnv(),*cards,values,*vars));
     }
     void p_pack(SolverInterface& si, const Call* call){
@@ -443,70 +442,106 @@ namespace MiniZinc {
 				      );
       model->add(IloPack(model->getEnv(),*load,*where,weight));
     }
+    // IloCount will only work if the value looked for in the array is fixed.
+    void p_count(SolverInterface& si, const Call* call, std::function<IloConstraint(IloNumExprArg*,IloNumExprArg*)> op){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloModel* model = (IloModel*)(si.getModel());
+      IloIntVarArray* array = (IloIntVarArray*) (si.resolveVar(args[0]));
+      IloExpr* value = (IloExpr*) (si.resolveVar(args[1]));
+      IloExpr* ref = (IloExpr*) (si.resolveVar(args[2]));
+      IloNumExpr count = IloCount(*array,value->getConstant());
+      model->add( op(&count, ref));
+    }
+    void p_count_eq(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){  return (*a == *b);} );
+    }
+    void p_count_geq(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){ return (*a >= *b);} );
+    }
+    void p_count_leq(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){ return (*a <= *b);} );
+    }
+    void p_count_gt(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){ return (*a > *b);} );
+    }
+    void p_count_lt(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){ return (*a < *b);} );
+    }
+    void p_count_neq(SolverInterface& si, const Call* call){
+      p_count(si,call,[](IloNumExprArg* a, IloNumExprArg* b){ return (*a != *b);} );
+    }
     
   }
   CpOptInterface::CpOptInterface() {
     model = new IloModel(env);
+
+    addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
+    addConstraintMapping(std::string("array_bool_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_bool_or"), CpOptConstraints::p_array_bool_or);
+    addConstraintMapping(std::string("array_int_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
+    addConstraintMapping(std::string("array_var_bool_element"), CpOptConstraints::p_array_var_element);
+
+    addConstraintMapping(std::string("bool2int"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("bool_and"), CpOptConstraints::p_bool_and);
+    addConstraintMapping(std::string("bool_clause"),CpOptConstraints::p_bool_clause);
+    addConstraintMapping(std::string("bool_eq"), CpOptConstraints::p_eq);
+    addConstraintMapping(std::string("bool_eq_reif"), CpOptConstraints::p_eq_reif);
+    addConstraintMapping(std::string("bool_le"), CpOptConstraints::p_le);
+    addConstraintMapping(std::string("bool_le_reif"), CpOptConstraints::p_le_reif);
+    addConstraintMapping(std::string("bool_lt"), CpOptConstraints::p_lt);
+    addConstraintMapping(std::string("bool_lt_reif"), CpOptConstraints::p_lt_reif);
+    addConstraintMapping(std::string("bool_not"), CpOptConstraints::p_bool_not);
+    addConstraintMapping(std::string("bool_or"), CpOptConstraints::p_bool_or);
+    addConstraintMapping(std::string("bool_xor"), CpOptConstraints::p_bool_xor);
+
     addConstraintMapping(std::string("int_abs"), CpOptConstraints::p_abs);
+    addConstraintMapping(std::string("int_div"),CpOptConstraints::p_div);
     addConstraintMapping(std::string("int_eq"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("int_eq_reif"), CpOptConstraints::p_eq_reif);
     addConstraintMapping(std::string("int_le"), CpOptConstraints::p_le);
     addConstraintMapping(std::string("int_le_reif"), CpOptConstraints::p_le_reif);
     addConstraintMapping(std::string("int_lin_eq"), CpOptConstraints::p_int_lin_eq_noreif); //
     addConstraintMapping(std::string("int_lin_eq_reif"), CpOptConstraints::p_int_lin_eq_reif);
+    //int_lin_gt_reif
     addConstraintMapping(std::string("int_lin_le"), CpOptConstraints::p_int_lin_le_noreif); //
     addConstraintMapping(std::string("int_lin_le_reif"), CpOptConstraints::p_int_lin_le_reif);
+    //int_lin_lt
+    //int_lin_lt_reif
     addConstraintMapping(std::string("int_lin_ne"), CpOptConstraints::p_int_lin_ne_noreif); //
     addConstraintMapping(std::string("int_lin_ne_reif"), CpOptConstraints::p_int_lin_ne_reif);
     
-    addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
-    addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
-    addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
-    addConstraintMapping(std::string("int_times_le"), CpOptConstraints::p_times_le);
-    addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
-    addConstraintMapping(std::string("array_bool_or"), CpOptConstraints::p_array_bool_or);
-   
-
-    addConstraintMapping(std::string("bool2int"), CpOptConstraints::p_eq);
-    addConstraintMapping(std::string("bool_and"), CpOptConstraints::p_bool_and);
-    addConstraintMapping(std::string("bool_eq"), CpOptConstraints::p_eq);
-    addConstraintMapping(std::string("bool_eq_reif"), CpOptConstraints::p_eq_reif);
-    addConstraintMapping(std::string("bool_le"), CpOptConstraints::p_le);
-    addConstraintMapping(std::string("bool_le_reif"), CpOptConstraints::p_le_reif);
-    addConstraintMapping(std::string("bool_lin_eq"), CpOptConstraints::p_bool_lin_eq);
-    addConstraintMapping(std::string("bool_lin_le"), CpOptConstraints::p_bool_lin_le);
-    addConstraintMapping(std::string("bool_not"), CpOptConstraints::p_bool_not);
-    addConstraintMapping(std::string("bool_or"), CpOptConstraints::p_bool_or);
-    addConstraintMapping(std::string("bool_xor"), CpOptConstraints::p_bool_xor);
-
     addConstraintMapping(std::string("int_lt"), CpOptConstraints::p_lt);
     addConstraintMapping(std::string("int_lt_reif"), CpOptConstraints::p_lt_reif);
-
-    addConstraintMapping(std::string("bool_lt"), CpOptConstraints::p_lt);
-    addConstraintMapping(std::string("bool_lt_reif"), CpOptConstraints::p_lt_reif);
-    addConstraintMapping(std::string("int_div"),CpOptConstraints::p_div);
     addConstraintMapping(std::string("int_min"),CpOptConstraints::p_min);
     addConstraintMapping(std::string("int_max"),CpOptConstraints::p_max);
     addConstraintMapping(std::string("int_mod"),CpOptConstraints::p_mod);
+    addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
+    addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
     addConstraintMapping(std::string("int_times"), CpOptConstraints::p_times);
-    addConstraintMapping(std::string("array_bool_element"), CpOptConstraints::p_array_element);
-    addConstraintMapping(std::string("array_var_bool_element"), CpOptConstraints::p_array_var_element);
-    addConstraintMapping(std::string("array_int_element"), CpOptConstraints::p_array_element);
-    addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
-    addConstraintMapping(std::string("bool_clause"),CpOptConstraints::p_bool_clause);
-
+    addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
+    
+    //Ilog CP Optimizer constraints
     addConstraintMapping(std::string("ilogcp_disjunctive"),CpOptConstraints::p_no_overlap);
-    addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);    
-    addConstraintMapping(std::string("cpoptimizer_alldifferent"),CpOptConstraints::p_alldifferent);    
-    addConstraintMapping(std::string("global_cardinality"),CpOptConstraints::p_distribute);
-    addConstraintMapping(std::string("bin_packing_load"),CpOptConstraints::p_pack);
+    addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);
+    addConstraintMapping(std::string("ilogcp_bin_packing_load"),CpOptConstraints::p_pack);  
+    addConstraintMapping(std::string("ilogcp_global_cardinality_closed"),CpOptConstraints::p_distribute);
+
+    addConstraintMapping(std::string("all_different_int"),CpOptConstraints::p_alldifferent);
+
+    addConstraintMapping(std::string("ilogcp_count_eq"),CpOptConstraints::p_count_eq);
+    addConstraintMapping(std::string("ilogcp_count_geq"),CpOptConstraints::p_count_geq);
+    addConstraintMapping(std::string("ilogcp_count_leq"),CpOptConstraints::p_count_leq);
+    addConstraintMapping(std::string("ilogcp_count_gt"),CpOptConstraints::p_count_gt);
+    addConstraintMapping(std::string("ilogcp_count_lt"),CpOptConstraints::p_count_lt);
+    addConstraintMapping(std::string("ilogcp_count_neq"),CpOptConstraints::p_count_neq);
   }
  
-
+  IlcChooseIndex1(InputOrder,  varIndex, IlcIntVar);
   ILCGOAL3(SearchGoal, IlcIntVarArray, vars, std::string, varSel, std::string,valSel){
     IloInt index = -1;
     if(varSel == std::string("input_order")){
-      index = IlcChooseFirstNonFixedInt(vars);
+      index = InputOrder(vars);
     } else if(varSel == std::string("first_fail")){
       index = IlcChooseMinSizeInt(vars);
     } else if(varSel == std::string("anti_first_fail")){
@@ -521,7 +556,6 @@ namespace MiniZinc {
     }
     if(index == -1) return 0;
     IlcIntVar var = vars[index];
-    //    std::cout << "chose " << var << std::endl;
     if(valSel == std::string("indomain_min")){
       IlcInt value = var.getMin();
       return IlcOr( IlcAnd( var == value,
@@ -569,11 +603,7 @@ namespace MiniZinc {
     }
   }
   ILOCPGOALWRAPPER3(oSearchGoal, cp, IloIntVarArray, vars, std::string, varSel, std::string,valSel){
-    try{
-      return SearchGoal(cp, cp.getIntVarArray(vars), varSel, valSel);
-    } catch(IloCP::Exception& e) {
-      std::cerr << "CP.getintvar..." << std::endl << e;
-    }
+    return SearchGoal(cp, cp.getIntVarArray(vars), varSel, valSel);   
   }
 
   void CpOptInterface::setObjective(SolveI* s){
@@ -782,6 +812,8 @@ namespace MiniZinc {
 	  case ILOBOOL:
 	    initArray<bool, BoolLit>(*res, ar);
 	    break;
+	  default:
+	    break;
 	  }
 	  model->add(*res);
 	  return (void*)res;
@@ -793,6 +825,8 @@ namespace MiniZinc {
 	    break;
 	  case ILOBOOL:
 	    initArray<bool, BoolLit>(*res2, ar);
+	    break;
+	  default:
 	    break;
 	  }
 	  model->add(*res2);

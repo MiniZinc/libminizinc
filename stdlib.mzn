@@ -95,7 +95,7 @@ predicate bool_xor(var bool: a, var bool: b, var bool: r);
 %predicate cpoptimizer_nooverlap(array[int] of var int: s, array[int] of int: d);
 %predicate cpoptimizer_cumul(array[int] of var int: s, array[int] of int: r,
 %	  			       array[int] of int: d, int: c);
-predicate cpoptimizer_alldifferent(array[int] of var int: a);
-predicate global_cardinality(array[int] of var int: x,
-	  		     array[int] of int: cover,
-                             array[int] of var int: counts);
+%predicate cpoptimizer_alldifferent(array[int] of var int: a);
+%predicate global_cardinality_closed(array[int] of var int: x,
+%	  		     array[int] of int: cover,
+ %                            array[int] of var int: counts);
