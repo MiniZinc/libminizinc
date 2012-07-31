@@ -7,6 +7,16 @@
 namespace MiniZinc {
   
   namespace CpOptConstraints{
+
+    IloIntArray toIntArray(IloExprArray* a, const IloEnv& env){
+      IloIntArray values(env);
+      unsigned int size = a->getSize();
+      for(unsigned int i = 0; i < size; i++){
+	IloExpr e = (*a)[i];
+	values.add(e.getConstant());
+      }
+      return values;
+    }
     template<typename T, typename S>
     void p_lin(SolverInterface& si, const Call* call,
 	       CpOptInterface::LIN_CON_TYPE lt, bool reif = false, bool mustBe = true) {
@@ -415,17 +425,23 @@ namespace MiniZinc {
     void p_distribute(SolverInterface& si, const Call* call){
       CtxVec<Expression*>& args = *(call->_args);
       IloIntVarArray* vars = (IloIntVarArray*) (si.resolveVar(args[0]));
-      IloNumExprArray* _values = (IloNumExprArray*) (si.resolveVar(args[1]));
+      IloExprArray* _values = (IloExprArray*) (si.resolveVar(args[1]));
       IloIntVarArray* cards = (IloIntVarArray*) (si.resolveVar(args[2]));
       IloModel* model = (IloModel*)(si.getModel());
-      IloIntArray values(model->getEnv());
-      unsigned int size = _values->getSize();
-      for(unsigned int i = 0; i < size; i++){
-	IloExpr e = (*_values)[i];
-	values.add(e.getConstant());
-      }
+      IloIntArray values = toIntArray(_values,model->getEnv());
       
       model->add(IloDistribute(model->getEnv(),*cards,values,*vars));
+    }
+    void p_pack(SolverInterface& si, const Call* call){
+      CtxVec<Expression*>& args = *(call->_args);
+      IloModel* model = (IloModel*)(si.getModel());
+      IloIntVarArray* load = (IloIntVarArray*) (si.resolveVar(args[0]));
+      IloIntVarArray* where = (IloIntVarArray*) (si.resolveVar(args[1]));
+      IloIntArray weight = toIntArray(
+				      ( static_cast<IloExprArray*>(si.resolveVar(args[2])) ),
+				      model->getEnv()
+				      );
+      model->add(IloPack(model->getEnv(),*load,*where,weight));
     }
     
   }
@@ -483,7 +499,7 @@ namespace MiniZinc {
     addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);    
     addConstraintMapping(std::string("cpoptimizer_alldifferent"),CpOptConstraints::p_alldifferent);    
     addConstraintMapping(std::string("global_cardinality"),CpOptConstraints::p_distribute);
-
+    addConstraintMapping(std::string("bin_packing_load"),CpOptConstraints::p_pack);
   }
  
 
@@ -610,7 +626,7 @@ namespace MiniZinc {
       unsigned int nbSol = 0;
       while(cplex.next() && (nbSol < 1 || allSolutions)) {
 	nbSol++;
-	std::cout << "Solution status : " << cplex.getStatus() << std::endl;
+	// std::cout << "Solution status : " << cplex.getStatus() << std::endl;
 	/*
 	if(cplex.hasObjective())
 	std::cout << "Solution value  = " << cplex.getObjValue() << std::endl;*/
@@ -618,7 +634,8 @@ namespace MiniZinc {
 	std::cout << "----------" << std::endl;
       }
 
-      // std::cerr << "==========" << std::endl;
+      if(!cplex.next())
+	std::cout << "==========" << std::endl;
       return;
       
     } catch(IloCP::Exception& e){
@@ -644,10 +661,13 @@ namespace MiniZinc {
     std::ostringstream oss;
     std::map<VarDecl*, void*>::iterator it;
     bool output;
-    for(it = variableMap.begin(); it != variableMap.end(); it++){
+
+    for(const auto& item: variableMap){
+      VarDecl* vd = item.first;
+      void* varptr = item.second;
       output = false;
-      if(!it->first) continue;
-      Annotation* ann = it->first->_ann;
+      if(!vd) continue;
+      Annotation* ann = vd->_ann;
       ArrayLit* al_dims = NULL;
       while(ann){
 	if(ann->_e->isa<Id>() && ann->_e->cast<Id>()->_v.str() =="output_var"){
@@ -662,11 +682,11 @@ namespace MiniZinc {
 	ann = ann->_ann;
       }
       if(!output) continue;
-      oss <<  it->first->_id.str() << " = ";
+      oss <<  vd->_id.str() << " = ";
 
       
-      if(it->first->_ti->isarray()){
-	IloNumVarArray* varray = (IloNumVarArray*)(it->second);
+      if(vd->_ti->isarray()){
+	IloNumVarArray* varray = (IloNumVarArray*)(varptr);
 	int sizeDims = al_dims->_v->size();
 	oss << "array" << sizeDims << "d(";
 	int size = varray->getSize();	
@@ -692,7 +712,7 @@ namespace MiniZinc {
 	}
 	oss << "]);";
       } else {
-	oss << showVariable(cplex,*(IloNumVar*)(it->second));
+	oss << showVariable(cplex,*(IloNumVar*)(varptr));
       }
       oss << std::endl;     
     }
