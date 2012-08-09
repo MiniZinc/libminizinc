@@ -1,3 +1,14 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/*
+ *  Main authors:
+ *     Guido Tack <guido.tack@monash.edu>
+ */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
 
@@ -480,14 +491,26 @@ namespace MiniZinc {
         }
       }
       if (tii->_ranges && tii->_ranges->size()==1 &&
-          (*tii->_ranges)[0] && (*tii->_ranges)[0]->isa<TIId>()) {
-        CtxStringH tiid = (*tii->_ranges)[0]->cast<TIId>()->_v;
+          (*tii->_ranges)[0]->_domain && 
+          (*tii->_ranges)[0]->_domain->isa<TIId>()) {
+        CtxStringH tiid = (*tii->_ranges)[0]->_domain->cast<TIId>()->_v;
         if (ta[i]->_type._dim<=0) {
           throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
             " must be an array index");
         }
         Type tiit = Type::any(ta[i]->_type._dim);
-        tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+        CtxStringMap<Type>::t::iterator it = tmap.find(tiid);
+        if (it==tmap.end()) {
+          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+        } else {
+          if (it->second._dim == 0) {
+            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+              tiid.str()+" used in both array and non-array position");
+          } else if (it->second!=tiit) {
+            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+              tiid.str()+" instantiated with different types");
+          }
+        }
       }
     }
     if (dh.size() != 0) {
