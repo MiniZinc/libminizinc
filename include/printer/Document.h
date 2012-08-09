@@ -2,7 +2,7 @@
 
 /*
  *  Main authors:
- *     
+ *  Pierre WILKE (wilke.pierre@gmail.com)
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
