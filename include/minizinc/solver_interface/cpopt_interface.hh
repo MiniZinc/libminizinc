@@ -17,21 +17,33 @@
 #include <string>
 
 namespace MiniZinc {
+
+  enum IlogSolver {
+    CPLEX,
+    CPOPT
+  };
   class CpOptInterface : public SolverInterface {
   private:
     IloEnv env;
     IloModel* model;
+    IlogSolver solver_;
   protected:
-
     void* addSolverVar(VarDecl* vd);
   public:
-    CpOptInterface();
+    CpOptInterface(IlogSolver solver = CPOPT);
     virtual ~CpOptInterface();
 
     void* getModel();
-    void solve(SolveI* s);
+    void solve(SolveI* s) ;
+    void solveCplex(SolveI* s);
+    void solveCpOpt(SolveI* s);
+    
     std::string showVariables(IloCP& cplex);
     std::string showVariable(IloCP& cplex, IloNumVar& v);
+    
+    std::string showVariables(IloCplex& cplex);
+    std::string showVariable(IloCplex& cplex, IloNumVar& v);
+    
     enum LIN_CON_TYPE {LQ,EQ,GQ};
     template<typename S, typename T> void initArray(IloNumExprArray& res, CtxVec<Expression*>& ar);
     // template<typename S, typename T> void initArray(IloNumVarArray& res, CtxVec<Expression*>& ar);

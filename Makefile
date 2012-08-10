@@ -24,7 +24,7 @@ CXX=cl
 OBJ=obj
 EXE=.exe
 else
-CXX=g++
+CXX=/opt/stlfilt/gfilt
 CC=clang
 #cplex options
 CPLEXDIR = /opt/ibm/ILOG/CPLEX_Studio124/cplex

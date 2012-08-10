@@ -100,9 +100,10 @@ int main(int argc, char** argv) {
         SolverInterface* si;
 
         if(solver == string("cpopt"))
-          si = new CpOptInterface;
+          si = new CpOptInterface(IlogSolver::CPOPT);
         else if (solver == string("cplex"))
-          si = new CplexInterface;
+          //si = new CpOptInterface(IlogSolver::CPLEX);
+          si = new CpOptInterface(IlogSolver::CPLEX);
         else // default
           si = new CpOptInterface;
         si->setNbThreads(nbThreads);

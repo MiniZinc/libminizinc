@@ -86,6 +86,7 @@ namespace MiniZinc {
       }
 
       model->add(IloConstraint(*var == constraint));
+
     }
 
     void p_bool_lin(SolverInterface& si, const Call* call,

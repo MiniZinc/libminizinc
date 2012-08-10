@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/ast.hh>
+#include <ilcplex/ilocplex.h>
 #include <minizinc/solver_interface/cpopt_interface.hh>
 #include <ilcp/cp.h>
 #include <ilcp/cpext.h>
@@ -483,15 +484,9 @@ namespace MiniZinc {
     }
     
   }
-  CpOptInterface::CpOptInterface() {
+  CpOptInterface::CpOptInterface(IlogSolver solver) {
+    solver_ = solver;
     model = new IloModel(env);
-
-    addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
-    addConstraintMapping(std::string("array_bool_element"), CpOptConstraints::p_array_element);
-    addConstraintMapping(std::string("array_bool_or"), CpOptConstraints::p_array_bool_or);
-    addConstraintMapping(std::string("array_int_element"), CpOptConstraints::p_array_element);
-    addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
-    addConstraintMapping(std::string("array_var_bool_element"), CpOptConstraints::p_array_var_element);
 
     addConstraintMapping(std::string("bool2int"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("bool_and"), CpOptConstraints::p_bool_and);
@@ -507,45 +502,53 @@ namespace MiniZinc {
     addConstraintMapping(std::string("bool_xor"), CpOptConstraints::p_bool_xor);
 
     addConstraintMapping(std::string("int_abs"), CpOptConstraints::p_abs);
-    addConstraintMapping(std::string("int_div"),CpOptConstraints::p_div);
     addConstraintMapping(std::string("int_eq"), CpOptConstraints::p_eq);
     addConstraintMapping(std::string("int_eq_reif"), CpOptConstraints::p_eq_reif);
     addConstraintMapping(std::string("int_le"), CpOptConstraints::p_le);
     addConstraintMapping(std::string("int_le_reif"), CpOptConstraints::p_le_reif);
     addConstraintMapping(std::string("int_lin_eq"), CpOptConstraints::p_int_lin_eq_noreif); //
     addConstraintMapping(std::string("int_lin_eq_reif"), CpOptConstraints::p_int_lin_eq_reif);
-    //int_lin_gt_reif
     addConstraintMapping(std::string("int_lin_le"), CpOptConstraints::p_int_lin_le_noreif); //
     addConstraintMapping(std::string("int_lin_le_reif"), CpOptConstraints::p_int_lin_le_reif);
-    //int_lin_lt
-    //int_lin_lt_reif
+
+    addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
+    addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
+    addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
+    
+    addConstraintMapping(std::string("array_bool_or"), CpOptConstraints::p_array_bool_or);
+    addConstraintMapping(std::string("array_bool_and"), CpOptConstraints::p_array_bool_and);
     addConstraintMapping(std::string("int_lin_ne"), CpOptConstraints::p_int_lin_ne_noreif); //
     addConstraintMapping(std::string("int_lin_ne_reif"), CpOptConstraints::p_int_lin_ne_reif);
-    
+
     addConstraintMapping(std::string("int_lt"), CpOptConstraints::p_lt);
     addConstraintMapping(std::string("int_lt_reif"), CpOptConstraints::p_lt_reif);
+
+    if(solver_ == CPOPT){
+ 
+    addConstraintMapping(std::string("array_bool_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_int_element"), CpOptConstraints::p_array_element);
+    addConstraintMapping(std::string("array_var_int_element"), CpOptConstraints::p_array_var_element);
+    addConstraintMapping(std::string("array_var_bool_element"), CpOptConstraints::p_array_var_element);
+    addConstraintMapping(std::string("int_div"),CpOptConstraints::p_div);
+    
     addConstraintMapping(std::string("int_min"),CpOptConstraints::p_min);
     addConstraintMapping(std::string("int_max"),CpOptConstraints::p_max);
     addConstraintMapping(std::string("int_mod"),CpOptConstraints::p_mod);
-    addConstraintMapping(std::string("int_ne"), CpOptConstraints::p_ne);
-    addConstraintMapping(std::string("int_ne_reif"), CpOptConstraints::p_ne_reif);
-    addConstraintMapping(std::string("int_times"), CpOptConstraints::p_times);
-    addConstraintMapping(std::string("int_plus"), CpOptConstraints::p_plus);
-    
-    //Ilog CP Optimizer constraints
-    addConstraintMapping(std::string("ilogcp_disjunctive"),CpOptConstraints::p_no_overlap);
-    addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);
-    addConstraintMapping(std::string("ilogcp_bin_packing_load"),CpOptConstraints::p_pack);  
-    addConstraintMapping(std::string("ilogcp_global_cardinality_closed"),CpOptConstraints::p_distribute);
+addConstraintMapping(std::string("int_times"), CpOptConstraints::p_times);
 
-    addConstraintMapping(std::string("all_different_int"),CpOptConstraints::p_alldifferent);
-
-    addConstraintMapping(std::string("ilogcp_count_eq"),CpOptConstraints::p_count_eq);
-    addConstraintMapping(std::string("ilogcp_count_geq"),CpOptConstraints::p_count_geq);
-    addConstraintMapping(std::string("ilogcp_count_leq"),CpOptConstraints::p_count_leq);
-    addConstraintMapping(std::string("ilogcp_count_gt"),CpOptConstraints::p_count_gt);
-    addConstraintMapping(std::string("ilogcp_count_lt"),CpOptConstraints::p_count_lt);
-    addConstraintMapping(std::string("ilogcp_count_neq"),CpOptConstraints::p_count_neq);
+      //Ilog CP Optimizer constraints
+      addConstraintMapping(std::string("ilogcp_disjunctive"),CpOptConstraints::p_no_overlap);
+      addConstraintMapping(std::string("ilogcp_cumulative"),CpOptConstraints::p_cumul);
+      addConstraintMapping(std::string("ilogcp_bin_packing_load"),CpOptConstraints::p_pack);  
+      addConstraintMapping(std::string("ilogcp_global_cardinality_closed"),CpOptConstraints::p_distribute);
+      addConstraintMapping(std::string("all_different_int"),CpOptConstraints::p_alldifferent);
+      addConstraintMapping(std::string("ilogcp_count_eq"),CpOptConstraints::p_count_eq);
+      addConstraintMapping(std::string("ilogcp_count_geq"),CpOptConstraints::p_count_geq);
+      addConstraintMapping(std::string("ilogcp_count_leq"),CpOptConstraints::p_count_leq);
+      addConstraintMapping(std::string("ilogcp_count_gt"),CpOptConstraints::p_count_gt);
+      addConstraintMapping(std::string("ilogcp_count_lt"),CpOptConstraints::p_count_lt);
+      addConstraintMapping(std::string("ilogcp_count_neq"),CpOptConstraints::p_count_neq);
+    }
   }
  
   IlcChooseIndex1(InputOrder,  varIndex, IlcIntVar);
@@ -651,7 +654,43 @@ namespace MiniZinc {
       std::exit(0);
     }
   }
+  // solver : 0-> cplex; 1-> cpopt
   void CpOptInterface::solve(SolveI* s) {
+    if(solver_ == IlogSolver::CPLEX){
+      solveCplex(s);
+    } else {
+      solveCpOpt(s);
+    }
+  }
+  void CpOptInterface::solveCplex(SolveI* s) {
+    if (s->_st != SolveI::SolveType::ST_SAT) {
+      IloObjective obj;
+      if (s->_st == SolveI::SolveType::ST_MAX)
+	obj = IloMaximize(env);
+      else
+	obj = IloMinimize(env);
+      IloNumVar* v = (IloNumVar*) resolveVar(s->_e);
+      obj.setLinearCoef(*v, 1);
+      model->add(obj);
+    }
+
+    IloCplex cplex(*model);
+    cplex.setOut(env.getNullStream());
+    try{
+      if (!cplex.solve()) {
+	std::cerr << "Failed to optimize LP" << std::endl;
+	return;
+      }
+    } catch(IloCplex::Exception& e){
+      std::cerr << "Caught IloCplex::Exception while solving : " << std::endl
+		<< e << std::endl;
+      std::exit(0);
+    }   
+
+    std::cout << showVariables(cplex);
+
+  }
+  void CpOptInterface::solveCpOpt(SolveI* s) {
     setObjective(s);
     IloCP cplex(*model);
     cplex.setParameter(IloCP::LogVerbosity,IloCP::Quiet);
@@ -691,6 +730,16 @@ namespace MiniZinc {
       if(cplex.isExtracted(v) && cplex.isFixed(v))
 	oss << cplex.getValue(v);
       else oss << v;
+    } catch (IloAlgorithm::NotExtractedException& e) {
+      oss << v;
+    }
+    oss << ";";
+    return oss.str();
+  }
+  std::string CpOptInterface::showVariable(IloCplex& cplex, IloNumVar& v) {
+    std::ostringstream oss;
+    try {
+      oss << cplex.getValue(v);
     } catch (IloAlgorithm::NotExtractedException& e) {
       oss << v;
     }
@@ -742,6 +791,70 @@ namespace MiniZinc {
 	  IloNumVar& v = (*varray)[i];
 	  try{
 	    if(cplex.isExtracted(v) && cplex.isFixed(v)){
+	      IloNum num = cplex.getValue(v);
+	      oss << num;
+	    } else {
+	      oss << (IloNumExpr)v;
+	    }
+	  } catch(IloAlgorithm::NotExtractedException& e){
+	    oss << (IloNumExpr)v;
+	  } catch(IloNotImplemented& e){
+            oss << (IloNumExpr)v;
+          }
+	}
+	oss << "]);";
+      } else {
+	oss << showVariable(cplex,*(IloNumVar*)(varptr));
+      }
+      oss << std::endl;     
+    }
+    return oss.str();
+  }
+  std::string CpOptInterface::showVariables(IloCplex& cplex){
+    ASTContext context;
+    std::ostringstream oss;
+    std::map<VarDecl*, void*>::iterator it;
+    bool output;
+
+    for(const auto& item: variableMap){
+      VarDecl* vd = item.first;
+      void* varptr = item.second;
+      output = false;
+      if(!vd) continue;
+      Annotation* ann = vd->_ann;
+      ArrayLit* al_dims = NULL;
+      while(ann){
+	if(ann->_e->isa<Id>() && ann->_e->cast<Id>()->_v.str() =="output_var"){
+	  output = true;
+	  break;
+	} else if (ann->_e->isa<Call>() && 
+		   ann->_e->cast<Call>()->_id.str() == "output_array"){
+	  al_dims = (*(ann->_e->cast<Call>()->_args))[0]->cast<ArrayLit>();
+	  output = true;
+	  break;
+	}
+	ann = ann->_ann;
+      }
+      if(!output) continue;
+      oss <<  vd->_id.str() << " = ";
+
+      
+      if(vd->_ti->isarray()){
+	IloNumVarArray* varray = (IloNumVarArray*)(varptr);
+	int sizeDims = al_dims->_v->size();
+	oss << "array" << sizeDims << "d(";
+	int size = varray->getSize();	
+	for(Expression* e : *(al_dims->_v)){
+	  BinOp* bo = e->cast<BinOp>();
+	  oss << getNumber<int,IntLit>(bo->_e0) << ".." 
+	      << getNumber<int,IntLit>(bo->_e1) << ", ";
+	}
+	oss << "[";
+	for(int i = 0; i < size; i++){
+	  if(i!=0)oss << ", ";
+	  IloNumVar& v = (*varray)[i];
+	  try{
+	    if(cplex.isExtracted(v)){
 	      IloNum num = cplex.getValue(v);
 	      oss << num;
 	    } else {
