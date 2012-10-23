@@ -51,13 +51,13 @@ namespace MiniZinc {
 
   IntLit*
   IntLit::a(const ASTContext& ctx, const Location& loc,
-            int v) {
+            IntVal v) {
     return new (ctx) IntLit(loc,v);
   }
 
   FloatLit*
   FloatLit::a(const ASTContext& ctx, const Location& loc,
-              double v) {
+              FloatVal v) {
     return new (ctx) FloatLit(loc,v);
   }
 

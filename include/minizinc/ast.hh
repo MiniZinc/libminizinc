@@ -12,6 +12,7 @@
 #ifndef __MINIZINC_AST_HH__
 #define __MINIZINC_AST_HH__
 
+#include <minizinc/values.hh>
 #include <minizinc/context.hh>
 #include <minizinc/type.hh>
 
@@ -189,30 +190,30 @@ namespace MiniZinc {
   class IntLit : public Expression {
   protected:
     /// Constructor
-    IntLit(const Location& loc, int v)
+    IntLit(const Location& loc, IntVal v)
       : Expression(loc,E_INTLIT,Type::parint()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
     /// The value of this expression
-    int _v;
+    IntVal _v;
     /// Allocate from context
     static IntLit* a(const ASTContext& ctx, const Location& loc,
-                     int v);
+                     IntVal v);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
   protected:
-    FloatLit(const Location& loc, double v)
+    FloatLit(const Location& loc, FloatVal v)
       : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
     /// The value of this expression
-    double _v;
+    FloatVal _v;
     /// Allocate from context
     static FloatLit* a(const ASTContext& ctx, const Location& loc,
-                       double v);
+                       FloatVal v);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
