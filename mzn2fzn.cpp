@@ -17,8 +17,6 @@
 #include <minizinc/print.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
-#include <minizinc/solver_interface/cplex_interface.hh>
-#include <minizinc/solver_interface/cpopt_interface.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -34,7 +32,6 @@ int main(int argc, char** argv) {
   bool output = true;
   bool outputFundecls = false;
   bool verbose = false;
-  string solver = "cpopt";
   bool allSolutions = false;
   bool free = false;
   int nbThreads = 1;
@@ -60,9 +57,6 @@ int main(int argc, char** argv) {
       eval = false;
     } else if (string(argv[i])==string("--verbose")) {
       verbose = true;
-    } else if (string(argv[i])==string("--solver")) {
-      i++;
-      solver = string(argv[i]);
     } else if (string(argv[i])==string("-a")) {
       allSolutions = true;
     } else if (string(argv[i])==string("-f")) {
@@ -89,27 +83,12 @@ int main(int argc, char** argv) {
 
     if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
-      //print(std::cout, m);
       try {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
           MiniZinc::typecheck(ctx,m);
         }
-        // printDoc(std::cout, m);
-        SolverInterface* si;
-
-        if(solver == string("cpopt"))
-          si = new CpOptInterface(IlogSolver::CPOPT);
-        else if (solver == string("cplex"))
-          //si = new CpOptInterface(IlogSolver::CPLEX);
-          si = new CpOptInterface(IlogSolver::CPLEX);
-        else // default
-          si = new CpOptInterface;
-        si->setNbThreads(nbThreads);
-        si->setFree(free);
-        si->setAllSolutions(allSolutions);
-        si->fromFlatZinc(*m);
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
         // flat = m->flatten(tm);
