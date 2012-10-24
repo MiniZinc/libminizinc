@@ -18,6 +18,9 @@
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
 
+#include <minizinc/eval_par.hh>
+#include <minizinc/builtins.hh>
+
 using namespace MiniZinc;
 using namespace std;
 
@@ -88,6 +91,8 @@ int main(int argc, char** argv) {
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
           MiniZinc::typecheck(ctx,m);
+          MiniZinc::registerBuiltins(ctx);
+          eval_int(ctx,m);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;

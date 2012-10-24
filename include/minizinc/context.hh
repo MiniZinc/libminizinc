@@ -13,6 +13,7 @@
 #define __MINIZINC_CONTEXT_HH__
 
 #include <minizinc/allocator.hh>
+#include <minizinc/type.hh>
 
 #include <string>
 #include <vector>
@@ -93,6 +94,7 @@ namespace MiniZinc {
     mutable BlockAllocator balloc;
     typedef CtxStringMap<std::vector<FunctionI*> >::t FnMap;
     FnMap fnmap;
+
   public:
     void* alloc(size_t size) const {
       return balloc.alloc(size);
@@ -111,6 +113,8 @@ namespace MiniZinc {
     void sortFn(void);
     FunctionI* matchFn(const CtxStringH&id,
                        const std::vector<Expression*>& args) const;
+    FunctionI* matchFn(const CtxStringH& id, const std::vector<Type>& t);
+
   };
 
   /**

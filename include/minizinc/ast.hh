@@ -228,7 +228,7 @@ namespace MiniZinc {
     // RangeSet* _rs;
     /// Allocate set \$f\{v1,\dots,vn\}\$f from context
     static SetLit* a(const ASTContext& ctx,
-		     const Location& loc,
+                     const Location& loc,
                      const std::vector<Expression*>& v);
   };
   /// \brief Boolean literal expression
@@ -734,6 +734,27 @@ namespace MiniZinc {
     Annotation* _ann;
     /// Function body (or NULL)
     Expression* _e;
+    
+    /// Type of builtin expression-valued functions
+    typedef Expression* (*builtin_e) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin int-valued functions
+    typedef IntVal (*builtin_i) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin bool-valued functions
+    typedef bool (*builtin_b) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin float-valued functions
+    typedef FloatVal (*builtin_f) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin set-valued functions
+    typedef IntSetVal* (*builtin_s) (ASTContext&, CtxVec<Expression*>*);
+
+    /// Builtin functions (or NULL)
+    struct {
+      builtin_e e;
+      builtin_i i;
+      builtin_f f;
+      builtin_b b;
+      builtin_s s;
+    } _builtins;
+
     /// Allocate from context
     static FunctionI* a(const ASTContext& ctx, const Location& loc,
                         const std::string& id, TypeInst* ti,

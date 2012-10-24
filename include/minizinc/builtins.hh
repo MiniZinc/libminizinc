@@ -9,17 +9,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_EVAL_PAR_HH__
-#define __MINIZINC_EVAL_PAR_HH__
+#ifndef __MINIZINC_BUILTINS_HH__
+#define __MINIZINC_BUILTINS_HH__
 
-#include <minizinc/model.hh>
+#include <minizinc/context.hh>
 
 namespace MiniZinc {
   
-  IntVal eval_int(ASTContext& ctx, Expression* e);
-  
-  void eval_int(ASTContext& ctx, Model* m);
-  ArrayLit* eval_array_lit(ASTContext& ctx, Expression* e);
+  void registerBuiltins(ASTContext& ctx);
   
 }
 

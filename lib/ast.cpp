@@ -456,6 +456,10 @@ namespace MiniZinc {
     fi->_params = CtxVec<VarDecl*>::a(ctx,params);
     fi->_ann = ann;
     fi->_e = e;
+    fi->_builtins.e = NULL;
+    fi->_builtins.b = NULL;
+    fi->_builtins.f = NULL;
+    fi->_builtins.i = NULL;
     return fi;
   }
 

@@ -45,6 +45,30 @@ namespace MiniZinc {
     }
   }
 
+  FunctionI* ASTContext::matchFn(const CtxStringH& id,
+                                 const std::vector<Type>& t) {
+    FnMap::iterator i_id = fnmap.find(id);
+    if (i_id == fnmap.end()) {
+      return NULL; // builtin not defined. TODO: should this be an error?
+    }
+    std::vector<FunctionI*>& v = i_id->second;
+    for (unsigned int i=0; i<v.size(); i++) {
+      FunctionI* fi = v[i];
+      if (fi->_params->size() == t.size()) {
+        bool match=true;
+        for (unsigned int j=0; j<t.size(); j++) {
+          if (!t[j].isSubtypeOf((*fi->_params)[j]->_type)) {
+            match=false;
+            break;
+          }
+        }
+        if (match)
+          return fi;
+      }
+    }
+    return NULL;
+  }
+
   namespace {
     class FunSort {
     public:
