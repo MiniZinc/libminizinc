@@ -67,7 +67,16 @@ namespace MiniZinc {
             const std::vector<Expression*>& v) {
     SetLit* sl = new (ctx) SetLit(loc);
     sl->_v = CtxVec<Expression*>::a(ctx,v);
-    // sl->_rs = NULL;
+    sl->_isv = NULL;
+    return sl;
+  }
+  SetLit*
+  SetLit::a(const ASTContext& ctx,
+            const Location& loc,
+            IntSetVal* isv) {
+    SetLit* sl = new (ctx) SetLit(loc);
+    sl->_v = NULL;
+    sl->_isv = isv;
     return sl;
   }
 
@@ -113,6 +122,16 @@ namespace MiniZinc {
   ArrayLit*
   ArrayLit::a(const ASTContext& ctx,
               const Location& loc,
+              CtxVec<Expression*>* v,
+              const std::vector<pair<int,int> >& dims) {
+    ArrayLit* al = new (ctx) ArrayLit(loc);
+    al->_v = v;
+    al->_dims = CtxVec<pair<int,int> >::a(ctx,dims);
+    return al;
+  }
+  ArrayLit*
+  ArrayLit::a(const ASTContext& ctx,
+              const Location& loc,
               const std::vector<Expression*>& v) {
     std::vector<pair<int,int> > dims;
     dims.push_back(pair<int,int>(1,v.size()));
@@ -151,7 +170,8 @@ namespace MiniZinc {
     std::vector<VarDecl*> vd;
     for (const CtxStringH& vdi : v)
       vd.push_back(VarDecl::a(ctx,in->_loc,
-        TypeInst::a(ctx,in->_loc,Type::parint()),vdi));
+        TypeInst::a(ctx,in->_loc,Type::parint()),vdi,
+        IntLit::a(ctx,in->_loc,0)));
     g->_v = CtxVec<VarDecl*>::a(ctx,vd);
     g->_in = in;
     return g;
@@ -331,6 +351,7 @@ namespace MiniZinc {
     v->_ti = ti;
     v->_id = id;
     v->_e = e;
+    v->_allocator = 0;
     return v;
   }
   VarDecl*
@@ -360,7 +381,9 @@ namespace MiniZinc {
                       const std::vector<TypeInst*>& ranges) {
     assert(_ranges == NULL);
     _ranges = CtxVec<TypeInst*>::a(ctx,ranges);
-    if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TIId>())
+    if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
+        ranges[0]->cast<TypeInst>()->_domain &&
+        ranges[0]->cast<TypeInst>()->_domain->isa<TIId>())
       _type._dim=-1;
     else
       _type._dim=ranges.size();

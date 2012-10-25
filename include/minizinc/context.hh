@@ -82,6 +82,8 @@ namespace MiniZinc {
     typedef std::unordered_map<CtxStringH,T> t;
   };
   
+  class VarDecl;
+  class Expression;
 
   /**
    * \brief Context for AST operations
@@ -91,23 +93,42 @@ namespace MiniZinc {
    */
   class ASTContext {
   protected:
-    mutable BlockAllocator balloc;
+    mutable std::vector<BlockAllocator> balloc;
+    std::vector<int> cur_balloc;
+    
     typedef CtxStringMap<std::vector<FunctionI*> >::t FnMap;
     FnMap fnmap;
 
+    /// A trail item representing a VarDecl assignment
+    struct TItem {
+      VarDecl* v;
+      Expression* e;
+      bool mark;
+      TItem(VarDecl* v0, Expression* e0)
+        : v(v0), e(e0), mark(false) {}
+    };
+    /// Trail of VarDecl assignments
+    std::vector<TItem> vdtrail;
   public:
     void* alloc(size_t size) const {
-      return balloc.alloc(size);
+      return balloc[cur_balloc.back()].alloc(size);
     }
     template<typename T> T* alloc(void) const {
-      return balloc.alloc<T>();
+      return balloc[cur_balloc.back()].alloc<T>();
     }
     template<typename T> T* alloc(int n) const {
-      return balloc.alloc<T>(n);
+      return balloc[cur_balloc.back()].alloc<T>(n);
     }
     void dealloc(const void* m) { (void) m; }
     
-    ~ASTContext(void) {}
+    ASTContext(void) {
+      balloc.push_back(BlockAllocator());
+      cur_balloc.push_back(0);
+    }
+    
+    ~ASTContext(void) {
+      assert(vdtrail.empty());
+    }
     
     void registerFn(FunctionI* fi);
     void sortFn(void);
@@ -115,6 +136,12 @@ namespace MiniZinc {
                        const std::vector<Expression*>& args) const;
     FunctionI* matchFn(const CtxStringH& id, const std::vector<Type>& t);
 
+    void trail(VarDecl* v);
+    void mark(void);
+    void untrail(void);
+
+    void push_allocator(int a);
+    void pop_allocator(void);
   };
 
   /**

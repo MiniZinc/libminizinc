@@ -124,17 +124,16 @@ int main(int argc, char** argv) {
             << e.loc().last_column
             << endl;
         exit(EXIT_FAILURE);
+      } catch (EvalError& e) {
+        std::cerr << "Error: " << e.msg() << std::endl;
+        std::cerr << "In file " << e.loc().filename->str() << ":"
+            << e.loc().first_line << "c"
+            << e.loc().first_column << "-"
+            << e.loc().last_line << "c"
+            << e.loc().last_column
+            << endl;
+        exit(EXIT_FAILURE);
       }
-      // } catch (EvalError& e) {
-      //   std::cerr << "Error: " << e.msg() << std::endl;
-      //   std::cerr << "In file " << e.loc().filename << ":"
-      //       << e.loc().first_line << "c"
-      //       << e.loc().first_column << "-"
-      //       << e.loc().last_line << "c"
-      //       << e.loc().last_column
-      //       << endl;
-      //   exit(EXIT_FAILURE);
-      // }
       delete m;
     }
   }

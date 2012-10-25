@@ -224,12 +224,16 @@ namespace MiniZinc {
     static const ExpressionId eid = E_SETLIT;
     /// The value of this expression, or NULL
     CtxVec<Expression*>* _v;
-    /// TODO
-    // RangeSet* _rs;
+    /// A range-list based representation for an integer set
+    IntSetVal* _isv;
     /// Allocate set \$f\{v1,\dots,vn\}\$f from context
     static SetLit* a(const ASTContext& ctx,
                      const Location& loc,
                      const std::vector<Expression*>& v);
+    /// Allocate set from context
+    static SetLit* a(const ASTContext& ctx,
+                     const Location& loc,
+                     IntSetVal* isv);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
@@ -320,6 +324,11 @@ namespace MiniZinc {
     static ArrayLit* a(const ASTContext& ctx,
                        const Location& loc,
                        const std::vector<Expression*>& v,
+                       const std::vector<pair<int,int> >& dims);
+    /// Allocate from context (existing content)
+    static ArrayLit* a(const ASTContext& ctx,
+                       const Location& loc,
+                       CtxVec<Expression*>* v,
                        const std::vector<pair<int,int> >& dims);
     /// Allocate from context (one-dimensional)
     static ArrayLit* a(const ASTContext& ctx,
@@ -515,6 +524,8 @@ namespace MiniZinc {
     CtxStringH _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
+    /// Allocation context
+    int _allocator;
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
                       TypeInst* ti, const std::string& id, Expression* e=NULL);

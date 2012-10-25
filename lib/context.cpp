@@ -49,6 +49,7 @@ namespace MiniZinc {
                                  const std::vector<Type>& t) {
     FnMap::iterator i_id = fnmap.find(id);
     if (i_id == fnmap.end()) {
+      assert(false);
       return NULL; // builtin not defined. TODO: should this be an error?
     }
     std::vector<FunctionI*>& v = i_id->second;
@@ -66,6 +67,7 @@ namespace MiniZinc {
           return fi;
       }
     }
+    assert(false);
     return NULL;
   }
 
@@ -120,5 +122,29 @@ namespace MiniZinc {
     }
     return NULL;
   }
-  
+
+  void
+  ASTContext::trail(VarDecl* v) {
+    vdtrail.push_back(TItem(v,v->_e));
+  }
+  void
+  ASTContext::mark(void) {
+    if (!vdtrail.empty())
+      vdtrail.back().mark = true;
+  }
+  void
+  ASTContext::untrail(void) {
+    while (!vdtrail.empty() && !vdtrail.back().mark) {
+      vdtrail.back().v->_e = vdtrail.back().e;
+      vdtrail.pop_back();
+    }
+  }
+  void
+  ASTContext::push_allocator(int a) {
+    cur_balloc.push_back(a);
+  }
+  void
+  ASTContext::pop_allocator(void) {
+    cur_balloc.pop_back();
+  }
 }

@@ -18,15 +18,122 @@ namespace MiniZinc {
   Expression* eval_arrayaccess(ASTContext& ctx, ArrayAccess* e);
   bool eval_bool(ASTContext& ctx, Expression* e);
 
-  Expression* eval_id(ASTContext& ctx, Id* e) {
-    if (e->_decl == NULL)
+  template<class E>
+  typename E::Val eval_id(ASTContext& ctx, Expression* e) {
+    Id* id = e->template cast<Id>();
+    if (id->_decl == NULL)
       throw EvalError(e->_loc, "undeclared identifier");
-    if (e->_decl->_e == NULL)
-      return e->_decl;
-    return e->_decl->_e;
+    if (id->_decl->_e == NULL)
+      return E::e(ctx,id->_decl);
+    ctx.push_allocator(id->_decl->_allocator);
+    typename E::Val r = E::e(ctx,id->_decl->_e);
+    id->_decl->_e = r;
+    ctx.pop_allocator();
+    return r;
+  }
+
+  class EvalIntLit {
+  public:
+    typedef IntLit* Val;
+    typedef Expression* ArrayVal;
+    static IntLit* e(ASTContext& ctx, Expression* e) {
+      return IntLit::a(ctx,Location(),eval_int(ctx,e));
+    }
+  };
+  class EvalIntVal {
+  public:
+    typedef IntVal Val;
+    typedef IntVal ArrayVal;
+    static IntVal e(ASTContext& ctx, Expression* e) {
+      return eval_int(ctx,e);
+    }
+  };
+  class EvalBoolLit {
+  public:
+    typedef BoolLit* Val;
+    typedef Expression* ArrayVal;
+    static BoolLit* e(ASTContext& ctx, Expression* e) {
+      return BoolLit::a(ctx,Location(),eval_bool(ctx,e));
+    }
+  };
+  class EvalArrayLit {
+  public:
+    typedef ArrayLit* Val;
+    typedef Expression* ArrayVal;
+    static ArrayLit* e(ASTContext& ctx, Expression* e) {
+      return eval_array_lit(ctx,e);
+    }
+  };
+  class EvalSetLit {
+  public:
+    typedef SetLit* Val;
+    typedef Expression* ArrayVal;
+    static SetLit* e(ASTContext& ctx, Expression* e) {
+      return SetLit::a(ctx,e->_loc,eval_intset(ctx,e));
+    }
+  };
+
+  template<class Eval>
+  void
+  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
+            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a);
+
+  template<class Eval>
+  void
+  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
+            int i, IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
+    (*(*e->_g)[gen]->_v)[id]->_e->cast<IntLit>()->_v = i;
+    if (id == (*e->_g)[gen]->_v->size()-1) {
+      if (gen == e->_g->size()-1) {
+        bool where = true;
+        if (e->_where != NULL) {
+          where = eval_bool(ctx, e->_where);
+        }
+        if (where) {
+          a.push_back(Eval::e(ctx,e->_e));
+        }
+      } else {
+        IntSetVal* nextin = eval_intset(ctx, (*e->_g)[gen+1]->_in);
+        eval_comp<Eval>(ctx,e,gen+1,0,nextin,a);
+      }
+    } else {
+      eval_comp<Eval>(ctx,e,gen,id+1,in,a);
+    }
+  }
+
+  template<class Eval>
+  void
+  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
+            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
+    IntSetRanges rsi(in);
+    Ranges::ToValues<IntSetRanges> rsv(rsi);
+    for (; rsv(); ++rsv) {
+      eval_comp<Eval>(ctx,e,gen,id,rsv.val(),in,a);
+    }
+  }
+
+  template<class Eval>
+  std::vector<typename Eval::ArrayVal>
+  eval_comp(ASTContext& ctx, Comprehension* e) {
+    std::vector<typename Eval::ArrayVal> a;
+    IntSetVal* in  = eval_intset(ctx, (*e->_g)[0]->_in);
+    eval_comp<Eval>(ctx,e,0,0,in,a);
+    return a;
   }
 
   ArrayLit* eval_array_comp(ASTContext& ctx, Comprehension* e) {
+    if (e->_type == Type::parint(1)) {
+      std::vector<Expression*> a = eval_comp<EvalIntLit>(ctx, e);
+      return ArrayLit::a(ctx,e->_loc,a);
+    }
+    if (e->_type == Type::parbool(1)) {
+      std::vector<Expression*> a = eval_comp<EvalBoolLit>(ctx, e);
+      return ArrayLit::a(ctx,e->_loc,a);
+    }
+    if (e->_type == Type::parsetint(1)) {
+      std::vector<Expression*> a = eval_comp<EvalSetLit>(ctx, e);
+      return ArrayLit::a(ctx,e->_loc,a);
+    }
     throw EvalError(e->_loc, "not supported yet");
   }
   
@@ -44,7 +151,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
       throw EvalError(e->_loc, "not an array expression");
     case Expression::E_ID:
-      return eval_array_lit(ctx, eval_id(ctx, e->template cast<Id>()));
+      return eval_id<EvalArrayLit>(ctx,e);
     case Expression::E_ARRAYLIT:
       return e->template cast<ArrayLit>();
     case Expression::E_ARRAYACCESS:
@@ -90,7 +197,16 @@ namespace MiniZinc {
         throw EvalError(e->_loc, "unforseen error");
       }
     case Expression::E_LET:
-      return eval_array_lit(ctx, e->template cast<Let>()->_in);
+      {
+        Let* l = e->template cast<Let>();
+        ctx.mark();
+        for (Expression* e : *l->_let)
+          if (e->isa<VarDecl>())
+            ctx.trail(e->cast<VarDecl>());
+        ArrayLit* ret = eval_array_lit(ctx, l->_in);
+        ctx.untrail();
+        return ret;
+      }
     }
     assert(false);
   }
@@ -118,9 +234,8 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->template cast<SetLit>();
-        /// TODO
-        // if (sl->_rs)
-        //   return sl->_rs;
+        if (sl->_isv)
+          return sl->_isv;
         std::vector<IntVal> vals(sl->_v->size());
         for (unsigned int i=0; i<sl->_v->size(); i++)
           vals[i] = eval_int(ctx, (*sl->_v)[i]);
@@ -133,15 +248,22 @@ namespace MiniZinc {
     case Expression::E_ANON:
     case Expression::E_TIID:
     case Expression::E_ARRAYLIT:
-    case Expression::E_COMP:
     case Expression::E_VARDECL:
     case Expression::E_ANN:
     case Expression::E_TI:
     case Expression::E_UNOP:
       throw EvalError(e->_loc,"not a set of int expression");
       break;
+    case Expression::E_COMP:
+      {
+        Comprehension* c = e->template cast<Comprehension>();
+        if (!c->_set)
+          throw EvalError(e->_loc,"not a set of int expression");
+        std::vector<IntVal> a = eval_comp<EvalIntVal>(ctx,c);
+        return IntSetVal::a(ctx,a);
+      }
     case Expression::E_ID:
-      return eval_intset(ctx,eval_id(ctx,e->template cast<Id>()));
+      return eval_id<EvalSetLit>(ctx,e)->_isv;
       break;
     case Expression::E_ARRAYACCESS:
       return eval_intset(ctx,eval_arrayaccess(ctx,
@@ -181,6 +303,11 @@ namespace MiniZinc {
             }
           default: throw EvalError(e->_loc,"not a set of int expression");
           }
+        } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
+          if (bo->_op != BOT_DOTDOT)
+            throw EvalError(e->_loc, "not a set of int expression");
+          return IntSetVal::a(ctx,eval_int(ctx,bo->_e0),
+                                  eval_int(ctx,bo->_e1));
         } else {
           throw EvalError(e->_loc, "not a set of int expression");
         }
@@ -199,7 +326,16 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_LET:
-      return eval_intset(ctx, e->template cast<Let>()->_in);
+      {
+        Let* l = e->template cast<Let>();
+        ctx.mark();
+        for (Expression* e : *l->_let)
+          if (e->isa<VarDecl>())
+            ctx.trail(e->cast<VarDecl>());
+        IntSetVal* ret = eval_intset(ctx, l->_in);
+        ctx.untrail();
+        return ret;
+      }
       break;
     default:
       assert(false);
@@ -228,7 +364,7 @@ namespace MiniZinc {
       throw EvalError(e->_loc,"not a bool expression");
       break;
     case Expression::E_ID:
-      return eval_bool(ctx,eval_id(ctx,e->template cast<Id>()));
+      return eval_id<EvalBoolLit>(ctx,e)->_v;
       break;
     case Expression::E_ARRAYACCESS:
       return eval_bool(ctx,eval_arrayaccess(ctx,
@@ -340,7 +476,16 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_LET:
-      return eval_bool(ctx, e->template cast<Let>()->_in);
+      {
+        Let* l = e->template cast<Let>();
+        ctx.mark();
+        for (Expression* e : *l->_let)
+          if (e->isa<VarDecl>())
+            ctx.trail(e->cast<VarDecl>());
+        bool ret = eval_bool(ctx, l->_in);
+        ctx.untrail();
+        return ret;
+      }
       break;
     default:
       assert(false);
@@ -365,7 +510,7 @@ namespace MiniZinc {
       throw EvalError(e->_loc,"not an integer expression");
       break;
     case Expression::E_ID:
-      return eval_int(ctx,eval_id(ctx,e->template cast<Id>()));
+      return eval_id<EvalIntLit>(ctx,e)->_v;
       break;
     case Expression::E_ARRAYACCESS:
       return eval_int(ctx,eval_arrayaccess(ctx,
@@ -419,7 +564,16 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_LET:
-      return eval_int(ctx, e->template cast<Let>()->_in);
+      {
+        Let* l = e->template cast<Let>();
+        ctx.mark();
+        for (Expression* e : *l->_let)
+          if (e->isa<VarDecl>())
+            ctx.trail(e->cast<VarDecl>());
+        IntVal ret = eval_int(ctx, l->_in);
+        ctx.untrail();
+        return ret;
+      }
       break;
     default:
       assert(false);
@@ -427,44 +581,44 @@ namespace MiniZinc {
     }
   }
 
-  void eval_int(ASTContext& ctx, Model* m) {
-    std::vector<Model*> models;
-    models.push_back(m);
-    while (!models.empty()) {
-      Model* cm = models.back();
-      models.pop_back();
-      for (Item* it : cm->_items) {
-        switch (it->_iid) {
-        case Item::II_INC:
-          if (it->cast<IncludeI>()->_own)
-            models.push_back(it->cast<IncludeI>()->_m);
-          break;
-        case Item::II_VD:
-          break;
-        case Item::II_ASN:
-          {
-            AssignI* ai = it->template cast<AssignI>();
-            if (ai->_e->_type.isint())
-              std::cerr << ai->_id.c_str() << " = " << eval_int(ctx,ai->_e) << "\n";
-            if (ai->_e->_type.isintset()) {
-              std::cerr << ai->_id.c_str() << " = {";
-              for (IntSetRanges ir(eval_intset(ctx,ai->_e)); ir(); ++ir)
-                std::cerr << ir.min() << ".." << ir.max() << ", ";
-              std::cerr << "}\n";
-            }
-          }
-          break;
-        case Item::II_CON:
-          break;
-        case Item::II_SOL:
-          break;
-        case Item::II_OUT:
-          break;
-        case Item::II_FUN:
-          break;
+  class AssignVisitor : public ItemVisitor {
+  public:
+    void vAssignI(AssignI* i) {
+      if (i->_decl == NULL)
+        throw EvalError(i->_loc, "undeclared identifier");
+      if (i->_decl->_e != NULL)
+        throw EvalError(i->_loc, "multiple assignments to same identifier");
+      i->_decl->_e = i->_e;
+    }
+  };
+
+  class EvalVisitor : public ItemVisitor {
+  protected:
+    ASTContext& ctx;
+  public:
+    EvalVisitor(ASTContext& ctx0) : ctx(ctx0) {}
+    void vVarDeclI(VarDeclI* i) {
+      if (i->_e->_e != NULL) {
+        if (i->_e->_e->_type.isint())
+          std::cerr << i->_e->_id.c_str() << " = " << eval_int(ctx,i->_e->_e) << "\n";
+        if (i->_e->_e->_type.isbool())
+          std::cerr << i->_e->_id.c_str() << " = " << eval_bool(ctx,i->_e->_e) << "\n";
+        if (i->_e->_e->_type.isintset()) {
+          std::cerr << i->_e->_id.c_str() << " = {";
+          for (IntSetRanges ir(eval_intset(ctx,i->_e->_e)); ir(); ++ir)
+            std::cerr << ir.min() << ".." << ir.max() << ", ";
+          std::cerr << "}\n";
         }
+        
       }
     }
+  };
+
+  void eval_int(ASTContext& ctx, Model* m) {
+    AssignVisitor av;
+    ItemIter<AssignVisitor>(av).run(m);
+    EvalVisitor ev(ctx);
+    ItemIter<EvalVisitor>(ev).run(m);
   }
 
 }

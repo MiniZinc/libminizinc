@@ -17,9 +17,13 @@
 namespace MiniZinc {
   
   IntVal eval_int(ASTContext& ctx, Expression* e);
+
+  bool eval_bool(ASTContext& ctx, Expression* e);
   
   void eval_int(ASTContext& ctx, Model* m);
   ArrayLit* eval_array_lit(ASTContext& ctx, Expression* e);
+
+  IntSetVal* eval_intset(ASTContext& ctx, Expression* e);
   
 }
 

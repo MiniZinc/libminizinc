@@ -502,85 +502,46 @@ namespace MiniZinc {
     
     std::vector<FunctionI*> functionItems;
     
-    std::vector<Model*> models;
-    models.push_back(m);
-    while (!models.empty()) {
-      Model* cm = models.back();
-      models.pop_back();
-      // Register types of all declared functions
-      for (Item* it : cm->_items) {
-        switch (it->_iid) {
-        case Item::II_INC:
-          if (it->cast<IncludeI>()->_own)
-            models.push_back(it->cast<IncludeI>()->_m);
-          break;
-        case Item::II_VD:
-          ts.add(it->cast<VarDeclI>()->_e,true);
-          break;
-        case Item::II_ASN:
-          break;
-        case Item::II_CON:
-          break;
-        case Item::II_SOL:
-          break;
-        case Item::II_OUT:
-          break;
-        case Item::II_FUN:
-          ctx.registerFn(it->cast<FunctionI>());
-          functionItems.push_back(it->cast<FunctionI>());
-          break;      
-        }
+    class TSV0 : public ItemVisitor {
+    public:
+      TopoSorter& ts;
+      ASTContext& ctx;
+      std::vector<FunctionI*>& fis;
+      TSV0(TopoSorter& ts0, ASTContext& ctx0, std::vector<FunctionI*>& fis0)
+        : ts(ts0), ctx(ctx0), fis(fis0) {}
+      void vVarDeclI(VarDeclI* i) { ts.add(i->_e, true); }
+      void vFunctionI(FunctionI* i) {
+        ctx.registerFn(i);
+        fis.push_back(i);
       }
-    }
-    
-    models.push_back(m);
-    while (!models.empty()) {
-      Model* cm = models.back();
-      models.pop_back();
-      // Run toposort for all expressions
-      for (Item* it : cm->_items) {
-        switch (it->_iid) {
-        case Item::II_INC:
-          if (it->cast<IncludeI>()->_own)
-            models.push_back(it->cast<IncludeI>()->_m);
-          break;
-        case Item::II_VD:
-          ts.run(it->cast<VarDeclI>()->_e);
-          break;
-        case Item::II_ASN:
-          {
-            AssignI* ai = it->cast<AssignI>();
-            ts.run(ai->_e);
-            ai->_decl = ts.checkId(ai->_id,ai->_loc);
-          }
-          break;
-        case Item::II_CON:
-          ts.run(it->cast<ConstraintI>()->_e);
-          break;
-        case Item::II_SOL:
-          ts.run(it->cast<SolveI>()->_ann);
-          ts.run(it->cast<SolveI>()->_e);
-          break;
-        case Item::II_OUT:
-          ts.run(it->cast<OutputI>()->_e);
-          break;
-        case Item::II_FUN:
-          {
-            FunctionI* fi = it->cast<FunctionI>();
-            ts.run(fi->_ti);
-            for (unsigned int i=0; i<fi->_params->size(); i++)
-              ts.run((*fi->_params)[i]);
-            ts.run(fi->_ann);
-            for (unsigned int i=0; i<fi->_params->size(); i++)
-              ts.add((*fi->_params)[i],false);
-            ts.run(fi->_e);
-            for (unsigned int i=0; i<fi->_params->size(); i++)
-              ts.remove((*fi->_params)[i]);
-          }
-          break;      
-        }
+    } _tsv0(ts,ctx,functionItems);
+    iterItems(_tsv0,m);
+
+    class TSV1 : public ItemVisitor {
+    public:
+      TopoSorter& ts;
+      TSV1(TopoSorter& ts0) : ts(ts0) {}
+      void vVarDeclI(VarDeclI* i) { ts.run(i->_e); }
+      void vAssignI(AssignI* i) {
+        ts.run(i->_e);
+        i->_decl = ts.checkId(i->_id,i->_loc);
       }
-    }
+      void vConstraintI(ConstraintI* i) { ts.run(i->_e); }
+      void vSolveI(SolveI* i) { ts.run(i->_ann); ts.run(i->_e); }
+      void vOutputI(OutputI* i) { ts.run(i->_e); }
+      void vFunctionI(FunctionI* fi) {
+        ts.run(fi->_ti);
+        for (unsigned int i=0; i<fi->_params->size(); i++)
+          ts.run((*fi->_params)[i]);
+        ts.run(fi->_ann);
+        for (unsigned int i=0; i<fi->_params->size(); i++)
+          ts.add((*fi->_params)[i],false);
+        ts.run(fi->_e);
+        for (unsigned int i=0; i<fi->_params->size(); i++)
+          ts.remove((*fi->_params)[i]);
+      }
+    } _tsv1(ts);
+    iterItems(_tsv1,m);
 
     ctx.sortFn();
 
@@ -599,66 +560,46 @@ namespace MiniZinc {
     {
       Typer<true> ty(ctx);
       BottomUpIterator<Typer<true> > bu_ty(ty);
-      models.push_back(m);
-      while (!models.empty()) {
-        Model* cm = models.back();
-        models.pop_back();
-        // Run type checking for all expressions
-        for (Item* it : cm->_items) {
-          switch (it->_iid) {
-          case Item::II_INC:
-            if (it->cast<IncludeI>()->_own)
-              models.push_back(it->cast<IncludeI>()->_m);
-            break;
-          case Item::II_VD:
-            bu_ty.run(it->cast<VarDeclI>()->_e);
-            break;
-          case Item::II_ASN:
-            {
-              AssignI* ai = it->cast<AssignI>();
-              bu_ty.run(ai->_e);
-              if (!ai->_e->_type.isSubtypeOf(ai->_decl->_ti->_type)) {
-                throw TypeError(ai->_e->_loc,
-                  "RHS of assignment does not agree with LHS");
-              }
-            }
-            break;
-          case Item::II_CON:
-            bu_ty.run(it->cast<ConstraintI>()->_e);
-            if (!it->cast<ConstraintI>()->
-              _e->_type.isSubtypeOf(Type::varbool()))
-              throw TypeError(it->cast<ConstraintI>()->_e->_loc,
-                "constraint must be var bool");
-            break;
-          case Item::II_SOL:
-            {
-              bu_ty.run(it->cast<SolveI>()->_ann);
-              bu_ty.run(it->cast<SolveI>()->_e);
-              if (it->cast<SolveI>()->_e) {
-                Type et = it->cast<SolveI>()->_e->_type;
-                if (! (et.isSubtypeOf(Type::varint()) || 
-                       et.isSubtypeOf(Type::varfloat())))
-                  throw TypeError(it->cast<SolveI>()->_e->_loc,
-                    "objective must be int or float");
-              }
-            }
-            break;
-          case Item::II_OUT:
-            bu_ty.run(it->cast<OutputI>()->_e);
-            if (it->cast<OutputI>()->_e->_type != Type::parstring(1))
-              throw TypeError(it->cast<OutputI>()->_e->_loc,
-                "output item needs string array");
-            break;
-          case Item::II_FUN:
-            {
-              FunctionI* fi = it->cast<FunctionI>();
-              bu_ty.run(fi->_ann);
-              bu_ty.run(fi->_e);
-            }
-            break;      
+      
+      class TSV2 : public ItemVisitor {
+      public:
+        BottomUpIterator<Typer<true> >& bu_ty;
+        TSV2(BottomUpIterator<Typer<true> >& b) : bu_ty(b) {}
+        void vVarDeclI(VarDeclI* i) { bu_ty.run(i->_e); }
+        void vAssignI(AssignI* i) {
+          bu_ty.run(i->_e);
+          if (!i->_e->_type.isSubtypeOf(i->_decl->_ti->_type)) {
+            throw TypeError(i->_e->_loc,
+              "RHS of assignment does not agree with LHS");
           }
         }
-      }
+        void vConstraintI(ConstraintI* i) {
+          bu_ty.run(i->_e);
+          if (!i->_e->_type.isSubtypeOf(Type::varbool()))
+            throw TypeError(i->_e->_loc, "constraint must be var bool");
+        }
+        void vSolveI(SolveI* i) {
+          bu_ty.run(i->_ann);
+          bu_ty.run(i->_e);
+          if (i->_e) {
+            Type et = i->_e->_type;
+            if (! (et.isSubtypeOf(Type::varint()) || 
+                   et.isSubtypeOf(Type::varfloat())))
+              throw TypeError(i->_e->_loc,
+                "objective must be int or float");
+          }
+        }
+        void vOutputI(OutputI* i) {
+          bu_ty.run(i->_e);
+          if (i->_e->_type != Type::parstring(1))
+            throw TypeError(i->_e->_loc, "output item needs string array");
+        }
+        void vFunctionI(FunctionI* i) {
+          bu_ty.run(i->_ann);
+          bu_ty.run(i->_e);
+        }
+      } _tsv2(bu_ty);
+      iterItems(_tsv2,m);
     }
     
   }
