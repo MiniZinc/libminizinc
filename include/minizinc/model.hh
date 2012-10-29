@@ -43,6 +43,62 @@ namespace MiniZinc {
       _filepath = CtxStringH(ctx,f);
     }
   };
+
+  class ItemVisitor {
+  public:
+    void vVarDeclI(VarDeclI*) {}
+    void vAssignI(AssignI*) {}
+    void vConstraintI(ConstraintI*) {}
+    void vSolveI(SolveI*) {}
+    void vOutputI(OutputI*) {}
+    void vFunctionI(FunctionI*) {}
+  };
+
+  template<class I>
+  class ItemIter {
+  protected:
+    I& i;
+  public:
+    ItemIter(I& i0) : i(i0) {}
+    void run(Model* m) {
+      std::vector<Model*> models;
+      models.push_back(m);
+      while (!models.empty()) {
+        Model* cm = models.back();
+        models.pop_back();
+        for (Item* it : cm->_items) {
+          switch (it->_iid) {
+          case Item::II_INC:
+            if (it->cast<IncludeI>()->_own)
+              models.push_back(it->cast<IncludeI>()->_m);
+            break;
+          case Item::II_VD:
+            i.vVarDeclI(it->cast<VarDeclI>());
+            break;
+          case Item::II_ASN:
+            i.vAssignI(it->cast<AssignI>());
+            break;
+          case Item::II_CON:
+            i.vConstraintI(it->cast<ConstraintI>());
+            break;
+          case Item::II_SOL:
+            i.vSolveI(it->cast<SolveI>());
+            break;
+          case Item::II_OUT:
+            i.vOutputI(it->cast<OutputI>());
+            break;
+          case Item::II_FUN:
+            i.vFunctionI(it->cast<FunctionI>());
+            break;      
+          }
+        }
+      }
+    }
+  };
+  template<class I>
+  void iterItems(I& i, Model* m) {
+    ItemIter<I>(i).run(m);
+  }
   
 }
 

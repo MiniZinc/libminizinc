@@ -12,6 +12,7 @@
 #ifndef __MINIZINC_AST_HH__
 #define __MINIZINC_AST_HH__
 
+#include <minizinc/values.hh>
 #include <minizinc/context.hh>
 #include <minizinc/type.hh>
 
@@ -189,30 +190,30 @@ namespace MiniZinc {
   class IntLit : public Expression {
   protected:
     /// Constructor
-    IntLit(const Location& loc, int v)
+    IntLit(const Location& loc, IntVal v)
       : Expression(loc,E_INTLIT,Type::parint()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
     /// The value of this expression
-    int _v;
+    IntVal _v;
     /// Allocate from context
     static IntLit* a(const ASTContext& ctx, const Location& loc,
-                     int v);
+                     IntVal v);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
   protected:
-    FloatLit(const Location& loc, double v)
+    FloatLit(const Location& loc, FloatVal v)
       : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
     /// The value of this expression
-    double _v;
+    FloatVal _v;
     /// Allocate from context
     static FloatLit* a(const ASTContext& ctx, const Location& loc,
-                       double v);
+                       FloatVal v);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
@@ -223,12 +224,16 @@ namespace MiniZinc {
     static const ExpressionId eid = E_SETLIT;
     /// The value of this expression, or NULL
     CtxVec<Expression*>* _v;
-    /// TODO
-    // RangeSet* _rs;
+    /// A range-list based representation for an integer set
+    IntSetVal* _isv;
     /// Allocate set \$f\{v1,\dots,vn\}\$f from context
     static SetLit* a(const ASTContext& ctx,
-		     const Location& loc,
+                     const Location& loc,
                      const std::vector<Expression*>& v);
+    /// Allocate set from context
+    static SetLit* a(const ASTContext& ctx,
+                     const Location& loc,
+                     IntSetVal* isv);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
@@ -319,6 +324,11 @@ namespace MiniZinc {
     static ArrayLit* a(const ASTContext& ctx,
                        const Location& loc,
                        const std::vector<Expression*>& v,
+                       const std::vector<pair<int,int> >& dims);
+    /// Allocate from context (existing content)
+    static ArrayLit* a(const ASTContext& ctx,
+                       const Location& loc,
+                       CtxVec<Expression*>* v,
                        const std::vector<pair<int,int> >& dims);
     /// Allocate from context (one-dimensional)
     static ArrayLit* a(const ASTContext& ctx,
@@ -514,6 +524,8 @@ namespace MiniZinc {
     CtxStringH _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
+    /// Allocation context
+    int _allocator;
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
                       TypeInst* ti, const std::string& id, Expression* e=NULL);
@@ -733,6 +745,27 @@ namespace MiniZinc {
     Annotation* _ann;
     /// Function body (or NULL)
     Expression* _e;
+    
+    /// Type of builtin expression-valued functions
+    typedef Expression* (*builtin_e) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin int-valued functions
+    typedef IntVal (*builtin_i) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin bool-valued functions
+    typedef bool (*builtin_b) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin float-valued functions
+    typedef FloatVal (*builtin_f) (ASTContext&, CtxVec<Expression*>*);
+    /// Type of builtin set-valued functions
+    typedef IntSetVal* (*builtin_s) (ASTContext&, CtxVec<Expression*>*);
+
+    /// Builtin functions (or NULL)
+    struct {
+      builtin_e e;
+      builtin_i i;
+      builtin_f f;
+      builtin_b b;
+      builtin_s s;
+    } _builtins;
+
     /// Allocate from context
     static FunctionI* a(const ASTContext& ctx, const Location& loc,
                         const std::string& id, TypeInst* ti,
