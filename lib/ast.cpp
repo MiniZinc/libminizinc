@@ -33,16 +33,18 @@ namespace MiniZinc {
     return oss.str();
   }
 
-  Annotation*
-  Annotation::a(const ASTContext& ctx, const Location& loc,
-                Expression* e) {
-    return new (ctx) Annotation(loc,e);
-  }
   void
   Annotation::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_e));
     cmb_hash(Expression::hash(_a));
+  }
+  Annotation*
+  Annotation::a(const ASTContext& ctx, const Location& loc,
+                Expression* e) {
+    Annotation* a = new (ctx) Annotation(loc,e);
+    a->rehash();
+    return a;
   }
   void
   Annotation::merge(Annotation* a) {
