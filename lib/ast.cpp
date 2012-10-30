@@ -11,6 +11,7 @@
 
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/iter.hh>
 
 namespace MiniZinc {
 
@@ -38,10 +39,17 @@ namespace MiniZinc {
     return new (ctx) Annotation(loc,e);
   }
   void
+  Annotation::rehash(void) {
+    init_hash();
+    cmb_hash(Expression::hash(_e));
+    cmb_hash(Expression::hash(_a));
+  }
+  void
   Annotation::merge(Annotation* a) {
     Annotation* r = this;
     while (r->_a != NULL) r=r->_a;
     r->_a = a;
+    r->rehash();
   }
 
   void
@@ -49,18 +57,48 @@ namespace MiniZinc {
     if (_ann) _ann->merge(ann); else _ann=ann;
   }
 
+  void
+  IntLit::rehash(void) {
+    init_hash();
+    std::hash<IntVal> h;
+    cmb_hash(h(_v));
+  }
   IntLit*
   IntLit::a(const ASTContext& ctx, const Location& loc,
             IntVal v) {
-    return new (ctx) IntLit(loc,v);
+    IntLit* il = new (ctx) IntLit(loc,v);
+    il->rehash();
+    return il;
   }
 
+  void
+  FloatLit::rehash(void) {
+    init_hash();
+    std::hash<FloatVal> h;
+    cmb_hash(h(_v));
+  }
   FloatLit*
   FloatLit::a(const ASTContext& ctx, const Location& loc,
               FloatVal v) {
-    return new (ctx) FloatLit(loc,v);
+    FloatLit* fl = new (ctx) FloatLit(loc,v);
+    fl->rehash();
+    return fl;
   }
 
+  void
+  SetLit::rehash(void) {
+    init_hash();
+    if (_v) {
+      for (unsigned int i=_v->size(); i--;)
+        cmb_hash(Expression::hash((*_v)[i]));
+    } else {
+      std::hash<IntVal> h;
+      for (IntSetRanges r0(_isv); r0(); ++r0) {
+        cmb_hash(h(r0.min()));
+        cmb_hash(h(r0.max()));
+      }
+    }
+  }
   SetLit*
   SetLit::a(const ASTContext& ctx,
             const Location& loc,
@@ -68,6 +106,7 @@ namespace MiniZinc {
     SetLit* sl = new (ctx) SetLit(loc);
     sl->_v = CtxVec<Expression*>::a(ctx,v);
     sl->_isv = NULL;
+    sl->rehash();
     return sl;
   }
   SetLit*
@@ -77,38 +116,88 @@ namespace MiniZinc {
     SetLit* sl = new (ctx) SetLit(loc);
     sl->_v = NULL;
     sl->_isv = isv;
+    sl->rehash();
     return sl;
   }
 
+  void
+  BoolLit::rehash(void) {
+    init_hash();
+    std::hash<bool> h;
+    cmb_hash(h(_v));
+  }
   BoolLit*
   BoolLit::a(const ASTContext& ctx, const Location& loc,
              bool v) {
-    return new (ctx) BoolLit(loc,v);
+    BoolLit* bl = new (ctx) BoolLit(loc,v);
+    bl->rehash();
+    return bl;
   }
 
+  void
+  StringLit::rehash(void) {
+    init_hash();
+    std::hash<std::string> h;
+    cmb_hash(h(_v.str()));
+  }
   StringLit*
   StringLit::a(const ASTContext& ctx, const Location& loc,
                const std::string& v) {
-    return new (ctx) StringLit(loc,CtxStringH(ctx,v));
+    StringLit* sl = new (ctx) StringLit(loc,CtxStringH(ctx,v));
+    sl->rehash();
+    return sl;
   }
 
+  void
+  Id::rehash(void) {
+    init_hash();
+    std::hash<std::string> h;
+    cmb_hash(h(_v.str()));
+  }
   Id*
   Id::a(const ASTContext& ctx, const Location& loc,
         const std::string& v, VarDecl* decl) {
-    return new (ctx) Id(loc,CtxStringH(ctx,v),decl);
+    Id* id = new (ctx) Id(loc,CtxStringH(ctx,v),decl);
+    id->rehash();
+    return id;
   }
 
+  void
+  TIId::rehash(void) {
+    init_hash();
+    std::hash<std::string> h;
+    cmb_hash(h(_v.str()));
+  }
   TIId*
   TIId::a(const ASTContext& ctx, const Location& loc,
           const std::string& v) {
-    return new (ctx) TIId(loc,CtxStringH(ctx,v));
+    TIId* t = new (ctx) TIId(loc,CtxStringH(ctx,v));
+    t->rehash();
+    return t;
   }
 
+  void
+  AnonVar::rehash(void) {
+    init_hash();
+  }
   AnonVar*
   AnonVar::a(const ASTContext& ctx, const Location& loc) {
-    return new (ctx) AnonVar(loc);
+    AnonVar* av = new (ctx) AnonVar(loc);
+    av->init_hash();
+    return av;
   }
 
+  void
+  ArrayLit::rehash(void) {
+    init_hash();
+    std::hash<int> h;
+    for (unsigned int i=0; i<_dims->size(); i++) {
+      cmb_hash(h((*_dims)[i].first));
+      cmb_hash(h((*_dims)[i].second));
+    }
+    for (unsigned int i=_v->size(); i--;)
+      cmb_hash(Expression::hash((*_v)[i]));
+  }
   ArrayLit*
   ArrayLit::a(const ASTContext& ctx,
               const Location& loc,
@@ -117,6 +206,7 @@ namespace MiniZinc {
     ArrayLit* al = new (ctx) ArrayLit(loc);
     al->_v = CtxVec<Expression*>::a(ctx,v);
     al->_dims = CtxVec<pair<int,int> >::a(ctx,dims);
+    al->rehash();
     return al;
   }
   ArrayLit*
@@ -127,6 +217,7 @@ namespace MiniZinc {
     ArrayLit* al = new (ctx) ArrayLit(loc);
     al->_v = v;
     al->_dims = CtxVec<pair<int,int> >::a(ctx,dims);
+    al->rehash();
     return al;
   }
   ArrayLit*
@@ -151,6 +242,15 @@ namespace MiniZinc {
     return a(ctx,loc,vv,dims);
   }
 
+  void
+  ArrayAccess::rehash(void) {
+    init_hash();
+    cmb_hash(Expression::hash(_v));
+    std::hash<unsigned int> h;
+    cmb_hash(h(_idx->size()));
+    for (unsigned int i=_idx->size(); i--;)
+      cmb_hash(Expression::hash((*_idx)[i]));
+  }
   ArrayAccess*
   ArrayAccess::a(const ASTContext& ctx,
                  const Location& loc,
@@ -159,6 +259,7 @@ namespace MiniZinc {
     ArrayAccess* aa = new (ctx) ArrayAccess(loc);
     aa->_v = v;
     aa->_idx = CtxVec<Expression*>::a(ctx,idx);
+    aa->rehash();
     return aa;
   }
 
@@ -186,6 +287,22 @@ namespace MiniZinc {
     return a(ctx,vv,in);
   }
 
+  void
+  Comprehension::rehash(void) {
+    init_hash();
+    std::hash<unsigned int> h;
+    cmb_hash(h(_set));
+    cmb_hash(Expression::hash(_e));
+    cmb_hash(Expression::hash(_where));
+    cmb_hash(h(_g->size()));
+    for (unsigned int i=_g->size(); i--;) {
+      cmb_hash(Expression::hash((*_g)[i]->_in));
+      cmb_hash(h((*_g)[i]->_v->size()));
+      for (unsigned int j=(*_g)[i]->_v->size(); j--;) {
+        cmb_hash(Expression::hash((*(*_g)[i]->_v)[j]));
+      }
+    }
+  }
   Comprehension*
   Comprehension::a(const ASTContext& ctx,
                    const Location& loc,
@@ -197,22 +314,45 @@ namespace MiniZinc {
     c->_g = CtxVec<Generator*>::a(ctx,g._g);
     c->_where = g._w;
     c->_set = set;
+    c->rehash();
     return c;
   }
 
+  void
+  ITE::rehash(void) {
+    init_hash();
+    std::hash<unsigned int> h;
+    cmb_hash(h(_e_if->size()));
+    for (unsigned int i=_e_if->size(); i--; ) {
+      cmb_hash(Expression::hash((*_e_if)[i].first));
+      cmb_hash(Expression::hash((*_e_if)[i].second));
+    }
+    cmb_hash(Expression::hash(_e_else));
+  }
   ITE*
   ITE::a(const ASTContext& ctx, const Location& loc,
          const std::vector<IfThen>& e_if, Expression* e_else) {
     ITE* ite = new (ctx) ITE(loc);
     ite->_e_if = CtxVec<IfThen>::a(ctx,e_if);
     ite->_e_else = e_else;
+    ite->rehash();
     return ite;
   }
 
+  void
+  BinOp::rehash(void) {
+    init_hash();
+    std::hash<int> h;
+    cmb_hash(h(static_cast<int>(_op)));
+    cmb_hash(Expression::hash(_e0));
+    cmb_hash(Expression::hash(_e1));
+  }
   BinOp*
   BinOp::a(const ASTContext& ctx, const Location& loc,
            Expression* e0, BinOpType op, Expression* e1) {
-    return new (ctx) BinOp(loc,e0,op,e1);
+    BinOp* bo = new (ctx) BinOp(loc,e0,op,e1);
+    bo->rehash();
+    return bo;
   }
 
   namespace {
@@ -316,10 +456,19 @@ namespace MiniZinc {
     }
   }
 
+  void
+  UnOp::rehash(void) {
+    init_hash();
+    std::hash<int> h;
+    cmb_hash(h(static_cast<int>(_op)));
+    cmb_hash(Expression::hash(_e0));
+  }
   UnOp*
   UnOp::a(const ASTContext& ctx, const Location& loc,
           UnOpType op, Expression* e) {
-    return new (ctx) UnOp(loc,op,e);
+    UnOp* uo = new (ctx) UnOp(loc,op,e);
+    uo->rehash();
+    return uo;
   }
 
   CtxStringH
@@ -332,6 +481,18 @@ namespace MiniZinc {
     }
   }
 
+  void
+  Call::rehash(void) {
+    init_hash();
+    std::hash<std::string> h;
+    cmb_hash(h(_id.str()));
+    std::hash<FunctionI*> hf;
+    cmb_hash(hf(_decl));
+    std::hash<unsigned int> hu;
+    cmb_hash(hu(_args->size()));
+    for (unsigned int i=_args->size(); i--;)
+      cmb_hash(Expression::hash((*_args)[i]));
+  }
   Call*
   Call::a(const ASTContext& ctx, const Location& loc,
           const std::string& id,
@@ -341,9 +502,18 @@ namespace MiniZinc {
     c->_id = CtxStringH(ctx,id);
     c->_args = CtxVec<Expression*>::a(ctx,args);
     c->_decl = decl;
+    c->rehash();
     return c;
   }
 
+  void
+  VarDecl::rehash(void) {
+    init_hash();
+    std::hash<std::string> h;
+    cmb_hash(Expression::hash(_ti));
+    cmb_hash(h(_id.str()));
+    cmb_hash(Expression::hash(_e));
+  }
   VarDecl*
   VarDecl::a(const ASTContext& ctx, const Location& loc,
              TypeInst* ti, const CtxStringH& id, Expression* e) {
@@ -352,6 +522,7 @@ namespace MiniZinc {
     v->_id = id;
     v->_e = e;
     v->_allocator = 0;
+    v->rehash();
     return v;
   }
   VarDecl*
@@ -360,20 +531,42 @@ namespace MiniZinc {
     return a(ctx,loc,ti,CtxStringH(ctx,id));
   }
 
+  void
+  Let::rehash(void) {
+    init_hash();
+    cmb_hash(Expression::hash(_in));
+    std::hash<unsigned int> h;
+    cmb_hash(h(_let->size()));
+    for (unsigned int i=_let->size(); i--;)
+      cmb_hash(Expression::hash((*_let)[i]));
+  }
   Let*
   Let::a(const ASTContext& ctx, const Location& loc,
          const std::vector<Expression*>& let, Expression* in) {
     Let* l = new (ctx) Let(loc);
     l->_let = CtxVec<Expression*>::a(ctx,let);
     l->_in = in;
+    l->rehash();
     return l;
   }
 
+  void
+  TypeInst::rehash(void) {
+    init_hash();
+    std::hash<unsigned int> h;
+    unsigned int rsize = _ranges==NULL ? 0 : _ranges->size();
+    cmb_hash(h(rsize));
+    for (unsigned int i=rsize; i--;)
+      cmb_hash(Expression::hash((*_ranges)[i]));
+    cmb_hash(Expression::hash(_domain));
+  }
   TypeInst*
   TypeInst::a(const ASTContext& ctx, const Location& loc,
               const Type& type, Expression* domain,
               CtxVec<TypeInst*>* ranges) {
-    return new (ctx) TypeInst(loc,type,domain,ranges);                     
+    TypeInst* t = new (ctx) TypeInst(loc,type,domain,ranges);
+    t->rehash();
+    return t;
   }
 
   void
@@ -387,6 +580,7 @@ namespace MiniZinc {
       _type._dim=-1;
     else
       _type._dim=ranges.size();
+    rehash();
   }
 
   bool
@@ -558,5 +752,180 @@ namespace MiniZinc {
     }
     return ret;
   }
+
+  bool
+  Expression::equal(const Expression* e0, const Expression* e1) {
+    if (e0==e1) return true;
+    if (e0 == NULL || e1 == NULL) return false;
+    if (e0->_eid != e1->_eid) return false;
+    if (e0->_type != e1->_type) return false;
+    switch (e0->_eid) {
+    case Expression::E_INTLIT:
+      return e0->cast<IntLit>()->_v == e1->cast<IntLit>()->_v;
+    case Expression::E_FLOATLIT:
+      return e0->cast<FloatLit>()->_v == e1->cast<FloatLit>()->_v;
+    case Expression::E_SETLIT:
+      {
+        const SetLit* s0 = e0->cast<SetLit>();
+        const SetLit* s1 = e1->cast<SetLit>();
+        if (s0->_isv) {
+          if (s1->_isv) {
+            IntSetRanges r0(s0->_isv);
+            IntSetRanges r1(s1->_isv);
+            return Ranges::equal(r0,r1);
+          } else {
+            return false;
+          }
+        } else {
+          if (s1->_isv) return false;
+          if (s0->_v->size() != s1->_v->size()) return false;
+          for (unsigned int i=0; i<s0->_v->size(); i++)
+            if (!Expression::equal( (*s0->_v)[i], (*s1->_v)[i] ))
+              return false;
+          return true;
+        }
+      }
+    case Expression::E_BOOLLIT:
+      return e0->cast<BoolLit>()->_v == e1->cast<BoolLit>()->_v;
+    case Expression::E_STRINGLIT:
+      return e0->cast<StringLit>()->_v == e1->cast<StringLit>()->_v;
+    case Expression::E_ID:
+      assert(e0->cast<Id>()->_decl != NULL);
+      return e0->cast<Id>()->_decl == e1->cast<Id>()->_decl;
+    case Expression::E_ANON:
+      return false;
+    case Expression::E_ARRAYLIT:
+      {
+        const ArrayLit* a0 = e0->cast<ArrayLit>();
+        const ArrayLit* a1 = e1->cast<ArrayLit>();
+        if (a0->_v->size() != a1->_v->size()) return false;
+        if (a0->_dims->size() != a1->_dims->size()) return false;
+        for (unsigned int i=0; i<a0->_dims->size(); i++)
+          if ( (*a0->_dims)[i] != (*a1->_dims)[i] ) return false;
+        for (unsigned int i=0; i<a0->_v->size(); i++)
+          if (!Expression::equal( (*a0->_v)[i], (*a1->_v)[i] ))
+            return false;
+        return true;
+      }
+    case Expression::E_ARRAYACCESS:
+      {
+        const ArrayAccess* a0 = e0->cast<ArrayAccess>();
+        const ArrayAccess* a1 = e1->cast<ArrayAccess>();
+        if (!Expression::equal( a0->_v, a1->_v )) return false;
+        if (a0->_idx->size() != a1->_idx->size()) return false;
+        for (unsigned int i=0; i<a0->_idx->size(); i++)
+          if (!Expression::equal( (*a0->_idx)[i], (*a1->_idx)[i] ))
+            return false;
+        return true;
+      }
+    case Expression::E_COMP:
+      {
+        const Comprehension* c0 = e0->cast<Comprehension>();
+        const Comprehension* c1 = e1->cast<Comprehension>();
+        if (c0->_set != c1->_set) return false;
+        if (!Expression::equal ( c0->_e, c1->_e )) return false;
+        if (!Expression::equal ( c0->_where, c1->_where )) return false;
+        if (c0->_g->size() != c1->_g->size()) return false;
+        for (unsigned int i=0; i<c0->_g->size(); i++) {
+          if (!Expression::equal( (*c0->_g)[i]->_in, (*c1->_g)[i]->_in ))
+            return false;
+          if ((*c0->_g)[i]->_v->size() != (*c1->_g)[i]->_v->size())
+            return false;
+          for (unsigned int j=0; j<(*c0->_g)[i]->_v->size(); j++) {
+            if (!Expression::equal ( (*(*c0->_g)[i]->_v)[j], 
+                                    (*(*c1->_g)[i]->_v)[j] ))
+              return false;
+          }
+        }
+        return true;
+      }
+    case Expression::E_ITE:
+      {
+        const ITE* i0 = e0->cast<ITE>();
+        const ITE* i1 = e1->cast<ITE>();
+        if (i0->_e_if->size() != i1->_e_if->size()) return false;
+        for (unsigned int i=i0->_e_if->size(); i--; ) {
+          if (!Expression::equal ( (*i0->_e_if)[i].first, 
+                                  (*i1->_e_if)[i].first))
+            return false;
+          if (!Expression::equal ( (*i0->_e_if)[i].second, 
+                                  (*i1->_e_if)[i].second))
+            return false;
+        }
+        if (!Expression::equal (i0->_e_else, i1->_e_else)) return false;
+        return true;
+      }
+    case Expression::E_BINOP:
+      {
+        const BinOp* b0 = e0->cast<BinOp>();
+        const BinOp* b1 = e1->cast<BinOp>();
+        if (b0->_op != b1->_op) return false;
+        if (!Expression::equal (b0->_e0, b1->_e0)) return false;
+        if (!Expression::equal (b0->_e1, b1->_e1)) return false;
+        return true;
+      }
+    case Expression::E_UNOP:
+      {
+        const UnOp* b0 = e0->cast<UnOp>();
+        const UnOp* b1 = e1->cast<UnOp>();
+        if (b0->_op != b1->_op) return false;
+        if (!Expression::equal (b0->_e0, b1->_e0)) return false;
+        return true;
+      }
+    case Expression::E_CALL:
+      {
+        const Call* c0 = e0->cast<Call>();
+        const Call* c1 = e1->cast<Call>();
+        if (c0->_id != c1->_id) return false;
+        if (c0->_decl != c1->_decl) return false;
+        if (c0->_args->size() != c1->_args->size()) return false;
+        for (unsigned int i=0; i<c0->_args->size(); i++)
+          if (!Expression::equal ( (*c0->_args)[i], (*c1->_args)[i] ))
+            return false;
+        return true;
+      }
+    case Expression::E_VARDECL:
+      {
+        const VarDecl* v0 = e0->cast<VarDecl>();
+        const VarDecl* v1 = e1->cast<VarDecl>();
+        if (!Expression::equal ( v0->_ti, v1->_ti )) return false;
+        if (v0->_id != v1->_id) return false;
+        if (!Expression::equal ( v0->_e, v1->_e )) return false;
+        return true;
+      }
+    case Expression::E_LET:
+      {
+        const Let* l0 = e0->cast<Let>();
+        const Let* l1 = e1->cast<Let>();
+        if (!Expression::equal ( l0->_in, l1->_in )) return false;
+        if (l0->_let->size() != l1->_let->size()) return false;
+        for (unsigned int i=l0->_let->size(); i--;)
+          if (!Expression::equal ( (*l0->_let)[i], (*l1->_let)[i]))
+            return false;
+        return true;
+      }
+    case Expression::E_ANN:
+      {
+        const Annotation* a0 = e0->cast<Annotation>();
+        const Annotation* a1 = e1->cast<Annotation>();
+        if (!Expression::equal ( a0->_e, a1->_e )) return false;
+        if (!Expression::equal ( a0->_a, a1->_a )) return false;
+        return true;
+      }
+    case Expression::E_TI:
+      {
+        const TypeInst* t0 = e0->cast<TypeInst>();
+        const TypeInst* t1 = e1->cast<TypeInst>();
+        if (t0->_ranges->size() != t1->_ranges->size()) return false;
+        for (unsigned int i=t0->_ranges->size(); i--;)
+          if (!Expression::equal ( (*t0->_ranges)[i], (*t1->_ranges)[i]))
+            return false;
+        if (!Expression::equal (t0->_domain, t1->_domain)) return false;
+        return true;
+      }
+    case Expression::E_TIID:
+      return false;
+    }
+  }    
 
 }

@@ -8,7 +8,7 @@ SOURCES=allocator ast context lexer.yy parser.tab  \
 	print printer/Document printer/Line printer/PrettyPrinter printer \
 	typecheck eval_par builtins
 
-HEADERS=allocator ast context exception model parser parser.tab print type typecheck printer eval_par builtins
+HEADERS=allocator ast context exception model parser parser.tab print type typecheck printer eval_par builtins hash
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
