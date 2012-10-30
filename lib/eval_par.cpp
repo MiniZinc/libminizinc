@@ -12,6 +12,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
 
@@ -595,6 +596,7 @@ namespace MiniZinc {
   class EvalVisitor : public ItemVisitor {
   protected:
     ASTContext& ctx;
+    ExpressionMap<VarDecl*> em;
   public:
     EvalVisitor(ASTContext& ctx0) : ctx(ctx0) {}
     void vVarDeclI(VarDeclI* i) {
@@ -604,10 +606,19 @@ namespace MiniZinc {
         if (i->_e->_e->_type.isbool())
           std::cerr << i->_e->_id.c_str() << " = " << eval_bool(ctx,i->_e->_e) << "\n";
         if (i->_e->_e->_type.isintset()) {
-          std::cerr << i->_e->_id.c_str() << " = {";
-          for (IntSetRanges ir(eval_intset(ctx,i->_e->_e)); ir(); ++ir)
-            std::cerr << ir.min() << ".." << ir.max() << ", ";
-          std::cerr << "}\n";
+          SetLit* sl = EvalSetLit::e(ctx,i->_e->_e);
+          auto it = em.find(sl);
+          std::cerr << i->_e->_id.c_str() << " = ";
+          if (it == em.end()) {
+            std::cerr << "{";
+            for (IntSetRanges ir(sl->_isv); ir(); ++ir)
+              std::cerr << ir.min() << ".." << ir.max() << ", ";
+            std::cerr << "}\n";
+            em.insert(sl, i->_e);
+          } else {
+            std::cerr << it->second->_id.c_str() << "\n";
+          }
+                    
         }
         
       }

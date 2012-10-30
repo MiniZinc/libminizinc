@@ -51,6 +51,7 @@ namespace MiniZinc {
     CtxString* ctxstr(void) const { return _s; }
 
     bool operator== (const CtxStringH& s) const;
+    bool operator!= (const CtxStringH& s) const;
     
     size_t hash(void) const;
     
@@ -201,7 +202,11 @@ namespace MiniZinc {
    */
   class CtxString {
   protected:
+    /// Hash value
+    size_t _hash;
+    /// String length
     unsigned int _n;
+    /// Character data
     char _s[1];
   public:
     static CtxString* a(const ASTContext& ctx, const std::string& s) {
@@ -209,12 +214,15 @@ namespace MiniZinc {
         ctx.alloc(sizeof(CtxString)+(s.size())));
       cs->_n = s.size();
       strncpy(cs->_s,s.c_str(),s.size()+1);
+      std::hash<std::string> h;
+      cs->_hash = h(s);
       return cs;
     }
     const char* c_str(void) const { return _s; }
     std::string str(void) const { return std::string(c_str()); }
     unsigned int size(void) const { return _n; }
     char operator[](unsigned int i) { assert(i<_n); return _s[i]; }
+    size_t hash(void) const { return _hash; }
   };
 
   inline
@@ -243,13 +251,14 @@ namespace MiniZinc {
     return size()==s.size() &&
       (size()==0 || strncmp(_s->c_str(),s._s->c_str(),size())==0);
   }
+  inline bool
+  CtxStringH::operator!= (const CtxStringH& s) const {
+    return !(*this == s);
+  }
   
   inline size_t
   CtxStringH::hash(void) const {
-    size_t h = 0;
-    for (unsigned int i = 0, e=size(); i != e; ++i)
-      h = h*33 + (*_s)[i];
-    return h;
+    return _s ? _s->hash() : 0;
   }
 
 }

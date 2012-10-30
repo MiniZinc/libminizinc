@@ -130,7 +130,23 @@ namespace MiniZinc {
     /// The %MiniZinc type of the expression
     Type _type;
 
+    /// The hash value of the expression
+    size_t _hash;
+
   protected:
+    /// Combination function for hash values
+    void cmb_hash(size_t h) {
+      _hash ^= h + 0x9e3779b9 + (_hash << 6) + (_hash >> 2);
+    }
+    /// Combination function for hash values
+    size_t cmb_hash(size_t seed, size_t h) {
+      seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      return seed;
+    }
+
+    /// Compute base hash value
+    void init_hash(void) { _hash = cmb_hash(0,_eid); }
+
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
       : _ann(NULL), _loc(loc), _eid(eid), _type(t) {}
@@ -162,6 +178,13 @@ namespace MiniZinc {
 
     /// Add annotation \a ann to the expression
     void annotate(Annotation* ann);
+    
+    /// Return hash value of \a e
+    static size_t hash(const Expression* e) {
+      return e==NULL ? 0 : e->_hash;
+    }
+    
+    static bool equal(const Expression* e0, const Expression* e1);
   };
 
   /**
@@ -184,6 +207,8 @@ namespace MiniZinc {
                          Expression* e);
     /// Add annotation \a a to end of list of annotations
     void merge(Annotation* a);
+    /// Recompute hash value
+    void rehash(void);
   };
   
   /// \brief Integer literal expression
@@ -200,6 +225,8 @@ namespace MiniZinc {
     /// Allocate from context
     static IntLit* a(const ASTContext& ctx, const Location& loc,
                      IntVal v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -214,6 +241,8 @@ namespace MiniZinc {
     /// Allocate from context
     static FloatLit* a(const ASTContext& ctx, const Location& loc,
                        FloatVal v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
@@ -234,6 +263,8 @@ namespace MiniZinc {
     static SetLit* a(const ASTContext& ctx,
                      const Location& loc,
                      IntSetVal* isv);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
@@ -249,6 +280,8 @@ namespace MiniZinc {
     /// Allocate from context
     static BoolLit* a(const ASTContext& ctx, const Location& loc,
                       bool v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief String literal expression
   class StringLit : public Expression {
@@ -264,6 +297,8 @@ namespace MiniZinc {
     /// Allocate from context
     static StringLit* a(const ASTContext& ctx, const Location& loc,
                         const std::string& v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Identifier expression
   class Id : public Expression {
@@ -281,6 +316,8 @@ namespace MiniZinc {
     /// Allocate from context (\a decl may be NULL)
     static Id* a(const ASTContext& ctx, const Location& loc,
                  const std::string& v, VarDecl* decl);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Type-inst identifier expression
   class TIId : public Expression {
@@ -296,6 +333,8 @@ namespace MiniZinc {
     /// Allocate from context
     static TIId* a(const ASTContext& ctx, const Location& loc,
                    const std::string& v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Anonymous variable expression
   class AnonVar : public Expression {
@@ -307,6 +346,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_ANON;
     /// Allocate from context
     static AnonVar* a(const ASTContext& ctx, const Location& loc);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Array literal expression
   class ArrayLit : public Expression {
@@ -338,6 +379,8 @@ namespace MiniZinc {
     static ArrayLit* a(const ASTContext& ctx,
                        const Location& loc,
                        const std::vector<std::vector<Expression*> >& v);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -356,6 +399,8 @@ namespace MiniZinc {
                           const Location& loc,
                           Expression* v,
                           const std::vector<Expression*>& idx);
+    /// Recompute hash value
+    void rehash(void);
   };
   /**
    * \brief Generators for comprehensions
@@ -415,6 +460,8 @@ namespace MiniZinc {
                             Expression* e,
                             Generators& g,
                             bool set);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
@@ -434,6 +481,8 @@ namespace MiniZinc {
     /// Allocate from context
     static ITE* a(const ASTContext& ctx, const Location& loc,
                   const std::vector<IfThen>& e_if, Expression* e_else);
+    /// Recompute hash value
+    void rehash(void);
   };
 
   /// Type of binary operators
@@ -465,6 +514,8 @@ namespace MiniZinc {
     static BinOp* a(const ASTContext& ctx, const Location& loc,
                     Expression* e0, BinOpType op, Expression* e1);
     CtxStringH opToString(void) const;
+    /// Recompute hash value
+    void rehash(void);
   };
 
   /// Type of unary operators
@@ -488,6 +539,8 @@ namespace MiniZinc {
     static UnOp* a(const ASTContext& ctx, const Location& loc,
                    UnOpType op, Expression* e);
     CtxStringH opToString(void) const;
+    /// Recompute hash value
+    void rehash(void);
   };
   
   /// \brief A predicate or function call expression
@@ -508,6 +561,8 @@ namespace MiniZinc {
                    const std::string& id,
                    const std::vector<Expression*>& args,
                    FunctionI* decl=NULL);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
@@ -532,6 +587,8 @@ namespace MiniZinc {
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
                       TypeInst* ti, const CtxStringH& id, Expression* e=NULL);
+    /// Recompute hash value
+    void rehash(void);
   };
   /// \brief %Let expression
   class Let : public Expression {
@@ -548,6 +605,8 @@ namespace MiniZinc {
     /// Allocate from context
     static Let* a(const ASTContext& ctx, const Location& loc,
                   const std::vector<Expression*>& let, Expression* in);
+    /// Recompute hash value
+    void rehash(void);
   };
 
   /// \brief Type-inst expression
@@ -575,6 +634,8 @@ namespace MiniZinc {
                    const std::vector<TypeInst*>& ranges);
     bool isarray(void) const { return _ranges && _ranges->size()>0; }
     bool hasTiVariable(void) const;
+    /// Recompute hash value
+    void rehash(void);
   };
 
   /**
