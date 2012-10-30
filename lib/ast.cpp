@@ -137,8 +137,7 @@ namespace MiniZinc {
   void
   StringLit::rehash(void) {
     init_hash();
-    std::hash<std::string> h;
-    cmb_hash(h(_v.str()));
+    cmb_hash(_v.hash());
   }
   StringLit*
   StringLit::a(const ASTContext& ctx, const Location& loc,
@@ -151,8 +150,7 @@ namespace MiniZinc {
   void
   Id::rehash(void) {
     init_hash();
-    std::hash<std::string> h;
-    cmb_hash(h(_v.str()));
+    cmb_hash(_v.hash());
   }
   Id*
   Id::a(const ASTContext& ctx, const Location& loc,
@@ -165,8 +163,7 @@ namespace MiniZinc {
   void
   TIId::rehash(void) {
     init_hash();
-    std::hash<std::string> h;
-    cmb_hash(h(_v.str()));
+    cmb_hash(_v.hash());
   }
   TIId*
   TIId::a(const ASTContext& ctx, const Location& loc,
@@ -484,8 +481,7 @@ namespace MiniZinc {
   void
   Call::rehash(void) {
     init_hash();
-    std::hash<std::string> h;
-    cmb_hash(h(_id.str()));
+    cmb_hash(_id.hash());
     std::hash<FunctionI*> hf;
     cmb_hash(hf(_decl));
     std::hash<unsigned int> hu;
@@ -509,9 +505,8 @@ namespace MiniZinc {
   void
   VarDecl::rehash(void) {
     init_hash();
-    std::hash<std::string> h;
     cmb_hash(Expression::hash(_ti));
-    cmb_hash(h(_id.str()));
+    cmb_hash(_id.hash());
     cmb_hash(Expression::hash(_e));
   }
   VarDecl*
