@@ -205,6 +205,9 @@ namespace MiniZinc {
     /// Allocate annotation \a e
     static Annotation* a(const ASTContext& ctx, const Location& loc,
                          Expression* e);
+    /// Allocate annotation \a e
+    static Annotation* a(const ASTContext& ctx, const Location& loc,
+                         Expression* e, Annotation* a);
     /// Add annotation \a a to end of list of annotations
     void merge(Annotation* a);
     /// Recompute hash value
@@ -259,6 +262,10 @@ namespace MiniZinc {
     static SetLit* a(const ASTContext& ctx,
                      const Location& loc,
                      const std::vector<Expression*>& v);
+    /// Allocate set \$f\{v1,\dots,vn\}\$f from context
+    static SetLit* a(const ASTContext& ctx,
+                     const Location& loc,
+                     CtxVec<Expression*>* v);
     /// Allocate set from context
     static SetLit* a(const ASTContext& ctx,
                      const Location& loc,
@@ -297,6 +304,9 @@ namespace MiniZinc {
     /// Allocate from context
     static StringLit* a(const ASTContext& ctx, const Location& loc,
                         const std::string& v);
+    /// Allocate from context
+    static StringLit* a(const ASTContext& ctx, const Location& loc,
+                        const CtxStringH& v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -316,6 +326,9 @@ namespace MiniZinc {
     /// Allocate from context (\a decl may be NULL)
     static Id* a(const ASTContext& ctx, const Location& loc,
                  const std::string& v, VarDecl* decl);
+    /// Allocate from context (\a decl may be NULL)
+    static Id* a(const ASTContext& ctx, const Location& loc,
+                 const CtxStringH& v, VarDecl* decl);
     /// Recompute hash value
     void rehash(void);
   };
@@ -399,6 +412,11 @@ namespace MiniZinc {
                           const Location& loc,
                           Expression* v,
                           const std::vector<Expression*>& idx);
+    /// Allocate from context
+    static ArrayAccess* a(const ASTContext& ctx,
+                          const Location& loc,
+                          Expression* v,
+                          CtxVec<Expression*>* idx);
     /// Recompute hash value
     void rehash(void);
   };
@@ -429,6 +447,10 @@ namespace MiniZinc {
     /// Allocate from context
     static Generator* a(const ASTContext& ctx,
                         const std::vector<CtxStringH>& v,
+                        Expression* in);
+    /// Allocate from context
+    static Generator* a(const ASTContext& ctx,
+                        CtxVec<VarDecl*>* v,
                         Expression* in);
   };
   /// \brief A list of generators with one where-expression
@@ -557,8 +579,14 @@ namespace MiniZinc {
     CtxVec<Expression*>* _args;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
+    /// Allocate from context
     static Call* a(const ASTContext& ctx, const Location& loc,
                    const std::string& id,
+                   const std::vector<Expression*>& args,
+                   FunctionI* decl=NULL);
+    /// Allocate from context
+    static Call* a(const ASTContext& ctx, const Location& loc,
+                   const CtxStringH& id,
                    const std::vector<Expression*>& args,
                    FunctionI* decl=NULL);
     /// Recompute hash value

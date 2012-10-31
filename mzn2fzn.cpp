@@ -19,6 +19,8 @@
 #include <minizinc/exception.hh>
 
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten.hh>
+#include <minizinc/copy.hh>
 #include <minizinc/builtins.hh>
 
 using namespace MiniZinc;
@@ -92,9 +94,12 @@ int main(int argc, char** argv) {
         if (typecheck) {
           MiniZinc::typecheck(ctx,m);
           MiniZinc::registerBuiltins(ctx);
-          // eval_int(ctx,m);
+
+          ASTContext fctx;
+          // Model* flat = MiniZinc::flatten(fctx, m);
+          Model* flat = copy(fctx, m);
           Printer p;
-          p.print(m,std::cerr);
+          p.print(flat,std::cout);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;

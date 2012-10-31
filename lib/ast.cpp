@@ -42,9 +42,17 @@ namespace MiniZinc {
   Annotation*
   Annotation::a(const ASTContext& ctx, const Location& loc,
                 Expression* e) {
-    Annotation* a = new (ctx) Annotation(loc,e);
-    a->rehash();
-    return a;
+    Annotation* ann = new (ctx) Annotation(loc,e);
+    ann->rehash();
+    return ann;
+  }
+  Annotation*
+  Annotation::a(const ASTContext& ctx, const Location& loc,
+                Expression* e, Annotation* a) {
+    Annotation* ann = new (ctx) Annotation(loc,e);
+    ann->_a = a;
+    ann->rehash();
+    return ann;
   }
   void
   Annotation::merge(Annotation* a) {
@@ -114,6 +122,16 @@ namespace MiniZinc {
   SetLit*
   SetLit::a(const ASTContext& ctx,
             const Location& loc,
+            CtxVec<Expression*>* v) {
+    SetLit* sl = new (ctx) SetLit(loc);
+    sl->_v = v;
+    sl->_isv = NULL;
+    sl->rehash();
+    return sl;
+  }
+  SetLit*
+  SetLit::a(const ASTContext& ctx,
+            const Location& loc,
             IntSetVal* isv) {
     SetLit* sl = new (ctx) SetLit(loc);
     sl->_v = NULL;
@@ -148,6 +166,13 @@ namespace MiniZinc {
     sl->rehash();
     return sl;
   }
+  StringLit*
+  StringLit::a(const ASTContext& ctx, const Location& loc,
+               const CtxStringH& v) {
+    StringLit* sl = new (ctx) StringLit(loc,v);
+    sl->rehash();
+    return sl;
+  }
 
   void
   Id::rehash(void) {
@@ -158,6 +183,13 @@ namespace MiniZinc {
   Id::a(const ASTContext& ctx, const Location& loc,
         const std::string& v, VarDecl* decl) {
     Id* id = new (ctx) Id(loc,CtxStringH(ctx,v),decl);
+    id->rehash();
+    return id;
+  }
+  Id*
+  Id::a(const ASTContext& ctx, const Location& loc,
+        const CtxStringH& v, VarDecl* decl) {
+    Id* id = new (ctx) Id(loc,v,decl);
     id->rehash();
     return id;
   }
@@ -261,6 +293,17 @@ namespace MiniZinc {
     aa->rehash();
     return aa;
   }
+  ArrayAccess*
+  ArrayAccess::a(const ASTContext& ctx,
+                 const Location& loc,
+                 Expression* v,
+                 CtxVec<Expression*>* idx) {
+    ArrayAccess* aa = new (ctx) ArrayAccess(loc);
+    aa->_v = v;
+    aa->_idx = idx;
+    aa->rehash();
+    return aa;
+  }
 
   Generator*
   Generator::a(const ASTContext& ctx,
@@ -284,6 +327,15 @@ namespace MiniZinc {
     for (const std::string& si : v)
       vv.push_back(CtxStringH(ctx,si));
     return a(ctx,vv,in);
+  }
+  Generator*
+  Generator::a(const ASTContext& ctx,
+               CtxVec<VarDecl*>* v,
+               Expression* in) {
+    Generator* g = new (ctx) Generator();
+    g->_v = v;
+    g->_in = in;
+    return g;
   }
 
   void
@@ -498,6 +550,18 @@ namespace MiniZinc {
           FunctionI* decl) {
     Call* c = new (ctx) Call(loc);
     c->_id = CtxStringH(ctx,id);
+    c->_args = CtxVec<Expression*>::a(ctx,args);
+    c->_decl = decl;
+    c->rehash();
+    return c;
+  }
+  Call*
+  Call::a(const ASTContext& ctx, const Location& loc,
+          const CtxStringH& id,
+          const std::vector<Expression*>& args,
+          FunctionI* decl) {
+    Call* c = new (ctx) Call(loc);
+    c->_id = id;
     c->_args = CtxVec<Expression*>::a(ctx,args);
     c->_decl = decl;
     c->rehash();
