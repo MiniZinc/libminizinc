@@ -373,9 +373,7 @@ namespace MiniZinc {
     void vBinOp(BinOp& bop) {
       std::vector<Expression*> args(2);
       args[0] = bop._e0; args[1] = bop._e1;
-      if (FunctionI* fi = _ctx.matchFn(bop.opToString(),args)) {
-        bop._type = fi->rtype(args);
-      } else if (bop._op==BOT_PLUSPLUS &&
+      if (bop._op==BOT_PLUSPLUS &&
         bop._e0->_type._dim==1 && bop._e1->_type._dim==1 &&
         bop._e0->_type._st==bop._e1->_type._st &&
         bop._e0->_type._bt==bop._e1->_type._bt) {
@@ -383,6 +381,8 @@ namespace MiniZinc {
           bop._type = bop._e0->_type;
         else
           bop._type = bop._e1->_type;
+      } else if (FunctionI* fi = _ctx.matchFn(bop.opToString(),args)) {
+        bop._type = fi->rtype(args);
       } else {
         throw TypeError(bop._loc,
           std::string("type error in operator application for ")+
