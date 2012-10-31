@@ -163,8 +163,6 @@ function var set of int: array_intersect(array[$T] of var set of int);
 
 % Array operations
 function int: length(array[$T] of any $U);
-function array[int] of any $T: '++'(array[int] of any $T,
-                                    array[int] of any $T);
 
 function set of int: index_set(array[int] of any $U);
 function set of int: index_set_1of2(array[int,int] of any $U);
