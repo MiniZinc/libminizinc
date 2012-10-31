@@ -14,7 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
-#include <minizinc/print.hh>
+#include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
 
@@ -92,7 +92,9 @@ int main(int argc, char** argv) {
         if (typecheck) {
           MiniZinc::typecheck(ctx,m);
           MiniZinc::registerBuiltins(ctx);
-          eval_int(ctx,m);
+          // eval_int(ctx,m);
+          Printer p;
+          p.print(m,std::cerr);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
@@ -115,8 +117,8 @@ int main(int argc, char** argv) {
         //   }
         //   flat->print(os,outputFundecls);
         // }
-      } catch (TypeError& e) {
-        std::cerr << "Error: " << e.msg() << std::endl;
+      } catch (LocationException& e) {
+        std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << "In file " << e.loc().filename->str() << ":"
             << e.loc().first_line << "c"
             << e.loc().first_column << "-"
@@ -124,14 +126,8 @@ int main(int argc, char** argv) {
             << e.loc().last_column
             << endl;
         exit(EXIT_FAILURE);
-      } catch (EvalError& e) {
-        std::cerr << "Error: " << e.msg() << std::endl;
-        std::cerr << "In file " << e.loc().filename->str() << ":"
-            << e.loc().first_line << "c"
-            << e.loc().first_column << "-"
-            << e.loc().last_line << "c"
-            << e.loc().last_column
-            << endl;
+      } catch (Exception& e) {
+        std::cerr << e.what() << ": " << e.msg() << std::endl;
         exit(EXIT_FAILURE);
       }
       delete m;
