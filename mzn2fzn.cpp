@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 
           ASTContext fctx;
           // Model* flat = MiniZinc::flatten(fctx, m);
-          Model* flat = copy(fctx, m);
+          Model* flat = flatten(fctx, m);
           Printer p;
           p.print(flat,std::cout);
         }
