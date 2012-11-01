@@ -24,6 +24,8 @@ namespace MiniZinc {
   ArrayLit* eval_array_lit(ASTContext& ctx, Expression* e);
 
   IntSetVal* eval_intset(ASTContext& ctx, Expression* e);
+
+  Expression* eval_par(ASTContext& ctx, Expression* e);
   
 }
 

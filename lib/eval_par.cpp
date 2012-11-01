@@ -13,6 +13,7 @@
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/copy.hh>
 
 namespace MiniZinc {
 
@@ -338,9 +339,6 @@ namespace MiniZinc {
         return ret;
       }
       break;
-    default:
-      assert(false);
-      break;
     }
   }
 
@@ -488,9 +486,6 @@ namespace MiniZinc {
         return ret;
       }
       break;
-    default:
-      assert(false);
-      break;
     }
   }
 
@@ -576,9 +571,6 @@ namespace MiniZinc {
         return ret;
       }
       break;
-    default:
-      assert(false);
-      break;
     }
   }
 
@@ -630,6 +622,98 @@ namespace MiniZinc {
     ItemIter<AssignVisitor>(av).run(m);
     EvalVisitor ev(ctx);
     ItemIter<EvalVisitor>(ev).run(m);
+  }
+
+  Expression* eval_par(ASTContext& ctx, Expression* e) {
+    if (e==NULL) return NULL;
+    switch (e->_eid) {
+    case Expression::E_ANON:
+    case Expression::E_TIID:
+      throw EvalError(e->_loc,"not a par expression");
+    case Expression::E_COMP:
+    case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = eval_array_lit(ctx,e);
+        for (unsigned int i=al->_v->size(); i--;)
+          (*al->_v)[i] = eval_par(ctx, (*al->_v)[i]);
+        return al;
+      }
+    case Expression::E_VARDECL:
+      {
+        VarDecl* vd = e->cast<VarDecl>();
+        if (vd->_e==NULL)
+          throw EvalError(vd->_loc,"not a par expression");
+        return eval_par(ctx,vd->_e);
+      }
+    case Expression::E_ANN:
+      {
+        Annotation* a = e->cast<Annotation>();
+        Annotation* r = Annotation::a(ctx,Location(),
+          eval_par(ctx,a->_e),
+          static_cast<Annotation*>(eval_par(ctx,a->_a)));
+        return r;
+      }
+    case Expression::E_TI:
+      {
+        TypeInst* t = e->cast<TypeInst>();
+        CtxVec<TypeInst*>* r = NULL;
+        if (t->_ranges) {
+          std::vector<TypeInst*> rv(t->_ranges->size());
+          for (unsigned int i=t->_ranges->size(); i--;)
+            rv[i] = static_cast<TypeInst*>(eval_par(ctx,(*t->_ranges)[i]));
+          r = CtxVec<TypeInst*>::a(ctx,rv);
+        }
+        return 
+          TypeInst::a(ctx,Location(),t->_type,eval_par(ctx,t->_domain),r);
+      }
+    case Expression::E_ID:
+      {
+        Id* id = e->cast<Id>();
+        if (id->_decl==NULL)
+          throw EvalError(e->_loc,"undefined identifier");
+        if (id->_decl->_e==NULL)
+          throw EvalError(e->_loc,"not a par expression");
+        return eval_par(ctx,id->_decl->_e);
+      }
+    case Expression::E_ITE:
+    case Expression::E_CALL:
+    case Expression::E_LET:
+    case Expression::E_BINOP:
+    case Expression::E_SETLIT:
+      {
+        if (e->_type._dim != 0) {
+          ArrayLit* al = eval_array_lit(ctx,e);
+          for (unsigned int i=al->_v->size(); i--;)
+            (*al->_v)[i] = eval_par(ctx, (*al->_v)[i]);
+          return al;
+        }
+        if (e->_type._st == Type::ST_SET) {
+          if (e->_type.isintset()) {
+            return EvalSetLit::e(ctx,e);
+          } else {
+            /// TODO
+            throw InternalError("not yet implemented");
+          }
+        }
+      }
+      // fall through!
+    case Expression::E_BOOLLIT:
+    case Expression::E_INTLIT: 
+    case Expression::E_FLOATLIT:
+    case Expression::E_STRINGLIT:
+    case Expression::E_UNOP:
+    case Expression::E_ARRAYACCESS:
+      {
+        switch (e->_type._bt) {
+        case Type::BT_BOOL: return EvalBoolLit::e(ctx,e);
+        case Type::BT_INT: return EvalIntLit::e(ctx,e);
+        case Type::BT_FLOAT: throw InternalError("not yet implemented");
+        case Type::BT_STRING: throw InternalError("not yet implemented");
+        case Type::BT_ANN: case Type::BT_BOT: case Type::BT_UNKNOWN:
+          throw EvalError(e->_loc,"not a par expression");
+        }
+      }
+    }
   }
 
 }
