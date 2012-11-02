@@ -74,13 +74,12 @@ namespace MiniZinc {
       return SetLit::a(ctx,e->_loc,eval_intset(ctx,e));
     }
   };
-  /// TODO: this does not make sense, we have to really evaluate the contents, as copying only copies ids but does not dereference them
-  class EvalCopy {
+  class EvalNone {
   public:
     typedef Expression* Val;
     typedef Expression* ArrayVal;
     static Expression* e(ASTContext& ctx, Expression* e) {
-      return copy(ctx,e);
+      return e;
     }
   };
 
@@ -96,7 +95,7 @@ namespace MiniZinc {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(ctx, e);
       ret = ArrayLit::a(ctx,e->_loc,a);
     } else {
-      std::vector<Expression*> a = eval_comp<EvalCopy>(ctx, e);
+      std::vector<Expression*> a = eval_comp<EvalNone>(ctx, e);
       ret = ArrayLit::a(ctx,e->_loc,a);
     }
     ret->_type = e->_type;

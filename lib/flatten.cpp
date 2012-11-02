@@ -119,7 +119,41 @@ namespace MiniZinc {
       }
       return NULL;
     } else if (vd==NULL) {
-      return e;
+      if (e==NULL) return NULL;
+      switch (e->_eid) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_ID:
+      case Expression::E_TIID:
+      case Expression::E_SETLIT:
+      case Expression::E_VARDECL:
+      case Expression::E_ANN:
+        return e;
+      case Expression::E_BINOP:
+      case Expression::E_UNOP:
+        return e; /// TODO: should not happen once operators are evaluated
+      case Expression::E_ARRAYACCESS:
+      case Expression::E_COMP:
+      case Expression::E_ITE:
+      case Expression::E_LET:
+      case Expression::E_TI:
+        assert(false && "unevaluated expression");
+        throw InternalError("unevaluated expression");
+      case Expression::E_ARRAYLIT:
+        return e;
+      case Expression::E_CALL:
+        {
+          /// TODO: handle array types
+          TypeInst* ti = TypeInst::a(env.ctx,Location(),e->_type);
+          VarDecl* vd = VarDecl::a(env.ctx,Location(),ti,env.genId("X"),e);
+          VarDeclI* nv = VarDeclI::a(env.ctx,Location(),vd);
+          env.m->addItem(nv);
+          return Id::a(env.ctx,Location(),vd->_id,vd);
+        }
+      }
     } else {
       if (vd->_e==NULL) {
         if (e==NULL) {
@@ -322,23 +356,29 @@ namespace MiniZinc {
         if (c->_decl == NULL)
           throw FlatteningError(e->_loc,"undefined function or predicate");
         if (c->_decl->_e==NULL) {
-          if (c->_decl->_builtins.e) {
-            ret = flat_exp(env,bctx,
-                           c->_decl->_builtins.e(env.ctx,c->_args),r,b);
+          /// For now assume that all builtins are total
+          std::vector<EE> args_ee(c->_args->size());
+          for (unsigned int i=c->_args->size(); i--;)
+            args_ee[i] = flat_exp(env,bctx,(*c->_args)[i],NULL,NULL);
+          std::vector<Expression*> args(args_ee.size());
+          for (unsigned int i=args_ee.size(); i--;)
+            args[i] = args_ee[i].r;
+          Call* cr = Call::a(env.ctx,Location(),c->_id.str(),args);
+          cr->_type = c->_type;
+          Env::Map::iterator cit = env.map.find(cr);
+          if (cit != env.map.end()) {
+            ret.b = bind(env,b,cit->second.b);
+            ret.r = bind(env,r,cit->second.r);
           } else {
-            if (bctx != C_ROOT)
-              throw FlatteningError(e->_loc,"only allowed in root context");
-            std::vector<Expression*> args(c->_args->size());
-            for (unsigned int i=c->_args->size(); i--;)
-              args[i] = flat_exp(env,bctx,(*c->_args)[i],NULL,constants.t).r;
-            Call* cr = Call::a(env.ctx,Location(),c->_id.str(),args);
-
-            Env::Map::iterator cit = env.map.find(cr);
-            if (cit != env.map.end()) {
-              ret.b = bind(env,b,cit->second.b);
-              ret.r = bind(env,r,cit->second.r);
+            if (c->_decl->_builtins.e) {
+              EE res = flat_exp(env,bctx,
+                                c->_decl->_builtins.e(env.ctx,cr->_args),r,b);
+              args_ee.push_back(res);
+              ret.b = conj(env,b,args_ee);
+              ret.r = bind(env,r,res.r);
+              env.map.insert(cr,ret);
             } else {
-              ret.b = bind(env,b,constants.lt);
+              ret.b = conj(env,b,args_ee);
               ret.r = bind(env,r,cr);
               env.map.insert(cr,ret);
             }
