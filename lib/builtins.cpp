@@ -136,7 +136,9 @@ namespace MiniZinc {
     }
     if (dim1d != al->_v->size())
       throw EvalError(al->_loc, "mismatch in array dimensions");
-    return ArrayLit::a(ctx, al->_loc, al->_v, dims);
+    ArrayLit* ret = ArrayLit::a(ctx, al->_loc, al->_v, dims);
+    ret->_type = al->_type;
+    return ret;
   }
   Expression* b_array1d(ASTContext& ctx, CtxVec<Expression*>* args) {
     return b_arrayXd(ctx,args,1);
@@ -164,6 +166,28 @@ namespace MiniZinc {
   
   IntVal b_bool2int(ASTContext& ctx, CtxVec<Expression*>* args) {
     return eval_bool(ctx, (*args)[0]) ? 1 : 0;
+  }
+
+  bool b_forall_par(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    for (unsigned int i=al->_v->size(); i--;)
+      if (!eval_bool(ctx,(*al->_v)[i]))
+        return false;
+    return true;
+  }
+  Expression* b_forall_var(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    assert(al->_v->size()!=0);
+    Expression* r = (*al->_v)[0];
+    for (unsigned int i=1; i<al->_v->size(); i++) {
+      r = BinOp::a(ctx,Location(),r,BOT_AND,(*al->_v)[i]);
+      r->_type = Type::varbool();
+    }
+    return r;
   }
 
   void registerBuiltins(ASTContext& ctx) {
@@ -284,6 +308,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool();
       rb(ctx, CtxStringH(ctx,"bool2int"), t, b_bool2int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varbool(-1);
+      rb(ctx, CtxStringH(ctx,"forall"), t, b_forall_var);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parbool(-1);
+      rb(ctx, CtxStringH(ctx,"forall"), t, b_forall_par);
     }
   }
   

@@ -116,8 +116,9 @@ namespace MiniZinc {
             break;
           }
         }
-        if (match)
+        if (match) {
           return fi;
+        }
       }
     }
     return NULL;

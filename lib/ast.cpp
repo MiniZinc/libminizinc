@@ -777,6 +777,7 @@ namespace MiniZinc {
           (*tii->_ranges)[0]->_domain->isa<TIId>()) {
         CtxStringH tiid = (*tii->_ranges)[0]->_domain->cast<TIId>()->_v;
         if (ta[i]->_type._dim<=0) {
+          assert(false);
           throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
             " must be an array index");
         }
@@ -851,8 +852,8 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       return e0->cast<StringLit>()->_v == e1->cast<StringLit>()->_v;
     case Expression::E_ID:
-      assert(e0->cast<Id>()->_decl != NULL);
-      return e0->cast<Id>()->_decl == e1->cast<Id>()->_decl;
+      // assert(e0->cast<Id>()->_decl != NULL);
+      return e0->cast<Id>()->_v == e1->cast<Id>()->_v;
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT:

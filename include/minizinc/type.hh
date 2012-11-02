@@ -144,7 +144,7 @@ namespace MiniZinc {
   public:
     bool isSubtypeOf(const Type& t) const {
       // either same dimension or t has variable dimension
-      if (_dim!=t._dim && t._dim!=-1)
+      if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
       // same type
       if (_ti==t._ti && _bt==t._bt && _st==t._st)

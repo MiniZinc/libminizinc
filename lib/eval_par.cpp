@@ -74,69 +74,33 @@ namespace MiniZinc {
       return SetLit::a(ctx,e->_loc,eval_intset(ctx,e));
     }
   };
-
-  template<class Eval>
-  void
-  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
-            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a);
-
-  template<class Eval>
-  void
-  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
-            int i, IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
-    (*(*e->_g)[gen]->_v)[id]->_e->cast<IntLit>()->_v = i;
-    if (id == (*e->_g)[gen]->_v->size()-1) {
-      if (gen == e->_g->size()-1) {
-        bool where = true;
-        if (e->_where != NULL) {
-          where = eval_bool(ctx, e->_where);
-        }
-        if (where) {
-          a.push_back(Eval::e(ctx,e->_e));
-        }
-      } else {
-        IntSetVal* nextin = eval_intset(ctx, (*e->_g)[gen+1]->_in);
-        eval_comp<Eval>(ctx,e,gen+1,0,nextin,a);
-      }
-    } else {
-      eval_comp<Eval>(ctx,e,gen,id+1,in,a);
+  /// TODO: this does not make sense, we have to really evaluate the contents, as copying only copies ids but does not dereference them
+  class EvalCopy {
+  public:
+    typedef Expression* Val;
+    typedef Expression* ArrayVal;
+    static Expression* e(ASTContext& ctx, Expression* e) {
+      return copy(ctx,e);
     }
-  }
-
-  template<class Eval>
-  void
-  eval_comp(ASTContext& ctx, Comprehension* e, int gen, int id,
-            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
-    IntSetRanges rsi(in);
-    Ranges::ToValues<IntSetRanges> rsv(rsi);
-    for (; rsv(); ++rsv) {
-      eval_comp<Eval>(ctx,e,gen,id,rsv.val(),in,a);
-    }
-  }
-
-  template<class Eval>
-  std::vector<typename Eval::ArrayVal>
-  eval_comp(ASTContext& ctx, Comprehension* e) {
-    std::vector<typename Eval::ArrayVal> a;
-    IntSetVal* in  = eval_intset(ctx, (*e->_g)[0]->_in);
-    eval_comp<Eval>(ctx,e,0,0,in,a);
-    return a;
-  }
+  };
 
   ArrayLit* eval_array_comp(ASTContext& ctx, Comprehension* e) {
+    ArrayLit* ret;
     if (e->_type == Type::parint(1)) {
       std::vector<Expression*> a = eval_comp<EvalIntLit>(ctx, e);
-      return ArrayLit::a(ctx,e->_loc,a);
-    }
-    if (e->_type == Type::parbool(1)) {
+      ret = ArrayLit::a(ctx,e->_loc,a);
+    } else if (e->_type == Type::parbool(1)) {
       std::vector<Expression*> a = eval_comp<EvalBoolLit>(ctx, e);
-      return ArrayLit::a(ctx,e->_loc,a);
-    }
-    if (e->_type == Type::parsetint(1)) {
+      ret = ArrayLit::a(ctx,e->_loc,a);
+    } else if (e->_type == Type::parsetint(1)) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(ctx, e);
-      return ArrayLit::a(ctx,e->_loc,a);
+      ret = ArrayLit::a(ctx,e->_loc,a);
+    } else {
+      std::vector<Expression*> a = eval_comp<EvalCopy>(ctx, e);
+      ret = ArrayLit::a(ctx,e->_loc,a);
     }
-    throw EvalError(e->_loc, "not supported yet");
+    ret->_type = e->_type;
+    return ret;
   }
   
   ArrayLit* eval_array_lit(ASTContext& ctx, Expression* e) {
@@ -180,7 +144,9 @@ namespace MiniZinc {
             v[i] = (*al0->_v)[i];
           for (unsigned int i=al1->_v->size(); i--;)
             v[al0->_v->size()+i] = (*al1->_v)[i];
-          return ArrayLit::a(ctx,e->_loc,v);
+          ArrayLit* ret = ArrayLit::a(ctx,e->_loc,v);
+          ret->_type = e->_type;
+          return ret;
         }
       }
       break;
@@ -213,22 +179,30 @@ namespace MiniZinc {
     assert(false);
   }
 
-  Expression* eval_arrayaccess(ASTContext& ctx, ArrayAccess* e) {
-    ArrayLit* al = eval_array_lit(ctx, e->_v);
-    assert(al->_dims->size() == e->_idx->size());
+  Expression* eval_arrayaccess(ASTContext& ctx, ArrayLit* al,
+                               const std::vector<IntVal>& dims) {
+    assert(al->_dims->size() == dims.size());
     int realidx = 0;
     int realdim = 1;
     for (unsigned int i=0; i<al->_dims->size(); i++)
       realdim *= (*al->_dims)[i].second-(*al->_dims)[i].first+1;
     for (unsigned int i=0; i<al->_dims->size(); i++) {
-      int ix = eval_int(ctx, (*e->_idx)[i]);
+      int ix = dims[i];
       if (ix < (*al->_dims)[i].first || ix > (*al->_dims)[i].second)
-        throw EvalError((*e->_idx)[i]->_loc, "array index out of bounds");
+        throw EvalError(al->_loc, "array index out of bounds");
       realdim /= (*al->_dims)[i].second-(*al->_dims)[i].first+1;
       realidx += (ix-(*al->_dims)[i].first)*realdim;
     }
     assert(realidx >= 0 && realidx <= al->_v->size());
     return (*al->_v)[realidx];
+  }
+  Expression* eval_arrayaccess(ASTContext& ctx, ArrayAccess* e) {
+    ArrayLit* al = eval_array_lit(ctx, e->_v);
+    std::vector<IntVal> dims(e->_idx->size());
+    for (unsigned int i=e->_idx->size(); i--;) {
+      dims[i] = eval_int(ctx, (*e->_idx)[i]);
+    }
+    return eval_arrayaccess(ctx,al,dims);
   }
 
   IntSetVal* eval_intset(ASTContext& ctx, Expression* e) {
@@ -360,6 +334,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
     case Expression::E_ANN:
     case Expression::E_TI:
+      assert(false);
       throw EvalError(e->_loc,"not a bool expression");
       break;
     case Expression::E_ID:
@@ -398,7 +373,9 @@ namespace MiniZinc {
           case BOT_OR: return v0||v1;
           case BOT_AND: return v0&&v1;
           case BOT_XOR: return v0^v1;
-          default: throw EvalError(e->_loc,"not a bool expression");
+          default:
+            assert(false);
+            throw EvalError(e->_loc,"not a bool expression");
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
           IntVal v0 = eval_int(ctx,bo->_e0);
@@ -410,7 +387,9 @@ namespace MiniZinc {
           case BOT_GQ: return v0>=v1;
           case BOT_EQ: return v0==v1;
           case BOT_NQ: return v0!=v1;
-          default: throw EvalError(e->_loc,"not a bool expression");
+          default:
+            assert(false);
+            throw EvalError(e->_loc,"not a bool expression");
           }
         } else if (bo->_e0->_type.isfloat() && bo->_e1->_type.isfloat()) {
           FloatVal v0 = eval_float(ctx,bo->_e0);
@@ -422,14 +401,18 @@ namespace MiniZinc {
           case BOT_GQ: return v0>=v1;
           case BOT_EQ: return v0==v1;
           case BOT_NQ: return v0!=v1;
-          default: throw EvalError(e->_loc,"not a bool expression");
+          default:
+            assert(false);
+            throw EvalError(e->_loc,"not a bool expression");
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isintset()) {
           IntVal v0 = eval_int(ctx,bo->_e0);
           IntSetVal* v1 = eval_intset(ctx,bo->_e1);
           switch (bo->_op) {
           case BOT_IN: return v1->contains(v0);
-          default: throw EvalError(e->_loc,"not a bool expression");
+          default:
+            assert(false);
+            throw EvalError(e->_loc,"not a bool expression");
           }
         } else if (bo->_e0->_type.isset() && bo->_e1->_type.isset()) {
           IntSetVal* v0 = eval_intset(ctx,bo->_e0);
@@ -445,9 +428,12 @@ namespace MiniZinc {
           case BOT_NQ: return !Ranges::equal(ir0,ir1);
           case BOT_SUBSET: return Ranges::subset(ir0,ir1);
           case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
-          default: throw EvalError(e->_loc,"not a bool expression");
+          default:
+            assert(false);
+            throw EvalError(e->_loc,"not a bool expression");
           }
         } else {
+          assert(false);
           throw EvalError(e->_loc, "not a bool expression");
         }
       }
@@ -458,7 +444,9 @@ namespace MiniZinc {
         bool v0 = eval_bool(ctx,uo->_e0);
         switch (uo->_op) {
         case UOT_NOT: return !v0;
-        default: throw EvalError(e->_loc,"not a bool expression");
+        default:
+          assert(false);
+          throw EvalError(e->_loc,"not a bool expression");
         }
       }
       break;
