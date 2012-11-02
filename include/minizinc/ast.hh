@@ -104,7 +104,11 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Location& loc) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    s << " in file " << loc.filename->str() << ":" << loc.first_line;
+    if (loc.filename==NULL) {
+      s << " in unknown file";
+    } else {
+      s << " in file " << loc.filename->str() << ":" << loc.first_line;
+    }
     return os << s.str();
   }
 
