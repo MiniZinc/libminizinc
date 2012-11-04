@@ -151,7 +151,13 @@ namespace MiniZinc {
           VarDecl* vd = VarDecl::a(env.ctx,Location(),ti,env.genId("X"),e);
           VarDeclI* nv = VarDeclI::a(env.ctx,Location(),vd);
           env.m->addItem(nv);
-          return Id::a(env.ctx,Location(),vd->_id,vd);
+          Id* id = Id::a(env.ctx,Location(),vd->_id,vd);
+          id->_type = e->_type;
+
+          EE ee(vd,NULL);
+          env.map.insert(id,ee);
+
+          return id;
         }
       }
     } else {
@@ -176,6 +182,9 @@ namespace MiniZinc {
       }
     }
   }
+
+  EE flat_exp(Env& env, BCtx bctx, Expression* e, VarDecl* r, VarDecl* b);
+
   Expression* conj(Env& env,VarDecl* b, const std::vector<EE>& e) {
     std::vector<Expression*> nontrue;
     for (const EE& ee : e) {
@@ -196,7 +205,8 @@ namespace MiniZinc {
       for (unsigned int i=2; i<nontrue.size(); i++) {
         ret = BinOp::a(env.ctx,Location(),ret,BOT_AND,nontrue[i]);
       }
-      return bind(env,b,ret);
+      EE rete = flat_exp(env,C_ROOT,ret,NULL,constants.t);
+      return bind(env,b,rete.r);
     }
   }
 
@@ -205,6 +215,70 @@ namespace MiniZinc {
     ///       needs the VarDecl to compute the actual dimensions of
     ///       array[int] expressions
     return eval_par(env.ctx,ti)->cast<TypeInst>();
+  }
+
+  std::string opToBuiltin(BinOp* op) {
+    std::string builtin;
+    if (op->_type.isint()) {
+      builtin = "int_";
+    } else if (op->_type.isbool()) {
+      builtin = "bool_";
+    } else if (op->_type.isset()) {
+      builtin = "set_";
+    } else {
+      throw InternalError("not yet implemented");
+    }
+    switch (op->_op) {
+    case BOT_PLUS:
+      return builtin+"plus";
+    case BOT_MINUS:
+      return builtin+"minus";
+    case BOT_MULT:
+      return builtin+"mult";
+    case BOT_DIV:
+      return builtin+"div";
+    case BOT_IDIV:
+      return builtin+"safediv";
+    case BOT_MOD:
+      return builtin+"mod";
+    case BOT_LE:
+      return builtin+"le";
+    case BOT_LQ:
+      return builtin+"lq";
+    case BOT_GR:
+      return builtin+"gr";
+    case BOT_GQ:
+      return builtin+"gq";
+    case BOT_EQ:
+      return builtin+"eq";
+    case BOT_NQ:
+      return builtin+"nq";
+    case BOT_IN:
+      return "set_in";
+    case BOT_SUBSET:
+      return "subset";
+    case BOT_SUPERSET:
+      return "superset";
+    case BOT_UNION:
+    case BOT_DIFF:
+    case BOT_SYMDIFF:
+    case BOT_INTERSECT:
+    case BOT_PLUSPLUS:
+    case BOT_DOTDOT:
+      throw InternalError("not yet implemented");
+    case BOT_EQUIV:
+      return builtin+"eq";
+    case BOT_IMPL:
+      return builtin+"lq";
+    case BOT_RIMPL:
+      return builtin+"gq";
+    case BOT_OR:
+      return builtin+"or";
+    case BOT_AND:
+      return builtin+"and";
+    case BOT_XOR:
+      return builtin+"xor";
+    }
   }
 
   EE flat_exp(Env& env, BCtx bctx, Expression* e, VarDecl* r, VarDecl* b) {
@@ -238,10 +312,9 @@ namespace MiniZinc {
           vd = it->second.r->cast<VarDecl>();
         }
         ret.b = bind(env,b,constants.lt);
-        if (vd->_e)
-          ret.r = bind(env,r,vd->_e);
-        else
-          ret.r = bind(env,r,Id::a(env.ctx,Location(),vd->_id,vd));
+        Id* nid = Id::a(env.ctx,Location(),vd->_id,vd);
+        nid->_type = id->_type;
+        ret.r = bind(env,r,nid);
       }
       break;
     case Expression::E_ANON:
@@ -343,8 +416,105 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_BINOP:
-      ret.b = bind(env,b,constants.lt);
-      ret.r = bind(env,r,copy(env.ctx,e));
+      {
+        BinOp* bo = e->cast<BinOp>();
+        switch (bo->_op) {
+        case BOT_PLUS:
+        case BOT_MINUS:
+        case BOT_MULT:
+        case BOT_IDIV:
+        case BOT_MOD:
+        case BOT_DIV:
+          {
+            EE e0 = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+            EE e1 = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+
+            std::vector<Expression*> args(2);
+            args[0] = e0.r; args[1] = e1.r;
+            Call* cc = Call::a(env.ctx,Location(),opToBuiltin(bo),args);
+            cc->_type = bo->_type;
+            ret.r = bind(env,NULL,cc);
+
+            std::vector<EE> ees(2);
+            ees[0].b = e0.b; ees[1].b = e1.b;
+            if (bo->_op==BOT_DIV) {
+              BinOp* nq = BinOp::a(env.ctx,Location(),e1.r,BOT_NQ,
+                                   IntLit::a(env.ctx,Location(),0));
+              if (e1.r->_type.ispar()) {
+                nq->_type = Type::parbool();
+              } else {
+                nq->_type = Type::varbool();
+              }
+              EE nqr = flat_exp(env,C_ROOT,nq,NULL,constants.t);
+              nqr.b = nqr.r;
+              ees.push_back(nqr);
+            }
+
+            ret.b = conj(env,b,ees);
+          }
+          break;
+
+        case BOT_LE:
+        case BOT_LQ:
+        case BOT_GR:
+        case BOT_GQ:
+        case BOT_EQ:
+        case BOT_NQ:
+        case BOT_IN:
+        case BOT_SUBSET:
+        case BOT_SUPERSET:
+          {
+            EE e0 = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+            EE e1 = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+            ret.b = bind(env,b,constants.lt);
+
+            std::vector<Expression*> args(2);
+            args[0] = e0.r; args[1] = e1.r;
+            Call* cc = Call::a(env.ctx,Location(),opToBuiltin(bo),args);
+            cc->_type = bo->_type;
+            Expression* re = bind(env,NULL,cc);
+            std::vector<EE> ees(3);
+            ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = re;
+            ret.r = conj(env,r,ees);
+          }
+          break;
+        case BOT_UNION:
+        case BOT_DIFF:
+        case BOT_SYMDIFF:
+        case BOT_INTERSECT:
+
+        case BOT_PLUSPLUS:
+
+        case BOT_EQUIV:
+        case BOT_IMPL:
+        case BOT_RIMPL:
+        case BOT_OR:
+          assert(false);
+          throw InternalError("not yet implemented");
+        case BOT_AND:
+          {
+            EE e0 = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+            EE e1 = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+            ret.b = bind(env,b,constants.lt);
+
+            std::vector<Expression*> args(2);
+            args[0] = e0.r; args[1] = e1.r;
+            Call* cc = Call::a(env.ctx,Location(),opToBuiltin(bo),args);
+            cc->_type = bo->_type;
+            Expression* re = bind(env,NULL,cc);
+            std::vector<EE> ees(3);
+            ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = re;
+            ret.r = conj(env,r,ees);
+          }
+          break;
+
+        case BOT_XOR:
+
+        case BOT_DOTDOT:
+          assert(false);
+          throw InternalError("not yet implemented");
+        }
+      }
       break;
     case Expression::E_UNOP:
       assert(false);
