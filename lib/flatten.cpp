@@ -108,9 +108,17 @@ namespace MiniZinc {
 
   bool isTotal(FunctionI* fi) {
     Annotation* a = fi->_ann;
+    Printer p;
     for (; a!=NULL; a=a->_a) {
-      if (a->_e && a->_e->_eid==Expression::E_STRINGLIT &&
-          a->_e->cast<StringLit>()->_v == "total")
+      VarDecl* vd = NULL;
+      Expression * ae = a->_e;
+      while (ae && ae->_eid==Expression::E_ID &&
+             ae->cast<Id>()->_decl!=NULL) {
+        vd = ae->cast<Id>()->_decl;
+        ae = vd->_e;
+      }
+      
+      if (vd && vd->_type.isann() && vd->_id == "total")
         return true;
     }
     return false;
