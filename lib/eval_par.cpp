@@ -146,6 +146,8 @@ namespace MiniZinc {
           ArrayLit* ret = ArrayLit::a(ctx,e->_loc,v);
           ret->_type = e->_type;
           return ret;
+        } else {
+          throw EvalError(e->_loc, "not an array expression");
         }
       }
       break;
