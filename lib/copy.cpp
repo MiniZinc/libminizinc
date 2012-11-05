@@ -149,6 +149,7 @@ namespace MiniZinc {
         }
         Id* c = Id::a(ctx,Location(),id_v,
                       static_cast<VarDecl*>(copy(ctx,m,id->_decl)));
+        c->_type = id->_type;
         m.insert(e,c);
         return c;
       }
@@ -176,6 +177,7 @@ namespace MiniZinc {
         for (unsigned int i=al->_dims->size(); i--;)
           dims[i] = (*al->_dims)[i];
         ArrayLit* c = ArrayLit::a(ctx,Location(),v,dims);
+        c->_type = al->_type;
         m.insert(e,c);
         return c;
       }
