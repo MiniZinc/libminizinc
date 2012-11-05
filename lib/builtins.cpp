@@ -189,6 +189,27 @@ namespace MiniZinc {
     }
     return r;
   }
+  bool b_exists_par(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    for (unsigned int i=al->_v->size(); i--;)
+      if (eval_bool(ctx,(*al->_v)[i]))
+        return true;
+    return false;
+  }
+  Expression* b_exists_var(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    assert(al->_v->size()!=0);
+    Expression* r = (*al->_v)[0];
+    for (unsigned int i=1; i<al->_v->size(); i++) {
+      r = BinOp::a(ctx,Location(),r,BOT_OR,(*al->_v)[i]);
+      r->_type = Type::varbool();
+    }
+    return r;
+  }
 
   void registerBuiltins(ASTContext& ctx) {
     
@@ -318,6 +339,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(ctx, CtxStringH(ctx,"forall"), t, b_forall_par);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varbool(-1);
+      rb(ctx, CtxStringH(ctx,"exists"), t, b_exists_var);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parbool(-1);
+      rb(ctx, CtxStringH(ctx,"exists"), t, b_exists_par);
     }
   }
   
