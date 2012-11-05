@@ -766,9 +766,15 @@ namespace MiniZinc {
           if (it->second._dim > 0) {
             throw TypeError(ta[i]->_loc,"type-inst variable $"+
               tiid.str()+" used in both array and non-array position");
-          } else if (it->second!=tiit) {
-            throw TypeError(ta[i]->_loc,"type-inst variable $"+
-              tiid.str()+" instantiated with different types");
+          } else {
+            Type tiit_par = tiit; tiit_par._ti = Type::TI_PAR;
+            Type its_par = it->second; its_par._ti = Type::TI_PAR;
+            if (tiit_par != its_par) {
+              throw TypeError(ta[i]->_loc,"type-inst variable $"+
+                tiid.str()+" instantiated with different types");
+            }
+            if (tiit.isvar())
+              it->second._ti = Type::TI_VAR;
           }
         }
       }
