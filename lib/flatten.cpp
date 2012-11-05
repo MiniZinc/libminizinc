@@ -269,7 +269,7 @@ namespace MiniZinc {
     case BOT_DIV:
       return builtin+"div";
     case BOT_IDIV:
-      return builtin+"safediv";
+      return builtin+"div";
     case BOT_MOD:
       return builtin+"mod";
     case BOT_LE:
@@ -484,11 +484,17 @@ namespace MiniZinc {
             args[0] = e0.r; args[1] = e1.r;
             Call* cc = Call::a(env.ctx,Location(),opToBuiltin(bo),args);
             cc->_type = bo->_type;
-            ret.r = bind(env,r,cc);
 
-            std::vector<EE> ees(2);
-            ees[0].b = e0.b; ees[1].b = e1.b;
-            ret.b = conj(env,b,ees);
+            if (FunctionI* fi = env.ctx.matchFn(cc->_id,args)) {
+              assert(cc->_type == fi->rtype(args));
+              cc->_decl = fi;
+              ret = flat_exp(env,bctx,cc,r,b);
+            } else {
+              ret.r = bind(env,r,cc);
+              std::vector<EE> ees(2);
+              ees[0].b = e0.b; ees[1].b = e1.b;
+              ret.b = conj(env,b,ees);
+            }
           }
           break;
 

@@ -17,6 +17,13 @@
 namespace MiniZinc {
 
   void
+  ASTContext::registerFn(ASTContext& ctx) {
+    if (!fnmap.empty())
+      throw InternalError("cannot initialize non-empty context");
+    fnmap = ctx.fnmap;
+  }
+
+  void
   ASTContext::registerFn(FunctionI* fi) {
     FnMap::iterator i_id = fnmap.find(fi->_id);
     if (i_id == fnmap.end()) {

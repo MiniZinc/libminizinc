@@ -135,6 +135,8 @@ namespace MiniZinc {
     }
     
     void registerFn(FunctionI* fi);
+    /// Copy register of functions from \a ctx
+    void registerFn(ASTContext& ctx);
     void sortFn(void);
     FunctionI* matchFn(const CtxStringH&id,
                        const std::vector<Expression*>& args) const;

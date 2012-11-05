@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
           MiniZinc::registerBuiltins(ctx);
 
           ASTContext fctx;
+          fctx.registerFn(ctx);
           // Model* flat = MiniZinc::flatten(fctx, m);
           Model* flat = flatten(fctx, m);
           Printer p;
