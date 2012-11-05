@@ -52,6 +52,9 @@ namespace MiniZinc {
 
     bool operator== (const CtxStringH& s) const;
     bool operator!= (const CtxStringH& s) const;
+
+    bool operator== (const std::string& s) const;
+    bool operator!= (const std::string& s) const;
     
     size_t hash(void) const;
     
@@ -253,6 +256,15 @@ namespace MiniZinc {
   }
   inline bool
   CtxStringH::operator!= (const CtxStringH& s) const {
+    return !(*this == s);
+  }
+  inline bool
+  CtxStringH::operator== (const std::string& s) const {
+    return size()==s.size() &&
+      (size()==0 || strncmp(_s->c_str(),s.c_str(),size())==0);
+  }
+  inline bool
+  CtxStringH::operator!= (const std::string& s) const {
     return !(*this == s);
   }
   
