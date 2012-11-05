@@ -43,6 +43,9 @@ namespace MiniZinc {
     iterator find(Expression* e) { return _m.find(e); }
     iterator begin(void) { return _m.begin(); }
     iterator end(void) { return _m.end(); }
+    void remove(Expression* e) {
+      _m.erase(e);
+    }
   };
   
 }
