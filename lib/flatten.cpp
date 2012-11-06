@@ -743,7 +743,6 @@ namespace MiniZinc {
               TypeInst* ti = copy(env.ctx,vd->_ti)->cast<TypeInst>();
               VarDecl* nvd = 
                 VarDecl::a(env.ctx,Location(),ti,env.genId("FromLet"));
-              nvd->_toplevel = false;
               VarDeclI* nv = VarDeclI::a(env.ctx,Location(),nvd);
               env.m->addItem(nv);
               Id* id = Id::a(env.ctx,Location(),nvd->_id,nvd);
