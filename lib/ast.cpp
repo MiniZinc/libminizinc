@@ -136,6 +136,7 @@ namespace MiniZinc {
     SetLit* sl = new (ctx) SetLit(loc);
     sl->_v = NULL;
     sl->_isv = isv;
+    sl->_type = Type::parsetint();
     sl->rehash();
     return sl;
   }
