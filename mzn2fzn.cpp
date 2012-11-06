@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
           fctx.registerFn(ctx);
           // Model* flat = MiniZinc::flatten(fctx, m);
           Model* flat = flatten(fctx, m);
+          oldflatzinc(fctx,flat);
           Printer p;
           p.print(flat,std::cout);
         }

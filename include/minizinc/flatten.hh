@@ -17,6 +17,8 @@
 namespace MiniZinc {
 
   Model* flatten(ASTContext& ctx, Model* m);
+
+  void oldflatzinc(ASTContext& ctx, Model* m);
   
 }
 

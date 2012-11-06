@@ -864,5 +864,64 @@ namespace MiniZinc {
     
     return flat;
   }
+
+  void oldflatzinc(ASTContext& ctx, Model* m) {
+    std::vector<ConstraintI*> cs;
+    class FV : public ItemVisitor {
+    public:
+      ASTContext& ctx;
+      std::vector<ConstraintI*>& cs;
+      FV(ASTContext& ctx0, std::vector<ConstraintI*>& cs0)
+        : ctx(ctx0), cs(cs0) {}
+      void vVarDeclI(VarDeclI* v) {
+        VarDecl* vd = v->_e;
+        if (vd->_type.isvar() && vd->_type.isbool()) {
+          if (Expression::equal(vd->_ti->_domain,constants.lt)) {
+            Expression* ve = vd->_e;
+            vd->_e = constants.lt;
+            vd->_ti->_domain = NULL;
+            if (ve != NULL)
+              cs.push_back(ConstraintI::a(ctx,Location(),ve));
+          } else {
+            if (vd->_e != NULL) {
+              if (vd->_e->_eid==Expression::E_CALL) {
+                Call* c = vd->_e->cast<Call>();
+                vd->_e = NULL;
+                c->_id = CtxStringH(ctx,c->_id.str()+"_reif");
+                std::vector<Expression*> args(c->_args->size());
+                std::copy(c->_args->begin(),c->_args->end(),args.begin());
+                args.push_back(Id::a(ctx,Location(),vd->_id,vd));
+                c->_args = CtxVec<Expression*>::a(ctx,args);
+                cs.push_back(ConstraintI::a(ctx,Location(),c));
+              } else {
+                assert(vd->_e->_eid == Expression::E_ID ||
+                       vd->_e->_eid == Expression::E_BOOLLIT);
+              }
+            }
+          }
+        } else if (vd->_type.isvar() && !vd->_type._dim > 0) {
+          if (vd->_e != NULL) {
+            if (vd->_e->_eid==Expression::E_CALL) {
+              Call* c = vd->_e->cast<Call>();
+              vd->_e = NULL;
+              std::vector<Expression*> args(c->_args->size());
+              std::copy(c->_args->begin(),c->_args->end(),args.begin());
+              args.push_back(Id::a(ctx,Location(),vd->_id,vd));
+              c->_args = CtxVec<Expression*>::a(ctx,args);
+              cs.push_back(ConstraintI::a(ctx,Location(),c));
+            } else {
+              assert(vd->_e->_eid == Expression::E_ID ||
+                     vd->_e->_eid == Expression::E_BOOLLIT);
+            }
+          }
+        }
+      }
+      void vConstraintI(ConstraintI* ci) {
+      }
+    } _fv(ctx,cs);
+    iterItems<FV>(_fv,m);
+    for (ConstraintI* ci : cs)
+      m->addItem(ci);
+  }
   
 }
