@@ -112,8 +112,8 @@ namespace MiniZinc {
             m.insert(s->_v,ce);
             c = SetLit::a(ctx,Location(),ce);
           }
-          
         }
+        c->_type = s->_type;
         m.insert(e,c);
         return c;
       }
