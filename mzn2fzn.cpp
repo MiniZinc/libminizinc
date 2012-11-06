@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 
     if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
-      // try {
+      try {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
@@ -124,20 +124,14 @@ int main(int argc, char** argv) {
         //   }
         //   flat->print(os,outputFundecls);
         // }
-      // } catch (LocationException& e) {
-      //   std::cerr << e.what() << ": " << e.msg() << std::endl;
-      //   std::cerr << e.loc() << std::endl;
-      //   // std::cerr << "In file " << e.loc().filename->str() << ":"
-      //   //     << e.loc().first_line << "c"
-      //   //     << e.loc().first_column << "-"
-      //   //     << e.loc().last_line << "c"
-      //   //     << e.loc().last_column
-      //   //     << endl;
-      //   exit(EXIT_FAILURE);
-      // } catch (Exception& e) {
-      //   std::cerr << e.what() << ": " << e.msg() << std::endl;
-      //   exit(EXIT_FAILURE);
-      // }
+      } catch (LocationException& e) {
+        std::cerr << e.what() << ": " << e.msg() << std::endl;
+        std::cerr << e.loc() << std::endl;
+        exit(EXIT_FAILURE);
+      } catch (Exception& e) {
+        std::cerr << e.what() << ": " << e.msg() << std::endl;
+        exit(EXIT_FAILURE);
+      }
       delete m;
     }
   }
