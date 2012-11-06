@@ -803,6 +803,7 @@ namespace MiniZinc {
               ee = EE(nvd,NULL);
               env.map.insert(id,ee);
               vd->_e = id;
+              (void) flat_exp(env,C_ROOT,id,NULL,constants.t);
             } else {
               ee = flat_exp(env,bctx,vd->_e,NULL,NULL);
               cs.push_back(ee);
@@ -946,7 +947,7 @@ namespace MiniZinc {
               }
             }
           }
-        } else if (vd->_type.isvar() && !vd->_type._dim > 0) {
+        } else if (vd->_type.isvar() && vd->_type._dim==0) {
           if (vd->_e != NULL) {
             if (vd->_e->_eid==Expression::E_CALL) {
               Call* c = vd->_e->cast<Call>();
@@ -961,6 +962,28 @@ namespace MiniZinc {
                      vd->_e->_eid == Expression::E_BOOLLIT);
             }
           }
+        } else if (vd->_type._dim==1 &&
+                   vd->_ti->_ranges != NULL &&
+                   vd->_ti->_ranges->size()==1 &&
+                   (*vd->_ti->_ranges)[0]->_domain==NULL) {
+          assert(vd->_e != NULL);
+          ArrayLit* al = NULL;
+          Expression* e = vd->_e;
+          while (al==NULL) {
+            switch (e->_eid) {
+            case Expression::E_ARRAYLIT:
+              al = e->cast<ArrayLit>();
+              break;
+            case Expression::E_ID:
+              e = e->cast<Id>()->_decl;
+            default:
+              assert(false);
+            }
+          }
+          IntSetVal* isv = IntSetVal::a(ctx,(*al->_dims)[0].first,
+                                        (*al->_dims)[0].second);
+          (*vd->_ti->_ranges)[0]->_domain =
+            SetLit::a(ctx,Location(),isv);
         }
       }
       void vConstraintI(ConstraintI* ci) {
@@ -969,6 +992,43 @@ namespace MiniZinc {
     iterItems<FV>(_fv,m);
     for (ConstraintI* ci : cs)
       m->addItem(ci);
+    
+    class Cmp {
+    public:
+      bool operator() (Item* i, Item* j) {
+        if (i->_iid==Item::II_SOL) {
+          assert(j->_iid != i->_iid);
+          return false;
+        }
+        if (j->_iid==Item::II_SOL) {
+          assert(j->_iid != i->_iid);
+          return true;
+        }
+        if (i->_iid==Item::II_VD) {
+          if (j->_iid != i->_iid)
+            return true;
+          if (i->cast<VarDeclI>()->_e->_type._dim == 0 &&
+              j->cast<VarDeclI>()->_e->_type._dim != 0)
+            return true;
+          if (i->cast<VarDeclI>()->_e->_e==NULL &&
+              j->cast<VarDeclI>()->_e->_e != NULL)
+            return true;
+        }
+        if (j->_iid==Item::II_VD) {
+          if (j->_iid != i->_iid)
+            return false;
+          if (j->cast<VarDeclI>()->_e->_type._dim == 0 &&
+              i->cast<VarDeclI>()->_e->_type._dim != 0)
+            return false;
+          if (j->cast<VarDeclI>()->_e->_e==NULL &&
+              i->cast<VarDeclI>()->_e->_e != NULL)
+            return false;
+        }
+        return i<j;
+      }
+    } _cmp;
+    std::sort(m->_items.begin(),m->_items.end(),_cmp);
+  
   }
   
 }
