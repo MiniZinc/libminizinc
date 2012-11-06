@@ -259,6 +259,7 @@ namespace MiniZinc {
           m.insert(ca->_id,id_v);
         }
         Call* c = Call::a(ctx,Location(),id_v,args);
+        c->_decl = ca->_decl;
         m.insert(e,c);
         return c;
       }
