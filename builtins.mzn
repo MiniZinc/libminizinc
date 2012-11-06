@@ -60,6 +60,7 @@ function any $T: min(array[$U] of any $T);
 function any $T: max(any $T, any $T);
 function any $T: max(array[$U] of any $T);
 function int: min(set of int);
+function int: max(set of int);
 
 function int: abs(int);
 function var int: abs(var int);
@@ -248,6 +249,12 @@ function array[$U] of float: lb(array[$U] of var float);
 function array[$U] of float: ub(array[$U] of var float);
 function array[$U] of set of int: lb(array[$U] of var set of int);
 function array[$U] of set of int: ub(array[$U] of var set of int);
+function int: lb_array(array[$U] of var int);
+function int: ub_array(array[$U] of var int);
+function float: lb_array(array[$U] of var float);
+function float: ub_array(array[$U] of var float);
+function set of int: lb_array(array[$U] of var set of int);
+function set of int: ub_array(array[$U] of var set of int);
 function set of int: dom(var int);
 function set of int: dom_array(array[$T] of var int);
 function int: dom_size(var int);
@@ -259,3 +266,5 @@ function bool: assert(bool, string);
 function any $T: trace(string, any $T);
 function $T: fix(any $T);
 function bool: is_fixed(any $T);
+
+function bool: abort(string);
