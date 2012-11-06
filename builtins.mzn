@@ -134,7 +134,7 @@ function     bool: iffall(array[$T] of     bool);
 function var bool: iffall(array[$T] of var bool);
 
 % Set operations
-function     bool: 'in'(     $T,     set of $T);
+function     bool: 'in'(    int,     set of int);
 function var bool: 'in'(var int, var set of int);
 
 function     bool: 'subset'(    set of $T,      set of $T);
