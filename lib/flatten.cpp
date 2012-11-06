@@ -600,11 +600,58 @@ namespace MiniZinc {
         case BOT_DIFF:
         case BOT_SYMDIFF:
         case BOT_INTERSECT:
-
-        case BOT_PLUSPLUS:
           assert(false);
           throw InternalError("not yet implemented");
 
+        case BOT_PLUSPLUS:
+          {
+            std::vector<EE> ee(2);
+            EE eev = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+            ee[0] = eev;
+            ArrayLit* al;
+            if (eev.r->isa<ArrayLit>()) {
+              al = eev.r->cast<ArrayLit>();
+            } else {
+              Id* id = eev.r->cast<Id>();
+              if (id->_decl==NULL) {
+                assert(false);
+                throw InternalError("undefined identifier");
+              }
+              if (id->_decl->_e==NULL) {
+                assert(false);
+                throw InternalError("array without initialiser not supported");
+              }
+              al = id->_decl->_e->cast<ArrayLit>();
+            }
+            ArrayLit* al0 = al;
+            eev = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+            ee[1] = eev;
+            if (eev.r->isa<ArrayLit>()) {
+              al = eev.r->cast<ArrayLit>();
+            } else {
+              Id* id = eev.r->cast<Id>();
+              if (id->_decl==NULL) {
+                assert(false);
+                throw InternalError("undefined identifier");
+              }
+              if (id->_decl->_e==NULL) {
+                assert(false);
+                throw InternalError("array without initialiser not supported");
+              }
+              al = id->_decl->_e->cast<ArrayLit>();
+            }
+            ArrayLit* al1 = al;
+            std::vector<Expression*> v(al0->_v->size()+al1->_v->size());
+            for (unsigned int i=al0->_v->size(); i--;)
+              v[i] = (*al0->_v)[i];
+            for (unsigned int i=al1->_v->size(); i--;)
+              v[al0->_v->size()+i] = (*al1->_v)[i];
+            ArrayLit* alret = ArrayLit::a(env.ctx,e->_loc,v);
+            alret->_type = e->_type;
+            ret.b = conj(env,b,ee);
+            ret.r = bind(env,r,alret);
+          }
+          break;
 
         case BOT_DOTDOT:
           assert(false);
