@@ -169,6 +169,8 @@ namespace MiniZinc {
         return e;
       case Expression::E_CALL:
         {
+          if (e->_type.isann())
+            return e;
           /// TODO: handle array types
           TypeInst* ti = TypeInst::a(env.ctx,Location(),e->_type);
           VarDecl* vd = VarDecl::a(env.ctx,Location(),ti,env.genId("X"),e);
@@ -347,12 +349,39 @@ namespace MiniZinc {
         if (vd->_e!=NULL) {
           switch (vd->_e->_eid) {
           case Expression::E_INTLIT:
+          case Expression::E_BOOLLIT:
           case Expression::E_FLOATLIT:
+          case Expression::E_SETLIT:
+          case Expression::E_ARRAYLIT:
           case Expression::E_ID:
             rete = vd->_e;
             break;
           default: break;
           }
+        } else if (vd->_ti->_ranges != NULL) {
+          // create fresh variables and array literal
+          std::vector<std::pair<int,int> > dims;
+          TypeInst* vti =
+            TypeInst::a(env.ctx,Location(),vd->_ti->_type,vd->_ti->_domain);
+          std::vector<Expression*> elems;
+          for (TypeInst* ti : *vd->_ti->_ranges) {
+            if (ti->_domain==NULL)
+              throw FlatteningError(ti->_loc,"array dimensions unknown");
+            IntSetVal* isv = eval_intset(env.ctx,ti->_domain);
+            if (isv->size() != 1)
+              throw FlatteningError(ti->_loc,"invalid array index set");
+            dims.push_back(std::pair<int,int>(isv->min(0),isv->max(0)));
+            for (int i=isv->min(0); i<=isv->max(0); i++) {
+              CtxStringH nid = env.genId(vd->_id.str());
+              VarDecl* nvd = VarDecl::a(env.ctx,Location(),vti,nid);
+              (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
+              Id* id = Id::a(env.ctx,Location(),nid,nvd);
+              elems.push_back(id);
+            }
+          }
+          ArrayLit* al = ArrayLit::a(env.ctx,Location(),elems,dims);
+          al->_type = vd->_type;
+          vd->_e = al;
         }
         if (rete==NULL) {
           rete = Id::a(env.ctx,Location(),vd->_id,vd);
@@ -761,8 +790,14 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_ANN:
-      assert(false);
-      throw InternalError("not supported yet");
+      {
+        Annotation* ann = e->cast<Annotation>();
+        EE ee = flat_exp(env,C_ROOT,ann->_e,NULL,constants.t);
+        EE ea = flat_exp(env,C_ROOT,ann->_a,NULL,constants.t);
+        ret.r = Annotation::a(env.ctx,Location(),ee.r,
+                              static_cast<Annotation*>(ea.r));
+        ret.b = b;
+      }
       break;
     case Expression::E_TI:
       assert(false);
