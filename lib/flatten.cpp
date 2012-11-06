@@ -342,7 +342,10 @@ namespace MiniZinc {
           vd = flat_exp(env,C_ROOT,id->_decl,NULL,constants.t).r
                ->cast<VarDecl>();
         } else {
-          vd = it->second.r->cast<VarDecl>();
+          if (it->second.r->isa<VarDecl>())
+            vd = it->second.r->cast<VarDecl>();
+          else
+            vd = it->second.r->cast<Id>()->_decl;
         }
         ret.b = bind(env,b,constants.lt);
         Expression* rete = NULL;
@@ -374,6 +377,7 @@ namespace MiniZinc {
               VarDecl* nvd = VarDecl::a(env.ctx,Location(),vti,nid);
               (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
               Id* id = Id::a(env.ctx,Location(),nid,nvd);
+              id->_type = vti->_type;
               elems.push_back(id);
             }
           }
@@ -385,7 +389,7 @@ namespace MiniZinc {
           if (!vd->_toplevel) {
             // create new VarDecl in toplevel
             VarDecl* nvd = 
-              VarDecl::a(env.ctx,Location(),vd->_ti,
+              VarDecl::a(env.ctx,Location(),eval_typeinst(env,vd->_ti),
                          env.genId(vd->_id.str()),vd->_e);
             VarDeclI* ni = VarDeclI::a(env.ctx,Location(),nvd);
             env.m->addItem(ni);
@@ -736,35 +740,36 @@ namespace MiniZinc {
         for (Expression* le : *let->_let) {
           if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
             env.ctx.trail(vd);
+            EE ee;
             if (!vd->_e) {
               if (bctx==C_NEG || bctx==C_MIX)
                 throw FlatteningError(vd->_loc,
                   "free variable in non-positive context");
-              TypeInst* ti = copy(env.ctx,vd->_ti)->cast<TypeInst>();
+              TypeInst* ti = eval_typeinst(env,vd->_ti);
               VarDecl* nvd = 
                 VarDecl::a(env.ctx,Location(),ti,env.genId("FromLet"));
+              nvd->_type = vd->_type;
               VarDeclI* nv = VarDeclI::a(env.ctx,Location(),nvd);
               env.m->addItem(nv);
               Id* id = Id::a(env.ctx,Location(),nvd->_id,nvd);
-              id->_type = e->_type;
-              EE ee(nvd,NULL);
+              id->_type = vd->_type;
+              ee = EE(nvd,NULL);
               env.map.insert(id,ee);
               vd->_e = id;
-
-              id = Id::a(env.ctx,Location(),vd->_id,NULL);
-              id->_type = e->_type;
-              Env::Map::iterator it = env.map.find(id);
-              if (it==env.map.end()) {
-                idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
-                env.map.insert(id,ee);
-              } else {
-                idmap.push_back(std::pair<Id*,Expression*>(id,it->second.r));
-                it->second.r = vd;
-              }
             } else {
-              EE ee = flat_exp(env,bctx,vd->_e,NULL,NULL);
+              ee = flat_exp(env,bctx,vd->_e,NULL,NULL);
               cs.push_back(ee);
               vd->_e = ee.r;
+            }
+            Id* id = Id::a(env.ctx,Location(),vd->_id,NULL);
+            id->_type = vd->_type;
+            Env::Map::iterator it = env.map.find(id);
+            if (it==env.map.end()) {
+              idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
+              env.map.insert(id,ee);
+            } else {
+              idmap.push_back(std::pair<Id*,Expression*>(id,it->second.r));
+              it->second.r = vd;
             }
           } else {
             EE ee = flat_exp(env,bctx,le,NULL,constants.t);
