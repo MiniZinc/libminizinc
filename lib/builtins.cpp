@@ -123,6 +123,29 @@ namespace MiniZinc {
     return b_index_set(ctx,args,6);
   }
 
+  IntSetVal* b_ub_set(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    Expression* e = (*args)[0];
+    for (;;) {
+      switch (e->_eid) {
+      case Expression::E_SETLIT: return eval_intset(ctx,e);
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            return eval_intset(ctx,id->_decl->_ti->_domain);
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to ub");
+      }
+    }
+  }
+
   ArrayLit* b_arrayXd(ASTContext& ctx, CtxVec<Expression*>* args, int d) {
     ArrayLit* al = eval_array_lit(ctx, (*args)[d]);
     std::vector<std::pair<int,int> > dims(d);
@@ -349,6 +372,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(ctx, CtxStringH(ctx,"exists"), t, b_exists_par);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varsetint();
+      rb(ctx, CtxStringH(ctx,"ub"), t, b_ub_set);
     }
   }
   
