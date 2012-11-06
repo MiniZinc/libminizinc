@@ -146,6 +146,8 @@ namespace MiniZinc {
       vdtrail.back().v->_e = vdtrail.back().e;
       vdtrail.pop_back();
     }
+    if (!vdtrail.empty())
+      vdtrail.back().mark = false;
   }
   void
   ASTContext::push_allocator(int a) {
