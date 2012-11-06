@@ -351,8 +351,6 @@ namespace MiniZinc {
           case Expression::E_INTLIT:
           case Expression::E_BOOLLIT:
           case Expression::E_FLOATLIT:
-          case Expression::E_SETLIT:
-          case Expression::E_ARRAYLIT:
           case Expression::E_ID:
             rete = vd->_e;
             break;
@@ -384,6 +382,15 @@ namespace MiniZinc {
           vd->_e = al;
         }
         if (rete==NULL) {
+          if (!vd->_toplevel) {
+            // create new VarDecl in toplevel
+            VarDecl* nvd = 
+              VarDecl::a(env.ctx,Location(),vd->_ti,
+                         env.genId(vd->_id.str()),vd->_e);
+            VarDeclI* ni = VarDeclI::a(env.ctx,Location(),nvd);
+            env.m->addItem(ni);
+            vd = nvd;
+          }
           rete = Id::a(env.ctx,Location(),vd->_id,vd);
           rete->_type = id->_type;
         }
@@ -736,6 +743,7 @@ namespace MiniZinc {
               TypeInst* ti = copy(env.ctx,vd->_ti)->cast<TypeInst>();
               VarDecl* nvd = 
                 VarDecl::a(env.ctx,Location(),ti,env.genId("FromLet"));
+              nvd->_toplevel = false;
               VarDeclI* nv = VarDeclI::a(env.ctx,Location(),nvd);
               env.m->addItem(nv);
               Id* id = Id::a(env.ctx,Location(),nvd->_id,nvd);

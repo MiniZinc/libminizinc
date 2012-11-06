@@ -601,7 +601,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     VarDecl(const Location& loc, const Type& t)
-     : Expression(loc,E_VARDECL,t) {}
+     : Expression(loc,E_VARDECL,t), _toplevel(true) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
@@ -613,6 +613,8 @@ namespace MiniZinc {
     Expression* _e;
     /// Allocation context
     int _allocator;
+    /// Whether variable is declared in toplevel context
+    bool _toplevel;
     /// Allocate from context
     static VarDecl* a(const ASTContext& ctx, const Location& loc,
                       TypeInst* ti, const std::string& id, Expression* e=NULL);

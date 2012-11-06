@@ -275,6 +275,8 @@ namespace MiniZinc {
         VarDecl* c = VarDecl::a(ctx,Location(),
           static_cast<TypeInst*>(copy(ctx,m,vd->_ti)),
           id_v,copy(ctx,m,vd->_e));
+        c->_toplevel = vd->_toplevel;
+        c->_type = vd->_type;
         /// TODO: what about c->_allocator ?
         m.insert(e,c);
         return c;
