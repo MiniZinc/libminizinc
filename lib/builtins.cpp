@@ -146,6 +146,71 @@ namespace MiniZinc {
     }
   }
 
+  IntSetVal* b_dom_varint(ASTContext& ctx, Expression* e) {
+    for (;;) {
+      switch (e->_eid) {
+      case Expression::E_INTLIT:
+        {
+          IntVal v = e->cast<IntLit>()->_v;
+          return IntSetVal::a(ctx,v,v);
+        }
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            return eval_intset(ctx,id->_decl->_ti->_domain);
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to dom");
+      }
+    }
+  }
+  IntSetVal* b_dom_varint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    return b_dom_varint(ctx,(*args)[0]);
+  }
+
+  IntSetVal* b_dom_array(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    Expression* ae = (*args)[0];
+    ArrayLit* al = NULL;
+    while (al==NULL) {
+      switch (ae->_eid) {
+      case Expression::E_ARRAYLIT:
+        al = ae->cast<ArrayLit>();
+        break;
+      case Expression::E_ID:
+        {
+          Id* id = ae->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            throw EvalError(id->_loc,"array without initialiser");
+          else
+            ae = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(ae->_loc,"invalid argument to ub");
+      }
+    }
+    if (al->_v->size()==0)
+      return IntSetVal::a(ctx);
+    IntSetVal* isv = b_dom_varint(ctx,(*al->_v)[0]);
+    for (unsigned int i=1; i<al->_v->size(); i++) {
+      IntSetRanges isr(isv);
+      IntSetRanges r(b_dom_varint(ctx,(*al->_v)[i]));
+      Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
+      isv = IntSetVal::ai(ctx,u);
+    }
+    return isv;
+  }
+
   ArrayLit* b_arrayXd(ASTContext& ctx, CtxVec<Expression*>* args, int d) {
     ArrayLit* al = eval_array_lit(ctx, (*args)[d]);
     std::vector<std::pair<int,int> > dims(d);
@@ -377,6 +442,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
       rb(ctx, CtxStringH(ctx,"ub"), t, b_ub_set);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(ctx, CtxStringH(ctx,"dom"), t, b_dom_varint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      rb(ctx, CtxStringH(ctx,"dom_array"), t, b_dom_array);
     }
   }
   
