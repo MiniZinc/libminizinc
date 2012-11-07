@@ -660,6 +660,7 @@ namespace MiniZinc {
               const CtxStringH& f) {
     IncludeI* i = new (ctx) IncludeI(loc);
     i->_f = f;
+    i->_m = NULL;
     return i;
   }
 
