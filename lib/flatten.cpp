@@ -174,6 +174,7 @@ namespace MiniZinc {
           /// TODO: handle array types
           TypeInst* ti = TypeInst::a(env.ctx,Location(),e->_type);
           VarDecl* vd = VarDecl::a(env.ctx,Location(),ti,env.genId("X"),e);
+          vd->_introduced = true;
           VarDeclI* nv = VarDeclI::a(env.ctx,Location(),vd);
           env.m->addItem(nv);
           Id* id = Id::a(env.ctx,Location(),vd->_id,vd);
@@ -395,6 +396,7 @@ namespace MiniZinc {
             VarDecl* nvd = 
               VarDecl::a(env.ctx,Location(),eval_typeinst(env,vd->_ti),
                          env.genId(vd->_id.str()),vd->_e);
+            nvd->_introduced = true;
             VarDeclI* ni = VarDeclI::a(env.ctx,Location(),nvd);
             env.m->addItem(ni);
             vd = nvd;
@@ -544,7 +546,7 @@ namespace MiniZinc {
 
         case BOT_AND:
           {
-            if (bctx==C_ROOT && r==constants.t) {
+            if (r==constants.t) {
               (void) flat_exp(env,C_ROOT,bo->_e0,constants.t,constants.t);
               (void) flat_exp(env,C_ROOT,bo->_e1,constants.t,constants.t);
               break;
@@ -799,6 +801,7 @@ namespace MiniZinc {
               TypeInst* ti = eval_typeinst(env,vd->_ti);
               VarDecl* nvd = 
                 VarDecl::a(env.ctx,Location(),ti,env.genId("FromLet"));
+              nvd->_introduced = true;
               nvd->_type = vd->_type;
               VarDeclI* nv = VarDeclI::a(env.ctx,Location(),nvd);
               env.m->addItem(nv);
@@ -1033,6 +1036,10 @@ namespace MiniZinc {
     } _cmp;
     std::sort(m->_items.begin(),m->_items.end(),_cmp);
   
+  }
+
+  void optimize(ASTContext& ctx, Model* m) {
+    
   }
   
 }
