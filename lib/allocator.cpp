@@ -19,7 +19,8 @@ namespace MiniZinc {
   void
   BlockAllocator::allocateBlock(size_t bs) {
     bs = std::max(bs,blockSize);
-    MemoryBlock* newBlock = static_cast<MemoryBlock*>(::malloc(bs));
+    MemoryBlock* newBlock =
+      static_cast<MemoryBlock*>(::malloc(sizeof(MemoryBlock)+bs));
     newBlock->size = bs;
     newBlock->next = curBlock;
     curBlock = newBlock;
