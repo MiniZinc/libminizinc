@@ -83,7 +83,7 @@ void filepath(const string& f, string& dirname, string& basename) {
 
 namespace MiniZinc {
 
-  Model* parse(const ASTContext& ctx,
+  Model* parse(ASTContext& ctx,
                const string& filename,
                const vector<string>& datafiles,
                const vector<string>& ip,

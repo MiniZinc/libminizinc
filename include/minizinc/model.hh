@@ -34,11 +34,11 @@ namespace MiniZinc {
     CtxStringH filename(void) const { return _filename; }
     CtxStringH filepath(void) const { return _filepath; }
     
-    void setFilename(const ASTContext& ctx, const std::string& f) {
+    void setFilename(ASTContext& ctx, const std::string& f) {
       assert(_filename.size()==0);
       _filename = CtxStringH(ctx,f);
     }
-    void setFilepath(const ASTContext& ctx, const std::string& f) {
+    void setFilepath(ASTContext& ctx, const std::string& f) {
       assert(_filepath.size()==0);
       _filepath = CtxStringH(ctx,f);
     }

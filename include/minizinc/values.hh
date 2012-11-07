@@ -52,21 +52,21 @@ namespace MiniZinc {
     IntVal width(int i) const { assert(i<_n); return max(i)-min(i)+1; }
 
     /// Allocate empty set from context
-    static IntSetVal* a(const ASTContext& ctx) {
+    static IntSetVal* a(ASTContext& ctx) {
       IntSetVal* r = ctx.alloc<IntSetVal>();
       new (r) IntSetVal();
       return r;
     }
     
     /// Allocate set \f$\{m,n\}\f$ from context
-    static IntSetVal* a(const ASTContext& ctx, IntVal m, IntVal n) {
+    static IntSetVal* a(ASTContext& ctx, IntVal m, IntVal n) {
       IntSetVal* r = ctx.alloc<IntSetVal>();
       new (r) IntSetVal(m,n);
       return r;
     }
 
     template<class I>
-    static IntSetVal* ai(const ASTContext& ctx, I& i) {
+    static IntSetVal* ai(ASTContext& ctx, I& i) {
       std::vector<Range> s;
       for (; i(); ++i)
         s.push_back(Range(i.min(),i.max()));
@@ -76,7 +76,7 @@ namespace MiniZinc {
       return r;
     }
     
-    static IntSetVal* a(const ASTContext& ctx,
+    static IntSetVal* a(ASTContext& ctx,
                         const std::vector<IntVal>& s0) {
       if (s0.size()==0)
         return a(ctx);
