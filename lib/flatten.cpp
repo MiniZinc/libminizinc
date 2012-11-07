@@ -364,23 +364,27 @@ namespace MiniZinc {
           std::vector<std::pair<int,int> > dims;
           TypeInst* vti =
             TypeInst::a(env.ctx,Location(),vd->_ti->_type,vd->_ti->_domain);
-          std::vector<Expression*> elems;
+          unsigned int asize = 1;
           for (TypeInst* ti : *vd->_ti->_ranges) {
             if (ti->_domain==NULL)
               throw FlatteningError(ti->_loc,"array dimensions unknown");
             IntSetVal* isv = eval_intset(env.ctx,ti->_domain);
             if (isv->size() != 1)
               throw FlatteningError(ti->_loc,"invalid array index set");
+            asize *= (isv->max(0)-isv->min(0)+1);
             dims.push_back(std::pair<int,int>(isv->min(0),isv->max(0)));
-            for (int i=isv->min(0); i<=isv->max(0); i++) {
-              CtxStringH nid = env.genId(vd->_id.str());
-              VarDecl* nvd = VarDecl::a(env.ctx,Location(),vti,nid);
-              (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
-              Id* id = Id::a(env.ctx,Location(),nid,nvd);
-              id->_type = vti->_type;
-              elems.push_back(id);
-            }
           }
+          std::vector<Expression*> elems(asize);
+          for (int i=0; i<asize; i++) {
+            CtxStringH nid = env.genId(vd->_id.str());
+            VarDecl* nvd = VarDecl::a(env.ctx,Location(),vti,nid);
+            nvd->_introduced = true;
+            (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
+            Id* id = Id::a(env.ctx,Location(),nid,nvd);
+            id->_type = vti->_type;
+            elems[i] = id;
+          }
+
           ArrayLit* al = ArrayLit::a(env.ctx,Location(),elems,dims);
           al->_type = vd->_type;
           vd->_e = al;
