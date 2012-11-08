@@ -123,6 +123,17 @@ namespace MiniZinc {
     return b_index_set(ctx,args,6);
   }
 
+  IntVal b_min_parsetint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    IntSetVal* isv = eval_intset(ctx,(*args)[0]);
+    return isv->min(0);
+  }
+  IntVal b_max_parsetint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    IntSetVal* isv = eval_intset(ctx,(*args)[0]);
+    return isv->max(isv->size()-1);
+  }
+
   IntSetVal* b_ub_set(ASTContext& ctx, CtxVec<Expression*>* args) {
     assert(args->size() == 1);
     Expression* e = (*args)[0];
@@ -452,6 +463,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
       rb(ctx, CtxStringH(ctx,"dom_array"), t, b_dom_array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(ctx, CtxStringH(ctx,"min"), t, b_min_parsetint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(ctx, CtxStringH(ctx,"max"), t, b_max_parsetint);
     }
   }
   
