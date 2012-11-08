@@ -1134,7 +1134,7 @@ namespace MiniZinc {
       for (it = items[item].begin(); it != items[item].end(); it++) {
         it->print(os);
       }
-      os << std::endl;
+      // os << std::endl;
     }
   }
   std::string PrettyPrinter::printSpaces(int n) {
@@ -1295,21 +1295,21 @@ namespace MiniZinc {
   }
 
   void
-  Printer::print(Document* d, std::ostream& os) {
+  Printer::print(Document* d, std::ostream& os, int width) {
     printer->print(d);
     printer->print(os);
     delete printer;
-    printer = new PrettyPrinter(80,4,true,true);
+    printer = new PrettyPrinter(width,4,true,true);
   }
 
   void
-  Printer::print(Expression* e, std::ostream& os) {
+  Printer::print(Expression* e, std::ostream& os, int width) {
     Document* d = expressionToDocument(e);
-    print(d,os);
+    print(d,os,width);
     delete d;
   }
   void
-  Printer::print(Item* i, std::ostream& os) {
+  Printer::print(Item* i, std::ostream& os, int width) {
     Document* d;
     switch (i->_iid) {
     case Item::II_INC:
@@ -1334,13 +1334,13 @@ namespace MiniZinc {
       d = ism->mapFunctionI(*i->cast<FunctionI>());
       break;
     }
-    print(d,os);
+    print(d,os,width);
     delete d;
   }
   void
-  Printer::print(Model* m, std::ostream& os) {
+  Printer::print(Model* m, std::ostream& os, int width) {
     for (unsigned int i = 0; i < m->_items.size(); i++) {
-      print(m->_items[i], os);
+      print(m->_items[i], os, width);
     }
   }
 

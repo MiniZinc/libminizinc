@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
           optimize(fctx,flat);
           oldflatzinc(fctx,flat);
           Printer p;
-          p.print(flat,std::cout);
+          p.print(flat,std::cout,100000);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
