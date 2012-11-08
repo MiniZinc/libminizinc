@@ -525,6 +525,9 @@ namespace MiniZinc {
       void vAssignI(AssignI* i) {
         ts.run(i->_e);
         i->_decl = ts.checkId(i->_id,i->_loc);
+        if (i->_decl->_e)
+          throw TypeError(i->_loc,"multiple assignment to same variable");
+        i->_decl->_e = i->_e;
       }
       void vConstraintI(ConstraintI* i) { ts.run(i->_e); }
       void vSolveI(SolveI* i) { ts.run(i->_ann); ts.run(i->_e); }
