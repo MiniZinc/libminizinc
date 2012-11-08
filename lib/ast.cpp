@@ -771,12 +771,22 @@ namespace MiniZinc {
           } else {
             Type tiit_par = tiit; tiit_par._ti = Type::TI_PAR;
             Type its_par = it->second; its_par._ti = Type::TI_PAR;
+            if (tiit_par._bt==Type::BT_BOT) {
+              tiit_par._bt = its_par._bt;
+            }
+            if (its_par._bt==Type::BT_BOT) {
+              its_par._bt = tiit_par._bt;
+            }
             if (tiit_par != its_par) {
               throw TypeError(ta[i]->_loc,"type-inst variable $"+
-                tiid.str()+" instantiated with different types");
+                tiid.str()+" instantiated with different types ("+
+                tiit.toString()+" vs "+
+                it->second.toString()+")");
             }
             if (tiit.isvar())
               it->second._ti = Type::TI_VAR;
+            if (it->second._bt == Type::BT_BOT)
+              it->second._bt = tiit._bt;
           }
         }
       }
@@ -799,7 +809,9 @@ namespace MiniZinc {
               tiid.str()+" used in both array and non-array position");
           } else if (it->second!=tiit) {
             throw TypeError(ta[i]->_loc,"type-inst variable $"+
-              tiid.str()+" instantiated with different types");
+              tiid.str()+" instantiated with different types ("+
+              tiit.toString()+" vs "+
+              it->second.toString()+")");
           }
         }
       }
