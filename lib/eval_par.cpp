@@ -620,6 +620,9 @@ namespace MiniZinc {
     case Expression::E_TIID:
       throw EvalError(e->_loc,"not a par expression");
     case Expression::E_COMP:
+      if (e->cast<Comprehension>()->_set)
+        return EvalSetLit::e(ctx,e);
+      // fall through
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = eval_array_lit(ctx,e);
@@ -695,7 +698,11 @@ namespace MiniZinc {
       {
         switch (e->_type._bt) {
         case Type::BT_BOOL: return EvalBoolLit::e(ctx,e);
-        case Type::BT_INT: return EvalIntLit::e(ctx,e);
+        case Type::BT_INT:
+          if (e->_type._st == Type::ST_PLAIN)
+            return EvalIntLit::e(ctx,e);
+          else
+            return EvalSetLit::e(ctx,e);
         case Type::BT_FLOAT: throw InternalError("not yet implemented");
         case Type::BT_STRING: throw InternalError("not yet implemented");
         case Type::BT_ANN: case Type::BT_BOT: case Type::BT_UNKNOWN:
