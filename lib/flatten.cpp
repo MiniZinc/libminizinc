@@ -276,36 +276,40 @@ namespace MiniZinc {
     case BOT_MOD:
       return builtin+"mod";
     case BOT_LE:
-      return builtin+"le";
+      return builtin+"lt";
     case BOT_LQ:
-      return builtin+"lq";
+      return builtin+"le";
     case BOT_GR:
-      return builtin+"gr";
+      return builtin+"gt";
     case BOT_GQ:
-      return builtin+"gq";
+      return builtin+"ge";
     case BOT_EQ:
       return builtin+"eq";
     case BOT_NQ:
-      return builtin+"nq";
+      return builtin+"ne";
     case BOT_IN:
       return "set_in";
     case BOT_SUBSET:
-      return "subset";
+      return builtin+"subset";
     case BOT_SUPERSET:
-      return "superset";
+      return builtin+"superset";
     case BOT_UNION:
+      return builtin+"union";
     case BOT_DIFF:
+      return builtin+"diff";
     case BOT_SYMDIFF:
+      return builtin+"symdiff";
     case BOT_INTERSECT:
+      return builtin+"intersect";
     case BOT_PLUSPLUS:
     case BOT_DOTDOT:
       throw InternalError("not yet implemented");
     case BOT_EQUIV:
       return builtin+"eq";
     case BOT_IMPL:
-      return builtin+"lq";
+      return builtin+"le";
     case BOT_RIMPL:
-      return builtin+"gq";
+      return builtin+"ge";
     case BOT_OR:
       return builtin+"or";
     case BOT_AND:
@@ -377,7 +381,7 @@ namespace MiniZinc {
           }
           std::vector<Expression*> elems(asize);
           for (int i=0; i<asize; i++) {
-            CtxStringH nid = env.genId(vd->_id.str());
+            CtxStringH nid = env.genId("fresh_"+vd->_id.str());
             VarDecl* nvd = VarDecl::a(env.ctx,Location(),vti,nid);
             nvd->_introduced = true;
             (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
@@ -392,14 +396,21 @@ namespace MiniZinc {
         }
         if (rete==NULL) {
           if (!vd->_toplevel) {
-            // create new VarDecl in toplevel
-            VarDecl* nvd = 
-              VarDecl::a(env.ctx,Location(),eval_typeinst(env,vd->_ti),
-                         env.genId(vd->_id.str()),vd->_e);
-            nvd->_introduced = true;
-            VarDeclI* ni = VarDeclI::a(env.ctx,Location(),nvd);
-            env.m->addItem(ni);
-            vd = nvd;
+            // create new VarDecl in toplevel, if decl doesnt exist yet
+            Env::Map::iterator it = env.map.find(vd->_e);
+            if (it==env.map.end()) {
+              VarDecl* nvd = 
+                VarDecl::a(env.ctx,Location(),eval_typeinst(env,vd->_ti),
+                           env.genId("tl_"+vd->_id.str()),vd->_e);
+              nvd->_introduced = true;
+              VarDeclI* ni = VarDeclI::a(env.ctx,Location(),nvd);
+              env.m->addItem(ni);
+              vd = nvd;
+              EE ee(vd,NULL);
+              env.map.insert(vd->_e,ee);
+            } else {
+              vd = it->second.r->cast<VarDecl>();
+            }
           }
           rete = Id::a(env.ctx,Location(),vd->_id,vd);
           rete->_type = id->_type;
@@ -522,6 +533,10 @@ namespace MiniZinc {
         case BOT_IDIV:
         case BOT_MOD:
         case BOT_DIV:
+        case BOT_UNION:
+        case BOT_DIFF:
+        case BOT_SYMDIFF:
+        case BOT_INTERSECT:
           {
             EE e0 = flat_exp(env,bctx0,bo->_e0,NULL,NULL);
             EE e1 = flat_exp(env,bctx1,bo->_e1,NULL,NULL);
@@ -602,13 +617,6 @@ namespace MiniZinc {
           }
           break;
 
-        case BOT_UNION:
-        case BOT_DIFF:
-        case BOT_SYMDIFF:
-        case BOT_INTERSECT:
-          assert(false);
-          throw InternalError("not yet implemented");
-
         case BOT_PLUSPLUS:
           {
             std::vector<EE> ee(2);
@@ -677,79 +685,114 @@ namespace MiniZinc {
           ret.b = bind(env,b,constants.lt);
           break;
         }
-          // throw FlatteningError(e->_loc,"undefined function or predicate");
 
-        std::vector<EE> args_ee(c->_args->size());
-        for (unsigned int i=c->_args->size(); i--;)
-          args_ee[i] = flat_exp(env,bctx,(*c->_args)[i],NULL,NULL);
-        std::vector<Expression*> args(args_ee.size());
-        for (unsigned int i=args_ee.size(); i--;)
-          args[i] = args_ee[i].r;
-        Call* cr = Call::a(env.ctx,Location(),c->_id.str(),args);
-        cr->_type = c->_type;
-        Env::Map::iterator cit = env.map.find(cr);
-        if (cit != env.map.end()) {
-          ret.b = bind(env,b,cit->second.b);
-          ret.r = bind(env,r,cit->second.r);
+        if (c->_id == "forall" && r==constants.t) {
+          /// TODO: need generic array evaluation function
+          ret.b = bind(env,b,constants.lt);
+          Expression* ca = (*c->_args)[0];
+          switch (ca->_eid) {
+          case Expression::E_ARRAYLIT:
+            {
+              ArrayLit* al = ca->cast<ArrayLit>();
+              for (unsigned int i=0; i<al->_v->size(); i++)
+                (void) flat_exp(env,C_ROOT,(*al->_v)[i],r,b);
+            }
+            break;
+          case Expression::E_COMP:
+            {
+              class EvalFlat {
+              public:
+                Env& env;
+                EvalFlat(Env& env0) : env(env0) {}
+                typedef bool ArrayVal;
+                bool e(ASTContext& ctx, Expression* e) {
+                  (void) flat_exp(env,C_ROOT,e,constants.t,constants.t);
+                  return true;
+                }
+              } _evalf(env);
+              (void) eval_comp<EvalFlat>(env.ctx,_evalf,
+                                         ca->cast<Comprehension>());
+            }
+            break;
+          default:
+            assert(false);
+            throw InternalError("not supported yet");
+            break;
+          }
         } else {
-          if (c->_decl->_e==NULL) {
-            /// For now assume that all builtins are total
-            if (cit != env.map.end()) {
-              ret.b = bind(env,b,cit->second.b);
-              ret.r = bind(env,r,cit->second.r);
-            } else {
-              if (c->_decl->_builtins.e) {
-                Expression* callres = 
-                  c->_decl->_builtins.e(env.ctx,cr->_args);
-                EE res = flat_exp(env,bctx,callres,r,b);
-                args_ee.push_back(res);
-                ret.b = conj(env,b,args_ee);
-                ret.r = bind(env,r,res.r);
-                env.map.insert(cr,ret);
-              } else {
-                ret.b = conj(env,b,args_ee);
-                ret.r = bind(env,r,cr);
-                env.map.insert(cr,ret);
-              }
-            }
+
+          std::vector<EE> args_ee(c->_args->size());
+          for (unsigned int i=c->_args->size(); i--;)
+            args_ee[i] = flat_exp(env,bctx,(*c->_args)[i],NULL,NULL);
+          std::vector<Expression*> args(args_ee.size());
+          for (unsigned int i=args_ee.size(); i--;)
+            args[i] = args_ee[i].r;
+          Call* cr = Call::a(env.ctx,Location(),c->_id.str(),args);
+          cr->_type = c->_type;
+          Env::Map::iterator cit = env.map.find(cr);
+          if (cit != env.map.end()) {
+            ret.b = bind(env,b,cit->second.b);
+            ret.r = bind(env,r,cit->second.r);
           } else {
-            std::vector<std::pair<Id*,Expression*> > idmap;
-            // Save mapping from Ids to VarDecls and set to parameters
-            for (unsigned int i=c->_decl->_params->size(); i--;) {
-              VarDecl* vd = (*c->_decl->_params)[i];
-              Id* id = Id::a(env.ctx,Location(),vd->_id,NULL);
-              id->_type = vd->_type;
-              Env::Map::iterator idit = env.map.find(id);
-              if (idit==env.map.end()) {
-                EE ee(vd,NULL);
-                idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
-                env.map.insert(id,ee);
+            if (c->_decl->_e==NULL) {
+              /// For now assume that all builtins are total
+              if (cit != env.map.end()) {
+                ret.b = bind(env,b,cit->second.b);
+                ret.r = bind(env,r,cit->second.r);
               } else {
-                idmap.push_back(
-                  std::pair<Id*,Expression*>(id,idit->second.r));
-                idit->second.r = vd;
+                if (c->_decl->_builtins.e) {
+                  Expression* callres = 
+                    c->_decl->_builtins.e(env.ctx,cr->_args);
+                  EE res = flat_exp(env,bctx,callres,r,b);
+                  args_ee.push_back(res);
+                  ret.b = conj(env,b,args_ee);
+                  ret.r = bind(env,r,res.r);
+                  env.map.insert(cr,ret);
+                } else {
+                  ret.b = conj(env,b,args_ee);
+                  ret.r = bind(env,r,cr);
+                  env.map.insert(cr,ret);
+                }
               }
-              vd->_e = args[i];
-            }
-            if (isTotal(c->_decl)) {
-              EE ee = flat_exp(env,C_ROOT,c->_decl->_e,r,constants.t);
-              ret.r = bind(env,r,ee.r);
-              ret.b = conj(env,b,args_ee);
-              env.map.insert(cr,ret);
             } else {
-              ret = flat_exp(env,bctx,c->_decl->_e,r,NULL);
-              args_ee.push_back(ret);
-              ret.b = conj(env,b,args_ee);
-              env.map.insert(cr,ret);
-            }
-            // Restore previous mapping
-            for (std::pair<Id*,Expression*>& idvd : idmap) {
-              Env::Map::iterator idit = env.map.find(idvd.first);
-              assert(idit != env.map.end());
-              if (idvd.second==NULL) {
-                env.map.remove(idvd.first);
+              std::vector<std::pair<Id*,Expression*> > idmap;
+              // Save mapping from Ids to VarDecls and set to parameters
+              for (unsigned int i=c->_decl->_params->size(); i--;) {
+                VarDecl* vd = (*c->_decl->_params)[i];
+                Id* id = Id::a(env.ctx,Location(),vd->_id,NULL);
+                id->_type = vd->_type;
+                Env::Map::iterator idit = env.map.find(id);
+                if (idit==env.map.end()) {
+                  EE ee(vd,NULL);
+                  idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
+                  env.map.insert(id,ee);
+                } else {
+                  idmap.push_back(
+                    std::pair<Id*,Expression*>(id,idit->second.r));
+                  idit->second.r = vd;
+                }
+                vd->_e = args[i];
+              }
+              if (isTotal(c->_decl)) {
+                EE ee = flat_exp(env,C_ROOT,c->_decl->_e,r,constants.t);
+                ret.r = bind(env,r,ee.r);
+                ret.b = conj(env,b,args_ee);
+                env.map.insert(cr,ret);
               } else {
-                idit->second.r = idvd.second;
+                ret = flat_exp(env,bctx,c->_decl->_e,r,NULL);
+                args_ee.push_back(ret);
+                ret.b = conj(env,b,args_ee);
+                env.map.insert(cr,ret);
+              }
+              // Restore previous mapping
+              for (std::pair<Id*,Expression*>& idvd : idmap) {
+                Env::Map::iterator idit = env.map.find(idvd.first);
+                assert(idit != env.map.end());
+                if (idvd.second==NULL) {
+                  env.map.remove(idvd.first);
+                } else {
+                  idit->second.r = idvd.second;
+                }
               }
             }
           }
@@ -935,14 +978,30 @@ namespace MiniZinc {
             Expression* ve = vd->_e;
             vd->_e = constants.lt;
             vd->_ti->_domain = NULL;
-            if (ve != NULL)
+            if (ve != NULL) {
+              if (Call* vc = ve->dyn_cast<Call>()) {
+                if (vc->_id == "bool_and" && vc->_args->size()==2) {
+                  std::vector<Expression*> args(3);
+                  args[0] = (*vc->_args)[0];
+                  args[1] = (*vc->_args)[1];
+                  args[2] = constants.lt;
+                  CtxVec<Expression*>* argsv = 
+                    CtxVec<Expression*>::a(ctx,args);
+                  vc->_args = argsv;
+                }
+              }
               cs.push_back(ConstraintI::a(ctx,Location(),ve));
+            }
           } else {
             if (vd->_e != NULL) {
               if (vd->_e->_eid==Expression::E_CALL) {
                 Call* c = vd->_e->cast<Call>();
                 vd->_e = NULL;
-                c->_id = CtxStringH(ctx,c->_id.str()+"_reif");
+                if (c->_id=="bool_and") {
+                  
+                } else {
+                  c->_id = CtxStringH(ctx,c->_id.str()+"_reif");
+                }
                 std::vector<Expression*> args(c->_args->size());
                 std::copy(c->_args->begin(),c->_args->end(),args.begin());
                 args.push_back(Id::a(ctx,Location(),vd->_id,vd));
@@ -966,31 +1025,46 @@ namespace MiniZinc {
               cs.push_back(ConstraintI::a(ctx,Location(),c));
             } else {
               assert(vd->_e->_eid == Expression::E_ID ||
-                     vd->_e->_eid == Expression::E_BOOLLIT);
+                     vd->_e->_eid == Expression::E_BOOLLIT ||
+                     vd->_e->_eid == Expression::E_SETLIT);
+              
             }
           }
         } else if (vd->_type._dim==1 &&
                    vd->_ti->_ranges != NULL &&
-                   vd->_ti->_ranges->size()==1 &&
-                   (*vd->_ti->_ranges)[0]->_domain==NULL) {
-          assert(vd->_e != NULL);
-          ArrayLit* al = NULL;
-          Expression* e = vd->_e;
-          while (al==NULL) {
-            switch (e->_eid) {
-            case Expression::E_ARRAYLIT:
-              al = e->cast<ArrayLit>();
-              break;
-            case Expression::E_ID:
-              e = e->cast<Id>()->_decl;
-            default:
-              assert(false);
+                   vd->_ti->_ranges->size()==1) {
+          if ((*vd->_ti->_ranges)[0]->_domain==NULL) {
+            assert(vd->_e != NULL);
+            ArrayLit* al = NULL;
+            Expression* e = vd->_e;
+            while (al==NULL) {
+              switch (e->_eid) {
+              case Expression::E_ARRAYLIT:
+                al = e->cast<ArrayLit>();
+                break;
+              case Expression::E_ID:
+                e = e->cast<Id>()->_decl;
+              default:
+                assert(false);
+              }
+            }
+            IntSetVal* isv = IntSetVal::a(ctx,(*al->_dims)[0].first,
+                                          (*al->_dims)[0].second);
+            (*vd->_ti->_ranges)[0]->_domain =
+              SetLit::a(ctx,Location(),isv);
+          } else {
+            IntSetVal* isv = eval_intset(ctx,(*vd->_ti->_ranges)[0]->_domain);
+            if (isv->min(0)!=1) {
+              (*vd->_ti->_ranges)[0]->_domain = SetLit::a(ctx,Location(),
+                IntSetVal::a(ctx,1,isv->max(0)-isv->min(0)+1));
+              if (vd->_e != NULL && vd->_e->_eid==Expression::E_ARRAYLIT) {
+                ArrayLit* al = vd->_e->cast<ArrayLit>();
+                std::vector<std::pair<int,int> > dims(1);
+                dims[0] = std::pair<int,int>(1,isv->max(0)-isv->min(0)+1);
+                al->_dims = CtxVec<std::pair<int,int> >::a(ctx,dims);
+              }
             }
           }
-          IntSetVal* isv = IntSetVal::a(ctx,(*al->_dims)[0].first,
-                                        (*al->_dims)[0].second);
-          (*vd->_ti->_ranges)[0]->_domain =
-            SetLit::a(ctx,Location(),isv);
         }
       }
       void vConstraintI(ConstraintI* ci) {
