@@ -22,11 +22,12 @@
 #pragma warning(push, 1)
 #endif
 
-#include <minizinc/parser.hh>
-
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location
 #define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 0
+
+#include <minizinc/parser.hh>
 
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \

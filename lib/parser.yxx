@@ -14,18 +14,19 @@
 %{
 #define YYPARSE_PARAM parm
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
-#include <minizinc/parser.hh>
 #include <iostream>
 #include <fstream>
 #include <map>
-
-using namespace std;
-using namespace MiniZinc;
 
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
+
+#include <minizinc/parser.hh>
+
+using namespace std;
+using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
   Current.filename = Rhs[1].filename; \
