@@ -818,6 +818,7 @@ namespace MiniZinc {
           VarDecl* vd = VarDecl::a(env.ctx,Location(),
                                    eval_typeinst(env,v->_ti),
                                    v->_id.str());
+          vd->_introduced = v->_introduced;
           VarDeclI* nv = VarDeclI::a(env.ctx,Location(),vd);
           if (v->_e) {
             (void) flat_exp(env,

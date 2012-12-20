@@ -871,6 +871,9 @@ namespace MiniZinc {
       dl->addDocumentToList(expressionToDocument(vd._ti));
       dl->addStringToList(": ");
       dl->addStringToList(vd._id.str());
+      if (vd._introduced) {
+        dl->addStringToList(" ::var_is_introduced ");
+      }
       if (vd._e) {
         dl->addStringToList(" = ");
         dl->addDocumentToList(expressionToDocument(vd._e));
