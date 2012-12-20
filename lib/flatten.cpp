@@ -341,20 +341,27 @@ namespace MiniZinc {
         if (id->_decl==NULL)
           throw FlatteningError(e->_loc, "undefined identifier");
         Env::Map::iterator it = env.map.find(id);
-        VarDecl* vd;
+        VarDecl* vd = NULL;
+        Expression* rete = NULL;
         if (it==env.map.end()) {
           // New top-level id, need to copy into env.m
           vd = flat_exp(env,C_ROOT,id->_decl,NULL,constants.t).r
                ->cast<VarDecl>();
         } else {
-          if (it->second.r->isa<VarDecl>())
+          switch (it->second.r->_eid) {
+          case Expression::E_VARDECL:
             vd = it->second.r->cast<VarDecl>();
-          else
+            break;
+          case Expression::E_ID:
             vd = it->second.r->cast<Id>()->_decl;
+            break;
+          default:
+            rete = it->second.r;
+            break;
+          }
         }
         ret.b = bind(env,b,constants.lt);
-        Expression* rete = NULL;
-        if (vd->_e!=NULL) {
+        if (vd && vd->_e!=NULL) {
           switch (vd->_e->_eid) {
           case Expression::E_INTLIT:
           case Expression::E_BOOLLIT:
@@ -364,7 +371,7 @@ namespace MiniZinc {
             break;
           default: break;
           }
-        } else if (vd->_ti->_ranges != NULL) {
+        } else if (vd && vd->_ti->_ranges != NULL) {
           // create fresh variables and array literal
           std::vector<std::pair<int,int> > dims;
           TypeInst* vti =
@@ -1043,7 +1050,8 @@ namespace MiniZinc {
                 al = e->cast<ArrayLit>();
                 break;
               case Expression::E_ID:
-                e = e->cast<Id>()->_decl;
+                e = e->cast<Id>()->_decl->_e;
+                break;
               default:
                 assert(false);
               }
