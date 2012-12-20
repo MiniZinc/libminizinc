@@ -25,6 +25,7 @@ using namespace MiniZinc;
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location
 #define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 0
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
   Current.filename = Rhs[1].filename; \
