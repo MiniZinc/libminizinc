@@ -280,13 +280,16 @@ namespace MiniZinc {
     if (args->size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
     ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
-    assert(al->_v->size()!=0);
-    Expression* r = (*al->_v)[0];
-    for (unsigned int i=1; i<al->_v->size(); i++) {
-      r = BinOp::a(ctx,Location(),r,BOT_AND,(*al->_v)[i]);
-      r->_type = Type::varbool();
+    if (al->_v->size() == 0) {
+      return BoolLit::a(ctx,Location(),true);
+    } else {
+      Expression* r = (*al->_v)[0];
+      for (unsigned int i=1; i<al->_v->size(); i++) {
+        r = BinOp::a(ctx,Location(),r,BOT_AND,(*al->_v)[i]);
+        r->_type = Type::varbool();
+      }
+      return r;
     }
-    return r;
   }
   bool b_exists_par(ASTContext& ctx, CtxVec<Expression*>* args) {
     if (args->size()!=1)
@@ -301,13 +304,16 @@ namespace MiniZinc {
     if (args->size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
     ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
-    assert(al->_v->size()!=0);
-    Expression* r = (*al->_v)[0];
-    for (unsigned int i=1; i<al->_v->size(); i++) {
-      r = BinOp::a(ctx,Location(),r,BOT_OR,(*al->_v)[i]);
-      r->_type = Type::varbool();
+    if (al->_v->size() == 0) {
+      return BoolLit::a(ctx,Location(),false);
+    } else {
+      Expression* r = (*al->_v)[0];
+      for (unsigned int i=1; i<al->_v->size(); i++) {
+        r = BinOp::a(ctx,Location(),r,BOT_OR,(*al->_v)[i]);
+        r->_type = Type::varbool();
+      }
+      return r;
     }
-    return r;
   }
 
   void registerBuiltins(ASTContext& ctx) {
