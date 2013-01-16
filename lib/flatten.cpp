@@ -1117,8 +1117,8 @@ namespace MiniZinc {
         return i<j;
       }
     } _cmp;
-    std::sort(m->_items.begin(),m->_items.end(),_cmp);
-  
+    std::stable_sort(m->_items.begin(),m->_items.end(),_cmp);
+
   }
 
   void optimize(ASTContext& ctx, Model* m) {
