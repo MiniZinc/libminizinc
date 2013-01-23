@@ -293,7 +293,7 @@ namespace MiniZinc {
   }
   bool b_exists_par(ASTContext& ctx, CtxVec<Expression*>* args) {
     if (args->size()!=1)
-      throw EvalError(Location(), "forall needs exactly one argument");
+      throw EvalError(Location(), "exists needs exactly one argument");
     ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
     for (unsigned int i=al->_v->size(); i--;)
       if (eval_bool(ctx,(*al->_v)[i]))
@@ -302,7 +302,7 @@ namespace MiniZinc {
   }
   Expression* b_exists_var(ASTContext& ctx, CtxVec<Expression*>* args) {
     if (args->size()!=1)
-      throw EvalError(Location(), "forall needs exactly one argument");
+      throw EvalError(Location(), "exists needs exactly one argument");
     ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
     if (al->_v->size() == 0) {
       return BoolLit::a(ctx,Location(),false);

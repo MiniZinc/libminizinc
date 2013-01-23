@@ -394,6 +394,7 @@ namespace MiniZinc {
             (void) flat_exp(env,C_ROOT,nvd,NULL,constants.t);
             Id* id = Id::a(env.ctx,Location(),nid,nvd);
             id->_type = vti->_type;
+            id->_type._dim--;
             elems[i] = id;
           }
 
