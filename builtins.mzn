@@ -55,6 +55,11 @@ function var int:   sum(array[$T] of var int);
 function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 
+function     int:   product(array[$T] of     int);
+function var int:   product(array[$T] of var int);
+function     float: product(array[$T] of     float);
+function var float: product(array[$T] of var float);
+
 function any $T: min(any $T, any $T);
 function any $T: min(array[$U] of any $T);
 function any $T: max(any $T, any $T);

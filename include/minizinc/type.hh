@@ -110,11 +110,11 @@ namespace MiniZinc {
     }
 
   // protected:
-    unsigned int toInt(void) const {
+    int toInt(void) const {
       return
-        (static_cast<unsigned>(_ti)<<24)
-      + (static_cast<unsigned>(_bt)<<21)
-      + (static_cast<unsigned>(_st)<<20)
+        (static_cast<int>(_ti)<<24)
+      + (static_cast<int>(_bt)<<21)
+      + (static_cast<int>(_st)<<20)
       + _dim;
     }
     std::string toString(void) const {
