@@ -834,10 +834,12 @@ namespace MiniZinc {
             DocumentList* generators = new DocumentList("(", ", ", ")");
             for (unsigned int i = 0; i < com->_g->size(); i++) {
               Generator* g = (*com->_g)[i];
-              DocumentList* gen = new DocumentList("", "", "");
+              DocumentList* vds = new DocumentList("", ",", "");
               for (unsigned int j = 0; j < g->_v->size(); j++) {
-                gen->addStringToList((*g->_v)[j]->_id.str());
+                vds->addStringToList((*g->_v)[j]->_id.str());
               }
+              DocumentList* gen = new DocumentList("", "", "");
+              gen->addDocumentToList(vds);
               gen->addStringToList(" in ");
               gen->addDocumentToList(expressionToDocument(g->_in));
               generators->addDocumentToList(gen);
