@@ -765,6 +765,7 @@ namespace MiniZinc {
             } else {
               std::vector<std::pair<Id*,Expression*> > idmap;
               // Save mapping from Ids to VarDecls and set to parameters
+              /// TODO: save vd->_e as well (if we want to support recursive functions)
               for (unsigned int i=c->_decl->_params->size(); i--;) {
                 VarDecl* vd = (*c->_decl->_params)[i];
                 Id* id = Id::a(env.ctx,Location(),vd->_id,NULL);
@@ -801,6 +802,9 @@ namespace MiniZinc {
                 } else {
                   idit->second.r = idvd.second;
                 }
+              }
+              for (unsigned int i=c->_decl->_params->size(); i--;) {
+                (*c->_decl->_params)[i]->_e = NULL;
               }
             }
           }
