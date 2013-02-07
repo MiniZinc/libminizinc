@@ -891,7 +891,7 @@ namespace MiniZinc {
       for (unsigned int i = 0; i < l._let->size(); i++) {
         if (i != 0)
           lets->addBreakPoint(ds);
-        DocumentList* exp = new DocumentList("", " ", ";");
+        DocumentList* exp = new DocumentList("", " ", ",");
         Expression* li = (*l._let)[i];
         if (!li->isa<VarDecl>())
           exp->addStringToList("constraint");
@@ -912,10 +912,10 @@ namespace MiniZinc {
       dl->addStringToList("let {");
       dl->addDocumentToList(letin);
       dl->addBreakPoint(ds);
-      dl->addStringToList("} in ");
+      dl->addStringToList("} in (");
       dl->addDocumentToList(letin2);
       //dl->addBreakPoint();
-      //dl->addStringToList(")");
+      dl->addStringToList(")");
       return dl;
     }
     ret mapAnnotation(const Annotation& an) {
