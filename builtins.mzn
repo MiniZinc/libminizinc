@@ -234,6 +234,7 @@ function array[int] of $T: set2array(set of $T);
 % String operations
 
 function string: show(any $T);
+function string: show(array[$U] of any $T);
 function string: show_int(int, var int);
 function string: show_float(int, int, var float);
 function string: '++'(string, string);
