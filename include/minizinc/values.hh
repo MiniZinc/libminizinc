@@ -101,7 +101,7 @@ namespace MiniZinc {
     }
     
     bool contains(const IntVal& v) {
-      for (unsigned int i=0; i<_n; i++) {
+      for (int i=0; i<_n; i++) {
         if (v < min(i))
           return false;
         if (v <= max(i))
