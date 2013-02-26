@@ -831,7 +831,7 @@ namespace MiniZinc {
             DocumentList* dl = new DocumentList("", " ", "");
             dl->addStringToList(c._id.str());
             DocumentList* args = new DocumentList("", " ", "", false);
-            DocumentList* generators = new DocumentList("(", ", ", ")");
+            DocumentList* generators = new DocumentList("", ", ", "");
             for (unsigned int i = 0; i < com->_g->size(); i++) {
               Generator* g = (*com->_g)[i];
               DocumentList* vds = new DocumentList("", ",", "");
@@ -844,7 +844,15 @@ namespace MiniZinc {
               gen->addDocumentToList(expressionToDocument(g->_in));
               generators->addDocumentToList(gen);
             }
+
+            args->addStringToList("(");
             args->addDocumentToList(generators);
+            if (com->_where != NULL) {
+              args->addStringToList("where");
+              args->addDocumentToList(expressionToDocument(com->_where));
+            }
+            args->addStringToList(")");
+
             args->addStringToList("(");
             args->addBreakPoint();
             args->addDocumentToList(expressionToDocument(com->_e));
