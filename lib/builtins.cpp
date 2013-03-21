@@ -85,6 +85,40 @@ namespace MiniZinc {
     }
   }
 
+  IntVal b_max(ASTContext& ctx, CtxVec<Expression*>* args) {
+    switch (args->size()) {
+    case 1:
+      if ((*args)[0]->_type.isset()) {
+        throw EvalError((*args)[0]->_loc, "sets not supported");
+      } else {
+        ArrayLit* al = eval_array_lit(ctx, (*args)[0]);
+        if (al->_v->size()==0)
+          throw EvalError(al->_loc, "max on empty array undefined");
+        IntVal m = eval_int(ctx,(*al->_v)[0]);
+        for (unsigned int i=1; i<al->_v->size(); i++)
+          m = std::max(m, eval_int(ctx,(*al->_v)[i]));
+        return m;
+      }
+    case 2:
+      {
+        return std::max(eval_int(ctx, (*args)[0]),eval_int(ctx, (*args)[1]));
+      }
+    default:
+      throw EvalError(Location(), "dynamic type error");
+    }
+  }
+
+  IntVal b_sum(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size()==1);
+    ArrayLit* al = eval_array_lit(ctx, (*args)[0]);
+    if (al->_v->size()==0)
+      return 0;
+    IntVal m = 0;
+    for (unsigned int i=0; i<al->_v->size(); i++)
+      m += eval_int(ctx,(*al->_v)[i]);
+    return m;
+  }
+
   IntSetVal* b_index_set(ASTContext& ctx, CtxVec<Expression*>* args, int i) {
     if (args->size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
@@ -328,6 +362,8 @@ namespace MiniZinc {
     
     rb(ctx, CtxStringH(ctx,"min"), t_intint, b_min);
     rb(ctx, CtxStringH(ctx,"min"), t_intarray, b_min);
+    rb(ctx, CtxStringH(ctx,"max"), t_intarray, b_max);
+    rb(ctx, CtxStringH(ctx,"sum"), t_intarray, b_sum);
 
     {
       std::vector<Type> t_anyarray1(1);
