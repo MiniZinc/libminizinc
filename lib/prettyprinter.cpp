@@ -566,14 +566,14 @@ namespace MiniZinc {
       } else if (n == 2 && (*al._dims)[0].first == 1
                  && (*al._dims)[1].first == 1) {
         dl = new DocumentList("[| ", " | ", " |]");
-        for (int i = 0; i < (*al._dims)[1].second; i++) {
+        for (int i = 0; i < (*al._dims)[0].second; i++) {
           DocumentList* row = new DocumentList("", ", ", "");
-          for (int j = 0; j < (*al._dims)[0].second; j++) {
+          for (int j = 0; j < (*al._dims)[1].second; j++) {
             row->
-              addDocumentToList(expressionToDocument((*al._v)[i * (*al._dims)[0].second + j]));
+              addDocumentToList(expressionToDocument((*al._v)[i * (*al._dims)[1].second + j]));
           }
           dl->addDocumentToList(row);
-          if (i != (*al._dims)[1].second - 1)
+          if (i != (*al._dims)[0].second - 1)
             dl->addBreakPoint(true); // dont simplify
         }
       } else {
