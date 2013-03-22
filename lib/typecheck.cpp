@@ -133,11 +133,11 @@ namespace MiniZinc {
     case Expression::E_COMP:
       {
         Comprehension* ce = e->cast<Comprehension>();
-        for (Generator* g : *ce->_g)
+        for (Generator* g : *ce->_g) {
+          run(g->_in);
           for (VarDecl* vd : *g->_v)
             add(vd,false);
-        for (Generator* g : *ce->_g)
-          run(g->_in);
+        }
         if (ce->_where)
           run(ce->_where);
         run(ce->_e);
