@@ -170,7 +170,8 @@ namespace MiniZinc {
     Document()  : level(0) {}
     virtual ~Document() {}
     int getLevel() { return level; }
-    void setParent(Document* d) {
+    // Make this object a child of "d".
+    virtual void setParent(Document* d) {
       level = d->level + 1;
     }
   };
@@ -234,18 +235,13 @@ namespace MiniZinc {
     void addDocumentToList(Document* d) {
       docs.push_back(d);
       d->setParent(this);
-      if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
-        dl->setParent(this);
-      }
     }
 
     void setParent(Document* d) {
+      Document::setParent(d);
       std::vector<Document*>::iterator it;
       for (it = docs.begin(); it != docs.end(); it++) {
         (*it)->setParent(this);
-        if (DocumentList* dl = dynamic_cast<DocumentList*>(*it)) {
-          dl->setParent(this);
-        }
       }
     }
 
@@ -321,7 +317,7 @@ namespace MiniZinc {
       indentation = i;
     }
 
-    const int getLength() const {
+    int getLength() const {
       return lineLength;
     }
     int getIndentation() const {
@@ -556,7 +552,7 @@ namespace MiniZinc {
     ret mapTIId(const TIId& id) {
       return new StringDocument("$"+id._v.str());
     }
-    ret mapAnonVar(const AnonVar& av) {
+    ret mapAnonVar(const AnonVar&) {
       return new StringDocument("_");
     }
     ret mapArrayLit(const ArrayLit& al) {
@@ -831,7 +827,7 @@ namespace MiniZinc {
             DocumentList* dl = new DocumentList("", " ", "");
             dl->addStringToList(c._id.str());
             DocumentList* args = new DocumentList("", " ", "", false);
-            DocumentList* generators = new DocumentList("(", ", ", ")");
+            DocumentList* generators = new DocumentList("", ", ", "");
             for (unsigned int i = 0; i < com->_g->size(); i++) {
               Generator* g = (*com->_g)[i];
               DocumentList* vds = new DocumentList("", ",", "");
@@ -844,7 +840,15 @@ namespace MiniZinc {
               gen->addDocumentToList(expressionToDocument(g->_in));
               generators->addDocumentToList(gen);
             }
+
+            args->addStringToList("(");
             args->addDocumentToList(generators);
+            if (com->_where != NULL) {
+              args->addStringToList("where");
+              args->addDocumentToList(expressionToDocument(com->_where));
+            }
+            args->addStringToList(")");
+
             args->addStringToList("(");
             args->addBreakPoint();
             args->addDocumentToList(expressionToDocument(com->_e));
@@ -891,7 +895,7 @@ namespace MiniZinc {
       for (unsigned int i = 0; i < l._let->size(); i++) {
         if (i != 0)
           lets->addBreakPoint(ds);
-        DocumentList* exp = new DocumentList("", " ", ";");
+        DocumentList* exp = new DocumentList("", " ", ",");
         Expression* li = (*l._let)[i];
         if (!li->isa<VarDecl>())
           exp->addStringToList("constraint");
@@ -912,10 +916,10 @@ namespace MiniZinc {
       dl->addStringToList("let {");
       dl->addDocumentToList(letin);
       dl->addBreakPoint(ds);
-      dl->addStringToList("} in ");
+      dl->addStringToList("} in (");
       dl->addDocumentToList(letin2);
       //dl->addBreakPoint();
-      //dl->addStringToList(")");
+      dl->addStringToList(")");
       return dl;
     }
     ret mapAnnotation(const Annotation& an) {
@@ -1198,6 +1202,9 @@ namespace MiniZinc {
   void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
       int alignmentCol, const std::string& super_before,
       const std::string& super_after) {
+    // Apparently "alignment" is not used.
+    (void) alignment;
+
     std::vector<Document*> ld = d->getDocs();
     std::string beginToken = d->getBeginToken();
     std::string separator = d->getSeparator();

@@ -117,6 +117,14 @@ namespace MiniZinc {
       + (static_cast<int>(_st)<<20)
       + _dim;
     }
+    static Type fromInt(int i) {
+      Type t;
+      t._ti = static_cast<TypeInst>((i >> 24) & 0x7);
+      t._bt = static_cast<BaseType>((i >> 21) & 0x7);
+      t._st = static_cast<SetType>((i >> 20) & 0x1);
+      t._dim = i & 0xFFFFF;
+      return t;
+    }
     std::string toString(void) const {
       std::ostringstream oss;
       if (_dim>0)
