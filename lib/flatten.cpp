@@ -108,7 +108,6 @@ namespace MiniZinc {
 
   bool isTotal(FunctionI* fi) {
     Annotation* a = fi->_ann;
-    Printer p;
     for (; a!=NULL; a=a->_a) {
       VarDecl* vd = NULL;
       Expression * ae = a->_e;
