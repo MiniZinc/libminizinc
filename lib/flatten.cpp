@@ -480,8 +480,16 @@ namespace MiniZinc {
           ret.b = bind(env,b,constants.lt);
           ret.r = bind(env,r,val);
         } else {
-          assert(false);
-          throw InternalError("not supported yet");
+          std::vector<Expression*> args(aa->_idx->size()+1);
+          args[0] = aa->_v;
+          for (unsigned int i=aa->_idx->size(); i--;)
+            args[i+1] = (*aa->_idx)[i];
+          Call* cc = Call::a(env.ctx,Location(),"element",args);
+          cc->_type = aa->_type;
+          FunctionI* fi = env.ctx.matchFn(cc->_id,args);
+          assert(cc->_type == fi->rtype(args));
+          cc->_decl = fi;
+          ret = flat_exp(env,bctx,cc,r,b);
         }
       }
       break;
@@ -618,9 +626,19 @@ namespace MiniZinc {
             args[0] = e0.r; args[1] = e1.r;
             Call* cc = Call::a(env.ctx,Location(),opToBuiltin(bo),args);
             cc->_type = bo->_type;
+
             std::vector<EE> ees(3);
-            ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = cc;
-            ret.r = conj(env,r,ees);
+            ees[0].b = e0.b; ees[1].b = e1.b;
+            Env::Map::iterator cit = env.map.find(cc);
+            Printer p; p.print(cc, std::cerr);
+            if (cit != env.map.end()) {
+              ees[2].b = cit->second.r;
+              ret.r = conj(env,r,ees);
+            } else {
+              ees[2].b = cc;
+              ret.r = conj(env,r,ees);
+              env.map.insert(cc,ret);
+            }
           }
           break;
 
