@@ -106,8 +106,9 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        for (Expression* ei : *sl->_v)
-          run(ei);
+        if(sl->_v)
+            for (Expression* ei : *sl->_v)
+                run(ei);
       }
       break;
     case Expression::E_ID:
@@ -249,15 +250,16 @@ namespace MiniZinc {
     /// Visit set literal
     void vSetLit(SetLit& sl) {
       Type ty; ty._st = Type::ST_SET;
-      for (Expression* ei : *sl._v) {
-        if (ei->_type.isvar())
-          ty._ti = Type::TI_VAR;
-        if (ty._bt!=ei->_type._bt) {
-          if (ty._bt!=Type::BT_UNKNOWN)
-            throw TypeError(sl._loc,"non-uniform set literal");
-          ty._bt = ei->_type._bt;
+      if(sl._v)
+        for (Expression* ei : *sl._v) {
+          if (ei->_type.isvar())
+            ty._ti = Type::TI_VAR;
+          if (ty._bt!=ei->_type._bt) {
+            if (ty._bt!=Type::BT_UNKNOWN)
+              throw TypeError(sl._loc,"non-uniform set literal");
+            ty._bt = ei->_type._bt;
+          }
         }
-      }
       if (ty._bt == Type::BT_UNKNOWN)
         ty._bt = Type::BT_BOT;
       sl._type = ty;
