@@ -1358,3 +1358,13 @@ namespace MiniZinc {
   }
 
 }
+
+void debugprint(MiniZinc::Expression* e) {
+  MiniZinc::Printer p; p.print(e,std::cout);
+}
+void debugprint(MiniZinc::Item* i) {
+  MiniZinc::Printer p; p.print(i,std::cout);
+}
+void debugprint(MiniZinc::Model* m) {
+  MiniZinc::Printer p; p.print(m,std::cout);
+}

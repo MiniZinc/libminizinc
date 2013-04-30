@@ -39,4 +39,8 @@ namespace MiniZinc {
 
 }
 
+void debugprint(MiniZinc::Expression* e);
+void debugprint(MiniZinc::Item* i);
+void debugprint(MiniZinc::Model* m);
+
 #endif
