@@ -17,6 +17,7 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/iter.hh>
 
 namespace MiniZinc {
 
@@ -508,9 +509,34 @@ namespace MiniZinc {
       return new StringDocument(oss.str());
     }
     ret mapSetLit(const SetLit& sl) {
-      DocumentList* dl = new DocumentList("{", ", ", "}", true);
-      for (unsigned int i = 0; i < sl._v->size(); i++) {
-        dl->addDocumentToList(expressionToDocument(((*sl._v)[i])));
+      DocumentList* dl;
+      if (sl._v) {
+        dl = new DocumentList("{", ", ", "}", true);
+        for (unsigned int i = 0; i < sl._v->size(); i++) {
+          dl->addDocumentToList(expressionToDocument(((*sl._v)[i])));
+        }
+      } else {
+        if (sl._isv->size()==1) {
+          dl = new DocumentList("", "..", "");
+          {
+            std::ostringstream oss;
+            oss << sl._isv->min(0);
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+          {
+            std::ostringstream oss;
+            oss << sl._isv->max(0);
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        } else {
+          dl = new DocumentList("{", ", ", "}", true);
+          IntSetRanges isr(sl._isv);
+          for (Ranges::ToValues<IntSetRanges> isv(isr); isv(); ++isv) {
+            std::ostringstream oss;
+            oss << isv.val();
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        }
       }
       return dl;
     }

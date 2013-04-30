@@ -108,9 +108,6 @@ namespace MiniZinc {
         case Expression::E_TIID:
           _t.vTIId(*c._e->template cast<TIId>());
           break;
-        default:
-          assert(false);
-          break;
         }
         stack.pop_back();
       } else {
@@ -184,9 +181,6 @@ namespace MiniZinc {
         case Expression::E_TI:
           stack.push_back(C(ce->template cast<TypeInst>()->_domain));
           pushVec(stack,ce->template cast<TypeInst>()->_ranges);
-          break;
-        default:
-          assert(false);
           break;
         }
       }
