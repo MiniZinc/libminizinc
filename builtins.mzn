@@ -55,11 +55,17 @@ function var int:   sum(array[$T] of var int);
 function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 
+function     int:   product(array[$T] of     int);
+function var int:   product(array[$T] of var int);
+function     float: product(array[$T] of     float);
+function var float: product(array[$T] of var float);
+
 function any $T: min(any $T, any $T);
 function any $T: min(array[$U] of any $T);
 function any $T: max(any $T, any $T);
 function any $T: max(array[$U] of any $T);
 function int: min(set of int);
+function int: max(set of int);
 
 function int: abs(int);
 function var int: abs(var int);
@@ -133,7 +139,7 @@ function     bool: iffall(array[$T] of     bool);
 function var bool: iffall(array[$T] of var bool);
 
 % Set operations
-function     bool: 'in'(     $T,     set of $T);
+function     bool: 'in'(    int,     set of int);
 function var bool: 'in'(var int, var set of int);
 
 function     bool: 'subset'(    set of $T,      set of $T);
@@ -228,6 +234,7 @@ function array[int] of $T: set2array(set of $T);
 % String operations
 
 function string: show(any $T);
+function string: show(array[$U] of any $T);
 function string: show_int(int, var int);
 function string: show_float(int, int, var float);
 function string: '++'(string, string);
@@ -248,6 +255,12 @@ function array[$U] of float: lb(array[$U] of var float);
 function array[$U] of float: ub(array[$U] of var float);
 function array[$U] of set of int: lb(array[$U] of var set of int);
 function array[$U] of set of int: ub(array[$U] of var set of int);
+function int: lb_array(array[$U] of var int);
+function int: ub_array(array[$U] of var int);
+function float: lb_array(array[$U] of var float);
+function float: ub_array(array[$U] of var float);
+function set of int: lb_array(array[$U] of var set of int);
+function set of int: ub_array(array[$U] of var set of int);
 function set of int: dom(var int);
 function set of int: dom_array(array[$T] of var int);
 function int: dom_size(var int);
@@ -259,3 +272,5 @@ function bool: assert(bool, string);
 function any $T: trace(string, any $T);
 function $T: fix(any $T);
 function bool: is_fixed(any $T);
+
+function bool: abort(string);

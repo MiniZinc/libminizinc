@@ -14,17 +14,19 @@
 %{
 #define YYPARSE_PARAM parm
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
-#include <minizinc/parser.hh>
 #include <iostream>
 #include <fstream>
 #include <map>
 
-using namespace std;
-using namespace MiniZinc;
-
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location
 #define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 0
+
+#include <minizinc/parser.hh>
+
+using namespace std;
+using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
   Current.filename = Rhs[1].filename; \
@@ -83,7 +85,7 @@ void filepath(const string& f, string& dirname, string& basename) {
 
 namespace MiniZinc {
 
-  Model* parse(const ASTContext& ctx,
+  Model* parse(ASTContext& ctx,
                const string& filename,
                const vector<string>& datafiles,
                const vector<string>& ip,
@@ -507,9 +509,13 @@ params_list : params_list_head comma_or_none
 
 params_list_head :
       ti_expr_and_id_or_anon
-      { $$=new vector<VarDecl*>(); $$->push_back($1); }
+      { $$=new vector<VarDecl*>();
+        $1->_toplevel = false;
+        $$->push_back($1); }
     | params_list_head ',' ti_expr_and_id_or_anon
-      { $$=$1; $1->push_back($3); }
+      { $$=$1;
+        $3->_toplevel = false;
+        $1->push_back($3); }
 
 comma_or_none : | ','
 

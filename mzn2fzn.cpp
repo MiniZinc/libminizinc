@@ -19,6 +19,8 @@
 #include <minizinc/exception.hh>
 
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten.hh>
+#include <minizinc/copy.hh>
 #include <minizinc/builtins.hh>
 
 using namespace MiniZinc;
@@ -92,9 +94,15 @@ int main(int argc, char** argv) {
         if (typecheck) {
           MiniZinc::typecheck(ctx,m);
           MiniZinc::registerBuiltins(ctx);
-          // eval_int(ctx,m);
+
+          ASTContext fctx;
+          fctx.registerFn(ctx);
+          // Model* flat = MiniZinc::flatten(fctx, m);
+          Model* flat = flatten(fctx, m);
+          optimize(fctx,flat);
+          oldflatzinc(fctx,flat);
           Printer p;
-          p.print(m,std::cerr);
+          p.print(flat,std::cout,100000);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
@@ -119,12 +127,7 @@ int main(int argc, char** argv) {
         // }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
-        std::cerr << "In file " << e.loc().filename->str() << ":"
-            << e.loc().first_line << "c"
-            << e.loc().first_column << "-"
-            << e.loc().last_line << "c"
-            << e.loc().last_column
-            << endl;
+        std::cerr << e.loc() << std::endl;
         exit(EXIT_FAILURE);
       } catch (Exception& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;

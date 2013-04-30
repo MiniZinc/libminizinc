@@ -17,6 +17,13 @@
 namespace MiniZinc {
 
   void
+  ASTContext::registerFn(ASTContext& ctx) {
+    if (!fnmap.empty())
+      throw InternalError("cannot initialize non-empty context");
+    fnmap = ctx.fnmap;
+  }
+
+  void
   ASTContext::registerFn(FunctionI* fi) {
     FnMap::iterator i_id = fnmap.find(fi->_id);
     if (i_id == fnmap.end()) {
@@ -116,8 +123,9 @@ namespace MiniZinc {
             break;
           }
         }
-        if (match)
+        if (match) {
           return fi;
+        }
       }
     }
     return NULL;
@@ -138,6 +146,8 @@ namespace MiniZinc {
       vdtrail.back().v->_e = vdtrail.back().e;
       vdtrail.pop_back();
     }
+    if (!vdtrail.empty())
+      vdtrail.back().mark = false;
   }
   void
   ASTContext::push_allocator(int a) {

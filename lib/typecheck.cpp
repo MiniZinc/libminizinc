@@ -50,196 +50,190 @@ namespace MiniZinc {
     }
   };
   
-  class TopoSorter {
-  public:
-    typedef std::vector<VarDecl*> Decls;
-    typedef CtxStringMap<Decls>::t DeclMap;
-    typedef std::unordered_map<VarDecl*,int> PosMap;
-    
-    Decls decls;
-    DeclMap env;
-    PosMap pos;
-    
-    void add(VarDecl* vd, bool unique) {
-      DeclMap::iterator vdi = env.find(vd->_id);
-      if (vdi == env.end()) {
-        Decls nd; nd.push_back(vd);
-        env.insert(std::pair<CtxStringH,Decls>(vd->_id,nd));
-      } else {
-        if (unique)
-          throw TypeError(vd->_loc,"identifier `"+vd->_id.str()+
-                          "' already defined");
-        vdi->second.push_back(vd);
-      }
+  void
+  TopoSorter::add(VarDecl* vd, bool unique) {
+    DeclMap::iterator vdi = env.find(vd->_id);
+    if (vdi == env.end()) {
+      Decls nd; nd.push_back(vd);
+      env.insert(std::pair<CtxStringH,Decls>(vd->_id,nd));
+    } else {
+      if (unique)
+        throw TypeError(vd->_loc,"identifier `"+vd->_id.str()+
+                        "' already defined");
+      vdi->second.push_back(vd);
     }
-    void remove(VarDecl* vd) {
-      DeclMap::iterator vdi = env.find(vd->_id);
-      assert(vdi != env.end());
-      vdi->second.pop_back();
-      if (vdi->second.empty())
-        env.erase(vdi);
+  }
+  void
+  TopoSorter::remove(VarDecl* vd) {
+    DeclMap::iterator vdi = env.find(vd->_id);
+    assert(vdi != env.end());
+    vdi->second.pop_back();
+    if (vdi->second.empty())
+      env.erase(vdi);
+  }
+  
+  VarDecl*
+  TopoSorter::checkId(const CtxStringH& id, const Location& loc) {
+    DeclMap::iterator decl = env.find(id);
+    if (decl==env.end()) {
+      throw TypeError(loc,"undefined identifier "+id.str());
     }
-    
-    VarDecl* checkId(const CtxStringH& id, const Location& loc) {
-      DeclMap::iterator decl = env.find(id);
-      if (decl==env.end()) {
-        throw TypeError(loc,"undefined identifier "+id.str());
-      }
-      PosMap::iterator pi = pos.find(decl->second.back());
-      if (pi==pos.end()) {
-        // new id
-        run(decl->second.back());
-      } else {
-        // previously seen, check if circular
-        if (pi->second==-1)
-          throw TypeError(loc,"circular definition of "+id.str());
-      }
-      return decl->second.back();
+    PosMap::iterator pi = pos.find(decl->second.back());
+    if (pi==pos.end()) {
+      // new id
+      run(decl->second.back());
+    } else {
+      // previously seen, check if circular
+      if (pi->second==-1)
+        throw TypeError(loc,"circular definition of "+id.str());
     }
-    
-    void run(Expression* e) {
-      if (e==NULL)
-        return;
-      if (e->_ann)
-        run(e->_ann);
-      switch (e->_eid) {
-      case Expression::E_INTLIT:
-      case Expression::E_FLOATLIT:
-      case Expression::E_BOOLLIT:
-      case Expression::E_STRINGLIT:
-      case Expression::E_ANON:
-        break;
-      case Expression::E_SETLIT:
-        {
-          SetLit* sl = e->cast<SetLit>();
-          for (Expression* ei : *sl->_v)
-            run(ei);
-        }
-        break;
-      case Expression::E_ID:
-        {
-          e->cast<Id>()->_decl = checkId(e->cast<Id>()->_v,e->_loc);
-        }
-        break;
-      case Expression::E_ARRAYLIT:
-        {
-          ArrayLit* al = e->cast<ArrayLit>();
-          for (Expression* ei : *al->_v)
-            run(ei);
-        }
-        break;
-      case Expression::E_ARRAYACCESS:
-        {
-          ArrayAccess* ae = e->cast<ArrayAccess>();
-          run(ae->_v);
-          for (Expression* ei : *ae->_idx)
-            run(ei);
-        }
-        break;
-      case Expression::E_COMP:
-        {
-          Comprehension* ce = e->cast<Comprehension>();
-          for (Generator* g : *ce->_g)
-            for (VarDecl* vd : *g->_v)
-              add(vd,false);
-          for (Generator* g : *ce->_g)
-            run(g->_in);
-          if (ce->_where)
-            run(ce->_where);
-          run(ce->_e);
-          for (Generator* g : *ce->_g)
-            for (VarDecl* vd : *g->_v)
-              remove(vd);
-        }
-        break;
-      case Expression::E_ITE:
-        {
-          ITE* ite = e->cast<ITE>();
-          for (ITE::IfThen& ie : *ite->_e_if) {
-            run(ie.first);
-            run(ie.second);
-          }
-          run(ite->_e_else);
-        }
-        break;
-      case Expression::E_BINOP:
-        {
-          BinOp* be = e->cast<BinOp>();
-          run(be->_e0);
-          run(be->_e1);
-        }
-        break;
-      case Expression::E_UNOP:
-        {
-          UnOp* ue = e->cast<UnOp>();
-          run(ue->_e0);
-        }
-        break;
-      case Expression::E_CALL:
-        {
-          Call* ce = e->cast<Call>();
-          for (Expression* ei : *ce->_args)
-            run(ei);
-        }
-        break;
-      case Expression::E_VARDECL:
-        {
-          VarDecl* ve = e->cast<VarDecl>();
-          PosMap::iterator pi = pos.find(ve);
-          if (pi==pos.end()) {
-            pos.insert(std::pair<VarDecl*,int>(ve,-1));
-            run(ve->_ti);
-            run(ve->_e);
-            decls.push_back(ve);
-            pi = pos.find(ve);
-            pi->second = decls.size()-1;
-          } else {
-            assert(pi->second != -1);
-          }
-        }
-        break;
-      case Expression::E_ANN:
-        {
-          Annotation* ann = e->cast<Annotation>();
-          run(ann->_e);
-          run(ann->_a);
-        }
-        break;
-      case Expression::E_TI:
-        {
-          TypeInst* ti = e->cast<TypeInst>();
-          if (ti->_ranges)
-            for (Expression* ei : *ti->_ranges)
-              run(ei);
-          run(ti->_domain);
-        }
-        break;
-      case Expression::E_TIID:
-        break;
-      case Expression::E_LET:
-        {
-          Let* let = e->cast<Let>();
-          for (Expression* ei : *let->_let) {
-            if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
-              add(vd,false);
-            }
-          }
-          for (Expression* ei : *let->_let) {
-            run(ei);
-          }
-          run(let->_in);
-          VarDeclCmp poscmp(pos);
-          std::stable_sort(let->_let->begin(), let->_let->end(), poscmp);
-          for (Expression* ei : *let->_let) {
-            if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
-              remove(vd);
-            }
-          }
-        }
-        break;
+    return decl->second.back();
+  }
+  
+  void
+  TopoSorter::run(Expression* e) {
+    if (e==NULL)
+      return;
+    if (e->_ann)
+      run(e->_ann);
+    switch (e->_eid) {
+    case Expression::E_INTLIT:
+    case Expression::E_FLOATLIT:
+    case Expression::E_BOOLLIT:
+    case Expression::E_STRINGLIT:
+    case Expression::E_ANON:
+      break;
+    case Expression::E_SETLIT:
+      {
+        SetLit* sl = e->cast<SetLit>();
+        if(sl->_v)
+            for (Expression* ei : *sl->_v)
+                run(ei);
       }
+      break;
+    case Expression::E_ID:
+      {
+        e->cast<Id>()->_decl = checkId(e->cast<Id>()->_v,e->_loc);
+      }
+      break;
+    case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        for (Expression* ei : *al->_v)
+          run(ei);
+      }
+      break;
+    case Expression::E_ARRAYACCESS:
+      {
+        ArrayAccess* ae = e->cast<ArrayAccess>();
+        run(ae->_v);
+        for (Expression* ei : *ae->_idx)
+          run(ei);
+      }
+      break;
+    case Expression::E_COMP:
+      {
+        Comprehension* ce = e->cast<Comprehension>();
+        for (Generator* g : *ce->_g) {
+          run(g->_in);
+          for (VarDecl* vd : *g->_v)
+            add(vd,false);
+        }
+        if (ce->_where)
+          run(ce->_where);
+        run(ce->_e);
+        for (Generator* g : *ce->_g)
+          for (VarDecl* vd : *g->_v)
+            remove(vd);
+      }
+      break;
+    case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (ITE::IfThen& ie : *ite->_e_if) {
+          run(ie.first);
+          run(ie.second);
+        }
+        run(ite->_e_else);
+      }
+      break;
+    case Expression::E_BINOP:
+      {
+        BinOp* be = e->cast<BinOp>();
+        run(be->_e0);
+        run(be->_e1);
+      }
+      break;
+    case Expression::E_UNOP:
+      {
+        UnOp* ue = e->cast<UnOp>();
+        run(ue->_e0);
+      }
+      break;
+    case Expression::E_CALL:
+      {
+        Call* ce = e->cast<Call>();
+        for (Expression* ei : *ce->_args)
+          run(ei);
+      }
+      break;
+    case Expression::E_VARDECL:
+      {
+        VarDecl* ve = e->cast<VarDecl>();
+        PosMap::iterator pi = pos.find(ve);
+        if (pi==pos.end()) {
+          pos.insert(std::pair<VarDecl*,int>(ve,-1));
+          run(ve->_ti);
+          run(ve->_e);
+          decls.push_back(ve);
+          pi = pos.find(ve);
+          pi->second = decls.size()-1;
+        } else {
+          assert(pi->second != -1);
+        }
+      }
+      break;
+    case Expression::E_ANN:
+      {
+        Annotation* ann = e->cast<Annotation>();
+        run(ann->_e);
+        run(ann->_a);
+      }
+      break;
+    case Expression::E_TI:
+      {
+        TypeInst* ti = e->cast<TypeInst>();
+        if (ti->_ranges)
+          for (Expression* ei : *ti->_ranges)
+            run(ei);
+        run(ti->_domain);
+      }
+      break;
+    case Expression::E_TIID:
+      break;
+    case Expression::E_LET:
+      {
+        Let* let = e->cast<Let>();
+        for (Expression* ei : *let->_let) {
+          if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
+            add(vd,false);
+          }
+        }
+        for (Expression* ei : *let->_let) {
+          run(ei);
+        }
+        run(let->_in);
+        VarDeclCmp poscmp(pos);
+        std::stable_sort(let->_let->begin(), let->_let->end(), poscmp);
+        for (Expression* ei : *let->_let) {
+          if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
+            remove(vd);
+          }
+        }
+      }
+      break;
     }
-  };
+  }
   
   template<bool ignoreVarDecl>
   class Typer {
@@ -256,15 +250,16 @@ namespace MiniZinc {
     /// Visit set literal
     void vSetLit(SetLit& sl) {
       Type ty; ty._st = Type::ST_SET;
-      for (Expression* ei : *sl._v) {
-        if (ei->_type.isvar())
-          ty._ti = Type::TI_VAR;
-        if (ty._bt!=ei->_type._bt) {
-          if (ty._bt!=Type::BT_UNKNOWN)
-            throw TypeError(sl._loc,"non-uniform set literal");
-          ty._bt = ei->_type._bt;
+      if(sl._v)
+        for (Expression* ei : *sl._v) {
+          if (ei->_type.isvar())
+            ty._ti = Type::TI_VAR;
+          if (ty._bt!=ei->_type._bt) {
+            if (ty._bt!=Type::BT_UNKNOWN)
+              throw TypeError(sl._loc,"non-uniform set literal");
+            ty._bt = ei->_type._bt;
+          }
         }
-      }
       if (ty._bt == Type::BT_UNKNOWN)
         ty._bt = Type::BT_BOT;
       sl._type = ty;
@@ -525,6 +520,9 @@ namespace MiniZinc {
       void vAssignI(AssignI* i) {
         ts.run(i->_e);
         i->_decl = ts.checkId(i->_id,i->_loc);
+        if (i->_decl->_e)
+          throw TypeError(i->_loc,"multiple assignment to same variable");
+        i->_decl->_e = i->_e;
       }
       void vConstraintI(ConstraintI* i) { ts.run(i->_e); }
       void vSolveI(SolveI* i) { ts.run(i->_ann); ts.run(i->_e); }

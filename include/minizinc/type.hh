@@ -110,12 +110,20 @@ namespace MiniZinc {
     }
 
   // protected:
-    unsigned int toInt(void) const {
+    int toInt(void) const {
       return
-        (static_cast<unsigned>(_ti)<<24)
-      + (static_cast<unsigned>(_bt)<<21)
-      + (static_cast<unsigned>(_st)<<20)
+        (static_cast<int>(_ti)<<24)
+      + (static_cast<int>(_bt)<<21)
+      + (static_cast<int>(_st)<<20)
       + _dim;
+    }
+    static Type fromInt(int i) {
+      Type t;
+      t._ti = static_cast<TypeInst>((i >> 24) & 0x7);
+      t._bt = static_cast<BaseType>((i >> 21) & 0x7);
+      t._st = static_cast<SetType>((i >> 20) & 0x1);
+      t._dim = i & 0xFFFFF;
+      return t;
     }
     std::string toString(void) const {
       std::ostringstream oss;
@@ -144,7 +152,7 @@ namespace MiniZinc {
   public:
     bool isSubtypeOf(const Type& t) const {
       // either same dimension or t has variable dimension
-      if (_dim!=t._dim && t._dim!=-1)
+      if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
       // same type
       if (_ti==t._ti && _bt==t._bt && _st==t._st)

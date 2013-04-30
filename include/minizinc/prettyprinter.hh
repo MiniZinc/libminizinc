@@ -27,16 +27,20 @@ namespace MiniZinc {
   private:
     ItemDocumentMapper* ism;
     PrettyPrinter* printer;
-    void print(Document* d, std::ostream& os);
+    void print(Document* d, std::ostream& os, int width=80);
   public:
     Printer(void);
     ~Printer(void);
     
-    void print(Expression* e, std::ostream& os);
-    void print(Item* i, std::ostream& os);
-    void print(Model* m, std::ostream& os);
+    void print(Expression* e, std::ostream& os, int width=80);
+    void print(Item* i, std::ostream& os, int width=80);
+    void print(Model* m, std::ostream& os, int width=80);
   };
 
 }
+
+void debugprint(MiniZinc::Expression* e);
+void debugprint(MiniZinc::Item* i);
+void debugprint(MiniZinc::Model* m);
 
 #endif

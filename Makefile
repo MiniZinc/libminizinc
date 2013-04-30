@@ -5,9 +5,9 @@ TARGETS=mzn2fzn
 GENERATE=yes
 
 SOURCES=allocator ast context lexer.yy parser.tab  \
-	prettyprinter typecheck eval_par builtins
+	prettyprinter typecheck eval_par builtins flatten copy
 
-HEADERS=allocator ast context exception model parser parser.tab type typecheck prettyprinter eval_par builtins hash astiterator
+HEADERS=allocator ast context exception model parser parser.tab type typecheck prettyprinter eval_par builtins hash astiterator flatten copy values
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
@@ -67,3 +67,6 @@ veryclean: clean
 
 # Dependencies
 mzn2fzn.$(OBJ): $(HEADERS:%=include/minizinc/%.hh)
+
+$(SOURCES:%=lib/%.$(OBJ)): %.$(OBJ): $(HEADERS:%=include/minizinc/%.hh)
+

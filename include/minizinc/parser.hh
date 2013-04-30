@@ -44,7 +44,7 @@ namespace MiniZinc {
   /// %State of the %MiniZinc parser
   class ParserState {
   public:
-    ParserState(const ASTContext& ctx0, const std::string& f,
+    ParserState(ASTContext& ctx0, const std::string& f,
                 const std::string& b, std::ostream& err0,
                 std::vector<std::pair<std::string,Model*> >& files0,
                 std::map<std::string,Model*>& seenModels0,
@@ -56,7 +56,7 @@ namespace MiniZinc {
       files(files0), seenModels(seenModels0), model(model0),
       isDatafile(isDatafile0), hadError(false), err(err0) {}
   
-    const ASTContext& ctx;
+    ASTContext& ctx;
   
     const char* filename;
   
@@ -98,7 +98,7 @@ namespace MiniZinc {
 
   };
 
-  Model* parse(const ASTContext& ctx,
+  Model* parse(ASTContext& ctx,
                const std::string& filename,
                const std::vector<std::string>& datafiles,
                const std::vector<std::string>& includePaths,

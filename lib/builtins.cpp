@@ -85,6 +85,40 @@ namespace MiniZinc {
     }
   }
 
+  IntVal b_max(ASTContext& ctx, CtxVec<Expression*>* args) {
+    switch (args->size()) {
+    case 1:
+      if ((*args)[0]->_type.isset()) {
+        throw EvalError((*args)[0]->_loc, "sets not supported");
+      } else {
+        ArrayLit* al = eval_array_lit(ctx, (*args)[0]);
+        if (al->_v->size()==0)
+          throw EvalError(al->_loc, "max on empty array undefined");
+        IntVal m = eval_int(ctx,(*al->_v)[0]);
+        for (unsigned int i=1; i<al->_v->size(); i++)
+          m = std::max(m, eval_int(ctx,(*al->_v)[i]));
+        return m;
+      }
+    case 2:
+      {
+        return std::max(eval_int(ctx, (*args)[0]),eval_int(ctx, (*args)[1]));
+      }
+    default:
+      throw EvalError(Location(), "dynamic type error");
+    }
+  }
+
+  IntVal b_sum(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size()==1);
+    ArrayLit* al = eval_array_lit(ctx, (*args)[0]);
+    if (al->_v->size()==0)
+      return 0;
+    IntVal m = 0;
+    for (unsigned int i=0; i<al->_v->size(); i++)
+      m += eval_int(ctx,(*al->_v)[i]);
+    return m;
+  }
+
   IntSetVal* b_index_set(ASTContext& ctx, CtxVec<Expression*>* args, int i) {
     if (args->size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
@@ -123,6 +157,105 @@ namespace MiniZinc {
     return b_index_set(ctx,args,6);
   }
 
+  IntVal b_min_parsetint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    IntSetVal* isv = eval_intset(ctx,(*args)[0]);
+    return isv->min(0);
+  }
+  IntVal b_max_parsetint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    IntSetVal* isv = eval_intset(ctx,(*args)[0]);
+    return isv->max(isv->size()-1);
+  }
+
+  IntSetVal* b_ub_set(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    Expression* e = (*args)[0];
+    for (;;) {
+      switch (e->_eid) {
+      case Expression::E_SETLIT: return eval_intset(ctx,e);
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            return eval_intset(ctx,id->_decl->_ti->_domain);
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to ub");
+      }
+    }
+  }
+
+  IntSetVal* b_dom_varint(ASTContext& ctx, Expression* e) {
+    for (;;) {
+      switch (e->_eid) {
+      case Expression::E_INTLIT:
+        {
+          IntVal v = e->cast<IntLit>()->_v;
+          return IntSetVal::a(ctx,v,v);
+        }
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            return eval_intset(ctx,id->_decl->_ti->_domain);
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to dom");
+      }
+    }
+  }
+  IntSetVal* b_dom_varint(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    return b_dom_varint(ctx,(*args)[0]);
+  }
+
+  IntSetVal* b_dom_array(ASTContext& ctx, CtxVec<Expression*>* args) {
+    assert(args->size() == 1);
+    Expression* ae = (*args)[0];
+    ArrayLit* al = NULL;
+    while (al==NULL) {
+      switch (ae->_eid) {
+      case Expression::E_ARRAYLIT:
+        al = ae->cast<ArrayLit>();
+        break;
+      case Expression::E_ID:
+        {
+          Id* id = ae->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            throw EvalError(id->_loc,"array without initialiser");
+          else
+            ae = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(ae->_loc,"invalid argument to ub");
+      }
+    }
+    if (al->_v->size()==0)
+      return IntSetVal::a(ctx);
+    IntSetVal* isv = b_dom_varint(ctx,(*al->_v)[0]);
+    for (unsigned int i=1; i<al->_v->size(); i++) {
+      IntSetRanges isr(isv);
+      IntSetRanges r(b_dom_varint(ctx,(*al->_v)[i]));
+      Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
+      isv = IntSetVal::ai(ctx,u);
+    }
+    return isv;
+  }
+
   ArrayLit* b_arrayXd(ASTContext& ctx, CtxVec<Expression*>* args, int d) {
     ArrayLit* al = eval_array_lit(ctx, (*args)[d]);
     std::vector<std::pair<int,int> > dims(d);
@@ -136,7 +269,9 @@ namespace MiniZinc {
     }
     if (dim1d != al->_v->size())
       throw EvalError(al->_loc, "mismatch in array dimensions");
-    return ArrayLit::a(ctx, al->_loc, al->_v, dims);
+    ArrayLit* ret = ArrayLit::a(ctx, al->_loc, al->_v, dims);
+    ret->_type = al->_type;
+    return ret;
   }
   Expression* b_array1d(ASTContext& ctx, CtxVec<Expression*>* args) {
     return b_arrayXd(ctx,args,1);
@@ -166,6 +301,55 @@ namespace MiniZinc {
     return eval_bool(ctx, (*args)[0]) ? 1 : 0;
   }
 
+  bool b_forall_par(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    for (unsigned int i=al->_v->size(); i--;)
+      if (!eval_bool(ctx,(*al->_v)[i]))
+        return false;
+    return true;
+  }
+  Expression* b_forall_var(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "forall needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    if (al->_v->size() == 0) {
+      return BoolLit::a(ctx,Location(),true);
+    } else {
+      Expression* r = (*al->_v)[0];
+      for (unsigned int i=1; i<al->_v->size(); i++) {
+        r = BinOp::a(ctx,Location(),r,BOT_AND,(*al->_v)[i]);
+        r->_type = Type::varbool();
+      }
+      return r;
+    }
+  }
+  bool b_exists_par(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "exists needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    for (unsigned int i=al->_v->size(); i--;)
+      if (eval_bool(ctx,(*al->_v)[i]))
+        return true;
+    return false;
+  }
+  Expression* b_exists_var(ASTContext& ctx, CtxVec<Expression*>* args) {
+    if (args->size()!=1)
+      throw EvalError(Location(), "exists needs exactly one argument");
+    ArrayLit* al = eval_array_lit(ctx,(*args)[0]);
+    if (al->_v->size() == 0) {
+      return BoolLit::a(ctx,Location(),false);
+    } else {
+      Expression* r = (*al->_v)[0];
+      for (unsigned int i=1; i<al->_v->size(); i++) {
+        r = BinOp::a(ctx,Location(),r,BOT_OR,(*al->_v)[i]);
+        r->_type = Type::varbool();
+      }
+      return r;
+    }
+  }
+
   void registerBuiltins(ASTContext& ctx) {
     
     std::vector<Type> t_intint(2);
@@ -178,6 +362,8 @@ namespace MiniZinc {
     
     rb(ctx, CtxStringH(ctx,"min"), t_intint, b_min);
     rb(ctx, CtxStringH(ctx,"min"), t_intarray, b_min);
+    rb(ctx, CtxStringH(ctx,"max"), t_intarray, b_max);
+    rb(ctx, CtxStringH(ctx,"sum"), t_intarray, b_sum);
 
     {
       std::vector<Type> t_anyarray1(1);
@@ -284,6 +470,51 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool();
       rb(ctx, CtxStringH(ctx,"bool2int"), t, b_bool2int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varbool(-1);
+      rb(ctx, CtxStringH(ctx,"forall"), t, b_forall_var);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parbool(-1);
+      rb(ctx, CtxStringH(ctx,"forall"), t, b_forall_par);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varbool(-1);
+      rb(ctx, CtxStringH(ctx,"exists"), t, b_exists_var);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parbool(-1);
+      rb(ctx, CtxStringH(ctx,"exists"), t, b_exists_par);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varsetint();
+      rb(ctx, CtxStringH(ctx,"ub"), t, b_ub_set);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(ctx, CtxStringH(ctx,"dom"), t, b_dom_varint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      rb(ctx, CtxStringH(ctx,"dom_array"), t, b_dom_array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(ctx, CtxStringH(ctx,"min"), t, b_min_parsetint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(ctx, CtxStringH(ctx,"max"), t, b_max_parsetint);
     }
   }
   

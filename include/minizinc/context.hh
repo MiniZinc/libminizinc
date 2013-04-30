@@ -39,7 +39,7 @@ namespace MiniZinc {
     /// Constructor
     CtxStringH(CtxString* s) : _s(s) {}
     /// Constructor
-    CtxStringH(const ASTContext& ctx, const std::string& s);
+    CtxStringH(ASTContext& ctx, const std::string& s);
     /// Copy constructor
     CtxStringH(const CtxStringH& s);
     /// Assignment operator
@@ -52,6 +52,9 @@ namespace MiniZinc {
 
     bool operator== (const CtxStringH& s) const;
     bool operator!= (const CtxStringH& s) const;
+
+    bool operator== (const std::string& s) const;
+    bool operator!= (const std::string& s) const;
     
     size_t hash(void) const;
     
@@ -94,7 +97,7 @@ namespace MiniZinc {
    */
   class ASTContext {
   protected:
-    mutable std::vector<BlockAllocator> balloc;
+    std::vector<BlockAllocator> balloc;
     std::vector<int> cur_balloc;
     
     typedef CtxStringMap<std::vector<FunctionI*> >::t FnMap;
@@ -111,13 +114,13 @@ namespace MiniZinc {
     /// Trail of VarDecl assignments
     std::vector<TItem> vdtrail;
   public:
-    void* alloc(size_t size) const {
+    void* alloc(size_t size) {
       return balloc[cur_balloc.back()].alloc(size);
     }
-    template<typename T> T* alloc(void) const {
+    template<typename T> T* alloc(void) {
       return balloc[cur_balloc.back()].alloc<T>();
     }
-    template<typename T> T* alloc(int n) const {
+    template<typename T> T* alloc(int n) {
       return balloc[cur_balloc.back()].alloc<T>(n);
     }
     void dealloc(const void* m) { (void) m; }
@@ -132,6 +135,8 @@ namespace MiniZinc {
     }
     
     void registerFn(FunctionI* fi);
+    /// Copy register of functions from \a ctx
+    void registerFn(ASTContext& ctx);
     void sortFn(void);
     FunctionI* matchFn(const CtxStringH&id,
                        const std::vector<Expression*>& args) const;
@@ -163,7 +168,7 @@ namespace MiniZinc {
     }
   public:
     /// Allocate from given vector \a x in context \a ctx
-    static CtxVec* a(const ASTContext& ctx, const std::vector<T>& x) {
+    static CtxVec* a(ASTContext& ctx, const std::vector<T>& x) {
       CtxVec<T>* v = static_cast<CtxVec<T>*>(
         ctx.alloc(sizeof(CtxVec<T>)+(x.size()-1)*sizeof(T)));
       new (v) CtxVec<T>(x);
@@ -171,7 +176,7 @@ namespace MiniZinc {
     }
 
     /// Allocate empty vector in context \a ctx
-    static CtxVec* a(const ASTContext& ctx) {
+    static CtxVec* a(ASTContext& ctx) {
       CtxVec<T>* v = static_cast<CtxVec<T>*>(
         ctx.alloc(sizeof(CtxVec<T>)));
       new (v) CtxVec<T>(std::vector<T>());
@@ -209,11 +214,12 @@ namespace MiniZinc {
     /// Character data
     char _s[1];
   public:
-    static CtxString* a(const ASTContext& ctx, const std::string& s) {
+    static CtxString* a(ASTContext& ctx, const std::string& s) {
       CtxString* cs = static_cast<CtxString*>(
         ctx.alloc(sizeof(CtxString)+(s.size())));
       cs->_n = s.size();
-      strncpy(cs->_s,s.c_str(),s.size()+1);
+      strncpy(cs->_s,s.c_str(),s.size());
+      *(cs->_s+s.size())=0;
       std::hash<std::string> h;
       cs->_hash = h(s);
       return cs;
@@ -226,7 +232,7 @@ namespace MiniZinc {
   };
 
   inline
-  CtxStringH::CtxStringH(const ASTContext& ctx, const std::string& s)
+  CtxStringH::CtxStringH(ASTContext& ctx, const std::string& s)
     : _s(CtxString::a(ctx,s)) {}
   inline
   CtxStringH::CtxStringH(const CtxStringH& s) : _s(s._s) {}
@@ -253,6 +259,15 @@ namespace MiniZinc {
   }
   inline bool
   CtxStringH::operator!= (const CtxStringH& s) const {
+    return !(*this == s);
+  }
+  inline bool
+  CtxStringH::operator== (const std::string& s) const {
+    return size()==s.size() &&
+      (size()==0 || strncmp(_s->c_str(),s.c_str(),size())==0);
+  }
+  inline bool
+  CtxStringH::operator!= (const std::string& s) const {
     return !(*this == s);
   }
   

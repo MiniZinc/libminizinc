@@ -170,7 +170,8 @@ namespace MiniZinc {
     Document()  : level(0) {}
     virtual ~Document() {}
     int getLevel() { return level; }
-    void setParent(Document* d) {
+    // Make this object a child of "d".
+    virtual void setParent(Document* d) {
       level = d->level + 1;
     }
   };
@@ -234,18 +235,13 @@ namespace MiniZinc {
     void addDocumentToList(Document* d) {
       docs.push_back(d);
       d->setParent(this);
-      if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
-        dl->setParent(this);
-      }
     }
 
     void setParent(Document* d) {
+      Document::setParent(d);
       std::vector<Document*>::iterator it;
       for (it = docs.begin(); it != docs.end(); it++) {
         (*it)->setParent(this);
-        if (DocumentList* dl = dynamic_cast<DocumentList*>(*it)) {
-          dl->setParent(this);
-        }
       }
     }
 
@@ -321,7 +317,7 @@ namespace MiniZinc {
       indentation = i;
     }
 
-    const int getLength() const {
+    int getLength() const {
       return lineLength;
     }
     int getIndentation() const {
@@ -556,7 +552,7 @@ namespace MiniZinc {
     ret mapTIId(const TIId& id) {
       return new StringDocument("$"+id._v.str());
     }
-    ret mapAnonVar(const AnonVar& av) {
+    ret mapAnonVar(const AnonVar&) {
       return new StringDocument("_");
     }
     ret mapArrayLit(const ArrayLit& al) {
@@ -570,14 +566,14 @@ namespace MiniZinc {
       } else if (n == 2 && (*al._dims)[0].first == 1
                  && (*al._dims)[1].first == 1) {
         dl = new DocumentList("[| ", " | ", " |]");
-        for (int i = 0; i < (*al._dims)[1].second; i++) {
+        for (int i = 0; i < (*al._dims)[0].second; i++) {
           DocumentList* row = new DocumentList("", ", ", "");
-          for (int j = 0; j < (*al._dims)[0].second; j++) {
+          for (int j = 0; j < (*al._dims)[1].second; j++) {
             row->
-              addDocumentToList(expressionToDocument((*al._v)[i * (*al._dims)[0].second + j]));
+              addDocumentToList(expressionToDocument((*al._v)[i * (*al._dims)[1].second + j]));
           }
           dl->addDocumentToList(row);
-          if (i != (*al._dims)[1].second - 1)
+          if (i != (*al._dims)[0].second - 1)
             dl->addBreakPoint(true); // dont simplify
         }
       } else {
@@ -619,6 +615,7 @@ namespace MiniZinc {
       else
         dl = new DocumentList("[ ", " | ", " ]");
       dl->addDocumentToList(expressionToDocument(c._e));
+      DocumentList* head = new DocumentList("", " ", "");
       DocumentList* generators = new DocumentList("", ", ", "");
       for (unsigned int i = 0; i < c._g->size(); i++) {
         Generator* g = (*c._g)[i];
@@ -632,12 +629,12 @@ namespace MiniZinc {
         gen->addDocumentToList(expressionToDocument(g->_in));
         generators->addDocumentToList(gen);
       }
-      dl->addDocumentToList(generators);
+      head->addDocumentToList(generators);
       if (c._where != NULL) {
-
-        dl->addStringToList(" where ");
-        dl->addDocumentToList(expressionToDocument(c._where));
+        head->addStringToList("where");
+        head->addDocumentToList(expressionToDocument(c._where));
       }
+      dl->addDocumentToList(head);
 
       return dl;
     }
@@ -831,18 +828,28 @@ namespace MiniZinc {
             DocumentList* dl = new DocumentList("", " ", "");
             dl->addStringToList(c._id.str());
             DocumentList* args = new DocumentList("", " ", "", false);
-            DocumentList* generators = new DocumentList("(", ", ", ")");
+            DocumentList* generators = new DocumentList("", ", ", "");
             for (unsigned int i = 0; i < com->_g->size(); i++) {
               Generator* g = (*com->_g)[i];
-              DocumentList* gen = new DocumentList("", "", "");
+              DocumentList* vds = new DocumentList("", ",", "");
               for (unsigned int j = 0; j < g->_v->size(); j++) {
-                gen->addStringToList((*g->_v)[j]->_id.str());
+                vds->addStringToList((*g->_v)[j]->_id.str());
               }
+              DocumentList* gen = new DocumentList("", "", "");
+              gen->addDocumentToList(vds);
               gen->addStringToList(" in ");
               gen->addDocumentToList(expressionToDocument(g->_in));
               generators->addDocumentToList(gen);
             }
+
+            args->addStringToList("(");
             args->addDocumentToList(generators);
+            if (com->_where != NULL) {
+              args->addStringToList("where");
+              args->addDocumentToList(expressionToDocument(com->_where));
+            }
+            args->addStringToList(")");
+
             args->addStringToList("(");
             args->addBreakPoint();
             args->addDocumentToList(expressionToDocument(com->_e));
@@ -871,6 +878,9 @@ namespace MiniZinc {
       dl->addDocumentToList(expressionToDocument(vd._ti));
       dl->addStringToList(": ");
       dl->addStringToList(vd._id.str());
+      if (vd._introduced) {
+        dl->addStringToList(" ::var_is_introduced ");
+      }
       if (vd._e) {
         dl->addStringToList(" = ");
         dl->addDocumentToList(expressionToDocument(vd._e));
@@ -886,7 +896,7 @@ namespace MiniZinc {
       for (unsigned int i = 0; i < l._let->size(); i++) {
         if (i != 0)
           lets->addBreakPoint(ds);
-        DocumentList* exp = new DocumentList("", " ", ";");
+        DocumentList* exp = new DocumentList("", " ", ",");
         Expression* li = (*l._let)[i];
         if (!li->isa<VarDecl>())
           exp->addStringToList("constraint");
@@ -907,10 +917,10 @@ namespace MiniZinc {
       dl->addStringToList("let {");
       dl->addDocumentToList(letin);
       dl->addBreakPoint(ds);
-      dl->addStringToList("} in ");
+      dl->addStringToList("} in (");
       dl->addDocumentToList(letin2);
       //dl->addBreakPoint();
-      //dl->addStringToList(")");
+      dl->addStringToList(")");
       return dl;
     }
     ret mapAnnotation(const Annotation& an) {
@@ -1134,7 +1144,7 @@ namespace MiniZinc {
       for (it = items[item].begin(); it != items[item].end(); it++) {
         it->print(os);
       }
-      os << std::endl;
+      // os << std::endl;
     }
   }
   std::string PrettyPrinter::printSpaces(int n) {
@@ -1193,6 +1203,9 @@ namespace MiniZinc {
   void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
       int alignmentCol, const std::string& super_before,
       const std::string& super_after) {
+    // Apparently "alignment" is not used.
+    (void) alignment;
+
     std::vector<Document*> ld = d->getDocs();
     std::string beginToken = d->getBeginToken();
     std::string separator = d->getSeparator();
@@ -1295,21 +1308,21 @@ namespace MiniZinc {
   }
 
   void
-  Printer::print(Document* d, std::ostream& os) {
+  Printer::print(Document* d, std::ostream& os, int width) {
     printer->print(d);
     printer->print(os);
     delete printer;
-    printer = new PrettyPrinter(80,4,true,true);
+    printer = new PrettyPrinter(width,4,true,true);
   }
 
   void
-  Printer::print(Expression* e, std::ostream& os) {
+  Printer::print(Expression* e, std::ostream& os, int width) {
     Document* d = expressionToDocument(e);
-    print(d,os);
+    print(d,os,width);
     delete d;
   }
   void
-  Printer::print(Item* i, std::ostream& os) {
+  Printer::print(Item* i, std::ostream& os, int width) {
     Document* d;
     switch (i->_iid) {
     case Item::II_INC:
@@ -1334,14 +1347,24 @@ namespace MiniZinc {
       d = ism->mapFunctionI(*i->cast<FunctionI>());
       break;
     }
-    print(d,os);
+    print(d,os,width);
     delete d;
   }
   void
-  Printer::print(Model* m, std::ostream& os) {
+  Printer::print(Model* m, std::ostream& os, int width) {
     for (unsigned int i = 0; i < m->_items.size(); i++) {
-      print(m->_items[i], os);
+      print(m->_items[i], os, width);
     }
   }
 
+}
+
+void debugprint(MiniZinc::Expression* e) {
+  MiniZinc::Printer p; p.print(e,std::cout);
+}
+void debugprint(MiniZinc::Item* i) {
+  MiniZinc::Printer p; p.print(i,std::cout);
+}
+void debugprint(MiniZinc::Model* m) {
+  MiniZinc::Printer p; p.print(m,std::cout);
 }
