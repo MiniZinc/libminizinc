@@ -5,9 +5,9 @@ TARGETS=mzn2fzn
 GENERATE=yes
 
 SOURCES=allocator ast context lexer.yy parser.tab  \
-	prettyprinter typecheck eval_par builtins flatten copy
+	prettyprinter typecheck eval_par builtins copy
 
-HEADERS=allocator ast context exception model parser parser.tab type typecheck prettyprinter eval_par builtins hash astiterator flatten copy values
+HEADERS=allocator ast context exception model parser parser.tab type typecheck prettyprinter eval_par builtins hash astiterator copy values
 
 GENERATED=include/minizinc/parser.tab.hh lib/parser.tab.cpp lib/lexer.yy.cpp
 
