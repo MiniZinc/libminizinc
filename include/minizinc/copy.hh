@@ -16,9 +16,9 @@
 
 namespace MiniZinc {
   
-  Expression* copy(ASTContext& ctx, Expression* e);
-  Item* copy(ASTContext& ctx, Item* e);
-  Model* copy(ASTContext& ctx, Model* e);
+  Expression* copy(Expression* e);
+  Item* copy(Item* e);
+  Model* copy(Model* e);
   
 }
 

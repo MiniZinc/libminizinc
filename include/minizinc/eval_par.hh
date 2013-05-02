@@ -17,72 +17,71 @@
 
 namespace MiniZinc {
   
-  IntVal eval_int(ASTContext& ctx, Expression* e);
+  IntVal eval_int(Expression* e);
 
-  bool eval_bool(ASTContext& ctx, Expression* e);
+  bool eval_bool(Expression* e);
   
-  void eval_int(ASTContext& ctx, Model* m);
-  ArrayLit* eval_array_lit(ASTContext& ctx, Expression* e);
-  Expression* eval_arrayaccess(ASTContext& ctx, ArrayLit* a,
-                               const std::vector<IntVal>& dims);
+  void eval_int(Model* m);
+  ArrayLit* eval_array_lit(Expression* e);
+  Expression* eval_arrayaccess(ArrayLit* a, const std::vector<IntVal>& dims);
 
-  IntSetVal* eval_intset(ASTContext& ctx, Expression* e);
+  IntSetVal* eval_intset(Expression* e);
 
-  Expression* eval_par(ASTContext& ctx, Expression* e);
+  Expression* eval_par(Expression* e);
 
   template<class Eval>
   void
-  eval_comp(ASTContext& ctx, Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             IntSetVal* in, std::vector<typename Eval::ArrayVal>& a);
 
   template<class Eval>
   void
-  eval_comp(ASTContext& ctx, Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             int i, IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
-    (*(*e->_g)[gen]->_v)[id]->_e->cast<IntLit>()->_v = i;
-    if (id == (*e->_g)[gen]->_v->size()-1) {
-      if (gen == e->_g->size()-1) {
+    e->_g[e->_g_idx[gen]+id+1]->cast<IntLit>()->_v = i;
+    if (id == e->_g_idx[gen+1]-1) {
+      if (gen == e->_g_idx.size()-1) {
         bool where = true;
         if (e->_where != NULL) {
-          where = eval_bool(ctx, e->_where);
+          where = eval_bool(e->_where);
         }
         if (where) {
-          a.push_back(eval.e(ctx,e->_e));
+          a.push_back(eval.e(e->_e));
         }
       } else {
-        IntSetVal* nextin = eval_intset(ctx, (*e->_g)[gen+1]->_in);
-        eval_comp<Eval>(ctx,eval,e,gen+1,0,nextin,a);
+        IntSetVal* nextin = eval_intset(e->_g[e->_g_idx[gen+1]]);
+        eval_comp<Eval>(eval,e,gen+1,0,nextin,a);
       }
     } else {
-      eval_comp<Eval>(ctx,eval,e,gen,id+1,in,a);
+      eval_comp<Eval>(eval,e,gen,id+1,in,a);
     }
   }
 
   template<class Eval>
   void
-  eval_comp(ASTContext& ctx, Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
     IntSetRanges rsi(in);
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
-      eval_comp<Eval>(ctx,eval,e,gen,id,rsv.val(),in,a);
+      eval_comp<Eval>(eval,e,gen,id,rsv.val(),in,a);
     }
   }
 
   template<class Eval>
   std::vector<typename Eval::ArrayVal>
-  eval_comp(ASTContext& ctx, Eval& eval, Comprehension* e) {
+  eval_comp(Eval& eval, Comprehension* e) {
     std::vector<typename Eval::ArrayVal> a;
-    IntSetVal* in  = eval_intset(ctx, (*e->_g)[0]->_in);
-    eval_comp<Eval>(ctx,eval,e,0,0,in,a);
+    IntSetVal* in  = eval_intset(e->_g[e->_g_idx[0]]);
+    eval_comp<Eval>(eval,e,0,0,in,a);
     return a;
   }  
 
   template<class Eval>
   std::vector<typename Eval::ArrayVal>
-  eval_comp(ASTContext& ctx, Comprehension* e) {
+  eval_comp(Comprehension* e) {
     Eval eval;
-    return eval_comp(ctx,eval,e);
+    return eval_comp(eval,e);
   }  
 }
 
