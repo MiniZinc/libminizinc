@@ -35,7 +35,7 @@ namespace MiniZinc {
     /// Flag
     unsigned int _flag_2 : 1;
     
-    enum BaseNodes { NID_CHUNK, NID_VEC, NID_END = NID_VEC };
+    enum BaseNodes { NID_FL, NID_CHUNK, NID_VEC, NID_END = NID_VEC };
 
     /// Constructor
     ASTNode(unsigned int id) : _gc_mark(0), _id(id) {}
@@ -65,10 +65,12 @@ namespace MiniZinc {
   protected:
     ASTChunk* _next;
     size_t _size;
-    char _data[1];
+    char _data[4];
     ASTChunk(size_t size);
     size_t memsize(void) const {
-      return sizeof(ASTChunk)+(_size-1)*sizeof(char);
+      size_t s = sizeof(ASTChunk)+(_size<=4?0:_size-4)*sizeof(char);
+      s += ((8 - (s & 7)) & 7);
+      return s;
     }
     static void* alloc(size_t size);
   };
@@ -82,10 +84,12 @@ namespace MiniZinc {
   protected:
     ASTVec* _next;
     size_t _size;
-    void* _data[1];
+    void* _data[2];
     ASTVec(size_t size);
     size_t memsize(void) const {
-      return sizeof(ASTVec)+(_size-1)*sizeof(void*);
+      size_t s = sizeof(ASTVec)+(_size<=2?0:_size-2)*sizeof(void*);
+      s += ((8 - (s & 7)) & 7);
+      return s;
     }
     static void* alloc(size_t size);
   };
@@ -111,10 +115,6 @@ namespace MiniZinc {
     /// Allocate garbage collected memory
     void* alloc(size_t size);
 
-    /// Register chunk of memory for garbage collection
-    void _registerChunk(ASTChunk* c);
-    /// Register vector for garbage collection
-    void _registerVec(ASTVec* v);
   public:
     /**
      * \brief Initialize thread-local GC object

@@ -118,6 +118,10 @@ namespace MiniZinc {
       }
       return false;
     }
+    
+    void mark(void) {
+      _gc_mark = 1;
+    }
   };
   
   class IntSetRanges {

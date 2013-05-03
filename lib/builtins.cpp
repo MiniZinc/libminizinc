@@ -62,7 +62,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_min(ASTNodeVec<Expression>& args) {
+  IntVal b_min(ASTExprVec<Expression>& args) {
     switch (args.size()) {
     case 1:
       if (args[0]->_type.isset()) {
@@ -85,7 +85,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_max(ASTNodeVec<Expression>& args) {
+  IntVal b_max(ASTExprVec<Expression>& args) {
     switch (args.size()) {
     case 1:
       if (args[0]->_type.isset()) {
@@ -108,7 +108,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_sum(ASTNodeVec<Expression>& args) {
+  IntVal b_sum(ASTExprVec<Expression>& args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->_v.size()==0)
@@ -119,7 +119,7 @@ namespace MiniZinc {
     return m;
   }
 
-  IntSetVal* b_index_set(ASTNodeVec<Expression>& args, int i) {
+  IntSetVal* b_index_set(ASTExprVec<Expression>& args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
     if (args[0]->eid() != Expression::E_ID)
@@ -137,37 +137,37 @@ namespace MiniZinc {
     }
     return eval_intset(id->_decl->_ti->_ranges[i-1]->_domain);
   }
-  IntSetVal* b_index_set1(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set1(ASTExprVec<Expression>& args) {
     return b_index_set(args,1);
   }
-  IntSetVal* b_index_set2(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set2(ASTExprVec<Expression>& args) {
     return b_index_set(args,2);
   }
-  IntSetVal* b_index_set3(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set3(ASTExprVec<Expression>& args) {
     return b_index_set(args,3);
   }
-  IntSetVal* b_index_set4(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set4(ASTExprVec<Expression>& args) {
     return b_index_set(args,4);
   }
-  IntSetVal* b_index_set5(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set5(ASTExprVec<Expression>& args) {
     return b_index_set(args,5);
   }
-  IntSetVal* b_index_set6(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_index_set6(ASTExprVec<Expression>& args) {
     return b_index_set(args,6);
   }
 
-  IntVal b_min_parsetint(ASTNodeVec<Expression>& args) {
+  IntVal b_min_parsetint(ASTExprVec<Expression>& args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
     return isv->min(0);
   }
-  IntVal b_max_parsetint(ASTNodeVec<Expression>& args) {
+  IntVal b_max_parsetint(ASTExprVec<Expression>& args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
     return isv->max(isv->size()-1);
   }
 
-  IntSetVal* b_ub_set(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_ub_set(ASTExprVec<Expression>& args) {
     assert(args.size() == 1);
     Expression* e = args[0];
     for (;;) {
@@ -214,12 +214,12 @@ namespace MiniZinc {
       }
     }
   }
-  IntSetVal* b_dom_varint(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_dom_varint(ASTExprVec<Expression>& args) {
     assert(args.size() == 1);
     return b_dom_varint(args[0]);
   }
 
-  IntSetVal* b_dom_array(ASTNodeVec<Expression>& args) {
+  IntSetVal* b_dom_array(ASTExprVec<Expression>& args) {
     assert(args.size() == 1);
     Expression* ae = args[0];
     ArrayLit* al = NULL;
@@ -255,7 +255,7 @@ namespace MiniZinc {
     return isv;
   }
 
-  ArrayLit* b_arrayXd(ASTNodeVec<Expression>& args, int d) {
+  ArrayLit* b_arrayXd(ASTExprVec<Expression>& args, int d) {
     ArrayLit* al = eval_array_lit(args[d]);
     std::vector<std::pair<int,int> > dims(d);
     unsigned int dim1d = 1;
@@ -272,35 +272,35 @@ namespace MiniZinc {
     ret->_type = al->_type;
     return ret;
   }
-  Expression* b_array1d(ASTNodeVec<Expression>& args) {
+  Expression* b_array1d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,1);
   }
-  Expression* b_array2d(ASTNodeVec<Expression>& args) {
+  Expression* b_array2d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,2);
   }
-  Expression* b_array3d(ASTNodeVec<Expression>& args) {
+  Expression* b_array3d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,3);
   }
-  Expression* b_array4d(ASTNodeVec<Expression>& args) {
+  Expression* b_array4d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,4);
   }
-  Expression* b_array5d(ASTNodeVec<Expression>& args) {
+  Expression* b_array5d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,5);
   }
-  Expression* b_array6d(ASTNodeVec<Expression>& args) {
+  Expression* b_array6d(ASTExprVec<Expression>& args) {
     return b_arrayXd(args,6);
   }
 
-  IntVal b_length(ASTNodeVec<Expression>& args) {
+  IntVal b_length(ASTExprVec<Expression>& args) {
     ArrayLit* al = eval_array_lit(args[0]);
     return al->_v.size();
   }
   
-  IntVal b_bool2int(ASTNodeVec<Expression>& args) {
+  IntVal b_bool2int(ASTExprVec<Expression>& args) {
     return eval_bool(args[0]) ? 1 : 0;
   }
 
-  bool b_forall_par(ASTNodeVec<Expression>& args) {
+  bool b_forall_par(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
@@ -309,7 +309,7 @@ namespace MiniZinc {
         return false;
     return true;
   }
-  Expression* b_forall_var(ASTNodeVec<Expression>& args) {
+  Expression* b_forall_var(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
@@ -324,7 +324,7 @@ namespace MiniZinc {
       return r;
     }
   }
-  bool b_exists_par(ASTNodeVec<Expression>& args) {
+  bool b_exists_par(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
@@ -333,7 +333,7 @@ namespace MiniZinc {
         return true;
     return false;
   }
-  Expression* b_exists_var(ASTNodeVec<Expression>& args) {
+  Expression* b_exists_var(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
@@ -358,7 +358,7 @@ namespace MiniZinc {
     std::vector<Type> t_intarray(1);
     t_intarray[0] = Type::parint(-1);
     
-    
+    GCLock lock;
     rb(m, ASTString("min"), t_intint, b_min);
     rb(m, ASTString("min"), t_intarray, b_min);
     rb(m, ASTString("max"), t_intarray, b_max);

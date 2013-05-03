@@ -26,7 +26,7 @@ namespace MiniZinc {
   ASTStringO*
   ASTStringO::a(const std::string& s) {
     ASTStringO* as =
-      static_cast<ASTStringO*>(alloc(sizeof(ASTStringO)+sizeof(size_t)+s.size()));
+      static_cast<ASTStringO*>(alloc(1+sizeof(size_t)+s.size()));
     new (as) ASTStringO(s);
     return as;
   }

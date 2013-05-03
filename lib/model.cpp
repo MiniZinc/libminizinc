@@ -19,6 +19,14 @@ namespace MiniZinc {
   }
 
   Model::~Model(void) {
+    for (Item* i : _items) {
+      if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+        if (ii->own() && ii->_m) {
+          delete ii->_m;
+          ii->_m = NULL;
+        }
+      }
+    }
     GC::remove(this);
   }
 

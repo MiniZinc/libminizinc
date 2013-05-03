@@ -88,7 +88,7 @@ namespace MiniZinc {
                const vector<string>& ip,
                bool ignoreStdlib,
                ostream& err) {
-
+    GCLock lock;
     string fileDirname; string fileBasename;
     filepath(filename, fileDirname, fileBasename);
 
@@ -99,7 +99,7 @@ namespace MiniZinc {
     vector<pair<string,Model*> > files;
     map<string,Model*> seenModels;
     
-    Model* model = new Model;
+    Model* model = new Model();
     model->_filename = ASTString(fileBasename);
 
     if (!ignoreStdlib) {

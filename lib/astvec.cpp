@@ -21,9 +21,7 @@ namespace MiniZinc {
 
   ASTIntVecO*
   ASTIntVecO::a(const std::vector<int>& v) {
-    ASTIntVecO* ao =
-      static_cast<ASTIntVecO*>(
-        alloc(sizeof(ASTIntVecO)+sizeof(int)*v.size()));
+    ASTIntVecO* ao = static_cast<ASTIntVecO*>(alloc(sizeof(int)*v.size()));
     new (ao) ASTIntVecO(v);
     return ao;
   }

@@ -166,9 +166,9 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* l = e->template cast<Let>();
-        l->mark();
+        l->pushbindings();
         ArrayLit* ret = eval_array_lit(l->_in);
-        l->untrail();
+        l->popbindings();
         return ret;
       }
     }
@@ -299,9 +299,9 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* l = e->template cast<Let>();
-        l->mark();
+        l->pushbindings();
         IntSetVal* ret = eval_intset(l->_in);
-        l->untrail();
+        l->popbindings();
         return ret;
       }
       break;
@@ -456,9 +456,9 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* l = e->template cast<Let>();
-        l->mark();
+        l->pushbindings();
         bool ret = eval_bool(l->_in);
-        l->untrail();
+        l->popbindings();
         return ret;
       }
       break;
@@ -537,9 +537,9 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* l = e->template cast<Let>();
-        l->mark();
+        l->pushbindings();
         IntVal ret = eval_int(l->_in);
-        l->untrail();
+        l->popbindings();
         return ret;
       }
       break;
@@ -630,12 +630,12 @@ namespace MiniZinc {
     case Expression::E_TI:
       {
         TypeInst* t = e->cast<TypeInst>();
-        ASTNodeVec<TypeInst> r;
+        ASTExprVec<TypeInst> r;
         if (t->_ranges.size() > 0) {
           std::vector<TypeInst*> rv(t->_ranges.size());
           for (unsigned int i=t->_ranges.size(); i--;)
             rv[i] = static_cast<TypeInst*>(eval_par(t->_ranges[i]));
-          r = ASTNodeVec<TypeInst>(rv);
+          r = ASTExprVec<TypeInst>(rv);
         }
         return 
           TypeInst::a(Location(),t->_type,r,eval_par(t->_domain));

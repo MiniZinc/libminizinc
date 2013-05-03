@@ -58,14 +58,14 @@ namespace MiniZinc {
       return static_cast<IntSetVal*>(it->second);
     }
     template<class T>
-    void insert(ASTNodeVec<T>& e0, ASTNodeVec<T>& e1) {
+    void insert(ASTExprVec<T>& e0, ASTExprVec<T>& e1) {
       m.insert(std::pair<void*,void*>(e0.vec(),e1.vec()));
     }
     template<class T>
-    ASTNodeVecO<T*>* find(ASTNodeVec<T>& e) {
+    ASTExprVecO<T*>* find(ASTExprVec<T>& e) {
       auto it = m.find(e.vec());
       if (it==m.end()) return NULL;
-      return static_cast<ASTNodeVecO<T*>*>(it->second);
+      return static_cast<ASTExprVecO<T*>*>(it->second);
     }
   };
 
@@ -129,13 +129,13 @@ namespace MiniZinc {
           }
           c = SetLit::a(copy_location(m,e),isv);
         } else {          
-          if (ASTNodeVecO<Expression*>* ve = m.find(s->_v)) {
-            c = SetLit::a(copy_location(m,e),ASTNodeVec<Expression>(ve));
+          if (ASTExprVecO<Expression*>* ve = m.find(s->_v)) {
+            c = SetLit::a(copy_location(m,e),ASTExprVec<Expression>(ve));
           } else {
             std::vector<Expression*> elems(s->_v.size());
             for (unsigned int i=s->_v.size(); i--;)
               elems[i] = copy(m,s->_v[i]);
-            ASTNodeVec<Expression> ce(elems);
+            ASTExprVec<Expression> ce(elems);
             m.insert(s->_v,ce);
             c = SetLit::a(copy_location(m,e),ce);
           }
@@ -190,14 +190,14 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
-        ASTNodeVecO<Expression*>* v;
-        if (ASTNodeVecO<Expression*>* cv = m.find(al->_v)) {
+        ASTExprVecO<Expression*>* v;
+        if (ASTExprVecO<Expression*>* cv = m.find(al->_v)) {
           v = cv;
         } else {
           std::vector<Expression*> elems(al->_v.size());
           for (unsigned int i=al->_v.size(); i--;)
             elems[i] = copy(m,al->_v[i]);
-          ASTNodeVec<Expression> ce(elems);
+          ASTExprVec<Expression> ce(elems);
           m.insert(al->_v,ce);
           v = ce.vec();
         }
@@ -207,7 +207,7 @@ namespace MiniZinc {
           dims[i].second = al->max(i);
         }
         ArrayLit* c = ArrayLit::a(copy_location(m,e),
-                                  ASTNodeVec<Expression>(v),dims);
+                                  ASTExprVec<Expression>(v),dims);
         c->_type = al->_type;
         m.insert(e,c);
         return c;
@@ -215,14 +215,14 @@ namespace MiniZinc {
     case Expression::E_ARRAYACCESS:
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
-        ASTNodeVecO<Expression*>* idx;
-        if (ASTNodeVecO<Expression*>* cidx = m.find(aa->_idx)) {
+        ASTExprVecO<Expression*>* idx;
+        if (ASTExprVecO<Expression*>* cidx = m.find(aa->_idx)) {
           idx = cidx;
         } else {
           std::vector<Expression*> elems(aa->_idx.size());
           for (unsigned int i=aa->_idx.size(); i--;)
             elems[i] = copy(m,aa->_idx[i]);
-          ASTNodeVec<Expression> ce(elems);
+          ASTExprVec<Expression> ce(elems);
           m.insert(aa->_idx,ce);
           idx = ce.vec();
         }
@@ -336,19 +336,19 @@ namespace MiniZinc {
     case Expression::E_TI:
       {
         TypeInst* t = e->cast<TypeInst>();
-        ASTNodeVecO<TypeInst*>* r;
+        ASTExprVecO<TypeInst*>* r;
         if (t->_ranges.size()==0) {
           r = NULL;
-        } else if (ASTNodeVecO<TypeInst*>* cr = m.find(t->_ranges)) {
+        } else if (ASTExprVecO<TypeInst*>* cr = m.find(t->_ranges)) {
           r = cr;
         } else {
           std::vector<TypeInst*> rr(t->_ranges.size());
           for (unsigned int i=t->_ranges.size(); i--;)
             rr[i] = static_cast<TypeInst*>(copy(m,t->_ranges[i]));
-          r = ASTNodeVecO<TypeInst*>::a(rr);
+          r = ASTExprVecO<TypeInst*>::a(rr);
         }
         TypeInst* c = TypeInst::a(copy_location(m,e),t->_type,
-          ASTNodeVec<TypeInst>(r),copy(m,t->_domain));
+          ASTExprVec<TypeInst>(r),copy(m,t->_domain));
         m.insert(e,c);
         return c;
       }

@@ -33,6 +33,11 @@ namespace MiniZinc {
   }
 
   void
+  Location::mark(void) {
+    filename.mark();
+  }
+
+  void
   Annotation::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_e));
@@ -63,6 +68,101 @@ namespace MiniZinc {
   Expression::annotate(Annotation* ann) {
     if (_ann) _ann->merge(ann); else _ann=ann;
   }
+
+#define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
+#define pushall(v) do { v.mark(); for (Expression* e : v) if (e!=NULL) { stack.push_back(e); }} while(0)
+  void
+  Expression::mark(Expression* e) {
+    if (e==NULL) return;
+    std::vector<Expression*> stack;
+    stack.push_back(e);
+    while (!stack.empty()) {
+      Expression* cur = stack.back(); stack.pop_back();
+      if (cur->_gc_mark==0) {
+        cur->_gc_mark = 1;
+        cur->_loc.mark();
+        pushstack(cur->_ann);
+        switch (cur->eid()) {
+        case Expression::E_INTLIT:
+        case Expression::E_FLOATLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_ANON:
+          break;
+        case Expression::E_SETLIT:
+          if (cur->cast<SetLit>()->_isv)
+            cur->cast<SetLit>()->_isv->mark();
+          else
+            pushall(cur->cast<SetLit>()->_v);
+          break;
+        case Expression::E_STRINGLIT:
+          cur->cast<StringLit>()->_v.mark();
+          break;
+        case Expression::E_ID:
+          cur->cast<Id>()->_v.mark();
+          pushstack(cur->cast<Id>()->_decl);
+          break;
+        case Expression::E_ARRAYLIT:
+          pushall(cur->cast<ArrayLit>()->_v);
+          cur->cast<ArrayLit>()->_dims.mark();
+          break;
+        case Expression::E_ARRAYACCESS:
+          pushstack(cur->cast<ArrayAccess>()->_v);
+          pushall(cur->cast<ArrayAccess>()->_idx);
+          break;
+        case Expression::E_COMP:
+          pushstack(cur->cast<Comprehension>()->_e);
+          pushstack(cur->cast<Comprehension>()->_where);
+          pushall(cur->cast<Comprehension>()->_g);
+          cur->cast<Comprehension>()->_g_idx.mark();
+          break;
+        case Expression::E_ITE:
+          pushstack(cur->cast<ITE>()->_e_else);
+          pushall(cur->cast<ITE>()->_e_if_then);
+          break;
+        case Expression::E_BINOP:
+          pushstack(cur->cast<BinOp>()->_e0);
+          pushstack(cur->cast<BinOp>()->_e1);
+          break;
+        case Expression::E_UNOP:
+          pushstack(cur->cast<UnOp>()->_e0);
+          break;
+        case Expression::E_CALL:
+          cur->cast<Call>()->_id.mark();
+          pushall(cur->cast<Call>()->_args);
+          if (FunctionI* fi = cur->cast<Call>()->_decl) {
+            fi->_id.mark();
+            pushstack(fi->_ti);
+            pushstack(fi->_ann);
+            pushstack(fi->_e);
+            pushall(fi->_params);
+          }
+          break;
+        case Expression::E_VARDECL:
+          pushstack(cur->cast<VarDecl>()->_ti);
+          pushstack(cur->cast<VarDecl>()->_e);
+          cur->cast<VarDecl>()->_id.mark();
+          break;
+        case Expression::E_LET:
+          pushall(cur->cast<Let>()->_let);
+          pushstack(cur->cast<Let>()->_in);
+          break;
+        case Expression::E_ANN:
+          pushstack(cur->cast<Annotation>()->_e);
+          pushstack(cur->cast<Annotation>()->_a);
+          break;
+        case Expression::E_TI:
+          pushstack(cur->cast<TypeInst>()->_domain);
+          pushall(cur->cast<TypeInst>()->_ranges);
+          break;
+        case Expression::E_TIID:
+          cur->cast<TIId>()->_v.mark();
+          break;
+        }
+      }
+    }
+  }
+#undef pushstack
+#undef pushall
 
   void
   IntLit::rehash(void) {
@@ -108,14 +208,14 @@ namespace MiniZinc {
   SetLit::a(const Location& loc,
             const std::vector<Expression*>& v) {
     SetLit* sl = new SetLit(loc);
-    sl->_v = ASTNodeVec<Expression>(v);
+    sl->_v = ASTExprVec<Expression>(v);
     sl->_isv = NULL;
     sl->rehash();
     return sl;
   }
   SetLit*
   SetLit::a(const Location& loc,
-            ASTNodeVec<Expression> v) {
+            ASTExprVec<Expression> v) {
     SetLit* sl = new SetLit(loc);
     sl->_v = v;
     sl->_isv = NULL;
@@ -225,14 +325,14 @@ namespace MiniZinc {
       _dims[i*2] = dims[i].first;
       _dims[i*2+1] = dims[i].second;
     }
-    al->_v = ASTNodeVec<Expression>(v);
+    al->_v = ASTExprVec<Expression>(v);
     al->_dims = ASTIntVec(_dims);
     al->rehash();
     return al;
   }
   ArrayLit*
   ArrayLit::a(const Location& loc,
-              ASTNodeVec<Expression> v,
+              ASTExprVec<Expression> v,
               const std::vector<pair<int,int> >& dims) {
     ArrayLit* al = new ArrayLit(loc);
     std::vector<int> _dims(dims.size()*2);
@@ -292,14 +392,14 @@ namespace MiniZinc {
                  const std::vector<Expression*>& idx) {
     ArrayAccess* aa = new ArrayAccess(loc);
     aa->_v = v;
-    aa->_idx = ASTNodeVec<Expression>(idx);
+    aa->_idx = ASTExprVec<Expression>(idx);
     aa->rehash();
     return aa;
   }
   ArrayAccess*
   ArrayAccess::a(const Location& loc,
                  Expression* v,
-                 ASTNodeVec<Expression> idx) {
+                 ASTExprVec<Expression> idx) {
     ArrayAccess* aa = new ArrayAccess(loc);
     aa->_v = v;
     aa->_idx = idx;
@@ -370,7 +470,7 @@ namespace MiniZinc {
       }
     }
     idx.push_back(es.size());
-    c->_g = ASTNodeVec<Expression>(es);
+    c->_g = ASTExprVec<Expression>(es);
     c->_g_idx = ASTIntVec(idx);
     c->_where = g._w;
     c->_flag_1 = set;
@@ -392,7 +492,7 @@ namespace MiniZinc {
   ITE::a(const Location& loc,
          const std::vector<Expression*>& e_if_then, Expression* e_else) {
     ITE* ite = new ITE(loc);
-    ite->_e_if_then = ASTNodeVec<Expression>(e_if_then);
+    ite->_e_if_then = ASTExprVec<Expression>(e_if_then);
     ite->_e_else = e_else;
     ite->rehash();
     return ite;
@@ -451,6 +551,7 @@ namespace MiniZinc {
       ASTString sBOT_NOT;
       
       OpToString(void) {
+        GCLock lock;
         sBOT_PLUS = ASTString("@+");
         sBOT_MINUS = ASTString("@-");
         sBOT_MULT = ASTString("@*");
@@ -568,7 +669,7 @@ namespace MiniZinc {
           FunctionI* decl) {
     Call* c = new Call(loc);
     c->_id = ASTString(id);
-    c->_args = ASTNodeVec<Expression>(args);
+    c->_args = ASTExprVec<Expression>(args);
     c->_decl = decl;
     c->rehash();
     return c;
@@ -580,7 +681,7 @@ namespace MiniZinc {
           FunctionI* decl) {
     Call* c = new Call(loc);
     c->_id = id;
-    c->_args = ASTNodeVec<Expression>(args);
+    c->_args = ASTExprVec<Expression>(args);
     c->_decl = decl;
     c->rehash();
     return c;
@@ -638,13 +739,13 @@ namespace MiniZinc {
   Let::a(const Location& loc,
          const std::vector<Expression*>& let, Expression* in) {
     Let* l = new Let(loc);
-    l->_let = ASTNodeVec<Expression>(let);
+    l->_let = ASTExprVec<Expression>(let);
     l->_in = in;
     l->rehash();
     return l;
   }
   void
-  Let::mark(void) {
+  Let::pushbindings(void) {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
       if (_let[i]->isa<VarDecl>()) {
@@ -653,7 +754,7 @@ namespace MiniZinc {
     }
   }
   void
-  Let::untrail(void) {
+  Let::popbindings(void) {
     GC::untrail();
   }
 
@@ -670,7 +771,7 @@ namespace MiniZinc {
   TypeInst*
   TypeInst::a(const Location& loc,
               const Type& type, 
-              ASTNodeVec<TypeInst> ranges,
+              ASTExprVec<TypeInst> ranges,
               Expression* domain) {
     TypeInst* t = new TypeInst(loc,type,ranges,domain);
     t->rehash();
@@ -688,7 +789,7 @@ namespace MiniZinc {
   void
   TypeInst::addRanges(const std::vector<TypeInst*>& ranges) {
     assert(_ranges.size() == 0);
-    _ranges = ASTNodeVec<TypeInst>(ranges);
+    _ranges = ASTExprVec<TypeInst>(ranges);
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
         ranges[0]->cast<TypeInst>()->_domain &&
         ranges[0]->cast<TypeInst>()->_domain->isa<TIId>())
@@ -787,7 +888,7 @@ namespace MiniZinc {
     FunctionI* fi = new FunctionI(loc);
     fi->_id = ASTString(id);
     fi->_ti = ti;
-    fi->_params = ASTNodeVec<VarDecl>(params);
+    fi->_params = ASTExprVec<VarDecl>(params);
     fi->_ann = ann;
     fi->_e = e;
     // fi->_builtins.e = NULL;

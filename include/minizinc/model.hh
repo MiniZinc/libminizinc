@@ -21,6 +21,8 @@ namespace MiniZinc {
   class Model {
     friend class GC;
   protected:
+    /// Previous model in root set list
+    Model* _roots_prev;
     /// Next model in root set list
     Model* _roots_next;
 
