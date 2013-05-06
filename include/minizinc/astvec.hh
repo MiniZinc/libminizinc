@@ -49,29 +49,31 @@ namespace MiniZinc {
     int* begin(void);
     /// Iterator end
     int* end(void);
+    /// Mark as alive for garbage collection
+    void mark(void);
   };
   
-  template<class> class ASTNodeVecO;
+  template<class> class ASTExprVecO;
 
   /**
    * \brief Handler for ASTIntVecO objects
    */
   template<class T>
-  class ASTNodeVec {
+  class ASTExprVec {
   protected:
     /// Vector
-    ASTNodeVecO<T*>* _v;
+    ASTExprVecO<T*>* _v;
   public:
     /// Default constructor
-    ASTNodeVec(void) : _v(NULL) {}
+    ASTExprVec(void) : _v(NULL) {}
     /// Constructor
-    ASTNodeVec(ASTNodeVecO<T*>* v) : _v(v) {}
+    ASTExprVec(ASTExprVecO<T*>* v) : _v(v) {}
     /// Constructor
-    ASTNodeVec(const std::vector<T*>& v);
+    ASTExprVec(const std::vector<T*>& v);
     /// Copy constructor
-    ASTNodeVec(const ASTNodeVec& v);
+    ASTExprVec(const ASTExprVec& v);
     /// Assignment operator
-    ASTNodeVec& operator= (const ASTNodeVec& v);
+    ASTExprVec& operator= (const ASTExprVec& v);
 
     /// Size of vector
     unsigned int size(void) const;
@@ -84,7 +86,10 @@ namespace MiniZinc {
     /// Iterator end
     T** end(void);
     
-    ASTNodeVecO<T*>* vec(void);
+    /// Return vector object
+    ASTExprVecO<T*>* vec(void);
+    /// Mark as alive for garbage collection
+    void mark(void);
   };
   
   class ASTIntVecO : public ASTChunk {
@@ -105,14 +110,16 @@ namespace MiniZinc {
     int* begin(void) { return reinterpret_cast<int*>(_data); }
     /// Iterator end
     int* end(void) { return begin()+size(); }
+    /// Mark as alive for garbage collection
+    void mark(void) { _gc_mark = 1; }
   };
 
   template<class T>
-  class ASTNodeVecO : public ASTVec {
+  class ASTExprVecO : public ASTVec {
   protected:
-    ASTNodeVecO(const std::vector<T>& v);
+    ASTExprVecO(const std::vector<T>& v);
   public:
-    static ASTNodeVecO* a(const std::vector<T>& v);
+    static ASTExprVecO* a(const std::vector<T>& v);
     unsigned int size(void) const { return _size; }
     bool empty(void) const { return size()==0; }
     T& operator[] (int i) {
@@ -125,21 +132,21 @@ namespace MiniZinc {
     T* begin(void) { return reinterpret_cast<T*>(_data); }
     /// Iterator end
     T* end(void) { return begin()+size(); }
+    /// Mark as alive for garbage collection
+    void mark(void) { _gc_mark = 1; }
   };
 
   template<class T>
-  ASTNodeVecO<T>::ASTNodeVecO(const std::vector<T>& v)
+  ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v)
     : ASTVec(v.size()) {
     for (unsigned int i=v.size(); i--;)
       (*this)[i] = v[i];
   }
   template<class T>
-  ASTNodeVecO<T>*
-  ASTNodeVecO<T>::a(const std::vector<T>& v) {
-    ASTNodeVecO<T>* ao =
-      static_cast<ASTNodeVecO<T>*>(
-        alloc(sizeof(ASTNodeVecO<T>)+sizeof(T)*v.size()));
-    new (ao) ASTNodeVecO<T>(v);
+  ASTExprVecO<T>*
+  ASTExprVecO<T>::a(const std::vector<T>& v) {
+    ASTExprVecO<T>* ao = static_cast<ASTExprVecO<T>*>(alloc(v.size()));
+    new (ao) ASTExprVecO<T>(v);
     return ao;
   }
 
@@ -166,52 +173,62 @@ namespace MiniZinc {
     return (*_v)[i];
   }
   inline int*
-  ASTIntVec::begin(void) { return _v->begin(); }
+  ASTIntVec::begin(void) {
+    return _v ? _v->begin() : NULL;
+  }
   inline int*
-  ASTIntVec::end(void) { return _v->end(); }
+  ASTIntVec::end(void) {
+    return _v ? _v->end() : NULL;
+  }
+  inline void
+  ASTIntVec::mark(void) { if (_v) _v->mark(); }
 
   template<class T>
-  ASTNodeVec<T>::ASTNodeVec(const std::vector<T*>& v)
-    : _v(ASTNodeVecO<T*>::a(v)) {}
+  ASTExprVec<T>::ASTExprVec(const std::vector<T*>& v)
+    : _v(ASTExprVecO<T*>::a(v)) {}
   template<class T>
   inline
-  ASTNodeVec<T>::ASTNodeVec(const ASTNodeVec<T>& v)
+  ASTExprVec<T>::ASTExprVec(const ASTExprVec<T>& v)
     : _v(v._v) {}
   template<class T>
-  inline ASTNodeVec<T>&
-  ASTNodeVec<T>::operator =(const ASTNodeVec<T>& v) {
+  inline ASTExprVec<T>&
+  ASTExprVec<T>::operator =(const ASTExprVec<T>& v) {
     _v = v._v;
     return *this;
   }
   template<class T>
   inline unsigned int
-  ASTNodeVec<T>::size(void) const {
+  ASTExprVec<T>::size(void) const {
     return _v ? _v->size() : 0;
   }
   template<class T>
   inline T*&
-  ASTNodeVec<T>::operator[](unsigned int i) {
+  ASTExprVec<T>::operator[](unsigned int i) {
     return (*_v)[i];
   }
   template<class T>
   inline const T*
-  ASTNodeVec<T>::operator[](unsigned int i) const {
+  ASTExprVec<T>::operator[](unsigned int i) const {
     return (*_v)[i];
   }
   template<class T>
   inline T**
-  ASTNodeVec<T>::begin(void) {
-    return _v ? _v->begin() : NULL; }
+  ASTExprVec<T>::begin(void) {
+    return _v ? _v->begin() : NULL;
+  }
   template<class T>
   inline T**
-  ASTNodeVec<T>::end(void) {
+  ASTExprVec<T>::end(void) {
     return _v ? _v->end() : NULL;
   }
   template<class T>
-  inline ASTNodeVecO<T*>*
-  ASTNodeVec<T>::vec(void) {
+  inline ASTExprVecO<T*>*
+  ASTExprVec<T>::vec(void) {
     return _v;
   }
+  template<class T>
+  inline void
+  ASTExprVec<T>::mark(void) { if (_v) _v->mark(); }
 
 }
 

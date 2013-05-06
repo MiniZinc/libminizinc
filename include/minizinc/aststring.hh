@@ -53,6 +53,8 @@ namespace MiniZinc {
     bool operator!= (const std::string& s) const;
     
     size_t hash(void) const;
+    
+    void mark(void);
   };
 
   template<typename T>
@@ -95,6 +97,9 @@ namespace MiniZinc {
     size_t hash(void) const {
       return reinterpret_cast<const size_t*>(_data)[0];
     }
+    void mark(void) {
+      _gc_mark = 1;
+    }
   };
 
   inline
@@ -114,6 +119,8 @@ namespace MiniZinc {
   ASTString::c_str(void) const { return _s ? _s->c_str() : NULL; }
   inline std::string
   ASTString::str(void) const { return _s ? _s->str() : std::string(""); }
+  inline void
+  ASTString::mark(void) { if (_s) _s->mark(); }
 
   inline bool
   ASTString::operator== (const ASTString& s) const {

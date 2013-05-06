@@ -28,7 +28,7 @@ namespace MiniZinc {
     };
     
     template<class E>
-    void pushVec(std::vector<C>& stack, ASTNodeVec<E>& v) {
+    void pushVec(std::vector<C>& stack, ASTExprVec<E>& v) {
       for (Expression* ei : v)
         stack.push_back(C(ei));
     }

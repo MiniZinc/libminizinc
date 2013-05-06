@@ -69,6 +69,9 @@ namespace MiniZinc {
     
     /// Return string representation
     std::string toString(void) const;
+    
+    /// Mark as alive for garbage collection
+    void mark(void);
   };
 
   /// Output operator for locations
@@ -166,6 +169,9 @@ namespace MiniZinc {
     }
     
     static bool equal(const Expression* e0, const Expression* e1);
+    
+    /// Mark \a e as alive for garbage collection
+    static void mark(Expression* e);
   };
 
   /**
@@ -232,7 +238,7 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
     /// The value of this expression, or NULL
-    ASTNodeVec<Expression> _v;
+    ASTExprVec<Expression> _v;
     /// A range-list based representation for an integer set
     IntSetVal* _isv;
     /// Allocate set \$f\{v1,\dots,vn\}\$f
@@ -240,7 +246,7 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v);
     /// Allocate set \$f\{v1,\dots,vn\}\$f
     static SetLit* a(const Location& loc,
-                     ASTNodeVec<Expression> v);
+                     ASTExprVec<Expression> v);
     /// Allocate set
     static SetLit* a(const Location& loc,
                      IntSetVal* isv);
@@ -339,7 +345,7 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
     /// The array
-    ASTNodeVec<Expression> _v;
+    ASTExprVec<Expression> _v;
     /// The declared array dimensions
     ASTIntVec _dims;
     /// Allocate
@@ -348,7 +354,7 @@ namespace MiniZinc {
                        const std::vector<pair<int,int> >& dims);
     /// Allocate (existing content)
     static ArrayLit* a(const Location& loc,
-                       ASTNodeVec<Expression> v,
+                       ASTExprVec<Expression> v,
                        const std::vector<pair<int,int> >& dims);
     /// Allocate (one-dimensional)
     static ArrayLit* a(const Location& loc,
@@ -377,7 +383,7 @@ namespace MiniZinc {
     /// The array to access
     Expression* _v;
     /// The indexes (for all array dimensions)
-    ASTNodeVec<Expression> _idx;
+    ASTExprVec<Expression> _idx;
     /// Allocate
     static ArrayAccess* a(const Location& loc,
                           Expression* v,
@@ -385,7 +391,7 @@ namespace MiniZinc {
     /// Allocate
     static ArrayAccess* a(const Location& loc,
                           Expression* v,
-                          ASTNodeVec<Expression> idx);
+                          ASTExprVec<Expression> idx);
     /// Recompute hash value
     void rehash(void);
   };
@@ -434,7 +440,7 @@ namespace MiniZinc {
     /// The expression to generate
     Expression* _e;
     /// A list of generator expressions
-    ASTNodeVec<Expression> _g;
+    ASTExprVec<Expression> _g;
     /// A list of indices where generators start
     ASTIntVec _g_idx;
     /// The where-clause (or NULL)
@@ -459,7 +465,7 @@ namespace MiniZinc {
     ITE(const Location& loc) : Expression(loc,E_ITE,Type()) {}
   public:
     /// List of if-then-pairs
-    ASTNodeVec<Expression> _e_if_then;
+    ASTExprVec<Expression> _e_if_then;
     /// Else-expression
     Expression* _e_else;
     /// Allocate
@@ -543,7 +549,7 @@ namespace MiniZinc {
     /// Identifier of called predicate or function
     ASTString _id;
     /// Arguments to the call
-    ASTNodeVec<Expression> _args;
+    ASTExprVec<Expression> _args;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
     /// Allocate
@@ -604,7 +610,7 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_LET;
     /// List of local declarations
-    ASTNodeVec<Expression> _let;
+    ASTExprVec<Expression> _let;
     /// Body of the let
     Expression* _in;
     /// Allocate
@@ -614,9 +620,9 @@ namespace MiniZinc {
     void rehash(void);
 
     /// Remember current let bindings
-    void mark(void);
+    void pushbindings(void);
     /// Restore previous let bindings
-    void untrail(void);
+    void popbindings(void);
     
   };
 
@@ -625,7 +631,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     TypeInst(const Location& loc, const Type& type,
-             ASTNodeVec<TypeInst> ranges,
+             ASTExprVec<TypeInst> ranges,
              Expression* domain=NULL)
      : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
     /// Constructor
@@ -636,13 +642,13 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_TI;
     /// Ranges of an array expression
-    ASTNodeVec<TypeInst> _ranges;
+    ASTExprVec<TypeInst> _ranges;
     /// Declared domain (or NULL)
     Expression* _domain;
     /// Allocate
     static TypeInst* a(const Location& loc,
                        const Type& t,
-                       ASTNodeVec<TypeInst> ranges,
+                       ASTExprVec<TypeInst> ranges,
                        Expression* domain=NULL);
     /// Allocate
     static TypeInst* a(const Location& loc,
@@ -667,7 +673,7 @@ namespace MiniZinc {
     /// Identifier of the concrete item type
     enum ItemId {
       II_INC = Expression::EID_END+1, II_VD, II_ASN, II_CON, II_SOL,
-      II_OUT, II_FUN
+      II_OUT, II_FUN, II_END = II_FUN
     };
     ItemId iid(void) const {
       return static_cast<ItemId>(_id);
@@ -824,22 +830,22 @@ namespace MiniZinc {
     /// Type-inst of the return value
     TypeInst* _ti;
     /// List of parameter declarations
-    ASTNodeVec<VarDecl> _params;
+    ASTExprVec<VarDecl> _params;
     /// Annotation
     Annotation* _ann;
     /// Function body (or NULL)
     Expression* _e;
     
     /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (ASTNodeVec<Expression>&);
+    typedef Expression* (*builtin_e) (ASTExprVec<Expression>&);
     /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (ASTNodeVec<Expression>&);
+    typedef IntVal (*builtin_i) (ASTExprVec<Expression>&);
     /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (ASTNodeVec<Expression>&);
+    typedef bool (*builtin_b) (ASTExprVec<Expression>&);
     /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (ASTNodeVec<Expression>&);
+    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>&);
     /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (ASTNodeVec<Expression>&);
+    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>&);
 
     /// Builtin functions (or NULL)
     struct {

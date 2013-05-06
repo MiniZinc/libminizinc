@@ -14,6 +14,7 @@
 #include <minizinc/model.hh>
 
 #include <vector>
+#include <cstring>
 
 namespace MiniZinc {
   
@@ -349,9 +350,10 @@ namespace MiniZinc {
   void
   GC::Heap::sweep(void) {
     HeapPage* p = _page;
+    HeapPage* prev = NULL;
     while (p) {
-      std::cerr << "Sweep page " << p << " used="<<p->used << std::endl;
       size_t off = 0;
+      bool wholepage = false;
       while (off < p->used) {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
@@ -360,19 +362,31 @@ namespace MiniZinc {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
+            _free_mem += ns;
           } else {
             assert(off==0);
             assert(p->used==p->size);
-            std::cerr << "Could free whole page\n";
+            wholepage = true;
           }
-          _free_mem += ns;
         } else {
           n->_gc_mark=0;
         }
         off += ns;
       }
-      std::cerr << std::endl;
-      p = p->next;
+      if (wholepage) {
+#ifndef NDEBUG
+        memset(p->data,42,p->size);
+#endif
+        if (prev)
+          prev->next = p->next;
+        HeapPage* pf = p;
+        p = p->next;
+        _alloced_mem -= pf->size;
+        ::free(pf);
+      } else {
+        prev = p;
+        p = p->next;
+      }
     }
   }
 
