@@ -121,9 +121,27 @@ namespace MiniZinc {
         static_cast<HeapPage*>(::malloc(sizeof(HeapPage)+s-1));
       _alloced_mem += s;
       _free_mem += s;
-      HeapPage** nextPage = exact ? &_page->next : &_page;
-      new (newPage) HeapPage(*nextPage,s);
-      *nextPage = newPage;
+      if (exact && _page) {
+        new (newPage) HeapPage(_page->next,s);
+        _page->next = newPage;
+      } else {
+        if (_page) {
+          size_t ns = _page->size-_page->used;
+          assert(ns <= _fl_size[_max_fl]);
+          if (ns >= _fl_size[0]) {
+            // Remainder of page can be added to free lists
+            FreeListNode* fln = 
+              reinterpret_cast<FreeListNode*>(_page->data+_page->used);
+            new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
+            _fl[_fl_slot(ns)] = fln;
+          } else {
+            // Waste a little memory (less than smallest free list slot)
+            _free_mem -= ns;
+          }
+        }
+        new (newPage) HeapPage(_page,s);
+        _page = newPage;
+      }
       return newPage;
     }
 
@@ -138,8 +156,6 @@ namespace MiniZinc {
       char* ret = p->data+p->used;
       p->used += size;
       _free_mem -= size;
-      // if (size>80)
-      //   std::cerr << "alloc large " << _page->used << " " << static_cast<void*>(ret) << " " << size << std::endl;
       return ret;
     }
 
@@ -150,16 +166,6 @@ namespace MiniZinc {
     /// Allocate \a n objects of type T (no initialisation)
     template<typename T>
     T* alloc(int n) { return static_cast<T*>(alloc(n*sizeof(T))); }
-
-    void fill_fl(int slot) {
-      assert(slot <= _max_fl);
-      if (_fl[slot]==NULL) {
-        _fl[slot] =
-          static_cast<FreeListNode*>(alloc(_fl_size[slot]));
-        new (_fl[slot]) FreeListNode(_fl_size[slot], NULL);
-      } else {
-      }
-    }
 
     void* fl(size_t size) {
       int slot = _fl_slot(size);
