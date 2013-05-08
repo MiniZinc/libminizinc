@@ -881,6 +881,9 @@ namespace MiniZinc {
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }
+      if (vd._ann) {
+        dl->addDocumentToList(expressionToDocument(vd._ann));
+      }
       if (vd._e) {
         dl->addStringToList(" = ");
         dl->addDocumentToList(expressionToDocument(vd._e));
@@ -955,7 +958,7 @@ namespace MiniZinc {
     DocumentList* dl = new DocumentList("", "", "");
     Document* s = em.map(e);
     dl->addDocumentToList(s);
-    if (e->_ann) {
+    if (!e->isa<VarDecl>() && e->_ann) {
       dl->addDocumentToList(em.map(e->_ann));
     }
     return dl;
