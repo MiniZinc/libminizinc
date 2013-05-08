@@ -28,10 +28,9 @@ namespace MiniZinc {
     };
     
     template<class E>
-    void pushVec(std::vector<C>& stack, CtxVec<E>* v) {
-      if (v)
-        for (Expression* ei : *v)
-          stack.push_back(C(ei));
+    void pushVec(std::vector<C>& stack, ASTExprVec<E>& v) {
+      for (Expression* ei : v)
+        stack.push_back(C(ei));
     }
     
   public:
@@ -50,7 +49,7 @@ namespace MiniZinc {
         continue;
       }
       if (c._done) {
-        switch (c._e->_eid) {
+        switch (c._e->eid()) {
         case Expression::E_INTLIT:
           _t.vIntLit(*c._e->template cast<IntLit>());
           break;
@@ -116,7 +115,7 @@ namespace MiniZinc {
         if (_t.visitAnnotation && ce->_ann) {
           stack.push_back(C(ce->_ann));
         }
-        switch (ce->_eid) {
+        switch (ce->eid()) {
         case Expression::E_INTLIT:
         case Expression::E_FLOATLIT:
         case Expression::E_BOOLLIT:
@@ -139,9 +138,8 @@ namespace MiniZinc {
           {
             Comprehension* comp = ce->template cast<Comprehension>();
             stack.push_back(C(comp->_where));
-            for (Generator* g : *comp->_g) {
-              pushVec(stack, g->_v);
-              stack.push_back(C(g->_in));
+            for (Expression* g : comp->_g) {
+              stack.push_back(C(g));
             }
             stack.push_back(C(comp->_e));
           }
@@ -150,9 +148,8 @@ namespace MiniZinc {
           {
             ITE* ite = ce->template cast<ITE>();
             stack.push_back(C(ite->_e_else));
-            for (ITE::IfThen& it : *ite->_e_if) {
-              stack.push_back(C(it.second));
-              stack.push_back(C(it.first));
+            for (Expression* it : ite->_e_if_then) {
+              stack.push_back(C(it));
             }
           }
           break;

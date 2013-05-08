@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
   if (argc < 2)
     goto error;
 
+  GC::init();
+
   for (;;) {
     if (string(argv[i])==string("-I")) {
       i++;
@@ -83,16 +85,16 @@ int main(int argc, char** argv) {
     datafiles.push_back(argv[i++]);
 
   {
-    ASTContext ctx;
-
-    if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
+    if (Model* m = parse(filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
       try {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
-          MiniZinc::typecheck(ctx,m);
-          MiniZinc::registerBuiltins(ctx);
+          MiniZinc::typecheck(m);
+          MiniZinc::registerBuiltins(m);
+          Printer p;
+          p.print(m,std::cout);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;

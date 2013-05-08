@@ -18,7 +18,6 @@ namespace MiniZinc {
   Location
   Location::a(void) {
     Location l;
-    l.filename = NULL;
     l.first_line = 0;
     l.first_column = 0;
     l.last_line = 0;
@@ -29,8 +28,13 @@ namespace MiniZinc {
   std::string
   Location::toString(void) const {
     std::ostringstream oss;
-    oss << (filename ? filename->str() : "") << ":" << first_line << "." << first_column;
+    oss << filename.str() << ":" << first_line << "." << first_column;
     return oss.str();
+  }
+
+  void
+  Location::mark(void) {
+    filename.mark();
   }
 
   void
@@ -40,16 +44,14 @@ namespace MiniZinc {
     cmb_hash(Expression::hash(_a));
   }
   Annotation*
-  Annotation::a(ASTContext& ctx, const Location& loc,
-                Expression* e) {
-    Annotation* ann = new (ctx) Annotation(loc,e);
+  Annotation::a(const Location& loc, Expression* e) {
+    Annotation* ann = new Annotation(loc,e);
     ann->rehash();
     return ann;
   }
   Annotation*
-  Annotation::a(ASTContext& ctx, const Location& loc,
-                Expression* e, Annotation* a) {
-    Annotation* ann = new (ctx) Annotation(loc,e);
+  Annotation::a(const Location& loc, Expression* e, Annotation* a) {
+    Annotation* ann = new Annotation(loc,e);
     ann->_a = a;
     ann->rehash();
     return ann;
@@ -67,6 +69,101 @@ namespace MiniZinc {
     if (_ann) _ann->merge(ann); else _ann=ann;
   }
 
+#define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
+#define pushall(v) do { v.mark(); for (Expression* e : v) if (e!=NULL) { stack.push_back(e); }} while(0)
+  void
+  Expression::mark(Expression* e) {
+    if (e==NULL) return;
+    std::vector<Expression*> stack;
+    stack.push_back(e);
+    while (!stack.empty()) {
+      Expression* cur = stack.back(); stack.pop_back();
+      if (cur->_gc_mark==0) {
+        cur->_gc_mark = 1;
+        cur->_loc.mark();
+        pushstack(cur->_ann);
+        switch (cur->eid()) {
+        case Expression::E_INTLIT:
+        case Expression::E_FLOATLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_ANON:
+          break;
+        case Expression::E_SETLIT:
+          if (cur->cast<SetLit>()->_isv)
+            cur->cast<SetLit>()->_isv->mark();
+          else
+            pushall(cur->cast<SetLit>()->_v);
+          break;
+        case Expression::E_STRINGLIT:
+          cur->cast<StringLit>()->_v.mark();
+          break;
+        case Expression::E_ID:
+          cur->cast<Id>()->_v.mark();
+          pushstack(cur->cast<Id>()->_decl);
+          break;
+        case Expression::E_ARRAYLIT:
+          pushall(cur->cast<ArrayLit>()->_v);
+          cur->cast<ArrayLit>()->_dims.mark();
+          break;
+        case Expression::E_ARRAYACCESS:
+          pushstack(cur->cast<ArrayAccess>()->_v);
+          pushall(cur->cast<ArrayAccess>()->_idx);
+          break;
+        case Expression::E_COMP:
+          pushstack(cur->cast<Comprehension>()->_e);
+          pushstack(cur->cast<Comprehension>()->_where);
+          pushall(cur->cast<Comprehension>()->_g);
+          cur->cast<Comprehension>()->_g_idx.mark();
+          break;
+        case Expression::E_ITE:
+          pushstack(cur->cast<ITE>()->_e_else);
+          pushall(cur->cast<ITE>()->_e_if_then);
+          break;
+        case Expression::E_BINOP:
+          pushstack(cur->cast<BinOp>()->_e0);
+          pushstack(cur->cast<BinOp>()->_e1);
+          break;
+        case Expression::E_UNOP:
+          pushstack(cur->cast<UnOp>()->_e0);
+          break;
+        case Expression::E_CALL:
+          cur->cast<Call>()->_id.mark();
+          pushall(cur->cast<Call>()->_args);
+          if (FunctionI* fi = cur->cast<Call>()->_decl) {
+            fi->_id.mark();
+            pushstack(fi->_ti);
+            pushstack(fi->_ann);
+            pushstack(fi->_e);
+            pushall(fi->_params);
+          }
+          break;
+        case Expression::E_VARDECL:
+          pushstack(cur->cast<VarDecl>()->_ti);
+          pushstack(cur->cast<VarDecl>()->_e);
+          cur->cast<VarDecl>()->_id.mark();
+          break;
+        case Expression::E_LET:
+          pushall(cur->cast<Let>()->_let);
+          pushstack(cur->cast<Let>()->_in);
+          break;
+        case Expression::E_ANN:
+          pushstack(cur->cast<Annotation>()->_e);
+          pushstack(cur->cast<Annotation>()->_a);
+          break;
+        case Expression::E_TI:
+          pushstack(cur->cast<TypeInst>()->_domain);
+          pushall(cur->cast<TypeInst>()->_ranges);
+          break;
+        case Expression::E_TIID:
+          cur->cast<TIId>()->_v.mark();
+          break;
+        }
+      }
+    }
+  }
+#undef pushstack
+#undef pushall
+
   void
   IntLit::rehash(void) {
     init_hash();
@@ -74,9 +171,8 @@ namespace MiniZinc {
     cmb_hash(h(_v));
   }
   IntLit*
-  IntLit::a(ASTContext& ctx, const Location& loc,
-            IntVal v) {
-    IntLit* il = new (ctx) IntLit(loc,v);
+  IntLit::a(const Location& loc, IntVal v) {
+    IntLit* il = new IntLit(loc,v);
     il->rehash();
     return il;
   }
@@ -88,9 +184,8 @@ namespace MiniZinc {
     cmb_hash(h(_v));
   }
   FloatLit*
-  FloatLit::a(ASTContext& ctx, const Location& loc,
-              FloatVal v) {
-    FloatLit* fl = new (ctx) FloatLit(loc,v);
+  FloatLit::a(const Location& loc, FloatVal v) {
+    FloatLit* fl = new FloatLit(loc,v);
     fl->rehash();
     return fl;
   }
@@ -98,43 +193,39 @@ namespace MiniZinc {
   void
   SetLit::rehash(void) {
     init_hash();
-    if (_v) {
-      for (unsigned int i=_v->size(); i--;)
-        cmb_hash(Expression::hash((*_v)[i]));
-    } else {
+    if (_isv) {
       std::hash<IntVal> h;
       for (IntSetRanges r0(_isv); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
+    } else {
+      for (unsigned int i=_v.size(); i--;)
+        cmb_hash(Expression::hash(_v[i]));
     }
   }
   SetLit*
-  SetLit::a(ASTContext& ctx,
-            const Location& loc,
+  SetLit::a(const Location& loc,
             const std::vector<Expression*>& v) {
-    SetLit* sl = new (ctx) SetLit(loc);
-    sl->_v = CtxVec<Expression*>::a(ctx,v);
+    SetLit* sl = new SetLit(loc);
+    sl->_v = ASTExprVec<Expression>(v);
     sl->_isv = NULL;
     sl->rehash();
     return sl;
   }
   SetLit*
-  SetLit::a(ASTContext& ctx,
-            const Location& loc,
-            CtxVec<Expression*>* v) {
-    SetLit* sl = new (ctx) SetLit(loc);
+  SetLit::a(const Location& loc,
+            ASTExprVec<Expression> v) {
+    SetLit* sl = new SetLit(loc);
     sl->_v = v;
     sl->_isv = NULL;
     sl->rehash();
     return sl;
   }
   SetLit*
-  SetLit::a(ASTContext& ctx,
-            const Location& loc,
+  SetLit::a(const Location& loc,
             IntSetVal* isv) {
-    SetLit* sl = new (ctx) SetLit(loc);
-    sl->_v = NULL;
+    SetLit* sl = new SetLit(loc);
     sl->_isv = isv;
     sl->_type = Type::parsetint();
     sl->rehash();
@@ -148,9 +239,8 @@ namespace MiniZinc {
     cmb_hash(h(_v));
   }
   BoolLit*
-  BoolLit::a(ASTContext& ctx, const Location& loc,
-             bool v) {
-    BoolLit* bl = new (ctx) BoolLit(loc,v);
+  BoolLit::a(const Location& loc, bool v) {
+    BoolLit* bl = new BoolLit(loc,v);
     bl->rehash();
     return bl;
   }
@@ -161,16 +251,14 @@ namespace MiniZinc {
     cmb_hash(_v.hash());
   }
   StringLit*
-  StringLit::a(ASTContext& ctx, const Location& loc,
-               const std::string& v) {
-    StringLit* sl = new (ctx) StringLit(loc,CtxStringH(ctx,v));
+  StringLit::a(const Location& loc, const std::string& v) {
+    StringLit* sl = new StringLit(loc,ASTString(v));
     sl->rehash();
     return sl;
   }
   StringLit*
-  StringLit::a(ASTContext& ctx, const Location& loc,
-               const CtxStringH& v) {
-    StringLit* sl = new (ctx) StringLit(loc,v);
+  StringLit::a(const Location& loc, const ASTString& v) {
+    StringLit* sl = new StringLit(loc,v);
     sl->rehash();
     return sl;
   }
@@ -181,16 +269,14 @@ namespace MiniZinc {
     cmb_hash(_v.hash());
   }
   Id*
-  Id::a(ASTContext& ctx, const Location& loc,
-        const std::string& v, VarDecl* decl) {
-    Id* id = new (ctx) Id(loc,CtxStringH(ctx,v),decl);
+  Id::a(const Location& loc, const std::string& v, VarDecl* decl) {
+    Id* id = new Id(loc,ASTString(v),decl);
     id->rehash();
     return id;
   }
   Id*
-  Id::a(ASTContext& ctx, const Location& loc,
-        const CtxStringH& v, VarDecl* decl) {
-    Id* id = new (ctx) Id(loc,v,decl);
+  Id::a(const Location& loc, const ASTString& v, VarDecl* decl) {
+    Id* id = new Id(loc,v,decl);
     id->rehash();
     return id;
   }
@@ -201,9 +287,8 @@ namespace MiniZinc {
     cmb_hash(_v.hash());
   }
   TIId*
-  TIId::a(ASTContext& ctx, const Location& loc,
-          const std::string& v) {
-    TIId* t = new (ctx) TIId(loc,CtxStringH(ctx,v));
+  TIId::a(const Location& loc, const std::string& v) {
+    TIId* t = new TIId(loc,ASTString(v));
     t->rehash();
     return t;
   }
@@ -213,8 +298,8 @@ namespace MiniZinc {
     init_hash();
   }
   AnonVar*
-  AnonVar::a(ASTContext& ctx, const Location& loc) {
-    AnonVar* av = new (ctx) AnonVar(loc);
+  AnonVar::a(const Location& loc) {
+    AnonVar* av = new AnonVar(loc);
     av->init_hash();
     return av;
   }
@@ -223,46 +308,52 @@ namespace MiniZinc {
   ArrayLit::rehash(void) {
     init_hash();
     std::hash<int> h;
-    for (unsigned int i=0; i<_dims->size(); i++) {
-      cmb_hash(h((*_dims)[i].first));
-      cmb_hash(h((*_dims)[i].second));
+    for (unsigned int i=0; i<_dims.size(); i+=2) {
+      cmb_hash(h(_dims[i]));
+      cmb_hash(h(_dims[i+1]));
     }
-    for (unsigned int i=_v->size(); i--;)
-      cmb_hash(Expression::hash((*_v)[i]));
+    for (unsigned int i=_v.size(); i--;)
+      cmb_hash(Expression::hash(_v[i]));
   }
   ArrayLit*
-  ArrayLit::a(ASTContext& ctx,
-              const Location& loc,
+  ArrayLit::a(const Location& loc,
               const std::vector<Expression*>& v,
               const std::vector<pair<int,int> >& dims) {
-    ArrayLit* al = new (ctx) ArrayLit(loc);
-    al->_v = CtxVec<Expression*>::a(ctx,v);
-    al->_dims = CtxVec<pair<int,int> >::a(ctx,dims);
+    ArrayLit* al = new ArrayLit(loc);
+    std::vector<int> _dims(dims.size()*2);
+    for (unsigned int i=dims.size(); i--;) {
+      _dims[i*2] = dims[i].first;
+      _dims[i*2+1] = dims[i].second;
+    }
+    al->_v = ASTExprVec<Expression>(v);
+    al->_dims = ASTIntVec(_dims);
     al->rehash();
     return al;
   }
   ArrayLit*
-  ArrayLit::a(ASTContext& ctx,
-              const Location& loc,
-              CtxVec<Expression*>* v,
+  ArrayLit::a(const Location& loc,
+              ASTExprVec<Expression> v,
               const std::vector<pair<int,int> >& dims) {
-    ArrayLit* al = new (ctx) ArrayLit(loc);
+    ArrayLit* al = new ArrayLit(loc);
+    std::vector<int> _dims(dims.size()*2);
+    for (unsigned int i=dims.size(); i--;) {
+      _dims[i*2] = dims[i].first;
+      _dims[i*2+1] = dims[i].second;
+    }
     al->_v = v;
-    al->_dims = CtxVec<pair<int,int> >::a(ctx,dims);
+    al->_dims = ASTIntVec(_dims);
     al->rehash();
     return al;
   }
   ArrayLit*
-  ArrayLit::a(ASTContext& ctx,
-              const Location& loc,
+  ArrayLit::a(const Location& loc,
               const std::vector<Expression*>& v) {
     std::vector<pair<int,int> > dims;
     dims.push_back(pair<int,int>(1,v.size()));
-    return a(ctx,loc,v,dims);
+    return a(loc,v,dims);
   }
   ArrayLit*
-  ArrayLit::a(ASTContext& ctx,
-              const Location& loc,
+  ArrayLit::a(const Location& loc,
               const std::vector<std::vector<Expression*> >& v) {
     std::vector<pair<int,int> > dims;
     dims.push_back(pair<int,int>(1,v.size()));
@@ -271,7 +362,19 @@ namespace MiniZinc {
     for (const std::vector<Expression*>& evi : v)
       for (Expression* ei : evi)
         vv.push_back(ei);
-    return a(ctx,loc,vv,dims);
+    return a(loc,vv,dims);
+  }
+  int
+  ArrayLit::dims(void) const {
+    return _dims.size()/2;
+  }
+  int
+  ArrayLit::min(int i) const {
+    return _dims[2*i];
+  }
+  int
+  ArrayLit::max(int i) const {
+    return _dims[2*i+1];
   }
 
   void
@@ -279,93 +382,98 @@ namespace MiniZinc {
     init_hash();
     cmb_hash(Expression::hash(_v));
     std::hash<unsigned int> h;
-    cmb_hash(h(_idx->size()));
-    for (unsigned int i=_idx->size(); i--;)
-      cmb_hash(Expression::hash((*_idx)[i]));
+    cmb_hash(h(_idx.size()));
+    for (unsigned int i=_idx.size(); i--;)
+      cmb_hash(Expression::hash(_idx[i]));
   }
   ArrayAccess*
-  ArrayAccess::a(ASTContext& ctx,
-                 const Location& loc,
+  ArrayAccess::a(const Location& loc,
                  Expression* v,
                  const std::vector<Expression*>& idx) {
-    ArrayAccess* aa = new (ctx) ArrayAccess(loc);
+    ArrayAccess* aa = new ArrayAccess(loc);
     aa->_v = v;
-    aa->_idx = CtxVec<Expression*>::a(ctx,idx);
+    aa->_idx = ASTExprVec<Expression>(idx);
     aa->rehash();
     return aa;
   }
   ArrayAccess*
-  ArrayAccess::a(ASTContext& ctx,
-                 const Location& loc,
+  ArrayAccess::a(const Location& loc,
                  Expression* v,
-                 CtxVec<Expression*>* idx) {
-    ArrayAccess* aa = new (ctx) ArrayAccess(loc);
+                 ASTExprVec<Expression> idx) {
+    ArrayAccess* aa = new ArrayAccess(loc);
     aa->_v = v;
     aa->_idx = idx;
     aa->rehash();
     return aa;
   }
 
-  Generator*
-  Generator::a(ASTContext& ctx,
-               const std::vector<CtxStringH>& v,
-               Expression* in) {
-    Generator* g = new (ctx) Generator();
+  Generator::Generator(const std::vector<ASTString>& v,
+                       Expression* in) {
     std::vector<VarDecl*> vd;
-    for (const CtxStringH& vdi : v)
-      vd.push_back(VarDecl::a(ctx,in->_loc,
-        TypeInst::a(ctx,in->_loc,Type::parint()),vdi,
-        IntLit::a(ctx,in->_loc,0)));
-    g->_v = CtxVec<VarDecl*>::a(ctx,vd);
-    g->_in = in;
-    return g;
+    for (const ASTString& vdi : v)
+      vd.push_back(VarDecl::a(in->_loc,
+        TypeInst::a(in->_loc,Type::parint()),vdi,
+        IntLit::a(in->_loc,0)));
+    _v = vd;
+    _in = in;
   }
-  Generator*
-  Generator::a(ASTContext& ctx,
-               const std::vector<std::string>& v,
-               Expression* in) {
-    std::vector<CtxStringH> vv;
-    for (const std::string& si : v)
-      vv.push_back(CtxStringH(ctx,si));
-    return a(ctx,vv,in);
+  Generator::Generator(const std::vector<std::string>& v,
+                       Expression* in) {
+    std::vector<VarDecl*> vd;
+    for (const std::string& vdi : v)
+      vd.push_back(VarDecl::a(in->_loc,
+        TypeInst::a(in->_loc,Type::parint()),ASTString(vdi),
+        IntLit::a(in->_loc,0)));
+    _v = vd;
+    _in = in;
   }
-  Generator*
-  Generator::a(ASTContext& ctx,
-               CtxVec<VarDecl*>* v,
-               Expression* in) {
-    Generator* g = new (ctx) Generator();
-    g->_v = v;
-    g->_in = in;
-    return g;
+  Generator::Generator(const std::vector<VarDecl*>& v,
+                       Expression* in) {
+    _v = v;
+    _in = in;
   }
 
+  bool
+  Comprehension::set(void) const {
+    return _flag_1;
+  }
   void
   Comprehension::rehash(void) {
     init_hash();
     std::hash<unsigned int> h;
-    cmb_hash(h(_set));
+    cmb_hash(h(set()));
     cmb_hash(Expression::hash(_e));
     cmb_hash(Expression::hash(_where));
-    cmb_hash(h(_g->size()));
-    for (unsigned int i=_g->size(); i--;) {
-      cmb_hash(Expression::hash((*_g)[i]->_in));
-      cmb_hash(h((*_g)[i]->_v->size()));
-      for (unsigned int j=(*_g)[i]->_v->size(); j--;) {
-        cmb_hash(Expression::hash((*(*_g)[i]->_v)[j]));
-      }
+    cmb_hash(h(_g_idx.size()));
+    for (unsigned int i=_g_idx.size(); i--;) {
+      cmb_hash(h(_g_idx[i]));
+    }
+    cmb_hash(h(_g.size()));
+    for (unsigned int i=_g.size(); i--;) {
+      cmb_hash(Expression::hash(_g[i]));
     }
   }
   Comprehension*
-  Comprehension::a(ASTContext& ctx,
-                   const Location& loc,
+  Comprehension::a(const Location& loc,
                    Expression* e,
                    Generators& g,
                    bool set) {
-    Comprehension* c = new (ctx) Comprehension(loc);
+    Comprehension* c = new Comprehension(loc);
     c->_e = e;
-    c->_g = CtxVec<Generator*>::a(ctx,g._g);
+    std::vector<Expression*> es;
+    std::vector<int> idx;
+    for (unsigned int i=g._g.size(); i--;) {
+      idx.push_back(es.size());
+      es.push_back(g._g[i]._in);
+      for (unsigned int j=g._g[i]._v.size(); j--;) {
+        es.push_back(g._g[i]._v[j]);
+      }
+    }
+    idx.push_back(es.size());
+    c->_g = ASTExprVec<Expression>(es);
+    c->_g_idx = ASTIntVec(idx);
     c->_where = g._w;
-    c->_set = set;
+    c->_flag_1 = set;
     c->rehash();
     return c;
   }
@@ -374,35 +482,38 @@ namespace MiniZinc {
   ITE::rehash(void) {
     init_hash();
     std::hash<unsigned int> h;
-    cmb_hash(h(_e_if->size()));
-    for (unsigned int i=_e_if->size(); i--; ) {
-      cmb_hash(Expression::hash((*_e_if)[i].first));
-      cmb_hash(Expression::hash((*_e_if)[i].second));
+    cmb_hash(h(_e_if_then.size()));
+    for (unsigned int i=_e_if_then.size(); i--; ) {
+      cmb_hash(Expression::hash(_e_if_then[i]));
     }
     cmb_hash(Expression::hash(_e_else));
   }
   ITE*
-  ITE::a(ASTContext& ctx, const Location& loc,
-         const std::vector<IfThen>& e_if, Expression* e_else) {
-    ITE* ite = new (ctx) ITE(loc);
-    ite->_e_if = CtxVec<IfThen>::a(ctx,e_if);
+  ITE::a(const Location& loc,
+         const std::vector<Expression*>& e_if_then, Expression* e_else) {
+    ITE* ite = new ITE(loc);
+    ite->_e_if_then = ASTExprVec<Expression>(e_if_then);
     ite->_e_else = e_else;
     ite->rehash();
     return ite;
   }
 
+  BinOpType
+  BinOp::op(void) const {
+    return static_cast<BinOpType>(_sec_id);
+  }
   void
   BinOp::rehash(void) {
     init_hash();
     std::hash<int> h;
-    cmb_hash(h(static_cast<int>(_op)));
+    cmb_hash(h(static_cast<int>(op())));
     cmb_hash(Expression::hash(_e0));
     cmb_hash(Expression::hash(_e1));
   }
   BinOp*
-  BinOp::a(ASTContext& ctx, const Location& loc,
+  BinOp::a(const Location& loc,
            Expression* e0, BinOpType op, Expression* e1) {
-    BinOp* bo = new (ctx) BinOp(loc,e0,op,e1);
+    BinOp* bo = new BinOp(loc,e0,op,e1);
     bo->rehash();
     return bo;
   }
@@ -410,125 +521,132 @@ namespace MiniZinc {
   namespace {
     class OpToString {
     public:
-      ASTContext ctx;
-      
-      CtxStringH sBOT_PLUS;
-      CtxStringH sBOT_MINUS;
-      CtxStringH sBOT_MULT;
-      CtxStringH sBOT_DIV;
-      CtxStringH sBOT_IDIV;
-      CtxStringH sBOT_MOD;
-      CtxStringH sBOT_LE;
-      CtxStringH sBOT_LQ;
-      CtxStringH sBOT_GR;
-      CtxStringH sBOT_GQ;
-      CtxStringH sBOT_EQ;
-      CtxStringH sBOT_NQ;
-      CtxStringH sBOT_IN;
-      CtxStringH sBOT_SUBSET;
-      CtxStringH sBOT_SUPERSET;
-      CtxStringH sBOT_UNION;
-      CtxStringH sBOT_DIFF;
-      CtxStringH sBOT_SYMDIFF;
-      CtxStringH sBOT_INTERSECT;
-      CtxStringH sBOT_PLUSPLUS;
-      CtxStringH sBOT_EQUIV;
-      CtxStringH sBOT_IMPL;
-      CtxStringH sBOT_RIMPL;
-      CtxStringH sBOT_OR;
-      CtxStringH sBOT_AND;
-      CtxStringH sBOT_XOR;
-      CtxStringH sBOT_DOTDOT;
-      CtxStringH sBOT_NOT;
+      ASTString sBOT_PLUS;
+      ASTString sBOT_MINUS;
+      ASTString sBOT_MULT;
+      ASTString sBOT_DIV;
+      ASTString sBOT_IDIV;
+      ASTString sBOT_MOD;
+      ASTString sBOT_LE;
+      ASTString sBOT_LQ;
+      ASTString sBOT_GR;
+      ASTString sBOT_GQ;
+      ASTString sBOT_EQ;
+      ASTString sBOT_NQ;
+      ASTString sBOT_IN;
+      ASTString sBOT_SUBSET;
+      ASTString sBOT_SUPERSET;
+      ASTString sBOT_UNION;
+      ASTString sBOT_DIFF;
+      ASTString sBOT_SYMDIFF;
+      ASTString sBOT_INTERSECT;
+      ASTString sBOT_PLUSPLUS;
+      ASTString sBOT_EQUIV;
+      ASTString sBOT_IMPL;
+      ASTString sBOT_RIMPL;
+      ASTString sBOT_OR;
+      ASTString sBOT_AND;
+      ASTString sBOT_XOR;
+      ASTString sBOT_DOTDOT;
+      ASTString sBOT_NOT;
       
       OpToString(void) {
-        sBOT_PLUS = CtxStringH(ctx, "@+");
-        sBOT_MINUS = CtxStringH(ctx, "@-");
-        sBOT_MULT = CtxStringH(ctx, "@*");
-        sBOT_DIV = CtxStringH(ctx, "@/");
-        sBOT_IDIV = CtxStringH(ctx, "@div");
-        sBOT_MOD = CtxStringH(ctx, "@mod");
-        sBOT_LE = CtxStringH(ctx, "@<");
-        sBOT_LQ = CtxStringH(ctx, "@<=");
-        sBOT_GR = CtxStringH(ctx, "@>");
-        sBOT_GQ = CtxStringH(ctx, "@>=");
-        sBOT_EQ = CtxStringH(ctx, "@=");
-        sBOT_NQ = CtxStringH(ctx, "@!=");
-        sBOT_IN = CtxStringH(ctx, "@in");
-        sBOT_SUBSET = CtxStringH(ctx, "@subset");
-        sBOT_SUPERSET = CtxStringH(ctx, "@superset");
-        sBOT_UNION = CtxStringH(ctx, "@union");
-        sBOT_DIFF = CtxStringH(ctx, "@diff");
-        sBOT_SYMDIFF = CtxStringH(ctx, "@symdiff");
-        sBOT_INTERSECT = CtxStringH(ctx, "@intersect");
-        sBOT_PLUSPLUS = CtxStringH(ctx, "@++");
-        sBOT_EQUIV = CtxStringH(ctx, "@<->");
-        sBOT_IMPL = CtxStringH(ctx, "@->");
-        sBOT_RIMPL = CtxStringH(ctx, "@<-");
-        sBOT_OR = CtxStringH(ctx, "@\\/");
-        sBOT_AND = CtxStringH(ctx, "@/\\");
-        sBOT_XOR = CtxStringH(ctx, "@xor");
-        sBOT_DOTDOT = CtxStringH(ctx, "@..");
-        sBOT_NOT = CtxStringH(ctx, "@not");
+        GCLock lock;
+        sBOT_PLUS = ASTString("@+");
+        sBOT_MINUS = ASTString("@-");
+        sBOT_MULT = ASTString("@*");
+        sBOT_DIV = ASTString("@/");
+        sBOT_IDIV = ASTString("@div");
+        sBOT_MOD = ASTString("@mod");
+        sBOT_LE = ASTString("@<");
+        sBOT_LQ = ASTString("@<=");
+        sBOT_GR = ASTString("@>");
+        sBOT_GQ = ASTString("@>=");
+        sBOT_EQ = ASTString("@=");
+        sBOT_NQ = ASTString("@!=");
+        sBOT_IN = ASTString("@in");
+        sBOT_SUBSET = ASTString("@subset");
+        sBOT_SUPERSET = ASTString("@superset");
+        sBOT_UNION = ASTString("@union");
+        sBOT_DIFF = ASTString("@diff");
+        sBOT_SYMDIFF = ASTString("@symdiff");
+        sBOT_INTERSECT = ASTString("@intersect");
+        sBOT_PLUSPLUS = ASTString("@++");
+        sBOT_EQUIV = ASTString("@<->");
+        sBOT_IMPL = ASTString("@->");
+        sBOT_RIMPL = ASTString("@<-");
+        sBOT_OR = ASTString("@\\/");
+        sBOT_AND = ASTString("@/\\");
+        sBOT_XOR = ASTString("@xor");
+        sBOT_DOTDOT = ASTString("@..");
+        sBOT_NOT = ASTString("@not");
       }
-    } _opToString;
+      
+      static OpToString& o(void) {
+        static OpToString _o;
+        return _o;
+      }
+    };
   }
 
-  CtxStringH
+  ASTString
   BinOp::opToString(void) const {
-    switch (_op) {
-    case BOT_PLUS: return _opToString.sBOT_PLUS;
-    case BOT_MINUS: return _opToString.sBOT_MINUS;
-    case BOT_MULT: return _opToString.sBOT_MULT;
-    case BOT_DIV: return _opToString.sBOT_DIV;
-    case BOT_IDIV: return _opToString.sBOT_IDIV;
-    case BOT_MOD: return _opToString.sBOT_MOD;
-    case BOT_LE: return _opToString.sBOT_LE;
-    case BOT_LQ: return _opToString.sBOT_LQ;
-    case BOT_GR: return _opToString.sBOT_GR;
-    case BOT_GQ: return _opToString.sBOT_GQ;
-    case BOT_EQ: return _opToString.sBOT_EQ;
-    case BOT_NQ: return _opToString.sBOT_NQ;
-    case BOT_IN: return _opToString.sBOT_IN;
-    case BOT_SUBSET: return _opToString.sBOT_SUBSET;
-    case BOT_SUPERSET: return _opToString.sBOT_SUPERSET;
-    case BOT_UNION: return _opToString.sBOT_UNION;
-    case BOT_DIFF: return _opToString.sBOT_DIFF;
-    case BOT_SYMDIFF: return _opToString.sBOT_SYMDIFF;
-    case BOT_INTERSECT: return _opToString.sBOT_INTERSECT;
-    case BOT_PLUSPLUS: return _opToString.sBOT_PLUSPLUS;
-    case BOT_EQUIV: return _opToString.sBOT_EQUIV;
-    case BOT_IMPL: return _opToString.sBOT_IMPL;
-    case BOT_RIMPL: return _opToString.sBOT_RIMPL;
-    case BOT_OR: return _opToString.sBOT_OR;
-    case BOT_AND: return _opToString.sBOT_AND;
-    case BOT_XOR: return _opToString.sBOT_XOR;
-    case BOT_DOTDOT: return _opToString.sBOT_DOTDOT;
+    switch (op()) {
+    case BOT_PLUS: return OpToString::o().sBOT_PLUS;
+    case BOT_MINUS: return OpToString::o().sBOT_MINUS;
+    case BOT_MULT: return OpToString::o().sBOT_MULT;
+    case BOT_DIV: return OpToString::o().sBOT_DIV;
+    case BOT_IDIV: return OpToString::o().sBOT_IDIV;
+    case BOT_MOD: return OpToString::o().sBOT_MOD;
+    case BOT_LE: return OpToString::o().sBOT_LE;
+    case BOT_LQ: return OpToString::o().sBOT_LQ;
+    case BOT_GR: return OpToString::o().sBOT_GR;
+    case BOT_GQ: return OpToString::o().sBOT_GQ;
+    case BOT_EQ: return OpToString::o().sBOT_EQ;
+    case BOT_NQ: return OpToString::o().sBOT_NQ;
+    case BOT_IN: return OpToString::o().sBOT_IN;
+    case BOT_SUBSET: return OpToString::o().sBOT_SUBSET;
+    case BOT_SUPERSET: return OpToString::o().sBOT_SUPERSET;
+    case BOT_UNION: return OpToString::o().sBOT_UNION;
+    case BOT_DIFF: return OpToString::o().sBOT_DIFF;
+    case BOT_SYMDIFF: return OpToString::o().sBOT_SYMDIFF;
+    case BOT_INTERSECT: return OpToString::o().sBOT_INTERSECT;
+    case BOT_PLUSPLUS: return OpToString::o().sBOT_PLUSPLUS;
+    case BOT_EQUIV: return OpToString::o().sBOT_EQUIV;
+    case BOT_IMPL: return OpToString::o().sBOT_IMPL;
+    case BOT_RIMPL: return OpToString::o().sBOT_RIMPL;
+    case BOT_OR: return OpToString::o().sBOT_OR;
+    case BOT_AND: return OpToString::o().sBOT_AND;
+    case BOT_XOR: return OpToString::o().sBOT_XOR;
+    case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT;
     default: assert(false);
     }
   }
 
+  UnOpType
+  UnOp::op(void) const {
+    return static_cast<UnOpType>(_sec_id);
+  }
   void
   UnOp::rehash(void) {
     init_hash();
     std::hash<int> h;
-    cmb_hash(h(static_cast<int>(_op)));
+    cmb_hash(h(static_cast<int>(_sec_id)));
     cmb_hash(Expression::hash(_e0));
   }
   UnOp*
-  UnOp::a(ASTContext& ctx, const Location& loc,
-          UnOpType op, Expression* e) {
-    UnOp* uo = new (ctx) UnOp(loc,op,e);
+  UnOp::a(const Location& loc, UnOpType op, Expression* e) {
+    UnOp* uo = new UnOp(loc,op,e);
     uo->rehash();
     return uo;
   }
 
-  CtxStringH
+  ASTString
   UnOp::opToString(void) const {
-    switch (_op) {
-    case UOT_PLUS: return _opToString.sBOT_PLUS;
-    case UOT_MINUS: return _opToString.sBOT_MINUS;
-    case UOT_NOT: return _opToString.sBOT_NOT;
+    switch (op()) {
+    case UOT_PLUS: return OpToString::o().sBOT_PLUS;
+    case UOT_MINUS: return OpToString::o().sBOT_MINUS;
+    case UOT_NOT: return OpToString::o().sBOT_NOT;
     default: assert(false);
     }
   }
@@ -540,30 +658,30 @@ namespace MiniZinc {
     std::hash<FunctionI*> hf;
     cmb_hash(hf(_decl));
     std::hash<unsigned int> hu;
-    cmb_hash(hu(_args->size()));
-    for (unsigned int i=_args->size(); i--;)
-      cmb_hash(Expression::hash((*_args)[i]));
+    cmb_hash(hu(_args.size()));
+    for (unsigned int i=_args.size(); i--;)
+      cmb_hash(Expression::hash(_args[i]));
   }
   Call*
-  Call::a(ASTContext& ctx, const Location& loc,
+  Call::a(const Location& loc,
           const std::string& id,
           const std::vector<Expression*>& args,
           FunctionI* decl) {
-    Call* c = new (ctx) Call(loc);
-    c->_id = CtxStringH(ctx,id);
-    c->_args = CtxVec<Expression*>::a(ctx,args);
+    Call* c = new Call(loc);
+    c->_id = ASTString(id);
+    c->_args = ASTExprVec<Expression>(args);
     c->_decl = decl;
     c->rehash();
     return c;
   }
   Call*
-  Call::a(ASTContext& ctx, const Location& loc,
-          const CtxStringH& id,
+  Call::a(const Location& loc,
+          const ASTString& id,
           const std::vector<Expression*>& args,
           FunctionI* decl) {
-    Call* c = new (ctx) Call(loc);
+    Call* c = new Call(loc);
     c->_id = id;
-    c->_args = CtxVec<Expression*>::a(ctx,args);
+    c->_args = ASTExprVec<Expression>(args);
     c->_decl = decl;
     c->rehash();
     return c;
@@ -577,20 +695,35 @@ namespace MiniZinc {
     cmb_hash(Expression::hash(_e));
   }
   VarDecl*
-  VarDecl::a(ASTContext& ctx, const Location& loc,
-             TypeInst* ti, const CtxStringH& id, Expression* e) {
-    VarDecl* v = new (ctx) VarDecl(loc,ti->_type);
+  VarDecl::a(const Location& loc,
+             TypeInst* ti, const ASTString& id, Expression* e) {
+    VarDecl* v = new VarDecl(loc,ti->_type);
     v->_ti = ti;
     v->_id = id;
     v->_e = e;
-    v->_allocator = 0;
     v->rehash();
     return v;
   }
   VarDecl*
-  VarDecl::a(ASTContext& ctx, const Location& loc,
+  VarDecl::a(const Location& loc,
              TypeInst* ti, const std::string& id, Expression* e) {
-    return a(ctx,loc,ti,CtxStringH(ctx,id));
+    return a(loc,ti,ASTString(id));
+  }
+  bool
+  VarDecl::toplevel(void) const {
+    return _flag_1;
+  }
+  void
+  VarDecl::toplevel(bool t) {
+    _flag_1 = t;
+  }
+  bool
+  VarDecl::introduced(void) const {
+    return _flag_2;
+  }
+  void
+  VarDecl::introduced(bool t) {
+    _flag_2 = t;
   }
 
   void
@@ -598,44 +731,65 @@ namespace MiniZinc {
     init_hash();
     cmb_hash(Expression::hash(_in));
     std::hash<unsigned int> h;
-    cmb_hash(h(_let->size()));
-    for (unsigned int i=_let->size(); i--;)
-      cmb_hash(Expression::hash((*_let)[i]));
+    cmb_hash(h(_let.size()));
+    for (unsigned int i=_let.size(); i--;)
+      cmb_hash(Expression::hash(_let[i]));
   }
   Let*
-  Let::a(ASTContext& ctx, const Location& loc,
+  Let::a(const Location& loc,
          const std::vector<Expression*>& let, Expression* in) {
-    Let* l = new (ctx) Let(loc);
-    l->_let = CtxVec<Expression*>::a(ctx,let);
+    Let* l = new Let(loc);
+    l->_let = ASTExprVec<Expression>(let);
     l->_in = in;
     l->rehash();
     return l;
+  }
+  void
+  Let::pushbindings(void) {
+    GC::mark();
+    for (unsigned int i=_let.size(); i--;) {
+      if (_let[i]->isa<VarDecl>()) {
+        GC::trail(reinterpret_cast<void**>(&_let[i]),_let[i]);
+      }
+    }
+  }
+  void
+  Let::popbindings(void) {
+    GC::untrail();
   }
 
   void
   TypeInst::rehash(void) {
     init_hash();
     std::hash<unsigned int> h;
-    unsigned int rsize = _ranges==NULL ? 0 : _ranges->size();
+    unsigned int rsize = _ranges.size();
     cmb_hash(h(rsize));
     for (unsigned int i=rsize; i--;)
-      cmb_hash(Expression::hash((*_ranges)[i]));
+      cmb_hash(Expression::hash(_ranges[i]));
     cmb_hash(Expression::hash(_domain));
   }
   TypeInst*
-  TypeInst::a(ASTContext& ctx, const Location& loc,
-              const Type& type, Expression* domain,
-              CtxVec<TypeInst*>* ranges) {
-    TypeInst* t = new (ctx) TypeInst(loc,type,domain,ranges);
+  TypeInst::a(const Location& loc,
+              const Type& type, 
+              ASTExprVec<TypeInst> ranges,
+              Expression* domain) {
+    TypeInst* t = new TypeInst(loc,type,ranges,domain);
+    t->rehash();
+    return t;
+  }
+  TypeInst*
+  TypeInst::a(const Location& loc,
+              const Type& type, 
+              Expression* domain) {
+    TypeInst* t = new TypeInst(loc,type,domain);
     t->rehash();
     return t;
   }
 
   void
-  TypeInst::addRanges(ASTContext& ctx,
-                      const std::vector<TypeInst*>& ranges) {
-    assert(_ranges == NULL);
-    _ranges = CtxVec<TypeInst*>::a(ctx,ranges);
+  TypeInst::addRanges(const std::vector<TypeInst*>& ranges) {
+    assert(_ranges.size() == 0);
+    _ranges = ASTExprVec<TypeInst>(ranges);
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
         ranges[0]->cast<TypeInst>()->_domain &&
         ranges[0]->cast<TypeInst>()->_domain->isa<TIId>())
@@ -649,121 +803,122 @@ namespace MiniZinc {
   TypeInst::hasTiVariable(void) const {
     if (_domain && _domain->isa<TIId>())
       return true;
-    if (_ranges && _ranges->size()==1 &&
-        (*_ranges)[0]->isa<TIId>())
+    if (_ranges.size()==1 &&
+        _ranges[0]->isa<TIId>())
       return true;
     return false;
   }
 
   IncludeI*
-  IncludeI::a(ASTContext& ctx, const Location& loc,
-              const CtxStringH& f) {
-    IncludeI* i = new (ctx) IncludeI(loc);
+  IncludeI::a(const Location& loc, const ASTString& f) {
+    IncludeI* i = new IncludeI(loc);
     i->_f = f;
     i->_m = NULL;
     return i;
   }
 
   VarDeclI*
-  VarDeclI::a(ASTContext& ctx, const Location& loc,
-              VarDecl* e) {
-    VarDeclI* vi = new (ctx) VarDeclI(loc);
+  VarDeclI::a(const Location& loc, VarDecl* e) {
+    VarDeclI* vi = new VarDeclI(loc);
     vi->_e = e;
     return vi;
   }
 
   AssignI*
-  AssignI::a(ASTContext& ctx, const Location& loc,
-             const std::string& id, Expression* e) {
-    AssignI* ai = new (ctx) AssignI(loc);
-    ai->_id = CtxStringH(ctx,id);
+  AssignI::a(const Location& loc, const std::string& id, Expression* e) {
+    AssignI* ai = new AssignI(loc);
+    ai->_id = ASTString(id);
     ai->_e = e;
     ai->_decl = NULL;
     return ai;
   }
 
   ConstraintI*
-  ConstraintI::a(ASTContext& ctx, const Location& loc, 
-                 Expression* e) {
-    ConstraintI* ci = new (ctx) ConstraintI(loc);
+  ConstraintI::a(const Location& loc, Expression* e) {
+    ConstraintI* ci = new ConstraintI(loc);
     ci->_e = e;
     return ci;
   }
 
   SolveI*
-  SolveI::sat(ASTContext& ctx, const Location& loc, Annotation* ann) {
-    SolveI* si = new (ctx) SolveI(loc);
+  SolveI::sat(const Location& loc, Annotation* ann) {
+    SolveI* si = new SolveI(loc);
     si->_ann = ann;
     si->_e = NULL;
-    si->_st = ST_SAT;
+    si->_sec_id = ST_SAT;
     return si;
   }
   SolveI*
-  SolveI::min(ASTContext& ctx, const Location& loc,
-              Expression* e, Annotation* ann) {
-    SolveI* si = new (ctx) SolveI(loc);
+  SolveI::min(const Location& loc, Expression* e, Annotation* ann) {
+    SolveI* si = new SolveI(loc);
     si->_ann = ann;
     si->_e = e;
-    si->_st = ST_MIN;
+    si->_sec_id = ST_MIN;
     return si;
   }
   SolveI*
-  SolveI::max(ASTContext& ctx, const Location& loc,
-              Expression* e, Annotation* ann) {
-    SolveI* si = new (ctx) SolveI(loc);
+  SolveI::max(const Location& loc, Expression* e, Annotation* ann) {
+    SolveI* si = new SolveI(loc);
     si->_ann = ann;
     si->_e = e;
-    si->_st = ST_MAX;
+    si->_sec_id = ST_MAX;
     return si;
+  }
+  SolveI::SolveType
+  SolveI::st(void) const {
+    return static_cast<SolveType>(_sec_id);
+  }
+  void
+  SolveI::st(SolveI::SolveType s) {
+    _sec_id = s;
   }
 
   OutputI*
-  OutputI::a(ASTContext& ctx, const Location& loc,
-             Expression* e) {
-    OutputI* oi = new (ctx) OutputI(loc);
+  OutputI::a(const Location& loc, Expression* e) {
+    OutputI* oi = new OutputI(loc);
     oi->_e = e;
     return oi;
   }
 
   FunctionI*
-  FunctionI::a(ASTContext& ctx, const Location& loc,
+  FunctionI::a(const Location& loc,
                const std::string& id, TypeInst* ti,
                const std::vector<VarDecl*>& params,
                Expression* e, Annotation* ann) {
-    FunctionI* fi = new (ctx) FunctionI(loc);
-    fi->_id = CtxStringH(ctx,id);
+    FunctionI* fi = new FunctionI(loc);
+    fi->_id = ASTString(id);
     fi->_ti = ti;
-    fi->_params = CtxVec<VarDecl*>::a(ctx,params);
+    fi->_params = ASTExprVec<VarDecl>(params);
     fi->_ann = ann;
     fi->_e = e;
-    fi->_builtins.e = NULL;
-    fi->_builtins.b = NULL;
-    fi->_builtins.f = NULL;
-    fi->_builtins.i = NULL;
+    // fi->_builtins.e = NULL;
+    // fi->_builtins.b = NULL;
+    // fi->_builtins.f = NULL;
+    // fi->_builtins.i = NULL;
     return fi;
   }
 
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {
     Type ret = _ti->_type;
-    CtxStringH dh;
+    ASTString dh;
     if (_ti->_domain && _ti->_domain->isa<TIId>())
       dh = _ti->_domain->cast<TIId>()->_v;
-    CtxStringH rh;
-    if (_ti->_ranges && _ti->_ranges->size()==1 &&
-        (*_ti->_ranges)[0] && (*_ti->_ranges)[0]->isa<TIId>())
-      rh = (*_ti->_ranges)[0]->cast<TIId>()->_v;
+    ASTString rh;
+    if (_ti->_ranges.size()==1 &&
+        _ti->_ranges[0] && _ti->_ranges[0]->isa<TIId>())
+      rh = _ti->_ranges[0]->cast<TIId>()->_v;
 
-    CtxStringMap<Type>::t tmap;
+    ASTStringMap<Type>::t tmap;
     for (unsigned int i=0; i<ta.size(); i++) {
-      TypeInst* tii = (*_params)[i]->_ti;
+      TypeInst* tii = _params[i]->_ti;
       if (tii->_domain && tii->_domain->isa<TIId>()) {
-        CtxStringH tiid = tii->_domain->cast<TIId>()->_v;
+        ASTString tiid = tii->_domain->cast<TIId>()->_v;
         Type tiit = ta[i]->_type;
         tiit._dim=0;
-        CtxStringMap<Type>::t::iterator it = tmap.find(tiid);
+        ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
-          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+          tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
         } else {
           if (it->second._dim > 0) {
             throw TypeError(ta[i]->_loc,"type-inst variable $"+
@@ -790,19 +945,19 @@ namespace MiniZinc {
           }
         }
       }
-      if (tii->_ranges && tii->_ranges->size()==1 &&
-          (*tii->_ranges)[0]->_domain && 
-          (*tii->_ranges)[0]->_domain->isa<TIId>()) {
-        CtxStringH tiid = (*tii->_ranges)[0]->_domain->cast<TIId>()->_v;
+      if (tii->_ranges.size()==1 &&
+          tii->_ranges[0]->_domain && 
+          tii->_ranges[0]->_domain->isa<TIId>()) {
+        ASTString tiid = tii->_ranges[0]->_domain->cast<TIId>()->_v;
         if (ta[i]->_type._dim<=0) {
           assert(false);
           throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
             " must be an array index");
         }
         Type tiit = Type::any(ta[i]->_type._dim);
-        CtxStringMap<Type>::t::iterator it = tmap.find(tiid);
+        ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
-          tmap.insert(std::pair<CtxStringH,Type>(tiid,tiit));
+          tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
         } else {
           if (it->second._dim == 0) {
             throw TypeError(ta[i]->_loc,"type-inst variable $"+
@@ -817,7 +972,7 @@ namespace MiniZinc {
       }
     }
     if (dh.size() != 0) {
-      CtxStringMap<Type>::t::iterator it = tmap.find(dh);
+      ASTStringMap<Type>::t::iterator it = tmap.find(dh);
       if (it==tmap.end())
         throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
       ret._bt = it->second._bt;
@@ -827,7 +982,7 @@ namespace MiniZinc {
         ret._st = it->second._st;
     } 
     if (rh.size() != 0) {
-      CtxStringMap<Type>::t::iterator it = tmap.find(rh);
+      ASTStringMap<Type>::t::iterator it = tmap.find(rh);
       if (it==tmap.end())
         throw TypeError(_loc,"type-inst variable $"+rh.str()+" used but not defined");
       ret._dim = it->second._dim;
@@ -839,9 +994,9 @@ namespace MiniZinc {
   Expression::equal(const Expression* e0, const Expression* e1) {
     if (e0==e1) return true;
     if (e0 == NULL || e1 == NULL) return false;
-    if (e0->_eid != e1->_eid) return false;
+    if (e0->_id != e1->_id) return false;
     if (e0->_type != e1->_type) return false;
-    switch (e0->_eid) {
+    switch (e0->_id) {
     case Expression::E_INTLIT:
       return e0->cast<IntLit>()->_v == e1->cast<IntLit>()->_v;
     case Expression::E_FLOATLIT:
@@ -860,9 +1015,9 @@ namespace MiniZinc {
           }
         } else {
           if (s1->_isv) return false;
-          if (s0->_v->size() != s1->_v->size()) return false;
-          for (unsigned int i=0; i<s0->_v->size(); i++)
-            if (!Expression::equal( (*s0->_v)[i], (*s1->_v)[i] ))
+          if (s0->_v.size() != s1->_v.size()) return false;
+          for (unsigned int i=0; i<s0->_v.size(); i++)
+            if (!Expression::equal( s0->_v[i], s1->_v[i] ))
               return false;
           return true;
         }
@@ -880,12 +1035,12 @@ namespace MiniZinc {
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
-        if (a0->_v->size() != a1->_v->size()) return false;
-        if (a0->_dims->size() != a1->_dims->size()) return false;
-        for (unsigned int i=0; i<a0->_dims->size(); i++)
-          if ( (*a0->_dims)[i] != (*a1->_dims)[i] ) return false;
-        for (unsigned int i=0; i<a0->_v->size(); i++)
-          if (!Expression::equal( (*a0->_v)[i], (*a1->_v)[i] ))
+        if (a0->_v.size() != a1->_v.size()) return false;
+        if (a0->_dims.size() != a1->_dims.size()) return false;
+        for (unsigned int i=0; i<a0->_dims.size(); i++)
+          if ( a0->_dims[i] != a1->_dims[i] ) return false;
+        for (unsigned int i=0; i<a0->_v.size(); i++)
+          if (!Expression::equal( a0->_v[i], a1->_v[i] ))
             return false;
         return true;
       }
@@ -894,9 +1049,9 @@ namespace MiniZinc {
         const ArrayAccess* a0 = e0->cast<ArrayAccess>();
         const ArrayAccess* a1 = e1->cast<ArrayAccess>();
         if (!Expression::equal( a0->_v, a1->_v )) return false;
-        if (a0->_idx->size() != a1->_idx->size()) return false;
-        for (unsigned int i=0; i<a0->_idx->size(); i++)
-          if (!Expression::equal( (*a0->_idx)[i], (*a1->_idx)[i] ))
+        if (a0->_idx.size() != a1->_idx.size()) return false;
+        for (unsigned int i=0; i<a0->_idx.size(); i++)
+          if (!Expression::equal( a0->_idx[i], a1->_idx[i] ))
             return false;
         return true;
       }
@@ -904,20 +1059,17 @@ namespace MiniZinc {
       {
         const Comprehension* c0 = e0->cast<Comprehension>();
         const Comprehension* c1 = e1->cast<Comprehension>();
-        if (c0->_set != c1->_set) return false;
+        if (c0->set() != c1->set()) return false;
         if (!Expression::equal ( c0->_e, c1->_e )) return false;
         if (!Expression::equal ( c0->_where, c1->_where )) return false;
-        if (c0->_g->size() != c1->_g->size()) return false;
-        for (unsigned int i=0; i<c0->_g->size(); i++) {
-          if (!Expression::equal( (*c0->_g)[i]->_in, (*c1->_g)[i]->_in ))
+        if (c0->_g.size() != c1->_g.size()) return false;
+        for (unsigned int i=0; i<c0->_g.size(); i++) {
+          if (!Expression::equal( c0->_g[i], c1->_g[i] ))
             return false;
-          if ((*c0->_g)[i]->_v->size() != (*c1->_g)[i]->_v->size())
+        }
+        for (unsigned int i=0; i<c0->_g_idx.size(); i++) {
+          if (c0->_g_idx[i] != c1->_g_idx[i])
             return false;
-          for (unsigned int j=0; j<(*c0->_g)[i]->_v->size(); j++) {
-            if (!Expression::equal ( (*(*c0->_g)[i]->_v)[j], 
-                                    (*(*c1->_g)[i]->_v)[j] ))
-              return false;
-          }
         }
         return true;
       }
@@ -925,13 +1077,10 @@ namespace MiniZinc {
       {
         const ITE* i0 = e0->cast<ITE>();
         const ITE* i1 = e1->cast<ITE>();
-        if (i0->_e_if->size() != i1->_e_if->size()) return false;
-        for (unsigned int i=i0->_e_if->size(); i--; ) {
-          if (!Expression::equal ( (*i0->_e_if)[i].first, 
-                                  (*i1->_e_if)[i].first))
-            return false;
-          if (!Expression::equal ( (*i0->_e_if)[i].second, 
-                                  (*i1->_e_if)[i].second))
+        if (i0->_e_if_then.size() != i1->_e_if_then.size()) return false;
+        for (unsigned int i=i0->_e_if_then.size(); i--; ) {
+          if (!Expression::equal ( i0->_e_if_then[i],
+                                   i1->_e_if_then[i]))
             return false;
         }
         if (!Expression::equal (i0->_e_else, i1->_e_else)) return false;
@@ -941,7 +1090,7 @@ namespace MiniZinc {
       {
         const BinOp* b0 = e0->cast<BinOp>();
         const BinOp* b1 = e1->cast<BinOp>();
-        if (b0->_op != b1->_op) return false;
+        if (b0->op() != b1->op()) return false;
         if (!Expression::equal (b0->_e0, b1->_e0)) return false;
         if (!Expression::equal (b0->_e1, b1->_e1)) return false;
         return true;
@@ -950,7 +1099,7 @@ namespace MiniZinc {
       {
         const UnOp* b0 = e0->cast<UnOp>();
         const UnOp* b1 = e1->cast<UnOp>();
-        if (b0->_op != b1->_op) return false;
+        if (b0->op() != b1->op()) return false;
         if (!Expression::equal (b0->_e0, b1->_e0)) return false;
         return true;
       }
@@ -960,9 +1109,9 @@ namespace MiniZinc {
         const Call* c1 = e1->cast<Call>();
         if (c0->_id != c1->_id) return false;
         if (c0->_decl != c1->_decl) return false;
-        if (c0->_args->size() != c1->_args->size()) return false;
-        for (unsigned int i=0; i<c0->_args->size(); i++)
-          if (!Expression::equal ( (*c0->_args)[i], (*c1->_args)[i] ))
+        if (c0->_args.size() != c1->_args.size()) return false;
+        for (unsigned int i=0; i<c0->_args.size(); i++)
+          if (!Expression::equal ( c0->_args[i], c1->_args[i] ))
             return false;
         return true;
       }
@@ -980,9 +1129,9 @@ namespace MiniZinc {
         const Let* l0 = e0->cast<Let>();
         const Let* l1 = e1->cast<Let>();
         if (!Expression::equal ( l0->_in, l1->_in )) return false;
-        if (l0->_let->size() != l1->_let->size()) return false;
-        for (unsigned int i=l0->_let->size(); i--;)
-          if (!Expression::equal ( (*l0->_let)[i], (*l1->_let)[i]))
+        if (l0->_let.size() != l1->_let.size()) return false;
+        for (unsigned int i=l0->_let.size(); i--;)
+          if (!Expression::equal ( l0->_let[i], l1->_let[i]))
             return false;
         return true;
       }
@@ -998,14 +1147,17 @@ namespace MiniZinc {
       {
         const TypeInst* t0 = e0->cast<TypeInst>();
         const TypeInst* t1 = e1->cast<TypeInst>();
-        if (t0->_ranges->size() != t1->_ranges->size()) return false;
-        for (unsigned int i=t0->_ranges->size(); i--;)
-          if (!Expression::equal ( (*t0->_ranges)[i], (*t1->_ranges)[i]))
+        if (t0->_ranges.size() != t1->_ranges.size()) return false;
+        for (unsigned int i=t0->_ranges.size(); i--;)
+          if (!Expression::equal ( t0->_ranges[i], t1->_ranges[i]))
             return false;
         if (!Expression::equal (t0->_domain, t1->_domain)) return false;
         return true;
       }
     case Expression::E_TIID:
+      return false;
+    default:
+      assert(false);
       return false;
     }
   }    
