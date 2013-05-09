@@ -371,6 +371,8 @@ namespace MiniZinc {
     int min(int i) const;
     /// Return maximum index of dimension \a i
     int max(int i) const;
+    /// Return the length of the array
+    int length(void) const;
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {

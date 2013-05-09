@@ -376,6 +376,14 @@ namespace MiniZinc {
   ArrayLit::max(int i) const {
     return _dims[2*i+1];
   }
+  int
+  ArrayLit::length(void) const {
+    if(dims() == 0) return 0;
+    int l = max(0) - min(0) + 1;
+    for(unsigned int i=1; i<dims(); i++)
+      l *= (max(i) - min(i) + 1);
+    return l;
+  }
 
   void
   ArrayAccess::rehash(void) {
