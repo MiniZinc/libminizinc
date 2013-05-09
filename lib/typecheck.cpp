@@ -405,8 +405,15 @@ namespace MiniZinc {
         call._type = fi->rtype(args);
         call._decl = fi;
       } else {
-        throw TypeError(call._loc,
-          "no function or predicate with this signature found");
+        std::ostringstream oss;
+        oss << "no function or predicate with this signature found: ";
+        oss << call._id.str() << "(";
+        for (unsigned int i=0; i<call._args.size(); i++) {
+          oss << call._args[i]->_type.toString();
+          if (i<call._args.size()-1) oss << ",";
+        }
+        oss << ")";
+        throw TypeError(call._loc, oss.str());
       }
     }
     /// Visit let
