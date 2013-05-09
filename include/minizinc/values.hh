@@ -13,6 +13,7 @@
 #define __MINIZINC_VALUES_HH__
 
 #include <minizinc/gc.hh>
+#include <algorithm>
 
 namespace MiniZinc {
   
