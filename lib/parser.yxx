@@ -714,9 +714,23 @@ expr :
     | MZN_NOT expr %prec MZN_NOT
       { $$=UnOp::a(@$, UOT_NOT, $2); }
     | MZN_PLUS expr %prec MZN_NOT
-      { $$=UnOp::a(@$, UOT_PLUS, $2); }
+      { if ($2->isa<IntLit>() || $2->isa<FloatLit>()) {
+          $$ = $2;
+        } else {
+          $$=UnOp::a(@$, UOT_PLUS, $2);
+        }
+      }
     | MZN_MINUS expr %prec MZN_NOT
-      { $$=UnOp::a(@$, UOT_MINUS, $2); }
+      { if ($2->isa<IntLit>()) {
+        $2->cast<IntLit>()->_v = -$2->cast<IntLit>()->_v;
+          $$ = $2;
+        } else if ($2->isa<FloatLit>()) {
+          $2->cast<FloatLit>()->_v = -$2->cast<FloatLit>()->_v;
+          $$ = $2;
+        } else {
+          $$=UnOp::a(@$, UOT_MINUS, $2);
+        }
+      }
 
 expr_atom_head :
       '(' expr ')'
@@ -943,8 +957,17 @@ quoted_op_call :
         }
         if (uot==-1)
           $$=NULL;
-        else
-          $$=UnOp::a(@$, static_cast<UnOpType>(uot),$3);
+        else {
+          if (uot==UOT_PLUS && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
+            $$ = $3;
+          } else if (uot==UOT_MINUS && $3->isa<IntLit>()) {
+            $3->cast<IntLit>()->_v = -$3->cast<IntLit>()->_v;
+          } else if (uot==UOT_MINUS && $3->isa<FloatLit>()) {
+            $3->cast<FloatLit>()->_v = -$3->cast<FloatLit>()->_v;
+          } else {
+            $$=UnOp::a(@$, static_cast<UnOpType>(uot),$3);
+          }
+        }
       }
 
 call_expr :
