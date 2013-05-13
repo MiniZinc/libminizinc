@@ -832,7 +832,7 @@ namespace MiniZinc {
               int idx_i = com->_g_idx[i];
               DocumentList* gen = new DocumentList("", "", "");
               DocumentList* idents = new DocumentList("", ", ", "");
-              for (unsigned int j = idx_i; j < com->_g_idx[i+1]; j++) {
+              for (unsigned int j = idx_i+1; j < com->_g_idx[i+1]; j++) {
                 idents->addStringToList(
                   com->_g[j]->cast<VarDecl>()->_id.str());
               }
