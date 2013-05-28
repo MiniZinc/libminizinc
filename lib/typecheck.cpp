@@ -55,7 +55,7 @@ namespace MiniZinc {
     DeclMap::iterator vdi = env.find(vd->_id);
     if (vdi == env.end()) {
       Decls nd; nd.push_back(vd);
-      env.insert(std::pair<CtxStringH,Decls>(vd->_id,nd));
+      env.insert(std::pair<ASTString,Decls>(vd->_id,nd));
     } else {
       if (unique)
         throw TypeError(vd->_loc,"identifier `"+vd->_id.str()+
@@ -73,7 +73,7 @@ namespace MiniZinc {
   }
   
   VarDecl*
-  TopoSorter::checkId(const CtxStringH& id, const Location& loc) {
+  TopoSorter::checkId(const ASTString& id, const Location& loc) {
     DeclMap::iterator decl = env.find(id);
     if (decl==env.end()) {
       throw TypeError(loc,"undefined identifier "+id.str());
@@ -96,7 +96,7 @@ namespace MiniZinc {
       return;
     if (e->_ann)
       run(e->_ann);
-    switch (e->_eid) {
+    switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_BOOLLIT:
@@ -106,8 +106,8 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        if(sl->_v)
-            for (Expression* ei : *sl->_v)
+        if(sl->_isv==NULL)
+            for (Expression* ei : sl->_v)
                 run(ei);
       }
       break;
@@ -119,7 +119,7 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
-        for (Expression* ei : *al->_v)
+        for (Expression* ei : al->_v)
           run(ei);
       }
       break;
@@ -127,32 +127,34 @@ namespace MiniZinc {
       {
         ArrayAccess* ae = e->cast<ArrayAccess>();
         run(ae->_v);
-        for (Expression* ei : *ae->_idx)
+        for (Expression* ei : ae->_idx)
           run(ei);
       }
       break;
     case Expression::E_COMP:
       {
         Comprehension* ce = e->cast<Comprehension>();
-        for (Generator* g : *ce->_g) {
-          run(g->_in);
-          for (VarDecl* vd : *g->_v)
-            add(vd,false);
+        for (unsigned int i=0; i<ce->_g_idx.size()-1; i++) {
+          run(ce->_g[ce->_g_idx[i]]);
+          for (unsigned int j=ce->_g_idx[i]+1; j<ce->_g_idx[i+1]; j++) {
+            add(ce->_g[j]->cast<VarDecl>(), false);
+          }
         }
         if (ce->_where)
           run(ce->_where);
         run(ce->_e);
-        for (Generator* g : *ce->_g)
-          for (VarDecl* vd : *g->_v)
-            remove(vd);
+        for (unsigned int i=0; i<ce->_g_idx.size()-1; i++) {
+          for (unsigned int j=ce->_g_idx[i]+1; j<ce->_g_idx[i+1]; j++) {
+            remove(ce->_g[j]->cast<VarDecl>());
+          }
+        }
       }
       break;
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (ITE::IfThen& ie : *ite->_e_if) {
-          run(ie.first);
-          run(ie.second);
+        for (Expression* ie : ite->_e_if_then) {
+          run(ie);
         }
         run(ite->_e_else);
       }
@@ -173,7 +175,7 @@ namespace MiniZinc {
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
-        for (Expression* ei : *ce->_args)
+        for (Expression* ei : ce->_args)
           run(ei);
       }
       break;
@@ -203,9 +205,8 @@ namespace MiniZinc {
     case Expression::E_TI:
       {
         TypeInst* ti = e->cast<TypeInst>();
-        if (ti->_ranges)
-          for (Expression* ei : *ti->_ranges)
-            run(ei);
+        for (Expression* ei : ti->_ranges)
+          run(ei);
         run(ti->_domain);
       }
       break;
@@ -214,18 +215,18 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* let = e->cast<Let>();
-        for (Expression* ei : *let->_let) {
+        for (Expression* ei : let->_let) {
           if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
             add(vd,false);
           }
         }
-        for (Expression* ei : *let->_let) {
+        for (Expression* ei : let->_let) {
           run(ei);
         }
         run(let->_in);
         VarDeclCmp poscmp(pos);
-        std::stable_sort(let->_let->begin(), let->_let->end(), poscmp);
-        for (Expression* ei : *let->_let) {
+        std::stable_sort(let->_let.begin(), let->_let.end(), poscmp);
+        for (Expression* ei : let->_let) {
           if (VarDecl* vd = ei->dyn_cast<VarDecl>()) {
             remove(vd);
           }
@@ -239,8 +240,8 @@ namespace MiniZinc {
   class Typer {
   public:
     static const bool visitAnnotation = ignoreVarDecl;
-    ASTContext& _ctx;
-    Typer(ASTContext& ctx) : _ctx(ctx) {}
+    Model* _model;
+    Typer(Model* model) : _model(model) {}
     /// Visit integer literal
     void vIntLit(const IntLit&) {}
     /// Visit floating point literal
@@ -250,16 +251,15 @@ namespace MiniZinc {
     /// Visit set literal
     void vSetLit(SetLit& sl) {
       Type ty; ty._st = Type::ST_SET;
-      if(sl._v)
-        for (Expression* ei : *sl._v) {
-          if (ei->_type.isvar())
-            ty._ti = Type::TI_VAR;
-          if (ty._bt!=ei->_type._bt) {
-            if (ty._bt!=Type::BT_UNKNOWN)
-              throw TypeError(sl._loc,"non-uniform set literal");
-            ty._bt = ei->_type._bt;
-          }
+      for (Expression* ei : sl._v) {
+        if (ei->_type.isvar())
+          ty._ti = Type::TI_VAR;
+        if (ty._bt!=ei->_type._bt) {
+          if (ty._bt!=Type::BT_UNKNOWN)
+            throw TypeError(sl._loc,"non-uniform set literal");
+          ty._bt = ei->_type._bt;
         }
+      }
       if (ty._bt == Type::BT_UNKNOWN)
         ty._bt = Type::BT_BOT;
       sl._type = ty;
@@ -275,8 +275,8 @@ namespace MiniZinc {
     void vAnonVar(const AnonVar&) {}
     /// Visit array literal
     void vArrayLit(ArrayLit& al) {
-      Type ty; ty._dim = al._dims->size();
-      for (Expression* vi : *al._v) {
+      Type ty; ty._dim = al.dims();
+      for (Expression* vi : al._v) {
         if (vi->_type.isvar() || vi->_type.isany())
           ty._ti = Type::TI_VAR;
         if (ty._bt==Type::BT_UNKNOWN) {
@@ -296,10 +296,10 @@ namespace MiniZinc {
     void vArrayAccess(ArrayAccess& aa) {
       if (aa._v->_type._dim==0)
         throw TypeError(aa._v->_loc,"not an array in array access");
-      if (aa._v->_type._dim != aa._idx->size())
+      if (aa._v->_type._dim != aa._idx.size())
         throw TypeError(aa._v->_loc,"array dimensions do not match");
       bool allpar=true;
-      for (Expression* aai : *aa._idx) {
+      for (Expression* aai : aa._idx) {
         if (aai->_type==Type::varint() || aai->_type==Type::any()) {
           allpar=false;
         } else if (aai->_type!=Type::parint()) {
@@ -313,10 +313,11 @@ namespace MiniZinc {
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
-      for (Generator* g : *c._g) {
-        const Type& ty_in = g->_in->_type;
+      for (unsigned int i=0; i<c._g_idx.size()-1; i++) {
+        Expression* g_in = c._g[c._g_idx[i]];
+        const Type& ty_in = g_in->_type;
         if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
-          throw TypeError(g->_in->_loc,
+          throw TypeError(g_in->_loc,
             "generator expression must be par set of int or array[int] of int, but is "+ty_in.toString());
         }
       }
@@ -327,7 +328,7 @@ namespace MiniZinc {
         
       }
       c._type = c._e->_type;
-      if (c._set) {
+      if (c.set()) {
         if (c._e->_type._dim != 0 || c._e->_type._st == Type::ST_SET)
           throw TypeError(c._e->_loc,
               "set comprehension expression must be scalar, but is "
@@ -344,9 +345,9 @@ namespace MiniZinc {
     void vITE(ITE& ite) {
       Type& telse = ite._e_else->_type;
       bool allpar = !(telse.isvar());
-      for (ITE::IfThen& it : *ite._e_if) {
-        Expression* eif = it.first;
-        Expression* ethen = it.second;
+      for (unsigned int i=0; i<ite._e_if_then.size(); i+=2) {
+        Expression* eif = ite._e_if_then[i];
+        Expression* ethen = ite._e_if_then[i+1];
         if (eif->_type != Type::parbool())
           throw TypeError(eif->_loc,
             "expected par bool conditional expression, got\n  "+
@@ -368,7 +369,7 @@ namespace MiniZinc {
     void vBinOp(BinOp& bop) {
       std::vector<Expression*> args(2);
       args[0] = bop._e0; args[1] = bop._e1;
-      if (bop._op==BOT_PLUSPLUS &&
+      if (bop.op()==BOT_PLUSPLUS &&
         bop._e0->_type._dim==1 && bop._e1->_type._dim==1 &&
         bop._e0->_type._st==bop._e1->_type._st &&
         bop._e0->_type._bt==bop._e1->_type._bt) {
@@ -376,7 +377,7 @@ namespace MiniZinc {
           bop._type = bop._e0->_type;
         else
           bop._type = bop._e1->_type;
-      } else if (FunctionI* fi = _ctx.matchFn(bop.opToString(),args)) {
+      } else if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
         bop._type = fi->rtype(args);
       } else {
         throw TypeError(bop._loc,
@@ -388,7 +389,7 @@ namespace MiniZinc {
     void vUnOp(UnOp& uop) {
       std::vector<Expression*> args(1);
       args[0] = uop._e0;
-      if (FunctionI* fi = _ctx.matchFn(uop.opToString(),args)) {
+      if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
         uop._type = fi->rtype(args);
       } else {
         throw TypeError(uop._loc,
@@ -398,19 +399,26 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& call) {
-      std::vector<Expression*> args(call._args->size());
-      std::copy(call._args->begin(),call._args->end(),args.begin());
-      if (FunctionI* fi = _ctx.matchFn(call._id,args)) {
+      std::vector<Expression*> args(call._args.size());
+      std::copy(call._args.begin(),call._args.end(),args.begin());
+      if (FunctionI* fi = _model->matchFn(call._id,args)) {
         call._type = fi->rtype(args);
         call._decl = fi;
       } else {
-        throw TypeError(call._loc,
-          "no function or predicate with this signature found");
+        std::ostringstream oss;
+        oss << "no function or predicate with this signature found: ";
+        oss << call._id.str() << "(";
+        for (unsigned int i=0; i<call._args.size(); i++) {
+          oss << call._args[i]->_type.toString();
+          if (i<call._args.size()-1) oss << ",";
+        }
+        oss << ")";
+        throw TypeError(call._loc, oss.str());
       }
     }
     /// Visit let
     void vLet(Let& let) {
-      for (Expression* li : *let._let) {
+      for (Expression* li : let._let) {
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->_type.ispar() && vdi->_e == NULL)
             throw TypeError(vdi->_loc,
@@ -438,9 +446,9 @@ namespace MiniZinc {
     }
     /// Visit type inst
     void vTypeInst(TypeInst& ti) {
-      if (ti._ranges) {
+      if (ti._ranges.size()>0) {
         bool foundTIId=false;
-        for (TypeInst* ri : *ti._ranges) {
+        for (TypeInst* ri : ti._ranges) {
           assert(ri != NULL);
           if (ri->_type == Type::bot()) {
 //            std::cerr << "tiid " << ri->cast<TIId>()->_v.str() << "\n";
@@ -460,7 +468,7 @@ namespace MiniZinc {
               ri->_type.toString());
           }
         }
-        ti._type._dim = foundTIId ? -1 : ti._ranges->size();
+        ti._type._dim = foundTIId ? -1 : ti._ranges.size();
       }
       if (ti._domain && !ti._domain->isa<TIId>()) {
         if (ti._domain->_type._ti != Type::TI_PAR ||
@@ -492,7 +500,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(ASTContext& ctx, Model* m) {
+  void typecheck(Model* m) {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
@@ -500,16 +508,16 @@ namespace MiniZinc {
     class TSV0 : public ItemVisitor {
     public:
       TopoSorter& ts;
-      ASTContext& ctx;
+      Model* model;
       std::vector<FunctionI*>& fis;
-      TSV0(TopoSorter& ts0, ASTContext& ctx0, std::vector<FunctionI*>& fis0)
-        : ts(ts0), ctx(ctx0), fis(fis0) {}
+      TSV0(TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0)
+        : ts(ts0), model(model0), fis(fis0) {}
       void vVarDeclI(VarDeclI* i) { ts.add(i->_e, true); }
       void vFunctionI(FunctionI* i) {
-        ctx.registerFn(i);
+        model->registerFn(i);
         fis.push_back(i);
       }
-    } _tsv0(ts,ctx,functionItems);
+    } _tsv0(ts,m,functionItems);
     iterItems(_tsv0,m);
 
     class TSV1 : public ItemVisitor {
@@ -529,34 +537,34 @@ namespace MiniZinc {
       void vOutputI(OutputI* i) { ts.run(i->_e); }
       void vFunctionI(FunctionI* fi) {
         ts.run(fi->_ti);
-        for (unsigned int i=0; i<fi->_params->size(); i++)
-          ts.run((*fi->_params)[i]);
+        for (unsigned int i=0; i<fi->_params.size(); i++)
+          ts.run(fi->_params[i]);
         ts.run(fi->_ann);
-        for (unsigned int i=0; i<fi->_params->size(); i++)
-          ts.add((*fi->_params)[i],false);
+        for (unsigned int i=0; i<fi->_params.size(); i++)
+          ts.add(fi->_params[i],false);
         ts.run(fi->_e);
-        for (unsigned int i=0; i<fi->_params->size(); i++)
-          ts.remove((*fi->_params)[i]);
+        for (unsigned int i=0; i<fi->_params.size(); i++)
+          ts.remove(fi->_params[i]);
       }
     } _tsv1(ts);
     iterItems(_tsv1,m);
 
-    ctx.sortFn();
+    m->sortFn();
 
     {
-      Typer<false> ty(ctx);
+      Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (VarDecl* vd : ts.decls)
         bu_ty.run(vd);
       for (FunctionI* fi : functionItems) {
         bu_ty.run(fi->_ti);
-        for (VarDecl* vd : *fi->_params)
+        for (VarDecl* vd : fi->_params)
           bu_ty.run(vd);
       }
     }
     
     {
-      Typer<true> ty(ctx);
+      Typer<true> ty(m);
       BottomUpIterator<Typer<true> > bu_ty(ty);
       
       class TSV2 : public ItemVisitor {

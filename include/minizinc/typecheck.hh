@@ -19,7 +19,7 @@ namespace MiniZinc {
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef CtxStringMap<Decls>::t DeclMap;
+    typedef ASTStringMap<Decls>::t DeclMap;
     typedef std::unordered_map<VarDecl*,int> PosMap;
     
     Decls decls;
@@ -29,12 +29,12 @@ namespace MiniZinc {
     void add(VarDecl* vd, bool unique);
     void remove(VarDecl* vd);
     
-    VarDecl* checkId(const CtxStringH& id, const Location& loc);
+    VarDecl* checkId(const ASTString& id, const Location& loc);
     
     void run(Expression* e);
   };
   
-  void typecheck(ASTContext& ctx, Model* m);
+  void typecheck(Model* m);
   
 }
 

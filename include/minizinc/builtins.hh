@@ -12,11 +12,11 @@
 #ifndef __MINIZINC_BUILTINS_HH__
 #define __MINIZINC_BUILTINS_HH__
 
-#include <minizinc/context.hh>
+#include <minizinc/model.hh>
 
 namespace MiniZinc {
   
-  void registerBuiltins(ASTContext& ctx);
+  void registerBuiltins(Model* m);
   
 }
 

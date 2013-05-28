@@ -12,6 +12,7 @@
 #ifndef __MINIZINC_CONTEXT_HH__
 #define __MINIZINC_CONTEXT_HH__
 
+#include <minizinc/gc.hh>
 #include <minizinc/allocator.hh>
 #include <minizinc/type.hh>
 
@@ -24,7 +25,6 @@
 namespace MiniZinc {
 
   class CtxString;
-  class ASTContext;
   
   /**
    * \brief Handler for CtxString objects
@@ -39,7 +39,7 @@ namespace MiniZinc {
     /// Constructor
     CtxStringH(CtxString* s) : _s(s) {}
     /// Constructor
-    CtxStringH(ASTContext& ctx, const std::string& s);
+    CtxStringH(Allocator& allocator, const std::string& s);
     /// Copy constructor
     CtxStringH(const CtxStringH& s);
     /// Assignment operator
@@ -168,19 +168,21 @@ namespace MiniZinc {
     }
   public:
     /// Allocate from given vector \a x in context \a ctx
-    static CtxVec* a(ASTContext& ctx, const std::vector<T>& x) {
-      CtxVec<T>* v = static_cast<CtxVec<T>*>(
-        ctx.alloc(sizeof(CtxVec<T>)+(x.size()-1)*sizeof(T)));
-      new (v) CtxVec<T>(x);
-      return v;
+    static CtxVec* a(Allocator& allocator, const std::vector<T>& x) {
+      // CtxVec<T>* v = static_cast<CtxVec<T>*>(
+      //   ctx.alloc(sizeof(CtxVec<T>)+(x.size()-1)*sizeof(T)));
+      // new (v) CtxVec<T>(x);
+      // return v;
+      return NULL;
     }
 
     /// Allocate empty vector in context \a ctx
-    static CtxVec* a(ASTContext& ctx) {
-      CtxVec<T>* v = static_cast<CtxVec<T>*>(
-        ctx.alloc(sizeof(CtxVec<T>)));
-      new (v) CtxVec<T>(std::vector<T>());
-      return v;
+    static CtxVec* a(Allocator& allocator) {
+      // CtxVec<T>* v = static_cast<CtxVec<T>*>(
+      //   ctx.alloc(sizeof(CtxVec<T>)));
+      // new (v) CtxVec<T>(std::vector<T>());
+      // return v;
+      return NULL;
     }
 
     /// Test if vector is empty
@@ -214,15 +216,16 @@ namespace MiniZinc {
     /// Character data
     char _s[1];
   public:
-    static CtxString* a(ASTContext& ctx, const std::string& s) {
-      CtxString* cs = static_cast<CtxString*>(
-        ctx.alloc(sizeof(CtxString)+(s.size())));
-      cs->_n = s.size();
-      strncpy(cs->_s,s.c_str(),s.size());
-      *(cs->_s+s.size())=0;
-      std::hash<std::string> h;
-      cs->_hash = h(s);
-      return cs;
+    static CtxString* a(Allocator& allocator, const std::string& s) {
+      // CtxString* cs = static_cast<CtxString*>(
+      //   ctx.alloc(sizeof(CtxString)+(s.size())));
+      // cs->_n = s.size();
+      // strncpy(cs->_s,s.c_str(),s.size());
+      // *(cs->_s+s.size())=0;
+      // std::hash<std::string> h;
+      // cs->_hash = h(s);
+      // return cs;
+      return NULL;
     }
     const char* c_str(void) const { return _s; }
     std::string str(void) const { return std::string(c_str()); }
@@ -232,8 +235,8 @@ namespace MiniZinc {
   };
 
   inline
-  CtxStringH::CtxStringH(ASTContext& ctx, const std::string& s)
-    : _s(CtxString::a(ctx,s)) {}
+  CtxStringH::CtxStringH(Allocator& allocator, const std::string& s)
+    : _s(CtxString::a(allocator,s)) {}
   inline
   CtxStringH::CtxStringH(const CtxStringH& s) : _s(s._s) {}
   inline CtxStringH&

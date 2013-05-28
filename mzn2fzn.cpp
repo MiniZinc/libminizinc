@@ -19,7 +19,6 @@
 #include <minizinc/exception.hh>
 
 #include <minizinc/eval_par.hh>
-#include <minizinc/flatten.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/builtins.hh>
 
@@ -42,6 +41,8 @@ int main(int argc, char** argv) {
   int nbThreads = 1;
   if (argc < 2)
     goto error;
+
+  GC::init();
 
   for (;;) {
     if (string(argv[i])==string("-I")) {
@@ -84,25 +85,16 @@ int main(int argc, char** argv) {
     datafiles.push_back(argv[i++]);
 
   {
-    ASTContext ctx;
-
-    if (Model* m = parse(ctx, filename, datafiles, includePaths, ignoreStdlib, 
+    if (Model* m = parse(filename, datafiles, includePaths, ignoreStdlib, 
                          std::cerr)) {
       try {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
-          MiniZinc::typecheck(ctx,m);
-          MiniZinc::registerBuiltins(ctx);
-
-          ASTContext fctx;
-          fctx.registerFn(ctx);
-          // Model* flat = MiniZinc::flatten(fctx, m);
-          Model* flat = flatten(fctx, m);
-          optimize(fctx,flat);
-          oldflatzinc(fctx,flat);
+          MiniZinc::typecheck(m);
+          MiniZinc::registerBuiltins(m);
           Printer p;
-          p.print(flat,std::cout,100000);
+          p.print(m,std::cout);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;

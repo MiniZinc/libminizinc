@@ -23,7 +23,7 @@ namespace MiniZinc {
 
   int precedence(const Expression* e) {
     if (const BinOp* bo = e->dyn_cast<BinOp>()) {
-      switch (bo->_op) {
+      switch (bo->op()) {
       case BOT_EQUIV:
         return 1200;
       case BOT_IMPL:
@@ -116,7 +116,7 @@ namespace MiniZinc {
       _t(t) {
     }
     typename T::ret map(const Expression* e) {
-      switch (e->_eid) {
+      switch (e->eid()) {
       case Expression::E_INTLIT:
         return _t.mapIntLit(*e->cast<IntLit>());
       case Expression::E_FLOATLIT:
@@ -506,12 +506,7 @@ namespace MiniZinc {
     }
     ret mapSetLit(const SetLit& sl) {
       DocumentList* dl;
-      if (sl._v) {
-        dl = new DocumentList("{", ", ", "}", true);
-        for (unsigned int i = 0; i < sl._v->size(); i++) {
-          dl->addDocumentToList(expressionToDocument(((*sl._v)[i])));
-        }
-      } else {
+      if (sl._isv) {
         if (sl._isv->size()==1) {
           dl = new DocumentList("", "..", "");
           {
@@ -532,6 +527,11 @@ namespace MiniZinc {
             oss << isv.val();
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
+        }
+      } else {
+        dl = new DocumentList("{", ", ", "}", true);
+        for (unsigned int i = 0; i < sl._v.size(); i++) {
+          dl->addDocumentToList(expressionToDocument((sl._v[i])));
         }
       }
       return dl;
@@ -558,22 +558,21 @@ namespace MiniZinc {
     ret mapArrayLit(const ArrayLit& al) {
       /// TODO: test multi-dimensional arrays handling
       DocumentList* dl;
-      int n = al._dims->size();
-      if (n == 1 && (*al._dims)[0].first == 1) {
+      int n = al.dims();
+      if (n == 1 && al.min(0) == 1) {
         dl = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al._v->size(); i++)
-          dl->addDocumentToList(expressionToDocument((*al._v)[i]));
-      } else if (n == 2 && (*al._dims)[0].first == 1
-                 && (*al._dims)[1].first == 1) {
+        for (unsigned int i = 0; i < al._v.size(); i++)
+          dl->addDocumentToList(expressionToDocument(al._v[i]));
+      } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
         dl = new DocumentList("[| ", " | ", " |]");
-        for (int i = 0; i < (*al._dims)[0].second; i++) {
+        for (int i = 0; i < al.max(0); i++) {
           DocumentList* row = new DocumentList("", ", ", "");
-          for (int j = 0; j < (*al._dims)[1].second; j++) {
+          for (int j = 0; j < al.max(1); j++) {
             row->
-              addDocumentToList(expressionToDocument((*al._v)[i * (*al._dims)[1].second + j]));
+              addDocumentToList(expressionToDocument(al._v[i * al.max(1) + j]));
           }
           dl->addDocumentToList(row);
-          if (i != (*al._dims)[0].second - 1)
+          if (i != al.max(0) - 1)
             dl->addBreakPoint(true); // dont simplify
         }
       } else {
@@ -583,14 +582,14 @@ namespace MiniZinc {
         dl->addStringToList(oss.str());
         DocumentList* args = new DocumentList("(", ", ", ")");
 
-        for (unsigned int i = 0; i < al._dims->size(); i++) {
+        for (unsigned int i = 0; i < al.dims(); i++) {
           oss.str("");
-          oss << (*al._dims)[i].first << ".." << (*al._dims)[i].second;
+          oss << al.min(i) << ".." << al.max(i);
           args->addStringToList(oss.str());
         }
         DocumentList* array = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al._v->size(); i++)
-          array->addDocumentToList(expressionToDocument((*al._v)[i]));
+        for (unsigned int i = 0; i < al._v.size(); i++)
+          array->addDocumentToList(expressionToDocument(al._v[i]));
         args->addDocumentToList(array);
         dl->addDocumentToList(args);
       }
@@ -601,8 +600,8 @@ namespace MiniZinc {
 
       dl->addDocumentToList(expressionToDocument(aa._v));
       DocumentList* args = new DocumentList("[", ", ", "]");
-      for (unsigned int i = 0; i < aa._idx->size(); i++) {
-        args->addDocumentToList(expressionToDocument((*aa._idx)[i]));
+      for (unsigned int i = 0; i < aa._idx.size(); i++) {
+        args->addDocumentToList(expressionToDocument(aa._idx[i]));
       }
       dl->addDocumentToList(args);
       return dl;
@@ -610,23 +609,23 @@ namespace MiniZinc {
     ret mapComprehension(const Comprehension& c) {
       std::ostringstream oss;
       DocumentList* dl;
-      if (c._set)
+      if (c.set())
         dl = new DocumentList("{ ", " | ", " }");
       else
         dl = new DocumentList("[ ", " | ", " ]");
       dl->addDocumentToList(expressionToDocument(c._e));
       DocumentList* head = new DocumentList("", " ", "");
       DocumentList* generators = new DocumentList("", ", ", "");
-      for (unsigned int i = 0; i < c._g->size(); i++) {
-        Generator* g = (*c._g)[i];
+      for (unsigned int i = 0; i < c._g_idx.size()-1; i++) {
+        int idx_i = c._g_idx[i];
         DocumentList* gen = new DocumentList("", "", "");
         DocumentList* idents = new DocumentList("", ", ", "");
-        for (unsigned int j = 0; j < g->_v->size(); j++) {
-          idents->addStringToList((*g->_v)[j]->_id.str());
+        for (unsigned int j = idx_i; j < c._g_idx[i+1]; j++) {
+          idents->addStringToList(c._g[j]->cast<VarDecl>()->_id.str());
         }
         gen->addDocumentToList(idents);
         gen->addStringToList(" in ");
-        gen->addDocumentToList(expressionToDocument(g->_in));
+        gen->addDocumentToList(expressionToDocument(c._g[idx_i]));
         generators->addDocumentToList(gen);
       }
       head->addDocumentToList(generators);
@@ -641,16 +640,15 @@ namespace MiniZinc {
     ret mapITE(const ITE& ite) {
 
       DocumentList* dl = new DocumentList("", "", "");
-      for (unsigned int i = 0; i < ite._e_if->size(); i++) {
+      for (unsigned int i = 0; i < ite._e_if_then.size(); i+=2) {
         std::string beg = (i == 0 ? "if " : " elseif ");
         dl->addStringToList(beg);
-        dl->addDocumentToList(expressionToDocument((*ite._e_if)[i].first));
+        dl->addDocumentToList(expressionToDocument(ite._e_if_then[i]));
         dl->addStringToList(" then ");
 
         DocumentList* ifdoc = new DocumentList("", "", "", false);
         ifdoc->addBreakPoint();
-        ifdoc->addDocumentToList(
-                                 expressionToDocument((*ite._e_if)[i].second));
+        ifdoc->addDocumentToList(expressionToDocument(ite._e_if_then[i+1]));
         dl->addDocumentToList(ifdoc);
         dl->addStringToList(" ");
       }
@@ -679,7 +677,7 @@ namespace MiniZinc {
         opLeft = new DocumentList("", " ", "");
       opLeft->addDocumentToList(expressionToDocument(bo._e0));
       std::string op;
-      switch (bo._op) {
+      switch (bo.op()) {
       case BOT_PLUS:
         op = "+";
         break;
@@ -785,7 +783,7 @@ namespace MiniZinc {
     ret mapUnOp(const UnOp& uo) {
       DocumentList* dl = new DocumentList("", "", "");
       std::string op;
-      switch (uo._op) {
+      switch (uo.op()) {
       case UOT_NOT:
         op = "not ";
         break;
@@ -812,7 +810,7 @@ namespace MiniZinc {
       return dl;
     }
     ret mapCall(const Call& c) {
-      if (c._args->size() == 1) {
+      if (c._args.size() == 1) {
         /*
          * if we have only one argument, and this is an array comprehension,
          * we convert it into the following syntax
@@ -821,24 +819,26 @@ namespace MiniZinc {
          * forall (i in 1..10) (f(i,j))
          */
 
-        Expression* e = (*c._args)[0];
+        const Expression* e = c._args[0];
         if (e->isa<Comprehension>()) {
-          Comprehension* com = e->cast<Comprehension>();
-          if (!com->_set) {
+          const Comprehension* com = e->cast<Comprehension>();
+          if (!com->set()) {
             DocumentList* dl = new DocumentList("", " ", "");
             dl->addStringToList(c._id.str());
             DocumentList* args = new DocumentList("", " ", "", false);
             DocumentList* generators = new DocumentList("", ", ", "");
-            for (unsigned int i = 0; i < com->_g->size(); i++) {
-              Generator* g = (*com->_g)[i];
-              DocumentList* vds = new DocumentList("", ",", "");
-              for (unsigned int j = 0; j < g->_v->size(); j++) {
-                vds->addStringToList((*g->_v)[j]->_id.str());
-              }
+
+            for (unsigned int i = 0; i < com->_g_idx.size()-1; i++) {
+              int idx_i = com->_g_idx[i];
               DocumentList* gen = new DocumentList("", "", "");
-              gen->addDocumentToList(vds);
+              DocumentList* idents = new DocumentList("", ", ", "");
+              for (unsigned int j = idx_i+1; j < com->_g_idx[i+1]; j++) {
+                idents->addStringToList(
+                  com->_g[j]->cast<VarDecl>()->_id.str());
+              }
+              gen->addDocumentToList(idents);
               gen->addStringToList(" in ");
-              gen->addDocumentToList(expressionToDocument(g->_in));
+              gen->addDocumentToList(expressionToDocument(com->_g[idx_i]));
               generators->addDocumentToList(gen);
             }
 
@@ -865,8 +865,8 @@ namespace MiniZinc {
       }
       std::string beg = c._id.str() + "(";
       DocumentList* dl = new DocumentList(beg, ", ", ")");
-      for (unsigned int i = 0; i < c._args->size(); i++) {
-        dl->addDocumentToList(expressionToDocument((*c._args)[i]));
+      for (unsigned int i = 0; i < c._args.size(); i++) {
+        dl->addDocumentToList(expressionToDocument(c._args[i]));
       }
       return dl;
 
@@ -878,8 +878,11 @@ namespace MiniZinc {
       dl->addDocumentToList(expressionToDocument(vd._ti));
       dl->addStringToList(": ");
       dl->addStringToList(vd._id.str());
-      if (vd._introduced) {
+      if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
+      }
+      if (vd._ann) {
+        dl->addDocumentToList(expressionToDocument(vd._ann));
       }
       if (vd._e) {
         dl->addStringToList(" = ");
@@ -891,13 +894,13 @@ namespace MiniZinc {
       DocumentList* letin = new DocumentList("", "", "", false);
       DocumentList* lets = new DocumentList("", " ", "", true);
       DocumentList* inexpr = new DocumentList("", "", "");
-      bool ds = l._let->size() > 1;
+      bool ds = l._let.size() > 1;
 
-      for (unsigned int i = 0; i < l._let->size(); i++) {
+      for (unsigned int i = 0; i < l._let.size(); i++) {
         if (i != 0)
           lets->addBreakPoint(ds);
         DocumentList* exp = new DocumentList("", " ", ",");
-        Expression* li = (*l._let)[i];
+        const Expression* li = l._let[i];
         if (!li->isa<VarDecl>())
           exp->addStringToList("constraint");
         exp->addDocumentToList(expressionToDocument(li));
@@ -938,8 +941,8 @@ namespace MiniZinc {
       if (ti.isarray()) {
         dl->addStringToList("array[");
         DocumentList* ran = new DocumentList("", ", ", "");
-        for (unsigned int i = 0; i < ti._ranges->size(); i++) {
-          ran->addDocumentToList(tiexpressionToDocument(Type::parint(), (*ti._ranges)[i]));
+        for (unsigned int i = 0; i < ti._ranges.size(); i++) {
+          ran->addDocumentToList(tiexpressionToDocument(Type::parint(), ti._ranges[i]));
         }
         dl->addDocumentToList(ran);
         dl->addStringToList("] of ");
@@ -955,7 +958,7 @@ namespace MiniZinc {
     DocumentList* dl = new DocumentList("", "", "");
     Document* s = em.map(e);
     dl->addDocumentToList(s);
-    if (e->_ann) {
+    if (!e->isa<VarDecl>() && e->_ann) {
       dl->addDocumentToList(em.map(e->_ann));
     }
     return dl;
@@ -991,7 +994,7 @@ namespace MiniZinc {
       dl->addStringToList("solve");
       if (si._ann)
         dl->addDocumentToList(expressionToDocument(si._ann));
-      switch (si._st) {
+      switch (si.st()) {
       case SolveI::ST_SAT:
         dl->addStringToList(" satisfy");
         break;
@@ -1025,12 +1028,12 @@ namespace MiniZinc {
         dl->addStringToList(": ");
       }
       dl->addStringToList(fi._id.str());
-      if (!fi._params->empty()) {
+      if (fi._params.size() > 0) {
         DocumentList* params = new DocumentList("(", ", ", ")");
-        for (unsigned int i = 0; i < fi._params->size(); i++) {
+        for (unsigned int i = 0; i < fi._params.size(); i++) {
           DocumentList* par = new DocumentList("", "", "");
           par->setUnbreakable(true);
-          par->addDocumentToList(expressionToDocument((*fi._params)[i]));
+          par->addDocumentToList(expressionToDocument(fi._params[i]));
           params->addDocumentToList(par);
         }
         dl->addDocumentToList(params);
@@ -1068,7 +1071,6 @@ namespace MiniZinc {
     int indentationBase;
     int currentLine;
     int currentItem;
-    int currentSubItem;
     std::vector<std::vector<Line> > items;
     std::vector<LinesToSimplify> linesToSimplify;
     std::vector<LinesToSimplify> linesNotToSimplify;
@@ -1324,7 +1326,7 @@ namespace MiniZinc {
   void
   Printer::print(Item* i, std::ostream& os, int width) {
     Document* d;
-    switch (i->_iid) {
+    switch (i->iid()) {
     case Item::II_INC:
       d = ism->mapIncludeI(*i->cast<IncludeI>());
       break;

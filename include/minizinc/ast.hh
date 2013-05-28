@@ -12,8 +12,11 @@
 #ifndef __MINIZINC_AST_HH__
 #define __MINIZINC_AST_HH__
 
+#include <minizinc/gc.hh>
+#include <minizinc/aststring.hh>
+#include <minizinc/astvec.hh>
+
 #include <minizinc/values.hh>
-#include <minizinc/context.hh>
 #include <minizinc/type.hh>
 
 #include <utility>
@@ -45,43 +48,13 @@ namespace MiniZinc {
   class TypeInst;
 
   class Item;
-
-  /**
-   * \brief Base class for abstract syntax tree nodes
-   */
-  class ASTNode {
-  public:
-
-    /// Allocate node from context
-    void* operator new(size_t size, ASTContext& c) throw() {
-      return c.alloc(size);
-    }
-
-    /// Placement-new
-    void* operator new(size_t, void* n) throw() {
-      return n;
-    }
-
-    /// Delete node (no-op)
-    void operator delete(void*, ASTContext&, unsigned) throw() { }
-    /// Delete node (no-op)
-    void operator delete(void*, size_t) throw() { }
-    /// Delete node (no-op)
-    void operator delete(void*, void*) throw() { }
-
-  private:
-    /// Disabled
-    void* operator new(size_t) throw();
-    /// Disabled
-    void operator delete(void*) throw();
-  };
-
+  class FunctionI;
 
   /// %Location of an expression in the source code
   class Location {
   public:
-    /// Source code file name (context-allocated) or NULL
-    CtxString* filename;
+    /// Source code file name
+    ASTString filename;
     /// Line where expression starts
     unsigned int first_line;
     /// Column where expression starts
@@ -96,6 +69,9 @@ namespace MiniZinc {
     
     /// Return string representation
     std::string toString(void) const;
+    
+    /// Mark as alive for garbage collection
+    void mark(void);
   };
 
   /// Output operator for locations
@@ -104,10 +80,10 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Location& loc) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    if (loc.filename==NULL) {
+    if (loc.filename=="") {
       s << " in unknown file";
     } else {
-      s << " in file " << loc.filename->str() << ":" << loc.first_line;
+      s << " in file " << loc.filename.str() << ":" << loc.first_line;
     }
     return os << s.str();
   }
@@ -124,12 +100,16 @@ namespace MiniZinc {
 
     /// Identifier of the concrere expression type
     enum ExpressionId {
-      E_INTLIT, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
+      E_INTLIT = ASTNode::NID_END+1, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
       E_ARRAYACCESS, E_COMP, E_ITE,
       E_BINOP, E_UNOP, E_CALL, E_VARDECL, E_LET,
-      E_ANN, E_TI, E_TIID
-    } _eid;
+      E_ANN, E_TI, E_TIID, EID_END = E_TIID
+    };
+
+    ExpressionId eid(void) const {
+      return static_cast<ExpressionId>(_id);
+    }
 
     /// The %MiniZinc type of the expression
     Type _type;
@@ -149,17 +129,17 @@ namespace MiniZinc {
     }
 
     /// Compute base hash value
-    void init_hash(void) { _hash = cmb_hash(0,_eid); }
+    void init_hash(void) { _hash = cmb_hash(0,_id); }
 
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
-      : _ann(NULL), _loc(loc), _eid(eid), _type(t) {}
+      : ASTNode(eid), _ann(NULL), _loc(loc), _type(t) {}
 
   public:
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
-      return _eid==T::eid;
+      return _id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> T* cast(void) {
@@ -189,6 +169,9 @@ namespace MiniZinc {
     }
     
     static bool equal(const Expression* e0, const Expression* e1);
+    
+    /// Mark \a e as alive for garbage collection
+    static void mark(Expression* e);
   };
 
   /**
@@ -207,11 +190,9 @@ namespace MiniZinc {
     /// The next annotation in a list or NULL
     Annotation* _a;
     /// Allocate annotation \a e
-    static Annotation* a(ASTContext& ctx, const Location& loc,
-                         Expression* e);
+    static Annotation* a(const Location& loc, Expression* e);
     /// Allocate annotation \a e
-    static Annotation* a(ASTContext& ctx, const Location& loc,
-                         Expression* e, Annotation* a);
+    static Annotation* a(const Location& loc, Expression* e, Annotation* a);
     /// Add annotation \a a to end of list of annotations
     void merge(Annotation* a);
     /// Recompute hash value
@@ -229,9 +210,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_INTLIT;
     /// The value of this expression
     IntVal _v;
-    /// Allocate from context
-    static IntLit* a(ASTContext& ctx, const Location& loc,
-                     IntVal v);
+    /// Allocate
+    static IntLit* a(const Location& loc, IntVal v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -245,9 +225,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_FLOATLIT;
     /// The value of this expression
     FloatVal _v;
-    /// Allocate from context
-    static FloatLit* a(ASTContext& ctx, const Location& loc,
-                       FloatVal v);
+    /// Allocate
+    static FloatLit* a(const Location& loc, FloatVal v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -259,20 +238,17 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
     /// The value of this expression, or NULL
-    CtxVec<Expression*>* _v;
+    ASTExprVec<Expression> _v;
     /// A range-list based representation for an integer set
     IntSetVal* _isv;
-    /// Allocate set \$f\{v1,\dots,vn\}\$f from context
-    static SetLit* a(ASTContext& ctx,
-                     const Location& loc,
+    /// Allocate set \$f\{v1,\dots,vn\}\$f
+    static SetLit* a(const Location& loc,
                      const std::vector<Expression*>& v);
-    /// Allocate set \$f\{v1,\dots,vn\}\$f from context
-    static SetLit* a(ASTContext& ctx,
-                     const Location& loc,
-                     CtxVec<Expression*>* v);
-    /// Allocate set from context
-    static SetLit* a(ASTContext& ctx,
-                     const Location& loc,
+    /// Allocate set \$f\{v1,\dots,vn\}\$f
+    static SetLit* a(const Location& loc,
+                     ASTExprVec<Expression> v);
+    /// Allocate set
+    static SetLit* a(const Location& loc,
                      IntSetVal* isv);
     /// Recompute hash value
     void rehash(void);
@@ -288,9 +264,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_BOOLLIT;
     /// The value of this expression
     bool _v;
-    /// Allocate from context
-    static BoolLit* a(ASTContext& ctx, const Location& loc,
-                      bool v);
+    /// Allocate
+    static BoolLit* a(const Location& loc, bool v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -298,19 +273,17 @@ namespace MiniZinc {
   class StringLit : public Expression {
   protected:
     /// Constructor
-    StringLit(const Location& loc, CtxStringH v)
+    StringLit(const Location& loc, ASTString v)
       : Expression(loc,E_STRINGLIT,Type::parstring()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_STRINGLIT;
-    /// The value of this expression (context-allocated)
-    CtxStringH _v;
-    /// Allocate from context
-    static StringLit* a(ASTContext& ctx, const Location& loc,
-                        const std::string& v);
-    /// Allocate from context
-    static StringLit* a(ASTContext& ctx, const Location& loc,
-                        const CtxStringH& v);
+    /// The value of this expression
+    ASTString _v;
+    /// Allocate
+    static StringLit* a(const Location& loc, const std::string& v);
+    /// Allocate
+    static StringLit* a(const Location& loc, const ASTString& v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -318,21 +291,19 @@ namespace MiniZinc {
   class Id : public Expression {
   protected:
     /// Constructor
-    Id(const Location& loc, CtxStringH v, VarDecl* decl)
+    Id(const Location& loc, const ASTString& v, VarDecl* decl)
       : Expression(loc,E_ID,Type()), _v(v), _decl(decl) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ID;
-    /// The string identifier (context-allocated)
-    CtxStringH _v;
+    /// The string identifier
+    ASTString _v;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
-    /// Allocate from context (\a decl may be NULL)
-    static Id* a(ASTContext& ctx, const Location& loc,
-                 const std::string& v, VarDecl* decl);
-    /// Allocate from context (\a decl may be NULL)
-    static Id* a(ASTContext& ctx, const Location& loc,
-                 const CtxStringH& v, VarDecl* decl);
+    /// Allocate (\a decl may be NULL)
+    static Id* a(const Location& loc, const std::string& v, VarDecl* decl);
+    /// Allocate (\a decl may be NULL)
+    static Id* a(const Location& loc, const ASTString& v, VarDecl* decl);
     /// Recompute hash value
     void rehash(void);
   };
@@ -340,16 +311,15 @@ namespace MiniZinc {
   class TIId : public Expression {
   protected:
     /// Constructor
-    TIId(const Location& loc, CtxStringH v)
+    TIId(const Location& loc, const ASTString& v)
       : Expression(loc,E_TIID,Type()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TIID;
-    /// The string identifier (context-allocated)
-    CtxStringH _v;
-    /// Allocate from context
-    static TIId* a(ASTContext& ctx, const Location& loc,
-                   const std::string& v);
+    /// The string identifier
+    ASTString _v;
+    /// Allocate
+    static TIId* a(const Location& loc, const std::string& v);
     /// Recompute hash value
     void rehash(void);
   };
@@ -361,8 +331,8 @@ namespace MiniZinc {
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANON;
-    /// Allocate from context
-    static AnonVar* a(ASTContext& ctx, const Location& loc);
+    /// Allocate
+    static AnonVar* a(const Location& loc);
     /// Recompute hash value
     void rehash(void);
   };
@@ -375,29 +345,34 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
     /// The array
-    CtxVec<Expression*>* _v;
+    ASTExprVec<Expression> _v;
     /// The declared array dimensions
-    CtxVec<pair<int,int> >* _dims;
-    /// Allocate from context
-    static ArrayLit* a(ASTContext& ctx,
-                       const Location& loc,
+    ASTIntVec _dims;
+    /// Allocate
+    static ArrayLit* a(const Location& loc,
                        const std::vector<Expression*>& v,
                        const std::vector<pair<int,int> >& dims);
-    /// Allocate from context (existing content)
-    static ArrayLit* a(ASTContext& ctx,
-                       const Location& loc,
-                       CtxVec<Expression*>* v,
+    /// Allocate (existing content)
+    static ArrayLit* a(const Location& loc,
+                       ASTExprVec<Expression> v,
                        const std::vector<pair<int,int> >& dims);
-    /// Allocate from context (one-dimensional)
-    static ArrayLit* a(ASTContext& ctx,
-                       const Location& loc,
+    /// Allocate (one-dimensional)
+    static ArrayLit* a(const Location& loc,
                        const std::vector<Expression*>& v);
-    /// Allocate from context (two-dimensional)
-    static ArrayLit* a(ASTContext& ctx,
-                       const Location& loc,
+    /// Allocate (two-dimensional)
+    static ArrayLit* a(const Location& loc,
                        const std::vector<std::vector<Expression*> >& v);
     /// Recompute hash value
     void rehash(void);
+    
+    /// Return number of dimensions
+    int dims(void) const;
+    /// Return minimum index of dimension \a i
+    int min(int i) const;
+    /// Return maximum index of dimension \a i
+    int max(int i) const;
+    /// Return the length of the array
+    int length(void) const;
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -410,17 +385,15 @@ namespace MiniZinc {
     /// The array to access
     Expression* _v;
     /// The indexes (for all array dimensions)
-    CtxVec<Expression*>* _idx;
-    /// Allocate from context
-    static ArrayAccess* a(ASTContext& ctx,
-                          const Location& loc,
+    ASTExprVec<Expression> _idx;
+    /// Allocate
+    static ArrayAccess* a(const Location& loc,
                           Expression* v,
                           const std::vector<Expression*>& idx);
-    /// Allocate from context
-    static ArrayAccess* a(ASTContext& ctx,
-                          const Location& loc,
+    /// Allocate
+    static ArrayAccess* a(const Location& loc,
                           Expression* v,
-                          CtxVec<Expression*>* idx);
+                          ASTExprVec<Expression> idx);
     /// Recompute hash value
     void rehash(void);
   };
@@ -435,32 +408,26 @@ namespace MiniZinc {
    * for k and the expression 1..5.
    *
    */
-  class Generator : public ASTNode {
-  protected:
-    /// Constructor
-    Generator(void) {}
+  class Generator {
   public:
     /// Variable declarations
-    CtxVec<VarDecl*>* _v;
+    std::vector<VarDecl*> _v;
     /// in-expression
     Expression* _in;
-    /// Allocate from context
-    static Generator* a(ASTContext& ctx,
-                        const std::vector<std::string>& v,
-                        Expression* in);
-    /// Allocate from context
-    static Generator* a(ASTContext& ctx,
-                        const std::vector<CtxStringH>& v,
-                        Expression* in);
-    /// Allocate from context
-    static Generator* a(ASTContext& ctx,
-                        CtxVec<VarDecl*>* v,
-                        Expression* in);
+    /// Allocate
+    Generator(const std::vector<std::string>& v,
+              Expression* in);
+    /// Allocate
+    Generator(const std::vector<ASTString>& v,
+              Expression* in);
+    /// Allocate
+    Generator(const std::vector<VarDecl*>& v,
+              Expression* in);
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
     /// %Generators
-    std::vector<Generator*> _g;
+    std::vector<Generator> _g;
     //// where-expression
     Expression* _w;
   };
@@ -474,39 +441,39 @@ namespace MiniZinc {
     static const ExpressionId eid = E_COMP;
     /// The expression to generate
     Expression* _e;
-    /// A list of generators
-    CtxVec<Generator*>* _g;
+    /// A list of generator expressions
+    ASTExprVec<Expression> _g;
+    /// A list of indices where generators start
+    ASTIntVec _g_idx;
     /// The where-clause (or NULL)
     Expression* _where;
-    /// Whether this is a set (true) or array (false) comprehension
-    bool _set;
-    /// Allocate from context
-    static Comprehension* a(ASTContext& ctx,
-                            const Location& loc,
+    /// Allocate
+    static Comprehension* a(const Location& loc,
                             Expression* e,
                             Generators& g,
                             bool set);
     /// Recompute hash value
     void rehash(void);
+    /// Whether comprehension is a set
+    bool set(void) const;
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ITE;
-    /// Type of if-then pairs
-    typedef pair<Expression*,Expression*> IfThen;
   protected:
     /// Constructor
     ITE(const Location& loc) : Expression(loc,E_ITE,Type()) {}
   public:
     /// List of if-then-pairs
-    CtxVec<IfThen>* _e_if;
+    ASTExprVec<Expression> _e_if_then;
     /// Else-expression
     Expression* _e_else;
-    /// Allocate from context
-    static ITE* a(ASTContext& ctx, const Location& loc,
-                  const std::vector<IfThen>& e_if, Expression* e_else);
+    /// Allocate
+    static ITE* a(const Location& loc,
+                  const std::vector<Expression*>& e_if_then, 
+                  Expression* e_else);
     /// Recompute hash value
     void rehash(void);
   };
@@ -526,7 +493,9 @@ namespace MiniZinc {
   protected:
     /// Constructor
     BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-     : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1), _op(op) {}
+      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1) {
+      _sec_id = op;
+    }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BINOP;
@@ -534,14 +503,14 @@ namespace MiniZinc {
     Expression* _e0;
     /// Right hand side expression
     Expression* _e1;
-    /// Operator type
-    BinOpType _op;
-    /// Allocate from context
-    static BinOp* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static BinOp* a(const Location& loc,
                     Expression* e0, BinOpType op, Expression* e1);
-    CtxStringH opToString(void) const;
+    ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
+    /// Return operator type
+    BinOpType op(void) const;
   };
 
   /// Type of unary operators
@@ -553,20 +522,22 @@ namespace MiniZinc {
   protected:
     /// Constructor
     UnOp(const Location& loc, UnOpType op, Expression* e)
-     : Expression(loc,E_UNOP,Type()), _e0(e), _op(op) {}
+      : Expression(loc,E_UNOP,Type()), _e0(e) {
+      _sec_id = op;
+    }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_UNOP;
     /// %Expression
     Expression* _e0;
-    /// Operator type
-    UnOpType _op;
-    /// Allocate from context
-    static UnOp* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static UnOp* a(const Location& loc,
                    UnOpType op, Expression* e);
-    CtxStringH opToString(void) const;
+    ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
+    /// Return operator type
+    UnOpType op(void) const;
   };
   
   /// \brief A predicate or function call expression
@@ -577,20 +548,20 @@ namespace MiniZinc {
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
-    /// Identifier of called predicate or function (context-allocated)
-    CtxStringH _id;
+    /// Identifier of called predicate or function
+    ASTString _id;
     /// Arguments to the call
-    CtxVec<Expression*>* _args;
+    ASTExprVec<Expression> _args;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
-    /// Allocate from context
-    static Call* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static Call* a(const Location& loc,
                    const std::string& id,
                    const std::vector<Expression*>& args,
                    FunctionI* decl=NULL);
-    /// Allocate from context
-    static Call* a(ASTContext& ctx, const Location& loc,
-                   const CtxStringH& id,
+    /// Allocate
+    static Call* a(const Location& loc,
+                   const ASTString& id,
                    const std::vector<Expression*>& args,
                    FunctionI* decl=NULL);
     /// Recompute hash value
@@ -601,30 +572,36 @@ namespace MiniZinc {
   protected:
     /// Constructor
     VarDecl(const Location& loc, const Type& t)
-     : Expression(loc,E_VARDECL,t), _toplevel(true), _introduced(false) {}
+     : Expression(loc,E_VARDECL,t) {
+       _flag_1 = true;
+       _flag_2 = false;
+     }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
     /// Type-inst of the declared variable
     TypeInst* _ti;
-    /// Identifier (context-allocated)
-    CtxStringH _id;
+    /// Identifier
+    ASTString _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
-    /// Allocation context
-    int _allocator;
-    /// Whether variable is declared in toplevel context
-    bool _toplevel;
-    /// Whether variable was introduced by translation
-    bool _introduced;
-    /// Allocate from context
-    static VarDecl* a(ASTContext& ctx, const Location& loc,
-                      TypeInst* ti, const std::string& id, Expression* e=NULL);
-    /// Allocate from context
-    static VarDecl* a(ASTContext& ctx, const Location& loc,
-                      TypeInst* ti, const CtxStringH& id, Expression* e=NULL);
+    /// Allocate
+    static VarDecl* a(const Location& loc,
+                      TypeInst* ti, const std::string& id,
+                      Expression* e=NULL);
+    /// Allocate
+    static VarDecl* a(const Location& loc,
+                      TypeInst* ti, const ASTString& id, Expression* e=NULL);
     /// Recompute hash value
     void rehash(void);
+    /// Whether variable is toplevel
+    bool toplevel(void) const;
+    /// Whether variable is toplevel
+    void toplevel(bool t);
+    /// Whether variable is introduced
+    bool introduced(void) const;
+    /// Whether variable is introduced
+    void introduced(bool t);
   };
   /// \brief %Let expression
   class Let : public Expression {
@@ -635,14 +612,20 @@ namespace MiniZinc {
     /// The identifier of this expression type
     static const ExpressionId eid = E_LET;
     /// List of local declarations
-    CtxVec<Expression*>* _let;
+    ASTExprVec<Expression> _let;
     /// Body of the let
     Expression* _in;
-    /// Allocate from context
-    static Let* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static Let* a(const Location& loc,
                   const std::vector<Expression*>& let, Expression* in);
     /// Recompute hash value
     void rehash(void);
+
+    /// Remember current let bindings
+    void pushbindings(void);
+    /// Restore previous let bindings
+    void popbindings(void);
+    
   };
 
   /// \brief Type-inst expression
@@ -650,25 +633,33 @@ namespace MiniZinc {
   protected:
     /// Constructor
     TypeInst(const Location& loc, const Type& type,
-             Expression* domain=NULL,
-             CtxVec<TypeInst*>* ranges=NULL)
+             ASTExprVec<TypeInst> ranges,
+             Expression* domain=NULL)
      : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
+    /// Constructor
+    TypeInst(const Location& loc, const Type& type,
+             Expression* domain=NULL)
+     : Expression(loc,E_TI,type), _domain(domain) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TI;
     /// Ranges of an array expression
-    CtxVec<TypeInst*>* _ranges;
+    ASTExprVec<TypeInst> _ranges;
     /// Declared domain (or NULL)
     Expression* _domain;
-    /// Allocate from context
-    static TypeInst* a(ASTContext& ctx, const Location& loc,
-                       const Type& t, Expression* domain=NULL,
-                       CtxVec<TypeInst*>* ranges=NULL);
+    /// Allocate
+    static TypeInst* a(const Location& loc,
+                       const Type& t,
+                       ASTExprVec<TypeInst> ranges,
+                       Expression* domain=NULL);
+    /// Allocate
+    static TypeInst* a(const Location& loc,
+                       const Type& t,
+                       Expression* domain=NULL);
     
     /// Add \a ranges to expression
-    void addRanges(ASTContext& ctx,
-                   const std::vector<TypeInst*>& ranges);
-    bool isarray(void) const { return _ranges && _ranges->size()>0; }
+    void addRanges(const std::vector<TypeInst*>& ranges);
+    bool isarray(void) const { return _ranges.size()>0; }
     bool hasTiVariable(void) const;
     /// Recompute hash value
     void rehash(void);
@@ -683,20 +674,23 @@ namespace MiniZinc {
     Location _loc;
     /// Identifier of the concrete item type
     enum ItemId {
-      II_INC, II_VD, II_ASN, II_CON, II_SOL,
-      II_OUT, II_FUN
-    } _iid;
+      II_INC = Expression::EID_END+1, II_VD, II_ASN, II_CON, II_SOL,
+      II_OUT, II_FUN, II_END = II_FUN
+    };
+    ItemId iid(void) const {
+      return static_cast<ItemId>(_id);
+    }
     
   protected:
     /// Constructor
     Item(const Location& loc, const ItemId& iid)
-      : _loc(loc), _iid(iid) {}
+      : ASTNode(iid), _loc(loc) {}
 
   public:
 
     /// Test if item is of type \a T
     template<class T> bool isa(void) const {
-      return _iid==T::iid;
+      return _id==T::iid;
     }
     /// Cast item to type \a T*
     template<class T> T* cast(void) {
@@ -727,18 +721,18 @@ namespace MiniZinc {
   public:
     /// The identifier of this item type
     static const ItemId iid = II_INC;
-    /// Filename to include (context-allocated)
-    CtxStringH _f;
+    /// Filename to include
+    ASTString _f;
     /// Model for that file
     Model* _m;
-    /// Whether this include-item owns the model
-    bool _own;
-    /// Allocate from context
-    static IncludeI* a(ASTContext& ctx, const Location& loc,
-                       const CtxStringH& f);
+    /// Allocate
+    static IncludeI* a(const Location& loc, const ASTString& f);
     /// Set the model
     void setModel(Model* m, bool own=true) {
-      assert(_m==NULL); _m = m; _own = own;
+      assert(_m==NULL); _m = m; _flag_1 = own;
+    }
+    bool own(void) const {
+      return _flag_1;
     }
   };
   /// \brief Variable declaration item
@@ -750,9 +744,8 @@ namespace MiniZinc {
     static const ItemId iid = II_VD;
     /// The declaration expression
     VarDecl* _e;
-    /// Allocate from context
-    static VarDeclI* a(ASTContext& ctx, const Location& loc,
-                       VarDecl* e);
+    /// Allocate
+    static VarDeclI* a(const Location& loc, VarDecl* e);
   };
   /// \brief Assign item
   class AssignI : public Item {
@@ -762,14 +755,14 @@ namespace MiniZinc {
   public:
     /// The identifier of this item type
     static const ItemId iid = II_ASN;
-    /// Identifier of variable to assign to (context-allocated)
-    CtxStringH _id;
+    /// Identifier of variable to assign to
+    ASTString _id;
     /// Expression to assign to the variable
     Expression* _e;
     /// Declaration of the variable to assign to
     VarDecl* _decl;
-    /// Allocate from context
-    static AssignI* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static AssignI* a(const Location& loc,
                       const std::string& id, Expression* e);
   };
   /// \brief Constraint item
@@ -782,9 +775,8 @@ namespace MiniZinc {
     static const ItemId iid = II_CON;
     /// Constraint expression
     Expression* _e;
-    /// Allocate from context
-    static ConstraintI* a(ASTContext& ctx, const Location& loc, 
-                          Expression* e);
+    /// Allocate
+    static ConstraintI* a(const Location& loc, Expression* e);
   };
   /// \brief Solve item
   class SolveI : public Item {
@@ -799,16 +791,20 @@ namespace MiniZinc {
     /// Expression for minimisation/maximisation (or NULL)
     Expression* _e;
     /// Type of solving
-    enum SolveType { ST_SAT, ST_MIN, ST_MAX } _st;
-    /// Allocate solve satisfy item from context
-    static SolveI* sat(ASTContext& ctx, const Location& loc,
+    enum SolveType { ST_SAT, ST_MIN, ST_MAX };
+    /// Allocate solve satisfy item
+    static SolveI* sat(const Location& loc,
                        Annotation* ann = NULL);
-    /// Allocate solve minimize item from context
-    static SolveI* min(ASTContext& ctx, const Location& loc,
+    /// Allocate solve minimize item
+    static SolveI* min(const Location& loc,
                        Expression* e, Annotation* ann = NULL);
-    /// Allocate solve maximize item from context
-    static SolveI* max(ASTContext& ctx, const Location& loc,
+    /// Allocate solve maximize item
+    static SolveI* max(const Location& loc,
                        Expression* e, Annotation* ann = NULL);
+    /// Return type of solving
+    SolveType st(void) const;
+    /// Set type of solving
+    void st(SolveType s);
   };
   /// \brief Output item
   class OutputI : public Item {
@@ -820,9 +816,8 @@ namespace MiniZinc {
     static const ItemId iid = II_OUT;
     /// Expression to output
     Expression* _e;
-    /// Allocate from context
-    static OutputI* a(ASTContext& ctx, const Location& loc,
-                      Expression* e);
+    /// Allocate
+    static OutputI* a(const Location& loc, Expression* e);
   };
   /// \brief Function declaration item
   class FunctionI : public Item {
@@ -832,27 +827,27 @@ namespace MiniZinc {
   public:
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
-    /// Identifier of this function (context-allocated)
-    CtxStringH _id;
+    /// Identifier of this function
+    ASTString _id;
     /// Type-inst of the return value
     TypeInst* _ti;
     /// List of parameter declarations
-    CtxVec<VarDecl*>* _params;
+    ASTExprVec<VarDecl> _params;
     /// Annotation
     Annotation* _ann;
     /// Function body (or NULL)
     Expression* _e;
     
     /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (ASTContext&, CtxVec<Expression*>*);
+    typedef Expression* (*builtin_e) (ASTExprVec<Expression>&);
     /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (ASTContext&, CtxVec<Expression*>*);
+    typedef IntVal (*builtin_i) (ASTExprVec<Expression>&);
     /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (ASTContext&, CtxVec<Expression*>*);
+    typedef bool (*builtin_b) (ASTExprVec<Expression>&);
     /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (ASTContext&, CtxVec<Expression*>*);
+    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>&);
     /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (ASTContext&, CtxVec<Expression*>*);
+    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>&);
 
     /// Builtin functions (or NULL)
     struct {
@@ -863,8 +858,8 @@ namespace MiniZinc {
       builtin_s s;
     } _builtins;
 
-    /// Allocate from context
-    static FunctionI* a(ASTContext& ctx, const Location& loc,
+    /// Allocate
+    static FunctionI* a(const Location& loc,
                         const std::string& id, TypeInst* ti,
                         const std::vector<VarDecl*>& params,
                         Expression* e = NULL, Annotation* ann = NULL);
