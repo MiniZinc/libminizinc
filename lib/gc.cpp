@@ -375,7 +375,8 @@ namespace MiniZinc {
             wholepage = true;
           }
         } else {
-          n->_gc_mark=0;
+          if (n->_id != ASTNode::NID_FL)
+            n->_gc_mark=0;
         }
         off += ns;
       }
