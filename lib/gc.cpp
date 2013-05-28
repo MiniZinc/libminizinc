@@ -107,7 +107,7 @@ namespace MiniZinc {
       , _alloced_mem(0)
       , _free_mem(0)
       , _gc_threshold(10) {
-      for (int i=_max_fl; i--;)
+      for (int i=_max_fl+1; i--;)
         _fl[i] = NULL;
     }
 
@@ -375,7 +375,8 @@ namespace MiniZinc {
             wholepage = true;
           }
         } else {
-          n->_gc_mark=0;
+          if (n->_id != ASTNode::NID_FL)
+            n->_gc_mark=0;
         }
         off += ns;
       }

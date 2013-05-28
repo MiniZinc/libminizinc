@@ -38,9 +38,9 @@ namespace MiniZinc {
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             int i, IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
-    e->_g[e->_g_idx[gen]+id+1]->cast<IntLit>()->_v = i;
-    if (id == e->_g_idx[gen+1]-1) {
-      if (gen == e->_g_idx.size()-1) {
+    e->_g[e->_g_idx[gen]+id+1]->cast<VarDecl>()->_e->cast<IntLit>()->_v = i;
+    if (e->_g_idx[gen]+id+1 == e->_g_idx[gen+1]-1) {
+      if (gen == e->_g_idx.size()-2) {
         bool where = true;
         if (e->_where != NULL) {
           where = eval_bool(e->_where);
