@@ -37,7 +37,7 @@ namespace MiniZinc {
       return reinterpret_cast<const Range*>(_data)[i];
     }
 
-    IntSetVal(void) : ASTChunk(1) {}
+    IntSetVal(void) : ASTChunk(0) {}
     IntSetVal(int m, int n) : ASTChunk(sizeof(Range)) {
       get(0).min = m;
       get(0).max = n;
@@ -60,9 +60,7 @@ namespace MiniZinc {
 
     /// Allocate empty set from context
     static IntSetVal* a(void) {
-      IntSetVal* r =
-        static_cast<IntSetVal*>(
-          alloc(sizeof(IntSetVal)+sizeof(Range)-1));
+      IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(0));
       new (r) IntSetVal();
       return r;
     }
@@ -70,8 +68,7 @@ namespace MiniZinc {
     /// Allocate set \f$\{m,n\}\f$ from context
     static IntSetVal* a(IntVal m, IntVal n) {
       IntSetVal* r =
-        static_cast<IntSetVal*>(
-          alloc(sizeof(IntSetVal)+sizeof(Range)-1));
+        static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
       new (r) IntSetVal(m,n);
       return r;
     }
@@ -82,7 +79,7 @@ namespace MiniZinc {
       for (; i(); ++i)
         s.push_back(Range(i.min(),i.max()));
       IntSetVal* r = static_cast<IntSetVal*>(
-          alloc(sizeof(IntSetVal)+sizeof(Range)*(s.size())-1));
+          ASTChunk::alloc(sizeof(Range)*s.size()));
       new (r) IntSetVal(s);
       return r;
     }
@@ -105,7 +102,7 @@ namespace MiniZinc {
       }
       ranges.push_back(Range(min,max));
       IntSetVal* r = static_cast<IntSetVal*>(
-          alloc(sizeof(IntSetVal)+sizeof(Range)*(s.size())-1));
+          ASTChunk::alloc(sizeof(Range)*s.size()));
       new (r) IntSetVal(ranges);
       return r;
     }
