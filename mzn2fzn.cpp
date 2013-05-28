@@ -19,6 +19,7 @@
 #include <minizinc/exception.hh>
 
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/builtins.hh>
 
@@ -93,8 +94,11 @@ int main(int argc, char** argv) {
         if (typecheck) {
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
+          Model* flat = flatten(m);
+          optimize(flat);
+          oldflatzinc(flat);
           Printer p;
-          p.print(m,std::cout);
+          p.print(flat,std::cout);
         }
         // if (verbose)
         //   std::cerr << "  typechecked" << std::endl;
