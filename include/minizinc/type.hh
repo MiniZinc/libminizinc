@@ -23,15 +23,18 @@ namespace MiniZinc {
     enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
                     BT_BOT, BT_UNKNOWN };
     enum SetType { ST_PLAIN, ST_SET };
+    enum OptType { OT_PRESENT, OT_OPTIONAL };
     TypeInst _ti : 3;
     BaseType _bt : 3;
     SetType _st  : 1;
+    OptType _ot  : 1;
     int _dim : 20;
-    Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN), _dim(0) {}
+    Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN),
+                 _ot(OT_PRESENT), _dim(0) {}
   protected:
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
          int dim)
-      : _ti(ti), _bt(bt), _st(st), _dim(dim) {}
+      : _ti(ti), _bt(bt), _st(st), _ot(OT_PRESENT), _dim(dim) {}
   public:
     static Type any(int dim=0) {
       return Type(TI_ANY,BT_BOT,ST_PLAIN,dim);
@@ -81,7 +84,9 @@ namespace MiniZinc {
 
     bool isunknown(void) const { return _bt==BT_UNKNOWN; }
     bool isany(void) const { return _ti==TI_ANY; }
-    bool isplain(void) const { return _dim==0 && _st==ST_PLAIN; }
+    bool isplain(void) const {
+      return _dim==0 && _st==ST_PLAIN && _ot==OT_PRESENT;
+    }
     bool isint(void) const { return isplain() && _bt==BT_INT; }
     bool isfloat(void) const { return isplain() && _bt==BT_FLOAT; }
     bool isbool(void) const { return isplain() && _bt==BT_BOOL; }
@@ -89,21 +94,24 @@ namespace MiniZinc {
     bool isvar(void) const { return _ti!=TI_PAR; }
     bool issvar(void) const { return _ti==TI_SVAR; }
     bool ispar(void) const { return _ti==TI_PAR; }
+    bool isopt(void) const { return _ot==OT_OPTIONAL; }
+    bool ispresent(void) const { return _ot==OT_PRESENT; }
     bool isset(void) const { return _dim==0 && _st==ST_SET; }
     bool isintset(void) const { return isset() && _bt==BT_INT; }
     bool isann(void) const { return isplain() && _bt==BT_ANN; }
     bool isintarray(void) const {
-      return _dim==1 && _st==ST_PLAIN && _bt==BT_INT;
+      return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_INT;
     }
     bool isboolarray(void) const {
-      return _dim==1 && _st==ST_PLAIN && _bt==BT_BOOL;
+      return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_BOOL;
     }
     bool isintsetarray(void) const {
       return _dim==1 && _st==ST_SET && _bt==BT_INT;
     }
 
     bool operator== (const Type& t) const {
-      return _ti==t._ti && _bt==t._bt && _st==t._st && _dim==t._dim;
+      return _ti==t._ti && _bt==t._bt && _st==t._st &&
+             _ot==t._ot && _dim==t._dim;
     }
     bool operator!= (const Type& t) const {
       return !this->operator==(t);
@@ -112,16 +120,18 @@ namespace MiniZinc {
   // protected:
     int toInt(void) const {
       return
-        (static_cast<int>(_ti)<<24)
-      + (static_cast<int>(_bt)<<21)
-      + (static_cast<int>(_st)<<20)
+        (static_cast<int>(_ti)<<25)
+      + (static_cast<int>(_bt)<<22)
+      + (static_cast<int>(_st)<<21)
+      + (static_cast<int>(_ot)<<20)
       + _dim;
     }
     static Type fromInt(int i) {
       Type t;
-      t._ti = static_cast<TypeInst>((i >> 24) & 0x7);
-      t._bt = static_cast<BaseType>((i >> 21) & 0x7);
-      t._st = static_cast<SetType>((i >> 20) & 0x1);
+      t._ti = static_cast<TypeInst>((i >> 25) & 0x7);
+      t._bt = static_cast<BaseType>((i >> 22) & 0x7);
+      t._st = static_cast<SetType>((i >> 21) & 0x1);
+      t._ot = static_cast<OptType>((i >> 20) & 0x1);
       t._dim = i & 0xFFFFF;
       return t;
     }
@@ -131,6 +141,7 @@ namespace MiniZinc {
         oss<<"array["<<_dim<<"] of ";
       if (_dim<0)
         oss<<"array[$_] of ";
+      if (_ot==OT_OPTIONAL) oss<<"opt ";
       switch (_ti) {
         case TI_PAR: oss<<"par "; break;
         case TI_VAR: oss<<"var "; break;
@@ -154,21 +165,21 @@ namespace MiniZinc {
       // either same dimension or t has variable dimension
       if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
-      // same type
+      // same type, this is present or both optional
       if (_ti==t._ti && _bt==t._bt && _st==t._st)
-        return true;
+        return _ot==OT_PRESENT || _ot==t._ot;
       // this is par or svar, other than that same type as t
       if ((_ti==TI_PAR || _ti==TI_SVAR) && _bt==t._bt && _st==t._st)
-        return true;
+        return _ot==OT_PRESENT || _ot==t._ot;
       // t is svar, other than that same type as this
       if (t._ti==TI_SVAR && _bt==t._bt && _st==t._st)
-        return true;
+        return _ot==OT_PRESENT || _ot==t._ot;
       if (t._ti==TI_ANY)
         return true;
       if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
         return true;
       if ( _bt==BT_BOT && _st==t._st)
-        return true;
+        return _ot==OT_PRESENT || _ot==t._ot;
       return false;
     }
 

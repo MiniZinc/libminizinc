@@ -264,6 +264,7 @@ namespace MiniZinc {
 %token <bValue> MZN_MAXIMIZE
 %token <bValue> MZN_MINIMIZE
 %token MZN_OF
+%token MZN_OPT
 %token MZN_SATISFY
 %token MZN_OUTPUT
 %token MZN_PREDICATE
@@ -342,6 +343,8 @@ namespace MiniZinc {
 %type <iValue> quoted_op
 
 %type <sValue> id_or_quoted_op
+
+%type <bValue> opt_opt
 
 %%
 
@@ -554,16 +557,25 @@ base_ti_expr :
       { $$ = $1; }
     | MZN_PAR base_ti_expr_tail
       { $$ = $2; }
-    | MZN_VAR base_ti_expr_tail
-      { $$ = $2; $$->_type._ti = Type::TI_VAR; }
+    | opt_opt MZN_VAR base_ti_expr_tail
+      { $$ = $3; $$->_type._ti = Type::TI_VAR;
+        if ($1) $$->_type._ot = Type::OT_OPTIONAL;
+      }
     | MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $3; $$->_type._st = Type::ST_SET; }
     | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4; $$->_type._st = Type::ST_SET; }
-    | MZN_VAR MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $4; $$->_type._ti = Type::TI_VAR;
+    | opt_opt MZN_VAR MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = $5; $$->_type._ti = Type::TI_VAR;
         $$->_type._st = Type::ST_SET;
+        if ($1) $$->_type._ot = Type::OT_OPTIONAL;
       }
+
+opt_opt:
+      /* nothing */
+      { $$ = false; }
+    | MZN_OPT
+      { $$ = true; }
 
 base_ti_expr_tail :
       MZN_INT

@@ -279,6 +279,8 @@ namespace MiniZinc {
       for (Expression* vi : al._v) {
         if (vi->_type.isvar() || vi->_type.isany())
           ty._ti = Type::TI_VAR;
+        if (vi->_type.isopt())
+          ty._ot = Type::OT_OPTIONAL;
         if (ty._bt==Type::BT_UNKNOWN) {
           ty._bt = vi->_type._bt;
           assert(ty._bt != Type::BT_UNKNOWN);
@@ -299,17 +301,25 @@ namespace MiniZinc {
       if (aa._v->_type._dim != aa._idx.size())
         throw TypeError(aa._v->_loc,"array dimensions do not match");
       bool allpar=true;
+      bool allpresent=true;
       for (Expression* aai : aa._idx) {
-        if (aai->_type==Type::varint() || aai->_type==Type::any()) {
-          allpar=false;
-        } else if (aai->_type!=Type::parint()) {
+        if (aai->_type.isset() || aai->_type._bt != Type::BT_INT ||
+            aai->_type._dim != 0) {
           throw TypeError(aai->_loc,"array index must be int");
+        }
+        if (aai->_type.isopt()) {
+          allpresent = false;
+        }
+        if (aai->_type.isany() || aai->_type.isvar()) {
+          allpar=false;
         }
       }
       aa._type = aa._v->_type;
       aa._type._dim = 0;
       if (!allpar)
         aa._type._ti = Type::TI_VAR;
+      if (!allpresent)
+        aa._type._ot = Type::OT_OPTIONAL;
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
