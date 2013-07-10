@@ -277,7 +277,7 @@ namespace MiniZinc {
     void vArrayLit(ArrayLit& al) {
       Type ty; ty._dim = al.dims();
       for (Expression* vi : al._v) {
-        if (vi->_type.isvar() || vi->_type.isany())
+        if (vi->_type.isvar() || vi->_type.isbot())
           ty._ti = Type::TI_VAR;
         if (vi->_type.isopt())
           ty._ot = Type::OT_OPTIONAL;
@@ -310,7 +310,7 @@ namespace MiniZinc {
         if (aai->_type.isopt()) {
           allpresent = false;
         }
-        if (aai->_type.isany() || aai->_type.isvar()) {
+        if (aai->_type.isbot() || aai->_type.isvar()) {
           allpar=false;
         }
       }
@@ -387,12 +387,16 @@ namespace MiniZinc {
           bop._type = bop._e0->_type;
         else
           bop._type = bop._e1->_type;
-      } else if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
-        bop._type = fi->rtype(args);
       } else {
-        throw TypeError(bop._loc,
-          std::string("type error in operator application for ")+
-          bop.opToString().str());
+        if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
+          bop._type = fi->rtype(args);
+          if (fi->_e)
+            bop._decl = fi;
+        } else {
+          throw TypeError(bop._loc,
+            std::string("type error in operator application for ")+
+            bop.opToString().str());
+        }
       }
     }
     /// Visit unary operator
@@ -401,6 +405,8 @@ namespace MiniZinc {
       args[0] = uop._e0;
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
         uop._type = fi->rtype(args);
+        if (fi->_e)
+          uop._decl = fi;
       } else {
         throw TypeError(uop._loc,
           std::string("type error in operator application for ")+
@@ -460,8 +466,7 @@ namespace MiniZinc {
         bool foundTIId=false;
         for (TypeInst* ri : ti._ranges) {
           assert(ri != NULL);
-          if (ri->_type == Type::bot()) {
-//            std::cerr << "tiid " << ri->cast<TIId>()->_v.str() << "\n";
+          if (ri->_type == Type::top()) {
             if (foundTIId) {
               throw TypeError(ri->_loc,
                 "only one type-inst variable allowed in array index");
@@ -612,7 +617,10 @@ namespace MiniZinc {
         }
         void vFunctionI(FunctionI* i) {
           bu_ty.run(i->_ann);
+          bu_ty.run(i->_ti);
           bu_ty.run(i->_e);
+          if (i->_e && !i->_e->_type.isSubtypeOf(i->_ti->_type))
+            throw TypeError(i->_e->_loc, "return type of function does not match body");
         }
       } _tsv2(bu_ty);
       iterItems(_tsv2,m);

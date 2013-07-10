@@ -1,6 +1,6 @@
 annotation is_defined_var;
 annotation var_is_introduced;
-annotation defines_var(any $t: c);
+annotation defines_var(var $t: c);
 annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation domain;
@@ -9,8 +9,8 @@ annotation domain;
 annotation complete;
 annotation bounds;
 
-annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
-annotation bool_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+annotation int_search(array[int] of var $t:a, ann:b, ann:c, ann:d);
+annotation bool_search(array[int] of var $t:a, ann:b, ann:c, ann:d);
 annotation seq_search(array[int] of ann:a);
 
 

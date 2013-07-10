@@ -19,13 +19,13 @@ namespace MiniZinc {
 
   class Type {
   public:
-    enum TypeInst { TI_PAR, TI_VAR, TI_SVAR, TI_ANY };
+    enum TypeInst { TI_PAR, TI_VAR, TI_SVAR };
     enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
-                    BT_BOT, BT_UNKNOWN };
+                    BT_BOT, BT_TOP, BT_UNKNOWN };
     enum SetType { ST_PLAIN, ST_SET };
     enum OptType { OT_PRESENT, OT_OPTIONAL };
     TypeInst _ti : 3;
-    BaseType _bt : 3;
+    BaseType _bt : 4;
     SetType _st  : 1;
     OptType _ot  : 1;
     int _dim : 20;
@@ -36,9 +36,6 @@ namespace MiniZinc {
          int dim)
       : _ti(ti), _bt(bt), _st(st), _ot(OT_PRESENT), _dim(dim) {}
   public:
-    static Type any(int dim=0) {
-      return Type(TI_ANY,BT_BOT,ST_PLAIN,dim);
-    }
     static Type parint(int dim=0) {
       return Type(TI_PAR,BT_INT,ST_PLAIN,dim);
     }
@@ -81,13 +78,24 @@ namespace MiniZinc {
     static Type bot(int dim=0) {
       return Type(TI_PAR,BT_BOT,ST_PLAIN,dim);
     }
+    static Type top(int dim=0) {
+      return Type(TI_PAR,BT_TOP,ST_PLAIN,dim);
+    }
+    static Type vartop(int dim=0) {
+      return Type(TI_VAR,BT_TOP,ST_PLAIN,dim);
+    }
+    static Type optvartop(int dim=0) {
+      Type t(TI_VAR,BT_TOP,ST_PLAIN,dim);
+      t._ot = OT_OPTIONAL;
+      return t;
+    }
 
     bool isunknown(void) const { return _bt==BT_UNKNOWN; }
-    bool isany(void) const { return _ti==TI_ANY; }
     bool isplain(void) const {
       return _dim==0 && _st==ST_PLAIN && _ot==OT_PRESENT;
     }
     bool isint(void) const { return isplain() && _bt==BT_INT; }
+    bool isbot(void) const { return _bt==BT_BOT; }
     bool isfloat(void) const { return isplain() && _bt==BT_FLOAT; }
     bool isbool(void) const { return isplain() && _bt==BT_BOOL; }
     bool isstring(void) const { return isplain() && _bt==BT_STRING; }
@@ -120,18 +128,18 @@ namespace MiniZinc {
   // protected:
     int toInt(void) const {
       return
-        (static_cast<int>(_ti)<<25)
-      + (static_cast<int>(_bt)<<22)
-      + (static_cast<int>(_st)<<21)
-      + (static_cast<int>(_ot)<<20)
+      + (static_cast<int>(_ot)<<28)
+      + (static_cast<int>(_ti)<<25)
+      + (static_cast<int>(_bt)<<21)
+      + (static_cast<int>(_st)<<20)
       + _dim;
     }
     static Type fromInt(int i) {
       Type t;
+      t._ot = static_cast<OptType>((i >> 28) & 0x1);
       t._ti = static_cast<TypeInst>((i >> 25) & 0x7);
-      t._bt = static_cast<BaseType>((i >> 22) & 0x7);
-      t._st = static_cast<SetType>((i >> 21) & 0x1);
-      t._ot = static_cast<OptType>((i >> 20) & 0x1);
+      t._bt = static_cast<BaseType>((i >> 21) & 0x7);
+      t._st = static_cast<SetType>((i >> 20) & 0x1);
       t._dim = i & 0xFFFFF;
       return t;
     }
@@ -146,7 +154,6 @@ namespace MiniZinc {
         case TI_PAR: oss<<"par "; break;
         case TI_VAR: oss<<"var "; break;
         case TI_SVAR: oss<<"svar "; break;
-        case TI_ANY: oss<<"any "; break;
       }
       if (_st==ST_SET) oss<<"set of ";
       switch (_bt) {
@@ -156,6 +163,7 @@ namespace MiniZinc {
         case BT_STRING: oss<<"string"; break;
         case BT_ANN: oss<<"ann"; break;
         case BT_BOT: oss<<"bot"; break;
+        case BT_TOP: oss<<"top"; break;
         case BT_UNKNOWN: oss<<"??? "; break;
       }
       return oss.str();
@@ -174,12 +182,13 @@ namespace MiniZinc {
       // t is svar, other than that same type as this
       if (t._ti==TI_SVAR && _bt==t._bt && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
-      if (t._ti==TI_ANY)
-        return true;
       if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
         return true;
       if ( _bt==BT_BOT && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
+      if (t._bt==BT_TOP && _ot==t._ot && _st==t._st &&
+          (_ti==TI_PAR || t._ti==TI_VAR))
+        return true;
       return false;
     }
 

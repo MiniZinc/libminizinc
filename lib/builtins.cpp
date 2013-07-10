@@ -361,30 +361,31 @@ namespace MiniZinc {
     GCLock lock;
     rb(m, ASTString("min"), t_intint, b_min);
     rb(m, ASTString("min"), t_intarray, b_min);
+    rb(m, ASTString("max"), t_intint, b_max);
     rb(m, ASTString("max"), t_intarray, b_max);
     rb(m, ASTString("sum"), t_intarray, b_sum);
 
     {
       std::vector<Type> t_anyarray1(1);
-      t_anyarray1[0] = Type::any(1);
+      t_anyarray1[0] = Type::optvartop(1);
       rb(m, ASTString("index_set"), t_anyarray1, b_index_set1);
     }
     {
       std::vector<Type> t_anyarray2(1);
-      t_anyarray2[0] = Type::any(2);
+      t_anyarray2[0] = Type::optvartop(2);
       rb(m, ASTString("index_set_1of2"), t_anyarray2, b_index_set1);
       rb(m, ASTString("index_set_2of2"), t_anyarray2, b_index_set2);
     }
     {
       std::vector<Type> t_anyarray3(1);
-      t_anyarray3[0] = Type::any(3);
+      t_anyarray3[0] = Type::optvartop(3);
       rb(m, ASTString("index_set_1of3"), t_anyarray3, b_index_set1);
       rb(m, ASTString("index_set_2of3"), t_anyarray3, b_index_set2);
       rb(m, ASTString("index_set_3of3"), t_anyarray3, b_index_set3);
     }
     {
       std::vector<Type> t_anyarray4(1);
-      t_anyarray4[0] = Type::any(4);
+      t_anyarray4[0] = Type::optvartop(4);
       rb(m, ASTString("index_set_1of4"), t_anyarray4, b_index_set1);
       rb(m, ASTString("index_set_2of4"), t_anyarray4, b_index_set2);
       rb(m, ASTString("index_set_3of4"), t_anyarray4, b_index_set3);
@@ -392,7 +393,7 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t_anyarray5(1);
-      t_anyarray5[0] = Type::any(5);
+      t_anyarray5[0] = Type::optvartop(5);
       rb(m, ASTString("index_set_1of5"), t_anyarray5, b_index_set1);
       rb(m, ASTString("index_set_2of5"), t_anyarray5, b_index_set2);
       rb(m, ASTString("index_set_3of5"), t_anyarray5, b_index_set3);
@@ -401,7 +402,7 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t_anyarray6(1);
-      t_anyarray6[0] = Type::any(6);
+      t_anyarray6[0] = Type::optvartop(6);
       rb(m, ASTString("index_set_1of6"), t_anyarray6, b_index_set1);
       rb(m, ASTString("index_set_2of6"), t_anyarray6, b_index_set2);
       rb(m, ASTString("index_set_3of6"), t_anyarray6, b_index_set3);
@@ -412,14 +413,22 @@ namespace MiniZinc {
     {
       std::vector<Type> t_arrayXd(2);
       t_arrayXd[0] = Type::parsetint();
-      t_arrayXd[1] = Type::any(-1);
+      t_arrayXd[1] = Type::top(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      t_arrayXd[1] = Type::vartop(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      t_arrayXd[1] = Type::optvartop(-1);
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
     }
     {
       std::vector<Type> t_arrayXd(3);
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
-      t_arrayXd[2] = Type::any(-1);
+      t_arrayXd[2] = Type::top(-1);
+      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      t_arrayXd[2] = Type::vartop(-1);
+      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      t_arrayXd[2] = Type::optvartop(-1);
       rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
     }
     {
@@ -427,7 +436,11 @@ namespace MiniZinc {
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::parsetint();
-      t_arrayXd[3] = Type::any(-1);
+      t_arrayXd[3] = Type::top(-1);
+      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      t_arrayXd[3] = Type::vartop(-1);
+      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      t_arrayXd[3] = Type::optvartop(-1);
       rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
     }
     {
@@ -436,7 +449,11 @@ namespace MiniZinc {
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
-      t_arrayXd[4] = Type::any(-1);
+      t_arrayXd[4] = Type::top(-1);
+      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      t_arrayXd[4] = Type::vartop(-1);
+      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      t_arrayXd[4] = Type::optvartop(-1);
       rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
     }
     {
@@ -446,7 +463,11 @@ namespace MiniZinc {
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::parsetint();
-      t_arrayXd[5] = Type::any(-1);
+      t_arrayXd[5] = Type::top(-1);
+      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      t_arrayXd[5] = Type::vartop(-1);
+      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      t_arrayXd[5] = Type::optvartop(-1);
       rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
     }
     {
@@ -457,12 +478,16 @@ namespace MiniZinc {
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::parsetint();
-      t_arrayXd[6] = Type::any(-1);
+      t_arrayXd[6] = Type::top(-1);
+      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      t_arrayXd[6] = Type::vartop(-1);
+      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      t_arrayXd[6] = Type::optvartop(-1);
       rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
     }
     {
       std::vector<Type> t_length(1);
-      t_length[0] = Type::any(-1);
+      t_length[0] = Type::optvartop(-1);
       rb(m, ASTString("length"), t_length, b_length);
     }
     {

@@ -466,11 +466,12 @@ namespace MiniZinc {
   Document* expressionToDocument(const Expression* e);
   Document* tiexpressionToDocument(const Type& type, const Expression* e) {
     DocumentList* dl = new DocumentList("","","",false);
+    if (type._ot==Type::OT_OPTIONAL)
+      dl->addStringToList("opt ");
     switch (type._ti) {
     case Type::TI_PAR: break;
     case Type::TI_VAR: dl->addStringToList("var "); break;
     case Type::TI_SVAR: dl->addStringToList("svar "); break;
-    case Type::TI_ANY: dl->addStringToList("any "); break;
     }
     if (type._st==Type::ST_SET)
       dl->addStringToList("set of ");
@@ -482,6 +483,7 @@ namespace MiniZinc {
       case Type::BT_STRING: dl->addStringToList("string"); break;
       case Type::BT_ANN: dl->addStringToList("ann"); break;
       case Type::BT_BOT: dl->addStringToList("bot"); break;
+      case Type::BT_TOP: dl->addStringToList("top"); break;
       case Type::BT_UNKNOWN: dl->addStringToList("???"); break;
       }
     } else {

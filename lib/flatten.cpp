@@ -126,8 +126,9 @@ namespace MiniZinc {
         ae = vd->_e;
       }
       
-      if (vd && vd->_type.isann() && vd->_id == "total")
+      if (vd && vd->_type.isann() && vd->_id == "total") {
         return true;
+      }
     }
     return false;
   }
@@ -268,7 +269,7 @@ namespace MiniZinc {
     } else if (op->_e1->_type.isset()) {
       builtin = "set_";
     } else {
-      throw InternalError("not yet implemented");
+      throw InternalError(op->opToString().str()+" not yet implemented");
     }
     switch (op->op()) {
     case BOT_PLUS:
@@ -548,162 +549,222 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        BCtx bctx0 = bctx;
-        BCtx bctx1 = bctx;
-        switch (bo->op()) {
-        case BOT_PLUS:
-        case BOT_MINUS:
-        case BOT_MULT:
-        case BOT_IDIV:
-        case BOT_MOD:
-        case BOT_DIV:
-        case BOT_UNION:
-        case BOT_DIFF:
-        case BOT_SYMDIFF:
-        case BOT_INTERSECT:
-          {
-            EE e0 = flat_exp(env,bctx0,bo->_e0,NULL,NULL);
-            EE e1 = flat_exp(env,bctx1,bo->_e1,NULL,NULL);
+        if (bo->_decl) {
 
-            std::vector<Expression*> args(2);
-            args[0] = e0.r; args[1] = e1.r;
-            Call* cc = Call::a(Location(),opToBuiltin(bo),args);
-            cc->_type = bo->_type;
-
-            if (FunctionI* fi = env.m->matchFn(cc->_id,args)) {
-              assert(cc->_type == fi->rtype(args));
-              cc->_decl = fi;
-              ret = flat_exp(env,bctx,cc,r,b);
+          std::vector<EE> args_ee(2);
+          args_ee[0] = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+          args_ee[1] = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+          std::vector<Expression*> args(2);
+          args[0] = args_ee[0].r;
+          args[1] = args_ee[1].r;
+          Call* cr = Call::a(Location(),"@"+bo->opToString().str(),args);
+          cr->_type = bo->_type;
+          Env::Map::iterator cit = env.map.find(cr);
+          if (cit != env.map.end()) {
+            ret.b = bind(env,b,cit->second.b);
+            ret.r = bind(env,r,cit->second.r);
+          } else {
+            std::vector<std::pair<Id*,Expression*> > idmap;
+            // Save mapping from Ids to VarDecls and set to parameters
+            /// TODO: save vd->_e as well (if we want to support recursive functions)
+            for (unsigned int i=bo->_decl->_params.size(); i--;) {
+              VarDecl* vd = bo->_decl->_params[i];
+              Id* id = Id::a(Location(),vd->_id,NULL);
+              id->_type = vd->_type;
+              Env::Map::iterator idit = env.map.find(id);
+              if (idit==env.map.end()) {
+                EE ee(vd,NULL);
+                idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
+                env.map.insert(id,ee);
+              } else {
+                idmap.push_back(
+                  std::pair<Id*,Expression*>(id,idit->second.r));
+                idit->second.r = vd;
+              }
+              vd->_e = args[i];
+            }
+            if (isTotal(bo->_decl)) {
+              EE ee = flat_exp(env,C_ROOT,bo->_decl->_e,r,constants.t);
+              ret.r = bind(env,r,ee.r);
+              ret.b = conj(env,b,args_ee);
+              env.map.insert(cr,ret);
             } else {
-              ret.r = bind(env,r,cc);
-              std::vector<EE> ees(2);
+              ret = flat_exp(env,bctx,bo->_decl->_e,r,NULL);
+              args_ee.push_back(ret);
+              ret.b = conj(env,b,args_ee);
+              env.map.insert(cr,ret);
+            }
+            // Restore previous mapping
+            for (std::pair<Id*,Expression*>& idvd : idmap) {
+              Env::Map::iterator idit = env.map.find(idvd.first);
+              assert(idit != env.map.end());
+              if (idvd.second==NULL) {
+                env.map.remove(idvd.first);
+              } else {
+                idit->second.r = idvd.second;
+              }
+            }
+            for (unsigned int i=bo->_decl->_params.size(); i--;) {
+              bo->_decl->_params[i]->_e = NULL;
+            }
+          }
+        } else {
+          BCtx bctx0 = bctx;
+          BCtx bctx1 = bctx;
+          switch (bo->op()) {
+          case BOT_PLUS:
+          case BOT_MINUS:
+          case BOT_MULT:
+          case BOT_IDIV:
+          case BOT_MOD:
+          case BOT_DIV:
+          case BOT_UNION:
+          case BOT_DIFF:
+          case BOT_SYMDIFF:
+          case BOT_INTERSECT:
+            {
+              EE e0 = flat_exp(env,bctx0,bo->_e0,NULL,NULL);
+              EE e1 = flat_exp(env,bctx1,bo->_e1,NULL,NULL);
+
+              std::vector<Expression*> args(2);
+              args[0] = e0.r; args[1] = e1.r;
+              Call* cc = Call::a(Location(),opToBuiltin(bo),args);
+              cc->_type = bo->_type;
+
+              if (FunctionI* fi = env.m->matchFn(cc->_id,args)) {
+                assert(cc->_type == fi->rtype(args));
+                cc->_decl = fi;
+                ret = flat_exp(env,bctx,cc,r,b);
+              } else {
+                ret.r = bind(env,r,cc);
+                std::vector<EE> ees(2);
+                ees[0].b = e0.b; ees[1].b = e1.b;
+                ret.b = conj(env,b,ees);
+              }
+            }
+            break;
+
+          case BOT_AND:
+            {
+              if (r==constants.t) {
+                (void) flat_exp(env,C_ROOT,bo->_e0,constants.t,constants.t);
+                (void) flat_exp(env,C_ROOT,bo->_e1,constants.t,constants.t);
+                break;
+              }
+              // else fall through
+            }
+          case BOT_EQUIV:
+          case BOT_IMPL:
+          case BOT_RIMPL:
+          case BOT_OR:
+          case BOT_XOR:
+          case BOT_LE:
+          case BOT_LQ:
+          case BOT_GR:
+          case BOT_GQ:
+          case BOT_EQ:
+          case BOT_NQ:
+          case BOT_IN:
+          case BOT_SUBSET:
+          case BOT_SUPERSET:
+            {
+              switch (bo->op()) {
+              case BOT_XOR:
+              case BOT_EQUIV:
+                bctx0 = bctx1 = C_MIX;
+                break;
+              case BOT_IMPL:
+                bctx0 = -bctx0;
+                bctx1 = +bctx1;
+                break;
+              case BOT_RIMPL:
+                bctx0 = +bctx0;
+                bctx1 = -bctx1;
+                break;
+              case BOT_OR:
+                bctx0 = +bctx0;
+                bctx1 = +bctx1;
+                break;
+              default:
+                break;
+              }
+              EE e0 = flat_exp(env,bctx0,bo->_e0,NULL,NULL);
+              EE e1 = flat_exp(env,bctx1,bo->_e1,NULL,NULL);
+              ret.b = bind(env,b,constants.lt);
+
+              std::vector<Expression*> args(2);
+              args[0] = e0.r; args[1] = e1.r;
+              Call* cc = Call::a(Location(),opToBuiltin(bo),args);
+              cc->_type = bo->_type;
+
+              std::vector<EE> ees(3);
               ees[0].b = e0.b; ees[1].b = e1.b;
-              ret.b = conj(env,b,ees);
-            }
-          }
-          break;
-
-        case BOT_AND:
-          {
-            if (r==constants.t) {
-              (void) flat_exp(env,C_ROOT,bo->_e0,constants.t,constants.t);
-              (void) flat_exp(env,C_ROOT,bo->_e1,constants.t,constants.t);
-              break;
-            }
-            // else fall through
-          }
-        case BOT_EQUIV:
-        case BOT_IMPL:
-        case BOT_RIMPL:
-        case BOT_OR:
-        case BOT_XOR:
-        case BOT_LE:
-        case BOT_LQ:
-        case BOT_GR:
-        case BOT_GQ:
-        case BOT_EQ:
-        case BOT_NQ:
-        case BOT_IN:
-        case BOT_SUBSET:
-        case BOT_SUPERSET:
-          {
-            switch (bo->op()) {
-            case BOT_XOR:
-            case BOT_EQUIV:
-              bctx0 = bctx1 = C_MIX;
-              break;
-            case BOT_IMPL:
-              bctx0 = -bctx0;
-              bctx1 = +bctx1;
-              break;
-            case BOT_RIMPL:
-              bctx0 = +bctx0;
-              bctx1 = -bctx1;
-              break;
-            case BOT_OR:
-              bctx0 = +bctx0;
-              bctx1 = +bctx1;
-              break;
-            default:
-              break;
-            }
-            EE e0 = flat_exp(env,bctx0,bo->_e0,NULL,NULL);
-            EE e1 = flat_exp(env,bctx1,bo->_e1,NULL,NULL);
-            ret.b = bind(env,b,constants.lt);
-
-            std::vector<Expression*> args(2);
-            args[0] = e0.r; args[1] = e1.r;
-            Call* cc = Call::a(Location(),opToBuiltin(bo),args);
-            cc->_type = bo->_type;
-
-            std::vector<EE> ees(3);
-            ees[0].b = e0.b; ees[1].b = e1.b;
-            Env::Map::iterator cit = env.map.find(cc);
-            Printer p; p.print(cc, std::cerr);
-            if (cit != env.map.end()) {
-              ees[2].b = cit->second.r;
-              ret.r = conj(env,r,ees);
-            } else {
-              ees[2].b = cc;
-              ret.r = conj(env,r,ees);
-              env.map.insert(cc,ret);
-            }
-          }
-          break;
-
-        case BOT_PLUSPLUS:
-          {
-            std::vector<EE> ee(2);
-            EE eev = flat_exp(env,bctx,bo->_e0,NULL,NULL);
-            ee[0] = eev;
-            ArrayLit* al;
-            if (eev.r->isa<ArrayLit>()) {
-              al = eev.r->cast<ArrayLit>();
-            } else {
-              Id* id = eev.r->cast<Id>();
-              if (id->_decl==NULL) {
-                assert(false);
-                throw InternalError("undefined identifier");
+              Env::Map::iterator cit = env.map.find(cc);
+              if (cit != env.map.end()) {
+                ees[2].b = cit->second.r;
+                ret.r = conj(env,r,ees);
+              } else {
+                ees[2].b = cc;
+                ret.r = conj(env,r,ees);
+                env.map.insert(cc,ret);
               }
-              if (id->_decl->_e==NULL) {
-                assert(false);
-                throw InternalError("array without initialiser not supported");
-              }
-              al = id->_decl->_e->cast<ArrayLit>();
             }
-            ArrayLit* al0 = al;
-            eev = flat_exp(env,bctx,bo->_e1,NULL,NULL);
-            ee[1] = eev;
-            if (eev.r->isa<ArrayLit>()) {
-              al = eev.r->cast<ArrayLit>();
-            } else {
-              Id* id = eev.r->cast<Id>();
-              if (id->_decl==NULL) {
-                assert(false);
-                throw InternalError("undefined identifier");
-              }
-              if (id->_decl->_e==NULL) {
-                assert(false);
-                throw InternalError("array without initialiser not supported");
-              }
-              al = id->_decl->_e->cast<ArrayLit>();
-            }
-            ArrayLit* al1 = al;
-            std::vector<Expression*> v(al0->_v.size()+al1->_v.size());
-            for (unsigned int i=al0->_v.size(); i--;)
-              v[i] = al0->_v[i];
-            for (unsigned int i=al1->_v.size(); i--;)
-              v[al0->_v.size()+i] = al1->_v[i];
-            ArrayLit* alret = ArrayLit::a(e->_loc,v);
-            alret->_type = e->_type;
-            ret.b = conj(env,b,ee);
-            ret.r = bind(env,r,alret);
-          }
-          break;
+            break;
 
-        case BOT_DOTDOT:
-          assert(false);
-          throw InternalError("not yet implemented");
+          case BOT_PLUSPLUS:
+            {
+              std::vector<EE> ee(2);
+              EE eev = flat_exp(env,bctx,bo->_e0,NULL,NULL);
+              ee[0] = eev;
+              ArrayLit* al;
+              if (eev.r->isa<ArrayLit>()) {
+                al = eev.r->cast<ArrayLit>();
+              } else {
+                Id* id = eev.r->cast<Id>();
+                if (id->_decl==NULL) {
+                  assert(false);
+                  throw InternalError("undefined identifier");
+                }
+                if (id->_decl->_e==NULL) {
+                  assert(false);
+                  throw InternalError("array without initialiser not supported");
+                }
+                al = id->_decl->_e->cast<ArrayLit>();
+              }
+              ArrayLit* al0 = al;
+              eev = flat_exp(env,bctx,bo->_e1,NULL,NULL);
+              ee[1] = eev;
+              if (eev.r->isa<ArrayLit>()) {
+                al = eev.r->cast<ArrayLit>();
+              } else {
+                Id* id = eev.r->cast<Id>();
+                if (id->_decl==NULL) {
+                  assert(false);
+                  throw InternalError("undefined identifier");
+                }
+                if (id->_decl->_e==NULL) {
+                  assert(false);
+                  throw InternalError("array without initialiser not supported");
+                }
+                al = id->_decl->_e->cast<ArrayLit>();
+              }
+              ArrayLit* al1 = al;
+              std::vector<Expression*> v(al0->_v.size()+al1->_v.size());
+              for (unsigned int i=al0->_v.size(); i--;)
+                v[i] = al0->_v[i];
+              for (unsigned int i=al1->_v.size(); i--;)
+                v[al0->_v.size()+i] = al1->_v[i];
+              ArrayLit* alret = ArrayLit::a(e->_loc,v);
+              alret->_type = e->_type;
+              ret.b = conj(env,b,ee);
+              ret.r = bind(env,r,alret);
+            }
+            break;
+
+          case BOT_DOTDOT:
+            assert(false);
+            throw InternalError("not yet implemented");
+          }
         }
       }
       break;
@@ -1065,6 +1126,7 @@ namespace MiniZinc {
               cs.push_back(ConstraintI::a(Location(),c));
             } else {
               assert(vd->_e->eid() == Expression::E_ID ||
+                     vd->_e->eid() == Expression::E_INTLIT ||
                      vd->_e->eid() == Expression::E_BOOLLIT ||
                      vd->_e->eid() == Expression::E_SETLIT);
               

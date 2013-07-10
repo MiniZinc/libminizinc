@@ -321,7 +321,7 @@ namespace MiniZinc {
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item
 %type <vardeclexpr_v> params params_list params_list_head
-%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail ti_variable_expr_tail
+%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
 %type <expression> expr expr_atom_head
@@ -590,18 +590,10 @@ base_ti_expr_tail :
       { $$ = TypeInst::a(@$,Type::ann()); }
     | set_expr
       { $$ = TypeInst::a(@$,Type(),$1); }
-    | ti_variable_expr_tail
-
-ti_variable_expr_tail :
-      MZN_TI_IDENTIFIER
-      { $$ = TypeInst::a(@$,Type::bot(),
+    | MZN_TI_IDENTIFIER
+      { $$ = TypeInst::a(@$,Type::top(),
                          TIId::a(@$, $1));
         free($1);
-      }
-    | MZN_ANY MZN_TI_IDENTIFIER
-      { $$ = TypeInst::a(@$,Type::any(),
-                         TIId::a(@$, $2));
-        free($2);
       }
 
 expr_list : expr_list_head comma_or_none

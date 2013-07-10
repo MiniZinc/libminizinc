@@ -687,7 +687,10 @@ namespace MiniZinc {
             return EvalSetLit::e(e);
         case Type::BT_FLOAT: throw InternalError("not yet implemented");
         case Type::BT_STRING: throw InternalError("not yet implemented");
-        case Type::BT_ANN: case Type::BT_BOT: case Type::BT_UNKNOWN:
+        case Type::BT_ANN:
+        case Type::BT_BOT:
+        case Type::BT_TOP:
+        case Type::BT_UNKNOWN:
           throw EvalError(e->_loc,"not a par expression");
         }
       }

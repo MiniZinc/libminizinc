@@ -327,7 +327,7 @@ namespace MiniZinc {
   class AnonVar : public Expression {
   protected:
     /// Constructor
-    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::any()) {}
+    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::bot()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANON;
@@ -493,7 +493,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1) {
+      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1), _decl(NULL) {
       _sec_id = op;
     }
   public:
@@ -503,6 +503,8 @@ namespace MiniZinc {
     Expression* _e0;
     /// Right hand side expression
     Expression* _e1;
+    /// The predicate or function declaration (or NULL)
+    FunctionI* _decl;
     /// Allocate
     static BinOp* a(const Location& loc,
                     Expression* e0, BinOpType op, Expression* e1);
@@ -522,7 +524,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     UnOp(const Location& loc, UnOpType op, Expression* e)
-      : Expression(loc,E_UNOP,Type()), _e0(e) {
+      : Expression(loc,E_UNOP,Type()), _e0(e), _decl(NULL) {
       _sec_id = op;
     }
   public:
@@ -530,6 +532,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_UNOP;
     /// %Expression
     Expression* _e0;
+    /// The predicate or function declaration (or NULL)
+    FunctionI* _decl;
     /// Allocate
     static UnOp* a(const Location& loc,
                    UnOpType op, Expression* e);

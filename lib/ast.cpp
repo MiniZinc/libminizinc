@@ -933,12 +933,16 @@ namespace MiniZinc {
             throw TypeError(ta[i]->_loc,"type-inst variable $"+
               tiid.str()+" used in both array and non-array position");
           } else {
-            Type tiit_par = tiit; tiit_par._ti = Type::TI_PAR;
-            Type its_par = it->second; its_par._ti = Type::TI_PAR;
-            if (tiit_par._bt==Type::BT_BOT) {
+            Type tiit_par = tiit;
+            tiit_par._ti = Type::TI_PAR;
+            tiit_par._ot = Type::OT_PRESENT;
+            Type its_par = it->second;
+            its_par._ti = Type::TI_PAR;
+            its_par._ot = Type::OT_PRESENT;
+            if (tiit_par._bt==Type::BT_TOP) {
               tiit_par._bt = its_par._bt;
             }
-            if (its_par._bt==Type::BT_BOT) {
+            if (its_par._bt==Type::BT_TOP) {
               its_par._bt = tiit_par._bt;
             }
             if (tiit_par != its_par) {
@@ -947,9 +951,7 @@ namespace MiniZinc {
                 tiit.toString()+" vs "+
                 it->second.toString()+")");
             }
-            if (tiit.isvar())
-              it->second._ti = Type::TI_VAR;
-            if (it->second._bt == Type::BT_BOT)
+            if (it->second._bt == Type::BT_TOP)
               it->second._bt = tiit._bt;
           }
         }
@@ -963,7 +965,7 @@ namespace MiniZinc {
           throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
             " must be an array index");
         }
-        Type tiit = Type::any(ta[i]->_type._dim);
+        Type tiit = Type::top(ta[i]->_type._dim);
         ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
           tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
@@ -985,8 +987,6 @@ namespace MiniZinc {
       if (it==tmap.end())
         throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
       ret._bt = it->second._bt;
-      if (ret._ti==Type::TI_ANY)
-        ret._ti = it->second._ti;
       if (ret._st==Type::ST_PLAIN)
         ret._st = it->second._st;
     } 
