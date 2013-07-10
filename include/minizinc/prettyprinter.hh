@@ -27,7 +27,9 @@ namespace MiniZinc {
   private:
     ItemDocumentMapper* ism;
     PrettyPrinter* printer;
-    void print(Document* d, std::ostream& os, int width=80);
+    void init(void);
+    void p(Document* d, std::ostream& os, int width=80);
+    void p(Item* i, std::ostream& os, int width=80);
   public:
     Printer(void);
     ~Printer(void);
