@@ -90,7 +90,7 @@ namespace MiniZinc {
       return 0;
     }
   }
-
+  
   enum Parentheses {
     PN_LEFT = 1, PN_RIGHT = 2
   };
@@ -104,6 +104,463 @@ namespace MiniZinc {
     ret += 2 * ((pbo < pr) || (pbo == pr && pbo != 200));
     return static_cast<Parentheses>(ret);
   }
+  
+  class PlainPrinter {
+  public:
+    std::ostream& os;
+    PlainPrinter(std::ostream& os0) : os(os0) {}
+
+    void p(const Type& type, const Expression* e) {
+      if (type._ot==Type::OT_OPTIONAL)
+        os << "opt ";
+      switch (type._ti) {
+      case Type::TI_PAR: break;
+      case Type::TI_VAR: os << "var "; break;
+      case Type::TI_SVAR: os << "svar "; break;
+      }
+      if (type._st==Type::ST_SET)
+        os << "set of ";
+      if (e==NULL) {
+        switch (type._bt) {
+        case Type::BT_INT: os << "int"; break;
+        case Type::BT_BOOL: os << "bool"; break;
+        case Type::BT_FLOAT: os << "float"; break;
+        case Type::BT_STRING: os << "string"; break;
+        case Type::BT_ANN: os << "ann"; break;
+        case Type::BT_BOT: os << "bot"; break;
+        case Type::BT_TOP: os << "top"; break;
+        case Type::BT_UNKNOWN: os << "???"; break;
+        }
+      } else {
+        p(e);
+      }
+    }
+    
+    void p(const Expression* e) {
+      switch (e->eid()) {
+      case Expression::E_INTLIT:
+        os << e->cast<IntLit>()->_v;
+        break;
+      case Expression::E_FLOATLIT:
+        os << e->cast<FloatLit>()->_v;
+        break;
+      case Expression::E_SETLIT:
+        {
+          const SetLit& sl = *e->cast<SetLit>();
+          if (sl._isv) {
+            if (sl._isv->size()==1) {
+              os << sl._isv->min(0) << ".." << sl._isv->max(0);
+            } else {
+              os << "{";
+              IntSetRanges isr(sl._isv);
+              Ranges::ToValues<IntSetRanges> isv(isr);
+              while (isv()) {
+                os << isv.val();
+                ++isv;
+                if (isv()) os << ",";
+              };
+              os << "}";
+            }
+          } else {
+            os << "{";
+            for (unsigned int i = 0; i < sl._v.size(); i++) {
+              p(sl._v[i]);
+              if (i<sl._v.size()-1)
+                os << ",";
+            }
+            os << "}";
+          }
+        }
+        break;
+      case Expression::E_BOOLLIT:
+        os << (e->cast<BoolLit>()->_v ? "true" : "false");
+        break;
+      case Expression::E_STRINGLIT:
+        os << "\"" << e->cast<StringLit>()->_v.c_str() << "\"";
+        break;
+      case Expression::E_ID:
+        os << e->cast<Id>()->_v.c_str();
+        break;
+      case Expression::E_TIID:
+        os << "$" << e->cast<TIId>()->_v.c_str();
+        break;
+      case Expression::E_ANON:
+        os << "_";
+        break;
+      case Expression::E_ARRAYLIT:
+        {
+          const ArrayLit& al = *e->cast<ArrayLit>();
+          int n = al.dims();
+          if (n == 1 && al.min(0) == 1) {
+            os << "[";
+            for (unsigned int i = 0; i < al._v.size(); i++) {
+              p(al._v[i]);
+              if (i<al._v.size()-1)
+                os << ",";
+            }
+            os << "]";
+          } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
+            os << "[|";
+            for (int i = 0; i < al.max(0); i++) {
+              for (int j = 0; j < al.max(1); j++) {
+                p(al._v[i * al.max(1) + j]);
+                if (j < al.max(1)-1)
+                  os << ",";
+              }
+              if (i<al.max(0)-1)
+                os << "|";
+            }
+            os << "|]";
+          } else {
+            os << "array" << n << "d(";
+            for (unsigned int i = 0; i < al.dims(); i++) {
+              os << al.min(i) << ".." << al.max(i);
+              os << ",";
+            }
+            os << "[";
+            for (unsigned int i = 0; i < al._v.size(); i++) {
+              p(al._v[i]);
+              if (i<al._v.size()-1)
+                os << ",";
+            }
+            os << "])";
+          }
+        }
+        break;
+      case Expression::E_ARRAYACCESS:
+        {
+          const ArrayAccess& aa = *e->cast<ArrayAccess>();
+          p(aa._v);
+          os << "[";
+          for (unsigned int i = 0; i < aa._idx.size(); i++) {
+            p(aa._idx[i]);
+            if (i<aa._idx.size()-1)
+              os << ",";
+          }
+          os << "]";
+        }
+        break;
+      case Expression::E_COMP:
+        {
+          const Comprehension& c = *e->cast<Comprehension>();
+          os << (c.set() ? "{" : "[");
+          p(c._e);
+          os << " | ";
+          for (unsigned int i = 0; i < c._g_idx.size()-1; i++) {
+            int idx_i = c._g_idx[i];
+            for (unsigned int j = idx_i+1; j < c._g_idx[i+1]; j++) {
+              os << c._g[j]->cast<VarDecl>()->_id.str();
+              if (j < c._g_idx[i+1]-1)
+                os << ",";
+            }
+            os << " in ";
+            p(c._g[idx_i]);
+            if (i < c._g_idx.size()-2)
+              os << ", ";
+          }
+          if (c._where != NULL) {
+            os << " where ";
+            p(c._where);
+          }
+          os << (c.set() ? "}" : "]");
+        }
+        break;
+      case Expression::E_ITE:
+        {
+          const ITE& ite = *e->cast<ITE>();
+          for (unsigned int i = 0; i < ite._e_if_then.size(); i+=2) {
+            os << (i == 0 ? "if " : " elseif ");
+            p(ite._e_if_then[i]);
+            os << " then ";
+            p(ite._e_if_then[i+1]);
+          }
+          os << " else ";
+          p(ite._e_else);
+          os << " endif";
+        }
+        break;
+      case Expression::E_BINOP:
+        {
+          const BinOp& bo = *e->cast<BinOp>();
+          Parentheses ps = needParens(&bo, bo._e0, bo._e1);
+          if (ps & PN_LEFT)
+            os << "(";
+          p(bo._e0);
+          if (ps & PN_LEFT)
+            os << ")";
+          switch (bo.op()) {
+          case BOT_PLUS:
+            os<<"+";
+            break;
+          case BOT_MINUS:
+            os<<"-";
+            break;
+          case BOT_MULT:
+            os<<"*";
+            break;
+          case BOT_DIV:
+            os<<"/";
+            break;
+          case BOT_IDIV:
+            os<<" div ";
+            break;
+          case BOT_MOD:
+            os<<" mod ";
+            break;
+          case BOT_LE:
+            os<<"<";
+            break;
+          case BOT_LQ:
+            os<<"<=";
+            break;
+          case BOT_GR:
+            os<<">";
+            break;
+          case BOT_GQ:
+            os<<">=";
+            break;
+          case BOT_EQ:
+            os<<"==";
+            break;
+          case BOT_NQ:
+            os<<"!=";
+            break;
+          case BOT_IN:
+            os<<" in ";
+            break;
+          case BOT_SUBSET:
+            os<<" subset ";
+            break;
+          case BOT_SUPERSET:
+            os<<" superset ";
+            break;
+          case BOT_UNION:
+            os<<" union ";
+            break;
+          case BOT_DIFF:
+            os<<" diff ";
+            break;
+          case BOT_SYMDIFF:
+            os<<" symdiff ";
+            break;
+          case BOT_INTERSECT:
+            os<<" intersect ";
+            break;
+          case BOT_PLUSPLUS:
+            os<<"++";
+            break;
+          case BOT_EQUIV:
+            os<<" <-> ";
+            break;
+          case BOT_IMPL:
+            os<<" -> ";
+            break;
+          case BOT_RIMPL:
+            os<<" <- ";
+            break;
+          case BOT_OR:
+            os<<" \\/ ";
+            break;
+          case BOT_AND:
+            os<<" /\\ ";
+            break;
+          case BOT_XOR:
+            os<<" xor ";
+            break;
+          case BOT_DOTDOT:
+            os<<"..";
+            break;
+          default:
+            assert(false);
+            break;
+          }
+
+          if (ps & PN_RIGHT)
+            os << "(";
+          p(bo._e1);
+          if (ps & PN_RIGHT)
+            os << ")";
+        }
+        break;
+      case Expression::E_UNOP:
+        {
+          const UnOp& uo = *e->cast<UnOp>();
+          switch (uo.op()) {
+          case UOT_NOT:
+            os << "not ";
+            break;
+          case UOT_PLUS:
+            os << "+";
+            break;
+          case UOT_MINUS:
+            os << "-";
+            break;
+          default:
+            assert(false);
+            break;
+          }
+          bool needParen = (uo._e0->isa<BinOp>() || uo._e0->isa<UnOp>());
+          if (needParen)
+            os << "(";
+          p(uo._e0);
+          if (needParen)
+            os << ")";
+        }
+        break;
+      case Expression::E_CALL:
+        {
+          const Call& c = *e->cast<Call>();
+          os << c._id.str() << "(";
+          for (unsigned int i = 0; i < c._args.size(); i++) {
+            p(c._args[i]);
+            if (i < c._args.size()-1)
+              os << ",";
+          }
+          os << ")";
+        }
+        break;
+      case Expression::E_VARDECL:
+        {
+          const VarDecl& vd = *e->cast<VarDecl>();
+          p(vd._ti);
+          os << ": " << vd._id.c_str();
+          if (vd.introduced()) {
+            os << " ::var_is_introduced ";
+          }
+          if (vd._ann) {
+            p(vd._ann);
+          }
+          if (vd._e) {
+            os << " = ";
+            p(vd._e);
+          }
+        }
+        break;
+      case Expression::E_LET:
+        {
+          const Let& l = *e->cast<Let>();
+          os << "let {";
+
+          for (unsigned int i = 0; i < l._let.size(); i++) {
+            const Expression* li = l._let[i];
+            if (!li->isa<VarDecl>())
+              os << "constraint";
+            p(li);
+            if (i<l._let.size()-1)
+              os << ", ";
+          }
+          os << "} in (";
+          p(l._in);
+          os << ")";
+        }
+        break;
+      case Expression::E_ANN:
+        {
+          const Annotation* a = e->cast<Annotation>();
+          while (a) {
+            os << " :: ";
+            p(a->_e);
+            a = a->_a;
+          }
+        }
+        break;
+      case Expression::E_TI:
+        {
+          const TypeInst& ti = *e->cast<TypeInst>();
+          if (ti.isarray()) {
+            os << "array[";
+            for (unsigned int i = 0; i < ti._ranges.size(); i++) {
+              p(Type::parint(), ti._ranges[i]);
+              if (i < ti._ranges.size()-1)
+                os << ",";
+            }
+            os << "] of ";
+          }
+          p(ti._type,ti._domain);
+        }
+      }
+    }
+
+    void p(const Item* i) {
+      switch (i->iid()) {
+      case Item::II_INC:
+        os << "include \"" << i->cast<IncludeI>()->_f.c_str() << "\"";
+        break;
+      case Item::II_VD:
+        p(i->cast<VarDeclI>()->_e);
+        break;
+      case Item::II_ASN:
+        os << i->cast<AssignI>()->_id.c_str() << " = ";
+        p(i->cast<AssignI>()->_e);
+        break;
+      case Item::II_CON:
+        os << "constraint ";
+        p(i->cast<ConstraintI>()->_e);
+        break;
+      case Item::II_SOL:
+        {
+          const SolveI* si = i->cast<SolveI>();
+          os << "solve ";
+          p(si->_ann);
+          switch (si->st()) {
+          case SolveI::ST_SAT:
+            os << " satisfy";
+            break;
+          case SolveI::ST_MIN:
+            os << " minimize ";
+            p(si->_e);
+            break;
+          case SolveI::ST_MAX:
+            os << " maximize ";
+            p(si->_e);
+            break;
+          }
+        }
+        break;
+      case Item::II_OUT:
+        os << "output ";
+        p(i->cast<OutputI>()->_e);
+        break;
+      case Item::II_FUN:
+        {
+          const FunctionI& fi = *i->cast<FunctionI>();
+          if (fi._ti->_type.isann() && fi._e == NULL) {
+            os << "annotation ";
+          } else if (fi._ti->_type == Type::parbool()) {
+            os << "test ";
+          } else if (fi._ti->_type == Type::varbool()) {
+            os << "predicate ";
+          } else {
+            os << "function ";
+            p(fi._ti);
+            os << " : ";
+          }
+          os << fi._id.c_str();
+          if (fi._params.size() > 0) {
+            os << "(";
+            for (unsigned int i = 0; i < fi._params.size(); i++) {
+              p(fi._params[i]);
+              if (i<fi._params.size()-1)
+                os << ",";
+            }
+            os << ")";
+          }
+          if (fi._ann) {
+            p(fi._ann);
+          }
+          if (fi._e) {
+            os << " = ";
+            p(fi._e);
+          }
+        }
+        break;
+      }
+      os << ";" << std::endl;
+    }
+  };
+
+
+
 
  
 
@@ -622,7 +1079,7 @@ namespace MiniZinc {
         int idx_i = c._g_idx[i];
         DocumentList* gen = new DocumentList("", "", "");
         DocumentList* idents = new DocumentList("", ", ", "");
-        for (unsigned int j = idx_i; j < c._g_idx[i+1]; j++) {
+        for (unsigned int j = idx_i+1; j < c._g_idx[i+1]; j++) {
           idents->addStringToList(c._g[j]->cast<VarDecl>()->_id.str());
         }
         gen->addDocumentToList(idents);
@@ -1302,9 +1759,13 @@ namespace MiniZinc {
     return true;
   }
 
-  Printer::Printer(void) {
-    ism = new ItemDocumentMapper();
-    printer =  new PrettyPrinter(80, 4, true, true);
+  Printer::Printer(void) : ism(NULL), printer(NULL) {}
+  void
+  Printer::init(void) {
+    if (ism==NULL) {
+      ism = new ItemDocumentMapper();
+      printer =  new PrettyPrinter(80, 4, true, true);
+    }
   }
   Printer::~Printer(void) {
     delete printer;
@@ -1312,21 +1773,14 @@ namespace MiniZinc {
   }
 
   void
-  Printer::print(Document* d, std::ostream& os, int width) {
+  Printer::p(Document* d, std::ostream& os, int width) {
     printer->print(d);
     printer->print(os);
     delete printer;
     printer = new PrettyPrinter(width,4,true,true);
   }
-
   void
-  Printer::print(Expression* e, std::ostream& os, int width) {
-    Document* d = expressionToDocument(e);
-    print(d,os,width);
-    delete d;
-  }
-  void
-  Printer::print(Item* i, std::ostream& os, int width) {
+  Printer::p(Item* i, std::ostream& os, int width) {
     Document* d;
     switch (i->iid()) {
     case Item::II_INC:
@@ -1351,13 +1805,42 @@ namespace MiniZinc {
       d = ism->mapFunctionI(*i->cast<FunctionI>());
       break;
     }
-    print(d,os,width);
+    p(d,os,width);
     delete d;
+  }
+
+  void
+  Printer::print(Expression* e, std::ostream& os, int width) {
+    if (width==0) {
+      PlainPrinter p(os); p.p(e);
+    } else {
+      init();
+      Document* d = expressionToDocument(e);
+      p(d,os,width);
+      delete d;
+    }
+  }
+  void
+  Printer::print(Item* i, std::ostream& os, int width) {
+    if (width==0) {
+      PlainPrinter p(os); p.p(i);
+    } else {
+      init();
+      p(i,os,width);
+    }
   }
   void
   Printer::print(Model* m, std::ostream& os, int width) {
-    for (unsigned int i = 0; i < m->_items.size(); i++) {
-      print(m->_items[i], os, width);
+    if (width==0) {
+      PlainPrinter p(os);
+      for (unsigned int i = 0; i < m->_items.size(); i++) {
+        p.p(m->_items[i]);
+      }
+    } else {
+      init();
+      for (unsigned int i = 0; i < m->_items.size(); i++) {
+        p(m->_items[i], os, width);
+      }
     }
   }
 
