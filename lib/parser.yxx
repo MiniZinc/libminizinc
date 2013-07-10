@@ -393,7 +393,6 @@ include_item :
       { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find($2);
         IncludeI* ii = IncludeI::a(@$,ASTString($2));
-        std::cerr << "include " << ii->_f.str() << std::endl;
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
