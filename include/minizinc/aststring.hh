@@ -90,7 +90,7 @@ namespace MiniZinc {
     static ASTStringO* a(const std::string& s);
     const char* c_str(void) const { return _data+sizeof(size_t); }
     std::string str(void) const { return std::string(c_str()); }
-    unsigned int size(void) const { return _size-sizeof(size_t); }
+    unsigned int size(void) const { return _size-sizeof(size_t)-1; }
     char operator[](unsigned int i) {
       assert(i<size()); return _data[sizeof(size_t)+i];
     }
