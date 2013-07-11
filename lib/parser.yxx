@@ -1083,12 +1083,14 @@ comma_or_semi : ',' | ';'
 let_vardecl_item :
       ti_expr_and_id annotations
       { $$ = $1;
+        $$->toplevel(false);
         $$->annotate($2);
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->_e = $4;
         $$ = $1;
         $$->_loc = @$;
+        $$->toplevel(false);
         $$->annotate($2);
       }
 
