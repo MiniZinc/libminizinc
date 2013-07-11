@@ -904,6 +904,7 @@ namespace MiniZinc {
     fi->_builtins.b = NULL;
     fi->_builtins.f = NULL;
     fi->_builtins.i = NULL;
+    fi->_builtins.s = NULL;
     return fi;
   }
 
@@ -1005,7 +1006,7 @@ namespace MiniZinc {
     if (e0 == NULL || e1 == NULL) return false;
     if (e0->_id != e1->_id) return false;
     if (e0->_type != e1->_type) return false;
-    switch (e0->_id) {
+    switch (e0->eid()) {
     case Expression::E_INTLIT:
       return e0->cast<IntLit>()->_v == e1->cast<IntLit>()->_v;
     case Expression::E_FLOATLIT:
