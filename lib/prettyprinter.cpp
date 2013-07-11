@@ -1408,6 +1408,7 @@ namespace MiniZinc {
   };
 
   Document* expressionToDocument(const Expression* e) {
+    if (e==NULL) return new StringDocument("NULL");
     ExpressionDocumentMapper esm;
     ExpressionMapper<ExpressionDocumentMapper> em(esm);
     DocumentList* dl = new DocumentList("", "", "");
