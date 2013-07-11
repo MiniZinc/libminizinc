@@ -38,6 +38,7 @@ namespace MiniZinc {
     typedef typename std::unordered_map<Expression*,T,
       ExpressionHash,ExpressionEq>::iterator iterator;
     void insert(Expression* e, T& t) {
+      assert(e != NULL);
       _m.insert(std::pair<Expression*,T>(e,t));
     }
     iterator find(Expression* e) { return _m.find(e); }
