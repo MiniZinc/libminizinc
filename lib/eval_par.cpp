@@ -160,8 +160,14 @@ namespace MiniZinc {
         if (ce->_decl->_builtins.e)
           return ce->_decl->_builtins.e(ce->_args)
             ->template cast<ArrayLit>();
-        assert(false); /// TODO
-        throw EvalError(e->_loc, "unforseen error");
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = ce->_args[i];
+        }
+        ArrayLit* ret = eval_array_lit(ce->_decl->_e);
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = NULL;
+        }
+        return ret;
       }
     case Expression::E_LET:
       {
@@ -219,18 +225,24 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
     case Expression::E_ANON:
     case Expression::E_TIID:
-    case Expression::E_ARRAYLIT:
     case Expression::E_VARDECL:
     case Expression::E_ANN:
     case Expression::E_TI:
     case Expression::E_UNOP:
       throw EvalError(e->_loc,"not a set of int expression");
       break;
+    case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->template cast<ArrayLit>();
+        std::vector<IntVal> vals(al->_v.size());
+        for (unsigned int i=0; i<al->_v.size(); i++)
+          vals[i] = eval_int(al->_v[i]);
+        return IntSetVal::a(vals);
+      }
+      break;
     case Expression::E_COMP:
       {
         Comprehension* c = e->template cast<Comprehension>();
-        if (!c->set())
-          throw EvalError(e->_loc,"not a set of int expression");
         std::vector<IntVal> a = eval_comp<EvalIntVal>(c);
         return IntSetVal::a(a);
       }
@@ -292,8 +304,15 @@ namespace MiniZinc {
         
         if (ce->_decl->_builtins.s)
           return ce->_decl->_builtins.s(ce->_args);
-        assert(false); /// TODO
-        throw EvalError(e->_loc, "unforseen error");
+
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = ce->_args[i];
+        }
+        IntSetVal* ret = eval_intset(ce->_decl->_e);
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = NULL;
+        }
+        return ret;
       }
       break;
     case Expression::E_LET:
@@ -449,8 +468,15 @@ namespace MiniZinc {
         
         if (ce->_decl->_builtins.b)
           return ce->_decl->_builtins.b(ce->_args);
-        assert(false); /// TODO
-        throw EvalError(e->_loc, "unforseen error");
+
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = ce->_args[i];
+        }
+        bool ret = eval_bool(ce->_decl->_e);
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = NULL;
+        }
+        return ret;
       }
       break;
     case Expression::E_LET:
@@ -530,8 +556,15 @@ namespace MiniZinc {
           throw EvalError(e->_loc, "undeclared function");
         if (ce->_decl->_builtins.i)
           return ce->_decl->_builtins.i(ce->_args);
-        assert(false); /// TODO
-        throw EvalError(e->_loc, "unforseen error");
+
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = ce->_args[i];
+        }
+        IntVal ret = eval_int(ce->_decl->_e);
+        for (unsigned int i=ce->_decl->_params.size(); i--;) {
+          ce->_decl->_params[i]->_e = NULL;
+        }
+        return ret;
       }
       break;
     case Expression::E_LET:
