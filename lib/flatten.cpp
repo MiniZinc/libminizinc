@@ -143,13 +143,13 @@ namespace MiniZinc {
           env.m->addItem(ConstraintI::a(Location(),e));
         }
       }
-      return NULL;
+      return constants.lt;
     } else if (vd==constants.f) {
       if (!isfalse(e)) {
         assert(false);
         throw InternalError("not supported yet");
       }
-      return NULL;
+      return constants.lt;
     } else if (vd==NULL) {
       if (e==NULL) return NULL;
       switch (e->eid()) {
@@ -238,7 +238,7 @@ namespace MiniZinc {
       if (b==constants.t) {
         for (Expression* ne : nontrue)
           bind(env,b,ne);
-        return NULL;
+        return constants.lt;
       } else {
         BinOp* ret = BinOp::a(Location(),
                               nontrue[0],BOT_AND,nontrue[1]);
@@ -424,7 +424,11 @@ namespace MiniZinc {
               env.m->addItem(ni);
               vd = nvd;
               EE ee(vd,NULL);
-              env.map.insert(vd->_e,ee);
+              if (vd->_e)
+                env.map.insert(vd->_e,ee);
+              Id* nid = Id::a(Location(),nvd->_id,NULL);
+              nid->_type = nvd->_type;
+              env.map.insert(nid,ee);
             } else {
               vd = it->second.r->cast<VarDecl>();
             }
@@ -943,6 +947,7 @@ namespace MiniZinc {
                   "free variable in non-positive context");
               TypeInst* ti = eval_typeinst(env,vd->_ti);
               VarDecl* nvd = VarDecl::a(Location(),ti,env.genId("FromLet"));
+              nvd->toplevel(vd->toplevel());
               nvd->introduced(true);
               nvd->_type = vd->_type;
               VarDeclI* nv = VarDeclI::a(Location(),nvd);
