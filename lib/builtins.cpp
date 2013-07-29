@@ -108,6 +108,56 @@ namespace MiniZinc {
     }
   }
 
+  IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    Expression* e = args[0];
+    for (;;) {
+      switch (e->eid()) {
+      case Expression::E_INTLIT: return eval_int(e);
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL)
+            return eval_intset(id->_decl->_ti->_domain)->min(0);
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to lb");
+      }
+    }
+  }
+
+  IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    Expression* e = args[0];
+    for (;;) {
+      switch (e->eid()) {
+      case Expression::E_INTLIT: return eval_int(e);
+      case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->_decl==NULL)
+            throw EvalError(id->_loc,"undefined identifier");
+          if (id->_decl->_e==NULL) {
+            IntSetVal* isv = eval_intset(id->_decl->_ti->_domain);
+            return isv->max(isv->size()-1);
+          }
+          else
+            e = id->_decl->_e;
+        }
+        break;
+      default:
+        throw EvalError(e->_loc,"invalid argument to lb");
+      }
+    }
+  }
+
   IntVal b_sum(ASTExprVec<Expression>& args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
@@ -539,6 +589,18 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("max"), t, b_max_parsetint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("lb"), t, b_lb_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("ub"), t, b_ub_varoptint);
     }
   }
   
