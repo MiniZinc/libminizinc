@@ -104,11 +104,12 @@ namespace MiniZinc {
 
   class Env {
   public:
+    Model* orig;
     Model* m;
     typedef ExpressionMap<EE> Map;
     Map map;
     unsigned int ids;
-    Env(Model* m0) : m(m0), ids(0) {}
+    Env(Model* orig0, Model* m0) : orig(orig0), m(m0), ids(0) {}
     ASTString genId(const std::string& s) {
       std::ostringstream oss; oss << "_" << s << "_" << ids++;
       return ASTString(oss.str());
@@ -331,7 +332,7 @@ namespace MiniZinc {
   EE flat_exp(Env& env, BCtx bctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     EE ret;
-    if (e->_type.ispar() && !e->_type.isann()) {
+    if (e->_type.ispar() && e->_type._bt!=Type::BT_ANN) {
       ret.b = bind(env,b,constants.lt);
       ret.r = bind(env,r,eval_par(e));
       return ret;
@@ -342,8 +343,9 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
     case Expression::E_BOOLLIT:
     case Expression::E_STRINGLIT:
-      throw InternalError("expression should be par");
-      break;
+      ret.b = bind(env,b,constants.lt);
+      ret.r = bind(env,r,e);
+      return ret;
     case Expression::E_ID:
       {
         Id* id = e->cast<Id>();
@@ -421,6 +423,7 @@ namespace MiniZinc {
                            env.genId("tl_"+vd->_id.str()),vd->_e);
               nvd->introduced(true);
               VarDeclI* ni = VarDeclI::a(Location(),nvd);
+              // std::cerr << "create new toplevel " << nvd->_id.c_str() << " for " << vd->_id.str() << " with definition " << vd->_e << "\n";
               env.m->addItem(ni);
               vd = nvd;
               EE ee(vd,NULL);
@@ -433,8 +436,12 @@ namespace MiniZinc {
               vd = it->second.r->cast<VarDecl>();
             }
           }
-          rete = Id::a(Location(),vd->_id,vd);
-          rete->_type = id->_type;
+          if (id->_type._bt == Type::BT_ANN && vd->_e) {
+            rete = vd->_e;
+          } else {
+            rete = Id::a(Location(),vd->_id,vd);
+            rete->_type = id->_type;
+          }
         }
         ret.r = bind(env,r,rete);
       }
@@ -495,12 +502,12 @@ namespace MiniZinc {
           ret.r = bind(env,r,val);
         } else {
           std::vector<Expression*> args(aa->_idx.size()+1);
-          args[0] = aa->_v;
           for (unsigned int i=aa->_idx.size(); i--;)
-            args[i+1] = aa->_idx[i];
+            args[i] = aa->_idx[i];
+          args[aa->_idx.size()] = aa->_v;
           Call* cc = Call::a(Location(),"element",args);
           cc->_type = aa->_type;
-          FunctionI* fi = env.m->matchFn(cc->_id,args);
+          FunctionI* fi = env.orig->matchFn(cc->_id,args);
           assert(cc->_type == fi->rtype(args));
           cc->_decl = fi;
           ret = flat_exp(env,bctx,cc,r,b);
@@ -561,18 +568,22 @@ namespace MiniZinc {
           std::vector<Expression*> args(2);
           args[0] = args_ee[0].r;
           args[1] = args_ee[1].r;
-          Call* cr = Call::a(Location(),"@"+bo->opToString().str(),args);
+          Call* cr = Call::a(Location(),bo->opToString().str(),args);
           cr->_type = bo->_type;
           Env::Map::iterator cit = env.map.find(cr);
           if (cit != env.map.end()) {
             ret.b = bind(env,b,cit->second.b);
             ret.r = bind(env,r,cit->second.r);
           } else {
+            // std::cerr << "============ " << (bo->opToString().str()) << "\n";
+            FunctionI* decl = env.orig->matchFn(bo->opToString().str(),args);
+            // std::cerr << "============\n";
+            assert(decl);
             std::vector<std::pair<Id*,Expression*> > idmap;
             // Save mapping from Ids to VarDecls and set to parameters
             /// TODO: save vd->_e as well (if we want to support recursive functions)
-            for (unsigned int i=bo->_decl->_params.size(); i--;) {
-              VarDecl* vd = bo->_decl->_params[i];
+            for (unsigned int i=decl->_params.size(); i--;) {
+              VarDecl* vd = decl->_params[i];
               Id* id = Id::a(Location(),vd->_id,NULL);
               id->_type = vd->_type;
               Env::Map::iterator idit = env.map.find(id);
@@ -587,13 +598,13 @@ namespace MiniZinc {
               }
               vd->_e = args[i];
             }
-            if (isTotal(bo->_decl)) {
-              EE ee = flat_exp(env,C_ROOT,bo->_decl->_e,r,constants.t);
+            if (isTotal(decl)) {
+              EE ee = flat_exp(env,C_ROOT,decl->_e,r,constants.t);
               ret.r = bind(env,r,ee.r);
               ret.b = conj(env,b,args_ee);
               env.map.insert(cr,ret);
             } else {
-              ret = flat_exp(env,bctx,bo->_decl->_e,r,NULL);
+              ret = flat_exp(env,bctx,decl->_e,r,NULL);
               args_ee.push_back(ret);
               ret.b = conj(env,b,args_ee);
               env.map.insert(cr,ret);
@@ -608,7 +619,7 @@ namespace MiniZinc {
                 idit->second.r = idvd.second;
               }
             }
-            for (unsigned int i=bo->_decl->_params.size(); i--;) {
+            for (unsigned int i=decl->_params.size(); i--;) {
               bo->_decl->_params[i]->_e = NULL;
             }
           }
@@ -635,7 +646,7 @@ namespace MiniZinc {
               Call* cc = Call::a(Location(),opToBuiltin(bo),args);
               cc->_type = bo->_type;
 
-              if (FunctionI* fi = env.m->matchFn(cc->_id,args)) {
+              if (FunctionI* fi = env.orig->matchFn(cc->_id,args)) {
                 assert(cc->_type == fi->rtype(args));
                 cc->_decl = fi;
                 ret = flat_exp(env,bctx,cc,r,b);
@@ -833,15 +844,16 @@ namespace MiniZinc {
             ret.b = bind(env,b,cit->second.b);
             ret.r = bind(env,r,cit->second.r);
           } else {
-            if (c->_decl->_e==NULL) {
+            FunctionI* decl = env.orig->matchFn(c->_id.str(),args);
+            if (decl->_e==NULL) {
               /// For now assume that all builtins are total
               if (cit != env.map.end()) {
                 ret.b = bind(env,b,cit->second.b);
                 ret.r = bind(env,r,cit->second.r);
               } else {
-                if (c->_decl->_builtins.e) {
+                if (decl->_builtins.e) {
                   Expression* callres = 
-                    c->_decl->_builtins.e(cr->_args);
+                    decl->_builtins.e(cr->_args);
                   EE res = flat_exp(env,bctx,callres,r,b);
                   args_ee.push_back(res);
                   ret.b = conj(env,b,args_ee);
@@ -857,8 +869,8 @@ namespace MiniZinc {
               std::vector<std::pair<Id*,Expression*> > idmap;
               // Save mapping from Ids to VarDecls and set to parameters
               /// TODO: save vd->_e as well (if we want to support recursive functions)
-              for (unsigned int i=c->_decl->_params.size(); i--;) {
-                VarDecl* vd = c->_decl->_params[i];
+              for (unsigned int i=decl->_params.size(); i--;) {
+                VarDecl* vd = decl->_params[i];
                 Id* id = Id::a(Location(),vd->_id,NULL);
                 id->_type = vd->_type;
                 Env::Map::iterator idit = env.map.find(id);
@@ -873,13 +885,13 @@ namespace MiniZinc {
                 }
                 vd->_e = args[i];
               }
-              if (isTotal(c->_decl)) {
-                EE ee = flat_exp(env,C_ROOT,c->_decl->_e,r,constants.t);
+              if (isTotal(decl)) {
+                EE ee = flat_exp(env,C_ROOT,decl->_e,r,constants.t);
                 ret.r = bind(env,r,ee.r);
                 ret.b = conj(env,b,args_ee);
                 env.map.insert(cr,ret);
               } else {
-                ret = flat_exp(env,bctx,c->_decl->_e,r,NULL);
+                ret = flat_exp(env,bctx,decl->_e,r,NULL);
                 args_ee.push_back(ret);
                 ret.b = conj(env,b,args_ee);
                 env.map.insert(cr,ret);
@@ -894,8 +906,8 @@ namespace MiniZinc {
                   idit->second.r = idvd.second;
                 }
               }
-              for (unsigned int i=c->_decl->_params.size(); i--;) {
-                c->_decl->_params[i]->_e = NULL;
+              for (unsigned int i=decl->_params.size(); i--;) {
+                decl->_params[i]->_e = NULL;
               }
             }
           }
@@ -946,8 +958,8 @@ namespace MiniZinc {
                 throw FlatteningError(vd->_loc,
                   "free variable in non-positive context");
               TypeInst* ti = eval_typeinst(env,vd->_ti);
-              VarDecl* nvd = VarDecl::a(Location(),ti,env.genId("FromLet"));
-              nvd->toplevel(vd->toplevel());
+              VarDecl* nvd = VarDecl::a(Location(),ti,env.genId("FromLet_"+vd->_id.str()));
+              nvd->toplevel(true);
               nvd->introduced(true);
               nvd->_type = vd->_type;
               VarDeclI* nv = VarDeclI::a(Location(),nvd);
@@ -974,9 +986,13 @@ namespace MiniZinc {
               it->second.r = vd;
             }
           } else {
-            EE ee = flat_exp(env,bctx,le,NULL,constants.t);
-            ee.b = ee.r;
-            cs.push_back(ee);
+            if (bctx==C_ROOT) {
+              (void) flat_exp(env,C_ROOT,le,constants.t,constants.t);
+            } else {
+              EE ee = flat_exp(env,bctx,le,NULL,constants.t);
+              ee.b = ee.r;
+              cs.push_back(ee);
+            }
           }
         }
         EE ee = flat_exp(env,bctx,let->_in,NULL,NULL);
@@ -1028,7 +1044,7 @@ namespace MiniZinc {
 
   Model* flatten(Model* m) {
     Model* flat = new Model;
-    Env env(flat);
+    Env env(m,flat);
     
     class FV : public ItemVisitor {
     public:
@@ -1042,7 +1058,10 @@ namespace MiniZinc {
       }
       void vConstraintI(ConstraintI* ci) {
         GCLock lock;
+        // std::cerr << "+++++++++++++++++++++++++++++++++++\n";
+        // debugprint(ci);
         (void) flat_exp(env,C_ROOT,ci->_e,constants.t,constants.t);
+        // std::cerr << "+++++++++++++++++++++++++++++++++++\n";
       }
       void vSolveI(SolveI* si) {
         GCLock lock;
@@ -1065,13 +1084,28 @@ namespace MiniZinc {
         }
       }
     } _fv(env);
+    GC::lock();
     iterItems<FV>(_fv,m);
+    GC::unlock();
     
     return flat;
   }
 
   void oldflatzinc(Model* m) {
     GCLock lock;
+
+    struct {
+    public:
+      bool operator() (const Item* i) {
+        return i->isa<VarDeclI>() &&
+          (i->cast<VarDeclI>()->_e->_type._ot == Type::OT_OPTIONAL ||
+           i->cast<VarDeclI>()->_e->_type._bt == Type::BT_ANN);
+      }
+    } _isOptVar;
+
+    m->_items.erase(remove_if(m->_items.begin(), m->_items.end(), _isOptVar),
+      m->_items.end());
+        
     std::vector<ConstraintI*> cs;
     class FV : public ItemVisitor {
     public:
@@ -1103,7 +1137,7 @@ namespace MiniZinc {
               if (vd->_e->eid()==Expression::E_CALL) {
                 Call* c = vd->_e->cast<Call>();
                 vd->_e = NULL;
-                if (c->_id=="bool_and") {
+                if (c->_id=="bool_and" || c->_id=="bool_or") {
                   
                 } else {
                   c->_id = ASTString(c->_id.str()+"_reif");
