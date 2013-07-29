@@ -470,10 +470,10 @@ namespace MiniZinc {
     c->_e = e;
     std::vector<Expression*> es;
     std::vector<int> idx;
-    for (unsigned int i=g._g.size(); i--;) {
+    for (unsigned int i=0; i<g._g.size(); i++) {
       idx.push_back(es.size());
       es.push_back(g._g[i]._in);
-      for (unsigned int j=g._g[i]._v.size(); j--;) {
+      for (unsigned int j=0; j<g._g[i]._v.size(); j++) {
         es.push_back(g._g[i]._v[j]);
       }
     }
