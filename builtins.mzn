@@ -172,43 +172,43 @@ function     set of $U:  array_intersect(array[$T] of     set of $U);
 function var set of int: array_intersect(array[$T] of var set of int);
 
 % Array operations
-function int: length(array[$T] of opt var $U);
+function int: length(array[$T] of var opt $U);
 
-function set of int: index_set(array[int] of opt var $U);
-function set of int: index_set_1of2(array[int,int] of opt var $U);
-function set of int: index_set_2of2(array[int,int] of opt var $U);
-function set of int: index_set_1of3(array[int,int,int] of opt var $U);
-function set of int: index_set_2of3(array[int,int,int] of opt var $U);
-function set of int: index_set_3of3(array[int,int,int] of opt var $U);
-function set of int: index_set_1of4(array[int,int,int,int] of opt var $U);
-function set of int: index_set_2of4(array[int,int,int,int] of opt var $U);
-function set of int: index_set_3of4(array[int,int,int,int] of opt var $U);
-function set of int: index_set_4of4(array[int,int,int,int] of opt var $U);
-function set of int: index_set_1of5(array[int,int,int,int,int] of opt var $U);
-function set of int: index_set_2of5(array[int,int,int,int,int] of opt var $U);
-function set of int: index_set_3of5(array[int,int,int,int,int] of opt var $U);
-function set of int: index_set_4of5(array[int,int,int,int,int] of opt var $U);
-function set of int: index_set_5of5(array[int,int,int,int,int] of opt var $U);
-function set of int: index_set_1of6(array[int,int,int,int,int,int] of opt var $U);
-function set of int: index_set_2of6(array[int,int,int,int,int,int] of opt var $U);
-function set of int: index_set_3of6(array[int,int,int,int,int,int] of opt var $U);
-function set of int: index_set_4of6(array[int,int,int,int,int,int] of opt var $U);
-function set of int: index_set_5of6(array[int,int,int,int,int,int] of opt var $U);
-function set of int: index_set_6of6(array[int,int,int,int,int,int] of opt var $U);
+function set of int: index_set(array[int] of var opt $U);
+function set of int: index_set_1of2(array[int,int] of var opt $U);
+function set of int: index_set_2of2(array[int,int] of var opt $U);
+function set of int: index_set_1of3(array[int,int,int] of var opt $U);
+function set of int: index_set_2of3(array[int,int,int] of var opt $U);
+function set of int: index_set_3of3(array[int,int,int] of var opt $U);
+function set of int: index_set_1of4(array[int,int,int,int] of var opt $U);
+function set of int: index_set_2of4(array[int,int,int,int] of var opt $U);
+function set of int: index_set_3of4(array[int,int,int,int] of var opt $U);
+function set of int: index_set_4of4(array[int,int,int,int] of var opt $U);
+function set of int: index_set_1of5(array[int,int,int,int,int] of var opt $U);
+function set of int: index_set_2of5(array[int,int,int,int,int] of var opt $U);
+function set of int: index_set_3of5(array[int,int,int,int,int] of var opt $U);
+function set of int: index_set_4of5(array[int,int,int,int,int] of var opt $U);
+function set of int: index_set_5of5(array[int,int,int,int,int] of var opt $U);
+function set of int: index_set_1of6(array[int,int,int,int,int,int] of var opt $U);
+function set of int: index_set_2of6(array[int,int,int,int,int,int] of var opt $U);
+function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U);
+function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U);
+function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U);
+function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U);
 
 function array[int] of $V: array1d(set of int,
                                    array[$U] of $V);
 function array[int] of var $V: array1d(set of int,
                                        array[$U] of var $V);
-function array[int] of opt var $V: array1d(set of int,
-                                           array[$U] of opt var $V);
+function array[int] of var opt $V: array1d(set of int,
+                                           array[$U] of var opt $V);
 
 function array[int,int] of $V: array2d(set of int, set of int, 
                                        array[$U] of $V);
 function array[int,int] of var $V: array2d(set of int, set of int, 
                                            array[$U] of var $V);
-function array[int,int] of opt var $V: array2d(set of int, set of int, 
-                                               array[$U] of opt var $V);
+function array[int,int] of var opt $V: array2d(set of int, set of int, 
+                                               array[$U] of var opt $V);
 
 function array[int,int,int] of $V: array3d(set of int,
                                            set of int,
@@ -218,10 +218,10 @@ function array[int,int,int] of var $V: array3d(set of int,
                                                set of int,
                                                set of int,
                                                array[$U] of var $V);
-function array[int,int,int] of opt var $V: array3d(set of int,
+function array[int,int,int] of var opt $V: array3d(set of int,
                                                    set of int,
                                                    set of int,
-                                                   array[$U] of opt var $V);
+                                                   array[$U] of var opt $V);
 
 function array[int,int,int,int] of $V: array4d(set of int,
                                                set of int,
@@ -233,11 +233,11 @@ function array[int,int,int,int] of var $V: array4d(set of int,
                                                    set of int,
                                                    set of int,
                                                    array[$U] of var $V);
-function array[int,int,int,int] of opt var $V: array4d(set of int,
+function array[int,int,int,int] of var opt $V: array4d(set of int,
                                                        set of int,
                                                        set of int,
                                                        set of int,
-                                                       array[$U] of opt var $V);
+                                                       array[$U] of var opt $V);
 
 function array[int,int,int,int,int] of $V: array5d(set of int,
                                                    set of int,
@@ -251,12 +251,12 @@ function array[int,int,int,int,int] of var $V: array5d(set of int,
                                                        set of int,
                                                        set of int,
                                                        array[$U] of var $V);
-function array[int,int,int,int,int] of opt var $V: array5d(set of int,
+function array[int,int,int,int,int] of var opt $V: array5d(set of int,
                                                            set of int,
                                                            set of int,
                                                            set of int,
                                                            set of int,
-                                                           array[$U] of opt var $V);
+                                                           array[$U] of var opt $V);
 
 function array[int,int,int,int,int,int] of $V: array6d(set of int,
                                                        set of int,
@@ -272,13 +272,13 @@ function array[int,int,int,int,int,int] of var $V: array6d(set of int,
                                                            set of int,
                                                            set of int,
                                                            array[$U] of var $V);
-function array[int,int,int,int,int,int] of opt var $V: array6d(set of int,
+function array[int,int,int,int,int,int] of var opt $V: array6d(set of int,
                                                                set of int,
                                                                set of int,
                                                                set of int,
                                                                set of int,
                                                                set of int,
-                                                               array[$U] of opt var $V);
+                                                               array[$U] of var opt $V);
 
 % Coercion operations
 
@@ -294,8 +294,8 @@ function array[int] of $T: set2array(set of $T);
 
 % String operations
 
-function string: show(opt var $T);
-function string: show(array[$U] of opt var $T);
+function string: show(var opt $T);
+function string: show(array[$U] of var opt $T);
 function string: show_int(int, var int);
 function string: show_float(int, int, var float);
 function string: '++'(string, string);
@@ -306,6 +306,8 @@ function string: join(string, array[$T] of string);
 
 function int: lb(var int);
 function int: ub(var int);
+function int: lb(var opt int);
+function int: ub(var opt int);
 function float: lb(var float);
 function float: ub(var float);
 function set of int: lb(var set of int);
@@ -330,12 +332,12 @@ function int: dom_size(var int);
 
 function $T: assert(bool, string, $T);
 function var $T: assert(bool, string, var $T);
-function opt var $T: assert(bool, string, opt var $T);
+function var opt $T: assert(bool, string, var opt $T);
 function bool: assert(bool, string);
 function $T: trace(string, $T);
 function var $T: trace(string, var $T);
-function opt var $T: trace(string, opt var $T);
-function $T: fix(opt var $T);
-function bool: is_fixed(opt var $T);
+function var opt $T: trace(string, var opt $T);
+function $T: fix(var opt $T);
+function bool: is_fixed(var opt $T);
 
 function bool: abort(string);
