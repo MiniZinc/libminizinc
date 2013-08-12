@@ -1251,9 +1251,5 @@ namespace MiniZinc {
     std::stable_sort(m->_items.begin(),m->_items.end(),_cmp);
 
   }
-
-  void optimize(Model* m) {
-    
-  }
   
 }
