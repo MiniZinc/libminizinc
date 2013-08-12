@@ -108,10 +108,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
-    if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
-    Expression* e = args[0];
+  IntVal lb_varoptint(Expression* e) {
     for (;;) {
       switch (e->eid()) {
       case Expression::E_INTLIT: return eval_int(e);
@@ -126,16 +123,32 @@ namespace MiniZinc {
             e = id->_decl->_e;
         }
         break;
+      case Expression::E_ARRAYACCESS:
+        e = eval_arrayaccess(e->cast<ArrayAccess>());
+        break;
       default:
         throw EvalError(e->_loc,"invalid argument to lb");
       }
     }
   }
-
-  IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
+  IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
-    Expression* e = args[0];
+    return lb_varoptint(args[0]);
+  }
+
+  IntVal b_array_lb_int(ASTExprVec<Expression>& args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->_v.size()==0)
+      throw EvalError(Location(), "min of empty array undefined");
+    IntVal min = lb_varoptint(al->_v[0]);
+    for (unsigned int i=1; i<al->_v.size(); i++)
+      min = std::min(min, lb_varoptint(al->_v[i]));
+    return min;
+  }
+
+  IntVal ub_varoptint(Expression* e) {
     for (;;) {
       switch (e->eid()) {
       case Expression::E_INTLIT: return eval_int(e);
@@ -152,10 +165,29 @@ namespace MiniZinc {
             e = id->_decl->_e;
         }
         break;
+      case Expression::E_ARRAYACCESS:
+        e = eval_arrayaccess(e->cast<ArrayAccess>());
+        break;
       default:
-        throw EvalError(e->_loc,"invalid argument to lb");
+        throw EvalError(e->_loc,"invalid argument to ub");
       }
     }
+  }
+  IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return ub_varoptint(args[0]);
+  }
+
+  IntVal b_array_ub_int(ASTExprVec<Expression>& args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->_v.size()==0)
+      throw EvalError(Location(), "min of empty array undefined");
+    IntVal max = ub_varoptint(al->_v[0]);
+    for (unsigned int i=1; i<al->_v.size(); i++)
+      max = std::max(max, ub_varoptint(al->_v[i]));
+    return max;
   }
 
   IntVal b_sum(ASTExprVec<Expression>& args) {
@@ -601,6 +633,28 @@ namespace MiniZinc {
       t[0] = Type::varint();
       t[0]._ot = Type::OT_OPTIONAL;
       rb(m, ASTString("ub"), t, b_ub_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("lb"), t, b_lb_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("ub"), t, b_ub_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("lb_array"), t, b_array_lb_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("ub_array"), t, b_array_ub_int);
     }
   }
   
