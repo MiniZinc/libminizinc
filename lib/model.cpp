@@ -150,5 +150,33 @@ namespace MiniZinc {
       }
     }
     return NULL;
-  }  
+  }
+  
+  FunctionI*
+  Model::matchFn(Call* c) const {
+    const Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    FnMap::const_iterator it = m->fnmap.find(c->_id.str());
+    if (it == m->fnmap.end()) {
+      return NULL;
+    }
+    const std::vector<FunctionI*>& v = it->second;
+    for (unsigned int i=0; i<v.size(); i++) {
+      FunctionI* fi = v[i];
+      if (fi->_params.size() == c->_args.size()) {
+        bool match=true;
+        for (unsigned int j=0; j<c->_args.size(); j++) {
+          if (!c->_args[j]->_type.isSubtypeOf(fi->_params[j]->_type)) {
+            match=false;
+            break;
+          }
+        }
+        if (match) {
+          return fi;
+        }
+      }
+    }
+    return NULL;
+  }
 }

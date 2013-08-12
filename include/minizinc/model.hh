@@ -60,6 +60,7 @@ namespace MiniZinc {
     FunctionI* matchFn(const ASTString& id,
                        const std::vector<Expression*>& args) const;
     FunctionI* matchFn(const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(Call* c) const;
 
   };
 
