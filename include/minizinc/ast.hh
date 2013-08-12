@@ -890,7 +890,7 @@ namespace MiniZinc {
     /// Visit identifier
     void vId(const Id&) {}
     /// Visit anonymous variable
-    void vAnon(const AnonVar&) {}
+    void vAnonVar(const AnonVar&) {}
     /// Visit array literal
     void vArrayLit(const ArrayLit&) {}
     /// Visit array access
@@ -909,6 +909,12 @@ namespace MiniZinc {
     void vLet(const Let&) {}
     /// Visit variable declaration
     void vVarDecl(const VarDecl&) {}
+    /// Visit annotation
+    void vAnnotation(const Annotation&) {}
+    /// Visit type inst
+    void vTypeInst(const TypeInst&) {}
+    /// Visit TIId
+    void vTIId(const TIId&) {}
   };
 
 }
