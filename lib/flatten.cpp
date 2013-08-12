@@ -927,6 +927,12 @@ namespace MiniZinc {
                                    eval_typeinst(env,v->_ti),
                                    v->_id.str());
           vd->introduced(v->introduced());
+          if (v->_ann) {
+            vd->annotate(
+              static_cast<Annotation*>(
+              flat_exp(env,C_ROOT,v->_ann,NULL,constants.t).r)
+            );
+          }
           VarDeclI* nv = VarDeclI::a(Location(),vd);
           if (v->_e) {
             (void) flat_exp(env,
