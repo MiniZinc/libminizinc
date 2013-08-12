@@ -561,68 +561,13 @@ namespace MiniZinc {
       {
         BinOp* bo = e->cast<BinOp>();
         if (bo->_decl) {
-
-          std::vector<EE> args_ee(2);
-          args_ee[0] = flat_exp(env,bctx,bo->_e0,NULL,NULL);
-          args_ee[1] = flat_exp(env,bctx,bo->_e1,NULL,NULL);
           std::vector<Expression*> args(2);
-          args[0] = args_ee[0].r;
-          args[1] = args_ee[1].r;
+          args[0] = bo->_e0;
+          args[1] = bo->_e1;
           Call* cr = Call::a(Location(),bo->opToString().str(),args);
           cr->_type = bo->_type;
-          Env::Map::iterator cit = env.map.find(cr);
-          if (cit != env.map.end()) {
-            ret.b = bind(env,b,cit->second.b);
-            ret.r = bind(env,r,cit->second.r);
-          } else {
-            // std::cerr << "============ " << (bo->opToString().str()) << "\n";
-            FunctionI* decl = env.orig->matchFn(bo->opToString().str(),args);
-            // std::cerr << "============\n";
-            assert(decl);
-            std::vector<std::pair<Id*,Expression*> > idmap;
-            // Save mapping from Ids to VarDecls and set to parameters
-            /// TODO: save vd->_e as well (if we want to support recursive functions)
-            for (unsigned int i=decl->_params.size(); i--;) {
-              VarDecl* vd = decl->_params[i];
-              Id* id = Id::a(Location(),vd->_id,NULL);
-              id->_type = vd->_type;
-              Env::Map::iterator idit = env.map.find(id);
-              if (idit==env.map.end()) {
-                EE ee(vd,NULL);
-                idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
-                env.map.insert(id,ee);
-              } else {
-                idmap.push_back(
-                  std::pair<Id*,Expression*>(id,idit->second.r));
-                idit->second.r = vd;
-              }
-              vd->_e = args[i];
-            }
-            if (isTotal(decl)) {
-              EE ee = flat_exp(env,C_ROOT,decl->_e,r,constants.t);
-              ret.r = bind(env,r,ee.r);
-              ret.b = conj(env,b,args_ee);
-              env.map.insert(cr,ret);
-            } else {
-              ret = flat_exp(env,bctx,decl->_e,r,NULL);
-              args_ee.push_back(ret);
-              ret.b = conj(env,b,args_ee);
-              env.map.insert(cr,ret);
-            }
-            // Restore previous mapping
-            for (std::pair<Id*,Expression*>& idvd : idmap) {
-              Env::Map::iterator idit = env.map.find(idvd.first);
-              assert(idit != env.map.end());
-              if (idvd.second==NULL) {
-                env.map.remove(idvd.first);
-              } else {
-                idit->second.r = idvd.second;
-              }
-            }
-            for (unsigned int i=decl->_params.size(); i--;) {
-              bo->_decl->_params[i]->_e = NULL;
-            }
-          }
+          cr->_decl = env.orig->matchFn(cr);
+          ret = flat_exp(env,bctx,cr,r,b);
         } else {
           BCtx bctx0 = bctx;
           BCtx bctx1 = bctx;
@@ -719,7 +664,8 @@ namespace MiniZinc {
                 ees[2].b = cit->second.r;
                 ret.r = conj(env,r,ees);
               } else {
-                ees[2].b = cc;
+                cc->_decl = env.orig->matchFn(cc->_id.str(),args);
+                ees[2].b = flat_exp(env,C_ROOT,cc,NULL,NULL).r;
                 ret.r = conj(env,r,ees);
                 env.map.insert(cc,ret);
               }
@@ -795,8 +741,11 @@ namespace MiniZinc {
           ret.b = bind(env,b,constants.lt);
           break;
         }
+        FunctionI* decl = env.orig->matchFn(c);
+        if (decl==NULL)
+          throw InternalError("forall not defined");
 
-        if (c->_id == "forall" && r==constants.t) {
+        if (decl->_e==NULL && c->_id == "forall" && r==constants.t) {
           /// TODO: need generic array evaluation function
           ret.b = bind(env,b,constants.lt);
           Expression* ca = c->_args[0];
@@ -844,7 +793,6 @@ namespace MiniZinc {
             ret.b = bind(env,b,cit->second.b);
             ret.r = bind(env,r,cit->second.r);
           } else {
-            FunctionI* decl = env.orig->matchFn(c->_id.str(),args);
             if (decl->_e==NULL) {
               /// For now assume that all builtins are total
               if (cit != env.map.end()) {
