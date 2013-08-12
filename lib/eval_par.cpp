@@ -17,7 +17,6 @@
 
 namespace MiniZinc {
 
-  Expression* eval_arrayaccess(ArrayAccess* e);
   bool eval_bool(Expression* e);
 
   template<class E>

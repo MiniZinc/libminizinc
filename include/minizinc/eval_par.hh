@@ -24,6 +24,7 @@ namespace MiniZinc {
   void eval_int(Model* m);
   ArrayLit* eval_array_lit(Expression* e);
   Expression* eval_arrayaccess(ArrayLit* a, const std::vector<IntVal>& dims);
+  Expression* eval_arrayaccess(ArrayAccess* e);
 
   IntSetVal* eval_intset(Expression* e);
 
