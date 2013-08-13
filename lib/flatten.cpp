@@ -53,6 +53,18 @@ namespace MiniZinc {
     return c==C_ROOT || c==C_POS;
   }
 
+  Annotation* ctx_ann(BCtx& c) {
+    std::string ctx;
+    switch (c) {
+    case C_ROOT: ctx = "ctx_root"; break;
+    case C_POS: ctx = "ctx_pos"; break;
+    case C_NEG: ctx = "ctx_neg"; break;
+    case C_MIX: ctx = "ctx_mix"; break;
+    default: assert(false); break;
+    }
+    return Annotation::a(Location(),Id::a(Location(),ctx,NULL));
+  }
+
   /// Result of evaluation
   class EE {
   public:
@@ -662,10 +674,18 @@ namespace MiniZinc {
               Env::Map::iterator cit = env.map.find(cc);
               if (cit != env.map.end()) {
                 ees[2].b = cit->second.r;
+                if (Id* id = ees[2].b->dyn_cast<Id>()) {
+                  if (id->_decl)
+                    id->_decl->annotate(ctx_ann(bctx));
+                }
                 ret.r = conj(env,r,ees);
               } else {
                 cc->_decl = env.orig->matchFn(cc->_id.str(),args);
                 ees[2].b = flat_exp(env,C_ROOT,cc,NULL,NULL).r;
+                if (Id* id = ees[2].b->dyn_cast<Id>()) {
+                  if (id->_decl)
+                    id->_decl->annotate(ctx_ann(bctx));
+                }
                 ret.r = conj(env,r,ees);
                 env.map.insert(cc,ret);
               }
