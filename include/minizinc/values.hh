@@ -102,7 +102,7 @@ namespace MiniZinc {
       }
       ranges.push_back(Range(min,max));
       IntSetVal* r = static_cast<IntSetVal*>(
-          ASTChunk::alloc(sizeof(Range)*s.size()));
+          ASTChunk::alloc(sizeof(Range)*ranges.size()));
       new (r) IntSetVal(ranges);
       return r;
     }
