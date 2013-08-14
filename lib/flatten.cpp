@@ -114,19 +114,54 @@ namespace MiniZinc {
            && !eval_bool(e);
   }  
 
-  class Env {
+  class EnvIter;
+
+  class Env : public ASTRootSet {
   public:
     Model* orig;
     Model* m;
     typedef ExpressionMap<EE> Map;
     Map map;
     unsigned int ids;
-    Env(Model* orig0, Model* m0) : orig(orig0), m(m0), ids(0) {}
+    Env(Model* orig0, Model* m0) : orig(orig0), m(m0), ids(0) {
+      GC::addRootSet(this);
+    }
     ASTString genId(const std::string& s) {
       std::ostringstream oss; oss << "_" << s << "_" << ids++;
       return ASTString(oss.str());
     }
+    ~Env(void) {
+      GC::removeRootSet(this);
+    }
+    ASTRootSetIter* rootSet(void);
   };
+
+  class EnvIter : public ASTRootSetIter {
+  public:
+    std::vector<Expression*> r;
+    EnvIter(std::vector<Expression*>& r0) : r(r0) {}
+    virtual Expression** begin(void) {
+      return &r[0];
+    }
+    virtual Expression** end(void) {
+      return &r[r.size()-1]+1;
+    }
+    virtual ~EnvIter(void) {}
+  };
+
+  ASTRootSetIter*
+  Env::rootSet(void) {
+    std::vector<Expression*> r;
+    for (auto x : map) {
+      if (x.first->eid() == Expression::E_ID)
+        r.push_back(x.first);
+      // if (x.second.r)
+      //   r.push_back(x.second.r);
+      // if (x.second.b)
+      //   r.push_back(x.second.b);
+    }
+    return new EnvIter(r);
+  }
 
   bool isTotal(FunctionI* fi) {
     Annotation* a = fi->_ann;
@@ -1058,9 +1093,7 @@ namespace MiniZinc {
         }
       }
     } _fv(env);
-    GC::lock();
     iterItems<FV>(_fv,m);
-    GC::unlock();
     
     return flat;
   }

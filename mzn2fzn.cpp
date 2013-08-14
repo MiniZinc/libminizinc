@@ -92,7 +92,6 @@ int main(int argc, char** argv) {
         if (verbose)
           std::cerr << "parsing " << filename << std::endl;
         if (typecheck) {
-          GC::lock();
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
           Model* flat = flatten(m);
@@ -100,29 +99,7 @@ int main(int argc, char** argv) {
           oldflatzinc(flat);
           Printer p;
           p.print(flat,std::cout);
-          GC::unlock();
         }
-        // if (verbose)
-        //   std::cerr << "  typechecked" << std::endl;
-        // flat = m->flatten(tm);
-        // if (verbose)
-        //   std::cerr << "  flattened" << std::endl;
-        // string outfilename;
-        // size_t sep = filename.rfind(".");
-        // if (sep == string::npos) {
-        //   outfilename = filename+".pr.mzn";
-        // } else {
-        //   outfilename = filename.substr(0,sep)+".pr.mzn";
-        // }
-        // if (output) {
-        //   std::ofstream os(outfilename.c_str());
-        //   if (!os.good()) {
-        //     std::cerr << "Could not open file " << outfilename << " for output."
-        //               << std::endl;
-        //     exit(EXIT_FAILURE);
-        //   }
-        //   flat->print(os,outputFundecls);
-        // }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;

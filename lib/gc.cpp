@@ -71,6 +71,7 @@ namespace MiniZinc {
   protected:
     HeapPage* _page;
     Model* _rootset;
+    std::vector<ASTRootSet*> roots;
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
@@ -351,6 +352,15 @@ namespace MiniZinc {
       }
       m = m->_roots_next;
     } while (m != _rootset);
+    for (ASTRootSet* rs : roots) {
+      ASTRootSetIter* i = rs->rootSet();
+      for (Expression* e : *i) {
+        if (e->_gc_mark==0) {
+          Expression::mark(e);
+        }
+      }
+      delete i;
+    }
   }
     
   void
@@ -363,6 +373,7 @@ namespace MiniZinc {
       while (off < p->used) {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
+        assert(ns != 0);
         if (n->_gc_mark==0) {
           if (ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
@@ -436,6 +447,19 @@ namespace MiniZinc {
     if (!gc->_heap->trail.empty())
       gc->_heap->trail.back().mark = false;
   }  
+
+  void
+  GC::addRootSet(ASTRootSet* rs) {
+    GC* gc = GC::gc();
+    gc->_heap->roots.push_back(rs);
+  }
+
+  void
+  GC::removeRootSet(ASTRootSet* rs) {
+    GC* gc = GC::gc();
+    gc->_heap->roots.erase(
+      std::find(gc->_heap->roots.begin(),gc->_heap->roots.end(),rs));
+  }
 
   void*
   ASTNode::operator new(size_t size) throw (std::bad_alloc) {
