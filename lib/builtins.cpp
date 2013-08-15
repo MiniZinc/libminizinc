@@ -206,7 +206,7 @@ namespace MiniZinc {
       throw EvalError(Location(), "index_set needs exactly one argument");
     if (args[0]->eid() != Expression::E_ID)
       throw EvalError(Location(), "index_set only supported for identifiers");
-    Id* id = args[0]->template cast<Id>();
+    Id* id = args[0]->cast<Id>();
     if (id->_decl == NULL)
       throw EvalError(id->_loc, "undefined identifier");
     if (id->_decl->_ti->_ranges.size() < i)
