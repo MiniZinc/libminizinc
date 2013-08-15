@@ -27,7 +27,8 @@ namespace MiniZinc {
     void add(VarDecl* v, Item* i) {
       ExpressionMap<Items>::iterator vi = _m.find(v);
       if (vi==_m.end()) {
-        _m.insert(v, Items({i}));
+        Items items; items.insert(i);
+        _m.insert(v, items);
       } else {
         vi->second.insert(i);
       }
