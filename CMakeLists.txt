@@ -31,6 +31,32 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
+add_custom_target(MZNParser echo "Creating parser")
+
+add_custom_command(
+  SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+  COMMAND "flex"
+  ARGS -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+       "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+  TARGET MZNParser
+  OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+)
+
+add_custom_command(
+  SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+  COMMAND "bison"
+  ARGS -o "${PROJECT_BINARY_DIR}/parser.tab.cpp"
+       --defines="${PROJECT_BINARY_DIR}/parser.tab.hh"
+       "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+  TARGET MZNParser
+  DEPENDS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+  OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp" 
+          "${PROJECT_BINARY_DIR}/parser.tab.hh"
+)
+
+set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
+set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
+
 add_library(mzn
 lib/allocator.cpp
 lib/ast.cpp
@@ -40,9 +66,9 @@ lib/builtins.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/gc.cpp
-lib/lexer.yy.cpp
+"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
 lib/model.cpp
-lib/parser.tab.cpp
+"${PROJECT_BINARY_DIR}/parser.tab.cpp"
 lib/prettyprinter.cpp
 lib/typecheck.cpp
 )

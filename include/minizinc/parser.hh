@@ -29,7 +29,7 @@ extern "C" int isatty(int);
 #endif
 
 #include <minizinc/model.hh>
-#include <minizinc/parser.tab.hh>
+#include <parser.tab.hh>
 
 #include <string>
 #include <vector>
