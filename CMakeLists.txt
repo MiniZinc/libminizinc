@@ -71,6 +71,8 @@ lib/model.cpp
 "${PROJECT_BINARY_DIR}/parser.tab.cpp"
 lib/prettyprinter.cpp
 lib/typecheck.cpp
+lib/flatten.cpp
+lib/optimize.cpp
 )
 
 # add the executable
