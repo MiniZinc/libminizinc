@@ -7,7 +7,7 @@ set (libmzn_VERSION_MINOR 8)
 
 include(CheckCXXCompilerFlag)
 
-check_cxx_compiler_flag(-std=c++11 HAS_STDCPP0X)
+check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
 check_cxx_compiler_flag(-stdlib=libc++ HAS_STDLIBLIBCPP)
 
 if (HAS_STDCPP0X)
