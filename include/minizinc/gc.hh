@@ -95,6 +95,18 @@ namespace MiniZinc {
   };
 
   class Model;
+  class Expression;
+
+  class ASTRootSetIter {
+  public:
+    virtual Expression** begin(void) = 0;
+    virtual Expression** end(void) = 0;
+    virtual ~ASTRootSetIter(void) {}
+  };
+  class ASTRootSet {
+  public:
+    virtual ASTRootSetIter* rootSet(void) = 0;
+  };
 
   /// Garbage collector
   class GC {
@@ -139,6 +151,11 @@ namespace MiniZinc {
     static void trail(void**,void*);
     /// Untrail to previous mark
     static void untrail(void);
+    
+    /// Add external root set
+    static void addRootSet(ASTRootSet* rs);
+    /// Remove external root set
+    static void removeRootSet(ASTRootSet* rs);
   };
 
   /// Automatic garbage collection lock
