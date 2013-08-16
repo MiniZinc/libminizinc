@@ -352,14 +352,15 @@ namespace MiniZinc {
       }
       m = m->_roots_next;
     } while (m != _rootset);
-    for (ASTRootSet* rs : roots) {
-      ASTRootSetIter* i = rs->rootSet();
-      for (Expression* e : *i) {
-        if (e->_gc_mark==0) {
-          Expression::mark(e);
+
+    for (unsigned int i=0; i<roots.size(); i++) {
+      ASTRootSetIter* iter = roots[i]->rootSet();
+      for (Expression** e = iter->begin(); e != iter->end(); ++e) {
+        if ((*e)->_gc_mark==0) {
+          Expression::mark(*e);
         }
       }
-      delete i;
+      delete iter;
     }
   }
     

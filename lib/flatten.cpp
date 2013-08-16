@@ -152,9 +152,9 @@ namespace MiniZinc {
   ASTRootSetIter*
   Env::rootSet(void) {
     std::vector<Expression*> r;
-    for (auto x : map) {
-      if (x.first->eid() == Expression::E_ID)
-        r.push_back(x.first);
+    for (Map::iterator it = map.begin(); it != map.end(); ++it) {
+      if (it->first->eid() == Expression::E_ID)
+        r.push_back(it->first);
       // if (x.second.r)
       //   r.push_back(x.second.r);
       // if (x.second.b)
@@ -242,6 +242,8 @@ namespace MiniZinc {
 
           return id;
         }
+      default:
+        assert(false); return NULL;
       }
     } else {
       if (vd->_e==NULL) {
@@ -270,13 +272,13 @@ namespace MiniZinc {
 
   Expression* conj(Env& env,VarDecl* b, const std::vector<EE>& e) {
     std::vector<Expression*> nontrue;
-    for (const EE& ee : e) {
-      if (istrue(ee.b))
+    for (unsigned int i=0; i<e.size(); i++) {
+      if (istrue(e[i].b))
         continue;
-      if (isfalse(ee.b)) {
+      if (isfalse(e[i].b)) {
         return bind(env,b,constants.lf);
       }
-      nontrue.push_back(ee.b);
+      nontrue.push_back(e[i].b);
     }
     if (nontrue.empty()) {
       return bind(env,b,constants.lt);
@@ -284,8 +286,8 @@ namespace MiniZinc {
       return bind(env,b,nontrue[0]);
     } else {
       if (b==constants.t) {
-        for (Expression* ne : nontrue)
-          bind(env,b,ne);
+        for (unsigned int i=0; i<nontrue.size(); i++)
+          bind(env,b,nontrue[i]);
         return constants.lt;
       } else {
         BinOp* ret = BinOp::a(Location(),
@@ -373,6 +375,8 @@ namespace MiniZinc {
       return builtin+"and";
     case BOT_XOR:
       return builtin+"xor";
+    default:
+      assert(false); return "";
     }
   }
 
@@ -435,7 +439,8 @@ namespace MiniZinc {
           TypeInst* vti =
             TypeInst::a(Location(),vd->_ti->_type,vd->_ti->_domain);
           unsigned int asize = 1;
-          for (TypeInst* ti : vd->_ti->_ranges) {
+          for (unsigned int i=0; i<vd->_ti->_ranges.size(); i++) {
+            TypeInst* ti = vd->_ti->_ranges[i];
             if (ti->_domain==NULL)
               throw FlatteningError(ti->_loc,"array dimensions unknown");
             IntSetVal* isv = eval_intset(ti->_domain);
@@ -518,8 +523,8 @@ namespace MiniZinc {
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
         bool parAccess=true;
-        for (Expression* i : aa->_idx) {
-          if (!i->_type.ispar()) {
+        for (unsigned int i=0; i<aa->_idx.size(); i++) {
+          if (!aa->_idx[i]->_type.ispar()) {
             parAccess = false;
             break;
           }
@@ -879,7 +884,8 @@ namespace MiniZinc {
                 Env::Map::iterator idit = env.map.find(id);
                 if (idit==env.map.end()) {
                   EE ee(vd,NULL);
-                  idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
+                  Expression* nullexp = NULL;
+                  idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
                   env.map.insert(id,ee);
                 } else {
                   idmap.push_back(
@@ -900,7 +906,8 @@ namespace MiniZinc {
                 env.map.insert(cr,ret);
               }
               // Restore previous mapping
-              for (std::pair<Id*,Expression*>& idvd : idmap) {
+              for (unsigned int i=0; i<idmap.size(); i++) {
+                std::pair<Id*,Expression*>& idvd = idmap[i];
                 Env::Map::iterator idit = env.map.find(idvd.first);
                 assert(idit != env.map.end());
                 if (idvd.second==NULL) {
@@ -959,7 +966,8 @@ namespace MiniZinc {
         std::vector<EE> cs;
         std::vector<std::pair<Id*,Expression*> > idmap;
         let->pushbindings();
-        for (Expression* le : let->_let) {
+        for (unsigned int i=0; i<let->_let.size(); i++) {
+          Expression* le = let->_let[i];
           if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
             EE ee;
             if (!vd->_e) {
@@ -988,7 +996,8 @@ namespace MiniZinc {
             id->_type = vd->_type;
             Env::Map::iterator it = env.map.find(id);
             if (it==env.map.end()) {
-              idmap.push_back(std::pair<Id*,Expression*>(id,NULL));
+              Expression* nullexp = NULL;
+              idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
               env.map.insert(id,ee);
             } else {
               idmap.push_back(std::pair<Id*,Expression*>(id,it->second.r));
@@ -1017,7 +1026,8 @@ namespace MiniZinc {
         }
         let->popbindings();
         // Restore previous mapping
-        for (std::pair<Id*,Expression*>& idvd : idmap) {
+        for (unsigned int i=0; i<idmap.size(); i++) {
+          std::pair<Id*,Expression*>& idvd = idmap[i];
           Env::Map::iterator idit = env.map.find(idvd.first);
           assert(idit != env.map.end());
           if (idvd.second==NULL) {
@@ -1218,8 +1228,8 @@ namespace MiniZinc {
       }
     } _fv(cs);
     iterItems<FV>(_fv,m);
-    for (ConstraintI* ci : cs)
-      m->addItem(ci);
+    for (unsigned int i=0; i<cs.size(); i++)
+      m->addItem(cs[i]);
     
     class Cmp {
     public:

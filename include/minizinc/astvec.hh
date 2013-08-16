@@ -123,10 +123,12 @@ namespace MiniZinc {
     unsigned int size(void) const { return _size; }
     bool empty(void) const { return size()==0; }
     T& operator[] (int i) {
-      assert(i<size()); return reinterpret_cast<T&>(_data[i]);
+      assert(i<static_cast<int>(size()));
+      return reinterpret_cast<T&>(_data[i]);
     }
     const T operator[] (int i) const {
-      assert(i<size()); return reinterpret_cast<T>(_data[i]);
+      assert(i<static_cast<int>(size()));
+      return reinterpret_cast<T>(_data[i]);
     }
     /// Iterator begin
     T* begin(void) { return reinterpret_cast<T*>(_data); }

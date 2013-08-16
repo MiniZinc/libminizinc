@@ -70,7 +70,7 @@ namespace MiniZinc {
   }
 
 #define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
-#define pushall(v) do { v.mark(); for (Expression* e : v) if (e!=NULL) { stack.push_back(e); }} while(0)
+#define pushall(v) do { v.mark(); for (unsigned int i=0; i<v.size(); i++) if (v[i]!=NULL) { stack.push_back(v[i]); }} while(0)
   void
   Expression::mark(Expression* e) {
     if (e==NULL) return;
@@ -359,9 +359,9 @@ namespace MiniZinc {
     dims.push_back(pair<int,int>(1,v.size()));
     dims.push_back(pair<int,int>(1,v[0].size()));
     std::vector<Expression*> vv;
-    for (const std::vector<Expression*>& evi : v)
-      for (Expression* ei : evi)
-        vv.push_back(ei);
+    for (unsigned int i=0; i<v.size(); i++)
+      for (unsigned int j=0; j<v[i].size(); j++)
+        vv.push_back(v[i][j]);
     return a(loc,vv,dims);
   }
   int
@@ -380,7 +380,7 @@ namespace MiniZinc {
   ArrayLit::length(void) const {
     if(dims() == 0) return 0;
     int l = max(0) - min(0) + 1;
-    for(unsigned int i=1; i<dims(); i++)
+    for(int i=1; i<dims(); i++)
       l *= (max(i) - min(i) + 1);
     return l;
   }
@@ -418,9 +418,9 @@ namespace MiniZinc {
   Generator::Generator(const std::vector<ASTString>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (const ASTString& vdi : v)
+    for (unsigned int i=0; i<v.size(); i++)
       vd.push_back(VarDecl::a(in->_loc,
-        TypeInst::a(in->_loc,Type::parint()),vdi,
+        TypeInst::a(in->_loc,Type::parint()),v[i],
         IntLit::a(in->_loc,0)));
     _v = vd;
     _in = in;
@@ -428,9 +428,9 @@ namespace MiniZinc {
   Generator::Generator(const std::vector<std::string>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (const std::string& vdi : v)
+    for (unsigned int i=0; i<v.size(); i++)
       vd.push_back(VarDecl::a(in->_loc,
-        TypeInst::a(in->_loc,Type::parint()),ASTString(vdi),
+        TypeInst::a(in->_loc,Type::parint()),ASTString(v[i]),
         IntLit::a(in->_loc,0)));
     _v = vd;
     _in = in;

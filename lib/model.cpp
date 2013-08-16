@@ -19,7 +19,8 @@ namespace MiniZinc {
   }
 
   Model::~Model(void) {
-    for (Item* i : _items) {
+    for (unsigned int j=0; j<_items.size(); j++) {
+      Item* i = _items[j];
       if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
         if (ii->own() && ii->_m) {
           delete ii->_m;

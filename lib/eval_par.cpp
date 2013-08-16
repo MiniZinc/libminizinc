@@ -17,11 +17,12 @@
 
 namespace MiniZinc {
 
+  Expression* eval_arrayaccess(ArrayAccess* e);
   bool eval_bool(Expression* e);
 
   template<class E>
   typename E::Val eval_id(Expression* e) {
-    Id* id = e->cast<Id>();
+    Id* id = e->template cast<Id>();
     if (id->_decl == NULL)
       throw EvalError(e->_loc, "undeclared identifier");
     if (id->_decl->_e == NULL)
@@ -115,14 +116,14 @@ namespace MiniZinc {
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(e);
     case Expression::E_ARRAYLIT:
-      return e->cast<ArrayLit>();
+      return e->template cast<ArrayLit>();
     case Expression::E_ARRAYACCESS:
       throw EvalError(e->_loc,"arrays of arrays not supported");
     case Expression::E_COMP:
-      return eval_array_comp(e->cast<Comprehension>());
+      return eval_array_comp(e->template cast<Comprehension>());
     case Expression::E_ITE:
       {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = e->template cast<ITE>();
         for (unsigned int i=0; i<ite->_e_if_then.size(); i+=2) {
           if (eval_bool(ite->_e_if_then[i]))
             return eval_array_lit(ite->_e_if_then[i+1]);
@@ -131,7 +132,7 @@ namespace MiniZinc {
       }
     case Expression::E_BINOP:
       {
-        BinOp* bo = e->cast<BinOp>();
+        BinOp* bo = e->template cast<BinOp>();
         if (bo->op()==BOT_PLUSPLUS) {
           ArrayLit* al0 = eval_array_lit(bo->_e0);
           ArrayLit* al1 = eval_array_lit(bo->_e1);
@@ -152,13 +153,13 @@ namespace MiniZinc {
       throw EvalError(e->_loc, "unary operator not supported");
     case Expression::E_CALL:
       {
-        Call* ce = e->cast<Call>();
+        Call* ce = e->template cast<Call>();
         if (ce->_decl==NULL)
           throw EvalError(e->_loc, "undeclared function");
         
         if (ce->_decl->_builtins.e)
           return ce->_decl->_builtins.e(ce->_args)
-            ->cast<ArrayLit>();
+            ->template cast<ArrayLit>();
         for (unsigned int i=ce->_decl->_params.size(); i--;) {
           ce->_decl->_params[i]->_e = ce->_args[i];
         }
@@ -170,7 +171,7 @@ namespace MiniZinc {
       }
     case Expression::E_LET:
       {
-        Let* l = e->cast<Let>();
+        Let* l = e->template cast<Let>();
         l->pushbindings();
         ArrayLit* ret = eval_array_lit(l->_in);
         l->popbindings();
@@ -210,7 +211,7 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_SETLIT:
       {
-        SetLit* sl = e->cast<SetLit>();
+        SetLit* sl = e->template cast<SetLit>();
         if (sl->_isv)
           return sl->_isv;
         std::vector<IntVal> vals(sl->_v.size());
@@ -232,7 +233,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYLIT:
       {
-        ArrayLit* al = e->cast<ArrayLit>();
+        ArrayLit* al = e->template cast<ArrayLit>();
         std::vector<IntVal> vals(al->_v.size());
         for (unsigned int i=0; i<al->_v.size(); i++)
           vals[i] = eval_int(al->_v[i]);
@@ -241,7 +242,7 @@ namespace MiniZinc {
       break;
     case Expression::E_COMP:
       {
-        Comprehension* c = e->cast<Comprehension>();
+        Comprehension* c = e->template cast<Comprehension>();
         std::vector<IntVal> a = eval_comp<EvalIntVal>(c);
         return IntSetVal::a(a);
       }
@@ -249,11 +250,11 @@ namespace MiniZinc {
       return eval_id<EvalSetLit>(e)->_isv;
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_intset(eval_arrayaccess(e->cast<ArrayAccess>()));
+      return eval_intset(eval_arrayaccess(e->template cast<ArrayAccess>()));
       break;
     case Expression::E_ITE:
       {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = e->template cast<ITE>();
         for (unsigned int i=0; i<ite->_e_if_then.size(); i+=2) {
           if (eval_bool(ite->_e_if_then[i]))
             return eval_intset(ite->_e_if_then[i+1]);
@@ -263,7 +264,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BINOP:
       {
-        BinOp* bo = e->cast<BinOp>();
+        BinOp* bo = e->template cast<BinOp>();
         if (bo->_e0->_type.isintset() && bo->_e1->_type.isintset()) {
           IntSetVal* v0 = eval_intset(bo->_e0);
           IntSetVal* v1 = eval_intset(bo->_e1);
@@ -297,7 +298,7 @@ namespace MiniZinc {
       break;
     case Expression::E_CALL:
       {
-        Call* ce = e->cast<Call>();
+        Call* ce = e->template cast<Call>();
         if (ce->_decl==NULL)
           throw EvalError(e->_loc, "undeclared function");
         
@@ -316,7 +317,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
-        Let* l = e->cast<Let>();
+        Let* l = e->template cast<Let>();
         l->pushbindings();
         IntSetVal* ret = eval_intset(l->_in);
         l->popbindings();
@@ -332,7 +333,7 @@ namespace MiniZinc {
 
   bool eval_bool(Expression* e) {
     switch (e->eid()) {
-    case Expression::E_BOOLLIT: return e->cast<BoolLit>()->_v;
+    case Expression::E_BOOLLIT: return e->template cast<BoolLit>()->_v;
     case Expression::E_INTLIT: 
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
@@ -351,11 +352,11 @@ namespace MiniZinc {
       return eval_id<EvalBoolLit>(e)->_v;
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_bool(eval_arrayaccess(e->cast<ArrayAccess>()));
+      return eval_bool(eval_arrayaccess(e->template cast<ArrayAccess>()));
       break;
     case Expression::E_ITE:
       {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = e->template cast<ITE>();
         for (unsigned int i=0; i<ite->_e_if_then.size(); i+=2) {
           if (eval_bool(ite->_e_if_then[i]))
             return eval_bool(ite->_e_if_then[i+1]);
@@ -365,7 +366,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BINOP:
       {
-        BinOp* bo = e->cast<BinOp>();
+        BinOp* bo = e->template cast<BinOp>();
         if (bo->_e0->_type.isbool() && bo->_e1->_type.isbool()) {
           bool v0 = eval_bool(bo->_e0);
           bool v1 = eval_bool(bo->_e1);
@@ -449,7 +450,7 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
-        UnOp* uo = e->cast<UnOp>();
+        UnOp* uo = e->template cast<UnOp>();
         bool v0 = eval_bool(uo->_e0);
         switch (uo->op()) {
         case UOT_NOT: return !v0;
@@ -461,7 +462,7 @@ namespace MiniZinc {
       break;
     case Expression::E_CALL:
       {
-        Call* ce = e->cast<Call>();
+        Call* ce = e->template cast<Call>();
         if (ce->_decl==NULL)
           throw EvalError(e->_loc, "undeclared function");
         
@@ -480,7 +481,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
-        Let* l = e->cast<Let>();
+        Let* l = e->template cast<Let>();
         l->pushbindings();
         bool ret = eval_bool(l->_in);
         l->popbindings();
@@ -492,7 +493,7 @@ namespace MiniZinc {
 
   IntVal eval_int(Expression* e) {
     switch (e->eid()) {
-    case Expression::E_INTLIT: return e->cast<IntLit>()->_v;
+    case Expression::E_INTLIT: return e->template cast<IntLit>()->_v;
     case Expression::E_FLOATLIT:
     case Expression::E_BOOLLIT:
     case Expression::E_STRINGLIT:
@@ -510,11 +511,11 @@ namespace MiniZinc {
       return eval_id<EvalIntLit>(e)->_v;
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
+      return eval_int(eval_arrayaccess(e->template cast<ArrayAccess>()));
       break;
     case Expression::E_ITE:
       {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = e->template cast<ITE>();
         for (unsigned int i=0; i<ite->_e_if_then.size(); i+=2) {
           if (eval_bool(ite->_e_if_then[i]))
             return eval_int(ite->_e_if_then[i+1]);
@@ -524,7 +525,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BINOP:
       {
-        BinOp* bo = e->cast<BinOp>();
+        BinOp* bo = e->template cast<BinOp>();
         IntVal v0 = eval_int(bo->_e0);
         IntVal v1 = eval_int(bo->_e1);
         switch (bo->op()) {
@@ -539,7 +540,7 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
-        UnOp* uo = e->cast<UnOp>();
+        UnOp* uo = e->template cast<UnOp>();
         IntVal v0 = eval_int(uo->_e0);
         switch (uo->op()) {
         case UOT_PLUS: return v0;
@@ -550,7 +551,7 @@ namespace MiniZinc {
       break;
     case Expression::E_CALL:
       {
-        Call* ce = e->cast<Call>();
+        Call* ce = e->template cast<Call>();
         if (ce->_decl==NULL)
           throw EvalError(e->_loc, "undeclared function");
         if (ce->_decl->_builtins.i)
@@ -568,7 +569,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
-        Let* l = e->cast<Let>();
+        Let* l = e->template cast<Let>();
         l->pushbindings();
         IntVal ret = eval_int(l->_in);
         l->popbindings();
