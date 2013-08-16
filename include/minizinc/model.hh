@@ -76,38 +76,38 @@ namespace MiniZinc {
   template<class I>
   class ItemIter {
   protected:
-    I& i;
+    I& iter;
   public:
-    ItemIter(I& i0) : i(i0) {}
+    ItemIter(I& iter0) : iter(iter0) {}
     void run(Model* m) {
       std::vector<Model*> models;
       models.push_back(m);
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
-        for (Item* it : cm->_items) {
-          switch (it->iid()) {
+        for (unsigned int i=0; i<cm->_items.size(); i++) {
+          switch (cm->_items[i]->iid()) {
           case Item::II_INC:
-            if (it->cast<IncludeI>()->own())
-              models.push_back(it->cast<IncludeI>()->_m);
+            if (cm->_items[i]->cast<IncludeI>()->own())
+              models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
             break;
           case Item::II_VD:
-            i.vVarDeclI(it->cast<VarDeclI>());
+            iter.vVarDeclI(cm->_items[i]->cast<VarDeclI>());
             break;
           case Item::II_ASN:
-            i.vAssignI(it->cast<AssignI>());
+            iter.vAssignI(cm->_items[i]->cast<AssignI>());
             break;
           case Item::II_CON:
-            i.vConstraintI(it->cast<ConstraintI>());
+            iter.vConstraintI(cm->_items[i]->cast<ConstraintI>());
             break;
           case Item::II_SOL:
-            i.vSolveI(it->cast<SolveI>());
+            iter.vSolveI(cm->_items[i]->cast<SolveI>());
             break;
           case Item::II_OUT:
-            i.vOutputI(it->cast<OutputI>());
+            iter.vOutputI(cm->_items[i]->cast<OutputI>());
             break;
           case Item::II_FUN:
-            i.vFunctionI(it->cast<FunctionI>());
+            iter.vFunctionI(cm->_items[i]->cast<FunctionI>());
             break;      
           }
         }

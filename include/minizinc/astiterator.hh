@@ -29,8 +29,8 @@ namespace MiniZinc {
     
     template<class E>
     void pushVec(std::vector<C>& stack, ASTExprVec<E>& v) {
-      for (Expression* ei : v)
-        stack.push_back(C(ei));
+      for (unsigned int i=0; i<v.size(); i++)
+        stack.push_back(C(v[i]));
     }
     
   public:
@@ -138,8 +138,8 @@ namespace MiniZinc {
           {
             Comprehension* comp = ce->template cast<Comprehension>();
             stack.push_back(C(comp->_where));
-            for (Expression* g : comp->_g) {
-              stack.push_back(C(g));
+            for (unsigned int i=0; i<comp->_g.size(); i++) {
+              stack.push_back(C(comp->_g[i]));
             }
             stack.push_back(C(comp->_e));
           }
@@ -148,8 +148,8 @@ namespace MiniZinc {
           {
             ITE* ite = ce->template cast<ITE>();
             stack.push_back(C(ite->_e_else));
-            for (Expression* it : ite->_e_if_then) {
-              stack.push_back(C(it));
+            for (unsigned int i=0; i<ite->_e_if_then.size(); i++) {
+              stack.push_back(C(ite->_e_if_then[i]));
             }
           }
           break;

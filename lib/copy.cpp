@@ -464,8 +464,8 @@ namespace MiniZinc {
     if (Model* cached = cm.find(m))
       return cached;
     Model* c = new Model;
-    for (Item* i : m->_items)
-      c->addItem(copy(cm,i));
+    for (unsigned int i=0; i<m->_items.size(); i++)
+      c->addItem(copy(cm,m->_items[i]));
     cm.insert(m,c);
     return c;
   }

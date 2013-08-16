@@ -69,7 +69,7 @@ namespace MiniZinc {
     static IntSetVal* a(IntVal m, IntVal n) {
       IntSetVal* r =
         static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
-      new (r) IntSetVal(m,n);
+      new (r) IntSetVal(static_cast<int>(m),static_cast<int>(n));
       return r;
     }
 

@@ -18,12 +18,24 @@ if (HAS_STDLIBLIBCPP)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
+SET(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
+check_cxx_compiler_flag(-Werror HAS_WERROR)
+
+if (HAS_WERROR)
+  SET(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -Werror")
+endif()
+   
+CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; return 0;}" HAS_DECLSPEC_THREAD)
+CHECK_CXX_SOURCE_COMPILES("int main(void) { __thread static int x; return 0;}" HAS_ATTR_THREAD)
+
+SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
+
 # configure a header file to pass some of the CMake settings
 # to the source code
-#configure_file (
-#  "${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in"
-#  "${PROJECT_BINARY_DIR}/config.hh"
-#  )
+configure_file (
+  "${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in"
+  "${PROJECT_BINARY_DIR}/config.hh"
+  )
 
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
