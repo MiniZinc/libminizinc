@@ -1138,7 +1138,8 @@ namespace MiniZinc {
             vd->_ti->_domain = NULL;
             if (ve != NULL) {
               if (Call* vc = ve->dyn_cast<Call>()) {
-                if (vc->_id == "bool_and" && vc->_args.size()==2) {
+                if ( (vc->_id == "bool_and" || vc->_id == "bool_or")
+                     && vc->_args.size()==2) {
                   std::vector<Expression*> args(3);
                   args[0] = vc->_args[0];
                   args[1] = vc->_args[1];
