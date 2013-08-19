@@ -779,6 +779,18 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        switch (uo->op()) {
+        case UOT_NOT:
+          {
+            BinOp* bo = BinOp::a(Location(),uo->_e0,BOT_EQUIV,constants.lf);
+            bo->_type = uo->_type;
+            return flat_exp(env,bctx,bo,r,b);
+          }
+        default: break;
+        }
+      }
       throw InternalError("not supported yet");
       break;
     case Expression::E_CALL:
