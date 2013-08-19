@@ -194,7 +194,6 @@ namespace MiniZinc {
       return constants.lt;
     } else if (vd==constants.f) {
       if (!isfalse(e)) {
-        assert(false);
         throw InternalError("not supported yet");
       }
       return constants.lt;
@@ -220,7 +219,6 @@ namespace MiniZinc {
       case Expression::E_ITE:
       case Expression::E_LET:
       case Expression::E_TI:
-        assert(false && "unevaluated expression");
         throw InternalError("unevaluated expression");
       case Expression::E_ARRAYLIT:
         return e;
@@ -260,7 +258,6 @@ namespace MiniZinc {
         }
         return e;
       } else if (vd->_e != e) {
-        assert(false);
         throw InternalError("not supported yet");
       } else {
         return e;
@@ -537,11 +534,9 @@ namespace MiniZinc {
           } else {
             Id* id = eev.r->cast<Id>();
             if (id->_decl==NULL) {
-              assert(false);
               throw InternalError("undefined identifier");
             }
             if (id->_decl->_e==NULL) {
-              assert(false);
               throw InternalError("array without initialiser not supported");
             }
             al = id->_decl->_e->cast<ArrayLit>();
@@ -570,7 +565,6 @@ namespace MiniZinc {
       {
         Comprehension* c = e->cast<Comprehension>();
         if (c->set()) {
-          assert(false);
           throw InternalError("not supported yet");
         }
         class EvalF {
@@ -743,11 +737,9 @@ namespace MiniZinc {
               } else {
                 Id* id = eev.r->cast<Id>();
                 if (id->_decl==NULL) {
-                  assert(false);
                   throw InternalError("undefined identifier");
                 }
                 if (id->_decl->_e==NULL) {
-                  assert(false);
                   throw InternalError("array without initialiser not supported");
                 }
                 al = id->_decl->_e->cast<ArrayLit>();
@@ -760,11 +752,9 @@ namespace MiniZinc {
               } else {
                 Id* id = eev.r->cast<Id>();
                 if (id->_decl==NULL) {
-                  assert(false);
                   throw InternalError("undefined identifier");
                 }
                 if (id->_decl->_e==NULL) {
-                  assert(false);
                   throw InternalError("array without initialiser not supported");
                 }
                 al = id->_decl->_e->cast<ArrayLit>();
@@ -783,14 +773,12 @@ namespace MiniZinc {
             break;
 
           case BOT_DOTDOT:
-            assert(false);
             throw InternalError("not yet implemented");
           }
         }
       }
       break;
     case Expression::E_UNOP:
-      assert(false);
       throw InternalError("not supported yet");
       break;
     case Expression::E_CALL:
@@ -834,7 +822,6 @@ namespace MiniZinc {
             }
             break;
           default:
-            assert(false);
             throw InternalError("not supported yet");
             break;
           }
@@ -1049,11 +1036,9 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_TI:
-      assert(false);
       throw InternalError("not supported yet");
       break;
     case Expression::E_TIID:
-      assert(false);
       throw InternalError("not supported yet");
       break;
     }
