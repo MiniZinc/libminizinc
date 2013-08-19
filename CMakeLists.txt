@@ -14,12 +14,17 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
-check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
-check_cxx_compiler_flag(-stdlib=libc++ HAS_STDLIBLIBCPP)
-
-if (HAS_STDCPP0X)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
+if (HAS_STDCPP11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+else()
+  check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
+  if (HAS_STDCPP0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  endif()
 endif()
+
+check_cxx_compiler_flag(-stdlib=libc++ HAS_STDLIBLIBCPP)
 
 if (HAS_STDLIBLIBCPP)
   set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
