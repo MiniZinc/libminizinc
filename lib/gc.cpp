@@ -21,9 +21,9 @@ namespace MiniZinc {
   
   GC*&
   GC::gc(void) {
-#ifdef HAS_DECLSPEC_THREAD
+#if defined(HAS_DECLSPEC_THREAD)
     __declspec (thread) static GC* gc = NULL;
-#elif HAS_ATTR_THREAD
+#elif defined(HAS_ATTR_THREAD)
     static __thread GC* gc = NULL;
 #else
 #error Need thread-local storage
