@@ -7,6 +7,13 @@ set (libmzn_VERSION_MINOR 8)
 
 include(CheckCXXCompilerFlag)
 
+SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+check_cxx_compiler_flag(-Werror HAS_WERROR)
+
+if (HAS_WERROR)
+  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif()
+
 check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
 check_cxx_compiler_flag(-stdlib=libc++ HAS_STDLIBLIBCPP)
 
@@ -15,18 +22,20 @@ if (HAS_STDCPP0X)
 endif()
 
 if (HAS_STDLIBLIBCPP)
+  set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
-
-SET(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
-check_cxx_compiler_flag(-Werror HAS_WERROR)
-
-if (HAS_WERROR)
-  SET(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -Werror")
+  check_cxx_source_compiles("int main(void) {return 0;}" LINKS_STDLIBLIBCPP)
+  if (NOT LINKS_STDLIBLIBCPP)
+    set(CMAKE_CXX_FLAGS "${SAFE_CMAKE_CXX_FLAGS}")
+  endif()
 endif()
    
-CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; return 0;}" HAS_DECLSPEC_THREAD)
-CHECK_CXX_SOURCE_COMPILES("int main(void) { __thread static int x; return 0;}" HAS_ATTR_THREAD)
+CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; return 0;}" HAS_ATTR_THREAD)
+
+if (NOT HAS_ATTR_THREAD)
+  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; return 0;}" HAS_DECLSPEC_THREAD)
+endif()
+
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
