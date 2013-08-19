@@ -12,6 +12,7 @@
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
 #include <minizinc/model.hh>
+#include <config.hh>
 
 #include <vector>
 #include <cstring>
@@ -20,7 +21,13 @@ namespace MiniZinc {
   
   GC*&
   GC::gc(void) {
+#ifdef HAS_DECLSPEC_THREAD
+    __declspec (thread) static GC* gc = NULL;
+#elif HAS_ATTR_THREAD
     static __thread GC* gc = NULL;
+#else
+#error Need thread-local storage
+#endif
     return gc;
   }
   
@@ -310,7 +317,8 @@ namespace MiniZinc {
   GC::Heap::mark(void) {
     Model* m = _rootset;
     do {
-      for (Item* i : m->_items) {
+      for (unsigned int j=0; j<m->_items.size(); j++) {
+        Item* i = m->_items[j];
         if (i->_gc_mark==0) {
           i->_gc_mark = 1;
           i->_loc.mark();
@@ -337,13 +345,16 @@ namespace MiniZinc {
             Expression::mark(i->cast<OutputI>()->_e);
             break;
           case Item::II_FUN:
-            i->cast<FunctionI>()->_id.mark();
-            Expression::mark(i->cast<FunctionI>()->_ti);
-            Expression::mark(i->cast<FunctionI>()->_ann);
-            Expression::mark(i->cast<FunctionI>()->_e);
-            i->cast<FunctionI>()->_params.mark();
-            for (Expression* e : i->cast<FunctionI>()->_params) {
-              Expression::mark(e);
+            {
+              FunctionI* fi = i->cast<FunctionI>();
+              fi->_id.mark();
+              Expression::mark(fi->_ti);
+              Expression::mark(fi->_ann);
+              Expression::mark(fi->_e);
+              fi->_params.mark();
+              for (unsigned int k=0; k<fi->_params.size(); k++) {
+                Expression::mark(fi->_params[k]);
+              }
             }
             break;      
           }
