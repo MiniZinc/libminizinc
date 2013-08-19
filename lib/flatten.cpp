@@ -789,10 +789,18 @@ namespace MiniZinc {
             bo->_type = uo->_type;
             return flat_exp(env,bctx,bo,r,b);
           }
+        case UOT_PLUS:
+          return flat_exp(env,bctx,uo->_e0,r,b);
+        case UOT_MINUS:
+          {
+            BinOp* bo = BinOp::a(Location(),IntLit::a(Location(),0),
+                                 BOT_MINUS,uo->_e0);
+            bo->_type = uo->_type;
+            return flat_exp(env,bctx,bo,r,b);
+          }
         default: break;
         }
       }
-      throw InternalError("not supported yet");
       break;
     case Expression::E_CALL:
       {
