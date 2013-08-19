@@ -784,7 +784,8 @@ namespace MiniZinc {
         switch (uo->op()) {
         case UOT_NOT:
           {
-            BinOp* bo = BinOp::a(Location(),uo->_e0,BOT_EQUIV,constants.lf);
+            EE ee = flat_exp(env,-bctx,uo->_e0,NULL,NULL);
+            BinOp* bo = BinOp::a(Location(),ee.r,BOT_EQUIV,constants.lf);
             bo->_type = uo->_type;
             return flat_exp(env,bctx,bo,r,b);
           }
