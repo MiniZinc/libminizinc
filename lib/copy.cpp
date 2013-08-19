@@ -15,13 +15,14 @@ namespace MiniZinc {
 
   class CopyMap {
   protected:
-    std::unordered_map<void*,void*> m;
+    typedef std::unordered_map<void*,void*> MyMap;
+    MyMap m;
   public:
     void insert(Expression* e0, Expression* e1) {
       m.insert(std::pair<void*,void*>(e0,e1));
     }
     Expression* find(Expression* e) {
-      auto it = m.find(e);
+      MyMap::iterator it = m.find(e);
       if (it==m.end()) return NULL;
       return static_cast<Expression*>(it->second);
     }
@@ -29,7 +30,7 @@ namespace MiniZinc {
       m.insert(std::pair<void*,void*>(e0,e1));
     }
     Item* find(Item* e) {
-      auto it = m.find(e);
+      MyMap::iterator it = m.find(e);
       if (it==m.end()) return NULL;
       return static_cast<Item*>(it->second);
     }
@@ -37,7 +38,7 @@ namespace MiniZinc {
       m.insert(std::pair<void*,void*>(e0,e1));
     }
     Model* find(Model* e) {
-      auto it = m.find(e);
+      MyMap::iterator it = m.find(e);
       if (it==m.end()) return NULL;
       return static_cast<Model*>(it->second);
     }
@@ -45,7 +46,7 @@ namespace MiniZinc {
       m.insert(std::pair<void*,void*>(e0.aststr(),e1.aststr()));
     }
     ASTStringO* find(const ASTString& e) {
-      auto it = m.find(e.aststr());
+      MyMap::iterator it = m.find(e.aststr());
       if (it==m.end()) return NULL;
       return static_cast<ASTStringO*>(it->second);
     }
@@ -53,7 +54,7 @@ namespace MiniZinc {
       m.insert(std::pair<void*,void*>(e0,e1));
     }
     IntSetVal* find(IntSetVal* e) {
-      auto it = m.find(e);
+      MyMap::iterator it = m.find(e);
       if (it==m.end()) return NULL;
       return static_cast<IntSetVal*>(it->second);
     }
@@ -63,7 +64,7 @@ namespace MiniZinc {
     }
     template<class T>
     ASTExprVecO<T*>* find(ASTExprVec<T>& e) {
-      auto it = m.find(e.vec());
+      MyMap::iterator it = m.find(e.vec());
       if (it==m.end()) return NULL;
       return static_cast<ASTExprVecO<T*>*>(it->second);
     }
