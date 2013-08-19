@@ -811,7 +811,7 @@ namespace MiniZinc {
           break;
         }
         FunctionI* decl = env.orig->matchFn(c);
-        if (decl==NULL)
+        if (c->_id == "forall" && decl==NULL)
           throw InternalError("forall not defined");
 
         if (decl->_e==NULL && c->_id == "forall" && r==constants.t) {
