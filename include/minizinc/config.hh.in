@@ -1,0 +1,4 @@
+#cmakedefine HAS_DECLSPEC_THREAD
+
+#cmakedefine HAS_ATTR_THREAD
+
