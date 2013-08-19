@@ -201,6 +201,22 @@ namespace MiniZinc {
     return m;
   }
 
+  Expression* b_sum_var(ASTExprVec<Expression>& args) {
+    if (args.size()!=1)
+      throw EvalError(Location(), "sum needs exactly one argument");
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->_v.size() == 0) {
+      return IntLit::a(Location(),0);
+    } else {
+      Expression* r = al->_v[0];
+      for (unsigned int i=1; i<al->_v.size(); i++) {
+        r = BinOp::a(Location(),r,BOT_PLUS,al->_v[i]);
+        r->_type = Type::varint();
+      }
+      return r;
+    }
+  }
+
   IntSetVal* b_index_set(ASTExprVec<Expression>& args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
@@ -447,6 +463,11 @@ namespace MiniZinc {
     rb(m, ASTString("max"), t_intarray, b_max);
     rb(m, ASTString("sum"), t_intarray, b_sum);
 
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      rb(m, ASTString("sum"), t, b_sum_var);
+    }
     {
       std::vector<Type> t_anyarray1(1);
       t_anyarray1[0] = Type::optvartop(1);
