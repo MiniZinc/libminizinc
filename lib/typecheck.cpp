@@ -278,11 +278,13 @@ namespace MiniZinc {
       Type ty; ty._dim = al.dims();
       for (unsigned int i=0; i<al._v.size(); i++) {
         Expression* vi = al._v[i];
-        if (vi->_type.isvar() || vi->_type.isbot())
+        if (vi->_type.isvar())
           ty._ti = Type::TI_VAR;
         if (vi->_type.isopt())
           ty._ot = Type::OT_OPTIONAL;
-        if (ty._bt==Type::BT_UNKNOWN) {
+        if (vi->_type.isbot()) {
+          // do nothing
+        } else if (ty._bt==Type::BT_UNKNOWN) {
           ty._bt = vi->_type._bt;
           assert(ty._bt != Type::BT_UNKNOWN);
           ty._st = vi->_type._st;
@@ -312,7 +314,7 @@ namespace MiniZinc {
         if (aai->_type.isopt()) {
           allpresent = false;
         }
-        if (aai->_type.isbot() || aai->_type.isvar()) {
+        if (aai->_type.isvar()) {
           allpar=false;
         }
       }
@@ -355,8 +357,8 @@ namespace MiniZinc {
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
-      Type& telse = ite._e_else->_type;
-      bool allpar = !(telse.isvar());
+      Type tret = ite._e_else->_type;
+      bool allpar = !(tret.isvar());
       for (unsigned int i=0; i<ite._e_if_then.size(); i+=2) {
         Expression* eif = ite._e_if_then[i];
         Expression* ethen = ite._e_if_then[i+1];
@@ -364,17 +366,20 @@ namespace MiniZinc {
           throw TypeError(eif->_loc,
             "expected par bool conditional expression, got\n  "+
             eif->_type.toString());
-        if (ethen->_type._bt != telse._bt ||
-            ethen->_type._st != telse._st ||
-            ethen->_type._dim != telse._dim) {
+        if (tret.isbot()) {
+          tret._bt = ethen->_type._bt;
+        }
+        if ( (!ethen->_type.isbot() && ethen->_type._bt != tret._bt) ||
+            ethen->_type._st != tret._st ||
+            ethen->_type._dim != tret._dim) {
           throw TypeError(ethen->_loc,
             "type mismatch in branches of conditional. Then-branch has type "+
             ethen->_type.toString()+", but else branch has type "+
-            telse.toString());
+            tret.toString());
         }
         if (ethen->_type.isvar()) allpar=false;
       }
-      ite._type = telse;
+      ite._type = tret;
       if (!allpar) ite._type._ti = Type::TI_VAR;
     }
     /// Visit binary operator
