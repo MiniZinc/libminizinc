@@ -324,7 +324,7 @@ namespace MiniZinc {
     case BOT_MINUS:
       return builtin+"minus";
     case BOT_MULT:
-      return builtin+"mult";
+      return builtin+"times";
     case BOT_DIV:
       return builtin+"div";
     case BOT_IDIV:
