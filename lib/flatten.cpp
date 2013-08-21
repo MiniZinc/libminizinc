@@ -153,12 +153,11 @@ namespace MiniZinc {
   Env::rootSet(void) {
     std::vector<Expression*> r;
     for (Map::iterator it = map.begin(); it != map.end(); ++it) {
-      if (it->first->eid() == Expression::E_ID)
-        r.push_back(it->first);
-      // if (x.second.r)
-      //   r.push_back(x.second.r);
-      // if (x.second.b)
-      //   r.push_back(x.second.b);
+      r.push_back(it->first);
+      if (it->second.r)
+        r.push_back(it->second.r);
+      if (it->second.b)
+        r.push_back(it->second.b);
     }
     return new EnvIter(r);
   }
