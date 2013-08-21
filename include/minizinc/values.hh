@@ -67,10 +67,14 @@ namespace MiniZinc {
     
     /// Allocate set \f$\{m,n\}\f$ from context
     static IntSetVal* a(IntVal m, IntVal n) {
-      IntSetVal* r =
-        static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
-      new (r) IntSetVal(static_cast<int>(m),static_cast<int>(n));
-      return r;
+      if (m>n) {
+        return a();
+      } else {
+        IntSetVal* r =
+          static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
+        new (r) IntSetVal(static_cast<int>(m),static_cast<int>(n));
+        return r;
+      }
     }
 
     template<class I>
