@@ -447,6 +447,14 @@ namespace MiniZinc {
     }
   }
 
+  IntVal b_card(ASTExprVec<Expression>& args) {
+    if (args.size()!=1)
+      throw EvalError(Location(), "card needs exactly one argument");
+    IntSetVal* isv = eval_intset(args[0]);
+    IntSetRanges isr(isv);
+    return Ranges::size(isr);
+  }
+
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -676,6 +684,11 @@ namespace MiniZinc {
       t[0] = Type::varint(-1);
       t[0]._ot = Type::OT_OPTIONAL;
       rb(m, ASTString("ub_array"), t, b_array_ub_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(m, ASTString("card"), t, b_card);
     }
   }
   
