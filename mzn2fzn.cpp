@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
   bool outputFundecls = false;
   bool verbose = false;
   bool allSolutions = false;
+  bool newfzn = false;
   bool free = false;
   int nbThreads = 1;
   if (argc < 2)
@@ -64,6 +65,8 @@ int main(int argc, char** argv) {
       eval = false;
     } else if (string(argv[i])==string("--verbose")) {
       verbose = true;
+    } else if (string(argv[i])==string("--newfzn")) {
+      newfzn = true;
     } else if (string(argv[i])==string("-a")) {
       allSolutions = true;
     } else if (string(argv[i])==string("-f")) {
@@ -96,7 +99,8 @@ int main(int argc, char** argv) {
           MiniZinc::registerBuiltins(m);
           Model* flat = flatten(m);
           // optimize(flat);
-          oldflatzinc(flat);
+          if (!newfzn)
+            oldflatzinc(flat);
           Printer p;
           p.print(flat,std::cout);
         }
