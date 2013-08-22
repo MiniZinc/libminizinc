@@ -58,7 +58,6 @@ namespace MiniZinc {
   public:
     VarOccurrences& vo;
     Item* ci;
-    static const bool visitAnnotation = true;
     CollectOccurrencesE(VarOccurrences& vo0, Item* ci0)
       : vo(vo0), ci(ci0) {}
     void vId(const Id& id) {

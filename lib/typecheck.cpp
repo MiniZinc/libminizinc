@@ -239,9 +239,11 @@ namespace MiniZinc {
   template<bool ignoreVarDecl>
   class Typer {
   public:
-    static const bool visitAnnotation = ignoreVarDecl;
     Model* _model;
     Typer(Model* model) : _model(model) {}
+    bool enter(Expression* e) {
+      return ignoreVarDecl || (!e->isa<Annotation>());
+    }
     /// Visit integer literal
     void vIntLit(const IntLit&) {}
     /// Visit floating point literal

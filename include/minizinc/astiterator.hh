@@ -41,7 +41,8 @@ namespace MiniZinc {
   template<class T> void
   BottomUpIterator<T>::run(Expression* root) {
     std::vector<C> stack;
-    stack.push_back(C(root));
+    if (_t.enter(root))
+      stack.push_back(C(root));
     while (!stack.empty()) {
       C& c = stack.back();
       if (c._e==NULL) {
@@ -112,73 +113,77 @@ namespace MiniZinc {
       } else {
         c._done=true;
         Expression* ce = c._e;
-        if (_t.visitAnnotation && ce->_ann) {
+        if (ce->_ann && _t.enter(ce->_ann)) {
           stack.push_back(C(ce->_ann));
         }
-        switch (ce->eid()) {
-        case Expression::E_INTLIT:
-        case Expression::E_FLOATLIT:
-        case Expression::E_BOOLLIT:
-        case Expression::E_STRINGLIT:
-        case Expression::E_ANON:
-        case Expression::E_ID:
-        case Expression::E_TIID:
-          break;
-        case Expression::E_SETLIT:
-          pushVec(stack, ce->template cast<SetLit>()->_v);
-          break;
-        case Expression::E_ARRAYLIT:
-          pushVec(stack, ce->template cast<ArrayLit>()->_v);
-          break;
-        case Expression::E_ARRAYACCESS:
-          pushVec(stack, ce->template cast<ArrayAccess>()->_idx);
-          stack.push_back(C(ce->template cast<ArrayAccess>()->_v));
-          break;
-        case Expression::E_COMP:
-          {
-            Comprehension* comp = ce->template cast<Comprehension>();
-            stack.push_back(C(comp->_where));
-            for (unsigned int i=0; i<comp->_g.size(); i++) {
-              stack.push_back(C(comp->_g[i]));
+        if (_t.enter(ce)) {
+          switch (ce->eid()) {
+          case Expression::E_INTLIT:
+          case Expression::E_FLOATLIT:
+          case Expression::E_BOOLLIT:
+          case Expression::E_STRINGLIT:
+          case Expression::E_ANON:
+          case Expression::E_ID:
+          case Expression::E_TIID:
+            break;
+          case Expression::E_SETLIT:
+            pushVec(stack, ce->template cast<SetLit>()->_v);
+            break;
+          case Expression::E_ARRAYLIT:
+            pushVec(stack, ce->template cast<ArrayLit>()->_v);
+            break;
+          case Expression::E_ARRAYACCESS:
+            pushVec(stack, ce->template cast<ArrayAccess>()->_idx);
+            stack.push_back(C(ce->template cast<ArrayAccess>()->_v));
+            break;
+          case Expression::E_COMP:
+            {
+              Comprehension* comp = ce->template cast<Comprehension>();
+              stack.push_back(C(comp->_where));
+              for (unsigned int i=0; i<comp->_g.size(); i++) {
+                stack.push_back(C(comp->_g[i]));
+              }
+              stack.push_back(C(comp->_e));
             }
-            stack.push_back(C(comp->_e));
-          }
-          break;
-        case Expression::E_ITE:
-          {
-            ITE* ite = ce->template cast<ITE>();
-            stack.push_back(C(ite->_e_else));
-            for (unsigned int i=0; i<ite->_e_if_then.size(); i++) {
-              stack.push_back(C(ite->_e_if_then[i]));
+            break;
+          case Expression::E_ITE:
+            {
+              ITE* ite = ce->template cast<ITE>();
+              stack.push_back(C(ite->_e_else));
+              for (unsigned int i=0; i<ite->_e_if_then.size(); i++) {
+                stack.push_back(C(ite->_e_if_then[i]));
+              }
             }
+            break;
+          case Expression::E_BINOP:
+            stack.push_back(C(ce->template cast<BinOp>()->_e1));
+            stack.push_back(C(ce->template cast<BinOp>()->_e0));
+            break;
+          case Expression::E_UNOP:
+            stack.push_back(C(ce->template cast<UnOp>()->_e0));
+            break;
+          case Expression::E_CALL:
+            pushVec(stack, ce->template cast<Call>()->_args);
+            break;
+          case Expression::E_VARDECL:
+            stack.push_back(C(ce->template cast<VarDecl>()->_e));
+            stack.push_back(C(ce->template cast<VarDecl>()->_ti));
+            break;
+          case Expression::E_LET:
+            stack.push_back(C(ce->template cast<Let>()->_in));
+            pushVec(stack, ce->template cast<Let>()->_let);
+            break;
+          case Expression::E_ANN:
+            stack.push_back(C(ce->template cast<Annotation>()->_a));
+            stack.push_back(C(ce->template cast<Annotation>()->_e));
+            break;
+          case Expression::E_TI:
+            stack.push_back(C(ce->template cast<TypeInst>()->_domain));
+            pushVec(stack,ce->template cast<TypeInst>()->_ranges);
+            break;
           }
-          break;
-        case Expression::E_BINOP:
-          stack.push_back(C(ce->template cast<BinOp>()->_e1));
-          stack.push_back(C(ce->template cast<BinOp>()->_e0));
-          break;
-        case Expression::E_UNOP:
-          stack.push_back(C(ce->template cast<UnOp>()->_e0));
-          break;
-        case Expression::E_CALL:
-          pushVec(stack, ce->template cast<Call>()->_args);
-          break;
-        case Expression::E_VARDECL:
-          stack.push_back(C(ce->template cast<VarDecl>()->_e));
-          stack.push_back(C(ce->template cast<VarDecl>()->_ti));
-          break;
-        case Expression::E_LET:
-          stack.push_back(C(ce->template cast<Let>()->_in));
-          pushVec(stack, ce->template cast<Let>()->_let);
-          break;
-        case Expression::E_ANN:
-          stack.push_back(C(ce->template cast<Annotation>()->_a));
-          stack.push_back(C(ce->template cast<Annotation>()->_e));
-          break;
-        case Expression::E_TI:
-          stack.push_back(C(ce->template cast<TypeInst>()->_domain));
-          pushVec(stack,ce->template cast<TypeInst>()->_ranges);
-          break;
+        } else {
+          c._e = NULL;
         }
       }
     }

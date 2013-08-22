@@ -919,6 +919,8 @@ namespace MiniZinc {
     void vTypeInst(const TypeInst&) {}
     /// Visit TIId
     void vTIId(const TIId&) {}
+    /// Determine whether to enter node
+    bool enter(Expression* e) { return true; }
   };
 
 }
