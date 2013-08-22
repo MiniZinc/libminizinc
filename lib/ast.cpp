@@ -940,10 +940,10 @@ namespace MiniZinc {
             Type its_par = it->second;
             its_par._ti = Type::TI_PAR;
             its_par._ot = Type::OT_PRESENT;
-            if (tiit_par._bt==Type::BT_TOP) {
+            if (tiit_par._bt==Type::BT_TOP || tiit_par._bt==Type::BT_BOT) {
               tiit_par._bt = its_par._bt;
             }
-            if (its_par._bt==Type::BT_TOP) {
+            if (its_par._bt==Type::BT_TOP || its_par._bt==Type::BT_BOT) {
               its_par._bt = tiit_par._bt;
             }
             if (tiit_par != its_par) {
