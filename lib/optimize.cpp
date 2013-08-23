@@ -61,8 +61,8 @@ namespace MiniZinc {
     CollectOccurrencesE(VarOccurrences& vo0, Item* ci0)
       : vo(vo0), ci(ci0) {}
     void vId(const Id& id) {
-      assert(id._decl);
-      vo.add(id._decl,ci);
+      if(id._decl)
+        vo.add(id._decl,ci);
     }
     
   };
@@ -86,6 +86,7 @@ namespace MiniZinc {
     VarOccurrences& vo;
     AnnotateVardecl(VarOccurrences& vo0) : vo(vo0) {}
     void vVarDeclI(VarDeclI* v) {
+      GCLock _gcl;
       std::vector<Expression*> args(1);
       args[0] = IntLit::a(Location(),vo.occurrences(v->_e));
       Call* c = Call::a(Location(),"occ",args);
