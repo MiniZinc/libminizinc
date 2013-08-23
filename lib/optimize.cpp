@@ -94,12 +94,42 @@ namespace MiniZinc {
     }
   };
 
+  class RemoveUnused : public ItemVisitor {
+  public:
+    VarOccurrences& vo;
+    RemoveUnused(VarOccurrences& vo0) : vo(vo0) {}
+    void vVarDeclI(VarDeclI* v) {
+      
+    }
+  };
+
+  void removeUnused(Model* m, VarOccurrences& vo) {
+    std::vector<Model*> models;
+    models.push_back(m);
+    while (!models.empty()) {
+      Model* cm = models.back();
+      models.pop_back();
+      unsigned int ci = 0;
+      for (unsigned int i=0; i<cm->_items.size(); i++) {
+        VarDeclI* vdi = cm->_items[i]->dyn_cast<VarDeclI>();
+        if (   vdi==NULL
+            // || ( !vdi->_e->introduced() )
+            || (vo.occurrences(vdi->_e)!=0)
+            || (vdi->_e->_ti->_domain != NULL))
+          cm->_items[ci++] = cm->_items[i];
+      }
+      cm->_items.resize(ci);
+    }
+    
+  }
+
   void optimize(Model* m) {
     VarOccurrences vo;
     CollectOccurrencesI co(vo);
     iterItems<CollectOccurrencesI>(co,m);
-    AnnotateVardecl avd(vo);
-    iterItems<AnnotateVardecl>(avd,m);
+    // AnnotateVardecl avd(vo);
+    // iterItems<AnnotateVardecl>(avd,m);
+    removeUnused(m,vo);
   }
 
 }
