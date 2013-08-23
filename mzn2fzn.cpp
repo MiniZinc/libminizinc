@@ -18,9 +18,8 @@
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
 
-#include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/copy.hh>
+#include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 
 using namespace MiniZinc;
@@ -31,15 +30,16 @@ int main(int argc, char** argv) {
   string filename;
   vector<string> datafiles;
   vector<string> includePaths;  
-  bool ignoreStdlib = false;
-  bool typecheck = true;
-  bool eval = true;
-  bool output = true;
-  bool outputFundecls = false;
-  bool verbose = false;
-  bool allSolutions = false;
-  bool newfzn = false;
-  bool free = false;
+  bool flag_ignoreStdlib = false;
+  bool flag_typecheck = true;
+  bool flag_eval = true;
+  bool flag_output = true;
+  bool flag_outputFundecls = false;
+  bool flag_verbose = false;
+  bool flag_allSolutions = false;
+  bool flag_newfzn = false;
+  bool flag_free_search = false;
+  bool flag_optimize = true;
   int nbThreads = 1;
   if (argc < 2)
     goto error;
@@ -54,23 +54,25 @@ int main(int argc, char** argv) {
       }
       includePaths.push_back(argv[i]+string("/"));
     } else if (string(argv[i])==string("--ignore-stdlib")) {
-      ignoreStdlib = true;
+      flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-output")) {
-      output = false;
+      flag_output = false;
     } else if (string(argv[i])==string("--no-fundecl-output")) {
-      outputFundecls = false;
+      flag_outputFundecls = false;
     } else if (string(argv[i])==string("--no-typecheck")) {
-      typecheck = false; eval=false;
+      flag_typecheck = false; flag_eval=false;
     } else if (string(argv[i])==string("--no-eval")) {
-      eval = false;
+      flag_eval = false;
     } else if (string(argv[i])==string("--verbose")) {
-      verbose = true;
+      flag_verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
-      newfzn = true;
+      flag_newfzn = true;
+    } else if (string(argv[i])==string("--no-optimize")) {
+      flag_optimize = false;
     } else if (string(argv[i])==string("-a")) {
-      allSolutions = true;
+      flag_allSolutions = true;
     } else if (string(argv[i])==string("-f")) {
-      free = true;
+      flag_free_search = true;
     } else if (string(argv[i])==string("-p")) {
       i++;
       nbThreads = atoi(argv[i]);
@@ -89,17 +91,18 @@ int main(int argc, char** argv) {
     datafiles.push_back(argv[i++]);
 
   {
-    if (Model* m = parse(filename, datafiles, includePaths, ignoreStdlib, 
+    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
                          std::cerr)) {
       try {
-        if (verbose)
+        if (flag_verbose)
           std::cerr << "parsing " << filename << std::endl;
-        if (typecheck) {
+        if (flag_typecheck) {
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
           Model* flat = flatten(m);
-          // optimize(flat);
-          if (!newfzn)
+          if (flag_optimize)
+            optimize(flat);
+          if (!flag_newfzn)
             oldflatzinc(flat);
           Printer p;
           p.print(flat,std::cout);
