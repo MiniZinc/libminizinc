@@ -79,6 +79,10 @@ namespace MiniZinc {
       CollectOccurrencesE ce(vo,ci);
       BottomUpIterator<CollectOccurrencesE>(ce).run(ci->_e);
     }
+    void vSolveI(SolveI* si) {
+      CollectOccurrencesE ce(vo,si);
+      BottomUpIterator<CollectOccurrencesE>(ce).run(si->_e);
+    }
   };
 
   class AnnotateVardecl : public ItemVisitor {
