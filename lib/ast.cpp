@@ -527,72 +527,123 @@ namespace MiniZinc {
   }
 
   namespace {
-    class OpToString {
+    class RSIter : public ASTRootSetIter {
     public:
-      ASTString sBOT_PLUS;
-      ASTString sBOT_MINUS;
-      ASTString sBOT_MULT;
-      ASTString sBOT_DIV;
-      ASTString sBOT_IDIV;
-      ASTString sBOT_MOD;
-      ASTString sBOT_LE;
-      ASTString sBOT_LQ;
-      ASTString sBOT_GR;
-      ASTString sBOT_GQ;
-      ASTString sBOT_EQ;
-      ASTString sBOT_NQ;
-      ASTString sBOT_IN;
-      ASTString sBOT_SUBSET;
-      ASTString sBOT_SUPERSET;
-      ASTString sBOT_UNION;
-      ASTString sBOT_DIFF;
-      ASTString sBOT_SYMDIFF;
-      ASTString sBOT_INTERSECT;
-      ASTString sBOT_PLUSPLUS;
-      ASTString sBOT_EQUIV;
-      ASTString sBOT_IMPL;
-      ASTString sBOT_RIMPL;
-      ASTString sBOT_OR;
-      ASTString sBOT_AND;
-      ASTString sBOT_XOR;
-      ASTString sBOT_DOTDOT;
-      ASTString sBOT_NOT;
+      std::vector<Expression*> r;
+      RSIter(std::vector<Expression*>& r0) : r(r0) {}
+      virtual Expression** begin(void) {
+        return &r[0];
+      }
+      virtual Expression** end(void) {
+        return &r[r.size()-1]+1;
+      }
+      virtual ~RSIter(void) {}
+    };
+    
+    class OpToString : public ASTRootSet {
+    public:
+      Id* sBOT_PLUS;
+      Id* sBOT_MINUS;
+      Id* sBOT_MULT;
+      Id* sBOT_DIV;
+      Id* sBOT_IDIV;
+      Id* sBOT_MOD;
+      Id* sBOT_LE;
+      Id* sBOT_LQ;
+      Id* sBOT_GR;
+      Id* sBOT_GQ;
+      Id* sBOT_EQ;
+      Id* sBOT_NQ;
+      Id* sBOT_IN;
+      Id* sBOT_SUBSET;
+      Id* sBOT_SUPERSET;
+      Id* sBOT_UNION;
+      Id* sBOT_DIFF;
+      Id* sBOT_SYMDIFF;
+      Id* sBOT_INTERSECT;
+      Id* sBOT_PLUSPLUS;
+      Id* sBOT_EQUIV;
+      Id* sBOT_IMPL;
+      Id* sBOT_RIMPL;
+      Id* sBOT_OR;
+      Id* sBOT_AND;
+      Id* sBOT_XOR;
+      Id* sBOT_DOTDOT;
+      Id* sBOT_NOT;
       
       OpToString(void) {
         GCLock lock;
-        sBOT_PLUS = ASTString("@+");
-        sBOT_MINUS = ASTString("@-");
-        sBOT_MULT = ASTString("@*");
-        sBOT_DIV = ASTString("@/");
-        sBOT_IDIV = ASTString("@div");
-        sBOT_MOD = ASTString("@mod");
-        sBOT_LE = ASTString("@<");
-        sBOT_LQ = ASTString("@<=");
-        sBOT_GR = ASTString("@>");
-        sBOT_GQ = ASTString("@>=");
-        sBOT_EQ = ASTString("@=");
-        sBOT_NQ = ASTString("@!=");
-        sBOT_IN = ASTString("@in");
-        sBOT_SUBSET = ASTString("@subset");
-        sBOT_SUPERSET = ASTString("@superset");
-        sBOT_UNION = ASTString("@union");
-        sBOT_DIFF = ASTString("@diff");
-        sBOT_SYMDIFF = ASTString("@symdiff");
-        sBOT_INTERSECT = ASTString("@intersect");
-        sBOT_PLUSPLUS = ASTString("@++");
-        sBOT_EQUIV = ASTString("@<->");
-        sBOT_IMPL = ASTString("@->");
-        sBOT_RIMPL = ASTString("@<-");
-        sBOT_OR = ASTString("@\\/");
-        sBOT_AND = ASTString("@/\\");
-        sBOT_XOR = ASTString("@xor");
-        sBOT_DOTDOT = ASTString("@..");
-        sBOT_NOT = ASTString("@not");
+        GC::addRootSet(this);
+        sBOT_PLUS = Id::a(Location(),"@+",NULL);
+        sBOT_MINUS = Id::a(Location(),"@-",NULL);
+        sBOT_MULT = Id::a(Location(),"@*",NULL);
+        sBOT_DIV = Id::a(Location(),"@/",NULL);
+        sBOT_IDIV = Id::a(Location(),"@div",NULL);
+        sBOT_MOD = Id::a(Location(),"@mod",NULL);
+        sBOT_LE = Id::a(Location(),"@<",NULL);
+        sBOT_LQ = Id::a(Location(),"@<=",NULL);
+        sBOT_GR = Id::a(Location(),"@>",NULL);
+        sBOT_GQ = Id::a(Location(),"@>=",NULL);
+        sBOT_EQ = Id::a(Location(),"@=",NULL);
+        sBOT_NQ = Id::a(Location(),"@!=",NULL);
+        sBOT_IN = Id::a(Location(),"@in",NULL);
+        sBOT_SUBSET = Id::a(Location(),"@subset",NULL);
+        sBOT_SUPERSET = Id::a(Location(),"@superset",NULL);
+        sBOT_UNION = Id::a(Location(),"@union",NULL);
+        sBOT_DIFF = Id::a(Location(),"@diff",NULL);
+        sBOT_SYMDIFF = Id::a(Location(),"@symdiff",NULL);
+        sBOT_INTERSECT = Id::a(Location(),"@intersect",NULL);
+        sBOT_PLUSPLUS = Id::a(Location(),"@++",NULL);
+        sBOT_EQUIV = Id::a(Location(),"@<->",NULL);
+        sBOT_IMPL = Id::a(Location(),"@->",NULL);
+        sBOT_RIMPL = Id::a(Location(),"@<-",NULL);
+        sBOT_OR = Id::a(Location(),"@\\/",NULL);
+        sBOT_AND = Id::a(Location(),"@/\\",NULL);
+        sBOT_XOR = Id::a(Location(),"@xor",NULL);
+        sBOT_DOTDOT = Id::a(Location(),"@..",NULL);
+        sBOT_NOT = Id::a(Location(),"@not",NULL);
+      }
+      
+      ~OpToString(void) {
+        GC::removeRootSet(this);
       }
       
       static OpToString& o(void) {
         static OpToString _o;
         return _o;
+      }
+      
+      virtual ASTRootSetIter* rootSet(void) {
+        std::vector<Expression*> rs;
+        rs.push_back(sBOT_PLUS);
+        rs.push_back(sBOT_MINUS);
+        rs.push_back(sBOT_MULT);
+        rs.push_back(sBOT_DIV);
+        rs.push_back(sBOT_IDIV);
+        rs.push_back(sBOT_MOD);
+        rs.push_back(sBOT_LE);
+        rs.push_back(sBOT_LQ);
+        rs.push_back(sBOT_GR);
+        rs.push_back(sBOT_GQ);
+        rs.push_back(sBOT_EQ);
+        rs.push_back(sBOT_NQ);
+        rs.push_back(sBOT_IN);
+        rs.push_back(sBOT_SUBSET);
+        rs.push_back(sBOT_SUPERSET);
+        rs.push_back(sBOT_UNION);
+        rs.push_back(sBOT_DIFF);
+        rs.push_back(sBOT_SYMDIFF);
+        rs.push_back(sBOT_INTERSECT);
+        rs.push_back(sBOT_PLUSPLUS);
+        rs.push_back(sBOT_EQUIV);
+        rs.push_back(sBOT_IMPL);
+        rs.push_back(sBOT_RIMPL);
+        rs.push_back(sBOT_OR);
+        rs.push_back(sBOT_AND);
+        rs.push_back(sBOT_XOR);
+        rs.push_back(sBOT_DOTDOT);
+        rs.push_back(sBOT_NOT);
+        return new RSIter(rs);
       }
     };
   }
@@ -600,33 +651,33 @@ namespace MiniZinc {
   ASTString
   BinOp::opToString(void) const {
     switch (op()) {
-    case BOT_PLUS: return OpToString::o().sBOT_PLUS;
-    case BOT_MINUS: return OpToString::o().sBOT_MINUS;
-    case BOT_MULT: return OpToString::o().sBOT_MULT;
-    case BOT_DIV: return OpToString::o().sBOT_DIV;
-    case BOT_IDIV: return OpToString::o().sBOT_IDIV;
-    case BOT_MOD: return OpToString::o().sBOT_MOD;
-    case BOT_LE: return OpToString::o().sBOT_LE;
-    case BOT_LQ: return OpToString::o().sBOT_LQ;
-    case BOT_GR: return OpToString::o().sBOT_GR;
-    case BOT_GQ: return OpToString::o().sBOT_GQ;
-    case BOT_EQ: return OpToString::o().sBOT_EQ;
-    case BOT_NQ: return OpToString::o().sBOT_NQ;
-    case BOT_IN: return OpToString::o().sBOT_IN;
-    case BOT_SUBSET: return OpToString::o().sBOT_SUBSET;
-    case BOT_SUPERSET: return OpToString::o().sBOT_SUPERSET;
-    case BOT_UNION: return OpToString::o().sBOT_UNION;
-    case BOT_DIFF: return OpToString::o().sBOT_DIFF;
-    case BOT_SYMDIFF: return OpToString::o().sBOT_SYMDIFF;
-    case BOT_INTERSECT: return OpToString::o().sBOT_INTERSECT;
-    case BOT_PLUSPLUS: return OpToString::o().sBOT_PLUSPLUS;
-    case BOT_EQUIV: return OpToString::o().sBOT_EQUIV;
-    case BOT_IMPL: return OpToString::o().sBOT_IMPL;
-    case BOT_RIMPL: return OpToString::o().sBOT_RIMPL;
-    case BOT_OR: return OpToString::o().sBOT_OR;
-    case BOT_AND: return OpToString::o().sBOT_AND;
-    case BOT_XOR: return OpToString::o().sBOT_XOR;
-    case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT;
+    case BOT_PLUS: return OpToString::o().sBOT_PLUS->_v;
+    case BOT_MINUS: return OpToString::o().sBOT_MINUS->_v;
+    case BOT_MULT: return OpToString::o().sBOT_MULT->_v;
+    case BOT_DIV: return OpToString::o().sBOT_DIV->_v;
+    case BOT_IDIV: return OpToString::o().sBOT_IDIV->_v;
+    case BOT_MOD: return OpToString::o().sBOT_MOD->_v;
+    case BOT_LE: return OpToString::o().sBOT_LE->_v;
+    case BOT_LQ: return OpToString::o().sBOT_LQ->_v;
+    case BOT_GR: return OpToString::o().sBOT_GR->_v;
+    case BOT_GQ: return OpToString::o().sBOT_GQ->_v;
+    case BOT_EQ: return OpToString::o().sBOT_EQ->_v;
+    case BOT_NQ: return OpToString::o().sBOT_NQ->_v;
+    case BOT_IN: return OpToString::o().sBOT_IN->_v;
+    case BOT_SUBSET: return OpToString::o().sBOT_SUBSET->_v;
+    case BOT_SUPERSET: return OpToString::o().sBOT_SUPERSET->_v;
+    case BOT_UNION: return OpToString::o().sBOT_UNION->_v;
+    case BOT_DIFF: return OpToString::o().sBOT_DIFF->_v;
+    case BOT_SYMDIFF: return OpToString::o().sBOT_SYMDIFF->_v;
+    case BOT_INTERSECT: return OpToString::o().sBOT_INTERSECT->_v;
+    case BOT_PLUSPLUS: return OpToString::o().sBOT_PLUSPLUS->_v;
+    case BOT_EQUIV: return OpToString::o().sBOT_EQUIV->_v;
+    case BOT_IMPL: return OpToString::o().sBOT_IMPL->_v;
+    case BOT_RIMPL: return OpToString::o().sBOT_RIMPL->_v;
+    case BOT_OR: return OpToString::o().sBOT_OR->_v;
+    case BOT_AND: return OpToString::o().sBOT_AND->_v;
+    case BOT_XOR: return OpToString::o().sBOT_XOR->_v;
+    case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT->_v;
     default: assert(false);
     }
   }
@@ -652,9 +703,9 @@ namespace MiniZinc {
   ASTString
   UnOp::opToString(void) const {
     switch (op()) {
-    case UOT_PLUS: return OpToString::o().sBOT_PLUS;
-    case UOT_MINUS: return OpToString::o().sBOT_MINUS;
-    case UOT_NOT: return OpToString::o().sBOT_NOT;
+    case UOT_PLUS: return OpToString::o().sBOT_PLUS->_v;
+    case UOT_MINUS: return OpToString::o().sBOT_MINUS->_v;
+    case UOT_NOT: return OpToString::o().sBOT_NOT->_v;
     default: assert(false);
     }
   }
