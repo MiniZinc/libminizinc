@@ -98,15 +98,6 @@ namespace MiniZinc {
     }
   };
 
-  class RemoveUnused : public ItemVisitor {
-  public:
-    VarOccurrences& vo;
-    RemoveUnused(VarOccurrences& vo0) : vo(vo0) {}
-    void vVarDeclI(VarDeclI* v) {
-      
-    }
-  };
-
   void removeUnused(Model* m, VarOccurrences& vo) {
     std::vector<Model*> models;
     models.push_back(m);
