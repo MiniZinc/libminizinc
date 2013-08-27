@@ -127,6 +127,9 @@ namespace MiniZinc {
         s = std::max(s,pageSize);
       HeapPage* newPage =
         static_cast<HeapPage*>(::malloc(sizeof(HeapPage)+s-1));
+#ifndef NDEBUG
+        memset(newPage,255,sizeof(HeapPage)+s-1);
+#endif
       _alloced_mem += s;
       _free_mem += s;
       if (exact && _page) {
@@ -233,17 +236,24 @@ namespace MiniZinc {
         sizeof(OutputI),       // II_OUT
         sizeof(FunctionI)      // II_FUN
       };
+      size_t ns;
       switch (n->_id) {
       case ASTNode::NID_FL:
-        return static_cast<FreeListNode*>(n)->size;
+        ns = static_cast<FreeListNode*>(n)->size;
+        break;
       case ASTNode::NID_CHUNK:
-        return static_cast<ASTChunk*>(n)->memsize();
+        ns = static_cast<ASTChunk*>(n)->memsize();
+        break;
       case ASTNode::NID_VEC:
-        return static_cast<ASTVec*>(n)->memsize();
+        ns = static_cast<ASTVec*>(n)->memsize();
+        break;
       default:
         assert(n->_id <= Item::II_END);
-        return _nodesize[n->_id];
+        ns = _nodesize[n->_id];
+        break;
       }
+      ns += ((8 - (ns & 7)) & 7);
+      return ns;
     }
 
 
