@@ -34,6 +34,14 @@ namespace MiniZinc {
       }
     }
     
+    /// Remove \a i from map and return new number of occurrences
+    int remove(VarDecl* v, Item* i) {
+      ExpressionMap<Items>::iterator vi = _m.find(v);
+      assert(vi!=_m.end());
+      vi->second.erase(i);
+      return vi->second.size();
+    }
+    
     Items::iterator v_begin(VarDecl* v) {
       ExpressionMap<Items>::iterator vi = _m.find(v);
       if (vi==_m.end()) return empty.end();
@@ -82,6 +90,7 @@ namespace MiniZinc {
     void vSolveI(SolveI* si) {
       CollectOccurrencesE ce(vo,si);
       BottomUpIterator<CollectOccurrencesE>(ce).run(si->_e);
+      BottomUpIterator<CollectOccurrencesE>(ce).run(si->_ann);
     }
   };
 
@@ -98,24 +107,63 @@ namespace MiniZinc {
     }
   };
 
-  void removeUnused(Model* m, VarOccurrences& vo) {
-    std::vector<Model*> models;
-    models.push_back(m);
-    while (!models.empty()) {
-      Model* cm = models.back();
-      models.pop_back();
-      unsigned int ci = 0;
-      for (unsigned int i=0; i<cm->_items.size(); i++) {
-        VarDeclI* vdi = cm->_items[i]->dyn_cast<VarDeclI>();
-        if (   vdi==NULL
-            // || ( !vdi->_e->introduced() )
-            || (vo.occurrences(vdi->_e)!=0)
-            || (vdi->_e->_e && vdi->_e->_ti->_domain != NULL))
-          cm->_items[ci++] = cm->_items[i];
+  class CollectDecls : public EVisitor {
+  public:
+    VarOccurrences& vo;
+    std::vector<VarDecl*>& vd;
+    VarDeclI* vdi;
+    CollectDecls(VarOccurrences& vo0,
+                 std::vector<VarDecl*>& vd0,
+                 VarDeclI* vdi0)
+      : vo(vo0), vd(vd0), vdi(vdi0) {}
+    void vId(Id& id) {
+      if(id._decl) {
+        if (vo.remove(id._decl,vdi) == 0) {
+          vd.push_back(id._decl);
+        }
       }
-      cm->_items.resize(ci);
+    }
+  };
+
+  void removeUnused(Model* m, VarOccurrences& vo) {
+    std::vector<bool> unused(m->_items.size(), true);
+    ExpressionMap<int> idx;
+    for (unsigned int i=0; i<m->_items.size(); i++) {
+      if (VarDeclI* vdi = m->_items[i]->dyn_cast<VarDeclI>()) {
+        idx.insert(vdi->_e,i);
+      }
+    }
+    std::vector<VarDecl*> vd;
+    for (unsigned int i=0; i<m->_items.size(); i++) {
+      VarDeclI* vdi = m->_items[i]->dyn_cast<VarDeclI>();
+      if (   vdi==NULL
+          // || ( !vdi->_e->introduced() )
+          || (vo.occurrences(vdi->_e)!=0)
+          || (vdi->_e->_e && vdi->_e->_ti->_domain != NULL)) {
+        unused[i] = false;
+      } else {
+        CollectDecls cd(vo,vd,vdi);
+        BottomUpIterator<CollectDecls>(cd).run(vdi->_e->_e);
+      }
+    }
+    while (!vd.empty()) {
+      VarDecl* cur = vd.back(); vd.pop_back();
+      int i = idx.find(cur)->second;
+      if (!unused[i]) {
+        unused[i] = true;
+        CollectDecls cd(vo,vd,m->_items[i]->cast<VarDeclI>());
+        BottomUpIterator<CollectDecls>(cd).run(cur->_e);
+      }
     }
     
+    unsigned int ci = 0;
+    for (unsigned int i=0; i<m->_items.size(); i++) {
+      if (!unused[i]) {
+        m->_items[ci++] = m->_items[i];
+      } else {
+      }
+    }
+    m->_items.resize(ci);
   }
 
   void optimize(Model* m) {
