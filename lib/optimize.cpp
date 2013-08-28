@@ -110,7 +110,7 @@ namespace MiniZinc {
         if (   vdi==NULL
             // || ( !vdi->_e->introduced() )
             || (vo.occurrences(vdi->_e)!=0)
-            || (vdi->_e->_ti->_domain != NULL))
+            || (vdi->_e->_e && vdi->_e->_ti->_domain != NULL))
           cm->_items[ci++] = cm->_items[i];
       }
       cm->_items.resize(ci);
