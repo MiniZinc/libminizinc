@@ -137,6 +137,8 @@ namespace MiniZinc {
     }
     
     void p(const Expression* e) {
+      if (e==NULL)
+        return;
       switch (e->eid()) {
       case Expression::E_INTLIT:
         os << e->cast<IntLit>()->_v;
@@ -482,6 +484,8 @@ namespace MiniZinc {
     }
 
     void p(const Item* i) {
+      if (i==NULL)
+        return;
       switch (i->iid()) {
       case Item::II_INC:
         os << "include \"" << i->cast<IncludeI>()->_f.c_str() << "\"";
