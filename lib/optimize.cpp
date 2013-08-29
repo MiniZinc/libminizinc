@@ -13,6 +13,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/flatten.hh>
 
 #include <unordered_set>
 
@@ -137,13 +138,21 @@ namespace MiniZinc {
     for (unsigned int i=0; i<m->_items.size(); i++) {
       VarDeclI* vdi = m->_items[i]->dyn_cast<VarDeclI>();
       if (   vdi==NULL
-          // || ( !vdi->_e->introduced() )
-          || (vo.occurrences(vdi->_e)!=0)
-          || (vdi->_e->_e && vdi->_e->_ti->_domain != NULL)) {
+          || (vo.occurrences(vdi->_e)!=0) ) {
         unused[i] = false;
       } else {
-        CollectDecls cd(vo,vd,vdi);
-        BottomUpIterator<CollectDecls>(cd).run(vdi->_e->_e);
+        if (vdi->_e->_e && vdi->_e->_ti->_domain != NULL) {
+          if (vdi->_e->_type.isvar() && vdi->_e->_type.isbool() &&
+              Expression::equal(vdi->_e->_ti->_domain,constants().lt)) {
+            GCLock lock;
+            m->_items.push_back(ConstraintI::a(vdi->_loc,vdi->_e->_e));
+          } else {
+            unused[i] = false;
+          }
+        } else {
+          CollectDecls cd(vo,vd,vdi);
+          BottomUpIterator<CollectDecls>(cd).run(vdi->_e->_e);
+        }
       }
     }
     while (!vd.empty()) {

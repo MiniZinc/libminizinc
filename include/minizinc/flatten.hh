@@ -16,6 +16,18 @@
 
 namespace MiniZinc {
 
+  class Constants {
+  public:
+    Model* m;
+    BoolLit* lt;
+    VarDecl* t;
+    BoolLit* lf;
+    VarDecl* f;
+    Constants(void);
+  };
+  
+  Constants& constants(void);
+
   Model* flatten(Model* m);
 
   void oldflatzinc(Model* m);

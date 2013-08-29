@@ -76,32 +76,29 @@ namespace MiniZinc {
     explicit EE(Expression* r0=NULL, Expression* b0=NULL) : r(r0), b(b0) {}
   };
 
-  class Constants {
-  public:
-    Model* m;
-    BoolLit* lt;
-    VarDecl* t;
-    BoolLit* lf;
-    VarDecl* f;
-    Constants(void) {
-      GC::init();
-      GCLock lock;
-      TypeInst* ti = TypeInst::a(Location(), Type::parbool());
-      lt = BoolLit::a(Location(), true);
-      t = VarDecl::a(Location(), ti, "_bool_true", lt);
-      lf = BoolLit::a(Location(), false);
-      f = VarDecl::a(Location(), ti, "_bool_false", lf);
-      m = new Model;
-      std::vector<Expression*> v;
-      v.push_back(ti);
-      v.push_back(lt);
-      v.push_back(t);
-      v.push_back(lf);
-      v.push_back(f);
-      m->_items.push_back(
-        ConstraintI::a(Location(),ArrayLit::a(Location(),v)));
-    }
-  } constants;
+  Constants::Constants(void) {
+    GC::init();
+    GCLock lock;
+    TypeInst* ti = TypeInst::a(Location(), Type::parbool());
+    lt = BoolLit::a(Location(), true);
+    t = VarDecl::a(Location(), ti, "_bool_true", lt);
+    lf = BoolLit::a(Location(), false);
+    f = VarDecl::a(Location(), ti, "_bool_false", lf);
+    m = new Model;
+    std::vector<Expression*> v;
+    v.push_back(ti);
+    v.push_back(lt);
+    v.push_back(t);
+    v.push_back(lf);
+    v.push_back(f);
+    m->_items.push_back(
+      ConstraintI::a(Location(),ArrayLit::a(Location(),v)));
+  }
+  
+  Constants& constants(void) {
+    static Constants _c;
+    return _c;
+  }
 
   /// Check if \a e is NULL or true
   bool istrue(Expression* e) {
