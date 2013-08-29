@@ -368,21 +368,19 @@ namespace MiniZinc {
       {
         BinOp* bo = e->cast<BinOp>();
         if (bo->_e0->_type.isbool() && bo->_e1->_type.isbool()) {
-          bool v0 = eval_bool(bo->_e0);
-          bool v1 = eval_bool(bo->_e1);
           switch (bo->op()) {
-          case BOT_LE: return v0<v1;
-          case BOT_LQ: return v0<=v1;
-          case BOT_GR: return v0>v1;
-          case BOT_GQ: return v0>=v1;
-          case BOT_EQ: return v0==v1;
-          case BOT_NQ: return v0!=v1;
-          case BOT_EQUIV: return v0==v1;
-          case BOT_IMPL: return (!v0)||v1;
-          case BOT_RIMPL: return (!v1)||v0;
-          case BOT_OR: return v0||v1;
-          case BOT_AND: return v0&&v1;
-          case BOT_XOR: return v0^v1;
+          case BOT_LE: return eval_bool(bo->_e0)<eval_bool(bo->_e1);
+          case BOT_LQ: return eval_bool(bo->_e0)<=eval_bool(bo->_e1);
+          case BOT_GR: return eval_bool(bo->_e0)>eval_bool(bo->_e1);
+          case BOT_GQ: return eval_bool(bo->_e0)>=eval_bool(bo->_e1);
+          case BOT_EQ: return eval_bool(bo->_e0)==eval_bool(bo->_e1);
+          case BOT_NQ: return eval_bool(bo->_e0)!=eval_bool(bo->_e1);
+          case BOT_EQUIV: return eval_bool(bo->_e0)==eval_bool(bo->_e1);
+          case BOT_IMPL: return (!eval_bool(bo->_e0))||eval_bool(bo->_e1);
+          case BOT_RIMPL: return (!eval_bool(bo->_e1))||eval_bool(bo->_e0);
+          case BOT_OR: return eval_bool(bo->_e0)||eval_bool(bo->_e1);
+          case BOT_AND: return eval_bool(bo->_e0)&&eval_bool(bo->_e1);
+          case BOT_XOR: return eval_bool(bo->_e0)^eval_bool(bo->_e1);
           default:
             assert(false);
             throw EvalError(e->_loc,"not a bool expression");
