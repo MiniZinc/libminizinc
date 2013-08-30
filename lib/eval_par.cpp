@@ -14,6 +14,7 @@
 #include <minizinc/iter.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/copy.hh>
+#include <minizinc/astiterator.hh>
 
 namespace MiniZinc {
 
@@ -727,5 +728,211 @@ namespace MiniZinc {
       }
     }
   }
+
+  class ComputeIntBounds : public EVisitor {
+  protected:
+    typedef std::pair<IntVal,IntVal> Bounds;
+  public:
+    std::vector<Bounds> _bounds;
+    bool valid;
+    ComputeIntBounds(void) : valid(true) {}
+    bool enter(Expression* e) {
+      if (e->_type._dim > 0)
+        return false;
+      if (e->_type.ispar()) {
+        if (e->_type.isint()) {
+          IntVal v = eval_int(e);
+          _bounds.push_back(Bounds(v,v));
+        } else {
+          throw EvalError(e->_loc, "not yet supported");
+        }
+        return false;
+      } else {
+        return true;
+      }
+    }
+    /// Visit integer literal
+    void vIntLit(const IntLit& i) {
+      _bounds.push_back(Bounds(i._v,i._v));
+    }
+    /// Visit floating point literal
+    void vFloatLit(const FloatLit&) {
+      throw EvalError(Location(), "not yet supported");
+    }
+    /// Visit Boolean literal
+    void vBoolLit(const BoolLit&) {
+      throw EvalError(Location(), "not yet supported");
+    }
+    /// Visit set literal
+    void vSetLit(const SetLit&) {
+      throw EvalError(Location(), "not yet supported");
+    }
+    /// Visit string literal
+    void vStringLit(const StringLit&) {
+      throw EvalError(Location(), "not yet supported");
+    }
+    /// Visit identifier
+    void vId(const Id& id) {
+      if (id._decl->_ti->_domain) {
+        IntSetVal* isv = eval_intset(id._decl->_ti->_domain);
+        if (isv->size()==0) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+        } else {
+          _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
+        }
+      } else {
+        if (id._decl->_e) {
+          BottomUpIterator<ComputeIntBounds> cbi(*this);
+          cbi.run(id._decl->_e);
+        } else {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+        }
+      }
+    }
+    /// Visit anonymous variable
+    void vAnonVar(const AnonVar& v) {
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
+    }
+    /// Visit array literal
+    void vArrayLit(const ArrayLit& al) {
+    }
+    /// Visit array access
+    void vArrayAccess(const ArrayAccess& aa) {
+      throw EvalError(aa._loc, "not yet supported");
+    }
+    /// Visit array comprehension
+    void vComprehension(const Comprehension& c) {
+      throw EvalError(c._loc, "not yet supported");
+    }
+    /// Visit if-then-else
+    void vITE(const ITE& ite) {
+      throw EvalError(ite._loc, "not yet supported");
+    }
+    /// Visit binary operator
+    void vBinOp(const BinOp& bo) {
+      Bounds b0 = _bounds.back(); _bounds.pop_back();
+      Bounds b1 = _bounds.back(); _bounds.pop_back();
+      switch (bo.op()) {
+      case BOT_PLUS:
+        _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
+        break;
+      case BOT_MINUS:
+        _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
+        break;
+      case BOT_MULT:
+        {
+          IntVal x0 = b0.first*b1.first;
+          IntVal x1 = b0.first*b1.second;
+          IntVal x2 = b0.second*b1.first;
+          IntVal x3 = b0.second*b1.second;
+          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(Bounds(m,n));
+        }
+        break;
+      case BOT_DIV:
+      case BOT_IDIV:
+      case BOT_MOD:
+      case BOT_LE:
+      case BOT_LQ:
+      case BOT_GR:
+      case BOT_GQ:
+      case BOT_EQ:
+      case BOT_NQ:
+      case BOT_IN:
+      case BOT_SUBSET:
+      case BOT_SUPERSET:
+      case BOT_UNION:
+      case BOT_DIFF:
+      case BOT_SYMDIFF:
+      case BOT_INTERSECT:
+      case BOT_PLUSPLUS:
+      case BOT_EQUIV:
+      case BOT_IMPL:
+      case BOT_RIMPL:
+      case BOT_OR:
+      case BOT_AND:
+      case BOT_XOR:
+      case BOT_DOTDOT:
+        throw EvalError(bo._loc, "not yet supported");
+      }
+    }
+    /// Visit unary operator
+    void vUnOp(const UnOp& uo) {
+      switch (uo.op()) {
+      case UOT_PLUS:
+        break;
+      case UOT_MINUS:
+        _bounds.back().first = -_bounds.back().first;
+        _bounds.back().second = -_bounds.back().second;
+        break;
+      case UOT_NOT:
+        throw EvalError(uo._loc, "not yet supported");
+      }
+    }
+    /// Visit call
+    void vCall(Call& c) {
+      if (c._id == "lin_exp" &&
+          c._args[0]->isa<ArrayLit>() &&
+          c._args[1]->isa<ArrayLit>() &&
+          c._args[2]->isa<IntLit>()) {
+        ArrayLit* coeff = c._args[0]->cast<ArrayLit>();
+        ArrayLit* al = c._args[1]->cast<ArrayLit>();
+        IntVal d = c._args[2]->cast<IntLit>()->_v;
+        int stacktop = _bounds.size();
+        for (unsigned int i=al->_v.size(); i--;) {
+          BottomUpIterator<ComputeIntBounds> cbi(*this);
+          cbi.run(al->_v[i]);
+          if (!valid)
+            return;
+        }
+        assert(stacktop+al->_v.size()==_bounds.size());
+        IntVal lb = d;
+        IntVal ub = d;
+        for (unsigned int i=al->_v.size(); i--;) {
+          Bounds b = _bounds.back(); _bounds.pop_back();
+          lb += eval_int(coeff->_v[i])*b.first;
+          ub += eval_int(coeff->_v[i])*b.second;
+        }
+        _bounds.push_back(Bounds(lb,ub));
+      } else {
+        valid = false;
+      }
+    }
+    /// Visit let
+    void vLet(const Let& l) {
+      throw EvalError(l._loc, "not yet supported");
+    }
+    /// Visit variable declaration
+    void vVarDecl(const VarDecl& vd) {
+      throw EvalError(vd._loc, "not yet supported");
+    }
+    /// Visit annotation
+    void vAnnotation(const Annotation& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+    /// Visit type inst
+    void vTypeInst(const TypeInst& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+    /// Visit TIId
+    void vTIId(const TIId& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+  };
+
+  IntBounds compute_int_bounds(Expression* e) {
+    ComputeIntBounds cb;
+    BottomUpIterator<ComputeIntBounds> cbi(cb);
+    cbi.run(e);
+    if (cb.valid)
+      return IntBounds(cb._bounds.back().first,cb._bounds.back().second,true);
+    else
+      return IntBounds(0,0,false);
+  }
+
 
 }

@@ -30,6 +30,18 @@ namespace MiniZinc {
 
   Expression* eval_par(Expression* e);
 
+  /// Representation for bounds of an integer expression
+  struct IntBounds {
+    IntVal l;
+    IntVal u;
+    bool valid;
+    IntBounds(IntVal l0, IntVal u0, bool valid0)
+      : l(l0), u(u0), valid(valid0) {}
+  };
+  
+  /// Compute bounds of an integer expression
+  IntBounds compute_int_bounds(Expression* e);
+
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,

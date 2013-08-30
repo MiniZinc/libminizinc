@@ -108,180 +108,19 @@ namespace MiniZinc {
       throw EvalError(Location(), "dynamic type error");
     }
   }
-
-  typedef std::pair<IntVal,IntVal> Bounds;
   
-  Bounds compute_bounds(Expression* e);
-
-  class ComputeBounds : public EVisitor {
-  public:
-    std::vector<Bounds> _bounds;
-    bool enter(Expression* e) {
-      if (e->_type.ispar()) {
-        if (e->_type.isint()) {
-          IntVal v = eval_int(e);
-          _bounds.push_back(Bounds(v,v));
-        } else {
-          throw EvalError(e->_loc, "not yet supported");
-        }
-        return false;
-      } else {
-        return true;
-      }
-    }
-    /// Visit integer literal
-    void vIntLit(const IntLit& i) {
-      _bounds.push_back(Bounds(i._v,i._v));
-    }
-    /// Visit floating point literal
-    void vFloatLit(const FloatLit&) {
-      throw EvalError(Location(), "not yet supported");
-    }
-    /// Visit Boolean literal
-    void vBoolLit(const BoolLit&) {
-      throw EvalError(Location(), "not yet supported");
-    }
-    /// Visit set literal
-    void vSetLit(const SetLit&) {
-      throw EvalError(Location(), "not yet supported");
-    }
-    /// Visit string literal
-    void vStringLit(const StringLit&) {
-      throw EvalError(Location(), "not yet supported");
-    }
-    /// Visit identifier
-    void vId(const Id& id) {
-      if (id._decl->_ti->_domain) {
-        IntSetVal* isv = eval_intset(id._decl->_ti->_domain);
-        if (isv->size()==0)
-          throw EvalError(id._loc, "Cannot get bounds of "+id._v.str());
-        _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
-      } else {
-        if (id._decl->_e)
-          _bounds.push_back(compute_bounds(id._decl->_e));
-        else
-          throw EvalError(id._loc, "Cannot get bounds of "+id._v.str());
-      }
-    }
-    /// Visit anonymous variable
-    void vAnonVar(const AnonVar& v) {
-      throw EvalError(v._loc, "Cannot get bounds of anonymous variable");
-    }
-    /// Visit array literal
-    void vArrayLit(const ArrayLit& al) {
-      throw EvalError(al._loc, "not yet supported");
-    }
-    /// Visit array access
-    void vArrayAccess(const ArrayAccess& aa) {
-      throw EvalError(aa._loc, "not yet supported");
-    }
-    /// Visit array comprehension
-    void vComprehension(const Comprehension& c) {
-      throw EvalError(c._loc, "not yet supported");
-    }
-    /// Visit if-then-else
-    void vITE(const ITE& ite) {
-      throw EvalError(ite._loc, "not yet supported");
-    }
-    /// Visit binary operator
-    void vBinOp(const BinOp& bo) {
-      Bounds b0 = _bounds.back(); _bounds.pop_back();
-      Bounds b1 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-      case BOT_PLUS:
-        _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
-        break;
-      case BOT_MINUS:
-        _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
-        break;
-      case BOT_MULT:
-        {
-          IntVal x0 = b0.first*b1.first;
-          IntVal x1 = b0.first*b1.second;
-          IntVal x2 = b0.second*b1.first;
-          IntVal x3 = b0.second*b1.second;
-          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-          std::cerr << x0 << " " << x1 << " " << x2 << " " << x3 << " " << std::endl;
-          _bounds.push_back(Bounds(m,n));
-        }
-        break;
-      case BOT_DIV:
-      case BOT_IDIV:
-      case BOT_MOD:
-      case BOT_LE:
-      case BOT_LQ:
-      case BOT_GR:
-      case BOT_GQ:
-      case BOT_EQ:
-      case BOT_NQ:
-      case BOT_IN:
-      case BOT_SUBSET:
-      case BOT_SUPERSET:
-      case BOT_UNION:
-      case BOT_DIFF:
-      case BOT_SYMDIFF:
-      case BOT_INTERSECT:
-      case BOT_PLUSPLUS:
-      case BOT_EQUIV:
-      case BOT_IMPL:
-      case BOT_RIMPL:
-      case BOT_OR:
-      case BOT_AND:
-      case BOT_XOR:
-      case BOT_DOTDOT:
-        throw EvalError(bo._loc, "not yet supported");
-      }
-    }
-    /// Visit unary operator
-    void vUnOp(const UnOp& uo) {
-      switch (uo.op()) {
-      case UOT_PLUS:
-        break;
-      case UOT_MINUS:
-        _bounds.back().first = -_bounds.back().first;
-        _bounds.back().second = -_bounds.back().second;
-        break;
-      case UOT_NOT:
-        throw EvalError(uo._loc, "not yet supported");
-      }
-    }
-    /// Visit call
-    void vCall(const Call& c) {
-      throw EvalError(c._loc, "not yet supported");
-    }
-    /// Visit let
-    void vLet(const Let& l) {
-      throw EvalError(l._loc, "not yet supported");
-    }
-    /// Visit variable declaration
-    void vVarDecl(const VarDecl& vd) {
-      throw EvalError(vd._loc, "not yet supported");
-    }
-    /// Visit annotation
-    void vAnnotation(const Annotation& e) {
-      throw EvalError(e._loc, "not yet supported");
-    }
-    /// Visit type inst
-    void vTypeInst(const TypeInst& e) {
-      throw EvalError(e._loc, "not yet supported");
-    }
-    /// Visit TIId
-    void vTIId(const TIId& e) {
-      throw EvalError(e._loc, "not yet supported");
-    }
-  };
-
-  Bounds compute_bounds(Expression* e) {
-    ComputeBounds cb;
-    BottomUpIterator<ComputeBounds> cbi(cb);
-    cbi.run(e);
-    assert(cb._bounds.size()==1);
-    return cb._bounds[0];
+  bool b_has_bounds(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return compute_int_bounds(args[0]).valid;
   }
   
   IntVal lb_varoptint(Expression* e) {
-    return compute_bounds(e).first;
+    IntBounds b = compute_int_bounds(e);
+    if (b.valid)
+      return b.l;
+    else
+      throw EvalError(e->_loc,"cannot determine bounds");
   }
   IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
     if (args.size() != 1)
@@ -301,7 +140,11 @@ namespace MiniZinc {
   }
 
   IntVal ub_varoptint(Expression* e) {
-    return compute_bounds(e).second;
+    IntBounds b = compute_int_bounds(e);
+    if (b.valid)
+      return b.u;
+    else
+      throw EvalError(e->_loc,"cannot determine bounds");
   }
   IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
     if (args.size() != 1)
@@ -331,21 +174,6 @@ namespace MiniZinc {
     return m;
   }
 
-  Expression* b_sum_var(ASTExprVec<Expression>& args) {
-    if (args.size()!=1)
-      throw EvalError(Location(), "sum needs exactly one argument");
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size() == 0) {
-      return IntLit::a(Location(),0);
-    } else {
-      Expression* r = al->_v[0];
-      for (unsigned int i=1; i<al->_v.size(); i++) {
-        r = BinOp::a(Location(),r,BOT_PLUS,al->_v[i]);
-        r->_type = Type::varint();
-      }
-      return r;
-    }
-  }
 
   IntSetVal* b_index_set(ASTExprVec<Expression>& args, int i) {
     if (args.size() != 1)
@@ -537,21 +365,6 @@ namespace MiniZinc {
         return false;
     return true;
   }
-  Expression* b_forall_var(ASTExprVec<Expression>& args) {
-    if (args.size()!=1)
-      throw EvalError(Location(), "forall needs exactly one argument");
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size() == 0) {
-      return BoolLit::a(Location(),true);
-    } else {
-      Expression* r = al->_v[0];
-      for (unsigned int i=1; i<al->_v.size(); i++) {
-        r = BinOp::a(Location(),r,BOT_AND,al->_v[i]);
-        r->_type = Type::varbool();
-      }
-      return r;
-    }
-  }
   bool b_exists_par(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
@@ -560,21 +373,6 @@ namespace MiniZinc {
       if (eval_bool(al->_v[i]))
         return true;
     return false;
-  }
-  Expression* b_exists_var(ASTExprVec<Expression>& args) {
-    if (args.size()!=1)
-      throw EvalError(Location(), "exists needs exactly one argument");
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size() == 0) {
-      return BoolLit::a(Location(),false);
-    } else {
-      Expression* r = al->_v[0];
-      for (unsigned int i=1; i<al->_v.size(); i++) {
-        r = BinOp::a(Location(),r,BOT_OR,al->_v[i]);
-        r->_type = Type::varbool();
-      }
-      return r;
-    }
   }
 
   IntVal b_card(ASTExprVec<Expression>& args) {
@@ -601,11 +399,6 @@ namespace MiniZinc {
     rb(m, ASTString("max"), t_intarray, b_max);
     rb(m, ASTString("sum"), t_intarray, b_sum);
 
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::varint(-1);
-      rb(m, ASTString("sum"), t, b_sum_var);
-    }
     {
       std::vector<Type> t_anyarray1(1);
       t_anyarray1[0] = Type::optvartop(1);
@@ -738,18 +531,8 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t(1);
-      t[0] = Type::varbool(-1);
-      rb(m, ASTString("forall"), t, b_forall_var);
-    }
-    {
-      std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(m, ASTString("forall"), t, b_forall_par);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::varbool(-1);
-      rb(m, ASTString("exists"), t, b_exists_var);
     }
     {
       std::vector<Type> t(1);
@@ -819,6 +602,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("card"), t, b_card);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("has_bounds"), t, b_has_bounds);
     }
   }
   
