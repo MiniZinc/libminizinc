@@ -62,7 +62,8 @@ predicate int_min(var int: a, var int: b, var int: c);
 predicate int_mod(var int: a, var int: b, var int: c);
 predicate int_times(var int: a, var int: b, var int: c);
 
-
+%set constraints
+predicate set_in(var int, set of int);
 
 %Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
@@ -88,6 +89,8 @@ predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
 
+function var int: lin_exp(array[int] of int, array[int] of var int, int);
+
 % Element constraints
 
 predicate array_int_element(var int, array[int] of var int, var int);
@@ -108,7 +111,7 @@ function var int: element_mt(var int: idx, array[int] of var int: x) ::total =
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
-  if (lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)

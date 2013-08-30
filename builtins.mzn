@@ -51,7 +51,8 @@ function     float: '/'(    float,    float);
 function var float: '/'(var float,var float);
 
 function     int:   sum(array[$T] of     int);
-function var int:   sum(array[$T] of var int);
+function var int:   sum(array[int] of var int: x) =
+  lin_exp([1|i in index_set(x)],x,0);
 function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 
@@ -327,6 +328,8 @@ function set of int: ub_array(array[$U] of var set of int);
 function set of int: dom(var int);
 function set of int: dom_array(array[$T] of var int);
 function int: dom_size(var int);
+
+function par bool: has_bounds(var int);
 
 % Other operations
 
