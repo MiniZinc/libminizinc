@@ -18,32 +18,42 @@
 
 namespace MiniZinc {
   
+  /// Hash class for expressions
   struct ExpressionHash {
     size_t operator() (const Expression* e) const {
       return Expression::hash(e);
     }
   };
   
+  /// Equality test for expressions
   struct ExpressionEq {
     bool operator() (const Expression* e0, const Expression* e1) const {
       return Expression::equal(e0,e1);
     }
   };
   
+  /// Hash map from expression to \a T
   template<class T>
   class ExpressionMap {
   protected:
+    /// The underlying map implementation
     std::unordered_map<Expression*,T,ExpressionHash,ExpressionEq> _m;
   public:
+    /// Iterator type
     typedef typename std::unordered_map<Expression*,T,
       ExpressionHash,ExpressionEq>::iterator iterator;
+    /// Insert mapping from \a e to \a t
     void insert(Expression* e, const T& t) {
       assert(e != NULL);
       _m.insert(std::pair<Expression*,T>(e,t));
     }
+    /// Find \a e in map
     iterator find(Expression* e) { return _m.find(e); }
+    /// Begin of iterator
     iterator begin(void) { return _m.begin(); }
+    /// End of iterator
     iterator end(void) { return _m.end(); }
+    /// Remove binding of \a e from map
     void remove(Expression* e) {
       _m.erase(e);
     }

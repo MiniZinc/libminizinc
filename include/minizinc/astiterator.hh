@@ -16,17 +16,25 @@
 
 namespace MiniZinc {
   
+  /**
+   * \brief Bottom-up iterator for expressions
+   */
   template<class T>
   class BottomUpIterator {
   protected:
+    /// The visitor to call back during iteration
     T& _t;
     
+    /// Stack item
     struct C {
+      /// Expression on the stack
       Expression* _e;
+      /// Whether this expression has been visited before
       bool _done;
       C(Expression* e) : _e(e), _done(false) {}
     };
     
+    /// Push all elements of \a v onto \a stack
     template<class E>
     void pushVec(std::vector<C>& stack, ASTExprVec<E>& v) {
       for (unsigned int i=0; i<v.size(); i++)
@@ -34,9 +42,13 @@ namespace MiniZinc {
     }
     
   public:
+    /// Constructor
     BottomUpIterator(T& t) : _t(t) {}
+    /// Run iterator on expression \a e
     void run(Expression* e);
   };
+
+  /* IMPLEMENTATION */
 
   template<class T> void
   BottomUpIterator<T>::run(Expression* root) {

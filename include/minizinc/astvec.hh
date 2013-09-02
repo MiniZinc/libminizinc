@@ -56,7 +56,7 @@ namespace MiniZinc {
   template<class> class ASTExprVecO;
 
   /**
-   * \brief Handler for ASTIntVecO objects
+   * \brief Handler for ASTExprVecO objects
    */
   template<class T>
   class ASTExprVec {
@@ -92,16 +92,23 @@ namespace MiniZinc {
     void mark(void);
   };
   
+  
+  /// Garbage collected integer vector
   class ASTIntVecO : public ASTChunk {
   protected:
+    /// Constructor
     ASTIntVecO(const std::vector<int>& v);
   public:
+    /// Allocate and initialise from \a v
     static ASTIntVecO* a(const std::vector<int>& v);
+    /// Return size
     unsigned int size(void) const { return _size/sizeof(int); }
+    /// Return element at position \a i
     int& operator[](unsigned int i) {
       assert(i<size());
       return reinterpret_cast<int*>(_data)[i];
     }
+    /// Return element at position \a i
     const int operator[](unsigned int i) const {
       assert(i<size());
       return reinterpret_cast<const int*>(_data)[i];
@@ -114,11 +121,14 @@ namespace MiniZinc {
     void mark(void) { _gc_mark = 1; }
   };
 
+  /// Garbage collected vector of expressions
   template<class T>
   class ASTExprVecO : public ASTVec {
   protected:
+    /// Constructor
     ASTExprVecO(const std::vector<T>& v);
   public:
+    /// Allocate and initialise from \a v
     static ASTExprVecO* a(const std::vector<T>& v);
     unsigned int size(void) const { return _size; }
     bool empty(void) const { return size()==0; }

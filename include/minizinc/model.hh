@@ -18,6 +18,7 @@
 
 namespace MiniZinc {
   
+  /// A MiniZinc model
   class Model {
     friend class GC;
   protected:
@@ -26,54 +27,81 @@ namespace MiniZinc {
     /// Next model in root set list
     Model* _roots_next;
 
+    /// Type of map from identifiers to function declarations
     typedef ASTStringMap<std::vector<FunctionI*> >::t FnMap;
+    /// Map from identifiers to function declarations
     FnMap fnmap;
 
   public:
+    /// Filename of the model
     ASTString _filename;
+    /// Path of the model
     ASTString _filepath;
+    /// Parent model if model was included
     Model* _parent;
+    /// Items in the model
     std::vector<Item*> _items;
     
+    /// Construct empty model
     Model(void);
+    /// Destructor
     ~Model(void);
     
+    /// Add \a i to the model
     void addItem(Item* i) { _items.push_back(i); }
     
+    /// Get parent model
     Model* parent(void) const { return _parent; }
+    /// Set parent model to \a p
     void setParent(Model* p) { assert(_parent==NULL); _parent = p; }
     
+    /// Get file name
     ASTString filename(void) const { return _filename; }
+    /// Get file path
     ASTString filepath(void) const { return _filepath; }
-    
+    /// Set file name
     void setFilename(const std::string& f) {
       assert(_filename.size()==0);
       _filename = ASTString(f);
     }
+    /// Set file path
     void setFilepath(const std::string& f) {
       assert(_filepath.size()==0);
       _filepath = ASTString(f);
     }
 
+    /// Register a builtin function item
     void registerFn(FunctionI* fi);
+    /// Sort functions by type
     void sortFn(void);
+    /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(const ASTString& id,
                        const std::vector<Expression*>& args) const;
+    /// Return function declaration for \a id matching types \a t
     FunctionI* matchFn(const ASTString& id, const std::vector<Type>& t);
+    /// Return function declaration matching call \a c
     FunctionI* matchFn(Call* c) const;
 
   };
 
+  /// Visitor for model items
   class ItemVisitor {
   public:
+    /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
+    /// Visit assign item
     void vAssignI(AssignI*) {}
+    /// Visit constraint item
     void vConstraintI(ConstraintI*) {}
+    /// Visit solve item
     void vSolveI(SolveI*) {}
+    /// Visit output item
     void vOutputI(OutputI*) {}
+    /// Visit function item
     void vFunctionI(FunctionI*) {}
   };
 
+  /// Iterator over items in a model and all its included models
   template<class I>
   class ItemIter {
   protected:
@@ -115,6 +143,8 @@ namespace MiniZinc {
       }
     }
   };
+  
+  /// Run iterator \a i over all items of model \a m
   template<class I>
   void iterItems(I& i, Model* m) {
     ItemIter<I>(i).run(m);

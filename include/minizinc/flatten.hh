@@ -16,20 +16,31 @@
 
 namespace MiniZinc {
 
+  /// Statically allocated constants
   class Constants {
-  public:
+  private:
+    /// Model used as a garbage collection root set
     Model* m;
+  public:
+    /// Literal true
     BoolLit* lt;
+    /// Variable bound to true
     VarDecl* t;
+    /// Literal false
     BoolLit* lf;
+    /// Variable bound to false
     VarDecl* f;
+    /// Constructor
     Constants(void);
   };
   
+  /// Return static instance
   Constants& constants(void);
 
+  /// Flatten model \a m
   Model* flatten(Model* m);
 
+  /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Model* m);
   
 }

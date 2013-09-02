@@ -620,13 +620,6 @@ namespace MiniZinc {
     }
   };
 
-  void eval_int(Model* m) {
-    AssignVisitor av;
-    ItemIter<AssignVisitor>(av).run(m);
-    EvalVisitor ev;
-    ItemIter<EvalVisitor>(ev).run(m);
-  }
-
   Expression* eval_par(Expression* e) {
     if (e==NULL) return NULL;
     switch (e->eid()) {

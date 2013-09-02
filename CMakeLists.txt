@@ -87,7 +87,6 @@ set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
 set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 
 add_library(mzn
-lib/allocator.cpp
 lib/ast.cpp
 lib/aststring.cpp
 lib/astvec.cpp

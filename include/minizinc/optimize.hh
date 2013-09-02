@@ -16,6 +16,7 @@
 
 namespace MiniZinc {
 
+  /// Simplyfy model \a m
   void optimize(Model* m);
   
 }

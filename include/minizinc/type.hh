@@ -17,21 +17,29 @@
 
 namespace MiniZinc {
 
+  /// Type of a MiniZinc expression
   class Type {
   public:
+    /// Type-inst
     enum TypeInst { TI_PAR, TI_VAR, TI_SVAR };
+    /// Basic type
     enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
                     BT_BOT, BT_TOP, BT_UNKNOWN };
+    /// Whether the expression is plain or set
     enum SetType { ST_PLAIN, ST_SET };
+    /// Whether the expression is normal or optional
     enum OptType { OT_PRESENT, OT_OPTIONAL };
     TypeInst _ti : 3;
     BaseType _bt : 4;
     SetType _st  : 1;
     OptType _ot  : 1;
+    /// Number of array dimensions
     int _dim : 20;
+    /// Default constructor
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN),
                  _ot(OT_PRESENT), _dim(0) {}
   protected:
+    /// Constructor
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
          int dim)
       : _ti(ti), _bt(bt), _st(st), _ot(OT_PRESENT), _dim(dim) {}
@@ -169,6 +177,7 @@ namespace MiniZinc {
       return oss.str();
     }
   public:
+    /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
       // either same dimension or t has variable dimension
       if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
@@ -193,6 +202,7 @@ namespace MiniZinc {
       return false;
     }
 
+    /// Compare types
     int cmp(const Type& t) const {
       return toInt()<t.toInt() ? -1 : (toInt()>t.toInt() ? 1 : 0);
     }
