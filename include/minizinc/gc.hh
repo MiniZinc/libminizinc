@@ -63,7 +63,6 @@ namespace MiniZinc {
   class ASTChunk : public ASTNode {
     friend class GC;
   protected:
-    ASTChunk* _next;
     size_t _size;
     char _data[4];
     ASTChunk(size_t size);
@@ -82,7 +81,6 @@ namespace MiniZinc {
   class ASTVec : public ASTNode {
     friend class GC;
   protected:
-    ASTVec* _next;
     size_t _size;
     void* _data[2];
     ASTVec(size_t size);
