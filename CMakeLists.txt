@@ -14,6 +14,9 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -35,10 +38,10 @@ if (HAS_STDLIBLIBCPP)
   endif()
 endif()
    
-CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; return 0;}" HAS_ATTR_THREAD)
+CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
 
 if (NOT HAS_ATTR_THREAD)
-  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; return 0;}" HAS_DECLSPEC_THREAD)
+  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
 endif()
 
 
