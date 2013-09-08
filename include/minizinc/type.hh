@@ -134,21 +134,24 @@ namespace MiniZinc {
     }
 
   // protected:
+
+    /* We add 1 to _dim in toInt to ensure that it is non-negative
+       (and subtract it again in fromInt). */
     int toInt(void) const {
       return
       + (static_cast<int>(_ot)<<28)
       + (static_cast<int>(_ti)<<25)
       + (static_cast<int>(_bt)<<21)
       + (static_cast<int>(_st)<<20)
-      + _dim;
+      + (_dim + 1);
     }
     static Type fromInt(int i) {
       Type t;
       t._ot = static_cast<OptType>((i >> 28) & 0x1);
       t._ti = static_cast<TypeInst>((i >> 25) & 0x7);
-      t._bt = static_cast<BaseType>((i >> 21) & 0x7);
+      t._bt = static_cast<BaseType>((i >> 21) & 0xF);
       t._st = static_cast<SetType>((i >> 20) & 0x1);
-      t._dim = i & 0xFFFFF;
+      t._dim = (i & 0xFFFFF) - 1;
       return t;
     }
     std::string toString(void) const {
