@@ -82,13 +82,16 @@ namespace MiniZinc {
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
-    int _fl_slot(size_t size) {
+    int _fl_slot(size_t _size) {
+      size_t size = _size;
       assert(size <= _fl_size[_max_fl]);
-      assert(size >= sizeof(Item));
+      assert(size >= _fl_size[0]);
       size -= sizeof(Item);
+      assert(size % sizeof(void*) == 0);
       size /= sizeof(void*);
+      assert(size >= 1);
       int slot = static_cast<int>(size)-1;
-      return slot < 0 ? 0 : slot;
+      return slot;
     }
 
     /// Total amount of memory allocated
@@ -143,6 +146,7 @@ namespace MiniZinc {
             // Remainder of page can be added to free lists
             FreeListNode* fln = 
               reinterpret_cast<FreeListNode*>(_page->data+_page->used);
+            _page->used += ns;
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
           } else {
@@ -317,7 +321,7 @@ namespace MiniZinc {
   void*
   GC::alloc(size_t size) {
     assert(locked());
-    if (size > _heap->_fl_size[_heap->_max_fl]) {
+    if (size < _heap->_fl_size[0] || size > _heap->_fl_size[_heap->_max_fl]) {
       return _heap->alloc(size,true);
     } else {
       return _heap->fl(size);
@@ -397,7 +401,7 @@ namespace MiniZinc {
         size_t ns = nodesize(n);
         assert(ns != 0);
         if (n->_gc_mark==0) {
-          if (ns <= _fl_size[_max_fl]) {
+          if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
