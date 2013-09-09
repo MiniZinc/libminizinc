@@ -1429,6 +1429,7 @@ namespace MiniZinc {
           throw InternalError("forall not defined");
 
         Ctx nctx = ctx;
+        nctx.b = C_MIX;
         nctx.neg = false;
         std::string cid = c->_id.str();
         if (ctx.neg) {
@@ -1449,6 +1450,7 @@ namespace MiniZinc {
           ret.b = bind(env,false,b,constants().lt);
           EE flat_al = flat_exp(env,Ctx(),c->_args[0],NULL,constants().t);
           ArrayLit* al = follow_id(flat_al.r)->cast<ArrayLit>();
+          nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->_v.size(); i++)
             (void) flat_exp(env,nctx,al->_v[i],r,b);
         } else {
