@@ -737,7 +737,7 @@ namespace MiniZinc {
           IntVal v = eval_int(e);
           _bounds.push_back(Bounds(v,v));
         } else {
-          throw EvalError(e->_loc, "not yet supported");
+          valid = false;
         }
         return false;
       } else {
