@@ -157,14 +157,16 @@ namespace MiniZinc {
     }
     while (!vd.empty()) {
       VarDecl* cur = vd.back(); vd.pop_back();
-      int i = idx.find(cur)->second;
-      if (!unused[i]) {
-        unused[i] = true;
-        CollectDecls cd(vo,vd,m->_items[i]->cast<VarDeclI>());
-        BottomUpIterator<CollectDecls>(cd).run(cur->_e);
+      ExpressionMap<int>::iterator cur_idx = idx.find(cur);
+      if (cur_idx != idx.end()) {
+        int i = cur_idx->second;
+        if (!unused[i]) {
+          unused[i] = true;
+          CollectDecls cd(vo,vd,m->_items[i]->cast<VarDeclI>());
+          BottomUpIterator<CollectDecls>(cd).run(cur->_e);
+        }
       }
     }
-    
     unsigned int ci = 0;
     for (unsigned int i=0; i<m->_items.size(); i++) {
       if (!unused[i]) {
