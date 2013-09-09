@@ -123,7 +123,9 @@ namespace MiniZinc {
     case C_MIX: ctx = "ctx_mix"; break;
     default: assert(false); break;
     }
-    return Annotation::a(Location(),Id::a(Location(),ctx,NULL));
+    Id* id = Id::a(Location(),ctx,NULL);
+    id->_type = Type::ann();
+    return Annotation::a(Location(),id);
   }
 
   /// Result of evaluation
