@@ -1063,6 +1063,10 @@ namespace MiniZinc {
                 c->_type = bo->_type;
                 c->_decl = env.orig->matchFn(c);
                 ret = flat_exp(env,ctx,c,r,b);
+                if (Id* id = ret.r->dyn_cast<Id>()) {
+                  if (id->_decl)
+                    id->_decl->annotate(ctx_ann(ctx.b));
+                }
               }
               break;
             }
@@ -1085,6 +1089,11 @@ namespace MiniZinc {
               c->_type = bo->_type;
               c->_decl = env.orig->matchFn(c);
               ret = flat_exp(env,ctx,c,r,b);
+              if (Id* id = ret.r->dyn_cast<Id>()) {
+                if (id->_decl) {
+                  id->_decl->annotate(ctx_ann(ctx.b));
+                }
+              }
             }
             break;
           case BOT_RIMPL:
@@ -1115,6 +1124,10 @@ namespace MiniZinc {
               c->_type = bo->_type;
               c->_decl = env.orig->matchFn(c);
               ret = flat_exp(env,ctx,c,r,b);
+              if (Id* id = ret.r->dyn_cast<Id>()) {
+                if (id->_decl)
+                  id->_decl->annotate(ctx_ann(ctx.b));
+              }
             }
             break;
           case BOT_EQUIV:
