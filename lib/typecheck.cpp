@@ -216,12 +216,10 @@ namespace MiniZinc {
       {
         Let* let = e->cast<Let>();
         for (unsigned int i=0; i<let->_let.size(); i++) {
+          run(let->_let[i]);
           if (VarDecl* vd = let->_let[i]->dyn_cast<VarDecl>()) {
             add(vd,false);
           }
-        }
-        for (unsigned int i=0; i<let->_let.size(); i++) {
-          run(let->_let[i]);
         }
         run(let->_in);
         VarDeclCmp poscmp(pos);
