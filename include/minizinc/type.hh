@@ -113,7 +113,9 @@ namespace MiniZinc {
     bool isopt(void) const { return _ot==OT_OPTIONAL; }
     bool ispresent(void) const { return _ot==OT_PRESENT; }
     bool isset(void) const { return _dim==0 && _st==ST_SET; }
-    bool isintset(void) const { return isset() && _bt==BT_INT; }
+    bool isintset(void) const {
+      return isset() && (_bt==BT_INT || _bt==BT_BOT);
+    }
     bool isann(void) const { return isplain() && _bt==BT_ANN; }
     bool isintarray(void) const {
       return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_INT;
