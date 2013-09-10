@@ -331,6 +331,8 @@ namespace MiniZinc {
   void
   GC::Heap::mark(void) {
     Model* m = _rootset;
+    if (m==NULL)
+      return;
     do {
       for (unsigned int j=0; j<m->_items.size(); j++) {
         Item* i = m->_items[j];
