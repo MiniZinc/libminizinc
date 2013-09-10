@@ -330,6 +330,16 @@ namespace MiniZinc {
 
   void
   GC::Heap::mark(void) {
+    for (unsigned int i=0; i<roots.size(); i++) {
+      ASTRootSetIter* iter = roots[i]->rootSet();
+      for (Expression** e = iter->begin(); e != iter->end(); ++e) {
+        if ((*e)->_gc_mark==0) {
+          Expression::mark(*e);
+        }
+      }
+      delete iter;
+    }
+
     Model* m = _rootset;
     if (m==NULL)
       return;
@@ -380,15 +390,6 @@ namespace MiniZinc {
       m = m->_roots_next;
     } while (m != _rootset);
 
-    for (unsigned int i=0; i<roots.size(); i++) {
-      ASTRootSetIter* iter = roots[i]->rootSet();
-      for (Expression** e = iter->begin(); e != iter->end(); ++e) {
-        if ((*e)->_gc_mark==0) {
-          Expression::mark(*e);
-        }
-      }
-      delete iter;
-    }
   }
     
   void
