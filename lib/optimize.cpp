@@ -145,10 +145,9 @@ namespace MiniZinc {
           if (vdi->_e->_type.isvar() && vdi->_e->_type.isbool() &&
               Expression::equal(vdi->_e->_ti->_domain,constants().lt)) {
             GCLock lock;
-            m->_items.push_back(ConstraintI::a(vdi->_loc,vdi->_e->_e));
-          } else {
-            unused[i] = false;
+            m->_items[i] = ConstraintI::a(vdi->_loc,vdi->_e->_e);
           }
+          unused[i] = false;
         } else {
           CollectDecls cd(vo,vd,vdi);
           BottomUpIterator<CollectDecls>(cd).run(vdi->_e->_e);
