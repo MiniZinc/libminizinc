@@ -1910,12 +1910,18 @@ namespace MiniZinc {
             vd->_ti->_domain = NULL;
             if (ve != NULL) {
               if (Call* vc = ve->dyn_cast<Call>()) {
-                if ( (vc->_id == "bool_and" || vc->_id == "bool_or")
-                     && vc->_args.size()==2) {
-                  std::vector<Expression*> args(3);
+                if (vc->_id == "exists") {
+                  vc->_id = ASTString("array_bool_or");
+                  std::vector<Expression*> args(2);
                   args[0] = vc->_args[0];
-                  args[1] = vc->_args[1];
-                  args[2] = constants().lt;
+                  args[1] = constants().lt;
+                  ASTExprVec<Expression> argsv(args);
+                  vc->_args = argsv;
+                } else if (vc->_id == "forall") {
+                  vc->_id = ASTString("array_bool_and");
+                  std::vector<Expression*> args(2);
+                  args[0] = vc->_args[0];
+                  args[1] = constants().lt;
                   ASTExprVec<Expression> argsv(args);
                   vc->_args = argsv;
                 }
@@ -1927,8 +1933,10 @@ namespace MiniZinc {
               if (vd->_e->eid()==Expression::E_CALL) {
                 Call* c = vd->_e->cast<Call>();
                 vd->_e = NULL;
-                if (c->_id=="bool_and" || c->_id=="bool_or") {
-                  
+                if (c->_id == "exists") {
+                  c->_id = ASTString("array_bool_or");
+                } else if (c->_id == "forall") {
+                  c->_id = ASTString("array_bool_and");
                 } else {
                   c->_id = ASTString(c->_id.str()+"_reif");
                 }
