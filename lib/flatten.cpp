@@ -2006,6 +2006,23 @@ namespace MiniZinc {
         }
       }
       void vConstraintI(ConstraintI* ci) {
+        if (Call* vc = ci->_e->dyn_cast<Call>()) {
+          if (vc->_id == "exists") {
+            vc->_id = ASTString("array_bool_or");
+            std::vector<Expression*> args(2);
+            args[0] = vc->_args[0];
+            args[1] = constants().lt;
+            ASTExprVec<Expression> argsv(args);
+            vc->_args = argsv;
+          } else if (vc->_id == "forall") {
+            vc->_id = ASTString("array_bool_and");
+            std::vector<Expression*> args(2);
+            args[0] = vc->_args[0];
+            args[1] = constants().lt;
+            ASTExprVec<Expression> argsv(args);
+            vc->_args = argsv;
+          }
+        }
       }
     } _fv(cs);
     iterItems<FV>(_fv,m);
