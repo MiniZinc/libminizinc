@@ -114,18 +114,32 @@ namespace MiniZinc {
     return c==C_ROOT || c==C_POS;
   }
 
-  Annotation* ctx_ann(BCtx& c) {
+  const char* ctx_ann(BCtx& c) {
     std::string ctx;
     switch (c) {
-    case C_ROOT: ctx = "ctx_root"; break;
-    case C_POS: ctx = "ctx_pos"; break;
-    case C_NEG: ctx = "ctx_neg"; break;
-    case C_MIX: ctx = "ctx_mix"; break;
-    default: assert(false); break;
+    case C_ROOT: return "ctx_root";
+    case C_POS: return "ctx_pos";
+    case C_NEG: return "ctx_neg";
+    case C_MIX: return "ctx_mix";
+    default: assert(false); return NULL;
     }
-    Id* id = Id::a(Location(),ctx,NULL);
-    id->_type = Type::ann();
-    return Annotation::a(Location(),id);
+  }
+  
+  void addCtxAnn(VarDecl* vd, BCtx& c) {
+    if (vd) {
+      const char* ctx = ctx_ann(c);
+      Annotation* vdann = vd->_ann;
+      while (vdann) {
+        if (Id* id = vdann->_e->dyn_cast<Id>()) {
+          if (id->_v==ctx)
+            return;
+        }
+        vdann = vdann->_a;
+      }
+      Id* id = Id::a(Location(),ctx,NULL);
+      id->_type = Type::ann();
+      vd->annotate(Annotation::a(Location(),id));
+    }
   }
 
   /// Result of evaluation
@@ -1065,8 +1079,7 @@ namespace MiniZinc {
                 c->_decl = env.orig->matchFn(c);
                 ret = flat_exp(env,ctx,c,r,b);
                 if (Id* id = ret.r->dyn_cast<Id>()) {
-                  if (id->_decl)
-                    id->_decl->annotate(ctx_ann(ctx.b));
+                  addCtxAnn(id->_decl, ctx.b);
                 }
               }
               break;
@@ -1091,9 +1104,7 @@ namespace MiniZinc {
               c->_decl = env.orig->matchFn(c);
               ret = flat_exp(env,ctx,c,r,b);
               if (Id* id = ret.r->dyn_cast<Id>()) {
-                if (id->_decl) {
-                  id->_decl->annotate(ctx_ann(ctx.b));
-                }
+                addCtxAnn(id->_decl, ctx.b);
               }
             }
             break;
@@ -1126,8 +1137,7 @@ namespace MiniZinc {
               c->_decl = env.orig->matchFn(c);
               ret = flat_exp(env,ctx,c,r,b);
               if (Id* id = ret.r->dyn_cast<Id>()) {
-                if (id->_decl)
-                  id->_decl->annotate(ctx_ann(ctx.b));
+                addCtxAnn(id->_decl,ctx.b);
               }
             }
             break;
@@ -1331,8 +1341,7 @@ namespace MiniZinc {
                   ees[2].b->_type = t;
                 }
                 if (Id* id = ees[2].b->dyn_cast<Id>()) {
-                  if (id->_decl)
-                    id->_decl->annotate(ctx_ann(ctx.b));
+                  addCtxAnn(id->_decl,ctx.b);
                 }
                 ret.r = conj(env,r,ctx.neg,ees);
               } else {
@@ -1345,8 +1354,7 @@ namespace MiniZinc {
                   ees[2].b->_type = t;
                 }
                 if (Id* id = ees[2].b->dyn_cast<Id>()) {
-                  if (id->_decl)
-                    id->_decl->annotate(ctx_ann(ctx.b));
+                  addCtxAnn(id->_decl,ctx.b);
                 }
                 ret.r = conj(env,r,ctx.neg,ees);
                 env.map.insert(cc,ret);
