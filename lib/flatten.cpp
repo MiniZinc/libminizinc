@@ -679,6 +679,7 @@ namespace MiniZinc {
   EE flat_exp(Env& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     EE ret;
+    assert(!e->_type.isunknown());
     if (e->_type.ispar() && e->_type._bt!=Type::BT_ANN) {
       ret.b = bind(env,false,b,constants().lt);
       ret.r = bind(env,ctx.neg,r,eval_par(e));
@@ -1051,7 +1052,7 @@ namespace MiniZinc {
                   bo_args[0] = UnOp::a(bo->_loc,UOT_NOT,boe0);
                   bo_args[0]->_type = boe0->_type;
                   bo_args[1] = UnOp::a(bo->_loc,UOT_NOT,boe1);
-                  bo_args[0]->_type = boe1->_type;
+                  bo_args[1]->_type = boe1->_type;
                 } else {
                   bo_args[0] = boe0;
                   bo_args[1] = boe1;
@@ -1444,19 +1445,24 @@ namespace MiniZinc {
           throw InternalError("forall not defined");
 
         Ctx nctx = ctx;
-        nctx.b = C_MIX;
         nctx.neg = false;
         std::string cid = c->_id.str();
-        if (ctx.neg) {
-          if (decl->_e==NULL && cid == "forall") {
+        if (decl->_e==NULL && cid == "forall") {
+          nctx.b = +nctx.b;
+          if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
             cid = "exists";
-          } else if (decl->_e==NULL && cid == "exists") {
+          }
+        } else if (decl->_e==NULL && cid == "exists") {
+          nctx.b = +nctx.b;
+          if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
             cid = "forall";
           }
+        } else {
+          nctx.b = C_MIX;
         }
 
         if (ctx.b==C_ROOT && decl->_e==NULL &&
@@ -1488,9 +1494,56 @@ namespace MiniZinc {
                 alv.push_back(al->_v[i]);
               }
             }
-            ArrayLit* nal = ArrayLit::a(al->_loc,alv);
-            nal->_type = al->_type;
-            args.push_back(nal);
+            if (cid == "exists") {
+              std::vector<Expression*> neg_alv;
+              unsigned int cur = 0;
+              for (unsigned int i=0; i<alv.size(); i++) {
+                Call* neg_call = same_call(alv[i],"bool_eq");
+                if (neg_call && 
+                    Expression::equal(neg_call->_args[1],constants().lf)) {
+                  neg_alv.push_back(neg_call->_args[0]);
+                } else {
+                  Call* clause = same_call(alv[i],"bool_clause");
+                  if (clause) {
+                    ArrayLit* clause_pos = eval_array_lit(clause->_args[0]);
+                    for (unsigned int j=0; j<clause_pos->_v.size(); j++) {
+                      alv.push_back(clause_pos->_v[j]);
+                    }
+                    ArrayLit* clause_neg = eval_array_lit(clause->_args[1]);
+                    for (unsigned int j=0; j<clause_neg->_v.size(); j++) {
+                      neg_alv.push_back(clause_neg->_v[j]);
+                    }
+                  } else {
+                    alv[cur++] = alv[i];
+                  }
+                }
+              }
+              if (neg_alv.empty()) {
+                assert(cur==alv.size());
+                ArrayLit* nal = ArrayLit::a(al->_loc,alv);
+                nal->_type = al->_type;
+                args.push_back(nal);
+              } else {
+                alv.resize(cur);
+                if (alv.size()==1 && neg_alv.size()==1) {
+                  args.push_back(neg_alv[0]);
+                  args.push_back(alv[0]);
+                  cid = "bool_le";
+                } else {
+                  ArrayLit* pos_al = ArrayLit::a(al->_loc,alv);
+                  pos_al->_type = al->_type;
+                  ArrayLit* neg_al = ArrayLit::a(al->_loc,neg_alv);
+                  neg_al->_type = al->_type;
+                  cid = "bool_clause";
+                  args.push_back(pos_al);
+                  args.push_back(neg_al);
+                }
+              }
+            } else {
+              ArrayLit* nal = ArrayLit::a(al->_loc,alv);
+              nal->_type = al->_type;
+              args.push_back(nal);
+            }
           } else if (decl->_e==NULL && cid == "lin_exp") {
             EE flat_coeff = flat_exp(env,nctx,c->_args[0],NULL,NULL);
             EE flat_al = flat_exp(env,nctx,c->_args[1],NULL,NULL);
