@@ -887,8 +887,14 @@ namespace MiniZinc {
         IntVal ub = d;
         for (unsigned int i=al->_v.size(); i--;) {
           Bounds b = _bounds.back(); _bounds.pop_back();
-          lb += eval_int(coeff->_v[i])*b.first;
-          ub += eval_int(coeff->_v[i])*b.second;
+          IntVal cv = eval_int(coeff->_v[i]);
+          if (cv > 0) {
+            lb += cv*b.first;
+            ub += cv*b.second;
+          } else {
+            lb += cv*b.second;
+            ub += cv*b.first;
+          }
         }
         _bounds.push_back(Bounds(lb,ub));
       } else {
