@@ -326,6 +326,7 @@ namespace MiniZinc {
       throw EvalError(al->_loc, "mismatch in array dimensions");
     ArrayLit* ret = ArrayLit::a(al->_loc, al->_v, dims);
     ret->_type = al->_type;
+    ret->_type._dim = d;
     return ret;
   }
   Expression* b_array1d(ASTExprVec<Expression>& args) {
