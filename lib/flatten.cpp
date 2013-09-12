@@ -622,16 +622,17 @@ namespace MiniZinc {
   }
 
   
-  class CmpExp {
+  class CmpExpIdx {
   public:
     std::vector<Expression*>& x;
-    CmpExp(std::vector<Expression*>& x0) : x(x0) {}
+    CmpExpIdx(std::vector<Expression*>& x0) : x(x0) {}
     bool operator ()(int i, int j) const {
       if (Expression::equal(x[i],x[j]))
         return false;
       return x[i]<x[j];
     }
   };
+
   void simplify_lin(std::vector<IntVal>& c,
                     std::vector<Expression*>& x,
                     IntVal& d) {
@@ -639,7 +640,7 @@ namespace MiniZinc {
     for (unsigned int i=idx.size(); i--;) {
       idx[i]=i;
     }
-    std::sort(idx.begin(),idx.end(),CmpExp(x));
+    std::sort(idx.begin(),idx.end(),CmpExpIdx(x));
     int ci = 0;
     for (; ci<x.size(); ci++) {
       if (IntLit* il = x[idx[ci]]->dyn_cast<IntLit>()) {
@@ -669,6 +670,32 @@ namespace MiniZinc {
       }
     }
     c.resize(ci);
+    x.resize(ci);
+  }
+
+  class CmpExp {
+  public:
+    bool operator ()(const Expression* i, const Expression* j) const {
+      if (Expression::equal(i,j))
+        return false;
+      return i<j;
+    }
+  };
+
+  void remove_dups(std::vector<Expression*>& x, bool identity) {
+    std::sort(x.begin(),x.end(),CmpExp());
+    int ci = 0;
+    Expression* prev = NULL;
+    for (unsigned int i=0; i<x.size(); i++) {
+      if (!Expression::equal(x[i],prev)) {
+        prev = x[i];
+        if (x[i]->isa<BoolLit>() && x[i]->cast<BoolLit>()->_v==identity) {
+          // skip
+        } else {
+          x[ci++] = x[i];
+        }
+      }
+    }
     x.resize(ci);
   }
 
@@ -1550,8 +1577,19 @@ namespace MiniZinc {
                   }
                 }
               }
+              remove_dups(alv,false);
+              remove_dups(neg_alv,true);
               if (neg_alv.empty()) {
                 assert(cur==alv.size());
+                if (alv.size()==0) {
+                  ret.b = bind(env,false,b,constants().lt);
+                  ret.r = bind(env,ctx.neg,r,constants().lf);
+                  return ret;
+                } else if (alv.size()==1) {
+                  ret.b = bind(env,false,b,constants().lt);
+                  ret.r = bind(env,ctx.neg,r,alv[0]);
+                  return ret;
+                }
                 ArrayLit* nal = ArrayLit::a(al->_loc,alv);
                 nal->_type = al->_type;
                 args.push_back(nal);
@@ -1565,7 +1603,17 @@ namespace MiniZinc {
                 args.push_back(pos_al);
                 args.push_back(neg_al);
               }
-            } else {
+            } else /* cid=="forall" */ {
+              remove_dups(alv,true);
+              if (alv.size()==0) {
+                ret.b = bind(env,false,b,constants().lt);
+                ret.r = bind(env,ctx.neg,r,constants().lt);
+                return ret;
+              } else if (alv.size()==1) {
+                ret.b = bind(env,false,b,constants().lt);
+                ret.r = bind(env,ctx.neg,r,alv[0]);
+                return ret;
+              }
               ArrayLit* nal = ArrayLit::a(al->_loc,alv);
               nal->_type = al->_type;
               args.push_back(nal);
