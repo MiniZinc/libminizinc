@@ -27,12 +27,10 @@ namespace MiniZinc {
   struct Ctx {
     /// Boolean context
     BCtx b;
-    /// Integer context
-    BCtx i;
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_ROOT), neg(false) {}
+    Ctx(void) : b(C_ROOT), neg(false) {}
   };
 
   /// Output operator for locations
@@ -40,13 +38,6 @@ namespace MiniZinc {
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, Ctx& ctx) {
     switch (ctx.b) {
-    case C_ROOT: os << "R"; break;
-    case C_POS: os << "+"; break;
-    case C_NEG: os << "-"; break;
-    case C_MIX: os << "M"; break;
-    default: assert(false); break;
-    }
-    switch (ctx.i) {
     case C_ROOT: os << "R"; break;
     case C_POS: os << "+"; break;
     case C_NEG: os << "-"; break;
@@ -1189,24 +1180,44 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GQ;
+              ctx0.b = +ctx0.b;
+              ctx1.b = -ctx1.b;
+            } else {
+              ctx0.b = -ctx0.b;
+              ctx1.b = +ctx1.b;
             }
             goto flatten_bool_op;
           case BOT_LQ:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GR;
+              ctx0.b = +ctx0.b;
+              ctx1.b = -ctx1.b;
+            } else {
+              ctx0.b = -ctx0.b;
+              ctx1.b = +ctx1.b;
             }
             goto flatten_bool_op;
           case BOT_GR:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LQ;
+              ctx0.b = -ctx0.b;
+              ctx1.b = +ctx1.b;
+            } else {
+              ctx0.b = +ctx0.b;
+              ctx1.b = -ctx1.b;
             }
             goto flatten_bool_op;
           case BOT_GQ:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LE;
+              ctx0.b = -ctx0.b;
+              ctx1.b = +ctx1.b;
+            } else {
+              ctx0.b = +ctx0.b;
+              ctx1.b = -ctx1.b;
             }
             goto flatten_bool_op;
           case BOT_EQ:
@@ -1214,16 +1225,19 @@ namespace MiniZinc {
               doubleNeg = true;
               bot = BOT_NQ;
             }
+            ctx0.b = ctx1.b = C_MIX;
             goto flatten_bool_op;
           case BOT_NQ:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_EQ;
             }
+            ctx0.b = ctx1.b = C_MIX;
             goto flatten_bool_op;
           case BOT_IN:
           case BOT_SUBSET:
           case BOT_SUPERSET:
+            ctx0.b = ctx1.b = C_MIX;
           flatten_bool_op:
             {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
@@ -1519,6 +1533,11 @@ namespace MiniZinc {
             ctx.neg = false;
             nctx.neg = true;
             cid = "forall";
+          }
+        } else if (decl->_e==NULL && cid == "bool2int") {
+          if (ctx.neg) {
+            ctx.neg = false;
+            nctx.neg = true;
           }
         } else {
           nctx.b = C_MIX;
