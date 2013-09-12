@@ -1607,7 +1607,7 @@ namespace MiniZinc {
               ret.b = conj(env,b,false,args_ee);
               ret.r = bind(env,ctx.neg,r,IntLit::a(Location(),d));
               break;
-            } else if (coeffv.size()==1 && std::abs(coeffv[0])==1 && d==0) {
+            } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
               ret.b = conj(env,b,false,args_ee);
               ret.r = bind(env,ctx.neg,r,alv[0]);
               break;
