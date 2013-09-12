@@ -429,6 +429,7 @@ namespace MiniZinc {
           args.push_back(al);
           Call* ret = Call::a(Location(),"forall",args);
           ret->_type = Type::varbool();
+          ret->_decl = env.orig->matchFn(ret);
           EE rete = flat_exp(env,Ctx(),ret,NULL,constants().t);
           return bind(env,false,b,rete.r);
         }
