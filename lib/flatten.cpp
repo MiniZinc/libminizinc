@@ -1557,19 +1557,13 @@ namespace MiniZinc {
                 args.push_back(nal);
               } else {
                 alv.resize(cur);
-                if (alv.size()==1 && neg_alv.size()==1) {
-                  args.push_back(neg_alv[0]);
-                  args.push_back(alv[0]);
-                  cid = "bool_le";
-                } else {
-                  ArrayLit* pos_al = ArrayLit::a(al->_loc,alv);
-                  pos_al->_type = al->_type;
-                  ArrayLit* neg_al = ArrayLit::a(al->_loc,neg_alv);
-                  neg_al->_type = al->_type;
-                  cid = "bool_clause";
-                  args.push_back(pos_al);
-                  args.push_back(neg_al);
-                }
+                ArrayLit* pos_al = ArrayLit::a(al->_loc,alv);
+                pos_al->_type = al->_type;
+                ArrayLit* neg_al = ArrayLit::a(al->_loc,neg_alv);
+                neg_al->_type = al->_type;
+                cid = "bool_clause";
+                args.push_back(pos_al);
+                args.push_back(neg_al);
               }
             } else {
               ArrayLit* nal = ArrayLit::a(al->_loc,alv);
