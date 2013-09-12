@@ -1272,10 +1272,33 @@ namespace MiniZinc {
                     case BOT_GQ: bot = BOT_LQ; break;
                     default: break;
                     }
+                  } else {
                     d = -d;
                   }
-                  args.push_back(alv[0]);
-                  args.push_back(IntLit::a(Location(),-d));
+                  Expression* e0;
+                  Expression* e1;
+                  switch (bot) {
+                  case BOT_LE:
+                    e0 = alv[0];
+                    e1 = IntLit::a(Location(),d-1);
+                    bot = BOT_LQ;
+                    break;
+                  case BOT_GR:
+                    e0 = IntLit::a(Location(),d+1);
+                    e1 = alv[0];
+                    bot = BOT_LQ;
+                    break;
+                  case BOT_GQ:
+                    e0 = IntLit::a(Location(),d);
+                    e1 = alv[0];
+                    bot = BOT_LQ;
+                    break;
+                  default:
+                    e0 = alv[0];
+                    e1 = IntLit::a(Location(),d);
+                  }
+                  args.push_back(e0);
+                  args.push_back(e1);
                   callid = opToBuiltin(bo,bot);
                 } else {
                   int coeff_sign;
