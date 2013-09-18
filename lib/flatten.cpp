@@ -713,7 +713,7 @@ namespace MiniZinc {
     if (e==NULL) return EE();
     EE ret;
     assert(!e->_type.isunknown());
-    if (e->_type.ispar() && e->_type._bt!=Type::BT_ANN) {
+    if (e->_type.ispar() && !e->isa<Let>() && e->_type._bt!=Type::BT_ANN) {
       ret.b = bind(env,false,b,constants().lt);
       ret.r = bind(env,ctx.neg,r,eval_par(e));
       return ret;
