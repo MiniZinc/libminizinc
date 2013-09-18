@@ -2062,6 +2062,8 @@ namespace MiniZinc {
                 std::copy(le_x->_v.begin(),le_x->_v.end(),nx.begin());
                 nx.push_back(Id::a(Location(),vd->_id,vd));
                 c->_args[1] = ArrayLit::a(Location(),nx);
+                IntVal d = c->_args[2]->cast<IntLit>()->_v;
+                c->_args[2] = IntLit::a(Location(),-d);
               } else {
                 args.push_back(Id::a(Location(),vd->_id,vd));
               }
