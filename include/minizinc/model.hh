@@ -82,6 +82,15 @@ namespace MiniZinc {
     /// Return function declaration matching call \a c
     FunctionI* matchFn(Call* c) const;
 
+    /// Return item \a i
+    Item*& operator[] (int i);
+    /// Return item \a i
+    const Item* operator[] (int i) const;
+    /// Return number of items
+    unsigned int size(void) const;
+
+    /// Remove all items marked as removed
+    void compact(void);
   };
 
   /// Visitor for model items

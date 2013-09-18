@@ -688,7 +688,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     Item(const Location& loc, const ItemId& iid)
-      : ASTNode(iid), _loc(loc) {}
+      : ASTNode(iid), _loc(loc) { _flag_1 = false; }
 
   public:
 
@@ -714,6 +714,11 @@ namespace MiniZinc {
     template<class T> const T* dyn_cast(void) const {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
+    
+    /// Check if item should be removed
+    bool removed(void) const { return _flag_1; }
+    /// Set flag to remove item
+    void remove(void) { _flag_1 = true; }
   };
 
   class Model;
@@ -733,10 +738,10 @@ namespace MiniZinc {
     static IncludeI* a(const Location& loc, const ASTString& f);
     /// Set the model
     void setModel(Model* m, bool own=true) {
-      assert(_m==NULL); _m = m; _flag_1 = own;
+      assert(_m==NULL); _m = m; _flag_2 = own;
     }
     bool own(void) const {
-      return _flag_1;
+      return _flag_2;
     }
   };
   /// \brief Variable declaration item

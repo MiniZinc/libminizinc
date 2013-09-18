@@ -180,4 +180,20 @@ namespace MiniZinc {
     }
     return NULL;
   }
+
+  Item*&
+  Model::operator[] (int i) { return _items[i]; }
+  const Item*
+  Model::operator[] (int i) const { return _items[i]; }
+  unsigned int
+  Model::size(void) const { return _items.size(); }
+  
+  void
+  Model::compact(void) {
+    struct { bool operator() (const Item* i) {
+      return i->removed();
+    }} isremoved;
+    _items.erase(remove_if(_items.begin(),_items.end(),isremoved),
+                 _items.end());
+  }
 }
