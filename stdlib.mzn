@@ -64,6 +64,8 @@ predicate int_times(var int: a, var int: b, var int: c);
 
 %set constraints
 predicate set_in(var int, set of int);
+predicate set_in(var int, var set of int);
+predicate set_subset(var set of int, var set of int);
 
 %Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
