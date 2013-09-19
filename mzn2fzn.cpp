@@ -78,21 +78,36 @@ int main(int argc, char** argv) {
     datafiles.push_back(argv[i++]);
 
   {
+    if (flag_verbose)
+      std::cerr << "Parsing '" << filename << "' ..." << std::endl;
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
                          std::cerr)) {
       try {
-        if (flag_verbose)
-          std::cerr << "parsing " << filename << std::endl;
         if (flag_typecheck) {
+          if (flag_verbose)
+            std::cerr << "Typechecking..." << std::endl;
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
+
+          if (flag_verbose)
+            std::cerr << "Flattening..." << std::endl;
           Model* flat = flatten(m);
-          if (flag_optimize)
+
+          if (flag_optimize) {
+            if (flag_verbose)
+              std::cerr << "Optimizing..." << std::endl;
             optimize(flat);
+          }
 
           if (flag_output) {
-            if (!flag_newfzn)
+            if (!flag_newfzn) {
+              if (flag_verbose)
+                std::cerr << "Converting to old FlatZinc..." << std::endl;
               oldflatzinc(flat);
+            }
+
+            if (flag_verbose)
+              std::cerr << "Printing FlatZinc..." << std::endl;
             Printer p;
             p.print(flat,std::cout);
           }
@@ -108,6 +123,9 @@ int main(int argc, char** argv) {
       delete m;
     }
   }
+
+  if (flag_verbose)
+    std::cerr << "Done." << std::endl;
   return 0;
 
 error:
