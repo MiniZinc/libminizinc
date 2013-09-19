@@ -1,0 +1,16 @@
+LibMZN: minizinc 2.0 library and transformation tool
+
+Compilation instructions:
+=========================
+Prerequisite software:
+- cmake
+- clang
+- bison, flex
+
+To build it, run:
+> mkdir build/
+> cd build/
+> cmake ..
+> make
+
+This will create a 'build/' directory and let cmake put its build files there. From then on, it suffices to go into the build directory and run 'make'.
