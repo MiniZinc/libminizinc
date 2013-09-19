@@ -34,13 +34,9 @@ int main(int argc, char** argv) {
   bool flag_typecheck = true;
   bool flag_eval = true;
   bool flag_output = true;
-  bool flag_outputFundecls = false;
   bool flag_verbose = false;
-  bool flag_allSolutions = false;
   bool flag_newfzn = false;
-  bool flag_free_search = false;
   bool flag_optimize = true;
-  int nbThreads = 1;
   if (argc < 2)
     goto error;
 
@@ -57,8 +53,6 @@ int main(int argc, char** argv) {
       flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-output")) {
       flag_output = false;
-    } else if (string(argv[i])==string("--no-fundecl-output")) {
-      flag_outputFundecls = false;
     } else if (string(argv[i])==string("--no-typecheck")) {
       flag_typecheck = false; flag_eval=false;
     } else if (string(argv[i])==string("--no-eval")) {
@@ -69,13 +63,6 @@ int main(int argc, char** argv) {
       flag_newfzn = true;
     } else if (string(argv[i])==string("--no-optimize")) {
       flag_optimize = false;
-    } else if (string(argv[i])==string("-a")) {
-      flag_allSolutions = true;
-    } else if (string(argv[i])==string("-f")) {
-      flag_free_search = true;
-    } else if (string(argv[i])==string("-p")) {
-      i++;
-      nbThreads = atoi(argv[i]);
     } else {
       break;
     }
