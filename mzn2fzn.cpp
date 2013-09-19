@@ -102,10 +102,13 @@ int main(int argc, char** argv) {
           Model* flat = flatten(m);
           if (flag_optimize)
             optimize(flat);
-          if (!flag_newfzn)
-            oldflatzinc(flat);
-          Printer p;
-          p.print(flat,std::cout);
+
+          if (flag_output) {
+            if (!flag_newfzn)
+              oldflatzinc(flat);
+            Printer p;
+            p.print(flat,std::cout);
+          }
         }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
@@ -122,6 +125,16 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-            << " [--ignore-stdlib] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+            << std::endl
+            << "Options:" << std::endl
+            << "\t--ignore-stdlib\tIgnore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+            << "\t--newfzn\tOutput in the new FlatZinc format" << std::endl
+            << "\t--verbose\tPrint progress statements" << std::endl
+            << "\t--no-typecheck\tDo not typecheck (implies --no-eval)" << std::endl
+            << "\t--no-eval\tDo not evaluate" << std::endl
+            << "\t--no-optimize\tDo not optimize the FlatZinc (may speed up large instances)" << std::endl
+            << "\t--no-output\tDo not print the output" << std::endl;
+
   exit(EXIT_FAILURE);
 }
