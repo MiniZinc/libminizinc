@@ -368,7 +368,16 @@ namespace MiniZinc {
           }
           return e;
         } else if (vd->_e != e) {
-          throw InternalError("not supported yet");
+          if (Call* c = e->dyn_cast<Call>()) {
+            std::vector<Expression*> args(c->_args.size());
+            std::copy(c->_args.begin(),c->_args.end(),args.begin());
+            args.push_back(Id::a(Location(),vd->_id,vd));
+            c->_args = ASTExprVec<Expression>(args);
+            env.m->addItem(ConstraintI::a(Location(),c));
+            return vd;
+          } else {
+            throw InternalError("not supported yet");
+          }
         } else {
           return e;
         }
