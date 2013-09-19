@@ -1389,6 +1389,18 @@ namespace MiniZinc {
                   args.push_back(il);
                 }
               } else {
+                switch (bot) {
+                case BOT_GR:
+                  std::swap(e0,e1);
+                  bot = BOT_LE;
+                  break;
+                case BOT_GQ:
+                  std::swap(e0,e1);
+                  bot = BOT_LQ;
+                  break;
+                default:
+                  break;
+                }
                 args.push_back(e0.r);
                 args.push_back(e1.r);
                 callid = opToBuiltin(bo,bot);
