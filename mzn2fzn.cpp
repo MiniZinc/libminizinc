@@ -43,6 +43,8 @@ int main(int argc, char** argv) {
   GC::init();
 
   for (;;) {
+    if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
+        goto error;
     if (string(argv[i])==string("-I")) {
       i++;
       if (i==argc) {
@@ -133,6 +135,7 @@ error:
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
             << std::endl
             << "Options:" << std::endl
+            << "\t--help  -h\tPrint this help message" << std::endl
             << "\t--ignore-stdlib\tIgnore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
             << "\t--newfzn\tOutput in the new FlatZinc format" << std::endl
             << "\t--verbose\tPrint progress statements" << std::endl
