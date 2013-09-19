@@ -230,8 +230,8 @@ namespace MiniZinc {
 
   EE flat_exp(Env& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
-  Expression* bind(Env& env, bool neg, VarDecl* vd, Expression* e) {
-    if (neg) {
+  Expression* bind(Env& env, Ctx ctx, VarDecl* vd, Expression* e) {
+    if (ctx.neg) {
       assert(e->_type._bt == Type::BT_BOOL);
       if (vd==constants().t) {
         if (!isfalse(e)) {
@@ -247,7 +247,7 @@ namespace MiniZinc {
             BinOp* bo = BinOp::a(e->_loc,e,BOT_EQUIV,constants().lf);
             bo->_type = e->_type;
             EE ee = flat_exp(env,Ctx(),bo,NULL,constants().t);
-            return bind(env,false,vd,ee.r);
+            return bind(env,Ctx(),vd,ee.r);
           }
         }
         return constants().lt;
@@ -255,7 +255,7 @@ namespace MiniZinc {
         BinOp* bo = BinOp::a(e->_loc,e,BOT_EQUIV,constants().lf);
         bo->_type = e->_type;
         EE ee = flat_exp(env,Ctx(),bo,NULL,constants().t);
-        return bind(env,false,vd,ee.r);
+        return bind(env,Ctx(),vd,ee.r);
       }
     } else {
       if (vd==constants().t) {
@@ -323,6 +323,8 @@ namespace MiniZinc {
                 }
                 vd->_ti->_domain = SetLit::a(Location(),ibv);
               }
+            } else if (vd->_e->_type.isbool()) {
+              addCtxAnn(vd, ctx.b);
             }
 
             vd->introduced(true);
@@ -385,25 +387,25 @@ namespace MiniZinc {
     }
   }
 
-  Expression* conj(Env& env,VarDecl* b,bool neg,const std::vector<EE>& e) {
-    if (!neg) {
+  Expression* conj(Env& env,VarDecl* b,Ctx ctx,const std::vector<EE>& e) {
+    if (!ctx.neg) {
       std::vector<Expression*> nontrue;
       for (unsigned int i=0; i<e.size(); i++) {
         if (istrue(e[i].b))
           continue;
         if (isfalse(e[i].b)) {
-          return bind(env,false,b,constants().lf);
+          return bind(env,Ctx(),b,constants().lf);
         }
         nontrue.push_back(e[i].b);
       }
       if (nontrue.empty()) {
-        return bind(env,false,b,constants().lt);
+        return bind(env,Ctx(),b,constants().lt);
       } else if (nontrue.size()==1) {
-        return bind(env,false,b,nontrue[0]);
+        return bind(env,ctx,b,nontrue[0]);
       } else {
         if (b==constants().t) {
           for (unsigned int i=0; i<nontrue.size(); i++)
-            bind(env,false,b,nontrue[i]);
+            bind(env,ctx,b,nontrue[i]);
           return constants().lt;
         } else {
           std::vector<Expression*> args;
@@ -413,32 +415,32 @@ namespace MiniZinc {
           Call* ret = Call::a(Location(),"forall",args);
           ret->_type = Type::varbool();
           ret->_decl = env.orig->matchFn(ret);
-          EE rete = flat_exp(env,Ctx(),ret,NULL,constants().t);
-          return bind(env,false,b,rete.r);
+          return flat_exp(env,ctx,ret,b,constants().t).r;
         }
       }
     } else {
+      Ctx nctx = ctx;
+      nctx.neg = false;
       // negated
       std::vector<Expression*> nonfalse;
       for (unsigned int i=0; i<e.size(); i++) {
         if (istrue(e[i].b))
           continue;
         if (isfalse(e[i].b)) {
-          return bind(env,false,b,constants().lt);
+          return bind(env,Ctx(),b,constants().lt);
         }
         nonfalse.push_back(e[i].b);
       }
       if (nonfalse.empty()) {
-        return bind(env,false,b,constants().lf);
+        return bind(env,Ctx(),b,constants().lf);
       } else if (nonfalse.size()==1) {
         UnOp* uo = UnOp::a(nonfalse[0]->_loc,UOT_NOT,nonfalse[0]);
         uo->_type = Type::varbool();
-        EE rete = flat_exp(env,Ctx(),uo,NULL,constants().t);
-        return bind(env,false,b,rete.r);
+        return flat_exp(env,nctx,uo,b,constants().t).r;
       } else {
         if (b==constants().f) {
           for (unsigned int i=0; i<nonfalse.size(); i++)
-            bind(env,false,b,nonfalse[i]);
+            bind(env,nctx,b,nonfalse[i]);
           return constants().lf;
         } else {
           std::vector<Expression*> args;
@@ -454,8 +456,7 @@ namespace MiniZinc {
           ret->_type = Type::varbool();
           ret->_decl = env.orig->matchFn(ret);
           assert(ret->_decl);
-          EE rete = flat_exp(env,Ctx(),ret,NULL,constants().t);
-          return bind(env,false,b,rete.r);
+          return flat_exp(env,nctx,ret,b,constants().t).r;
         }
       }
       
@@ -706,8 +707,8 @@ namespace MiniZinc {
     EE ret;
     assert(!e->_type.isunknown());
     if (e->_type.ispar() && !e->isa<Let>() && e->_type._bt!=Type::BT_ANN) {
-      ret.b = bind(env,false,b,constants().lt);
-      ret.r = bind(env,ctx.neg,r,eval_par(e));
+      ret.b = bind(env,Ctx(),b,constants().lt);
+      ret.r = bind(env,ctx,r,eval_par(e));
       return ret;
     }
     switch (e->eid()) {
@@ -715,13 +716,13 @@ namespace MiniZinc {
     case Expression::E_FLOATLIT:
     case Expression::E_SETLIT:
     case Expression::E_STRINGLIT:
-      ret.b = bind(env,false,b,constants().lt);
-      ret.r = bind(env,false,r,e);
+      ret.b = bind(env,Ctx(),b,constants().lt);
+      ret.r = bind(env,Ctx(),r,e);
       return ret;
     case Expression::E_BOOLLIT:
       {
-        ret.b = bind(env,false,b,constants().lt);
-        ret.r = bind(env,ctx.neg,r,e);
+        ret.b = bind(env,Ctx(),b,constants().lt);
+        ret.r = bind(env,ctx,r,e);
         return ret;
       }
       break;
@@ -777,7 +778,7 @@ namespace MiniZinc {
               break;
             }
           }
-          ret.b = bind(env,false,b,constants().lt);
+          ret.b = bind(env,Ctx(),b,constants().lt);
           if (vd && vd->_e!=NULL) {
             switch (vd->_e->eid()) {
             case Expression::E_INTLIT:
@@ -850,7 +851,7 @@ namespace MiniZinc {
               rete->_type = id->_type;
             }
           }
-          ret.r = bind(env,ctx.neg,r,rete);
+          ret.r = bind(env,ctx,r,rete);
         }
       }
       break;
@@ -871,8 +872,8 @@ namespace MiniZinc {
           dims[i] = std::pair<int,int>(al->min(i), al->max(i));
         ArrayLit* alr = ArrayLit::a(Location(),elems,dims);
         alr->_type = al->_type;
-        ret.b = conj(env,b,false,elems_ee);
-        ret.r = bind(env,false,r,alr);
+        ret.b = conj(env,b,Ctx(),elems_ee);
+        ret.r = bind(env,ctx,r,alr);
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -907,8 +908,8 @@ namespace MiniZinc {
           for (unsigned int i=aa->_idx.size(); i--;)
             dims[i] = eval_int(aa->_idx[i]);
           Expression* val = eval_arrayaccess(al,dims);
-          ret.b = bind(env,false,b,constants().lt);
-          ret.r = bind(env,ctx.neg,r,val);
+          ret.b = bind(env,Ctx(),b,constants().lt);
+          ret.r = bind(env,ctx,r,val);
         } else {
           std::vector<Expression*> args(aa->_idx.size()+1);
           for (unsigned int i=aa->_idx.size(); i--;)
@@ -945,8 +946,8 @@ namespace MiniZinc {
           elems[i] = elems_ee[i].r;
         ArrayLit* alr = ArrayLit::a(Location(),elems);
         alr->_type = c->_type;
-        ret.b = conj(env,b,false,elems_ee);
-        ret.r = bind(env,false,r,alr);
+        ret.b = conj(env,b,Ctx(),elems_ee);
+        ret.r = bind(env,Ctx(),r,alr);
       }
       break;
     case Expression::E_ITE:
@@ -1053,12 +1054,12 @@ namespace MiniZinc {
                 ret.r = ee.r;
                 std::vector<EE> ees(3);
                 ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = ee.b;
-                ret.b = conj(env,b,false,ees);
+                ret.b = conj(env,b,Ctx(),ees);
               } else {
-                ret.r = bind(env,false,r,cc);
+                ret.r = bind(env,ctx,r,cc);
                 std::vector<EE> ees(2);
                 ees[0].b = e0.b; ees[1].b = e1.b;
-                ret.b = conj(env,b,false,ees);
+                ret.b = conj(env,b,Ctx(),ees);
               }
             }
             break;
@@ -1159,8 +1160,18 @@ namespace MiniZinc {
               ctx.b = -ctx.b;
               bot = BOT_XOR;
               ctx0.b = ctx1.b = C_MIX;
+              goto flatten_bool_op;
+            } else {
+              ctx0.b = ctx1.b = C_MIX;
+              if (boe1->isa<Id>())
+                std::swap(boe0,boe1);
+              EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
+              Id* id = e0.r->cast<Id>();
+              EE e1 = flat_exp(env,ctx1,boe1,id->_decl,NULL);
+              ret.b = bind(env,Ctx(),b,constants().lt);
+              ret.r = bind(env,Ctx(),b,constants().lt);
+              break;
             }
-            goto flatten_bool_op;
           case BOT_XOR:
             if (ctx.neg) {
               ctx.neg = false;
@@ -1273,7 +1284,7 @@ namespace MiniZinc {
             {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
-              ret.b = bind(env,false,b,constants().lt);
+              ret.b = bind(env,Ctx(),b,constants().lt);
 
               std::vector<Expression*> args;
               std::string callid;
@@ -1329,9 +1340,9 @@ namespace MiniZinc {
                   default: assert(false); break;
                   }
                   if (result || doubleNeg) {
-                    ret.r = conj(env,r,ctx.neg,ees);
+                    ret.r = conj(env,r,ctx,ees);
                   } else {
-                    ret.r = bind(env,ctx.neg,r,constants().lf);
+                    ret.r = bind(env,ctx,r,constants().lf);
                   }
                   break;
                 } else if (coeffv.size()==1 && 
@@ -1451,20 +1462,36 @@ namespace MiniZinc {
                 if (Id* id = ees[2].b->dyn_cast<Id>()) {
                   addCtxAnn(id->_decl,ctx.b);
                 }
-                ret.r = conj(env,r,ctx.neg,ees);
+                ret.r = conj(env,r,ctx,ees);
               } else {
                 cc->_decl = env.orig->matchFn(cc->_id.str(),args);
                 assert(cc->_decl);
-                ees[2].b = flat_exp(env,Ctx(),cc,NULL,NULL).r;
-                if (doubleNeg) {
-                  Type t = ees[2].b->_type;
-                  ees[2].b = UnOp::a(Location(),UOT_NOT,ees[2].b);
-                  ees[2].b->_type = t;
+                bool singleExp = true;
+                for (unsigned int i=0; i<ees.size(); i++) {
+                  if (!istrue(ees[i].b)) {
+                    singleExp = false;
+                    break;
+                  }
                 }
-                if (Id* id = ees[2].b->dyn_cast<Id>()) {
-                  addCtxAnn(id->_decl,ctx.b);
+                if (singleExp) {
+                  if (doubleNeg) {
+                    ctx.b = -ctx.b;
+                    ctx.neg = !ctx.neg;
+                  }
+                  ret.r = flat_exp(env,ctx,cc,r,NULL).r;
+                } else {
+                  Expression* res = flat_exp(env,Ctx(),cc,NULL,NULL).r;
+                  ees[2].b = res;
+                  if (doubleNeg) {
+                    Type t = ees[2].b->_type;
+                    ees[2].b = UnOp::a(Location(),UOT_NOT,ees[2].b);
+                    ees[2].b->_type = t;
+                  }
+                  if (Id* id = ees[2].b->dyn_cast<Id>()) {
+                    addCtxAnn(id->_decl,ctx.b);
+                  }
+                  ret.r = conj(env,r,ctx,ees);
                 }
-                ret.r = conj(env,r,ctx.neg,ees);
                 env.map.insert(cc,ret);
               }
             }
@@ -1511,8 +1538,8 @@ namespace MiniZinc {
                 v[al0->_v.size()+i] = al1->_v[i];
               ArrayLit* alret = ArrayLit::a(e->_loc,v);
               alret->_type = e->_type;
-              ret.b = conj(env,b,false,ee);
-              ret.r = bind(env,false,r,alret);
+              ret.b = conj(env,b,Ctx(),ee);
+              ret.r = bind(env,ctx,r,alret);
             }
             break;
 
@@ -1590,7 +1617,7 @@ namespace MiniZinc {
         if (ctx.b==C_ROOT && decl->_e==NULL &&
             cid == "forall" && r==constants().t) {
           /// TODO: need generic array evaluation function
-          ret.b = bind(env,false,b,constants().lt);
+          ret.b = bind(env,ctx,b,constants().lt);
           EE flat_al = flat_exp(env,Ctx(),c->_args[0],NULL,constants().t);
           ArrayLit* al = follow_id(flat_al.r)->cast<ArrayLit>();
           nctx.b = C_ROOT;
@@ -1653,12 +1680,12 @@ namespace MiniZinc {
               if (neg_alv.empty()) {
                 assert(cur==alv.size());
                 if (alv.size()==0) {
-                  ret.b = bind(env,false,b,constants().lt);
-                  ret.r = bind(env,ctx.neg,r,constants().lf);
+                  ret.b = bind(env,Ctx(),b,constants().lt);
+                  ret.r = bind(env,ctx,r,constants().lf);
                   return ret;
                 } else if (alv.size()==1) {
-                  ret.b = bind(env,false,b,constants().lt);
-                  ret.r = bind(env,ctx.neg,r,alv[0]);
+                  ret.b = bind(env,Ctx(),b,constants().lt);
+                  ret.r = bind(env,ctx,r,alv[0]);
                   return ret;
                 }
                 ArrayLit* nal = ArrayLit::a(al->_loc,alv);
@@ -1677,12 +1704,12 @@ namespace MiniZinc {
             } else /* cid=="forall" */ {
               remove_dups(alv,true);
               if (alv.size()==0) {
-                ret.b = bind(env,false,b,constants().lt);
-                ret.r = bind(env,ctx.neg,r,constants().lt);
+                ret.b = bind(env,Ctx(),b,constants().lt);
+                ret.r = bind(env,ctx,r,constants().lt);
                 return ret;
               } else if (alv.size()==1) {
-                ret.b = bind(env,false,b,constants().lt);
-                ret.r = bind(env,ctx.neg,r,alv[0]);
+                ret.b = bind(env,Ctx(),b,constants().lt);
+                ret.r = bind(env,ctx,r,alv[0]);
                 return ret;
               }
               ArrayLit* nal = ArrayLit::a(al->_loc,alv);
@@ -1717,12 +1744,12 @@ namespace MiniZinc {
             }
             simplify_lin(coeffv,alv,d);
             if (coeffv.size()==0) {
-              ret.b = conj(env,b,false,args_ee);
-              ret.r = bind(env,ctx.neg,r,IntLit::a(Location(),d));
+              ret.b = conj(env,b,Ctx(),args_ee);
+              ret.r = bind(env,ctx,r,IntLit::a(Location(),d));
               break;
             } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
-              ret.b = conj(env,b,false,args_ee);
-              ret.r = bind(env,ctx.neg,r,alv[0]);
+              ret.b = conj(env,b,Ctx(),args_ee);
+              ret.r = bind(env,ctx,r,alv[0]);
               break;
             }
             std::vector<Expression*> coeff_ev(coeffv.size());
@@ -1747,26 +1774,26 @@ namespace MiniZinc {
           assert(decl);
           Env::Map::iterator cit = env.map.find(cr);
           if (cit != env.map.end()) {
-            ret.b = bind(env,false,b,cit->second.b);
-            ret.r = bind(env,ctx.neg,r,cit->second.r);
+            ret.b = bind(env,Ctx(),b,cit->second.b);
+            ret.r = bind(env,ctx,r,cit->second.r);
           } else {
             if (decl->_e==NULL) {
               /// For now assume that all builtins are total
               if (cit != env.map.end()) {
-                ret.b = bind(env,false,b,cit->second.b);
-                ret.r = bind(env,ctx.neg,r,cit->second.r);
+                ret.b = bind(env,Ctx(),b,cit->second.b);
+                ret.r = bind(env,ctx,r,cit->second.r);
               } else {
                 if (decl->_builtins.e) {
                   Expression* callres = 
                     decl->_builtins.e(cr->_args);
                   EE res = flat_exp(env,ctx,callres,r,b);
                   args_ee.push_back(res);
-                  ret.b = conj(env,b,false,args_ee);
-                  ret.r = bind(env,ctx.neg,r,res.r);
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret.r = bind(env,ctx,r,res.r);
                   env.map.insert(cr,ret);
                 } else {
-                  ret.b = conj(env,b,false,args_ee);
-                  ret.r = bind(env,ctx.neg,r,cr);
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret.r = bind(env,ctx,r,cr);
                   env.map.insert(cr,ret);
                 }
               }
@@ -1793,13 +1820,13 @@ namespace MiniZinc {
               }
               if (isTotal(decl)) {
                 EE ee = flat_exp(env,Ctx(),decl->_e,r,constants().t);
-                ret.r = bind(env,ctx.neg,r,ee.r);
-                ret.b = conj(env,b,false,args_ee);
+                ret.r = bind(env,ctx,r,ee.r);
+                ret.b = conj(env,b,Ctx(),args_ee);
                 env.map.insert(cr,ret);
               } else {
                 ret = flat_exp(env,ctx,decl->_e,r,NULL);
                 args_ee.push_back(ret);
-                ret.b = conj(env,b,false,args_ee);
+                ret.b = conj(env,b,Ctx(),args_ee);
                 env.map.insert(cr,ret);
               }
               // Restore previous mapping
@@ -1865,11 +1892,11 @@ namespace MiniZinc {
           
           EE ee(vd,NULL);
           env.map.insert(id,ee);
-          ret.r = bind(env,false,r,vd);
+          ret.r = bind(env,Ctx(),r,vd);
         } else {
-          ret.r = bind(env,false,r,it->second.r);
+          ret.r = bind(env,Ctx(),r,it->second.r);
         }
-        ret.b = bind(env,false,b,constants().lt);
+        ret.b = bind(env,Ctx(),b,constants().lt);
       }
       break;
     case Expression::E_LET:
@@ -1927,20 +1954,20 @@ namespace MiniZinc {
           }
         }
         if (r==constants().t && ctx.b==C_ROOT && !ctx.neg) {
-          ret.b = bind(env,false,b,constants().lt);
+          ret.b = bind(env,Ctx(),b,constants().lt);
           (void) flat_exp(env,ctx,let->_in,r,b);
-          ret.r = conj(env,r,false,cs);
+          ret.r = conj(env,r,Ctx(),cs);
         } else {
           EE ee = flat_exp(env,ctx,let->_in,NULL,NULL);
           if (let->_type.isbool()) {
             ee.b = ee.r;
             cs.push_back(ee);
-            ret.r = conj(env,r,ctx.neg,cs);
-            ret.b = bind(env,false,b,constants().lt);
+            ret.r = conj(env,r,ctx,cs);
+            ret.b = bind(env,Ctx(),b,constants().lt);
           } else {
             cs.push_back(ee);
-            ret.r = bind(env,false,r,ee.r);
-            ret.b = conj(env,b,false,cs);
+            ret.r = bind(env,Ctx(),r,ee.r);
+            ret.b = conj(env,b,Ctx(),cs);
           }
           let->popbindings();
           // Restore previous mapping
