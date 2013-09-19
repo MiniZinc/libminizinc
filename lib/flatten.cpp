@@ -1163,14 +1163,26 @@ namespace MiniZinc {
               goto flatten_bool_op;
             } else {
               ctx0.b = ctx1.b = C_MIX;
-              if (boe1->isa<Id>())
-                std::swap(boe0,boe1);
-              EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-              Id* id = e0.r->cast<Id>();
-              EE e1 = flat_exp(env,ctx1,boe1,id->_decl,NULL);
-              ret.b = bind(env,Ctx(),b,constants().lt);
-              ret.r = bind(env,Ctx(),b,constants().lt);
-              break;
+              if (r==constants().t) {
+                if (boe1->_type.ispar() || boe1->isa<Id>())
+                  std::swap(boe0,boe1);
+                if (istrue(boe0)) {
+                  return flat_exp(env,ctx1,boe1,r,b);
+                } else if (isfalse(boe0)) {
+                  ctx1.neg = true;
+                  ctx1.b = -ctx1.b;
+                  return flat_exp(env,ctx1,boe1,r,b);
+                } else {
+                  EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
+                  Id* id = e0.r->cast<Id>();
+                  EE e1 = flat_exp(env,ctx1,boe1,id->_decl,NULL);
+                  ret.b = bind(env,Ctx(),b,constants().lt);
+                  ret.r = bind(env,Ctx(),b,constants().lt);
+                }
+                break;
+              } else {
+                goto flatten_bool_op;
+              }
             }
           case BOT_XOR:
             if (ctx.neg) {
