@@ -27,10 +27,12 @@ namespace MiniZinc {
   struct Ctx {
     /// Boolean context
     BCtx b;
+    /// Integer context
+    BCtx i;
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), neg(false) {}
+    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
   };
 
   /// Output operator for locations
@@ -38,6 +40,13 @@ namespace MiniZinc {
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, Ctx& ctx) {
     switch (ctx.b) {
+    case C_ROOT: os << "R"; break;
+    case C_POS: os << "+"; break;
+    case C_NEG: os << "-"; break;
+    case C_MIX: os << "M"; break;
+    default: assert(false); break;
+    }
+    switch (ctx.i) {
     case C_ROOT: os << "R"; break;
     case C_POS: os << "+"; break;
     case C_NEG: os << "-"; break;
@@ -59,19 +68,6 @@ namespace MiniZinc {
     }
   }
 
-  /// Turn \a c into positive context
-  Ctx operator +(const Ctx& c) {
-    Ctx ret = c;
-    switch (ret.b) {
-    case C_ROOT: ret.b = C_POS; break;
-    case C_POS: ret.b = C_POS; break;
-    case C_NEG: ret.b = C_NEG; break;
-    case C_MIX: ret.b = C_MIX; break;
-    default: assert(false);
-    }
-    return ret;
-  }
-
   /// Turn \a c into negative context
   BCtx operator -(const BCtx& c) {
     switch (c) {
@@ -81,19 +77,6 @@ namespace MiniZinc {
     case C_MIX: return C_MIX;
     default: assert(false); return C_ROOT;
     }
-  }
-
-  /// Turn \a c into negative context
-  Ctx operator -(const Ctx& c) {
-    Ctx ret = c;
-    switch (ret.b) {
-    case C_ROOT: ret.b = C_NEG; break;
-    case C_POS: ret.b = C_NEG; break;
-    case C_NEG: ret.b = C_POS; break;
-    case C_MIX: ret.b = C_MIX; break;
-    default: assert(false);
-    }
-    return ret;
   }
 
   /// Check if \a c is non-positive
@@ -894,7 +877,8 @@ namespace MiniZinc {
           }
         }
         if (parAccess) {
-          Ctx nctx = +ctx;
+          Ctx nctx = ctx;
+          nctx.b = +nctx.b;
           nctx.neg = false;
           EE eev = flat_exp(env,nctx,aa->_v,NULL,NULL);
           ArrayLit* al;
@@ -1191,33 +1175,63 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GR;
-              ctx0.b = +ctx0.b;
-              ctx1.b = -ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = +ctx0.b;
+                ctx1.b = -ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = +ctx0.i;
+                ctx1.i = -ctx1.i;
+              }
             } else {
-              ctx0.b = -ctx0.b;
-              ctx1.b = +ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = -ctx0.b;
+                ctx1.b = +ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = -ctx0.i;
+                ctx1.i = +ctx1.i;
+              }
             }
             goto flatten_bool_op;
           case BOT_GR:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LQ;
-              ctx0.b = -ctx0.b;
-              ctx1.b = +ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = -ctx0.b;
+                ctx1.b = +ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = -ctx0.i;
+                ctx1.i = +ctx1.i;
+              }
             } else {
-              ctx0.b = +ctx0.b;
-              ctx1.b = -ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = +ctx0.b;
+                ctx1.b = -ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = +ctx0.i;
+                ctx1.i = -ctx1.i;
+              }
             }
             goto flatten_bool_op;
           case BOT_GQ:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LE;
-              ctx0.b = -ctx0.b;
-              ctx1.b = +ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = -ctx0.b;
+                ctx1.b = +ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = -ctx0.i;
+                ctx1.i = +ctx1.i;
+              }
             } else {
-              ctx0.b = +ctx0.b;
-              ctx1.b = -ctx1.b;
+              if (boe0->_type.isbool()) {
+                ctx0.b = +ctx0.b;
+                ctx1.b = -ctx1.b;
+              } else if (boe0->_type.isint()) {
+                ctx0.i = +ctx0.i;
+                ctx1.i = -ctx1.i;
+              }
             }
             goto flatten_bool_op;
           case BOT_EQ:
@@ -1225,19 +1239,27 @@ namespace MiniZinc {
               doubleNeg = true;
               bot = BOT_NQ;
             }
-            ctx0.b = ctx1.b = C_MIX;
+            if (boe0->_type.isbool()) {
+              ctx0.b = ctx1.b = C_MIX;
+            } else if (boe0->_type.isint()) {
+              ctx0.i = ctx1.i = C_MIX;
+            }
             goto flatten_bool_op;
           case BOT_NQ:
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_EQ;
             }
-            ctx0.b = ctx1.b = C_MIX;
+            if (boe0->_type.isbool()) {
+              ctx0.b = ctx1.b = C_MIX;
+            } else if (boe0->_type.isint()) {
+              ctx0.i = ctx1.i = C_MIX;
+            }
             goto flatten_bool_op;
           case BOT_IN:
           case BOT_SUBSET:
           case BOT_SUPERSET:
-            ctx0.b = ctx1.b = C_MIX;
+            ctx0.i = ctx1.i = C_MIX;
           flatten_bool_op:
             {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
@@ -1550,9 +1572,10 @@ namespace MiniZinc {
           if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
+            nctx.b = -ctx.i;
+          } else {
+            nctx.b = ctx.i;
           }
-        } else {
-          nctx.b = C_MIX;
         }
 
         if (ctx.b==C_ROOT && decl->_e==NULL &&
@@ -1566,13 +1589,21 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->_v[i],r,b);
         } else {
           std::vector<EE> args_ee(c->_args.size());
-          for (unsigned int i=c->_args.size(); i--;)
-            args_ee[i] = flat_exp(env,nctx,c->_args[i],NULL,NULL);
+          for (unsigned int i=c->_args.size(); i--;) {
+            Ctx argctx = nctx;
+            if (decl->_e!=NULL || (cid != "forall" && cid != "exists")) {
+              if (c->_args[i]->_type._bt==Type::BT_BOOL) {
+                argctx.b = C_MIX;
+              } else if (c->_args[i]->_type._bt==Type::BT_INT) {
+                argctx.i = C_MIX;
+              }
+            }
+            args_ee[i] = flat_exp(env,argctx,c->_args[i],NULL,NULL);
+          }
 
           std::vector<Expression*> args;
           if (decl->_e==NULL && (cid == "forall" || cid == "exists")) {
-            EE flat_al = flat_exp(env,nctx,c->_args[0],NULL,NULL);
-            ArrayLit* al = follow_id(flat_al.r)->cast<ArrayLit>();
+            ArrayLit* al = follow_id(args_ee[0].r)->cast<ArrayLit>();
             std::vector<Expression*> alv;
             for (unsigned int i=0; i<al->_v.size(); i++) {
               if (Call* sc = same_call(al->_v[i],cid)) {
