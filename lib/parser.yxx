@@ -50,7 +50,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file " << m->filename().str() << ")" << endl;
+    pp->err << "(included from file '" << m->filename().str() << "')" << endl;
   }
   pp->err << "In file " << location->filename.str() << ", line "
           << location->first_line << ":" << endl;
@@ -162,7 +162,7 @@ namespace MiniZinc {
         includePaths.pop_back();
       }
       if (!file.is_open()) {
-        err << "Error: cannot open file " << f << endl;
+        err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
       std::string s = string(istreambuf_iterator<char>(file),
@@ -185,7 +185,7 @@ namespace MiniZinc {
       std::ifstream file;
       file.open(f.c_str());
       if (!file.is_open()) {
-        err << "Error: cannot open data file " << f << endl;
+        err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
       std::string s = string(istreambuf_iterator<char>(file),
