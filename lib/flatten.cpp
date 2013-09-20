@@ -1163,7 +1163,7 @@ namespace MiniZinc {
               goto flatten_bool_op;
             } else {
               ctx0.b = ctx1.b = C_MIX;
-              if (r==constants().t) {
+              if (r && r==constants().t) {
                 if (boe1->_type.ispar() || boe1->isa<Id>())
                   std::swap(boe0,boe1);
                 if (istrue(boe0)) {
