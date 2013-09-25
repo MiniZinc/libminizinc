@@ -1664,6 +1664,7 @@ namespace MiniZinc {
               }
             }
             if (cid == "exists") {
+              std::vector<Expression*> pos_alv;
               std::vector<Expression*> neg_alv;
               unsigned int cur = 0;
               for (unsigned int i=0; i<alv.size(); i++) {
@@ -1676,36 +1677,34 @@ namespace MiniZinc {
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(clause->_args[0]);
                     for (unsigned int j=0; j<clause_pos->_v.size(); j++) {
-                      alv.push_back(clause_pos->_v[j]);
+                      pos_alv.push_back(clause_pos->_v[j]);
                     }
                     ArrayLit* clause_neg = eval_array_lit(clause->_args[1]);
                     for (unsigned int j=0; j<clause_neg->_v.size(); j++) {
                       neg_alv.push_back(clause_neg->_v[j]);
                     }
                   } else {
-                    alv[cur++] = alv[i];
+                    pos_alv.push_back(alv[i]);
                   }
                 }
               }
-              remove_dups(alv,false);
+              remove_dups(pos_alv,false);
               remove_dups(neg_alv,true);
               if (neg_alv.empty()) {
-                assert(cur==alv.size());
-                if (alv.size()==0) {
+                if (pos_alv.size()==0) {
                   ret.b = bind(env,Ctx(),b,constants().lt);
                   ret.r = bind(env,ctx,r,constants().lf);
                   return ret;
-                } else if (alv.size()==1) {
+                } else if (pos_alv.size()==1) {
                   ret.b = bind(env,Ctx(),b,constants().lt);
-                  ret.r = bind(env,ctx,r,alv[0]);
+                  ret.r = bind(env,ctx,r,pos_alv[0]);
                   return ret;
                 }
-                ArrayLit* nal = ArrayLit::a(al->_loc,alv);
+                ArrayLit* nal = ArrayLit::a(al->_loc,pos_alv);
                 nal->_type = al->_type;
                 args.push_back(nal);
               } else {
-                alv.resize(cur);
-                ArrayLit* pos_al = ArrayLit::a(al->_loc,alv);
+                ArrayLit* pos_al = ArrayLit::a(al->_loc,pos_alv);
                 pos_al->_type = al->_type;
                 ArrayLit* neg_al = ArrayLit::a(al->_loc,neg_alv);
                 neg_al->_type = al->_type;
