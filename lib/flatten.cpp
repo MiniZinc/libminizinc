@@ -2064,8 +2064,6 @@ namespace MiniZinc {
   }
 
   void oldflatzinc(Model* m) {
-    GCLock lock;
-
     struct {
     public:
       bool operator() (const Item* i) {
@@ -2078,13 +2076,14 @@ namespace MiniZinc {
     m->_items.erase(remove_if(m->_items.begin(), m->_items.end(), _isOptVar),
       m->_items.end());
         
-    std::vector<ConstraintI*> cs;
+    Model tmp;
     class FV : public ItemVisitor {
     public:
-      std::vector<ConstraintI*>& cs;
-      FV(std::vector<ConstraintI*>& cs0)
-        : cs(cs0) {}
+      Model& tmp;
+      FV(Model& tmp0)
+        : tmp(tmp0) {}
       void vVarDeclI(VarDeclI* v) {
+        GCLock lock;
         VarDecl* vd = v->_e;
         if (vd->_type.isvar() && vd->_type.isbool()) {
           if (Expression::equal(vd->_ti->_domain,constants().lt)) {
@@ -2109,7 +2108,7 @@ namespace MiniZinc {
                   vc->_args = argsv;
                 }
               }
-              cs.push_back(ConstraintI::a(Location(),ve));
+              tmp._items.push_back(ConstraintI::a(Location(),ve));
             }
           } else {
             if (vd->_e != NULL) {
@@ -2127,7 +2126,7 @@ namespace MiniZinc {
                 std::copy(c->_args.begin(),c->_args.end(),args.begin());
                 args.push_back(Id::a(Location(),vd->_id,vd));
                 c->_args = ASTExprVec<Expression>(args);
-                cs.push_back(ConstraintI::a(Location(),c));
+                tmp._items.push_back(ConstraintI::a(Location(),c));
               } else {
                 assert(vd->_e->eid() == Expression::E_ID ||
                        vd->_e->eid() == Expression::E_BOOLLIT);
@@ -2159,7 +2158,7 @@ namespace MiniZinc {
               }
               std::copy(c->_args.begin(),c->_args.end(),args.begin());
               c->_args = ASTExprVec<Expression>(args);
-              cs.push_back(ConstraintI::a(Location(),c));
+              tmp._items.push_back(ConstraintI::a(Location(),c));
             } else {
               assert(vd->_e->eid() == Expression::E_ID ||
                      vd->_e->eid() == Expression::E_INTLIT ||
@@ -2207,6 +2206,7 @@ namespace MiniZinc {
       void vConstraintI(ConstraintI* ci) {
         if (Call* vc = ci->_e->dyn_cast<Call>()) {
           if (vc->_id == "exists") {
+            GCLock lock;
             vc->_id = ASTString("array_bool_or");
             std::vector<Expression*> args(2);
             args[0] = vc->_args[0];
@@ -2214,6 +2214,7 @@ namespace MiniZinc {
             ASTExprVec<Expression> argsv(args);
             vc->_args = argsv;
           } else if (vc->_id == "forall") {
+            GCLock lock;
             vc->_id = ASTString("array_bool_and");
             std::vector<Expression*> args(2);
             args[0] = vc->_args[0];
@@ -2223,10 +2224,10 @@ namespace MiniZinc {
           }
         }
       }
-    } _fv(cs);
+    } _fv(tmp);
     iterItems<FV>(_fv,m);
-    for (unsigned int i=0; i<cs.size(); i++)
-      m->addItem(cs[i]);
+    for (unsigned int i=0; i<tmp._items.size(); i++)
+      m->addItem(tmp._items[i]);
     
     class Cmp {
     public:
