@@ -1659,7 +1659,7 @@ namespace MiniZinc {
             Ctx argctx = nctx;
             if (decl->_e!=NULL ||
                 (cid != "forall" && cid != "exists" && cid != "bool2int" &&
-                 cid != "sum" && cid != "lin_exp" )) {
+                 cid != "sum" && cid != "lin_exp" && cid != "assert")) {
               if (c->_args[i]->_type._bt==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->_args[i]->_type._bt==Type::BT_INT) {
