@@ -82,6 +82,24 @@ void filepath(const string& f, string& dirname, string& basename) {
        ) {}
 }
 
+// fastest way to read a file into a string (especially big files)
+// see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
+std::string get_file_contents(std::ifstream &in)
+{
+  //std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (in)
+  {
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    return(contents);
+  }
+  throw(errno);
+}
+
 namespace MiniZinc {
 
   Model* parse(const string& filename,
@@ -165,8 +183,7 @@ namespace MiniZinc {
         err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       m->_filepath = ASTString(fullname);
       ParserState pp(fullname,s, err, files, seenModels, m, false);
@@ -188,8 +205,7 @@ namespace MiniZinc {
         err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       ParserState pp(f, s, err, files, seenModels, model, true);
       yylex_init(&pp.yyscanner);
