@@ -132,3 +132,14 @@ function var int: element(int: idx1, var int: idx2,
   element(idx2,
           array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
                   [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var int: element(var int: idx1, var int: idx2,
+                          array[int,int] of var int: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
+                          
