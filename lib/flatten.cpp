@@ -33,6 +33,17 @@ namespace MiniZinc {
     bool neg;
     /// Default constructor (root context)
     Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    /// Copy constructor
+    Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
+    /// Assignment operator
+    Ctx& operator =(const Ctx& ctx) {
+      if (this!=&ctx) {
+        b = ctx.b;
+        i = ctx.i;
+        neg = ctx.neg;
+      }
+      return *this;
+    }
   };
 
   /// Output operator for locations
