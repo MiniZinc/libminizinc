@@ -1805,6 +1805,7 @@ namespace MiniZinc {
           cr->_type = c->_type;
           decl = env.orig->matchFn(cr);
           assert(decl);
+          cr->_decl = decl;
           Env::Map::iterator cit = env.map.find(cr);
           if (cit != env.map.end()) {
             ret.b = bind(env,Ctx(),b,cit->second.b);
