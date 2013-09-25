@@ -90,6 +90,7 @@ predicate bool_lt_reif(var bool: a, var bool: b, var bool: r);
 predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
+predicate bool_xor(var bool: a, var bool: b);
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 

@@ -994,6 +994,15 @@ namespace MiniZinc {
           Ctx ctx1 = ctx;
           ctx1.neg = false;
           BinOpType bot = bo->op();
+          if (bo->_e0->_type.isbool()) {
+            switch (bot) {
+            case BOT_EQ: bot = BOT_EQUIV; break;
+            case BOT_NQ: bot = BOT_XOR; break;
+            case BOT_LQ: bot = BOT_IMPL; break;
+            case BOT_GQ: bot = BOT_RIMPL; break;
+            default: break;
+            }
+          }
           bool negArgs = false;
           bool doubleNeg = false;
           if (ctx.neg) {
