@@ -101,6 +101,27 @@ lib/prettyprinter.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+include/minizinc/ast.hh
+include/minizinc/astiterator.hh
+include/minizinc/aststring.hh
+include/minizinc/astvec.hh
+include/minizinc/builtins.hh
+include/minizinc/config.hh.in
+include/minizinc/copy.hh
+include/minizinc/eval_par.hh
+include/minizinc/exception.hh
+include/minizinc/flatten.hh
+include/minizinc/gc.hh
+include/minizinc/hash.hh
+include/minizinc/iter.hh
+include/minizinc/model.hh
+include/minizinc/optimize.hh
+include/minizinc/parser.hh
+include/minizinc/parser.tab.hh
+include/minizinc/prettyprinter.hh
+include/minizinc/type.hh
+include/minizinc/typecheck.hh
+include/minizinc/values.hh
 )
 
 # add the executable
