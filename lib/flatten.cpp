@@ -1175,7 +1175,7 @@ namespace MiniZinc {
                 } else {
                   EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
                   Id* id = e0.r->cast<Id>();
-                  EE e1 = flat_exp(env,ctx1,boe1,id->_decl,NULL);
+                  (void) flat_exp(env,ctx1,boe1,id->_decl,NULL);
                   ret.b = bind(env,Ctx(),b,constants().lt);
                   ret.r = bind(env,Ctx(),b,constants().lt);
                 }
@@ -2032,10 +2032,7 @@ namespace MiniZinc {
       }
       void vConstraintI(ConstraintI* ci) {
         GCLock lock;
-        // std::cerr << "+++++++++++++++++++++++++++++++++++\n";
-        // debugprint(ci);
         (void) flat_exp(env,Ctx(),ci->_e,constants().t,constants().t);
-        // std::cerr << "+++++++++++++++++++++++++++++++++++\n";
       }
       void vSolveI(SolveI* si) {
         GCLock lock;
