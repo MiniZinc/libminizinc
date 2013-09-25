@@ -51,8 +51,7 @@ function     float: '/'(    float,    float);
 function var float: '/'(var float,var float);
 
 function     int:   sum(array[$T] of     int);
-function var int:   sum(array[int] of var int: x) =
-  lin_exp([1|i in index_set(x)],x,0);
+function var int:   sum(array[int] of var int: x);
 function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 

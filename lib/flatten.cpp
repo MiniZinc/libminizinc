@@ -1596,8 +1596,6 @@ namespace MiniZinc {
                               +c->_id.str());
         }
         FunctionI* decl = env.orig->matchFn(c);
-        if (c->_id == "forall" && decl==NULL)
-          throw InternalError("forall not defined");
 
         Ctx nctx = ctx;
         nctx.neg = false;
@@ -1639,7 +1637,9 @@ namespace MiniZinc {
           std::vector<EE> args_ee(c->_args.size());
           for (unsigned int i=c->_args.size(); i--;) {
             Ctx argctx = nctx;
-            if (decl->_e!=NULL || (cid != "forall" && cid != "exists")) {
+            if (decl->_e!=NULL ||
+                (cid != "forall" && cid != "exists" && cid != "bool2int" &&
+                 cid != "sum" && cid != "lin_exp" )) {
               if (c->_args[i]->_type._bt==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->_args[i]->_type._bt==Type::BT_INT) {
@@ -1727,18 +1727,29 @@ namespace MiniZinc {
               nal->_type = al->_type;
               args.push_back(nal);
             }
-          } else if (decl->_e==NULL && cid == "lin_exp") {
-            EE flat_coeff = flat_exp(env,nctx,c->_args[0],NULL,NULL);
-            EE flat_al = flat_exp(env,nctx,c->_args[1],NULL,NULL);
-            ArrayLit* coeff = follow_id(flat_coeff.r)->cast<ArrayLit>();
+          } else if (decl->_e==NULL && (cid == "lin_exp" || cid=="sum")) {
+
+            Expression* al_arg = (cid=="sum" ? c->_args[0] : c->_args[1]);
+            EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
             ArrayLit* al = follow_id(flat_al.r)->cast<ArrayLit>();
-            IntVal d = eval_int(c->_args[2]);
+            IntVal d = (cid == "sum" ? 0 : eval_int(c->_args[2]));
             
+            std::vector<IntVal> c_coeff(al->_v.size());
+            if (cid=="sum") {
+              for (unsigned int i=al->_v.size(); i--;)
+                c_coeff[i] = 1;
+            } else {
+              EE flat_coeff = flat_exp(env,nctx,c->_args[0],NULL,NULL);
+              ArrayLit* coeff = follow_id(flat_coeff.r)->cast<ArrayLit>();
+              for (unsigned int i=coeff->_v.size(); i--;)
+                c_coeff[i] = eval_int(coeff->_v[i]);
+            }
+            cid = "lin_exp";
             std::vector<IntVal> coeffv;
             std::vector<Expression*> alv;
             for (unsigned int i=0; i<al->_v.size(); i++) {
               if (Call* sc = same_call(al->_v[i],cid)) {
-                IntVal cd = eval_int(coeff->_v[i]);
+                IntVal cd = c_coeff[i];
                 ArrayLit* sc_coeff = eval_array_lit(sc->_args[0]);
                 ArrayLit* sc_al = eval_array_lit(sc->_args[1]);
                 IntVal sc_d = eval_int(sc->_args[2]);
@@ -1749,7 +1760,7 @@ namespace MiniZinc {
                 }
                 d += cd*sc_d;
               } else {
-                coeffv.push_back(eval_int(coeff->_v[i]));
+                coeffv.push_back(c_coeff[i]);
                 alv.push_back(al->_v[i]);
               }
             }
@@ -1766,13 +1777,13 @@ namespace MiniZinc {
             std::vector<Expression*> coeff_ev(coeffv.size());
             for (unsigned int i=coeff_ev.size(); i--;)
               coeff_ev[i] = IntLit::a(Location(),coeffv[i]);
-            ArrayLit* ncoeff = ArrayLit::a(coeff->_loc,coeff_ev);
+            ArrayLit* ncoeff = ArrayLit::a(Location(),coeff_ev);
             ncoeff->_type = Type::parint(1);
             args.push_back(ncoeff);
             ArrayLit* nal = ArrayLit::a(al->_loc,alv);
             nal->_type = al->_type;
             args.push_back(nal);
-            IntLit* il = IntLit::a(c->_args[2]->_loc,d);
+            IntLit* il = IntLit::a(Location(),d);
             il->_type = Type::parint();
             args.push_back(il);
           } else {
