@@ -699,7 +699,6 @@ namespace MiniZinc {
     case Expression::E_BOOLLIT:
     case Expression::E_INTLIT: 
     case Expression::E_FLOATLIT:
-    case Expression::E_STRINGLIT:
     case Expression::E_UNOP:
     case Expression::E_ARRAYACCESS:
       {
@@ -719,6 +718,8 @@ namespace MiniZinc {
           throw EvalError(e->_loc,"not a par expression");
         }
       }
+    case Expression::E_STRINGLIT:
+      return e;
     }
   }
 
