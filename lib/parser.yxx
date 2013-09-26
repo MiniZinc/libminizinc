@@ -50,7 +50,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file " << m->filename().str() << ")" << endl;
+    pp->err << "(included from file '" << m->filename().str() << "')" << endl;
   }
   pp->err << "In file " << location->filename.str() << ", line "
           << location->first_line << ":" << endl;
@@ -80,6 +80,24 @@ void filepath(const string& f, string& dirname, string& basename) {
        basename=basename.substr(p+1),
        p=basename.find_first_of('/')
        ) {}
+}
+
+// fastest way to read a file into a string (especially big files)
+// see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
+std::string get_file_contents(std::ifstream &in)
+{
+  //std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (in)
+  {
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    return(contents);
+  }
+  throw(errno);
 }
 
 namespace MiniZinc {
@@ -162,11 +180,10 @@ namespace MiniZinc {
         includePaths.pop_back();
       }
       if (!file.is_open()) {
-        err << "Error: cannot open file " << f << endl;
+        err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       m->_filepath = ASTString(fullname);
       ParserState pp(fullname,s, err, files, seenModels, m, false);
@@ -185,11 +202,10 @@ namespace MiniZinc {
       std::ifstream file;
       file.open(f.c_str());
       if (!file.is_open()) {
-        err << "Error: cannot open data file " << f << endl;
+        err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       ParserState pp(f, s, err, files, seenModels, model, true);
       yylex_init(&pp.yyscanner);

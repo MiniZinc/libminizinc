@@ -117,7 +117,6 @@ include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/parser.hh
-include/minizinc/parser.tab.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
