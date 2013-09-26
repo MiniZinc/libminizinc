@@ -46,7 +46,7 @@ namespace MiniZinc {
     }
   };
 
-  /// Output operator for locations
+  /// Output operator for contexts
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, Ctx& ctx) {
