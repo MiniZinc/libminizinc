@@ -380,15 +380,46 @@ namespace MiniZinc {
             }
           }
           return e;
+        } else if (vd == e) {
+          return vd;
         } else if (vd->_e != e) {
-          if (Call* c = e->dyn_cast<Call>()) {
-            std::vector<Expression*> args(c->_args.size());
-            std::copy(c->_args.begin(),c->_args.end(),args.begin());
-            args.push_back(Id::a(Location(),vd->_id,vd));
-            c->_args = ASTExprVec<Expression>(args);
-            env.m->addItem(ConstraintI::a(Location(),c));
-            return vd;
-          } else {
+          switch (e->eid()) {
+          case Expression::E_VARDECL:
+            {
+              VarDecl* e_vd = e->cast<VarDecl>();
+              if (e->_type._dim != 0)
+                throw InternalError("not supported yet");
+              std::string cid;
+              if (e->_type.isint()) {
+                cid = "int_eq";
+              } else if (e->_type.isbool()) {
+                cid = "bool_eq";
+              } else if (e->_type.isset()) {
+                cid = "set_eq";
+              } else {
+                throw InternalError("not yet implemented");
+              }
+              std::vector<Expression*> args(2);
+              args[0] = Id::a(Location(),vd->_id,vd);
+              args[0]->_type = vd->_type;
+              args[1] = Id::a(Location(),e_vd->_id,e_vd);
+              args[1]->_type = e_vd->_type;
+              Call* c = Call::a(Location(),cid,args);
+              env.m->addItem(ConstraintI::a(Location(),c));
+              return vd;
+            }
+          case Expression::E_CALL:
+            {
+              Call* c = e->cast<Call>();
+              std::vector<Expression*> args(c->_args.size());
+              std::copy(c->_args.begin(),c->_args.end(),args.begin());
+              args.push_back(Id::a(Location(),vd->_id,vd));
+              c->_args = ASTExprVec<Expression>(args);
+              env.m->addItem(ConstraintI::a(Location(),c));
+              return vd;
+            }
+            break;
+          default:
             throw InternalError("not supported yet");
           }
         } else {
