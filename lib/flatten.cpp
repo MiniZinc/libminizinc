@@ -979,7 +979,11 @@ namespace MiniZinc {
           EvalF(Env& env0, Ctx ctx0) : env(env0), ctx(ctx0) {}
           typedef EE ArrayVal;
           EE e(Expression* e) {
-            return flat_exp(env,ctx,e,NULL,NULL);
+            if (ctx.b == C_ROOT && e->_type.isbool()) {
+              return flat_exp(env,ctx,e,constants().t,constants().t);
+            } else {
+              return flat_exp(env,ctx,e,NULL,NULL);
+            }
           }
         } _evalf(env,ctx);
         std::vector<EE> elems_ee = eval_comp<EvalF>(_evalf,c);
@@ -1228,7 +1232,7 @@ namespace MiniZinc {
                   Id* id = e0.r->cast<Id>();
                   (void) flat_exp(env,ctx1,boe1,id->_decl,NULL);
                   ret.b = bind(env,Ctx(),b,constants().lt);
-                  ret.r = bind(env,Ctx(),b,constants().lt);
+                  ret.r = bind(env,Ctx(),r,constants().lt);
                 }
                 break;
               } else {
