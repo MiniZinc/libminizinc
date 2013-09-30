@@ -412,10 +412,37 @@ namespace MiniZinc {
             {
               Call* c = e->cast<Call>();
               std::vector<Expression*> args(c->_args.size());
+
+              if (c->_id == "lin_exp") {
+                c->_id = ASTString("int_lin_eq");
+                ArrayLit* le_c = c->_args[0]->cast<ArrayLit>();
+                std::vector<Expression*> nc(le_c->_v.size());
+                std::copy(le_c->_v.begin(),le_c->_v.end(),nc.begin());
+                nc.push_back(IntLit::a(Location(),-1));
+                c->_args[0] = ArrayLit::a(Location(),nc);
+                ArrayLit* le_x = c->_args[1]->cast<ArrayLit>();
+                std::vector<Expression*> nx(le_x->_v.size());
+                std::copy(le_x->_v.begin(),le_x->_v.end(),nx.begin());
+                nx.push_back(Id::a(Location(),vd->_id,vd));
+                c->_args[1] = ArrayLit::a(Location(),nx);
+                IntVal d = c->_args[2]->cast<IntLit>()->_v;
+                c->_args[2] = IntLit::a(Location(),-d);
+              } else {
+                args.push_back(Id::a(Location(),vd->_id,vd));
+
+                if (c->_id == "exists") {
+                  c->_id = ASTString("array_bool_or");
+                } else if (c->_id == "forall") {
+                  c->_id = ASTString("array_bool_and");
+                } else if (vd->_type.isbool()) {
+                  c->_id = ASTString(c->_id.str()+"_reif");
+                }
+
+              }
               std::copy(c->_args.begin(),c->_args.end(),args.begin());
-              args.push_back(Id::a(Location(),vd->_id,vd));
               c->_args = ASTExprVec<Expression>(args);
-              env.m->addItem(ConstraintI::a(Location(),c));
+              ConstraintI* ci = ConstraintI::a(Location(),c);
+              env.m->addItem(ci);
               return vd;
             }
             break;
