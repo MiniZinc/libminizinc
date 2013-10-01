@@ -2245,6 +2245,10 @@ namespace MiniZinc {
                 IntVal d = c->_args[2]->cast<IntLit>()->_v;
                 c->_args[2] = IntLit::a(Location(),-d);
               } else {
+                if (c->_id == "card") {
+                  // card is 'set_card' in old FlatZinc
+                  c->_id = ASTString("set_card");
+                }
                 args.push_back(Id::a(Location(),vd->_id,vd));
               }
               std::copy(c->_args.begin(),c->_args.end(),args.begin());
