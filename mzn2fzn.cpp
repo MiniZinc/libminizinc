@@ -113,6 +113,10 @@ int main(int argc, char** argv) {
             Printer p;
             p.print(flat,std::cout);
           }
+          delete flat;
+        } else if (flag_output) { // !flag_typecheck
+          Printer p;
+          p.print(m,std::cout);
         }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
