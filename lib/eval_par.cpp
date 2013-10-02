@@ -25,7 +25,7 @@ namespace MiniZinc {
   typename E::Val eval_id(Expression* e) {
     Id* id = e->cast<Id>();
     if (id->_decl == NULL)
-      throw EvalError(e->_loc, "undeclared identifier");
+      throw EvalError(e->_loc, "undeclared identifier", id->_v);
     if (id->_decl->_e == NULL)
       return E::e(id->_decl);
     typename E::Val r = E::e(id->_decl->_e);
@@ -146,7 +146,7 @@ namespace MiniZinc {
           ret->_type = e->_type;
           return ret;
         } else {
-          throw EvalError(e->_loc, "not an array expression");
+          throw EvalError(e->_loc, "not an array expression", bo->opToString());
         }
       }
       break;
@@ -156,7 +156,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function");
+          throw EvalError(e->_loc, "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.e)
           return ce->_decl->_builtins.e(ce->_args)
@@ -285,15 +285,15 @@ namespace MiniZinc {
               Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
-          default: throw EvalError(e->_loc,"not a set of int expression");
+          default: throw EvalError(e->_loc,"not a set of int expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
           if (bo->op() != BOT_DOTDOT)
-            throw EvalError(e->_loc, "not a set of int expression");
+            throw EvalError(e->_loc, "not a set of int expression", bo->opToString());
           return IntSetVal::a(eval_int(bo->_e0),
                               eval_int(bo->_e1));
         } else {
-          throw EvalError(e->_loc, "not a set of int expression");
+          throw EvalError(e->_loc, "not a set of int expression", bo->opToString());
         }
       }
       break;
@@ -301,7 +301,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function");
+          throw EvalError(e->_loc, "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.s)
           return ce->_decl->_builtins.s(ce->_args);
@@ -384,7 +384,7 @@ namespace MiniZinc {
           case BOT_XOR: return eval_bool(bo->_e0)^eval_bool(bo->_e1);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression");
+            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
           IntVal v0 = eval_int(bo->_e0);
@@ -398,7 +398,7 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression");
+            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isfloat() && bo->_e1->_type.isfloat()) {
           FloatVal v0 = eval_float(bo->_e0);
@@ -412,7 +412,7 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression");
+            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isintset()) {
           IntVal v0 = eval_int(bo->_e0);
@@ -421,7 +421,7 @@ namespace MiniZinc {
           case BOT_IN: return v1->contains(v0);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression");
+            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isset() && bo->_e1->_type.isset()) {
           IntSetVal* v0 = eval_intset(bo->_e0);
@@ -439,11 +439,11 @@ namespace MiniZinc {
           case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression");
+            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else {
           assert(false);
-          throw EvalError(e->_loc, "not a bool expression");
+          throw EvalError(e->_loc, "not a bool expression", bo->opToString());
         }
       }
       break;
@@ -455,7 +455,7 @@ namespace MiniZinc {
         case UOT_NOT: return !v0;
         default:
           assert(false);
-          throw EvalError(e->_loc,"not a bool expression");
+          throw EvalError(e->_loc,"not a bool expression", uo->opToString());
         }
       }
       break;
@@ -463,7 +463,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function");
+          throw EvalError(e->_loc, "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.b)
           return ce->_decl->_builtins.b(ce->_args);
@@ -533,7 +533,7 @@ namespace MiniZinc {
         case BOT_MULT: return v0*v1;
         case BOT_IDIV: return v0 / v1;
         case BOT_MOD: return v0 % v1;
-        default: throw EvalError(e->_loc,"not an integer expression");
+        default: throw EvalError(e->_loc,"not an integer expression", bo->opToString());
         }
       }
       break;
@@ -544,7 +544,7 @@ namespace MiniZinc {
         switch (uo->op()) {
         case UOT_PLUS: return v0;
         case UOT_MINUS: return -v0;
-        default: throw EvalError(e->_loc,"not an integer expression");
+        default: throw EvalError(e->_loc,"not an integer expression", uo->opToString());
         }
       }
       break;
@@ -552,7 +552,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function");
+          throw EvalError(e->_loc, "undeclared function", ce->_id);
         if (ce->_decl->_builtins.i)
           return ce->_decl->_builtins.i(ce->_args);
 
@@ -582,9 +582,9 @@ namespace MiniZinc {
   public:
     void vAssignI(AssignI* i) {
       if (i->_decl == NULL)
-        throw EvalError(i->_loc, "undeclared identifier");
+        throw EvalError(i->_loc, "undeclared identifier", i->_id);
       if (i->_decl->_e != NULL)
-        throw EvalError(i->_loc, "multiple assignments to same identifier");
+        throw EvalError(i->_loc, "multiple assignments to same identifier", i->_id);
       i->_decl->_e = i->_e;
     }
   };
@@ -625,7 +625,10 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_ANON:
     case Expression::E_TIID:
-      throw EvalError(e->_loc,"not a par expression");
+      {
+        TIId* tiid = e->cast<TIId>();
+        throw EvalError(e->_loc,"not a par expression", tiid->_v);
+      }
     case Expression::E_COMP:
       if (e->cast<Comprehension>()->set())
         return EvalSetLit::e(e);
@@ -641,7 +644,7 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         if (vd->_e==NULL)
-          throw EvalError(vd->_loc,"not a par expression");
+          throw EvalError(vd->_loc,"not a par expression", vd->_id);
         return eval_par(vd->_e);
       }
     case Expression::E_ANN:
@@ -669,9 +672,9 @@ namespace MiniZinc {
       {
         Id* id = e->cast<Id>();
         if (id->_decl==NULL)
-          throw EvalError(e->_loc,"undefined identifier");
+          throw EvalError(e->_loc,"undefined identifier", id->_v);
         if (id->_decl->_e==NULL)
-          throw EvalError(e->_loc,"not a par expression");
+          throw EvalError(e->_loc,"not a par expression", id->_v);
         return eval_par(id->_decl->_e);
       }
     case Expression::E_ITE:

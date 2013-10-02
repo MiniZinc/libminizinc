@@ -50,6 +50,8 @@ namespace MiniZinc {
   public:
     EvalError(const Location& loc, const std::string& msg)
       : LocationException(loc,msg) {}
+    EvalError(const Location& loc, const std::string& msg, const ASTString& name)
+      : LocationException(loc,msg+" '"+name.str()+"'") {}
     ~EvalError(void) throw() {}
     virtual const char* what(void) const throw() {
       return "MiniZinc: evaluation error";
