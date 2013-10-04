@@ -2074,17 +2074,17 @@ namespace MiniZinc {
             ret.r = bind(env,Ctx(),r,ee.r);
             ret.b = conj(env,b,Ctx(),cs);
           }
-          let->popbindings();
-          // Restore previous mapping
-          for (unsigned int i=0; i<idmap.size(); i++) {
-            std::pair<Id*,Expression*>& idvd = idmap[i];
-            Env::Map::iterator idit = env.map.find(idvd.first);
-            assert(idit != env.map.end());
-            if (idvd.second==NULL) {
-              env.map.remove(idvd.first);
-            } else {
-              idit->second.r = idvd.second;
-            }
+        }
+        let->popbindings();
+        // Restore previous mapping
+        for (unsigned int i=0; i<idmap.size(); i++) {
+          std::pair<Id*,Expression*>& idvd = idmap[i];
+          Env::Map::iterator idit = env.map.find(idvd.first);
+          assert(idit != env.map.end());
+          if (idvd.second==NULL) {
+            env.map.remove(idvd.first);
+          } else {
+            idit->second.r = idvd.second;
           }
         }
       }
