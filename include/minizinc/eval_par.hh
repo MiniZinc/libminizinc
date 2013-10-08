@@ -48,6 +48,13 @@ namespace MiniZinc {
   /// Compute bounds of an integer expression
   IntBounds compute_int_bounds(Expression* e);
 
+  /**
+   * \brief Compute bounds of a set of int expression
+   *
+   * Returns NULL if bounds cannot be determined
+   */
+  IntSetVal* compute_intset_bounds(Expression* e);
+
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,

@@ -901,8 +901,17 @@ namespace MiniZinc {
           }
         }
         _bounds.push_back(Bounds(lb,ub));
+      } else if (c._id == "card") {
+        if (IntSetVal* isv = compute_intset_bounds(c._args[0])) {
+          IntSetRanges isr(isv);
+          _bounds.push_back(Bounds(0,Ranges::size(isr)));
+        } else {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+        }
       } else {
         valid = false;
+        _bounds.push_back(Bounds(0,0));
       }
     }
     /// Visit let
@@ -937,5 +946,178 @@ namespace MiniZinc {
       return IntBounds(0,0,false);
   }
 
+  class ComputeIntSetBounds : public EVisitor {
+  public:
+    std::vector<IntSetVal*> _bounds;
+    bool valid;
+    ComputeIntSetBounds(void) : valid(true) {}
+    bool enter(Expression* e) {
+      if (e->_type._dim > 0)
+        return false;
+      if (!e->_type.isintset())
+        return false;
+      if (e->_type.ispar()) {
+        _bounds.push_back(eval_intset(e));
+        return false;
+      } else {
+        return true;
+      }
+    }
+    /// Visit set literal
+    void vSetLit(const SetLit&) {
+      throw EvalError(Location(), "not yet supported");
+    }
+    /// Visit identifier
+    void vId(const Id& id) {
+      if (id._decl->_ti->_domain) {
+        _bounds.push_back(eval_intset(id._decl->_ti->_domain));
+      } else {
+        if (id._decl->_e) {
+          BottomUpIterator<ComputeIntSetBounds> cbi(*this);
+          cbi.run(id._decl->_e);
+        } else {
+          valid = false;
+          _bounds.push_back(NULL);
+        }
+      }
+    }
+    /// Visit anonymous variable
+    void vAnonVar(const AnonVar& v) {
+      valid = false;
+      _bounds.push_back(NULL);
+    }
+    /// Visit array access
+    void vArrayAccess(const ArrayAccess& aa) {
+      throw EvalError(aa._loc, "not yet supported");
+    }
+    /// Visit array comprehension
+    void vComprehension(const Comprehension& c) {
+      throw EvalError(c._loc, "not yet supported");
+    }
+    /// Visit if-then-else
+    void vITE(const ITE& ite) {
+      throw EvalError(ite._loc, "not yet supported");
+    }
+    /// Visit binary operator
+    void vBinOp(const BinOp& bo) {
+      IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+      IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+      switch (bo.op()) {
+      case BOT_UNION:
+        {
+          IntSetRanges b0r(b0);
+          IntSetRanges b1r(b1);
+          Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
+          _bounds.push_back(IntSetVal::ai(u));
+        }
+        break;
+      case BOT_DIFF:
+        {
+          IntSetRanges b0r(b0);
+          IntSetRanges b1r(b1);
+          Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
+          _bounds.push_back(IntSetVal::ai(u));
+        }
+        break;
+      case BOT_SYMDIFF:
+        throw EvalError(bo._loc, "not yet supported");
+        break;
+      case BOT_INTERSECT:
+        {
+          IntSetRanges b0r(b0);
+          IntSetRanges b1r(b1);
+          Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
+          _bounds.push_back(IntSetVal::ai(u));
+        }
+        break;
+      case BOT_PLUS:
+      case BOT_MINUS:
+      case BOT_MULT:
+      case BOT_DIV:
+      case BOT_IDIV:
+      case BOT_MOD:
+      case BOT_LE:
+      case BOT_LQ:
+      case BOT_GR:
+      case BOT_GQ:
+      case BOT_EQ:
+      case BOT_NQ:
+      case BOT_IN:
+      case BOT_SUBSET:
+      case BOT_SUPERSET:
+      case BOT_PLUSPLUS:
+      case BOT_EQUIV:
+      case BOT_IMPL:
+      case BOT_RIMPL:
+      case BOT_OR:
+      case BOT_AND:
+      case BOT_XOR:
+      case BOT_DOTDOT:
+        throw EvalError(bo._loc, "not yet supported");
+      }
+    }
+    /// Visit unary operator
+    void vUnOp(const UnOp& uo) {
+      throw EvalError(uo._loc, "not yet supported");
+    }
+    /// Visit call
+    void vCall(Call& c) {
+      if (c._id == "set_intersect") {
+        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        IntSetRanges b0r(b0);
+        IntSetRanges b1r(b1);
+        Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
+        _bounds.push_back(IntSetVal::ai(u));
+      } else if (c._id == "set_union") {
+        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        IntSetRanges b0r(b0);
+        IntSetRanges b1r(b1);
+        Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
+        _bounds.push_back(IntSetVal::ai(u));
+      } else if (c._id == "set_diff") {
+        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        IntSetRanges b0r(b0);
+        IntSetRanges b1r(b1);
+        Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
+        _bounds.push_back(IntSetVal::ai(u));
+      } else {
+        valid = false;
+        _bounds.push_back(NULL);
+      }
+    }
+    /// Visit let
+    void vLet(const Let& l) {
+      throw EvalError(l._loc, "not yet supported");
+    }
+    /// Visit variable declaration
+    void vVarDecl(const VarDecl& vd) {
+      throw EvalError(vd._loc, "not yet supported");
+    }
+    /// Visit annotation
+    void vAnnotation(const Annotation& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+    /// Visit type inst
+    void vTypeInst(const TypeInst& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+    /// Visit TIId
+    void vTIId(const TIId& e) {
+      throw EvalError(e._loc, "not yet supported");
+    }
+  };
+
+  IntSetVal* compute_intset_bounds(Expression* e) {
+    ComputeIntSetBounds cb;
+    BottomUpIterator<ComputeIntSetBounds> cbi(cb);
+    cbi.run(e);
+    if (cb.valid)
+      return cb._bounds.back();
+    else
+      return NULL;  
+  }
 
 }

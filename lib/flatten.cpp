@@ -322,9 +322,16 @@ namespace MiniZinc {
             VarDecl* vd = VarDecl::a(Location(),ti,env.genId("X"),e);
 
             if (vd->_e->_type._bt==Type::BT_INT && vd->_e->_type._dim==0) {
-              IntBounds ib = compute_int_bounds(vd->_e);
-              if (ib.valid) {
-                IntSetVal* ibv = IntSetVal::a(ib.l,ib.u);
+              IntSetVal* ibv = NULL;
+              if (vd->_e->_type.isset()) {
+                ibv = compute_intset_bounds(vd->_e);
+              } else {
+                IntBounds ib = compute_int_bounds(vd->_e);
+                if (ib.valid) {
+                  ibv = IntSetVal::a(ib.l,ib.u);
+                }
+              }
+              if (ibv) {
                 if (vd->_ti->_domain) {
                   IntSetVal* domain = eval_intset(vd->_ti->_domain);
                   IntSetRanges dr(domain);
@@ -365,15 +372,21 @@ namespace MiniZinc {
           } else {
             vd->_e = e;
             if (vd->_e->_type._bt==Type::BT_INT && vd->_e->_type._dim==0) {
-              IntBounds ib = compute_int_bounds(vd->_e);
-              if (ib.valid) {
-                IntSetVal* ibv = IntSetVal::a(ib.l,ib.u);
+              IntSetVal* ibv = NULL;
+              if (vd->_e->_type.isset()) {
+                ibv = compute_intset_bounds(vd->_e);
+              } else {
+                IntBounds ib = compute_int_bounds(vd->_e);
+                if (ib.valid)
+                  ibv = IntSetVal::a(ib.l,ib.u);
+              }
+              if (ibv) {
                 if (vd->_ti->_domain) {
                   IntSetVal* domain = eval_intset(vd->_ti->_domain);
                   IntSetRanges dr(domain);
                   IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntSetRanges,IntSetRanges> inter(dr,ibr);
-                  ibv = IntSetVal::ai(inter);
+                  Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
+                  ibv = IntSetVal::ai(i);
                 }
                 vd->_ti->_domain = SetLit::a(Location(),ibv);
               }
@@ -1979,9 +1992,15 @@ namespace MiniZinc {
           if (v->_e) {
             (void) flat_exp(env,nctx,v->_e,vd,constants().t);
             if (v->_e->_type._bt==Type::BT_INT && v->_e->_type._dim==0) {
-              IntBounds ib = compute_int_bounds(vd->_e);
-              if (ib.valid) {
-                IntSetVal* ibv = IntSetVal::a(ib.l,ib.u);
+              IntSetVal* ibv = NULL;
+              if (v->_e->_type.isset()) {
+                ibv = compute_intset_bounds(vd->_e);
+              } else {
+                IntBounds ib = compute_int_bounds(vd->_e);
+                if (ib.valid)
+                  ibv = IntSetVal::a(ib.l,ib.u);
+              }
+              if (ibv) {
                 if (vd->_ti->_domain) {
                   IntSetVal* domain = eval_intset(vd->_ti->_domain);
                   IntSetRanges dr(domain);
