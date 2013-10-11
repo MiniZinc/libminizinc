@@ -337,7 +337,14 @@ namespace MiniZinc {
                   IntSetRanges dr(domain);
                   IntSetRanges ibr(ibv);
                   Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  ibv = IntSetVal::ai(i);
+                  IntSetVal* newibv = IntSetVal::ai(i);
+                  if (ibv->card() == newibv->card()) {
+                    vd->_ti->setComputedDomain(true);
+                  } else {
+                    ibv = newibv;
+                  }
+                } else {
+                  vd->_ti->setComputedDomain(true);
                 }
                 vd->_ti->_domain = SetLit::a(Location(),ibv);
               }
@@ -386,7 +393,14 @@ namespace MiniZinc {
                   IntSetRanges dr(domain);
                   IntSetRanges ibr(ibv);
                   Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  ibv = IntSetVal::ai(i);
+                  IntSetVal* newibv = IntSetVal::ai(i);
+                  if (ibv->card() == newibv->card()) {
+                    vd->_ti->setComputedDomain(true);
+                  } else {
+                    ibv = newibv;
+                  }
+                } else {
+                  vd->_ti->setComputedDomain(true);
                 }
                 vd->_ti->_domain = SetLit::a(Location(),ibv);
               }
@@ -2006,7 +2020,14 @@ namespace MiniZinc {
                   IntSetRanges dr(domain);
                   IntSetRanges ibr(ibv);
                   Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  ibv = IntSetVal::ai(i);
+                  IntSetVal* newibv = IntSetVal::ai(i);
+                  if (ibv->card() == newibv->card()) {
+                    vd->_ti->setComputedDomain(true);
+                  } else {
+                    ibv = newibv;
+                  }
+                } else {
+                  vd->_ti->setComputedDomain(true);
                 }
                 vd->_ti->_domain = SetLit::a(Location(),ibv);
               }

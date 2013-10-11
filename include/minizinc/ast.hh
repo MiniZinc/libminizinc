@@ -639,7 +639,10 @@ namespace MiniZinc {
     TypeInst(const Location& loc, const Type& type,
              ASTExprVec<TypeInst> ranges,
              Expression* domain=NULL)
-     : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
+     : Expression(loc,E_TI,type),
+       _ranges(ranges), _domain(domain) {
+      _flag_1 = false;
+    }
     /// Constructor
     TypeInst(const Location& loc, const Type& type,
              Expression* domain=NULL)
@@ -667,6 +670,10 @@ namespace MiniZinc {
     bool hasTiVariable(void) const;
     /// Recompute hash value
     void rehash(void);
+    /// Check if domain is computed from right hand side of variable
+    bool computedDomain(void) const { return _flag_1; }
+    /// Set if domain is computed from right hand side of variable
+    void setComputedDomain(bool b) { _flag_1=b; }
   };
 
   /**

@@ -133,6 +133,10 @@ namespace MiniZinc {
               vdi->_e->_e = NULL;
               m._items.push_back(ci);
             }
+          } else if (vdi->_e->_ti->computedDomain()) {
+            CollectDecls cd(vo,vd,vdi);
+            topDown(cd,vdi->_e->_e);
+            vdi->remove();
           }
         } else {
           CollectDecls cd(vo,vd,vdi);
