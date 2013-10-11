@@ -71,6 +71,13 @@ namespace MiniZinc {
     IntVal max(int i) const { assert(i<size()); return get(i).max; }
     /// Return width of range \a i
     IntVal width(int i) const { assert(i<size()); return max(i)-min(i)+1; }
+    /// Return cardinality
+    unsigned int card(void) const {
+      unsigned int c = 0;
+      for (unsigned int i=size(); i--;)
+        c += width(i);
+      return c;
+    }
 
     /// Allocate empty set from context
     static IntSetVal* a(void) {
