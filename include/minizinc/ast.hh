@@ -456,6 +456,19 @@ namespace MiniZinc {
     void rehash(void);
     /// Whether comprehension is a set
     bool set(void) const;
+    
+    /// Return number of generators
+    int n_generators(void) const;
+    /// Return "in" expression for generator \a i
+    Expression* in(int i);
+    /// Return "in" expression for generator \a i
+    const Expression* in(int i) const;
+    /// Return number of declarations for generator \a i
+    int n_decls(int i) const;
+    /// Return declaration \a i for generator \a gen
+    VarDecl* decl(int gen, int i);
+    /// Return declaration \a i for generator \a gen
+    const VarDecl* decl(int gen, int i) const;
   };
   /// \brief If-then-else expression
   class ITE : public Expression {

@@ -486,6 +486,32 @@ namespace MiniZinc {
     return c;
   }
 
+  int
+  Comprehension::n_generators(void) const {
+    return _g_idx.size()-1;
+  }
+  Expression*
+  Comprehension::in(int i) {
+    return _g[_g_idx[i]];
+  }
+  const Expression*
+  Comprehension::in(int i) const {
+    return _g[_g_idx[i]];
+  }
+
+  int
+  Comprehension::n_decls(int i) const {
+    return _g_idx[i+1]-_g_idx[i]-1;
+  }
+  VarDecl*
+  Comprehension::decl(int gen, int i) {
+    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+  }
+  const VarDecl*
+  Comprehension::decl(int gen, int i) const {
+    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+  }
+
   void
   ITE::rehash(void) {
     init_hash();

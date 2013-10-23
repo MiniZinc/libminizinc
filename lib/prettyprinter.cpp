@@ -248,16 +248,15 @@ namespace MiniZinc {
           os << (c.set() ? "{" : "[");
           p(c._e);
           os << " | ";
-          for (unsigned int i = 0; i < c._g_idx.size()-1; i++) {
-            int idx_i = c._g_idx[i];
-            for (unsigned int j = idx_i+1; j < c._g_idx[i+1]; j++) {
-              os << c._g[j]->cast<VarDecl>()->_id.str();
-              if (j < c._g_idx[i+1]-1)
+          for (unsigned int i=0; i<c.n_generators(); i++) {
+            for (unsigned int j=0; j<c.n_decls(i); j++) {
+              os << c.decl(i,j)->_id.str();
+              if (j < c.n_decls(i)-1)
                 os << ",";
             }
             os << " in ";
-            p(c._g[idx_i]);
-            if (i < c._g_idx.size()-2)
+            p(c.in(i));
+            if (i < c.n_generators())
               os << ", ";
           }
           if (c._where != NULL) {
