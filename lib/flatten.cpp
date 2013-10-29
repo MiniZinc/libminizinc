@@ -1775,7 +1775,6 @@ namespace MiniZinc {
             if (cid == "exists") {
               std::vector<Expression*> pos_alv;
               std::vector<Expression*> neg_alv;
-              unsigned int cur = 0;
               for (unsigned int i=0; i<alv.size(); i++) {
                 Call* neg_call = same_call(alv[i],"bool_eq");
                 if (neg_call && 
