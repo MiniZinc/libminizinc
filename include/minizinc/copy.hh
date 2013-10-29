@@ -16,9 +16,12 @@
 
 namespace MiniZinc {
   
+  /// Create a deep copy of expression \a e
   Expression* copy(Expression* e);
-  Item* copy(Item* e);
-  Model* copy(Model* e);
+  /// Create a deep copy of item \a i
+  Item* copy(Item* i);
+  /// Create a deep copy of model \a m
+  Model* copy(Model* m);
   
 }
 

@@ -14,6 +14,9 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -35,10 +38,10 @@ if (HAS_STDLIBLIBCPP)
   endif()
 endif()
    
-CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; return 0;}" HAS_ATTR_THREAD)
+CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
 
 if (NOT HAS_ATTR_THREAD)
-  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; return 0;}" HAS_DECLSPEC_THREAD)
+  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
 endif()
 
 
@@ -84,7 +87,6 @@ set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
 set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 
 add_library(mzn
-lib/allocator.cpp
 lib/ast.cpp
 lib/aststring.cpp
 lib/astvec.cpp
@@ -97,6 +99,28 @@ lib/model.cpp
 "${PROJECT_BINARY_DIR}/parser.tab.cpp"
 lib/prettyprinter.cpp
 lib/typecheck.cpp
+lib/flatten.cpp
+lib/optimize.cpp
+include/minizinc/ast.hh
+include/minizinc/astiterator.hh
+include/minizinc/aststring.hh
+include/minizinc/astvec.hh
+include/minizinc/builtins.hh
+include/minizinc/config.hh.in
+include/minizinc/copy.hh
+include/minizinc/eval_par.hh
+include/minizinc/exception.hh
+include/minizinc/flatten.hh
+include/minizinc/gc.hh
+include/minizinc/hash.hh
+include/minizinc/iter.hh
+include/minizinc/model.hh
+include/minizinc/optimize.hh
+include/minizinc/parser.hh
+include/minizinc/prettyprinter.hh
+include/minizinc/type.hh
+include/minizinc/typecheck.hh
+include/minizinc/values.hh
 )
 
 # add the executable

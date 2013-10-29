@@ -18,8 +18,8 @@
 #include <minizinc/typecheck.hh>
 #include <minizinc/exception.hh>
 
-#include <minizinc/eval_par.hh>
-#include <minizinc/copy.hh>
+#include <minizinc/flatten.hh>
+#include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 
 using namespace MiniZinc;
@@ -30,21 +30,21 @@ int main(int argc, char** argv) {
   string filename;
   vector<string> datafiles;
   vector<string> includePaths;  
-  bool ignoreStdlib = false;
-  bool typecheck = true;
-  bool eval = true;
-  bool output = true;
-  bool outputFundecls = false;
-  bool verbose = false;
-  bool allSolutions = false;
-  bool free = false;
-  int nbThreads = 1;
+  bool flag_ignoreStdlib = false;
+  bool flag_typecheck = true;
+  bool flag_eval = true;
+  bool flag_output = true;
+  bool flag_verbose = false;
+  bool flag_newfzn = false;
+  bool flag_optimize = true;
   if (argc < 2)
     goto error;
 
   GC::init();
 
   for (;;) {
+    if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
+        goto error;
     if (string(argv[i])==string("-I")) {
       i++;
       if (i==argc) {
@@ -52,24 +52,19 @@ int main(int argc, char** argv) {
       }
       includePaths.push_back(argv[i]+string("/"));
     } else if (string(argv[i])==string("--ignore-stdlib")) {
-      ignoreStdlib = true;
+      flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-output")) {
-      output = false;
-    } else if (string(argv[i])==string("--no-fundecl-output")) {
-      outputFundecls = false;
+      flag_output = false;
     } else if (string(argv[i])==string("--no-typecheck")) {
-      typecheck = false; eval=false;
+      flag_typecheck = false; flag_eval=false;
     } else if (string(argv[i])==string("--no-eval")) {
-      eval = false;
+      flag_eval = false;
     } else if (string(argv[i])==string("--verbose")) {
-      verbose = true;
-    } else if (string(argv[i])==string("-a")) {
-      allSolutions = true;
-    } else if (string(argv[i])==string("-f")) {
-      free = true;
-    } else if (string(argv[i])==string("-p")) {
-      i++;
-      nbThreads = atoi(argv[i]);
+      flag_verbose = true;
+    } else if (string(argv[i])==string("--newfzn")) {
+      flag_newfzn = true;
+    } else if (string(argv[i])==string("--no-optimize")) {
+      flag_optimize = false;
     } else {
       break;
     }
@@ -85,38 +80,44 @@ int main(int argc, char** argv) {
     datafiles.push_back(argv[i++]);
 
   {
-    if (Model* m = parse(filename, datafiles, includePaths, ignoreStdlib, 
+    if (flag_verbose)
+      std::cerr << "Parsing '" << filename << "' ..." << std::endl;
+    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
                          std::cerr)) {
       try {
-        if (verbose)
-          std::cerr << "parsing " << filename << std::endl;
-        if (typecheck) {
+        if (flag_typecheck) {
+          if (flag_verbose)
+            std::cerr << "Typechecking..." << std::endl;
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
+
+          if (flag_verbose)
+            std::cerr << "Flattening..." << std::endl;
+          Model* flat = flatten(m);
+
+          if (flag_optimize) {
+            if (flag_verbose)
+              std::cerr << "Optimizing..." << std::endl;
+            optimize(flat);
+          }
+
+          if (flag_output) {
+            if (!flag_newfzn) {
+              if (flag_verbose)
+                std::cerr << "Converting to old FlatZinc..." << std::endl;
+              oldflatzinc(flat);
+            }
+
+            if (flag_verbose)
+              std::cerr << "Printing FlatZinc..." << std::endl;
+            Printer p;
+            p.print(flat,std::cout);
+          }
+          delete flat;
+        } else if (flag_output) { // !flag_typecheck
           Printer p;
           p.print(m,std::cout);
         }
-        // if (verbose)
-        //   std::cerr << "  typechecked" << std::endl;
-        // flat = m->flatten(tm);
-        // if (verbose)
-        //   std::cerr << "  flattened" << std::endl;
-        // string outfilename;
-        // size_t sep = filename.rfind(".");
-        // if (sep == string::npos) {
-        //   outfilename = filename+".pr.mzn";
-        // } else {
-        //   outfilename = filename.substr(0,sep)+".pr.mzn";
-        // }
-        // if (output) {
-        //   std::ofstream os(outfilename.c_str());
-        //   if (!os.good()) {
-        //     std::cerr << "Could not open file " << outfilename << " for output."
-        //               << std::endl;
-        //     exit(EXIT_FAILURE);
-        //   }
-        //   flat->print(os,outputFundecls);
-        // }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
@@ -128,10 +129,24 @@ int main(int argc, char** argv) {
       delete m;
     }
   }
+
+  if (flag_verbose)
+    std::cerr << "Done." << std::endl;
   return 0;
 
 error:
   std::cerr << "Usage: "<< argv[0]
-            << " [--ignore-stdlib] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+            << std::endl
+            << "Options:" << std::endl
+            << "\t--help  -h\tPrint this help message" << std::endl
+            << "\t--ignore-stdlib\tIgnore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+            << "\t--newfzn\tOutput in the new FlatZinc format" << std::endl
+            << "\t--verbose\tPrint progress statements" << std::endl
+            << "\t--no-typecheck\tDo not typecheck (implies --no-eval)" << std::endl
+            << "\t--no-eval\tDo not evaluate" << std::endl
+            << "\t--no-optimize\tDo not optimize the FlatZinc (may speed up large instances)" << std::endl
+            << "\t--no-output\tDo not print the output" << std::endl;
+
   exit(EXIT_FAILURE);
 }

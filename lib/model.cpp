@@ -151,5 +151,49 @@ namespace MiniZinc {
       }
     }
     return NULL;
-  }  
+  }
+  
+  FunctionI*
+  Model::matchFn(Call* c) const {
+    const Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    FnMap::const_iterator it = m->fnmap.find(c->_id.str());
+    if (it == m->fnmap.end()) {
+      return NULL;
+    }
+    const std::vector<FunctionI*>& v = it->second;
+    for (unsigned int i=0; i<v.size(); i++) {
+      FunctionI* fi = v[i];
+      if (fi->_params.size() == c->_args.size()) {
+        bool match=true;
+        for (unsigned int j=0; j<c->_args.size(); j++) {
+          if (!c->_args[j]->_type.isSubtypeOf(fi->_params[j]->_type)) {
+            match=false;
+            break;
+          }
+        }
+        if (match) {
+          return fi;
+        }
+      }
+    }
+    return NULL;
+  }
+
+  Item*&
+  Model::operator[] (int i) { return _items[i]; }
+  const Item*
+  Model::operator[] (int i) const { return _items[i]; }
+  unsigned int
+  Model::size(void) const { return _items.size(); }
+  
+  void
+  Model::compact(void) {
+    struct { bool operator() (const Item* i) {
+      return i->removed();
+    }} isremoved;
+    _items.erase(remove_if(_items.begin(),_items.end(),isremoved),
+                 _items.end());
+  }
 }

@@ -41,24 +41,36 @@ namespace MiniZinc {
     /// Assignment operator
     ASTString& operator= (const ASTString& s);
 
+    /// Size of the string
     unsigned int size(void) const;
+    /// Underlying C string object
     const char* c_str(void) const;
+    /// Conversion to STL string
     std::string str(void) const;
+    /// Underlying string implementation
     ASTStringO* aststr(void) const { return _s; }
 
+    /// Return if string is equal to \a s
     bool operator== (const ASTString& s) const;
+    /// Return if string is not equal to \a s
     bool operator!= (const ASTString& s) const;
 
+    /// Return if string is equal to \a s
     bool operator== (const std::string& s) const;
+    /// Return if string is not equal to \a s
     bool operator!= (const std::string& s) const;
-    
+
+    /// Compute hash value of string
     size_t hash(void) const;
     
+    /// Mark string during garbage collection
     void mark(void);
   };
 
+  /// Hash map from strings to \a T
   template<typename T>
   struct ASTStringMap {
+    /// The map type specialised for ASTString
     typedef std::unordered_map<ASTString,T> t;
   };
 
@@ -85,18 +97,26 @@ namespace MiniZinc {
    */
   class ASTStringO : public ASTChunk {
   protected:
+    /// Constructor
     ASTStringO(const std::string& s);
   public:
+    /// Allocate and initialise as \a s
     static ASTStringO* a(const std::string& s);
+    /// Return underlying C-style string
     const char* c_str(void) const { return _data+sizeof(size_t); }
+    /// Conversion to STL string
     std::string str(void) const { return std::string(c_str()); }
+    /// Return size of string
     unsigned int size(void) const { return _size-sizeof(size_t)-1; }
+    /// Access character at position \a i
     char operator[](unsigned int i) {
       assert(i<size()); return _data[sizeof(size_t)+i];
     }
+    /// Return hash value of string
     size_t hash(void) const {
       return reinterpret_cast<const size_t*>(_data)[0];
     }
+    /// Mark for garbage collection
     void mark(void) {
       _gc_mark = 1;
     }

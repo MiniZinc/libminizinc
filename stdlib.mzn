@@ -1,6 +1,8 @@
+annotation total;
+
 annotation is_defined_var;
 annotation var_is_introduced;
-annotation defines_var(any $t: c);
+annotation defines_var(var $t: c);
 annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation domain;
@@ -9,8 +11,8 @@ annotation domain;
 annotation complete;
 annotation bounds;
 
-annotation int_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
-annotation bool_search(array[int] of any $t:a, ann:b, ann:c, ann:d);
+annotation int_search(array[int] of var $t:a, ann:b, ann:c, ann:d);
+annotation bool_search(array[int] of var $t:a, ann:b, ann:c, ann:d);
 annotation seq_search(array[int] of ann:a);
 
 
@@ -60,7 +62,14 @@ predicate int_min(var int: a, var int: b, var int: c);
 predicate int_mod(var int: a, var int: b, var int: c);
 predicate int_times(var int: a, var int: b, var int: c);
 
-
+%set constraints
+predicate set_in(var int, set of int);
+predicate set_in(var int, var set of int);
+predicate set_subset(var set of int, var set of int);
+function var set of int: set_intersect(var set of int, var set of int);
+function var set of int: set_union(var set of int, var set of int);
+function var set of int: set_diff(var set of int, var set of int);
+function var set of int: set_symdiff(var set of int, var set of int);
 
 %Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
@@ -85,5 +94,56 @@ predicate bool_lt_reif(var bool: a, var bool: b, var bool: r);
 predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
+predicate bool_xor(var bool: a, var bool: b);
 
+function var int: lin_exp(array[int] of int, array[int] of var int, int);
 
+% Element constraints
+
+predicate array_int_element(var int, array[int] of var int, var int);
+
+function var int: element_t(var int: idx, array[int] of var int: x) ::total =
+  let {
+    var int: r;
+    constraint array_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var int: element_mt(var int: idx, array[int] of var int: x) ::total =
+  let {
+    var int: r;
+    var int: idx2;
+    constraint idx in index_set(x) -> idx2=idx;
+    constraint idx in index_set(x) \/ idx2=min(index_set(x));
+    constraint array_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var int: element(var int: idx, array[int] of var int: x) =
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+    element_t(idx,x)
+  else let {
+    constraint idx in index_set(x)
+  } in element_mt(idx,x)
+  endif;
+
+function var int: element(var int: idx1, int: idx2,
+                          array[int,int] of var int: x) =
+  element(idx1,
+          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
+                  [x[i,idx2] | i in index_set_1of2(x)]));
+
+function var int: element(int: idx1, var int: idx2,
+                          array[int,int] of var int: x) =
+  element(idx2,
+          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
+                  [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var int: element(var int: idx1, var int: idx2,
+                          array[int,int] of var int: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
+                          

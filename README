@@ -1,0 +1,25 @@
+LibMZN: minizinc 2.0 library and transformation tool
+
+Compilation instructions:
+=========================
+Prerequisite software:
+- cmake
+- clang
+- bison, flex
+
+To build it, run:
+> mkdir build/
+> cd build/
+> cmake ..
+> make
+
+This will create a 'build/' directory and let cmake put its build files there. From then on, it suffices to go into the build directory and run 'make'.
+
+Running
+=======
+Usage:
+> ./build/mzn2fzn model.mzn data.dzn
+
+Run 'mzn2fzn' without arguments to see all options.
+
+If you get the error "Error: cannot open file 'builtins.mzn'" then you did not execute mzn2fzn in the root folder (probably in build/ instead). Change directory to the (root) folder containing 'builtins.mzn' and try again.

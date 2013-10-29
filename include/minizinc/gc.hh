@@ -63,15 +63,19 @@ namespace MiniZinc {
   class ASTChunk : public ASTNode {
     friend class GC;
   protected:
-    ASTChunk* _next;
+    /// Allocated size
     size_t _size;
+    /// Storage
     char _data[4];
+    /// Constructor
     ASTChunk(size_t size);
+    /// Actual size of object in memory
     size_t memsize(void) const {
       size_t s = sizeof(ASTChunk)+(_size<=4?0:_size-4)*sizeof(char);
       s += ((8 - (s & 7)) & 7);
       return s;
     }
+    /// Allocate raw memory
     static void* alloc(size_t size);
   };
 
@@ -82,19 +86,41 @@ namespace MiniZinc {
   class ASTVec : public ASTNode {
     friend class GC;
   protected:
-    ASTVec* _next;
+    /// Allocated size
     size_t _size;
+    /// Storage
     void* _data[2];
+    /// Constructor
     ASTVec(size_t size);
+    /// Actual size of object in memory
     size_t memsize(void) const {
       size_t s = sizeof(ASTVec)+(_size<=2?0:_size-2)*sizeof(void*);
       s += ((8 - (s & 7)) & 7);
       return s;
     }
+    /// Allocate raw memory
     static void* alloc(size_t size);
   };
 
   class Model;
+  class Expression;
+
+  /// Iterator over expressions that need to be kept alive
+  class ASTRootSetIter {
+  public:
+    /// Begin of iterator
+    virtual Expression** begin(void) = 0;
+    /// End of iterator
+    virtual Expression** end(void) = 0;
+    /// Destructor
+    virtual ~ASTRootSetIter(void) {}
+  };
+  /// Virtual base class for objects that keep expressions alive
+  class ASTRootSet {
+  public:
+    /// Return new iterator (will be deallocated by GC)
+    virtual ASTRootSetIter* rootSet(void) = 0;
+  };
 
   /// Garbage collector
   class GC {
@@ -139,6 +165,11 @@ namespace MiniZinc {
     static void trail(void**,void*);
     /// Untrail to previous mark
     static void untrail(void);
+    
+    /// Add external root set
+    static void addRootSet(ASTRootSet* rs);
+    /// Remove external root set
+    static void removeRootSet(ASTRootSet* rs);
   };
 
   /// Automatic garbage collection lock

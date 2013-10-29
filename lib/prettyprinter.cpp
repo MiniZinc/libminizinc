@@ -111,11 +111,12 @@ namespace MiniZinc {
     PlainPrinter(std::ostream& os0) : os(os0) {}
 
     void p(const Type& type, const Expression* e) {
+      if (type._ot==Type::OT_OPTIONAL)
+        os << "opt ";
       switch (type._ti) {
       case Type::TI_PAR: break;
       case Type::TI_VAR: os << "var "; break;
       case Type::TI_SVAR: os << "svar "; break;
-      case Type::TI_ANY: os << "any "; break;
       }
       if (type._st==Type::ST_SET)
         os << "set of ";
@@ -127,6 +128,7 @@ namespace MiniZinc {
         case Type::BT_STRING: os << "string"; break;
         case Type::BT_ANN: os << "ann"; break;
         case Type::BT_BOT: os << "bot"; break;
+        case Type::BT_TOP: os << "top"; break;
         case Type::BT_UNKNOWN: os << "???"; break;
         }
       } else {
@@ -135,6 +137,8 @@ namespace MiniZinc {
     }
     
     void p(const Expression* e) {
+      if (e==NULL)
+        return;
       switch (e->eid()) {
       case Expression::E_INTLIT:
         os << e->cast<IntLit>()->_v;
@@ -244,16 +248,15 @@ namespace MiniZinc {
           os << (c.set() ? "{" : "[");
           p(c._e);
           os << " | ";
-          for (unsigned int i = 0; i < c._g_idx.size()-1; i++) {
-            int idx_i = c._g_idx[i];
-            for (unsigned int j = idx_i+1; j < c._g_idx[i+1]; j++) {
-              os << c._g[j]->cast<VarDecl>()->_id.str();
-              if (j < c._g_idx[i+1]-1)
+          for (unsigned int i=0; i<c.n_generators(); i++) {
+            for (unsigned int j=0; j<c.n_decls(i); j++) {
+              os << c.decl(i,j)->_id.str();
+              if (j < c.n_decls(i)-1)
                 os << ",";
             }
             os << " in ";
-            p(c._g[idx_i]);
-            if (i < c._g_idx.size()-2)
+            p(c.in(i));
+            if (i < c.n_generators())
               os << ", ";
           }
           if (c._where != NULL) {
@@ -480,6 +483,8 @@ namespace MiniZinc {
     }
 
     void p(const Item* i) {
+      if (i==NULL)
+        return;
       switch (i->iid()) {
       case Item::II_INC:
         os << "include \"" << i->cast<IncludeI>()->_f.c_str() << "\"";
@@ -921,11 +926,12 @@ namespace MiniZinc {
   Document* expressionToDocument(const Expression* e);
   Document* tiexpressionToDocument(const Type& type, const Expression* e) {
     DocumentList* dl = new DocumentList("","","",false);
+    if (type._ot==Type::OT_OPTIONAL)
+      dl->addStringToList("opt ");
     switch (type._ti) {
     case Type::TI_PAR: break;
     case Type::TI_VAR: dl->addStringToList("var "); break;
     case Type::TI_SVAR: dl->addStringToList("svar "); break;
-    case Type::TI_ANY: dl->addStringToList("any "); break;
     }
     if (type._st==Type::ST_SET)
       dl->addStringToList("set of ");
@@ -937,6 +943,7 @@ namespace MiniZinc {
       case Type::BT_STRING: dl->addStringToList("string"); break;
       case Type::BT_ANN: dl->addStringToList("ann"); break;
       case Type::BT_BOT: dl->addStringToList("bot"); break;
+      case Type::BT_TOP: dl->addStringToList("top"); break;
       case Type::BT_UNKNOWN: dl->addStringToList("???"); break;
       }
     } else {

@@ -216,12 +216,10 @@ namespace MiniZinc {
       {
         Let* let = e->cast<Let>();
         for (unsigned int i=0; i<let->_let.size(); i++) {
+          run(let->_let[i]);
           if (VarDecl* vd = let->_let[i]->dyn_cast<VarDecl>()) {
             add(vd,false);
           }
-        }
-        for (unsigned int i=0; i<let->_let.size(); i++) {
-          run(let->_let[i]);
         }
         run(let->_in);
         VarDeclCmp poscmp(pos);
@@ -239,9 +237,11 @@ namespace MiniZinc {
   template<bool ignoreVarDecl>
   class Typer {
   public:
-    static const bool visitAnnotation = ignoreVarDecl;
     Model* _model;
     Typer(Model* model) : _model(model) {}
+    bool enter(Expression* e) {
+      return ignoreVarDecl || (!e->isa<Annotation>());
+    }
     /// Visit integer literal
     void vIntLit(const IntLit&) {}
     /// Visit floating point literal
@@ -278,9 +278,13 @@ namespace MiniZinc {
       Type ty; ty._dim = al.dims();
       for (unsigned int i=0; i<al._v.size(); i++) {
         Expression* vi = al._v[i];
-        if (vi->_type.isvar() || vi->_type.isany())
+        if (vi->_type.isvar())
           ty._ti = Type::TI_VAR;
-        if (ty._bt==Type::BT_UNKNOWN) {
+        if (vi->_type.isopt())
+          ty._ot = Type::OT_OPTIONAL;
+        if (vi->_type.isbot()) {
+          // do nothing
+        } else if (ty._bt==Type::BT_UNKNOWN) {
           ty._bt = vi->_type._bt;
           assert(ty._bt != Type::BT_UNKNOWN);
           ty._st = vi->_type._st;
@@ -307,16 +311,19 @@ namespace MiniZinc {
             aai->_type._dim != 0) {
           throw TypeError(aai->_loc,"array index must be int");
         }
-        if (aai->_type.isany() || aai->_type.isvar()) {
+        if (aai->_type.isopt()) {
+          allpresent = false;
+        }
+        if (aai->_type.isvar()) {
           allpar=false;
-        } else if (aai->_type!=Type::parint()) {
-          throw TypeError(aai->_loc,"array index must be int");
         }
       }
       aa._type = aa._v->_type;
       aa._type._dim = 0;
       if (!allpar)
         aa._type._ti = Type::TI_VAR;
+      if (!allpresent)
+        aa._type._ot = Type::OT_OPTIONAL;
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
@@ -350,8 +357,8 @@ namespace MiniZinc {
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
-      Type& telse = ite._e_else->_type;
-      bool allpar = !(telse.isvar());
+      Type tret = ite._e_else->_type;
+      bool allpar = !(tret.isvar());
       for (unsigned int i=0; i<ite._e_if_then.size(); i+=2) {
         Expression* eif = ite._e_if_then[i];
         Expression* ethen = ite._e_if_then[i+1];
@@ -359,17 +366,20 @@ namespace MiniZinc {
           throw TypeError(eif->_loc,
             "expected par bool conditional expression, got\n  "+
             eif->_type.toString());
-        if (ethen->_type._bt != telse._bt ||
-            ethen->_type._st != telse._st ||
-            ethen->_type._dim != telse._dim) {
+        if (tret.isbot()) {
+          tret._bt = ethen->_type._bt;
+        }
+        if ( (!ethen->_type.isbot() && ethen->_type._bt != tret._bt) ||
+            ethen->_type._st != tret._st ||
+            ethen->_type._dim != tret._dim) {
           throw TypeError(ethen->_loc,
             "type mismatch in branches of conditional. Then-branch has type "+
             ethen->_type.toString()+", but else branch has type "+
-            telse.toString());
+            tret.toString());
         }
         if (ethen->_type.isvar()) allpar=false;
       }
-      ite._type = telse;
+      ite._type = tret;
       if (!allpar) ite._type._ti = Type::TI_VAR;
     }
     /// Visit binary operator
@@ -384,12 +394,16 @@ namespace MiniZinc {
           bop._type = bop._e0->_type;
         else
           bop._type = bop._e1->_type;
-      } else if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
-        bop._type = fi->rtype(args);
       } else {
-        throw TypeError(bop._loc,
-          std::string("type error in operator application for ")+
-          bop.opToString().str());
+        if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
+          bop._type = fi->rtype(args);
+          if (fi->_e)
+            bop._decl = fi;
+        } else {
+          throw TypeError(bop._loc,
+            std::string("type error in operator application for ")+
+            bop.opToString().str());
+        }
       }
     }
     /// Visit unary operator
@@ -398,6 +412,8 @@ namespace MiniZinc {
       args[0] = uop._e0;
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
         uop._type = fi->rtype(args);
+        if (fi->_e)
+          uop._decl = fi;
       } else {
         throw TypeError(uop._loc,
           std::string("type error in operator application for ")+
@@ -459,8 +475,7 @@ namespace MiniZinc {
         for (unsigned int i=0; i<ti._ranges.size(); i++) {
           TypeInst* ri = ti._ranges[i];
           assert(ri != NULL);
-          if (ri->_type == Type::bot()) {
-//            std::cerr << "tiid " << ri->cast<TIId>()->_v.str() << "\n";
+          if (ri->_type == Type::top()) {
             if (foundTIId) {
               throw TypeError(ri->_loc,
                 "only one type-inst variable allowed in array index");
@@ -611,7 +626,10 @@ namespace MiniZinc {
         }
         void vFunctionI(FunctionI* i) {
           bu_ty.run(i->_ann);
+          bu_ty.run(i->_ti);
           bu_ty.run(i->_e);
+          if (i->_e && !i->_e->_type.isSubtypeOf(i->_ti->_type))
+            throw TypeError(i->_e->_loc, "return type of function does not match body");
         }
       } _tsv2(bu_ty);
       iterItems(_tsv2,m);

@@ -13,6 +13,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/astiterator.hh>
 
 namespace MiniZinc {
   
@@ -107,6 +108,60 @@ namespace MiniZinc {
       throw EvalError(Location(), "dynamic type error");
     }
   }
+  
+  bool b_has_bounds(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return compute_int_bounds(args[0]).valid;
+  }
+  
+  IntVal lb_varoptint(Expression* e) {
+    IntBounds b = compute_int_bounds(e);
+    if (b.valid)
+      return b.l;
+    else
+      throw EvalError(e->_loc,"cannot determine bounds");
+  }
+  IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return lb_varoptint(args[0]);
+  }
+
+  IntVal b_array_lb_int(ASTExprVec<Expression>& args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->_v.size()==0)
+      throw EvalError(Location(), "min of empty array undefined");
+    IntVal min = lb_varoptint(al->_v[0]);
+    for (unsigned int i=1; i<al->_v.size(); i++)
+      min = std::min(min, lb_varoptint(al->_v[i]));
+    return min;
+  }
+
+  IntVal ub_varoptint(Expression* e) {
+    IntBounds b = compute_int_bounds(e);
+    if (b.valid)
+      return b.u;
+    else
+      throw EvalError(e->_loc,"cannot determine bounds");
+  }
+  IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return ub_varoptint(args[0]);
+  }
+
+  IntVal b_array_ub_int(ASTExprVec<Expression>& args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->_v.size()==0)
+      throw EvalError(Location(), "min of empty array undefined");
+    IntVal max = ub_varoptint(al->_v[0]);
+    for (unsigned int i=1; i<al->_v.size(); i++)
+      max = std::max(max, ub_varoptint(al->_v[i]));
+    return max;
+  }
 
   IntVal b_sum(ASTExprVec<Expression>& args) {
     assert(args.size()==1);
@@ -119,12 +174,13 @@ namespace MiniZinc {
     return m;
   }
 
+
   IntSetVal* b_index_set(ASTExprVec<Expression>& args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
     if (args[0]->eid() != Expression::E_ID)
       throw EvalError(Location(), "index_set only supported for identifiers");
-    Id* id = args[0]->template cast<Id>();
+    Id* id = args[0]->cast<Id>();
     if (id->_decl == NULL)
       throw EvalError(id->_loc, "undefined identifier");
     if (id->_decl->_ti->_ranges.size() < i)
@@ -270,6 +326,7 @@ namespace MiniZinc {
       throw EvalError(al->_loc, "mismatch in array dimensions");
     ArrayLit* ret = ArrayLit::a(al->_loc, al->_v, dims);
     ret->_type = al->_type;
+    ret->_type._dim = d;
     return ret;
   }
   Expression* b_array1d(ASTExprVec<Expression>& args) {
@@ -309,21 +366,6 @@ namespace MiniZinc {
         return false;
     return true;
   }
-  Expression* b_forall_var(ASTExprVec<Expression>& args) {
-    if (args.size()!=1)
-      throw EvalError(Location(), "forall needs exactly one argument");
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size() == 0) {
-      return BoolLit::a(Location(),true);
-    } else {
-      Expression* r = al->_v[0];
-      for (unsigned int i=1; i<al->_v.size(); i++) {
-        r = BinOp::a(Location(),r,BOT_AND,al->_v[i]);
-        r->_type = Type::varbool();
-      }
-      return r;
-    }
-  }
   bool b_exists_par(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
@@ -333,20 +375,13 @@ namespace MiniZinc {
         return true;
     return false;
   }
-  Expression* b_exists_var(ASTExprVec<Expression>& args) {
+
+  IntVal b_card(ASTExprVec<Expression>& args) {
     if (args.size()!=1)
-      throw EvalError(Location(), "exists needs exactly one argument");
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size() == 0) {
-      return BoolLit::a(Location(),false);
-    } else {
-      Expression* r = al->_v[0];
-      for (unsigned int i=1; i<al->_v.size(); i++) {
-        r = BinOp::a(Location(),r,BOT_OR,al->_v[i]);
-        r->_type = Type::varbool();
-      }
-      return r;
-    }
+      throw EvalError(Location(), "card needs exactly one argument");
+    IntSetVal* isv = eval_intset(args[0]);
+    IntSetRanges isr(isv);
+    return Ranges::size(isr);
   }
 
   void registerBuiltins(Model* m) {
@@ -361,30 +396,31 @@ namespace MiniZinc {
     GCLock lock;
     rb(m, ASTString("min"), t_intint, b_min);
     rb(m, ASTString("min"), t_intarray, b_min);
+    rb(m, ASTString("max"), t_intint, b_max);
     rb(m, ASTString("max"), t_intarray, b_max);
     rb(m, ASTString("sum"), t_intarray, b_sum);
 
     {
       std::vector<Type> t_anyarray1(1);
-      t_anyarray1[0] = Type::any(1);
+      t_anyarray1[0] = Type::optvartop(1);
       rb(m, ASTString("index_set"), t_anyarray1, b_index_set1);
     }
     {
       std::vector<Type> t_anyarray2(1);
-      t_anyarray2[0] = Type::any(2);
+      t_anyarray2[0] = Type::optvartop(2);
       rb(m, ASTString("index_set_1of2"), t_anyarray2, b_index_set1);
       rb(m, ASTString("index_set_2of2"), t_anyarray2, b_index_set2);
     }
     {
       std::vector<Type> t_anyarray3(1);
-      t_anyarray3[0] = Type::any(3);
+      t_anyarray3[0] = Type::optvartop(3);
       rb(m, ASTString("index_set_1of3"), t_anyarray3, b_index_set1);
       rb(m, ASTString("index_set_2of3"), t_anyarray3, b_index_set2);
       rb(m, ASTString("index_set_3of3"), t_anyarray3, b_index_set3);
     }
     {
       std::vector<Type> t_anyarray4(1);
-      t_anyarray4[0] = Type::any(4);
+      t_anyarray4[0] = Type::optvartop(4);
       rb(m, ASTString("index_set_1of4"), t_anyarray4, b_index_set1);
       rb(m, ASTString("index_set_2of4"), t_anyarray4, b_index_set2);
       rb(m, ASTString("index_set_3of4"), t_anyarray4, b_index_set3);
@@ -392,7 +428,7 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t_anyarray5(1);
-      t_anyarray5[0] = Type::any(5);
+      t_anyarray5[0] = Type::optvartop(5);
       rb(m, ASTString("index_set_1of5"), t_anyarray5, b_index_set1);
       rb(m, ASTString("index_set_2of5"), t_anyarray5, b_index_set2);
       rb(m, ASTString("index_set_3of5"), t_anyarray5, b_index_set3);
@@ -401,7 +437,7 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t_anyarray6(1);
-      t_anyarray6[0] = Type::any(6);
+      t_anyarray6[0] = Type::optvartop(6);
       rb(m, ASTString("index_set_1of6"), t_anyarray6, b_index_set1);
       rb(m, ASTString("index_set_2of6"), t_anyarray6, b_index_set2);
       rb(m, ASTString("index_set_3of6"), t_anyarray6, b_index_set3);
@@ -412,14 +448,22 @@ namespace MiniZinc {
     {
       std::vector<Type> t_arrayXd(2);
       t_arrayXd[0] = Type::parsetint();
-      t_arrayXd[1] = Type::any(-1);
+      t_arrayXd[1] = Type::top(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      t_arrayXd[1] = Type::vartop(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      t_arrayXd[1] = Type::optvartop(-1);
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
     }
     {
       std::vector<Type> t_arrayXd(3);
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
-      t_arrayXd[2] = Type::any(-1);
+      t_arrayXd[2] = Type::top(-1);
+      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      t_arrayXd[2] = Type::vartop(-1);
+      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      t_arrayXd[2] = Type::optvartop(-1);
       rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
     }
     {
@@ -427,7 +471,11 @@ namespace MiniZinc {
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::parsetint();
-      t_arrayXd[3] = Type::any(-1);
+      t_arrayXd[3] = Type::top(-1);
+      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      t_arrayXd[3] = Type::vartop(-1);
+      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      t_arrayXd[3] = Type::optvartop(-1);
       rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
     }
     {
@@ -436,7 +484,11 @@ namespace MiniZinc {
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
-      t_arrayXd[4] = Type::any(-1);
+      t_arrayXd[4] = Type::top(-1);
+      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      t_arrayXd[4] = Type::vartop(-1);
+      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      t_arrayXd[4] = Type::optvartop(-1);
       rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
     }
     {
@@ -446,7 +498,11 @@ namespace MiniZinc {
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::parsetint();
-      t_arrayXd[5] = Type::any(-1);
+      t_arrayXd[5] = Type::top(-1);
+      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      t_arrayXd[5] = Type::vartop(-1);
+      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      t_arrayXd[5] = Type::optvartop(-1);
       rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
     }
     {
@@ -457,12 +513,16 @@ namespace MiniZinc {
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::parsetint();
-      t_arrayXd[6] = Type::any(-1);
+      t_arrayXd[6] = Type::top(-1);
+      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      t_arrayXd[6] = Type::vartop(-1);
+      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      t_arrayXd[6] = Type::optvartop(-1);
       rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
     }
     {
       std::vector<Type> t_length(1);
-      t_length[0] = Type::any(-1);
+      t_length[0] = Type::optvartop(-1);
       rb(m, ASTString("length"), t_length, b_length);
     }
     {
@@ -472,18 +532,8 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t(1);
-      t[0] = Type::varbool(-1);
-      rb(m, ASTString("forall"), t, b_forall_var);
-    }
-    {
-      std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(m, ASTString("forall"), t, b_forall_par);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::varbool(-1);
-      rb(m, ASTString("exists"), t, b_exists_var);
     }
     {
       std::vector<Type> t(1);
@@ -514,6 +564,50 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("max"), t, b_max_parsetint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("lb"), t, b_lb_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("ub"), t, b_ub_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("lb"), t, b_lb_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("ub"), t, b_ub_varoptint);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("lb_array"), t, b_array_lb_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint(-1);
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("ub_array"), t, b_array_ub_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(m, ASTString("card"), t, b_card);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(m, ASTString("has_bounds"), t, b_has_bounds);
     }
   }
   

@@ -327,7 +327,7 @@ namespace MiniZinc {
   class AnonVar : public Expression {
   protected:
     /// Constructor
-    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::any()) {}
+    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::bot()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANON;
@@ -456,6 +456,19 @@ namespace MiniZinc {
     void rehash(void);
     /// Whether comprehension is a set
     bool set(void) const;
+    
+    /// Return number of generators
+    int n_generators(void) const;
+    /// Return "in" expression for generator \a i
+    Expression* in(int i);
+    /// Return "in" expression for generator \a i
+    const Expression* in(int i) const;
+    /// Return number of declarations for generator \a i
+    int n_decls(int i) const;
+    /// Return declaration \a i for generator \a gen
+    VarDecl* decl(int gen, int i);
+    /// Return declaration \a i for generator \a gen
+    const VarDecl* decl(int gen, int i) const;
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
@@ -493,7 +506,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1) {
+      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1), _decl(NULL) {
       _sec_id = op;
     }
   public:
@@ -503,6 +516,8 @@ namespace MiniZinc {
     Expression* _e0;
     /// Right hand side expression
     Expression* _e1;
+    /// The predicate or function declaration (or NULL)
+    FunctionI* _decl;
     /// Allocate
     static BinOp* a(const Location& loc,
                     Expression* e0, BinOpType op, Expression* e1);
@@ -522,7 +537,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     UnOp(const Location& loc, UnOpType op, Expression* e)
-      : Expression(loc,E_UNOP,Type()), _e0(e) {
+      : Expression(loc,E_UNOP,Type()), _e0(e), _decl(NULL) {
       _sec_id = op;
     }
   public:
@@ -530,6 +545,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_UNOP;
     /// %Expression
     Expression* _e0;
+    /// The predicate or function declaration (or NULL)
+    FunctionI* _decl;
     /// Allocate
     static UnOp* a(const Location& loc,
                    UnOpType op, Expression* e);
@@ -635,7 +652,10 @@ namespace MiniZinc {
     TypeInst(const Location& loc, const Type& type,
              ASTExprVec<TypeInst> ranges,
              Expression* domain=NULL)
-     : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {}
+     : Expression(loc,E_TI,type),
+       _ranges(ranges), _domain(domain) {
+      _flag_1 = false;
+    }
     /// Constructor
     TypeInst(const Location& loc, const Type& type,
              Expression* domain=NULL)
@@ -663,6 +683,10 @@ namespace MiniZinc {
     bool hasTiVariable(void) const;
     /// Recompute hash value
     void rehash(void);
+    /// Check if domain is computed from right hand side of variable
+    bool computedDomain(void) const { return _flag_1; }
+    /// Set if domain is computed from right hand side of variable
+    void setComputedDomain(bool b) { _flag_1=b; }
   };
 
   /**
@@ -684,7 +708,7 @@ namespace MiniZinc {
   protected:
     /// Constructor
     Item(const Location& loc, const ItemId& iid)
-      : ASTNode(iid), _loc(loc) {}
+      : ASTNode(iid), _loc(loc) { _flag_1 = false; }
 
   public:
 
@@ -710,6 +734,11 @@ namespace MiniZinc {
     template<class T> const T* dyn_cast(void) const {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
+    
+    /// Check if item should be removed
+    bool removed(void) const { return _flag_1; }
+    /// Set flag to remove item
+    void remove(void) { _flag_1 = true; }
   };
 
   class Model;
@@ -729,10 +758,10 @@ namespace MiniZinc {
     static IncludeI* a(const Location& loc, const ASTString& f);
     /// Set the model
     void setModel(Model* m, bool own=true) {
-      assert(_m==NULL); _m = m; _flag_1 = own;
+      assert(_m==NULL); _m = m; _flag_2 = own;
     }
     bool own(void) const {
-      return _flag_1;
+      return _flag_2;
     }
   };
   /// \brief Variable declaration item
@@ -915,6 +944,8 @@ namespace MiniZinc {
     void vTypeInst(const TypeInst&) {}
     /// Visit TIId
     void vTIId(const TIId&) {}
+    /// Determine whether to enter node
+    bool enter(Expression* e) { return true; }
   };
 
 }

@@ -171,16 +171,18 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_NOT_QUOTED; }
 "of"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_OF; }
-"satisfy"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SATISFY; }
 "output"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_OUTPUT; }
+"opt"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_OPT; }
 "par"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PAR; }
 "predicate"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PREDICATE; }
 "record"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_RECORD; }
+"satisfy"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_SATISFY; }
 "set"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SET; }
 "solve"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);

@@ -50,7 +50,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file " << m->filename().str() << ")" << endl;
+    pp->err << "(included from file '" << m->filename().str() << "')" << endl;
   }
   pp->err << "In file " << location->filename.str() << ", line "
           << location->first_line << ":" << endl;
@@ -80,6 +80,24 @@ void filepath(const string& f, string& dirname, string& basename) {
        basename=basename.substr(p+1),
        p=basename.find_first_of('/')
        ) {}
+}
+
+// fastest way to read a file into a string (especially big files)
+// see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
+std::string get_file_contents(std::ifstream &in)
+{
+  //std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (in)
+  {
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    return(contents);
+  }
+  throw(errno);
 }
 
 namespace MiniZinc {
@@ -162,11 +180,10 @@ namespace MiniZinc {
         includePaths.pop_back();
       }
       if (!file.is_open()) {
-        err << "Error: cannot open file " << f << endl;
+        err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       m->_filepath = ASTString(fullname);
       ParserState pp(fullname,s, err, files, seenModels, m, false);
@@ -185,11 +202,10 @@ namespace MiniZinc {
       std::ifstream file;
       file.open(f.c_str());
       if (!file.is_open()) {
-        err << "Error: cannot open data file " << f << endl;
+        err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
-      std::string s = string(istreambuf_iterator<char>(file),
-                             istreambuf_iterator<char>());
+      std::string s = get_file_contents(file);
 
       ParserState pp(f, s, err, files, seenModels, model, true);
       yylex_init(&pp.yyscanner);
@@ -265,6 +281,7 @@ namespace MiniZinc {
 %token <bValue> MZN_MAXIMIZE
 %token <bValue> MZN_MINIMIZE
 %token MZN_OF
+%token MZN_OPT
 %token MZN_SATISFY
 %token MZN_OUTPUT
 %token MZN_PREDICATE
@@ -321,7 +338,7 @@ namespace MiniZinc {
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item
 %type <vardeclexpr_v> params params_list params_list_head
-%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail ti_variable_expr_tail
+%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
 %type <expression> expr expr_atom_head
@@ -343,6 +360,8 @@ namespace MiniZinc {
 %type <iValue> quoted_op
 
 %type <sValue> id_or_quoted_op
+
+%type <bValue> opt_opt
 
 %%
 
@@ -554,16 +573,25 @@ base_ti_expr :
       { $$ = $1; }
     | MZN_PAR base_ti_expr_tail
       { $$ = $2; }
-    | MZN_VAR base_ti_expr_tail
-      { $$ = $2; $$->_type._ti = Type::TI_VAR; }
+    | MZN_VAR opt_opt base_ti_expr_tail
+      { $$ = $3; $$->_type._ti = Type::TI_VAR;
+        if ($2) $$->_type._ot = Type::OT_OPTIONAL;
+      }
     | MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $3; $$->_type._st = Type::ST_SET; }
     | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4; $$->_type._st = Type::ST_SET; }
-    | MZN_VAR MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $4; $$->_type._ti = Type::TI_VAR;
+    | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = $5; $$->_type._ti = Type::TI_VAR;
         $$->_type._st = Type::ST_SET;
+        if ($2) $$->_type._ot = Type::OT_OPTIONAL;
       }
+
+opt_opt:
+      /* nothing */
+      { $$ = false; }
+    | MZN_OPT
+      { $$ = true; }
 
 base_ti_expr_tail :
       MZN_INT
@@ -578,18 +606,10 @@ base_ti_expr_tail :
       { $$ = TypeInst::a(@$,Type::ann()); }
     | set_expr
       { $$ = TypeInst::a(@$,Type(),$1); }
-    | ti_variable_expr_tail
-
-ti_variable_expr_tail :
-      MZN_TI_IDENTIFIER
-      { $$ = TypeInst::a(@$,Type::bot(),
+    | MZN_TI_IDENTIFIER
+      { $$ = TypeInst::a(@$,Type::top(),
                          TIId::a(@$, $1));
         free($1);
-      }
-    | MZN_ANY MZN_TI_IDENTIFIER
-      { $$ = TypeInst::a(@$,Type::any(),
-                         TIId::a(@$, $2));
-        free($2);
       }
 
 expr_list : expr_list_head comma_or_none

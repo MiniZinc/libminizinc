@@ -16,24 +16,31 @@
 
 namespace MiniZinc {
 
+  /// Topological sorting of items
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
     typedef ASTStringMap<Decls>::t DeclMap;
     typedef std::unordered_map<VarDecl*,int> PosMap;
     
+    /// List of all declarations
     Decls decls;
+    /// Map from identifiers to declarations
     DeclMap env;
+    /// Map from declarations to positions
     PosMap pos;
     
+    /// Add a variable declaration
     void add(VarDecl* vd, bool unique);
+    /// Remove a variable declaration
     void remove(VarDecl* vd);
     
     VarDecl* checkId(const ASTString& id, const Location& loc);
-    
+    /// Run the topological sorting for expression \a e
     void run(Expression* e);
   };
   
+  /// Type check the model \a m
   void typecheck(Model* m);
   
 }

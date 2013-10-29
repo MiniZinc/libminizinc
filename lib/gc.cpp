@@ -78,16 +78,20 @@ namespace MiniZinc {
   protected:
     HeapPage* _page;
     Model* _rootset;
+    std::vector<ASTRootSet*> roots;
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
-    int _fl_slot(size_t size) {
+    int _fl_slot(size_t _size) {
+      size_t size = _size;
       assert(size <= _fl_size[_max_fl]);
-      assert(size >= sizeof(Item));
+      assert(size >= _fl_size[0]);
       size -= sizeof(Item);
+      assert(size % sizeof(void*) == 0);
       size /= sizeof(void*);
+      assert(size >= 1);
       int slot = static_cast<int>(size)-1;
-      return slot < 0 ? 0 : slot;
+      return slot;
     }
 
     /// Total amount of memory allocated
@@ -126,6 +130,9 @@ namespace MiniZinc {
         s = std::max(s,pageSize);
       HeapPage* newPage =
         static_cast<HeapPage*>(::malloc(sizeof(HeapPage)+s-1));
+#ifndef NDEBUG
+        memset(newPage,255,sizeof(HeapPage)+s-1);
+#endif
       _alloced_mem += s;
       _free_mem += s;
       if (exact && _page) {
@@ -139,6 +146,7 @@ namespace MiniZinc {
             // Remainder of page can be added to free lists
             FreeListNode* fln = 
               reinterpret_cast<FreeListNode*>(_page->data+_page->used);
+            _page->used += ns;
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
           } else {
@@ -232,17 +240,24 @@ namespace MiniZinc {
         sizeof(OutputI),       // II_OUT
         sizeof(FunctionI)      // II_FUN
       };
+      size_t ns;
       switch (n->_id) {
       case ASTNode::NID_FL:
-        return static_cast<FreeListNode*>(n)->size;
+        ns = static_cast<FreeListNode*>(n)->size;
+        break;
       case ASTNode::NID_CHUNK:
-        return static_cast<ASTChunk*>(n)->memsize();
+        ns = static_cast<ASTChunk*>(n)->memsize();
+        break;
       case ASTNode::NID_VEC:
-        return static_cast<ASTVec*>(n)->memsize();
+        ns = static_cast<ASTVec*>(n)->memsize();
+        break;
       default:
         assert(n->_id <= Item::II_END);
-        return _nodesize[n->_id];
+        ns = _nodesize[n->_id];
+        break;
       }
+      ns += ((8 - (ns & 7)) & 7);
+      return ns;
     }
 
 
@@ -306,7 +321,7 @@ namespace MiniZinc {
   void*
   GC::alloc(size_t size) {
     assert(locked());
-    if (size > _heap->_fl_size[_heap->_max_fl]) {
+    if (size < _heap->_fl_size[0] || size > _heap->_fl_size[_heap->_max_fl]) {
       return _heap->alloc(size,true);
     } else {
       return _heap->fl(size);
@@ -315,7 +330,19 @@ namespace MiniZinc {
 
   void
   GC::Heap::mark(void) {
+    for (unsigned int i=0; i<roots.size(); i++) {
+      ASTRootSetIter* iter = roots[i]->rootSet();
+      for (Expression** e = iter->begin(); e != iter->end(); ++e) {
+        if ((*e)->_gc_mark==0) {
+          Expression::mark(*e);
+        }
+      }
+      delete iter;
+    }
+
     Model* m = _rootset;
+    if (m==NULL)
+      return;
     do {
       for (unsigned int j=0; j<m->_items.size(); j++) {
         Item* i = m->_items[j];
@@ -362,6 +389,7 @@ namespace MiniZinc {
       }
       m = m->_roots_next;
     } while (m != _rootset);
+
   }
     
   void
@@ -374,8 +402,9 @@ namespace MiniZinc {
       while (off < p->used) {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
+        assert(ns != 0);
         if (n->_gc_mark==0) {
-          if (ns <= _fl_size[_max_fl]) {
+          if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
@@ -447,6 +476,19 @@ namespace MiniZinc {
     if (!gc->_heap->trail.empty())
       gc->_heap->trail.back().mark = false;
   }  
+
+  void
+  GC::addRootSet(ASTRootSet* rs) {
+    GC* gc = GC::gc();
+    gc->_heap->roots.push_back(rs);
+  }
+
+  void
+  GC::removeRootSet(ASTRootSet* rs) {
+    GC* gc = GC::gc();
+    gc->_heap->roots.erase(
+      std::find(gc->_heap->roots.begin(),gc->_heap->roots.end(),rs));
+  }
 
   void*
   ASTNode::operator new(size_t size) throw (std::bad_alloc) {
