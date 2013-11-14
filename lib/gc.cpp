@@ -188,6 +188,7 @@ namespace MiniZinc {
       if (_fl[slot]) {
         FreeListNode* p = _fl[slot];
         _fl[slot] = p->next;
+        _free_mem -= size;
         return p;
       }
       return alloc(size);
