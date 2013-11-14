@@ -158,7 +158,7 @@ namespace MiniZinc {
     const Model* m = this;
     while (m->_parent)
       m = m->_parent;
-    FnMap::const_iterator it = m->fnmap.find(c->_id.str());
+    FnMap::const_iterator it = m->fnmap.find(c->_id);
     if (it == m->fnmap.end()) {
       return NULL;
     }
