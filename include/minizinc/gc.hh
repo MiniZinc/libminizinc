@@ -105,28 +105,14 @@ namespace MiniZinc {
   class Model;
   class Expression;
 
-  /// Iterator over expressions that need to be kept alive
-  class ASTRootSetIter {
-  public:
-    /// Begin of iterator
-    virtual Expression** begin(void) = 0;
-    /// End of iterator
-    virtual Expression** end(void) = 0;
-    /// Destructor
-    virtual ~ASTRootSetIter(void) {}
-  };
-  /// Virtual base class for objects that keep expressions alive
-  class ASTRootSet {
-  public:
-    /// Return new iterator (will be deallocated by GC)
-    virtual ASTRootSetIter* rootSet(void) = 0;
-  };
+  class KeepAlive;
 
   /// Garbage collector
   class GC {
     friend class ASTNode;
     friend class ASTVec;
     friend class ASTChunk;
+    friend class KeepAlive;
   private:
     class Heap;
     /// The memory controlled by the collector
@@ -141,6 +127,8 @@ namespace MiniZinc {
     /// Allocate garbage collected memory
     void* alloc(size_t size);
 
+    static void addKeepAlive(KeepAlive* e);
+    static void removeKeepAlive(KeepAlive* e);
   public:
     /**
      * \brief Initialize thread-local GC object
@@ -166,10 +154,6 @@ namespace MiniZinc {
     /// Untrail to previous mark
     static void untrail(void);
     
-    /// Add external root set
-    static void addRootSet(ASTRootSet* rs);
-    /// Remove external root set
-    static void removeRootSet(ASTRootSet* rs);
   };
 
   /// Automatic garbage collection lock
@@ -179,6 +163,23 @@ namespace MiniZinc {
     GCLock(void);
     /// Release lock upon destruction
     ~GCLock(void);
+  };
+
+  /// Expression wrapper that is a member of the root set
+  class KeepAlive {
+    friend class GC;
+  private:
+    Expression* _e;
+    KeepAlive* _p;
+    KeepAlive* _n;
+  public:
+    KeepAlive(Expression* e = NULL);
+    ~KeepAlive(void);
+    KeepAlive(const KeepAlive& e);
+    KeepAlive& operator =(const KeepAlive& e);
+    Expression* operator ()(void) { return _e; }
+    Expression* operator ()(void) const { return _e; }
+    KeepAlive* next(void) const { return _n; }
   };
 
 }

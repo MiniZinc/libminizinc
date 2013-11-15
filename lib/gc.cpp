@@ -30,14 +30,7 @@ namespace MiniZinc {
 #endif
     return gc;
   }
-  
-  void
-  GC::init(void) {
-    if (gc()==NULL) {
-      gc() = new GC();
-    }
-  }
-  
+    
   bool
   GC::locked(void) {
     assert(gc());
@@ -78,7 +71,7 @@ namespace MiniZinc {
   protected:
     HeapPage* _page;
     Model* _rootset;
-    std::vector<ASTRootSet*> roots;
+    KeepAlive* _roots;
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
@@ -115,6 +108,7 @@ namespace MiniZinc {
     Heap(void)
       : _page(NULL)
       , _rootset(NULL)
+      , _roots(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
       , _gc_threshold(10) {
@@ -152,6 +146,7 @@ namespace MiniZinc {
           } else {
             // Waste a little memory (less than smallest free list slot)
             _free_mem -= ns;
+            assert(_alloced_mem >= _free_mem);
           }
         }
         new (newPage) HeapPage(_page,s);
@@ -171,6 +166,7 @@ namespace MiniZinc {
       char* ret = p->data+p->used;
       p->used += size;
       _free_mem -= size;
+      assert(_alloced_mem >= _free_mem);
       return ret;
     }
 
@@ -195,13 +191,24 @@ namespace MiniZinc {
     }
 
     void rungc(void) {
-      if (_alloced_mem-_free_mem > _gc_threshold) {
-        mark();
-        sweep();
-        if (_alloced_mem-_free_mem > _gc_threshold) {
-          // grow threshold for next garbage collection
-          _gc_threshold = std::max(_alloced_mem-_free_mem,_gc_threshold);
-          _gc_threshold *= 1.5;
+      if (_free_mem < 10000) {
+        if (_alloced_mem > _gc_threshold) {
+#ifdef MZN_GC_DEBUG
+          std::cerr << "GC\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+                    << ((_alloced_mem-_free_mem)/1024)
+                    << "\n\tthreshold " << (_gc_threshold/1024)
+                    << "\n";
+#endif
+          mark();
+          sweep();
+          while (_alloced_mem > _gc_threshold)
+            _gc_threshold *= 1.5;
+#ifdef MZN_GC_DEBUG
+          std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+                    << ((_alloced_mem-_free_mem)/1024)
+                    << "\n\tthreshold " << (_gc_threshold/1024)
+                    << "\n";
+#endif
         }
       }
     }
@@ -331,14 +338,9 @@ namespace MiniZinc {
 
   void
   GC::Heap::mark(void) {
-    for (unsigned int i=0; i<roots.size(); i++) {
-      ASTRootSetIter* iter = roots[i]->rootSet();
-      for (Expression** e = iter->begin(); e != iter->end(); ++e) {
-        if ((*e)->_gc_mark==0) {
-          Expression::mark(*e);
-        }
-      }
-      delete iter;
+    for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
+      if ((*e)() && (*e)()->_gc_mark==0)
+        Expression::mark((*e)());
     }
 
     Model* m = _rootset;
@@ -410,6 +412,7 @@ namespace MiniZinc {
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
             _free_mem += ns;
+            assert(_alloced_mem >= _free_mem);
           } else {
             assert(off==0);
             assert(p->used==p->size);
@@ -430,6 +433,7 @@ namespace MiniZinc {
         HeapPage* pf = p;
         p = p->next;
         _alloced_mem -= pf->size;
+        assert(_alloced_mem >= _free_mem);
         ::free(pf);
       } else {
         prev = p;
@@ -478,22 +482,64 @@ namespace MiniZinc {
       gc->_heap->trail.back().mark = false;
   }  
 
-  void
-  GC::addRootSet(ASTRootSet* rs) {
-    GC* gc = GC::gc();
-    gc->_heap->roots.push_back(rs);
-  }
-
-  void
-  GC::removeRootSet(ASTRootSet* rs) {
-    GC* gc = GC::gc();
-    gc->_heap->roots.erase(
-      std::find(gc->_heap->roots.begin(),gc->_heap->roots.end(),rs));
-  }
-
   void*
   ASTNode::operator new(size_t size) throw (std::bad_alloc) {
     return GC::gc()->alloc(size);
+  }
+
+  void
+  GC::addKeepAlive(KeepAlive* e) {
+    assert(e->_p==NULL);
+    assert(e->_n==NULL);
+    e->_n = GC::gc()->_heap->_roots;
+    if (GC::gc()->_heap->_roots)
+      GC::gc()->_heap->_roots->_p = e;
+    GC::gc()->_heap->_roots = e;
+  }
+  void
+  GC::removeKeepAlive(KeepAlive* e) {
+    if (e->_p) {
+      e->_p->_n = e->_n;
+    } else {
+      assert(GC::gc()->_heap->_roots==e);
+      GC::gc()->_heap->_roots = e->_n;
+    }
+    if (e->_n) {
+      e->_n->_p = e->_p;
+    }
+  }
+
+  KeepAlive::KeepAlive(Expression* e)
+    : _e(e), _p(NULL), _n(NULL) {
+    if (_e)
+      GC::gc()->addKeepAlive(this);
+  }
+  KeepAlive::~KeepAlive(void) {
+    if (_e)
+      GC::gc()->removeKeepAlive(this);
+  }
+  KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(NULL), _n(NULL) {
+    if (_e)
+      GC::gc()->addKeepAlive(this);
+  }
+  KeepAlive&
+  KeepAlive::operator =(const KeepAlive& e) {
+    if (_e) {
+      if (e._e==NULL)
+        GC::gc()->removeKeepAlive(this);
+    } else {
+      if (e._e!=NULL)
+        GC::gc()->addKeepAlive(this);
+    }
+    _e = e._e;
+    return *this;
+  }
+
+  void
+  GC::init(void) {
+    if (gc()==NULL) {
+      gc() = new GC();
+    }
   }
 
 }

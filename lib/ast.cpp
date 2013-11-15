@@ -553,20 +553,10 @@ namespace MiniZinc {
   }
 
   namespace {
-    class RSIter : public ASTRootSetIter {
-    public:
-      std::vector<Expression*> r;
-      RSIter(std::vector<Expression*>& r0) : r(r0) {}
-      virtual Expression** begin(void) {
-        return &r[0];
-      }
-      virtual Expression** end(void) {
-        return &r[r.size()-1]+1;
-      }
-      virtual ~RSIter(void) {}
-    };
     
-    class OpToString : public ASTRootSet {
+    class OpToString {
+    protected:
+      std::vector<KeepAlive> rootSet;
     public:
       Id* sBOT_PLUS;
       Id* sBOT_MINUS;
@@ -599,78 +589,69 @@ namespace MiniZinc {
       
       OpToString(void) {
         GCLock lock;
-        GC::addRootSet(this);
         sBOT_PLUS = Id::a(Location(),"@+",NULL);
+        rootSet.push_back(sBOT_PLUS);
         sBOT_MINUS = Id::a(Location(),"@-",NULL);
+        rootSet.push_back(sBOT_MINUS);
         sBOT_MULT = Id::a(Location(),"@*",NULL);
+        rootSet.push_back(sBOT_MULT);
         sBOT_DIV = Id::a(Location(),"@/",NULL);
+        rootSet.push_back(sBOT_DIV);
         sBOT_IDIV = Id::a(Location(),"@div",NULL);
+        rootSet.push_back(sBOT_IDIV);
         sBOT_MOD = Id::a(Location(),"@mod",NULL);
+        rootSet.push_back(sBOT_MOD);
         sBOT_LE = Id::a(Location(),"@<",NULL);
+        rootSet.push_back(sBOT_LE);
         sBOT_LQ = Id::a(Location(),"@<=",NULL);
+        rootSet.push_back(sBOT_LQ);
         sBOT_GR = Id::a(Location(),"@>",NULL);
+        rootSet.push_back(sBOT_GR);
         sBOT_GQ = Id::a(Location(),"@>=",NULL);
+        rootSet.push_back(sBOT_GQ);
         sBOT_EQ = Id::a(Location(),"@=",NULL);
+        rootSet.push_back(sBOT_EQ);
         sBOT_NQ = Id::a(Location(),"@!=",NULL);
+        rootSet.push_back(sBOT_NQ);
         sBOT_IN = Id::a(Location(),"@in",NULL);
+        rootSet.push_back(sBOT_IN);
         sBOT_SUBSET = Id::a(Location(),"@subset",NULL);
+        rootSet.push_back(sBOT_SUBSET);
         sBOT_SUPERSET = Id::a(Location(),"@superset",NULL);
+        rootSet.push_back(sBOT_SUPERSET);
         sBOT_UNION = Id::a(Location(),"@union",NULL);
+        rootSet.push_back(sBOT_UNION);
         sBOT_DIFF = Id::a(Location(),"@diff",NULL);
+        rootSet.push_back(sBOT_DIFF);
         sBOT_SYMDIFF = Id::a(Location(),"@symdiff",NULL);
+        rootSet.push_back(sBOT_SYMDIFF);
         sBOT_INTERSECT = Id::a(Location(),"@intersect",NULL);
+        rootSet.push_back(sBOT_INTERSECT);
         sBOT_PLUSPLUS = Id::a(Location(),"@++",NULL);
+        rootSet.push_back(sBOT_PLUSPLUS);
         sBOT_EQUIV = Id::a(Location(),"@<->",NULL);
+        rootSet.push_back(sBOT_EQUIV);
         sBOT_IMPL = Id::a(Location(),"@->",NULL);
+        rootSet.push_back(sBOT_IMPL);
         sBOT_RIMPL = Id::a(Location(),"@<-",NULL);
+        rootSet.push_back(sBOT_RIMPL);
         sBOT_OR = Id::a(Location(),"@\\/",NULL);
+        rootSet.push_back(sBOT_OR);
         sBOT_AND = Id::a(Location(),"@/\\",NULL);
+        rootSet.push_back(sBOT_AND);
         sBOT_XOR = Id::a(Location(),"@xor",NULL);
+        rootSet.push_back(sBOT_XOR);
         sBOT_DOTDOT = Id::a(Location(),"@..",NULL);
+        rootSet.push_back(sBOT_DOTDOT);
         sBOT_NOT = Id::a(Location(),"@not",NULL);
+        rootSet.push_back(sBOT_NOT);
       }
-      
-      ~OpToString(void) {
-        GC::removeRootSet(this);
-      }
-      
+            
       static OpToString& o(void) {
         static OpToString _o;
         return _o;
       }
       
-      virtual ASTRootSetIter* rootSet(void) {
-        std::vector<Expression*> rs;
-        rs.push_back(sBOT_PLUS);
-        rs.push_back(sBOT_MINUS);
-        rs.push_back(sBOT_MULT);
-        rs.push_back(sBOT_DIV);
-        rs.push_back(sBOT_IDIV);
-        rs.push_back(sBOT_MOD);
-        rs.push_back(sBOT_LE);
-        rs.push_back(sBOT_LQ);
-        rs.push_back(sBOT_GR);
-        rs.push_back(sBOT_GQ);
-        rs.push_back(sBOT_EQ);
-        rs.push_back(sBOT_NQ);
-        rs.push_back(sBOT_IN);
-        rs.push_back(sBOT_SUBSET);
-        rs.push_back(sBOT_SUPERSET);
-        rs.push_back(sBOT_UNION);
-        rs.push_back(sBOT_DIFF);
-        rs.push_back(sBOT_SYMDIFF);
-        rs.push_back(sBOT_INTERSECT);
-        rs.push_back(sBOT_PLUSPLUS);
-        rs.push_back(sBOT_EQUIV);
-        rs.push_back(sBOT_IMPL);
-        rs.push_back(sBOT_RIMPL);
-        rs.push_back(sBOT_OR);
-        rs.push_back(sBOT_AND);
-        rs.push_back(sBOT_XOR);
-        rs.push_back(sBOT_DOTDOT);
-        rs.push_back(sBOT_NOT);
-        return new RSIter(rs);
-      }
     };
   }
 

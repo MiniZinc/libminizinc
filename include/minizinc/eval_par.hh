@@ -58,24 +58,29 @@ namespace MiniZinc {
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a);
+            KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
 
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            int i, IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
+            int i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     e->_g[e->_g_idx[gen]+id+1]->cast<VarDecl>()->_e->cast<IntLit>()->_v = i;
     if (e->_g_idx[gen]+id+1 == e->_g_idx[gen+1]-1) {
       if (gen == e->_g_idx.size()-2) {
         bool where = true;
         if (e->_where != NULL) {
+          GCLock lock;
           where = eval_bool(e->_where);
         }
         if (where) {
           a.push_back(eval.e(e->_e));
         }
       } else {
-        IntSetVal* nextin = eval_intset(e->_g[e->_g_idx[gen+1]]);
+        KeepAlive nextin;
+        {
+          GCLock lock;
+          nextin = SetLit::a(Location(),eval_intset(e->_g[e->_g_idx[gen+1]]));
+        }
         eval_comp<Eval>(eval,e,gen+1,0,nextin,a);
       }
     } else {
@@ -94,8 +99,8 @@ namespace MiniZinc {
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            IntSetVal* in, std::vector<typename Eval::ArrayVal>& a) {
-    IntSetRanges rsi(in);
+            KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+    IntSetRanges rsi(in()->cast<SetLit>()->_isv);
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
       eval_comp<Eval>(eval,e,gen,id,rsv.val(),in,a);
@@ -112,7 +117,11 @@ namespace MiniZinc {
   std::vector<typename Eval::ArrayVal>
   eval_comp(Eval& eval, Comprehension* e) {
     std::vector<typename Eval::ArrayVal> a;
-    IntSetVal* in  = eval_intset(e->_g[e->_g_idx[0]]);
+    KeepAlive in;
+    {
+      GCLock lock;
+      in = SetLit::a(Location(),eval_intset(e->_g[e->_g_idx[0]]));
+    }
     eval_comp<Eval>(eval,e,0,0,in,a);
     return a;
   }  
