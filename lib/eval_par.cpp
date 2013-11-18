@@ -416,6 +416,7 @@ namespace MiniZinc {
           }
         } else if (bo->_e0->_type.isint() && bo->_e1->_type.isintset()) {
           IntVal v0 = eval_int(bo->_e0);
+          GCLock lock;
           IntSetVal* v1 = eval_intset(bo->_e1);
           switch (bo->op()) {
           case BOT_IN: return v1->contains(v0);
@@ -424,6 +425,7 @@ namespace MiniZinc {
             throw EvalError(e->_loc,"not a bool expression", bo->opToString());
           }
         } else if (bo->_e0->_type.isset() && bo->_e1->_type.isset()) {
+          GCLock lock;
           IntSetVal* v0 = eval_intset(bo->_e0);
           IntSetVal* v1 = eval_intset(bo->_e1);
           IntSetRanges ir0(v0);
