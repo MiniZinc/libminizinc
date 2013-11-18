@@ -173,13 +173,11 @@ namespace MiniZinc {
            && !eval_bool(e);
   }  
 
-  class EnvIter;
-
   class Env {
   public:
     Model* orig;
     Model* m;
-    typedef ExpressionMap<EE> Map;
+    typedef KeepAliveMap<EE> Map;
     Map map;
     unsigned int ids;
     Env(Model* orig0, Model* m0) : orig(orig0), m(m0), ids(0) {
@@ -187,6 +185,18 @@ namespace MiniZinc {
     ASTString genId(const std::string& s) {
       std::ostringstream oss; oss << "_" << s << "_" << ids++;
       return ASTString(oss.str());
+    }
+    void map_insert(Expression* e, const EE& ee) {
+      KeepAlive ka(e);
+      map.insert(ka,ee);
+    }
+    Map::iterator map_find(Expression* e) {
+      KeepAlive ka(e);
+      return map.find(ka);
+    }
+    void map_remove(Expression* e) {
+      KeepAlive ka(e);
+      map.remove(ka);
     }
   };
 
@@ -328,7 +338,7 @@ namespace MiniZinc {
             id->_type = e->_type;
 
             EE ee(vd,NULL);
-            env.map.insert(id,ee);
+            env.map_insert(id,ee);
 
             return id;
           }
@@ -829,7 +839,7 @@ namespace MiniZinc {
           ctx.neg = false;
           ret = flat_exp(env,ctx,cp,r,b);
         } else {
-          Env::Map::iterator it = env.map.find(id);
+          Env::Map::iterator it = env.map_find(id);
           GCLock lock;
           VarDecl* vd = NULL;
           Expression* rete = NULL;
@@ -896,7 +906,7 @@ namespace MiniZinc {
           if (rete==NULL) {
             if (!vd->toplevel()) {
               // create new VarDecl in toplevel, if decl doesnt exist yet
-              Env::Map::iterator it = env.map.find(vd->_e);
+              Env::Map::iterator it = env.map_find(vd->_e);
               if (it==env.map.end()) {
                 VarDecl* nvd = 
                   VarDecl::a(Location(),eval_typeinst(env,vd->_ti),
@@ -908,10 +918,10 @@ namespace MiniZinc {
                 vd = nvd;
                 EE ee(vd,NULL);
                 if (vd->_e)
-                  env.map.insert(vd->_e,ee);
+                  env.map_insert(vd->_e,ee);
                 Id* nid = Id::a(Location(),nvd->_id,NULL);
                 nid->_type = nvd->_type;
-                env.map.insert(nid,ee);
+                env.map_insert(nid,ee);
               } else {
                 vd = it->second.r()->cast<VarDecl>();
               }
@@ -1553,7 +1563,7 @@ namespace MiniZinc {
               Call* cc = Call::a(Location(),callid,args);
               cc->_type = bo->_type;
 
-              Env::Map::iterator cit = env.map.find(cc);
+              Env::Map::iterator cit = env.map_find(cc);
               if (cit != env.map.end()) {
                 ees[2].b = cit->second.r;
                 if (doubleNeg) {
@@ -1594,7 +1604,7 @@ namespace MiniZinc {
                   }
                   ret.r = conj(env,r,ctx,ees);
                 }
-                env.map.insert(cc,ret);
+                env.map_insert(cc,ret);
               }
             }
             break;
@@ -1886,7 +1896,7 @@ namespace MiniZinc {
           decl = env.orig->matchFn(cr);
           assert(decl);
           cr->_decl = decl;
-          Env::Map::iterator cit = env.map.find(cr);
+          Env::Map::iterator cit = env.map_find(cr);
           if (cit != env.map.end()) {
             ret.b = bind(env,Ctx(),b,cit->second.b());
             ret.r = bind(env,ctx,r,cit->second.r());
@@ -1904,11 +1914,11 @@ namespace MiniZinc {
                   args_ee.push_back(res);
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,res.r());
-                  env.map.insert(cr,ret);
+                  env.map_insert(cr,ret);
                 } else {
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,cr);
-                  env.map.insert(cr,ret);
+                  env.map_insert(cr,ret);
                 }
               }
             } else {
@@ -1919,12 +1929,12 @@ namespace MiniZinc {
                 VarDecl* vd = decl->_params[i];
                 Id* id = Id::a(Location(),vd->_id,NULL);
                 id->_type = vd->_type;
-                Env::Map::iterator idit = env.map.find(id);
+                Env::Map::iterator idit = env.map_find(id);
                 if (idit==env.map.end()) {
                   EE ee(vd,NULL);
                   Expression* nullexp = NULL;
                   idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
-                  env.map.insert(id,ee);
+                  env.map_insert(id,ee);
                 } else {
                   idmap.push_back(
                     std::pair<Id*,Expression*>(id,idit->second.r()));
@@ -1936,20 +1946,20 @@ namespace MiniZinc {
                 EE ee = flat_exp(env,Ctx(),decl->_e,r,constants().t);
                 ret.r = bind(env,ctx,r,ee.r());
                 ret.b = conj(env,b,Ctx(),args_ee);
-                env.map.insert(cr,ret);
+                env.map_insert(cr,ret);
               } else {
                 ret = flat_exp(env,ctx,decl->_e,r,NULL);
                 args_ee.push_back(ret);
                 ret.b = conj(env,b,Ctx(),args_ee);
-                env.map.insert(cr,ret);
+                env.map_insert(cr,ret);
               }
               // Restore previous mapping
               for (unsigned int i=0; i<idmap.size(); i++) {
                 std::pair<Id*,Expression*>& idvd = idmap[i];
-                Env::Map::iterator idit = env.map.find(idvd.first);
+                Env::Map::iterator idit = env.map_find(idvd.first);
                 assert(idit != env.map.end());
                 if (idvd.second==NULL) {
-                  env.map.remove(idvd.first);
+                  env.map_remove(idvd.first);
                 } else {
                   idit->second.r = idvd.second;
                 }
@@ -1970,7 +1980,7 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         Id* id = Id::a(Location(),v->_id,NULL); /// TODO: avoid allocation
         id->_type = v->_type;
-        Env::Map::iterator it = env.map.find(id);
+        Env::Map::iterator it = env.map_find(id);
         if (it==env.map.end()) {
           VarDecl* vd = VarDecl::a(Location(),
                                    eval_typeinst(env,v->_ti),
@@ -2019,7 +2029,7 @@ namespace MiniZinc {
           env.m->addItem(nv);
           
           EE ee(vd,NULL);
-          env.map.insert(id,ee);
+          env.map_insert(id,ee);
           ret.r = bind(env,Ctx(),r,vd);
         } else {
           ret.r = bind(env,Ctx(),r,it->second.r());
@@ -2058,16 +2068,16 @@ namespace MiniZinc {
             Id* nid = Id::a(Location(),nvd->_id,nvd);
             nid->_type = vd->_type;
             ee = EE(nvd,NULL);
-            env.map.insert(nid,ee);
+            env.map_insert(nid,ee);
             vd->_e = nid;
             (void) flat_exp(env,Ctx(),nid,NULL,constants().t);
             Id* id = Id::a(Location(),vd->_id,NULL);
             id->_type = vd->_type;
-            Env::Map::iterator it = env.map.find(id);
+            Env::Map::iterator it = env.map_find(id);
             if (it==env.map.end()) {
               Expression* nullexp = NULL;
               idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
-              env.map.insert(id,ee);
+              env.map_insert(id,ee);
             } else {
               idmap.push_back(std::pair<Id*,Expression*>(id,it->second.r()));
               it->second.r = vd;
@@ -2103,10 +2113,10 @@ namespace MiniZinc {
         // Restore previous mapping
         for (unsigned int i=0; i<idmap.size(); i++) {
           std::pair<Id*,Expression*>& idvd = idmap[i];
-          Env::Map::iterator idit = env.map.find(idvd.first);
+          Env::Map::iterator idit = env.map_find(idvd.first);
           assert(idit != env.map.end());
           if (idvd.second==NULL) {
-            env.map.remove(idvd.first);
+            env.map_remove(idvd.first);
           } else {
             idit->second.r = idvd.second;
           }

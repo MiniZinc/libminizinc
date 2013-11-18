@@ -58,6 +58,49 @@ namespace MiniZinc {
       _m.erase(e);
     }
   };
+
+
+  /// Hash class for KeepAlive objects
+  struct KAHash {
+    size_t operator() (const KeepAlive& e) const {
+      return Expression::hash(e());
+    }
+  };
+  
+  /// Equality test for KeepAlive objects
+  struct KAEq {
+    bool operator() (const KeepAlive& e0, const KeepAlive& e1) const {
+      return Expression::equal(e0(),e1());
+    }
+  };
+
+
+  /// Hash map from KeepAlive to \a T
+  template<class T>
+  class KeepAliveMap {
+  protected:
+    /// The underlying map implementation
+    std::unordered_map<KeepAlive,T,KAHash,KAEq> _m;
+  public:
+    /// Iterator type
+    typedef typename std::unordered_map<KeepAlive,T,
+      KAHash,KAEq>::iterator iterator;
+    /// Insert mapping from \a e to \a t
+    void insert(KeepAlive& e, const T& t) {
+      assert(e() != NULL);
+      _m.insert(std::pair<KeepAlive,T>(e,t));
+    }
+    /// Find \a e in map
+    iterator find(KeepAlive& e) { return _m.find(e); }
+    /// Begin of iterator
+    iterator begin(void) { return _m.begin(); }
+    /// End of iterator
+    iterator end(void) { return _m.end(); }
+    /// Remove binding of \a e from map
+    void remove(KeepAlive& e) {
+      _m.erase(e);
+    }
+  };
   
 }
 
