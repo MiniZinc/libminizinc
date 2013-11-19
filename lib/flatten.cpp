@@ -919,8 +919,8 @@ namespace MiniZinc {
               ASTString nid = env.genId("fresh_"+vd->_id.str());
               VarDecl* nvd = VarDecl::a(Location(),vti,nid);
               nvd->introduced(true);
-              (void) flat_exp(env,Ctx(),nvd,NULL,constants().t);
-              Id* id = Id::a(Location(),nid,nvd);
+              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().t);
+              Id* id = Id::a(Location(),nid,root_vd.r()->cast<VarDecl>());
               id->_type = vti->_type;
               id->_type._dim = 0;
               elems[i] = id;
