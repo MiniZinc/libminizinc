@@ -6,6 +6,27 @@
 
 %-----------------------------------------------------------------------------%
 %
+% General annotations
+%
+
+annotation total;
+annotation is_defined_var;
+annotation var_is_introduced;
+annotation defines_var(var $t: c);
+annotation output_array(array[$u] of set of int:a);
+annotation output_var;
+
+%-----------------------------------------------------------------------------%
+%
+% Propagation strength
+%
+
+annotation domain;
+annotation bounds;
+
+
+%-----------------------------------------------------------------------------%
+%
 % Search annotations
 %
 
