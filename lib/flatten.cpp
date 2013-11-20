@@ -1531,31 +1531,101 @@ namespace MiniZinc {
                   } else {
                     d = -d;
                   }
-                  Expression* e0;
-                  Expression* e1;
-                  switch (bot) {
-                  case BOT_LE:
-                    e0 = alv[0]();
-                    e1 = IntLit::a(Location(),d-1);
-                    bot = BOT_LQ;
-                    break;
-                  case BOT_GR:
-                    e0 = IntLit::a(Location(),d+1);
-                    e1 = alv[0]();
-                    bot = BOT_LQ;
-                    break;
-                  case BOT_GQ:
-                    e0 = IntLit::a(Location(),d);
-                    e1 = alv[0]();
-                    bot = BOT_LQ;
-                    break;
-                  default:
-                    e0 = alv[0]();
-                    e1 = IntLit::a(Location(),d);
+                  Expression* alv0 = alv[0]();
+                  if (alv[0]()->isa<Id>() && bot==BOT_EQ) {
+                    GCLock lock;
+                    VarDecl* vd = alv[0]()->cast<Id>()->_decl;
+                    if (vd->_ti->_domain) {
+                      IntSetVal* domain = eval_intset(vd->_ti->_domain);
+                      if (domain->contains(d)) {
+                        if (domain->size()!=1 || domain->min(0)!=d || domain->max(0)!=d) {
+                          vd->_ti->setComputedDomain(false);
+                          vd->_ti->_domain = SetLit::a(Location(),IntSetVal::a(d,d));
+                        }
+                        ret.r = bind(env,ctx,r,constants().lt);
+                      } else {
+                        ret.r = bind(env,ctx,r,constants().lf);
+                      }
+                    } else {
+                      vd->_ti->setComputedDomain(false);
+                      vd->_ti->_domain = SetLit::a(Location(),IntSetVal::a(d,d));
+                      ret.r = bind(env,ctx,r,constants().lt);
+                    }
+                  } else if (alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->_decl->_ti->_domain) {
+                    GCLock lock;
+                    VarDecl* vd = alv[0]()->cast<Id>()->_decl;
+                    IntSetVal* domain = eval_intset(vd->_ti->_domain);
+                    IntSetRanges dr(domain);
+                    IntSetVal* ndomain;
+                    switch (bot) {
+                    case BOT_LE:
+                      d -= 1;
+                      // fall through
+                    case BOT_LQ:
+                      {
+                        Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::maxiter(dr,d);
+                        ndomain = IntSetVal::ai(b);
+                      }
+                      break;
+                    case BOT_GR:
+                      d += 1;
+                      // fall through
+                    case BOT_GQ:
+                      {
+                        Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::miniter(dr,d);
+                        ndomain = IntSetVal::ai(b);
+                      }
+                      break;
+                    case BOT_NQ:
+                      {
+                        Ranges::Const c(d,d);
+                        Ranges::Diff<IntSetRanges,Ranges::Const> d(dr,c);
+                        ndomain = IntSetVal::ai(d);
+                      }
+                      break;
+                    default: assert(false);
+                    }
+                    IntSetRanges dr2(domain);
+                    IntSetRanges ndr(ndomain);
+                    Ranges::Inter<IntSetRanges,IntSetRanges> i(dr2,ndr);
+                    IntSetVal* newibv = IntSetVal::ai(i);
+                    if (domain->card() != newibv->card()) {
+                      if (newibv->card() == 0) {
+                        ret.r = bind(env,ctx,r,constants().lf);
+                      } else {
+                        ret.r = bind(env,ctx,r,constants().lt);
+                        vd->_ti->setComputedDomain(false);
+                        vd->_ti->_domain = SetLit::a(Location(),newibv);
+                      }
+                    }
+                  } else {
+                    GCLock lock;
+                    Expression* e0;
+                    Expression* e1;
+                    switch (bot) {
+                    case BOT_LE:
+                      e0 = alv[0]();
+                      e1 = IntLit::a(Location(),d-1);
+                      bot = BOT_LQ;
+                      break;
+                    case BOT_GR:
+                      e0 = IntLit::a(Location(),d+1);
+                      e1 = alv[0]();
+                      bot = BOT_LQ;
+                      break;
+                    case BOT_GQ:
+                      e0 = IntLit::a(Location(),d);
+                      e1 = alv[0]();
+                      bot = BOT_LQ;
+                      break;
+                    default:
+                      e0 = alv[0]();
+                      e1 = IntLit::a(Location(),d);
+                    }
+                    args.push_back(e0);
+                    args.push_back(e1);
+                    callid = opToBuiltin(bo,bot);
                   }
-                  args.push_back(e0);
-                  args.push_back(e1);
-                  callid = opToBuiltin(bo,bot);
                 } else {
                   int coeff_sign;
                   switch (bot) {
@@ -1627,48 +1697,18 @@ namespace MiniZinc {
                 callid = opToBuiltin(bo,bot);
               }
 
-              GC::lock();
-              std::vector<Expression*> args_e(args.size());
-              for (unsigned int i=args.size(); i--;)
-                args_e[i] = args[i]();
-              Call* cc = Call::a(Location(),callid,args_e);
-              cc->_type = bo->_type;
+              if (args.size() > 0) {
+                GC::lock();
+                std::vector<Expression*> args_e(args.size());
+                for (unsigned int i=args.size(); i--;)
+                  args_e[i] = args[i]();
+                Call* cc = Call::a(Location(),callid,args_e);
+                cc->_type = bo->_type;
 
-              Env::Map::iterator cit = env.map_find(cc);
-              if (cit != env.map.end()) {
-                ees[2].b = cit->second.r;
-                if (doubleNeg) {
-                  Type t = ees[2].b()->_type;
-                  ees[2].b = UnOp::a(Location(),UOT_NOT,ees[2].b());
-                  ees[2].b()->_type = t;
-                }
-                if (Id* id = ees[2].b()->dyn_cast<Id>()) {
-                  addCtxAnn(id->_decl,ctx.b);
-                }
-                ret.r = conj(env,r,ctx,ees);
-                GC::unlock();
-              } else {
-                cc->_decl = env.orig->matchFn(cc->_id.str(),args_e);
-                assert(cc->_decl);
-                bool singleExp = true;
-                for (unsigned int i=0; i<ees.size(); i++) {
-                  if (!istrue(ees[i].b())) {
-                    singleExp = false;
-                    break;
-                  }
-                }
-                KeepAlive ka(cc);
-                GC::unlock();
-                if (singleExp) {
+                Env::Map::iterator cit = env.map_find(cc);
+                if (cit != env.map.end()) {
+                  ees[2].b = cit->second.r;
                   if (doubleNeg) {
-                    ctx.b = -ctx.b;
-                    ctx.neg = !ctx.neg;
-                  }
-                  ret.r = flat_exp(env,ctx,cc,r,NULL).r;
-                } else {
-                  ees[2].b = flat_exp(env,Ctx(),cc,NULL,NULL).r;
-                  if (doubleNeg) {
-                    GCLock lock;
                     Type t = ees[2].b()->_type;
                     ees[2].b = UnOp::a(Location(),UOT_NOT,ees[2].b());
                     ees[2].b()->_type = t;
@@ -1677,8 +1717,40 @@ namespace MiniZinc {
                     addCtxAnn(id->_decl,ctx.b);
                   }
                   ret.r = conj(env,r,ctx,ees);
+                  GC::unlock();
+                } else {
+                  cc->_decl = env.orig->matchFn(cc->_id.str(),args_e);
+                  assert(cc->_decl);
+                  bool singleExp = true;
+                  for (unsigned int i=0; i<ees.size(); i++) {
+                    if (!istrue(ees[i].b())) {
+                      singleExp = false;
+                      break;
+                    }
+                  }
+                  KeepAlive ka(cc);
+                  GC::unlock();
+                  if (singleExp) {
+                    if (doubleNeg) {
+                      ctx.b = -ctx.b;
+                      ctx.neg = !ctx.neg;
+                    }
+                    ret.r = flat_exp(env,ctx,cc,r,NULL).r;
+                  } else {
+                    ees[2].b = flat_exp(env,Ctx(),cc,NULL,NULL).r;
+                    if (doubleNeg) {
+                      GCLock lock;
+                      Type t = ees[2].b()->_type;
+                      ees[2].b = UnOp::a(Location(),UOT_NOT,ees[2].b());
+                      ees[2].b()->_type = t;
+                    }
+                    if (Id* id = ees[2].b()->dyn_cast<Id>()) {
+                      addCtxAnn(id->_decl,ctx.b);
+                    }
+                    ret.r = conj(env,r,ctx,ees);
+                  }
+                  env.map_insert(cc,ret);
                 }
-                env.map_insert(cc,ret);
               }
             }
             break;

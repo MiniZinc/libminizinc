@@ -91,6 +91,135 @@ namespace MiniZinc { namespace Ranges {
     return static_cast<UIntVal>(ma-mi)+1;
   }
   
+  
+  template<class I>
+  class Bounded {
+  protected:
+    I i;
+    IntVal _min;
+    bool use_min;
+    IntVal _max;
+    bool use_max;
+    Bounded(I& i, IntVal min0, bool umin0, IntVal max0, bool umax0);
+  public:
+    static Bounded miniter(I& i, IntVal min);
+    static Bounded maxiter(I& i, IntVal max);
+    static Bounded minmaxiter(I& i, IntVal min, IntVal max);
+
+    /// \name Iteration control
+    //@{
+    /// Test whether iterator is still at a range or done
+    bool operator ()(void) const;
+    /// Move iterator to next range (if possible)
+    void operator ++(void);
+    //@}
+
+    /// \name Range access
+    //@{
+    /// Return smallest value of range
+    IntVal min(void) const;
+    /// Return largest value of range
+    IntVal max(void) const;
+    /// Return width of range (distance between minimum and maximum)
+    UIntVal width(void) const;
+    //@}
+  };
+
+  template<class I>
+  inline
+  Bounded<I>::Bounded(I& i0, IntVal min0, bool umin0, IntVal max0, bool umax0)
+    : i(i0), _min(min0), use_min(umin0), _max(max0), use_max(umax0) {
+    while (i() && use_min && i.max() < _min)
+      ++i;
+  }
+  template<class I>
+  inline Bounded<I>
+  Bounded<I>::miniter(I& i, IntVal min) {
+    return Bounded(i,min,true,0,false);
+  }
+  template<class I>
+  inline Bounded<I>
+  Bounded<I>::maxiter(I& i, IntVal max) {
+    return Bounded(i,0,false,max,true);
+  }
+  template<class I>
+  inline Bounded<I>
+  Bounded<I>::minmaxiter(I& i, IntVal min, IntVal max) {
+    return Bounded(i,min,true,max,true);
+  }
+
+  template<class I>
+  inline bool
+  Bounded<I>::operator ()(void) const {
+    return i() && (!use_max || i.min() <= _max);
+  }
+  template<class I>
+  inline void
+  Bounded<I>::operator ++(void) {
+    ++i;
+    while (i() && use_min && i.max() < _min)
+      ++i;
+  }
+  template<class I>
+  inline IntVal
+  Bounded<I>::min(void) const {
+    return use_min ? std::max(_min,i.min()) : i.min();
+  }
+  template<class I>
+  inline IntVal
+  Bounded<I>::max(void) const {
+    return use_max ? std::min(_max,i.max()) : i.max();
+  }
+  template<class I>
+  inline UIntVal
+  Bounded<I>::width(void) const {
+    return static_cast<UIntVal>(max()-min())+1;
+  }
+
+  class Const {
+  protected:
+    IntVal _min;
+    IntVal _max;
+    bool done;
+  public:
+    Const(IntVal min0, IntVal max0);
+
+    /// \name Iteration control
+    //@{
+    /// Test whether iterator is still at a range or done
+    bool operator ()(void) const;
+    /// Move iterator to next range (if possible)
+    void operator ++(void);
+    //@}
+
+    /// \name Range access
+    //@{
+    /// Return smallest value of range
+    IntVal min(void) const;
+    /// Return largest value of range
+    IntVal max(void) const;
+    /// Return width of range (distance between minimum and maximum)
+    UIntVal width(void) const;
+    //@}
+  };
+
+  inline
+  Const::Const(IntVal min0, IntVal max0) : _min(min0), _max(max0), done(min0<max0) {}
+  inline bool
+  Const::operator ()(void) const {
+    return done;
+  }
+  inline void
+  Const::operator ++(void) {
+    done = true;
+  }
+  inline IntVal
+  Const::min(void) const { return _min; }
+  inline IntVal
+  Const::max(void) const { return _max; }
+  inline UIntVal
+  Const::width(void) const { return static_cast<UIntVal>(max()-min())+1; }
+  
   /**
    * \brief Range iterator for computing union (binary)
    *
