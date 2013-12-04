@@ -351,7 +351,7 @@ namespace MiniZinc {
         Item* i = m->_items[j];
         if (i->_gc_mark==0) {
           i->_gc_mark = 1;
-          i->_loc.mark();
+          i->loc().mark();
           switch (i->iid()) {
           case Item::II_INC:
             i->cast<IncludeI>()->_f.mark();

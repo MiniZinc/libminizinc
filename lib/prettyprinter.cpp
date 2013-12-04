@@ -428,8 +428,8 @@ namespace MiniZinc {
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
-          if (vd._ann) {
-            p(vd._ann);
+          if (vd.ann()) {
+            p(vd.ann());
           }
           if (vd._e) {
             os << " = ";
@@ -460,8 +460,8 @@ namespace MiniZinc {
           const Annotation* a = e->cast<Annotation>();
           while (a) {
             os << " :: ";
-            p(a->_e);
-            a = a->_a;
+            p(a->e());
+            a = a->next();
           }
         }
         break;
@@ -477,7 +477,7 @@ namespace MiniZinc {
             }
             os << "] of ";
           }
-          p(ti._type,ti._domain);
+          p(ti.type(),ti._domain);
         }
       }
     }
@@ -527,11 +527,11 @@ namespace MiniZinc {
       case Item::II_FUN:
         {
           const FunctionI& fi = *i->cast<FunctionI>();
-          if (fi._ti->_type.isann() && fi._e == NULL) {
+          if (fi._ti->type().isann() && fi._e == NULL) {
             os << "annotation ";
-          } else if (fi._ti->_type == Type::parbool()) {
+          } else if (fi._ti->type() == Type::parbool()) {
             os << "test ";
-          } else if (fi._ti->_type == Type::varbool()) {
+          } else if (fi._ti->type() == Type::varbool()) {
             os << "predicate ";
           } else {
             os << "function ";
@@ -1343,8 +1343,8 @@ namespace MiniZinc {
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }
-      if (vd._ann) {
-        dl->addDocumentToList(expressionToDocument(vd._ann));
+      if (vd.ann()) {
+        dl->addDocumentToList(expressionToDocument(vd.ann()));
       }
       if (vd._e) {
         dl->addStringToList(" = ");
@@ -1392,9 +1392,9 @@ namespace MiniZinc {
       const Annotation* a = &an;
       DocumentList* dl = new DocumentList(" :: ", " :: ", "");
       while (a) {
-        Document* ann = expressionToDocument(a->_e);
+        Document* ann = expressionToDocument(a->e());
         dl->addDocumentToList(ann);
-        a = a->_a;
+        a = a->next();
       }
       return dl;
     }
@@ -1409,7 +1409,7 @@ namespace MiniZinc {
         dl->addDocumentToList(ran);
         dl->addStringToList("] of ");
       }
-      dl->addDocumentToList(tiexpressionToDocument(ti._type,ti._domain));
+      dl->addDocumentToList(tiexpressionToDocument(ti.type(),ti._domain));
       return dl;
     }
   };
@@ -1421,8 +1421,8 @@ namespace MiniZinc {
     DocumentList* dl = new DocumentList("", "", "");
     Document* s = em.map(e);
     dl->addDocumentToList(s);
-    if (!e->isa<VarDecl>() && e->_ann) {
-      dl->addDocumentToList(em.map(e->_ann));
+    if (!e->isa<VarDecl>() && e->ann()) {
+      dl->addDocumentToList(em.map(e->ann()));
     }
     return dl;
   }
@@ -1479,11 +1479,11 @@ namespace MiniZinc {
     }
     ret mapFunctionI(const FunctionI& fi) {
       DocumentList* dl;
-      if (fi._ti->_type.isann() && fi._e == NULL) {
+      if (fi._ti->type().isann() && fi._e == NULL) {
         dl = new DocumentList("annotation ", " ", ";", false);
-      } else if (fi._ti->_type == Type::parbool()) {
+      } else if (fi._ti->type() == Type::parbool()) {
         dl = new DocumentList("test ", "", ";", false);
-      } else if (fi._ti->_type == Type::varbool()) {
+      } else if (fi._ti->type() == Type::varbool()) {
         dl = new DocumentList("predicate ", "", ";", false);
       } else {
         dl = new DocumentList("function ", "", ";", false);

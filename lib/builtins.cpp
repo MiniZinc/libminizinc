@@ -66,12 +66,12 @@ namespace MiniZinc {
   IntVal b_min(ASTExprVec<Expression>& args) {
     switch (args.size()) {
     case 1:
-      if (args[0]->_type.isset()) {
-        throw EvalError(args[0]->_loc, "sets not supported");
+      if (args[0]->type().isset()) {
+        throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->_v.size()==0)
-          throw EvalError(al->_loc, "min on empty array undefined");
+          throw EvalError(al->loc(), "min on empty array undefined");
         IntVal m = eval_int(al->_v[0]);
         for (unsigned int i=1; i<al->_v.size(); i++)
           m = std::min(m, eval_int(al->_v[i]));
@@ -89,12 +89,12 @@ namespace MiniZinc {
   IntVal b_max(ASTExprVec<Expression>& args) {
     switch (args.size()) {
     case 1:
-      if (args[0]->_type.isset()) {
-        throw EvalError(args[0]->_loc, "sets not supported");
+      if (args[0]->type().isset()) {
+        throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->_v.size()==0)
-          throw EvalError(al->_loc, "max on empty array undefined");
+          throw EvalError(al->loc(), "max on empty array undefined");
         IntVal m = eval_int(al->_v[0]);
         for (unsigned int i=1; i<al->_v.size(); i++)
           m = std::max(m, eval_int(al->_v[i]));
@@ -120,7 +120,7 @@ namespace MiniZinc {
     if (b.valid)
       return b.l;
     else
-      throw EvalError(e->_loc,"cannot determine bounds");
+      throw EvalError(e->loc(),"cannot determine bounds");
   }
   IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
     if (args.size() != 1)
@@ -144,7 +144,7 @@ namespace MiniZinc {
     if (b.valid)
       return b.u;
     else
-      throw EvalError(e->_loc,"cannot determine bounds");
+      throw EvalError(e->loc(),"cannot determine bounds");
   }
   IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
     if (args.size() != 1)
@@ -182,13 +182,13 @@ namespace MiniZinc {
       throw EvalError(Location(), "index_set only supported for identifiers");
     Id* id = args[0]->cast<Id>();
     if (id->_decl == NULL)
-      throw EvalError(id->_loc, "undefined identifier");
+      throw EvalError(id->loc(), "undefined identifier");
     if (id->_decl->_ti->_ranges.size() < i)
-      throw EvalError(id->_loc, "index_set: wrong dimension");
+      throw EvalError(id->loc(), "index_set: wrong dimension");
     if (id->_decl->_ti->_ranges[i-1]->_domain == NULL) {
       ArrayLit* al = eval_array_lit(id);
       if (al->dims() < i)
-        throw EvalError(id->_loc, "index_set: wrong dimension");
+        throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
     return eval_intset(id->_decl->_ti->_ranges[i-1]->_domain);
@@ -233,7 +233,7 @@ namespace MiniZinc {
         {
           Id* id = e->cast<Id>();
           if (id->_decl==NULL)
-            throw EvalError(id->_loc,"undefined identifier");
+            throw EvalError(id->loc(),"undefined identifier");
           if (id->_decl->_e==NULL)
             return eval_intset(id->_decl->_ti->_domain);
           else
@@ -241,7 +241,7 @@ namespace MiniZinc {
         }
         break;
       default:
-        throw EvalError(e->_loc,"invalid argument to ub");
+        throw EvalError(e->loc(),"invalid argument to ub");
       }
     }
   }
@@ -258,7 +258,7 @@ namespace MiniZinc {
         {
           Id* id = e->cast<Id>();
           if (id->_decl==NULL)
-            throw EvalError(id->_loc,"undefined identifier");
+            throw EvalError(id->loc(),"undefined identifier");
           if (id->_decl->_e==NULL)
             return eval_intset(id->_decl->_ti->_domain);
           else
@@ -266,7 +266,7 @@ namespace MiniZinc {
         }
         break;
       default:
-        throw EvalError(e->_loc,"invalid argument to dom");
+        throw EvalError(e->loc(),"invalid argument to dom");
       }
     }
   }
@@ -288,15 +288,15 @@ namespace MiniZinc {
         {
           Id* id = ae->cast<Id>();
           if (id->_decl==NULL)
-            throw EvalError(id->_loc,"undefined identifier");
+            throw EvalError(id->loc(),"undefined identifier");
           if (id->_decl->_e==NULL)
-            throw EvalError(id->_loc,"array without initialiser");
+            throw EvalError(id->loc(),"array without initialiser");
           else
             ae = id->_decl->_e;
         }
         break;
       default:
-        throw EvalError(ae->_loc,"invalid argument to ub");
+        throw EvalError(ae->loc(),"invalid argument to ub");
       }
     }
     if (al->_v.size()==0)
@@ -318,15 +318,16 @@ namespace MiniZinc {
     for (int i=0; i<d; i++) {
       IntSetVal* di = eval_intset(args[i]);
       if (di->size() != 1)
-        throw EvalError(args[i]->_loc, "arrayXd only defined for ranges");
+        throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
       dims[i] = std::pair<int,int>(di->min(0),di->max(0));
       dim1d *= dims[i].second-dims[i].first+1;
     }
     if (dim1d != al->_v.size())
-      throw EvalError(al->_loc, "mismatch in array dimensions");
-    ArrayLit* ret = new ArrayLit(al->_loc, al->_v, dims);
-    ret->_type = al->_type;
-    ret->_type._dim = d;
+      throw EvalError(al->loc(), "mismatch in array dimensions");
+    ArrayLit* ret = new ArrayLit(al->loc(), al->_v, dims);
+    Type t = al->type();
+    t._dim = d;
+    ret->type(t);
     return ret;
   }
   Expression* b_array1d(ASTExprVec<Expression>& args) {

@@ -26,8 +26,6 @@
 
 namespace MiniZinc {
 
-  using std::pair;
-
   class Annotation;
   class IntLit;
   class FloatLit;
@@ -71,7 +69,7 @@ namespace MiniZinc {
     std::string toString(void) const;
     
     /// Mark as alive for garbage collection
-    void mark(void);
+    void mark(void) const;
   };
 
   /// Output operator for locations
@@ -92,12 +90,16 @@ namespace MiniZinc {
    * \brief Base class for expressions
    */
   class Expression : public ASTNode {
-  public:
+  protected:
     /// An annotation (or NULL)
     Annotation* _ann;
     /// The location of the expression
     Location _loc;
-
+    /// The %MiniZinc type of the expression
+    Type _type;
+    /// The hash value of the expression
+    size_t _hash;
+  public:
     /// Identifier of the concrere expression type
     enum ExpressionId {
       E_INTLIT = ASTNode::NID_END+1, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
@@ -111,12 +113,24 @@ namespace MiniZinc {
       return static_cast<ExpressionId>(_id);
     }
 
-    /// The %MiniZinc type of the expression
-    Type _type;
-
-    /// The hash value of the expression
-    size_t _hash;
-
+    Annotation* ann(void) const {
+      return _ann;
+    }
+    const Location& loc(void) const {
+      return _loc;
+    }
+    void loc(const Location& l) {
+      _loc = l;
+    }
+    const Type& type(void) const {
+      return _type;
+    }
+    void type(const Type& t) {
+      _type = t;
+    }
+    size_t hash(void) const {
+      return _hash;
+    }
   protected:
     /// Combination function for hash values
     void cmb_hash(size_t h) {
@@ -178,14 +192,20 @@ namespace MiniZinc {
    * \brief Annotations
    */
   class Annotation : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ANN;
+  protected:
     /// The actual annotation expression
     Expression* _e;
     /// The next annotation in a list or NULL
     Annotation* _a;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_ANN;
 
+    /// Access expression
+    Expression* e(void) const { return _e; }
+    /// Access next annotation in the list
+    Annotation* next(void) const { return _a; }
+    
     /// Constructor
     Annotation(const Location& loc, Expression* e, Annotation* a = NULL);
     /// Add annotation \a a to end of list of annotations
@@ -312,11 +332,11 @@ namespace MiniZinc {
     /// Constructor
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v,
-             const std::vector<pair<int,int> >& dims);
+             const std::vector<std::pair<int,int> >& dims);
     /// Constructor (existing content)
     ArrayLit(const Location& loc,
              ASTExprVec<Expression> v,
-             const std::vector<pair<int,int> >& dims);
+             const std::vector<std::pair<int,int> >& dims);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
@@ -605,9 +625,10 @@ namespace MiniZinc {
    * \brief Base-class for items
    */
   class Item : public ASTNode {
-  public:
+  protected:
     /// Location of the item
     Location _loc;
+  public:
     /// Identifier of the concrete item type
     enum ItemId {
       II_INC = Expression::EID_END+1, II_VD, II_ASN, II_CON, II_SOL,
@@ -617,6 +638,9 @@ namespace MiniZinc {
       return static_cast<ItemId>(_id);
     }
     
+    const Location& loc(void) const {
+      return _loc;
+    }
   protected:
     /// Constructor
     Item(const Location& loc, const ItemId& iid)

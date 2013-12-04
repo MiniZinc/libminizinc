@@ -94,7 +94,7 @@ namespace MiniZinc {
   inline
   ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<Expression*>& v,
-                     const std::vector<pair<int,int> >& dims)
+                     const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
@@ -109,7 +109,7 @@ namespace MiniZinc {
   inline
   ArrayLit::ArrayLit(const Location& loc,
                      ASTExprVec<Expression> v,
-                     const std::vector<pair<int,int> >& dims)
+                     const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
@@ -245,7 +245,7 @@ namespace MiniZinc {
   inline
   VarDecl::VarDecl(const Location& loc,
                    TypeInst* ti, const ASTString& id, Expression* e)
-  : Expression(loc,E_VARDECL,ti->_type) {
+  : Expression(loc,E_VARDECL,ti->type()) {
     _flag_1 = true;
     _flag_2 = false;
     _ti = ti;
@@ -257,7 +257,7 @@ namespace MiniZinc {
   inline
   VarDecl::VarDecl(const Location& loc,
                    TypeInst* ti, const std::string& id, Expression* e)
-  : Expression(loc,E_VARDECL,ti->_type) {
+  : Expression(loc,E_VARDECL,ti->type()) {
     _flag_1 = true;
     _flag_2 = false;
     _ti = ti;

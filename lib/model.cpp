@@ -48,14 +48,14 @@ namespace MiniZinc {
         if (v[i]->_params.size() == fi->_params.size()) {
           bool alleq=true;
           for (unsigned int j=0; j<fi->_params.size(); j++) {
-            if (v[i]->_params[j]->_type != fi->_params[j]->_type) {
+            if (v[i]->_params[j]->type() != fi->_params[j]->type()) {
               alleq=false; break;
             }
           }
           if (alleq) {
-            throw TypeError(fi->_loc,
+            throw TypeError(fi->loc(),
               "function with the same type already defined in "
-              +v[i]->_loc.toString());
+              +v[i]->loc().toString());
           }
         }
       }
@@ -80,7 +80,7 @@ namespace MiniZinc {
       if (fi->_params.size() == t.size()) {
         bool match=true;
         for (unsigned int j=0; j<t.size(); j++) {
-          if (!t[j].isSubtypeOf(fi->_params[j]->_type)) {
+          if (!t[j].isSubtypeOf(fi->_params[j]->type())) {
             match=false;
             break;
           }
@@ -102,7 +102,7 @@ namespace MiniZinc {
           return true;
         if (x->_params.size() == y->_params.size()) {
           for (unsigned int i=0; i<x->_params.size(); i++) {
-            switch (x->_params[i]->_type.cmp(y->_params[i]->_type)) {
+            switch (x->_params[i]->type().cmp(y->_params[i]->type())) {
             case -1: return true;
             case 1: return false;
             }
@@ -140,7 +140,7 @@ namespace MiniZinc {
       if (fi->_params.size() == args.size()) {
         bool match=true;
         for (unsigned int j=0; j<args.size(); j++) {
-          if (!args[j]->_type.isSubtypeOf(fi->_params[j]->_type)) {
+          if (!args[j]->type().isSubtypeOf(fi->_params[j]->type())) {
             match=false;
             break;
           }
@@ -168,7 +168,7 @@ namespace MiniZinc {
       if (fi->_params.size() == c->_args.size()) {
         bool match=true;
         for (unsigned int j=0; j<c->_args.size(); j++) {
-          if (!c->_args[j]->_type.isSubtypeOf(fi->_params[j]->_type)) {
+          if (!c->_args[j]->type().isSubtypeOf(fi->_params[j]->type())) {
             match=false;
             break;
           }

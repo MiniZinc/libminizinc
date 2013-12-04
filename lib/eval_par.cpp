@@ -25,7 +25,7 @@ namespace MiniZinc {
   typename E::Val eval_id(Expression* e) {
     Id* id = e->cast<Id>();
     if (id->_decl == NULL)
-      throw EvalError(e->_loc, "undeclared identifier", id->_v);
+      throw EvalError(e->loc(), "undeclared identifier", id->_v);
     if (id->_decl->_e == NULL)
       return E::e(id->_decl);
     typename E::Val r = E::e(id->_decl->_e);
@@ -70,7 +70,7 @@ namespace MiniZinc {
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(Expression* e) {
-      return new SetLit(e->_loc,eval_intset(e));
+      return new SetLit(e->loc(),eval_intset(e));
     }
   };
   class EvalNone {
@@ -84,20 +84,20 @@ namespace MiniZinc {
 
   ArrayLit* eval_array_comp(Comprehension* e) {
     ArrayLit* ret;
-    if (e->_type == Type::parint(1)) {
+    if (e->type() == Type::parint(1)) {
       std::vector<Expression*> a = eval_comp<EvalIntLit>(e);
-      ret = new ArrayLit(e->_loc,a);
-    } else if (e->_type == Type::parbool(1)) {
+      ret = new ArrayLit(e->loc(),a);
+    } else if (e->type() == Type::parbool(1)) {
       std::vector<Expression*> a = eval_comp<EvalBoolLit>(e);
-      ret = new ArrayLit(e->_loc,a);
-    } else if (e->_type == Type::parsetint(1)) {
+      ret = new ArrayLit(e->loc(),a);
+    } else if (e->type() == Type::parsetint(1)) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(e);
-      ret = new ArrayLit(e->_loc,a);
+      ret = new ArrayLit(e->loc(),a);
     } else {
       std::vector<Expression*> a = eval_comp<EvalNone>(e);
-      ret = new ArrayLit(e->_loc,a);
+      ret = new ArrayLit(e->loc(),a);
     }
-    ret->_type = e->_type;
+    ret->type(e->type());
     return ret;
   }
   
@@ -113,13 +113,13 @@ namespace MiniZinc {
     case Expression::E_TI:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
-      throw EvalError(e->_loc, "not an array expression");
+      throw EvalError(e->loc(), "not an array expression");
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(e);
     case Expression::E_ARRAYLIT:
       return e->cast<ArrayLit>();
     case Expression::E_ARRAYACCESS:
-      throw EvalError(e->_loc,"arrays of arrays not supported");
+      throw EvalError(e->loc(),"arrays of arrays not supported");
     case Expression::E_COMP:
       return eval_array_comp(e->cast<Comprehension>());
     case Expression::E_ITE:
@@ -142,21 +142,21 @@ namespace MiniZinc {
             v[i] = al0->_v[i];
           for (unsigned int i=al1->_v.size(); i--;)
             v[al0->_v.size()+i] = al1->_v[i];
-          ArrayLit* ret = new ArrayLit(e->_loc,v);
-          ret->_type = e->_type;
+          ArrayLit* ret = new ArrayLit(e->loc(),v);
+          ret->type(e->type());
           return ret;
         } else {
-          throw EvalError(e->_loc, "not an array expression", bo->opToString());
+          throw EvalError(e->loc(), "not an array expression", bo->opToString());
         }
       }
       break;
     case Expression::E_UNOP:
-      throw EvalError(e->_loc, "unary operator not supported");
+      throw EvalError(e->loc(), "unary operator not supported");
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function", ce->_id);
+          throw EvalError(e->loc(), "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.e)
           return ce->_decl->_builtins.e(ce->_args)
@@ -192,7 +192,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<al->dims(); i++) {
       int ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i))
-        throw EvalError(al->_loc, "array index out of bounds");
+        throw EvalError(al->loc(), "array index out of bounds");
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
     }
@@ -230,7 +230,7 @@ namespace MiniZinc {
     case Expression::E_ANN:
     case Expression::E_TI:
     case Expression::E_UNOP:
-      throw EvalError(e->_loc,"not a set of int expression");
+      throw EvalError(e->loc(),"not a set of int expression");
       break;
     case Expression::E_ARRAYLIT:
       {
@@ -266,7 +266,7 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        if (bo->_e0->_type.isintset() && bo->_e1->_type.isintset()) {
+        if (bo->_e0->type().isintset() && bo->_e1->type().isintset()) {
           IntSetVal* v0 = eval_intset(bo->_e0);
           IntSetVal* v1 = eval_intset(bo->_e1);
           IntSetRanges ir0(v0);
@@ -285,15 +285,15 @@ namespace MiniZinc {
               Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
-          default: throw EvalError(e->_loc,"not a set of int expression", bo->opToString());
+          default: throw EvalError(e->loc(),"not a set of int expression", bo->opToString());
           }
-        } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
+        } else if (bo->_e0->type().isint() && bo->_e1->type().isint()) {
           if (bo->op() != BOT_DOTDOT)
-            throw EvalError(e->_loc, "not a set of int expression", bo->opToString());
+            throw EvalError(e->loc(), "not a set of int expression", bo->opToString());
           return IntSetVal::a(eval_int(bo->_e0),
                               eval_int(bo->_e1));
         } else {
-          throw EvalError(e->_loc, "not a set of int expression", bo->opToString());
+          throw EvalError(e->loc(), "not a set of int expression", bo->opToString());
         }
       }
       break;
@@ -301,7 +301,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function", ce->_id);
+          throw EvalError(e->loc(), "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.s)
           return ce->_decl->_builtins.s(ce->_args);
@@ -329,7 +329,7 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(Expression* e) {
-    throw EvalError(e->_loc, "floats not supported yet");
+    throw EvalError(e->loc(), "floats not supported yet");
   }
 
   bool eval_bool(Expression* e) {
@@ -347,7 +347,7 @@ namespace MiniZinc {
     case Expression::E_ANN:
     case Expression::E_TI:
       assert(false);
-      throw EvalError(e->_loc,"not a bool expression");
+      throw EvalError(e->loc(),"not a bool expression");
       break;
     case Expression::E_ID:
       return eval_id<EvalBoolLit>(e)->_v;
@@ -368,7 +368,7 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        if (bo->_e0->_type.isbool() && bo->_e1->_type.isbool()) {
+        if (bo->_e0->type().isbool() && bo->_e1->type().isbool()) {
           switch (bo->op()) {
           case BOT_LE: return eval_bool(bo->_e0)<eval_bool(bo->_e1);
           case BOT_LQ: return eval_bool(bo->_e0)<=eval_bool(bo->_e1);
@@ -384,9 +384,9 @@ namespace MiniZinc {
           case BOT_XOR: return eval_bool(bo->_e0)^eval_bool(bo->_e1);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
+            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->_e0->_type.isint() && bo->_e1->_type.isint()) {
+        } else if (bo->_e0->type().isint() && bo->_e1->type().isint()) {
           IntVal v0 = eval_int(bo->_e0);
           IntVal v1 = eval_int(bo->_e1);
           switch (bo->op()) {
@@ -398,9 +398,9 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
+            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->_e0->_type.isfloat() && bo->_e1->_type.isfloat()) {
+        } else if (bo->_e0->type().isfloat() && bo->_e1->type().isfloat()) {
           FloatVal v0 = eval_float(bo->_e0);
           FloatVal v1 = eval_float(bo->_e1);
           switch (bo->op()) {
@@ -412,9 +412,9 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
+            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->_e0->_type.isint() && bo->_e1->_type.isintset()) {
+        } else if (bo->_e0->type().isint() && bo->_e1->type().isintset()) {
           IntVal v0 = eval_int(bo->_e0);
           GCLock lock;
           IntSetVal* v1 = eval_intset(bo->_e1);
@@ -422,9 +422,9 @@ namespace MiniZinc {
           case BOT_IN: return v1->contains(v0);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
+            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->_e0->_type.isset() && bo->_e1->_type.isset()) {
+        } else if (bo->_e0->type().isset() && bo->_e1->type().isset()) {
           GCLock lock;
           IntSetVal* v0 = eval_intset(bo->_e0);
           IntSetVal* v1 = eval_intset(bo->_e1);
@@ -441,11 +441,11 @@ namespace MiniZinc {
           case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
           default:
             assert(false);
-            throw EvalError(e->_loc,"not a bool expression", bo->opToString());
+            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
         } else {
           assert(false);
-          throw EvalError(e->_loc, "not a bool expression", bo->opToString());
+          throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }
       }
       break;
@@ -457,7 +457,7 @@ namespace MiniZinc {
         case UOT_NOT: return !v0;
         default:
           assert(false);
-          throw EvalError(e->_loc,"not a bool expression", uo->opToString());
+          throw EvalError(e->loc(),"not a bool expression", uo->opToString());
         }
       }
       break;
@@ -465,7 +465,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function", ce->_id);
+          throw EvalError(e->loc(), "undeclared function", ce->_id);
         
         if (ce->_decl->_builtins.b)
           return ce->_decl->_builtins.b(ce->_args);
@@ -506,7 +506,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
     case Expression::E_ANN:
     case Expression::E_TI:
-      throw EvalError(e->_loc,"not an integer expression");
+      throw EvalError(e->loc(),"not an integer expression");
       break;
     case Expression::E_ID:
       return eval_id<EvalIntLit>(e)->_v;
@@ -535,7 +535,7 @@ namespace MiniZinc {
         case BOT_MULT: return v0*v1;
         case BOT_IDIV: return v0 / v1;
         case BOT_MOD: return v0 % v1;
-        default: throw EvalError(e->_loc,"not an integer expression", bo->opToString());
+        default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
         }
       }
       break;
@@ -546,7 +546,7 @@ namespace MiniZinc {
         switch (uo->op()) {
         case UOT_PLUS: return v0;
         case UOT_MINUS: return -v0;
-        default: throw EvalError(e->_loc,"not an integer expression", uo->opToString());
+        default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
         }
       }
       break;
@@ -554,7 +554,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->_decl==NULL)
-          throw EvalError(e->_loc, "undeclared function", ce->_id);
+          throw EvalError(e->loc(), "undeclared function", ce->_id);
         if (ce->_decl->_builtins.i)
           return ce->_decl->_builtins.i(ce->_args);
 
@@ -584,9 +584,9 @@ namespace MiniZinc {
   public:
     void vAssignI(AssignI* i) {
       if (i->_decl == NULL)
-        throw EvalError(i->_loc, "undeclared identifier", i->_id);
+        throw EvalError(i->loc(), "undeclared identifier", i->_id);
       if (i->_decl->_e != NULL)
-        throw EvalError(i->_loc, "multiple assignments to same identifier", i->_id);
+        throw EvalError(i->loc(), "multiple assignments to same identifier", i->_id);
       i->_decl->_e = i->_e;
     }
   };
@@ -598,11 +598,11 @@ namespace MiniZinc {
     EvalVisitor(void) {}
     void vVarDeclI(VarDeclI* i) {
       if (i->_e->_e != NULL) {
-        if (i->_e->_e->_type.isint())
+        if (i->_e->_e->type().isint())
           std::cerr << i->_e->_id.c_str() << " = " << eval_int(i->_e->_e) << "\n";
-        if (i->_e->_e->_type.isbool())
+        if (i->_e->_e->type().isbool())
           std::cerr << i->_e->_id.c_str() << " = " << eval_bool(i->_e->_e) << "\n";
-        if (i->_e->_e->_type.isintset()) {
+        if (i->_e->_e->type().isintset()) {
           SetLit* sl = EvalSetLit::e(i->_e->_e);
           ExpressionMap<VarDecl*>::iterator it = em.find(sl);
           std::cerr << i->_e->_id.c_str() << " = ";
@@ -629,7 +629,7 @@ namespace MiniZinc {
     case Expression::E_TIID:
       {
         TIId* tiid = e->cast<TIId>();
-        throw EvalError(e->_loc,"not a par expression", tiid->_v);
+        throw EvalError(e->loc(),"not a par expression", tiid->_v);
       }
     case Expression::E_COMP:
       if (e->cast<Comprehension>()->set())
@@ -646,14 +646,14 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         if (vd->_e==NULL)
-          throw EvalError(vd->_loc,"not a par expression", vd->_id);
+          throw EvalError(vd->loc(),"not a par expression", vd->_id);
         return eval_par(vd->_e);
       }
     case Expression::E_ANN:
       {
         Annotation* a = e->cast<Annotation>();
-        Annotation* r = new Annotation(Location(),eval_par(a->_e),
-                                       static_cast<Annotation*>(eval_par(a->_a)));
+        Annotation* r = new Annotation(Location(),eval_par(a->e()),
+                                       static_cast<Annotation*>(eval_par(a->next())));
         return r;
       }
     case Expression::E_TI:
@@ -667,15 +667,15 @@ namespace MiniZinc {
           r = ASTExprVec<TypeInst>(rv);
         }
         return 
-          new TypeInst(Location(),t->_type,r,eval_par(t->_domain));
+          new TypeInst(Location(),t->type(),r,eval_par(t->_domain));
       }
     case Expression::E_ID:
       {
         Id* id = e->cast<Id>();
         if (id->_decl==NULL)
-          throw EvalError(e->_loc,"undefined identifier", id->_v);
+          throw EvalError(e->loc(),"undefined identifier", id->_v);
         if (id->_decl->_e==NULL)
-          throw EvalError(e->_loc,"not a par expression", id->_v);
+          throw EvalError(e->loc(),"not a par expression", id->_v);
         return eval_par(id->_decl->_e);
       }
     case Expression::E_ITE:
@@ -684,14 +684,14 @@ namespace MiniZinc {
     case Expression::E_BINOP:
     case Expression::E_SETLIT:
       {
-        if (e->_type._dim != 0) {
+        if (e->type()._dim != 0) {
           ArrayLit* al = eval_array_lit(e);
           for (unsigned int i=al->_v.size(); i--;)
             al->_v[i] = eval_par(al->_v[i]);
           return al;
         }
-        if (e->_type._st == Type::ST_SET) {
-          if (e->_type.isintset()) {
+        if (e->type()._st == Type::ST_SET) {
+          if (e->type().isintset()) {
             return EvalSetLit::e(e);
           } else {
             /// TODO
@@ -706,10 +706,10 @@ namespace MiniZinc {
     case Expression::E_UNOP:
     case Expression::E_ARRAYACCESS:
       {
-        switch (e->_type._bt) {
+        switch (e->type()._bt) {
         case Type::BT_BOOL: return EvalBoolLit::e(e);
         case Type::BT_INT:
-          if (e->_type._st == Type::ST_PLAIN)
+          if (e->type()._st == Type::ST_PLAIN)
             return EvalIntLit::e(e);
           else
             return EvalSetLit::e(e);
@@ -719,7 +719,7 @@ namespace MiniZinc {
         case Type::BT_BOT:
         case Type::BT_TOP:
         case Type::BT_UNKNOWN:
-          throw EvalError(e->_loc,"not a par expression");
+          throw EvalError(e->loc(),"not a par expression");
         }
       }
     case Expression::E_STRINGLIT:
@@ -735,10 +735,10 @@ namespace MiniZinc {
     bool valid;
     ComputeIntBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->_type._dim > 0)
+      if (e->type()._dim > 0)
         return false;
-      if (e->_type.ispar()) {
-        if (e->_type.isint()) {
+      if (e->type().ispar()) {
+        if (e->type().isint()) {
           IntVal v = eval_int(e);
           _bounds.push_back(Bounds(v,v));
         } else {
@@ -799,15 +799,15 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(const ArrayAccess& aa) {
-      throw EvalError(aa._loc, "not yet supported");
+      throw EvalError(aa.loc(), "not yet supported");
     }
     /// Visit array comprehension
     void vComprehension(const Comprehension& c) {
-      throw EvalError(c._loc, "not yet supported");
+      throw EvalError(c.loc(), "not yet supported");
     }
     /// Visit if-then-else
     void vITE(const ITE& ite) {
-      throw EvalError(ite._loc, "not yet supported");
+      throw EvalError(ite.loc(), "not yet supported");
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
@@ -855,7 +855,7 @@ namespace MiniZinc {
       case BOT_AND:
       case BOT_XOR:
       case BOT_DOTDOT:
-        throw EvalError(bo._loc, "not yet supported");
+        throw EvalError(bo.loc(), "not yet supported");
       }
     }
     /// Visit unary operator
@@ -868,7 +868,7 @@ namespace MiniZinc {
         _bounds.back().second = -_bounds.back().second;
         break;
       case UOT_NOT:
-        throw EvalError(uo._loc, "not yet supported");
+        throw EvalError(uo.loc(), "not yet supported");
       }
     }
     /// Visit call
@@ -917,23 +917,23 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(const Let& l) {
-      throw EvalError(l._loc, "not yet supported");
+      throw EvalError(l.loc(), "not yet supported");
     }
     /// Visit variable declaration
     void vVarDecl(const VarDecl& vd) {
-      throw EvalError(vd._loc, "not yet supported");
+      throw EvalError(vd.loc(), "not yet supported");
     }
     /// Visit annotation
     void vAnnotation(const Annotation& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
     /// Visit type inst
     void vTypeInst(const TypeInst& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
     /// Visit TIId
     void vTIId(const TIId& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
   };
 
@@ -953,11 +953,11 @@ namespace MiniZinc {
     bool valid;
     ComputeIntSetBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->_type._dim > 0)
+      if (e->type()._dim > 0)
         return false;
-      if (!e->_type.isintset())
+      if (!e->type().isintset())
         return false;
-      if (e->_type.ispar()) {
+      if (e->type().ispar()) {
         _bounds.push_back(eval_intset(e));
         return false;
       } else {
@@ -989,15 +989,15 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(const ArrayAccess& aa) {
-      throw EvalError(aa._loc, "not yet supported");
+      throw EvalError(aa.loc(), "not yet supported");
     }
     /// Visit array comprehension
     void vComprehension(const Comprehension& c) {
-      throw EvalError(c._loc, "not yet supported");
+      throw EvalError(c.loc(), "not yet supported");
     }
     /// Visit if-then-else
     void vITE(const ITE& ite) {
-      throw EvalError(ite._loc, "not yet supported");
+      throw EvalError(ite.loc(), "not yet supported");
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
@@ -1021,7 +1021,7 @@ namespace MiniZinc {
         }
         break;
       case BOT_SYMDIFF:
-        throw EvalError(bo._loc, "not yet supported");
+        throw EvalError(bo.loc(), "not yet supported");
         break;
       case BOT_INTERSECT:
         {
@@ -1054,12 +1054,12 @@ namespace MiniZinc {
       case BOT_AND:
       case BOT_XOR:
       case BOT_DOTDOT:
-        throw EvalError(bo._loc, "not yet supported");
+        throw EvalError(bo.loc(), "not yet supported");
       }
     }
     /// Visit unary operator
     void vUnOp(const UnOp& uo) {
-      throw EvalError(uo._loc, "not yet supported");
+      throw EvalError(uo.loc(), "not yet supported");
     }
     /// Visit call
     void vCall(Call& c) {
@@ -1091,23 +1091,23 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(const Let& l) {
-      throw EvalError(l._loc, "not yet supported");
+      throw EvalError(l.loc(), "not yet supported");
     }
     /// Visit variable declaration
     void vVarDecl(const VarDecl& vd) {
-      throw EvalError(vd._loc, "not yet supported");
+      throw EvalError(vd.loc(), "not yet supported");
     }
     /// Visit annotation
     void vAnnotation(const Annotation& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
     /// Visit type inst
     void vTypeInst(const TypeInst& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
     /// Visit TIId
     void vTIId(const TIId& e) {
-      throw EvalError(e._loc, "not yet supported");
+      throw EvalError(e.loc(), "not yet supported");
     }
   };
 

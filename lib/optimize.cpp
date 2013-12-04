@@ -123,10 +123,10 @@ namespace MiniZinc {
       VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
       if (vdi!=NULL && vo.occurrences(vdi->_e)==0 ) {
         if (vdi->_e->_e && vdi->_e->_ti->_domain) {
-          if (vdi->_e->_type.isvar() && vdi->_e->_type.isbool() &&
+          if (vdi->_e->type().isvar() && vdi->_e->type().isbool() &&
               Expression::equal(vdi->_e->_ti->_domain,constants().lt)) {
             GCLock lock;
-            ConstraintI* ci = new ConstraintI(vdi->_loc,vdi->_e->_e);
+            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->_e->_e);
             if (vdi->_e->introduced()) {
               m[i] = ci;
             } else {

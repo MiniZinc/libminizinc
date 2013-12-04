@@ -64,7 +64,7 @@ namespace MiniZinc {
     size_t hash(void) const;
     
     /// Mark string during garbage collection
-    void mark(void);
+    void mark(void) const;
   };
 
   /// Hash map from strings to \a T
@@ -117,7 +117,7 @@ namespace MiniZinc {
       return reinterpret_cast<const size_t*>(_data)[0];
     }
     /// Mark for garbage collection
-    void mark(void) {
+    void mark(void) const {
       _gc_mark = 1;
     }
   };
@@ -140,7 +140,7 @@ namespace MiniZinc {
   inline std::string
   ASTString::str(void) const { return _s ? _s->str() : std::string(""); }
   inline void
-  ASTString::mark(void) { if (_s) _s->mark(); }
+  ASTString::mark(void) const { if (_s) _s->mark(); }
 
   inline bool
   ASTString::operator== (const ASTString& s) const {

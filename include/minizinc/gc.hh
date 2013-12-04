@@ -25,7 +25,7 @@ namespace MiniZinc {
     friend class GC;
   protected:
     /// Mark for garbage collection
-    unsigned int _gc_mark : 1;
+    mutable unsigned int _gc_mark : 1;
     /// Id of the node
     unsigned int _id : 7;
     /// Secondary id

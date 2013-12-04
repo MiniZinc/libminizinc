@@ -29,7 +29,7 @@ namespace MiniZinc {
   }
 
   void
-  Location::mark(void) {
+  Location::mark(void) const {
     filename.mark();
   }
 
@@ -63,8 +63,8 @@ namespace MiniZinc {
       Expression* cur = stack.back(); stack.pop_back();
       if (cur->_gc_mark==0) {
         cur->_gc_mark = 1;
-        cur->_loc.mark();
-        pushstack(cur->_ann);
+        cur->loc().mark();
+        pushstack(cur->ann());
         switch (cur->eid()) {
         case Expression::E_INTLIT:
         case Expression::E_FLOATLIT:
@@ -130,8 +130,8 @@ namespace MiniZinc {
           pushstack(cur->cast<Let>()->_in);
           break;
         case Expression::E_ANN:
-          pushstack(cur->cast<Annotation>()->_e);
-          pushstack(cur->cast<Annotation>()->_a);
+          pushstack(cur->cast<Annotation>()->e());
+          pushstack(cur->cast<Annotation>()->next());
           break;
         case Expression::E_TI:
           pushstack(cur->cast<TypeInst>()->_domain);
@@ -252,9 +252,9 @@ namespace MiniZinc {
                        Expression* in) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->_loc,
-        new TypeInst(in->_loc,Type::parint()),v[i],
-        new IntLit(in->_loc,0)));
+      vd.push_back(new VarDecl(in->loc(),
+        new TypeInst(in->loc(),Type::parint()),v[i],
+        new IntLit(in->loc(),0)));
     _v = vd;
     _in = in;
   }
@@ -262,9 +262,9 @@ namespace MiniZinc {
                        Expression* in) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->_loc,
-        new TypeInst(in->_loc,Type::parint()),ASTString(v[i]),
-        new IntLit(in->_loc,0)));
+      vd.push_back(new VarDecl(in->loc(),
+        new TypeInst(in->loc(),Type::parint()),ASTString(v[i]),
+        new IntLit(in->loc(),0)));
     _v = vd;
     _in = in;
   }
@@ -634,7 +634,7 @@ namespace MiniZinc {
 
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {
-    Type ret = _ti->_type;
+    Type ret = _ti->type();
     ASTString dh;
     if (_ti->_domain && _ti->_domain->isa<TIId>())
       dh = _ti->_domain->cast<TIId>()->_v;
@@ -648,14 +648,14 @@ namespace MiniZinc {
       TypeInst* tii = _params[i]->_ti;
       if (tii->_domain && tii->_domain->isa<TIId>()) {
         ASTString tiid = tii->_domain->cast<TIId>()->_v;
-        Type tiit = ta[i]->_type;
+        Type tiit = ta[i]->type();
         tiit._dim=0;
         ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
           tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
         } else {
           if (it->second._dim > 0) {
-            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+            throw TypeError(ta[i]->loc(),"type-inst variable $"+
               tiid.str()+" used in both array and non-array position");
           } else {
             Type tiit_par = tiit;
@@ -671,7 +671,7 @@ namespace MiniZinc {
               its_par._bt = tiit_par._bt;
             }
             if (tiit_par != its_par) {
-              throw TypeError(ta[i]->_loc,"type-inst variable $"+
+              throw TypeError(ta[i]->loc(),"type-inst variable $"+
                 tiid.str()+" instantiated with different types ("+
                 tiit.toString()+" vs "+
                 it->second.toString()+")");
@@ -685,21 +685,21 @@ namespace MiniZinc {
           tii->_ranges[0]->_domain && 
           tii->_ranges[0]->_domain->isa<TIId>()) {
         ASTString tiid = tii->_ranges[0]->_domain->cast<TIId>()->_v;
-        if (ta[i]->_type._dim<=0) {
+        if (ta[i]->type()._dim<=0) {
           assert(false);
-          throw TypeError(ta[i]->_loc,"type-inst variable $"+tiid.str()+
+          throw TypeError(ta[i]->loc(),"type-inst variable $"+tiid.str()+
             " must be an array index");
         }
-        Type tiit = Type::top(ta[i]->_type._dim);
+        Type tiit = Type::top(ta[i]->type()._dim);
         ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
           tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
         } else {
           if (it->second._dim == 0) {
-            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+            throw TypeError(ta[i]->loc(),"type-inst variable $"+
               tiid.str()+" used in both array and non-array position");
           } else if (it->second!=tiit) {
-            throw TypeError(ta[i]->_loc,"type-inst variable $"+
+            throw TypeError(ta[i]->loc(),"type-inst variable $"+
               tiid.str()+" instantiated with different types ("+
               tiit.toString()+" vs "+
               it->second.toString()+")");
@@ -729,7 +729,7 @@ namespace MiniZinc {
     if (e0==e1) return true;
     if (e0 == NULL || e1 == NULL) return false;
     if (e0->_id != e1->_id) return false;
-    if (e0->_type != e1->_type) return false;
+    if (e0->type() != e1->type()) return false;
     switch (e0->eid()) {
     case Expression::E_INTLIT:
       return e0->cast<IntLit>()->_v == e1->cast<IntLit>()->_v;
@@ -873,8 +873,8 @@ namespace MiniZinc {
       {
         const Annotation* a0 = e0->cast<Annotation>();
         const Annotation* a1 = e1->cast<Annotation>();
-        if (!Expression::equal ( a0->_e, a1->_e )) return false;
-        if (!Expression::equal ( a0->_a, a1->_a )) return false;
+        if (!Expression::equal ( a0->e(), a1->e() )) return false;
+        if (!Expression::equal ( a0->next(), a1->next() )) return false;
         return true;
       }
     case Expression::E_TI:

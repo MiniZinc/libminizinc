@@ -70,7 +70,7 @@ namespace MiniZinc {
     }
   };
 
-  Location copy_location(CopyMap& m, Location& _loc) {
+  Location copy_location(CopyMap& m, const Location& _loc) {
     Location loc;
     loc.first_line = _loc.first_line;
     loc.first_column = _loc.first_column;
@@ -90,10 +90,10 @@ namespace MiniZinc {
     return loc;
   }
   Location copy_location(CopyMap& m, Expression* e) {
-    return copy_location(m,e->_loc);
+    return copy_location(m,e->loc());
   }
   Location copy_location(CopyMap& m, Item* i) {
-    return copy_location(m,i->_loc);
+    return copy_location(m,i->loc());
   }
 
   Expression* copy(CopyMap& m, Expression* e) {
@@ -141,7 +141,7 @@ namespace MiniZinc {
             c = new SetLit(copy_location(m,e),ce);
           }
         }
-        c->_type = s->_type;
+        c->type(s->type());
         m.insert(e,c);
         return c;
       }
@@ -178,7 +178,7 @@ namespace MiniZinc {
         }
         Id* c = new Id(copy_location(m,e),id_v,
                       static_cast<VarDecl*>(copy(m,id->_decl)));
-        c->_type = id->_type;
+        c->type(id->type());
         m.insert(e,c);
         return c;
       }
@@ -209,7 +209,7 @@ namespace MiniZinc {
         }
         ArrayLit* c = new ArrayLit(copy_location(m,e),
                                   ASTExprVec<Expression>(v),dims);
-        c->_type = al->_type;
+        c->type(al->type());
         m.insert(e,c);
         return c;
       }
@@ -311,7 +311,7 @@ namespace MiniZinc {
           id_v,copy(m,vd->_e));
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
-        c->_type = vd->_type;
+        c->type(vd->type());
         m.insert(e,c);
         return c;
       }
@@ -328,8 +328,8 @@ namespace MiniZinc {
     case Expression::E_ANN:
       {
         Annotation* a = e->cast<Annotation>();
-        Annotation* c = new Annotation(copy_location(m,e),copy(m,a->_e),
-                                       static_cast<Annotation*>(copy(m,a->_a)));
+        Annotation* c = new Annotation(copy_location(m,e),copy(m,a->e()),
+                                       static_cast<Annotation*>(copy(m,a->next())));
         m.insert(e,c);
         return c;
       }
@@ -347,7 +347,7 @@ namespace MiniZinc {
             rr[i] = static_cast<TypeInst*>(copy(m,t->_ranges[i]));
           r = ASTExprVecO<TypeInst*>::a(rr);
         }
-        TypeInst* c = new TypeInst(copy_location(m,e),t->_type,
+        TypeInst* c = new TypeInst(copy_location(m,e),t->type(),
           ASTExprVec<TypeInst>(r),copy(m,t->_domain));
         m.insert(e,c);
         return c;

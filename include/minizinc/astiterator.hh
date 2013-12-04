@@ -158,8 +158,8 @@ namespace MiniZinc {
       } else {
         c._done=true;
         Expression* ce = c._e;
-        if (ce->_ann && _t.enter(ce->_ann)) {
-          stack.push_back(C(ce->_ann));
+        if (ce->ann() && _t.enter(ce->ann())) {
+          stack.push_back(C(ce->ann()));
         }
         if (_t.enter(ce)) {
           switch (ce->eid()) {
@@ -219,8 +219,8 @@ namespace MiniZinc {
             pushVec(stack, ce->template cast<Let>()->_let);
             break;
           case Expression::E_ANN:
-            stack.push_back(C(ce->template cast<Annotation>()->_a));
-            stack.push_back(C(ce->template cast<Annotation>()->_e));
+            stack.push_back(C(ce->template cast<Annotation>()->next()));
+            stack.push_back(C(ce->template cast<Annotation>()->e()));
             break;
           case Expression::E_TI:
             stack.push_back(C(ce->template cast<TypeInst>()->_domain));
@@ -323,8 +323,8 @@ namespace MiniZinc {
         break;
         case Expression::E_ANN:
         _t.vAnnotation(*e->template cast<Annotation>());
-        stack.push_back(e->template cast<Annotation>()->_a);
-        stack.push_back(e->template cast<Annotation>()->_e);
+        stack.push_back(e->template cast<Annotation>()->next());
+        stack.push_back(e->template cast<Annotation>()->e());
         break;
         case Expression::E_TI:
         _t.vTypeInst(*e->template cast<TypeInst>());

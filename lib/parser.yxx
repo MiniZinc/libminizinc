@@ -466,26 +466,26 @@ output_item :
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$2,new TypeInst(@$,
-                          Type::varbool()),*$3,$5,$4);
+      { $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                           Type::varbool()),*$3,$5,$4);
         free($2);
         delete $3;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$2,new TypeInst(@$,
-                          Type::parbool()),*$3,$5,$4);
+      { $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                           Type::parbool()),*$3,$5,$4);
         free($2);
         delete $3;
       }
 
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$4,$2,*$5,$7,$6);
+      { $$ = new FunctionI(@$,$4,$2,*$5,$7,$6);
         free($4);
         delete $5;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$3,$1,*$5,$8,$7);
+      { $$ = new FunctionI(@$,$3,$1,*$5,$8,$7);
         free($3);
         delete $5;
       }
@@ -498,14 +498,14 @@ annotation_item :
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = FunctionI::a(@$,$2,ti,*$3,NULL,NULL);
+          $$ = new FunctionI(@$,$2,ti,*$3,NULL,NULL);
         }
         free($2);
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
       { TypeInst* ti=new TypeInst(@1,Type::ann());
-        $$ = FunctionI::a(@$,$2,ti,*$3,$5,NULL);
+        $$ = new FunctionI(@$,$2,ti,*$3,$5,NULL);
         delete $3;
       }
 
@@ -574,17 +574,31 @@ base_ti_expr :
     | MZN_PAR base_ti_expr_tail
       { $$ = $2; }
     | MZN_VAR opt_opt base_ti_expr_tail
-      { $$ = $3; $$->_type._ti = Type::TI_VAR;
-        if ($2) $$->_type._ot = Type::OT_OPTIONAL;
+      { $$ = $3;
+        Type tt = $$->type();
+        tt._ti = Type::TI_VAR;
+        if ($2) tt._ot = Type::OT_OPTIONAL;
+        $$->type(tt);
       }
     | MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $3; $$->_type._st = Type::ST_SET; }
+      { $$ = $3;
+        Type tt = $$->type();
+        tt._st = Type::ST_SET;
+        $$->type(tt);
+      }
     | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $4; $$->_type._st = Type::ST_SET; }
+      { $$ = $4;
+        Type tt = $$->type();
+        tt._st = Type::ST_SET;
+        $$->type(tt);
+      }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $5; $$->_type._ti = Type::TI_VAR;
-        $$->_type._st = Type::ST_SET;
-        if ($2) $$->_type._ot = Type::OT_OPTIONAL;
+      { $$ = $5;
+        Type tt = $$->type();
+        tt._ti = Type::TI_VAR;
+        tt._st = Type::ST_SET;
+        if ($2) tt._ot = Type::OT_OPTIONAL;
+        $$->type(tt);
       }
 
 opt_opt:
@@ -1106,7 +1120,7 @@ let_vardecl_item :
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->_e = $4;
         $$ = $1;
-        $$->_loc = @$;
+        $$->loc(@$);
         $$->toplevel(false);
         $$->annotate($2);
       }
