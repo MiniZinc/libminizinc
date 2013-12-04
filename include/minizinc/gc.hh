@@ -40,6 +40,7 @@ namespace MiniZinc {
     /// Constructor
     ASTNode(unsigned int id) : _gc_mark(0), _id(id) {}
 
+  public:
     /// Allocate node
     void* operator new(size_t size) throw (std::bad_alloc);
 

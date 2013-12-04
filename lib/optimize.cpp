@@ -89,9 +89,9 @@ namespace MiniZinc {
     void vVarDeclI(VarDeclI* v) {
       GCLock _gcl;
       std::vector<Expression*> args(1);
-      args[0] = IntLit::a(Location(),vo.occurrences(v->_e));
-      Call* c = Call::a(Location(),"occ",args);
-      v->_e->annotate(Annotation::a(Location(),c));
+      args[0] = new IntLit(Location(),vo.occurrences(v->_e));
+      Call* c = new Call(Location(),"occ",args);
+      v->_e->annotate(new Annotation(Location(),c));
     }
   };
 
@@ -126,7 +126,7 @@ namespace MiniZinc {
           if (vdi->_e->_type.isvar() && vdi->_e->_type.isbool() &&
               Expression::equal(vdi->_e->_ti->_domain,constants().lt)) {
             GCLock lock;
-            ConstraintI* ci = ConstraintI::a(vdi->_loc,vdi->_e->_e);
+            ConstraintI* ci = new ConstraintI(vdi->_loc,vdi->_e->_e);
             if (vdi->_e->introduced()) {
               m[i] = ci;
             } else {

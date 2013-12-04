@@ -129,7 +129,7 @@ namespace MiniZinc {
       Location stdlibloc;
       stdlibloc.filename=ASTString(filename);
       IncludeI* stdlibinc = 
-        IncludeI::a(stdlibloc,stdlib->_filename);
+        new IncludeI(stdlibloc,stdlib->_filename);
       stdlibinc->setModel(stdlib,true);
       model->addItem(stdlibinc);
 
@@ -141,7 +141,7 @@ namespace MiniZinc {
       Location builtinsloc;
       builtinsloc.filename=ASTString(filename);
       IncludeI* builtinsinc = 
-        IncludeI::a(builtinsloc,builtins->_filename);
+        new IncludeI(builtinsloc,builtins->_filename);
       builtinsinc->setModel(builtins,true);
       model->addItem(builtinsinc);
     }
@@ -412,7 +412,7 @@ include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
       { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find($2);
-        IncludeI* ii = IncludeI::a(@$,ASTString($2));
+        IncludeI* ii = new IncludeI(@$,ASTString($2));
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -434,23 +434,23 @@ include_item :
 vardecl_item :
       ti_expr_and_id annotations
       { $1->annotate($2);
-        $$ = VarDeclI::a(@$,$1);
+        $$ = new VarDeclI(@$,$1);
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->_e = $4;
         $1->annotate($2);
-        $$ = VarDeclI::a(@$,$1);
+        $$ = new VarDeclI(@$,$1);
       }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
-      { $$ = AssignI::a(@$,$1,$3);
+      { $$ = new AssignI(@$,$1,$3);
         free($1);
       }
 
 constraint_item :
       MZN_CONSTRAINT expr
-      { $$ = ConstraintI::a(@$,$2);}
+      { $$ = new ConstraintI(@$,$2);}
 
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
@@ -462,17 +462,17 @@ solve_item :
 
 output_item :
       MZN_OUTPUT expr
-      { $$ = OutputI::a(@$,$2);}
+      { $$ = new OutputI(@$,$2);}
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$2,TypeInst::a(@$,
+      { $$ = FunctionI::a(@$,$2,new TypeInst(@$,
                           Type::varbool()),*$3,$5,$4);
         free($2);
         delete $3;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = FunctionI::a(@$,$2,TypeInst::a(@$,
+      { $$ = FunctionI::a(@$,$2,new TypeInst(@$,
                           Type::parbool()),*$3,$5,$4);
         free($2);
         delete $3;
@@ -493,10 +493,10 @@ function_item :
 annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
-        TypeInst* ti=TypeInst::a(@1,Type::ann());
+        TypeInst* ti=new TypeInst(@1,Type::ann());
         if ($3->empty()) {
-          VarDecl* vd = VarDecl::a(@$,ti,$2);
-          $$ = VarDeclI::a(@$,vd);
+          VarDecl* vd = new VarDecl(@$,ti,$2);
+          $$ = new VarDeclI(@$,vd);
         } else {
           $$ = FunctionI::a(@$,$2,ti,*$3,NULL,NULL);
         }
@@ -504,7 +504,7 @@ annotation_item :
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
-      { TypeInst* ti=TypeInst::a(@1,Type::ann());
+      { TypeInst* ti=new TypeInst(@1,Type::ann());
         $$ = FunctionI::a(@$,$2,ti,*$3,$5,NULL);
         delete $3;
       }
@@ -542,11 +542,11 @@ ti_expr_and_id_or_anon :
       ti_expr_and_id
       { $$=$1; }
     | ti_expr
-      { $$=VarDecl::a(@$, $1, "_"); }
+      { $$=new VarDecl(@$, $1, "_"); }
     
 ti_expr_and_id :
       ti_expr ':' MZN_IDENTIFIER
-      { $$ = VarDecl::a(@$, $1, $3);
+      { $$ = new VarDecl(@$, $1, $3);
         free($3);
       }
 
@@ -595,20 +595,20 @@ opt_opt:
 
 base_ti_expr_tail :
       MZN_INT
-      { $$ = TypeInst::a(@$,Type::parint()); }
+      { $$ = new TypeInst(@$,Type::parint()); }
     | MZN_BOOL
-      { $$ = TypeInst::a(@$,Type::parbool()); }
+      { $$ = new TypeInst(@$,Type::parbool()); }
     | MZN_FLOAT
-      { $$ = TypeInst::a(@$,Type::parfloat()); }
+      { $$ = new TypeInst(@$,Type::parfloat()); }
     | MZN_STRING
-      { $$ = TypeInst::a(@$,Type::parstring()); }
+      { $$ = new TypeInst(@$,Type::parstring()); }
     | MZN_ANN
-      { $$ = TypeInst::a(@$,Type::ann()); }
+      { $$ = new TypeInst(@$,Type::ann()); }
     | set_expr
-      { $$ = TypeInst::a(@$,Type(),$1); }
+      { $$ = new TypeInst(@$,Type(),$1); }
     | MZN_TI_IDENTIFIER
-      { $$ = TypeInst::a(@$,Type::top(),
-                         TIId::a(@$, $1));
+      { $$ = new TypeInst(@$,Type::top(),
+                         new TIId(@$, $1));
         free($1);
       }
 
@@ -625,119 +625,119 @@ expr_list_head :
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON expr_atom_head
-      { $1->annotate(Annotation::a(@3,$3)); $$=$1; }
+      { $1->annotate(new Annotation(@3,$3)); $$=$1; }
     | set_expr MZN_UNION set_expr
-      { $$=BinOp::a(@$, $1, BOT_UNION, $3); }
+      { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
-      { $$=BinOp::a(@$, $1, BOT_DIFF, $3); }
+      { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
     | set_expr MZN_SYMDIFF set_expr
-      { $$=BinOp::a(@$, $1, BOT_SYMDIFF, $3); }
+      { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { $$=BinOp::a(@$, $1, BOT_DOTDOT, $3); }
+      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=BinOp::a(@$, $3, BOT_DOTDOT, $5); }
+      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
     | set_expr MZN_INTERSECT set_expr
-      { $$=BinOp::a(@$, $1, BOT_INTERSECT, $3); }
+      { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | set_expr MZN_PLUSPLUS set_expr
-      { $$=BinOp::a(@$, $1, BOT_PLUSPLUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_PLUSPLUS, $3); }
     | set_expr MZN_PLUS set_expr
-      { $$=BinOp::a(@$, $1, BOT_PLUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_PLUS, $3); }
     | set_expr MZN_MINUS set_expr
-      { $$=BinOp::a(@$, $1, BOT_MINUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_MINUS, $3); }
     | set_expr MZN_MULT set_expr
-      { $$=BinOp::a(@$, $1, BOT_MULT, $3); }
+      { $$=new BinOp(@$, $1, BOT_MULT, $3); }
     | set_expr MZN_DIV set_expr
-      { $$=BinOp::a(@$, $1, BOT_DIV, $3); }
+      { $$=new BinOp(@$, $1, BOT_DIV, $3); }
     | set_expr MZN_IDIV set_expr
-      { $$=BinOp::a(@$, $1, BOT_IDIV, $3); }
+      { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | set_expr MZN_MOD set_expr
-      { $$=BinOp::a(@$, $1, BOT_MOD, $3); }
+      { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, $2, args);
+        $$=new Call(@$, $2, args);
         free($2);
       }
     | MZN_PLUS set_expr %prec MZN_NOT
-      { $$=UnOp::a(@$, UOT_PLUS, $2); }
+      { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { $$=UnOp::a(@$, UOT_MINUS, $2); }
+      { $$=new UnOp(@$, UOT_MINUS, $2); }
 
 ///
 
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON expr_atom_head
-      { $1->annotate(Annotation::a(@3,$3)); $$=$1; }
+      { $1->annotate(new Annotation(@3,$3)); $$=$1; }
     | expr MZN_EQUIV expr
-      { $$=BinOp::a(@$, $1, BOT_EQUIV, $3); }
+      { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
-      { $$=BinOp::a(@$, $1, BOT_IMPL, $3); }
+      { $$=new BinOp(@$, $1, BOT_IMPL, $3); }
     | expr MZN_RIMPL expr
-      { $$=BinOp::a(@$, $1, BOT_RIMPL, $3); }
+      { $$=new BinOp(@$, $1, BOT_RIMPL, $3); }
     | expr MZN_OR expr
-      { $$=BinOp::a(@$, $1, BOT_OR, $3); }
+      { $$=new BinOp(@$, $1, BOT_OR, $3); }
     | expr MZN_XOR expr
-      { $$=BinOp::a(@$, $1, BOT_XOR, $3); }
+      { $$=new BinOp(@$, $1, BOT_XOR, $3); }
     | expr MZN_AND expr
-      { $$=BinOp::a(@$, $1, BOT_AND, $3); }
+      { $$=new BinOp(@$, $1, BOT_AND, $3); }
     | expr MZN_LE expr
-      { $$=BinOp::a(@$, $1, BOT_LE, $3); }
+      { $$=new BinOp(@$, $1, BOT_LE, $3); }
     | expr MZN_GR expr
-      { $$=BinOp::a(@$, $1, BOT_GR, $3); }
+      { $$=new BinOp(@$, $1, BOT_GR, $3); }
     | expr MZN_LQ expr
-      { $$=BinOp::a(@$, $1, BOT_LQ, $3); }
+      { $$=new BinOp(@$, $1, BOT_LQ, $3); }
     | expr MZN_GQ expr
-      { $$=BinOp::a(@$, $1, BOT_GQ, $3); }
+      { $$=new BinOp(@$, $1, BOT_GQ, $3); }
     | expr MZN_EQ expr
-      { $$=BinOp::a(@$, $1, BOT_EQ, $3); }
+      { $$=new BinOp(@$, $1, BOT_EQ, $3); }
     | expr MZN_NQ expr
-      { $$=BinOp::a(@$, $1, BOT_NQ, $3); }
+      { $$=new BinOp(@$, $1, BOT_NQ, $3); }
     | expr MZN_IN expr
-      { $$=BinOp::a(@$, $1, BOT_IN, $3); }
+      { $$=new BinOp(@$, $1, BOT_IN, $3); }
     | expr MZN_SUBSET expr
-      { $$=BinOp::a(@$, $1, BOT_SUBSET, $3); }
+      { $$=new BinOp(@$, $1, BOT_SUBSET, $3); }
     | expr MZN_SUPERSET expr
-      { $$=BinOp::a(@$, $1, BOT_SUPERSET, $3); }
+      { $$=new BinOp(@$, $1, BOT_SUPERSET, $3); }
     | expr MZN_UNION expr
-      { $$=BinOp::a(@$, $1, BOT_UNION, $3); }
+      { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | expr MZN_DIFF expr
-      { $$=BinOp::a(@$, $1, BOT_DIFF, $3); }
+      { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
     | expr MZN_SYMDIFF expr
-      { $$=BinOp::a(@$, $1, BOT_SYMDIFF, $3); }
+      { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { $$=BinOp::a(@$, $1, BOT_DOTDOT, $3); }
+      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=BinOp::a(@$, $3, BOT_DOTDOT, $5); }
+      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
     | expr MZN_INTERSECT expr
-      { $$=BinOp::a(@$, $1, BOT_INTERSECT, $3); }
+      { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | expr MZN_PLUSPLUS expr
-      { $$=BinOp::a(@$, $1, BOT_PLUSPLUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_PLUSPLUS, $3); }
     | expr MZN_PLUS expr
-      { $$=BinOp::a(@$, $1, BOT_PLUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_PLUS, $3); }
     | expr MZN_MINUS expr
-      { $$=BinOp::a(@$, $1, BOT_MINUS, $3); }
+      { $$=new BinOp(@$, $1, BOT_MINUS, $3); }
     | expr MZN_MULT expr
-      { $$=BinOp::a(@$, $1, BOT_MULT, $3); }
+      { $$=new BinOp(@$, $1, BOT_MULT, $3); }
     | expr MZN_DIV expr
-      { $$=BinOp::a(@$, $1, BOT_DIV, $3); }
+      { $$=new BinOp(@$, $1, BOT_DIV, $3); }
     | expr MZN_IDIV expr
-      { $$=BinOp::a(@$, $1, BOT_IDIV, $3); }
+      { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | expr MZN_MOD expr
-      { $$=BinOp::a(@$, $1, BOT_MOD, $3); }
+      { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, $2, args);
+        $$=new Call(@$, $2, args);
         free($2);
       }
     | MZN_NOT expr %prec MZN_NOT
-      { $$=UnOp::a(@$, UOT_NOT, $2); }
+      { $$=new UnOp(@$, UOT_NOT, $2); }
     | MZN_PLUS expr %prec MZN_NOT
       { if ($2->isa<IntLit>() || $2->isa<FloatLit>()) {
           $$ = $2;
         } else {
-          $$=UnOp::a(@$, UOT_PLUS, $2);
+          $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
     | MZN_MINUS expr %prec MZN_NOT
@@ -748,7 +748,7 @@ expr :
           $2->cast<FloatLit>()->_v = -$2->cast<FloatLit>()->_v;
           $$ = $2;
         } else {
-          $$=UnOp::a(@$, UOT_MINUS, $2);
+          $$=new UnOp(@$, UOT_MINUS, $2);
         }
       }
 
@@ -756,42 +756,42 @@ expr_atom_head :
       '(' expr ')'
       { $$=$2; }
     | '(' expr ')' array_access_tail
-      { $$=ArrayAccess::a(@$, $2, *$4); delete $4; }
+      { $$=new ArrayAccess(@$, $2, *$4); delete $4; }
     | MZN_IDENTIFIER
-      { $$=Id::a(@$, $1, NULL); free($1); }
+      { $$=new Id(@$, $1, NULL); free($1); }
     | MZN_IDENTIFIER array_access_tail
-      { $$=ArrayAccess::a(@$, Id::a(@1,$1,NULL), *$2);
+      { $$=new ArrayAccess(@$, new Id(@1,$1,NULL), *$2);
         free($1); delete $2; }
     | MZN_UNDERSCORE
-      { $$=AnonVar::a(@$); }
+      { $$=new AnonVar(@$); }
     | MZN_UNDERSCORE array_access_tail
-      { $$=ArrayAccess::a(@$, AnonVar::a(@$), *$2);
+      { $$=new ArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
-      { $$=BoolLit::a(@$, $1); }
+      { $$=new BoolLit(@$, $1); }
     | MZN_INTEGER_LITERAL
-      { $$=IntLit::a(@$, $1); }
+      { $$=new IntLit(@$, $1); }
     | MZN_FLOAT_LITERAL
-      { $$=FloatLit::a(@$, $1); }
+      { $$=new FloatLit(@$, $1); }
     | MZN_STRING_LITERAL
-      { $$=StringLit::a(@$, $1); free($1); }
+      { $$=new StringLit(@$, $1); free($1); }
     | set_literal
     | set_comp
     | simple_array_literal
     | simple_array_literal array_access_tail
-      { $$=ArrayAccess::a(@$, $1, *$2);
+      { $$=new ArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal_2d
     | simple_array_literal_2d array_access_tail
-      { $$=ArrayAccess::a(@$, $1, *$2);
+      { $$=new ArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_comp
     | simple_array_comp array_access_tail
-      { $$=ArrayAccess::a(@$, $1, *$2);
+      { $$=new ArrayAccess(@$, $1, *$2);
         delete $2; }
     | if_then_else_expr
     | if_then_else_expr array_access_tail
-      { $$=ArrayAccess::a(@$, $1, *$2);
+      { $$=new ArrayAccess(@$, $1, *$2);
         delete $2; }
     | let_expr
     | call_expr
@@ -802,13 +802,13 @@ array_access_tail :
 
 set_literal :
       '{' '}'
-      { $$ = SetLit::a(@$, std::vector<Expression*>()); }
+      { $$ = new SetLit(@$, std::vector<Expression*>()); }
     | '{' expr_list '}'
-      { $$ = SetLit::a(@$, *$2); delete $2; }
+      { $$ = new SetLit(@$, *$2); delete $2; }
 
 set_comp :
       '{' expr '|' comp_tail '}'
-      { $$ = Comprehension::a(@$, $2, *$4, true);
+      { $$ = new Comprehension(@$, $2, *$4, true);
         delete $4;
       }
 
@@ -840,20 +840,20 @@ id_list_head :
 
 simple_array_literal : 
       MZN_LEFT_BRACKET MZN_RIGHT_BRACKET
-      { $$=ArrayLit::a(@$, std::vector<MiniZinc::Expression*>()); }
+      { $$=new ArrayLit(@$, std::vector<MiniZinc::Expression*>()); }
     | MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
-      { $$=ArrayLit::a(@$, *$2); delete $2; }
+      { $$=new ArrayLit(@$, *$2); delete $2; }
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
-      { $$=ArrayLit::a(@$, *$2);
+      { $$=new ArrayLit(@$, *$2);
         for (unsigned int i=1; i<$2->size(); i++)
           if ((*$2)[i].size() != (*$2)[i-1].size())
             yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
         delete $2;
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
-      { $$=ArrayLit::a(@$, *$2);
+      { $$=new ArrayLit(@$, *$2);
         for (unsigned int i=1; i<$2->size(); i++)
           if ((*$2)[i].size() != (*$2)[i-1].size())
             yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
@@ -871,7 +871,7 @@ simple_array_literal_2d_list :
 
 simple_array_comp :
       MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
-      { $$=Comprehension::a(@$, $2, *$4, false);
+      { $$=new Comprehension(@$, $2, *$4, false);
         delete $4;
       }
 
@@ -885,7 +885,7 @@ if_then_else_expr :
           iexps.push_back((*$5)[i]);
           iexps.push_back((*$5)[i+1]);
         }
-        $$=ITE::a(@$, iexps,$7);
+        $$=new ITE(@$, iexps,$7);
         delete $5;
       }
 
@@ -956,7 +956,7 @@ quoted_op_call :
           $$=NULL;
           yyerror(&@3, parm, "syntax error, unary operator with two arguments");
         } else {
-          $$=BinOp::a(@$, $3,static_cast<BinOpType>($1),$5);
+          $$=new BinOp(@$, $3,static_cast<BinOpType>($1),$5);
         }
       }
     | quoted_op '(' expr ')'
@@ -985,14 +985,14 @@ quoted_op_call :
           } else if (uot==UOT_MINUS && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->_v = -$3->cast<FloatLit>()->_v;
           } else {
-            $$=UnOp::a(@$, static_cast<UnOpType>(uot),$3);
+            $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
           }
         }
       }
 
 call_expr :
       MZN_IDENTIFIER '(' ')'
-      { $$=Call::a(@$, $1, std::vector<Expression*>()); free($1); }
+      { $$=new Call(@$, $1, std::vector<Expression*>()); free($1); }
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
@@ -1000,7 +1000,7 @@ call_expr :
           yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
           $$=NULL;
         } else {
-          $$=Call::a(@$, $1, $3->first);
+          $$=new Call(@$, $1, $3->first);
         }
         free($1);
         delete $3;
@@ -1035,9 +1035,9 @@ call_expr :
           $$=NULL;
         } else {
           Generators g; g._g = gens; g._w = $3->second;
-          Comprehension* ac = Comprehension::a(@$, $6,g,false);
+          Comprehension* ac = new Comprehension(@$, $6,g,false);
           vector<Expression*> args; args.push_back(ac);
-          $$=Call::a(@$, $1, args);
+          $$=new Call(@$, $1, args);
         }
         free($1);
         delete $3;
@@ -1057,9 +1057,9 @@ comp_or_expr :
 
 let_expr :
       MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
-      { $$=Let::a(@$, *$3, $6); delete $3; }
+      { $$=new Let(@$, *$3, $6); delete $3; }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
-      { $$=Let::a(@$, *$3, $7); delete $3; }
+      { $$=new Let(@$, *$3, $7); delete $3; }
 //    | MZN_LET '{' slet_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
 //      { $$=new SLetExpr(@$, *$3, $6); delete $3; }
 //    | MZN_LET '{' slet_vardecl_item_list ',' '}' MZN_IN expr %prec PREC_ANNO
@@ -1118,9 +1118,9 @@ annotations :
 
 ne_annotations :
       MZN_COLONCOLON expr_atom_head
-      { $$=Annotation::a(@2, $2); }
+      { $$=new Annotation(@2, $2); }
     | ne_annotations MZN_COLONCOLON expr_atom_head
-      { $$=$1; $$->merge(Annotation::a(@3, $3)); }
+      { $$=$1; $$->merge(new Annotation(@3, $3)); }
 
 id_or_quoted_op :
       MZN_IDENTIFIER

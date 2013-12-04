@@ -79,7 +79,7 @@ namespace MiniZinc {
         KeepAlive nextin;
         {
           GCLock lock;
-          nextin = SetLit::a(Location(),eval_intset(e->_g[e->_g_idx[gen+1]]));
+          nextin = new SetLit(Location(),eval_intset(e->_g[e->_g_idx[gen+1]]));
         }
         eval_comp<Eval>(eval,e,gen+1,0,nextin,a);
       }
@@ -120,7 +120,7 @@ namespace MiniZinc {
     KeepAlive in;
     {
       GCLock lock;
-      in = SetLit::a(Location(),eval_intset(e->_g[e->_g_idx[0]]));
+      in = new SetLit(Location(),eval_intset(e->_g[e->_g_idx[0]]));
     }
     eval_comp<Eval>(eval,e,0,0,in,a);
     return a;

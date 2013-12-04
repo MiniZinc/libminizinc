@@ -38,7 +38,7 @@ namespace MiniZinc {
     typedef IntLit* Val;
     typedef Expression* ArrayVal;
     static IntLit* e(Expression* e) {
-      return IntLit::a(Location(),eval_int(e));
+      return new IntLit(Location(),eval_int(e));
     }
   };
   class EvalIntVal {
@@ -54,7 +54,7 @@ namespace MiniZinc {
     typedef BoolLit* Val;
     typedef Expression* ArrayVal;
     static BoolLit* e(Expression* e) {
-      return BoolLit::a(Location(),eval_bool(e));
+      return new BoolLit(Location(),eval_bool(e));
     }
   };
   class EvalArrayLit {
@@ -70,7 +70,7 @@ namespace MiniZinc {
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(Expression* e) {
-      return SetLit::a(e->_loc,eval_intset(e));
+      return new SetLit(e->_loc,eval_intset(e));
     }
   };
   class EvalNone {
@@ -86,16 +86,16 @@ namespace MiniZinc {
     ArrayLit* ret;
     if (e->_type == Type::parint(1)) {
       std::vector<Expression*> a = eval_comp<EvalIntLit>(e);
-      ret = ArrayLit::a(e->_loc,a);
+      ret = new ArrayLit(e->_loc,a);
     } else if (e->_type == Type::parbool(1)) {
       std::vector<Expression*> a = eval_comp<EvalBoolLit>(e);
-      ret = ArrayLit::a(e->_loc,a);
+      ret = new ArrayLit(e->_loc,a);
     } else if (e->_type == Type::parsetint(1)) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(e);
-      ret = ArrayLit::a(e->_loc,a);
+      ret = new ArrayLit(e->_loc,a);
     } else {
       std::vector<Expression*> a = eval_comp<EvalNone>(e);
-      ret = ArrayLit::a(e->_loc,a);
+      ret = new ArrayLit(e->_loc,a);
     }
     ret->_type = e->_type;
     return ret;
@@ -142,7 +142,7 @@ namespace MiniZinc {
             v[i] = al0->_v[i];
           for (unsigned int i=al1->_v.size(); i--;)
             v[al0->_v.size()+i] = al1->_v[i];
-          ArrayLit* ret = ArrayLit::a(e->_loc,v);
+          ArrayLit* ret = new ArrayLit(e->_loc,v);
           ret->_type = e->_type;
           return ret;
         } else {
@@ -652,9 +652,8 @@ namespace MiniZinc {
     case Expression::E_ANN:
       {
         Annotation* a = e->cast<Annotation>();
-        Annotation* r = Annotation::a(Location(),
-          eval_par(a->_e),
-          static_cast<Annotation*>(eval_par(a->_a)));
+        Annotation* r = new Annotation(Location(),eval_par(a->_e),
+                                       static_cast<Annotation*>(eval_par(a->_a)));
         return r;
       }
     case Expression::E_TI:
@@ -668,7 +667,7 @@ namespace MiniZinc {
           r = ASTExprVec<TypeInst>(rv);
         }
         return 
-          TypeInst::a(Location(),t->_type,r,eval_par(t->_domain));
+          new TypeInst(Location(),t->_type,r,eval_par(t->_domain));
       }
     case Expression::E_ID:
       {

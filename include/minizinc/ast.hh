@@ -64,8 +64,8 @@ namespace MiniZinc {
     /// Column where expression ends
     unsigned int last_column;
     
-    /// Allocate empty location
-    static Location a(void);
+    /// Construct empty location
+    Location(void);
     
     /// Return string representation
     std::string toString(void) const;
@@ -178,10 +178,6 @@ namespace MiniZinc {
    * \brief Annotations
    */
   class Annotation : public Expression {
-  protected:
-    /// Constructor
-    Annotation(const Location& loc, Expression* e)
-     : Expression(loc,E_ANN,Type::ann()), _e(e), _a(NULL) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANN;
@@ -189,10 +185,9 @@ namespace MiniZinc {
     Expression* _e;
     /// The next annotation in a list or NULL
     Annotation* _a;
-    /// Allocate annotation \a e
-    static Annotation* a(const Location& loc, Expression* e);
-    /// Allocate annotation \a e
-    static Annotation* a(const Location& loc, Expression* e, Annotation* a);
+
+    /// Constructor
+    Annotation(const Location& loc, Expression* e, Annotation* a = NULL);
     /// Add annotation \a a to end of list of annotations
     void merge(Annotation* a);
     /// Recompute hash value
@@ -201,39 +196,30 @@ namespace MiniZinc {
   
   /// \brief Integer literal expression
   class IntLit : public Expression {
-  protected:
-    /// Constructor
-    IntLit(const Location& loc, IntVal v)
-      : Expression(loc,E_INTLIT,Type::parint()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
     /// The value of this expression
     IntVal _v;
-    /// Allocate
-    static IntLit* a(const Location& loc, IntVal v);
+    /// Constructor
+    IntLit(const Location& loc, IntVal v);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
-  protected:
-    FloatLit(const Location& loc, FloatVal v)
-      : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
     /// The value of this expression
     FloatVal _v;
-    /// Allocate
-    static FloatLit* a(const Location& loc, FloatVal v);
+    /// Constructor
+    FloatLit(const Location& loc, FloatVal v);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
-  protected:
-    SetLit(const Location& loc) : Expression(loc,E_SETLIT,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
@@ -241,58 +227,43 @@ namespace MiniZinc {
     ASTExprVec<Expression> _v;
     /// A range-list based representation for an integer set
     IntSetVal* _isv;
-    /// Allocate set \$f\{v1,\dots,vn\}\$f
-    static SetLit* a(const Location& loc,
-                     const std::vector<Expression*>& v);
-    /// Allocate set \$f\{v1,\dots,vn\}\$f
-    static SetLit* a(const Location& loc,
-                     ASTExprVec<Expression> v);
-    /// Allocate set
-    static SetLit* a(const Location& loc,
-                     IntSetVal* isv);
+    /// Construct set \$f\{v1,\dots,vn\}\$f
+    SetLit(const Location& loc, const std::vector<Expression*>& v);
+    /// Construct set \$f\{v1,\dots,vn\}\$f
+    SetLit(const Location& loc, ASTExprVec<Expression> v);
+    /// Construct set
+    SetLit(const Location& loc, IntSetVal* isv);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
-  protected:
-    /// Constructor
-    BoolLit(const Location& loc, bool v)
-      : Expression(loc,E_BOOLLIT,Type::parbool()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BOOLLIT;
     /// The value of this expression
     bool _v;
-    /// Allocate
-    static BoolLit* a(const Location& loc, bool v);
+    /// Constructor
+    BoolLit(const Location& loc, bool v);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief String literal expression
   class StringLit : public Expression {
-  protected:
-    /// Constructor
-    StringLit(const Location& loc, ASTString v)
-      : Expression(loc,E_STRINGLIT,Type::parstring()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_STRINGLIT;
     /// The value of this expression
     ASTString _v;
-    /// Allocate
-    static StringLit* a(const Location& loc, const std::string& v);
-    /// Allocate
-    static StringLit* a(const Location& loc, const ASTString& v);
+    /// Constructor
+    StringLit(const Location& loc, const std::string& v);
+    /// Constructor
+    StringLit(const Location& loc, const ASTString& v);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Identifier expression
   class Id : public Expression {
-  protected:
-    /// Constructor
-    Id(const Location& loc, const ASTString& v, VarDecl* decl)
-      : Expression(loc,E_ID,Type()), _v(v), _decl(decl) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ID;
@@ -300,47 +271,37 @@ namespace MiniZinc {
     ASTString _v;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
-    /// Allocate (\a decl may be NULL)
-    static Id* a(const Location& loc, const std::string& v, VarDecl* decl);
-    /// Allocate (\a decl may be NULL)
-    static Id* a(const Location& loc, const ASTString& v, VarDecl* decl);
+    /// Constructor (\a decl may be NULL)
+    Id(const Location& loc, const std::string& v, VarDecl* decl);
+    /// Constructor (\a decl may be NULL)
+    Id(const Location& loc, const ASTString& v, VarDecl* decl);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Type-inst identifier expression
   class TIId : public Expression {
-  protected:
-    /// Constructor
-    TIId(const Location& loc, const ASTString& v)
-      : Expression(loc,E_TIID,Type()), _v(v) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TIID;
     /// The string identifier
     ASTString _v;
-    /// Allocate
-    static TIId* a(const Location& loc, const std::string& v);
+    /// Constructor
+    TIId(const Location& loc, const std::string& v);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Anonymous variable expression
   class AnonVar : public Expression {
-  protected:
-    /// Constructor
-    AnonVar(const Location& loc) : Expression(loc,E_ANON,Type::bot()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ANON;
-    /// Allocate
-    static AnonVar* a(const Location& loc);
+    /// Constructor
+    AnonVar(const Location& loc);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Array literal expression
   class ArrayLit : public Expression {
-  protected:
-    /// Constructor
-    ArrayLit(const Location& loc) : Expression(loc,E_ARRAYLIT,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
@@ -348,20 +309,20 @@ namespace MiniZinc {
     ASTExprVec<Expression> _v;
     /// The declared array dimensions
     ASTIntVec _dims;
-    /// Allocate
-    static ArrayLit* a(const Location& loc,
-                       const std::vector<Expression*>& v,
-                       const std::vector<pair<int,int> >& dims);
-    /// Allocate (existing content)
-    static ArrayLit* a(const Location& loc,
-                       ASTExprVec<Expression> v,
-                       const std::vector<pair<int,int> >& dims);
-    /// Allocate (one-dimensional)
-    static ArrayLit* a(const Location& loc,
-                       const std::vector<Expression*>& v);
-    /// Allocate (two-dimensional)
-    static ArrayLit* a(const Location& loc,
-                       const std::vector<std::vector<Expression*> >& v);
+    /// Constructor
+    ArrayLit(const Location& loc,
+             const std::vector<Expression*>& v,
+             const std::vector<pair<int,int> >& dims);
+    /// Constructor (existing content)
+    ArrayLit(const Location& loc,
+             ASTExprVec<Expression> v,
+             const std::vector<pair<int,int> >& dims);
+    /// Constructor (one-dimensional)
+    ArrayLit(const Location& loc,
+             const std::vector<Expression*>& v);
+    /// Constructor (two-dimensional)
+    ArrayLit(const Location& loc,
+             const std::vector<std::vector<Expression*> >& v);
     /// Recompute hash value
     void rehash(void);
     
@@ -376,9 +337,6 @@ namespace MiniZinc {
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
-  protected:
-    /// Constructor
-    ArrayAccess(const Location& loc) : Expression(loc,E_ARRAYACCESS,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYACCESS;
@@ -386,14 +344,14 @@ namespace MiniZinc {
     Expression* _v;
     /// The indexes (for all array dimensions)
     ASTExprVec<Expression> _idx;
-    /// Allocate
-    static ArrayAccess* a(const Location& loc,
-                          Expression* v,
-                          const std::vector<Expression*>& idx);
-    /// Allocate
-    static ArrayAccess* a(const Location& loc,
-                          Expression* v,
-                          ASTExprVec<Expression> idx);
+    /// Constructor
+    ArrayAccess(const Location& loc,
+                Expression* v,
+                const std::vector<Expression*>& idx);
+    /// Constructor
+    ArrayAccess(const Location& loc,
+                Expression* v,
+                ASTExprVec<Expression> idx);
     /// Recompute hash value
     void rehash(void);
   };
@@ -433,9 +391,6 @@ namespace MiniZinc {
   };
   /// \brief An expression representing an array- or set-comprehension
   class Comprehension : public Expression {
-  protected:
-    /// Constructor
-    Comprehension(const Location& loc) : Expression(loc,E_COMP,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_COMP;
@@ -447,11 +402,9 @@ namespace MiniZinc {
     ASTIntVec _g_idx;
     /// The where-clause (or NULL)
     Expression* _where;
-    /// Allocate
-    static Comprehension* a(const Location& loc,
-                            Expression* e,
-                            Generators& g,
-                            bool set);
+    /// Constructor
+    Comprehension(const Location& loc,
+                  Expression* e, Generators& g, bool set);
     /// Recompute hash value
     void rehash(void);
     /// Whether comprehension is a set
@@ -475,18 +428,15 @@ namespace MiniZinc {
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ITE;
-  protected:
-    /// Constructor
-    ITE(const Location& loc) : Expression(loc,E_ITE,Type()) {}
   public:
     /// List of if-then-pairs
     ASTExprVec<Expression> _e_if_then;
     /// Else-expression
     Expression* _e_else;
-    /// Allocate
-    static ITE* a(const Location& loc,
-                  const std::vector<Expression*>& e_if_then, 
-                  Expression* e_else);
+    /// Constructor
+    ITE(const Location& loc,
+        const std::vector<Expression*>& e_if_then,
+        Expression* e_else);
     /// Recompute hash value
     void rehash(void);
   };
@@ -503,12 +453,6 @@ namespace MiniZinc {
   };
   /// \brief Binary-operator expression
   class BinOp : public Expression {
-  protected:
-    /// Constructor
-    BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-      : Expression(loc,E_BINOP,Type()), _e0(e0), _e1(e1), _decl(NULL) {
-      _sec_id = op;
-    }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BINOP;
@@ -518,9 +462,9 @@ namespace MiniZinc {
     Expression* _e1;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
-    /// Allocate
-    static BinOp* a(const Location& loc,
-                    Expression* e0, BinOpType op, Expression* e1);
+    /// Constructor
+    BinOp(const Location& loc,
+          Expression* e0, BinOpType op, Expression* e1);
     ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
@@ -534,12 +478,6 @@ namespace MiniZinc {
   };
   /// \brief Unary-operator expressions
   class UnOp : public Expression {
-  protected:
-    /// Constructor
-    UnOp(const Location& loc, UnOpType op, Expression* e)
-      : Expression(loc,E_UNOP,Type()), _e0(e), _decl(NULL) {
-      _sec_id = op;
-    }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_UNOP;
@@ -547,9 +485,9 @@ namespace MiniZinc {
     Expression* _e0;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
-    /// Allocate
-    static UnOp* a(const Location& loc,
-                   UnOpType op, Expression* e);
+    /// Constructor
+    UnOp(const Location& loc,
+         UnOpType op, Expression* e);
     ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
@@ -559,9 +497,6 @@ namespace MiniZinc {
   
   /// \brief A predicate or function call expression
   class Call : public Expression {
-  protected:
-    /// Constructor
-    Call(const Location& loc) : Expression(loc, E_CALL,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
@@ -571,28 +506,21 @@ namespace MiniZinc {
     ASTExprVec<Expression> _args;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
-    /// Allocate
-    static Call* a(const Location& loc,
-                   const std::string& id,
-                   const std::vector<Expression*>& args,
-                   FunctionI* decl=NULL);
-    /// Allocate
-    static Call* a(const Location& loc,
-                   const ASTString& id,
-                   const std::vector<Expression*>& args,
-                   FunctionI* decl=NULL);
+    /// Constructor
+    Call(const Location& loc,
+         const std::string& id,
+         const std::vector<Expression*>& args,
+         FunctionI* decl=NULL);
+    /// Constructor
+    Call(const Location& loc,
+         const ASTString& id,
+         const std::vector<Expression*>& args,
+         FunctionI* decl=NULL);
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
-  protected:
-    /// Constructor
-    VarDecl(const Location& loc, const Type& t)
-     : Expression(loc,E_VARDECL,t) {
-       _flag_1 = true;
-       _flag_2 = false;
-     }
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
@@ -602,13 +530,13 @@ namespace MiniZinc {
     ASTString _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
-    /// Allocate
-    static VarDecl* a(const Location& loc,
-                      TypeInst* ti, const std::string& id,
-                      Expression* e=NULL);
-    /// Allocate
-    static VarDecl* a(const Location& loc,
-                      TypeInst* ti, const ASTString& id, Expression* e=NULL);
+    /// Constructor
+    VarDecl(const Location& loc,
+            TypeInst* ti, const std::string& id,
+            Expression* e=NULL);
+    /// Constructor
+    VarDecl(const Location& loc,
+            TypeInst* ti, const ASTString& id, Expression* e=NULL);
     /// Recompute hash value
     void rehash(void);
     /// Whether variable is toplevel
@@ -622,9 +550,6 @@ namespace MiniZinc {
   };
   /// \brief %Let expression
   class Let : public Expression {
-  protected:
-    /// Constructor
-    Let(const Location& loc) : Expression(loc,E_LET,Type()) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_LET;
@@ -632,9 +557,9 @@ namespace MiniZinc {
     ASTExprVec<Expression> _let;
     /// Body of the let
     Expression* _in;
-    /// Allocate
-    static Let* a(const Location& loc,
-                  const std::vector<Expression*>& let, Expression* in);
+    /// Constructor
+    Let(const Location& loc,
+        const std::vector<Expression*>& let, Expression* in);
     /// Recompute hash value
     void rehash(void);
 
@@ -647,19 +572,6 @@ namespace MiniZinc {
 
   /// \brief Type-inst expression
   class TypeInst : public Expression {
-  protected:
-    /// Constructor
-    TypeInst(const Location& loc, const Type& type,
-             ASTExprVec<TypeInst> ranges,
-             Expression* domain=NULL)
-     : Expression(loc,E_TI,type),
-       _ranges(ranges), _domain(domain) {
-      _flag_1 = false;
-    }
-    /// Constructor
-    TypeInst(const Location& loc, const Type& type,
-             Expression* domain=NULL)
-     : Expression(loc,E_TI,type), _domain(domain) {}
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TI;
@@ -667,15 +579,15 @@ namespace MiniZinc {
     ASTExprVec<TypeInst> _ranges;
     /// Declared domain (or NULL)
     Expression* _domain;
-    /// Allocate
-    static TypeInst* a(const Location& loc,
-                       const Type& t,
-                       ASTExprVec<TypeInst> ranges,
-                       Expression* domain=NULL);
-    /// Allocate
-    static TypeInst* a(const Location& loc,
-                       const Type& t,
-                       Expression* domain=NULL);
+    /// Constructor
+    TypeInst(const Location& loc,
+             const Type& t,
+             ASTExprVec<TypeInst> ranges,
+             Expression* domain=NULL);
+    /// Constructor
+    TypeInst(const Location& loc,
+             const Type& t,
+             Expression* domain=NULL);
     
     /// Add \a ranges to expression
     void addRanges(const std::vector<TypeInst*>& ranges);
@@ -742,11 +654,9 @@ namespace MiniZinc {
   };
 
   class Model;
+
   /// \brief Include item
   class IncludeI : public Item {
-  protected:
-    /// Constructor
-    IncludeI(const Location& loc) : Item(loc, II_INC) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_INC;
@@ -754,8 +664,8 @@ namespace MiniZinc {
     ASTString _f;
     /// Model for that file
     Model* _m;
-    /// Allocate
-    static IncludeI* a(const Location& loc, const ASTString& f);
+    /// Constructor
+    IncludeI(const Location& loc, const ASTString& f);
     /// Set the model
     void setModel(Model* m, bool own=true) {
       assert(_m==NULL); _m = m; _flag_2 = own;
@@ -764,23 +674,20 @@ namespace MiniZinc {
       return _flag_2;
     }
   };
+
   /// \brief Variable declaration item
   class VarDeclI : public Item {
-  protected:
-    VarDeclI(const Location& loc) : Item(loc, II_VD) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_VD;
     /// The declaration expression
     VarDecl* _e;
-    /// Allocate
-    static VarDeclI* a(const Location& loc, VarDecl* e);
+    /// Constructor
+    VarDeclI(const Location& loc, VarDecl* e);
   };
+
   /// \brief Assign item
   class AssignI : public Item {
-  protected:
-    /// Constructor
-    AssignI(const Location& loc) : Item(loc, II_ASN) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_ASN;
@@ -790,23 +697,22 @@ namespace MiniZinc {
     Expression* _e;
     /// Declaration of the variable to assign to
     VarDecl* _decl;
-    /// Allocate
-    static AssignI* a(const Location& loc,
-                      const std::string& id, Expression* e);
+    /// Constructor
+    AssignI(const Location& loc,
+            const std::string& id, Expression* e);
   };
+
   /// \brief Constraint item
   class ConstraintI : public Item {
-  protected:
-    /// Constructor
-    ConstraintI(const Location& loc) : Item(loc, II_CON) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_CON;
     /// Constraint expression
     Expression* _e;
-    /// Allocate
-    static ConstraintI* a(const Location& loc, Expression* e);
+    /// Constructor
+    ConstraintI(const Location& loc, Expression* e);
   };
+
   /// \brief Solve item
   class SolveI : public Item {
   protected:
@@ -835,24 +741,20 @@ namespace MiniZinc {
     /// Set type of solving
     void st(SolveType s);
   };
+
   /// \brief Output item
   class OutputI : public Item {
-  protected:
-    /// Constructor
-    OutputI(const Location& loc) : Item(loc, II_OUT) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_OUT;
     /// Expression to output
     Expression* _e;
-    /// Allocate
-    static OutputI* a(const Location& loc, Expression* e);
+    /// Constructor
+    OutputI(const Location& loc, Expression* e);
   };
+
   /// \brief Function declaration item
   class FunctionI : public Item {
-  protected:
-    /// Constructor
-    FunctionI(const Location& loc) : Item(loc, II_FUN) {}
   public:
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
@@ -887,11 +789,11 @@ namespace MiniZinc {
       builtin_s s;
     } _builtins;
 
-    /// Allocate
-    static FunctionI* a(const Location& loc,
-                        const std::string& id, TypeInst* ti,
-                        const std::vector<VarDecl*>& params,
-                        Expression* e = NULL, Annotation* ann = NULL);
+    /// Constructor
+    FunctionI(const Location& loc,
+              const std::string& id, TypeInst* ti,
+              const std::vector<VarDecl*>& params,
+              Expression* e = NULL, Annotation* ann = NULL);
     
     /** \brief Compute return type given argument types \a ta
      */
@@ -949,5 +851,7 @@ namespace MiniZinc {
   };
 
 }
+
+#include <minizinc/ast.hpp>
 
 #endif

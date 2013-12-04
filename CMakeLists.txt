@@ -101,7 +101,10 @@ lib/prettyprinter.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+lib/parser.yxx
+lib/lexer.lxx
 include/minizinc/ast.hh
+include/minizinc/ast.hpp
 include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh

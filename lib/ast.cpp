@@ -15,15 +15,11 @@
 
 namespace MiniZinc {
 
-  Location
-  Location::a(void) {
-    Location l;
-    l.first_line = 0;
-    l.first_column = 0;
-    l.last_line = 0;
-    l.last_column = 0;
-    return l;
-  }
+  Location::Location(void)
+  : first_line(0),
+    first_column(0),
+    last_line(0),
+    last_column(0) {}
 
   std::string
   Location::toString(void) const {
@@ -42,19 +38,6 @@ namespace MiniZinc {
     init_hash();
     cmb_hash(Expression::hash(_e));
     cmb_hash(Expression::hash(_a));
-  }
-  Annotation*
-  Annotation::a(const Location& loc, Expression* e) {
-    Annotation* ann = new Annotation(loc,e);
-    ann->rehash();
-    return ann;
-  }
-  Annotation*
-  Annotation::a(const Location& loc, Expression* e, Annotation* a) {
-    Annotation* ann = new Annotation(loc,e);
-    ann->_a = a;
-    ann->rehash();
-    return ann;
   }
   void
   Annotation::merge(Annotation* a) {
@@ -170,24 +153,12 @@ namespace MiniZinc {
     std::hash<IntVal> h;
     cmb_hash(h(_v));
   }
-  IntLit*
-  IntLit::a(const Location& loc, IntVal v) {
-    IntLit* il = new IntLit(loc,v);
-    il->rehash();
-    return il;
-  }
 
   void
   FloatLit::rehash(void) {
     init_hash();
     std::hash<FloatVal> h;
     cmb_hash(h(_v));
-  }
-  FloatLit*
-  FloatLit::a(const Location& loc, FloatVal v) {
-    FloatLit* fl = new FloatLit(loc,v);
-    fl->rehash();
-    return fl;
   }
 
   void
@@ -204,33 +175,6 @@ namespace MiniZinc {
         cmb_hash(Expression::hash(_v[i]));
     }
   }
-  SetLit*
-  SetLit::a(const Location& loc,
-            const std::vector<Expression*>& v) {
-    SetLit* sl = new SetLit(loc);
-    sl->_v = ASTExprVec<Expression>(v);
-    sl->_isv = NULL;
-    sl->rehash();
-    return sl;
-  }
-  SetLit*
-  SetLit::a(const Location& loc,
-            ASTExprVec<Expression> v) {
-    SetLit* sl = new SetLit(loc);
-    sl->_v = v;
-    sl->_isv = NULL;
-    sl->rehash();
-    return sl;
-  }
-  SetLit*
-  SetLit::a(const Location& loc,
-            IntSetVal* isv) {
-    SetLit* sl = new SetLit(loc);
-    sl->_isv = isv;
-    sl->_type = Type::parsetint();
-    sl->rehash();
-    return sl;
-  }
 
   void
   BoolLit::rehash(void) {
@@ -238,29 +182,11 @@ namespace MiniZinc {
     std::hash<bool> h;
     cmb_hash(h(_v));
   }
-  BoolLit*
-  BoolLit::a(const Location& loc, bool v) {
-    BoolLit* bl = new BoolLit(loc,v);
-    bl->rehash();
-    return bl;
-  }
 
   void
   StringLit::rehash(void) {
     init_hash();
     cmb_hash(_v.hash());
-  }
-  StringLit*
-  StringLit::a(const Location& loc, const std::string& v) {
-    StringLit* sl = new StringLit(loc,ASTString(v));
-    sl->rehash();
-    return sl;
-  }
-  StringLit*
-  StringLit::a(const Location& loc, const ASTString& v) {
-    StringLit* sl = new StringLit(loc,v);
-    sl->rehash();
-    return sl;
   }
 
   void
@@ -268,40 +194,16 @@ namespace MiniZinc {
     init_hash();
     cmb_hash(_v.hash());
   }
-  Id*
-  Id::a(const Location& loc, const std::string& v, VarDecl* decl) {
-    Id* id = new Id(loc,ASTString(v),decl);
-    id->rehash();
-    return id;
-  }
-  Id*
-  Id::a(const Location& loc, const ASTString& v, VarDecl* decl) {
-    Id* id = new Id(loc,v,decl);
-    id->rehash();
-    return id;
-  }
 
   void
   TIId::rehash(void) {
     init_hash();
     cmb_hash(_v.hash());
   }
-  TIId*
-  TIId::a(const Location& loc, const std::string& v) {
-    TIId* t = new TIId(loc,ASTString(v));
-    t->rehash();
-    return t;
-  }
 
   void
   AnonVar::rehash(void) {
     init_hash();
-  }
-  AnonVar*
-  AnonVar::a(const Location& loc) {
-    AnonVar* av = new AnonVar(loc);
-    av->init_hash();
-    return av;
   }
 
   void
@@ -314,55 +216,6 @@ namespace MiniZinc {
     }
     for (unsigned int i=_v.size(); i--;)
       cmb_hash(Expression::hash(_v[i]));
-  }
-  ArrayLit*
-  ArrayLit::a(const Location& loc,
-              const std::vector<Expression*>& v,
-              const std::vector<pair<int,int> >& dims) {
-    ArrayLit* al = new ArrayLit(loc);
-    std::vector<int> _dims(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      _dims[i*2] = dims[i].first;
-      _dims[i*2+1] = dims[i].second;
-    }
-    al->_v = ASTExprVec<Expression>(v);
-    al->_dims = ASTIntVec(_dims);
-    al->rehash();
-    return al;
-  }
-  ArrayLit*
-  ArrayLit::a(const Location& loc,
-              ASTExprVec<Expression> v,
-              const std::vector<pair<int,int> >& dims) {
-    ArrayLit* al = new ArrayLit(loc);
-    std::vector<int> _dims(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      _dims[i*2] = dims[i].first;
-      _dims[i*2+1] = dims[i].second;
-    }
-    al->_v = v;
-    al->_dims = ASTIntVec(_dims);
-    al->rehash();
-    return al;
-  }
-  ArrayLit*
-  ArrayLit::a(const Location& loc,
-              const std::vector<Expression*>& v) {
-    std::vector<pair<int,int> > dims;
-    dims.push_back(pair<int,int>(1,v.size()));
-    return a(loc,v,dims);
-  }
-  ArrayLit*
-  ArrayLit::a(const Location& loc,
-              const std::vector<std::vector<Expression*> >& v) {
-    std::vector<pair<int,int> > dims;
-    dims.push_back(pair<int,int>(1,v.size()));
-    dims.push_back(pair<int,int>(1,v[0].size()));
-    std::vector<Expression*> vv;
-    for (unsigned int i=0; i<v.size(); i++)
-      for (unsigned int j=0; j<v[i].size(); j++)
-        vv.push_back(v[i][j]);
-    return a(loc,vv,dims);
   }
   int
   ArrayLit::dims(void) const {
@@ -394,34 +247,14 @@ namespace MiniZinc {
     for (unsigned int i=_idx.size(); i--;)
       cmb_hash(Expression::hash(_idx[i]));
   }
-  ArrayAccess*
-  ArrayAccess::a(const Location& loc,
-                 Expression* v,
-                 const std::vector<Expression*>& idx) {
-    ArrayAccess* aa = new ArrayAccess(loc);
-    aa->_v = v;
-    aa->_idx = ASTExprVec<Expression>(idx);
-    aa->rehash();
-    return aa;
-  }
-  ArrayAccess*
-  ArrayAccess::a(const Location& loc,
-                 Expression* v,
-                 ASTExprVec<Expression> idx) {
-    ArrayAccess* aa = new ArrayAccess(loc);
-    aa->_v = v;
-    aa->_idx = idx;
-    aa->rehash();
-    return aa;
-  }
 
   Generator::Generator(const std::vector<ASTString>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(VarDecl::a(in->_loc,
-        TypeInst::a(in->_loc,Type::parint()),v[i],
-        IntLit::a(in->_loc,0)));
+      vd.push_back(new VarDecl(in->_loc,
+        new TypeInst(in->_loc,Type::parint()),v[i],
+        new IntLit(in->_loc,0)));
     _v = vd;
     _in = in;
   }
@@ -429,9 +262,9 @@ namespace MiniZinc {
                        Expression* in) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(VarDecl::a(in->_loc,
-        TypeInst::a(in->_loc,Type::parint()),ASTString(v[i]),
-        IntLit::a(in->_loc,0)));
+      vd.push_back(new VarDecl(in->_loc,
+        new TypeInst(in->_loc,Type::parint()),ASTString(v[i]),
+        new IntLit(in->_loc,0)));
     _v = vd;
     _in = in;
   }
@@ -460,30 +293,6 @@ namespace MiniZinc {
     for (unsigned int i=_g.size(); i--;) {
       cmb_hash(Expression::hash(_g[i]));
     }
-  }
-  Comprehension*
-  Comprehension::a(const Location& loc,
-                   Expression* e,
-                   Generators& g,
-                   bool set) {
-    Comprehension* c = new Comprehension(loc);
-    c->_e = e;
-    std::vector<Expression*> es;
-    std::vector<int> idx;
-    for (unsigned int i=0; i<g._g.size(); i++) {
-      idx.push_back(es.size());
-      es.push_back(g._g[i]._in);
-      for (unsigned int j=0; j<g._g[i]._v.size(); j++) {
-        es.push_back(g._g[i]._v[j]);
-      }
-    }
-    idx.push_back(es.size());
-    c->_g = ASTExprVec<Expression>(es);
-    c->_g_idx = ASTIntVec(idx);
-    c->_where = g._w;
-    c->_flag_1 = set;
-    c->rehash();
-    return c;
   }
 
   int
@@ -522,15 +331,6 @@ namespace MiniZinc {
     }
     cmb_hash(Expression::hash(_e_else));
   }
-  ITE*
-  ITE::a(const Location& loc,
-         const std::vector<Expression*>& e_if_then, Expression* e_else) {
-    ITE* ite = new ITE(loc);
-    ite->_e_if_then = ASTExprVec<Expression>(e_if_then);
-    ite->_e_else = e_else;
-    ite->rehash();
-    return ite;
-  }
 
   BinOpType
   BinOp::op(void) const {
@@ -543,13 +343,6 @@ namespace MiniZinc {
     cmb_hash(h(static_cast<int>(op())));
     cmb_hash(Expression::hash(_e0));
     cmb_hash(Expression::hash(_e1));
-  }
-  BinOp*
-  BinOp::a(const Location& loc,
-           Expression* e0, BinOpType op, Expression* e1) {
-    BinOp* bo = new BinOp(loc,e0,op,e1);
-    bo->rehash();
-    return bo;
   }
 
   namespace {
@@ -589,61 +382,61 @@ namespace MiniZinc {
       
       OpToString(void) {
         GCLock lock;
-        sBOT_PLUS = Id::a(Location(),"@+",NULL);
+        sBOT_PLUS = new Id(Location(),"@+",NULL);
         rootSet.push_back(sBOT_PLUS);
-        sBOT_MINUS = Id::a(Location(),"@-",NULL);
+        sBOT_MINUS = new Id(Location(),"@-",NULL);
         rootSet.push_back(sBOT_MINUS);
-        sBOT_MULT = Id::a(Location(),"@*",NULL);
+        sBOT_MULT = new Id(Location(),"@*",NULL);
         rootSet.push_back(sBOT_MULT);
-        sBOT_DIV = Id::a(Location(),"@/",NULL);
+        sBOT_DIV = new Id(Location(),"@/",NULL);
         rootSet.push_back(sBOT_DIV);
-        sBOT_IDIV = Id::a(Location(),"@div",NULL);
+        sBOT_IDIV = new Id(Location(),"@div",NULL);
         rootSet.push_back(sBOT_IDIV);
-        sBOT_MOD = Id::a(Location(),"@mod",NULL);
+        sBOT_MOD = new Id(Location(),"@mod",NULL);
         rootSet.push_back(sBOT_MOD);
-        sBOT_LE = Id::a(Location(),"@<",NULL);
+        sBOT_LE = new Id(Location(),"@<",NULL);
         rootSet.push_back(sBOT_LE);
-        sBOT_LQ = Id::a(Location(),"@<=",NULL);
+        sBOT_LQ = new Id(Location(),"@<=",NULL);
         rootSet.push_back(sBOT_LQ);
-        sBOT_GR = Id::a(Location(),"@>",NULL);
+        sBOT_GR = new Id(Location(),"@>",NULL);
         rootSet.push_back(sBOT_GR);
-        sBOT_GQ = Id::a(Location(),"@>=",NULL);
+        sBOT_GQ = new Id(Location(),"@>=",NULL);
         rootSet.push_back(sBOT_GQ);
-        sBOT_EQ = Id::a(Location(),"@=",NULL);
+        sBOT_EQ = new Id(Location(),"@=",NULL);
         rootSet.push_back(sBOT_EQ);
-        sBOT_NQ = Id::a(Location(),"@!=",NULL);
+        sBOT_NQ = new Id(Location(),"@!=",NULL);
         rootSet.push_back(sBOT_NQ);
-        sBOT_IN = Id::a(Location(),"@in",NULL);
+        sBOT_IN = new Id(Location(),"@in",NULL);
         rootSet.push_back(sBOT_IN);
-        sBOT_SUBSET = Id::a(Location(),"@subset",NULL);
+        sBOT_SUBSET = new Id(Location(),"@subset",NULL);
         rootSet.push_back(sBOT_SUBSET);
-        sBOT_SUPERSET = Id::a(Location(),"@superset",NULL);
+        sBOT_SUPERSET = new Id(Location(),"@superset",NULL);
         rootSet.push_back(sBOT_SUPERSET);
-        sBOT_UNION = Id::a(Location(),"@union",NULL);
+        sBOT_UNION = new Id(Location(),"@union",NULL);
         rootSet.push_back(sBOT_UNION);
-        sBOT_DIFF = Id::a(Location(),"@diff",NULL);
+        sBOT_DIFF = new Id(Location(),"@diff",NULL);
         rootSet.push_back(sBOT_DIFF);
-        sBOT_SYMDIFF = Id::a(Location(),"@symdiff",NULL);
+        sBOT_SYMDIFF = new Id(Location(),"@symdiff",NULL);
         rootSet.push_back(sBOT_SYMDIFF);
-        sBOT_INTERSECT = Id::a(Location(),"@intersect",NULL);
+        sBOT_INTERSECT = new Id(Location(),"@intersect",NULL);
         rootSet.push_back(sBOT_INTERSECT);
-        sBOT_PLUSPLUS = Id::a(Location(),"@++",NULL);
+        sBOT_PLUSPLUS = new Id(Location(),"@++",NULL);
         rootSet.push_back(sBOT_PLUSPLUS);
-        sBOT_EQUIV = Id::a(Location(),"@<->",NULL);
+        sBOT_EQUIV = new Id(Location(),"@<->",NULL);
         rootSet.push_back(sBOT_EQUIV);
-        sBOT_IMPL = Id::a(Location(),"@->",NULL);
+        sBOT_IMPL = new Id(Location(),"@->",NULL);
         rootSet.push_back(sBOT_IMPL);
-        sBOT_RIMPL = Id::a(Location(),"@<-",NULL);
+        sBOT_RIMPL = new Id(Location(),"@<-",NULL);
         rootSet.push_back(sBOT_RIMPL);
-        sBOT_OR = Id::a(Location(),"@\\/",NULL);
+        sBOT_OR = new Id(Location(),"@\\/",NULL);
         rootSet.push_back(sBOT_OR);
-        sBOT_AND = Id::a(Location(),"@/\\",NULL);
+        sBOT_AND = new Id(Location(),"@/\\",NULL);
         rootSet.push_back(sBOT_AND);
-        sBOT_XOR = Id::a(Location(),"@xor",NULL);
+        sBOT_XOR = new Id(Location(),"@xor",NULL);
         rootSet.push_back(sBOT_XOR);
-        sBOT_DOTDOT = Id::a(Location(),"@..",NULL);
+        sBOT_DOTDOT = new Id(Location(),"@..",NULL);
         rootSet.push_back(sBOT_DOTDOT);
-        sBOT_NOT = Id::a(Location(),"@not",NULL);
+        sBOT_NOT = new Id(Location(),"@not",NULL);
         rootSet.push_back(sBOT_NOT);
       }
             
@@ -700,12 +493,6 @@ namespace MiniZinc {
     cmb_hash(h(static_cast<int>(_sec_id)));
     cmb_hash(Expression::hash(_e0));
   }
-  UnOp*
-  UnOp::a(const Location& loc, UnOpType op, Expression* e) {
-    UnOp* uo = new UnOp(loc,op,e);
-    uo->rehash();
-    return uo;
-  }
 
   ASTString
   UnOp::opToString(void) const {
@@ -728,30 +515,6 @@ namespace MiniZinc {
     for (unsigned int i=_args.size(); i--;)
       cmb_hash(Expression::hash(_args[i]));
   }
-  Call*
-  Call::a(const Location& loc,
-          const std::string& id,
-          const std::vector<Expression*>& args,
-          FunctionI* decl) {
-    Call* c = new Call(loc);
-    c->_id = ASTString(id);
-    c->_args = ASTExprVec<Expression>(args);
-    c->_decl = decl;
-    c->rehash();
-    return c;
-  }
-  Call*
-  Call::a(const Location& loc,
-          const ASTString& id,
-          const std::vector<Expression*>& args,
-          FunctionI* decl) {
-    Call* c = new Call(loc);
-    c->_id = id;
-    c->_args = ASTExprVec<Expression>(args);
-    c->_decl = decl;
-    c->rehash();
-    return c;
-  }
 
   void
   VarDecl::rehash(void) {
@@ -759,21 +522,6 @@ namespace MiniZinc {
     cmb_hash(Expression::hash(_ti));
     cmb_hash(_id.hash());
     cmb_hash(Expression::hash(_e));
-  }
-  VarDecl*
-  VarDecl::a(const Location& loc,
-             TypeInst* ti, const ASTString& id, Expression* e) {
-    VarDecl* v = new VarDecl(loc,ti->_type);
-    v->_ti = ti;
-    v->_id = id;
-    v->_e = e;
-    v->rehash();
-    return v;
-  }
-  VarDecl*
-  VarDecl::a(const Location& loc,
-             TypeInst* ti, const std::string& id, Expression* e) {
-    return a(loc,ti,ASTString(id));
   }
   bool
   VarDecl::toplevel(void) const {
@@ -801,15 +549,6 @@ namespace MiniZinc {
     for (unsigned int i=_let.size(); i--;)
       cmb_hash(Expression::hash(_let[i]));
   }
-  Let*
-  Let::a(const Location& loc,
-         const std::vector<Expression*>& let, Expression* in) {
-    Let* l = new Let(loc);
-    l->_let = ASTExprVec<Expression>(let);
-    l->_in = in;
-    l->rehash();
-    return l;
-  }
   void
   Let::pushbindings(void) {
     GC::mark();
@@ -835,23 +574,6 @@ namespace MiniZinc {
       cmb_hash(Expression::hash(_ranges[i]));
     cmb_hash(Expression::hash(_domain));
   }
-  TypeInst*
-  TypeInst::a(const Location& loc,
-              const Type& type, 
-              ASTExprVec<TypeInst> ranges,
-              Expression* domain) {
-    TypeInst* t = new TypeInst(loc,type,ranges,domain);
-    t->rehash();
-    return t;
-  }
-  TypeInst*
-  TypeInst::a(const Location& loc,
-              const Type& type, 
-              Expression* domain) {
-    TypeInst* t = new TypeInst(loc,type,domain);
-    t->rehash();
-    return t;
-  }
 
   void
   TypeInst::addRanges(const std::vector<TypeInst*>& ranges) {
@@ -874,37 +596,6 @@ namespace MiniZinc {
         _ranges[0]->isa<TIId>())
       return true;
     return false;
-  }
-
-  IncludeI*
-  IncludeI::a(const Location& loc, const ASTString& f) {
-    IncludeI* i = new IncludeI(loc);
-    i->_f = f;
-    i->_m = NULL;
-    return i;
-  }
-
-  VarDeclI*
-  VarDeclI::a(const Location& loc, VarDecl* e) {
-    VarDeclI* vi = new VarDeclI(loc);
-    vi->_e = e;
-    return vi;
-  }
-
-  AssignI*
-  AssignI::a(const Location& loc, const std::string& id, Expression* e) {
-    AssignI* ai = new AssignI(loc);
-    ai->_id = ASTString(id);
-    ai->_e = e;
-    ai->_decl = NULL;
-    return ai;
-  }
-
-  ConstraintI*
-  ConstraintI::a(const Location& loc, Expression* e) {
-    ConstraintI* ci = new ConstraintI(loc);
-    ci->_e = e;
-    return ci;
   }
 
   SolveI*
@@ -940,31 +631,6 @@ namespace MiniZinc {
     _sec_id = s;
   }
 
-  OutputI*
-  OutputI::a(const Location& loc, Expression* e) {
-    OutputI* oi = new OutputI(loc);
-    oi->_e = e;
-    return oi;
-  }
-
-  FunctionI*
-  FunctionI::a(const Location& loc,
-               const std::string& id, TypeInst* ti,
-               const std::vector<VarDecl*>& params,
-               Expression* e, Annotation* ann) {
-    FunctionI* fi = new FunctionI(loc);
-    fi->_id = ASTString(id);
-    fi->_ti = ti;
-    fi->_params = ASTExprVec<VarDecl>(params);
-    fi->_ann = ann;
-    fi->_e = e;
-    fi->_builtins.e = NULL;
-    fi->_builtins.b = NULL;
-    fi->_builtins.f = NULL;
-    fi->_builtins.i = NULL;
-    fi->_builtins.s = NULL;
-    return fi;
-  }
 
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {

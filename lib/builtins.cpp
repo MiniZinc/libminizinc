@@ -324,7 +324,7 @@ namespace MiniZinc {
     }
     if (dim1d != al->_v.size())
       throw EvalError(al->_loc, "mismatch in array dimensions");
-    ArrayLit* ret = ArrayLit::a(al->_loc, al->_v, dims);
+    ArrayLit* ret = new ArrayLit(al->_loc, al->_v, dims);
     ret->_type = al->_type;
     ret->_type._dim = d;
     return ret;

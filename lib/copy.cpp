@@ -103,15 +103,15 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_INTLIT:
       {
-        IntLit* c = IntLit::a(copy_location(m,e),
+        IntLit* c = new IntLit(copy_location(m,e),
                               e->cast<IntLit>()->_v);
         m.insert(e,c);
         return c;
       }
     case Expression::E_FLOATLIT:
       {
-        FloatLit* c = FloatLit::a(copy_location(m,e),
-                                  e->cast<FloatLit>()->_v);
+        FloatLit* c = new FloatLit(copy_location(m,e),
+                                   e->cast<FloatLit>()->_v);
         m.insert(e,c);
         return c;
       }
@@ -128,17 +128,17 @@ namespace MiniZinc {
             isv = IntSetVal::ai(r);
             m.insert(s->_isv,isv);
           }
-          c = SetLit::a(copy_location(m,e),isv);
+          c = new SetLit(copy_location(m,e),isv);
         } else {          
           if (ASTExprVecO<Expression*>* ve = m.find(s->_v)) {
-            c = SetLit::a(copy_location(m,e),ASTExprVec<Expression>(ve));
+            c = new SetLit(copy_location(m,e),ASTExprVec<Expression>(ve));
           } else {
             std::vector<Expression*> elems(s->_v.size());
             for (unsigned int i=s->_v.size(); i--;)
               elems[i] = copy(m,s->_v[i]);
             ASTExprVec<Expression> ce(elems);
             m.insert(s->_v,ce);
-            c = SetLit::a(copy_location(m,e),ce);
+            c = new SetLit(copy_location(m,e),ce);
           }
         }
         c->_type = s->_type;
@@ -147,7 +147,7 @@ namespace MiniZinc {
       }
     case Expression::E_BOOLLIT:
       {
-        BoolLit* c = BoolLit::a(copy_location(m,e),
+        BoolLit* c = new BoolLit(copy_location(m,e),
                                 e->cast<BoolLit>()->_v);
         m.insert(e,c);
         return c;
@@ -157,11 +157,11 @@ namespace MiniZinc {
         StringLit* sl = e->cast<StringLit>();
         StringLit* c;
         if (ASTStringO* cs = m.find(sl->_v)) {
-          c = StringLit::a(copy_location(m,e),ASTString(cs));
+          c = new StringLit(copy_location(m,e),ASTString(cs));
         } else {
           ASTString s(sl->_v.str());
           m.insert(sl->_v,s);
-          c = StringLit::a(copy_location(m,e),s);
+          c = new StringLit(copy_location(m,e),s);
         }
         m.insert(e,c);
         return c;
@@ -176,7 +176,7 @@ namespace MiniZinc {
           id_v = ASTString(id->_v.str());
           m.insert(id->_v,id_v);
         }
-        Id* c = Id::a(copy_location(m,e),id_v,
+        Id* c = new Id(copy_location(m,e),id_v,
                       static_cast<VarDecl*>(copy(m,id->_decl)));
         c->_type = id->_type;
         m.insert(e,c);
@@ -184,7 +184,7 @@ namespace MiniZinc {
       }
     case Expression::E_ANON:
       {
-        AnonVar* c = AnonVar::a(copy_location(m,e));
+        AnonVar* c = new AnonVar(copy_location(m,e));
         m.insert(e,c);
         return c;
       }
@@ -207,7 +207,7 @@ namespace MiniZinc {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ArrayLit* c = ArrayLit::a(copy_location(m,e),
+        ArrayLit* c = new ArrayLit(copy_location(m,e),
                                   ASTExprVec<Expression>(v),dims);
         c->_type = al->_type;
         m.insert(e,c);
@@ -228,7 +228,7 @@ namespace MiniZinc {
           idx = ce.vec();
         }
         ArrayAccess* c = 
-          ArrayAccess::a(copy_location(m,e),copy(m,aa->_v),idx);
+          new ArrayAccess(copy_location(m,e),copy(m,aa->_v),idx);
         m.insert(e,c);
         return c;
       }
@@ -244,7 +244,7 @@ namespace MiniZinc {
           g._g.push_back(Generator(vv,c->_g[c->_g_idx[i]]));
         }
         Comprehension* cc = 
-          Comprehension::a(copy_location(m,e),
+          new Comprehension(copy_location(m,e),
                            copy(m,c->_e),g,c->set());
         m.insert(c,cc);
         return cc;
@@ -256,7 +256,7 @@ namespace MiniZinc {
         for (unsigned int i=ite->_e_if_then.size(); i--;) {
           ifthen[i] = copy(m,ite->_e_if_then[i]);
         }
-        ITE* c = ITE::a(copy_location(m,e),
+        ITE* c = new ITE(copy_location(m,e),
                         ifthen,copy(m,ite->_e_else));
         m.insert(e,c);
         return c;
@@ -264,7 +264,7 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* b = e->cast<BinOp>();
-        BinOp* c = BinOp::a(copy_location(m,e),
+        BinOp* c = new BinOp(copy_location(m,e),
                             copy(m,b->_e0),b->op(),
                             copy(m,b->_e1));
         m.insert(e,c);
@@ -273,7 +273,7 @@ namespace MiniZinc {
     case Expression::E_UNOP:
       {
         UnOp* b = e->cast<UnOp>();
-        UnOp* c = UnOp::a(copy_location(m,e),
+        UnOp* c = new UnOp(copy_location(m,e),
                           b->op(),copy(m,b->_e0));
         m.insert(e,c);
         return c;
@@ -291,7 +291,7 @@ namespace MiniZinc {
           id_v = ASTString(ca->_id.str());
           m.insert(ca->_id,id_v);
         }
-        Call* c = Call::a(copy_location(m,e),id_v,args);
+        Call* c = new Call(copy_location(m,e),id_v,args);
         c->_decl = ca->_decl;
         m.insert(e,c);
         return c;
@@ -306,7 +306,7 @@ namespace MiniZinc {
           id_v = ASTString(vd->_id.str());
           m.insert(vd->_id,id_v);
         }
-        VarDecl* c = VarDecl::a(copy_location(m,e),
+        VarDecl* c = new VarDecl(copy_location(m,e),
           static_cast<TypeInst*>(copy(m,vd->_ti)),
           id_v,copy(m,vd->_e));
         c->toplevel(vd->toplevel());
@@ -321,16 +321,15 @@ namespace MiniZinc {
         std::vector<Expression*> let(l->_let.size());
         for (unsigned int i=l->_let.size(); i--;)
           let[i] = copy(m,l->_let[i]);
-        Let* c = Let::a(copy_location(m,e),let,copy(m,l->_in));
+        Let* c = new Let(copy_location(m,e),let,copy(m,l->_in));
         m.insert(e,c);
         return c;
       }
     case Expression::E_ANN:
       {
         Annotation* a = e->cast<Annotation>();
-        Annotation* c = Annotation::a(copy_location(m,e),
-                                      copy(m,a->_e),
-          static_cast<Annotation*>(copy(m,a->_a)));
+        Annotation* c = new Annotation(copy_location(m,e),copy(m,a->_e),
+                                       static_cast<Annotation*>(copy(m,a->_a)));
         m.insert(e,c);
         return c;
       }
@@ -348,7 +347,7 @@ namespace MiniZinc {
             rr[i] = static_cast<TypeInst*>(copy(m,t->_ranges[i]));
           r = ASTExprVecO<TypeInst*>::a(rr);
         }
-        TypeInst* c = TypeInst::a(copy_location(m,e),t->_type,
+        TypeInst* c = new TypeInst(copy_location(m,e),t->_type,
           ASTExprVec<TypeInst>(r),copy(m,t->_domain));
         m.insert(e,c);
         return c;
@@ -356,7 +355,7 @@ namespace MiniZinc {
     case Expression::E_TIID:
       {
         TIId* t = e->cast<TIId>();
-        TIId* c = TIId::a(copy_location(m,e),t->_v.str());
+        TIId* c = new TIId(copy_location(m,e),t->_v.str());
         m.insert(e,c);
         return c;
       }
@@ -379,7 +378,7 @@ namespace MiniZinc {
       {
         IncludeI* ii = i->cast<IncludeI>();
         IncludeI* c = 
-          IncludeI::a(copy_location(m,i),
+          new IncludeI(copy_location(m,i),
                       ASTString(ii->_f.str()));
         c->setModel(copy(m,ii->_m),ii->own());
         m.insert(i,c);
@@ -388,7 +387,7 @@ namespace MiniZinc {
     case Item::II_VD:
       {
         VarDeclI* v = i->cast<VarDeclI>();
-        VarDeclI* c = VarDeclI::a(copy_location(m,i),
+        VarDeclI* c = new VarDeclI(copy_location(m,i),
           static_cast<VarDecl*>(copy(m,v->_e)));
         m.insert(i,c);
         return c;
@@ -397,7 +396,7 @@ namespace MiniZinc {
       {
         AssignI* a = i->cast<AssignI>();
         AssignI* c = 
-          AssignI::a(copy_location(m,i),
+          new AssignI(copy_location(m,i),
                      a->_id.str(),copy(m,a->_e));
         c->_decl = static_cast<VarDecl*>(copy(m,a->_decl));
         m.insert(i,c);
@@ -406,7 +405,7 @@ namespace MiniZinc {
     case Item::II_CON:
       {
         ConstraintI* cc = i->cast<ConstraintI>();
-        ConstraintI* c = ConstraintI::a(copy_location(m,i),
+        ConstraintI* c = new ConstraintI(copy_location(m,i),
                                         copy(m,cc->_e));
         m.insert(i,c);
         return c;
@@ -435,7 +434,7 @@ namespace MiniZinc {
     case Item::II_OUT:
       {
         OutputI* o = i->cast<OutputI>();
-        OutputI* c = OutputI::a(copy_location(m,i),copy(m,o->_e));
+        OutputI* c = new OutputI(copy_location(m,i),copy(m,o->_e));
         m.insert(i,c);
         return c;
       }
@@ -445,7 +444,7 @@ namespace MiniZinc {
         std::vector<VarDecl*> params(f->_params.size());
         for (unsigned int j=f->_params.size(); j--;)
           params[j] = static_cast<VarDecl*>(copy(m,f->_params[j]));
-        FunctionI* c = FunctionI::a(copy_location(m,i),f->_id.str(),
+        FunctionI* c = new FunctionI(copy_location(m,i),f->_id.str(),
           static_cast<TypeInst*>(copy(m,f->_ti)),
           params, copy(m,f->_e),
           static_cast<Annotation*>(copy(m,f->_ann)));
