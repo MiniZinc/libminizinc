@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
             if (flag_verbose)
               std::cerr << "Printing FlatZinc..." << std::endl;
             Printer p;
-            p.print(flat,std::cout);
+            p.print(flat,std::cout,0);
           }
           delete flat;
         } else if (flag_output) { // !flag_typecheck
