@@ -64,22 +64,22 @@ namespace MiniZinc {
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             int i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
-    e->_g[e->_g_idx[gen]+id+1]->cast<VarDecl>()->_e->cast<IntLit>()->_v = i;
-    if (e->_g_idx[gen]+id+1 == e->_g_idx[gen+1]-1) {
-      if (gen == e->_g_idx.size()-2) {
+    e->decl(gen,id)->e()->cast<IntLit>()->v(i);
+    if (id == e->n_decls(gen)-1) {
+      if (gen == e->n_generators()-1) {
         bool where = true;
-        if (e->_where != NULL) {
+        if (e->where() != NULL) {
           GCLock lock;
-          where = eval_bool(e->_where);
+          where = eval_bool(e->where());
         }
         if (where) {
-          a.push_back(eval.e(e->_e));
+          a.push_back(eval.e(e->e()));
         }
       } else {
         KeepAlive nextin;
         {
           GCLock lock;
-          nextin = new SetLit(Location(),eval_intset(e->_g[e->_g_idx[gen+1]]));
+          nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
         }
         eval_comp<Eval>(eval,e,gen+1,0,nextin,a);
       }
@@ -100,7 +100,7 @@ namespace MiniZinc {
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
             KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
-    IntSetRanges rsi(in()->cast<SetLit>()->_isv);
+    IntSetRanges rsi(in()->cast<SetLit>()->isv());
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
       eval_comp<Eval>(eval,e,gen,id,rsv.val(),in,a);
@@ -120,7 +120,7 @@ namespace MiniZinc {
     KeepAlive in;
     {
       GCLock lock;
-      in = new SetLit(Location(),eval_intset(e->_g[e->_g_idx[0]]));
+      in = new SetLit(Location(),eval_intset(e->in(0)));
     }
     eval_comp<Eval>(eval,e,0,0,in,a);
     return a;

@@ -437,7 +437,7 @@ vardecl_item :
         $$ = new VarDeclI(@$,$1);
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->_e = $4;
+      { $1->e($4);
         $1->annotate($2);
         $$ = new VarDeclI(@$,$1);
       }
@@ -756,10 +756,10 @@ expr :
       }
     | MZN_MINUS expr %prec MZN_NOT
       { if ($2->isa<IntLit>()) {
-        $2->cast<IntLit>()->_v = -$2->cast<IntLit>()->_v;
+        $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
           $$ = $2;
         } else if ($2->isa<FloatLit>()) {
-          $2->cast<FloatLit>()->_v = -$2->cast<FloatLit>()->_v;
+          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
@@ -995,9 +995,9 @@ quoted_op_call :
           if (uot==UOT_PLUS && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
           } else if (uot==UOT_MINUS && $3->isa<IntLit>()) {
-            $3->cast<IntLit>()->_v = -$3->cast<IntLit>()->_v;
+            $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
           } else if (uot==UOT_MINUS && $3->isa<FloatLit>()) {
-            $3->cast<FloatLit>()->_v = -$3->cast<FloatLit>()->_v;
+            $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
           }
@@ -1025,13 +1025,13 @@ call_expr :
         vector<ASTString> ids;
         for (unsigned int i=0; i<$3->first.size(); i++) {
           if (Id* id = $3->first[i]->dyn_cast<Id>()) {
-            ids.push_back(id->_v);
+            ids.push_back(id->v());
           } else {
             if (BinOp* boe = $3->first[i]->dyn_cast<BinOp>()) {
-              Id* id = boe->_e0->dyn_cast<Id>();
+              Id* id = boe->lhs()->dyn_cast<Id>();
               if (id && boe->op() == BOT_IN) {
-                ids.push_back(id->_v);
-                gens.push_back(Generator(ids,boe->_e1));
+                ids.push_back(id->v());
+                gens.push_back(Generator(ids,boe->rhs()));
                 ids = vector<ASTString>();
               } else {
                 yyerror(&@3, parm, "illegal expression in generator call");
@@ -1118,7 +1118,7 @@ let_vardecl_item :
         $$->annotate($2);
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->_e = $4;
+      { $1->e($4);
         $$ = $1;
         $$->loc(@$);
         $$->toplevel(false);

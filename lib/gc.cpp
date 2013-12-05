@@ -378,7 +378,7 @@ namespace MiniZinc {
             {
               FunctionI* fi = i->cast<FunctionI>();
               fi->_id.mark();
-              Expression::mark(fi->_ti);
+              Expression::mark(fi->ti());
               Expression::mark(fi->_ann);
               Expression::mark(fi->_e);
               fi->_params.mark();

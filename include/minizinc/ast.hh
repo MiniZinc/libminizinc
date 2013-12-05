@@ -216,97 +216,140 @@ namespace MiniZinc {
   
   /// \brief Integer literal expression
   class IntLit : public Expression {
+  protected:
+    /// The value of this expression
+    IntVal _v;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
-    /// The value of this expression
-    IntVal _v;
     /// Constructor
     IntLit(const Location& loc, IntVal v);
+    /// Access value
+    IntVal v(void) const { return _v; }
+    /// Set value
+    void v(IntVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
+  protected:
+    /// The value of this expression
+    FloatVal _v;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
-    /// The value of this expression
-    FloatVal _v;
     /// Constructor
     FloatLit(const Location& loc, FloatVal v);
+    /// Access value
+    FloatVal v(void) const { return _v; }
+    /// Set value
+    void v(FloatVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
+  protected:
+    /// The value of this expression
+    ASTExprVec<Expression> _v;
+    /// A range-list based representation for an integer set, or NULL
+    IntSetVal* _isv;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
-    /// The value of this expression, or NULL
-    ASTExprVec<Expression> _v;
-    /// A range-list based representation for an integer set
-    IntSetVal* _isv;
     /// Construct set \$f\{v1,\dots,vn\}\$f
     SetLit(const Location& loc, const std::vector<Expression*>& v);
     /// Construct set \$f\{v1,\dots,vn\}\$f
     SetLit(const Location& loc, ASTExprVec<Expression> v);
     /// Construct set
     SetLit(const Location& loc, IntSetVal* isv);
+    /// Access value
+    ASTExprVec<Expression> v(void) const { return _v; }
+    /// Set value
+    void v(const ASTExprVec<Expression>& val) { _v = val; }
+    /// Access value
+    IntSetVal* isv(void) const { return _isv; }
+    /// Set value
+    void isv(IntSetVal* val) { _isv = val; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Boolean literal expression
   class BoolLit : public Expression {
+  protected:
+    /// The value of this expression
+    bool _v;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_BOOLLIT;
-    /// The value of this expression
-    bool _v;
     /// Constructor
     BoolLit(const Location& loc, bool v);
+    /// Access value
+    bool v(void) const { return _v; }
+    /// Set value
+    void v(bool val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief String literal expression
   class StringLit : public Expression {
+  protected:
+    /// The value of this expression
+    ASTString _v;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_STRINGLIT;
-    /// The value of this expression
-    ASTString _v;
     /// Constructor
     StringLit(const Location& loc, const std::string& v);
     /// Constructor
     StringLit(const Location& loc, const ASTString& v);
+    /// Access value
+    ASTString v(void) const { return _v; }
+    /// Set value
+    void v(const ASTString& val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Identifier expression
   class Id : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ID;
+  protected:
     /// The string identifier
     ASTString _v;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_ID;
     /// Constructor (\a decl may be NULL)
     Id(const Location& loc, const std::string& v, VarDecl* decl);
     /// Constructor (\a decl may be NULL)
     Id(const Location& loc, const ASTString& v, VarDecl* decl);
+    /// Access identifier
+    ASTString v(void) const { return _v; }
+    /// Set identifier
+    void v(const ASTString& val) { _v = val; }
+    /// Access declaration
+    VarDecl* decl(void) const { return _decl; }
+    /// Set declaration
+    void decl(VarDecl* d) { _decl = d; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief Type-inst identifier expression
   class TIId : public Expression {
+  protected:
+    /// The string identifier
+    ASTString _v;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_TIID;
-    /// The string identifier
-    ASTString _v;
     /// Constructor
     TIId(const Location& loc, const std::string& v);
+    /// Access identifier
+    ASTString v(void) const { return _v; }
+    /// Set identifier
+    void v(const ASTString& val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -322,13 +365,15 @@ namespace MiniZinc {
   };
   /// \brief Array literal expression
   class ArrayLit : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ARRAYLIT;
+    friend class Expression;
+  protected:
     /// The array
     ASTExprVec<Expression> _v;
     /// The declared array dimensions
     ASTIntVec _dims;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_ARRAYLIT;
     /// Constructor
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v,
@@ -346,6 +391,11 @@ namespace MiniZinc {
     /// Recompute hash value
     void rehash(void);
     
+    /// Access value
+    ASTExprVec<Expression> v(void) const { return _v; }
+    /// Set value
+    void v(const ASTExprVec<Expression>& val) { _v = val; }
+
     /// Return number of dimensions
     int dims(void) const;
     /// Return minimum index of dimension \a i
@@ -354,16 +404,19 @@ namespace MiniZinc {
     int max(int i) const;
     /// Return the length of the array
     int length(void) const;
+    /// Set dimension vector
+    void setDims(ASTIntVec dims) { _dims = dims; }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ARRAYACCESS;
+  protected:
     /// The array to access
     Expression* _v;
     /// The indexes (for all array dimensions)
     ASTExprVec<Expression> _idx;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_ARRAYACCESS;
     /// Constructor
     ArrayAccess(const Location& loc,
                 Expression* v,
@@ -372,6 +425,14 @@ namespace MiniZinc {
     ArrayAccess(const Location& loc,
                 Expression* v,
                 ASTExprVec<Expression> idx);
+    /// Access value
+    Expression* v(void) const { return _v; }
+    /// Set value
+    void v(Expression* val) { _v = val; }
+    /// Access index sets
+    ASTExprVec<Expression> idx(void) const { return _idx; }
+    /// Set index sets
+    void idx(const ASTExprVec<Expression>& idx) { _idx = idx; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -387,11 +448,13 @@ namespace MiniZinc {
    *
    */
   class Generator {
-  public:
+    friend class Comprehension;
+  protected:
     /// Variable declarations
     std::vector<VarDecl*> _v;
     /// in-expression
     Expression* _in;
+  public:
     /// Allocate
     Generator(const std::vector<std::string>& v,
               Expression* in);
@@ -401,6 +464,7 @@ namespace MiniZinc {
     /// Allocate
     Generator(const std::vector<VarDecl*>& v,
               Expression* in);
+    
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
@@ -411,9 +475,8 @@ namespace MiniZinc {
   };
   /// \brief An expression representing an array- or set-comprehension
   class Comprehension : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_COMP;
+    friend class Expression;
+  protected:
     /// The expression to generate
     Expression* _e;
     /// A list of generator expressions
@@ -422,6 +485,9 @@ namespace MiniZinc {
     ASTIntVec _g_idx;
     /// The where-clause (or NULL)
     Expression* _where;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_COMP;
     /// Constructor
     Comprehension(const Location& loc,
                   Expression* e, Generators& g, bool set);
@@ -442,21 +508,33 @@ namespace MiniZinc {
     VarDecl* decl(int gen, int i);
     /// Return declaration \a i for generator \a gen
     const VarDecl* decl(int gen, int i) const;
+    /// Return where clause
+    Expression* where(void) const { return _where; }
+    /// Return generator body
+    Expression* e(void) const { return _e; }
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ITE;
-  public:
+    friend class Expression;
+  protected:
     /// List of if-then-pairs
     ASTExprVec<Expression> _e_if_then;
     /// Else-expression
     Expression* _e_else;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_ITE;
     /// Constructor
     ITE(const Location& loc,
         const std::vector<Expression*>& e_if_then,
         Expression* e_else);
+    int size(void) const { return _e_if_then.size()/2; }
+    Expression* e_if(int i) { return _e_if_then[2*i]; }
+    Expression* e_then(int i) { return _e_if_then[2*i+1]; }
+    Expression* e_else(void) { return _e_else; }
+    const Expression* e_if(int i) const { return _e_if_then[2*i]; }
+    const Expression* e_then(int i) const { return _e_if_then[2*i+1]; }
+    const Expression* e_else(void) const { return _e_else; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -473,18 +551,28 @@ namespace MiniZinc {
   };
   /// \brief Binary-operator expression
   class BinOp : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_BINOP;
+  protected:
     /// Left hand side expression
     Expression* _e0;
     /// Right hand side expression
     Expression* _e1;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_BINOP;
     /// Constructor
     BinOp(const Location& loc,
           Expression* e0, BinOpType op, Expression* e1);
+    /// Access left hand side
+    Expression* lhs(void) const { return _e0; }
+    /// Access right hand side
+    Expression* rhs(void) const { return _e1; }
+    /// Access declaration
+    FunctionI* decl(void) const { return _decl; }
+    /// Set declaration
+    void decl(FunctionI* f) { _decl = f; }
+    /// Return string representation of the operator
     ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
@@ -498,16 +586,23 @@ namespace MiniZinc {
   };
   /// \brief Unary-operator expressions
   class UnOp : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_UNOP;
+  protected:
     /// %Expression
     Expression* _e0;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_UNOP;
     /// Constructor
     UnOp(const Location& loc,
          UnOpType op, Expression* e);
+    /// Access expression
+    Expression* e(void) const { return _e0; }
+    /// Access declaration
+    FunctionI* decl(void) const { return _decl; }
+    /// Set declaration
+    void decl(FunctionI* f) { _decl = f; }
     ASTString opToString(void) const;
     /// Recompute hash value
     void rehash(void);
@@ -517,15 +612,17 @@ namespace MiniZinc {
   
   /// \brief A predicate or function call expression
   class Call : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_CALL;
+    friend class Expression;
+  protected:
     /// Identifier of called predicate or function
     ASTString _id;
     /// Arguments to the call
     ASTExprVec<Expression> _args;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_CALL;
     /// Constructor
     Call(const Location& loc,
          const std::string& id,
@@ -536,20 +633,34 @@ namespace MiniZinc {
          const ASTString& id,
          const std::vector<Expression*>& args,
          FunctionI* decl=NULL);
+    /// Access identifier
+    ASTString id(void) const { return _id; }
+    /// Set identifier
+    void id(const ASTString& i) { _id = i; }
+    /// Access arguments
+    ASTExprVec<Expression> args(void) const { return _args; }
+    /// Set arguments
+    void args(const ASTExprVec<Expression>& a) { _args = a; }
+    /// Access declaration
+    FunctionI* decl(void) const { return _decl; }
+    /// Set declaration
+    void decl(FunctionI* f) { _decl = f; }
     /// Recompute hash value
     void rehash(void);
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_VARDECL;
+    friend class Let;
+  protected:
     /// Type-inst of the declared variable
     TypeInst* _ti;
     /// Identifier
     ASTString _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_VARDECL;
     /// Constructor
     VarDecl(const Location& loc,
             TypeInst* ti, const std::string& id,
@@ -557,6 +668,16 @@ namespace MiniZinc {
     /// Constructor
     VarDecl(const Location& loc,
             TypeInst* ti, const ASTString& id, Expression* e=NULL);
+
+    /// Access TypeInst
+    TypeInst* ti(void) const { return _ti; }
+    /// Access identifier
+    ASTString id(void) const { return _id; }
+    /// Access initialisation expression
+    Expression* e(void) const { return _e; }
+    /// Set initialisation expression
+    void e(Expression* rhs) { _e = rhs; }
+    
     /// Recompute hash value
     void rehash(void);
     /// Whether variable is toplevel
@@ -570,19 +691,25 @@ namespace MiniZinc {
   };
   /// \brief %Let expression
   class Let : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_LET;
+  protected:
     /// List of local declarations
     ASTExprVec<Expression> _let;
     /// Body of the let
     Expression* _in;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_LET;
     /// Constructor
     Let(const Location& loc,
         const std::vector<Expression*>& let, Expression* in);
     /// Recompute hash value
     void rehash(void);
 
+    /// Access local declarations
+    ASTExprVec<Expression> let(void) const { return _let; }
+    /// Access body
+    Expression* in(void) const { return _in; }
+    
     /// Remember current let bindings
     void pushbindings(void);
     /// Restore previous let bindings
@@ -592,13 +719,14 @@ namespace MiniZinc {
 
   /// \brief Type-inst expression
   class TypeInst : public Expression {
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_TI;
+  protected:
     /// Ranges of an array expression
     ASTExprVec<TypeInst> _ranges;
     /// Declared domain (or NULL)
     Expression* _domain;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_TI;
     /// Constructor
     TypeInst(const Location& loc,
              const Type& t,
@@ -608,6 +736,13 @@ namespace MiniZinc {
     TypeInst(const Location& loc,
              const Type& t,
              Expression* domain=NULL);
+    
+    /// Access ranges
+    ASTExprVec<TypeInst> ranges(void) const { return _ranges; }
+    /// Access domain
+    Expression* domain(void) const { return domain(); }
+    //// Set domain
+    void domain(Expression* d) { _domain = d; }
     
     /// Add \a ranges to expression
     void addRanges(const std::vector<TypeInst*>& ranges);
@@ -794,15 +929,15 @@ namespace MiniZinc {
     Expression* _e;
     
     /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (ASTExprVec<Expression>&);
+    typedef Expression* (*builtin_e) (ASTExprVec<Expression>);
     /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (ASTExprVec<Expression>&);
+    typedef IntVal (*builtin_i) (ASTExprVec<Expression>);
     /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (ASTExprVec<Expression>&);
+    typedef bool (*builtin_b) (ASTExprVec<Expression>);
     /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>&);
+    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>);
     /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>&);
+    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>);
 
     /// Builtin functions (or NULL)
     struct {
@@ -818,6 +953,9 @@ namespace MiniZinc {
               const std::string& id, TypeInst* ti,
               const std::vector<VarDecl*>& params,
               Expression* e = NULL, Annotation* ann = NULL);
+
+    /// Access TypeInst
+    TypeInst* ti(void) const { return _ti; }
     
     /** \brief Compute return type given argument types \a ta
      */

@@ -63,18 +63,18 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_min(ASTExprVec<Expression>& args) {
+  IntVal b_min(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
       if (args[0]->type().isset()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         ArrayLit* al = eval_array_lit(args[0]);
-        if (al->_v.size()==0)
+        if (al->v().size()==0)
           throw EvalError(al->loc(), "min on empty array undefined");
-        IntVal m = eval_int(al->_v[0]);
-        for (unsigned int i=1; i<al->_v.size(); i++)
-          m = std::min(m, eval_int(al->_v[i]));
+        IntVal m = eval_int(al->v()[0]);
+        for (unsigned int i=1; i<al->v().size(); i++)
+          m = std::min(m, eval_int(al->v()[i]));
         return m;
       }
     case 2:
@@ -86,18 +86,18 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_max(ASTExprVec<Expression>& args) {
+  IntVal b_max(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
       if (args[0]->type().isset()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         ArrayLit* al = eval_array_lit(args[0]);
-        if (al->_v.size()==0)
+        if (al->v().size()==0)
           throw EvalError(al->loc(), "max on empty array undefined");
-        IntVal m = eval_int(al->_v[0]);
-        for (unsigned int i=1; i<al->_v.size(); i++)
-          m = std::max(m, eval_int(al->_v[i]));
+        IntVal m = eval_int(al->v()[0]);
+        for (unsigned int i=1; i<al->v().size(); i++)
+          m = std::max(m, eval_int(al->v()[i]));
         return m;
       }
     case 2:
@@ -109,7 +109,7 @@ namespace MiniZinc {
     }
   }
   
-  bool b_has_bounds(ASTExprVec<Expression>& args) {
+  bool b_has_bounds(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
     return compute_int_bounds(args[0]).valid;
@@ -122,20 +122,20 @@ namespace MiniZinc {
     else
       throw EvalError(e->loc(),"cannot determine bounds");
   }
-  IntVal b_lb_varoptint(ASTExprVec<Expression>& args) {
+  IntVal b_lb_varoptint(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
     return lb_varoptint(args[0]);
   }
 
-  IntVal b_array_lb_int(ASTExprVec<Expression>& args) {
+  IntVal b_array_lb_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size()==0)
+    if (al->v().size()==0)
       throw EvalError(Location(), "min of empty array undefined");
-    IntVal min = lb_varoptint(al->_v[0]);
-    for (unsigned int i=1; i<al->_v.size(); i++)
-      min = std::min(min, lb_varoptint(al->_v[i]));
+    IntVal min = lb_varoptint(al->v()[0]);
+    for (unsigned int i=1; i<al->v().size(); i++)
+      min = std::min(min, lb_varoptint(al->v()[i]));
     return min;
   }
 
@@ -146,84 +146,84 @@ namespace MiniZinc {
     else
       throw EvalError(e->loc(),"cannot determine bounds");
   }
-  IntVal b_ub_varoptint(ASTExprVec<Expression>& args) {
+  IntVal b_ub_varoptint(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
     return ub_varoptint(args[0]);
   }
 
-  IntVal b_array_ub_int(ASTExprVec<Expression>& args) {
+  IntVal b_array_ub_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size()==0)
+    if (al->v().size()==0)
       throw EvalError(Location(), "min of empty array undefined");
-    IntVal max = ub_varoptint(al->_v[0]);
-    for (unsigned int i=1; i<al->_v.size(); i++)
-      max = std::max(max, ub_varoptint(al->_v[i]));
+    IntVal max = ub_varoptint(al->v()[0]);
+    for (unsigned int i=1; i<al->v().size(); i++)
+      max = std::max(max, ub_varoptint(al->v()[i]));
     return max;
   }
 
-  IntVal b_sum(ASTExprVec<Expression>& args) {
+  IntVal b_sum(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
-    if (al->_v.size()==0)
+    if (al->v().size()==0)
       return 0;
     IntVal m = 0;
-    for (unsigned int i=0; i<al->_v.size(); i++)
-      m += eval_int(al->_v[i]);
+    for (unsigned int i=0; i<al->v().size(); i++)
+      m += eval_int(al->v()[i]);
     return m;
   }
 
 
-  IntSetVal* b_index_set(ASTExprVec<Expression>& args, int i) {
+  IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
     if (args[0]->eid() != Expression::E_ID)
       throw EvalError(Location(), "index_set only supported for identifiers");
     Id* id = args[0]->cast<Id>();
-    if (id->_decl == NULL)
+    if (id->decl() == NULL)
       throw EvalError(id->loc(), "undefined identifier");
-    if (id->_decl->_ti->_ranges.size() < i)
+    if (id->decl()->ti()->ranges().size() < i)
       throw EvalError(id->loc(), "index_set: wrong dimension");
-    if (id->_decl->_ti->_ranges[i-1]->_domain == NULL) {
+    if (id->decl()->ti()->ranges()[i-1]->domain() == NULL) {
       ArrayLit* al = eval_array_lit(id);
       if (al->dims() < i)
         throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
-    return eval_intset(id->_decl->_ti->_ranges[i-1]->_domain);
+    return eval_intset(id->decl()->ti()->ranges()[i-1]->domain());
   }
-  IntSetVal* b_index_set1(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set1(ASTExprVec<Expression> args) {
     return b_index_set(args,1);
   }
-  IntSetVal* b_index_set2(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set2(ASTExprVec<Expression> args) {
     return b_index_set(args,2);
   }
-  IntSetVal* b_index_set3(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set3(ASTExprVec<Expression> args) {
     return b_index_set(args,3);
   }
-  IntSetVal* b_index_set4(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set4(ASTExprVec<Expression> args) {
     return b_index_set(args,4);
   }
-  IntSetVal* b_index_set5(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set5(ASTExprVec<Expression> args) {
     return b_index_set(args,5);
   }
-  IntSetVal* b_index_set6(ASTExprVec<Expression>& args) {
+  IntSetVal* b_index_set6(ASTExprVec<Expression> args) {
     return b_index_set(args,6);
   }
 
-  IntVal b_min_parsetint(ASTExprVec<Expression>& args) {
+  IntVal b_min_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
     return isv->min(0);
   }
-  IntVal b_max_parsetint(ASTExprVec<Expression>& args) {
+  IntVal b_max_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
     return isv->max(isv->size()-1);
   }
 
-  IntSetVal* b_ub_set(ASTExprVec<Expression>& args) {
+  IntSetVal* b_ub_set(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     Expression* e = args[0];
     for (;;) {
@@ -232,12 +232,12 @@ namespace MiniZinc {
       case Expression::E_ID:
         {
           Id* id = e->cast<Id>();
-          if (id->_decl==NULL)
+          if (id->decl()==NULL)
             throw EvalError(id->loc(),"undefined identifier");
-          if (id->_decl->_e==NULL)
-            return eval_intset(id->_decl->_ti->_domain);
+          if (id->decl()->e()==NULL)
+            return eval_intset(id->decl()->ti()->domain());
           else
-            e = id->_decl->_e;
+            e = id->decl()->e();
         }
         break;
       default:
@@ -251,18 +251,18 @@ namespace MiniZinc {
       switch (e->eid()) {
       case Expression::E_INTLIT:
         {
-          IntVal v = e->cast<IntLit>()->_v;
+          IntVal v = e->cast<IntLit>()->v();
           return IntSetVal::a(v,v);
         }
       case Expression::E_ID:
         {
           Id* id = e->cast<Id>();
-          if (id->_decl==NULL)
+          if (id->decl()==NULL)
             throw EvalError(id->loc(),"undefined identifier");
-          if (id->_decl->_e==NULL)
-            return eval_intset(id->_decl->_ti->_domain);
+          if (id->decl()->e()==NULL)
+            return eval_intset(id->decl()->ti()->domain());
           else
-            e = id->_decl->_e;
+            e = id->decl()->e();
         }
         break;
       default:
@@ -270,12 +270,12 @@ namespace MiniZinc {
       }
     }
   }
-  IntSetVal* b_dom_varint(ASTExprVec<Expression>& args) {
+  IntSetVal* b_dom_varint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     return b_dom_varint(args[0]);
   }
 
-  IntSetVal* b_dom_array(ASTExprVec<Expression>& args) {
+  IntSetVal* b_dom_array(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     Expression* ae = args[0];
     ArrayLit* al = NULL;
@@ -287,31 +287,31 @@ namespace MiniZinc {
       case Expression::E_ID:
         {
           Id* id = ae->cast<Id>();
-          if (id->_decl==NULL)
+          if (id->decl()==NULL)
             throw EvalError(id->loc(),"undefined identifier");
-          if (id->_decl->_e==NULL)
+          if (id->decl()->e()==NULL)
             throw EvalError(id->loc(),"array without initialiser");
           else
-            ae = id->_decl->_e;
+            ae = id->decl()->e();
         }
         break;
       default:
         throw EvalError(ae->loc(),"invalid argument to ub");
       }
     }
-    if (al->_v.size()==0)
+    if (al->v().size()==0)
       return IntSetVal::a();
-    IntSetVal* isv = b_dom_varint(al->_v[0]);
-    for (unsigned int i=1; i<al->_v.size(); i++) {
+    IntSetVal* isv = b_dom_varint(al->v()[0]);
+    for (unsigned int i=1; i<al->v().size(); i++) {
       IntSetRanges isr(isv);
-      IntSetRanges r(b_dom_varint(al->_v[i]));
+      IntSetRanges r(b_dom_varint(al->v()[i]));
       Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
       isv = IntSetVal::ai(u);
     }
     return isv;
   }
 
-  ArrayLit* b_arrayXd(ASTExprVec<Expression>& args, int d) {
+  ArrayLit* b_arrayXd(ASTExprVec<Expression> args, int d) {
     ArrayLit* al = eval_array_lit(args[d]);
     std::vector<std::pair<int,int> > dims(d);
     unsigned int dim1d = 1;
@@ -322,62 +322,62 @@ namespace MiniZinc {
       dims[i] = std::pair<int,int>(di->min(0),di->max(0));
       dim1d *= dims[i].second-dims[i].first+1;
     }
-    if (dim1d != al->_v.size())
+    if (dim1d != al->v().size())
       throw EvalError(al->loc(), "mismatch in array dimensions");
-    ArrayLit* ret = new ArrayLit(al->loc(), al->_v, dims);
+    ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
     Type t = al->type();
     t._dim = d;
     ret->type(t);
     return ret;
   }
-  Expression* b_array1d(ASTExprVec<Expression>& args) {
+  Expression* b_array1d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,1);
   }
-  Expression* b_array2d(ASTExprVec<Expression>& args) {
+  Expression* b_array2d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,2);
   }
-  Expression* b_array3d(ASTExprVec<Expression>& args) {
+  Expression* b_array3d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,3);
   }
-  Expression* b_array4d(ASTExprVec<Expression>& args) {
+  Expression* b_array4d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,4);
   }
-  Expression* b_array5d(ASTExprVec<Expression>& args) {
+  Expression* b_array5d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,5);
   }
-  Expression* b_array6d(ASTExprVec<Expression>& args) {
+  Expression* b_array6d(ASTExprVec<Expression> args) {
     return b_arrayXd(args,6);
   }
 
-  IntVal b_length(ASTExprVec<Expression>& args) {
+  IntVal b_length(ASTExprVec<Expression> args) {
     ArrayLit* al = eval_array_lit(args[0]);
-    return al->_v.size();
+    return al->v().size();
   }
   
-  IntVal b_bool2int(ASTExprVec<Expression>& args) {
+  IntVal b_bool2int(ASTExprVec<Expression> args) {
     return eval_bool(args[0]) ? 1 : 0;
   }
 
-  bool b_forall_par(ASTExprVec<Expression>& args) {
+  bool b_forall_par(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
-    for (unsigned int i=al->_v.size(); i--;)
-      if (!eval_bool(al->_v[i]))
+    for (unsigned int i=al->v().size(); i--;)
+      if (!eval_bool(al->v()[i]))
         return false;
     return true;
   }
-  bool b_exists_par(ASTExprVec<Expression>& args) {
+  bool b_exists_par(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
     ArrayLit* al = eval_array_lit(args[0]);
-    for (unsigned int i=al->_v.size(); i--;)
-      if (eval_bool(al->_v[i]))
+    for (unsigned int i=al->v().size(); i--;)
+      if (eval_bool(al->v()[i]))
         return true;
     return false;
   }
 
-  IntVal b_card(ASTExprVec<Expression>& args) {
+  IntVal b_card(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "card needs exactly one argument");
     IntSetVal* isv = eval_intset(args[0]);

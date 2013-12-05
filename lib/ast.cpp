@@ -72,25 +72,25 @@ namespace MiniZinc {
         case Expression::E_ANON:
           break;
         case Expression::E_SETLIT:
-          if (cur->cast<SetLit>()->_isv)
-            cur->cast<SetLit>()->_isv->mark();
+          if (cur->cast<SetLit>()->isv())
+            cur->cast<SetLit>()->isv()->mark();
           else
-            pushall(cur->cast<SetLit>()->_v);
+            pushall(cur->cast<SetLit>()->v());
           break;
         case Expression::E_STRINGLIT:
-          cur->cast<StringLit>()->_v.mark();
+          cur->cast<StringLit>()->v().mark();
           break;
         case Expression::E_ID:
-          cur->cast<Id>()->_v.mark();
-          pushstack(cur->cast<Id>()->_decl);
+          cur->cast<Id>()->v().mark();
+          pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
-          pushall(cur->cast<ArrayLit>()->_v);
+          pushall(cur->cast<ArrayLit>()->v());
           cur->cast<ArrayLit>()->_dims.mark();
           break;
         case Expression::E_ARRAYACCESS:
-          pushstack(cur->cast<ArrayAccess>()->_v);
-          pushall(cur->cast<ArrayAccess>()->_idx);
+          pushstack(cur->cast<ArrayAccess>()->v());
+          pushall(cur->cast<ArrayAccess>()->idx());
           break;
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
@@ -99,46 +99,46 @@ namespace MiniZinc {
           cur->cast<Comprehension>()->_g_idx.mark();
           break;
         case Expression::E_ITE:
-          pushstack(cur->cast<ITE>()->_e_else);
+          pushstack(cur->cast<ITE>()->e_else());
           pushall(cur->cast<ITE>()->_e_if_then);
           break;
         case Expression::E_BINOP:
-          pushstack(cur->cast<BinOp>()->_e0);
-          pushstack(cur->cast<BinOp>()->_e1);
+          pushstack(cur->cast<BinOp>()->lhs());
+          pushstack(cur->cast<BinOp>()->rhs());
           break;
         case Expression::E_UNOP:
-          pushstack(cur->cast<UnOp>()->_e0);
+          pushstack(cur->cast<UnOp>()->e());
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->_id.mark();
           pushall(cur->cast<Call>()->_args);
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
             fi->_id.mark();
-            pushstack(fi->_ti);
+            pushstack(fi->ti());
             pushstack(fi->_ann);
             pushstack(fi->_e);
             pushall(fi->_params);
           }
           break;
         case Expression::E_VARDECL:
-          pushstack(cur->cast<VarDecl>()->_ti);
-          pushstack(cur->cast<VarDecl>()->_e);
-          cur->cast<VarDecl>()->_id.mark();
+          pushstack(cur->cast<VarDecl>()->ti());
+          pushstack(cur->cast<VarDecl>()->e());
+          cur->cast<VarDecl>()->id().mark();
           break;
         case Expression::E_LET:
-          pushall(cur->cast<Let>()->_let);
-          pushstack(cur->cast<Let>()->_in);
+          pushall(cur->cast<Let>()->let());
+          pushstack(cur->cast<Let>()->in());
           break;
         case Expression::E_ANN:
           pushstack(cur->cast<Annotation>()->e());
           pushstack(cur->cast<Annotation>()->next());
           break;
         case Expression::E_TI:
-          pushstack(cur->cast<TypeInst>()->_domain);
-          pushall(cur->cast<TypeInst>()->_ranges);
+          pushstack(cur->cast<TypeInst>()->domain());
+          pushall(cur->cast<TypeInst>()->ranges());
           break;
         case Expression::E_TIID:
-          cur->cast<TIId>()->_v.mark();
+          cur->cast<TIId>()->v().mark();
           break;
         }
       }
@@ -164,14 +164,14 @@ namespace MiniZinc {
   void
   SetLit::rehash(void) {
     init_hash();
-    if (_isv) {
+    if (isv()) {
       std::hash<IntVal> h;
-      for (IntSetRanges r0(_isv); r0(); ++r0) {
+      for (IntSetRanges r0(isv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
     } else {
-      for (unsigned int i=_v.size(); i--;)
+      for (unsigned int i=v().size(); i--;)
         cmb_hash(Expression::hash(_v[i]));
     }
   }
@@ -329,7 +329,7 @@ namespace MiniZinc {
     for (unsigned int i=_e_if_then.size(); i--; ) {
       cmb_hash(Expression::hash(_e_if_then[i]));
     }
-    cmb_hash(Expression::hash(_e_else));
+    cmb_hash(Expression::hash(e_else()));
   }
 
   BinOpType
@@ -451,33 +451,33 @@ namespace MiniZinc {
   ASTString
   BinOp::opToString(void) const {
     switch (op()) {
-    case BOT_PLUS: return OpToString::o().sBOT_PLUS->_v;
-    case BOT_MINUS: return OpToString::o().sBOT_MINUS->_v;
-    case BOT_MULT: return OpToString::o().sBOT_MULT->_v;
-    case BOT_DIV: return OpToString::o().sBOT_DIV->_v;
-    case BOT_IDIV: return OpToString::o().sBOT_IDIV->_v;
-    case BOT_MOD: return OpToString::o().sBOT_MOD->_v;
-    case BOT_LE: return OpToString::o().sBOT_LE->_v;
-    case BOT_LQ: return OpToString::o().sBOT_LQ->_v;
-    case BOT_GR: return OpToString::o().sBOT_GR->_v;
-    case BOT_GQ: return OpToString::o().sBOT_GQ->_v;
-    case BOT_EQ: return OpToString::o().sBOT_EQ->_v;
-    case BOT_NQ: return OpToString::o().sBOT_NQ->_v;
-    case BOT_IN: return OpToString::o().sBOT_IN->_v;
-    case BOT_SUBSET: return OpToString::o().sBOT_SUBSET->_v;
-    case BOT_SUPERSET: return OpToString::o().sBOT_SUPERSET->_v;
-    case BOT_UNION: return OpToString::o().sBOT_UNION->_v;
-    case BOT_DIFF: return OpToString::o().sBOT_DIFF->_v;
-    case BOT_SYMDIFF: return OpToString::o().sBOT_SYMDIFF->_v;
-    case BOT_INTERSECT: return OpToString::o().sBOT_INTERSECT->_v;
-    case BOT_PLUSPLUS: return OpToString::o().sBOT_PLUSPLUS->_v;
-    case BOT_EQUIV: return OpToString::o().sBOT_EQUIV->_v;
-    case BOT_IMPL: return OpToString::o().sBOT_IMPL->_v;
-    case BOT_RIMPL: return OpToString::o().sBOT_RIMPL->_v;
-    case BOT_OR: return OpToString::o().sBOT_OR->_v;
-    case BOT_AND: return OpToString::o().sBOT_AND->_v;
-    case BOT_XOR: return OpToString::o().sBOT_XOR->_v;
-    case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT->_v;
+    case BOT_PLUS: return OpToString::o().sBOT_PLUS->v();
+    case BOT_MINUS: return OpToString::o().sBOT_MINUS->v();
+    case BOT_MULT: return OpToString::o().sBOT_MULT->v();
+    case BOT_DIV: return OpToString::o().sBOT_DIV->v();
+    case BOT_IDIV: return OpToString::o().sBOT_IDIV->v();
+    case BOT_MOD: return OpToString::o().sBOT_MOD->v();
+    case BOT_LE: return OpToString::o().sBOT_LE->v();
+    case BOT_LQ: return OpToString::o().sBOT_LQ->v();
+    case BOT_GR: return OpToString::o().sBOT_GR->v();
+    case BOT_GQ: return OpToString::o().sBOT_GQ->v();
+    case BOT_EQ: return OpToString::o().sBOT_EQ->v();
+    case BOT_NQ: return OpToString::o().sBOT_NQ->v();
+    case BOT_IN: return OpToString::o().sBOT_IN->v();
+    case BOT_SUBSET: return OpToString::o().sBOT_SUBSET->v();
+    case BOT_SUPERSET: return OpToString::o().sBOT_SUPERSET->v();
+    case BOT_UNION: return OpToString::o().sBOT_UNION->v();
+    case BOT_DIFF: return OpToString::o().sBOT_DIFF->v();
+    case BOT_SYMDIFF: return OpToString::o().sBOT_SYMDIFF->v();
+    case BOT_INTERSECT: return OpToString::o().sBOT_INTERSECT->v();
+    case BOT_PLUSPLUS: return OpToString::o().sBOT_PLUSPLUS->v();
+    case BOT_EQUIV: return OpToString::o().sBOT_EQUIV->v();
+    case BOT_IMPL: return OpToString::o().sBOT_IMPL->v();
+    case BOT_RIMPL: return OpToString::o().sBOT_RIMPL->v();
+    case BOT_OR: return OpToString::o().sBOT_OR->v();
+    case BOT_AND: return OpToString::o().sBOT_AND->v();
+    case BOT_XOR: return OpToString::o().sBOT_XOR->v();
+    case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT->v();
     default: assert(false);
     }
   }
@@ -497,9 +497,9 @@ namespace MiniZinc {
   ASTString
   UnOp::opToString(void) const {
     switch (op()) {
-    case UOT_PLUS: return OpToString::o().sBOT_PLUS->_v;
-    case UOT_MINUS: return OpToString::o().sBOT_MINUS->_v;
-    case UOT_NOT: return OpToString::o().sBOT_NOT->_v;
+    case UOT_PLUS: return OpToString::o().sBOT_PLUS->v();
+    case UOT_MINUS: return OpToString::o().sBOT_MINUS->v();
+    case UOT_NOT: return OpToString::o().sBOT_NOT->v();
     default: assert(false);
     }
   }
@@ -555,7 +555,7 @@ namespace MiniZinc {
     for (unsigned int i=_let.size(); i--;) {
       if (_let[i]->isa<VarDecl>()) {
         VarDecl* vd = _let[i]->cast<VarDecl>();
-        GC::trail(reinterpret_cast<void**>(&vd->_e),vd->_e);
+        GC::trail(reinterpret_cast<void**>(&vd->_e),vd->e());
       }
     }
   }
@@ -572,7 +572,7 @@ namespace MiniZinc {
     cmb_hash(h(rsize));
     for (unsigned int i=rsize; i--;)
       cmb_hash(Expression::hash(_ranges[i]));
-    cmb_hash(Expression::hash(_domain));
+    cmb_hash(Expression::hash(domain()));
   }
 
   void
@@ -580,8 +580,8 @@ namespace MiniZinc {
     assert(_ranges.size() == 0);
     _ranges = ASTExprVec<TypeInst>(ranges);
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
-        ranges[0]->cast<TypeInst>()->_domain &&
-        ranges[0]->cast<TypeInst>()->_domain->isa<TIId>())
+        ranges[0]->cast<TypeInst>()->domain() &&
+        ranges[0]->cast<TypeInst>()->domain()->isa<TIId>())
       _type._dim=-1;
     else
       _type._dim=ranges.size();
@@ -590,7 +590,7 @@ namespace MiniZinc {
 
   bool
   TypeInst::hasTiVariable(void) const {
-    if (_domain && _domain->isa<TIId>())
+    if (domain() && domain()->isa<TIId>())
       return true;
     if (_ranges.size()==1 &&
         _ranges[0]->isa<TIId>())
@@ -636,18 +636,18 @@ namespace MiniZinc {
   FunctionI::rtype(const std::vector<Expression*>& ta) {
     Type ret = _ti->type();
     ASTString dh;
-    if (_ti->_domain && _ti->_domain->isa<TIId>())
-      dh = _ti->_domain->cast<TIId>()->_v;
+    if (_ti->domain() && _ti->domain()->isa<TIId>())
+      dh = _ti->domain()->cast<TIId>()->v();
     ASTString rh;
-    if (_ti->_ranges.size()==1 &&
-        _ti->_ranges[0] && _ti->_ranges[0]->isa<TIId>())
-      rh = _ti->_ranges[0]->cast<TIId>()->_v;
+    if (_ti->ranges().size()==1 &&
+        _ti->ranges()[0] && _ti->ranges()[0]->isa<TIId>())
+      rh = _ti->ranges()[0]->cast<TIId>()->v();
 
     ASTStringMap<Type>::t tmap;
     for (unsigned int i=0; i<ta.size(); i++) {
-      TypeInst* tii = _params[i]->_ti;
-      if (tii->_domain && tii->_domain->isa<TIId>()) {
-        ASTString tiid = tii->_domain->cast<TIId>()->_v;
+      TypeInst* tii = _params[i]->ti();
+      if (tii->domain() && tii->domain()->isa<TIId>()) {
+        ASTString tiid = tii->domain()->cast<TIId>()->v();
         Type tiit = ta[i]->type();
         tiit._dim=0;
         ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
@@ -681,10 +681,10 @@ namespace MiniZinc {
           }
         }
       }
-      if (tii->_ranges.size()==1 &&
-          tii->_ranges[0]->_domain && 
-          tii->_ranges[0]->_domain->isa<TIId>()) {
-        ASTString tiid = tii->_ranges[0]->_domain->cast<TIId>()->_v;
+      if (tii->ranges().size()==1 &&
+          tii->ranges()[0]->domain() && 
+          tii->ranges()[0]->domain()->isa<TIId>()) {
+        ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
         if (ta[i]->type()._dim<=0) {
           assert(false);
           throw TypeError(ta[i]->loc(),"type-inst variable $"+tiid.str()+
@@ -732,49 +732,49 @@ namespace MiniZinc {
     if (e0->type() != e1->type()) return false;
     switch (e0->eid()) {
     case Expression::E_INTLIT:
-      return e0->cast<IntLit>()->_v == e1->cast<IntLit>()->_v;
+      return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
     case Expression::E_FLOATLIT:
-      return e0->cast<FloatLit>()->_v == e1->cast<FloatLit>()->_v;
+      return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
     case Expression::E_SETLIT:
       {
         const SetLit* s0 = e0->cast<SetLit>();
         const SetLit* s1 = e1->cast<SetLit>();
-        if (s0->_isv) {
-          if (s1->_isv) {
-            IntSetRanges r0(s0->_isv);
-            IntSetRanges r1(s1->_isv);
+        if (s0->isv()) {
+          if (s1->isv()) {
+            IntSetRanges r0(s0->isv());
+            IntSetRanges r1(s1->isv());
             return Ranges::equal(r0,r1);
           } else {
             return false;
           }
         } else {
-          if (s1->_isv) return false;
-          if (s0->_v.size() != s1->_v.size()) return false;
-          for (unsigned int i=0; i<s0->_v.size(); i++)
-            if (!Expression::equal( s0->_v[i], s1->_v[i] ))
+          if (s1->isv()) return false;
+          if (s0->v().size() != s1->v().size()) return false;
+          for (unsigned int i=0; i<s0->v().size(); i++)
+            if (!Expression::equal( s0->v()[i], s1->v()[i] ))
               return false;
           return true;
         }
       }
     case Expression::E_BOOLLIT:
-      return e0->cast<BoolLit>()->_v == e1->cast<BoolLit>()->_v;
+      return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
     case Expression::E_STRINGLIT:
-      return e0->cast<StringLit>()->_v == e1->cast<StringLit>()->_v;
+      return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
     case Expression::E_ID:
       // assert(e0->cast<Id>()->_decl != NULL);
-      return e0->cast<Id>()->_v == e1->cast<Id>()->_v;
+      return e0->cast<Id>()->v() == e1->cast<Id>()->v();
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT:
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
-        if (a0->_v.size() != a1->_v.size()) return false;
+        if (a0->v().size() != a1->v().size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
         for (unsigned int i=0; i<a0->_dims.size(); i++)
           if ( a0->_dims[i] != a1->_dims[i] ) return false;
-        for (unsigned int i=0; i<a0->_v.size(); i++)
-          if (!Expression::equal( a0->_v[i], a1->_v[i] ))
+        for (unsigned int i=0; i<a0->v().size(); i++)
+          if (!Expression::equal( a0->v()[i], a1->v()[i] ))
             return false;
         return true;
       }
@@ -782,10 +782,10 @@ namespace MiniZinc {
       {
         const ArrayAccess* a0 = e0->cast<ArrayAccess>();
         const ArrayAccess* a1 = e1->cast<ArrayAccess>();
-        if (!Expression::equal( a0->_v, a1->_v )) return false;
-        if (a0->_idx.size() != a1->_idx.size()) return false;
-        for (unsigned int i=0; i<a0->_idx.size(); i++)
-          if (!Expression::equal( a0->_idx[i], a1->_idx[i] ))
+        if (!Expression::equal( a0->v(), a1->v() )) return false;
+        if (a0->idx().size() != a1->idx().size()) return false;
+        for (unsigned int i=0; i<a0->idx().size(); i++)
+          if (!Expression::equal( a0->idx()[i], a1->idx()[i] ))
             return false;
         return true;
       }
@@ -817,7 +817,7 @@ namespace MiniZinc {
                                    i1->_e_if_then[i]))
             return false;
         }
-        if (!Expression::equal (i0->_e_else, i1->_e_else)) return false;
+        if (!Expression::equal (i0->e_else(), i1->e_else())) return false;
         return true;
       }
     case Expression::E_BINOP:
@@ -825,8 +825,8 @@ namespace MiniZinc {
         const BinOp* b0 = e0->cast<BinOp>();
         const BinOp* b1 = e1->cast<BinOp>();
         if (b0->op() != b1->op()) return false;
-        if (!Expression::equal (b0->_e0, b1->_e0)) return false;
-        if (!Expression::equal (b0->_e1, b1->_e1)) return false;
+        if (!Expression::equal (b0->lhs(), b1->lhs())) return false;
+        if (!Expression::equal (b0->rhs(), b1->rhs())) return false;
         return true;
       }
     case Expression::E_UNOP:
@@ -834,7 +834,7 @@ namespace MiniZinc {
         const UnOp* b0 = e0->cast<UnOp>();
         const UnOp* b1 = e1->cast<UnOp>();
         if (b0->op() != b1->op()) return false;
-        if (!Expression::equal (b0->_e0, b1->_e0)) return false;
+        if (!Expression::equal (b0->e(), b1->e())) return false;
         return true;
       }
     case Expression::E_CALL:
@@ -843,9 +843,9 @@ namespace MiniZinc {
         const Call* c1 = e1->cast<Call>();
         if (c0->_id != c1->_id) return false;
         if (c0->_decl != c1->_decl) return false;
-        if (c0->_args.size() != c1->_args.size()) return false;
-        for (unsigned int i=0; i<c0->_args.size(); i++)
-          if (!Expression::equal ( c0->_args[i], c1->_args[i] ))
+        if (c0->args().size() != c1->args().size()) return false;
+        for (unsigned int i=0; i<c0->args().size(); i++)
+          if (!Expression::equal ( c0->args()[i], c1->args()[i] ))
             return false;
         return true;
       }
@@ -853,19 +853,19 @@ namespace MiniZinc {
       {
         const VarDecl* v0 = e0->cast<VarDecl>();
         const VarDecl* v1 = e1->cast<VarDecl>();
-        if (!Expression::equal ( v0->_ti, v1->_ti )) return false;
-        if (v0->_id != v1->_id) return false;
-        if (!Expression::equal ( v0->_e, v1->_e )) return false;
+        if (!Expression::equal ( v0->ti(), v1->ti() )) return false;
+        if (v0->id() != v1->id()) return false;
+        if (!Expression::equal ( v0->e(), v1->e() )) return false;
         return true;
       }
     case Expression::E_LET:
       {
         const Let* l0 = e0->cast<Let>();
         const Let* l1 = e1->cast<Let>();
-        if (!Expression::equal ( l0->_in, l1->_in )) return false;
-        if (l0->_let.size() != l1->_let.size()) return false;
-        for (unsigned int i=l0->_let.size(); i--;)
-          if (!Expression::equal ( l0->_let[i], l1->_let[i]))
+        if (!Expression::equal ( l0->in(), l1->in() )) return false;
+        if (l0->let().size() != l1->let().size()) return false;
+        for (unsigned int i=l0->let().size(); i--;)
+          if (!Expression::equal ( l0->let()[i], l1->let()[i]))
             return false;
         return true;
       }
@@ -881,11 +881,11 @@ namespace MiniZinc {
       {
         const TypeInst* t0 = e0->cast<TypeInst>();
         const TypeInst* t1 = e1->cast<TypeInst>();
-        if (t0->_ranges.size() != t1->_ranges.size()) return false;
-        for (unsigned int i=t0->_ranges.size(); i--;)
-          if (!Expression::equal ( t0->_ranges[i], t1->_ranges[i]))
+        if (t0->ranges().size() != t1->ranges().size()) return false;
+        for (unsigned int i=t0->ranges().size(); i--;)
+          if (!Expression::equal ( t0->ranges()[i], t1->ranges()[i]))
             return false;
-        if (!Expression::equal (t0->_domain, t1->_domain)) return false;
+        if (!Expression::equal (t0->domain(), t1->domain())) return false;
         return true;
       }
     case Expression::E_TIID:

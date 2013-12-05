@@ -57,8 +57,8 @@ namespace MiniZinc {
     CollectOccurrencesE(VarOccurrences& vo0, Item* ci0)
       : vo(vo0), ci(ci0) {}
     void vId(const Id& id) {
-      if(id._decl)
-        vo.add(id._decl,ci);
+      if(id.decl())
+        vo.add(id.decl(),ci);
     }
     
   };
@@ -105,8 +105,8 @@ namespace MiniZinc {
                  VarDeclI* vdi0)
       : vo(vo0), vd(vd0), vdi(vdi0) {}
     void vId(Id& id) {
-      if (id._decl && vo.remove(id._decl,vdi) == 0)
-        vd.push_back(id._decl);
+      if (id.decl() && vo.remove(id.decl(),vdi) == 0)
+        vd.push_back(id.decl());
     }
   };
 
@@ -122,25 +122,25 @@ namespace MiniZinc {
     for (unsigned int i=0; i<msize; i++) {
       VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
       if (vdi!=NULL && vo.occurrences(vdi->_e)==0 ) {
-        if (vdi->_e->_e && vdi->_e->_ti->_domain) {
+        if (vdi->_e->e() && vdi->_e->ti()->domain()) {
           if (vdi->_e->type().isvar() && vdi->_e->type().isbool() &&
-              Expression::equal(vdi->_e->_ti->_domain,constants().lt)) {
+              Expression::equal(vdi->_e->ti()->domain(),constants().lt)) {
             GCLock lock;
-            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->_e->_e);
+            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->_e->e());
             if (vdi->_e->introduced()) {
               m[i] = ci;
             } else {
-              vdi->_e->_e = NULL;
+              vdi->_e->e(NULL);
               m._items.push_back(ci);
             }
-          } else if (vdi->_e->_ti->computedDomain()) {
+          } else if (vdi->_e->ti()->computedDomain()) {
             CollectDecls cd(vo,vd,vdi);
-            topDown(cd,vdi->_e->_e);
+            topDown(cd,vdi->_e->e());
             vdi->remove();
           }
         } else {
           CollectDecls cd(vo,vd,vdi);
-          topDown(cd,vdi->_e->_e);
+          topDown(cd,vdi->_e->e());
           vdi->remove();
         }
       }
@@ -150,7 +150,7 @@ namespace MiniZinc {
       ExpressionMap<int>::iterator cur_idx = idx.find(cur);
       if (cur_idx != idx.end() && !m[cur_idx->second]->removed()) {
         CollectDecls cd(vo,vd,m[cur_idx->second]->cast<VarDeclI>());
-        topDown(cd,cur->_e);
+        topDown(cd,cur->e());
         m[cur_idx->second]->remove();
       }
     }
