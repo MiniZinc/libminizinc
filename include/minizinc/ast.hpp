@@ -116,6 +116,8 @@ namespace MiniZinc {
       d[i*2] = dims[i].first;
       d[i*2+1] = dims[i].second;
     }
+    _v = v;
+    _dims = ASTIntVec(d);
     rehash();
   }
 

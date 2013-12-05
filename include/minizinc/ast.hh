@@ -834,7 +834,7 @@ namespace MiniZinc {
     Model* m(void) const { return _m; }
     /// Set the model
     void m(Model* m0, bool own=true) {
-      assert(_m==NULL); _m = m0; _flag_2 = own;
+      assert(_m==NULL || m0==NULL); _m = m0; _flag_2 = own;
     }
     bool own(void) const {
       return _flag_2;
