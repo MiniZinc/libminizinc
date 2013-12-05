@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
-project (libmzn CXX)
+project (libminizinc CXX)
 
 # The version number.
-set (libmzn_VERSION_MAJOR 0)
-set (libmzn_VERSION_MINOR 8)
+set (libminizinc_VERSION_MAJOR 0)
+set (libminizinc_VERSION_MINOR 8)
 
 include(CheckCXXCompilerFlag)
 
@@ -86,7 +86,7 @@ add_custom_command(
 set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
 set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 
-add_library(mzn
+add_library(minizinc
 lib/ast.cpp
 lib/aststring.cpp
 lib/astvec.cpp
@@ -128,4 +128,4 @@ include/minizinc/values.hh
 
 # add the executable
 add_executable(mzn2fzn mzn2fzn.cpp)
-target_link_libraries(mzn2fzn mzn)
+target_link_libraries(mzn2fzn minizinc)
