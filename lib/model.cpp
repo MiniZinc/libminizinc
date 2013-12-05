@@ -22,9 +22,9 @@ namespace MiniZinc {
     for (unsigned int j=0; j<_items.size(); j++) {
       Item* i = _items[j];
       if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
-        if (ii->own() && ii->_m) {
-          delete ii->_m;
-          ii->_m = NULL;
+        if (ii->own() && ii->m()) {
+          delete ii->m();
+          ii->m(NULL);
         }
       }
     }
@@ -36,19 +36,19 @@ namespace MiniZinc {
     Model* m = this;
     while (m->_parent)
       m = m->_parent;
-    FnMap::iterator i_id = m->fnmap.find(fi->_id);
+    FnMap::iterator i_id = m->fnmap.find(fi->id());
     if (i_id == m->fnmap.end()) {
       // new element
       std::vector<FunctionI*> v; v.push_back(fi);
-      m->fnmap.insert(std::pair<ASTString,std::vector<FunctionI*> >(fi->_id,v));
+      m->fnmap.insert(std::pair<ASTString,std::vector<FunctionI*> >(fi->id(),v));
     } else {
       // add to list of existing elements
       std::vector<FunctionI*>& v = i_id->second;
       for (unsigned int i=0; i<v.size(); i++) {
-        if (v[i]->_params.size() == fi->_params.size()) {
+        if (v[i]->params().size() == fi->params().size()) {
           bool alleq=true;
-          for (unsigned int j=0; j<fi->_params.size(); j++) {
-            if (v[i]->_params[j]->type() != fi->_params[j]->type()) {
+          for (unsigned int j=0; j<fi->params().size(); j++) {
+            if (v[i]->params()[j]->type() != fi->params()[j]->type()) {
               alleq=false; break;
             }
           }
@@ -77,10 +77,10 @@ namespace MiniZinc {
     std::vector<FunctionI*>& v = i_id->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
-      if (fi->_params.size() == t.size()) {
+      if (fi->params().size() == t.size()) {
         bool match=true;
         for (unsigned int j=0; j<t.size(); j++) {
-          if (!t[j].isSubtypeOf(fi->_params[j]->type())) {
+          if (!t[j].isSubtypeOf(fi->params()[j]->type())) {
             match=false;
             break;
           }
@@ -98,11 +98,11 @@ namespace MiniZinc {
     class FunSort {
     public:
       bool operator()(FunctionI* x, FunctionI* y) const {
-        if (x->_params.size() < y->_params.size())
+        if (x->params().size() < y->params().size())
           return true;
-        if (x->_params.size() == y->_params.size()) {
-          for (unsigned int i=0; i<x->_params.size(); i++) {
-            switch (x->_params[i]->type().cmp(y->_params[i]->type())) {
+        if (x->params().size() == y->params().size()) {
+          for (unsigned int i=0; i<x->params().size(); i++) {
+            switch (x->params()[i]->type().cmp(y->params()[i]->type())) {
             case -1: return true;
             case 1: return false;
             }
@@ -137,10 +137,10 @@ namespace MiniZinc {
     const std::vector<FunctionI*>& v = it->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
-      if (fi->_params.size() == args.size()) {
+      if (fi->params().size() == args.size()) {
         bool match=true;
         for (unsigned int j=0; j<args.size(); j++) {
-          if (!args[j]->type().isSubtypeOf(fi->_params[j]->type())) {
+          if (!args[j]->type().isSubtypeOf(fi->params()[j]->type())) {
             match=false;
             break;
           }
@@ -165,10 +165,10 @@ namespace MiniZinc {
     const std::vector<FunctionI*>& v = it->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
-      if (fi->_params.size() == c->args().size()) {
+      if (fi->params().size() == c->args().size()) {
         bool match=true;
         for (unsigned int j=0; j<c->args().size(); j++) {
-          if (!c->args()[j]->type().isSubtypeOf(fi->_params[j]->type())) {
+          if (!c->args()[j]->type().isSubtypeOf(fi->params()[j]->type())) {
             match=false;
             break;
           }

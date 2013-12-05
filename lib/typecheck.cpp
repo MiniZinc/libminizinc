@@ -40,7 +40,7 @@ namespace MiniZinc {
     bool operator()(Item* i0, Item* i1) {
       if (VarDeclI* vd0 = i0->cast<VarDeclI>()) {
         if (VarDeclI* vd1 = i1->cast<VarDeclI>()) {
-          return _pos.at(vd0->_e) < _pos.at(vd1->_e);
+          return _pos.at(vd0->e()) < _pos.at(vd1->e());
         } else {
           return true;
         }
@@ -401,7 +401,7 @@ namespace MiniZinc {
       } else {
         if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
           bop.type(fi->rtype(args));
-          if (fi->_e)
+          if (fi->e())
             bop.decl(fi);
         } else {
           throw TypeError(bop.loc(),
@@ -416,7 +416,7 @@ namespace MiniZinc {
       args[0] = uop.e();
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
         uop.type(fi->rtype(args));
-        if (fi->_e)
+        if (fi->e())
           uop.decl(fi);
       } else {
         throw TypeError(uop.loc(),
@@ -546,7 +546,7 @@ namespace MiniZinc {
       std::vector<FunctionI*>& fis;
       TSV0(TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0)
         : ts(ts0), model(model0), fis(fis0) {}
-      void vVarDeclI(VarDeclI* i) { ts.add(i->_e, true); }
+      void vVarDeclI(VarDeclI* i) { ts.add(i->e(), true); }
       void vFunctionI(FunctionI* i) {
         model->registerFn(i);
         fis.push_back(i);
@@ -558,27 +558,27 @@ namespace MiniZinc {
     public:
       TopoSorter& ts;
       TSV1(TopoSorter& ts0) : ts(ts0) {}
-      void vVarDeclI(VarDeclI* i) { ts.run(i->_e); }
+      void vVarDeclI(VarDeclI* i) { ts.run(i->e()); }
       void vAssignI(AssignI* i) {
-        ts.run(i->_e);
-        i->_decl = ts.checkId(i->_id,i->loc());
-        if (i->_decl->e())
+        ts.run(i->e());
+        i->decl(ts.checkId(i->id(),i->loc()));
+        if (i->decl()->e())
           throw TypeError(i->loc(),"multiple assignment to same variable");
-        i->_decl->e(i->_e);
+        i->decl()->e(i->e());
       }
-      void vConstraintI(ConstraintI* i) { ts.run(i->_e); }
-      void vSolveI(SolveI* i) { ts.run(i->_ann); ts.run(i->_e); }
-      void vOutputI(OutputI* i) { ts.run(i->_e); }
+      void vConstraintI(ConstraintI* i) { ts.run(i->e()); }
+      void vSolveI(SolveI* i) { ts.run(i->ann()); ts.run(i->e()); }
+      void vOutputI(OutputI* i) { ts.run(i->e()); }
       void vFunctionI(FunctionI* fi) {
         ts.run(fi->ti());
-        for (unsigned int i=0; i<fi->_params.size(); i++)
-          ts.run(fi->_params[i]);
-        ts.run(fi->_ann);
-        for (unsigned int i=0; i<fi->_params.size(); i++)
-          ts.add(fi->_params[i],false);
-        ts.run(fi->_e);
-        for (unsigned int i=0; i<fi->_params.size(); i++)
-          ts.remove(fi->_params[i]);
+        for (unsigned int i=0; i<fi->params().size(); i++)
+          ts.run(fi->params()[i]);
+        ts.run(fi->ann());
+        for (unsigned int i=0; i<fi->params().size(); i++)
+          ts.add(fi->params()[i],false);
+        ts.run(fi->e());
+        for (unsigned int i=0; i<fi->params().size(); i++)
+          ts.remove(fi->params()[i]);
       }
     } _tsv1(ts);
     iterItems(_tsv1,m);
@@ -592,8 +592,8 @@ namespace MiniZinc {
         bu_ty.run(ts.decls[i]);
       for (unsigned int i=0; i<functionItems.size(); i++) {
         bu_ty.run(functionItems[i]->ti());
-        for (unsigned int j=0; j<functionItems[i]->_params.size(); j++)
-          bu_ty.run(functionItems[i]->_params[j]);
+        for (unsigned int j=0; j<functionItems[i]->params().size(); j++)
+          bu_ty.run(functionItems[i]->params()[j]);
       }
     }
     
@@ -605,41 +605,41 @@ namespace MiniZinc {
       public:
         BottomUpIterator<Typer<true> >& bu_ty;
         TSV2(BottomUpIterator<Typer<true> >& b) : bu_ty(b) {}
-        void vVarDeclI(VarDeclI* i) { bu_ty.run(i->_e); }
+        void vVarDeclI(VarDeclI* i) { bu_ty.run(i->e()); }
         void vAssignI(AssignI* i) {
-          bu_ty.run(i->_e);
-          if (!i->_e->type().isSubtypeOf(i->_decl->ti()->type())) {
-            throw TypeError(i->_e->loc(),
+          bu_ty.run(i->e());
+          if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
+            throw TypeError(i->e()->loc(),
               "RHS of assignment does not agree with LHS");
           }
         }
         void vConstraintI(ConstraintI* i) {
-          bu_ty.run(i->_e);
-          if (!i->_e->type().isSubtypeOf(Type::varbool()))
-            throw TypeError(i->_e->loc(), "constraint must be var bool");
+          bu_ty.run(i->e());
+          if (!i->e()->type().isSubtypeOf(Type::varbool()))
+            throw TypeError(i->e()->loc(), "constraint must be var bool");
         }
         void vSolveI(SolveI* i) {
-          bu_ty.run(i->_ann);
-          bu_ty.run(i->_e);
-          if (i->_e) {
-            Type et = i->_e->type();
+          bu_ty.run(i->ann());
+          bu_ty.run(i->e());
+          if (i->e()) {
+            Type et = i->e()->type();
             if (! (et.isSubtypeOf(Type::varint()) || 
                    et.isSubtypeOf(Type::varfloat())))
-              throw TypeError(i->_e->loc(),
+              throw TypeError(i->e()->loc(),
                 "objective must be int or float");
           }
         }
         void vOutputI(OutputI* i) {
-          bu_ty.run(i->_e);
-          if (i->_e->type() != Type::parstring(1))
-            throw TypeError(i->_e->loc(), "output item needs string array");
+          bu_ty.run(i->e());
+          if (i->e()->type() != Type::parstring(1))
+            throw TypeError(i->e()->loc(), "output item needs string array");
         }
         void vFunctionI(FunctionI* i) {
-          bu_ty.run(i->_ann);
+          bu_ty.run(i->ann());
           bu_ty.run(i->ti());
-          bu_ty.run(i->_e);
-          if (i->_e && !i->_e->type().isSubtypeOf(i->ti()->type()))
-            throw TypeError(i->_e->loc(), "return type of function does not match body");
+          bu_ty.run(i->e());
+          if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))
+            throw TypeError(i->e()->loc(), "return type of function does not match body");
         }
       } _tsv2(bu_ty);
       iterItems(_tsv2,m);

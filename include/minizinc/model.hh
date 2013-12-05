@@ -127,7 +127,7 @@ namespace MiniZinc {
           switch (cm->_items[i]->iid()) {
           case Item::II_INC:
             if (cm->_items[i]->cast<IncludeI>()->own())
-              models.push_back(cm->_items[i]->cast<IncludeI>()->_m);
+              models.push_back(cm->_items[i]->cast<IncludeI>()->m());
             break;
           case Item::II_VD:
             iter.vVarDeclI(cm->_items[i]->cast<VarDeclI>());

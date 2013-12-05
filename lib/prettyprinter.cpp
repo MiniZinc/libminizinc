@@ -487,73 +487,73 @@ namespace MiniZinc {
         return;
       switch (i->iid()) {
       case Item::II_INC:
-        os << "include \"" << i->cast<IncludeI>()->_f.c_str() << "\"";
+        os << "include \"" << i->cast<IncludeI>()->f().c_str() << "\"";
         break;
       case Item::II_VD:
-        p(i->cast<VarDeclI>()->_e);
+        p(i->cast<VarDeclI>()->e());
         break;
       case Item::II_ASN:
-        os << i->cast<AssignI>()->_id.c_str() << " = ";
-        p(i->cast<AssignI>()->_e);
+        os << i->cast<AssignI>()->id().c_str() << " = ";
+        p(i->cast<AssignI>()->e());
         break;
       case Item::II_CON:
         os << "constraint ";
-        p(i->cast<ConstraintI>()->_e);
+        p(i->cast<ConstraintI>()->e());
         break;
       case Item::II_SOL:
         {
           const SolveI* si = i->cast<SolveI>();
           os << "solve ";
-          p(si->_ann);
+          p(si->ann());
           switch (si->st()) {
           case SolveI::ST_SAT:
             os << " satisfy";
             break;
           case SolveI::ST_MIN:
             os << " minimize ";
-            p(si->_e);
+            p(si->e());
             break;
           case SolveI::ST_MAX:
             os << " maximize ";
-            p(si->_e);
+            p(si->e());
             break;
           }
         }
         break;
       case Item::II_OUT:
         os << "output ";
-        p(i->cast<OutputI>()->_e);
+        p(i->cast<OutputI>()->e());
         break;
       case Item::II_FUN:
         {
           const FunctionI& fi = *i->cast<FunctionI>();
-          if (fi._ti->type().isann() && fi._e == NULL) {
+          if (fi.ti()->type().isann() && fi.e() == NULL) {
             os << "annotation ";
-          } else if (fi._ti->type() == Type::parbool()) {
+          } else if (fi.ti()->type() == Type::parbool()) {
             os << "test ";
-          } else if (fi._ti->type() == Type::varbool()) {
+          } else if (fi.ti()->type() == Type::varbool()) {
             os << "predicate ";
           } else {
             os << "function ";
-            p(fi._ti);
+            p(fi.ti());
             os << " : ";
           }
-          os << fi._id.c_str();
-          if (fi._params.size() > 0) {
+          os << fi.id().c_str();
+          if (fi.params().size() > 0) {
             os << "(";
-            for (unsigned int i = 0; i < fi._params.size(); i++) {
-              p(fi._params[i]);
-              if (i<fi._params.size()-1)
+            for (unsigned int i = 0; i < fi.params().size(); i++) {
+              p(fi.params()[i]);
+              if (i<fi.params().size()-1)
                 os << ",";
             }
             os << ")";
           }
-          if (fi._ann) {
-            p(fi._ann);
+          if (fi.ann()) {
+            p(fi.ann());
           }
-          if (fi._e) {
+          if (fi.e()) {
             os << " = ";
-            p(fi._e);
+            p(fi.e());
           }
         }
         break;
@@ -1431,81 +1431,81 @@ namespace MiniZinc {
     typedef Document* ret;
     ret mapIncludeI(const IncludeI& ii) {
       std::ostringstream oss;
-      oss << "include \"" << ii._f.str() << "\";";
+      oss << "include \"" << ii.f().str() << "\";";
       return new StringDocument(oss.str());
     }
     ret mapVarDeclI(const VarDeclI& vi) {
       DocumentList* dl = new DocumentList("", " ", ";");
-      dl->addDocumentToList(expressionToDocument(vi._e));
+      dl->addDocumentToList(expressionToDocument(vi.e()));
       return dl;
     }
     ret mapAssignI(const AssignI& ai) {
       DocumentList* dl = new DocumentList("", " = ", ";");
-      dl->addStringToList(ai._id.str());
-      dl->addDocumentToList(expressionToDocument(ai._e));
+      dl->addStringToList(ai.id().str());
+      dl->addDocumentToList(expressionToDocument(ai.e()));
       return dl;
     }
     ret mapConstraintI(const ConstraintI& ci) {
       DocumentList* dl = new DocumentList("constraint ", " ", ";");
-      dl->addDocumentToList(expressionToDocument(ci._e));
+      dl->addDocumentToList(expressionToDocument(ci.e()));
       return dl;
     }
     ret mapSolveI(const SolveI& si) {
       DocumentList* dl = new DocumentList("", "", ";");
       dl->addStringToList("solve");
-      if (si._ann)
-        dl->addDocumentToList(expressionToDocument(si._ann));
+      if (si.ann())
+        dl->addDocumentToList(expressionToDocument(si.ann()));
       switch (si.st()) {
       case SolveI::ST_SAT:
         dl->addStringToList(" satisfy");
         break;
       case SolveI::ST_MIN:
         dl->addStringToList(" minimize ");
-        dl->addDocumentToList(expressionToDocument(si._e));
+        dl->addDocumentToList(expressionToDocument(si.e()));
         break;
       case SolveI::ST_MAX:
         dl->addStringToList(" maximize ");
-        dl->addDocumentToList(expressionToDocument(si._e));
+        dl->addDocumentToList(expressionToDocument(si.e()));
         break;
       }
       return dl;
     }
     ret mapOutputI(const OutputI& oi) {
       DocumentList* dl = new DocumentList("output ", " ", ";");
-      dl->addDocumentToList(expressionToDocument(oi._e));
+      dl->addDocumentToList(expressionToDocument(oi.e()));
       return dl;
     }
     ret mapFunctionI(const FunctionI& fi) {
       DocumentList* dl;
-      if (fi._ti->type().isann() && fi._e == NULL) {
+      if (fi.ti()->type().isann() && fi.e() == NULL) {
         dl = new DocumentList("annotation ", " ", ";", false);
-      } else if (fi._ti->type() == Type::parbool()) {
+      } else if (fi.ti()->type() == Type::parbool()) {
         dl = new DocumentList("test ", "", ";", false);
-      } else if (fi._ti->type() == Type::varbool()) {
+      } else if (fi.ti()->type() == Type::varbool()) {
         dl = new DocumentList("predicate ", "", ";", false);
       } else {
         dl = new DocumentList("function ", "", ";", false);
-        dl->addDocumentToList(expressionToDocument(fi._ti));
+        dl->addDocumentToList(expressionToDocument(fi.ti()));
         dl->addStringToList(": ");
       }
-      dl->addStringToList(fi._id.str());
-      if (fi._params.size() > 0) {
+      dl->addStringToList(fi.id().str());
+      if (fi.params().size() > 0) {
         DocumentList* params = new DocumentList("(", ", ", ")");
-        for (unsigned int i = 0; i < fi._params.size(); i++) {
+        for (unsigned int i = 0; i < fi.params().size(); i++) {
           DocumentList* par = new DocumentList("", "", "");
           par->setUnbreakable(true);
-          par->addDocumentToList(expressionToDocument(fi._params[i]));
+          par->addDocumentToList(expressionToDocument(fi.params()[i]));
           params->addDocumentToList(par);
         }
         dl->addDocumentToList(params);
       }
-      if (fi._ann) {
-        dl->addDocumentToList(expressionToDocument(fi._ann));
+      if (fi.ann()) {
+        dl->addDocumentToList(expressionToDocument(fi.ann()));
       }
-      if (fi._e) {
+      if (fi.e()) {
         dl->addStringToList(" = ");
         dl->addBreakPoint();
-        dl->addDocumentToList(expressionToDocument(fi._e));
+        dl->addDocumentToList(expressionToDocument(fi.e()));
       }
 
       return dl;

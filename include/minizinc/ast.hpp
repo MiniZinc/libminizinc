@@ -310,6 +310,36 @@ namespace MiniZinc {
   : Item(loc, II_CON), _e(e) {}
 
   inline
+  SolveI::SolveI(const Location& loc, Annotation* a, Expression* e)
+  : Item(loc, II_SOL), _ann(a), _e(e) {}
+  inline SolveI*
+  SolveI::sat(const Location& loc, Annotation* ann) {
+    SolveI* si = new SolveI(loc,ann,NULL);
+    si->_sec_id = ST_SAT;
+    return si;
+  }
+  inline SolveI*
+  SolveI::min(const Location& loc, Expression* e, Annotation* ann) {
+    SolveI* si = new SolveI(loc,ann,e);
+    si->_sec_id = ST_MIN;
+    return si;
+  }
+  inline SolveI*
+  SolveI::max(const Location& loc, Expression* e, Annotation* ann) {
+    SolveI* si = new SolveI(loc,ann,e);
+    si->_sec_id = ST_MAX;
+    return si;
+  }
+  inline SolveI::SolveType
+  SolveI::st(void) const {
+    return static_cast<SolveType>(_sec_id);
+  }
+  inline void
+  SolveI::st(SolveI::SolveType s) {
+    _sec_id = s;
+  }
+
+  inline
   OutputI::OutputI(const Location& loc, Expression* e)
   : Item(loc, II_OUT), _e(e) {}
   

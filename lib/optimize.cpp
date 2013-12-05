@@ -69,16 +69,16 @@ namespace MiniZinc {
     CollectOccurrencesI(VarOccurrences& vo0) : vo(vo0) {}
     void vVarDeclI(VarDeclI* v) {
       CollectOccurrencesE ce(vo,v);
-      topDown(ce,v->_e);
+      topDown(ce,v->e());
     }
     void vConstraintI(ConstraintI* ci) {
       CollectOccurrencesE ce(vo,ci);
-      topDown(ce,ci->_e);
+      topDown(ce,ci->e());
     }
     void vSolveI(SolveI* si) {
       CollectOccurrencesE ce(vo,si);
-      topDown(ce,si->_e);
-      topDown(ce,si->_ann);
+      topDown(ce,si->e());
+      topDown(ce,si->ann());
     }
   };
 
@@ -89,9 +89,9 @@ namespace MiniZinc {
     void vVarDeclI(VarDeclI* v) {
       GCLock _gcl;
       std::vector<Expression*> args(1);
-      args[0] = new IntLit(Location(),vo.occurrences(v->_e));
+      args[0] = new IntLit(Location(),vo.occurrences(v->e()));
       Call* c = new Call(Location(),"occ",args);
-      v->_e->annotate(new Annotation(Location(),c));
+      v->e()->annotate(new Annotation(Location(),c));
     }
   };
 
@@ -114,33 +114,33 @@ namespace MiniZinc {
     ExpressionMap<int> idx;
     for (unsigned int i=0; i<m.size(); i++) {
       if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
-        idx.insert(vdi->_e,i);
+        idx.insert(vdi->e(),i);
       }
     }
     std::vector<VarDecl*> vd;
     int msize = m.size();
     for (unsigned int i=0; i<msize; i++) {
       VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
-      if (vdi!=NULL && vo.occurrences(vdi->_e)==0 ) {
-        if (vdi->_e->e() && vdi->_e->ti()->domain()) {
-          if (vdi->_e->type().isvar() && vdi->_e->type().isbool() &&
-              Expression::equal(vdi->_e->ti()->domain(),constants().lt)) {
+      if (vdi!=NULL && vo.occurrences(vdi->e())==0 ) {
+        if (vdi->e()->e() && vdi->e()->ti()->domain()) {
+          if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
+              Expression::equal(vdi->e()->ti()->domain(),constants().lt)) {
             GCLock lock;
-            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->_e->e());
-            if (vdi->_e->introduced()) {
+            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
+            if (vdi->e()->introduced()) {
               m[i] = ci;
             } else {
-              vdi->_e->e(NULL);
+              vdi->e()->e(NULL);
               m._items.push_back(ci);
             }
-          } else if (vdi->_e->ti()->computedDomain()) {
+          } else if (vdi->e()->ti()->computedDomain()) {
             CollectDecls cd(vo,vd,vdi);
-            topDown(cd,vdi->_e->e());
+            topDown(cd,vdi->e()->e());
             vdi->remove();
           }
         } else {
           CollectDecls cd(vo,vd,vdi);
-          topDown(cd,vdi->_e->e());
+          topDown(cd,vdi->e()->e());
           vdi->remove();
         }
       }

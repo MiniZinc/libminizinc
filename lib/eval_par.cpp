@@ -161,12 +161,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.e)
           return ce->decl()->_builtins.e(ce->args())
             ->cast<ArrayLit>();
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(ce->args()[i]);
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
         }
-        ArrayLit* ret = eval_array_lit(ce->decl()->_e);
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(NULL);
+        ArrayLit* ret = eval_array_lit(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
         }
         return ret;
       }
@@ -306,12 +306,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.s)
           return ce->decl()->_builtins.s(ce->args());
 
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(ce->args()[i]);
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
         }
-        IntSetVal* ret = eval_intset(ce->decl()->_e);
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(NULL);
+        IntSetVal* ret = eval_intset(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
         }
         return ret;
       }
@@ -470,12 +470,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.b)
           return ce->decl()->_builtins.b(ce->args());
 
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(ce->args()[i]);
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
         }
-        bool ret = eval_bool(ce->decl()->_e);
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(NULL);
+        bool ret = eval_bool(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
         }
         return ret;
       }
@@ -558,12 +558,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.i)
           return ce->decl()->_builtins.i(ce->args());
 
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(ce->args()[i]);
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
         }
-        IntVal ret = eval_int(ce->decl()->_e);
-        for (unsigned int i=ce->decl()->_params.size(); i--;) {
-          ce->decl()->_params[i]->e(NULL);
+        IntVal ret = eval_int(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
         }
         return ret;
       }
@@ -583,11 +583,11 @@ namespace MiniZinc {
   class AssignVisitor : public ItemVisitor {
   public:
     void vAssignI(AssignI* i) {
-      if (i->_decl == NULL)
-        throw EvalError(i->loc(), "undeclared identifier", i->_id);
-      if (i->_decl->e() != NULL)
-        throw EvalError(i->loc(), "multiple assignments to same identifier", i->_id);
-      i->_decl->e(i->_e);
+      if (i->decl() == NULL)
+        throw EvalError(i->loc(), "undeclared identifier", i->id());
+      if (i->decl()->e() != NULL)
+        throw EvalError(i->loc(), "multiple assignments to same identifier", i->id());
+      i->decl()->e(i->e());
     }
   };
 
@@ -597,21 +597,21 @@ namespace MiniZinc {
   public:
     EvalVisitor(void) {}
     void vVarDeclI(VarDeclI* i) {
-      if (i->_e->e() != NULL) {
-        if (i->_e->e()->type().isint())
-          std::cerr << i->_e->id().c_str() << " = " << eval_int(i->_e->e()) << "\n";
-        if (i->_e->e()->type().isbool())
-          std::cerr << i->_e->id().c_str() << " = " << eval_bool(i->_e->e()) << "\n";
-        if (i->_e->e()->type().isintset()) {
-          SetLit* sl = EvalSetLit::e(i->_e->e());
+      if (i->e()->e() != NULL) {
+        if (i->e()->e()->type().isint())
+          std::cerr << i->e()->id().c_str() << " = " << eval_int(i->e()->e()) << "\n";
+        if (i->e()->e()->type().isbool())
+          std::cerr << i->e()->id().c_str() << " = " << eval_bool(i->e()->e()) << "\n";
+        if (i->e()->e()->type().isintset()) {
+          SetLit* sl = EvalSetLit::e(i->e()->e());
           ExpressionMap<VarDecl*>::iterator it = em.find(sl);
-          std::cerr << i->_e->id().c_str() << " = ";
+          std::cerr << i->e()->id().c_str() << " = ";
           if (it == em.end()) {
             std::cerr << "{";
             for (IntSetRanges ir(sl->isv()); ir(); ++ir)
               std::cerr << ir.min() << ".." << ir.max() << ", ";
             std::cerr << "}\n";
-            em.insert(sl, i->_e);
+            em.insert(sl, i->e());
           } else {
             std::cerr << it->second->id().c_str() << "\n";
           }

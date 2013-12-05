@@ -110,14 +110,14 @@ namespace MiniZinc {
           pushstack(cur->cast<UnOp>()->e());
           break;
         case Expression::E_CALL:
-          cur->cast<Call>()->_id.mark();
+          cur->cast<Call>()->id().mark();
           pushall(cur->cast<Call>()->_args);
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
-            fi->_id.mark();
+            fi->id().mark();
             pushstack(fi->ti());
-            pushstack(fi->_ann);
-            pushstack(fi->_e);
-            pushall(fi->_params);
+            pushstack(fi->ann());
+            pushstack(fi->e());
+            pushall(fi->params());
           }
           break;
         case Expression::E_VARDECL:
@@ -598,38 +598,6 @@ namespace MiniZinc {
     return false;
   }
 
-  SolveI*
-  SolveI::sat(const Location& loc, Annotation* ann) {
-    SolveI* si = new SolveI(loc);
-    si->_ann = ann;
-    si->_e = NULL;
-    si->_sec_id = ST_SAT;
-    return si;
-  }
-  SolveI*
-  SolveI::min(const Location& loc, Expression* e, Annotation* ann) {
-    SolveI* si = new SolveI(loc);
-    si->_ann = ann;
-    si->_e = e;
-    si->_sec_id = ST_MIN;
-    return si;
-  }
-  SolveI*
-  SolveI::max(const Location& loc, Expression* e, Annotation* ann) {
-    SolveI* si = new SolveI(loc);
-    si->_ann = ann;
-    si->_e = e;
-    si->_sec_id = ST_MAX;
-    return si;
-  }
-  SolveI::SolveType
-  SolveI::st(void) const {
-    return static_cast<SolveType>(_sec_id);
-  }
-  void
-  SolveI::st(SolveI::SolveType s) {
-    _sec_id = s;
-  }
 
 
   Type
@@ -841,7 +809,7 @@ namespace MiniZinc {
       {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
-        if (c0->_id != c1->_id) return false;
+        if (c0->id() != c1->id()) return false;
         if (c0->_decl != c1->_decl) return false;
         if (c0->args().size() != c1->args().size()) return false;
         for (unsigned int i=0; i<c0->args().size(); i++)

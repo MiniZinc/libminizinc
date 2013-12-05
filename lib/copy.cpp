@@ -380,8 +380,8 @@ namespace MiniZinc {
         IncludeI* ii = i->cast<IncludeI>();
         IncludeI* c = 
           new IncludeI(copy_location(m,i),
-                      ASTString(ii->_f.str()));
-        c->setModel(copy(m,ii->_m),ii->own());
+                      ASTString(ii->f().str()));
+        c->m(copy(m,ii->m()),ii->own());
         m.insert(i,c);
         return c;
       }
@@ -389,7 +389,7 @@ namespace MiniZinc {
       {
         VarDeclI* v = i->cast<VarDeclI>();
         VarDeclI* c = new VarDeclI(copy_location(m,i),
-          static_cast<VarDecl*>(copy(m,v->_e)));
+          static_cast<VarDecl*>(copy(m,v->e())));
         m.insert(i,c);
         return c;
       }
@@ -398,8 +398,8 @@ namespace MiniZinc {
         AssignI* a = i->cast<AssignI>();
         AssignI* c = 
           new AssignI(copy_location(m,i),
-                     a->_id.str(),copy(m,a->_e));
-        c->_decl = static_cast<VarDecl*>(copy(m,a->_decl));
+                     a->id().str(),copy(m,a->e()));
+        c->decl(static_cast<VarDecl*>(copy(m,a->decl())));
         m.insert(i,c);
         return c;
       }
@@ -407,7 +407,7 @@ namespace MiniZinc {
       {
         ConstraintI* cc = i->cast<ConstraintI>();
         ConstraintI* c = new ConstraintI(copy_location(m,i),
-                                        copy(m,cc->_e));
+                                         copy(m,cc->e()));
         m.insert(i,c);
         return c;
       }
@@ -418,15 +418,15 @@ namespace MiniZinc {
         switch (s->st()) {
         case SolveI::ST_SAT:
           c = SolveI::sat(Location(),
-            static_cast<Annotation*>(copy(m,s->_ann)));
+            static_cast<Annotation*>(copy(m,s->ann())));
           break;
         case SolveI::ST_MIN:
-          c = SolveI::min(Location(),copy(m,s->_e),
-            static_cast<Annotation*>(copy(m,s->_ann)));
+          c = SolveI::min(Location(),copy(m,s->e()),
+            static_cast<Annotation*>(copy(m,s->ann())));
           break;
         case SolveI::ST_MAX:
-          c = SolveI::min(Location(),copy(m,s->_e),
-            static_cast<Annotation*>(copy(m,s->_ann)));
+          c = SolveI::min(Location(),copy(m,s->e()),
+            static_cast<Annotation*>(copy(m,s->ann())));
           break;
         }
         m.insert(i,c);
@@ -435,20 +435,20 @@ namespace MiniZinc {
     case Item::II_OUT:
       {
         OutputI* o = i->cast<OutputI>();
-        OutputI* c = new OutputI(copy_location(m,i),copy(m,o->_e));
+        OutputI* c = new OutputI(copy_location(m,i),copy(m,o->e()));
         m.insert(i,c);
         return c;
       }
     case Item::II_FUN:
       {
         FunctionI* f = i->cast<FunctionI>();
-        std::vector<VarDecl*> params(f->_params.size());
-        for (unsigned int j=f->_params.size(); j--;)
-          params[j] = static_cast<VarDecl*>(copy(m,f->_params[j]));
-        FunctionI* c = new FunctionI(copy_location(m,i),f->_id.str(),
+        std::vector<VarDecl*> params(f->params().size());
+        for (unsigned int j=f->params().size(); j--;)
+          params[j] = static_cast<VarDecl*>(copy(m,f->params()[j]));
+        FunctionI* c = new FunctionI(copy_location(m,i),f->id().str(),
           static_cast<TypeInst*>(copy(m,f->ti())),
-          params, copy(m,f->_e),
-          static_cast<Annotation*>(copy(m,f->_ann)));
+          params, copy(m,f->e()),
+          static_cast<Annotation*>(copy(m,f->ann())));
         m.insert(i,c);
         return c;
       }

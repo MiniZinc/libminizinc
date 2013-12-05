@@ -130,7 +130,7 @@ namespace MiniZinc {
       stdlibloc.filename=ASTString(filename);
       IncludeI* stdlibinc = 
         new IncludeI(stdlibloc,stdlib->_filename);
-      stdlibinc->setModel(stdlib,true);
+      stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
 
       Model* builtins = new Model;
@@ -142,7 +142,7 @@ namespace MiniZinc {
       builtinsloc.filename=ASTString(filename);
       IncludeI* builtinsinc = 
         new IncludeI(builtinsloc,builtins->_filename);
-      builtinsinc->setModel(builtins,true);
+      builtinsinc->m(builtins,true);
       model->addItem(builtinsinc);
     }
     
@@ -423,10 +423,10 @@ include_item :
             fpath="./";
           pair<string,Model*> pm(fpath, im);
           pp->files.push_back(pm);
-          ii->setModel(im);
+          ii->m(im);
           pp->seenModels.insert(pair<string,Model*>($2,im));
         } else {
-          ii->setModel(ret->second, false);
+          ii->m(ret->second, false);
         }
         free($2);
       }
@@ -1100,16 +1100,16 @@ let_vardecl_item_list :
     | constraint_item
       { $$=new vector<Expression*>;
         ConstraintI* ce = $1->cast<ConstraintI>();
-        $$->push_back(ce->_e);
-        ce->_e=NULL;
+        $$->push_back(ce->e());
+        ce->e(NULL);
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
       { $$=$1; $$->push_back($3); }
     | let_vardecl_item_list comma_or_semi constraint_item
       { $$=$1;
         ConstraintI* ce = $3->cast<ConstraintI>();
-        $$->push_back(ce->_e);
-        ce->_e=NULL;
+        $$->push_back(ce->e());
+        ce->e(NULL);
       }
 
 comma_or_semi : ',' | ';'

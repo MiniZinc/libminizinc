@@ -740,7 +740,7 @@ namespace MiniZinc {
     /// Access ranges
     ASTExprVec<TypeInst> ranges(void) const { return _ranges; }
     /// Access domain
-    Expression* domain(void) const { return domain(); }
+    Expression* domain(void) const { return _domain; }
     //// Set domain
     void domain(Expression* d) { _domain = d; }
     
@@ -816,18 +816,25 @@ namespace MiniZinc {
 
   /// \brief Include item
   class IncludeI : public Item {
-  public:
-    /// The identifier of this item type
-    static const ItemId iid = II_INC;
+  protected:
     /// Filename to include
     ASTString _f;
     /// Model for that file
     Model* _m;
+  public:
+    /// The identifier of this item type
+    static const ItemId iid = II_INC;
     /// Constructor
     IncludeI(const Location& loc, const ASTString& f);
+    /// Access filename
+    ASTString f(void) const { return _f; }
+    /// Set filename
+    void f(const ASTString& nf) { _f = nf; }
+    /// Access model
+    Model* m(void) const { return _m; }
     /// Set the model
-    void setModel(Model* m, bool own=true) {
-      assert(_m==NULL); _m = m; _flag_2 = own;
+    void m(Model* m0, bool own=true) {
+      assert(_m==NULL); _m = m0; _flag_2 = own;
     }
     bool own(void) const {
       return _flag_2;
@@ -836,54 +843,71 @@ namespace MiniZinc {
 
   /// \brief Variable declaration item
   class VarDeclI : public Item {
+  protected:
+    /// The declaration expression
+    VarDecl* _e;
   public:
     /// The identifier of this item type
     static const ItemId iid = II_VD;
-    /// The declaration expression
-    VarDecl* _e;
     /// Constructor
     VarDeclI(const Location& loc, VarDecl* e);
+    /// Access expression
+    VarDecl* e(void) const { return _e; }
   };
 
   /// \brief Assign item
   class AssignI : public Item {
-  public:
-    /// The identifier of this item type
-    static const ItemId iid = II_ASN;
+  protected:
     /// Identifier of variable to assign to
     ASTString _id;
     /// Expression to assign to the variable
     Expression* _e;
     /// Declaration of the variable to assign to
     VarDecl* _decl;
+  public:
+    /// The identifier of this item type
+    static const ItemId iid = II_ASN;
     /// Constructor
     AssignI(const Location& loc,
             const std::string& id, Expression* e);
+    /// Access identifier
+    ASTString id(void) const { return _id; }
+    /// Access expressions
+    Expression* e(void) const { return _e; }
+    /// Access declaration
+    VarDecl* decl(void) const { return _decl; }
+    /// Set declaration
+    void decl(VarDecl* d) { _decl = d; }
   };
 
   /// \brief Constraint item
   class ConstraintI : public Item {
+  protected:
+    /// Constraint expression
+    Expression* _e;
   public:
     /// The identifier of this item type
     static const ItemId iid = II_CON;
-    /// Constraint expression
-    Expression* _e;
     /// Constructor
     ConstraintI(const Location& loc, Expression* e);
+    /// Access expression
+    Expression* e(void) const { return _e; }
+    /// Set expression
+    void e(Expression* e0) { _e = e0; }
   };
 
   /// \brief Solve item
   class SolveI : public Item {
   protected:
-    /// Constructor
-    SolveI(const Location& loc) : Item(loc, II_SOL) {}
-  public:
-    /// The identifier of this item type
-    static const ItemId iid = II_SOL;
     /// Solve item annotation
     Annotation* _ann;
     /// Expression for minimisation/maximisation (or NULL)
     Expression* _e;
+    /// Constructor
+    SolveI(const Location& loc, Annotation* a, Expression* e);
+  public:
+    /// The identifier of this item type
+    static const ItemId iid = II_SOL;
     /// Type of solving
     enum SolveType { ST_SAT, ST_MIN, ST_MAX };
     /// Allocate solve satisfy item
@@ -895,6 +919,10 @@ namespace MiniZinc {
     /// Allocate solve maximize item
     static SolveI* max(const Location& loc,
                        Expression* e, Annotation* ann = NULL);
+    /// Access solve annotation
+    Annotation* ann(void) const { return _ann; }
+    /// Access expression for optimisation
+    Expression* e(void) const { return _e; }
     /// Return type of solving
     SolveType st(void) const;
     /// Set type of solving
@@ -903,20 +931,21 @@ namespace MiniZinc {
 
   /// \brief Output item
   class OutputI : public Item {
+  protected:
+    /// Expression to output
+    Expression* _e;
   public:
     /// The identifier of this item type
     static const ItemId iid = II_OUT;
-    /// Expression to output
-    Expression* _e;
     /// Constructor
     OutputI(const Location& loc, Expression* e);
+    /// Access expression
+    Expression* e(void) const { return _e; }
   };
 
   /// \brief Function declaration item
   class FunctionI : public Item {
-  public:
-    /// The identifier of this item type
-    static const ItemId iid = II_FUN;
+  protected:
     /// Identifier of this function
     ASTString _id;
     /// Type-inst of the return value
@@ -927,6 +956,9 @@ namespace MiniZinc {
     Annotation* _ann;
     /// Function body (or NULL)
     Expression* _e;
+  public:
+    /// The identifier of this item type
+    static const ItemId iid = II_FUN;
     
     /// Type of builtin expression-valued functions
     typedef Expression* (*builtin_e) (ASTExprVec<Expression>);
@@ -954,8 +986,16 @@ namespace MiniZinc {
               const std::vector<VarDecl*>& params,
               Expression* e = NULL, Annotation* ann = NULL);
 
+    /// Access identifier
+    ASTString id(void) const { return _id; }
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }
+    /// Access parameters
+    ASTExprVec<VarDecl> params(void) const { return _params; }
+    /// Access annotation
+    Annotation* ann(void) const { return _ann; }
+    /// Access body
+    Expression* e(void) const { return _e; }
     
     /** \brief Compute return type given argument types \a ta
      */

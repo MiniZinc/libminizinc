@@ -354,36 +354,36 @@ namespace MiniZinc {
           i->loc().mark();
           switch (i->iid()) {
           case Item::II_INC:
-            i->cast<IncludeI>()->_f.mark();
+            i->cast<IncludeI>()->f().mark();
             break;
           case Item::II_VD:
-            Expression::mark(i->cast<VarDeclI>()->_e);
+            Expression::mark(i->cast<VarDeclI>()->e());
             break;
           case Item::II_ASN:
-            i->cast<AssignI>()->_id.mark();
-            Expression::mark(i->cast<AssignI>()->_e);
-            Expression::mark(i->cast<AssignI>()->_decl);
+            i->cast<AssignI>()->id().mark();
+            Expression::mark(i->cast<AssignI>()->e());
+            Expression::mark(i->cast<AssignI>()->decl());
             break;
           case Item::II_CON:
-            Expression::mark(i->cast<ConstraintI>()->_e);
+            Expression::mark(i->cast<ConstraintI>()->e());
             break;
           case Item::II_SOL:
-            Expression::mark(i->cast<SolveI>()->_ann);
-            Expression::mark(i->cast<SolveI>()->_e);
+            Expression::mark(i->cast<SolveI>()->ann());
+            Expression::mark(i->cast<SolveI>()->e());
             break;
           case Item::II_OUT:
-            Expression::mark(i->cast<OutputI>()->_e);
+            Expression::mark(i->cast<OutputI>()->e());
             break;
           case Item::II_FUN:
             {
               FunctionI* fi = i->cast<FunctionI>();
-              fi->_id.mark();
+              fi->id().mark();
               Expression::mark(fi->ti());
-              Expression::mark(fi->_ann);
-              Expression::mark(fi->_e);
-              fi->_params.mark();
-              for (unsigned int k=0; k<fi->_params.size(); k++) {
-                Expression::mark(fi->_params[k]);
+              Expression::mark(fi->ann());
+              Expression::mark(fi->e());
+              fi->params().mark();
+              for (unsigned int k=0; k<fi->params().size(); k++) {
+                Expression::mark(fi->params()[k]);
               }
             }
             break;      
