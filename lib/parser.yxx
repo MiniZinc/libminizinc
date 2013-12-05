@@ -809,6 +809,9 @@ expr_atom_head :
         delete $2; }
     | let_expr
     | call_expr
+    | call_expr array_access_tail
+      { $$=new ArrayAccess(@$, $1, *$2);
+        delete $2; }
 
 array_access_tail :
       MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
