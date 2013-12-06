@@ -591,37 +591,6 @@ namespace MiniZinc {
     }
   };
 
-  class EvalVisitor : public ItemVisitor {
-  protected:
-    ExpressionMap<VarDecl*> em;
-  public:
-    EvalVisitor(void) {}
-    void vVarDeclI(VarDeclI* i) {
-      if (i->e()->e() != NULL) {
-        if (i->e()->e()->type().isint())
-          std::cerr << i->e()->id().c_str() << " = " << eval_int(i->e()->e()) << "\n";
-        if (i->e()->e()->type().isbool())
-          std::cerr << i->e()->id().c_str() << " = " << eval_bool(i->e()->e()) << "\n";
-        if (i->e()->e()->type().isintset()) {
-          SetLit* sl = EvalSetLit::e(i->e()->e());
-          ExpressionMap<VarDecl*>::iterator it = em.find(sl);
-          std::cerr << i->e()->id().c_str() << " = ";
-          if (it == em.end()) {
-            std::cerr << "{";
-            for (IntSetRanges ir(sl->isv()); ir(); ++ir)
-              std::cerr << ir.min() << ".." << ir.max() << ", ";
-            std::cerr << "}\n";
-            em.insert(sl, i->e());
-          } else {
-            std::cerr << it->second->id().c_str() << "\n";
-          }
-                    
-        }
-        
-      }
-    }
-  };
-
   Expression* eval_par(Expression* e) {
     if (e==NULL) return NULL;
     switch (e->eid()) {
