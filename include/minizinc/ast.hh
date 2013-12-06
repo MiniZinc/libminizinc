@@ -566,8 +566,12 @@ namespace MiniZinc {
           Expression* e0, BinOpType op, Expression* e1);
     /// Access left hand side
     Expression* lhs(void) const { return _e0; }
+    /// Set left hand side
+    void lhs(Expression* e) { _e0 = e; }
     /// Access right hand side
     Expression* rhs(void) const { return _e1; }
+    /// Set right hand side
+    void rhs(Expression* e) { _e1 = e; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -599,6 +603,8 @@ namespace MiniZinc {
          UnOpType op, Expression* e);
     /// Access expression
     Expression* e(void) const { return _e0; }
+    /// Set expression
+    void e(Expression* e0) { _e0 = e0; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -655,7 +661,7 @@ namespace MiniZinc {
     /// Type-inst of the declared variable
     TypeInst* _ti;
     /// Identifier
-    ASTString _id;
+    Id _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
   public:
@@ -672,7 +678,9 @@ namespace MiniZinc {
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }
     /// Access identifier
-    ASTString id(void) const { return _id; }
+    const Id* id(void) const { return &_id; }
+    /// Access identifier
+    Id* id(void) { return &_id; }
     /// Access initialisation expression
     Expression* e(void) const { return _e; }
     /// Set initialisation expression

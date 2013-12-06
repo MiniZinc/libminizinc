@@ -301,11 +301,11 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         ASTString id_v;
-        if (ASTStringO* cs = m.find(vd->id())) {
+        if (ASTStringO* cs = m.find(vd->id()->v())) {
           id_v = ASTString(cs);
         } else {
-          id_v = ASTString(vd->id().str());
-          m.insert(vd->id(),id_v);
+          id_v = ASTString(vd->id()->v().str());
+          m.insert(vd->id()->v(),id_v);
         }
         VarDecl* c = new VarDecl(copy_location(m,e),
           static_cast<TypeInst*>(copy(m,vd->ti())),

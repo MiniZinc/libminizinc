@@ -615,7 +615,7 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         if (vd->e()==NULL)
-          throw EvalError(vd->loc(),"not a par expression", vd->id());
+          throw EvalError(vd->loc(),"not a par expression", vd->id()->v());
         return eval_par(vd->e());
       }
     case Expression::E_ANN:

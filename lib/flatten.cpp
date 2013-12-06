@@ -198,6 +198,16 @@ namespace MiniZinc {
       KeepAlive ka(e);
       map.remove(ka);
     }
+    void dump(void) {
+      struct EED {
+        static std::string d(const EE& ee) {
+          std::ostringstream oss;
+          oss << ee.r() << " " << ee.b();
+          return oss.str();
+        }
+      };
+      map.dump<EED>();
+    }
   };
 
   bool isTotal(FunctionI* fi) {
@@ -211,7 +221,7 @@ namespace MiniZinc {
         ae = vd->e();
       }
       
-      if (vd && vd->type().isann() && vd->id() == "total") {
+      if (vd && vd->type().isann() && vd->id()->v() == "total") {
         return true;
       }
     }
@@ -344,13 +354,11 @@ namespace MiniZinc {
             vd->introduced(true);
             VarDeclI* nv = new VarDeclI(Location(),vd);
             env.m->addItem(nv);
-            Id* id = new Id(Location(),vd->id(),vd);
-            id->type(e->type());
 
             EE ee(vd,NULL);
-            env.map_insert(id,ee);
+            env.map_insert(vd->id(),ee);
 
-            return id;
+            return vd->id();
           }
         default:
           assert(false); return NULL;
@@ -418,10 +426,8 @@ namespace MiniZinc {
               }
               GCLock lock;
               std::vector<Expression*> args(2);
-              args[0] = new Id(Location(),vd->id(),vd);
-              args[0]->type(vd->type());
-              args[1] = new Id(Location(),e_vd->id(),e_vd);
-              args[1]->type(e_vd->type());
+              args[0] = vd->id();
+              args[1] = e_vd->id();
               Call* c = new Call(Location(),cid,args);
               env.m->addItem(new ConstraintI(Location(),c));
               return vd;
@@ -441,12 +447,12 @@ namespace MiniZinc {
                 ArrayLit* le_x = c->args()[1]->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
-                nx.push_back(new Id(Location(),vd->id(),vd));
+                nx.push_back(vd->id());
                 c->args()[1] = new ArrayLit(Location(),nx);
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
                 c->args()[2] = new IntLit(Location(),-d);
               } else {
-                args.push_back(new Id(Location(),vd->id(),vd));
+                args.push_back(vd->id());
 
                 if (c->id() == "exists") {
                   c->id(ASTString("array_bool_or"));
@@ -852,20 +858,20 @@ namespace MiniZinc {
             idxset->decl(env.orig->matchFn(idxset));
             Generator gen(gen_id,idxset);
             std::vector<Expression*> idx(1);
-            Id* bodyidx = new Id(id->loc(),gen_id[0],NULL);
-            idx[0] = bodyidx;
             Generators gens;
             gens._g.push_back(gen);
             gens._w = NULL;
+            UnOp* aanot = new UnOp(id->loc(),UOT_NOT,NULL);
+            Comprehension* cp = new Comprehension(id->loc(),
+              aanot, gens, false);
+            Id* bodyidx = cp->decl(0,0)->id();
+            idx[0] = bodyidx;
             ArrayAccess* aa = new ArrayAccess(id->loc(),id,idx);
+            aanot->e(aa);
             Type tt = id->type();
             tt._dim = 0;
             aa->type(tt);
-            UnOp* aanot = new UnOp(id->loc(),UOT_NOT,aa);
             aanot->type(aa->type());
-            Comprehension* cp = new Comprehension(id->loc(),
-              aanot, gens, false);
-            bodyidx->decl(cp->decl(0,0));
             cp->type(id->type());
             ctx.neg = false;
             ka = cp;
@@ -907,8 +913,6 @@ namespace MiniZinc {
           } else if (vd && vd->ti()->ranges().size() > 0) {
             // create fresh variables and array literal
             std::vector<std::pair<int,int> > dims;
-            TypeInst* vti =
-              new TypeInst(Location(),vd->ti()->type(),vd->ti()->domain());
             unsigned int asize = 1;
             for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
               TypeInst* ti = vd->ti()->ranges()[i];
@@ -920,16 +924,17 @@ namespace MiniZinc {
               asize *= (isv->max(0)-isv->min(0)+1);
               dims.push_back(std::pair<int,int>(isv->min(0),isv->max(0)));
             }
+            Type tt = vd->ti()->type();
+            tt._dim = 0;
+            TypeInst* vti = new TypeInst(Location(),tt,vd->ti()->domain());
+            
             std::vector<Expression*> elems(asize);
             for (int i=0; i<asize; i++) {
-              ASTString nid = env.genId("fresh_"+vd->id().str());
+              ASTString nid = env.genId("fresh_"+vd->id()->v().str());
               VarDecl* nvd = new VarDecl(Location(),vti,nid);
               nvd->introduced(true);
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().t);
-              Id* id = new Id(Location(),nid,root_vd.r()->cast<VarDecl>());
-              Type tt = vti->type();
-              tt._dim = 0;
-              id->type(tt);
+              Id* id = root_vd.r()->cast<VarDecl>()->id();
               elems[i] = id;
             }
 
@@ -944,7 +949,7 @@ namespace MiniZinc {
               if (it==env.map.end()) {
                 VarDecl* nvd = 
                   new VarDecl(Location(),eval_typeinst(env,vd->ti()),
-                             env.genId("tl_"+vd->id().str()),vd->e());
+                             env.genId("tl_"+vd->id()->v().str()),vd->e());
                 nvd->introduced(true);
                 VarDeclI* ni = new VarDeclI(Location(),nvd);
                 // std::cerr << "create new toplevel " << nvd->id().c_str() << " for " << vd->id().str() << " with definition " << vd->_e << "\n";
@@ -953,9 +958,7 @@ namespace MiniZinc {
                 EE ee(vd,NULL);
                 if (vd->e())
                   env.map_insert(vd->e(),ee);
-                Id* nid = new Id(Location(),nvd->id(),NULL);
-                nid->type(nvd->type());
-                env.map_insert(nid,ee);
+                env.map_insert(nvd->id(),ee);
               } else {
                 vd = it->second.r()->cast<VarDecl>();
               }
@@ -963,7 +966,7 @@ namespace MiniZinc {
             if (id->type()._bt == Type::BT_ANN && vd->e()) {
               rete = vd->e();
             } else {
-              rete = new Id(Location(),vd->id(),vd);
+              rete = vd->id();
               rete->type(id->type());
             }
           }
@@ -1900,7 +1903,8 @@ namespace MiniZinc {
                 argctx.i = C_MIX;
               }
             }
-            args_ee[i] = flat_exp(env,argctx,c->args()[i],NULL,NULL);
+            Expression* tmp = c->args()[i];
+            args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
           }
 
           GCLock lock;
@@ -2083,8 +2087,7 @@ namespace MiniZinc {
               /// TODO: save vd->_e as well (if we want to support recursive functions)
               for (unsigned int i=decl->params().size(); i--;) {
                 VarDecl* vd = decl->params()[i];
-                Id* id = new Id(Location(),vd->id(),NULL);
-                id->type(vd->type());
+                Id* id = vd->id();
                 Env::Map::iterator idit = env.map_find(id);
                 if (idit==env.map.end()) {
                   EE ee(vd,NULL);
@@ -2134,13 +2137,12 @@ namespace MiniZinc {
         if (ctx.b != C_ROOT)
           throw FlatteningError(e->loc(), "not in root context");
         VarDecl* v = e->cast<VarDecl>();
-        Id* id = new Id(Location(),v->id(),NULL); /// TODO: avoid allocation
-        id->type(v->type());
+        Id* id = v->id();
         Env::Map::iterator it = env.map_find(id);
         if (it==env.map.end()) {
           VarDecl* vd = new VarDecl(Location(),
-                                   eval_typeinst(env,v->ti()),
-                                   v->id().str());
+                                    eval_typeinst(env,v->ti()),
+                                    v->id()->v().str());
           vd->introduced(v->introduced());
           if (v->ann()) {
             vd->annotate(
@@ -2207,7 +2209,7 @@ namespace MiniZinc {
             EE ee;
             TypeInst* ti = eval_typeinst(env,vd->ti());
             VarDecl* nvd = new VarDecl(Location(),ti,
-                                      env.genId("FromLet_"+vd->id().str()));
+                                      env.genId("FromLet_"+vd->id()->v().str()));
             nvd->toplevel(true);
             nvd->introduced(true);
             nvd->type(vd->type());
@@ -2221,14 +2223,12 @@ namespace MiniZinc {
                 throw FlatteningError(vd->loc(),
                   "free variable in non-positive context");
             }
-            Id* nid = new Id(Location(),nvd->id(),nvd);
-            nid->type(vd->type());
+            Id* nid = nvd->id();
             ee = EE(nvd,NULL);
             env.map_insert(nid,ee);
             vd->e(nid);
             (void) flat_exp(env,Ctx(),nid,NULL,constants().t);
-            Id* id = new Id(Location(),vd->id(),NULL);
-            id->type(vd->type());
+            Id* id = vd->id();
             Env::Map::iterator it = env.map_find(id);
             if (it==env.map.end()) {
               Expression* nullexp = NULL;
@@ -2404,7 +2404,7 @@ namespace MiniZinc {
                 }
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
-                args.push_back(new Id(Location(),vd->id(),vd));
+                args.push_back(vd->id());
                 c->args(ASTExprVec<Expression>(args));
                 tmp._items.push_back(new ConstraintI(Location(),c));
               } else {
@@ -2429,7 +2429,7 @@ namespace MiniZinc {
                 ArrayLit* le_x = c->args()[1]->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
-                nx.push_back(new Id(Location(),vd->id(),vd));
+                nx.push_back(vd->id());
                 c->args()[1] = new ArrayLit(Location(),nx);
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
                 c->args()[2] = new IntLit(Location(),-d);
@@ -2438,7 +2438,7 @@ namespace MiniZinc {
                   // card is 'set_card' in old FlatZinc
                   c->id(ASTString("set_card"));
                 }
-                args.push_back(new Id(Location(),vd->id(),vd));
+                args.push_back(vd->id());
               }
               std::copy(c->args().begin(),c->args().end(),args.begin());
               c->args(ASTExprVec<Expression>(args));

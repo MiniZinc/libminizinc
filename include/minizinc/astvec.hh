@@ -50,7 +50,7 @@ namespace MiniZinc {
     /// Iterator end
     int* end(void);
     /// Mark as alive for garbage collection
-    void mark(void);
+    void mark(void) const;
   };
   
   template<class> class ASTExprVecO;
@@ -89,7 +89,7 @@ namespace MiniZinc {
     /// Return vector object
     ASTExprVecO<T*>* vec(void);
     /// Mark as alive for garbage collection
-    void mark(void);
+    void mark(void) const;
   };
   
   
@@ -118,7 +118,7 @@ namespace MiniZinc {
     /// Iterator end
     int* end(void) { return begin()+size(); }
     /// Mark as alive for garbage collection
-    void mark(void) { _gc_mark = 1; }
+    void mark(void) const { _gc_mark = 1; }
   };
 
   /// Garbage collected vector of expressions
@@ -145,7 +145,7 @@ namespace MiniZinc {
     /// Iterator end
     T* end(void) { return begin()+size(); }
     /// Mark as alive for garbage collection
-    void mark(void) { _gc_mark = 1; }
+    void mark(void) const { _gc_mark = 1; }
   };
 
   template<class T>
@@ -193,7 +193,7 @@ namespace MiniZinc {
     return _v ? _v->end() : NULL;
   }
   inline void
-  ASTIntVec::mark(void) { if (_v) _v->mark(); }
+  ASTIntVec::mark(void) const { if (_v) _v->mark(); }
 
   template<class T>
   ASTExprVec<T>::ASTExprVec(const std::vector<T*>& v)
@@ -240,7 +240,7 @@ namespace MiniZinc {
   }
   template<class T>
   inline void
-  ASTExprVec<T>::mark(void) { if (_v) _v->mark(); }
+  ASTExprVec<T>::mark(void) const { if (_v) _v->mark(); }
 
 }
 

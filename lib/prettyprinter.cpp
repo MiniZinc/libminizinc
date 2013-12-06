@@ -250,7 +250,7 @@ namespace MiniZinc {
           os << " | ";
           for (unsigned int i=0; i<c.n_generators(); i++) {
             for (unsigned int j=0; j<c.n_decls(i); j++) {
-              os << c.decl(i,j)->id().str();
+              os << c.decl(i,j)->id()->v().str();
               if (j < c.n_decls(i)-1)
                 os << ",";
             }
@@ -424,7 +424,7 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
-          os << ": " << vd.id().c_str();
+          os << ": " << vd.id()->v().c_str();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
@@ -1082,7 +1082,7 @@ namespace MiniZinc {
         DocumentList* gen = new DocumentList("", "", "");
         DocumentList* idents = new DocumentList("", ", ", "");
         for (unsigned int j = 0; j < c.n_decls(i); j++) {
-          idents->addStringToList(c.decl(i, j)->id().str());
+          idents->addStringToList(c.decl(i, j)->id()->v().str());
         }
         gen->addDocumentToList(idents);
         gen->addStringToList(" in ");
@@ -1294,7 +1294,7 @@ namespace MiniZinc {
               DocumentList* idents = new DocumentList("", ", ", "");
               for (unsigned int j = 0; j<com->n_decls(i); j++) {
                 idents->addStringToList(
-                  com->decl(i,j)->id().str());
+                  com->decl(i,j)->id()->v().str());
               }
               gen->addDocumentToList(idents);
               gen->addStringToList(" in ");
@@ -1337,7 +1337,7 @@ namespace MiniZinc {
       DocumentList* dl = new DocumentList("", "", "");
       dl->addDocumentToList(expressionToDocument(vd.ti()));
       dl->addStringToList(": ");
-      dl->addStringToList(vd.id().str());
+      dl->addStringToList(vd.id()->v().str());
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }

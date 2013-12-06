@@ -52,20 +52,20 @@ namespace MiniZinc {
   
   void
   TopoSorter::add(VarDecl* vd, bool unique) {
-    DeclMap::iterator vdi = env.find(vd->id());
+    DeclMap::iterator vdi = env.find(vd->id()->v());
     if (vdi == env.end()) {
       Decls nd; nd.push_back(vd);
-      env.insert(std::pair<ASTString,Decls>(vd->id(),nd));
+      env.insert(std::pair<ASTString,Decls>(vd->id()->v(),nd));
     } else {
       if (unique)
-        throw TypeError(vd->loc(),"identifier `"+vd->id().str()+
+        throw TypeError(vd->loc(),"identifier `"+vd->id()->v().str()+
                         "' already defined");
       vdi->second.push_back(vd);
     }
   }
   void
   TopoSorter::remove(VarDecl* vd) {
-    DeclMap::iterator vdi = env.find(vd->id());
+    DeclMap::iterator vdi = env.find(vd->id()->v());
     assert(vdi != env.end());
     vdi->second.pop_back();
     if (vdi->second.empty())
@@ -450,7 +450,7 @@ namespace MiniZinc {
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(vdi->loc(),
-              "let variable `"+vdi->id().str()+"' must be defined");
+              "let variable `"+vdi->id()->v().str()+"' must be defined");
         }
       }
       let.type(let.in()->type());
@@ -470,6 +470,7 @@ namespace MiniZinc {
         }
       } else {
         vd.type(vd.ti()->type());
+        vd.id()->type(vd.type());
       }
     }
     /// Visit type inst

@@ -13,6 +13,8 @@
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
 
+#include <minizinc/prettyprinter.hh>
+
 namespace MiniZinc {
 
   Location::Location(void)
@@ -57,10 +59,10 @@ namespace MiniZinc {
   void
   Expression::mark(Expression* e) {
     if (e==NULL) return;
-    std::vector<Expression*> stack;
+    std::vector<const Expression*> stack;
     stack.push_back(e);
     while (!stack.empty()) {
-      Expression* cur = stack.back(); stack.pop_back();
+      const Expression* cur = stack.back(); stack.pop_back();
       if (cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
@@ -123,7 +125,7 @@ namespace MiniZinc {
         case Expression::E_VARDECL:
           pushstack(cur->cast<VarDecl>()->ti());
           pushstack(cur->cast<VarDecl>()->e());
-          cur->cast<VarDecl>()->id().mark();
+          pushstack(cur->cast<VarDecl>()->id());
           break;
         case Expression::E_LET:
           pushall(cur->cast<Let>()->let());
