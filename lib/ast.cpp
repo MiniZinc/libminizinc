@@ -610,8 +610,8 @@ namespace MiniZinc {
       dh = _ti->domain()->cast<TIId>()->v();
     ASTString rh;
     if (_ti->ranges().size()==1 &&
-        _ti->ranges()[0] && _ti->ranges()[0]->isa<TIId>())
-      rh = _ti->ranges()[0]->cast<TIId>()->v();
+        _ti->ranges()[0]->domain() && _ti->ranges()[0]->domain()->isa<TIId>())
+      rh = _ti->ranges()[0]->domain()->cast<TIId>()->v();
 
     ASTStringMap<Type>::t tmap;
     for (unsigned int i=0; i<ta.size(); i++) {
