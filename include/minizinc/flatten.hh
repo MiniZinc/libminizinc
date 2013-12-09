@@ -30,6 +30,16 @@ namespace MiniZinc {
     BoolLit* lf;
     /// Variable bound to false
     VarDecl* f;
+    /// Identifiers for builtins
+    struct {
+      ASTString forall;
+      ASTString exists;
+      ASTString bool2int;
+      ASTString sum;
+      ASTString lin_exp;
+      ASTString bool_eq;
+      ASTString bool_clause;
+    } ids;
     /// Constructor
     Constants(void);
   };

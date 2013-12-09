@@ -14,6 +14,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/flatten.hh>
 
 namespace MiniZinc {
   
@@ -399,7 +400,7 @@ namespace MiniZinc {
     rb(m, ASTString("min"), t_intarray, b_min);
     rb(m, ASTString("max"), t_intint, b_max);
     rb(m, ASTString("max"), t_intarray, b_max);
-    rb(m, ASTString("sum"), t_intarray, b_sum);
+    rb(m, constants().ids.sum, t_intarray, b_sum);
 
     {
       std::vector<Type> t_anyarray1(1);
@@ -529,17 +530,17 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::parbool();
-      rb(m, ASTString("bool2int"), t, b_bool2int);
+      rb(m, constants().ids.bool2int, t, b_bool2int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
-      rb(m, ASTString("forall"), t, b_forall_par);
+      rb(m, constants().ids.forall, t, b_forall_par);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
-      rb(m, ASTString("exists"), t, b_exists_par);
+      rb(m, constants().ids.exists, t, b_exists_par);
     }
     {
       std::vector<Type> t(1);

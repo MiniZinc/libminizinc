@@ -146,6 +146,15 @@ namespace MiniZinc {
     t = new VarDecl(Location(), ti, "_bool_true", lt);
     lf = new BoolLit(Location(), false);
     f = new VarDecl(Location(), ti, "_bool_false", lf);
+    
+    ids.forall = ASTString("forall");
+    ids.exists = ASTString("exists");
+    ids.bool2int = ASTString("bool2int");
+    ids.sum = ASTString("sum");
+    ids.lin_exp = ASTString("lin_exp");
+    ids.bool_eq = ASTString("bool_eq");
+    ids.bool_clause = ASTString("bool_clause");
+    
     m = new Model;
     std::vector<Expression*> v;
     v.push_back(ti);
@@ -153,6 +162,13 @@ namespace MiniZinc {
     v.push_back(t);
     v.push_back(lf);
     v.push_back(f);
+    v.push_back(new StringLit(Location(),ids.forall));
+    v.push_back(new StringLit(Location(),ids.exists));
+    v.push_back(new StringLit(Location(),ids.bool2int));
+    v.push_back(new StringLit(Location(),ids.sum));
+    v.push_back(new StringLit(Location(),ids.lin_exp));
+    v.push_back(new StringLit(Location(),ids.bool_eq));
+    v.push_back(new StringLit(Location(),ids.bool_clause));
     m->_items.push_back(
       new ConstraintI(Location(),new ArrayLit(Location(),v)));
   }
@@ -454,9 +470,9 @@ namespace MiniZinc {
               } else {
                 args.push_back(vd->id());
 
-                if (c->id() == "exists") {
+                if (c->id() == constants().ids.exists) {
                   c->id(ASTString("array_bool_or"));
-                } else if (c->id() == "forall") {
+                } else if (c->id() == constants().ids.forall) {
                   c->id(ASTString("array_bool_and"));
                 } else if (vd->type().isbool()) {
                   c->id(ASTString(c->id().str()+"_reif"));
@@ -506,7 +522,7 @@ namespace MiniZinc {
           ArrayLit* al = new ArrayLit(Location(),nontrue);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location(),"forall",args);
+          Call* ret = new Call(Location(),constants().ids.forall,args);
           ret->type(Type::varbool());
           ret->decl(env.orig->matchFn(ret));
           KeepAlive ka(ret);
@@ -552,7 +568,7 @@ namespace MiniZinc {
           ArrayLit* al = new ArrayLit(Location(),nonfalse);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location(),"exists",args);
+          Call* ret = new Call(Location(),constants().ids.exists,args);
           ret->type(Type::varbool());
           ret->decl(env.orig->matchFn(ret));
           assert(ret->decl());
@@ -657,6 +673,12 @@ namespace MiniZinc {
   Call* same_call(Expression* e, const std::string& id) {
     Expression* ce = follow_id(e);
     if (ce && ce->isa<Call>() && ce->cast<Call>()->id().str() == id)
+      return ce->cast<Call>();
+    return NULL;
+  }
+  Call* same_call(Expression* e, const ASTString& id) {
+    Expression* ce = follow_id(e);
+    if (ce && ce->isa<Call>() && ce->cast<Call>()->id() == id)
       return ce->cast<Call>();
     return NULL;
   }
@@ -803,7 +825,7 @@ namespace MiniZinc {
       }
     }
     if (e && (e->isa<Id>() || e->isa<IntLit>() ||
-              (e->isa<Call>() && e->cast<Call>()->id().str() == "lin_exp")))
+              (e->isa<Call>() && e->cast<Call>()->id() == constants().ids.lin_exp)))
       return e;
     return NULL;
   }
@@ -1249,7 +1271,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(1);
                 args[0]=new ArrayLit(bo->loc(),bo_args);
                 args[0]->type(Type::varbool(1));
-                Call* c = new Call(bo->loc(),"forall",args);
+                Call* c = new Call(bo->loc(),constants().ids.forall,args);
                 c->type(bo->type());
                 c->decl(env.orig->matchFn(c));
                 KeepAlive ka(c);
@@ -1277,7 +1299,7 @@ namespace MiniZinc {
               std::vector<Expression*> args(1);
               args[0]= new ArrayLit(bo->loc(),bo_args);
               args[0]->type(Type::varbool(1));
-              Call* c = new Call(bo->loc(),"exists",args);
+              Call* c = new Call(bo->loc(),constants().ids.exists,args);
               c->type(bo->type());
               c->decl(env.orig->matchFn(c));
               KeepAlive ka(c);
@@ -1297,17 +1319,17 @@ namespace MiniZinc {
             {
               GC::lock();
               std::vector<Expression*> bo_args(2);
-              std::string id;
+              ASTString id;
               if (ctx.neg) {
                 bo_args[0] = boe0;
                 bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
                 bo_args[1]->type(boe1->type());
-                id = "forall";
+                id = constants().ids.forall;
               } else {
                 bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
                 bo_args[0]->type(boe0->type());
                 bo_args[1] = boe1;
-                id = "exists";
+                id = constants().ids.exists;
               }
               ctx.neg = false;
               std::vector<Expression*> args(1);
@@ -1729,7 +1751,7 @@ namespace MiniZinc {
                   ret.r = conj(env,r,ctx,ees);
                   GC::unlock();
                 } else {
-                  cc->decl(env.orig->matchFn(cc->id().str(),args_e));
+                  cc->decl(env.orig->matchFn(cc->id(),args_e));
                   assert(cc->decl());
                   bool singleExp = true;
                   for (unsigned int i=0; i<ees.size(); i++) {
@@ -1856,22 +1878,22 @@ namespace MiniZinc {
 
         Ctx nctx = ctx;
         nctx.neg = false;
-        std::string cid = c->id().str();
-        if (decl->e()==NULL && cid == "forall") {
+        ASTString cid = c->id();
+        if (decl->e()==NULL && cid == constants().ids.forall) {
           nctx.b = +nctx.b;
           if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
-            cid = "exists";
+            cid = constants().ids.exists;
           }
-        } else if (decl->e()==NULL && cid == "exists") {
+        } else if (decl->e()==NULL && cid == constants().ids.exists) {
           nctx.b = +nctx.b;
           if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
-            cid = "forall";
+            cid = constants().ids.forall;
           }
-        } else if (decl->e()==NULL && cid == "bool2int") {
+        } else if (decl->e()==NULL && cid == constants().ids.bool2int) {
           if (ctx.neg) {
             ctx.neg = false;
             nctx.neg = true;
@@ -1882,7 +1904,7 @@ namespace MiniZinc {
         }
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
-            cid == "forall" && r==constants().t) {
+            cid == constants().ids.forall && r==constants().t) {
           /// TODO: need generic array evaluation function
           ret.b = bind(env,ctx,b,constants().lt);
           EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().t);
@@ -1895,8 +1917,8 @@ namespace MiniZinc {
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
             if (decl->e()!=NULL ||
-                (cid != "forall" && cid != "exists" && cid != "bool2int" &&
-                 cid != "sum" && cid != "lin_exp" && cid != "assert")) {
+                (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
+                 cid != constants().ids.sum && cid != constants().ids.lin_exp && cid != "assert")) {
               if (c->args()[i]->type()._bt==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->args()[i]->type()._bt==Type::BT_INT) {
@@ -1909,7 +1931,7 @@ namespace MiniZinc {
 
           GCLock lock;
           std::vector<Expression*> args;
-          if (decl->e()==NULL && (cid == "forall" || cid == "exists")) {
+          if (decl->e()==NULL && (cid == constants().ids.forall || cid == constants().ids.exists)) {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<Expression*> alv;
             for (unsigned int i=0; i<al->v().size(); i++) {
@@ -1922,7 +1944,7 @@ namespace MiniZinc {
                 alv.push_back(al->v()[i]);
               }
             }
-            if (cid == "exists") {
+            if (cid == constants().ids.exists) {
               std::vector<Expression*> pos_alv;
               std::vector<Expression*> neg_alv;
               for (unsigned int i=0; i<alv.size(); i++) {
@@ -1966,7 +1988,7 @@ namespace MiniZinc {
                 pos_al->type(al->type());
                 ArrayLit* neg_al = new ArrayLit(al->loc(),neg_alv);
                 neg_al->type(al->type());
-                cid = "bool_clause";
+                cid = constants().ids.bool_clause;
                 args.push_back(pos_al);
                 args.push_back(neg_al);
               }
@@ -1985,15 +2007,15 @@ namespace MiniZinc {
               nal->type(al->type());
               args.push_back(nal);
             }
-          } else if (decl->e()==NULL && (cid == "lin_exp" || cid=="sum")) {
+          } else if (decl->e()==NULL && (cid == constants().ids.lin_exp || cid==constants().ids.sum)) {
 
-            Expression* al_arg = (cid=="sum" ? c->args()[0] : c->args()[1]);
+            Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
             EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
             ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
-            IntVal d = (cid == "sum" ? 0 : eval_int(c->args()[2]));
+            IntVal d = (cid == constants().ids.sum ? 0 : eval_int(c->args()[2]));
             
             std::vector<IntVal> c_coeff(al->v().size());
-            if (cid=="sum") {
+            if (cid==constants().ids.sum) {
               for (unsigned int i=al->v().size(); i--;)
                 c_coeff[i] = 1;
             } else {
@@ -2002,7 +2024,7 @@ namespace MiniZinc {
               for (unsigned int i=coeff->v().size(); i--;)
                 c_coeff[i] = eval_int(coeff->v()[i]);
             }
-            cid = "lin_exp";
+            cid = constants().ids.lin_exp;
             std::vector<IntVal> coeffv;
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->v().size(); i++) {
@@ -2372,14 +2394,14 @@ namespace MiniZinc {
             vd->ti()->domain(NULL);
             if (ve != NULL) {
               if (Call* vc = ve->dyn_cast<Call>()) {
-                if (vc->id() == "exists") {
+                if (vc->id() == constants().ids.exists) {
                   vc->id(ASTString("array_bool_or"));
                   std::vector<Expression*> args(2);
                   args[0] = vc->args()[0];
                   args[1] = constants().lt;
                   ASTExprVec<Expression> argsv(args);
                   vc->args(argsv);
-                } else if (vc->id() == "forall") {
+                } else if (vc->id() == constants().ids.forall) {
                   vc->id(ASTString("array_bool_and"));
                   std::vector<Expression*> args(2);
                   args[0] = vc->args()[0];
@@ -2395,9 +2417,9 @@ namespace MiniZinc {
               if (vd->e()->eid()==Expression::E_CALL) {
                 Call* c = vd->e()->cast<Call>();
                 vd->e(NULL);
-                if (c->id() == "exists") {
+                if (c->id() == constants().ids.exists) {
                   c->id(ASTString("array_bool_or"));
-                } else if (c->id() == "forall") {
+                } else if (c->id() == constants().ids.forall) {
                   c->id(ASTString("array_bool_and"));
                 } else {
                   c->id(ASTString(c->id().str()+"_reif"));
@@ -2489,7 +2511,7 @@ namespace MiniZinc {
       }
       void vConstraintI(ConstraintI* ci) {
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
-          if (vc->id() == "exists") {
+          if (vc->id() == constants().ids.exists) {
             GCLock lock;
             vc->id(ASTString("array_bool_or"));
             std::vector<Expression*> args(2);
@@ -2497,7 +2519,7 @@ namespace MiniZinc {
             args[1] = constants().lt;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
-          } else if (vc->id() == "forall") {
+          } else if (vc->id() == constants().ids.forall) {
             GCLock lock;
             vc->id(ASTString("array_bool_and"));
             std::vector<Expression*> args(2);
