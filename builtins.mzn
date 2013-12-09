@@ -448,6 +448,8 @@ function $T: trace(string, $T);
 function var $T: trace(string, var $T);
 function var opt $T: trace(string, var opt $T);
 function $T: fix(var opt $T);
+function array[$U] of $T: fix(array[$U] of var opt $T);
 function bool: is_fixed(var opt $T);
+function bool: is_fixed(array[$U] of var opt $T);
 
 function bool: abort(string);

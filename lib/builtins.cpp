@@ -133,7 +133,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
-      throw EvalError(Location(), "min of empty array undefined");
+      throw EvalError(Location(), "lower bound of empty array undefined");
     IntVal min = lb_varoptint(al->v()[0]);
     for (unsigned int i=1; i<al->v().size(); i++)
       min = std::min(min, lb_varoptint(al->v()[i]));
@@ -157,7 +157,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
-      throw EvalError(Location(), "min of empty array undefined");
+      throw EvalError(Location(), "upper bound of empty array undefined");
     IntVal max = ub_varoptint(al->v()[0]);
     for (unsigned int i=1; i<al->v().size(); i++)
       max = std::max(max, ub_varoptint(al->v()[i]));
@@ -394,6 +394,76 @@ namespace MiniZinc {
     IntSetRanges isr(isv);
     return Ranges::size(isr);
   }
+  
+  Expression* exp_is_fixed(Expression* e) {
+    Expression* cur = e;
+    for (;;) {
+      if (cur==NULL)
+        return NULL;
+      if (cur->type().ispar())
+        return cur;
+      switch (cur->eid()) {
+        case Expression::E_ID:
+          cur = e->cast<Id>()->decl();
+          break;
+        case Expression::E_VARDECL:
+          if (cur->type()._st != Type::ST_SET) {
+            Expression* dom = cur->cast<VarDecl>()->ti()->domain();
+            if (dom && (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>()))
+              return dom;
+          }
+          cur = cur->cast<VarDecl>()->e();
+          break;
+        default:
+          return NULL;
+      }
+    }
+  }
+  
+  bool b_is_fixed(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    return exp_is_fixed(args[0]) != NULL;
+  }
+
+  bool b_is_fixed_array(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      return true;
+    for (unsigned int i=0; i<al->v().size(); i++) {
+      if (exp_is_fixed(al->v()[i])==NULL)
+        return false;
+    }
+    return true;
+  }
+
+  Expression* b_fix(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    Expression* ret = exp_is_fixed(args[0]);
+    if (ret==NULL)
+      throw EvalError(args[0]->loc(), "expression is not fixed");
+    return ret;
+  }
+
+  IntVal b_fix_int(ASTExprVec<Expression> args) {
+    return eval_int(b_fix(args));
+  }
+  bool b_fix_bool(ASTExprVec<Expression> args) {
+    return eval_bool(b_fix(args));
+  }
+
+  Expression* b_fix_array(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    std::vector<Expression*> fixed(al->v().size());
+    for (unsigned int i=0; i<fixed.size(); i++) {
+      fixed[i] = exp_is_fixed(al->v()[i]);
+      if (fixed[i]==NULL)
+        throw EvalError(al->v()[i]->loc(), "expression is not fixed");
+    }
+    ArrayLit* ret = new ArrayLit(Location(), fixed);
+    return ret;
+  }
 
   void registerBuiltins(Model* m) {
     
@@ -619,6 +689,27 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       rb(m, ASTString("has_bounds"), t, b_has_bounds);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::optvartop();
+      rb(m, ASTString("is_fixed"), t, b_is_fixed);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::optvartop(-1);
+      rb(m, ASTString("is_fixed"), t, b_is_fixed_array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::optvartop();
+      rb(m, ASTString("fix"), t, b_fix_bool);
+      rb(m, ASTString("fix"), t, b_fix_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::optvartop(1);
+      rb(m, ASTString("fix"), t, b_fix_array);
     }
   }
   
