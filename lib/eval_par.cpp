@@ -15,6 +15,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/flatten.hh>
 
 namespace MiniZinc {
 
@@ -54,7 +55,7 @@ namespace MiniZinc {
     typedef BoolLit* Val;
     typedef Expression* ArrayVal;
     static BoolLit* e(Expression* e) {
-      return new BoolLit(Location(),eval_bool(e));
+      return constants().boollit(eval_bool(e));
     }
   };
   class EvalArrayLit {

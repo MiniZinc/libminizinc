@@ -99,34 +99,6 @@ namespace MiniZinc {
     return c==C_ROOT || c==C_POS;
   }
 
-  const char* ctx_ann(BCtx& c) {
-    std::string ctx;
-    switch (c) {
-    case C_ROOT: return "ctx_root";
-    case C_POS: return "ctx_pos";
-    case C_NEG: return "ctx_neg";
-    case C_MIX: return "ctx_mix";
-    default: assert(false); return NULL;
-    }
-  }
-  
-  void addCtxAnn(VarDecl* vd, BCtx& c) {
-    if (vd) {
-      const char* ctx = ctx_ann(c);
-      Annotation* vdann = vd->ann();
-      while (vdann) {
-        if (Id* id = vdann->e()->dyn_cast<Id>()) {
-          if (id->v()==ctx)
-            return;
-        }
-        vdann = vdann->next();
-      }
-      Id* id = new Id(Location(),ctx,NULL);
-      id->type(Type::ann());
-      vd->annotate(new Annotation(Location(),id));
-    }
-  }
-
   /// Result of evaluation
   class EE {
   public:
@@ -155,6 +127,15 @@ namespace MiniZinc {
     ids.bool_eq = ASTString("bool_eq");
     ids.bool_clause = ASTString("bool_clause");
     
+    ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
+    ctx.root->type(Type::ann());
+    ctx.pos = new Id(Location(),ASTString("ctx_pos"),NULL);
+    ctx.pos->type(Type::ann());
+    ctx.neg = new Id(Location(),ASTString("ctx_neg"),NULL);
+    ctx.neg->type(Type::ann());
+    ctx.mix = new Id(Location(),ASTString("ctx_mix"),NULL);
+    ctx.mix->type(Type::ann());
+
     m = new Model;
     std::vector<Expression*> v;
     v.push_back(ti);
@@ -169,6 +150,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.bool_clause));
+    v.push_back(ctx.root);
+    v.push_back(ctx.pos);
+    v.push_back(ctx.neg);
+    v.push_back(ctx.mix);
     m->_items.push_back(
       new ConstraintI(Location(),new ArrayLit(Location(),v)));
   }
@@ -176,6 +161,28 @@ namespace MiniZinc {
   Constants& constants(void) {
     static Constants _c;
     return _c;
+  }
+
+  void addCtxAnn(VarDecl* vd, BCtx& c) {
+    if (vd) {
+      Id* ctx_id = NULL;
+      switch (c) {
+        case C_ROOT: ctx_id=constants().ctx.root;
+        case C_POS: ctx_id=constants().ctx.pos;
+        case C_NEG: ctx_id=constants().ctx.neg;
+        case C_MIX: ctx_id=constants().ctx.mix;
+        default: assert(false);;
+      }
+      Annotation* vdann = vd->ann();
+      while (vdann) {
+        if (Id* id = vdann->e()->dyn_cast<Id>()) {
+          if (id->v()==ctx_id->v())
+            return;
+        }
+        vdann = vdann->next();
+      }
+      vd->annotate(new Annotation(Location(),ctx_id));
+    }
   }
 
   /// Check if \a e is NULL or true
@@ -974,7 +981,6 @@ namespace MiniZinc {
                              env.genId("tl_"+vd->id()->v().str()),vd->e());
                 nvd->introduced(true);
                 VarDeclI* ni = new VarDeclI(Location(),nvd);
-                // std::cerr << "create new toplevel " << nvd->id() << " for " << vd->id()) << " with definition " << vd->_e << "\n";
                 env.m->addItem(ni);
                 vd = nvd;
                 EE ee(vd,NULL);
@@ -2073,6 +2079,8 @@ namespace MiniZinc {
             for (unsigned int i=0; i<args_ee.size(); i++)
               args.push_back(args_ee[i].r());
           }
+          Expression** args_vector = &args[0];
+          int args_size = args.size();
           Call* cr = new Call(Location(),cid,args);
           cr->type(c->type());
           decl = env.orig->matchFn(cr);

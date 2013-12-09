@@ -40,8 +40,19 @@ namespace MiniZinc {
       ASTString bool_eq;
       ASTString bool_clause;
     } ids;
+    /// Identifiers for Boolean contexts
+    struct {
+      Id* root;
+      Id* pos;
+      Id* neg;
+      Id* mix;
+    } ctx;
     /// Constructor
     Constants(void);
+    /// Return shared BoolLit
+    BoolLit* boollit(bool b) {
+      return b ? lt : lf;
+    }
   };
   
   /// Return static instance
