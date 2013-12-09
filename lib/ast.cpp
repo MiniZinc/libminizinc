@@ -522,7 +522,7 @@ namespace MiniZinc {
   VarDecl::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_ti));
-    cmb_hash(_id.hash());
+    cmb_hash(_id->hash());
     cmb_hash(Expression::hash(_e));
   }
   bool

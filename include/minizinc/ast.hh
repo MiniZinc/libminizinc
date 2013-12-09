@@ -661,7 +661,7 @@ namespace MiniZinc {
     /// Type-inst of the declared variable
     TypeInst* _ti;
     /// Identifier
-    Id _id;
+    Id* _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
   public:
@@ -678,9 +678,7 @@ namespace MiniZinc {
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }
     /// Access identifier
-    const Id* id(void) const { return &_id; }
-    /// Access identifier
-    Id* id(void) { return &_id; }
+    Id* id(void) const { return _id; }
     /// Access initialisation expression
     Expression* e(void) const { return _e; }
     /// Set initialisation expression
