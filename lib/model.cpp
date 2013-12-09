@@ -53,9 +53,16 @@ namespace MiniZinc {
             }
           }
           if (alleq) {
-            throw TypeError(fi->loc(),
-              "function with the same type already defined in "
-              +v[i]->loc().toString());
+            if (v[i]->e() && fi->e()) {
+              throw TypeError(fi->loc(),
+                              "function with the same type already defined in "
+                              +v[i]->loc().toString());
+              
+            } else {
+              if (fi->e())
+                v[i] = fi;
+              return;
+            }
           }
         }
       }
