@@ -248,7 +248,18 @@ namespace MiniZinc {
   }
 
   IntSetVal* b_dom_varint(Expression* e) {
+    Id* lastid = NULL;
     for (;;) {
+      if (e==NULL) {
+        if (lastid==NULL) {
+          EvalError(e->loc(),"invalid argument to dom");
+        } else {
+          if (lastid->decl()->ti()->domain()==NULL) {
+            EvalError(e->loc(),"invalid argument to dom");
+          }
+          return eval_intset(lastid->decl()->ti()->domain());
+        }
+      }
       switch (e->eid()) {
       case Expression::E_INTLIT:
         {
@@ -257,17 +268,15 @@ namespace MiniZinc {
         }
       case Expression::E_ID:
         {
-          Id* id = e->cast<Id>();
-          if (id->decl()==NULL)
-            throw EvalError(id->loc(),"undefined identifier");
-          if (id->decl()->e()==NULL)
-            return eval_intset(id->decl()->ti()->domain());
-          else
-            e = id->decl()->e();
+          lastid = e->cast<Id>();
+          if (lastid->decl()==NULL)
+            throw EvalError(lastid->loc(),"undefined identifier");
+          e = lastid->decl()->e();
         }
         break;
       default:
-        throw EvalError(e->loc(),"invalid argument to dom");
+        e = NULL;
+        break;
       }
     }
   }
