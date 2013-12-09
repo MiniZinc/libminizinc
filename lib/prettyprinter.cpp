@@ -178,13 +178,13 @@ namespace MiniZinc {
         os << (e->cast<BoolLit>()->v() ? "true" : "false");
         break;
       case Expression::E_STRINGLIT:
-        os << "\"" << e->cast<StringLit>()->v().c_str() << "\"";
+        os << "\"" << e->cast<StringLit>()->v() << "\"";
         break;
       case Expression::E_ID:
-        os << e->cast<Id>()->v().c_str();
+        os << e->cast<Id>()->v();
         break;
       case Expression::E_TIID:
-        os << "$" << e->cast<TIId>()->v().c_str();
+        os << "$" << e->cast<TIId>()->v();
         break;
       case Expression::E_ANON:
         os << "_";
@@ -250,7 +250,7 @@ namespace MiniZinc {
           os << " | ";
           for (unsigned int i=0; i<c.n_generators(); i++) {
             for (unsigned int j=0; j<c.n_decls(i); j++) {
-              os << c.decl(i,j)->id()->v().str();
+              os << c.decl(i,j)->id()->v();
               if (j < c.n_decls(i)-1)
                 os << ",";
             }
@@ -411,7 +411,7 @@ namespace MiniZinc {
       case Expression::E_CALL:
         {
           const Call& c = *e->cast<Call>();
-          os << c.id().str() << "(";
+          os << c.id() << "(";
           for (unsigned int i = 0; i < c.args().size(); i++) {
             p(c.args()[i]);
             if (i < c.args().size()-1)
@@ -424,7 +424,7 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
-          os << ": " << vd.id()->v().c_str();
+          os << ": " << vd.id()->v();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
@@ -487,13 +487,13 @@ namespace MiniZinc {
         return;
       switch (i->iid()) {
       case Item::II_INC:
-        os << "include \"" << i->cast<IncludeI>()->f().c_str() << "\"";
+        os << "include \"" << i->cast<IncludeI>()->f() << "\"";
         break;
       case Item::II_VD:
         p(i->cast<VarDeclI>()->e());
         break;
       case Item::II_ASN:
-        os << i->cast<AssignI>()->id().c_str() << " = ";
+        os << i->cast<AssignI>()->id() << " = ";
         p(i->cast<AssignI>()->e());
         break;
       case Item::II_CON:
@@ -538,7 +538,7 @@ namespace MiniZinc {
             p(fi.ti());
             os << " : ";
           }
-          os << fi.id().c_str();
+          os << fi.id();
           if (fi.params().size() > 0) {
             os << "(";
             for (unsigned int i = 0; i < fi.params().size(); i++) {
@@ -1003,7 +1003,7 @@ namespace MiniZinc {
     }
     ret mapStringLit(const StringLit& sl) {
       std::ostringstream oss;
-      oss << "\"" << sl.v().str() << "\"";
+      oss << "\"" << sl.v() << "\"";
       return new StringDocument(oss.str());
 
 
@@ -1431,7 +1431,7 @@ namespace MiniZinc {
     typedef Document* ret;
     ret mapIncludeI(const IncludeI& ii) {
       std::ostringstream oss;
-      oss << "include \"" << ii.f().str() << "\";";
+      oss << "include \"" << ii.f() << "\";";
       return new StringDocument(oss.str());
     }
     ret mapVarDeclI(const VarDeclI& vi) {

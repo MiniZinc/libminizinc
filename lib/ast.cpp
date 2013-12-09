@@ -26,7 +26,7 @@ namespace MiniZinc {
   std::string
   Location::toString(void) const {
     std::ostringstream oss;
-    oss << filename.str() << ":" << first_line << "." << first_column;
+    oss << filename << ":" << first_line << "." << first_column;
     return oss.str();
   }
 

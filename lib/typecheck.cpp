@@ -434,7 +434,7 @@ namespace MiniZinc {
       } else {
         std::ostringstream oss;
         oss << "no function or predicate with this signature found: ";
-        oss << call.id().str() << "(";
+        oss << call.id() << "(";
         for (unsigned int i=0; i<call.args().size(); i++) {
           oss << call.args()[i]->type().toString();
           if (i<call.args().size()-1) oss << ",";

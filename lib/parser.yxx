@@ -50,9 +50,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   Model* m = pp->model;
   while (m->parent() != NULL) {
     m = m->parent();
-    pp->err << "(included from file '" << m->filename().str() << "')" << endl;
+    pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << "In file " << location->filename.str() << ", line "
+  pp->err << "In file " << location->filename << ", line "
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
   for (int i=0; i<location->first_column-1; i++)
@@ -159,7 +159,7 @@ namespace MiniZinc {
         if (f == p->_filename.c_str()) {
           err << "Error: cyclic includes: " << std::endl;
           for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename.c_str() << std::endl;
+            err << "  " << pe->_filename << std::endl;
           }
           goto error;
         }

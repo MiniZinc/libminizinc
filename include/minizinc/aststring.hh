@@ -17,6 +17,7 @@
 #include <cstring>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
 
 namespace MiniZinc {
   
@@ -73,6 +74,16 @@ namespace MiniZinc {
     /// The map type specialised for ASTString
     typedef std::unordered_map<ASTString,T> t;
   };
+
+  /**
+   * \brief Print integer set \a s
+   * \relates Gecode::IntSet
+   */
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const ASTString& s) {
+    return os << s.c_str();
+  }
 
 }
 

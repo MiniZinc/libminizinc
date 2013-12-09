@@ -952,7 +952,7 @@ namespace MiniZinc {
                              env.genId("tl_"+vd->id()->v().str()),vd->e());
                 nvd->introduced(true);
                 VarDeclI* ni = new VarDeclI(Location(),nvd);
-                // std::cerr << "create new toplevel " << nvd->id().c_str() << " for " << vd->id().str() << " with definition " << vd->_e << "\n";
+                // std::cerr << "create new toplevel " << nvd->id() << " for " << vd->id()) << " with definition " << vd->_e << "\n";
                 env.m->addItem(ni);
                 vd = nvd;
                 EE ee(vd,NULL);

@@ -81,7 +81,7 @@ namespace MiniZinc {
     if (loc.filename=="") {
       s << " in unknown file";
     } else {
-      s << " in file " << loc.filename.str() << ":" << loc.first_line;
+      s << " in file " << loc.filename << ":" << loc.first_line;
     }
     return os << s.str();
   }
