@@ -13,6 +13,8 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <limits>
+#include <iomanip>
 #include <map>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/model.hh>
@@ -144,7 +146,14 @@ namespace MiniZinc {
         os << e->cast<IntLit>()->v();
         break;
       case Expression::E_FLOATLIT:
-        os << e->cast<FloatLit>()->v();
+        {
+          std::ostringstream oss;
+          oss << std::setprecision(std::numeric_limits<double>::digits10);
+          oss << e->cast<FloatLit>()->v();
+          if (oss.str().find(".") == std::string::npos)
+            oss << ".0";
+          os << oss.str();
+        }
         break;
       case Expression::E_SETLIT:
         {
@@ -961,9 +970,11 @@ namespace MiniZinc {
       return new StringDocument(oss.str());
     }
     ret mapFloatLit(const FloatLit& fl) {
-
       std::ostringstream oss;
+      oss << std::setprecision(std::numeric_limits<double>::digits10);
       oss << fl.v();
+      if (oss.str().find(".") == std::string::npos)
+        oss << ".0";
       return new StringDocument(oss.str());
     }
     ret mapSetLit(const SetLit& sl) {
