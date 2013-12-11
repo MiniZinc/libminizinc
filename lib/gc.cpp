@@ -116,6 +116,7 @@ namespace MiniZinc {
       : _page(NULL)
       , _rootset(NULL)
       , _roots(NULL)
+      , _weakRefs(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
       , _gc_threshold(10) {
@@ -499,6 +500,10 @@ namespace MiniZinc {
         stats.first++;
 #endif
         if (n->_gc_mark==0) {
+          if (n->_id == Expression::E_VARDECL) {
+            /// Reset WeakRef inside VarDecl
+            static_cast<VarDecl*>(n)->flat(NULL);
+          }
           if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
