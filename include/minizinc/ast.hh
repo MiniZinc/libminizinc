@@ -664,6 +664,8 @@ namespace MiniZinc {
     Id* _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
+    /// Flattened version of the VarDecl
+    WeakRef _flat;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
@@ -683,6 +685,10 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Set initialisation expression
     void e(Expression* rhs) { _e = rhs; }
+    /// Access flattened version
+    VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
+    /// Set flattened version
+    void flat(VarDecl* vd) { _flat = WeakRef(vd); }
     
     /// Recompute hash value
     void rehash(void);

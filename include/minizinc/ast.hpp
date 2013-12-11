@@ -248,7 +248,7 @@ namespace MiniZinc {
   VarDecl::VarDecl(const Location& loc,
                    TypeInst* ti, const ASTString& id, Expression* e)
   : Expression(loc,E_VARDECL,ti->type()),
-    _id(new Id(loc,id,this)) {
+    _id(new Id(loc,id,this)), _flat(NULL) {
     _flag_1 = true;
     _flag_2 = false;
     _ti = ti;
@@ -261,7 +261,7 @@ namespace MiniZinc {
   VarDecl::VarDecl(const Location& loc,
                    TypeInst* ti, const std::string& id, Expression* e)
   : Expression(loc,E_VARDECL,ti->type()),
-    _id(new Id(loc,ASTString(id),this)) {
+    _id(new Id(loc,ASTString(id),this)), _flat(NULL) {
     _flag_1 = true;
     _flag_2 = false;
     _ti = ti;

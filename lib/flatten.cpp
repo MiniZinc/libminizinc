@@ -200,9 +200,16 @@ namespace MiniZinc {
   public:
     Model* orig;
     Model* m;
-    typedef KeepAliveMap<EE> Map;
+    struct WW {
+      WeakRef r;
+      WeakRef b;
+      WW(WeakRef r0, WeakRef b0) : r(r0), b(b0) {}
+    };
+    typedef KeepAliveMap<WW> Map;
+  protected:
     Map map;
     unsigned int ids;
+  public:
     Env(Model* orig0, Model* m0) : orig(orig0), m(m0), ids(0) {
     }
     ASTString genId(const std::string& s) {
@@ -211,7 +218,7 @@ namespace MiniZinc {
     }
     void map_insert(Expression* e, const EE& ee) {
       KeepAlive ka(e);
-      map.insert(ka,ee);
+      map.insert(ka,WW(ee.r(),ee.b()));
     }
     Map::iterator map_find(Expression* e) {
       KeepAlive ka(e);
@@ -221,9 +228,12 @@ namespace MiniZinc {
       KeepAlive ka(e);
       map.remove(ka);
     }
+    Map::iterator map_end(void) {
+      return map.end();
+    }
     void dump(void) {
       struct EED {
-        static std::string d(const EE& ee) {
+        static std::string d(const WW& ee) {
           std::ostringstream oss;
           oss << ee.r() << " " << ee.b();
           return oss.str();
@@ -342,6 +352,7 @@ namespace MiniZinc {
             /// TODO: handle array types
             TypeInst* ti = new TypeInst(Location(),e->type());
             VarDecl* vd = new VarDecl(Location(),ti,env.genId("X"),e);
+            vd->introduced(true);
 
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
               IntSetVal* ibv = NULL;
@@ -374,7 +385,6 @@ namespace MiniZinc {
               addCtxAnn(vd, ctx.b);
             }
 
-            vd->introduced(true);
             VarDeclI* nv = new VarDeclI(Location(),vd);
             env.m->addItem(nv);
 
@@ -907,26 +917,13 @@ namespace MiniZinc {
           }
           ret = flat_exp(env,ctx,ka(),r,b);
         } else {
-          Env::Map::iterator it = env.map_find(id);
           GCLock lock;
-          VarDecl* vd = NULL;
+          VarDecl* vd = id->decl()->flat();
           Expression* rete = NULL;
-          if (it==env.map.end()) {
+          if (vd==NULL) {
             // New top-level id, need to copy into env.m
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().t).r()
                  ->cast<VarDecl>();
-          } else {
-            switch (it->second.r()->eid()) {
-            case Expression::E_VARDECL:
-              vd = it->second.r()->cast<VarDecl>();
-              break;
-            case Expression::E_ID:
-              vd = it->second.r()->cast<Id>()->decl();
-              break;
-            default:
-              rete = it->second.r();
-              break;
-            }
           }
           ret.b = bind(env,Ctx(),b,constants().lt);
           if (vd && vd->e()!=NULL) {
@@ -975,7 +972,7 @@ namespace MiniZinc {
             if (!vd->toplevel()) {
               // create new VarDecl in toplevel, if decl doesnt exist yet
               Env::Map::iterator it = env.map_find(vd->e());
-              if (it==env.map.end()) {
+              if (it==env.map_end()) {
                 VarDecl* nvd = 
                   new VarDecl(Location(),eval_typeinst(env,vd->ti()),
                              env.genId("tl_"+vd->id()->v().str()),vd->e());
@@ -1744,8 +1741,8 @@ namespace MiniZinc {
                 cc->type(bo->type());
 
                 Env::Map::iterator cit = env.map_find(cc);
-                if (cit != env.map.end()) {
-                  ees[2].b = cit->second.r;
+                if (cit != env.map_end()) {
+                  ees[2].b = cit->second.r();
                   if (doubleNeg) {
                     Type t = ees[2].b()->type();
                     ees[2].b = new UnOp(Location(),UOT_NOT,ees[2].b());
@@ -2079,37 +2076,30 @@ namespace MiniZinc {
             for (unsigned int i=0; i<args_ee.size(); i++)
               args.push_back(args_ee[i].r());
           }
-          Expression** args_vector = &args[0];
-          int args_size = args.size();
           Call* cr = new Call(Location(),cid,args);
           cr->type(c->type());
           decl = env.orig->matchFn(cr);
           assert(decl);
           cr->decl(decl);
           Env::Map::iterator cit = env.map_find(cr);
-          if (cit != env.map.end()) {
+          if (cit != env.map_end()) {
             ret.b = bind(env,Ctx(),b,cit->second.b());
             ret.r = bind(env,ctx,r,cit->second.r());
           } else {
             if (decl->e()==NULL) {
               /// For now assume that all builtins are total
-              if (cit != env.map.end()) {
-                ret.b = bind(env,Ctx(),b,cit->second.b());
-                ret.r = bind(env,ctx,r,cit->second.r());
+              if (decl->_builtins.e) {
+                Expression* callres =
+                decl->_builtins.e(cr->args());
+                EE res = flat_exp(env,ctx,callres,r,b);
+                args_ee.push_back(res);
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,res.r());
+                env.map_insert(cr,ret);
               } else {
-                if (decl->_builtins.e) {
-                  Expression* callres = 
-                    decl->_builtins.e(cr->args());
-                  EE res = flat_exp(env,ctx,callres,r,b);
-                  args_ee.push_back(res);
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,res.r());
-                  env.map_insert(cr,ret);
-                } else {
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,cr);
-                  env.map_insert(cr,ret);
-                }
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,cr);
+                env.map_insert(cr,ret);
               }
             } else {
               std::vector<std::pair<Id*,Expression*> > idmap;
@@ -2117,18 +2107,7 @@ namespace MiniZinc {
               /// TODO: save vd->_e as well (if we want to support recursive functions)
               for (unsigned int i=decl->params().size(); i--;) {
                 VarDecl* vd = decl->params()[i];
-                Id* id = vd->id();
-                Env::Map::iterator idit = env.map_find(id);
-                if (idit==env.map.end()) {
-                  EE ee(vd,NULL);
-                  Expression* nullexp = NULL;
-                  idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
-                  env.map_insert(id,ee);
-                } else {
-                  idmap.push_back(
-                    std::pair<Id*,Expression*>(id,idit->second.r()));
-                  idit->second.r = vd;
-                }
+                vd->flat(vd);
                 vd->e(args[i]);
               }
               if (isTotal(decl)) {
@@ -2143,18 +2122,10 @@ namespace MiniZinc {
                 env.map_insert(cr,ret);
               }
               // Restore previous mapping
-              for (unsigned int i=0; i<idmap.size(); i++) {
-                std::pair<Id*,Expression*>& idvd = idmap[i];
-                Env::Map::iterator idit = env.map_find(idvd.first);
-                assert(idit != env.map.end());
-                if (idvd.second==NULL) {
-                  env.map_remove(idvd.first);
-                } else {
-                  idit->second.r = idvd.second;
-                }
-              }
               for (unsigned int i=decl->params().size(); i--;) {
-                decl->params()[i]->e(NULL);
+                VarDecl* vd = decl->params()[i];
+                vd->flat(NULL);
+                vd->e(NULL);
               }
             }
           }
@@ -2168,8 +2139,8 @@ namespace MiniZinc {
           throw FlatteningError(e->loc(), "not in root context");
         VarDecl* v = e->cast<VarDecl>();
         Id* id = v->id();
-        Env::Map::iterator it = env.map_find(id);
-        if (it==env.map.end()) {
+        VarDecl* it = v->flat();
+        if (it==NULL) {
           VarDecl* vd = new VarDecl(Location(),
                                     eval_typeinst(env,v->ti()),
                                     v->id()->v().str());
@@ -2216,11 +2187,10 @@ namespace MiniZinc {
           }
           env.m->addItem(nv);
           
-          EE ee(vd,NULL);
-          env.map_insert(id,ee);
+          v->flat(vd);
           ret.r = bind(env,Ctx(),r,vd);
         } else {
-          ret.r = bind(env,Ctx(),r,it->second.r());
+          ret.r = bind(env,Ctx(),r,it);
         }
         ret.b = bind(env,Ctx(),b,constants().lt);
       }
@@ -2254,20 +2224,11 @@ namespace MiniZinc {
                   "free variable in non-positive context");
             }
             Id* nid = nvd->id();
-            ee = EE(nvd,NULL);
-            env.map_insert(nid,ee);
+            nvd->flat(nvd);
             vd->e(nid);
             (void) flat_exp(env,Ctx(),nid,NULL,constants().t);
-            Id* id = vd->id();
-            Env::Map::iterator it = env.map_find(id);
-            if (it==env.map.end()) {
-              Expression* nullexp = NULL;
-              idmap.push_back(std::pair<Id*,Expression*>(id,nullexp));
-              env.map_insert(id,ee);
-            } else {
-              idmap.push_back(std::pair<Id*,Expression*>(id,it->second.r()));
-              it->second.r = vd;
-            }
+            assert(vd->flat()==NULL);
+            vd->flat(vd);
           } else {
             if (ctx.b==C_ROOT) {
               (void) flat_exp(env,Ctx(),le,constants().t,constants().t);
@@ -2297,14 +2258,9 @@ namespace MiniZinc {
         }
         let->popbindings();
         // Restore previous mapping
-        for (unsigned int i=0; i<idmap.size(); i++) {
-          std::pair<Id*,Expression*>& idvd = idmap[i];
-          Env::Map::iterator idit = env.map_find(idvd.first);
-          assert(idit != env.map.end());
-          if (idvd.second==NULL) {
-            env.map_remove(idvd.first);
-          } else {
-            idit->second.r = idvd.second;
+        for (unsigned int i=0; i<let->let().size(); i++) {
+          if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+            vd->flat(NULL);
           }
         }
       }
@@ -2580,5 +2536,5 @@ namespace MiniZinc {
     std::stable_sort(m->_items.begin(),m->_items.end(),_cmp);
 
   }
-  
+
 }

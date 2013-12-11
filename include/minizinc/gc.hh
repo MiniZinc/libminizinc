@@ -107,6 +107,7 @@ namespace MiniZinc {
   class Expression;
 
   class KeepAlive;
+  class WeakRef;
 
   /// Garbage collector
   class GC {
@@ -114,6 +115,7 @@ namespace MiniZinc {
     friend class ASTVec;
     friend class ASTChunk;
     friend class KeepAlive;
+    friend class WeakRef;
   private:
     class Heap;
     /// The memory controlled by the collector
@@ -130,6 +132,8 @@ namespace MiniZinc {
 
     static void addKeepAlive(KeepAlive* e);
     static void removeKeepAlive(KeepAlive* e);
+    static void addWeakRef(WeakRef* e);
+    static void removeWeakRef(WeakRef* e);
   public:
     /**
      * \brief Initialize thread-local GC object
@@ -181,6 +185,24 @@ namespace MiniZinc {
     Expression* operator ()(void) { return _e; }
     Expression* operator ()(void) const { return _e; }
     KeepAlive* next(void) const { return _n; }
+  };
+
+  /// Expression wrapper that is a member of the root set
+  class WeakRef {
+    friend class GC;
+  private:
+    Expression* _e;
+    WeakRef* _p;
+    WeakRef* _n;
+    bool _valid;
+  public:
+    WeakRef(Expression* e = NULL);
+    ~WeakRef(void);
+    WeakRef(const WeakRef& e);
+    WeakRef& operator =(const WeakRef& e);
+    Expression* operator ()(void) { return _valid ? _e : NULL; }
+    Expression* operator ()(void) const { return _valid ? _e : NULL; }
+    WeakRef* next(void) const { return _n; }
   };
 
 }

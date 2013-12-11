@@ -17,6 +17,12 @@
 #include <vector>
 #include <cstring>
 
+#define MINIZINC_GC_STATS
+
+#if defined(MINIZINC_GC_STATS)
+#include <map>
+#endif
+
 namespace MiniZinc {
   
   GC*&
@@ -72,6 +78,7 @@ namespace MiniZinc {
     HeapPage* _page;
     Model* _rootset;
     KeepAlive* _roots;
+    WeakRef* _weakRefs;
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
@@ -338,11 +345,29 @@ namespace MiniZinc {
 
   void
   GC::Heap::mark(void) {
+#if defined(MINIZINC_GC_STATS)
+    std::cerr << "================= mark =================: ";
+#endif
+
+#if defined(MINIZINC_GC_STATS)
+    std::cerr << "+ ";
+    {
+      int wrcount=0;
+      for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+        wrcount++;
+      }
+      std::cerr << wrcount << " weak refs ";
+    }
+#endif
+
     for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
       if ((*e)() && (*e)()->_gc_mark==0)
         Expression::mark((*e)());
     }
-
+#if defined(MINIZINC_GC_STATS)
+    std::cerr << "+";
+#endif
+    
     Model* m = _rootset;
     if (m==NULL)
       return;
@@ -392,11 +417,74 @@ namespace MiniZinc {
       }
       m = m->_roots_next;
     } while (m != _rootset);
+#if defined(MINIZINC_GC_STATS)
+    std::cerr << "+ ";
+    
+    int wrcount=0;
+    for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+      wrcount++;
+    }
+    std::cerr << wrcount << " weak refs ";
+#endif
+    
+    
+    for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+      if ((*wr)() && (*wr)()->_gc_mark==0) {
+        wr->_e = NULL;
+        wr->_valid = false;
+      }
+    }
 
+#if defined(MINIZINC_GC_STATS)
+    std::cerr << "+ ";
+    
+    wrcount=0;
+    for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+      wrcount++;
+    }
+    std::cerr << wrcount << " weak refs ";
+    std::cerr << "\n";
+#endif
   }
     
   void
   GC::Heap::sweep(void) {
+#if defined(MINIZINC_GC_STATS)
+    static const char* _nodeid[Item::II_END+1] = {
+      "FreeList      ", // NID_FL
+      "Chunk         ", // NID_CHUNK
+      "Vec           ", // NID_VEC
+      "IntLit        ",        // E_INTLIT
+      "FloatLit      ",      // E_FLOATLIT
+      "SetLit        ",        // E_SETLIT
+      "BoolLit       ",       // E_BOOLLIT
+      "StringLit     ",     // E_STRINGLIT
+      "Id            ",            // E_ID
+      "AnonVar       ",       // E_ANON
+      "ArrayLit      ",      // E_ARRAYLIT
+      "ArrayAccess   ",   // E_ARRAYACCESS
+      "Comprehension ", // E_COMP
+      "ITE           ",           // E_ITE
+      "BinOp         ",         // E_BINOP
+      "UnOp          ",          // E_UNOP
+      "Call          ",          // E_CALL
+      "VarDecl       ",       // E_VARDECL
+      "Let           ",           // E_LET
+      "Annotation    ",    // E_ANN
+      "TypeInst      ",      // E_TI
+      "TIId          ",          // E_TIID
+      "IncludeI      ",      // II_INC
+      "VarDeclI      ",      // II_VD
+      "AssignI       ",       // II_ASN
+      "ConstraintI   ",   // II_CON
+      "SolveI        ",        // II_SOL
+      "OutputI       ",       // II_OUT
+      "FunctionI     "      // II_FUN
+    };
+    
+    std::cerr << "=============== GC sweep =============\n";
+    std::map<int,std::pair<int,int> > gc_stats;
+#endif
     HeapPage* p = _page;
     HeapPage* prev = NULL;
     while (p) {
@@ -406,6 +494,10 @@ namespace MiniZinc {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
         assert(ns != 0);
+#if defined(MINIZINC_GC_STATS)
+        std::pair<int,int>& stats = gc_stats[n->_id];
+        stats.first++;
+#endif
         if (n->_gc_mark==0) {
           if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
@@ -419,6 +511,9 @@ namespace MiniZinc {
             wholepage = true;
           }
         } else {
+#if defined(MINIZINC_GC_STATS)
+          stats.second++;
+#endif
           if (n->_id != ASTNode::NID_FL)
             n->_gc_mark=0;
         }
@@ -440,6 +535,11 @@ namespace MiniZinc {
         p = p->next;
       }
     }
+#if defined(MINIZINC_GC_STATS)
+    for (auto stat: gc_stats) {
+      std::cerr << _nodeid[stat.first] << ":\t" << stat.second.first << " / " << stat.second.second << std::endl;
+    }
+#endif
   }
 
   ASTVec::ASTVec(size_t size)
@@ -532,6 +632,55 @@ namespace MiniZinc {
         GC::gc()->addKeepAlive(this);
     }
     _e = e._e;
+    return *this;
+  }
+
+  void
+  GC::addWeakRef(WeakRef* e) {
+    assert(e->_p==NULL);
+    assert(e->_n==NULL);
+    e->_n = GC::gc()->_heap->_weakRefs;
+    if (GC::gc()->_heap->_weakRefs)
+      GC::gc()->_heap->_weakRefs->_p = e;
+    GC::gc()->_heap->_weakRefs = e;
+  }
+  void
+  GC::removeWeakRef(MiniZinc::WeakRef *e) {
+    if (e->_p) {
+      e->_p->_n = e->_n;
+    } else {
+      assert(GC::gc()->_heap->_weakRefs==e);
+      GC::gc()->_heap->_weakRefs = e->_n;
+    }
+    if (e->_n) {
+      e->_n->_p = e->_p;
+    }
+  }
+
+  WeakRef::WeakRef(Expression* e)
+  : _e(e), _p(NULL), _n(NULL), _valid(true) {
+    if (_e)
+      GC::gc()->addWeakRef(this);
+  }
+  WeakRef::~WeakRef(void) {
+    if (_e || !_valid)
+      GC::gc()->removeWeakRef(this);
+  }
+  WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(NULL), _n(NULL), _valid(true) {
+    if (_e)
+      GC::gc()->addWeakRef(this);
+  }
+  WeakRef&
+  WeakRef::operator =(const WeakRef& e) {
+    if (_e || !_valid) {
+      if (e()==NULL)
+        GC::gc()->removeWeakRef(this);
+    } else {
+      if (e()!=NULL)
+        GC::gc()->addWeakRef(this);
+    }
+    _e = e();
+    _valid = true;
     return *this;
   }
 
