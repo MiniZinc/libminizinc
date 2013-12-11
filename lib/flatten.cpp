@@ -167,10 +167,10 @@ namespace MiniZinc {
     if (vd) {
       Id* ctx_id = NULL;
       switch (c) {
-        case C_ROOT: ctx_id=constants().ctx.root;
-        case C_POS: ctx_id=constants().ctx.pos;
-        case C_NEG: ctx_id=constants().ctx.neg;
-        case C_MIX: ctx_id=constants().ctx.mix;
+        case C_ROOT: ctx_id=constants().ctx.root; break;
+        case C_POS: ctx_id=constants().ctx.pos; break;
+        case C_NEG: ctx_id=constants().ctx.neg; break;
+        case C_MIX: ctx_id=constants().ctx.mix; break;
         default: assert(false);;
       }
       Annotation* vdann = vd->ann();
