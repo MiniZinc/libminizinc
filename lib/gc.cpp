@@ -17,7 +17,7 @@
 #include <vector>
 #include <cstring>
 
-#define MINIZINC_GC_STATS
+//#define MINIZINC_GC_STATS
 
 #if defined(MINIZINC_GC_STATS)
 #include <map>
@@ -350,17 +350,6 @@ namespace MiniZinc {
     std::cerr << "================= mark =================: ";
 #endif
 
-#if defined(MINIZINC_GC_STATS)
-    std::cerr << "+ ";
-    {
-      int wrcount=0;
-      for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
-        wrcount++;
-      }
-      std::cerr << wrcount << " weak refs ";
-    }
-#endif
-
     for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
       if ((*e)() && (*e)()->_gc_mark==0)
         Expression::mark((*e)());
@@ -418,16 +407,6 @@ namespace MiniZinc {
       }
       m = m->_roots_next;
     } while (m != _rootset);
-#if defined(MINIZINC_GC_STATS)
-    std::cerr << "+ ";
-    
-    int wrcount=0;
-    for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
-      wrcount++;
-    }
-    std::cerr << wrcount << " weak refs ";
-#endif
-    
     
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
       if ((*wr)() && (*wr)()->_gc_mark==0) {
@@ -437,13 +416,7 @@ namespace MiniZinc {
     }
 
 #if defined(MINIZINC_GC_STATS)
-    std::cerr << "+ ";
-    
-    wrcount=0;
-    for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
-      wrcount++;
-    }
-    std::cerr << wrcount << " weak refs ";
+    std::cerr << "+";
     std::cerr << "\n";
 #endif
   }
