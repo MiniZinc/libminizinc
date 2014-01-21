@@ -93,12 +93,14 @@ int main(int argc, char** argv) {
 
           if (flag_verbose)
             std::cerr << "Flattening..." << std::endl;
-          Model* flat = flatten(m);
-
+          Env env(m);
+          flatten(env);
+          Model* flat = env.flat();
+          
           if (flag_optimize) {
             if (flag_verbose)
               std::cerr << "Optimizing..." << std::endl;
-            optimize(flat);
+            optimize(env);
           }
 
           if (flag_output) {

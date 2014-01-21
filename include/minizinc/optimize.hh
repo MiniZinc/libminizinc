@@ -12,12 +12,12 @@
 #ifndef __MINIZINC_OPTIMIZE_HH__
 #define __MINIZINC_OPTIMIZE_HH__
 
-#include <minizinc/model.hh>
+#include <minizinc/flatten.hh>
 
 namespace MiniZinc {
 
-  /// Simplyfy model \a m
-  void optimize(Model* m);
+  /// Simplyfy models in \a env
+  void optimize(Env& env);
   
 }
 

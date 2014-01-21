@@ -110,6 +110,22 @@ namespace MiniZinc {
     }
   };
 
+  bool isOutput(VarDecl* vd) {
+    Annotation* a = vd->ann();
+    while (a) {
+      if (a->e()) {
+        if (a->e()==constants().ann.output_var)
+          return true;
+        if (Call* c = a->e()->dyn_cast<Call>()) {
+          if (c->id() == constants().ann.output_array)
+            return true;
+        }
+      }
+      a = a->next();
+    }
+    return false;
+  }
+  
   void removeUnused(Model& m, VarOccurrences& vo) {
     ExpressionMap<int> idx;
     for (unsigned int i=0; i<m.size(); i++) {
@@ -121,7 +137,7 @@ namespace MiniZinc {
     int msize = m.size();
     for (unsigned int i=0; i<msize; i++) {
       VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
-      if (vdi!=NULL && vo.occurrences(vdi->e())==0 ) {
+      if (vdi!=NULL && !isOutput(vdi->e()) && vo.occurrences(vdi->e())==0 ) {
         if (vdi->e()->e() && vdi->e()->ti()->domain()) {
           if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
               Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
@@ -157,13 +173,13 @@ namespace MiniZinc {
     m.compact();
   }
 
-  void optimize(Model* m) {
+  void optimize(Env& env) {
     VarOccurrences vo;
     CollectOccurrencesI co(vo);
-    iterItems(co,m);
+    iterItems(co,env.flat());
     // AnnotateVardecl avd(vo);
     // iterItems<AnnotateVardecl>(avd,m);
-    removeUnused(*m,vo);
+    removeUnused(*env.flat(),vo);
   }
 
 }

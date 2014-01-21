@@ -47,6 +47,11 @@ namespace MiniZinc {
       Id* neg;
       Id* mix;
     } ctx;
+    /// Common annotations
+    struct {
+      Id* output_var;
+      ASTString output_array;
+    } ann;
     /// Constructor
     Constants(void);
     /// Return shared BoolLit
@@ -58,8 +63,24 @@ namespace MiniZinc {
   /// Return static instance
   Constants& constants(void);
 
+  class EnvI;
+  
+  /// Environment for flattening
+  class Env {
+  private:
+    EnvI* e;
+  public:
+    Env(Model* m);
+    
+    Model* model(void);
+    Model* flat(void);
+    Model* output(void);
+    EnvI& envi(void);
+  };
+
+  
   /// Flatten model \a m
-  Model* flatten(Model* m);
+  void flatten(Env& m);
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Model* m);
