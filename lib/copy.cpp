@@ -13,62 +13,46 @@
 
 namespace MiniZinc {
 
-  class CopyMap {
-  protected:
-    typedef std::unordered_map<void*,void*> MyMap;
-    MyMap m;
-  public:
-    void insert(Expression* e0, Expression* e1) {
-      m.insert(std::pair<void*,void*>(e0,e1));
-    }
-    Expression* find(Expression* e) {
-      MyMap::iterator it = m.find(e);
-      if (it==m.end()) return NULL;
-      return static_cast<Expression*>(it->second);
-    }
-    void insert(Item* e0, Item* e1) {
-      m.insert(std::pair<void*,void*>(e0,e1));
-    }
-    Item* find(Item* e) {
-      MyMap::iterator it = m.find(e);
-      if (it==m.end()) return NULL;
-      return static_cast<Item*>(it->second);
-    }
-    void insert(Model* e0, Model* e1) {
-      m.insert(std::pair<void*,void*>(e0,e1));
-    }
-    Model* find(Model* e) {
-      MyMap::iterator it = m.find(e);
-      if (it==m.end()) return NULL;
-      return static_cast<Model*>(it->second);
-    }
-    void insert(const ASTString& e0, const ASTString& e1) {
-      m.insert(std::pair<void*,void*>(e0.aststr(),e1.aststr()));
-    }
-    ASTStringO* find(const ASTString& e) {
-      MyMap::iterator it = m.find(e.aststr());
-      if (it==m.end()) return NULL;
-      return static_cast<ASTStringO*>(it->second);
-    }
-    void insert(IntSetVal* e0, IntSetVal* e1) {
-      m.insert(std::pair<void*,void*>(e0,e1));
-    }
-    IntSetVal* find(IntSetVal* e) {
-      MyMap::iterator it = m.find(e);
-      if (it==m.end()) return NULL;
-      return static_cast<IntSetVal*>(it->second);
-    }
-    template<class T>
-    void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
-      m.insert(std::pair<void*,void*>(e0.vec(),e1.vec()));
-    }
-    template<class T>
-    ASTExprVecO<T*>* find(ASTExprVec<T> e) {
-      MyMap::iterator it = m.find(e.vec());
-      if (it==m.end()) return NULL;
-      return static_cast<ASTExprVecO<T*>*>(it->second);
-    }
-  };
+  void CopyMap::insert(Expression* e0, Expression* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  Expression* CopyMap::find(Expression* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<Expression*>(it->second);
+  }
+  void CopyMap::insert(Item* e0, Item* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  Item* CopyMap::find(Item* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<Item*>(it->second);
+  }
+  void CopyMap::insert(Model* e0, Model* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  Model* CopyMap::find(Model* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<Model*>(it->second);
+  }
+  void CopyMap::insert(const ASTString& e0, const ASTString& e1) {
+    m.insert(std::pair<void*,void*>(e0.aststr(),e1.aststr()));
+  }
+  ASTStringO* CopyMap::find(const ASTString& e) {
+    MyMap::iterator it = m.find(e.aststr());
+    if (it==m.end()) return NULL;
+    return static_cast<ASTStringO*>(it->second);
+  }
+  void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  IntSetVal* CopyMap::find(IntSetVal* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<IntSetVal*>(it->second);
+  }
 
   Location copy_location(CopyMap& m, const Location& _loc) {
     Location loc;

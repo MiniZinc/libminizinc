@@ -15,14 +15,48 @@
 #include <minizinc/model.hh>
 
 namespace MiniZinc {
-  
+
+  class CopyMap {
+  protected:
+    typedef std::unordered_map<void*,void*> MyMap;
+    MyMap m;
+  public:
+    void insert(Expression* e0, Expression* e1);
+    Expression* find(Expression* e);
+    void insert(Item* e0, Item* e1);
+    Item* find(Item* e);
+    void insert(Model* e0, Model* e1);
+    Model* find(Model* e);
+    void insert(const ASTString& e0, const ASTString& e1);
+    ASTStringO* find(const ASTString& e);
+    void insert(IntSetVal* e0, IntSetVal* e1);
+    IntSetVal* find(IntSetVal* e);
+    template<class T>
+    void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
+      m.insert(std::pair<void*,void*>(e0.vec(),e1.vec()));
+    }
+    template<class T>
+    ASTExprVecO<T*>* find(ASTExprVec<T> e) {
+      MyMap::iterator it = m.find(e.vec());
+      if (it==m.end()) return NULL;
+      return static_cast<ASTExprVecO<T*>*>(it->second);
+    }
+  };
+
   /// Create a deep copy of expression \a e
   Expression* copy(Expression* e);
   /// Create a deep copy of item \a i
   Item* copy(Item* i);
   /// Create a deep copy of model \a m
   Model* copy(Model* m);
-  
+
+  /// Create a deep copy of expression \a e
+  Expression* copy(CopyMap& map, Expression* e);
+  /// Create a deep copy of item \a i
+  Item* copy(CopyMap& map, Item* i);
+  /// Create a deep copy of model \a m
+  Model* copy(CopyMap& map, Model* m);
+
 }
 
 #endif
