@@ -219,6 +219,10 @@ namespace MiniZinc {
   public:
     EnvI(Model* orig0) : orig(orig0), flat(new Model), output(new Model), ids(0) {
     }
+    ~EnvI(void) {
+      delete flat;
+      delete output;
+    }
     ASTString genId(const std::string& s) {
       std::ostringstream oss; oss << "_" << s << "_" << ids++;
       return ASTString(oss.str());
@@ -251,6 +255,9 @@ namespace MiniZinc {
   };
 
   Env::Env(Model* m) : e(new EnvI(m)) {}
+  Env::~Env(void) {
+    delete e;
+  }
   
   Model*
   Env::model(void) { return e->orig; }

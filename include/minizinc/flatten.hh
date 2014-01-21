@@ -71,6 +71,7 @@ namespace MiniZinc {
     EnvI* e;
   public:
     Env(Model* m);
+    ~Env(void);
     
     Model* model(void);
     Model* flat(void);
