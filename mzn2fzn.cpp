@@ -37,6 +37,14 @@ int main(int argc, char** argv) {
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
+  
+  bool flag_no_output_ozn = false;
+  string flag_output_base;
+  string flag_output_fzn;
+  string flag_output_ozn;
+  bool flag_output_fzn_stdout = false;
+  bool flag_output_ozn_stdout = false;
+  
   if (argc < 2)
     goto error;
 
@@ -65,6 +73,30 @@ int main(int argc, char** argv) {
       flag_newfzn = true;
     } else if (string(argv[i])==string("--no-optimize")) {
       flag_optimize = false;
+    } else if (string(argv[i])==string("--no-output-ozn") ||
+               string(argv[i])==string("-O-")) {
+      flag_no_output_ozn = false;
+    } else if (string(argv[i])=="--output-base") {
+      i++;
+      if (i==argc)
+        goto error;
+      flag_output_base = argv[i];
+    } else if (string(argv[i])=="-o" || string(argv[i])=="--output-to-file" ||
+               string(argv[i])=="--output-fzn-to-file") {
+      i++;
+      if (i==argc)
+        goto error;
+      flag_output_fzn = argv[i];
+    } else if (string(argv[i])=="--output-ozn-to-file") {
+      i++;
+      if (i==argc)
+        goto error;
+      flag_output_ozn = argv[i];
+    } else if (string(argv[i])=="--output-to-stdout" ||
+               string(argv[i])=="--output-fzn-to-stdout") {
+      flag_output_fzn_stdout = true;
+    } else if (string(argv[i])=="--output-ozn-to-stdout") {
+      flag_output_ozn_stdout = true;
     } else {
       break;
     }
@@ -75,6 +107,19 @@ int main(int argc, char** argv) {
     goto error;
   }
   filename = argv[i++];
+  if (filename.length()<=4 ||
+      filename.substr(filename.length()-4,string::npos) != ".mzn")
+    goto error;
+  
+  if (flag_output_base == "") {
+    flag_output_base = filename.substr(0,filename.length()-4);
+  }
+  if (flag_output_fzn == "") {
+    flag_output_fzn = flag_output_base+".fzn";
+  }
+  if (flag_output_ozn == "") {
+    flag_output_ozn = flag_output_base+".ozn";
+  }
   
   while (i<argc)
     datafiles.push_back(argv[i++]);
@@ -113,9 +158,26 @@ int main(int argc, char** argv) {
             if (flag_verbose)
               std::cerr << "Printing FlatZinc..." << std::endl;
             Printer p;
-            p.print(flat,std::cout,0);
+            if (flag_output_fzn_stdout) {
+              p.print(flat,std::cout,0);
+            } else {
+              std::ofstream os;
+              os.open(flag_output_fzn, ios::out);
+              p.print(flat,os,0);
+              os.close();
+            }
+            if (!flag_no_output_ozn) {
+              if (flag_output_ozn_stdout) {
+                p.print(env.output(),std::cout,0);
+              } else {
+                std::ofstream os;
+                os.open(flag_output_ozn, ios::out);
+                p.print(env.output(),os,0);
+                os.close();
+              }
+            }
+            
           }
-          delete flat;
         } else if (flag_output) { // !flag_typecheck
           Printer p;
           p.print(m,std::cout);
