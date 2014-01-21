@@ -879,8 +879,15 @@ namespace MiniZinc {
     case Expression::E_ID:
       {
         Id* id = e->cast<Id>();
-        if (id->decl()==NULL)
-          throw FlatteningError(e->loc(), "undefined identifier");
+        if (id->decl()==NULL) {
+          if (id->type().isann()) {
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
+            ret.r = bind(env,ctx,r,e);
+            return ret;
+          } else {
+            throw FlatteningError(e->loc(), "undefined identifier");
+          }
+        }
         if (ctx.neg && id->type()._dim > 0) {
           if (id->type()._dim > 1)
             throw InternalError("multi-dim arrays in negative positions not supported yet");
