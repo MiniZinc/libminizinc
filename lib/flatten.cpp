@@ -114,10 +114,10 @@ namespace MiniZinc {
     GC::init();
     GCLock lock;
     TypeInst* ti = new TypeInst(Location(), Type::parbool());
-    lt = new BoolLit(Location(), true);
-    t = new VarDecl(Location(), ti, "_bool_true", lt);
-    lf = new BoolLit(Location(), false);
-    f = new VarDecl(Location(), ti, "_bool_false", lf);
+    lit_true = new BoolLit(Location(), true);
+    var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
+    lit_false = new BoolLit(Location(), false);
+    var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
     
     ids.forall = ASTString("forall");
     ids.exists = ASTString("exists");
@@ -139,10 +139,10 @@ namespace MiniZinc {
     m = new Model;
     std::vector<Expression*> v;
     v.push_back(ti);
-    v.push_back(lt);
-    v.push_back(t);
-    v.push_back(lf);
-    v.push_back(f);
+    v.push_back(lit_true);
+    v.push_back(var_true);
+    v.push_back(lit_false);
+    v.push_back(var_false);
     v.push_back(new StringLit(Location(),ids.forall));
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.bool2int));
@@ -266,59 +266,59 @@ namespace MiniZinc {
   KeepAlive bind(Env& env, Ctx ctx, VarDecl* vd, Expression* e) {
     if (ctx.neg) {
       assert(e->type()._bt == Type::BT_BOOL);
-      if (vd==constants().t) {
+      if (vd==constants().var_true) {
         if (!isfalse(e)) {
           if (Id* id = e->dyn_cast<Id>()) {
             assert(id->decl() != NULL);
             if (id->decl()->ti()->domain() && istrue(id->decl()->ti()->domain())) {
               GCLock lock;
-              env.m->addItem(new ConstraintI(Location(),constants().lf));
+              env.m->addItem(new ConstraintI(Location(),constants().lit_false));
             } else {
-              id->decl()->ti()->domain(constants().lf);
+              id->decl()->ti()->domain(constants().lit_false);
             }
-            return constants().lt;
+            return constants().lit_true;
           } else {
             GC::lock();
-            BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lf);
+            BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lit_false);
             bo->type(e->type());
             KeepAlive ka(bo);
             GC::unlock();
-            EE ee = flat_exp(env,Ctx(),bo,NULL,constants().t);
+            EE ee = flat_exp(env,Ctx(),bo,NULL,constants().var_true);
             return bind(env,Ctx(),vd,ee.r());
           }
         }
-        return constants().lt;
+        return constants().lit_true;
       } else {
         GC::lock();
-        BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lf);
+        BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lit_false);
         bo->type(e->type());
         KeepAlive ka(bo);
         GC::unlock();
-        EE ee = flat_exp(env,Ctx(),bo,NULL,constants().t);
+        EE ee = flat_exp(env,Ctx(),bo,NULL,constants().var_true);
         return bind(env,Ctx(),vd,ee.r());
       }
     } else {
-      if (vd==constants().t) {
+      if (vd==constants().var_true) {
         if (!istrue(e)) {
           if (Id* id = e->dyn_cast<Id>()) {
             assert(id->decl() != NULL);
             if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
               GCLock lock;
-              env.m->addItem(new ConstraintI(Location(),constants().lf));
+              env.m->addItem(new ConstraintI(Location(),constants().lit_false));
             } else {
-              id->decl()->ti()->domain(constants().lt);
+              id->decl()->ti()->domain(constants().lit_true);
             }
           } else {
             GCLock lock;
             env.m->addItem(new ConstraintI(Location(),e));
           }
         }
-        return constants().lt;
-      } else if (vd==constants().f) {
+        return constants().lit_true;
+      } else if (vd==constants().var_false) {
         if (!isfalse(e)) {
           throw InternalError("not supported yet");
         }
-        return constants().lt;
+        return constants().lit_true;
       } else if (vd==NULL) {
         if (e==NULL) return NULL;
         switch (e->eid()) {
@@ -399,12 +399,12 @@ namespace MiniZinc {
       } else {
         if (vd->e()==NULL) {
           if (e==NULL) {
-            vd->e(constants().lt);
+            vd->e(constants().lit_true);
           } else if (e->type().ispar() && e->type().isbool()) {
             if (eval_bool(e)) {
-              vd->e(constants().lt);
+              vd->e(constants().lit_true);
             } else {
-              vd->e(constants().lf);
+              vd->e(constants().lit_false);
             }
           } else {
             vd->e(e);
@@ -520,19 +520,19 @@ namespace MiniZinc {
         if (istrue(e[i].b()))
           continue;
         if (isfalse(e[i].b())) {
-          return bind(env,Ctx(),b,constants().lf);
+          return bind(env,Ctx(),b,constants().lit_false);
         }
         nontrue.push_back(e[i].b());
       }
       if (nontrue.empty()) {
-        return bind(env,Ctx(),b,constants().lt);
+        return bind(env,Ctx(),b,constants().lit_true);
       } else if (nontrue.size()==1) {
         return bind(env,ctx,b,nontrue[0]);
       } else {
-        if (b==constants().t) {
+        if (b==constants().var_true) {
           for (unsigned int i=0; i<nontrue.size(); i++)
             bind(env,ctx,b,nontrue[i]);
-          return constants().lt;
+          return constants().lit_true;
         } else {
           GC::lock();
           std::vector<Expression*> args;
@@ -544,7 +544,7 @@ namespace MiniZinc {
           ret->decl(env.orig->matchFn(ret));
           KeepAlive ka(ret);
           GC::unlock();
-          return flat_exp(env,ctx,ret,b,constants().t).r;
+          return flat_exp(env,ctx,ret,b,constants().var_true).r;
         }
       }
     } else {
@@ -556,24 +556,24 @@ namespace MiniZinc {
         if (istrue(e[i].b()))
           continue;
         if (isfalse(e[i].b())) {
-          return bind(env,Ctx(),b,constants().lt);
+          return bind(env,Ctx(),b,constants().lit_true);
         }
         nonfalse.push_back(e[i].b());
       }
       if (nonfalse.empty()) {
-        return bind(env,Ctx(),b,constants().lf);
+        return bind(env,Ctx(),b,constants().lit_false);
       } else if (nonfalse.size()==1) {
         GC::lock();
         UnOp* uo = new UnOp(nonfalse[0]->loc(),UOT_NOT,nonfalse[0]);
         uo->type(Type::varbool());
         KeepAlive ka(uo);
         GC::unlock();
-        return flat_exp(env,nctx,uo,b,constants().t).r;
+        return flat_exp(env,nctx,uo,b,constants().var_true).r;
       } else {
-        if (b==constants().f) {
+        if (b==constants().var_false) {
           for (unsigned int i=0; i<nonfalse.size(); i++)
             bind(env,nctx,b,nonfalse[i]);
-          return constants().lf;
+          return constants().lit_false;
         } else {
           GC::lock();
           std::vector<Expression*> args;
@@ -591,7 +591,7 @@ namespace MiniZinc {
           assert(ret->decl());
           KeepAlive ka(ret);
           GC::unlock();
-          return flat_exp(env,nctx,ret,b,constants().t).r;
+          return flat_exp(env,nctx,ret,b,constants().var_true).r;
         }
       }
       
@@ -853,7 +853,7 @@ namespace MiniZinc {
     assert(!e->type().isunknown());
     if (e->type().ispar() && !e->isa<Let>() && e->type()._bt!=Type::BT_ANN) {
       GCLock lock;
-      ret.b = bind(env,Ctx(),b,constants().lt);
+      ret.b = bind(env,Ctx(),b,constants().lit_true);
       ret.r = bind(env,ctx,r,eval_par(e));
       return ret;
     }
@@ -864,14 +864,14 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       {
         GCLock lock;
-        ret.b = bind(env,Ctx(),b,constants().lt);
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,Ctx(),r,e);
         return ret;
       }
     case Expression::E_BOOLLIT:
       {
         GCLock lock;
-        ret.b = bind(env,Ctx(),b,constants().lt);
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,ctx,r,e);
         return ret;
       }
@@ -922,10 +922,10 @@ namespace MiniZinc {
           Expression* rete = NULL;
           if (vd==NULL) {
             // New top-level id, need to copy into env.m
-            vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().t).r()
+            vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
                  ->cast<VarDecl>();
           }
-          ret.b = bind(env,Ctx(),b,constants().lt);
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           if (vd && vd->e()!=NULL) {
             switch (vd->e()->eid()) {
             case Expression::E_INTLIT:
@@ -959,7 +959,7 @@ namespace MiniZinc {
               ASTString nid = env.genId("fresh_"+vd->id()->v().str());
               VarDecl* nvd = new VarDecl(Location(),vti,nid);
               nvd->introduced(true);
-              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().t);
+              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
               Id* id = root_vd.r()->cast<VarDecl>()->id();
               elems[i] = id;
             }
@@ -1061,7 +1061,7 @@ namespace MiniZinc {
               dims[i] = eval_int(aa->idx()[i]);
             ka = eval_arrayaccess(al,dims);
           }
-          ret.b = bind(env,Ctx(),b,constants().lt);
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           ret.r = bind(env,ctx,r,ka());
         } else {
           std::vector<Expression*> args(aa->idx().size()+1);
@@ -1096,7 +1096,7 @@ namespace MiniZinc {
           typedef EE ArrayVal;
           EE e(Expression* e) {
             if (ctx.b == C_ROOT && e->type().isbool()) {
-              return flat_exp(env,ctx,e,constants().t,constants().t);
+              return flat_exp(env,ctx,e,constants().var_true,constants().var_true);
             } else {
               return flat_exp(env,ctx,e,NULL,NULL);
             }
@@ -1252,12 +1252,12 @@ namespace MiniZinc {
 
         case BOT_AND:
             {
-              if (r==constants().t) {
+              if (r==constants().var_true) {
                 Ctx ctx;
                 ctx.neg = negArgs;
                 ctx.b = negArgs ? C_NEG : C_ROOT;
-                (void) flat_exp(env,ctx,boe0,constants().t,constants().t);
-                (void) flat_exp(env,ctx,boe1,constants().t,constants().t);
+                (void) flat_exp(env,ctx,boe0,constants().var_true,constants().var_true);
+                (void) flat_exp(env,ctx,boe1,constants().var_true,constants().var_true);
                 break;
               } else {
                 GC::lock();
@@ -1358,7 +1358,7 @@ namespace MiniZinc {
               goto flatten_bool_op;
             } else {
               ctx0.b = ctx1.b = C_MIX;
-              if (r && r==constants().t) {
+              if (r && r==constants().var_true) {
                 if (boe1->type().ispar() || boe1->isa<Id>())
                   std::swap(boe0,boe1);
                 if (istrue(boe0)) {
@@ -1371,8 +1371,8 @@ namespace MiniZinc {
                   EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
                   Id* id = e0.r()->cast<Id>();
                   (void) flat_exp(env,ctx1,boe1,id->decl(),NULL);
-                  ret.b = bind(env,Ctx(),b,constants().lt);
-                  ret.r = bind(env,Ctx(),r,constants().lt);
+                  ret.b = bind(env,Ctx(),b,constants().lit_true);
+                  ret.r = bind(env,Ctx(),r,constants().lit_true);
                 }
                 break;
               } else {
@@ -1491,7 +1491,7 @@ namespace MiniZinc {
             {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
-              ret.b = bind(env,Ctx(),b,constants().lt);
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
 
               std::vector<KeepAlive> args;
               std::string callid;
@@ -1550,7 +1550,7 @@ namespace MiniZinc {
                   if (result || doubleNeg) {
                     ret.r = conj(env,r,ctx,ees);
                   } else {
-                    ret.r = bind(env,ctx,r,constants().lf);
+                    ret.r = bind(env,ctx,r,constants().lit_false);
                   }
                   break;
                 } else if (coeffv.size()==1 && 
@@ -1576,14 +1576,14 @@ namespace MiniZinc {
                           vd->ti()->setComputedDomain(false);
                           vd->ti()->domain(new SetLit(Location(),IntSetVal::a(d,d)));
                         }
-                        ret.r = bind(env,ctx,r,constants().lt);
+                        ret.r = bind(env,ctx,r,constants().lit_true);
                       } else {
-                        ret.r = bind(env,ctx,r,constants().lf);
+                        ret.r = bind(env,ctx,r,constants().lit_false);
                       }
                     } else {
                       vd->ti()->setComputedDomain(false);
                       vd->ti()->domain(new SetLit(Location(),IntSetVal::a(d,d)));
-                      ret.r = bind(env,ctx,r,constants().lt);
+                      ret.r = bind(env,ctx,r,constants().lit_true);
                     }
                   } else if (alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
                     GCLock lock;
@@ -1625,9 +1625,9 @@ namespace MiniZinc {
                     IntSetVal* newibv = IntSetVal::ai(i);
                     if (domain->card() != newibv->card()) {
                       if (newibv->card() == 0) {
-                        ret.r = bind(env,ctx,r,constants().lf);
+                        ret.r = bind(env,ctx,r,constants().lit_false);
                       } else {
-                        ret.r = bind(env,ctx,r,constants().lt);
+                        ret.r = bind(env,ctx,r,constants().lit_true);
                         vd->ti()->setComputedDomain(false);
                         vd->ti()->domain(new SetLit(Location(),newibv));
                       }
@@ -1907,10 +1907,10 @@ namespace MiniZinc {
         }
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
-            cid == constants().ids.forall && r==constants().t) {
+            cid == constants().ids.forall && r==constants().var_true) {
           /// TODO: need generic array evaluation function
-          ret.b = bind(env,ctx,b,constants().lt);
-          EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().t);
+          ret.b = bind(env,ctx,b,constants().lit_true);
+          EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().var_true);
           ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->v().size(); i++)
@@ -1953,7 +1953,7 @@ namespace MiniZinc {
               for (unsigned int i=0; i<alv.size(); i++) {
                 Call* neg_call = same_call(alv[i],"bool_eq");
                 if (neg_call && 
-                    Expression::equal(neg_call->args()[1],constants().lf)) {
+                    Expression::equal(neg_call->args()[1],constants().lit_false)) {
                   neg_alv.push_back(neg_call->args()[0]);
                 } else {
                   Call* clause = same_call(alv[i],"bool_clause");
@@ -1975,11 +1975,11 @@ namespace MiniZinc {
               remove_dups(neg_alv,true);
               if (neg_alv.empty()) {
                 if (pos_alv.size()==0) {
-                  ret.b = bind(env,Ctx(),b,constants().lt);
-                  ret.r = bind(env,ctx,r,constants().lf);
+                  ret.b = bind(env,Ctx(),b,constants().lit_true);
+                  ret.r = bind(env,ctx,r,constants().lit_false);
                   return ret;
                 } else if (pos_alv.size()==1) {
-                  ret.b = bind(env,Ctx(),b,constants().lt);
+                  ret.b = bind(env,Ctx(),b,constants().lit_true);
                   ret.r = bind(env,ctx,r,pos_alv[0]);
                   return ret;
                 }
@@ -1998,11 +1998,11 @@ namespace MiniZinc {
             } else /* cid=="forall" */ {
               remove_dups(alv,true);
               if (alv.size()==0) {
-                ret.b = bind(env,Ctx(),b,constants().lt);
-                ret.r = bind(env,ctx,r,constants().lt);
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,constants().lit_true);
                 return ret;
               } else if (alv.size()==1) {
-                ret.b = bind(env,Ctx(),b,constants().lt);
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
                 ret.r = bind(env,ctx,r,alv[0]);
                 return ret;
               }
@@ -2111,7 +2111,7 @@ namespace MiniZinc {
                 vd->e(args[i]);
               }
               if (isTotal(decl)) {
-                EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().t);
+                EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
                 ret.r = bind(env,ctx,r,ee.r());
                 ret.b = conj(env,b,Ctx(),args_ee);
                 env.map_insert(cr,ret);
@@ -2138,7 +2138,6 @@ namespace MiniZinc {
         if (ctx.b != C_ROOT)
           throw FlatteningError(e->loc(), "not in root context");
         VarDecl* v = e->cast<VarDecl>();
-        Id* id = v->id();
         VarDecl* it = v->flat();
         if (it==NULL) {
           VarDecl* vd = new VarDecl(Location(),
@@ -2148,7 +2147,7 @@ namespace MiniZinc {
           if (v->ann()) {
             vd->annotate(
               static_cast<Annotation*>(
-              flat_exp(env,Ctx(),v->ann(),NULL,constants().t).r())
+              flat_exp(env,Ctx(),v->ann(),NULL,constants().var_true).r())
             );
           }
           VarDeclI* nv = new VarDeclI(Location(),vd);
@@ -2156,7 +2155,7 @@ namespace MiniZinc {
           if (v->e() && v->e()->type().isbool())
             nctx.b = C_MIX;
           if (v->e()) {
-            (void) flat_exp(env,nctx,v->e(),vd,constants().t);
+            (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
             if (v->e()->type()._bt==Type::BT_INT && v->e()->type()._dim==0) {
               IntSetVal* ibv = NULL;
               if (v->e()->type().isset()) {
@@ -2192,7 +2191,7 @@ namespace MiniZinc {
         } else {
           ret.r = bind(env,Ctx(),r,it);
         }
-        ret.b = bind(env,Ctx(),b,constants().lt);
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
       }
       break;
     case Expression::E_LET:
@@ -2226,21 +2225,21 @@ namespace MiniZinc {
             Id* nid = nvd->id();
             nvd->flat(nvd);
             vd->e(nid);
-            (void) flat_exp(env,Ctx(),nid,NULL,constants().t);
+            (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
             assert(vd->flat()==NULL);
             vd->flat(vd);
           } else {
             if (ctx.b==C_ROOT) {
-              (void) flat_exp(env,Ctx(),le,constants().t,constants().t);
+              (void) flat_exp(env,Ctx(),le,constants().var_true,constants().var_true);
             } else {
-              EE ee = flat_exp(env,ctx,le,NULL,constants().t);
+              EE ee = flat_exp(env,ctx,le,NULL,constants().var_true);
               ee.b = ee.r;
               cs.push_back(ee);
             }
           }
         }
-        if (r==constants().t && ctx.b==C_ROOT && !ctx.neg) {
-          ret.b = bind(env,Ctx(),b,constants().lt);
+        if (r==constants().var_true && ctx.b==C_ROOT && !ctx.neg) {
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           (void) flat_exp(env,ctx,let->in(),r,b);
           ret.r = conj(env,r,Ctx(),cs);
         } else {
@@ -2249,7 +2248,7 @@ namespace MiniZinc {
             ee.b = ee.r;
             cs.push_back(ee);
             ret.r = conj(env,r,ctx,cs);
-            ret.b = bind(env,Ctx(),b,constants().lt);
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
           } else {
             cs.push_back(ee);
             ret.r = bind(env,Ctx(),r,ee.r());
@@ -2269,8 +2268,8 @@ namespace MiniZinc {
       {
         GCLock lock;
         Annotation* ann = e->cast<Annotation>();
-        EE ee = flat_exp(env,Ctx(),ann->e(),NULL,constants().t);
-        EE ea = flat_exp(env,Ctx(),ann->next(),NULL,constants().t);
+        EE ee = flat_exp(env,Ctx(),ann->e(),NULL,constants().var_true);
+        EE ea = flat_exp(env,Ctx(),ann->next(),NULL,constants().var_true);
         ret.r = new Annotation(Location(),ee.r(),
                                static_cast<Annotation*>(ea.r()));
         ret.b = b;
@@ -2297,14 +2296,14 @@ namespace MiniZinc {
       FV(Env& env0) : env(env0) {}
       void vVarDeclI(VarDeclI* v) {
         if (v->e()->type().isvar()) {
-          (void) flat_exp(env,Ctx(),v->e(),NULL,constants().t);
+          (void) flat_exp(env,Ctx(),v->e(),NULL,constants().var_true);
         }
       }
       void vConstraintI(ConstraintI* ci) {
-        (void) flat_exp(env,Ctx(),ci->e(),constants().t,constants().t);
+        (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
       }
       void vSolveI(SolveI* si) {
-        EE ee = flat_exp(env,Ctx(),si->ann(),NULL,constants().t);
+        EE ee = flat_exp(env,Ctx(),si->ann(),NULL,constants().var_true);
         Annotation* ann = static_cast<Annotation*>(ee.r());
         GCLock lock;
         switch (si->st()) {
@@ -2313,12 +2312,12 @@ namespace MiniZinc {
           break;
         case SolveI::ST_MIN:
           env.m->addItem(SolveI::min(Location(),
-            flat_exp(env,Ctx(),si->e(),NULL,constants().t).r(),
+            flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
             ann));
           break;
         case SolveI::ST_MAX:
           env.m->addItem(SolveI::max(Location(),
-            flat_exp(env,Ctx(),si->e(),NULL,constants().t).r(),
+            flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
             ann));
           break;
         }
@@ -2352,9 +2351,9 @@ namespace MiniZinc {
         GCLock lock;
         VarDecl* vd = v->e();
         if (vd->type().isvar() && vd->type().isbool()) {
-          if (Expression::equal(vd->ti()->domain(),constants().lt)) {
+          if (Expression::equal(vd->ti()->domain(),constants().lit_true)) {
             Expression* ve = vd->e();
-            vd->e(constants().lt);
+            vd->e(constants().lit_true);
             vd->ti()->domain(NULL);
             if (ve != NULL) {
               if (Call* vc = ve->dyn_cast<Call>()) {
@@ -2362,14 +2361,14 @@ namespace MiniZinc {
                   vc->id(ASTString("array_bool_or"));
                   std::vector<Expression*> args(2);
                   args[0] = vc->args()[0];
-                  args[1] = constants().lt;
+                  args[1] = constants().lit_true;
                   ASTExprVec<Expression> argsv(args);
                   vc->args(argsv);
                 } else if (vc->id() == constants().ids.forall) {
                   vc->id(ASTString("array_bool_and"));
                   std::vector<Expression*> args(2);
                   args[0] = vc->args()[0];
-                  args[1] = constants().lt;
+                  args[1] = constants().lit_true;
                   ASTExprVec<Expression> argsv(args);
                   vc->args(argsv);
                 }
@@ -2480,7 +2479,7 @@ namespace MiniZinc {
             vc->id(ASTString("array_bool_or"));
             std::vector<Expression*> args(2);
             args[0] = vc->args()[0];
-            args[1] = constants().lt;
+            args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
           } else if (vc->id() == constants().ids.forall) {
@@ -2488,7 +2487,7 @@ namespace MiniZinc {
             vc->id(ASTString("array_bool_and"));
             std::vector<Expression*> args(2);
             args[0] = vc->args()[0];
-            args[1] = constants().lt;
+            args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
           }

@@ -23,13 +23,13 @@ namespace MiniZinc {
     Model* m;
   public:
     /// Literal true
-    BoolLit* lt;
+    BoolLit* lit_true;
     /// Variable bound to true
-    VarDecl* t;
+    VarDecl* var_true;
     /// Literal false
-    BoolLit* lf;
+    BoolLit* lit_false;
     /// Variable bound to false
-    VarDecl* f;
+    VarDecl* var_false;
     /// Identifiers for builtins
     struct {
       ASTString forall;
@@ -51,7 +51,7 @@ namespace MiniZinc {
     Constants(void);
     /// Return shared BoolLit
     BoolLit* boollit(bool b) {
-      return b ? lt : lf;
+      return b ? lit_true : lit_false;
     }
   };
   

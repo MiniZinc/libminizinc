@@ -124,7 +124,7 @@ namespace MiniZinc {
       if (vdi!=NULL && vo.occurrences(vdi->e())==0 ) {
         if (vdi->e()->e() && vdi->e()->ti()->domain()) {
           if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
-              Expression::equal(vdi->e()->ti()->domain(),constants().lt)) {
+              Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
             GCLock lock;
             ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
             if (vdi->e()->introduced()) {
