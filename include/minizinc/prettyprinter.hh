@@ -29,15 +29,37 @@ namespace MiniZinc {
     PrettyPrinter* printer;
     void init(void);
     void p(Document* d, std::ostream& os, int width=80);
-    void p(Item* i, std::ostream& os, int width=80);
+    void p(const Item* i, std::ostream& os, int width=80);
   public:
     Printer(void);
     ~Printer(void);
     
-    void print(Expression* e, std::ostream& os, int width=80);
-    void print(Item* i, std::ostream& os, int width=80);
-    void print(Model* m, std::ostream& os, int width=80);
+    void print(const Expression* e, std::ostream& os, int width=80);
+    void print(const Item* i, std::ostream& os, int width=80);
+    void print(const Model* m, std::ostream& os, int width=80);
   };
+
+  /// Output operator for expressions
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const Expression& e) {
+    std::basic_ostringstream<Char,Traits> s;
+    s.copyfmt(os); s.width(0);
+    Printer p;
+    p.print(&e,s);
+    return os << s.str();
+  }
+
+  /// Output operator for items
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const Item& i) {
+    std::basic_ostringstream<Char,Traits> s;
+    s.copyfmt(os); s.width(0);
+    Printer p;
+    p.print(&i,s);
+    return os << s.str();
+  }
 
 }
 

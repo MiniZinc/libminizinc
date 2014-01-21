@@ -1793,7 +1793,7 @@ namespace MiniZinc {
     printer = new PrettyPrinter(width,4,true,true);
   }
   void
-  Printer::p(Item* i, std::ostream& os, int width) {
+  Printer::p(const Item* i, std::ostream& os, int width) {
     Document* d;
     switch (i->iid()) {
     case Item::II_INC:
@@ -1823,7 +1823,7 @@ namespace MiniZinc {
   }
 
   void
-  Printer::print(Expression* e, std::ostream& os, int width) {
+  Printer::print(const Expression* e, std::ostream& os, int width) {
     if (width==0) {
       PlainPrinter p(os); p.p(e);
     } else {
@@ -1834,7 +1834,7 @@ namespace MiniZinc {
     }
   }
   void
-  Printer::print(Item* i, std::ostream& os, int width) {
+  Printer::print(const Item* i, std::ostream& os, int width) {
     if (width==0) {
       PlainPrinter p(os); p.p(i);
     } else {
@@ -1843,7 +1843,7 @@ namespace MiniZinc {
     }
   }
   void
-  Printer::print(Model* m, std::ostream& os, int width) {
+  Printer::print(const Model* m, std::ostream& os, int width) {
     if (width==0) {
       PlainPrinter p(os);
       for (unsigned int i = 0; i < m->_items.size(); i++) {
@@ -1860,10 +1860,10 @@ namespace MiniZinc {
 }
 
 void debugprint(MiniZinc::Expression* e) {
-  MiniZinc::Printer p; p.print(e,std::cerr);
+  std::cerr << *e;
 }
 void debugprint(MiniZinc::Item* i) {
-  MiniZinc::Printer p; p.print(i,std::cerr);
+  std::cerr << *i;
 }
 void debugprint(MiniZinc::Model* m) {
   MiniZinc::Printer p; p.print(m,std::cerr);
