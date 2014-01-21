@@ -134,7 +134,9 @@ namespace MiniZinc {
     bool operator!= (const Type& t) const {
       return !this->operator==(t);
     }
-
+    int dim(void) const {
+      return _dim;
+    }
   // protected:
 
     /* We add 1 to _dim in toInt to ensure that it is non-negative
