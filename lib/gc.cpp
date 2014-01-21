@@ -651,8 +651,10 @@ namespace MiniZinc {
   WeakRef&
   WeakRef::operator =(const WeakRef& e) {
     if (_e || !_valid) {
-      if (e()==NULL)
+      if (e()==NULL) {
         GC::gc()->removeWeakRef(this);
+        _n = _p = NULL;
+      }
     } else {
       if (e()!=NULL)
         GC::gc()->addWeakRef(this);
