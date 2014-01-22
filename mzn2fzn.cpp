@@ -38,6 +38,12 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   
+  string std_lib_dir;
+  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+    std_lib_dir = string(MZNSTDLIBDIR);
+  }
+  string globals_dir;
+  
   bool flag_no_output_ozn = false;
   string flag_output_base;
   string flag_output_fzn;
@@ -97,12 +103,36 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (string(argv[i])=="--stdlib-dir") {
+      i++;
+      if (i==argc)
+        goto error;
+      std_lib_dir = argv[i];
+    } else if (string(argv[i])=="-G" ||
+               string(argv[i])=="--globals-dir" ||
+               string(argv[i])=="--mzn-globals-dir") {
+      i++;
+      if (i==argc)
+        goto error;
+      globals_dir = argv[i];
     } else {
       break;
     }
     i++;
   }
 
+  if (std_lib_dir=="") {
+    std::cerr << "Error: unknown minizinc standard library directory.\n"
+              << "Specify --stdlib-dir on the command line or set the\n"
+              << "MZN_STDLIB_DIR environment variable.\n";
+    std::exit(EXIT_FAILURE);
+  }
+  
+  if (globals_dir!="") {
+    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
+  }
+  includePaths.push_back(std_lib_dir+"/std/");
+  
   if (i==argc) {
     goto error;
   }
@@ -121,8 +151,12 @@ int main(int argc, char** argv) {
     flag_output_ozn = flag_output_base+".ozn";
   }
   
-  while (i<argc)
+  while (i<argc) {
+    if (filename.length()<=4 ||
+        filename.substr(filename.length()-4,string::npos) != ".dzn")
+      goto error;
     datafiles.push_back(argv[i++]);
+  }
 
   {
     if (flag_verbose)
