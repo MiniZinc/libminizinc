@@ -679,6 +679,8 @@ namespace MiniZinc {
 
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }
+    /// Set TypeInst
+    void ti(TypeInst* t) { _ti=t; }
     /// Access identifier
     Id* id(void) const { return _id; }
     /// Access initialisation expression

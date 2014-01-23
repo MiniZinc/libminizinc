@@ -2516,14 +2516,19 @@ namespace MiniZinc {
               
             }
           }
-        } else if (vd->type()._dim==1 &&
-                   vd->ti()->ranges().size()==1) {
-          if (vd->ti()->ranges()[0]->domain()==NULL) {
-            assert(vd->e() != NULL);
-            ArrayLit* al = NULL;
-            Expression* e = vd->e();
-            while (al==NULL) {
-              switch (e->eid()) {
+        } else if (vd->type()._dim > 0) {
+          if (vd->ti()->ranges().size() == 1 &&
+              vd->ti()->ranges()[0]->domain() != NULL &&
+              vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
+            IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
+            if (isv && isv->min(0)==1)
+              return;
+          }
+          assert(vd->e() != NULL);
+          ArrayLit* al = NULL;
+          Expression* e = vd->e();
+          while (al==NULL) {
+            switch (e->eid()) {
               case Expression::E_ARRAYLIT:
                 al = e->cast<ArrayLit>();
                 break;
@@ -2532,23 +2537,23 @@ namespace MiniZinc {
                 break;
               default:
                 assert(false);
-              }
             }
-            IntSetVal* isv = IntSetVal::a(al->min(0),al->max(0));
+          }
+          std::vector<int> dims(2);
+          dims[0] = 1;
+          dims[1] = al->length();
+          al->setDims(ASTIntVec(dims));
+          IntSetVal* isv = IntSetVal::a(1,al->length());
+          if (vd->ti()->ranges().size() == 1) {
             vd->ti()->ranges()[0]->domain(new SetLit(Location(),isv));
           } else {
-            IntSetVal* isv = eval_intset(vd->ti()->ranges()[0]->domain());
-            if (isv->min(0)!=1) {
-              vd->ti()->ranges()[0]->domain(new SetLit(Location(),
-                IntSetVal::a(1,isv->max(0)-isv->min(0)+1)));
-              if (vd->e() != NULL && vd->e()->eid()==Expression::E_ARRAYLIT) {
-                std::vector<int> dims(2);
-                dims[0] = 1;
-                dims[1] = isv->max(0)-isv->min(0)+1;
-                ArrayLit* al = vd->e()->cast<ArrayLit>();
-                al->setDims(ASTIntVec(dims));
-              }
-            }
+            std::vector<TypeInst*> r(1);
+            r[0] = new TypeInst(vd->ti()->ranges()[0]->loc(),
+                                vd->ti()->ranges()[0]->type(),
+                                new SetLit(Location(),isv));
+            ASTExprVec<TypeInst> ranges(r);
+            TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
+            vd->ti(ti);
           }
         }
       }
