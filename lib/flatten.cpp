@@ -1598,7 +1598,7 @@ namespace MiniZinc {
                   } else {
                     d = -d;
                   }
-                  if (alv[0]()->isa<Id>() && bot==BOT_EQ) {
+                  if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
                     GCLock lock;
                     VarDecl* vd = alv[0]()->cast<Id>()->decl();
                     if (vd->ti()->domain()) {
@@ -1617,7 +1617,7 @@ namespace MiniZinc {
                       vd->ti()->domain(new SetLit(Location(),IntSetVal::a(d,d)));
                       ret.r = bind(env,ctx,r,constants().lit_true);
                     }
-                  } else if (alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+                  } else if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
                     GCLock lock;
                     VarDecl* vd = alv[0]()->cast<Id>()->decl();
                     IntSetVal* domain = eval_intset(vd->ti()->domain());
