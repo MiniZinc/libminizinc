@@ -2217,7 +2217,8 @@ namespace MiniZinc {
             }
           }
           env.flat->addItem(nv);
-          
+
+          vd->flat(vd);
           v->flat(vd);
           ret.r = bind(env,Ctx(),r,vd);
         } else {
