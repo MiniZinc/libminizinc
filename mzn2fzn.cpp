@@ -33,7 +33,6 @@ int main(int argc, char** argv) {
   bool flag_ignoreStdlib = false;
   bool flag_typecheck = true;
   bool flag_eval = true;
-  bool flag_output = true;
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
@@ -67,8 +66,6 @@ int main(int argc, char** argv) {
       includePaths.push_back(argv[i]+string("/"));
     } else if (string(argv[i])==string("--ignore-stdlib")) {
       flag_ignoreStdlib = true;
-    } else if (string(argv[i])==string("--no-output")) {
-      flag_output = false;
     } else if (string(argv[i])==string("--no-typecheck")) {
       flag_typecheck = false; flag_eval=false;
     } else if (string(argv[i])==string("--no-eval")) {
@@ -182,37 +179,34 @@ int main(int argc, char** argv) {
             optimize(env);
           }
 
-          if (flag_output) {
-            if (!flag_newfzn) {
-              if (flag_verbose)
-                std::cerr << "Converting to old FlatZinc..." << std::endl;
-              oldflatzinc(flat);
-            }
-
+          if (!flag_newfzn) {
             if (flag_verbose)
-              std::cerr << "Printing FlatZinc..." << std::endl;
-            Printer p;
-            if (flag_output_fzn_stdout) {
-              p.print(flat,std::cout,0);
+              std::cerr << "Converting to old FlatZinc..." << std::endl;
+            oldflatzinc(flat);
+          }
+          
+          if (flag_verbose)
+            std::cerr << "Printing FlatZinc..." << std::endl;
+          Printer p;
+          if (flag_output_fzn_stdout) {
+            p.print(flat,std::cout,0);
+          } else {
+            std::ofstream os;
+            os.open(flag_output_fzn, ios::out);
+            p.print(flat,os,0);
+            os.close();
+          }
+          if (!flag_no_output_ozn) {
+            if (flag_output_ozn_stdout) {
+              p.print(env.output(),std::cout,0);
             } else {
               std::ofstream os;
-              os.open(flag_output_fzn, ios::out);
-              p.print(flat,os,0);
+              os.open(flag_output_ozn, ios::out);
+              p.print(env.output(),os,0);
               os.close();
             }
-            if (!flag_no_output_ozn) {
-              if (flag_output_ozn_stdout) {
-                p.print(env.output(),std::cout,0);
-              } else {
-                std::ofstream os;
-                os.open(flag_output_ozn, ios::out);
-                p.print(env.output(),os,0);
-                os.close();
-              }
-            }
-            
           }
-        } else if (flag_output) { // !flag_typecheck
+        } else { // !flag_typecheck
           Printer p;
           p.print(m,std::cout);
         }
@@ -237,14 +231,22 @@ error:
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
             << std::endl
             << "Options:" << std::endl
-            << "\t--help  -h\tPrint this help message" << std::endl
-            << "\t--ignore-stdlib\tIgnore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-            << "\t--newfzn\tOutput in the new FlatZinc format" << std::endl
-            << "\t--verbose\tPrint progress statements" << std::endl
-            << "\t--no-typecheck\tDo not typecheck (implies --no-eval)" << std::endl
-            << "\t--no-eval\tDo not evaluate" << std::endl
-            << "\t--no-optimize\tDo not optimize the FlatZinc (may speed up large instances)" << std::endl
-            << "\t--no-output\tDo not print the output" << std::endl;
+            << "  --help, -h\n    Print this help message" << std::endl
+            << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+            << "  --newfzn\n    Output in the new FlatZinc format" << std::endl
+            << "  --verbose\n    Print progress statements" << std::endl
+            << "  --no-typecheck\n    Do not typecheck (implies --no-eval)" << std::endl
+            << "  --no-eval\n    Do not evaluate" << std::endl
+            << "  --no-optimize\n    Do not optimize the FlatZinc (may speed up large instances)" << std::endl
+            << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+            << "  --output-base <name>\n    Base name for output files" << std::endl
+            << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+            << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
+            << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
+            << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+  ;
 
   exit(EXIT_FAILURE);
 }
