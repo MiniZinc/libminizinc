@@ -2060,46 +2060,69 @@ namespace MiniZinc {
             ret.b = bind(env,Ctx(),b,cit->second.b());
             ret.r = bind(env,ctx,r,cit->second.r());
           } else {
-            if (decl->e()==NULL) {
-              /// For now assume that all builtins are total
-              if (decl->_builtins.e) {
-                Expression* callres =
-                decl->_builtins.e(cr->args());
-                EE res = flat_exp(env,ctx,callres,r,b);
-                args_ee.push_back(res);
-                ret.b = conj(env,b,Ctx(),args_ee);
-                ret.r = bind(env,ctx,r,res.r());
-                env.map_insert(cr,ret);
+            if (cr->type().isbool() && ctx.b != C_ROOT && r != constants().var_true) {
+              VarDecl* reif_b = r;
+              if (reif_b == NULL) {
+                reif_b = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
+                reif_b->type(Type::varbool());
+              }
+              args.push_back(reif_b->id());
+              Call* cr_real = new Call(Location(),cid.str()+"_reif",args);
+              cr_real->type(Type::varbool());
+              FunctionI* decl_real = env.orig->matchFn(cr_real);
+              if (decl_real && decl_real->e()) {
+                cr_real->decl(decl_real);
+                flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r=reif_b->id();
               } else {
-                ret.b = conj(env,b,Ctx(),args_ee);
-                ret.r = bind(env,ctx,r,cr);
-                env.map_insert(cr,ret);
+                args.pop_back();
+                goto call_nonreif;
               }
             } else {
-              std::vector<std::pair<Id*,Expression*> > idmap;
-              // Save mapping from Ids to VarDecls and set to parameters
-              /// TODO: save vd->_e as well (if we want to support recursive functions)
-              for (unsigned int i=decl->params().size(); i--;) {
-                VarDecl* vd = decl->params()[i];
-                vd->flat(vd);
-                vd->e(args[i]);
-              }
-              if (isTotal(decl)) {
-                EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                ret.r = bind(env,ctx,r,ee.r());
-                ret.b = conj(env,b,Ctx(),args_ee);
-                env.map_insert(cr,ret);
+            call_nonreif:
+              if (decl->e()==NULL) {
+                /// For now assume that all builtins are total
+                if (decl->_builtins.e) {
+                  Expression* callres =
+                  decl->_builtins.e(cr->args());
+                  EE res = flat_exp(env,ctx,callres,r,b);
+                  args_ee.push_back(res);
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret.r = bind(env,ctx,r,res.r());
+                  env.map_insert(cr,ret);
+                } else {
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret.r = bind(env,ctx,r,cr);
+                  env.map_insert(cr,ret);
+                }
               } else {
-                ret = flat_exp(env,ctx,decl->e(),r,NULL);
-                args_ee.push_back(ret);
-                ret.b = conj(env,b,Ctx(),args_ee);
-                env.map_insert(cr,ret);
-              }
-              // Restore previous mapping
-              for (unsigned int i=decl->params().size(); i--;) {
-                VarDecl* vd = decl->params()[i];
-                vd->flat(NULL);
-                vd->e(NULL);
+                std::vector<std::pair<Id*,Expression*> > idmap;
+                // Save mapping from Ids to VarDecls and set to parameters
+                /// TODO: save vd->_e as well (if we want to support recursive functions)
+                for (unsigned int i=decl->params().size(); i--;) {
+                  VarDecl* vd = decl->params()[i];
+                  vd->flat(vd);
+                  vd->e(args[i]);
+                }
+                
+                if (isTotal(decl)) {
+                  EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
+                  ret.r = bind(env,ctx,r,ee.r());
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  env.map_insert(cr,ret);
+                } else {
+                  ret = flat_exp(env,ctx,decl->e(),r,NULL);
+                  args_ee.push_back(ret);
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  env.map_insert(cr,ret);
+                }
+                // Restore previous mapping
+                for (unsigned int i=decl->params().size(); i--;) {
+                  VarDecl* vd = decl->params()[i];
+                  vd->flat(NULL);
+                  vd->e(NULL);
+                }
               }
             }
           }
@@ -2118,6 +2141,8 @@ namespace MiniZinc {
                                     eval_typeinst(env,v->ti()),
                                     v->id()->v().str());
           vd->introduced(v->introduced());
+          vd->flat(vd);
+          v->flat(vd);
           if (v->ann()) {
             vd->annotate(
               static_cast<Annotation*>(
@@ -2160,8 +2185,6 @@ namespace MiniZinc {
           }
           env.flat->addItem(nv);
 
-          vd->flat(vd);
-          v->flat(vd);
           ret.r = bind(env,Ctx(),r,vd);
         } else {
           ret.r = bind(env,Ctx(),r,it);
