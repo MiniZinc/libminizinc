@@ -110,64 +110,6 @@ namespace MiniZinc {
     explicit EE(Expression* r0=NULL, Expression* b0=NULL) : r(r0), b(b0) {}
   };
 
-  Constants::Constants(void) {
-    GC::init();
-    GCLock lock;
-    TypeInst* ti = new TypeInst(Location(), Type::parbool());
-    lit_true = new BoolLit(Location(), true);
-    var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
-    lit_false = new BoolLit(Location(), false);
-    var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
-    
-    ids.forall = ASTString("forall");
-    ids.exists = ASTString("exists");
-    ids.bool2int = ASTString("bool2int");
-    ids.sum = ASTString("sum");
-    ids.lin_exp = ASTString("lin_exp");
-    ids.bool_eq = ASTString("bool_eq");
-    ids.bool_clause = ASTString("bool_clause");
-    
-    ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
-    ctx.root->type(Type::ann());
-    ctx.pos = new Id(Location(),ASTString("ctx_pos"),NULL);
-    ctx.pos->type(Type::ann());
-    ctx.neg = new Id(Location(),ASTString("ctx_neg"),NULL);
-    ctx.neg->type(Type::ann());
-    ctx.mix = new Id(Location(),ASTString("ctx_mix"),NULL);
-    ctx.mix->type(Type::ann());
-
-    ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
-    ann.output_var->type(Type::ann());
-    ann.output_array = ASTString("output_array");
-    
-    m = new Model;
-    std::vector<Expression*> v;
-    v.push_back(ti);
-    v.push_back(lit_true);
-    v.push_back(var_true);
-    v.push_back(lit_false);
-    v.push_back(var_false);
-    v.push_back(new StringLit(Location(),ids.forall));
-    v.push_back(new StringLit(Location(),ids.exists));
-    v.push_back(new StringLit(Location(),ids.bool2int));
-    v.push_back(new StringLit(Location(),ids.sum));
-    v.push_back(new StringLit(Location(),ids.lin_exp));
-    v.push_back(new StringLit(Location(),ids.bool_eq));
-    v.push_back(new StringLit(Location(),ids.bool_clause));
-    v.push_back(ctx.root);
-    v.push_back(ctx.pos);
-    v.push_back(ctx.neg);
-    v.push_back(ctx.mix);
-    v.push_back(ann.output_var);
-    v.push_back(new StringLit(Location(),ann.output_array));
-    m->_items.push_back(
-      new ConstraintI(Location(),new ArrayLit(Location(),v)));
-  }
-  
-  Constants& constants(void) {
-    static Constants _c;
-    return _c;
-  }
 
   void addCtxAnn(VarDecl* vd, BCtx& c) {
     if (vd) {

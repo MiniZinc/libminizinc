@@ -14,7 +14,6 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/astiterator.hh>
-#include <minizinc/flatten.hh>
 
 namespace MiniZinc {
   

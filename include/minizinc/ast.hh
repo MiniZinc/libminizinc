@@ -1066,6 +1066,53 @@ namespace MiniZinc {
     bool enter(Expression* e) { return true; }
   };
 
+  /// Statically allocated constants
+  class Constants {
+  private:
+      /// Garbage collection root set for constants
+      KeepAlive ka;
+  public:
+      /// Literal true
+      BoolLit* lit_true;
+      /// Variable bound to true
+      VarDecl* var_true;
+      /// Literal false
+      BoolLit* lit_false;
+      /// Variable bound to false
+      VarDecl* var_false;
+      /// Identifiers for builtins
+      struct {
+          ASTString forall;
+          ASTString exists;
+          ASTString bool2int;
+          ASTString sum;
+          ASTString lin_exp;
+          ASTString bool_eq;
+          ASTString bool_clause;
+      } ids;
+      /// Identifiers for Boolean contexts
+      struct {
+          Id* root;
+          Id* pos;
+          Id* neg;
+          Id* mix;
+      } ctx;
+      /// Common annotations
+      struct {
+          Id* output_var;
+          ASTString output_array;
+      } ann;
+      /// Constructor
+      Constants(void);
+      /// Return shared BoolLit
+      BoolLit* boollit(bool b) {
+          return b ? lit_true : lit_false;
+      }
+  };
+    
+  /// Return static instance
+  Constants& constants(void);
+
 }
 
 #include <minizinc/ast.hpp>
