@@ -2374,7 +2374,7 @@ namespace MiniZinc {
     createOutput(env);
   }
 
-  void oldflatzinc(Model* m) {
+  void oldflatzinc(Env& e) {
     struct {
     public:
       bool operator() (const Item* i) {
@@ -2383,16 +2383,17 @@ namespace MiniZinc {
            i->cast<VarDeclI>()->e()->type()._bt == Type::BT_ANN);
       }
     } _isOptVar;
-
+    Model* m = e.flat();
     m->_items.erase(remove_if(m->_items.begin(), m->_items.end(), _isOptVar),
       m->_items.end());
         
     Model tmp;
     class FV : public ItemVisitor {
     public:
+      Env& env;
       Model& tmp;
-      FV(Model& tmp0)
-        : tmp(tmp0) {}
+      FV(Env& env0, Model& tmp0)
+        : env(env0), tmp(tmp0) {}
       void vVarDeclI(VarDeclI* v) {
         GCLock lock;
         VarDecl* vd = v->e();
@@ -2533,6 +2534,7 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
+            vc->decl(env.model()->matchFn(vc));
           } else if (vc->id() == constants().ids.forall) {
             GCLock lock;
             vc->id(ASTString("array_bool_and"));
@@ -2541,10 +2543,14 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
+            vc->decl(env.model()->matchFn(vc));
+          }
+          if (vc->decl() && vc->decl()->loc().filename != "./builtins.mzn") {
+            tmp.addItem(vc->decl());
           }
         }
       }
-    } _fv(tmp);
+    } _fv(e,tmp);
     iterItems<FV>(_fv,m);
     for (unsigned int i=0; i<tmp._items.size(); i++)
       m->addItem(tmp._items[i]);
@@ -2552,6 +2558,11 @@ namespace MiniZinc {
     class Cmp {
     public:
       bool operator() (Item* i, Item* j) {
+        if (i->iid()==Item::II_FUN || j->iid()==Item::II_FUN) {
+          if (i->iid()==j->iid())
+            return i<j;
+          return i->iid()==Item::II_FUN;
+        }
         if (i->iid()==Item::II_SOL) {
           assert(j->iid() != i->iid());
           return false;

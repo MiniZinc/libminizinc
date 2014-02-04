@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
           if (!flag_newfzn) {
             if (flag_verbose)
               std::cerr << "Converting to old FlatZinc..." << std::endl;
-            oldflatzinc(flat);
+            oldflatzinc(env);
           }
           
           if (flag_verbose)

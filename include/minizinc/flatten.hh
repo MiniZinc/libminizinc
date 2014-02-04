@@ -37,7 +37,7 @@ namespace MiniZinc {
   void flatten(Env& m);
 
   /// Translate \a m into old FlatZinc syntax
-  void oldflatzinc(Model* m);
+  void oldflatzinc(Env& m);
   
 }
 
