@@ -409,7 +409,7 @@ namespace MiniZinc {
             assert(false);
             break;
           }
-          bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>());
+          bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>() || uo.ann()!=NULL);
           if (needParen)
             os << "(";
           p(uo.e());
@@ -488,6 +488,9 @@ namespace MiniZinc {
           }
           p(ti.type(),ti.domain());
         }
+      }
+      if (e->ann() && !e->isa<VarDecl>()) {
+        p(e->ann());
       }
     }
 
