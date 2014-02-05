@@ -654,6 +654,21 @@ namespace MiniZinc {
     }
   }
 
+  Expression* follow_id_to_decl(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e->isa<Id>()) {
+        if (e->cast<Id>()->decl()->e() && e->cast<Id>()->decl()->e()->isa<VarDecl>())
+          e = e->cast<Id>()->decl()->e();
+        else
+          return e->cast<Id>()->decl()->id();
+      } else {
+        return e;
+      }
+    }
+  }
+  
   Call* same_call(Expression* e, const std::string& id) {
     Expression* ce = follow_id(e);
     if (ce && ce->isa<Call>() && ce->cast<Call>()->id().str() == id)
@@ -894,10 +909,12 @@ namespace MiniZinc {
           GCLock lock;
           VarDecl* vd = id->decl()->flat();
           Expression* rete = NULL;
+          bool storeVdInEnv = false;
           if (vd==NULL) {
             // New top-level id, need to copy into env.m
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
                  ->cast<VarDecl>();
+            storeVdInEnv = true;
           }
           ret.b = bind(env,Ctx(),b,constants().lit_true);
           if (vd && vd->e()!=NULL) {
@@ -941,6 +958,11 @@ namespace MiniZinc {
             ArrayLit* al = new ArrayLit(Location(),elems,dims);
             al->type(vd->type());
             vd->e(al);
+          }
+          if (storeVdInEnv && vd->e()) {
+            EE ee;
+            ee.r = vd;
+            env.map_insert(vd->e(), ee);
           }
           if (rete==NULL) {
             if (!vd->toplevel()) {
@@ -2038,11 +2060,18 @@ namespace MiniZinc {
             ncoeff->type(Type::parint(1));
             args.push_back(ncoeff);
             std::vector<Expression*> alv_e(alv.size());
-            for (unsigned int i=alv.size(); i--;)
+            bool al_same_as_before = alv.size()==al->v().size();
+            for (unsigned int i=alv.size(); i--;) {
               alv_e[i] = alv[i]();
-            ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
-            nal->type(al->type());
-            args.push_back(nal);
+              al_same_as_before = al_same_as_before && Expression::equal(alv_e[i],al->v()[i]);
+            }
+            if (al_same_as_before) {
+              args.push_back(follow_id_to_decl(flat_al.r()));
+            } else {
+              ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
+              nal->type(al->type());
+              args.push_back(nal);
+            }
             IntLit* il = new IntLit(Location(),d);
             il->type(Type::parint());
             args.push_back(il);
@@ -2458,7 +2487,7 @@ namespace MiniZinc {
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 nc.push_back(new IntLit(Location(),-1));
                 c->args()[0] = new ArrayLit(Location(),nc);
-                ArrayLit* le_x = c->args()[1]->cast<ArrayLit>();
+                ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                 nx.push_back(vd->id());
