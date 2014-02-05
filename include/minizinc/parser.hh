@@ -49,11 +49,12 @@ namespace MiniZinc {
                 std::vector<std::pair<std::string,Model*> >& files0,
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
-                bool isDatafile0)
+                bool isDatafile0, bool isFlatZinc0)
     : filename(f.c_str()), buf(b.c_str()), pos(0), length(b.size()),
       lineno(1), lineStartPos(0), nTokenNextStart(1),
       files(files0), seenModels(seenModels0), model(model0),
-      isDatafile(isDatafile0), hadError(false), err(err0) {}
+      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0),
+      hadError(false), err(err0) {}
   
     const char* filename;
   
@@ -71,6 +72,7 @@ namespace MiniZinc {
     MiniZinc::Model* model;
 
     bool isDatafile;
+    bool isFlatZinc;
     bool hadError;
     std::ostream& err;
 

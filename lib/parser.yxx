@@ -186,7 +186,8 @@ namespace MiniZinc {
       std::string s = get_file_contents(file);
 
       m->_filepath = ASTString(fullname);
-      ParserState pp(fullname,s, err, files, seenModels, m, false);
+      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
+      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
       yyparse(&pp);
@@ -207,7 +208,7 @@ namespace MiniZinc {
       }
       std::string s = get_file_contents(file);
 
-      ParserState pp(f, s, err, files, seenModels, model, true);
+      ParserState pp(f, s, err, files, seenModels, model, true, false);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
       yyparse(&pp);
@@ -303,6 +304,10 @@ namespace MiniZinc {
 %token MZN_RIGHT_2D_BRACKET
 
 %token UNKNOWN_CHAR
+
+// Used to signal an error when parsing a MiniZinc file
+// that contains identifiers starting with _
+%token FLATZINC_IDENTIFIER
 
 %right PREC_ANNO
 %left MZN_EQUIV

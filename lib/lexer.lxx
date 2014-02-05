@@ -296,6 +296,16 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
 [A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+_[A-Za-z][A-Za-z0-9_]* {
+                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    MiniZinc::ParserState* parm =
+                    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
+                    if (parm->isFlatZinc) {
+                      yylval->sValue = strdup(yytext); return MZN_IDENTIFIER;
+                    } else {
+                      return FLATZINC_IDENTIFIER;
+                    }
+                    }
 $[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
