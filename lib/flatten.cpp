@@ -912,12 +912,10 @@ namespace MiniZinc {
           GCLock lock;
           VarDecl* vd = id->decl()->flat();
           Expression* rete = NULL;
-          bool storeVdInEnv = false;
           if (vd==NULL) {
             // New top-level id, need to copy into env.m
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
                  ->cast<VarDecl>();
-            storeVdInEnv = true;
           }
           ret.b = bind(env,Ctx(),b,constants().lit_true);
           if (vd && vd->e()!=NULL) {
@@ -961,8 +959,6 @@ namespace MiniZinc {
             ArrayLit* al = new ArrayLit(Location(),elems,dims);
             al->type(vd->type());
             vd->e(al);
-          }
-          if (storeVdInEnv && vd->e()) {
             EE ee;
             ee.r = vd;
             env.map_insert(vd->e(), ee);
