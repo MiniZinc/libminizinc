@@ -429,7 +429,9 @@ namespace MiniZinc {
               args[0] = vd->id();
               args[1] = e_vd->id();
               Call* c = new Call(Location(),cid,args);
-              env.flat->addItem(new ConstraintI(Location(),c));
+              c->type(Type::varbool());
+              c->decl(env.orig->matchFn(c));
+              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
               return vd;
             }
           case Expression::E_CALL:
@@ -464,9 +466,10 @@ namespace MiniZinc {
 
               }
               std::copy(c->args().begin(),c->args().end(),args.begin());
+              c->type(Type::varbool());
               c->args(ASTExprVec<Expression>(args));
-              ConstraintI* ci = new ConstraintI(Location(),c);
-              env.flat->addItem(ci);
+              c->decl(env.orig->matchFn(c));
+              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
               return vd;
             }
             break;
