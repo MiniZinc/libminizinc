@@ -2418,6 +2418,7 @@ namespace MiniZinc {
     Model tmp;
     class FV : public ItemVisitor {
     public:
+      std::unordered_set<Item*> globals;
       Env& env;
       Model& tmp;
       FV(Env& env0, Model& tmp0)
@@ -2573,8 +2574,10 @@ namespace MiniZinc {
             vc->args(argsv);
             vc->decl(env.model()->matchFn(vc));
           }
-          if (vc->decl() && vc->decl()->loc().filename != "./builtins.mzn") {
+          if (vc->decl() && vc->decl()->loc().filename != "./builtins.mzn" &&
+              globals.find(vc->decl())==globals.end()) {
             tmp.addItem(vc->decl());
+            globals.insert(vc->decl());
           }
         }
       }
