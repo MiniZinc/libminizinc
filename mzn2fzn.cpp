@@ -149,10 +149,11 @@ int main(int argc, char** argv) {
   }
   
   while (i<argc) {
-    if (filename.length()<=4 ||
-        filename.substr(filename.length()-4,string::npos) != ".dzn")
+    std::string datafile = argv[i++];
+    if (datafile.length()<=4 ||
+        datafile.substr(datafile.length()-4,string::npos) != ".dzn")
       goto error;
-    datafiles.push_back(argv[i++]);
+    datafiles.push_back(datafile);
   }
 
   {
