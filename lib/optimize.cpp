@@ -91,7 +91,7 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = new IntLit(Location(),vo.occurrences(v->e()));
       Call* c = new Call(Location(),"occ",args);
-      v->e()->annotate(new Annotation(Location(),c));
+      v->e()->addAnnotation(new Annotation(Location(),c));
     }
   };
 
