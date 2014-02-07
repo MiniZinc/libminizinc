@@ -232,7 +232,40 @@ namespace MiniZinc {
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
+  Expression* follow_id(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e->eid()==Expression::E_ID) {
+        e = e->cast<Id>()->decl()->e();
+      } else {
+        return e;
+      }
+    }
+  }
+  
+  Expression* follow_id_to_decl(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      switch (e->eid()) {
+        case Expression::E_ID:
+          e = e->cast<Id>()->decl();
+          break;
+        case Expression::E_VARDECL:
+          if (e->cast<VarDecl>()->e() && e->cast<VarDecl>()->e()->isa<Id>())
+            e = e->cast<VarDecl>()->e();
+          else
+            return e;
+          break;
+        default:
+          return e;
+      }
+    }
+  }
+  
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
+    assert(!e->isa<VarDecl>());
     if (ctx.neg) {
       assert(e->type()._bt == Type::BT_BOOL);
       if (vd==constants().var_true) {
@@ -322,6 +355,7 @@ namespace MiniZinc {
             TypeInst* ti = new TypeInst(Location(),e->type());
             VarDecl* vd = new VarDecl(Location(),ti,env.genId("X"),e);
             vd->introduced(true);
+            vd->flat(vd);
 
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
               IntSetVal* ibv = NULL;
@@ -408,8 +442,9 @@ namespace MiniZinc {
           }
           return e;
         } else if (vd == e) {
-          return vd;
+          return vd->id();
         } else if (vd->e() != e) {
+          e = follow_id_to_decl(e);
           switch (e->eid()) {
           case Expression::E_VARDECL:
             {
@@ -434,7 +469,7 @@ namespace MiniZinc {
               c->type(Type::varbool());
               c->decl(env.orig->matchFn(c));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
-              return vd;
+              return vd->id();
             }
           case Expression::E_CALL:
             {
@@ -472,7 +507,7 @@ namespace MiniZinc {
               c->args(ASTExprVec<Expression>(args));
               c->decl(env.orig->matchFn(c));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
-              return vd;
+              return vd->id();
             }
             break;
           default:
@@ -644,33 +679,6 @@ namespace MiniZinc {
       return builtin+"xor";
     default:
       assert(false); return "";
-    }
-  }
-
-  Expression* follow_id(Expression* e) {
-    for (;;) {
-      if (e==NULL)
-        return NULL;
-      if (e->eid()==Expression::E_ID) {
-        e = e->cast<Id>()->decl()->e();
-      } else {
-        return e;
-      }
-    }
-  }
-
-  Expression* follow_id_to_decl(Expression* e) {
-    for (;;) {
-      if (e==NULL)
-        return NULL;
-      if (e->isa<Id>()) {
-        if (e->cast<Id>()->decl()->e() && e->cast<Id>()->decl()->e()->isa<VarDecl>())
-          e = e->cast<Id>()->decl()->e();
-        else
-          return e->cast<Id>()->decl()->id();
-      } else {
-        return e;
-      }
     }
   }
   
@@ -917,7 +925,7 @@ namespace MiniZinc {
           if (vd==NULL) {
             // New top-level id, need to copy into env.m
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
-                 ->cast<VarDecl>();
+                 ->cast<Id>()->decl();
           }
           ret.b = bind(env,Ctx(),b,constants().lit_true);
           if (vd && vd->e()!=NULL) {
@@ -2067,7 +2075,10 @@ namespace MiniZinc {
               al_same_as_before = al_same_as_before && Expression::equal(alv_e[i],al->v()[i]);
             }
             if (al_same_as_before) {
-              args.push_back(follow_id_to_decl(flat_al.r()));
+              Expression* rd = follow_id_to_decl(flat_al.r());
+              if (rd->isa<VarDecl>())
+                rd = rd->cast<VarDecl>()->id();
+              args.push_back(rd);
             } else {
               ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
               nal->type(al->type());
@@ -2215,7 +2226,7 @@ namespace MiniZinc {
           }
           env.flat->addItem(nv);
 
-          ret.r = bind(env,Ctx(),r,vd);
+          ret.r = bind(env,Ctx(),r,vd->id());
         } else {
           ret.r = bind(env,Ctx(),r,it);
         }
@@ -2243,7 +2254,11 @@ namespace MiniZinc {
             VarDeclI* nv = new VarDeclI(Location(),nvd);
             env.flat->addItem(nv);
             if (vd->e()) {
-              ee = flat_exp(env,ctx,vd->e(),nvd,NULL);
+              Ctx nctx = ctx;
+              if (vd->e()->type()._bt==Type::BT_BOOL)
+                nctx.b = C_MIX;
+
+              ee = flat_exp(env,nctx,vd->e(),nvd,NULL);
               cs.push_back(ee);
             } else {
               if (ctx.b==C_NEG || ctx.b==C_MIX)
