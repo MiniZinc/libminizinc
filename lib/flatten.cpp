@@ -15,6 +15,8 @@
 #include <minizinc/hash.hh>
 #include <minizinc/exception.hh>
 
+#include <unordered_set>
+
 // temporary
 #include <minizinc/prettyprinter.hh>
 
