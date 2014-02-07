@@ -64,17 +64,17 @@ predicate array_int_element(var int, array[int] of var int, var int);
 
 function var int: element_t(var int: idx, array[int] of var int: x) ::total =
   let {
-    var int: r;
-    constraint array_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    var lb_array(x)..ub_array(x): r;
+    constraint array_var_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element_mt(var int: idx, array[int] of var int: x) ::total =
   let {
-    var int: r;
-    var int: idx2;
+    var lb_array(x)..ub_array(x): r;
+    var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    constraint array_var_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
