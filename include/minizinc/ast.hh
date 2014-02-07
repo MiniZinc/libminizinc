@@ -174,8 +174,11 @@ namespace MiniZinc {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
 
+    /// Set annotation to \a ann
+    void ann(Annotation* ann);
+    
     /// Add annotation \a ann to the expression
-    void annotate(Annotation* ann);
+    void addAnnotation(Annotation* ann);
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
@@ -205,6 +208,9 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Access next annotation in the list
     Annotation* next(void) const { return _a; }
+
+    /// Set next annotation in the list to \a a
+    void next(Annotation* a) { _a = a; }
     
     /// Constructor
     Annotation(const Location& loc, Expression* e, Annotation* a = NULL);

@@ -129,7 +129,7 @@ namespace MiniZinc {
         }
         vdann = vdann->next();
       }
-      vd->annotate(new Annotation(Location(),ctx_id));
+      vd->addAnnotation(new Annotation(Location(),ctx_id));
     }
   }
 
@@ -2172,7 +2172,7 @@ namespace MiniZinc {
           vd->flat(vd);
           v->flat(vd);
           if (v->ann()) {
-            vd->annotate(
+            vd->addAnnotation(
               static_cast<Annotation*>(
               flat_exp(env,Ctx(),v->ann(),NULL,constants().var_true).r())
             );
@@ -2343,7 +2343,7 @@ namespace MiniZinc {
             vd->cast<VarDecl>()->e(NULL);
             assert(vdi->e()->flat());
             if (vdi->e()->type().dim() == 0) {
-              vdi->e()->flat()->annotate(new Annotation(Location(),constants().ann.output_var));
+              vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
             } else {
               std::vector<Expression*> args(vdi->e()->type().dim());
               for (int i=0; i<args.size(); i++)
@@ -2353,7 +2353,7 @@ namespace MiniZinc {
               args[0] = al;
               Annotation* ann = new Annotation(Location(),
                                                new Call(Location(),constants().ann.output_array,args,NULL));
-              vdi->e()->flat()->annotate(ann);
+              vdi->e()->flat()->addAnnotation(ann);
             }
           }
         }
@@ -2426,6 +2426,22 @@ namespace MiniZinc {
       void vVarDeclI(VarDeclI* v) {
         GCLock lock;
         VarDecl* vd = v->e();
+        Annotation* prevAnn = NULL;
+        for (Annotation* a = vd->ann(); a != NULL; a=a->next()) {
+          if (a->e()==constants().ctx.mix ||
+              a->e()==constants().ctx.pos ||
+              a->e()==constants().ctx.neg ||
+              a->e()==constants().ctx.root) {
+            if (prevAnn) {
+              prevAnn->next(a->next());
+            } else {
+              vd->ann(a->next());
+            }
+          } else {
+            prevAnn = a;
+          }
+        }
+        
         if (vd->type().isvar() && vd->type().isbool()) {
           if (Expression::equal(vd->ti()->domain(),constants().lit_true)) {
             Expression* ve = vd->e();

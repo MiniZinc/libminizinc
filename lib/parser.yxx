@@ -438,12 +438,12 @@ include_item :
 
 vardecl_item :
       ti_expr_and_id annotations
-      { $1->annotate($2);
+      { $1->addAnnotation($2);
         $$ = new VarDeclI(@$,$1);
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->e($4);
-        $1->annotate($2);
+        $1->addAnnotation($2);
         $$ = new VarDeclI(@$,$1);
       }
 
@@ -644,7 +644,7 @@ expr_list_head :
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON expr_atom_head
-      { $1->annotate(new Annotation(@3,$3)); $$=$1; }
+      { $1->addAnnotation(new Annotation(@3,$3)); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
@@ -687,7 +687,7 @@ set_expr :
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON expr_atom_head
-      { $1->annotate(new Annotation(@3,$3)); $$=$1; }
+      { $1->addAnnotation(new Annotation(@3,$3)); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
@@ -1123,14 +1123,14 @@ let_vardecl_item :
       ti_expr_and_id annotations
       { $$ = $1;
         $$->toplevel(false);
-        $$->annotate($2);
+        $$->addAnnotation($2);
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->e($4);
         $$ = $1;
         $$->loc(@$);
         $$->toplevel(false);
-        $$->annotate($2);
+        $$->addAnnotation($2);
       }
 
 annotations :

@@ -49,8 +49,13 @@ namespace MiniZinc {
     r->rehash();
   }
 
+  
   void
-  Expression::annotate(Annotation* ann) {
+  Expression::ann(Annotation* ann) {
+    _ann = ann;
+  }
+  void
+  Expression::addAnnotation(Annotation* ann) {
     if (_ann) _ann->merge(ann); else _ann=ann;
   }
 
