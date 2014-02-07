@@ -14,6 +14,8 @@
 #include <minizinc/copy.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/optimize.hh>
+#include <minizinc/astiterator.hh>
 
 #include <unordered_set>
 
@@ -149,8 +151,8 @@ namespace MiniZinc {
   class EnvI {
   public:
     Model* orig;
-    Model* flat;
     Model* output;
+    VarOccurrences vo;
     struct WW {
       WeakRef r;
       WeakRef b;
@@ -159,12 +161,13 @@ namespace MiniZinc {
     typedef KeepAliveMap<WW> Map;
   protected:
     Map map;
+    Model* _flat;
     unsigned int ids;
   public:
-    EnvI(Model* orig0) : orig(orig0), flat(new Model), output(new Model), ids(0) {
+    EnvI(Model* orig0) : orig(orig0), output(new Model), _flat(new Model), ids(0) {
     }
     ~EnvI(void) {
-      delete flat;
+      delete _flat;
       delete output;
     }
     ASTString genId(const std::string& s) {
@@ -196,6 +199,48 @@ namespace MiniZinc {
       };
       map.dump<EED>();
     }
+
+    void flat_addItem(Item* i) {
+      _flat->addItem(i);
+      switch (i->iid()) {
+      case Item::II_VD:
+        {
+          VarDeclI* vd = i->cast<VarDeclI>();
+          vo.add(vd, _flat->size()-1);
+          CollectOccurrencesE ce(vo,vd);
+          topDown(ce,vd->e());
+        }
+        break;
+      case Item::II_CON:
+        {
+          ConstraintI* ci = i->cast<ConstraintI>();
+          if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v())
+            std::cerr << "Warning: model inconsistency detected" << std::endl;
+          CollectOccurrencesE ce(vo,ci);
+          topDown(ce,ci->e());
+        }
+        break;
+      case Item::II_SOL:
+        {
+          SolveI* si = i->cast<SolveI>();
+          CollectOccurrencesE ce(vo,si);
+          topDown(ce,si->e());
+          topDown(ce,si->ann());
+        }
+        break;
+      default:
+        break;
+      }
+    }
+    void vo_add_exp(VarDecl* vd) {
+      int idx = vo.find(vd);
+      CollectOccurrencesE ce(vo,_flat->_items[idx]);
+      topDown(ce, vd->e());
+    }
+    Model* flat(void) {
+      return _flat;
+    }
+    
   };
 
   Env::Env(Model* m) : e(new EnvI(m)) {}
@@ -206,7 +251,7 @@ namespace MiniZinc {
   Model*
   Env::model(void) { return e->orig; }
   Model*
-  Env::flat(void) { return e->flat; }
+  Env::flat(void) { return e->flat(); }
   Model*
   Env::output(void) { return e->output; }
   EnvI&
@@ -274,7 +319,7 @@ namespace MiniZinc {
             assert(id->decl() != NULL);
             if (id->decl()->ti()->domain() && istrue(id->decl()->ti()->domain())) {
               GCLock lock;
-              env.flat->addItem(new ConstraintI(Location(),constants().lit_false));
+              env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
             } else {
               id->decl()->ti()->domain(constants().lit_false);
             }
@@ -306,13 +351,13 @@ namespace MiniZinc {
             assert(id->decl() != NULL);
             if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
               GCLock lock;
-              env.flat->addItem(new ConstraintI(Location(),constants().lit_false));
+              env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
             } else {
               id->decl()->ti()->domain(constants().lit_true);
             }
           } else {
             GCLock lock;
-            env.flat->addItem(new ConstraintI(Location(),e));
+            env.flat_addItem(new ConstraintI(Location(),e));
           }
         }
         return constants().lit_true;
@@ -389,7 +434,7 @@ namespace MiniZinc {
             }
 
             VarDeclI* nv = new VarDeclI(Location(),vd);
-            env.flat->addItem(nv);
+            env.flat_addItem(nv);
 
             EE ee(vd,NULL);
             env.map_insert(vd->id(),ee);
@@ -969,6 +1014,7 @@ namespace MiniZinc {
             ArrayLit* al = new ArrayLit(Location(),elems,dims);
             al->type(vd->type());
             vd->e(al);
+            env.vo_add_exp(vd);
             EE ee;
             ee.r = vd;
             env.map_insert(vd->e(), ee);
@@ -978,26 +1024,36 @@ namespace MiniZinc {
               // create new VarDecl in toplevel, if decl doesnt exist yet
               EnvI::Map::iterator it = env.map_find(vd->e());
               if (it==env.map_end()) {
-                VarDecl* nvd = 
+                Expression* vde = follow_id(vd->e());
+                ArrayLit* vdea = vde ? vde->dyn_cast<ArrayLit>() : NULL;
+                if (vdea && vdea->v().size()==0) {
+                  // Do not create names for empty arrays but return array literal directly
+                  rete = vdea;
+                } else {
+                  VarDecl* nvd =
                   new VarDecl(Location(),eval_typeinst(env,vd->ti()),
-                             env.genId("tl_"+vd->id()->v().str()),vd->e());
-                nvd->introduced(true);
-                VarDeclI* ni = new VarDeclI(Location(),nvd);
-                env.flat->addItem(ni);
-                vd = nvd;
-                EE ee(vd,NULL);
-                if (vd->e())
-                  env.map_insert(vd->e(),ee);
-                env.map_insert(nvd->id(),ee);
+                              env.genId("tl_"+vd->id()->v().str()),vd->e());
+                  nvd->introduced(true);
+                  
+                  VarDeclI* ni = new VarDeclI(Location(),nvd);
+                  env.flat_addItem(ni);
+                  vd = nvd;
+                  EE ee(vd,NULL);
+                  if (vd->e())
+                    env.map_insert(vd->e(),ee);
+                  env.map_insert(nvd->id(),ee);
+                }
               } else {
                 vd = it->second.r()->cast<VarDecl>();
               }
             }
-            if (id->type()._bt == Type::BT_ANN && vd->e()) {
-              rete = vd->e();
-            } else {
-              rete = vd->id();
-              rete->type(id->type());
+            if (rete==NULL) {
+              if (id->type()._bt == Type::BT_ANN && vd->e()) {
+                rete = vd->e();
+              } else {
+                rete = vd->id();
+                rete->type(id->type());
+              }
             }
           }
           ret.r = bind(env,ctx,r,rete);
@@ -2224,7 +2280,7 @@ namespace MiniZinc {
               }
             }
           }
-          env.flat->addItem(nv);
+          env.flat_addItem(nv);
 
           ret.r = bind(env,Ctx(),r,vd->id());
         } else {
@@ -2252,7 +2308,7 @@ namespace MiniZinc {
             nvd->introduced(true);
             nvd->type(vd->type());
             VarDeclI* nv = new VarDeclI(Location(),nvd);
-            env.flat->addItem(nv);
+            env.flat_addItem(nv);
             if (vd->e()) {
               Ctx nctx = ctx;
               if (vd->e()->type()._bt==Type::BT_BOOL)
@@ -2400,15 +2456,15 @@ namespace MiniZinc {
         GCLock lock;
         switch (si->st()) {
         case SolveI::ST_SAT:
-          env.flat->addItem(SolveI::sat(Location(),ann));
+          env.flat_addItem(SolveI::sat(Location(),ann));
           break;
         case SolveI::ST_MIN:
-          env.flat->addItem(SolveI::min(Location(),
+          env.flat_addItem(SolveI::min(Location(),
             flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
             ann));
           break;
         case SolveI::ST_MAX:
-          env.flat->addItem(SolveI::max(Location(),
+          env.flat_addItem(SolveI::max(Location(),
             flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
             ann));
           break;
@@ -2417,6 +2473,51 @@ namespace MiniZinc {
     } _fv(env);
     iterItems<FV>(_fv,e.model());
     createOutput(env);
+    
+    std::vector<VarDecl*> vd;
+    Model& m = *e.flat();
+    int msize = m.size();
+    for (unsigned int i=0; i<msize; i++) {
+      VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
+      if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
+        if (vdi->e()->e() && vdi->e()->ti()->domain()) {
+          if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
+              Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
+            GCLock lock;
+            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
+            if (vdi->e()->introduced()) {
+              std::cerr << "strange new item " << *ci << " from " << *vdi;
+              m[i] = ci;
+            } else {
+              vdi->e()->e(NULL);
+              env.flat_addItem(ci);
+            }
+          } else if (vdi->e()->ti()->computedDomain()) {
+            CollectDecls cd(env.vo,vd,vdi);
+            topDown(cd,vdi->e()->e());
+            vdi->remove();
+          }
+        } else {
+          CollectDecls cd(env.vo,vd,vdi);
+          topDown(cd,vdi->e()->e());
+          vdi->remove();
+        }
+      }
+    }
+    while (!vd.empty()) {
+      VarDecl* cur = vd.back(); vd.pop_back();
+      if (!isOutput(cur)) {
+        ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+          CollectDecls cd(env.vo,vd,m[cur_idx->second]->cast<VarDeclI>());
+          topDown(cd,cur->e());
+          m[cur_idx->second]->remove();
+        }
+      }
+    }
+    m.compact();
+    
+    
   }
 
   void oldflatzinc(Env& e) {
