@@ -1008,7 +1008,7 @@ namespace MiniZinc {
               VarDecl* nvd = new VarDecl(Location(),vti,nid);
               nvd->introduced(true);
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
-              Id* id = root_vd.r()->cast<VarDecl>()->id();
+              Id* id = root_vd.r()->cast<Id>();
               elems[i] = id;
             }
 
