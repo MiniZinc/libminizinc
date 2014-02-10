@@ -133,6 +133,7 @@ namespace MiniZinc {
         }
         vdann = vdann->next();
       }
+      GCLock lock;
       vd->addAnnotation(new Annotation(Location(),ctx_id));
     }
   }
