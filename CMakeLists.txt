@@ -54,8 +54,6 @@ configure_file (
   "${PROJECT_BINARY_DIR}/config.hh"
   )
 
-# add the binary tree to the search path for include files
-# so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
@@ -71,16 +69,18 @@ add_custom_command(
   OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
 )
 
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+
 add_custom_command(
   SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
   COMMAND "bison"
   ARGS -o "${PROJECT_BINARY_DIR}/parser.tab.cpp"
-       --defines="${PROJECT_BINARY_DIR}/parser.tab.hh"
+       --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
        "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
   TARGET MZNParser
   DEPENDS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
   OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp" 
-          "${PROJECT_BINARY_DIR}/parser.tab.hh"
+          "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
 )
 
 set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
