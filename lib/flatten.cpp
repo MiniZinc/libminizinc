@@ -531,7 +531,7 @@ namespace MiniZinc {
               Call* c = e->cast<Call>();
               std::vector<Expression*> args(c->args().size());
               GCLock lock;
-              if (c->id() == "lin_exp") {
+              if (c->id() == constants().ids.lin_exp) {
                 c->id(ASTString("int_lin_eq"));
                 ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
@@ -791,7 +791,7 @@ namespace MiniZinc {
     args[1]->type(tt);
     args[2] = new IntLit(e0->loc(),d);
     args[2]->type(Type::parint());
-    Call* c = new Call(e0->loc(),"lin_exp",args);
+    Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
     tt = args[1]->type();
     tt._dim = 0;
     c->type(tt);
@@ -2614,7 +2614,7 @@ namespace MiniZinc {
             if (Call* c = vd->e()->dyn_cast<Call>()) {
               GCLock lock;
               Call* nc = NULL;
-              if (c->id() == "lin_exp") {
+              if (c->id() == constants().ids.lin_exp) {
                 if (int_lin_eq) {
                   std::vector<Expression*> args(c->args().size());
                   ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
@@ -2730,7 +2730,7 @@ namespace MiniZinc {
     }
 
     m.compact();
-        
+    
   }
 
   void oldflatzinc(Env& e) {
@@ -2826,7 +2826,7 @@ namespace MiniZinc {
             if (Call* c = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
               std::vector<Expression*> args(c->args().size());
-              if (c->id() == "lin_exp") {
+              if (c->id() == constants().ids.lin_exp) {
                 c->id(ASTString("int_lin_eq"));
                 ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());

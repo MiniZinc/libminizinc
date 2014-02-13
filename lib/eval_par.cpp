@@ -843,7 +843,7 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == "lin_exp" &&
+      if (c.id() == constants().ids.lin_exp &&
           c.args()[0]->isa<ArrayLit>() &&
           c.args()[1]->isa<ArrayLit>() &&
           c.args()[2]->isa<IntLit>()) {
