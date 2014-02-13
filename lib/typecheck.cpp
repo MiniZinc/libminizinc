@@ -362,12 +362,14 @@ namespace MiniZinc {
     void vITE(ITE& ite) {
       Type tret = ite.e_else()->type();
       bool allpar = !(tret.isvar());
+      bool varcond = false;
       for (unsigned int i=0; i<ite.size(); i++) {
         Expression* eif = ite.e_if(i);
         Expression* ethen = ite.e_then(i);
-        if (eif->type() != Type::parbool())
+        varcond = varcond || (eif->type() == Type::varbool());
+        if (eif->type() != Type::parbool() && eif->type() != Type::varbool())
           throw TypeError(eif->loc(),
-            "expected par bool conditional expression, got\n  "+
+            "expected bool conditional expression, got\n  "+
             eif->type().toString());
         if (tret.isbot()) {
           tret._bt = ethen->type()._bt;
@@ -382,6 +384,9 @@ namespace MiniZinc {
         }
         if (ethen->type().isvar()) allpar=false;
       }
+      /// TODO: perhaps extend flattener to array types, but for now throw an error
+      if (varcond && tret.dim() > 0)
+        throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
       if (!allpar)
         tret._ti = Type::TI_VAR;
       ite.type(tret);

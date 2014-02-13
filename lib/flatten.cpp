@@ -888,6 +888,71 @@ namespace MiniZinc {
     return NULL;
   }
 
+  /// TODO: check if all expressions are total
+  /// If yes, use element encoding
+  /// If not, use implication encoding
+  KeepAlive flat_ite(EnvI& env,ITE* ite,int i) {
+    if (i>=ite->size())
+      return ite->e_else();
+    if (ite->e_if(i)->type()==Type::parbool()) {
+      if (eval_bool(ite->e_if(i)))
+        return ite->e_then(i);
+      else
+        return flat_ite(env,ite,i+1);
+    } else {
+      KeepAlive e_else = flat_ite(env,ite,i+1);
+      GCLock lock;
+      
+      // TODO: translate to [e_else,e_then][bool2int(e_if)+1]
+      // if both e_else and e_then do not contain partial function calls
+//      std::vector<Expression*> alv(2);
+//      alv[1] = ite->e_then(i);
+//      alv[0] = flat_ite(env,ite,i+1)();
+//      std::vector<std::pair<int,int> > aldims(1);
+//      aldims[0].first = 0;
+//      aldims[0].second = 1;
+//      ArrayLit* al = new ArrayLit(ite->loc(),alv,aldims);
+//      Type alt = ite->type();
+//      alt._dim++;
+//      al->type(alt);
+//      std::vector<Expression*> b2iargs(1);
+//      b2iargs[0] = ite->e_if(i);
+//      Call* b2i = new Call(ite->loc(),"bool2int",b2iargs);
+//      b2i->type(Type::varint());
+//      b2i->decl(env.orig->matchFn(b2i));
+//      std::vector<Expression*> aaidx(1);
+//      aaidx[0] = b2i;
+//      ArrayAccess* aa = new ArrayAccess(ite->loc(),al,aaidx);
+//      aa->type(ite->type());
+//      return aa;
+
+      // Translate into the following expression:
+      // let {
+      //   var $T: r;
+      //   constraint e_if -> r=e_then_arg;
+      //   constraint (not e_if) -> r=e_else_arg;
+      // } in r;
+      
+      TypeInst* ti = new TypeInst(Location(),ite->type(),NULL);
+      VarDecl* r = new VarDecl(Location(),ti,env.genId("r"));
+      BinOp* eq_then = new BinOp(Location(),r->id(),BOT_EQ,ite->e_then(i));
+      eq_then->type(Type::varbool());
+      BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
+      eq_else->type(Type::varbool());
+      BinOp* if_op = new BinOp(Location(),ite->e_if(i),BOT_IMPL,eq_then);
+      if_op->type(Type::varbool());
+      BinOp* else_op = new BinOp(Location(),ite->e_if(i),BOT_OR,eq_else);
+      else_op->type(Type::varbool());
+      std::vector<Expression*> e_let(3);
+      e_let[0] = r;
+      e_let[1] = if_op;
+      e_let[2] = else_op;
+      Let* let = new Let(Location(),e_let,r->id());
+      let->type(r->id()->type());
+      return let;
+    }
+  }
+  
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     EE ret;
@@ -1182,17 +1247,8 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        bool done = false;
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(ite->e_if(i))) {
-            ret = flat_exp(env,ctx,ite->e_then(i),r,b);
-            done = true;
-            break;
-          }
-        }
-        if (!done) {
-          ret = flat_exp(env,ctx,ite->e_else(),r,b);
-        }
+        KeepAlive ka = flat_ite(env,ite,0);
+        ret = flat_exp(env,ctx,ka(),r,b);
       }
       break;
     case Expression::E_BINOP:
