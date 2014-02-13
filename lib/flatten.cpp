@@ -181,7 +181,13 @@ namespace MiniZinc {
     }
     Map::iterator map_find(Expression* e) {
       KeepAlive ka(e);
-      return map.find(ka);
+      Map::iterator it = map.find(ka);
+      if (it != map.end() && it->second.r() && it->second.r()->isa<VarDecl>()) {
+        int idx = vo.find(it->second.r()->cast<VarDecl>());
+        if (idx >= 0 && _flat->_items[idx]->removed())
+          return map.end();
+      }
+      return it;
     }
     void map_remove(Expression* e) {
       KeepAlive ka(e);
@@ -232,6 +238,9 @@ namespace MiniZinc {
       default:
         break;
       }
+    }
+    void flat_replaceItem(int idx, Item* i) {
+      _flat->_items[idx] = i;
     }
     void vo_add_exp(VarDecl* vd) {
       int idx = vo.find(vd);
@@ -1201,6 +1210,7 @@ namespace MiniZinc {
             Call* cc = new Call(Location(),"element",args);
             cc->type(aa->type());
             FunctionI* fi = env.orig->matchFn(cc->id(),args);
+            assert(fi);
             assert(cc->type() == fi->rtype(args));
             cc->decl(fi);
             ka = cc;
@@ -2251,11 +2261,10 @@ namespace MiniZinc {
                   env.map_insert(cr,ret);
                 }
               } else {
-                std::vector<std::pair<Id*,Expression*> > idmap;
-                // Save mapping from Ids to VarDecls and set to parameters
-                /// TODO: save vd->_e as well (if we want to support recursive functions)
+                std::vector<KeepAlive> previousParameters(decl->params().size());
                 for (unsigned int i=decl->params().size(); i--;) {
                   VarDecl* vd = decl->params()[i];
+                  previousParameters[i] = vd->e();
                   vd->flat(vd);
                   vd->e(args[i]);
                 }
@@ -2274,8 +2283,8 @@ namespace MiniZinc {
                 // Restore previous mapping
                 for (unsigned int i=decl->params().size(); i--;) {
                   VarDecl* vd = decl->params()[i];
-                  vd->flat(NULL);
-                  vd->e(NULL);
+                  vd->e(previousParameters[i]());
+                  vd->flat(vd->e() ? vd : NULL);
                 }
               }
             }
@@ -2531,50 +2540,197 @@ namespace MiniZinc {
     iterItems<FV>(_fv,e.model());
     createOutput(env);
     
-    std::vector<VarDecl*> vd;
+    
     Model& m = *e.flat();
-    int msize = m.size();
-    for (unsigned int i=0; i<msize; i++) {
-      VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
-      if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
-        if (vdi->e()->e() && vdi->e()->ti()->domain()) {
-          if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
-              Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
-            GCLock lock;
-            ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
-            if (vdi->e()->introduced()) {
-              std::cerr << "strange new item " << *ci << " from " << *vdi;
-              m[i] = ci;
-            } else {
-              vdi->e()->e(NULL);
-              env.flat_addItem(ci);
+    int startItem = 0;
+    int endItem = m.size()-1;
+    
+    FunctionI* int_lin_eq;
+    {
+      std::vector<Type> int_lin_eq_t(3);
+      int_lin_eq_t[0] = Type::parint(1);
+      int_lin_eq_t[1] = Type::varint(1);
+      int_lin_eq_t[2] = Type::parint(0);
+      GCLock lock;
+      FunctionI* fi = env.orig->matchFn(ASTString("int_lin_eq"), int_lin_eq_t);
+      int_lin_eq = (fi && fi->e()) ? fi : NULL;
+    }
+    FunctionI* array_bool_and;
+    FunctionI* array_bool_or;
+    {
+      std::vector<Type> array_bool_andor_t(2);
+      array_bool_andor_t[0] = Type::varbool(1);
+      array_bool_andor_t[1] = Type::varbool(0);
+      GCLock lock;
+      FunctionI* fi = env.orig->matchFn(ASTString("array_bool_and"), array_bool_andor_t);
+      array_bool_and = (fi && fi->e()) ? fi : NULL;
+      fi = env.orig->matchFn(ASTString("array_bool_or"), array_bool_andor_t);
+      array_bool_or = (fi && fi->e()) ? fi : NULL;
+    }
+    
+    std::vector<VarDecl*> deletedVarDecls;
+    while (startItem <= endItem) {
+      for (unsigned int i=startItem; i<=endItem; i++) {
+        VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
+        if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
+          if (vdi->e()->e() && vdi->e()->ti()->domain()) {
+            if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
+                Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
+              GCLock lock;
+              ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
+              if (vdi->e()->introduced()) {
+                env.flat_replaceItem(i,ci);
+              } else {
+                vdi->e()->e(NULL);
+                env.flat_addItem(ci);
+              }
+            } else if (vdi->e()->ti()->computedDomain()) {
+              CollectDecls cd(env.vo,deletedVarDecls,vdi);
+              topDown(cd,vdi->e()->e());
+              vdi->remove();
             }
-          } else if (vdi->e()->ti()->computedDomain()) {
-            CollectDecls cd(env.vo,vd,vdi);
+          } else {
+            CollectDecls cd(env.vo,deletedVarDecls,vdi);
             topDown(cd,vdi->e()->e());
             vdi->remove();
           }
-        } else {
-          CollectDecls cd(env.vo,vd,vdi);
-          topDown(cd,vdi->e()->e());
-          vdi->remove();
         }
       }
-    }
-    while (!vd.empty()) {
-      VarDecl* cur = vd.back(); vd.pop_back();
-      if (!isOutput(cur)) {
-        ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
-        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-          CollectDecls cd(env.vo,vd,m[cur_idx->second]->cast<VarDeclI>());
-          topDown(cd,cur->e());
-          m[cur_idx->second]->remove();
+      while (!deletedVarDecls.empty()) {
+        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+          ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+            topDown(cd,cur->e());
+            m[cur_idx->second]->remove();
+          }
         }
       }
+      for (unsigned int i=startItem; i<=endItem; i++) {
+        if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
+          VarDecl* vd = vdi->e();
+          if (!vdi->removed() && vd->e()) {
+            if (Call* c = vd->e()->dyn_cast<Call>()) {
+              GCLock lock;
+              Call* nc = NULL;
+              if (c->id() == "lin_exp") {
+                if (int_lin_eq) {
+                  std::vector<Expression*> args(c->args().size());
+                  ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
+                  std::vector<Expression*> nc_c(le_c->v().size());
+                  std::copy(le_c->v().begin(),le_c->v().end(),nc_c.begin());
+                  nc_c.push_back(new IntLit(Location(),-1));
+                  args[0] = new ArrayLit(Location(),nc_c);
+                  args[0]->type(Type::parint(1));
+                  ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
+                  std::vector<Expression*> nx(le_x->v().size());
+                  std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
+                  nx.push_back(vd->id());
+                  args[1] = new ArrayLit(Location(),nx);
+                  args[1]->type(Type::varint(1));
+                  IntVal d = c->args()[2]->cast<IntLit>()->v();
+                  args[2] = new IntLit(Location(),-d);
+                  args[2]->type(Type::parint(0));
+                  nc = new Call(c->loc(),ASTString("int_lin_eq"),args);
+                  nc->type(Type::varbool());
+                  nc->decl(int_lin_eq);
+                }
+              } else if (c->id() == constants().ids.exists) {
+                if (array_bool_or) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->args()[0];
+                  args[1] = vd->id();
+                  nc = new Call(c->loc(),array_bool_or->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_or);
+                }
+              } else if (c->id() == constants().ids.forall) {
+                if (array_bool_and) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->args()[0];
+                  args[1] = vd->id();
+                  nc = new Call(c->loc(),array_bool_and->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_and);
+                }
+              } else {
+                std::vector<Expression*> args(c->args().size());
+                std::copy(c->args().begin(),c->args().end(),args.begin());
+                args.push_back(vd->id());
+                FunctionI* decl = env.orig->matchFn(c->id(),args);
+                if (decl && decl->e()) {
+                  nc = new Call(c->loc(),c->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(decl);
+                }
+              }
+              if (nc != NULL) {
+                CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                topDown(cd,c);
+                vd->e(NULL);
+                (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
+              }
+            }
+          }
+        } else if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+          if (Call* c = ci->e()->dyn_cast<Call>()) {
+            GCLock lock;
+            Call* nc = NULL;
+            if (c->id() == constants().ids.exists) {
+              if (array_bool_or) {
+                std::vector<Expression*> args(2);
+                args[0] = c->args()[0];
+                args[1] = constants().lit_true;
+                nc = new Call(c->loc(),array_bool_or->id(),args);
+                nc->type(Type::varbool());
+                nc->decl(array_bool_or);
+              }
+            } else if (c->id() == constants().ids.forall) {
+              if (array_bool_and) {
+                std::vector<Expression*> args(2);
+                args[0] = c->args()[0];
+                args[1] = constants().lit_true;
+                nc = new Call(c->loc(),array_bool_and->id(),args);
+                nc->type(Type::varbool());
+                nc->decl(array_bool_and);
+              }
+            } else {
+              FunctionI* decl = env.orig->matchFn(c);
+              if (decl && decl->e()) {
+                nc = c;
+                nc->decl(decl);
+              }
+            }
+            if (nc != NULL) {
+              CollectDecls cd(env.vo,deletedVarDecls,vdi);
+              topDown(cd,c);
+              ci->e(constants().lit_true);
+              ci->remove();
+              (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
+            }
+          }
+          
+        }
+      }
+      while (!deletedVarDecls.empty()) {
+        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+          ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+            topDown(cd,cur->e());
+            m[cur_idx->second]->remove();
+          }
+        }
+      }
+
+      startItem = endItem+1;
+      endItem = m.size()-1;
     }
+
     m.compact();
-    
-    
+        
   }
 
   void oldflatzinc(Env& e) {
@@ -2667,8 +2823,7 @@ namespace MiniZinc {
           }
         } else if (vd->type().isvar() && vd->type()._dim==0) {
           if (vd->e() != NULL) {
-            if (vd->e()->eid()==Expression::E_CALL) {
-              Call* c = vd->e()->cast<Call>();
+            if (Call* c = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
               std::vector<Expression*> args(c->args().size());
               if (c->id() == "lin_exp") {

@@ -26,8 +26,7 @@ namespace MiniZinc {
   int VarOccurrences::find(VarDecl* vd)
   {
     ExpressionMap<int>::iterator it = idx.find(vd);
-    assert(it != idx.end());
-    return it->second;
+    return it==idx.end() ? -1 : it->second;
   }
   
   void VarOccurrences::add(VarDecl* v, Item* i) {
