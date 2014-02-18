@@ -948,8 +948,17 @@ namespace MiniZinc {
       eq_then->type(Type::varbool());
       BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
       eq_else->type(Type::varbool());
-      BinOp* if_op = new BinOp(Location(),ite->e_if(i),BOT_IMPL,eq_then);
+      std::vector<Expression*> clauseargs(2);
+      std::vector<Expression*> posargs(1);
+      posargs[0] = eq_then;
+      clauseargs[0] = new ArrayLit(Location(),posargs);
+      clauseargs[0]->type(Type::varbool(1));
+      posargs[0] = ite->e_if(i);
+      clauseargs[1] = new ArrayLit(Location(),posargs);
+      clauseargs[1]->type(Type::varbool(1));
+      Call* if_op = new Call(Location(), "bool_clause", clauseargs);
       if_op->type(Type::varbool());
+      if_op->decl(env.orig->matchFn(if_op));
       BinOp* else_op = new BinOp(Location(),ite->e_if(i),BOT_OR,eq_else);
       else_op->type(Type::varbool());
       std::vector<Expression*> e_let(3);
