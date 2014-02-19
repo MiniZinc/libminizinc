@@ -21,6 +21,8 @@ namespace MiniZinc {
   IntVal eval_int(Expression* e);
   /// Evaluate par bool expression \a e
   bool eval_bool(Expression* e);
+  /// Evaluate par float expression \a e
+  FloatVal eval_float(Expression* e);
   /// Evaluate an array expression \a e into an array literal
   ArrayLit* eval_array_lit(Expression* e);
   /// Evaluate an access to array \a with indices \a idx

@@ -50,6 +50,14 @@ namespace MiniZinc {
       return eval_int(e);
     }
   };
+  class EvalFloatLit {
+  public:
+    typedef FloatLit* Val;
+    typedef Expression* ArrayVal;
+    static FloatLit* e(Expression* e) {
+      return new FloatLit(Location(),eval_float(e));
+    }
+  };
   class EvalBoolLit {
   public:
     typedef BoolLit* Val;
@@ -339,10 +347,6 @@ namespace MiniZinc {
     }
   }
 
-  FloatVal eval_float(Expression* e) {
-    throw EvalError(e->loc(), "floats not supported yet");
-  }
-
   bool eval_bool(Expression* e) {
     switch (e->eid()) {
     case Expression::E_BOOLLIT: return e->cast<BoolLit>()->v();
@@ -591,6 +595,96 @@ namespace MiniZinc {
         return ret;
       }
       break;
+    }
+  }
+
+  FloatVal eval_float(Expression* e) {
+    switch (e->eid()) {
+      case Expression::E_FLOATLIT: return e->cast<FloatLit>()->v();
+      case Expression::E_INTLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_TIID:
+      case Expression::E_SETLIT:
+      case Expression::E_ARRAYLIT:
+      case Expression::E_COMP:
+      case Expression::E_VARDECL:
+      case Expression::E_ANN:
+      case Expression::E_TI:
+        throw EvalError(e->loc(),"not a float expression");
+        break;
+      case Expression::E_ID:
+      {
+        GCLock lock;
+        return eval_id<EvalFloatLit>(e)->v();
+      }
+        break;
+      case Expression::E_ARRAYACCESS:
+        return eval_float(eval_arrayaccess(e->cast<ArrayAccess>()));
+        break;
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (unsigned int i=0; i<ite->size(); i++) {
+          if (eval_bool(ite->e_if(i)))
+            return eval_float(ite->e_then(i));
+        }
+        return eval_float(ite->e_else());
+      }
+        break;
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        FloatVal v0 = eval_float(bo->lhs());
+        FloatVal v1 = eval_float(bo->rhs());
+        switch (bo->op()) {
+          case BOT_PLUS: return v0+v1;
+          case BOT_MINUS: return v0-v1;
+          case BOT_MULT: return v0*v1;
+          case BOT_DIV: return v0 / v1;
+          default: throw EvalError(e->loc(),"not a float expression", bo->opToString());
+        }
+      }
+        break;
+      case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        FloatVal v0 = eval_float(uo->e());
+        switch (uo->op()) {
+          case UOT_PLUS: return v0;
+          case UOT_MINUS: return -v0;
+          default: throw EvalError(e->loc(),"not a float expression", uo->opToString());
+        }
+      }
+        break;
+      case Expression::E_CALL:
+      {
+        Call* ce = e->cast<Call>();
+        if (ce->decl()==NULL)
+          throw EvalError(e->loc(), "undeclared function", ce->id());
+        if (ce->decl()->_builtins.f)
+          return ce->decl()->_builtins.f(ce->args());
+        
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
+        }
+        FloatVal ret = eval_float(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
+        }
+        return ret;
+      }
+        break;
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        FloatVal ret = eval_float(l->in());
+        l->popbindings();
+        return ret;
+      }
+        break;
     }
   }
 
