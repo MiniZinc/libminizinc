@@ -99,6 +99,9 @@ namespace MiniZinc {
     } else if (e->type() == Type::parbool(1)) {
       std::vector<Expression*> a = eval_comp<EvalBoolLit>(e);
       ret = new ArrayLit(e->loc(),a);
+    } else if (e->type() == Type::parfloat(1)) {
+      std::vector<Expression*> a = eval_comp<EvalFloatLit>(e);
+      ret = new ArrayLit(e->loc(),a);
     } else if (e->type() == Type::parsetint(1)) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(e);
       ret = new ArrayLit(e->loc(),a);
