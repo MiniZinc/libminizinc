@@ -190,6 +190,11 @@ function var $T: max(array[$U] of var $T);
 function int: min(set of int);
 function int: max(set of int);
 
+function var int: max(var int: x, var int: y) ::total =
+  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
+        constraint int_max(x,y,m);
+  } in m;
+
 function int: abs(int);
 function var int: abs(var int);
 function float: abs(float);
