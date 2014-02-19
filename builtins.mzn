@@ -64,6 +64,9 @@ predicate bool_clause_reif(array[int] of var bool: as,
   forall (i in index_set(as)) (as[i] -> b) /\
   forall (i in index_set(bs)) (bs[i] \/ b);
 
+predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
+  bool_xor(a,b,c);
+
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 
 % Element constraints
