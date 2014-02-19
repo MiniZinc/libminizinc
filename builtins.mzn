@@ -26,6 +26,7 @@ predicate int_times(var int: a, var int: b, var int: c);
 predicate set_in(var int, set of int);
 predicate set_in(var int, var set of int);
 predicate set_subset(var set of int, var set of int);
+predicate set_le(var set of int, var set of int);
 function var set of int: set_intersect(var set of int, var set of int);
 function var set of int: set_union(var set of int, var set of int);
 function var set of int: set_diff(var set of int, var set of int);
