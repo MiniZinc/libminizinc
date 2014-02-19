@@ -2949,7 +2949,7 @@ namespace MiniZinc {
             vc->args(argsv);
             vc->decl(env.model()->matchFn(vc));
           }
-          if (vc->decl() && vc->decl()->loc().filename != "./builtins.mzn" &&
+          if (vc->decl() && !vc->decl()->loc().filename.endsWith("/builtins.mzn") &&
               globals.find(vc->decl())==globals.end()) {
             tmp.addItem(vc->decl());
             globals.insert(vc->decl());

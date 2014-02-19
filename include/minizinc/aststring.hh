@@ -61,6 +61,9 @@ namespace MiniZinc {
     /// Return if string is not equal to \a s
     bool operator!= (const std::string& s) const;
 
+    /// Return if string ends with \a s
+    bool endsWith(const std::string& s) const;
+    
     /// Compute hash value of string
     size_t hash(void) const;
     
@@ -170,6 +173,11 @@ namespace MiniZinc {
   inline bool
   ASTString::operator!= (const std::string& s) const {
     return !(*this == s);
+  }
+  inline bool
+  ASTString::endsWith(const std::string &s) const {
+    return size() >= s.size() &&
+      (size() == 0 || strncmp(_s->c_str()+size()-s.size(), s.c_str(), s.size())==0);
   }
   
   inline size_t
