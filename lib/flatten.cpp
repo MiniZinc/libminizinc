@@ -1155,13 +1155,7 @@ namespace MiniZinc {
         }
         VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), av->type()),
                                   env.genId("Anon"));
-        std::vector<Expression*> let_v(1);
-        let_v[0] = vd;
-        Let* let = new Let(Location(),let_v,vd->id());
-        let->type(vd->type());
-        ret = flat_exp(env,Ctx(),let,NULL,constants().var_true);
-        /// TODO: introduce
-        /// let { var $T: x } in x
+        ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
       }
       break;
     case Expression::E_ARRAYLIT:
