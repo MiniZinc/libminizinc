@@ -28,6 +28,8 @@ namespace MiniZinc {
     void add(VarDeclI* i, int idx_i);
     /// Find index of \a vd
     int find(VarDecl* vd);
+    /// Remove index of \a vd
+    void remove(VarDecl* vd);
     
     /// Add \a i to the dependencies of \a v
     void add(VarDecl* v, Item* i);

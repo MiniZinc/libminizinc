@@ -28,6 +28,10 @@ namespace MiniZinc {
     ExpressionMap<int>::iterator it = idx.find(vd);
     return it==idx.end() ? -1 : it->second;
   }
+  void VarOccurrences::remove(VarDecl *vd)
+  {
+    idx.remove(vd);
+  }
   
   void VarOccurrences::add(VarDecl* v, Item* i) {
     ExpressionMap<Items>::iterator vi = _m.find(v);

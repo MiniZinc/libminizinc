@@ -240,6 +240,8 @@ namespace MiniZinc {
       }
     }
     void flat_replaceItem(int idx, Item* i) {
+      if (_flat->_items[idx]->isa<VarDeclI>() && !i->isa<VarDeclI>())
+        vo.remove(_flat->_items[idx]->cast<VarDeclI>()->e());
       _flat->_items[idx] = i;
     }
     void vo_add_exp(VarDecl* vd) {
@@ -466,6 +468,7 @@ namespace MiniZinc {
             }
           } else {
             vd->e(e);
+            env.vo_add_exp(vd);
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
@@ -2382,6 +2385,7 @@ namespace MiniZinc {
                                       env.genId("FromLet_"+vd->id()->v().str()));
             nvd->toplevel(true);
             nvd->introduced(true);
+            nvd->flat(nvd);
             nvd->type(vd->type());
             VarDeclI* nv = new VarDeclI(Location(),nvd);
             env.flat_addItem(nv);
@@ -2398,11 +2402,10 @@ namespace MiniZinc {
                   "free variable in non-positive context");
             }
             Id* nid = nvd->id();
-            nvd->flat(nvd);
             vd->e(nid);
-            (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
             assert(vd->flat()==NULL);
             vd->flat(vd);
+            (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
           } else {
             if (ctx.b==C_ROOT) {
               (void) flat_exp(env,Ctx(),le,constants().var_true,constants().var_true);
