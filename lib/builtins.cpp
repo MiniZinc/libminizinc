@@ -174,6 +174,17 @@ namespace MiniZinc {
     return m;
   }
 
+  FloatVal b_sum_float(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      return 0;
+    FloatVal m = 0;
+    for (unsigned int i=0; i<al->v().size(); i++)
+      m += eval_float(al->v()[i]);
+    return m;
+  }
+
 
   IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
     if (args.size() != 1)
@@ -464,6 +475,13 @@ namespace MiniZinc {
     return ret;
   }
 
+  FloatVal b_int2float(ASTExprVec<Expression> args) {
+    return eval_int(args[0]);
+  }
+  IntVal b_ceil(ASTExprVec<Expression> args) {
+    return std::ceil(eval_float(args[0]));
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -709,6 +727,21 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::optvartop(1);
       rb(m, ASTString("fix"), t, b_fix_array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      rb(m, ASTString("int2float"), t, b_int2float);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();
+      rb(m, ASTString("ceil"), t, b_ceil);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat(1);
+      rb(m, constants().ids.sum, t, b_sum_float);      
     }
   }
   
