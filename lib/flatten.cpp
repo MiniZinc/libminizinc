@@ -1637,7 +1637,7 @@ namespace MiniZinc {
               ees[0].b = e0.b; ees[1].b = e1.b;
 
               Expression* le0 = 
-                (boe0->type()._bt == Type::BT_INT && bot != BOT_IN) ?
+                (boe0->type().isint() && bot != BOT_IN) ?
                   get_linexp(e0.r()) : NULL;
               Expression* le1 = le0 ? get_linexp(e1.r()) : NULL;
 
