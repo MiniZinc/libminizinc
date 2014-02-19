@@ -2491,16 +2491,24 @@ namespace MiniZinc {
       CopyMap& cmap;
       OV2(EnvI& env0, CopyMap& cmap0) : env(env0), cmap(cmap0) {}
       void vVarDeclI(VarDeclI* vdi) {
-        if (Expression* vd = cmap.find(vdi->e())) {
+        if (Expression* vd_e = cmap.find(vdi->e())) {
+          VarDecl* vd = vd_e->cast<VarDecl>();
           GCLock lock;
           // Delete domain constraint, not needed in ozn
-          vd->cast<VarDecl>()->ti()->domain(NULL);
+          if (vd->type().isvar() && vd->type()._st==Type::ST_SET) {
+            if (vd->ti()->domain()==NULL) {
+              assert(vd->flat() != NULL);
+              vd->ti()->domain(vd->flat()->ti()->domain());
+            }
+          } else {
+            vd->ti()->domain(NULL);
+          }
           env.output->addItem(copy(cmap,vdi));
           if (!vdi->e()->type().ispar()) {
             // Remove right hand side
             // This will need to be changed, so that if there is a right hand side
             // the FlatZinc does not need to contain the output variable at all.
-            vd->cast<VarDecl>()->e(NULL);
+            vd->e(NULL);
             assert(vdi->e()->flat());
             if (vdi->e()->type().dim() == 0) {
               vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
