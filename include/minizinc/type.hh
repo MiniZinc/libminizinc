@@ -83,6 +83,9 @@ namespace MiniZinc {
     static Type varsetint(int dim=0) {
       return Type(TI_VAR,BT_INT,ST_SET,dim);
     }
+    static Type varbot(int dim=0) {
+      return Type(TI_VAR,BT_BOT,ST_PLAIN,dim);
+    }
     static Type bot(int dim=0) {
       return Type(TI_PAR,BT_BOT,ST_PLAIN,dim);
     }

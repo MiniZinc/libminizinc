@@ -1148,7 +1148,21 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_ANON:
-      throw InternalError("anonymous variables not supported yet");
+      {
+        AnonVar* av = e->cast<AnonVar>();
+        if (av->type().isbot()) {
+          throw InternalError("type of anonymous variable could not be inferred");
+        }
+        VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), av->type()),
+                                  env.genId("Anon"));
+        std::vector<Expression*> let_v(1);
+        let_v[0] = vd;
+        Let* let = new Let(Location(),let_v,vd->id());
+        let->type(vd->type());
+        ret = flat_exp(env,Ctx(),let,NULL,constants().var_true);
+        /// TODO: introduce
+        /// let { var $T: x } in x
+      }
       break;
     case Expression::E_ARRAYLIT:
       {

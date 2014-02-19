@@ -277,10 +277,15 @@ namespace MiniZinc {
     /// Visit array literal
     void vArrayLit(ArrayLit& al) {
       Type ty; ty._dim = al.dims();
+      std::vector<AnonVar*> anons;
       for (unsigned int i=0; i<al.v().size(); i++) {
         Expression* vi = al.v()[i];
-        if (vi->type().isvar())
+        if (AnonVar* av = vi->dyn_cast<AnonVar>()) {
           ty._ti = Type::TI_VAR;
+          anons.push_back(av);
+        } else if (vi->type().isvar()) {
+          ty._ti = Type::TI_VAR;
+        }
         if (vi->type().isopt())
           ty._ot = Type::OT_OPTIONAL;
         if (vi->type().isbot()) {
@@ -294,8 +299,17 @@ namespace MiniZinc {
           throw TypeError(al.loc(),"non-uniform array literal");
         }
       }
-      if (ty._bt == Type::BT_UNKNOWN)
+      if (ty._bt == Type::BT_UNKNOWN) {
         ty._bt = Type::BT_BOT;
+        if (!anons.empty())
+          throw TypeError(al.loc(),"array literal must contain at least one non-anonymous variable");
+      } else {
+        Type at = ty;
+        at._dim = 0;
+        for (unsigned int i=0; i<anons.size(); i++) {
+          anons[i]->type(at);
+        }
+      }
       al.type(ty);
     }
     /// Visit array access
