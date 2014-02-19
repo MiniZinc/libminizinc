@@ -225,7 +225,7 @@ namespace MiniZinc {
           std::vector<VarDecl*> vv;
           for (unsigned int j=0; j<c->n_decls(i); j++)
             vv.push_back(static_cast<VarDecl*>(copy(m,c->decl(i,j))));
-          g._g.push_back(Generator(vv,c->in(i)));
+          g._g.push_back(Generator(vv,copy(m,c->in(i))));
         }
         Comprehension* cc = 
           new Comprehension(copy_location(m,e),
