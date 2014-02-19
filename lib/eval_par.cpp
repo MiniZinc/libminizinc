@@ -520,7 +520,10 @@ namespace MiniZinc {
       throw EvalError(e->loc(),"not an integer expression");
       break;
     case Expression::E_ID:
-      return eval_id<EvalIntLit>(e)->v();
+      {
+        GCLock lock;
+        return eval_id<EvalIntLit>(e)->v();
+      }
       break;
     case Expression::E_ARRAYACCESS:
       return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));

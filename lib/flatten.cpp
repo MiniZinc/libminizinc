@@ -1966,6 +1966,7 @@ namespace MiniZinc {
                 v[i] = al0->v()[i];
               for (unsigned int i=al1->v().size(); i--;)
                 v[al0->v().size()+i] = al1->v()[i];
+              GCLock lock;
               ArrayLit* alret = new ArrayLit(e->loc(),v);
               alret->type(e->type());
               ret.b = conj(env,b,Ctx(),ee);
