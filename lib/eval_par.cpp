@@ -279,8 +279,18 @@ namespace MiniZinc {
               return IntSetVal::ai(u);
             }
           case BOT_DIFF:
+            {
+              Ranges::Diff<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              return IntSetVal::ai(u);
+            }
           case BOT_SYMDIFF:
-            assert(false); /// TODO
+            {
+              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntSetRanges,IntSetRanges> i(ir0,ir1);
+              Ranges::Diff<Ranges::Union<IntSetRanges,IntSetRanges>,
+                           Ranges::Inter<IntSetRanges,IntSetRanges>> sd(u,i);
+              return IntSetVal::ai(sd);
+            }
           case BOT_INTERSECT:
             {
               Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
