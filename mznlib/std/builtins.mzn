@@ -117,6 +117,20 @@ function var int: element(var int: idx1, var int: idx2,
     constraint idx2 in index_set_2of2(x);
   } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
 
+function var int: element(var int: idx1, var int: idx2, var int: idx3,
+                          array[int,int,int] of var int: x) =
+  let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+    
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+    constraint idx1 in index_set_1of3(x);
+    constraint idx2 in index_set_2of3(x);
+    constraint idx3 in index_set_3of3(x);
+  } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
+
 function var set of int: element_t(var int: idx, array[int] of var set of int: x) ::total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r;
