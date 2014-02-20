@@ -2252,6 +2252,7 @@ namespace MiniZinc {
               if (reif_b == NULL) {
                 reif_b = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
                 reif_b->type(Type::varbool());
+                reif_b->introduced(true);
               }
               args.push_back(reif_b->id());
               Call* cr_real = new Call(Location(),cid.str()+"_reif",args);
