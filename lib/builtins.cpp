@@ -233,10 +233,7 @@ namespace MiniZinc {
     IntSetVal* isv = eval_intset(args[0]);
     return isv->max(isv->size()-1);
   }
-
-  IntSetVal* b_ub_set(ASTExprVec<Expression> args) {
-    assert(args.size() == 1);
-    Expression* e = args[0];
+  IntSetVal* b_ub_set(Expression* e) {
     for (;;) {
       switch (e->eid()) {
       case Expression::E_SETLIT: return eval_intset(e);
@@ -255,6 +252,25 @@ namespace MiniZinc {
         throw EvalError(e->loc(),"invalid argument to ub");
       }
     }
+  }
+  IntSetVal* b_ub_set(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    return b_ub_set(args[0]);
+  }
+
+  IntSetVal* b_array_ub_set(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      throw EvalError(Location(), "upper bound of empty array undefined");
+    IntSetVal* ub = b_ub_set(al->v()[0]);
+    for (unsigned int i=1; i<al->v().size(); i++) {
+      IntSetRanges isr(ub);
+      IntSetRanges r(b_ub_set(al->v()[i]));
+      Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
+      ub = IntSetVal::ai(u);
+    }
+    return ub;
   }
 
   IntSetVal* b_dom_varint(Expression* e) {
@@ -642,6 +658,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
       rb(m, ASTString("ub"), t, b_ub_set);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varsetint(1);
+      rb(m, ASTString("ub_array"), t, b_array_ub_set);
     }
     {
       std::vector<Type> t(1);
