@@ -2265,9 +2265,11 @@ namespace MiniZinc {
             if (cr->type().isbool() && ctx.b != C_ROOT && r != constants().var_true) {
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
-                reif_b = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
-                reif_b->type(Type::varbool());
-                reif_b->introduced(true);
+                VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
+                nvd->type(Type::varbool());
+                nvd->introduced(true);
+                (void) flat_exp(env, Ctx(), nvd, NULL, constants().var_true);
+                reif_b = nvd->flat();
               }
               args.push_back(reif_b->id());
               Call* cr_real = new Call(Location(),cid.str()+"_reif",args);
