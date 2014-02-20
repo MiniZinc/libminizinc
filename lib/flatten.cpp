@@ -2849,6 +2849,10 @@ namespace MiniZinc {
                        vd->e()->eid() == Expression::E_BOOLLIT);
               }
             }
+            if (Expression::equal(vd->ti()->domain(),constants().lit_false)) {
+              vd->ti()->domain(NULL);
+              vd->e(constants().lit_false);
+            }
           }
         } else if (vd->type().isvar() && vd->type()._dim==0) {
           if (vd->e() != NULL) {
