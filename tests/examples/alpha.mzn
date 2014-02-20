@@ -1,12 +1,4 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON minizinc_mip
-% RUNS ON zinc_fdic_mznlib
-% RUNS ON zinc_mip_hl
-% RUNS ON mzn_mer_lp
-% RUNS ON minizinc_cpx
-% RUNS ON minizinc_fd
+% RUNS ON mzn20_fd
 %-----------------------------------------------------------------------------
 % Alphabet puzzle, a well-known cryptoarithmetic puzzle
 %

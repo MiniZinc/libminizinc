@@ -1,8 +1,4 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON zinc_mip_hl
-% RUNS ON zinc_fdic_mznlib
-% RUNS ON minizinc_cpx
-% RUNS ON minizinc_fd
+% RUNS ON mzn20_fd
 
 %-----------------------------------------------------------------------------%
 % Timetabling problem

@@ -1,7 +1,3 @@
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_fdlp
-% RUNS ON zinc_mip_hl
-% RUNS ON minizinc_fd
 % RUNS OM minizinc_cpx
 
 %% Product example from the OPL book!

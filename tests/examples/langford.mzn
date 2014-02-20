@@ -1,9 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON zinc_fdic_mznlib
-% RUNS ON zinc_mip_hl
-% RUNS ON minizinc_fd
 % RUSN ON minizinc_cpx
 %-----------------------------------------------------------------------------%
 % Langford's Problem  (CSPlib problem 24)

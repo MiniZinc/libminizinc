@@ -1,10 +1,4 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON zinc_fdic_mznlib
-% RUNS ON zinc_mip_hl
-% RUNS ON minizinc_cpx
-% RUNS ON minizinc_fd
+% RUNS ON mzn20_fd
 %% Bennett quasigroup existence problem (QG5).
 %%
 %% A quasigroup is just a groupoid whose "multiplication table" is a

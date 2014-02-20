@@ -1,7 +1,4 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON zinc_mip_hl
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
+% RUNS ON mzn20_fd
 include "magicsq.mzn.model";
 
 n = 5;
