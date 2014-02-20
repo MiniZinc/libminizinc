@@ -280,7 +280,7 @@ then
     echo " ... passed"
     rm -f $OUT $ERR
 else
-    echo ""
+    echo " ... failed"
     echo "$THIS: no match against expected outputs"
     echo "$THIS: ---- $OUT ----"
     cat $OUT
