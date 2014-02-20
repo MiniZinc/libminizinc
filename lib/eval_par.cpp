@@ -830,7 +830,7 @@ namespace MiniZinc {
         }
         return false;
       } else {
-        return true;
+        return e->type().isint();
       }
     }
     /// Visit integer literal
@@ -994,6 +994,8 @@ namespace MiniZinc {
           valid = false;
           _bounds.push_back(Bounds(0,0));
         }
+      } else if (c.id() == constants().ids.bool2int) {
+          _bounds.push_back(Bounds(0,1));
       } else {
         valid = false;
         _bounds.push_back(Bounds(0,0));
