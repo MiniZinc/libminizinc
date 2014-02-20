@@ -2493,17 +2493,25 @@ namespace MiniZinc {
   
   void createOutput(EnvI& e) {
     CopyMap cmap;
+    bool hadOutput = false;
     class OV1 : public ItemVisitor {
     public:
       EnvI& env;
       CopyMap& cmap;
-      OV1(EnvI& env0, CopyMap& cmap0) : env(env0), cmap(cmap0) {}
+      bool& hadOutput;
+      OV1(EnvI& env0, CopyMap& cmap0, bool& hadOutput0) : env(env0), cmap(cmap0), hadOutput(hadOutput0) {}
       void vOutputI(OutputI* oi) {
+        hadOutput = true;
         GCLock lock;
         env.output->addItem(copy(cmap, oi));
       }
-    } _ov1(e,cmap);
+    } _ov1(e,cmap,hadOutput);
     iterItems(_ov1,e.orig);
+    
+    if (!hadOutput) {
+      GCLock lock;
+      e.output->addItem(new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>())));
+    }
 
     class OV2 : public ItemVisitor {
     public:
