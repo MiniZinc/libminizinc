@@ -303,6 +303,8 @@ function     bool: xorall(array[$T] of     bool);
 function var bool: xorall(array[$T] of var bool);
 function     bool: iffall(array[$T] of     bool);
 function var bool: iffall(array[$T] of var bool);
+function var bool: clause(array[$T] of var bool, array[$T] of var bool);
+function var bool: clause(array[$T] of     bool, array[$T] of     bool);
 
 % Set operations
 function     bool: 'in'(    int,     set of int);

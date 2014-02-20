@@ -1090,11 +1090,11 @@ namespace MiniZinc {
       struct {
           ASTString forall;
           ASTString exists;
+          ASTString clause;
           ASTString bool2int;
           ASTString sum;
           ASTString lin_exp;
           ASTString bool_eq;
-          ASTString bool_clause;
       } ids;
       /// Identifiers for Boolean contexts
       struct {

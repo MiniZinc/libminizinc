@@ -412,6 +412,19 @@ namespace MiniZinc {
         return true;
     return false;
   }
+  bool b_clause_par(ASTExprVec<Expression> args) {
+    if (args.size()!=2)
+      throw EvalError(Location(), "clause needs exactly two arguments");
+    ArrayLit* al = eval_array_lit(args[0]);
+    for (unsigned int i=al->v().size(); i--;)
+      if (eval_bool(al->v()[i]))
+        return true;
+    al = eval_array_lit(args[1]);
+    for (unsigned int i=al->v().size(); i--;)
+      if (!eval_bool(al->v()[i]))
+        return true;
+    return false;
+  }
 
   IntVal b_card(ASTExprVec<Expression> args) {
     if (args.size()!=1)
@@ -653,6 +666,12 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(m, constants().ids.exists, t, b_exists_par);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parbool(-1);
+      t[1] = Type::parbool(-1);
+      rb(m, constants().ids.clause, t, b_clause_par);
     }
     {
       std::vector<Type> t(1);

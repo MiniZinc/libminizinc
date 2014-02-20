@@ -882,11 +882,11 @@ namespace MiniZinc {
     
     ids.forall = ASTString("forall");
     ids.exists = ASTString("exists");
+    ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
     ids.sum = ASTString("sum");
     ids.lin_exp = ASTString("lin_exp");
     ids.bool_eq = ASTString("bool_eq");
-    ids.bool_clause = ASTString("bool_clause");
     
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -909,11 +909,11 @@ namespace MiniZinc {
     v.push_back(var_false);
     v.push_back(new StringLit(Location(),ids.forall));
     v.push_back(new StringLit(Location(),ids.exists));
+    v.push_back(new StringLit(Location(),ids.clause));
     v.push_back(new StringLit(Location(),ids.bool2int));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.bool_eq));
-    v.push_back(new StringLit(Location(),ids.bool_clause));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);

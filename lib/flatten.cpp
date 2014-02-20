@@ -961,7 +961,7 @@ namespace MiniZinc {
       posargs[0] = ite->e_if(i);
       clauseargs[1] = new ArrayLit(Location(),posargs);
       clauseargs[1]->type(Type::varbool(1));
-      Call* if_op = new Call(Location(), "bool_clause", clauseargs);
+      Call* if_op = new Call(Location(), constants().ids.clause, clauseargs);
       if_op->type(Type::varbool());
       if_op->decl(env.orig->matchFn(if_op));
       BinOp* else_op = new BinOp(Location(),ite->e_if(i),BOT_OR,eq_else);
@@ -2122,7 +2122,7 @@ namespace MiniZinc {
                     Expression::equal(neg_call->args()[1],constants().lit_false)) {
                   neg_alv.push_back(neg_call->args()[0]);
                 } else {
-                  Call* clause = same_call(alv[i],"bool_clause");
+                  Call* clause = same_call(alv[i],constants().ids.clause);
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(clause->args()[0]);
                     for (unsigned int j=0; j<clause_pos->v().size(); j++) {
@@ -2157,7 +2157,7 @@ namespace MiniZinc {
                 pos_al->type(al->type());
                 ArrayLit* neg_al = new ArrayLit(al->loc(),neg_alv);
                 neg_al->type(al->type());
-                cid = constants().ids.bool_clause;
+                cid = constants().ids.clause;
                 args.push_back(pos_al);
                 args.push_back(neg_al);
               }
@@ -2606,6 +2606,8 @@ namespace MiniZinc {
     }
     FunctionI* array_bool_and;
     FunctionI* array_bool_or;
+    FunctionI* array_bool_clause;
+    FunctionI* array_bool_clause_reif;
     {
       std::vector<Type> array_bool_andor_t(2);
       array_bool_andor_t[0] = Type::varbool(1);
@@ -2615,6 +2617,14 @@ namespace MiniZinc {
       array_bool_and = (fi && fi->e()) ? fi : NULL;
       fi = env.orig->matchFn(ASTString("array_bool_or"), array_bool_andor_t);
       array_bool_or = (fi && fi->e()) ? fi : NULL;
+
+      array_bool_andor_t[1] = Type::varbool(1);
+      fi = env.orig->matchFn(ASTString("bool_clause"), array_bool_andor_t);
+      array_bool_clause = (fi && fi->e()) ? fi : NULL;
+
+      array_bool_andor_t.push_back(Type::varbool());
+      fi = env.orig->matchFn(ASTString("bool_clause_reif"), array_bool_andor_t);
+      array_bool_clause_reif = (fi && fi->e()) ? fi : NULL;
     }
     
     std::vector<VarDecl*> deletedVarDecls;
@@ -2703,6 +2713,16 @@ namespace MiniZinc {
                   nc->type(Type::varbool());
                   nc->decl(array_bool_and);
                 }
+              } else if (c->id() == constants().ids.clause) {
+                if (array_bool_clause_reif) {
+                  std::vector<Expression*> args(3);
+                  args[0] = c->args()[0];
+                  args[1] = c->args()[1];
+                  args[2] = vd->id();
+                  nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_clause_reif);
+                }
               } else {
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
@@ -2743,6 +2763,15 @@ namespace MiniZinc {
                 nc = new Call(c->loc(),array_bool_and->id(),args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_and);
+              }
+            } else if (c->id() == constants().ids.clause) {
+              if (array_bool_clause) {
+                std::vector<Expression*> args(2);
+                args[0] = c->args()[0];
+                args[1] = c->args()[1];
+                nc = new Call(c->loc(),array_bool_clause->id(),args);
+                nc->type(Type::varbool());
+                nc->decl(array_bool_clause);
               }
             } else {
               FunctionI* decl = env.orig->matchFn(c);
@@ -2843,6 +2872,8 @@ namespace MiniZinc {
                   args[1] = constants().lit_true;
                   ASTExprVec<Expression> argsv(args);
                   vc->args(argsv);
+                } else if (vc->id() == constants().ids.clause) {
+                  vc->id(ASTString("bool_clause"));
                 }
               }
               tmp._items.push_back(new ConstraintI(Location(),ve));
@@ -2856,6 +2887,8 @@ namespace MiniZinc {
                   c->id(ASTString("array_bool_or"));
                 } else if (c->id() == constants().ids.forall) {
                   c->id(ASTString("array_bool_and"));
+                } else if (c->id() == constants().ids.clause) {
+                  c->id(ASTString("bool_clause"));
                 } else {
                   c->id(ASTString(c->id().str()+"_reif"));
                 }
@@ -2971,6 +3004,10 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
+            vc->decl(env.model()->matchFn(vc));
+          } else if (vc->id() == constants().ids.clause) {
+            GCLock lock;
+            vc->id(ASTString("bool_clause"));
             vc->decl(env.model()->matchFn(vc));
           }
           if (vc->decl() && !vc->decl()->loc().filename.endsWith("/builtins.mzn") &&
