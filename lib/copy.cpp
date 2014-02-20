@@ -84,21 +84,24 @@ namespace MiniZinc {
     if (e==NULL) return NULL;
     if (Expression* cached = m.find(e))
       return cached;
+    Expression* ret = NULL;
     switch (e->eid()) {
     case Expression::E_INTLIT:
       {
         IntLit* c = new IntLit(copy_location(m,e),
                               e->cast<IntLit>()->v());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_FLOATLIT:
       {
         FloatLit* c = new FloatLit(copy_location(m,e),
                                    e->cast<FloatLit>()->v());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_SETLIT:
       {
         SetLit* s = e->cast<SetLit>();
@@ -127,15 +130,17 @@ namespace MiniZinc {
         }
         c->type(s->type());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_BOOLLIT:
       {
         BoolLit* c = new BoolLit(copy_location(m,e),
                                 e->cast<BoolLit>()->v());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_STRINGLIT:
       {
         StringLit* sl = e->cast<StringLit>();
@@ -148,8 +153,9 @@ namespace MiniZinc {
           c = new StringLit(copy_location(m,e),s);
         }
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_ID:
       {
         Id* id = e->cast<Id>();
@@ -164,14 +170,16 @@ namespace MiniZinc {
                       static_cast<VarDecl*>(copy(m,id->decl())));
         c->type(id->type());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_ANON:
       {
         AnonVar* c = new AnonVar(copy_location(m,e));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
@@ -195,8 +203,9 @@ namespace MiniZinc {
                                   ASTExprVec<Expression>(v),dims);
         c->type(al->type());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_ARRAYACCESS:
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
@@ -214,8 +223,9 @@ namespace MiniZinc {
         ArrayAccess* c = 
           new ArrayAccess(copy_location(m,e),copy(m,aa->v()),idx);
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_COMP:
       {
         Comprehension* c = e->cast<Comprehension>();
@@ -231,8 +241,9 @@ namespace MiniZinc {
           new Comprehension(copy_location(m,e),
                             copy(m,c->e()),g,c->set());
         m.insert(c,cc);
-        return cc;
+        ret = cc;
       }
+      break;
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
@@ -244,8 +255,9 @@ namespace MiniZinc {
         ITE* c = new ITE(copy_location(m,e),
                         ifthen,copy(m,ite->e_else()));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_BINOP:
       {
         BinOp* b = e->cast<BinOp>();
@@ -253,16 +265,18 @@ namespace MiniZinc {
                             copy(m,b->lhs()),b->op(),
                             copy(m,b->rhs()));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_UNOP:
       {
         UnOp* b = e->cast<UnOp>();
         UnOp* c = new UnOp(copy_location(m,e),
                           b->op(),copy(m,b->e()));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_CALL:
       {
         Call* ca = e->cast<Call>();
@@ -279,8 +293,9 @@ namespace MiniZinc {
         Call* c = new Call(copy_location(m,e),id_v,args);
         c->decl(ca->decl());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_VARDECL:
       {
         VarDecl* vd = e->cast<VarDecl>();
@@ -298,8 +313,9 @@ namespace MiniZinc {
         c->introduced(vd->introduced());
         c->type(vd->type());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_LET:
       {
         Let* l = e->cast<Let>();
@@ -308,16 +324,18 @@ namespace MiniZinc {
           let[i] = copy(m,l->let()[i]);
         Let* c = new Let(copy_location(m,e),let,copy(m,l->in()));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_ANN:
       {
         Annotation* a = e->cast<Annotation>();
         Annotation* c = new Annotation(copy_location(m,e),copy(m,a->e()),
                                        static_cast<Annotation*>(copy(m,a->next())));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_TI:
       {
         TypeInst* t = e->cast<TypeInst>();
@@ -335,16 +353,24 @@ namespace MiniZinc {
         TypeInst* c = new TypeInst(copy_location(m,e),t->type(),
           ASTExprVec<TypeInst>(r),copy(m,t->domain()));
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
     case Expression::E_TIID:
       {
         TIId* t = e->cast<TIId>();
         TIId* c = new TIId(copy_location(m,e),t->v().str());
         m.insert(e,c);
-        return c;
+        ret = c;
       }
+      break;
+    default:
+        assert(false);
     }
+    if (e->ann()) {
+      ret->ann(copy(m,e->ann())->cast<Annotation>());
+    }
+    return ret;
   }
 
   Expression* copy(Expression* e) {
