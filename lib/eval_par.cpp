@@ -793,7 +793,11 @@ namespace MiniZinc {
             return EvalIntLit::e(e);
           else
             return EvalSetLit::e(e);
-        case Type::BT_FLOAT: throw InternalError("not yet implemented");
+        case Type::BT_FLOAT:
+            if (e->type()._st == Type::ST_PLAIN)
+              return EvalFloatLit::e(e);
+            else
+              throw InternalError("set of float not yet implemented");
         case Type::BT_STRING: throw InternalError("not yet implemented");
         case Type::BT_ANN:
         case Type::BT_BOT:

@@ -678,6 +678,8 @@ namespace MiniZinc {
       builtin = "bool_";
     } else if (op->rhs()->type().isset()) {
       builtin = "set_";
+    } else if (op->rhs()->type().isfloat()) {
+      builtin = "float_";
     } else {
       throw InternalError(op->opToString().str()+" not yet implemented");
     }
