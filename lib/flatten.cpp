@@ -1541,11 +1541,21 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GQ;
-              ctx0.b = +ctx0.b;
-              ctx1.b = -ctx1.b;
+              if (boe0->type().isbool()) {
+                ctx0.b = +ctx0.b;
+                ctx1.b = -ctx1.b;
+              } else if (boe0->type().isint()) {
+                ctx0.i = +ctx0.i;
+                ctx1.i = -ctx1.i;
+              }
             } else {
-              ctx0.b = -ctx0.b;
-              ctx1.b = +ctx1.b;
+              if (boe0->type().isbool()) {
+                ctx0.b = -ctx0.b;
+                ctx1.b = +ctx1.b;
+              } else if (boe0->type().isint()) {
+                ctx0.i = -ctx0.i;
+                ctx1.i = +ctx1.i;
+              }
             }
             goto flatten_bool_op;
           case BOT_LQ:
@@ -1698,6 +1708,11 @@ namespace MiniZinc {
                   default: assert(false); break;
                   }
                   if (result || doubleNeg) {
+                    if (doubleNeg) {
+                      ctx.b = -ctx.b;
+                      ctx.neg = !ctx.neg;
+                    }
+                    ees[2].b = constants().lit_true;
                     ret.r = conj(env,r,ctx,ees);
                   } else {
                     ret.r = bind(env,ctx,r,constants().lit_false);
