@@ -159,7 +159,9 @@ namespace MiniZinc {
         {
           const SetLit& sl = *e->cast<SetLit>();
           if (sl.isv()) {
-            if (sl.isv()->size()==1) {
+            if (sl.isv()->size()==0) {
+              os << "1..0";
+            } else if (sl.isv()->size()==1) {
               os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
             } else {
               os << "{";
@@ -983,7 +985,9 @@ namespace MiniZinc {
     ret mapSetLit(const SetLit& sl) {
       DocumentList* dl;
       if (sl.isv()) {
-        if (sl.isv()->size()==1) {
+        if (sl.isv()->size()==0) {
+          dl = new DocumentList("1..0","","");
+        } else if (sl.isv()->size()==1) {
           dl = new DocumentList("", "..", "");
           {
             std::ostringstream oss;
