@@ -321,6 +321,55 @@ namespace MiniZinc {
     }
   }
   
+  void checkIndexSets(VarDecl* vd, Expression* e) {
+    ASTExprVec<TypeInst> tis = vd->ti()->ranges();
+    std::vector<TypeInst*> newtis(tis.size());
+    bool needNewTypeInst = false;
+    switch (e->eid()) {
+      case Expression::E_ID:
+      {
+        Id* id = e->cast<Id>();
+        ASTExprVec<TypeInst> e_tis = id->decl()->ti()->ranges();
+        assert(tis.size()==e_tis.size());
+        for (unsigned int i=0; i<tis.size(); i++) {
+          if (tis[i]->domain()==NULL) {
+            newtis[i] = e_tis[i];
+            needNewTypeInst = true;
+          } else {
+            if (!eval_intset(tis[i]->domain())->equal(eval_intset(e_tis[i]->domain())))
+              throw EvalError(vd->loc(), "Index set mismatch");
+            newtis[i] = tis[i];
+          }
+        }
+      }
+        break;
+      case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        for (unsigned int i=0; i<tis.size(); i++) {
+          if (tis[i]->domain()==NULL) {
+            newtis[i] = new TypeInst(Location(),Type(),new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+            needNewTypeInst = true;
+          } else {
+            IntSetVal* isv = eval_intset(tis[i]->domain());
+            assert(isv->size()==1);
+            if (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))
+              throw EvalError(vd->loc(), "Index set mismatch");
+            newtis[i] = tis[i];
+          }
+        }
+      }
+        break;
+      default:
+        throw InternalError("not supported yet");
+    }
+    if (needNewTypeInst) {
+      TypeInst* tic = copy(vd->ti())->cast<TypeInst>();
+      tic->setRanges(newtis);
+      vd->ti(tic);
+    }
+  }
+  
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(!e->isa<VarDecl>());
     if (ctx.neg) {
@@ -467,6 +516,10 @@ namespace MiniZinc {
               vd->e(constants().lit_false);
             }
           } else {
+            if (e->type().dim() > 0) {
+              // Check that index sets match
+              checkIndexSets(vd,e);
+            }
             vd->e(e);
             env.vo_add_exp(vd);
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
@@ -2361,12 +2414,13 @@ namespace MiniZinc {
             );
           }
           VarDeclI* nv = new VarDeclI(Location(),vd);
+          env.flat_addItem(nv);
           Ctx nctx;
           if (v->e() && v->e()->type().isbool())
             nctx.b = C_MIX;
           if (v->e()) {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
-            if (v->e()->type()._bt==Type::BT_INT && v->e()->type()._dim==0) {
+            if (v->e()->type()._bt==Type::BT_INT && v->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
               if (v->e()->type().isset()) {
                 ibv = compute_intset_bounds(vd->e());
@@ -2394,7 +2448,6 @@ namespace MiniZinc {
               }
             }
           }
-          env.flat_addItem(nv);
 
           ret.r = bind(env,Ctx(),r,vd->id());
         } else {
