@@ -569,7 +569,7 @@ ti_expr :
     | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
       {
         $$ = $6;
-        $$->addRanges(*$3);
+        $$->setRanges(*$3);
         delete $3;
       }
 
