@@ -2048,27 +2048,34 @@ namespace MiniZinc {
         Ctx nctx = ctx;
         nctx.neg = false;
         ASTString cid = c->id();
-        if (decl->e()==NULL && cid == constants().ids.forall) {
-          nctx.b = +nctx.b;
-          if (ctx.neg) {
-            ctx.neg = false;
-            nctx.neg = true;
-            cid = constants().ids.exists;
-          }
-        } else if (decl->e()==NULL && cid == constants().ids.exists) {
-          nctx.b = +nctx.b;
-          if (ctx.neg) {
-            ctx.neg = false;
-            nctx.neg = true;
-            cid = constants().ids.forall;
-          }
-        } else if (decl->e()==NULL && cid == constants().ids.bool2int) {
-          if (ctx.neg) {
-            ctx.neg = false;
-            nctx.neg = true;
-            nctx.b = -ctx.i;
-          } else {
-            nctx.b = ctx.i;
+        if (decl->e()==NULL) {
+          if (cid == constants().ids.forall) {
+            nctx.b = +nctx.b;
+            if (ctx.neg) {
+              ctx.neg = false;
+              nctx.neg = true;
+              cid = constants().ids.exists;
+            }
+          } else if (cid == constants().ids.exists) {
+            nctx.b = +nctx.b;
+            if (ctx.neg) {
+              ctx.neg = false;
+              nctx.neg = true;
+              cid = constants().ids.forall;
+            }
+          } else if (cid == constants().ids.bool2int) {
+            if (ctx.neg) {
+              ctx.neg = false;
+              nctx.neg = true;
+              nctx.b = -ctx.i;
+            } else {
+              nctx.b = ctx.i;
+            }
+          } else if (cid == constants().ids.assert) {
+            Expression* callres = decl->_builtins.e(c->args());
+            ret = flat_exp(env,ctx,callres,r,b);
+            // This is all we need to do for assert, so break out of the E_CALL
+            break;
           }
         }
 

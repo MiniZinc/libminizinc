@@ -1095,6 +1095,7 @@ namespace MiniZinc {
           ASTString sum;
           ASTString lin_exp;
           ASTString bool_eq;
+          ASTString assert;
       } ids;
       /// Identifiers for Boolean contexts
       struct {

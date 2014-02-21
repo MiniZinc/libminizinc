@@ -511,6 +511,22 @@ namespace MiniZinc {
     return std::ceil(eval_float(args[0]));
   }
   
+  bool b_assert_bool(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    if (eval_bool(args[0]))
+      return true;
+    StringLit* err = eval_par(args[1])->cast<StringLit>();
+    throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
+  }
+
+  Expression* b_assert(ASTExprVec<Expression> args) {
+    assert(args.size()==3);
+    if (eval_bool(args[0]))
+      return args[2];
+    StringLit* err = eval_par(args[1])->cast<StringLit>();
+    throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -646,6 +662,23 @@ namespace MiniZinc {
       rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
       t_arrayXd[6] = Type::optvartop(-1);
       rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parbool();
+      t[1] = Type::parstring();
+      rb(m, ASTString("assert"), t, b_assert_bool);
+    }
+    {
+      std::vector<Type> t(3);
+      t[0] = Type::parbool();
+      t[1] = Type::parstring();
+      t[2] = Type::top();
+      rb(m, ASTString("assert"), t, b_assert);
+      t[2] = Type::vartop();
+      rb(m, ASTString("assert"), t, b_assert);
+      t[2] = Type::optvartop();
+      rb(m, ASTString("assert"), t, b_assert);
     }
     {
       std::vector<Type> t_length(1);
