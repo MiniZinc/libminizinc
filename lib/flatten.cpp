@@ -2462,7 +2462,7 @@ namespace MiniZinc {
         Let* let = e->cast<Let>();
         GC::mark();
         std::vector<EE> cs;
-        std::vector<std::pair<Id*,Expression*> > idmap;
+        std::vector<VarDecl*> flatmap;
         let->pushbindings();
         for (unsigned int i=0; i<let->let().size(); i++) {
           Expression* le = let->let()[i];
@@ -2492,7 +2492,7 @@ namespace MiniZinc {
             }
             Id* nid = nvd->id();
             vd->e(nid);
-            assert(vd->flat()==NULL);
+            flatmap.push_back(vd->flat());
             vd->flat(vd);
             (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
           } else {
@@ -2528,7 +2528,8 @@ namespace MiniZinc {
         // Restore previous mapping
         for (unsigned int i=0; i<let->let().size(); i++) {
           if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
-            vd->flat(NULL);
+            vd->flat(flatmap.back());
+            flatmap.pop_back();
           }
         }
       }
