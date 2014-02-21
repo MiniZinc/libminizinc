@@ -248,7 +248,16 @@ function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 
 function     int:   product(array[$T] of     int);
-function var int:   product(array[$T] of var int);
+function var int:   product(array[$T] of var int: x) =
+  let { array[int] of var int: xx = array1d(1..length(x),x) }
+  in product_rec(xx);
+function var int:   product_rec(array[int] of var int: x) =
+  if length(x)=0 then 1
+  elseif length(x)=1 then x[min(index_set(x))]
+  else x[min(index_set(x))]*
+       product_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
+  endif;
+
 function     float: product(array[$T] of     float);
 function var float: product(array[$T] of var float);
 
