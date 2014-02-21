@@ -22,7 +22,7 @@
 #   fork: Resource temporarily unavailable
 
 # Uncomment the next line for debugging:
-set -x
+# set -x
 
 # The name of this program as invoked.
 #
