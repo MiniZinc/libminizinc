@@ -154,6 +154,28 @@ function var set of int: element(var int: idx, array[int] of var set of int: x) 
   } in element_mt(idx,x)
   endif;
 
+function var bool: element_t(var int: idx, array[int] of var bool: x) ::total =
+  let {
+    var bool: r;
+    constraint array_var_bool_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var bool: element_mt(var int: idx, array[int] of var bool: x) ::total =
+  let {
+    var bool: r;
+    var min(index_set(x))..max(index_set(x)): idx2;
+    constraint idx in index_set(x) -> idx2=idx;
+    constraint idx in index_set(x) \/ idx2=min(index_set(x));
+    constraint array_var_bool_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var bool: element(var int: idx, array[int] of var bool: x) =
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+    element_t(idx,x)
+  else let {
+    constraint idx in index_set(x)
+  } in element_mt(idx,x)
+  endif;
 
 % Comparisons
 function     bool: '<'(    $T,    $T);
@@ -201,7 +223,18 @@ function     float: '-'(    float);
 function var float: '-'(var float);
 
 function     int: 'div'(int,int);
-function var int: 'div'(var int,var int);
+
+function var int: div_t(var int: x, var int: y) ::total =
+  let { var int: z; constraint int_div(x,y,z); } in z;
+function var int: div_mt(var int: x, var int: y) ::total =
+  let {
+    var int: yy = if y=0 then 1 else y endif;
+  } in div_t(x,yy);
+
+function var int: 'div'(var int: x,var int: y) =
+  if not (0 in dom(y)) then div_t(x,y) else
+  let { constraint y != 0 } in div_mt(x,y) endif;
+  
 function     int: 'mod'(int,int);
 function var int: 'mod'(var int,var int);
 function     float: '/'(    float,    float);
