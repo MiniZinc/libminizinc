@@ -173,6 +173,10 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.e)
           return ce->decl()->_builtins.e(ce->args())
             ->cast<ArrayLit>();
+
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
@@ -328,6 +332,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.s)
           return ce->decl()->_builtins.s(ce->args());
 
+        if (ce->decl()->_builtins.e)
+          return eval_intset(ce->decl()->_builtins.e(ce->args()));
+
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
@@ -488,6 +498,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.b)
           return ce->decl()->_builtins.b(ce->args());
 
+        if (ce->decl()->_builtins.e)
+          return eval_bool(ce->decl()->_builtins.e(ce->args()));
+
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
@@ -579,6 +595,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.i)
           return ce->decl()->_builtins.i(ce->args());
 
+        if (ce->decl()->_builtins.e)
+          return eval_int(ce->decl()->_builtins.e(ce->args()));
+
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
@@ -669,6 +691,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.f)
           return ce->decl()->_builtins.f(ce->args());
         
+        if (ce->decl()->_builtins.e)
+          return eval_float(ce->decl()->_builtins.e(ce->args()));
+
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
