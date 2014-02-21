@@ -1120,7 +1120,7 @@ namespace MiniZinc {
                   rete = vdea;
                 } else {
                   VarDecl* nvd =
-                  new VarDecl(Location(),eval_typeinst(env,vd->ti()),
+                  new VarDecl(vd->loc(),eval_typeinst(env,vd->ti()),
                               env.genId("tl_"+vd->id()->v().str()),vd->e());
                   nvd->introduced(true);
                   
@@ -2348,7 +2348,7 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = new VarDecl(Location(),
+          VarDecl* vd = new VarDecl(v->loc(),
                                     eval_typeinst(env,v->ti()),
                                     v->id()->v().str());
           vd->introduced(v->introduced());
@@ -2416,7 +2416,7 @@ namespace MiniZinc {
           if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
             EE ee;
             TypeInst* ti = eval_typeinst(env,vd->ti());
-            VarDecl* nvd = new VarDecl(Location(),ti,
+            VarDecl* nvd = new VarDecl(vd->loc(),ti,
                                       env.genId("FromLet_"+vd->id()->v().str()));
             nvd->toplevel(true);
             nvd->introduced(true);
