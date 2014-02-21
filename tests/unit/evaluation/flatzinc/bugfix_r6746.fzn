@@ -1,0 +1,35 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_lazyfd
+% Regression test for int_{plus,minus} in flatzinc's lazy FD backend.
+% (See log message of r6746 for details.)
+% This is derived from the mzn2fzn_cd reduction of
+% benchmarks/minizinc/golomb.mzn with m = 3.
+
+array[1 .. 3] of var 0 .. 9: differences;
+
+array[1 .. 3] of var 0 .. 9: mark :: output_array([1..3]);
+
+constraint int_lt(mark[2], mark[3]);
+
+constraint int_lt(0, mark[2]);
+
+constraint int_eq(mark[1], 0);
+
+constraint int_plus(differences[3], mark[2], mark[3]);
+
+constraint int_lt(differences[1], differences[3]);
+
+constraint int_eq(differences[2], mark[3]);
+
+constraint int_eq(differences[1], mark[2]);
+
+constraint int_ne(differences[1], differences[2]);
+
+constraint int_ne(differences[1], differences[3]);
+
+constraint int_ne(differences[2], differences[3]);
+
+solve 
+  ::int_search(mark, input_order, indomain, complete) 
+  minimize mark[3];

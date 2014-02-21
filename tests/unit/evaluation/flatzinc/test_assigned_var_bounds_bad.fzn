@@ -1,0 +1,5 @@
+% RUNS ON fzn_fd
+
+var 1..10: x = 123;
+
+solve satisfy;

@@ -1,0 +1,9 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+array[1 .. 5] of var 1 .. 6: a;
+
+constraint int_lin_eq([ 1, 1, 1 ], [ a[1], a[3], a[6] ], 9);
+
+solve satisfy;

@@ -1,0 +1,9 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+var 1 .. 10: a :: output_var;
+
+var bool: b :: output_var;
+
+constraint set_in_reif(a, 1..2, b);
+
+solve satisfy;

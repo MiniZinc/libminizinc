@@ -1,0 +1,10 @@
+% RUNS ON fzn_fd
+% RUNS ON fzn_lp
+% RUNS ON fzn_lazyfd
+
+% Regression test for bug #319:
+% (a) G12/FD incorrectly reported this as unsatisfiable
+% (b) the MIP backend aborted with an internal error
+
+var 3..3: obj :: output_var = 3;
+solve minimize obj;

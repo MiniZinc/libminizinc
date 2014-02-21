@@ -1,0 +1,71 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_sat
+var bool: b1 :: output_var;
+var bool: b2 :: output_var;
+var bool: b3 :: output_var;
+var bool: b4 :: output_var;
+var bool: b5 :: output_var;
+var bool: b6 :: output_var;
+array [1..3] of var bool: ab1 :: output_array([1..3]);
+array [1..3] of var bool: ab2 :: output_array([1..3]);
+
+constraint bool_eq(true, true);
+constraint bool_eq(false, false);
+
+constraint bool_not(true, false);
+constraint bool_not(false, true);
+
+constraint bool_and(false, true,  false);
+constraint bool_and(false, false, false);
+constraint bool_and(true,  false, false);
+constraint bool_and(true,  true,  true);
+constraint bool_and(b1,    true, true);
+
+constraint bool_or(false, true,  true);
+constraint bool_or(false, false, false);
+constraint bool_or(true,  false, true);
+constraint bool_or(true,  true,  true);
+constraint bool_or(b2,    false, true);
+
+constraint bool_xor(false, true,  true);
+constraint bool_xor(false, false, false);
+constraint bool_xor(true,  false, true);
+constraint bool_xor(true,  true,  false);
+constraint bool_xor(b3,    false, true);
+
+constraint bool_le_reif(false, true,  true);
+constraint bool_le_reif(false, false, true);
+constraint bool_le_reif(true,  false, false);
+constraint bool_le_reif(true,  true,  true);
+constraint bool_le_reif(true,  b4,    true);
+
+constraint bool_le_reif(false, true, true);
+constraint bool_le_reif(false, false, true);
+constraint bool_le_reif(true,  false,  false);
+constraint bool_le_reif(true,  true,  true);
+constraint bool_le_reif(true,  b5,  true);
+
+constraint bool_not(false, true);
+constraint bool_not(true, false);
+constraint bool_not(b6, false);
+
+constraint array_bool_and([false], false);
+constraint array_bool_and([true], true);
+constraint array_bool_and([false, true],  false);
+constraint array_bool_and([false, false], false);
+constraint array_bool_and([true,  false], false);
+constraint array_bool_and([true,  true],  true);
+constraint array_bool_and(ab1, true);
+
+constraint array_bool_or([false], false);
+constraint array_bool_or([true], true);
+constraint array_bool_or([false, true],  true);
+constraint array_bool_or([false, false], false);
+constraint array_bool_or([true,  false], true);
+constraint array_bool_or([true,  true],  true);
+constraint array_bool_or(ab2, true);
+
+solve satisfy;

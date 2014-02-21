@@ -1,0 +1,39 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% Hand coded 4-queens problem.
+% Ralph Becket
+% Thu Feb  8 15:33:49 EST 2007
+
+array [1..4] of var 1..4: q :: output_array([1..4]);
+var int: dq01 :: output_var;
+var int: dq02 :: output_var;
+var int: dq03 :: output_var;
+var int: dq12 :: output_var;
+var int: dq13 :: output_var;
+var int: dq23 :: output_var;
+constraint int_plus(dq01, q[2], q[1]);
+constraint int_plus(dq02, q[3], q[1]);
+constraint int_plus(dq03, q[4], q[1]);
+constraint int_plus(dq12, q[3], q[2]);
+constraint int_plus(dq13, q[4], q[2]);
+constraint int_plus(dq23, q[4], q[3]);
+constraint int_ne(q[1], q[2]);
+constraint int_ne(q[1], q[3]);
+constraint int_ne(q[1], q[4]);
+constraint int_ne(q[2], q[3]);
+constraint int_ne(q[2], q[4]);
+constraint int_ne(q[3], q[4]);
+constraint int_ne(dq01, -1);
+constraint int_ne(dq01,  1);
+constraint int_ne(dq02, -2);
+constraint int_ne(dq02,  2);
+constraint int_ne(dq03, -3);
+constraint int_ne(dq03,  3);
+constraint int_ne(dq12, -1);
+constraint int_ne(dq12,  1);
+constraint int_ne(dq13, -2);
+constraint int_ne(dq13,  2);
+constraint int_ne(dq23, -1);
+constraint int_ne(dq23,  1);
+solve satisfy;

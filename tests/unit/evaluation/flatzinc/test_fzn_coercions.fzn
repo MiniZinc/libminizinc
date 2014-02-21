@@ -1,0 +1,9 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fdlp
+var float: f1 :: output_var;
+var int: i1 :: output_var;
+
+constraint int2float(42, f1);
+constraint bool2int(true, i1);
+
+solve satisfy;

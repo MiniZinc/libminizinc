@@ -1,0 +1,74 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fdlp
+var 1.0..10.0: f1 :: output_var;
+var 1.0..10.0: f2 :: output_var;
+var 1.0..10.0: f3 :: output_var;
+var 1.0..10.0: f4 :: output_var;
+var 1.0..10.0: f5 :: output_var;
+var 1.0..10.0: f6 :: output_var;
+var 1.0..10.0: f7 :: output_var;
+var 1.0..10.0: f8 :: output_var;
+var 1.0..10.0: f9 :: output_var;
+
+var 1..10: i1 :: output_var;
+var 1..10: i2 :: output_var;
+var 1..10: i3 :: output_var;
+var 1..10: i4 :: output_var;
+var 1..10: i5 :: output_var;
+var 1..10: i6 :: output_var;
+var 1..10: i7 :: output_var;
+var 1..10: i8 :: output_var;
+var 1..10: i9 :: output_var;
+
+constraint float_plus(1.0, 1.0, 2.0);
+constraint float_plus(f1, 1.0, 3.0);
+
+constraint float_plus(0.0, 1.0, 1.0);
+constraint float_plus(2.0, 1.0, f2);
+
+% constraint float_times(1.0, 1.0, 1.0);
+% constraint float_times(f3, 2.0, 8.0);
+
+constraint float_plus(-1.0, 1.0, 0.0);
+constraint float_plus(-5.0, f4, 0.0);
+
+% constraint float_div(1.0, 1.0, 1.0);
+% constraint float_div(f5, 5.0, 2.0);
+
+% constraint float_min(1.0, 2.0, 1.0);
+% constraint float_min(f6, 8.0, 7.0);
+
+% constraint float_max(1.0, 2.0, 2.0);
+% constraint float_max(f7, 9.0, 8.0);
+
+% constraint float_abs(-1.0, 1.0);
+% constraint float_abs(-9.0, f8);
+
+constraint int_plus(1, 1, 2);
+constraint int_plus(i1, 1, 3);
+
+constraint int_plus(0, 1, 1);
+constraint int_plus(2, 1, i2);
+
+constraint int_times(1, 1, 1);
+constraint int_times(i3, 2, 8);
+
+constraint int_plus(-1, 1, 0);
+constraint int_plus(-5, i4, 0);
+
+constraint int_div(1, 1, 1);
+constraint int_div(i5, 3, 2);
+
+constraint int_mod(1, 2, 1);
+constraint int_mod(i6, 6, 0);
+
+constraint int_min(1, 2, 1);
+constraint int_min(i7, 9, 8);
+
+constraint int_max(1, 2, 2);
+constraint int_max(i8, 7, 9);
+
+constraint int_abs(-1, 1);
+constraint int_abs(-10, i9);
+
+solve satisfy;

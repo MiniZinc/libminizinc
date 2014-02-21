@@ -1,0 +1,26 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_sat
+% Simple tests of bool_eq_reif and bool_xor ( i.e. bool_ne_reif).
+%
+var bool: eq_a;
+var bool: eq_b;
+var bool: eq_c;
+
+var bool: ne_a;
+var bool: ne_b;
+
+array [1..5] of var bool: result :: output_array([1..5]) =
+	[eq_a, eq_b, eq_c, ne_a, ne_b];
+
+constraint bool_eq_reif(false, eq_a, true);
+constraint bool_eq_reif(eq_b, true, true);
+constraint bool_eq_reif(false, true, eq_c);
+
+constraint bool_xor(false, ne_a, true);
+constraint bool_xor(ne_b, true, true);
+constraint bool_xor(false, true, true);
+
+solve satisfy;

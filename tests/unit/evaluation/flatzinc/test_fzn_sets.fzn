@@ -1,0 +1,44 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+var set of 1..10: s1 :: output_var;
+var set of 1..10: s2 :: output_var;
+var set of 1..10: s3 :: output_var;
+var set of 1..10: s4 :: output_var;
+var set of 1..10: s5 :: output_var;
+var set of 1..10: s6 :: output_var;
+var set of 1..10: s7 :: output_var;
+var set of 1..10: s8 :: output_var;
+
+var bool: rs1 :: output_var;
+var bool: rs2 :: output_var;
+var bool: rs3 :: output_var;
+
+constraint set_in(1, {1, 2, 3});
+constraint set_in(1, s1);
+constraint set_in_reif(2, s1, rs1);
+
+constraint set_subset({1, 2}, {1, 2, 3});
+constraint set_subset({1, 2}, s2);
+constraint set_subset_reif({1, 2, 3}, s2, rs2);
+
+constraint set_subset({1, 2}, {1, 2, 3});
+constraint set_subset({1, 2, 3}, s3);
+constraint set_subset_reif({1, 2, 3, 4}, s3, rs3);
+
+constraint set_intersect({1, 2, 3}, {1, 3, 5}, {1, 3});
+constraint set_intersect(s4, {1, 2, 3}, {1, 3});
+
+constraint set_diff({1, 2, 3}, {1, 3, 5}, {2});
+constraint set_diff(s5, {2}, {1, 3});
+
+constraint set_symdiff({1, 2, 3}, {1, 3, 5}, {2, 5});
+constraint set_symdiff(s6, {2, 5}, {1, 5});
+
+constraint set_union({1, 2, 3}, {1, 3, 5}, {1, 2, 3, 5});
+constraint set_union(s7, {2, 5}, {1, 2, 3, 4, 5});
+
+constraint set_card({1, 2, 3}, 3);
+constraint set_card(s8, 3);
+
+solve satisfy;

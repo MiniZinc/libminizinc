@@ -1,0 +1,10 @@
+r1 = false;
+r2 = true;
+r3 = true;
+r4 = true;
+r5 = true;
+w = true;
+x = false;
+y = [true, false, false];
+z = [false, false, false];
+----------

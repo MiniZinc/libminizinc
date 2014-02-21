@@ -1,0 +1,1 @@
+test_assigned_var_bounds_bad.fzn:3: warning: this assignment value is out of range.

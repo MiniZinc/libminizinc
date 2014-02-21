@@ -1,0 +1,2 @@
+cadmap: transformation abort in let_lift.bool:
+	Local variable must have an assignment in a reified or negated context.

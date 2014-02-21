@@ -1,0 +1,2 @@
+test_array_index-bad.fzn:3: error: array index out of range: 6
+----------

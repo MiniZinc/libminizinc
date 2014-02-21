@@ -1,0 +1,7 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_lp
+array [1 .. 3] of var 11..10: x;
+solve satisfy;

@@ -1,0 +1,2 @@
+result = array1d(1..9, [false, true, true, false, true, false, false, false, true]);
+----------

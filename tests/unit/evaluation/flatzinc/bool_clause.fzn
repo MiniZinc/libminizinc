@@ -1,0 +1,16 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_sat
+var bool: w :: output_var;
+var bool: x :: output_var;
+array [1..3] of var bool: y :: output_array([1..3]);
+array [1..3] of var bool: z :: output_array([1..3]);
+
+constraint bool_clause([w], []);
+constraint bool_clause([], [x]);
+constraint bool_clause(y, []);
+constraint bool_clause([], z);
+
+solve satisfy;

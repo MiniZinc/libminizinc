@@ -1,0 +1,4 @@
+x = array1d(1..2, [false, false]);
+y = array1d(1..2, [true, false]);
+----------
+==========

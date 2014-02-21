@@ -1,0 +1,31 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_sat
+var bool: lt_a;
+var bool: lt_b;
+var bool: gt_a;
+var bool: gt_b;
+var bool: le_a;
+var bool: le_b;
+var bool: le_c;
+var bool: ge_a;
+var bool: ge_b;
+array [1..9] of var bool: result :: output_array([1..9]) =
+	[lt_a, lt_b, gt_a, gt_b, le_a, le_b, le_c, ge_a, ge_b];
+
+% Tests for bool_lt_reif
+%
+constraint bool_lt_reif(lt_a,  lt_b, true);
+constraint bool_lt_reif(gt_b,  gt_a, true);
+
+% Tests for bool_le_reif
+%
+constraint bool_le_reif(true,  le_a, true);
+constraint bool_le_reif(le_b,  false, true);
+constraint bool_le_reif(false, true, true);
+constraint bool_le_reif(ge_a, false, true);
+constraint bool_le_reif(true, ge_b, true);
+
+solve satisfy;

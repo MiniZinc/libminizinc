@@ -1,0 +1,24 @@
+% XXX This doesn't run on anything!
+var bool: b1;
+var 1.0..10.0: f1;
+var 1..10: i1;
+var set of 1..10: s1;
+
+array [1..3] of var bool: ab1;
+array [1..3] of var 1.0..10.0: af1;
+array [1..3] of var 1..10: ai1;
+array [1..3] of var set of 1..10: as1;
+
+constraint array_bool_element(1, [true, false], b1);
+constraint array_var_bool_element(2, ab1, b1);
+
+constraint array_int_element(2, [1, 2, 3], i1);
+constraint array_var_int_element(2, ai1, i1);
+
+constraint array_float_element(3, [1.0, 2.0, 3.0], f1);
+constraint array_var_float_element(3, af1, f1);
+
+constraint array_set_element(1, [{1}, {2}, {3}], s1);
+constraint array_var_set_element(2, as1, s1);
+
+solve satisfy;

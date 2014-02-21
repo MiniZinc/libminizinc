@@ -1,0 +1,3 @@
+x = array1d(1..10, [true, true, true, true, true, true, true, true, true, true]);
+y = array1d(1..10, [false, false, false, false, false, false, false, false, false, false]);
+----------

@@ -1,0 +1,2 @@
+Uncaught Mercury exception:
+Software Error: predicate `flatzinc_lazyfd_backend.fzlazy_new_int_var_array'/7: variable array creation failed

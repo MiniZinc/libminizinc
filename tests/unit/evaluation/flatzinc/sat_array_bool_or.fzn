@@ -1,0 +1,13 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_sat
+array[1..4] of var bool: x :: output_array([1..4]);
+
+constraint bool_eq(x[1], false);
+constraint bool_eq(x[2], false);
+constraint bool_eq(x[4], false);
+constraint array_bool_or(x, true);
+
+solve satisfy;

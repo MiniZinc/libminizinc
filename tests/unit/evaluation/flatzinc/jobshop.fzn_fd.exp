@@ -1,0 +1,7 @@
+b1 = true;
+b2 = false;
+b3 = true;
+b4 = false;
+end = 11;
+s = [0, 2, 2, 7];
+----------

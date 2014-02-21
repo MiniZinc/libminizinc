@@ -1,0 +1,14 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+var int: a :: output_var;
+var int: b :: output_var;
+var int: c :: output_var;
+var int: d :: output_var;
+
+constraint int_div(7, 4, a);
+constraint int_div(-7, 4, b);
+constraint int_div(7, -4, c);
+constraint int_div(-7, -4, d);
+
+solve satisfy;

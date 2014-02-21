@@ -1,0 +1,13 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lazyfd
+% RUNS ON fzn_lp
+var 0..1: x :: output_var;
+array [1..4] of var 0..3: ys :: output_array([2..3, 0..1]);
+var bool: z; % Not an output var.
+constraint int_lt(ys[1], ys[2]);
+constraint int_lt(ys[2], ys[3]);
+constraint int_lt(ys[3], ys[4]);
+constraint int_eq(x, ys[1]);
+solve satisfy;

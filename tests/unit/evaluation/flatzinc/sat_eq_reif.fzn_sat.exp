@@ -1,0 +1,7 @@
+eq_a = false
+eq_b = true
+eq_c = false
+
+ne_a = true
+ne_b = false
+----------

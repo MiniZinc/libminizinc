@@ -1,0 +1,11 @@
+% RUNS ON fzn_fd
+% RUNS ON fzn_lazyfd
+%
+% Regression test for bug #232.
+% int_lin_le_reif would cause an internal abort in the LazyFD
+% backend if there was a zero coefficient.
+%
+var 0..1: INT___1;
+var bool: BOOL___6;
+constraint int_lin_le_reif([0], [INT___1], 4, BOOL___6);
+solve satisfy;

@@ -1,0 +1,2 @@
+MiniZinc: type error: no function or predicate with this signature found: my_global_cardinality_low_up(array[1] of var int,array[1] of par set of int,array[1] of par int,array[1] of par int)
+ in file bug70.mzn:18

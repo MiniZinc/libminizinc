@@ -1,0 +1,19 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd
+% RUNS ON fzn_fdlp
+var int: a :: output_var;
+var int: b :: output_var;
+var int: c :: output_var;
+var int: d :: output_var;
+
+var 0..10: x :: output_var;
+var 0..10: y :: output_var;
+
+constraint int_mod(7, 4, a);
+constraint int_mod(-7, 4, b);
+constraint int_mod(7, -4, c);
+constraint int_mod(-7, -4, d);
+
+constraint int_mod(x, y, 3);
+
+solve satisfy;
