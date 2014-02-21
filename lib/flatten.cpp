@@ -2549,8 +2549,13 @@ namespace MiniZinc {
               vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
             } else {
               std::vector<Expression*> args(vdi->e()->type().dim());
-              for (int i=0; i<args.size(); i++)
-                args[i] = new SetLit(Location(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
+              for (int i=0; i<args.size(); i++) {
+                if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
+                  args[i] = new SetLit(Location(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
+                } else {
+                  args[i] = new SetLit(Location(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
+                }
+              }
               ArrayLit* al = new ArrayLit(Location(), args);
               args.resize(1);
               args[0] = al;
