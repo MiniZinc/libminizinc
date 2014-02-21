@@ -144,6 +144,17 @@ namespace MiniZinc {
       }
       return false;
     }
+    
+    /// Check if it is equal to \a s
+    bool equal(const IntSetVal* s) {
+      if (size()!=s->size())
+        return false;
+      for (int i=0; i<size(); i++)
+        if (min(i)!=s->min(i) || max(i)!=s->max(i))
+          return false;
+      return true;
+    }
+    
     /// Mark for garbage collection
     void mark(void) {
       _gc_mark = 1;
