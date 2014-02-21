@@ -2479,6 +2479,7 @@ namespace MiniZinc {
             env.flat_addItem(nv);
             if (vd->e()) {
               Ctx nctx = ctx;
+              nctx.neg = false;
               if (vd->e()->type()._bt==Type::BT_BOOL)
                 nctx.b = C_MIX;
 
@@ -2509,7 +2510,9 @@ namespace MiniZinc {
           (void) flat_exp(env,ctx,let->in(),r,b);
           ret.r = conj(env,r,Ctx(),cs);
         } else {
-          EE ee = flat_exp(env,ctx,let->in(),NULL,NULL);
+          Ctx nctx = ctx;
+          ctx.neg = false;
+          EE ee = flat_exp(env,nctx,let->in(),NULL,NULL);
           if (let->type().isbool()) {
             ee.b = ee.r;
             cs.push_back(ee);
