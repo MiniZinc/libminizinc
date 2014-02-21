@@ -3030,6 +3030,12 @@ namespace MiniZinc {
             tmp.addItem(vc->decl());
             globals.insert(vc->decl());
           }
+        } else if (Id* id = ci->e()->dyn_cast<Id>()) {
+          std::vector<Expression*> args(2);
+          args[0] = id;
+          args[1] = constants().lit_true;
+          GCLock lock;
+          ci->e(new Call(Location(),"bool_eq",args));
         }
       }
     } _fv(e,tmp);
@@ -3062,6 +3068,10 @@ namespace MiniZinc {
           if (i->cast<VarDeclI>()->e()->e()==NULL &&
               j->cast<VarDeclI>()->e()->e() != NULL)
             return true;
+          if (j->cast<VarDeclI>()->e()->e())
+            if (Id* id = j->cast<VarDeclI>()->e()->e()->dyn_cast<Id>())
+              if (id->decl() == i->cast<VarDeclI>()->e())
+                return true;
         }
         if (j->iid()==Item::II_VD) {
           if (j->iid() != i->iid())
