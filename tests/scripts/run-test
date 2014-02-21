@@ -71,7 +71,7 @@
 
 
 # Uncomment the next line for debugging:
-# set -x
+set -x
 
 # Set default time and memory limits (seconds and megabytes respectively).
 #
