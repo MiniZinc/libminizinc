@@ -583,8 +583,7 @@ namespace MiniZinc {
   }
 
   void
-  TypeInst::addRanges(const std::vector<TypeInst*>& ranges) {
-    assert(_ranges.size() == 0);
+  TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
     _ranges = ASTExprVec<TypeInst>(ranges);
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
         ranges[0]->cast<TypeInst>()->domain() &&
@@ -737,7 +736,7 @@ namespace MiniZinc {
       return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
     case Expression::E_ID:
       // assert(e0->cast<Id>()->_decl != NULL);
-      return e0->cast<Id>()->v() == e1->cast<Id>()->v();
+      return e0->cast<Id>()->decl() == e1->cast<Id>()->decl();
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT:

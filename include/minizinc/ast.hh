@@ -764,8 +764,8 @@ namespace MiniZinc {
     //// Set domain
     void domain(Expression* d) { _domain = d; }
     
-    /// Add \a ranges to expression
-    void addRanges(const std::vector<TypeInst*>& ranges);
+    /// Set ranges to \a ranges
+    void setRanges(const std::vector<TypeInst*>& ranges);
     bool isarray(void) const { return _ranges.size()>0; }
     bool hasTiVariable(void) const;
     /// Recompute hash value
