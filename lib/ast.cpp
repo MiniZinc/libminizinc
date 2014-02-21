@@ -659,8 +659,7 @@ namespace MiniZinc {
           tii->ranges()[0]->domain() && 
           tii->ranges()[0]->domain()->isa<TIId>()) {
         ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-        if (ta[i]->type()._dim<=0) {
-          assert(false);
+        if (ta[i]->type()._dim==0) {
           throw TypeError(ta[i]->loc(),"type-inst variable $"+tiid.str()+
             " must be an array index");
         }

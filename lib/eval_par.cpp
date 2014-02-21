@@ -468,11 +468,11 @@ namespace MiniZinc {
           case BOT_SUBSET: return Ranges::subset(ir0,ir1);
           case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
           default:
-            assert(false);
             throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
+        } else if (bo->lhs()->type().isstring() && bo->rhs()->type().isstring()) {
+          throw InternalError("not implemented yet");
         } else {
-          assert(false);
           throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }
       }
