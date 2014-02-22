@@ -19,7 +19,6 @@
 
 namespace MiniZinc {
 
-  Expression* eval_arrayaccess(ArrayAccess* e);
   bool eval_bool(Expression* e);
 
   template<class E>
@@ -198,8 +197,9 @@ namespace MiniZinc {
     assert(false);
   }
 
-  Expression* eval_arrayaccess(ArrayLit* al,
-                               const std::vector<IntVal>& dims) {
+  Expression* eval_arrayaccess(ArrayLit* al, const std::vector<IntVal>& dims,
+                               bool& success) {
+    success = true;
     assert(al->dims() == dims.size());
     int realidx = 0;
     int realdim = 1;
@@ -207,21 +207,44 @@ namespace MiniZinc {
       realdim *= al->max(i)-al->min(i)+1;
     for (unsigned int i=0; i<al->dims(); i++) {
       int ix = dims[i];
-      if (ix < al->min(i) || ix > al->max(i))
-        throw EvalError(al->loc(), "array index out of bounds");
+      if (ix < al->min(i) || ix > al->max(i)) {
+        success = false;
+        Type t = al->type();
+        t._dim = 0;
+        if (t.isint())
+          return new IntLit(Location(),0);
+        if (t.isbool())
+          return constants().lit_false;
+        if (t.isfloat())
+          return new FloatLit(Location(),0.0);
+        if (t.isintset())
+          return new SetLit(Location(),IntSetVal::a());
+        if (t.isstring())
+          return new StringLit(Location(),"");
+        assert(false);
+        return NULL;
+      }
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
     }
     assert(realidx >= 0 && realidx <= al->v().size());
     return al->v()[realidx];
   }
-  Expression* eval_arrayaccess(ArrayAccess* e) {
+  Expression* eval_arrayaccess(ArrayAccess* e, bool& success) {
     ArrayLit* al = eval_array_lit(e->v());
     std::vector<IntVal> dims(e->idx().size());
     for (unsigned int i=e->idx().size(); i--;) {
       dims[i] = eval_int(e->idx()[i]);
     }
-    return eval_arrayaccess(al,dims);
+    return eval_arrayaccess(al,dims,success);
+  }
+  Expression* eval_arrayaccess(ArrayAccess* e) {
+    bool success;
+    Expression* ret = eval_arrayaccess(e,success);
+    if (success)
+      return ret;
+    else
+      throw EvalError(e->loc(), "array access out of bounds");
   }
 
   IntSetVal* eval_intset(Expression* e) {

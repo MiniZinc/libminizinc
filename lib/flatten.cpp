@@ -371,7 +371,7 @@ namespace MiniZinc {
   }
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
-    assert(!e->isa<VarDecl>());
+    assert(e==NULL || !e->isa<VarDecl>());
     if (ctx.neg) {
       assert(e->type()._bt == Type::BT_BOOL);
       if (vd==constants().var_true) {
@@ -1265,14 +1265,15 @@ namespace MiniZinc {
             al = id->decl()->e()->cast<ArrayLit>();
           }
           KeepAlive ka;
+          bool success;
           {
             GCLock lock;
             std::vector<IntVal> dims(aa->idx().size());
             for (unsigned int i=aa->idx().size(); i--;)
               dims[i] = eval_int(aa->idx()[i]);
-            ka = eval_arrayaccess(al,dims);
+            ka = eval_arrayaccess(al,dims,success);
           }
-          ret.b = bind(env,Ctx(),b,constants().lit_true);
+          ret.b = bind(env,Ctx(),b,success ? constants().lit_true : constants().lit_false);
           ret.r = bind(env,ctx,r,ka());
         } else {
           std::vector<Expression*> args(aa->idx().size()+1);

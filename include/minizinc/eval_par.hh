@@ -25,10 +25,11 @@ namespace MiniZinc {
   FloatVal eval_float(Expression* e);
   /// Evaluate an array expression \a e into an array literal
   ArrayLit* eval_array_lit(Expression* e);
-  /// Evaluate an access to array \a with indices \a idx
-  Expression* eval_arrayaccess(ArrayLit* a, const std::vector<IntVal>& idx);
-  /// Evaluate an array access \a e
-  Expression* eval_arrayaccess(ArrayAccess* e);
+  /// Evaluate an access to array \a with indices \a idx and return whether
+  /// access succeeded in \a success
+  Expression* eval_arrayaccess(ArrayLit* a, const std::vector<IntVal>& idx, bool& success);
+  /// Evaluate an array access \a e and return whether access succeeded in \a success
+  Expression* eval_arrayaccess(ArrayAccess* e, bool& success);
   /// Evaluate a par integer set \a e
   IntSetVal* eval_intset(Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
