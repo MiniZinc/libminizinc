@@ -1,10 +1,7 @@
 % wolfgoatetc.mzn
 % ft=zinc ts=4 sw=4 et
 %
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
-% RUNS ON mzn_mer_fdlp
+% RUNS ON mzn20_fd
 %
 % XXX why is lazyfd so slow with this?
 %

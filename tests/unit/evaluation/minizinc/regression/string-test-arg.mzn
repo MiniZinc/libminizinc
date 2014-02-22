@@ -1,6 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
-% RUNS ON mzn_mer_fd
 
 % mzn2fzn r14673 and before aborted on this model due to the test predicate
 % having a string argument.

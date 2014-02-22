@@ -1,8 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_lazyfd
-% RUNS ON mzn_mer_lazyfd
+% RUNS ON mzn20_fd
 array[1..5] of var int: x = [1,3,5,7,9];
 array[4..8] of var int: y = array1d(4..8, [1,3,5,8,9]);
 

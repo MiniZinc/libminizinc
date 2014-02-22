@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_fd
 
 include "alldifferent_except_0.mzn";
 

@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_fd
 
 array[int] of var 1..1: x = [_, _, _];
 solve satisfy;

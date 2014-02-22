@@ -1,2 +1,0 @@
-result = array1d([1..5], [false, true, false, true, false]);
-----------

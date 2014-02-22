@@ -1,5 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
+% RUNS ON mzn20_fd
 
 % Prior to r8850 mzn2fzn would abort when attempting to flatten the
 % seq_search annotation here.

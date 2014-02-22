@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_fd
 
 % Regression test for a bug in mzn2fzn 1.2.  The optimisation pass was leaving
 % dangling references to variables it had "eliminated".  The symptom was the

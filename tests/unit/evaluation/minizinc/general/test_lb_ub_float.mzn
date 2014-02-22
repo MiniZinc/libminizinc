@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_fdlp
 
 var 1.0..10.0: x;
 

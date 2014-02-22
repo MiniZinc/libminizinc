@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for bug #220.  The assignment of the let-variable 'capacity'
 % below should result in an error message being produced during flattening

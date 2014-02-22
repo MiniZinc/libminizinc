@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Test forall/1 with multi-dimensional arrays.
 

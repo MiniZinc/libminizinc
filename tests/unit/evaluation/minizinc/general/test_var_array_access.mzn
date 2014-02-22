@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 var 1..3: i;
 var int: x;

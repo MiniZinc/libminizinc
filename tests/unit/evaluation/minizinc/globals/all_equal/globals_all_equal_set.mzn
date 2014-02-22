@@ -1,5 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
+% RUNS ON mzn20_fd
 
 % Test the set all_equal global constraint.
 

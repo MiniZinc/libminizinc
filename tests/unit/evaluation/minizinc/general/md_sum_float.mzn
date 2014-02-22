@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Test sum/1 for floats with multi-dimensional arrays.
 

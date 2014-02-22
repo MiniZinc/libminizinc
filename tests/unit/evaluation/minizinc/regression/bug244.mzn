@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Regression test for bug #244: when asked for all solutions (with G12/FD)
 % this model did not produce the solution (i = 0, b = false).  The problem

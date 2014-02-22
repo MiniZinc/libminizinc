@@ -1,5 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
+% RUNS ON mzn20_fd
 
 % Prior to r9313, mzn2fzn would "improve" the bounds on y incorrectly.
 % In particular the lower bound would be set to 1 rather than 0.

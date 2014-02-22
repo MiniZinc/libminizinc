@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 array[1..4] of string: v;
 string: s = join(", ", v);

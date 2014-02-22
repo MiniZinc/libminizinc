@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for bug #312.
 % The element constraint below was being incorrectly flattened to the FlatZinc

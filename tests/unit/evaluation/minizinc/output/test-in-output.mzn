@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Test that test items work in output items.
 

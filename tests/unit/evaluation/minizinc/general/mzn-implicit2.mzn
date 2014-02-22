@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 array[int] of int: a = [1, 2, 3];
 set of int: ia = index_set(a);

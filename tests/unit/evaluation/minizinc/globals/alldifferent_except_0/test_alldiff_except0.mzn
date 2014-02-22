@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 include "alldifferent_except_0.mzn";
 

@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 % Test assertions that should succeed.
 
 array [1..10] of int: a =

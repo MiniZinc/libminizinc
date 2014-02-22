@@ -1,7 +1,3 @@
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON minizinc_cpx
 
 % A test for the integer version of value_precede/3.
 

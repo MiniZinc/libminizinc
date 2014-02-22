@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 % RUNS OM minizinc_cpx
 
 int: Endtime;

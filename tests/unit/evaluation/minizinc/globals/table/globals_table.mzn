@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON minizinc_cpx
 
 include "table.mzn";
 

@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 float: f = 123.45679123;
 solve satisfy;

@@ -1,6 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
+% RUNS ON mzn20_fd
 
 % Regression test for bug #70: set2array coercions were not supported.
 

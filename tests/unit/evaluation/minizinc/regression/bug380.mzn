@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
 
 % Regression test for bug #380 - the body of the lex_leq_bool_half was being
 % flattened in a reified context.  (The reification context was not being

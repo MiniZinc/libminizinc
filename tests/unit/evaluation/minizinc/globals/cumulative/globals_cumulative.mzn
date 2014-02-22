@@ -1,8 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_fdlp
-% RUNS ON minizinc_cpx
 
 include "cumulative.mzn";
 

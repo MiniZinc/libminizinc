@@ -1,10 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_cd_fd
-% RUNS ON mzn_lazyfd
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON mzn_cd_lazyfd
+% RUNS ON mzn20_fd
 % A regression test for G12 bug #85.
 %
 include "all_different.mzn";

@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lazyfd
 
 % Regression test.
 % The bounds inferred for absolute values expressions where incorrect in r13710

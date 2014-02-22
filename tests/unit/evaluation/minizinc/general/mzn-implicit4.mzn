@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 constraint let {
         array[int] of int: x = [1, 2, 3, 4]

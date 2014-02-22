@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_mer_std_fd
 
 % mzn2fzn and minizinc aborted on this model with an error message about
 % being unable to compute set bounds.  This was fixed in r8782.

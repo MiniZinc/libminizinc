@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for bug #141.
 % In mzn2fzn 1.1.5 'x' was not being marked as an output variable in the

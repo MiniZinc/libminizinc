@@ -1,2 +1,0 @@
-test_array_too_short-bad.fzn:1: error: array a has size 10, but was assigned 3.
-----------

@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 % Regression test for bug #221.
 % In the G12/FD implementation of cumulative, ext_edge_finding_filtering

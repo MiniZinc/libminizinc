@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON minizinc_cpx
+% RUNS ON mzn20_fd
 
 include "at_most1.mzn";
 

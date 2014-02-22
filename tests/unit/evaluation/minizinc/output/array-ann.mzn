@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Check that arrays of annotation varibles (and assignments to such) do
 % not get emitted in .ozn files.

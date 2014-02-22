@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for a flattening problem reported by pjs in version 1.1.5
 % of MiniZinc.

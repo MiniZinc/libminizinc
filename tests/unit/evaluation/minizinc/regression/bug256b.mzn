@@ -1,6 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_cpx
 
 % A regression test for bug #256.
 

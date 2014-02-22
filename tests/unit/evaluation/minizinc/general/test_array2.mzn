@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS not ON mzn_cd_fd
-% RUNS ON mzn_mer_lp
+% RUNS ON mzn20_fd
 %% has solution i = 4 in relational 
 %% no solution in strict and Kleene 
 

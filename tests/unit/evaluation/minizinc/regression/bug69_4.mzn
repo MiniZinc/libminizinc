@@ -1,6 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
+% RUNS ON mzn20_fd
 % DISABLED ON mzn_cd_fd
 % A regression test for G12 bug #69.
 %

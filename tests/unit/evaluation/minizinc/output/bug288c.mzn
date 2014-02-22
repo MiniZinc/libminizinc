@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Regression test for bug #288: (see bug288a.mzn for details).  Check
 % that empty strings at the end of an output item do not affect the

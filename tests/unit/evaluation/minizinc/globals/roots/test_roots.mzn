@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON minizinc_cpx
 
 var 1..1: x;	% Just so we have something to print out.
 

@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 %
 % This test case checks that the cpviz annotations are recongised
 % and flattened.

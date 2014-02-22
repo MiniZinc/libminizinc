@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 % Test using arrays of strings as generators.
 

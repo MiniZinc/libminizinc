@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON minizinc_cpx
+% RUNS ON mzn20_fd
 
 % Test all_different for var set of int.
 

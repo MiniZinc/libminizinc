@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_lazyfd
+% RUNS ON mzn20_fd
 
 % Test the integer all_equal global constraint.
 

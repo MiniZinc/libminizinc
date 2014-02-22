@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_mer_lazyfd
+% RUNS ON mzn20_fd
 
 array[1..3] of var 1..3: a;
 var -100..100: test_1 = lb(a[1]);

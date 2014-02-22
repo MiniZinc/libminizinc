@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Test for MiniZinc/FlatZinc 1.1 semantics for mod.
 

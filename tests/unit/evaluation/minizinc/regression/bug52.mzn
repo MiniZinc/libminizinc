@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 % A regression test for G12 bug #52.
 %
 array[1..3,1..3] of var int: x;

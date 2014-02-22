@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Regression test for bug #259: mzn2fzn (and consequently solns2out) didn't support
 % array5d casts.

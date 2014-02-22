@@ -1,4 +1,3 @@
-% RUNS ON minizinc_fd
 
 array[int, int, int] of var 1..1: x
 	= array3d(1..2, 1..2, 1..2, [_, _, _, _, _, _, _, _]);

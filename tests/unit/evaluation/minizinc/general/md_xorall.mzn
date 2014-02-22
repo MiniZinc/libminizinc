@@ -1,6 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
-% RUNS ON minizinc_mip
 
 % Test xorall with multi-dimensional arrays.
 

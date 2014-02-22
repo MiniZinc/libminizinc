@@ -1,5 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Regression test for bug #335.
 % Previous versions of CPX found this model to be unsatisfiable.

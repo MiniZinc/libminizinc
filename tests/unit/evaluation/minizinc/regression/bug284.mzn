@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
 
 % Regression test for bug #284: this model caused a stack overflow in the
 % in parser and another in the flattening engine.

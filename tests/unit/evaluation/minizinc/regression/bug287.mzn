@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for bug #287: the first solution violated the alldifferent
 % constraint.

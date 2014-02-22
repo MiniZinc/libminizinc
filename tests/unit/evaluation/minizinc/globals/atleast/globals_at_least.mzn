@@ -1,8 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON minizinc_cpx
 
 include "at_least.mzn";
 include "at_most.mzn";

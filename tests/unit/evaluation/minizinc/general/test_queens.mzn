@@ -1,10 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
-% RUNS ON mzn_lazyfd
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON mzn_cd_lazyfd
+% RUNS ON mzn20_fd
 % Copied from the queens.mzn benchmark.
 %
 % In some very rare cases some literals in MiniSAT are labeled during 

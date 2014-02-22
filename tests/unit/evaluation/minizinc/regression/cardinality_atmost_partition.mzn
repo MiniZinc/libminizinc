@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Another regression test for the problem described in var_self_assign_bug.mzn.
 % (This model is from http://www.hakank.org/minizinc/cardinality_atmost_partition.mzn.)

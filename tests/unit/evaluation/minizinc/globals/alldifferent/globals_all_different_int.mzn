@@ -1,8 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON minizinc_cpx
 
 % Test all_different for var int.
 

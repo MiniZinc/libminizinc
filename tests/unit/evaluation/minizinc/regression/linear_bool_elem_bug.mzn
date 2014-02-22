@@ -1,4 +1,3 @@
-% RUNS ON minizinc_mip
 
 % Regression test for a problem with the "linear" MiniZinc redefinitions.
 % The signature of array_var_bool_element/3 in the redefintions was

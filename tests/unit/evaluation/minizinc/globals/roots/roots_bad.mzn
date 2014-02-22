@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_std_fd
-% RUNS ON minizinc_cpx
 
 % This should abort since {6} is not a subset of index_set(x).
 

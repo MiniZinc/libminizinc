@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Regression test for bug #282: mzn2fzn's optimization pass left dangling
 % variables in the int_search/4 annotation below.

@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_cpx
 
 include "bin_packing_capa.mzn";
 

@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % A regression test for Bug #156. 
 

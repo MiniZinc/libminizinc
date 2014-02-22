@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Test for bug #337 but with mod rather than div.
 

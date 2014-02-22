@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 include "subcircuit.mzn";
 

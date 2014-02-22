@@ -1,5 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lazyfd
 
 include "lex_lesseq.mzn";
 

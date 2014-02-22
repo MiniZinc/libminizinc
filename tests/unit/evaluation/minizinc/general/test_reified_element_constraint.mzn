@@ -1,6 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
+% RUNS ON mzn20_fd
 array [1..3] of var 1..10: a;
 var bool: b;
 var 4..6: i;

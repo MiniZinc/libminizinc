@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 % Regression test for bug #269: the assignment to the annotation
 % variable "var_selection" (marked with ** below) was being emitted

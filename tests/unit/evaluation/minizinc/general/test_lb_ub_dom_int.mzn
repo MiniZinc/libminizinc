@@ -1,7 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_mer_lazyfd
+% RUNS ON mzn20_fd
 
 var 1..10: x;
 

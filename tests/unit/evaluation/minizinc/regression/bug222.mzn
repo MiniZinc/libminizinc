@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_lp
 
 % Regession test for Minizinc  bug #222.  This model caused
 % a series of problems with the FlatZinc MIP (Cbc) backend.

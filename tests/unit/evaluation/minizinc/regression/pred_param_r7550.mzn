@@ -1,6 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
+% RUNS ON mzn20_fd
 % RUNS slowly? ON mzn_cd_fd
 % The following is a regression test for a flattening bug with predicate
 % parameter expansion.  See the log message for r7550.

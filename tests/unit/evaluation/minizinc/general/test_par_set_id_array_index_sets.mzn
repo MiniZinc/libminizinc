@@ -1,7 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 predicate p(array [int] of var int: xs) =
 	let {
 		set of int: ix = index_set(xs),

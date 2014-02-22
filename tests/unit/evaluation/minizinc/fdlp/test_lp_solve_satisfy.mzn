@@ -1,7 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 var 0..9: X;
 constraint X > 5;
 solve satisfy;

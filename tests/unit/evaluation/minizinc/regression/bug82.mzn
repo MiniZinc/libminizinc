@@ -1,6 +1,5 @@
 % This caused mzn2fzn (r9627 and before) to abort.
 
-% RUNS ON mzn_mer_std_fd
 
 % NOTE: we cannot run this on LazyFD because it the redefinition of
 % array_var_bool_element below will conflict with the LazyFD backend's

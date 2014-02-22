@@ -1,6 +1,3 @@
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
-% RUNS ON mzn_mer_fd
 
 % mzn2fzn and soln2out aborted when evaluating this model in
 % r14647 and before.

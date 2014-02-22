@@ -1,4 +1,3 @@
-% RUNS ON mzn_mer_fd
 
 % Test the is_fixed/1 built-in.
 

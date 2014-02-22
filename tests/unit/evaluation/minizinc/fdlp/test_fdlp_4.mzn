@@ -1,7 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fdlp
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_cd_fdlp
+% RUNS ON mzn20_fdlp
 
 var 1..10: x;
 var 1.0..10.0: y :: lp;

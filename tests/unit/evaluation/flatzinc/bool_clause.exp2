@@ -1,5 +1,0 @@
-w = true;
-x = false;
-y = [false, false, true];
-z = [false, false, false];
-----------

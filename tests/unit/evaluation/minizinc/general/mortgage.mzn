@@ -1,8 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_lp
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_fdlp
-% RUNS ON mzn_mer_fdlp
+% RUNS ON mzn20_fdlp
 %
 % Constraint Programming: Mortgage
 %

@@ -1,9 +1,6 @@
-% RUNS ON minizinc
 % Test string comparison.
 %
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 
 array [1..6] of var 1..3: xs;
 

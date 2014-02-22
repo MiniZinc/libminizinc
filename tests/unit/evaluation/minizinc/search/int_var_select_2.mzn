@@ -1,7 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 int: n = 8;
 
 array [1..n] of var 1..n: q;

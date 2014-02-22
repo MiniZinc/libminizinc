@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON minizinc_fd
-% RUNS ON minizinc_cpx
 
 var 1..3: a;
 

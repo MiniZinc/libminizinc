@@ -1,7 +1,4 @@
-% RUNS ON minizinc
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_cd_fd
+% RUNS ON mzn20_fd
 %% Check that the indomain_median search complies with spec
 %%
 

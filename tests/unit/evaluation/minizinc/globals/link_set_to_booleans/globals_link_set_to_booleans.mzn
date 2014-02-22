@@ -1,6 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON minizinc_cpx
 
 include "link_set_to_booleans.mzn";
 

@@ -1,6 +1,4 @@
-% RUNS ON mzn_fd
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_lp
+% RUNS ON mzn20_fd
 
 % vim: et ts=4
 % Cut down version of MiniZinc bug 110.

@@ -1,8 +1,3 @@
-% RUNS ON mzn_mer_fd
-% RUNS ON mzn_mer_fdlp
-% RUNS ON mzn_mer_lazyfd
-% RUNS ON mzn_mer_lp
-% RUNS ON mzn_mer_sat
 
 % This is a regression test for a series of problems that caused
 % stack overflows in mzn2fzn r13357 and before.
