@@ -2379,6 +2379,8 @@ namespace MiniZinc {
                       ee.b = ee.r;
                       args_ee.push_back(ee);
                     }
+                  } else if (args[i]->type()._bt == Type::BT_BOT) {
+                    // Nothing to be done for empty arrays/sets
                   } else {
                     throw EvalError(decl->params()[i]->loc(),"domain restrictions other than int not supported yet");
                   }
