@@ -2,6 +2,8 @@
 
 % Regression test for bug #70: set2array coercions were not supported.
 
+include "global_cardinality_low_up.mzn";
+
 predicate my_global_cardinality_low_up(array[int] of var int: x,
                                     array[int] of int: cover,
 				    array[int] of int: lbound,
@@ -13,7 +15,7 @@ predicate my_global_cardinality_low_up(array[int] of var int: x,
 
 
 predicate myall_different(array[int] of var int: x) =
-    my_global_cardinality_low_up(
+    global_cardinality_low_up(
         x, set2array(dom_array(x)), [0 | i in dom_array(x)], [1 | i in dom_array(x)]);
 
 array[1..3] of var 1..4: x;
