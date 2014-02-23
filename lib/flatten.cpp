@@ -2952,9 +2952,9 @@ namespace MiniZinc {
     class FV : public ItemVisitor {
     public:
       std::unordered_set<Item*> globals;
-      Env& env;
+      EnvI& env;
       Model& tmp;
-      FV(Env& env0, Model& tmp0)
+      FV(EnvI& env0, Model& tmp0)
         : env(env0), tmp(tmp0) {}
       void vVarDeclI(VarDeclI* v) {
         GCLock lock;
@@ -3119,7 +3119,7 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
-            vc->decl(env.model()->matchFn(vc));
+            vc->decl(env.orig->matchFn(vc));
           } else if (vc->id() == constants().ids.forall) {
             GCLock lock;
             vc->id(ASTString("array_bool_and"));
@@ -3128,11 +3128,11 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
-            vc->decl(env.model()->matchFn(vc));
+            vc->decl(env.orig->matchFn(vc));
           } else if (vc->id() == constants().ids.clause) {
             GCLock lock;
             vc->id(ASTString("bool_clause"));
-            vc->decl(env.model()->matchFn(vc));
+            vc->decl(env.orig->matchFn(vc));
           }
           if (vc->decl() && !vc->decl()->loc().filename.endsWith("/builtins.mzn") &&
               globals.find(vc->decl())==globals.end()) {
@@ -3147,7 +3147,16 @@ namespace MiniZinc {
           ci->e(new Call(Location(),"bool_eq",args));
         }
       }
-    } _fv(e,tmp);
+      void vSolveI(SolveI* si) {
+        if (si->e() && si->e()->type().ispar()) {
+          GCLock lock;
+          TypeInst* ti = new TypeInst(Location(),si->e()->type(),NULL);
+          VarDecl* constantobj = new VarDecl(Location(),ti,env.genId("obj"),si->e());
+          si->e(constantobj->id());
+          tmp.addItem(new VarDeclI(Location(),constantobj));
+        }
+      }
+    } _fv(e.envi(),tmp);
     iterItems<FV>(_fv,m);
     for (unsigned int i=0; i<tmp._items.size(); i++)
       m->addItem(tmp._items[i]);

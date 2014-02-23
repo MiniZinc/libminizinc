@@ -943,6 +943,8 @@ namespace MiniZinc {
     Annotation* ann(void) const { return _ann; }
     /// Access expression for optimisation
     Expression* e(void) const { return _e; }
+    /// Set expression for optimisation
+    void e(Expression* e0) { _e=e0; }
     /// Return type of solving
     SolveType st(void) const;
     /// Set type of solving
