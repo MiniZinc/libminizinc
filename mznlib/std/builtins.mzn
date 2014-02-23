@@ -306,8 +306,19 @@ function var int: max(var int: x, var int: y) ::total =
         constraint int_max(x,y,m);
   } in m;
 
+function var int: min(var int: x, var int: y) ::total =
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
+        constraint int_min(x,y,m);
+  } in m;
+
 function int: abs(int);
-function var int: abs(var int);
+
+function var int: abs(var int: x) ::total =
+  let { var 0..max(-lb(x),ub(x)): m;
+        constraint int_abs(x,m);
+  } in m;
+
+
 function float: abs(float);
 function var float: abs(var float);
 
