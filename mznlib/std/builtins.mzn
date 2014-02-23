@@ -186,6 +186,28 @@ function var bool: element(var int: idx, array[int] of var bool: x) =
   } in element_mt(idx,x)
   endif;
 
+function var bool: element(var int: idx1, int: idx2,
+                          array[int,int] of var bool: x) =
+  element(idx1,
+          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
+                  [x[i,idx2] | i in index_set_1of2(x)]));
+
+function var bool: element(int: idx1, var int: idx2,
+                          array[int,int] of var bool: x) =
+  element(idx2,
+          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
+                  [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var bool: element(var int: idx1, var int: idx2,
+                          array[int,int] of var bool: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
+
 % Comparisons
 function     bool: '<'(    $T,    $T);
 function var bool: '<'(var $T,var $T);
