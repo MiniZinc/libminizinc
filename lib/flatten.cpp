@@ -716,11 +716,26 @@ namespace MiniZinc {
     }
   }
 
-  TypeInst* eval_typeinst(EnvI& env, TypeInst* ti) {
+  TypeInst* eval_typeinst(EnvI& env, VarDecl* vd) {
     /// TODO: evaluate all par components in the domain. This probably
     ///       needs the VarDecl to compute the actual dimensions of
     ///       array[int] expressions
-    return eval_par(ti)->cast<TypeInst>();
+    bool hasTiVars = vd->ti()->domain() && vd->ti()->domain()->isa<TIId>();
+    for (unsigned int i=0; i<vd->ti()->ranges().size(); i++)
+      hasTiVars = hasTiVars || (vd->ti()->ranges()[i]->domain() && vd->ti()->ranges()[i]->domain()->isa<TIId>());
+    if (hasTiVars) {
+      assert(vd->e());
+      if (vd->e()->type().dim()==0)
+        return new TypeInst(Location(),vd->e()->type());
+      ArrayLit* al = eval_array_lit(vd->e());
+      std::vector<TypeInst*> dims(al->dims());
+      for (unsigned int i=0; i<dims.size(); i++) {
+        dims[i] = new TypeInst(Location(), Type(), new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+      }
+      return new TypeInst(Location(), vd->e()->type(), dims);
+    } else {
+      return eval_par(vd->ti())->cast<TypeInst>();
+    }
   }
 
   std::string opToBuiltin(BinOp* op, BinOpType bot) {
@@ -1173,7 +1188,7 @@ namespace MiniZinc {
                   rete = vdea;
                 } else {
                   VarDecl* nvd =
-                  new VarDecl(vd->loc(),eval_typeinst(env,vd->ti()),
+                  new VarDecl(vd->loc(),eval_typeinst(env,vd),
                               env.genId("tl_"+vd->id()->v().str()),vd->e());
                   nvd->introduced(true);
                   
@@ -2156,7 +2171,9 @@ namespace MiniZinc {
                 argctx.i = C_MIX;
               }
             }
-            Expression* tmp = c->args()[i];
+            Expression* tmp = follow_id_to_decl(c->args()[i]);
+            if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+              tmp = vd->id();
             args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
           }
 
@@ -2341,7 +2358,7 @@ namespace MiniZinc {
                         issubsumed = false;
                       } else {
                         IntBounds ib = compute_int_bounds(args[i]);
-                        issubsumed = !ib.valid || isv->size()==0 || ib.l > isv->min(0) || ib.u < isv->max(isv->size());
+                        issubsumed = !ib.valid || isv->size()==0 || ib.l > isv->min(0) || ib.u < isv->max(isv->size()-1);
                       }
                     }
                     if (!issubsumed) {
@@ -2449,7 +2466,7 @@ namespace MiniZinc {
         VarDecl* it = v->flat();
         if (it==NULL) {
           VarDecl* vd = new VarDecl(v->loc(),
-                                    eval_typeinst(env,v->ti()),
+                                    eval_typeinst(env,v),
                                     v->id()->v().str());
           vd->introduced(v->introduced());
           vd->flat(vd);
@@ -2515,7 +2532,7 @@ namespace MiniZinc {
           Expression* le = let->let()[i];
           if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
             EE ee;
-            TypeInst* ti = eval_typeinst(env,vd->ti());
+            TypeInst* ti = eval_typeinst(env,vd);
             VarDecl* nvd = new VarDecl(vd->loc(),ti,
                                       env.genId("FromLet_"+vd->id()->v().str()));
             nvd->toplevel(true);
