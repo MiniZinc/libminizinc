@@ -527,7 +527,10 @@ function int: bool2int(bool);
 function var int: bool2int(var bool);
 function float: int2float(int);
 function var float: int2float(var int);
-function array[int] of $T: set2array(set of $T);
+
+% Only supported for set of int:
+% function array[int] of $T: set2array(set of $T);
+function array[int] of int: set2array(set of int);
 
 % String operations
 

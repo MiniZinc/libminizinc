@@ -533,6 +533,18 @@ namespace MiniZinc {
     throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
   }
   
+  Expression* b_set2array(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    IntSetVal* isv = eval_intset(args[0]);
+    std::vector<Expression*> elems;
+    IntSetRanges isr(isv);
+    for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v)
+      elems.push_back(new IntLit(Location(),isr_v.val()));
+    ArrayLit* al = new ArrayLit(args[0]->loc(),elems);
+    al->type(Type::parint(1));
+    return al;
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -823,6 +835,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
       rb(m, constants().ids.sum, t, b_sum_float);      
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(m, ASTString("set2array"), t, b_set2array);
     }
   }
   
