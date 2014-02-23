@@ -34,6 +34,13 @@ function var set of int: set_union(var set of int, var set of int);
 function var set of int: set_diff(var set of int, var set of int);
 function var set of int: set_symdiff(var set of int, var set of int);
 
+predicate array_dom(array[$T] of var set of int: x, set of int: d) =
+    let { array[int] of var set of int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (xx[i] subset d);
+predicate array_dom(array[$T] of var int: x, set of int: d) =
+    let { array[int] of var int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (xx[i] in d);
+
 %Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
 predicate array_bool_or(array[int] of var bool: as, var bool: r);

@@ -2144,11 +2144,12 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->v()[i],r,b);
         } else {
           std::vector<EE> args_ee(c->args().size());
+          bool mixContext = decl->e()!=NULL ||
+            (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
+             cid != constants().ids.sum && cid != constants().ids.lin_exp && cid != "assert");
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
-            if (decl->e()!=NULL ||
-                (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
-                 cid != constants().ids.sum && cid != constants().ids.lin_exp && cid != "assert")) {
+            if (mixContext) {
               if (c->args()[i]->type()._bt==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->args()[i]->type()._bt==Type::BT_INT) {
@@ -2323,6 +2324,50 @@ namespace MiniZinc {
             ret.b = bind(env,Ctx(),b,cit->second.b());
             ret.r = bind(env,ctx,r,cit->second.r());
           } else {
+            for (unsigned int i=0; i<decl->params().size(); i++) {
+              if (Expression* dom = decl->params()[i]->ti()->domain()) {
+                if (!dom->isa<TIId>()) {
+                  // May have to constrain actual argument
+                  if (args[i]->type()._bt == Type::BT_INT) {
+                    IntSetVal* isv = eval_intset(dom);
+                    BinOpType bot;
+                    bool issubsumed;
+                    if (args[i]->type()._st == Type::ST_SET) {
+                      bot = BOT_SUBSET;
+                      issubsumed = false;
+                    } else {
+                      bot = BOT_IN;
+                      if (args[i]->type().dim() > 0) {
+                        issubsumed = false;
+                      } else {
+                        IntBounds ib = compute_int_bounds(args[i]);
+                        issubsumed = !ib.valid || isv->size()==0 || ib.l > isv->min(0) || ib.u < isv->max(isv->size());
+                      }
+                    }
+                    if (!issubsumed) {
+                      Expression* domconstraint;
+                      if (args[i]->type().dim() > 0) {
+                        std::vector<Expression*> domargs(2);
+                        domargs[0] = args[i];
+                        domargs[1] = dom;
+                        Call* c = new Call(Location(),"array_dom",domargs);
+                        c->type(Type::varbool());
+                        c->decl(env.orig->matchFn(c));
+                        domconstraint = c;
+                      } else {
+                        domconstraint = new BinOp(Location(),args[i],bot,dom);
+                      }
+                      domconstraint->type(Type::varbool());
+                      EE ee = flat_exp(env, Ctx(), domconstraint, NULL, constants().var_true);
+                      ee.b = ee.r;
+                      args_ee.push_back(ee);
+                    }
+                  } else {
+                    throw EvalError(decl->params()[i]->loc(),"domain restrictions other than int not supported yet");
+                  }
+                }
+              }
+            }
             if (cr->type().isbool() && ctx.b != C_ROOT && r != constants().var_true) {
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
@@ -2340,7 +2385,8 @@ namespace MiniZinc {
                 cr_real->decl(decl_real);
                 flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r=reif_b->id();
+                args_ee.push_back(EE(NULL,reif_b->id()));
+                ret.r = conj(env,b,Ctx(),args_ee);
               } else {
                 args.pop_back();
                 goto call_nonreif;
