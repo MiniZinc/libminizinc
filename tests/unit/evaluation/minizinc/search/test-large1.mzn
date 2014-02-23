@@ -4,7 +4,7 @@
 
 var 1..10: x;
 var 2..10: y;
-constraint y <= 6 -> y > 6;
+constraint 7 < y \/ y > 6;
 constraint x + y <= 13;
 
 solve :: int_search([x,y],largest,indomain_split,complete)
