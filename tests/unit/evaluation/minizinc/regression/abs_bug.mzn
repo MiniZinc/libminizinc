@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test.
 % The bounds inferred for absolute values expressions where incorrect in r13710
