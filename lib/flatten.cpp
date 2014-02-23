@@ -2348,20 +2348,20 @@ namespace MiniZinc {
                   if (args[i]->type()._bt == Type::BT_INT) {
                     IntSetVal* isv = eval_intset(dom);
                     BinOpType bot;
-                    bool issubsumed;
+                    bool needToConstrain;
                     if (args[i]->type()._st == Type::ST_SET) {
                       bot = BOT_SUBSET;
-                      issubsumed = false;
+                      needToConstrain = true;
                     } else {
                       bot = BOT_IN;
                       if (args[i]->type().dim() > 0) {
-                        issubsumed = false;
+                        needToConstrain = true;
                       } else {
                         IntBounds ib = compute_int_bounds(args[i]);
-                        issubsumed = !ib.valid || isv->size()==0 || ib.l > isv->min(0) || ib.u < isv->max(isv->size()-1);
+                        needToConstrain = !ib.valid || isv->size()==0 || ib.l < isv->min(0) || ib.u > isv->max(isv->size()-1);
                       }
                     }
-                    if (!issubsumed) {
+                    if (needToConstrain) {
                       Expression* domconstraint;
                       if (args[i]->type().dim() > 0) {
                         std::vector<Expression*> domargs(2);
