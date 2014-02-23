@@ -624,6 +624,8 @@ namespace MiniZinc {
         ASTString tiid = tii->domain()->cast<TIId>()->v();
         Type tiit = ta[i]->type();
         tiit._dim=0;
+        if (tii->type()._st==Type::ST_SET)
+          tiit._st = Type::ST_PLAIN;
         ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
         if (it==tmap.end()) {
           tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
