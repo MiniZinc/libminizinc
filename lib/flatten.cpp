@@ -2374,10 +2374,14 @@ namespace MiniZinc {
                       } else {
                         domconstraint = new BinOp(Location(),args[i],bot,dom);
                       }
-                      domconstraint->type(Type::varbool());
-                      EE ee = flat_exp(env, Ctx(), domconstraint, NULL, constants().var_true);
-                      ee.b = ee.r;
-                      args_ee.push_back(ee);
+                      domconstraint->type(args[i]->type().ispar() ? Type::parbool() : Type::varbool());
+                      if (ctx.b == C_ROOT) {
+                        (void) flat_exp(env, Ctx(), domconstraint, constants().var_true, constants().var_true);
+                      } else {
+                        EE ee = flat_exp(env, Ctx(), domconstraint, NULL, constants().var_true);
+                        ee.b = ee.r;
+                        args_ee.push_back(ee);
+                      }
                     }
                   } else if (args[i]->type()._bt == Type::BT_BOT) {
                     // Nothing to be done for empty arrays/sets
@@ -3164,6 +3168,15 @@ namespace MiniZinc {
           args[1] = constants().lit_true;
           GCLock lock;
           ci->e(new Call(Location(),"bool_eq",args));
+        } else if (BoolLit* bl = ci->e()->dyn_cast<BoolLit>()) {
+          if (!bl->v()) {
+            GCLock lock;
+            std::vector<Expression*> args(2);
+            args[0] = constants().lit_false;
+            args[1] = constants().lit_true;
+            Call* neq = new Call(Location(),"bool_eq",args);
+            ci->e(neq);
+          }
         }
       }
       void vSolveI(SolveI* si) {
