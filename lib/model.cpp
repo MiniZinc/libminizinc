@@ -11,6 +11,9 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/prettyprinter.hh>
+
+#undef MZN_DEBUG_FUNCTION_REGISTRY
 
 namespace MiniZinc {
   
@@ -84,10 +87,17 @@ namespace MiniZinc {
     std::vector<FunctionI*>& v = i_id->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+      std::cerr << "try " << *fi;
+#endif
       if (fi->params().size() == t.size()) {
         bool match=true;
         for (unsigned int j=0; j<t.size(); j++) {
           if (!t[j].isSubtypeOf(fi->params()[j]->type())) {
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+            std::cerr << t[j].toString() << " does not match "
+            << fi->params()[j]->type().toString() << "\n";
+#endif
             match=false;
             break;
           }
@@ -144,10 +154,17 @@ namespace MiniZinc {
     const std::vector<FunctionI*>& v = it->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+      std::cerr << "try " << *fi;
+#endif
       if (fi->params().size() == args.size()) {
         bool match=true;
         for (unsigned int j=0; j<args.size(); j++) {
           if (!args[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+            std::cerr << args[j]->type().toString() << " does not match "
+            << fi->params()[j]->type().toString() << "\n";
+#endif
             match=false;
             break;
           }
