@@ -2141,7 +2141,7 @@ namespace MiniZinc {
             } else {
               nctx.b = ctx.i;
             }
-          } else if (cid == constants().ids.assert) {
+          } else if (cid == constants().ids.assert || cid == constants().ids.trace) {
             Expression* callres = decl->_builtins.e(c->args());
             ret = flat_exp(env,ctx,callres,r,b);
             // This is all we need to do for assert, so break out of the E_CALL
