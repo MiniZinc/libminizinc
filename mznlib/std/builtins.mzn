@@ -25,6 +25,8 @@ predicate int_times(var int: a, var int: b, var int: c);
 %set constraints
 predicate set_in(var int, set of int);
 predicate set_in(var int, var set of int);
+predicate set_in_reif(var int, set of int, var bool);
+predicate set_in_reif(var int, var set of int, var bool);
 predicate set_subset(var set of int, var set of int);
 predicate set_le(var set of int, var set of int);
 predicate set_eq(var set of int, var set of int);
