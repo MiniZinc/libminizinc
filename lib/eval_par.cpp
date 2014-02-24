@@ -19,8 +19,6 @@
 
 namespace MiniZinc {
 
-  bool eval_bool(Expression* e);
-
   template<class E>
   typename E::Val eval_id(Expression* e) {
     Id* id = e->cast<Id>();
@@ -55,6 +53,22 @@ namespace MiniZinc {
     typedef Expression* ArrayVal;
     static FloatLit* e(Expression* e) {
       return new FloatLit(Location(),eval_float(e));
+    }
+  };
+  class EvalString {
+  public:
+    typedef std::string Val;
+    typedef std::string ArrayVal;
+    static std::string e(Expression* e) {
+      return eval_string(e);
+    }
+  };
+  class EvalStringLit {
+  public:
+    typedef StringLit* Val;
+    typedef Expression* ArrayVal;
+    static StringLit* e(Expression* e) {
+      return new StringLit(Location(),eval_string(e));
     }
   };
   class EvalBoolLit {
@@ -742,6 +756,90 @@ namespace MiniZinc {
     }
   }
 
+  std::string eval_string(Expression* e) {
+    switch (e->eid()) {
+      case Expression::E_STRINGLIT:
+        return e->cast<StringLit>()->v().str();
+      case Expression::E_FLOATLIT:
+      case Expression::E_INTLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_ANON:
+      case Expression::E_TIID:
+      case Expression::E_SETLIT:
+      case Expression::E_ARRAYLIT:
+      case Expression::E_COMP:
+      case Expression::E_VARDECL:
+      case Expression::E_ANN:
+      case Expression::E_TI:
+        throw EvalError(e->loc(),"not a float expression");
+        break;
+      case Expression::E_ID:
+      {
+        GCLock lock;
+        return eval_id<EvalStringLit>(e)->v().str();
+      }
+        break;
+      case Expression::E_ARRAYACCESS:
+        return eval_string(eval_arrayaccess(e->cast<ArrayAccess>()));
+        break;
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (unsigned int i=0; i<ite->size(); i++) {
+          if (eval_bool(ite->e_if(i)))
+            return eval_string(ite->e_then(i));
+        }
+        return eval_string(ite->e_else());
+      }
+        break;
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        std::string v0 = eval_string(bo->lhs());
+        std::string v1 = eval_string(bo->rhs());
+        switch (bo->op()) {
+          case BOT_PLUSPLUS: return v0+v1;
+          default: throw EvalError(e->loc(),"not a string expression", bo->opToString());
+        }
+      }
+        break;
+      case Expression::E_UNOP:
+        throw EvalError(e->loc(),"not a string expression");
+        break;
+      case Expression::E_CALL:
+      {
+        Call* ce = e->cast<Call>();
+        if (ce->decl()==NULL)
+          throw EvalError(e->loc(), "undeclared function", ce->id());
+
+        if (ce->decl()->_builtins.e)
+          return eval_string(ce->decl()->_builtins.e(ce->args()));
+        
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(ce->args()[i]);
+        }
+        std::string ret = eval_string(ce->decl()->e());
+        for (unsigned int i=ce->decl()->params().size(); i--;) {
+          ce->decl()->params()[i]->e(NULL);
+        }
+        return ret;
+      }
+        break;
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        std::string ret = eval_string(l->in());
+        l->popbindings();
+        return ret;
+      }
+        break;
+    }
+  }
+
   class AssignVisitor : public ItemVisitor {
   public:
     void vAssignI(AssignI* i) {
@@ -849,7 +947,11 @@ namespace MiniZinc {
               return EvalFloatLit::e(e);
             else
               throw InternalError("set of float not yet implemented");
-        case Type::BT_STRING: throw InternalError("not yet implemented");
+        case Type::BT_STRING:
+            if (e->type()._st == Type::ST_PLAIN)
+              return EvalStringLit::e(e);
+            else
+              throw InternalError("set of string not yet implemented");
         case Type::BT_ANN:
         case Type::BT_BOT:
         case Type::BT_TOP:

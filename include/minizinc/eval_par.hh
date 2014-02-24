@@ -32,6 +32,8 @@ namespace MiniZinc {
   Expression* eval_arrayaccess(ArrayAccess* e, bool& success);
   /// Evaluate a par integer set \a e
   IntSetVal* eval_intset(Expression* e);
+  /// Evaluate a par string \a e
+  std::string eval_string(Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
   Expression* eval_par(Expression* e);
 
