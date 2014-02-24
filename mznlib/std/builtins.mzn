@@ -190,9 +190,7 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) ::total =
 function var bool: element(var int: idx, array[int] of var bool: x) =
   if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
-  else let {
-    constraint idx in index_set(x)
-  } in element_mt(idx,x)
+  else idx in index_set(x) /\ element_mt(idx,x)
   endif;
 
 function var bool: element(var int: idx1, int: idx2,
