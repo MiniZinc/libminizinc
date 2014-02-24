@@ -315,10 +315,32 @@ function var int: max(var int: x, var int: y) ::total =
         constraint int_max(x,y,m);
   } in m;
 
+function var int: max_t(array[int] of var int: x) :: total =
+  if length(x)=0 then 0
+  elseif length(x)=1 then x[1]
+  else max(x[1],max_t([x[i] | i in 2..length(x)]))
+  endif;
+function var int: max(array[$U] of var int: x) =
+  let {
+    array[int] of var int: xx = array1d(1..length(x),x);
+    constraint length(x) > 1;
+  } in max_t(xx);
+
 function var int: min(var int: x, var int: y) ::total =
   let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
         constraint int_min(x,y,m);
   } in m;
+
+function var int: min_t(array[int] of var int: x) :: total =
+  if length(x)=0 then 0
+  elseif length(x)=1 then x[1]
+  else min(x[1],min_t([x[i] | i in 2..length(x)]))
+  endif;
+function var int: min(array[$U] of var int: x) =
+  let {
+    array[int] of var int: xx = array1d(1..length(x),x);
+    constraint length(x) > 1;
+  } in min_t(xx);
 
 function int: abs(int);
 
