@@ -114,6 +114,29 @@ function var int: element(var int: idx, array[int] of var int: x) =
   } in element_mt(idx,x)
   endif;
 
+function var int: element_t(var int: idx, array[int] of int: x) ::total =
+  let {
+    var lb_array(x)..ub_array(x): r;
+    constraint array_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var int: element_mt(var int: idx, array[int] of int: x) ::total =
+  let {
+    var lb_array(x)..ub_array(x): r;
+    var min(index_set(x))..max(index_set(x)): idx2;
+    constraint idx in index_set(x) -> idx2=idx;
+    constraint idx in index_set(x) \/ idx2=min(index_set(x));
+    constraint array_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+  } in r;
+
+function var int: element(var int: idx, array[int] of int: x) =
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+    element_t(idx,x)
+  else let {
+    constraint idx in index_set(x)
+  } in element_mt(idx,x)
+  endif;
+
 function var int: element(var int: idx1, int: idx2,
                           array[int,int] of var int: x) =
   element(idx1,
@@ -135,12 +158,47 @@ function var int: element(var int: idx1, var int: idx2,
     constraint idx2 in index_set_2of2(x);
   } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
 
+function var int: element(var int: idx1, int: idx2,
+                          array[int,int] of int: x) =
+  element(idx1,
+          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
+                  [x[i,idx2] | i in index_set_1of2(x)]));
+
+function var int: element(int: idx1, var int: idx2,
+                          array[int,int] of int: x) =
+  element(idx2,
+          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
+                  [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var int: element(var int: idx1, var int: idx2,
+                          array[int,int] of int: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
 function var int: element(var int: idx1, var int: idx2, var int: idx3,
                           array[int,int,int] of var int: x) =
   let {
     int: dim2 = card(index_set_2of3(x));
     int: dim3 = card(index_set_3of3(x));
     
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+    constraint idx1 in index_set_1of3(x);
+    constraint idx2 in index_set_2of3(x);
+    constraint idx3 in index_set_3of3(x);
+  } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
+
+function var int: element(var int: idx1, var int: idx2, var int: idx3,
+                          array[int,int,int] of int: x) =
+  let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
