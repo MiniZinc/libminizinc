@@ -1223,6 +1223,7 @@ namespace MiniZinc {
         if (av->type().isbot()) {
           throw InternalError("type of anonymous variable could not be inferred");
         }
+        GCLock lock;
         VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), av->type()),
                                   env.genId("Anon"));
         ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
