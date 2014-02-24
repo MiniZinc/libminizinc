@@ -274,7 +274,19 @@ function var int: 'div'(var int: x,var int: y) =
   let { constraint y != 0 } in div_mt(x,y) endif;
   
 function     int: 'mod'(int,int);
-function var int: 'mod'(var int,var int);
+
+function var int: mod_t(var int: x, var int: y) ::total =
+  let { var int: z; constraint int_mod(x,y,z); } in z;
+function var int: mod_mt(var int: x, var int: y) ::total =
+  let {
+    var int: yy = if y=0 then 1 else y endif;
+  } in mod_t(x,yy);
+
+function var int: 'mod'(var int: x,var int: y) =
+  if not (0 in dom(y)) then mod_t(x,y) else
+  let { constraint y != 0 } in mod_mt(x,y) endif;
+
+
 function     float: '/'(    float,    float);
 function var float: '/'(var float,var float);
 
