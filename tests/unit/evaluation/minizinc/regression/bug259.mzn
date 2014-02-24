@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for bug #259: mzn2fzn (and consequently solns2out) didn't support
 % array5d casts.

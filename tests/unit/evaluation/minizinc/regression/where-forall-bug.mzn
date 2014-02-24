@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for a problem in mzn2fzn where failure of the
 % where clause was incorrectly being treated as equivalent to

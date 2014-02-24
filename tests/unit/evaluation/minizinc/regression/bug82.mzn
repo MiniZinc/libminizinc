@@ -1,3 +1,5 @@
+% RUNS ON mzn20_fd
+
 % This caused mzn2fzn (r9627 and before) to abort.
 
 

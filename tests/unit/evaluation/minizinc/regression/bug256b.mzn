@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % A regression test for bug #256.
 

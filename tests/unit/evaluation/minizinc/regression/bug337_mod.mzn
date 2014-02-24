@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Test for bug #337 but with mod rather than div.
 

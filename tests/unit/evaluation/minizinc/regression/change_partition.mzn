@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for the bug descibed in var_self_assign_bug.mzn.
 % (This is the model from the original bug report.)

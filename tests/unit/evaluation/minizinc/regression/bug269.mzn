@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for bug #269: the assignment to the annotation
 % variable "var_selection" (marked with ** below) was being emitted

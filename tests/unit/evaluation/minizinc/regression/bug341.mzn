@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for bug #341: mzn2fzn 1.5.0 was incorrectly tightening the
 % bounds on the array S to 4..3.  The problem was that the bounds inferred for

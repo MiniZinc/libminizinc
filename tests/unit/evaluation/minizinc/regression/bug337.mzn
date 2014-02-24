@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for bug #337: mzn2fzn was incorrectly setting the initial
 % domains of variables introduced in the reification of the division operation

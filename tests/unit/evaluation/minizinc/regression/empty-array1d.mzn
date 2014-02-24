@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % mzn2fzn and soln2out aborted when evaluating this model in
 % r14647 and before.

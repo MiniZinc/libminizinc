@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 % Regression test for bug #283: mzn2fzn's optimization pass left dangling
 % variables in the bool_search/4 annotation below.
