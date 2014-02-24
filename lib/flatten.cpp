@@ -2442,17 +2442,28 @@ namespace MiniZinc {
                   vd->e(args[i]);
                 }
                 
-                if (isTotal(decl)) {
-                  EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                  ret.r = bind(env,ctx,r,ee.r());
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  env.map_insert(cr,ret);
+                if (decl->e()->type().isbool()) {
+                  ret.b = bind(env,Ctx(),b,constants().lit_true);
+                  if (ctx.b==C_ROOT && r==constants().var_true) {
+                    (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
+                  } else {
+                    EE ee = flat_exp(env,Ctx(),decl->e(),NULL,constants().var_true);
+                    ee.b = ee.r;
+                    args_ee.push_back(ee);
+                  }
+                  ret.r = conj(env,r,ctx,args_ee);
                 } else {
-                  ret = flat_exp(env,ctx,decl->e(),r,NULL);
-                  args_ee.push_back(ret);
+                  if (isTotal(decl)) {
+                    EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
+                    ret.r = bind(env,ctx,r,ee.r());
+                  } else {
+                    ret = flat_exp(env,ctx,decl->e(),r,NULL);
+                    args_ee.push_back(ret);
+                  }
                   ret.b = conj(env,b,Ctx(),args_ee);
-                  env.map_insert(cr,ret);
                 }
+                env.map_insert(cr,ret);
+
                 // Restore previous mapping
                 for (unsigned int i=decl->params().size(); i--;) {
                   VarDecl* vd = decl->params()[i];
