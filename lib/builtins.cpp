@@ -532,6 +532,13 @@ namespace MiniZinc {
     StringLit* err = eval_par(args[1])->cast<StringLit>();
     throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
   }
+
+  Expression* b_trace(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    StringLit* msg = eval_par(args[0])->cast<StringLit>();
+    std::cerr << msg;
+    return args[1];
+  }
   
   Expression* b_set2array(ASTExprVec<Expression> args) {
     assert(args.size()==1);
@@ -685,18 +692,28 @@ namespace MiniZinc {
       std::vector<Type> t(2);
       t[0] = Type::parbool();
       t[1] = Type::parstring();
-      rb(m, ASTString("assert"), t, b_assert_bool);
+      rb(m, constants().ids.assert, t, b_assert_bool);
     }
     {
       std::vector<Type> t(3);
       t[0] = Type::parbool();
       t[1] = Type::parstring();
       t[2] = Type::top();
-      rb(m, ASTString("assert"), t, b_assert);
+      rb(m, constants().ids.assert, t, b_assert);
       t[2] = Type::vartop();
-      rb(m, ASTString("assert"), t, b_assert);
+      rb(m, constants().ids.assert, t, b_assert);
       t[2] = Type::optvartop();
-      rb(m, ASTString("assert"), t, b_assert);
+      rb(m, constants().ids.assert, t, b_assert);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parstring();
+      t[1] = Type::top();
+      rb(m, constants().ids.trace, t, b_trace);
+      t[1] = Type::vartop();
+      rb(m, constants().ids.trace, t, b_trace);
+      t[1] = Type::optvartop();
+      rb(m, constants().ids.trace, t, b_trace);
     }
     {
       std::vector<Type> t_length(1);

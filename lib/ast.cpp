@@ -888,6 +888,7 @@ namespace MiniZinc {
     ids.lin_exp = ASTString("lin_exp");
     ids.bool_eq = ASTString("bool_eq");
     ids.assert = ASTString("assert");
+    ids.trace = ASTString("trace");
     
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -916,6 +917,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.assert));
+    v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);
