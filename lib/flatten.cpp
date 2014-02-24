@@ -352,8 +352,9 @@ namespace MiniZinc {
             needNewTypeInst = true;
           } else {
             IntSetVal* isv = eval_intset(tis[i]->domain());
-            assert(isv->size()==1);
-            if (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))
+            assert(isv->size()<=1);
+            if ( (isv->size()==0 && al->min(i) <= al->max(i)) ||
+                 (isv->size()!=0 && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))) )
               throw EvalError(vd->loc(), "Index set mismatch");
             newtis[i] = tis[i];
           }
@@ -3097,7 +3098,7 @@ namespace MiniZinc {
               vd->ti()->ranges()[0]->domain() != NULL &&
               vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
             IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
-            if (isv && isv->min(0)==1)
+            if (isv && (isv->size()==0 || isv->min(0)==1))
               return;
           }
           assert(vd->e() != NULL);

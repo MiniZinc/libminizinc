@@ -353,10 +353,15 @@ namespace MiniZinc {
     unsigned int dim1d = 1;
     for (int i=0; i<d; i++) {
       IntSetVal* di = eval_intset(args[i]);
-      if (di->size() != 1)
+      if (di->size()==0) {
+        dims[i] = std::pair<int,int>(1,0);
+        dim1d = 0;
+      } else if (di->size() != 1) {
         throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
-      dims[i] = std::pair<int,int>(di->min(0),di->max(0));
-      dim1d *= dims[i].second-dims[i].first+1;
+      } else {
+        dims[i] = std::pair<int,int>(di->min(0),di->max(0));
+        dim1d *= dims[i].second-dims[i].first+1;
+      }
     }
     if (dim1d != al->v().size())
       throw EvalError(al->loc(), "mismatch in array dimensions");
