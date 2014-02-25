@@ -32,9 +32,15 @@ namespace MiniZinc {
     EnvI& envi(void);
   };
 
+  /// Options for the flattener
+  struct FlatteningOptions {
+    /// Variables support only ranges, convert holes into != constraints
+    bool onlyRangeDomains;
+    FlatteningOptions(void) : onlyRangeDomains(false) {}
+  };
   
   /// Flatten model \a m
-  void flatten(Env& m);
+  void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);

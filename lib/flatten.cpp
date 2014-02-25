@@ -2710,7 +2710,7 @@ namespace MiniZinc {
     iterItems(_ov2,e.orig);
   }
   
-  void flatten(Env& e) {
+  void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
     
     class FV : public ItemVisitor {
@@ -2791,6 +2791,7 @@ namespace MiniZinc {
     while (startItem <= endItem) {
       for (unsigned int i=startItem; i<=endItem; i++) {
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
+        bool keptVariable = true;
         if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
           if (vdi->e()->e() && vdi->e()->ti()->domain()) {
             if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
@@ -2799,6 +2800,7 @@ namespace MiniZinc {
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
                 env.flat_replaceItem(i,ci);
+                keptVariable = false;
               } else {
                 vdi->e()->e(NULL);
                 env.flat_addItem(ci);
@@ -2807,11 +2809,40 @@ namespace MiniZinc {
               CollectDecls cd(env.vo,deletedVarDecls,vdi);
               topDown(cd,vdi->e()->e());
               vdi->remove();
+              keptVariable = false;
             }
           } else {
             CollectDecls cd(env.vo,deletedVarDecls,vdi);
             topDown(cd,vdi->e()->e());
             vdi->remove();
+            keptVariable = false;
+          }
+        }
+        if (vdi && opt.onlyRangeDomains && keptVariable &&
+            vdi->e()->type().isint() && vdi->e()->type().isvar() &&
+            vdi->e()->ti()->domain() != NULL) {
+          GCLock lock;
+          IntSetVal* dom = eval_intset(vdi->e()->ti()->domain());
+          if (dom->size() > 1) {
+            SetLit* newDom = new SetLit(Location(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
+            TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
+            nti->domain(newDom);
+            vdi->e()->ti(nti);
+            IntVal firstHole = dom->max(0)+1;
+            IntSetRanges domr(dom);
+            ++domr;
+            for (; domr(); ++domr) {
+              for (IntVal i=firstHole; i<domr.min(); i++) {
+                std::vector<Expression*> args(2);
+                args[0] = vdi->e()->id();
+                args[1] = new IntLit(Location(),i);
+                Call* call = new Call(Location(),"int_ne",args);
+                call->type(Type::varbool());
+                call->decl(env.orig->matchFn(call));
+                (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+                firstHole = domr.max()+1;
+              }
+            }
           }
         }
       }
