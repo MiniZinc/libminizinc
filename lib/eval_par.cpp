@@ -508,7 +508,19 @@ namespace MiniZinc {
             throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isstring() && bo->rhs()->type().isstring()) {
-          throw InternalError("not implemented yet");
+          GCLock lock;
+          std::string s0 = eval_string(bo->lhs());
+          std::string s1 = eval_string(bo->rhs());
+          switch (bo->op()) {
+            case BOT_EQ: return s0==s1;
+            case BOT_NQ: return s0!=s1;
+            case BOT_LE: return s0<s1;
+            case BOT_LQ: return s0<=s1;
+            case BOT_GR: return s0>s1;
+            case BOT_GQ: return s0>=s1;
+            default:
+              throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+          }
         } else {
           throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }
