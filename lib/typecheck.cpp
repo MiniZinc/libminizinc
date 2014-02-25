@@ -422,6 +422,8 @@ namespace MiniZinc {
           bop.type(fi->rtype(args));
           if (fi->e())
             bop.decl(fi);
+          else
+            bop.decl(NULL);
         } else {
           throw TypeError(bop.loc(),
             std::string("type error in operator application for ")+
