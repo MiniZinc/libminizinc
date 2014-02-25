@@ -278,25 +278,46 @@ namespace MiniZinc {
     void vArrayLit(ArrayLit& al) {
       Type ty; ty._dim = al.dims();
       std::vector<AnonVar*> anons;
+      bool haveInferredType = false;
       for (unsigned int i=0; i<al.v().size(); i++) {
         Expression* vi = al.v()[i];
-        if (AnonVar* av = vi->dyn_cast<AnonVar>()) {
+        AnonVar* av = vi->dyn_cast<AnonVar>();
+        if (av) {
           ty._ti = Type::TI_VAR;
           anons.push_back(av);
         } else if (vi->type().isvar()) {
           ty._ti = Type::TI_VAR;
         }
-        if (vi->type().isopt())
+        if (vi->type().isopt()) {
           ty._ot = Type::OT_OPTIONAL;
-        if (vi->type().isbot()) {
-          // do nothing
-        } else if (ty._bt==Type::BT_UNKNOWN) {
-          ty._bt = vi->type()._bt;
-          assert(ty._bt != Type::BT_UNKNOWN);
-          ty._st = vi->type()._st;
-        } else if (ty._bt != vi->type()._bt ||
-                   ty._st != vi->type()._st) {
-          throw TypeError(al.loc(),"non-uniform array literal");
+        }
+        
+        if (ty._bt==Type::BT_UNKNOWN) {
+          if (av == NULL) {
+            if (haveInferredType) {
+              if (ty._st != vi->type()._st) {
+                throw TypeError(al.loc(),"non-uniform array literal");
+              }
+            } else {
+              haveInferredType = true;
+              ty._st = vi->type()._st;
+            }
+            if (vi->type()._bt != Type::BT_BOT) {
+              ty._bt = vi->type()._bt;
+            }
+          }
+        } else {
+          if (av == NULL) {
+            if (vi->type()._bt == Type::BT_BOT) {
+              if (vi->type()._st != ty._st) {
+                throw TypeError(al.loc(),"non-uniform array literal");
+              }
+            } else {
+              if (ty._bt != vi->type()._bt || ty._st != vi->type()._st) {
+                throw TypeError(al.loc(),"non-uniform array literal");
+              }
+            }
+          }
         }
       }
       if (ty._bt == Type::BT_UNKNOWN) {
