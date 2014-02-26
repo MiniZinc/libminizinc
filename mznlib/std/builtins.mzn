@@ -514,9 +514,26 @@ function     int: card(    set of $T);
 function var int: card(var set of int);
 
 function     set of $U:  array_union(array[$T] of     set of $U);
-function var set of int: array_union(array[$T] of var set of int);
+function var set of int: array_union(array[$T] of var set of int: x) =
+  let { array[int] of var set of int: xx = array1d(1..length(x),x) }
+  in array_union_rec(xx);
+function var set of int: array_union_rec(array[int] of var set of int: x) =
+  if length(x)=0 then {}
+  elseif length(x)=1 then x[min(index_set(x))]
+  else x[min(index_set(x))] union
+       array_union_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
+  endif;
+
 function     set of $U:  array_intersect(array[$T] of     set of $U);
-function var set of int: array_intersect(array[$T] of var set of int);
+function var set of int: array_intersect(array[$T] of var set of int: x) =
+  let { array[int] of var set of int: xx = array1d(1..length(x),x) }
+  in array_intersect_rec(xx);
+function var set of int: array_intersect_rec(array[int] of var set of int: x) =
+  if length(x)=0 then {}
+  elseif length(x)=1 then x[min(index_set(x))]
+  else x[min(index_set(x))] intersect
+       array_intersect_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
+  endif;
 
 % Array operations
 function int: length(array[$T] of var opt $U);
