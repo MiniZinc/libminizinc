@@ -1140,7 +1140,7 @@ namespace MiniZinc {
         assert(stacktop+al->v().size()==_bounds.size());
         IntVal lb = d;
         IntVal ub = d;
-        for (unsigned int i=al->v().size(); i--;) {
+        for (unsigned int i=0; i<al->v().size(); i++) {
           Bounds b = _bounds.back(); _bounds.pop_back();
           IntVal cv = eval_int(coeff->v()[i]);
           if (cv > 0) {
@@ -1253,8 +1253,8 @@ namespace MiniZinc {
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
-      IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
       IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+      IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
       switch (bo.op()) {
       case BOT_UNION:
         {
@@ -1330,8 +1330,8 @@ namespace MiniZinc {
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
       } else if (c.id() == "set_diff") {
-        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
         IntSetRanges b1r(b1);
         Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
