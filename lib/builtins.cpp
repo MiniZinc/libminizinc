@@ -448,7 +448,7 @@ namespace MiniZinc {
         return cur;
       switch (cur->eid()) {
         case Expression::E_ID:
-          cur = e->cast<Id>()->decl();
+          cur = cur->cast<Id>()->decl();
           break;
         case Expression::E_VARDECL:
           if (cur->type()._st != Type::ST_SET) {
