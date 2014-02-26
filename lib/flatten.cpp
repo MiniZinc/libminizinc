@@ -1599,10 +1599,18 @@ namespace MiniZinc {
                   return flat_exp(env,ctx1,boe1,r,b);
                 } else {
                   EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-                  Id* id = e0.r()->cast<Id>();
-                  (void) flat_exp(env,ctx1,boe1,id->decl(),NULL);
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  ret.r = bind(env,Ctx(),r,constants().lit_true);
+                  if (istrue(e0.r())) {
+                    return flat_exp(env,ctx1,boe1,r,b);
+                  } else if (isfalse(e0.r())) {
+                    ctx1.neg = true;
+                    ctx1.b = -ctx1.b;
+                    return flat_exp(env,ctx1,boe1,r,b);
+                  } else {
+                    Id* id = e0.r()->cast<Id>();
+                    (void) flat_exp(env,ctx1,boe1,id->decl(),NULL);
+                    ret.b = bind(env,Ctx(),b,constants().lit_true);
+                    ret.r = bind(env,Ctx(),r,constants().lit_true);
+                  }
                 }
                 break;
               } else {
