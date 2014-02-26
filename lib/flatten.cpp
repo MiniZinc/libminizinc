@@ -1290,8 +1290,17 @@ namespace MiniZinc {
               dims[i] = eval_int(aa->idx()[i]);
             ka = eval_arrayaccess(al,dims,success);
           }
-          ret.b = bind(env,Ctx(),b,success ? constants().lit_true : constants().lit_false);
-          ret.r = bind(env,ctx,r,ka());
+          if (aa->type().isbool()) {
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
+            if (success) {
+              ret.r = bind(env,ctx,r,ka());
+            } else {
+              ret.r = bind(env,ctx,r,constants().lit_false);
+            }
+          } else {
+            ret.b = bind(env,Ctx(),b,success ? constants().lit_true : constants().lit_false);
+            ret.r = bind(env,ctx,r,ka());
+          }
         } else {
           std::vector<Expression*> args(aa->idx().size()+1);
           for (unsigned int i=aa->idx().size(); i--;)
