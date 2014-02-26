@@ -1021,6 +1021,7 @@ namespace MiniZinc {
     /// Visit identifier
     void vId(const Id& id) {
       if (id.decl()->ti()->domain()) {
+        GCLock lock;
         IntSetVal* isv = eval_intset(id.decl()->ti()->domain());
         if (isv->size()==0) {
           valid = false;
