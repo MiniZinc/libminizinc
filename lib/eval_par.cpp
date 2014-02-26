@@ -1061,8 +1061,8 @@ namespace MiniZinc {
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
-      Bounds b0 = _bounds.back(); _bounds.pop_back();
       Bounds b1 = _bounds.back(); _bounds.pop_back();
+      Bounds b0 = _bounds.back(); _bounds.pop_back();
       switch (bo.op()) {
       case BOT_PLUS:
         _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
