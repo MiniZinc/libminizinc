@@ -49,12 +49,13 @@ int main(int argc, char** argv) {
   string flag_output_ozn;
   bool flag_output_fzn_stdout = false;
   bool flag_output_ozn_stdout = false;
+  FlatteningOptions fopts;
   
   if (argc < 2)
     goto error;
 
   GC::init();
-
+  
   for (;;) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
@@ -112,6 +113,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
+    } else if (string(argv[i])=="--only-range-domains") {
+      fopts.onlyRangeDomains = true;
     } else {
       break;
     }
@@ -171,7 +174,7 @@ int main(int argc, char** argv) {
           if (flag_verbose)
             std::cerr << "Flattening..." << std::endl;
           Env env(m);
-          flatten(env);
+          flatten(env,fopts);
           Model* flat = env.flat();
           
           if (flag_optimize) {
