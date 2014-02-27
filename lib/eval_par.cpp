@@ -1049,7 +1049,11 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(const ArrayAccess& aa) {
-      throw EvalError(aa.loc(), "not yet supported");
+      if (Id* id = aa.v()->dyn_cast<Id>()) {
+        vId(*id);
+      } else {
+        throw EvalError(aa.loc(), "not yet supported");
+      }
     }
     /// Visit array comprehension
     void vComprehension(const Comprehension& c) {
