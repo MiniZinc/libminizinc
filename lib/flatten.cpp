@@ -2989,7 +2989,7 @@ namespace MiniZinc {
               }
             }
             if (nc != NULL) {
-              CollectDecls cd(env.vo,deletedVarDecls,vdi);
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
               topDown(cd,c);
               ci->e(constants().lit_true);
               ci->remove();

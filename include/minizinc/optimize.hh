@@ -68,14 +68,15 @@ namespace MiniZinc {
   public:
     VarOccurrences& vo;
     std::vector<VarDecl*>& vd;
-    VarDeclI* vdi;
+    Item* item;
     CollectDecls(VarOccurrences& vo0,
                  std::vector<VarDecl*>& vd0,
-                 VarDeclI* vdi0)
-    : vo(vo0), vd(vd0), vdi(vdi0) {}
+                 Item* item0)
+    : vo(vo0), vd(vd0), item(item0) {}
     void vId(Id& id) {
-      if (id.decl() && vo.remove(id.decl(),vdi) == 0)
+      if (id.decl() && vo.remove(id.decl(),item) == 0) {
         vd.push_back(id.decl());
+      }
     }
   };
 
