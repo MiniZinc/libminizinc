@@ -1632,7 +1632,7 @@ namespace MiniZinc {
                     return flat_exp(env,ctx1,boe1,r,b);
                   } else {
                     Id* id = e0.r()->cast<Id>();
-                    (void) flat_exp(env,ctx1,boe1,id->decl(),NULL);
+                    (void) flat_exp(env,ctx1,boe1,id->decl(),constants().var_true);
                     ret.b = bind(env,Ctx(),b,constants().lit_true);
                     ret.r = bind(env,Ctx(),r,constants().lit_true);
                   }
