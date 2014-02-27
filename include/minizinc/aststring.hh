@@ -63,7 +63,10 @@ namespace MiniZinc {
 
     /// Return if string ends with \a s
     bool endsWith(const std::string& s) const;
-    
+
+    /// Return if string begins with \a s
+    bool beginsWith(const std::string& s) const;
+
     /// Compute hash value of string
     size_t hash(void) const;
     
@@ -178,6 +181,11 @@ namespace MiniZinc {
   ASTString::endsWith(const std::string &s) const {
     return size() >= s.size() &&
       (size() == 0 || strncmp(_s->c_str()+size()-s.size(), s.c_str(), s.size())==0);
+  }
+  inline bool
+  ASTString::beginsWith(const std::string &s) const {
+    return size() >= s.size() &&
+    (size() == 0 || strncmp(_s->c_str(), s.c_str(), s.size())==0);
   }
   
   inline size_t

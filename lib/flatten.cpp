@@ -520,7 +520,32 @@ namespace MiniZinc {
             if (e->type().dim() > 0) {
               // Check that index sets match
               checkIndexSets(vd,e);
+            } else if (Id* e_id = e->dyn_cast<Id>()) {
+              std::string cid = "";
+              if (e->type().isint()) {
+                cid = "int_eq";
+              } else if (e->type().isbool()) {
+                cid = "bool_eq";
+              } else if (e->type().isset()) {
+                cid = "set_eq";
+              } else if (e->type().isfloat()) {
+                cid = "float_eq";
+              }
+              if (cid != "") {
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = vd->id();
+                args[1] = e_id;
+                Call* c = new Call(Location(),cid,args);
+                c->type(Type::varbool());
+                c->decl(env.orig->matchFn(c));
+                if (c->decl()->e()) {
+                  flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                  return vd->id();
+                }
+              }
             }
+            
             vd->e(e);
             env.vo_add_exp(vd);
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
@@ -1607,7 +1632,7 @@ namespace MiniZinc {
                     return flat_exp(env,ctx1,boe1,r,b);
                   } else {
                     Id* id = e0.r()->cast<Id>();
-                    (void) flat_exp(env,ctx1,boe1,id->decl(),NULL);
+                    (void) flat_exp(env,ctx1,boe1,id->decl(),constants().var_true);
                     ret.b = bind(env,Ctx(),b,constants().lit_true);
                     ret.r = bind(env,Ctx(),r,constants().lit_true);
                   }
@@ -2989,7 +3014,7 @@ namespace MiniZinc {
               }
             }
             if (nc != NULL) {
-              CollectDecls cd(env.vo,deletedVarDecls,vdi);
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
               topDown(cd,c);
               ci->e(constants().lit_true);
               ci->remove();
