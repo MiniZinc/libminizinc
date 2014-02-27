@@ -3065,7 +3065,9 @@ namespace MiniZinc {
             vd->e(constants().lit_true);
             vd->ti()->domain(NULL);
             if (ve != NULL) {
-              if (Call* vc = ve->dyn_cast<Call>()) {
+              if (Call* vcc = ve->dyn_cast<Call>()) {
+                Call* vc = copy(vcc)->cast<Call>();
+                ve=vc;
                 if (vc->id() == constants().ids.exists) {
                   vc->id(ASTString("array_bool_or"));
                   std::vector<Expression*> args(2);
@@ -3089,7 +3091,7 @@ namespace MiniZinc {
           } else {
             if (vd->e() != NULL) {
               if (vd->e()->eid()==Expression::E_CALL) {
-                Call* c = vd->e()->cast<Call>();
+                Call* c = copy(vd->e()->cast<Call>())->cast<Call>();
                 vd->e(NULL);
                 if (c->id() == constants().ids.exists) {
                   c->id(ASTString("array_bool_or"));
@@ -3117,9 +3119,10 @@ namespace MiniZinc {
           }
         } else if (vd->type().isvar() && vd->type()._dim==0) {
           if (vd->e() != NULL) {
-            if (Call* c = vd->e()->dyn_cast<Call>()) {
+            if (Call* cc = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
-              std::vector<Expression*> args(c->args().size());
+              std::vector<Expression*> args(cc->args().size());
+              Call* c = copy(cc)->cast<Call>();
               if (c->id() == constants().ids.lin_exp) {
                 c->id(ASTString("int_lin_eq"));
                 ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
