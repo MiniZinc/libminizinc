@@ -287,6 +287,24 @@ namespace MiniZinc {
     return false;
   }
 
+  bool isReverseMap(Expression* e) {
+    Annotation* a = e->ann();
+    for (; a!=NULL; a=a->next()) {
+      VarDecl* vd = NULL;
+      Expression * ae = a->e();
+      while (ae && ae->eid()==Expression::E_ID &&
+             ae->cast<Id>()->decl()!=NULL) {
+        vd = ae->cast<Id>()->decl();
+        ae = vd->e();
+      }
+      
+      if (vd && vd->type().isann() && vd->id()->v() == "is_reverse_map") {
+        return true;
+      }
+    }
+    return false;
+  }
+
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
   Expression* follow_id(Expression* e) {
@@ -1391,6 +1409,27 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (isReverseMap(bo)) {
+          Id* id = bo->lhs()->dyn_cast<Id>();
+          if (id==NULL)
+            throw EvalError(bo->lhs()->loc(), "Reverse mappers are only defined for identifiers");
+          Call* c = bo->rhs()->dyn_cast<Call>();
+          if (c==NULL)
+            throw EvalError(bo->rhs()->loc(), "Reverse mappers require call on right hand side");
+          std::vector<Expression*> args(c->args().size()+1);
+          for (unsigned int i=0; i<c->args().size(); i++) {
+            Id* idi = c->args()[i]->dyn_cast<Id>();
+            if (idi==NULL)
+              throw EvalError(c->args()[i]->loc(), "Reverse mapper calls require identifiers as arguments");
+            args[i] = idi;
+          }
+          args[c->args().size()] = id;
+          Call* keepAlive = new Call(Location(),constants().var_redef->id(),args);
+          keepAlive->type(Type::varbool());
+          keepAlive->decl(constants().var_redef);
+          (void) flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
+          break;
+        }
         if (bo->decl()) {
           std::vector<Expression*> args(2);
           args[0] = bo->lhs();
@@ -3040,6 +3079,29 @@ namespace MiniZinc {
       endItem = m.size()-1;
     }
 
+    for (unsigned int i=0; i<m.size(); i++) {
+      if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+        if (Call* c = ci->e()->dyn_cast<Call>()) {
+          if (c->decl()==constants().var_redef) {
+            CollectDecls cd(env.vo,deletedVarDecls,ci);
+            topDown(cd,c);
+            ci->remove();
+          }
+        }
+      }
+    }
+    while (!deletedVarDecls.empty()) {
+      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+        ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+          CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+          topDown(cd,cur->e());
+          m[cur_idx->second]->remove();
+        }
+      }
+    }
+    
     m.compact();
     
   }

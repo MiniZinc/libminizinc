@@ -76,6 +76,8 @@ namespace MiniZinc {
   FunctionI*
   Model::matchFn(const ASTString& id,
                  const std::vector<Type>& t) {
+    if (id==constants().var_redef->id())
+      return constants().var_redef;
     Model* m = this;
     while (m->_parent)
       m = m->_parent;
@@ -144,6 +146,8 @@ namespace MiniZinc {
   FunctionI*
   Model::matchFn(const ASTString& id,
                  const std::vector<Expression*>& args) const {
+    if (id==constants().var_redef->id())
+      return constants().var_redef;
     const Model* m = this;
     while (m->_parent)
       m = m->_parent;
@@ -179,6 +183,8 @@ namespace MiniZinc {
   
   FunctionI*
   Model::matchFn(Call* c) const {
+    if (c->id()==constants().var_redef->id())
+      return constants().var_redef;
     const Model* m = this;
     while (m->_parent)
       m = m->_parent;

@@ -12,6 +12,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/model.hh>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -904,6 +905,9 @@ namespace MiniZinc {
     ann.output_var->type(Type::ann());
     ann.output_array = ASTString("output_array");
     
+    var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
+                              std::vector<VarDecl*>());
+    
     std::vector<Expression*> v;
     v.push_back(ti);
     v.push_back(lit_true);
@@ -927,7 +931,9 @@ namespace MiniZinc {
     v.push_back(ann.output_var);
     v.push_back(new StringLit(Location(),ann.output_array));
     
-    ka = KeepAlive(new ArrayLit(Location(),v));
+    m = new Model();
+    m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
+    m->addItem(var_redef);
   }
   
   Constants& constants(void) {

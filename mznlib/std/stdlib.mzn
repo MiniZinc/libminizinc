@@ -15,6 +15,7 @@ annotation var_is_introduced;
 annotation defines_var(var $t: c);
 annotation output_array(array[$u] of set of int:a);
 annotation output_var;
+annotation is_reverse_map;
 
 %-----------------------------------------------------------------------------%
 %
