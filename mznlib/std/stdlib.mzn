@@ -9,7 +9,7 @@
 % General annotations
 %
 
-annotation total;
+annotation promise_total;
 annotation is_defined_var;
 annotation var_is_introduced;
 annotation defines_var(var $t: c);

@@ -94,13 +94,13 @@ function var int: lin_exp(array[int] of int, array[int] of var int, int);
 
 % Element constraints
 
-function var int: element_t(var int: idx, array[int] of var int: x) ::total =
+function var int: element_t(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
     constraint array_var_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
-function var int: element_mt(var int: idx, array[int] of var int: x) ::total =
+function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
     var min(index_set(x))..max(index_set(x)): idx2;
@@ -117,13 +117,13 @@ function var int: element(var int: idx, array[int] of var int: x) =
   } in element_mt(idx,x)
   endif;
 
-function var int: element_t(var int: idx, array[int] of int: x) ::total =
+function var int: element_t(var int: idx, array[int] of int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
     constraint array_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
-function var int: element_mt(var int: idx, array[int] of int: x) ::total =
+function var int: element_mt(var int: idx, array[int] of int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
     var min(index_set(x))..max(index_set(x)): idx2;
@@ -210,13 +210,13 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     constraint idx3 in index_set_3of3(x);
   } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
 
-function var set of int: element_t(var int: idx, array[int] of var set of int: x) ::total =
+function var set of int: element_t(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r;
     constraint array_var_set_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
-function var set of int: element_mt(var int: idx, array[int] of var set of int: x) ::total =
+function var set of int: element_mt(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r;
     var min(index_set(x))..max(index_set(x)): idx2;
@@ -233,13 +233,13 @@ function var set of int: element(var int: idx, array[int] of var set of int: x) 
   } in element_mt(idx,x)
   endif;
 
-function var bool: element_t(var int: idx, array[int] of var bool: x) ::total =
+function var bool: element_t(var int: idx, array[int] of var bool: x) :: promise_total =
   let {
     var bool: r;
     constraint array_var_bool_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
   } in r;
 
-function var bool: element_mt(var int: idx, array[int] of var bool: x) ::total =
+function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promise_total =
   let {
     var bool: r;
     var min(index_set(x))..max(index_set(x)): idx2;
@@ -322,9 +322,9 @@ function var float: '-'(var float);
 
 function     int: 'div'(int,int);
 
-function var int: div_t(var int: x, var int: y) ::total =
+function var int: div_t(var int: x, var int: y) :: promise_total =
   let { var int: z; constraint int_div(x,y,z); } in z;
-function var int: div_mt(var int: x, var int: y) ::total =
+function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
     var int: yy = if y=0 then 1 else y endif;
   } in div_t(x,yy);
@@ -335,9 +335,9 @@ function var int: 'div'(var int: x,var int: y) =
   
 function     int: 'mod'(int,int);
 
-function var int: mod_t(var int: x, var int: y) ::total =
+function var int: mod_t(var int: x, var int: y) :: promise_total =
   let { var int: z; constraint int_mod(x,y,z); } in z;
-function var int: mod_mt(var int: x, var int: y) ::total =
+function var int: mod_mt(var int: x, var int: y) :: promise_total =
   let {
     var int: yy = if y=0 then 1 else y endif;
   } in mod_t(x,yy);
@@ -380,12 +380,12 @@ function var $T: max(array[$U] of var $T);
 function int: min(set of int);
 function int: max(set of int);
 
-function var int: max(var int: x, var int: y) ::total =
+function var int: max(var int: x, var int: y) :: promise_total =
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
         constraint int_max(x,y,m);
   } in m;
 
-function var int: max_t(array[int] of var int: x) :: total =
+function var int: max_t(array[int] of var int: x) :: promise_total =
   if length(x)=0 then 0
   elseif length(x)=1 then x[1]
   else max(x[1],max_t([x[i] | i in 2..length(x)]))
@@ -396,12 +396,12 @@ function var int: max(array[$U] of var int: x) =
     constraint length(x) > 1;
   } in max_t(xx);
 
-function var int: min(var int: x, var int: y) ::total =
+function var int: min(var int: x, var int: y) :: promise_total =
   let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
         constraint int_min(x,y,m);
   } in m;
 
-function var int: min_t(array[int] of var int: x) :: total =
+function var int: min_t(array[int] of var int: x) :: promise_total =
   if length(x)=0 then 0
   elseif length(x)=1 then x[1]
   else min(x[1],min_t([x[i] | i in 2..length(x)]))
@@ -414,7 +414,7 @@ function var int: min(array[$U] of var int: x) =
 
 function int: abs(int);
 
-function var int: abs(var int: x) ::total =
+function var int: abs(var int: x) :: promise_total =
   let { var 0..max(-lb(x),ub(x)): m;
         constraint int_abs(x,m);
   } in m;

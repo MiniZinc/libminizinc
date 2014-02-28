@@ -280,7 +280,7 @@ namespace MiniZinc {
         ae = vd->e();
       }
       
-      if (vd && vd->type().isann() && vd->id()->v() == "total") {
+      if (vd && vd->type().isann() && vd->id()->v() == constants().ids.promise_total) {
         return true;
       }
     }

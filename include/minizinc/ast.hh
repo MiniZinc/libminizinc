@@ -1090,33 +1090,34 @@ namespace MiniZinc {
       VarDecl* var_false;
       /// Identifiers for builtins
       struct {
-          ASTString forall;
-          ASTString exists;
-          ASTString clause;
-          ASTString bool2int;
-          ASTString sum;
-          ASTString lin_exp;
-          ASTString bool_eq;
-          ASTString assert;
-          ASTString trace;
+        ASTString forall;
+        ASTString exists;
+        ASTString clause;
+        ASTString bool2int;
+        ASTString sum;
+        ASTString lin_exp;
+        ASTString bool_eq;
+        ASTString assert;
+        ASTString trace;
+        ASTString promise_total;
       } ids;
       /// Identifiers for Boolean contexts
       struct {
-          Id* root;
-          Id* pos;
-          Id* neg;
-          Id* mix;
+        Id* root;
+        Id* pos;
+        Id* neg;
+        Id* mix;
       } ctx;
       /// Common annotations
       struct {
-          Id* output_var;
-          ASTString output_array;
+        Id* output_var;
+        ASTString output_array;
       } ann;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit
       BoolLit* boollit(bool b) {
-          return b ? lit_true : lit_false;
+        return b ? lit_true : lit_false;
       }
   };
     

@@ -889,6 +889,7 @@ namespace MiniZinc {
     ids.bool_eq = ASTString("bool_eq");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
+    ids.promise_total = ASTString("promise_total");
     
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -918,6 +919,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
+    v.push_back(new StringLit(Location(),ids.promise_total));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);
