@@ -1078,7 +1078,7 @@ namespace MiniZinc {
   class Constants {
   private:
       /// Garbage collection root set for constants
-      KeepAlive ka;
+      Model* m;
   public:
       /// Literal true
       BoolLit* lit_true;
@@ -1088,6 +1088,8 @@ namespace MiniZinc {
       BoolLit* lit_false;
       /// Variable bound to false
       VarDecl* var_false;
+      /// Function item used to keep track of redefined variables
+      FunctionI* var_redef;
       /// Identifiers for builtins
       struct {
         ASTString forall;
