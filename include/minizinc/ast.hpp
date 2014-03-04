@@ -363,6 +363,7 @@ namespace MiniZinc {
     _builtins.f = NULL;
     _builtins.i = NULL;
     _builtins.s = NULL;
+    _builtins.str = NULL;
   }
 
 }

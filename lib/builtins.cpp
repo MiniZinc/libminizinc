@@ -14,6 +14,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
   
@@ -58,6 +59,15 @@ namespace MiniZinc {
     FunctionI* fi = m->matchFn(id,t);
     if (fi) {
       fi->_builtins.s = b;
+    } else {
+      assert(false); // TODO: is this an error?
+    }
+  }
+  void rb(Model* m, const ASTString& id, const std::vector<Type>& t,
+          FunctionI::builtin_str b) {
+    FunctionI* fi = m->matchFn(id,t);
+    if (fi) {
+      fi->_builtins.str = b;
     } else {
       assert(false); // TODO: is this an error?
     }
@@ -557,6 +567,14 @@ namespace MiniZinc {
     return al;
   }
   
+  std::string b_show(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    std::ostringstream oss;
+    Printer p;
+    p.print(eval_par(args[0]), oss, 0);
+    return oss.str();
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -862,6 +880,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("set2array"), t, b_set2array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::vartop();
+      rb(m, ASTString("show"), t, b_show);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::vartop(-1);
+      rb(m, ASTString("show"), t, b_show);
     }
   }
   

@@ -118,6 +118,9 @@ namespace MiniZinc {
     } else if (e->type() == Type::parsetint(1)) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(e);
       ret = new ArrayLit(e->loc(),a);
+    } else if (e->type() == Type::parstring(1)) {
+      std::vector<Expression*> a = eval_comp<EvalStringLit>(e);
+      ret = new ArrayLit(e->loc(),a);
     } else {
       std::vector<Expression*> a = eval_comp<EvalNone>(e);
       ret = new ArrayLit(e->loc(),a);
@@ -783,7 +786,7 @@ namespace MiniZinc {
       case Expression::E_VARDECL:
       case Expression::E_ANN:
       case Expression::E_TI:
-        throw EvalError(e->loc(),"not a float expression");
+        throw EvalError(e->loc(),"not a string expression");
         break;
       case Expression::E_ID:
       {
@@ -824,6 +827,8 @@ namespace MiniZinc {
         if (ce->decl()==NULL)
           throw EvalError(e->loc(), "undeclared function", ce->id());
 
+        if (ce->decl()->_builtins.str)
+          return ce->decl()->_builtins.str(ce->args());
         if (ce->decl()->_builtins.e)
           return eval_string(ce->decl()->_builtins.e(ce->args()));
         

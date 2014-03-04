@@ -992,6 +992,8 @@ namespace MiniZinc {
     typedef FloatVal (*builtin_f) (ASTExprVec<Expression>);
     /// Type of builtin set-valued functions
     typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>);
+    /// Type of builtin string-valued functions
+    typedef std::string (*builtin_str) (ASTExprVec<Expression>);
 
     /// Builtin functions (or NULL)
     struct {
@@ -1000,6 +1002,7 @@ namespace MiniZinc {
       builtin_f f;
       builtin_b b;
       builtin_s s;
+      builtin_str str;
     } _builtins;
 
     /// Constructor
