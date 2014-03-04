@@ -609,6 +609,8 @@ namespace MiniZinc {
 
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {
+    if (id()==constants().var_redef->id())
+      return Type::varbool();
     Type ret = _ti->type();
     ASTString dh;
     if (_ti->domain() && _ti->domain()->isa<TIId>())
