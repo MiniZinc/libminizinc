@@ -3153,24 +3153,27 @@ namespace MiniZinc {
             vd->ti()->domain(NULL);
             if (ve != NULL) {
               if (Call* vcc = ve->dyn_cast<Call>()) {
-                Call* vc = copy(vcc)->cast<Call>();
-                ve=vc;
-                if (vc->id() == constants().ids.exists) {
-                  vc->id(ASTString("array_bool_or"));
-                  std::vector<Expression*> args(2);
-                  args[0] = vc->args()[0];
-                  args[1] = constants().lit_true;
-                  ASTExprVec<Expression> argsv(args);
-                  vc->args(argsv);
-                } else if (vc->id() == constants().ids.forall) {
-                  vc->id(ASTString("array_bool_and"));
-                  std::vector<Expression*> args(2);
-                  args[0] = vc->args()[0];
-                  args[1] = constants().lit_true;
-                  ASTExprVec<Expression> argsv(args);
-                  vc->args(argsv);
-                } else if (vc->id() == constants().ids.clause) {
-                  vc->id(ASTString("bool_clause"));
+                std::string cid;
+                std::vector<Expression*> args;
+                if (vcc->id() == constants().ids.exists) {
+                  cid = "array_bool_or";
+                  args.push_back(vcc->args()[0]);
+                  args.push_back(constants().lit_true);
+                } else if (vcc->id() == constants().ids.forall) {
+                  cid = "array_bool_and";
+                  args.push_back(vcc->args()[0]);
+                  args.push_back(constants().lit_true);
+                } else if (vcc->id() == constants().ids.clause) {
+                  cid = "bool_clause";
+                  args.push_back(vcc->args()[0]);
+                  args.push_back(vcc->args()[1]);
+                }
+                if (args.size()==0) {
+                  ve = vcc;
+                } else {
+                  Call* nc = new Call(vcc->loc(),cid,args);
+                  nc->type(vcc->type());
+                  ve = nc;
                 }
               }
               tmp._items.push_back(new ConstraintI(Location(),ve));
@@ -3178,22 +3181,24 @@ namespace MiniZinc {
           } else {
             if (vd->e() != NULL) {
               if (vd->e()->eid()==Expression::E_CALL) {
-                Call* c = copy(vd->e()->cast<Call>())->cast<Call>();
+                const Call* c = vd->e()->cast<Call>();
                 vd->e(NULL);
+                std::string cid;
                 if (c->id() == constants().ids.exists) {
-                  c->id(ASTString("array_bool_or"));
+                  cid = "array_bool_or";
                 } else if (c->id() == constants().ids.forall) {
-                  c->id(ASTString("array_bool_and"));
+                  cid = "array_bool_and";
                 } else if (c->id() == constants().ids.clause) {
-                  c->id(ASTString("bool_clause"));
+                  cid = "bool_clause";
                 } else {
-                  c->id(ASTString(c->id().str()+"_reif"));
+                  cid = c->id().str()+"_reif";
                 }
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
                 args.push_back(vd->id());
-                c->args(ASTExprVec<Expression>(args));
-                tmp._items.push_back(new ConstraintI(Location(),c));
+                Call * nc = new Call(c->loc(),cid,args);
+                nc->type(c->type());
+                tmp._items.push_back(new ConstraintI(Location(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
                        vd->e()->eid() == Expression::E_BOOLLIT);
@@ -3206,34 +3211,37 @@ namespace MiniZinc {
           }
         } else if (vd->type().isvar() && vd->type()._dim==0) {
           if (vd->e() != NULL) {
-            if (Call* cc = vd->e()->dyn_cast<Call>()) {
+            if (const Call* cc = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
               std::vector<Expression*> args(cc->args().size());
-              Call* c = copy(cc)->cast<Call>();
-              if (c->id() == constants().ids.lin_exp) {
-                c->id(ASTString("int_lin_eq"));
-                ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
+              std::string cid;
+              if (cc->id() == constants().ids.lin_exp) {
+                cid = "int_lin_eq";
+                ArrayLit* le_c = cc->args()[0]->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 nc.push_back(new IntLit(Location(),-1));
-                c->args()[0] = new ArrayLit(Location(),nc);
-                ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
+                args[0] = new ArrayLit(Location(),nc);
+                ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                 nx.push_back(vd->id());
-                c->args()[1] = new ArrayLit(Location(),nx);
-                IntVal d = c->args()[2]->cast<IntLit>()->v();
-                c->args()[2] = new IntLit(Location(),-d);
+                args[1] = new ArrayLit(Location(),nx);
+                IntVal d = cc->args()[2]->cast<IntLit>()->v();
+                args[2] = new IntLit(Location(),-d);
               } else {
-                if (c->id() == "card") {
+                if (cc->id() == "card") {
                   // card is 'set_card' in old FlatZinc
-                  c->id(ASTString("set_card"));
+                  cid = "set_card";
+                } else {
+                  cid = cc->id().str();
                 }
+                std::copy(cc->args().begin(),cc->args().end(),args.begin());
                 args.push_back(vd->id());
               }
-              std::copy(c->args().begin(),c->args().end(),args.begin());
-              c->args(ASTExprVec<Expression>(args));
-              tmp._items.push_back(new ConstraintI(Location(),c));
+              Call* nc = new Call(cc->loc(),cid,args);
+              nc->type(cc->type());
+              tmp._items.push_back(new ConstraintI(Location(),nc));
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
                      vd->e()->eid() == Expression::E_INTLIT ||
