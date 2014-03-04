@@ -555,8 +555,8 @@ namespace MiniZinc {
                 args[0] = vd->id();
                 args[1] = e_id;
                 Call* c = new Call(Location(),cid,args);
-                c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
+                c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
                   flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                   return vd->id();
@@ -621,8 +621,8 @@ namespace MiniZinc {
               args[0] = vd->id();
               args[1] = e_vd->id();
               Call* c = new Call(Location(),cid,args);
-              c->type(Type::varbool());
               c->decl(env.orig->matchFn(c));
+              c->type(c->decl()->rtype(args));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
               return vd->id();
             }
@@ -658,9 +658,9 @@ namespace MiniZinc {
 
               }
               std::copy(c->args().begin(),c->args().end(),args.begin());
-              c->type(Type::varbool());
               c->args(ASTExprVec<Expression>(args));
               c->decl(env.orig->matchFn(c));
+              c->type(c->decl()->rtype(args));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
               return vd->id();
             }
@@ -702,8 +702,8 @@ namespace MiniZinc {
           al->type(Type::varbool(1));
           args.push_back(al);
           Call* ret = new Call(Location(),constants().ids.forall,args);
-          ret->type(Type::varbool());
           ret->decl(env.orig->matchFn(ret));
+          ret->type(ret->decl()->rtype(args));
           KeepAlive ka(ret);
           GC::unlock();
           return flat_exp(env,ctx,ret,b,constants().var_true).r;
@@ -748,8 +748,8 @@ namespace MiniZinc {
           al->type(Type::varbool(1));
           args.push_back(al);
           Call* ret = new Call(Location(),constants().ids.exists,args);
-          ret->type(Type::varbool());
           ret->decl(env.orig->matchFn(ret));
+          ret->type(ret->decl()->rtype(args));
           assert(ret->decl());
           KeepAlive ka(ret);
           GC::unlock();
@@ -911,8 +911,8 @@ namespace MiniZinc {
     Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
     tt = args[1]->type();
     tt._dim = 0;
-    c->type(tt);
     c->decl(env.orig->matchFn(c));
+    c->type(c->decl()->rtype(args));
     KeepAlive ka = c;
     return ka;
   }
@@ -1074,8 +1074,8 @@ namespace MiniZinc {
       clauseargs[1] = new ArrayLit(Location(),posargs);
       clauseargs[1]->type(Type::varbool(1));
       Call* if_op = new Call(Location(), constants().ids.clause, clauseargs);
-      if_op->type(Type::varbool());
       if_op->decl(env.orig->matchFn(if_op));
+      if_op->type(if_op->decl()->rtype(clauseargs));
       BinOp* else_op = new BinOp(Location(),ite->e_if(i),BOT_OR,eq_else);
       else_op->type(Type::varbool());
       std::vector<Expression*> e_let(3);
@@ -1141,8 +1141,8 @@ namespace MiniZinc {
             std::vector<Expression*> idxsetargs(1);
             idxsetargs[0] = id;
             Call* idxset = new Call(id->loc(),"index_set",idxsetargs);
-            idxset->type(Type::parsetint());
             idxset->decl(env.orig->matchFn(idxset));
+            idxset->type(idxset->decl()->rtype(idxsetargs));
             Generator gen(gen_id,idxset);
             std::vector<Expression*> idx(1);
             Generators gens;
@@ -1438,8 +1438,8 @@ namespace MiniZinc {
           {
             GCLock lock;
             Call* cr = new Call(Location(),bo->opToString().str(),args);
-            cr->type(bo->type());
             cr->decl(env.orig->matchFn(cr));
+            cr->type(cr->decl()->rtype(args));
             ka = cr;
           }
           ret = flat_exp(env,ctx,ka(),r,b);
@@ -1526,6 +1526,7 @@ namespace MiniZinc {
               if (FunctionI* fi = env.orig->matchFn(cc->id(),args)) {
                 assert(cc->type() == fi->rtype(args));
                 cc->decl(fi);
+                cc->type(cc->decl()->rtype(args));
                 KeepAlive ka(cc);
                 GC::unlock();
                 EE ee = flat_exp(env,ctx,cc,r,NULL);
@@ -1569,8 +1570,8 @@ namespace MiniZinc {
                 args[0]=new ArrayLit(bo->loc(),bo_args);
                 args[0]->type(Type::varbool(1));
                 Call* c = new Call(bo->loc(),constants().ids.forall,args);
-                c->type(bo->type());
                 c->decl(env.orig->matchFn(c));
+                c->type(c->decl()->rtype(args));
                 KeepAlive ka(c);
                 GC::unlock();
                 ret = flat_exp(env,ctx,c,r,b);
@@ -1597,8 +1598,8 @@ namespace MiniZinc {
               args[0]= new ArrayLit(bo->loc(),bo_args);
               args[0]->type(Type::varbool(1));
               Call* c = new Call(bo->loc(),constants().ids.exists,args);
-              c->type(bo->type());
               c->decl(env.orig->matchFn(c));
+              c->type(c->decl()->rtype(args));
               KeepAlive ka(c);
               GC::unlock();
               ret = flat_exp(env,ctx,c,r,b);
@@ -1633,8 +1634,8 @@ namespace MiniZinc {
               args[0]= new ArrayLit(bo->loc(),bo_args);
               args[0]->type(Type::varbool(1));
               Call* c = new Call(bo->loc(),id,args);
-              c->type(bo->type());
               c->decl(env.orig->matchFn(c));
+              c->type(c->decl()->rtype(args));
               KeepAlive ka(c);
               GC::unlock();
               ret = flat_exp(env,ctx,c,r,b);
@@ -2072,6 +2073,7 @@ namespace MiniZinc {
                   GC::unlock();
                 } else {
                   cc->decl(env.orig->matchFn(cc->id(),args_e));
+                  cc->type(cc->decl()->rtype(args_e));
                   assert(cc->decl());
                   bool singleExp = true;
                   for (unsigned int i=0; i<ees.size(); i++) {
@@ -2415,8 +2417,8 @@ namespace MiniZinc {
               args.push_back(args_ee[i].r());
           }
           Call* cr = new Call(Location(),cid,args);
-          cr->type(c->type());
           decl = env.orig->matchFn(cr);
+          cr->type(decl->rtype(args));
           assert(decl);
           cr->decl(decl);
           EnvI::Map::iterator cit = env.map_find(cr);
