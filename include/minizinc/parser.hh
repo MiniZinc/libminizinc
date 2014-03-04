@@ -105,6 +105,12 @@ namespace MiniZinc {
                bool ignoreStdlib,
                std::ostream& err);
 
+  Model* parseFromString(const std::string& model,
+                         const std::string& filename,
+                         const std::vector<std::string>& includePaths,
+                         bool ignoreStdlib,
+                         std::ostream& err);
+  
 }
 
 #endif

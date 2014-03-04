@@ -102,6 +102,111 @@ std::string get_file_contents(std::ifstream &in)
 
 namespace MiniZinc {
 
+  Model* parseFromString(const string& text,
+                         const string& filename,
+                         const vector<string>& ip,
+                         bool ignoreStdlib,
+                         ostream& err) {
+    GCLock lock;
+
+    vector<string> includePaths;
+    for (unsigned int i=0; i<ip.size(); i++)
+      includePaths.push_back(ip[i]);
+
+    vector<pair<string,Model*> > files;
+    map<string,Model*> seenModels;
+
+    Model* model = new Model();
+    model->_filename = ASTString(filename);
+
+    if (!ignoreStdlib) {
+      Model* stdlib = new Model;
+      stdlib->_filename = ASTString("stdlib.mzn");
+      files.push_back(pair<string,Model*>("./",stdlib));
+      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
+      IncludeI* stdlibinc = new IncludeI(Location(),stdlib->_filename);
+      stdlibinc->m(stdlib,true);
+      model->addItem(stdlibinc);
+
+      Model* builtins = new Model;
+      ASTString bn("builtins.mzn");
+      builtins->_filename = bn;
+      files.push_back(pair<string,Model*>("./",builtins));
+      seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
+      IncludeI* builtinsinc = new IncludeI(Location(),builtins->_filename);
+      builtinsinc->m(builtins,true);
+      model->addItem(builtinsinc);
+    }
+
+    model->_filepath = ASTString(filename);
+    bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
+    ParserState pp(filename,text, err, files, seenModels, model, false, isFzn);
+    yylex_init(&pp.yyscanner);
+    yyset_extra(&pp, pp.yyscanner);
+    yyparse(&pp);
+    if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+    if (pp.hadError) {
+      goto error;
+    }
+
+    while (!files.empty()) {
+      pair<string,Model*>& np = files.back();
+      string parentPath = np.first;
+      Model* m = np.second;
+      files.pop_back();
+      string f(m->_filename.str());
+
+      for (Model* p=m->_parent; p; p=p->_parent) {
+        if (f == p->_filename.c_str()) {
+          err << "Error: cyclic includes: " << std::endl;
+          for (Model* pe=m; pe; pe=pe->_parent) {
+            err << "  " << pe->_filename << std::endl;
+          }
+          goto error;
+        }
+      }
+      ifstream file;
+      string fullname;
+      if (parentPath=="") {
+        fullname = filename;
+        file.open(fullname.c_str());
+      } else {
+        includePaths.push_back(parentPath);
+        for (unsigned int i=0; i<includePaths.size(); i++) {
+          fullname = includePaths[i]+f;
+          file.open(fullname.c_str());
+          if (file.is_open())
+            break;
+        }
+        includePaths.pop_back();
+      }
+      if (!file.is_open()) {
+        err << "Error: cannot open file '" << f << "'." << endl;
+        goto error;
+      }
+      std::string s = get_file_contents(file);
+
+      m->_filepath = ASTString(fullname);
+      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
+      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn);
+      yylex_init(&pp.yyscanner);
+      yyset_extra(&pp, pp.yyscanner);
+      yyparse(&pp);
+      if (pp.yyscanner)
+      yylex_destroy(pp.yyscanner);
+      if (pp.hadError) {
+        goto error;
+      }
+    }
+
+    return model;
+  error:
+    for (unsigned int i=0; i<files.size(); i++)
+      delete files[i].second;
+    return NULL;
+  }
+
   Model* parse(const string& filename,
                const vector<string>& datafiles,
                const vector<string>& ip,
