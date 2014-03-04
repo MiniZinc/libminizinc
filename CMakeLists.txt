@@ -129,3 +129,6 @@ include/minizinc/values.hh
 # add the executable
 add_executable(mzn2fzn mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
+
+add_executable(solns2out solns2out.cpp)
+target_link_libraries(solns2out minizinc)
