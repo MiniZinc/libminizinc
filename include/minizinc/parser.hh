@@ -75,6 +75,8 @@ namespace MiniZinc {
     bool isFlatZinc;
     bool hadError;
     std::ostream& err;
+    
+    std::string stringBuffer;
 
     void printCurrentLine(void) {
       const char* eol_c = strchr(buf+lineStartPos,'\n');

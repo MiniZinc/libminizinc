@@ -107,6 +107,27 @@ namespace MiniZinc {
     return static_cast<Parentheses>(ret);
   }
   
+  std::string escapeStringLit(const ASTString& s) {
+    const char* sc = s.c_str();
+    std::string ret;
+    for (unsigned int i=0; i<s.size(); i++) {
+      switch (sc[i]) {
+        case '\n':
+          ret += "\\n";
+          break;
+        case '\t':
+          ret += "\\t";
+          break;
+        case '"':
+          ret += "\\\"";
+          break;
+        default:
+          ret += sc[i];
+      }
+    }
+    return ret;
+  }
+  
   class PlainPrinter {
   public:
     std::ostream& os;
@@ -189,7 +210,7 @@ namespace MiniZinc {
         os << (e->cast<BoolLit>()->v() ? "true" : "false");
         break;
       case Expression::E_STRINGLIT:
-        os << "\"" << e->cast<StringLit>()->v() << "\"";
+        os << "\"" << escapeStringLit(e->cast<StringLit>()->v()) << "\"";
         break;
       case Expression::E_ID:
         os << e->cast<Id>()->v();
@@ -1021,7 +1042,7 @@ namespace MiniZinc {
     }
     ret mapStringLit(const StringLit& sl) {
       std::ostringstream oss;
-      oss << "\"" << sl.v() << "\"";
+      oss << "\"" << escapeStringLit(sl.v()) << "\"";
       return new StringDocument(oss.str());
 
 
