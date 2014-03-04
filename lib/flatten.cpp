@@ -2020,11 +2020,14 @@ namespace MiniZinc {
                     ncoeff->type(Type::parint(1));
                     args.push_back(ncoeff);
                     std::vector<Expression*> alv_e(alv.size());
-                    for (unsigned int i=alv.size(); i--;)
-                      alv_e[i] = alv[i]();
-                    ArrayLit* nal = new ArrayLit(Location(),alv_e);
                     Type tt = alv[0]()->type();
                     tt._dim = 1;
+                    for (unsigned int i=alv.size(); i--;) {
+                      if (alv[i]()->type().isvar())
+                        tt._ti = Type::TI_VAR;
+                      alv_e[i] = alv[i]();
+                    }
+                    ArrayLit* nal = new ArrayLit(Location(),alv_e);
                     nal->type(tt);
                     args.push_back(nal);
                     IntLit* il = new IntLit(Location(),-d);
