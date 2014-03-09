@@ -450,7 +450,7 @@ namespace MiniZinc {
   }
   
   Expression* exp_is_fixed(Expression* e) {
-    Expression* cur = e;
+    Expression* cur = eval_par(e);
     for (;;) {
       if (cur==NULL)
         return NULL;

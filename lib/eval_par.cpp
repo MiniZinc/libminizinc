@@ -103,6 +103,14 @@ namespace MiniZinc {
       return e;
     }
   };
+  class EvalCopy {
+  public:
+    typedef Expression* Val;
+    typedef Expression* ArrayVal;
+    static Expression* e(Expression* e) {
+      return copy(e,true);
+    }
+  };
 
   ArrayLit* eval_array_comp(Comprehension* e) {
     ArrayLit* ret;
@@ -122,7 +130,7 @@ namespace MiniZinc {
       std::vector<Expression*> a = eval_comp<EvalStringLit>(e);
       ret = new ArrayLit(e->loc(),a);
     } else {
-      std::vector<Expression*> a = eval_comp<EvalNone>(e);
+      std::vector<Expression*> a = eval_comp<EvalCopy>(e);
       ret = new ArrayLit(e->loc(),a);
     }
     ret->type(e->type());
@@ -193,6 +201,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
+        /// TODO: fix for recursion
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }

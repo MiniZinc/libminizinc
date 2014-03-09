@@ -44,16 +44,16 @@ namespace MiniZinc {
   };
 
   /// Create a deep copy of expression \a e
-  Expression* copy(Expression* e);
+  Expression* copy(Expression* e, bool followIds=false);
   /// Create a deep copy of item \a i
-  Item* copy(Item* i);
+  Item* copy(Item* i, bool followIds=false);
   /// Create a deep copy of model \a m
   Model* copy(Model* m);
 
   /// Create a deep copy of expression \a e
-  Expression* copy(CopyMap& map, Expression* e);
+  Expression* copy(CopyMap& map, Expression* e, bool followIds=false);
   /// Create a deep copy of item \a i
-  Item* copy(CopyMap& map, Item* i);
+  Item* copy(CopyMap& map, Item* i, bool followIds=false);
   /// Create a deep copy of model \a m
   Model* copy(CopyMap& map, Model* m);
 
