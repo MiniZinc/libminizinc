@@ -595,12 +595,13 @@ namespace MiniZinc {
     std::ostringstream oss;
     if (IntLit* iv = e->dyn_cast<IntLit>()) {
       IntVal justify = eval_int(args[0]);
-      oss << iv->v();
-      int addLeft = justify < 0 ? 0 : (justify - static_cast<int>(oss.str().size()));
+      std::ostringstream oss_length;
+      oss_length << iv->v();
+      int iv_length = static_cast<int>(oss_length.str().size());
+      int addLeft = justify < 0 ? 0 : (justify - iv_length);
       if (addLeft < 0) addLeft = 0;
-      int addRight = justify < 0 ? (-justify-static_cast<int>(oss.str().size())) : 0;
+      int addRight = justify < 0 ? (-justify-iv_length) : 0;
       if (addRight < 0) addRight = 0;
-      oss = std::ostringstream();
       for (int i=addLeft; i--;)
         oss << " ";
       oss << iv->v();
