@@ -2755,16 +2755,12 @@ namespace MiniZinc {
         if (Expression* vd_e = cmap.find(vdi->e())) {
           VarDecl* vd = vd_e->cast<VarDecl>();
           GCLock lock;
-          // Delete domain constraint, not needed in ozn
-          if (vd->type().isvar() && vd->type()._st==Type::ST_SET) {
-            if (vd->ti()->domain()==NULL) {
-              assert(vd->flat() != NULL);
-              vd->ti()->domain(vd->flat()->ti()->domain());
-            }
-          } else {
-            vd->ti()->domain(NULL);
-          }
-          env.output->addItem(copy(cmap,vdi));
+          VarDeclI* vdi_copy = copy(cmap,vdi)->cast<VarDeclI>();
+          Type t = vdi_copy->e()->ti()->type();
+          t._ti = Type::TI_PAR;
+          vdi_copy->e()->ti()->type(t);
+
+          env.output->addItem(vdi_copy);
           if (!vdi->e()->type().ispar()) {
             // Remove right hand side
             // This will need to be changed, so that if there is a right hand side
