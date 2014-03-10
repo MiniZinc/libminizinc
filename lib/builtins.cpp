@@ -16,6 +16,8 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include <iomanip>
+
 namespace MiniZinc {
   
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
@@ -658,7 +660,58 @@ namespace MiniZinc {
     }
     return oss.str();
   }
-  
+
+  std::string b_show_float(ASTExprVec<Expression> args) {
+    assert(args.size()==3);
+    Expression* e = eval_par(args[2]);
+    std::ostringstream oss;
+    if (FloatLit* fv = e->dyn_cast<FloatLit>()) {
+      IntVal justify = eval_int(args[0]);
+      IntVal prec = eval_int(args[1]);
+      if (prec < 0)
+        throw EvalError(args[1]->loc(), "number of digits in show_float cannot be negative");
+      std::ostringstream oss_length;
+      oss_length << std::setprecision(prec) << std::fixed << fv->v();
+      int fv_length = static_cast<int>(oss_length.str().size());
+      int addLeft = justify < 0 ? 0 : (justify - fv_length);
+      if (addLeft < 0) addLeft = 0;
+      int addRight = justify < 0 ? (-justify-fv_length) : 0;
+      if (addRight < 0) addRight = 0;
+      for (int i=addLeft; i--;)
+        oss << " ";
+      oss << std::setprecision(prec) << std::fixed << fv->v();
+      for (int i=addRight; i--;)
+        oss << " ";
+    } else {
+      Printer p(oss,0,false);
+      p.print(e);
+    }
+    return oss.str();
+  }
+
+  std::string b_concat(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    std::ostringstream oss;
+    for (unsigned int i=0; i<al->v().size(); i++) {
+      oss << eval_string(al->v()[i]);
+    }
+    return oss.str();
+  }
+
+  std::string b_join(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    std::string sep = eval_string(args[0]);
+    ArrayLit* al = eval_array_lit(args[1]);
+    std::ostringstream oss;
+    for (unsigned int i=0; i<al->v().size(); i++) {
+      oss << eval_string(al->v()[i]);
+      if (i<al->v().size()-1)
+        oss << sep;
+    }
+    return oss.str();
+  }
+
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -978,9 +1031,27 @@ namespace MiniZinc {
       rb(m, ASTString("show_int"), t, b_show_int);
     }
     {
+      std::vector<Type> t(3);
+      t[0] = Type::parint();
+      t[1] = Type::parint();
+      t[2] = Type::varfloat();
+      rb(m, ASTString("show_float"), t, b_show_float);
+    }
+    {
       std::vector<Type> t(1);
       t[0] = Type::vartop(-1);
       rb(m, ASTString("show"), t, b_show);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring(1);
+      rb(m, ASTString("concat"), t, b_concat);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parstring();
+      t[1] = Type::parstring(1);
+      rb(m, ASTString("join"), t, b_join);
     }
   }
   
