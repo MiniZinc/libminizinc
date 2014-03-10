@@ -3181,6 +3181,12 @@ namespace MiniZinc {
                   nc->type(vcc->type());
                   ve = nc;
                 }
+              } else if (Id* id = ve->dyn_cast<Id>()) {
+                std::vector<Expression*> args(2);
+                args[0] = id;
+                args[1] = constants().lit_true;
+                GCLock lock;
+                ve = new Call(Location(),"bool_eq",args);
               }
               tmp._items.push_back(new ConstraintI(Location(),ve));
             }
