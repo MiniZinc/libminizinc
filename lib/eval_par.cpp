@@ -25,7 +25,7 @@ namespace MiniZinc {
     if (id->decl() == NULL)
       throw EvalError(e->loc(), "undeclared identifier", id->v());
     if (id->decl()->e() == NULL)
-      return E::e(id->decl());
+      throw EvalError(e->loc(), "cannot evaluate expression", id->v());
     typename E::Val r = E::e(id->decl()->e());
     id->decl()->e(r);
     return r;
@@ -1211,10 +1211,12 @@ namespace MiniZinc {
     ComputeIntBounds cb;
     BottomUpIterator<ComputeIntBounds> cbi(cb);
     cbi.run(e);
-    if (cb.valid)
+    if (cb.valid) {
+      assert(cb._bounds.size() > 0);
       return IntBounds(cb._bounds.back().first,cb._bounds.back().second,true);
-    else
+    } else {
       return IntBounds(0,0,false);
+    }
   }
 
   class ComputeIntSetBounds : public EVisitor {
