@@ -531,6 +531,9 @@ namespace MiniZinc {
   IntVal b_round(ASTExprVec<Expression> args) {
     return std::round(eval_float(args[0]));
   }
+  FloatVal b_log10(ASTExprVec<Expression> args) {
+    return std::log10(eval_float(args[0]));
+  }
   
   bool b_assert_bool(ASTExprVec<Expression> args) {
     assert(args.size()==2);
@@ -894,6 +897,7 @@ namespace MiniZinc {
       rb(m, ASTString("ceil"), t, b_ceil);
       rb(m, ASTString("floor"), t, b_floor);
       rb(m, ASTString("round"), t, b_round);
+      rb(m, ASTString("log10"), t, b_log10);
     }
     {
       std::vector<Type> t(1);
