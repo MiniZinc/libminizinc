@@ -573,8 +573,19 @@ namespace MiniZinc {
   std::string b_show(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     std::ostringstream oss;
+    Expression* e = eval_par(args[0]);
     Printer p;
-    p.print(eval_par(args[0]), oss, 0);
+    if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+      oss << "[";
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        p.print(al->v()[i],oss,0);
+        if (i<al->v().size()-1)
+          oss << ", ";
+      }
+      oss << "]";
+    } else {
+      p.print(e, oss, 0);
+    }
     return oss.str();
   }
 
