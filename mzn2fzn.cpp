@@ -191,28 +191,31 @@ int main(int argc, char** argv) {
           
           if (flag_verbose)
             std::cerr << "Printing FlatZinc..." << std::endl;
-          Printer p;
           if (flag_output_fzn_stdout) {
-            p.print(flat,std::cout,0);
+            Printer p(std::cout,0);
+            p.print(flat);
           } else {
             std::ofstream os;
             os.open(flag_output_fzn, ios::out);
-            p.print(flat,os,0);
+            Printer p(os,0);
+            p.print(flat);
             os.close();
           }
           if (!flag_no_output_ozn) {
             if (flag_output_ozn_stdout) {
-              p.print(env.output(),std::cout,0);
+              Printer p(std::cout,0);
+              p.print(env.output());
             } else {
               std::ofstream os;
               os.open(flag_output_ozn, ios::out);
-              p.print(env.output(),os,0);
+              Printer p(os,0);
+              p.print(env.output());
               os.close();
             }
           }
         } else { // !flag_typecheck
-          Printer p;
-          p.print(m,std::cout);
+          Printer p(std::cout);
+          p.print(m);
         }
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;

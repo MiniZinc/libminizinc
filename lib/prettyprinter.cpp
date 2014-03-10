@@ -131,7 +131,8 @@ namespace MiniZinc {
   class PlainPrinter {
   public:
     std::ostream& os;
-    PlainPrinter(std::ostream& os0) : os(os0) {}
+    bool _flatZinc;
+    PlainPrinter(std::ostream& os0, bool flatZinc) : os(os0), _flatZinc(flatZinc) {}
 
     void p(const Type& type, const Expression* e) {
       if (type._ot==Type::OT_OPTIONAL)
@@ -181,7 +182,7 @@ namespace MiniZinc {
           const SetLit& sl = *e->cast<SetLit>();
           if (sl.isv()) {
             if (sl.isv()->size()==0) {
-              os << "1..0";
+              os << (_flatZinc ? "1..0" : "{}");
             } else if (sl.isv()->size()==1) {
               os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
             } else {
@@ -1800,7 +1801,8 @@ namespace MiniZinc {
     return true;
   }
 
-  Printer::Printer(void) : ism(NULL), printer(NULL) {}
+  Printer::Printer(std::ostream& os, int width, bool flatZinc)
+  : ism(NULL), printer(NULL), _os(os), _width(width), _flatZinc(flatZinc) {}
   void
   Printer::init(void) {
     if (ism==NULL) {
@@ -1814,14 +1816,14 @@ namespace MiniZinc {
   }
 
   void
-  Printer::p(Document* d, std::ostream& os, int width) {
+  Printer::p(Document* d) {
     printer->print(d);
-    printer->print(os);
+    printer->print(_os);
     delete printer;
-    printer = new PrettyPrinter(width,4,true,true);
+    printer = new PrettyPrinter(_width,4,true,true);
   }
   void
-  Printer::p(const Item* i, std::ostream& os, int width) {
+  Printer::p(const Item* i) {
     Document* d;
     switch (i->iid()) {
     case Item::II_INC:
@@ -1846,41 +1848,41 @@ namespace MiniZinc {
       d = ism->mapFunctionI(*i->cast<FunctionI>());
       break;
     }
-    p(d,os,width);
+    p(d);
     delete d;
   }
 
   void
-  Printer::print(const Expression* e, std::ostream& os, int width) {
-    if (width==0) {
-      PlainPrinter p(os); p.p(e);
+  Printer::print(const Expression* e) {
+    if (_width==0) {
+      PlainPrinter p(_os,_flatZinc); p.p(e);
     } else {
       init();
       Document* d = expressionToDocument(e);
-      p(d,os,width);
+      p(d);
       delete d;
     }
   }
   void
-  Printer::print(const Item* i, std::ostream& os, int width) {
-    if (width==0) {
-      PlainPrinter p(os); p.p(i);
+  Printer::print(const Item* i) {
+    if (_width==0) {
+      PlainPrinter p(_os,_flatZinc); p.p(i);
     } else {
       init();
-      p(i,os,width);
+      p(i);
     }
   }
   void
-  Printer::print(const Model* m, std::ostream& os, int width) {
-    if (width==0) {
-      PlainPrinter p(os);
+  Printer::print(const Model* m) {
+    if (_width==0) {
+      PlainPrinter p(_os,_flatZinc);
       for (unsigned int i = 0; i < m->_items.size(); i++) {
         p.p(m->_items[i]);
       }
     } else {
       init();
       for (unsigned int i = 0; i < m->_items.size(); i++) {
-        p(m->_items[i], os, width);
+        p(m->_items[i]);
       }
     }
   }
@@ -1894,5 +1896,5 @@ void debugprint(MiniZinc::Item* i) {
   std::cerr << *i;
 }
 void debugprint(MiniZinc::Model* m) {
-  MiniZinc::Printer p; p.print(m,std::cerr);
+  MiniZinc::Printer p(std::cerr); p.print(m);
 }

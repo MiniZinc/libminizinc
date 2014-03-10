@@ -27,16 +27,20 @@ namespace MiniZinc {
   private:
     ItemDocumentMapper* ism;
     PrettyPrinter* printer;
+    std::ostream& _os;
+    int _width;
+    bool _flatZinc;
+    
     void init(void);
-    void p(Document* d, std::ostream& os, int width=80);
-    void p(const Item* i, std::ostream& os, int width=80);
+    void p(Document* d);
+    void p(const Item* i);
   public:
-    Printer(void);
+    Printer(std::ostream& os, int width=80, bool flatZinc=true);
     ~Printer(void);
     
-    void print(const Expression* e, std::ostream& os, int width=80);
-    void print(const Item* i, std::ostream& os, int width=80);
-    void print(const Model* m, std::ostream& os, int width=80);
+    void print(const Expression* e);
+    void print(const Item* i);
+    void print(const Model* m);
   };
 
   /// Output operator for expressions
@@ -45,8 +49,8 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Expression& e) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    Printer p;
-    p.print(&e,s);
+    Printer p(s);
+    p.print(&e);
     return os << s.str();
   }
 
@@ -56,8 +60,8 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Item& i) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    Printer p;
-    p.print(&i,s);
+    Printer p(s);
+    p.print(&i);
     return os << s.str();
   }
 

@@ -574,17 +574,17 @@ namespace MiniZinc {
     assert(args.size()==1);
     std::ostringstream oss;
     Expression* e = eval_par(args[0]);
-    Printer p;
+    Printer p(oss,0,false);
     if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
       oss << "[";
       for (unsigned int i=0; i<al->v().size(); i++) {
-        p.print(al->v()[i],oss,0);
+        p.print(al->v()[i]);
         if (i<al->v().size()-1)
           oss << ", ";
       }
       oss << "]";
     } else {
-      p.print(e, oss, 0);
+      p.print(e);
     }
     return oss.str();
   }
@@ -607,8 +607,8 @@ namespace MiniZinc {
       for (int i=addRight; i--;)
         oss << " ";
     } else {
-      Printer p;
-      p.print(e, oss, 0);
+      Printer p(oss,0,false);
+      p.print(e);
     }
     return oss.str();
   }
