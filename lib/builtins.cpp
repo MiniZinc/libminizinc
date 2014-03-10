@@ -138,15 +138,45 @@ namespace MiniZinc {
     return lb_varoptint(args[0]);
   }
 
+  Expression* deref_id(Expression* e) {
+    Expression* cur = e;
+    for (;;) {
+      Id* id = cur->dyn_cast<Id>();
+      if (id) {
+        if (id->decl()->e()==NULL)
+          return id;
+        else
+          cur = id->decl()->e();
+      } else {
+        return cur;
+      }
+    }
+  }
+  
   IntVal b_array_lb_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->v().size()==0)
-      throw EvalError(Location(), "lower bound of empty array undefined");
-    IntVal min = lb_varoptint(al->v()[0]);
-    for (unsigned int i=1; i<al->v().size(); i++)
-      min = std::min(min, lb_varoptint(al->v()[i]));
-    return min;
+    Expression* e = deref_id(args[0]);
+    if (Id* id = e->dyn_cast<Id>()) {
+      if (id->decl()->ti()->domain()) {
+        GCLock lock;
+        IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
+        if (isv->size()==0) {
+          throw EvalError(e->loc(),"cannot determine bounds");
+        } else {
+          return isv->min(0);
+        }
+      } else {
+        throw EvalError(e->loc(),"cannot determine bounds");
+      }
+    } else {
+      ArrayLit* al = eval_array_lit(args[0]);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      IntVal min = lb_varoptint(al->v()[0]);
+      for (unsigned int i=1; i<al->v().size(); i++)
+        min = std::min(min, lb_varoptint(al->v()[i]));
+      return min;
+    }
   }
 
   IntVal ub_varoptint(Expression* e) {
@@ -164,13 +194,28 @@ namespace MiniZinc {
 
   IntVal b_array_ub_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
-    ArrayLit* al = eval_array_lit(args[0]);
-    if (al->v().size()==0)
-      throw EvalError(Location(), "upper bound of empty array undefined");
-    IntVal max = ub_varoptint(al->v()[0]);
-    for (unsigned int i=1; i<al->v().size(); i++)
-      max = std::max(max, ub_varoptint(al->v()[i]));
-    return max;
+    Expression* e = deref_id(args[0]);
+    if (Id* id = e->dyn_cast<Id>()) {
+      if (id->decl()->ti()->domain()) {
+        GCLock lock;
+        IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
+        if (isv->size()==0) {
+          throw EvalError(e->loc(),"cannot determine bounds");
+        } else {
+          return isv->max(isv->size()-1);
+        }
+      } else {
+        throw EvalError(e->loc(),"cannot determine bounds");
+      }
+    } else {
+      ArrayLit* al = eval_array_lit(args[0]);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "upper bound of empty array undefined");
+      IntVal max = ub_varoptint(al->v()[0]);
+      for (unsigned int i=1; i<al->v().size(); i++)
+        max = std::max(max, ub_varoptint(al->v()[i]));
+      return max;
+    }
   }
 
   IntVal b_sum(ASTExprVec<Expression> args) {
