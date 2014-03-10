@@ -2617,6 +2617,18 @@ namespace MiniZinc {
                 }
                 vd->ti()->domain(new SetLit(Location(),ibv));
               }
+            } else if (v->e()->type().dim() > 0) {
+              assert(vd->e() && vd->e()->isa<ArrayLit>());
+              ArrayLit* al = vd->e()->cast<ArrayLit>();
+              if (vd->ti()->domain()) {
+                for (unsigned int i=0; i<al->v().size(); i++) {
+                  if (Id* ali_id = al->v()[i]->dyn_cast<Id>()) {
+                    if (ali_id->decl()->ti()->domain()==NULL) {
+                      ali_id->decl()->ti()->domain(vd->ti()->domain());
+                    }
+                  }
+                }
+              }
             }
           }
 
