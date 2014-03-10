@@ -146,9 +146,16 @@ int main(int argc, char** argv) {
                 }
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(outputExpr);
+                std::string os;
                 for (int i=0; i<al->v().size(); i++) {
-                  std::cout << eval_string(al->v()[i]);
+                  std::string s = eval_string(al->v()[i]);
+                  if (!s.empty()) {
+                    os = s;
+                    std::cout << os;
+                  }
                 }
+                if (os.empty() || os.back() != '\n')
+                  std::cout << std::endl;
               }
               solution = "";
               cout << line << std::endl;
