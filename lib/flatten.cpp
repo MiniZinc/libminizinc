@@ -1652,7 +1652,6 @@ namespace MiniZinc {
               ctx0.b = ctx1.b = C_MIX;
               goto flatten_bool_op;
             } else {
-              ctx0.b = ctx1.b = C_MIX;
               if (r && r==constants().var_true) {
                 if (boe1->type().ispar() || boe1->isa<Id>())
                   std::swap(boe0,boe1);
@@ -1663,6 +1662,7 @@ namespace MiniZinc {
                   ctx1.b = -ctx1.b;
                   return flat_exp(env,ctx1,boe1,r,b);
                 } else {
+                  ctx0.b = C_MIX;
                   EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
                   if (istrue(e0.r())) {
                     return flat_exp(env,ctx1,boe1,r,b);
@@ -1672,6 +1672,7 @@ namespace MiniZinc {
                     return flat_exp(env,ctx1,boe1,r,b);
                   } else {
                     Id* id = e0.r()->cast<Id>();
+                    ctx1.b = C_MIX;
                     (void) flat_exp(env,ctx1,boe1,id->decl(),constants().var_true);
                     ret.b = bind(env,Ctx(),b,constants().lit_true);
                     ret.r = bind(env,Ctx(),r,constants().lit_true);
@@ -1679,6 +1680,7 @@ namespace MiniZinc {
                 }
                 break;
               } else {
+                ctx0.b = ctx1.b = C_MIX;
                 goto flatten_bool_op;
               }
             }
@@ -2497,7 +2499,7 @@ namespace MiniZinc {
                 flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
-                ret.r = conj(env,b,Ctx(),args_ee);
+                ret.r = conj(env,NULL,ctx,args_ee);
               } else {
                 args.pop_back();
                 goto call_nonreif;
