@@ -690,4 +690,15 @@ namespace MiniZinc {
     
   }
   
+  void typecheck(Model* m, AssignI* ai) {
+    Typer<true> ty(m);
+    BottomUpIterator<Typer<true> > bu_ty(ty);
+    bu_ty.run(ai->e());
+    if (!ai->e()->type().isSubtypeOf(ai->decl()->ti()->type())) {
+      throw TypeError(ai->e()->loc(),
+                      "RHS of assignment does not agree with LHS");
+    }
+    
+  }
+  
 }

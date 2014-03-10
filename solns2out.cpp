@@ -131,6 +131,8 @@ int main(int argc, char** argv) {
                       exit(EXIT_FAILURE);
                     }
                     ai->e()->type(it->second->type());
+                    ai->decl(it->second);
+                    typecheck(outputm, ai);
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
@@ -144,8 +146,9 @@ int main(int argc, char** argv) {
                 }
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(outputExpr);
-                for (int i=0; i<al->v().size(); i++)
+                for (int i=0; i<al->v().size(); i++) {
                   std::cout << eval_string(al->v()[i]);
+                }
               }
               solution = "";
               cout << line << std::endl;

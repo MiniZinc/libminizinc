@@ -42,6 +42,9 @@ namespace MiniZinc {
   
   /// Type check the model \a m
   void typecheck(Model* m);
+
+  /// Type check new assign item \a ai in model \a m
+  void typecheck(Model* m, AssignI* ai);
   
 }
 
