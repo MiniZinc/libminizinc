@@ -574,6 +574,30 @@ namespace MiniZinc {
     p.print(eval_par(args[0]), oss, 0);
     return oss.str();
   }
+
+  std::string b_show_int(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    Expression* e = eval_par(args[1]);
+    std::ostringstream oss;
+    if (IntLit* iv = e->dyn_cast<IntLit>()) {
+      IntVal justify = eval_int(args[0]);
+      oss << iv->v();
+      int addLeft = justify < 0 ? 0 : (justify - static_cast<int>(oss.str().size()));
+      if (addLeft < 0) addLeft = 0;
+      int addRight = justify < 0 ? (-justify-static_cast<int>(oss.str().size())) : 0;
+      if (addRight < 0) addRight = 0;
+      oss = std::ostringstream();
+      for (int i=addLeft; i--;)
+        oss << " ";
+      oss << iv->v();
+      for (int i=addRight; i--;)
+        oss << " ";
+    } else {
+      Printer p;
+      p.print(e, oss, 0);
+    }
+    return oss.str();
+  }
   
   void registerBuiltins(Model* m) {
     
@@ -885,6 +909,12 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::vartop();
       rb(m, ASTString("show"), t, b_show);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parint();
+      t[1] = Type::varint();
+      rb(m, ASTString("show_int"), t, b_show_int);
     }
     {
       std::vector<Type> t(1);
