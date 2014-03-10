@@ -53,7 +53,46 @@ test array_dom(array[$T] of int: x, set of int: d) =
     let { array[int] of int: xx = array1d(1..length(x),x) }
     in forall (i in index_set(xx)) (xx[i] in d);
 
-%Array constraints
+% Float constraints
+predicate float_abs(var float, var float);
+predicate float_acos(var float, var float);
+predicate float_asin(var float, var float);
+predicate float_atan(var float, var float);
+predicate float_cos(var float, var float);
+predicate float_cosh(var float, var float);
+predicate float_exp(var float, var float);
+predicate float_ln(var float, var float);
+predicate float_log10(var float, var float);
+predicate float_log2(var float, var float);
+predicate float_sqrt(var float, var float);
+predicate float_sin(var float, var float);
+predicate float_sinh(var float, var float);
+predicate float_tan(var float, var float);
+predicate float_tanh(var float, var float);
+
+predicate float_eq(var float, var float);
+predicate float_eq_reif(var float, var float, var bool);
+predicate float_le(var float, var float);
+predicate float_le_reif(var float, var float, var bool);
+predicate float_lt(var float, var float);
+predicate float_lt_reif(var float, var float, var bool);
+predicate float_ne(var float, var float);
+predicate float_ne_reif(var float, var float, var bool);
+
+predicate float_lin_eq(array[int] of float, array[int] of var float, float);
+predicate float_lin_eq_reif(array[int] of float, array[int] of var float, float, var bool);
+predicate float_lin_le(array[int] of float, array[int] of var float, float);
+predicate float_lin_le_reif(array[int] of float, array[int] of var float, float, var bool);
+predicate float_lin_lt(array[int] of float, array[int] of var float, float);
+predicate float_lin_lt_reif(array[int] of float, array[int] of var float, float, var bool);
+predicate float_lin_ne(array[int] of float, array[int] of var float, float);
+predicate float_lin_ne_reif(array[int] of float, array[int] of var float, float, var bool);
+
+predicate float_max(var float, var float, var float);
+predicate float_min(var float, var float, var float);
+predicate float_plus(var float, var float, var float);
+
+% Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
 predicate array_bool_or(array[int] of var bool: as, var bool: r);
 predicate array_bool_element(var int: b, array[int] of bool: as, var bool: c);
