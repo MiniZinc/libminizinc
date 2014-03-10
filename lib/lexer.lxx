@@ -340,6 +340,7 @@ $[A-Za-z][A-Za-z0-9_]* {
 <string>[^\\"\n]* { appendBufferString(yyget_extra(yyscanner), yytext); }
 <string>\\n         { appendBufferChar(yyget_extra(yyscanner), '\n'); }
 <string>\\t         { appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string>\\[\\']     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 <string>\\[\\"]     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 <string>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
                       BEGIN 0; return MZN_STRING_LITERAL; }
