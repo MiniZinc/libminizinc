@@ -3132,6 +3132,11 @@ namespace MiniZinc {
         GCLock lock;
         VarDecl* vd = v->e();
         Annotation* prevAnn = NULL;
+        if (vd->type().ispar()) {
+          vd->ann(NULL);
+          vd->introduced(false);
+          vd->ti()->domain(NULL);
+        }
         for (Annotation* a = vd->ann(); a != NULL; a=a->next()) {
           if (a->e()==constants().ctx.mix ||
               a->e()==constants().ctx.pos ||
