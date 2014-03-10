@@ -674,7 +674,7 @@ namespace MiniZinc {
         }
         void vOutputI(OutputI* i) {
           bu_ty.run(i->e());
-          if (i->e()->type() != Type::parstring(1))
+          if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1))
             throw TypeError(i->e()->loc(), "output item needs string array");
         }
         void vFunctionI(FunctionI* i) {
