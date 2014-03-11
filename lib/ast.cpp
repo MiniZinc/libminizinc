@@ -605,101 +605,116 @@ namespace MiniZinc {
     return false;
   }
 
+  namespace {
+    Type getType(Expression* e) { return e->type(); }
+    Type getType(const Type& t) { return t; }
+    const Location& getLoc(Expression* e, FunctionI*) { return e->loc(); }
+    const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
-
+    template<class T>
+    Type return_type(FunctionI* fi, const std::vector<T>& ta) {
+      if (fi->id()==constants().var_redef->id())
+        return Type::varbool();
+      Type ret = fi->ti()->type();
+      ASTString dh;
+      if (fi->ti()->domain() && fi->ti()->domain()->isa<TIId>())
+        dh = fi->ti()->domain()->cast<TIId>()->v();
+      ASTString rh;
+      if (fi->ti()->ranges().size()==1 &&
+          fi->ti()->ranges()[0]->domain() && fi->ti()->ranges()[0]->domain()->isa<TIId>())
+        rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
+      
+      ASTStringMap<Type>::t tmap;
+      for (unsigned int i=0; i<ta.size(); i++) {
+        TypeInst* tii = fi->params()[i]->ti();
+        if (tii->domain() && tii->domain()->isa<TIId>()) {
+          ASTString tiid = tii->domain()->cast<TIId>()->v();
+          Type tiit = getType(ta[i]);
+          tiit._dim=0;
+          if (tii->type()._st==Type::ST_SET)
+            tiit._st = Type::ST_PLAIN;
+          ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
+          if (it==tmap.end()) {
+            tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
+          } else {
+            if (it->second._dim > 0) {
+              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+                              tiid.str()+" used in both array and non-array position");
+            } else {
+              Type tiit_par = tiit;
+              tiit_par._ti = Type::TI_PAR;
+              tiit_par._ot = Type::OT_PRESENT;
+              Type its_par = it->second;
+              its_par._ti = Type::TI_PAR;
+              its_par._ot = Type::OT_PRESENT;
+              if (tiit_par._bt==Type::BT_TOP || tiit_par._bt==Type::BT_BOT) {
+                tiit_par._bt = its_par._bt;
+              }
+              if (its_par._bt==Type::BT_TOP || its_par._bt==Type::BT_BOT) {
+                its_par._bt = tiit_par._bt;
+              }
+              if (tiit_par != its_par) {
+                throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+                                tiid.str()+" instantiated with different types ("+
+                                tiit.toString()+" vs "+
+                                it->second.toString()+")");
+              }
+              if (it->second._bt == Type::BT_TOP)
+                it->second._bt = tiit._bt;
+            }
+          }
+        }
+        if (tii->ranges().size()==1 &&
+            tii->ranges()[0]->domain() &&
+            tii->ranges()[0]->domain()->isa<TIId>()) {
+          ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
+          if (getType(ta[i])._dim==0) {
+            throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
+                            " must be an array index");
+          }
+          Type tiit = Type::top(getType(ta[i])._dim);
+          ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
+          if (it==tmap.end()) {
+            tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
+          } else {
+            if (it->second._dim == 0) {
+              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+                              tiid.str()+" used in both array and non-array position");
+            } else if (it->second!=tiit) {
+              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+                              tiid.str()+" instantiated with different types ("+
+                              tiit.toString()+" vs "+
+                              it->second.toString()+")");
+            }
+          }
+        }
+      }
+      if (dh.size() != 0) {
+        ASTStringMap<Type>::t::iterator it = tmap.find(dh);
+        if (it==tmap.end())
+          throw TypeError(fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
+        ret._bt = it->second._bt;
+        if (ret._st==Type::ST_PLAIN)
+          ret._st = it->second._st;
+      }
+      if (rh.size() != 0) {
+        ASTStringMap<Type>::t::iterator it = tmap.find(rh);
+        if (it==tmap.end())
+          throw TypeError(fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
+        ret._dim = it->second._dim;
+      }
+      return ret;
+    }
+  }
+  
   Type
   FunctionI::rtype(const std::vector<Expression*>& ta) {
-    if (id()==constants().var_redef->id())
-      return Type::varbool();
-    Type ret = _ti->type();
-    ASTString dh;
-    if (_ti->domain() && _ti->domain()->isa<TIId>())
-      dh = _ti->domain()->cast<TIId>()->v();
-    ASTString rh;
-    if (_ti->ranges().size()==1 &&
-        _ti->ranges()[0]->domain() && _ti->ranges()[0]->domain()->isa<TIId>())
-      rh = _ti->ranges()[0]->domain()->cast<TIId>()->v();
+    return return_type(this, ta);
+  }
 
-    ASTStringMap<Type>::t tmap;
-    for (unsigned int i=0; i<ta.size(); i++) {
-      TypeInst* tii = _params[i]->ti();
-      if (tii->domain() && tii->domain()->isa<TIId>()) {
-        ASTString tiid = tii->domain()->cast<TIId>()->v();
-        Type tiit = ta[i]->type();
-        tiit._dim=0;
-        if (tii->type()._st==Type::ST_SET)
-          tiit._st = Type::ST_PLAIN;
-        ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
-        if (it==tmap.end()) {
-          tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
-        } else {
-          if (it->second._dim > 0) {
-            throw TypeError(ta[i]->loc(),"type-inst variable $"+
-              tiid.str()+" used in both array and non-array position");
-          } else {
-            Type tiit_par = tiit;
-            tiit_par._ti = Type::TI_PAR;
-            tiit_par._ot = Type::OT_PRESENT;
-            Type its_par = it->second;
-            its_par._ti = Type::TI_PAR;
-            its_par._ot = Type::OT_PRESENT;
-            if (tiit_par._bt==Type::BT_TOP || tiit_par._bt==Type::BT_BOT) {
-              tiit_par._bt = its_par._bt;
-            }
-            if (its_par._bt==Type::BT_TOP || its_par._bt==Type::BT_BOT) {
-              its_par._bt = tiit_par._bt;
-            }
-            if (tiit_par != its_par) {
-              throw TypeError(ta[i]->loc(),"type-inst variable $"+
-                tiid.str()+" instantiated with different types ("+
-                tiit.toString()+" vs "+
-                it->second.toString()+")");
-            }
-            if (it->second._bt == Type::BT_TOP)
-              it->second._bt = tiit._bt;
-          }
-        }
-      }
-      if (tii->ranges().size()==1 &&
-          tii->ranges()[0]->domain() && 
-          tii->ranges()[0]->domain()->isa<TIId>()) {
-        ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-        if (ta[i]->type()._dim==0) {
-          throw TypeError(ta[i]->loc(),"type-inst variable $"+tiid.str()+
-            " must be an array index");
-        }
-        Type tiit = Type::top(ta[i]->type()._dim);
-        ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
-        if (it==tmap.end()) {
-          tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
-        } else {
-          if (it->second._dim == 0) {
-            throw TypeError(ta[i]->loc(),"type-inst variable $"+
-              tiid.str()+" used in both array and non-array position");
-          } else if (it->second!=tiit) {
-            throw TypeError(ta[i]->loc(),"type-inst variable $"+
-              tiid.str()+" instantiated with different types ("+
-              tiit.toString()+" vs "+
-              it->second.toString()+")");
-          }
-        }
-      }
-    }
-    if (dh.size() != 0) {
-      ASTStringMap<Type>::t::iterator it = tmap.find(dh);
-      if (it==tmap.end())
-        throw TypeError(_loc,"type-inst variable $"+dh.str()+" used but not defined");
-      ret._bt = it->second._bt;
-      if (ret._st==Type::ST_PLAIN)
-        ret._st = it->second._st;
-    } 
-    if (rh.size() != 0) {
-      ASTStringMap<Type>::t::iterator it = tmap.find(rh);
-      if (it==tmap.end())
-        throw TypeError(_loc,"type-inst variable $"+rh.str()+" used but not defined");
-      ret._dim = it->second._dim;
-    }
-    return ret;
+  Type
+  FunctionI::rtype(const std::vector<Type>& ta) {
+    return return_type(this, ta);
   }
 
   bool
