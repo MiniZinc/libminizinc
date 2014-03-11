@@ -2738,33 +2738,127 @@ namespace MiniZinc {
     return ret;
   }
   
+  bool cannotUseRHSForOutput(EnvI& env, CopyMap& cmap, Expression* e) {
+    if (e==NULL)
+      return true;
+
+    class V : public EVisitor {
+    public:
+      EnvI& env;
+      CopyMap& cmap;
+      bool success;
+      V(EnvI& env0, CopyMap& cmap0) : env(env0), cmap(cmap0), success(true) {}
+      /// Visit anonymous variable
+      void vAnonVar(const AnonVar&) { success = false; }
+      /// Visit array literal
+      void vArrayLit(const ArrayLit&) {}
+      /// Visit array access
+      void vArrayAccess(const ArrayAccess&) {}
+      /// Visit array comprehension
+      void vComprehension(const Comprehension&) {}
+      /// Visit if-then-else
+      void vITE(const ITE&) {}
+      /// Visit binary operator
+      void vBinOp(const BinOp&) {}
+      /// Visit unary operator
+      void vUnOp(const UnOp&) {}
+      /// Visit call
+      void vCall(Call& c) {
+        std::vector<Type> tv(c.args().size());
+        for (unsigned int i=c.args().size(); i--;) {
+          tv[i] = c.args()[i]->type();
+          tv[i]._ti = Type::TI_PAR;
+        }
+        FunctionI* decl = env.output->matchFn(c.id(), tv);
+        Type t;
+        if (decl==NULL) {
+          FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
+          assert(origdecl != NULL);
+
+          if (origdecl->e() && cannotUseRHSForOutput(env, cmap, origdecl->e())) {
+            success = false;
+          } else {
+            decl = copy(cmap,origdecl)->cast<FunctionI>();
+            env.output->addItem(decl);
+            c.decl(decl);
+          }
+        }
+        if (success) {
+          t = decl->rtype(tv);
+          if (!t.ispar())
+            success = false;
+        }
+      }
+      /// Visit let
+      void vLet(const Let&) { success = false; }
+      /// Visit variable declaration
+      void vVarDecl(const VarDecl&) {}
+      /// Visit annotation
+      void vAnnotation(const Annotation&) {}
+      /// Visit type inst
+      void vTypeInst(const TypeInst&) {}
+      /// Visit TIId
+      void vTIId(const TIId&) {}
+      /// Determine whether to enter node
+      bool enter(Expression* e) { return success; }
+    } _v(env,cmap);
+    topDown(_v, e);
+    
+    return !_v.success;
+  }
+  
+  void removeIsOutput(VarDecl* vd) {
+    if (vd==NULL)
+      return;
+    Annotation* prevAnn = NULL;
+    for (Annotation* a = vd->ann(); a != NULL; a=a->next()) {
+      if (a->e()==constants().ann.output_var ||
+          ( a->e()->isa<Call>() && a->e()->cast<Call>()->id()==constants().ann.output_array) ) {
+        if (prevAnn) {
+          prevAnn->next(a->next());
+        } else {
+          vd->ann(a->next());
+        }
+      } else {
+        prevAnn = a;
+      }
+    }
+  }
+  
   void createOutput(EnvI& e) {
     CopyMap cmap;
-    bool hadOutput = false;
+
+    OutputI* outputItem = NULL;
+    VarOccurrences vo;
+    
     class OV1 : public ItemVisitor {
     public:
       EnvI& env;
       CopyMap& cmap;
-      bool& hadOutput;
-      OV1(EnvI& env0, CopyMap& cmap0, bool& hadOutput0) : env(env0), cmap(cmap0), hadOutput(hadOutput0) {}
+      VarOccurrences& vo;
+      OutputI*& outputItem;
+      OV1(EnvI& env0, CopyMap& cmap0, VarOccurrences& vo0, OutputI*& outputItem0)
+      : env(env0), cmap(cmap0), vo(vo0), outputItem(outputItem0) {}
       void vOutputI(OutputI* oi) {
-        hadOutput = true;
         GCLock lock;
-        env.output->addItem(copy(cmap, oi));
+        outputItem = copy(cmap, oi)->cast<OutputI>();
+        env.output->addItem(outputItem);
       }
-    } _ov1(e,cmap,hadOutput);
+    } _ov1(e,cmap,vo,outputItem);
     iterItems(_ov1,e.orig);
     
-    if (!hadOutput) {
+    if (outputItem==NULL) {
       GCLock lock;
-      e.output->addItem(new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>())));
+      outputItem = new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>()));
+      e.output->addItem(outputItem);
     }
 
     class OV2 : public ItemVisitor {
     public:
       EnvI& env;
       CopyMap& cmap;
-      OV2(EnvI& env0, CopyMap& cmap0) : env(env0), cmap(cmap0) {}
+      VarOccurrences& vo;
+      OV2(EnvI& env0, CopyMap& cmap0, VarOccurrences& vo0) : env(env0), cmap(cmap0), vo(vo0) {}
       void vVarDeclI(VarDeclI* vdi) {
         if (Expression* vd_e = cmap.find(vdi->e())) {
           VarDecl* vd = vd_e->cast<VarDecl>();
@@ -2773,37 +2867,75 @@ namespace MiniZinc {
           Type t = vdi_copy->e()->ti()->type();
           t._ti = Type::TI_PAR;
           vdi_copy->e()->ti()->type(t);
-
-          env.output->addItem(vdi_copy);
+          vdi_copy->e()->ti()->domain(NULL);
+          vdi_copy->e()->flat(vdi->e()->flat());
           if (!vdi->e()->type().ispar()) {
-            // Remove right hand side
-            // This will need to be changed, so that if there is a right hand side
-            // the FlatZinc does not need to contain the output variable at all.
-            vd->e(NULL);
-            assert(vdi->e()->flat());
-            if (vdi->e()->type().dim() == 0) {
-              vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
-            } else {
-              std::vector<Expression*> args(vdi->e()->type().dim());
-              for (int i=0; i<args.size(); i++) {
-                if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
-                  args[i] = new SetLit(Location(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
-                } else {
-                  args[i] = new SetLit(Location(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
+            if (vd->e() && vd->e()->type().ispar()) {
+              vd->e(vdi->e()->flat()->e());
+            } else if (cannotUseRHSForOutput(env,cmap,vd->e())) {
+              // If the VarDecl does not have a right hand side, it needs to be
+              // marked as output in the FlatZinc
+              vd->e(NULL);
+              assert(vdi->e()->flat());
+              if (vdi->e()->type().dim() == 0) {
+                vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+              } else {
+                std::vector<Expression*> args(vdi->e()->type().dim());
+                for (int i=0; i<args.size(); i++) {
+                  if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
+                    args[i] = new SetLit(Location(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
+                  } else {
+                    args[i] = new SetLit(Location(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
+                  }
                 }
+                ArrayLit* al = new ArrayLit(Location(), args);
+                args.resize(1);
+                args[0] = al;
+                Annotation* ann = new Annotation(Location(),
+                                                 new Call(Location(),constants().ann.output_array,args,NULL));
+                vdi->e()->flat()->addAnnotation(ann);
               }
-              ArrayLit* al = new ArrayLit(Location(), args);
-              args.resize(1);
-              args[0] = al;
-              Annotation* ann = new Annotation(Location(),
-                                               new Call(Location(),constants().ann.output_array,args,NULL));
-              vdi->e()->flat()->addAnnotation(ann);
             }
+          }
+          vo.add(vdi_copy, env.output->size());
+          CollectOccurrencesE ce(vo,vdi_copy);
+          topDown(ce, vdi_copy->e());
+          env.output->addItem(vdi_copy);
+        }
+      }
+    } _ov2(e,cmap,vo);
+    iterItems(_ov2,e.orig);
+    
+    CollectOccurrencesE ce(vo,outputItem);
+    topDown(ce, outputItem->e());
+
+    std::vector<VarDecl*> deletedVarDecls;
+    for (unsigned int i=0; i<e.output->size(); i++) {
+      if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
+        if (vo.occurrences(vdi->e())==0) {
+          CollectDecls cd(vo,deletedVarDecls,vdi);
+          topDown(cd, vdi->e()->e());
+          removeIsOutput(vdi->e()->flat());
+          vdi->remove();
+        }
+      }
+    }
+    while (!deletedVarDecls.empty()) {
+      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      if (vo.occurrences(cur) == 0) {
+        ExpressionMap<int>::iterator cur_idx = vo.idx.find(cur);
+        if (cur_idx != vo.idx.end()) {
+          VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
+          if (!vdi->removed()) {
+            CollectDecls cd(vo,deletedVarDecls,vdi);
+            topDown(cd,cur->e());
+            removeIsOutput(vdi->e()->flat());
+            vdi->remove();
           }
         }
       }
-    } _ov2(e,cmap);
-    iterItems(_ov2,e.orig);
+    }
+    e.output->compact();
   }
   
   void flatten(Env& e, FlatteningOptions opt) {
