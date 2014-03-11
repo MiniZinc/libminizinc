@@ -83,8 +83,7 @@ namespace MiniZinc {
       m = m->_parent;
     FnMap::iterator i_id = m->fnmap.find(id);
     if (i_id == m->fnmap.end()) {
-      assert(false);
-      return NULL; // builtin not defined. TODO: should this be an error?
+      return NULL;
     }
     std::vector<FunctionI*>& v = i_id->second;
     for (unsigned int i=0; i<v.size(); i++) {
