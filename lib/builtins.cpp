@@ -231,6 +231,18 @@ namespace MiniZinc {
     return m;
   }
 
+  IntVal b_product(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      return 1;
+    IntVal m = 1;
+    for (unsigned int i=0; i<al->v().size(); i++)
+      m *= eval_int(al->v()[i]);
+    return m;
+  }
+  
+  
   FloatVal b_sum_float(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(args[0]);
@@ -727,6 +739,7 @@ namespace MiniZinc {
     rb(m, ASTString("max"), t_intint, b_max);
     rb(m, ASTString("max"), t_intarray, b_max);
     rb(m, constants().ids.sum, t_intarray, b_sum);
+    rb(m, ASTString("product"), t_intarray, b_product);
 
     {
       std::vector<Type> t_anyarray1(1);
