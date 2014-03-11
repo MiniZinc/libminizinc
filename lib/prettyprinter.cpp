@@ -460,7 +460,8 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
-          os << ": " << vd.id()->v();
+          if (vd.id()->v() != "_")
+            os << ": " << vd.id()->v();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
