@@ -128,7 +128,6 @@ namespace MiniZinc {
             c = new SetLit(copy_location(m,e),ce);
           }
         }
-        c->type(s->type());
         m.insert(e,c);
         ret = c;
       }
@@ -202,7 +201,6 @@ namespace MiniZinc {
         }
         Id* c = new Id(copy_location(m,e),id_v,
                        static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
-        c->type(id->type());
         m.insert(e,c);
         ret = c;
       }
@@ -235,7 +233,6 @@ namespace MiniZinc {
         }
         ArrayLit* c = new ArrayLit(copy_location(m,e),
                                   ASTExprVec<Expression>(v),dims);
-        c->type(al->type());
         m.insert(e,c);
         ret = c;
       }
@@ -345,7 +342,6 @@ namespace MiniZinc {
           id_v,copy(m,vd->e(),followIds));
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
-        c->type(vd->type());
         m.insert(e,c);
         ret = c;
       }
@@ -401,6 +397,7 @@ namespace MiniZinc {
     default:
         assert(false);
     }
+    ret->type(e->type());
     if (e->ann()) {
       ret->ann(copy(m,e->ann(),followIds)->cast<Annotation>());
     }
