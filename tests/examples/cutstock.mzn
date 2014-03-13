@@ -22,7 +22,7 @@ array[1..K, 1..N] of var int: items;
 constraint
     forall(k in 1..K, i in 1..N)( items[k,i] >=0 );
 
-solve minimize
+solve ::int_search(array1d(1..K*N,items)++pieces,input_order,indomain_min,complete) minimize
 	sum([ pieces[k] | k in 1..K]);
 
 constraint 
