@@ -2507,8 +2507,15 @@ namespace MiniZinc {
             } else {
             call_nonreif:
               if (decl->e()==NULL) {
-                /// For now assume that all builtins are total
-                if (decl->_builtins.e) {
+                /// All builtins are total
+                std::vector<Type> argt(cr->args().size());
+                for (unsigned int i=argt.size(); i--;)
+                  argt[i] = cr->args()[i]->type();
+                if (decl->rtype(argt).ispar()) {
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret.r = bind(env,ctx,r,eval_par(cr));
+                  env.map_insert(cr,ret);
+                } else if (decl->_builtins.e) {
                   Expression* callres =
                   decl->_builtins.e(cr->args());
                   EE res = flat_exp(env,ctx,callres,r,b);
