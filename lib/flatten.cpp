@@ -153,7 +153,11 @@ namespace MiniZinc {
   public:
     Model* orig;
     Model* output;
+    std::string varPrefix;
     VarOccurrences vo;
+    VarOccurrences output_vo;
+    CopyMap cmap;
+    ASTStringMap<KeepAlive>::t reverseMappers;
     struct WW {
       WeakRef r;
       WeakRef b;
@@ -165,14 +169,14 @@ namespace MiniZinc {
     Model* _flat;
     unsigned int ids;
   public:
-    EnvI(Model* orig0) : orig(orig0), output(new Model), _flat(new Model), ids(0) {
+    EnvI(Model* orig0) : orig(orig0), output(new Model), varPrefix("X_"), _flat(new Model), ids(0) {
     }
     ~EnvI(void) {
       delete _flat;
       delete output;
     }
     ASTString genId(const std::string& s) {
-      std::ostringstream oss; oss << "_" << s << "_" << ids++;
+      std::ostringstream oss; oss << varPrefix << s << "_" << ids++;
       return ASTString(oss.str());
     }
     void map_insert(Expression* e, const EE& ee) {
@@ -2947,7 +2951,20 @@ namespace MiniZinc {
   
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
+
+    // Collect variable declarations to determine clean namespace for temporaries
+    class DeclV : public ItemVisitor {
+    public:
+      std::string& prefix;
+      DeclV(EnvI& envi) : prefix(envi.varPrefix) {}
+      void vVarDeclI(VarDeclI* v) {
+        while (v->e()->id()->v().beginsWith(prefix))
+          prefix += "_";
+      }
+    } _declv(e.envi());
+    iterItems(_declv, e.model());
     
+    // Flatten main model
     class FV : public ItemVisitor {
     public:
       EnvI& env;
@@ -2982,9 +2999,11 @@ namespace MiniZinc {
       }
     } _fv(env);
     iterItems<FV>(_fv,e.model());
+
+    // Create output model
     createOutput(env);
     
-    
+    // Flatten remaining redefinitions
     Model& m = *e.flat();
     int startItem = 0;
     int endItem = m.size()-1;
