@@ -1109,8 +1109,20 @@ namespace MiniZinc {
       //   constraint (not e_if) -> r=e_else_arg;
       // } in r;
       
-      TypeInst* ti = new TypeInst(Location(),ite->type(),NULL);
-      VarDecl* r = new VarDecl(Location(),ti,env.genId("r"));
+      SetLit* r_bounds = NULL;
+      IntBounds ib_then = compute_int_bounds(ite->e_then(i));
+      if (ib_then.valid) {
+        IntBounds ib_else = compute_int_bounds(e_else());
+        if (ib_else.valid) {
+          r_bounds = new SetLit(Location(),
+                                IntSetVal::a(std::min(ib_then.l,ib_else.l),
+                                             std::max(ib_then.u,ib_else.u)));
+          r_bounds->type(Type::parsetint());
+        }
+      }
+      TypeInst* ti = new TypeInst(Location(),ite->type(),r_bounds);
+      
+      VarDecl* r = new VarDecl(ite->loc(),ti,env.genId("r_ite"));
       BinOp* eq_then = new BinOp(Location(),r->id(),BOT_EQ,ite->e_then(i));
       eq_then->type(Type::varbool());
       BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
