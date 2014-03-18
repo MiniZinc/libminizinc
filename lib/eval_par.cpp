@@ -1203,6 +1203,19 @@ namespace MiniZinc {
           valid = false;
           _bounds.push_back(Bounds(0,0));
         }
+      } else if (c.id() == "int_times") {
+        BottomUpIterator<ComputeIntBounds> cbi(*this);
+        cbi.run(c.args()[0]);
+        cbi.run(c.args()[1]);
+        Bounds b1 = _bounds.back(); _bounds.pop_back();
+        Bounds b0 = _bounds.back(); _bounds.pop_back();
+        IntVal x0 = b0.first*b1.first;
+        IntVal x1 = b0.first*b1.second;
+        IntVal x2 = b0.second*b1.first;
+        IntVal x3 = b0.second*b1.second;
+        IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+        IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+        _bounds.push_back(Bounds(m,n));
       } else if (c.id() == constants().ids.bool2int) {
           _bounds.push_back(Bounds(0,1));
       } else {
