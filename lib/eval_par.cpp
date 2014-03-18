@@ -312,10 +312,16 @@ namespace MiniZinc {
         return IntSetVal::a(a);
       }
     case Expression::E_ID:
-      return eval_id<EvalSetLit>(e)->isv();
+      {
+        GCLock lock;
+        return eval_id<EvalSetLit>(e)->isv();
+      }
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_intset(eval_arrayaccess(e->cast<ArrayAccess>()));
+      {
+        GCLock lock;
+        return eval_intset(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
       break;
     case Expression::E_ITE:
       {
@@ -426,10 +432,16 @@ namespace MiniZinc {
       throw EvalError(e->loc(),"not a bool expression");
       break;
     case Expression::E_ID:
-      return eval_id<EvalBoolLit>(e)->v();
+      {
+        GCLock lock;
+        return eval_id<EvalBoolLit>(e)->v();
+      }
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_bool(eval_arrayaccess(e->cast<ArrayAccess>()));
+      {
+        GCLock lock;
+        return eval_bool(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
       break;
     case Expression::E_ITE:
       {
@@ -609,7 +621,10 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_ARRAYACCESS:
-      return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
+      {
+        GCLock lock;
+        return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
       break;
     case Expression::E_ITE:
       {
@@ -706,7 +721,10 @@ namespace MiniZinc {
       }
         break;
       case Expression::E_ARRAYACCESS:
+      {
+        GCLock lock;
         return eval_float(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
         break;
       case Expression::E_ITE:
       {
@@ -803,7 +821,10 @@ namespace MiniZinc {
       }
         break;
       case Expression::E_ARRAYACCESS:
+      {
+        GCLock lock;
         return eval_string(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
         break;
       case Expression::E_ITE:
       {
