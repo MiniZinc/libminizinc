@@ -738,7 +738,7 @@ function set of int: lb_array(array[$U] of var set of int);
 function set of int: ub_array(array[$U] of var set of int);
 function set of int: dom(var int);
 function set of int: dom_array(array[$T] of var int);
-function int: dom_size(var int);
+function int: dom_size(var int: x) = card(dom(x));
 
 function par bool: has_bounds(var int);
 
