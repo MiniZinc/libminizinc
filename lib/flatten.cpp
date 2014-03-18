@@ -1474,21 +1474,33 @@ namespace MiniZinc {
           Id* id = bo->lhs()->dyn_cast<Id>();
           if (id==NULL)
             throw EvalError(bo->lhs()->loc(), "Reverse mappers are only defined for identifiers");
+          if (bo->op() != BOT_EQ && bo->op() != BOT_EQUIV)
+            throw EvalError(bo->loc(), "Reverse mappers have to use `=` as the operator");
           Call* c = bo->rhs()->dyn_cast<Call>();
           if (c==NULL)
             throw EvalError(bo->rhs()->loc(), "Reverse mappers require call on right hand side");
-          std::vector<Expression*> args(c->args().size()+1);
+
+          std::vector<Expression*> args(c->args().size());
           for (unsigned int i=0; i<c->args().size(); i++) {
             Id* idi = c->args()[i]->dyn_cast<Id>();
             if (idi==NULL)
               throw EvalError(c->args()[i]->loc(), "Reverse mapper calls require identifiers as arguments");
-            args[i] = idi;
+            EE ee = flat_exp(env, Ctx(), idi, NULL, constants().var_true);
+            args[i] = ee.r();
           }
-          args[c->args().size()] = id;
+          
+          EE ee = flat_exp(env, Ctx(), id, NULL, constants().var_true);
+          
+          Call* revMap = new Call(Location(),c->id(),args);
+          
+          args.push_back(ee.r());
           Call* keepAlive = new Call(Location(),constants().var_redef->id(),args);
           keepAlive->type(Type::varbool());
           keepAlive->decl(constants().var_redef);
           (void) flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
+          
+          env.reverseMappers.insert(std::pair<ASTString, KeepAlive>(ee.r()->cast<Id>()->v(),revMap));
+          
           break;
         }
         if (bo->decl()) {
@@ -2813,16 +2825,15 @@ namespace MiniZinc {
     return ret;
   }
   
-  bool cannotUseRHSForOutput(EnvI& env, CopyMap& cmap, Expression* e) {
+  bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
       return true;
 
     class V : public EVisitor {
     public:
       EnvI& env;
-      CopyMap& cmap;
       bool success;
-      V(EnvI& env0, CopyMap& cmap0) : env(env0), cmap(cmap0), success(true) {}
+      V(EnvI& env0) : env(env0), success(true) {}
       /// Visit anonymous variable
       void vAnonVar(const AnonVar&) { success = false; }
       /// Visit array literal
@@ -2850,10 +2861,11 @@ namespace MiniZinc {
           FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
           assert(origdecl != NULL);
 
-          if (origdecl->e() && cannotUseRHSForOutput(env, cmap, origdecl->e())) {
+          if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
             success = false;
           } else {
-            decl = copy(cmap,origdecl)->cast<FunctionI>();
+            decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+            env.output->registerFn(decl);
             env.output->addItem(decl);
             c.decl(decl);
           }
@@ -2876,7 +2888,7 @@ namespace MiniZinc {
       void vTIId(const TIId&) {}
       /// Determine whether to enter node
       bool enter(Expression* e) { return success; }
-    } _v(env,cmap);
+    } _v(env);
     topDown(_v, e);
     
     return !_v.success;
@@ -2900,26 +2912,97 @@ namespace MiniZinc {
     }
   }
   
-  void createOutput(EnvI& e) {
-    CopyMap cmap;
+  void outputVarDecls(EnvI& env, VarOccurrences& vo, Expression* e) {
+    class O : public EVisitor {
+    public:
+      EnvI& env;
+      VarOccurrences& vo;
+      O(EnvI& env0, VarOccurrences& vo0) : env(env0), vo(vo0) {}
+      void vId(Id& id) {
+        VarDecl* vd = id.decl();
+        ExpressionMap<int>::iterator idx = vo.idx.find(vd);
+        if (idx==vo.idx.end()) {
+          VarDeclI* nvi = new VarDeclI(Location(), copy(env.cmap,vd)->cast<VarDecl>());
+          Type t = nvi->e()->ti()->type();
+          t._ti = Type::TI_PAR;
+          nvi->e()->ti()->type(t);
+          nvi->e()->ti()->domain(NULL);
+          nvi->e()->flat(vd->flat());
+          nvi->e()->ann(NULL);
+          nvi->e()->introduced(false);
+          id.decl(nvi->e());
+          
+          nvi->e()->e(NULL);
 
+          ASTStringMap<KeepAlive>::t::iterator it;
+          if ( (it = env.reverseMappers.find(nvi->e()->id()->v())) != env.reverseMappers.end()) {
+            Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+            {
+              std::vector<Type> tv(rhs->args().size());
+              for (unsigned int i=rhs->args().size(); i--;) {
+                tv[i] = rhs->args()[i]->type();
+                tv[i]._ti = Type::TI_PAR;
+              }
+              FunctionI* decl = env.output->matchFn(rhs->id(), tv);
+              Type t;
+              if (decl==NULL) {
+                FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
+                assert(origdecl != NULL);
+                decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                env.output->registerFn(decl);
+                env.output->addItem(decl);
+                rhs->decl(decl);
+              }
+            }
+            outputVarDecls(env,vo,rhs);
+            nvi->e()->e(rhs);
+          } else {
+            assert(nvi->e()->flat());
+            if (nvi->e()->type().dim() == 0) {
+              nvi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+            } else {
+              std::vector<Expression*> args(nvi->e()->e()->type().dim());
+              for (int i=0; i<args.size(); i++) {
+                if (nvi->e()->ti()->ranges()[i]->domain() == NULL) {
+                  args[i] = new SetLit(Location(), eval_intset(nvi->e()->flat()->ti()->ranges()[i]->domain()));
+                } else {
+                  args[i] = new SetLit(Location(), eval_intset(nvi->e()->ti()->ranges()[i]->domain()));
+                }
+              }
+              ArrayLit* al = new ArrayLit(Location(), args);
+              args.resize(1);
+              args[0] = al;
+              Annotation* ann = new Annotation(Location(),
+                                               new Call(Location(),constants().ann.output_array,args,NULL));
+              nvi->e()->flat()->addAnnotation(ann);
+            }
+          }
+          vo.add(nvi, env.output->size());
+          CollectOccurrencesE ce(vo,nvi);
+          topDown(ce, nvi->e());
+          env.output->addItem(nvi);
+        }
+      }
+    } _o(env,vo);
+    topDown(_o, e);
+  }
+  
+  void createOutput(EnvI& e) {
     OutputI* outputItem = NULL;
-    VarOccurrences vo;
     
     class OV1 : public ItemVisitor {
     public:
       EnvI& env;
-      CopyMap& cmap;
       VarOccurrences& vo;
       OutputI*& outputItem;
-      OV1(EnvI& env0, CopyMap& cmap0, VarOccurrences& vo0, OutputI*& outputItem0)
-      : env(env0), cmap(cmap0), vo(vo0), outputItem(outputItem0) {}
+      OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
+      : env(env0), vo(vo0), outputItem(outputItem0) {}
       void vOutputI(OutputI* oi) {
         GCLock lock;
-        outputItem = copy(cmap, oi)->cast<OutputI>();
+        outputItem = copy(env.cmap, oi)->cast<OutputI>();
         env.output->addItem(outputItem);
       }
-    } _ov1(e,cmap,vo,outputItem);
+    } _ov1(e,e.output_vo,outputItem);
     iterItems(_ov1,e.orig);
     
     if (outputItem==NULL) {
@@ -2927,28 +3010,56 @@ namespace MiniZinc {
       outputItem = new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>()));
       e.output->addItem(outputItem);
     }
-
+    
     class OV2 : public ItemVisitor {
     public:
       EnvI& env;
-      CopyMap& cmap;
       VarOccurrences& vo;
-      OV2(EnvI& env0, CopyMap& cmap0, VarOccurrences& vo0) : env(env0), cmap(cmap0), vo(vo0) {}
+      OV2(EnvI& env0, VarOccurrences& vo0) : env(env0), vo(vo0) {}
       void vVarDeclI(VarDeclI* vdi) {
-        if (Expression* vd_e = cmap.find(vdi->e())) {
+        if (Expression* vd_e = env.cmap.find(vdi->e())) {
           VarDecl* vd = vd_e->cast<VarDecl>();
           GCLock lock;
-          VarDeclI* vdi_copy = copy(cmap,vdi)->cast<VarDeclI>();
+          VarDeclI* vdi_copy = copy(env.cmap,vdi)->cast<VarDeclI>();
           Type t = vdi_copy->e()->ti()->type();
           t._ti = Type::TI_PAR;
           vdi_copy->e()->ti()->type(t);
           vdi_copy->e()->ti()->domain(NULL);
           vdi_copy->e()->flat(vdi->e()->flat());
+          vdi_copy->e()->ann(NULL);
+          vdi_copy->e()->introduced(false);
+          ASTStringMap<KeepAlive>::t::iterator it;
+          if (vd->e() == NULL && vd->flat() != NULL && vd->flat()->e() != NULL) {
+            Expression* flat_e = copy(env.cmap, vd->flat()->e());
+            outputVarDecls(env, vo, flat_e);
+            vd->e(flat_e);
+          }
           if (!vdi->e()->type().ispar()) {
-            if (vd->e() && vd->e()->type().ispar()) {
+            if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
               vd->e(vdi->e()->flat()->e());
-            } else if (cannotUseRHSForOutput(env,cmap,vd->e())) {
-              // If the VarDecl does not have a right hand side, it needs to be
+            } else if ( (it = env.reverseMappers.find(vd->id()->v())) != env.reverseMappers.end()) {
+              Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+              {
+                std::vector<Type> tv(rhs->args().size());
+                for (unsigned int i=rhs->args().size(); i--;) {
+                  tv[i] = rhs->args()[i]->type();
+                  tv[i]._ti = Type::TI_PAR;
+                }
+                FunctionI* decl = env.output->matchFn(rhs->id(), tv);
+                Type t;
+                if (decl==NULL) {
+                  FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
+                  assert(origdecl != NULL);
+                  decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                  env.output->registerFn(decl);
+                  env.output->addItem(decl);
+                  rhs->decl(decl);
+                }
+              }
+              outputVarDecls(env,vo,rhs);
+              vd->e(rhs);
+            } else if (cannotUseRHSForOutput(env,vd->e())) {
+              // If the VarDecl does not have a usable right hand side, it needs to be
               // marked as output in the FlatZinc
               vd->e(NULL);
               assert(vdi->e()->flat());
@@ -2978,17 +3089,17 @@ namespace MiniZinc {
           env.output->addItem(vdi_copy);
         }
       }
-    } _ov2(e,cmap,vo);
+    } _ov2(e,e.output_vo);
     iterItems(_ov2,e.orig);
     
-    CollectOccurrencesE ce(vo,outputItem);
+    CollectOccurrencesE ce(e.output_vo,outputItem);
     topDown(ce, outputItem->e());
 
     std::vector<VarDecl*> deletedVarDecls;
     for (unsigned int i=0; i<e.output->size(); i++) {
       if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
-        if (vo.occurrences(vdi->e())==0) {
-          CollectDecls cd(vo,deletedVarDecls,vdi);
+        if (e.output_vo.occurrences(vdi->e())==0) {
+          CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
           removeIsOutput(vdi->e()->flat());
           vdi->remove();
@@ -2997,12 +3108,12 @@ namespace MiniZinc {
     }
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-      if (vo.occurrences(cur) == 0) {
-        ExpressionMap<int>::iterator cur_idx = vo.idx.find(cur);
-        if (cur_idx != vo.idx.end()) {
+      if (e.output_vo.occurrences(cur) == 0) {
+        ExpressionMap<int>::iterator cur_idx = e.output_vo.idx.find(cur);
+        if (cur_idx != e.output_vo.idx.end()) {
           VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
           if (!vdi->removed()) {
-            CollectDecls cd(vo,deletedVarDecls,vdi);
+            CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
             topDown(cd,cur->e());
             removeIsOutput(vdi->e()->flat());
             vdi->remove();
@@ -3236,9 +3347,13 @@ namespace MiniZinc {
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
                 args.push_back(vd->id());
-                FunctionI* decl = env.orig->matchFn(c->id(),args);
+                ASTString cid = c->id();
+                if (c->type().isbool() && vd->type().isbool()) {
+                  cid = ASTString(c->id().str()+"_reif");
+                }
+                FunctionI* decl = env.orig->matchFn(cid,args);
                 if (decl && decl->e()) {
-                  nc = new Call(c->loc(),c->id(),args);
+                  nc = new Call(c->loc(),cid,args);
                   nc->type(Type::varbool());
                   nc->decl(decl);
                 }
@@ -3316,6 +3431,37 @@ namespace MiniZinc {
       endItem = m.size()-1;
     }
 
+    // Add redefinitions for output variables that may have been redefined since createOutput
+    for (unsigned int i=0; i<env.output->size(); i++) {
+      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+        ASTStringMap<KeepAlive>::t::iterator it;
+        if (!vdi->e()->type().ispar() &&
+            vdi->e()->e()==NULL &&
+            (it = env.reverseMappers.find(vdi->e()->id()->v())) != env.reverseMappers.end()) {
+          GCLock lock;
+          Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+          std::vector<Type> tv(rhs->args().size());
+          for (unsigned int i=rhs->args().size(); i--;) {
+            tv[i] = rhs->args()[i]->type();
+            tv[i]._ti = Type::TI_PAR;
+          }
+          FunctionI* decl = env.output->matchFn(rhs->id(), tv);
+          Type t;
+          if (decl==NULL) {
+            FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
+            assert(origdecl != NULL);
+            decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+            env.output->registerFn(decl);
+            env.output->addItem(decl);
+            rhs->decl(decl);
+          }
+          outputVarDecls(env,env.output_vo,rhs);
+          removeIsOutput(vdi->e()->flat());
+          vdi->e()->e(rhs);
+        }
+      }
+    }
+    
     for (unsigned int i=0; i<m.size(); i++) {
       if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
         if (Call* c = ci->e()->dyn_cast<Call>()) {
