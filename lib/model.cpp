@@ -194,10 +194,18 @@ namespace MiniZinc {
     const std::vector<FunctionI*>& v = it->second;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+      std::cerr << "try " << *fi;
+#endif
       if (fi->params().size() == c->args().size()) {
         bool match=true;
         for (unsigned int j=0; j<c->args().size(); j++) {
           if (!c->args()[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+#ifdef MZN_DEBUG_FUNCTION_REGISTRY
+            std::cerr << c->args()[j]->type().toString() << " does not match "
+            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << "Wrong argument is " << *c->args()[j];
+#endif
             match=false;
             break;
           }
