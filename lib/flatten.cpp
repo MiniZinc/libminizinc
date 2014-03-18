@@ -2183,7 +2183,8 @@ namespace MiniZinc {
                     }
                     ret.r = conj(env,r,ctx,ees);
                   }
-                  env.map_insert(cc,ret);
+                  if (!ctx.neg)
+                    env.map_insert(cc,ret);
                 }
               }
             }
@@ -2602,11 +2603,13 @@ namespace MiniZinc {
                   args_ee.push_back(res);
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,res.r());
-                  env.map_insert(cr,ret);
+                  if (!ctx.neg)
+                    env.map_insert(cr,ret);
                 } else {
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,cr);
-                  env.map_insert(cr,ret);
+                  if (!ctx.neg)
+                    env.map_insert(cr,ret);
                 }
               } else {
                 std::vector<KeepAlive> previousParameters(decl->params().size());
@@ -2637,7 +2640,8 @@ namespace MiniZinc {
                   }
                   ret.b = conj(env,b,Ctx(),args_ee);
                 }
-                env.map_insert(cr,ret);
+                if (!ctx.neg)
+                  env.map_insert(cr,ret);
 
                 // Restore previous mapping
                 for (unsigned int i=decl->params().size(); i--;) {
