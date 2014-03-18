@@ -204,7 +204,7 @@ namespace MiniZinc { namespace Ranges {
   };
 
   inline
-  Const::Const(IntVal min0, IntVal max0) : _min(min0), _max(max0), done(min0<max0) {}
+  Const::Const(IntVal min0, IntVal max0) : _min(min0), _max(max0), done(min0>max0) {}
   inline bool
   Const::operator ()(void) const {
     return !done;
