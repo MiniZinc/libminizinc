@@ -27,7 +27,6 @@ namespace MiniZinc {
     if (id->decl()->e() == NULL)
       throw EvalError(e->loc(), "cannot evaluate expression", id->v());
     typename E::Val r = E::e(id->decl()->e());
-    id->decl()->e(r);
     return r;
   }
 
