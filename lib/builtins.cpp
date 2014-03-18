@@ -121,6 +121,11 @@ namespace MiniZinc {
     }
   }
   
+  IntVal b_abs(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    return std::abs(eval_int(args[0]));
+  }
+  
   bool b_has_bounds(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
@@ -982,6 +987,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("card"), t, b_card);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      rb(m, ASTString("abs"), t, b_abs);
     }
     {
       std::vector<Type> t(1);
