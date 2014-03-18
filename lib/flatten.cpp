@@ -187,10 +187,16 @@ namespace MiniZinc {
     Map::iterator map_find(Expression* e) {
       KeepAlive ka(e);
       Map::iterator it = map.find(ka);
-      if (it != map.end() && it->second.r() && it->second.r()->isa<VarDecl>()) {
-        int idx = vo.find(it->second.r()->cast<VarDecl>());
-        if (idx >= 0 && _flat->_items[idx]->removed())
+      if (it != map.end()) {
+        if (it->second.r()) {
+          if (it->second.r()->isa<VarDecl>()) {
+            int idx = vo.find(it->second.r()->cast<VarDecl>());
+            if (idx >= 0 && _flat->_items[idx]->removed())
+              return map.end();
+          }
+        } else {
           return map.end();
+        }
       }
       return it;
     }
