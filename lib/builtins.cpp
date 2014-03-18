@@ -17,6 +17,7 @@
 #include <minizinc/prettyprinter.hh>
 
 #include <iomanip>
+#include <climits>
 
 namespace MiniZinc {
   
