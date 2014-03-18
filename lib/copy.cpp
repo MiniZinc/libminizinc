@@ -342,6 +342,7 @@ namespace MiniZinc {
           id_v,copy(m,vd->e(),followIds));
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
+        c->flat(vd->flat());
         m.insert(e,c);
         ret = c;
       }
