@@ -1209,8 +1209,8 @@ namespace MiniZinc {
             std::vector<Expression*> elems(asize);
             for (int i=0; i<asize; i++) {
               ASTString nid = env.genId("fresh_"+vd->id()->v().str());
-              VarDecl* nvd = new VarDecl(Location(),vti,nid);
-              nvd->introduced(true);
+              VarDecl* nvd = new VarDecl(vd->loc(),vti,nid);
+              nvd->introduced(vd->introduced());
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
               Id* id = root_vd.r()->cast<Id>();
               elems[i] = id;
