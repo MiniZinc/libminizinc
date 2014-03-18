@@ -445,6 +445,16 @@ namespace MiniZinc {
               env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
             } else {
               id->decl()->ti()->domain(constants().lit_true);
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = id;
+              args[1] = constants().lit_true;
+              Call* c = new Call(Location(),"bool_eq",args);
+              c->decl(env.orig->matchFn(c));
+              c->type(c->decl()->rtype(args));
+              if (c->decl()->e()) {
+                flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+              }
             }
           } else {
             GCLock lock;
@@ -537,14 +547,23 @@ namespace MiniZinc {
         }
       } else {
         if (vd->e()==NULL) {
-          if (e==NULL) {
-            vd->e(constants().lit_true);
-          } else if (e->type().ispar() && e->type().isbool()) {
-            if (eval_bool(e)) {
+          if (e==NULL || (e->type().ispar() && e->type().isbool())) {
+            if (e==NULL || eval_bool(e)) {
               vd->e(constants().lit_true);
             } else {
               vd->e(constants().lit_false);
             }
+            GCLock lock;
+            std::vector<Expression*> args(2);
+            args[0] = vd->id();
+            args[1] = vd->e();
+            Call* c = new Call(Location(),"bool_eq",args);
+            c->decl(env.orig->matchFn(c));
+            c->type(c->decl()->rtype(args));
+            if (c->decl()->e()) {
+              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+              return vd->id();
+            }            
           } else {
             if (e->type().dim() > 0) {
               // Check that index sets match
