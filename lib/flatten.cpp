@@ -114,6 +114,14 @@ namespace MiniZinc {
     explicit EE(Expression* r0=NULL, Expression* b0=NULL) : r(r0), b(b0) {}
   };
 
+  void dumpEEb(const std::vector<EE>& ee) {
+    for (int i=0; i<ee.size(); i++)
+      std::cerr << *ee[i].b();
+  }
+  void dumpEEr(const std::vector<EE>& ee) {
+    for (int i=0; i<ee.size(); i++)
+      std::cerr << *ee[i].r();
+  }
 
   void addCtxAnn(VarDecl* vd, BCtx& c) {
     if (vd) {
@@ -298,7 +306,7 @@ namespace MiniZinc {
     return false;
   }
 
-  bool isReverseMap(Expression* e) {
+  bool isReverseMap(BinOp* e) {
     Annotation* a = e->ann();
     for (; a!=NULL; a=a->next()) {
       VarDecl* vd = NULL;
@@ -499,7 +507,7 @@ namespace MiniZinc {
             GCLock lock;
             /// TODO: handle array types
             TypeInst* ti = new TypeInst(Location(),e->type());
-            VarDecl* vd = new VarDecl(Location(),ti,env.genId("X"),e);
+            VarDecl* vd = new VarDecl(e->loc(),ti,env.genId("X"),e);
             vd->introduced(true);
             vd->flat(vd);
 
@@ -791,12 +799,10 @@ namespace MiniZinc {
   }
 
   TypeInst* eval_typeinst(EnvI& env, VarDecl* vd) {
-    /// TODO: evaluate all par components in the domain. This probably
-    ///       needs the VarDecl to compute the actual dimensions of
-    ///       array[int] expressions
     bool hasTiVars = vd->ti()->domain() && vd->ti()->domain()->isa<TIId>();
-    for (unsigned int i=0; i<vd->ti()->ranges().size(); i++)
+    for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
       hasTiVars = hasTiVars || (vd->ti()->ranges()[i]->domain() && vd->ti()->ranges()[i]->domain()->isa<TIId>());
+    }
     if (hasTiVars) {
       assert(vd->e());
       if (vd->e()->type().dim()==0)
@@ -910,7 +916,7 @@ namespace MiniZinc {
       e1 = NULL;
     }
     if (e0==NULL && e1==NULL)
-      return new IntLit(e0->loc(),d);
+      return new IntLit(Location(),d);
     if (e0==NULL) {
       std::swap(e0,e1);
       std::swap(c0,c1);
@@ -1283,7 +1289,6 @@ namespace MiniZinc {
                 rete = vd->e();
               } else {
                 rete = vd->id();
-                rete->type(id->type());
               }
             }
           }
@@ -1467,7 +1472,7 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            Call* cr = new Call(Location(),bo->opToString().str(),args);
+            Call* cr = new Call(bo->loc(),bo->opToString().str(),args);
             cr->decl(env.orig->matchFn(cr));
             cr->type(cr->decl()->rtype(args));
             ka = cr;
@@ -2511,7 +2516,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (cr->type().isbool() && ctx.b != C_ROOT && r != constants().var_true) {
+            if (cr->type().isbool() && (ctx.b != C_ROOT || r != constants().var_true)) {
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
                 VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
@@ -2544,10 +2549,12 @@ namespace MiniZinc {
                 std::vector<Type> argt(cr->args().size());
                 for (unsigned int i=argt.size(); i--;)
                   argt[i] = cr->args()[i]->type();
-                if (decl->rtype(argt).ispar()) {
+                Type callt = decl->rtype(argt);
+                if (callt.ispar() && callt._bt!=Type::BT_ANN) {
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,eval_par(cr));
-                  env.map_insert(cr,ret);
+                  // Do not insert into map, since par results will quickly become
+                  // garbage anyway and then disappear from the map
                 } else if (decl->_builtins.e) {
                   Expression* callres =
                   decl->_builtins.e(cr->args());
@@ -2627,7 +2634,7 @@ namespace MiniZinc {
           VarDeclI* nv = new VarDeclI(Location(),vd);
           env.flat_addItem(nv);
           Ctx nctx;
-          if (v->e() && v->e()->type().isbool())
+          if (v->e() && v->e()->type()._bt == Type::BT_BOOL)
             nctx.b = C_MIX;
           if (v->e()) {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
