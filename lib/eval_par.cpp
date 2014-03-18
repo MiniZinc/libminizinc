@@ -866,17 +866,6 @@ namespace MiniZinc {
     }
   }
 
-  class AssignVisitor : public ItemVisitor {
-  public:
-    void vAssignI(AssignI* i) {
-      if (i->decl() == NULL)
-        throw EvalError(i->loc(), "undeclared identifier", i->id());
-      if (i->decl()->e() != NULL)
-        throw EvalError(i->loc(), "multiple assignments to same identifier", i->id());
-      i->decl()->e(i->e());
-    }
-  };
-
   Expression* eval_par(Expression* e) {
     if (e==NULL) return NULL;
     switch (e->eid()) {
