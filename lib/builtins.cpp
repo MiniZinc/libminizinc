@@ -624,6 +624,7 @@ namespace MiniZinc {
   
   Expression* b_set2array(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     IntSetVal* isv = eval_intset(args[0]);
     std::vector<Expression*> elems;
     IntSetRanges isr(isv);
