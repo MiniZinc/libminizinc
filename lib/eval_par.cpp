@@ -902,9 +902,17 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = eval_array_lit(e);
+        std::vector<Expression*> args(al->v().size());
         for (unsigned int i=al->v().size(); i--;)
-          al->v()[i] = eval_par(al->v()[i]);
-        return al;
+          args[i] = eval_par(al->v()[i]);
+        std::vector<std::pair<int,int> > dims(al->dims());
+        for (unsigned int i=al->dims(); i--;) {
+          dims[i].first = al->min(i);
+          dims[i].second = al->max(i);
+        }
+        ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
+        ret->type(al->type());
+        return ret;
       }
     case Expression::E_VARDECL:
       {
@@ -950,9 +958,17 @@ namespace MiniZinc {
       {
         if (e->type()._dim != 0) {
           ArrayLit* al = eval_array_lit(e);
+          std::vector<Expression*> args(al->v().size());
           for (unsigned int i=al->v().size(); i--;)
-            al->v()[i] = eval_par(al->v()[i]);
-          return al;
+            args[i] = eval_par(al->v()[i]);
+          std::vector<std::pair<int,int> > dims(al->dims());
+          for (unsigned int i=al->dims(); i--;) {
+            dims[i].first = al->min(i);
+            dims[i].second = al->max(i);
+          }
+          ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
+          ret->type(al->type());
+          return ret;
         }
         if (e->type()._st == Type::ST_SET) {
           if (e->type().isintset()) {
