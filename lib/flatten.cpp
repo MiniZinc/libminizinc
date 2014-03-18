@@ -812,9 +812,23 @@ namespace MiniZinc {
       for (unsigned int i=0; i<dims.size(); i++) {
         dims[i] = new TypeInst(Location(), Type(), new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
       }
-      return new TypeInst(Location(), vd->e()->type(), dims);
+      return new TypeInst(Location(), vd->e()->type(), dims, eval_par(vd->ti()->domain()));
     } else {
-      return eval_par(vd->ti())->cast<TypeInst>();
+      std::vector<TypeInst*> dims(vd->ti()->ranges().size());
+      for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
+        if (vd->ti()->ranges()[i]->domain()) {
+          IntSetVal* isv = eval_intset(vd->ti()->ranges()[i]->domain());
+          if (isv->size() > 1)
+            throw EvalError(vd->ti()->ranges()[i]->domain()->loc(),
+                            "array index set must be contiguous range");
+          SetLit* sl = new SetLit(vd->ti()->ranges()[i]->loc(),isv);
+          sl->type(Type::parsetint());
+          dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(),sl);
+        } else {
+          dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), NULL);
+        }
+      }
+      return new TypeInst(vd->ti()->loc(), vd->ti()->type(), dims, eval_par(vd->ti()->domain()));
     }
   }
 
