@@ -70,5 +70,6 @@ namespace MiniZinc {
 void debugprint(MiniZinc::Expression* e);
 void debugprint(MiniZinc::Item* i);
 void debugprint(MiniZinc::Model* m);
+void debugprint(const MiniZinc::Location& l);
 
 #endif
