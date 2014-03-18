@@ -1554,17 +1554,6 @@ namespace MiniZinc {
             }
             break;
           case BOT_MULT:
-            {
-              if (boe0->type().ispar())
-                std::swap(boe0,boe1);
-              if (boe1->type().ispar() && boe1->type().isint()) {
-                IntVal coeff = eval_int(boe1);
-                KeepAlive ka = mklinexp(env,coeff,0,boe0,NULL);
-                ret = flat_exp(env,ctx,ka(),r,b);
-                break;
-              }
-              // else fall through
-            }
           case BOT_IDIV:
           case BOT_MOD:
           case BOT_DIV:
@@ -1578,10 +1567,23 @@ namespace MiniZinc {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
 
+              if (bot==BOT_MULT) {
+                Expression* e0r = e0.r();
+                Expression* e1r = e1.r();
+                if (e0r->type().ispar())
+                  std::swap(e0r,e1r);
+                if (e1r->type().ispar() && e1r->type().isint()) {
+                  IntVal coeff = eval_int(e1r);
+                  KeepAlive ka = mklinexp(env,coeff,0,e0r,NULL);
+                  ret = flat_exp(env,ctx,ka(),r,b);
+                  break;
+                }
+              }
+              
               GC::lock();
               std::vector<Expression*> args(2);
               args[0] = e0.r(); args[1] = e1.r();
-              Call* cc = new Call(Location(),opToBuiltin(bo,bot),args);
+              Call* cc = new Call(bo->loc(),opToBuiltin(bo,bot),args);
               cc->type(bo->type());
 
               if (FunctionI* fi = env.orig->matchFn(cc->id(),args)) {
