@@ -164,12 +164,13 @@ namespace MiniZinc {
       WW(WeakRef r0, WeakRef b0) : r(r0), b(b0) {}
     };
     typedef KeepAliveMap<WW> Map;
+    bool ignorePartial;
   protected:
     Map map;
     Model* _flat;
     unsigned int ids;
   public:
-    EnvI(Model* orig0) : orig(orig0), output(new Model), varPrefix("X_"), _flat(new Model), ids(0) {
+    EnvI(Model* orig0) : orig(orig0), output(new Model), varPrefix("X_"), ignorePartial(false), _flat(new Model), ids(0) {
     }
     ~EnvI(void) {
       delete _flat;
@@ -2432,7 +2433,7 @@ namespace MiniZinc {
           cr->decl(decl);
           EnvI::Map::iterator cit = env.map_find(cr);
           if (cit != env.map_end()) {
-            ret.b = bind(env,Ctx(),b,cit->second.b());
+            ret.b = bind(env,Ctx(),b,env.ignorePartial ? constants().lit_true : cit->second.b());
             ret.r = bind(env,ctx,r,cit->second.r());
           } else {
             for (unsigned int i=0; i<decl->params().size(); i++) {
@@ -2500,7 +2501,10 @@ namespace MiniZinc {
               FunctionI* decl_real = env.orig->matchFn(cr_real);
               if (decl_real && decl_real->e()) {
                 cr_real->decl(decl_real);
+                bool ignorePartial = env.ignorePartial;
+                env.ignorePartial = true;
                 flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
+                env.ignorePartial = ignorePartial;
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
                 ret.r = conj(env,NULL,ctx,args_ee);
