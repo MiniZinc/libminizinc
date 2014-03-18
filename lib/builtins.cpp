@@ -420,6 +420,41 @@ namespace MiniZinc {
     }
     return isv;
   }
+  IntSetVal* b_compute_div_bounds(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    IntBounds bx = compute_int_bounds(args[0]);
+    if (!bx.valid)
+      throw EvalError(args[0]->loc(),"cannot determine bounds");
+    IntBounds by = compute_int_bounds(args[1]);
+    if (!by.valid)
+      throw EvalError(args[1]->loc(),"cannot determine bounds");
+    Ranges::Const byr(by.l,by.u);
+    Ranges::Const by0(0,0);
+    Ranges::Diff<Ranges::Const, Ranges::Const> byr0(byr,by0);
+
+    int min=INT_MAX;
+    int max=INT_MIN;
+    min = std::min(min, static_cast<int>(bx.l / byr0.min()));
+    min = std::min(min, static_cast<int>(bx.l / byr0.max()));
+    min = std::min(min, static_cast<int>(bx.u / byr0.min()));
+    min = std::min(min, static_cast<int>(bx.u / byr0.max()));
+    max = std::max(max, static_cast<int>(bx.l / byr0.min()));
+    max = std::max(max, static_cast<int>(bx.l / byr0.max()));
+    max = std::max(max, static_cast<int>(bx.u / byr0.min()));
+    max = std::max(max, static_cast<int>(bx.u / byr0.max()));
+    ++byr0;
+    if (byr0()) {
+      min = std::min(min, static_cast<int>(bx.l / byr0.min()));
+      min = std::min(min, static_cast<int>(bx.l / byr0.max()));
+      min = std::min(min, static_cast<int>(bx.u / byr0.min()));
+      min = std::min(min, static_cast<int>(bx.u / byr0.max()));
+      max = std::max(max, static_cast<int>(bx.l / byr0.min()));
+      max = std::max(max, static_cast<int>(bx.l / byr0.max()));
+      max = std::max(max, static_cast<int>(bx.u / byr0.min()));
+      max = std::max(max, static_cast<int>(bx.u / byr0.max()));
+    }
+    return IntSetVal::a(min,max);
+  }
 
   ArrayLit* b_arrayXd(ASTExprVec<Expression> args, int d) {
     ArrayLit* al = eval_array_lit(args[d]);
@@ -1076,6 +1111,12 @@ namespace MiniZinc {
       t[0] = Type::parstring();
       t[1] = Type::parstring(1);
       rb(m, ASTString("join"), t, b_join);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varint();
+      t[1] = Type::varint();
+      rb(m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
     }
   }
   

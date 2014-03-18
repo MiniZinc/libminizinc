@@ -361,8 +361,12 @@ function var float: '-'(var float);
 
 function     int: 'div'(int,int);
 
+function set of int:compute_div_bounds(var int: x, var int: y);
+
 function var int: div_t(var int: x, var int: y) :: promise_total =
-  let { var int: z; constraint int_div(x,y,z); } in z;
+  let {
+    var (compute_div_bounds(x,y)): z; 
+    constraint int_div(x,y,z); } in z;
 function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
     var int: yy = if y=0 then 1 else y endif;
