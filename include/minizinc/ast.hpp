@@ -11,6 +11,17 @@
 
 namespace MiniZinc {
 
+  inline void
+  Expression::type(const Type& t) {
+    if (eid()==E_VARDECL) {
+      this->cast<VarDecl>()->id()->_type = t;
+    } else if (eid()==E_ID && this->cast<Id>()->decl()) {
+      assert(_type._bt == Type::BT_UNKNOWN || _type._dim==t._dim || t._dim != -1);
+      this->cast<Id>()->decl()->_type = t;
+    }
+    _type = t;
+  }
+
   inline
   Annotation::Annotation(const Location& loc, Expression* e, Annotation* a)
   : Expression(loc,E_ANN,Type::ann()), _e(e), _a(a) {

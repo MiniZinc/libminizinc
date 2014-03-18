@@ -125,9 +125,7 @@ namespace MiniZinc {
     const Type& type(void) const {
       return _type;
     }
-    void type(const Type& t) {
-      _type = t;
-    }
+    void type(const Type& t);
     size_t hash(void) const {
       return _hash;
     }
