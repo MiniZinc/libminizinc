@@ -140,6 +140,8 @@ namespace MiniZinc {
 
     model->_filepath = ASTString(filename);
     bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
+    isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
+    isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
     ParserState pp(filename,text, err, files, seenModels, model, false, isFzn);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
@@ -189,6 +191,8 @@ namespace MiniZinc {
 
       m->_filepath = ASTString(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
@@ -292,6 +296,8 @@ namespace MiniZinc {
 
       m->_filepath = ASTString(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn);
       yylex_init(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
