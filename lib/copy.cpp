@@ -187,22 +187,23 @@ namespace MiniZinc {
             }
           } while (!done);
           if (cur->isa<Id>()) {
-            id = cur->cast<Id>();
+            return cur;
           } else {
             return copy(m,cur,false);
           }
-        }
-        ASTString id_v;
-        if (ASTStringO* cs = m.find(id->v())) {
-          id_v = ASTString(cs);
         } else {
-          id_v = ASTString(id->v().str());
-          m.insert(id->v(),id_v);
+          ASTString id_v;
+          if (ASTStringO* cs = m.find(id->v())) {
+            id_v = ASTString(cs);
+          } else {
+            id_v = ASTString(id->v().str());
+            m.insert(id->v(),id_v);
+          }
+          Id* c = new Id(copy_location(m,e),id_v,
+                         static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
+          m.insert(e,c);
+          ret = c;
         }
-        Id* c = new Id(copy_location(m,e),id_v,
-                       static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
-        m.insert(e,c);
-        ret = c;
       }
       break;
     case Expression::E_ANON:
