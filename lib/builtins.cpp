@@ -82,6 +82,7 @@ namespace MiniZinc {
       if (args[0]->type().isset()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
+        GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
           throw EvalError(al->loc(), "min on empty array undefined");
@@ -105,6 +106,7 @@ namespace MiniZinc {
       if (args[0]->type().isset()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
+        GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
           throw EvalError(al->loc(), "max on empty array undefined");
@@ -177,6 +179,7 @@ namespace MiniZinc {
         throw EvalError(e->loc(),"cannot determine bounds");
       }
     } else {
+      GCLock lock;
       ArrayLit* al = eval_array_lit(args[0]);
       if (al->v().size()==0)
         throw EvalError(Location(), "lower bound of empty array undefined");
@@ -216,6 +219,7 @@ namespace MiniZinc {
         throw EvalError(e->loc(),"cannot determine bounds");
       }
     } else {
+      GCLock lock;
       ArrayLit* al = eval_array_lit(args[0]);
       if (al->v().size()==0)
         throw EvalError(Location(), "upper bound of empty array undefined");
@@ -228,6 +232,7 @@ namespace MiniZinc {
 
   IntVal b_sum(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
       return 0;
@@ -239,6 +244,7 @@ namespace MiniZinc {
 
   IntVal b_product(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
       return 1;
@@ -251,6 +257,7 @@ namespace MiniZinc {
   
   FloatVal b_sum_float(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
       return 0;
@@ -272,6 +279,7 @@ namespace MiniZinc {
     if (id->decl()->ti()->ranges().size() < i)
       throw EvalError(id->loc(), "index_set: wrong dimension");
     if (id->decl()->ti()->ranges()[i-1]->domain() == NULL) {
+      GCLock lock;
       ArrayLit* al = eval_array_lit(id);
       if (al->dims() < i)
         throw EvalError(id->loc(), "index_set: wrong dimension");
@@ -335,6 +343,7 @@ namespace MiniZinc {
 
   IntSetVal* b_array_ub_set(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
       throw EvalError(Location(), "upper bound of empty array undefined");
@@ -458,6 +467,7 @@ namespace MiniZinc {
   }
 
   ArrayLit* b_arrayXd(ASTExprVec<Expression> args, int d) {
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[d]);
     std::vector<std::pair<int,int> > dims(d);
     unsigned int dim1d = 1;
@@ -501,6 +511,7 @@ namespace MiniZinc {
   }
 
   IntVal b_length(ASTExprVec<Expression> args) {
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     return al->v().size();
   }
@@ -512,6 +523,7 @@ namespace MiniZinc {
   bool b_forall_par(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "forall needs exactly one argument");
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     for (unsigned int i=al->v().size(); i--;)
       if (!eval_bool(al->v()[i]))
@@ -521,6 +533,7 @@ namespace MiniZinc {
   bool b_exists_par(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "exists needs exactly one argument");
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     for (unsigned int i=al->v().size(); i--;)
       if (eval_bool(al->v()[i]))
@@ -530,6 +543,7 @@ namespace MiniZinc {
   bool b_clause_par(ASTExprVec<Expression> args) {
     if (args.size()!=2)
       throw EvalError(Location(), "clause needs exactly two arguments");
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     for (unsigned int i=al->v().size(); i--;)
       if (eval_bool(al->v()[i]))
@@ -581,6 +595,7 @@ namespace MiniZinc {
 
   bool b_is_fixed_array(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     if (al->v().size()==0)
       return true;
@@ -608,6 +623,7 @@ namespace MiniZinc {
 
   Expression* b_fix_array(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     std::vector<Expression*> fixed(al->v().size());
     for (unsigned int i=0; i<fixed.size(); i++) {
@@ -745,6 +761,7 @@ namespace MiniZinc {
 
   std::string b_concat(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     std::ostringstream oss;
     for (unsigned int i=0; i<al->v().size(); i++) {
@@ -756,6 +773,7 @@ namespace MiniZinc {
   std::string b_join(ASTExprVec<Expression> args) {
     assert(args.size()==2);
     std::string sep = eval_string(args[0]);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[1]);
     std::ostringstream oss;
     for (unsigned int i=0; i<al->v().size(); i++) {
