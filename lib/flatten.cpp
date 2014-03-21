@@ -671,12 +671,12 @@ namespace MiniZinc {
               GCLock lock;
               if (c->id() == constants().ids.lin_exp) {
                 c->id(ASTString("int_lin_eq"));
-                ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
+                ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 nc.push_back(new IntLit(Location(),-1));
                 c->args()[0] = new ArrayLit(Location(),nc);
-                ArrayLit* le_x = c->args()[1]->cast<ArrayLit>();
+                ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                 nx.push_back(vd->id());
@@ -1154,9 +1154,56 @@ namespace MiniZinc {
     if (e==NULL) return EE();
     EE ret;
     assert(!e->type().isunknown());
-    if (e->type().ispar() && !e->isa<Let>() && e->type()._bt!=Type::BT_ANN) {
-      GCLock lock;
+    if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type()._bt!=Type::BT_ANN) {
       ret.b = bind(env,Ctx(),b,constants().lit_true);
+      if (e->type().dim() > 0) {
+        EnvI::Map::iterator it;
+        if (Id* id = e->dyn_cast<Id>()) {
+          VarDecl* vd = id->decl()->flat();
+          if (vd==NULL) {
+            vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
+            id->decl()->flat(vd);
+          }
+          ret.r = bind(env,ctx,r,e->cast<Id>()->decl()->flat()->id());
+          return ret;
+        } else if ( (it = env.map_find(e)) != env.map_end()) {
+          ret.r = bind(env,ctx,r,it->second.r()->cast<VarDecl>()->id());
+          return ret;
+        } else {
+          GCLock lock;
+          ArrayLit* al = follow_id(eval_par(e))->cast<ArrayLit>();
+          if (al->v().size()==0) {
+            ret.r = bind(env,ctx,r,al);
+            return ret;
+          }
+          if ( (it = env.map_find(al)) != env.map_end()) {
+            ret.r = bind(env,ctx,r,it->second.r()->cast<VarDecl>()->id());
+            return ret;
+          }
+          std::vector<TypeInst*> ranges(al->dims());
+          for (unsigned int i=0; i<ranges.size(); i++) {
+            ranges[i] = new TypeInst(e->loc(),
+                                     Type(),
+                                     new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+          }
+          ASTExprVec<TypeInst> ranges_v(ranges);
+          assert(!al->type().isbot());
+          TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,NULL);
+          VarDecl* vd = new VarDecl(e->loc(),ti,env.genId("a"),al);
+          vd->introduced(true);
+          vd->flat(vd);
+          VarDeclI* ni = new VarDeclI(Location(),vd);
+          env.flat_addItem(ni);
+          EE ee(vd,NULL);
+          env.map_insert(al,ee);
+          env.map_insert(vd->e(),ee);
+          env.map_insert(vd->id(),ee);
+          
+          ret.r = bind(env,ctx,r,vd->id());
+          return ret;
+        }
+      }
+      GCLock lock;
       ret.r = bind(env,ctx,r,eval_par(e));
       return ret;
     }
@@ -1383,7 +1430,7 @@ namespace MiniZinc {
             if (id->decl()->e()==NULL) {
               throw InternalError("array without initialiser not supported");
             }
-            al = id->decl()->e()->cast<ArrayLit>();
+            al = follow_id(id)->cast<ArrayLit>();
           }
           KeepAlive ka;
           bool success;
@@ -2206,7 +2253,7 @@ namespace MiniZinc {
                 if (id->decl()->e()==NULL) {
                   throw InternalError("array without initialiser not supported");
                 }
-                al = id->decl()->e()->cast<ArrayLit>();
+                al = follow_id(id)->cast<ArrayLit>();
               }
               ArrayLit* al0 = al;
               eev = flat_exp(env,ctx,boe1,NULL,NULL);
@@ -2221,7 +2268,7 @@ namespace MiniZinc {
                 if (id->decl()->e()==NULL) {
                   throw InternalError("array without initialiser not supported");
                 }
-                al = id->decl()->e()->cast<ArrayLit>();
+                al = follow_id(id)->cast<ArrayLit>();
               }
               ArrayLit* al1 = al;
               std::vector<Expression*> v(al0->v().size()+al1->v().size());
@@ -2709,8 +2756,11 @@ namespace MiniZinc {
                 vd->ti()->domain(new SetLit(Location(),ibv));
               }
             } else if (v->e()->type().dim() > 0) {
-              assert(vd->e() && vd->e()->isa<ArrayLit>());
-              ArrayLit* al = vd->e()->cast<ArrayLit>();
+              Expression* ee = follow_id_to_decl(vd->e());
+              if (ee->isa<VarDecl>())
+                ee = ee->cast<VarDecl>()->e();
+              assert(ee && ee->isa<ArrayLit>());
+              ArrayLit* al = ee->cast<ArrayLit>();
               if (vd->ti()->domain()) {
                 for (unsigned int i=0; i<al->v().size(); i++) {
                   if (Id* ali_id = al->v()[i]->dyn_cast<Id>()) {
@@ -2928,7 +2978,10 @@ namespace MiniZinc {
         if (idx==vo.idx.end()) {
           VarDeclI* nvi = new VarDeclI(Location(), copy(env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
-          t._ti = Type::TI_PAR;
+          if (t._ti != Type::TI_PAR) {
+            t._ti = Type::TI_PAR;
+            nvi->e()->e(NULL);
+          }
           nvi->e()->ti()->type(t);
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
@@ -2936,8 +2989,6 @@ namespace MiniZinc {
           nvi->e()->introduced(false);
           id.decl(nvi->e());
           
-          nvi->e()->e(NULL);
-
           ASTStringMap<KeepAlive>::t::iterator it;
           if ( (it = env.reverseMappers.find(nvi->e()->id()->v())) != env.reverseMappers.end()) {
             Call* rhs = copy(env.cmap,it->second())->cast<Call>();
@@ -2962,13 +3013,16 @@ namespace MiniZinc {
             nvi->e()->e(rhs);
           } else {
             assert(nvi->e()->flat());
+            VarDecl* reallyFlat = nvi->e()->flat();
+            while (reallyFlat != reallyFlat->flat())
+              reallyFlat = reallyFlat->flat();
             if (nvi->e()->type().dim() == 0) {
-              nvi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+              reallyFlat->addAnnotation(new Annotation(Location(),constants().ann.output_var));
             } else {
-              std::vector<Expression*> args(nvi->e()->e()->type().dim());
+              std::vector<Expression*> args(reallyFlat->e()->type().dim());
               for (int i=0; i<args.size(); i++) {
                 if (nvi->e()->ti()->ranges()[i]->domain() == NULL) {
-                  args[i] = new SetLit(Location(), eval_intset(nvi->e()->flat()->ti()->ranges()[i]->domain()));
+                  args[i] = new SetLit(Location(), eval_intset(reallyFlat->ti()->ranges()[i]->domain()));
                 } else {
                   args[i] = new SetLit(Location(), eval_intset(nvi->e()->ti()->ranges()[i]->domain()));
                 }
@@ -2978,7 +3032,7 @@ namespace MiniZinc {
               args[0] = al;
               Annotation* ann = new Annotation(Location(),
                                                new Call(Location(),constants().ann.output_array,args,NULL));
-              nvi->e()->flat()->addAnnotation(ann);
+              reallyFlat->addAnnotation(ann);
             }
           }
           vo.add(nvi, env.output->size());
@@ -3040,7 +3094,12 @@ namespace MiniZinc {
           }
           if (!vdi->e()->type().ispar()) {
             if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
-              vd->e(vdi->e()->flat()->e());
+              VarDecl* reallyFlat = vd->flat();
+              while (reallyFlat!=reallyFlat->flat())
+                reallyFlat=reallyFlat->flat();
+              Expression* flate = follow_id(reallyFlat->id());
+              outputVarDecls(env,vo,flate);
+              vd->e(flate);
             } else if ( (it = env.reverseMappers.find(vd->id()->v())) != env.reverseMappers.end()) {
               Call* rhs = copy(env.cmap,it->second())->cast<Call>();
               {
@@ -3300,7 +3359,7 @@ namespace MiniZinc {
               if (c->id() == constants().ids.lin_exp) {
                 if (int_lin_eq) {
                   std::vector<Expression*> args(c->args().size());
-                  ArrayLit* le_c = c->args()[0]->cast<ArrayLit>();
+                  ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->v().size());
                   std::copy(le_c->v().begin(),le_c->v().end(),nc_c.begin());
                   nc_c.push_back(new IntLit(Location(),-1));
@@ -3615,7 +3674,7 @@ namespace MiniZinc {
               std::string cid;
               if (cc->id() == constants().ids.lin_exp) {
                 cid = "int_lin_eq";
-                ArrayLit* le_c = cc->args()[0]->cast<ArrayLit>();
+                ArrayLit* le_c = follow_id(cc->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 nc.push_back(new IntLit(Location(),-1));
@@ -3649,6 +3708,9 @@ namespace MiniZinc {
             }
           }
         } else if (vd->type()._dim > 0) {
+          if (!vd->e()->isa<ArrayLit>()) {
+            vd->e(follow_id(vd->e()));
+          }
           if (vd->ti()->ranges().size() == 1 &&
               vd->ti()->ranges()[0]->domain() != NULL &&
               vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {

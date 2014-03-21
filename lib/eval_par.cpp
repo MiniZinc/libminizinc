@@ -186,7 +186,7 @@ namespace MiniZinc {
       }
       break;
     case Expression::E_UNOP:
-      throw EvalError(e->loc(), "unary operator not supported");
+      throw EvalError(e->loc(), "not an array expression");
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
@@ -194,8 +194,7 @@ namespace MiniZinc {
           throw EvalError(e->loc(), "undeclared function", ce->id());
         
         if (ce->decl()->_builtins.e)
-          return ce->decl()->_builtins.e(ce->args())
-            ->cast<ArrayLit>();
+          return eval_array_lit(ce->decl()->_builtins.e(ce->args()));
 
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
@@ -204,7 +203,7 @@ namespace MiniZinc {
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(ce->args()[i]);
         }
-        ArrayLit* ret = eval_array_lit(ce->decl()->e());
+        ArrayLit* ret = copy(eval_array_lit(ce->decl()->e()),true)->cast<ArrayLit>();
         for (unsigned int i=ce->decl()->params().size(); i--;) {
           ce->decl()->params()[i]->e(NULL);
         }
@@ -214,7 +213,7 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
-        ArrayLit* ret = eval_array_lit(l->in());
+        ArrayLit* ret = copy(eval_array_lit(l->in()),true)->cast<ArrayLit>();
         l->popbindings();
         return ret;
       }
@@ -892,8 +891,7 @@ namespace MiniZinc {
     case Expression::E_ANON:
     case Expression::E_TIID:
       {
-        TIId* tiid = e->cast<TIId>();
-        throw EvalError(e->loc(),"not a par expression", tiid->v());
+        return e;
       }
     case Expression::E_COMP:
       if (e->cast<Comprehension>()->set())
@@ -911,15 +909,17 @@ namespace MiniZinc {
           dims[i].second = al->max(i);
         }
         ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
-        ret->type(al->type());
+        Type t = al->type();
+        if (t.isbot() && ret->v().size() > 0) {
+          t._bt = ret->v()[0]->type()._bt;
+        }
+        ret->type(t);
         return ret;
       }
     case Expression::E_VARDECL:
       {
         VarDecl* vd = e->cast<VarDecl>();
-        if (vd->e()==NULL)
-          throw EvalError(vd->loc(),"not a par expression", vd->id()->v());
-        return eval_par(vd->e());
+        throw EvalError(vd->loc(),"cannot evaluate variable declaration", vd->id()->v());
       }
     case Expression::E_ANN:
       {
@@ -947,14 +947,13 @@ namespace MiniZinc {
         if (id->decl()==NULL)
           throw EvalError(e->loc(),"undefined identifier", id->v());
         if (id->decl()->e()==NULL)
-          throw EvalError(e->loc(),"not a par expression", id->v());
-        return eval_par(id->decl()->e());
+          return id;
+        else
+          return eval_par(id->decl()->e());
       }
-    case Expression::E_ITE:
-    case Expression::E_CALL:
-    case Expression::E_LET:
-    case Expression::E_BINOP:
-    case Expression::E_SETLIT:
+    case Expression::E_STRINGLIT:
+      return e;
+    default:
       {
         if (e->type()._dim != 0) {
           ArrayLit* al = eval_array_lit(e);
@@ -967,51 +966,90 @@ namespace MiniZinc {
             dims[i].second = al->max(i);
           }
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
-          ret->type(al->type());
+          Type t = al->type();
+          if (t.isbot() && ret->v().size() > 0) {
+            t._bt = ret->v()[0]->type()._bt;
+          }
+          ret->type(t);
           return ret;
         }
-        if (e->type()._st == Type::ST_SET) {
-          if (e->type().isintset()) {
-            return EvalSetLit::e(e);
-          } else {
-            /// TODO
-            throw InternalError("not yet implemented");
+        if (e->type().isintset()) {
+          return EvalSetLit::e(e);
+        }
+        if (e->type()==Type::parint()) {
+          return EvalIntLit::e(e);
+        }
+        if (e->type()==Type::parbool()) {
+          return EvalBoolLit::e(e);
+        }
+        if (e->type()==Type::parfloat()) {
+          return EvalFloatLit::e(e);
+        }
+        if (e->type()==Type::parstring()) {
+          return EvalStringLit::e(e);
+        }
+        switch (e->eid()) {
+          case Expression::E_ITE:
+          {
+            ITE* ite = e->cast<ITE>();
+            for (unsigned int i=0; i<ite->size(); i++) {
+              if (ite->e_if(i)->type()==Type::parbool()) {
+                if (eval_bool(ite->e_if(i)))
+                  return eval_par(ite->e_then(i));
+              } else {
+                std::vector<Expression*> e_ifthen(ite->size()*2);
+                for (unsigned int i=0; i<ite->size(); i++) {
+                  e_ifthen[2*i] = eval_par(ite->e_if(i));
+                  e_ifthen[2*i+1] = eval_par(ite->e_then(i));
+                }
+                ITE* n_ite = new ITE(ite->loc(),e_ifthen,eval_par(ite->e_else()));
+                n_ite->type(ite->type());
+                return n_ite;
+              }
+            }
+            return eval_par(ite->e_else());
           }
+          case Expression::E_CALL:
+          {
+            Call* c = e->cast<Call>();
+            if (c->decl() && c->decl()->_builtins.e) {
+              return eval_par(c->decl()->_builtins.e(c->args()));
+            } else {
+              std::vector<Expression*> args(c->args().size());
+              for (unsigned int i=0; i<args.size(); i++) {
+                args[i] = eval_par(c->args()[i]);
+              }
+              Call* nc = new Call(c->loc(),c->id(),args,c->decl());
+              nc->type(c->type());
+              return nc;
+            }
+          }
+          case Expression::E_LET:
+          {
+            throw EvalError(e->loc(),"cannot partially evaluate let expression");
+          }
+          case Expression::E_BINOP:
+          {
+            BinOp* bo = e->cast<BinOp>();
+            BinOp* nbo = new BinOp(e->loc(),eval_par(bo->lhs()),bo->op(),eval_par(bo->rhs()));
+            nbo->type(bo->type());
+            return nbo;
+          }
+          case Expression::E_UNOP:
+          {
+            UnOp* uo = e->cast<UnOp>();
+            UnOp* nuo = new UnOp(e->loc(),uo->op(),eval_par(uo->e()));
+            nuo->type(uo->type());
+            return nuo;
+          }
+          case Expression::E_ARRAYACCESS:
+          {
+            throw EvalError(e->loc(),"cannot partially evaluate array access expression");
+          }
+          default:
+            throw EvalError(e->loc(),"cannot partially evaluate expression");
         }
       }
-      // fall through!
-    case Expression::E_BOOLLIT:
-    case Expression::E_INTLIT: 
-    case Expression::E_FLOATLIT:
-    case Expression::E_UNOP:
-    case Expression::E_ARRAYACCESS:
-      {
-        switch (e->type()._bt) {
-        case Type::BT_BOOL: return EvalBoolLit::e(e);
-        case Type::BT_INT:
-          if (e->type()._st == Type::ST_PLAIN)
-            return EvalIntLit::e(e);
-          else
-            return EvalSetLit::e(e);
-        case Type::BT_FLOAT:
-            if (e->type()._st == Type::ST_PLAIN)
-              return EvalFloatLit::e(e);
-            else
-              throw InternalError("set of float not yet implemented");
-        case Type::BT_STRING:
-            if (e->type()._st == Type::ST_PLAIN)
-              return EvalStringLit::e(e);
-            else
-              throw InternalError("set of string not yet implemented");
-        case Type::BT_ANN:
-        case Type::BT_BOT:
-        case Type::BT_TOP:
-        case Type::BT_UNKNOWN:
-          throw EvalError(e->loc(),"not a par expression");
-        }
-      }
-    case Expression::E_STRINGLIT:
-      return e;
     }
   }
 
