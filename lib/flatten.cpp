@@ -1296,7 +1296,7 @@ namespace MiniZinc {
           } else if (vd && vd->ti()->ranges().size() > 0) {
             // create fresh variables and array literal
             std::vector<std::pair<int,int> > dims;
-            unsigned int asize = 1;
+            IntVal asize = 1;
             for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
               TypeInst* ti = vd->ti()->ranges()[i];
               if (ti->domain()==NULL)
@@ -1305,13 +1305,13 @@ namespace MiniZinc {
               if (isv->size() != 1)
                 throw FlatteningError(ti->loc(),"invalid array index set");
               asize *= (isv->max(0)-isv->min(0)+1);
-              dims.push_back(std::pair<int,int>(isv->min(0),isv->max(0)));
+              dims.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(0).toInt()));
             }
             Type tt = vd->ti()->type();
             tt._dim = 0;
             TypeInst* vti = new TypeInst(Location(),tt,vd->ti()->domain());
             
-            std::vector<Expression*> elems(asize);
+            std::vector<Expression*> elems(asize.toInt());
             for (int i=0; i<asize; i++) {
               ASTString nid = env.genId("fresh_"+vd->id()->v().str());
               VarDecl* nvd = new VarDecl(vd->loc(),vti,nid);
@@ -2473,7 +2473,7 @@ namespace MiniZinc {
             Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
             EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
             ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
-            IntVal d = (cid == constants().ids.sum ? 0 : eval_int(c->args()[2]));
+            IntVal d = (cid == constants().ids.sum ? IntVal(0) : eval_int(c->args()[2]));
             
             std::vector<IntVal> c_coeff(al->v().size());
             if (cid==constants().ids.sum) {

@@ -57,7 +57,7 @@ namespace MiniZinc { namespace Ranges {
     /// Return largest value of range
     IntVal max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    UIntVal width(void) const;
+    IntVal width(void) const;
     //@}
   };
 
@@ -86,9 +86,9 @@ namespace MiniZinc { namespace Ranges {
   MinMax::max(void) const {
     return ma;
   }
-  inline UIntVal
+  inline IntVal
   MinMax::width(void) const {
-    return static_cast<UIntVal>(ma-mi)+1;
+    return ma-mi+1;
   }
   
   
@@ -199,7 +199,7 @@ namespace MiniZinc { namespace Ranges {
     /// Return largest value of range
     IntVal max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    UIntVal width(void) const;
+    IntVal width(void) const;
     //@}
   };
 
@@ -217,8 +217,8 @@ namespace MiniZinc { namespace Ranges {
   Const::min(void) const { return _min; }
   inline IntVal
   Const::max(void) const { return _max; }
-  inline UIntVal
-  Const::width(void) const { return static_cast<UIntVal>(max()-min())+1; }
+  inline IntVal
+  Const::width(void) const { return max()-min()+1; }
   
   /**
    * \brief Range iterator for computing union (binary)
@@ -588,7 +588,7 @@ namespace MiniZinc { namespace Ranges {
   //@{
   /// Size of all ranges of range iterator \a i
   template<class I>
-  unsigned int size(I& i);
+  IntVal size(I& i);
 
   /// Check whether range iterators \a i and \a j are equal
   template<class I, class J>
@@ -616,9 +616,9 @@ namespace MiniZinc { namespace Ranges {
 
 
   template<class I>
-  inline unsigned int
+  inline IntVal
   size(I& i) {
-    unsigned int s = 0;
+    IntVal s = 0;
     while (i()) {
       s += i.width(); ++i;
     }

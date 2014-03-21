@@ -225,12 +225,12 @@ namespace MiniZinc {
                                bool& success) {
     success = true;
     assert(al->dims() == dims.size());
-    int realidx = 0;
+    IntVal realidx = 0;
     int realdim = 1;
     for (unsigned int i=0; i<al->dims(); i++)
       realdim *= al->max(i)-al->min(i)+1;
     for (unsigned int i=0; i<al->dims(); i++) {
-      int ix = dims[i];
+      IntVal ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
         Type t = al->type();
@@ -252,7 +252,7 @@ namespace MiniZinc {
       realidx += (ix-al->min(i))*realdim;
     }
     assert(realidx >= 0 && realidx <= al->v().size());
-    return al->v()[realidx];
+    return al->v()[realidx.toInt()];
   }
   Expression* eval_arrayaccess(ArrayAccess* e, bool& success) {
     ArrayLit* al = eval_array_lit(e->v());

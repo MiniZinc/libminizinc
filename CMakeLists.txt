@@ -103,6 +103,7 @@ lib/flatten.cpp
 lib/optimize.cpp
 lib/parser.yxx
 lib/lexer.lxx
+lib/values.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
 include/minizinc/astiterator.hh

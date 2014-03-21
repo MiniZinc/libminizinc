@@ -14,10 +14,149 @@
 
 #include <minizinc/gc.hh>
 #include <algorithm>
+#include <functional>
+#include <vector>
 
 namespace MiniZinc {
   
-  typedef long long int IntVal;
+  class IntVal {
+  private:
+    long long int _v;
+    bool _infinity;
+  public:
+    IntVal(void) : _v(0), _infinity(false) {}
+    IntVal(long long int v) : _v(v), _infinity(false) {}
+    
+    long long int toInt(void) const { return _v; }
+    
+    bool isFinite(void) const { return !_infinity; }
+    bool isPlusInfinity(void) const { return _infinity && _v==1; }
+    bool isMinusInfinity(void) const { return _infinity && _v==-1; }
+    
+    IntVal& operator +=(const IntVal& x) {
+      if (_infinity)
+        return *this;
+      _v += x._v;
+      return *this;
+    }
+    IntVal& operator -=(const IntVal& x) {
+      _v -= x._v;
+      return *this;
+    }
+    IntVal& operator *=(const IntVal& x) {
+      _v *= x._v;
+      return *this;
+    }
+    IntVal& operator /=(const IntVal& x) {
+      _v /= x._v;
+      return *this;
+    }
+    IntVal operator -() {
+      return -_v;
+    }
+    void operator ++() {
+      ++_v;
+    }
+    void operator ++(int) {
+      ++_v;
+    }
+    void operator --() {
+      --_v;
+    }
+    void operator --(int) {
+      --_v;
+    }
+    static const IntVal minint;
+    static const IntVal maxint;
+  };
+
+  inline
+  bool operator ==(const IntVal& x, const IntVal& y) {
+    return x.isFinite()==y.isFinite() && x.toInt() == y.toInt();
+  }
+  inline
+  bool operator <=(const IntVal& x, const IntVal& y) {
+    return x.toInt() <= y.toInt();
+  }
+  inline
+  bool operator <(const IntVal& x, const IntVal& y) {
+    return x.toInt() < y.toInt();
+  }
+  inline
+  bool operator >=(const IntVal& x, const IntVal& y) {
+    return x.toInt() >= y.toInt();
+  }
+  inline
+  bool operator >(const IntVal& x, const IntVal& y) {
+    return x.toInt() > y.toInt();
+  }
+  inline
+  bool operator !=(const IntVal& x, const IntVal& y) {
+    return x.toInt() != y.toInt();
+  }
+  inline
+  IntVal operator +(const IntVal& x, const IntVal& y) {
+    return x.toInt()+y.toInt();
+  }
+  inline
+  IntVal operator -(const IntVal& x, const IntVal& y) {
+    return x.toInt()-y.toInt();
+  }
+  inline
+  IntVal operator *(const IntVal& x, const IntVal& y) {
+    return x.toInt()*y.toInt();
+  }
+  inline
+  IntVal operator /(const IntVal& x, const IntVal& y) {
+    return x.toInt()/y.toInt();
+  }
+  inline
+  IntVal operator %(const IntVal& x, const IntVal& y) {
+    return x.toInt()%y.toInt();
+  }
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const IntVal& s) {
+    return os << s.toInt();
+  }
+}
+
+
+namespace std {
+  inline
+  MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
+    return abs(x.toInt());
+  }
+  
+  inline
+  MiniZinc::IntVal min(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
+    return min(x.toInt(),y.toInt());
+  }
+  inline
+  MiniZinc::IntVal max(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
+    return max(x.toInt(),y.toInt());
+  }
+  
+  template<>
+  struct hash<MiniZinc::IntVal> {
+  public:
+    size_t operator()(const MiniZinc::IntVal& s) const {
+      std::hash<long long int> h;
+      return h(s.toInt());
+    }
+  };
+  template<>
+  struct equal_to<MiniZinc::IntVal> {
+  public:
+    bool operator()(const MiniZinc::IntVal& s0,
+                    const MiniZinc::IntVal& s1) const {
+      return s0==s1;
+    }
+  };
+}
+
+namespace MiniZinc {
+
   typedef unsigned long long int UIntVal;
 
   typedef double FloatVal;
@@ -47,7 +186,7 @@ namespace MiniZinc {
     /// Construct empty set
     IntSetVal(void) : ASTChunk(0) {}
     /// Construct set of single range
-    IntSetVal(int m, int n) : ASTChunk(sizeof(Range)) {
+    IntSetVal(IntVal m, IntVal n) : ASTChunk(sizeof(Range)) {
       get(0).min = m;
       get(0).max = n;
     }
@@ -72,8 +211,8 @@ namespace MiniZinc {
     /// Return width of range \a i
     IntVal width(int i) const { assert(i<size()); return max(i)-min(i)+1; }
     /// Return cardinality
-    unsigned int card(void) const {
-      unsigned int c = 0;
+    IntVal card(void) const {
+      IntVal c = 0;
       for (unsigned int i=size(); i--;)
         c += width(i);
       return c;
@@ -93,7 +232,7 @@ namespace MiniZinc {
       } else {
         IntSetVal* r =
           static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
-        new (r) IntSetVal(static_cast<int>(m),static_cast<int>(n));
+        new (r) IntSetVal(m,n);
         return r;
       }
     }

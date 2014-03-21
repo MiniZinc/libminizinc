@@ -68,7 +68,7 @@ namespace MiniZinc {
   template<class Eval>
   void
   eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            int i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+            IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     e->decl(gen,id)->e()->cast<IntLit>()->v(i);
     if (id == e->n_decls(gen)-1) {
       if (gen == e->n_generators()-1) {
