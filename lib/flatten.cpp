@@ -1302,10 +1302,15 @@ namespace MiniZinc {
               if (ti->domain()==NULL)
                 throw FlatteningError(ti->loc(),"array dimensions unknown");
               IntSetVal* isv = eval_intset(ti->domain());
-              if (isv->size() != 1)
-                throw FlatteningError(ti->loc(),"invalid array index set");
-              asize *= (isv->max(0)-isv->min(0)+1);
-              dims.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(0).toInt()));
+              if (isv->size() == 0) {
+                dims.push_back(std::pair<int,int>(1,0));
+                asize = 0;
+              } else {
+                if (isv->size() != 1)
+                  throw FlatteningError(ti->loc(),"invalid array index set");
+                asize *= (isv->max(0)-isv->min(0)+1);
+                dims.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(0).toInt()));
+              }
             }
             Type tt = vd->ti()->type();
             tt._dim = 0;
