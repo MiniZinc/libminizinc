@@ -2822,7 +2822,7 @@ namespace MiniZinc {
             Id* nid = nvd->id();
             vd->e(nid);
             flatmap.push_back(vd->flat());
-            vd->flat(vd);
+            vd->flat(nvd);
             (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
           } else {
             if (ctx.b==C_ROOT) {
