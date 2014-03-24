@@ -57,6 +57,10 @@ namespace MiniZinc {
     void remove(Expression* e) {
       _m.erase(e);
     }
+    /// Remove all elements from the map
+    void clear(void) {
+      _m.clear();
+    }
   };
 
 

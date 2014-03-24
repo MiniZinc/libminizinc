@@ -50,6 +50,11 @@ namespace MiniZinc {
     return vi->second.size();
   }
   
+  void VarOccurrences::clear(void) {
+    _m.clear();
+    idx.clear();
+  }
+  
   int VarOccurrences::occurrences(VarDecl* v) {
     ExpressionMap<Items>::iterator vi = _m.find(v);
     return (vi==_m.end() ? 0 : vi->second.size());

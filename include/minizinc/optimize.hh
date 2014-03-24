@@ -40,6 +40,8 @@ namespace MiniZinc {
     /// Return number of occurrences of \a v
     int occurrences(VarDecl* v);
     
+    /// Clear all entries
+    void clear(void);
   };
   
   class CollectOccurrencesE : public EVisitor {
