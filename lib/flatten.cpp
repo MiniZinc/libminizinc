@@ -415,12 +415,15 @@ namespace MiniZinc {
       if (vd==constants().var_true) {
         if (!isfalse(e)) {
           if (Id* id = e->dyn_cast<Id>()) {
-            assert(id->decl() != NULL);
-            if (id->decl()->ti()->domain() && istrue(id->decl()->ti()->domain())) {
-              GCLock lock;
-              env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
-            } else {
-              id->decl()->ti()->domain(constants().lit_false);
+            while (id != NULL) {
+              assert(id->decl() != NULL);
+              if (id->decl()->ti()->domain() && istrue(id->decl()->ti()->domain())) {
+                GCLock lock;
+                env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+              } else {
+                id->decl()->ti()->domain(constants().lit_false);
+              }
+              id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
             }
             return constants().lit_true;
           } else {
@@ -448,21 +451,24 @@ namespace MiniZinc {
         if (!istrue(e)) {
           if (Id* id = e->dyn_cast<Id>()) {
             assert(id->decl() != NULL);
-            if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
-              GCLock lock;
-              env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
-            } else {
-              id->decl()->ti()->domain(constants().lit_true);
-              GCLock lock;
-              std::vector<Expression*> args(2);
-              args[0] = id;
-              args[1] = constants().lit_true;
-              Call* c = new Call(Location(),"bool_eq",args);
-              c->decl(env.orig->matchFn(c));
-              c->type(c->decl()->rtype(args));
-              if (c->decl()->e()) {
-                flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+            while (id != NULL) {
+              if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
+                GCLock lock;
+                env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+              } else {
+                id->decl()->ti()->domain(constants().lit_true);
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = id;
+                args[1] = constants().lit_true;
+                Call* c = new Call(Location(),"bool_eq",args);
+                c->decl(env.orig->matchFn(c));
+                c->type(c->decl()->rtype(args));
+                if (c->decl()->e()) {
+                  flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
               }
+              id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
             }
           } else {
             GCLock lock;
@@ -522,21 +528,30 @@ namespace MiniZinc {
                 }
               }
               if (ibv) {
-                if (vd->ti()->domain()) {
-                  IntSetVal* domain = eval_intset(vd->ti()->domain());
-                  IntSetRanges dr(domain);
-                  IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  IntSetVal* newibv = IntSetVal::ai(i);
-                  if (ibv->card() == newibv->card()) {
-                    vd->ti()->setComputedDomain(true);
+                Id* id = vd->id();
+                while (id != NULL) {
+                  if (id->decl()->ti()->domain()) {
+                    IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
+                    IntSetRanges dr(domain);
+                    IntSetRanges ibr(ibv);
+                    Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
+                    IntSetVal* newibv = IntSetVal::ai(i);
+                    if (ibv->card() == newibv->card()) {
+                      id->decl()->ti()->setComputedDomain(true);
+                    } else {
+                      ibv = newibv;
+                    }
                   } else {
-                    ibv = newibv;
+                    id->decl()->ti()->setComputedDomain(true);
                   }
-                } else {
-                  vd->ti()->setComputedDomain(true);
+                  if (ibv->size()==0) {
+                    std::cerr << "Warning: model inconsistency detected" << std::endl;
+                    env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                  } else {
+                    id->decl()->ti()->domain(new SetLit(Location(),ibv));
+                  }
+                  id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
-                vd->ti()->domain(new SetLit(Location(),ibv));
               }
             } else if (vd->e()->type().isbool()) {
               addCtxAnn(vd, ctx.b);
