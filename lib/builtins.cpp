@@ -620,6 +620,9 @@ namespace MiniZinc {
   bool b_fix_bool(ASTExprVec<Expression> args) {
     return eval_bool(b_fix(args));
   }
+  IntSetVal* b_fix_set(ASTExprVec<Expression> args) {
+    return eval_intset(b_fix(args));
+  }
 
   Expression* b_fix_array(ASTExprVec<Expression> args) {
     assert(args.size()==1);
@@ -1068,6 +1071,7 @@ namespace MiniZinc {
       t[0] = Type::optvartop();
       rb(m, ASTString("fix"), t, b_fix_bool);
       rb(m, ASTString("fix"), t, b_fix_int);
+      rb(m, ASTString("fix"), t, b_fix_set);
     }
     {
       std::vector<Type> t(1);
