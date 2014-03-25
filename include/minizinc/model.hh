@@ -124,6 +124,8 @@ namespace MiniZinc {
         Model* cm = models.back();
         models.pop_back();
         for (unsigned int i=0; i<cm->_items.size(); i++) {
+          if (cm->_items[i]->removed())
+            continue;
           switch (cm->_items[i]->iid()) {
           case Item::II_INC:
             if (cm->_items[i]->cast<IncludeI>()->own())
