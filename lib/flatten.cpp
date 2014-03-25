@@ -544,8 +544,8 @@ namespace MiniZinc {
                   } else {
                     id->decl()->ti()->setComputedDomain(true);
                   }
-                  if (ibv->size()==0) {
-                    std::cerr << "Warning: model inconsistency detected" << std::endl;
+                  if (id->type()._st==Type::ST_PLAIN && ibv->size()==0) {
+                    std::cerr << "Warning: model inconsistency detected";
                     env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location(),ibv));
