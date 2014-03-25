@@ -79,7 +79,9 @@ namespace MiniZinc {
     : vo(vo0), vd(vd0), item(item0) {}
     void vId(Id& id) {
       if (id.decl() && vo.remove(id.decl(),item) == 0) {
-        vd.push_back(id.decl());
+        if (id.decl()->e()==NULL || id.decl()->ti()->domain()==NULL || id.decl()->ti()->computedDomain()) {
+          vd.push_back(id.decl());
+        }
       }
     }
   };
