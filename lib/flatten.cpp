@@ -422,6 +422,16 @@ namespace MiniZinc {
                 env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
               } else {
                 id->decl()->ti()->domain(constants().lit_false);
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = id;
+                args[1] = constants().lit_false;
+                Call* c = new Call(Location(),"bool_eq",args);
+                c->decl(env.orig->matchFn(c));
+                c->type(c->decl()->rtype(args));
+                if (c->decl()->e()) {
+                  flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
               }
               id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
             }
