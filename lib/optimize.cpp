@@ -23,6 +23,10 @@ namespace MiniZinc {
   {
     idx.insert(i->e(), idx_i);
   }
+  void VarOccurrences::add(VarDecl *e, int idx_i)
+  {
+    idx.insert(e, idx_i);
+  }
   int VarOccurrences::find(VarDecl* vd)
   {
     ExpressionMap<int>::iterator it = idx.find(vd);

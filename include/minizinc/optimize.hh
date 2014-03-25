@@ -26,6 +26,8 @@ namespace MiniZinc {
 
     /// Add \a to the index
     void add(VarDeclI* i, int idx_i);
+    /// Add \a to the index
+    void add(VarDecl* e, int idx_i);
     /// Find index of \a vd
     int find(VarDecl* vd);
     /// Remove index of \a vd
