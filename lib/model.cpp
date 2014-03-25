@@ -108,7 +108,6 @@ namespace MiniZinc {
         }
       }
     }
-    assert(false);
     return NULL;
   }
 
