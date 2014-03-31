@@ -8,12 +8,9 @@
 include "domain_encodings.mzn";
 
 predicate inverse(array[int] of var int: f, array[int] of var int: g) =
-    let { set of int: ixf = index_set(f),
-          set of int: ixg = index_set(g),
-          array[ixf, ixg] of var 0..1: map }
-    in
-    equality_encoding(f, map)
-    /\
-    equality_encoding(g, array2d(ixg, ixf, [ map[i,j] | j in ixg, i in ixf ]));
+    let {
+      array[int,int] of var 0..1: map_f = eq_encode(f);
+      array[int,int] of var 0..1: map_g = eq_encode(g);
+    } in forall (i in index_set(f), j in index_set(g)) (map_f[i,j] = map_g[j,i]);
 
 %-----------------------------------------------------------------------------%

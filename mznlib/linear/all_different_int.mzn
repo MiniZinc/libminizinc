@@ -10,13 +10,10 @@ include "domain_encodings.mzn";
 
 predicate all_different_int(array[int] of var int: x) =
     let {
-        set of int: ix = index_set(x),
-        set of int: domx = dom_array(x),
-        set of int: dx = min(domx)..max(domx),
-        array[ix, dx] of var 0..1: x_eq_d
+        array[int,int] of var 0..1: x_eq_d = eq_encode(x)
     } in (
-    	equality_encoding(x, x_eq_d) /\
-        forall(d in dx)( sum(i in ix)( x_eq_d[i,d] ) <= 1 )
+        forall(d in index_set_2of2(x_eq_d))( sum(i in index_set_1of2(x_eq_d))( x_eq_d[i,d] ) <= 1 )
     );
+
 
 %-----------------------------------------------------------------------------%
