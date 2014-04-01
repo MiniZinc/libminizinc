@@ -340,7 +340,28 @@ namespace MiniZinc {
     assert(args.size() == 1);
     return b_ub_set(args[0]);
   }
-
+  bool b_has_ub_set(ASTExprVec<Expression> args) {
+    Expression* e = args[0];
+    for (;;) {
+      switch (e->eid()) {
+        case Expression::E_SETLIT: return true;
+        case Expression::E_ID:
+        {
+          Id* id = e->cast<Id>();
+          if (id->decl()==NULL)
+            throw EvalError(id->loc(),"undefined identifier");
+          if (id->decl()->e()==NULL)
+            return id->decl()->ti()->domain() != NULL;
+          else
+            e = id->decl()->e();
+        }
+          break;
+        default:
+          throw EvalError(e->loc(),"invalid argument to has_ub_set");
+      }
+    }
+  }
+  
   IntSetVal* b_array_ub_set(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     GCLock lock;
@@ -1055,6 +1076,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       rb(m, ASTString("has_bounds"), t, b_has_bounds);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varsetint();
+      rb(m, ASTString("has_ub_set"), t, b_has_ub_set);
     }
     {
       std::vector<Type> t(1);

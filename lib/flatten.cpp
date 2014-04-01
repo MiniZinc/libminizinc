@@ -1960,6 +1960,43 @@ namespace MiniZinc {
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
               ret.b = bind(env,Ctx(),b,constants().lit_true);
 
+              if (ctx.b==C_ROOT && b==constants().var_true && e1.r()->type().ispar() &&
+                  e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
+                VarDecl* vd = e0.r()->cast<Id>()->decl();
+                if (vd->ti()->domain()==NULL) {
+                  vd->ti()->domain(e1.r());
+                } else {
+                  GCLock lock;
+                  IntSetVal* newdom = eval_intset(e1.r());
+                  Id* id = vd->id();
+                  while (id != NULL) {
+                    if (id->decl()->ti()->domain()) {
+                      IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
+                      IntSetRanges dr(domain);
+                      IntSetRanges ibr(newdom);
+                      Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
+                      IntSetVal* newibv = IntSetVal::ai(i);
+                      if (newdom->card() == newibv->card()) {
+                        id->decl()->ti()->setComputedDomain(true);
+                      } else {
+                        newdom = newibv;
+                      }
+                    } else {
+                      id->decl()->ti()->setComputedDomain(true);
+                    }
+                    if (id->type()._st==Type::ST_PLAIN && newdom->size()==0) {
+                      std::cerr << "Warning: model inconsistency detected";
+                      env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                    } else {
+                      id->decl()->ti()->domain(new SetLit(Location(),newdom));
+                    }
+                    id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
+                  }
+
+                }
+                break;
+              }
+              
               std::vector<KeepAlive> args;
               std::string callid;
 
@@ -2610,7 +2647,7 @@ namespace MiniZinc {
                         std::vector<Expression*> domargs(2);
                         domargs[0] = args[i];
                         domargs[1] = dom;
-                        Call* c = new Call(Location(),"array_dom",domargs);
+                        Call* c = new Call(Location(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(c));
                         domconstraint = c;
@@ -2821,34 +2858,51 @@ namespace MiniZinc {
         for (unsigned int i=0; i<let->let().size(); i++) {
           Expression* le = let->let()[i];
           if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
-            EE ee;
-            TypeInst* ti = eval_typeinst(env,vd);
-            VarDecl* nvd = new VarDecl(vd->loc(),ti,
-                                      env.genId("FromLet_"+vd->id()->v().str()));
-            nvd->toplevel(true);
-            nvd->introduced(true);
-            nvd->flat(nvd);
-            nvd->type(vd->type());
-            VarDeclI* nv = new VarDeclI(Location(),nvd);
-            env.flat_addItem(nv);
+            Expression* let_e = NULL;
             if (vd->e()) {
               Ctx nctx = ctx;
               nctx.neg = false;
               if (vd->e()->type()._bt==Type::BT_BOOL)
                 nctx.b = C_MIX;
 
-              ee = flat_exp(env,nctx,vd->e(),nvd,NULL);
+              EE ee = flat_exp(env,nctx,vd->e(),NULL,NULL);
+              let_e = ee.r();
               cs.push_back(ee);
+              if (vd->ti()->domain() != NULL) {
+                std::vector<Expression*> domargs(2);
+                domargs[0] = ee.r();
+                domargs[1] = vd->ti()->domain();
+                Call* c = new Call(vd->ti()->loc(),"var_dom",domargs);
+                c->type(Type::varbool());
+                c->decl(env.orig->matchFn(c));
+                VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
+                ee = flat_exp(env, nctx, c, NULL, b_b);
+                cs.push_back(ee);
+                ee.b = ee.r;
+                cs.push_back(ee);
+              }
             } else {
               if (ctx.b==C_NEG || ctx.b==C_MIX)
                 throw FlatteningError(vd->loc(),
                   "free variable in non-positive context");
+              TypeInst* ti = eval_typeinst(env,vd);
+              VarDecl* nvd = new VarDecl(vd->loc(),ti,
+                                         env.genId("FromLet_"+vd->id()->v().str()));
+              nvd->toplevel(true);
+              nvd->introduced(true);
+              nvd->flat(nvd);
+              nvd->type(vd->type());
+              VarDeclI* nv = new VarDeclI(Location(),nvd);
+              env.flat_addItem(nv);
+              let_e = nvd->id();
             }
-            Id* nid = nvd->id();
-            vd->e(nid);
+            vd->e(let_e);
             flatmap.push_back(vd->flat());
-            vd->flat(nvd);
-            (void) flat_exp(env,Ctx(),nid,NULL,constants().var_true);
+            if (Id* id = let_e->dyn_cast<Id>()) {
+              vd->flat(id->decl());
+            } else {
+              vd->flat(vd);
+            }
           } else {
             if (ctx.b==C_ROOT) {
               (void) flat_exp(env,Ctx(),le,constants().var_true,constants().var_true);

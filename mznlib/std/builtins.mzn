@@ -1,3 +1,28 @@
+% domain constraints
+predicate var_dom(var int:x, set of int: s) =
+  if has_bounds(x) /\ dom(x) subset s then true
+  else x in s
+  endif;
+predicate var_dom(var set of int: x, set of int: s) =
+  if has_ub_set(x) /\ ub(x) subset s then true
+  else set_subset(x,s)
+  endif;
+
+predicate var_dom(array[$T] of var set of int: x, set of int: d) =
+    let { array[int] of var set of int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+predicate var_dom(array[$T] of var int: x, set of int: d) =
+    let { array[int] of var int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+
+test var_dom(array[$T] of set of int: x, set of int: d) =
+    let { array[int] of set of int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (xx[i] subset d);
+test var_dom(array[$T] of int: x, set of int: d) =
+    let { array[int] of int: xx = array1d(1..length(x),x) }
+    in forall (i in index_set(xx)) (xx[i] in d);
+
+% integer constraints
 predicate int_abs(var int: a, var int: b);
 predicate int_eq(var int: a, var int: b);
 predicate int_eq_reif(var int: a, var int: b, var bool: r);
@@ -38,20 +63,6 @@ function var set of int: set_intersect(var set of int, var set of int);
 function var set of int: set_union(var set of int, var set of int);
 function var set of int: set_diff(var set of int, var set of int);
 function var set of int: set_symdiff(var set of int, var set of int);
-
-predicate array_dom(array[$T] of var set of int: x, set of int: d) =
-    let { array[int] of var set of int: xx = array1d(1..length(x),x) }
-    in forall (i in index_set(xx)) (xx[i] subset d);
-predicate array_dom(array[$T] of var int: x, set of int: d) =
-    let { array[int] of var int: xx = array1d(1..length(x),x) }
-    in forall (i in index_set(xx)) (xx[i] in d);
-
-test array_dom(array[$T] of set of int: x, set of int: d) =
-    let { array[int] of set of int: xx = array1d(1..length(x),x) }
-    in forall (i in index_set(xx)) (xx[i] subset d);
-test array_dom(array[$T] of int: x, set of int: d) =
-    let { array[int] of int: xx = array1d(1..length(x),x) }
-    in forall (i in index_set(xx)) (xx[i] in d);
 
 % Float constraints
 predicate float_abs(var float, var float);
@@ -741,6 +752,7 @@ function set of int: dom_array(array[$T] of var int);
 function int: dom_size(var int: x) = card(dom(x));
 
 function par bool: has_bounds(var int);
+function par bool: has_ub_set(var set of int);
 
 % Other operations
 
