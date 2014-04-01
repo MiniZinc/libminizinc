@@ -106,3 +106,11 @@ predicate set_in_reif(var int: x, var set of int: y, var bool: b) =
   let {
     array[int] of var bool: by = set2bools(y);
   } in b <-> by[x];
+
+function array[int] of var bool: setarray2bools(array[int] of var set of int: x) =
+  if length(x)=0 then [] else
+  set2bools(x[1])++setarray2bools([x[i]|i in 2..length(x)])
+  endif;
+
+annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
+  bool_search(setarray2bools(x),a1,a2,a3);
