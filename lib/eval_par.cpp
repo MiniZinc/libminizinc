@@ -543,6 +543,8 @@ namespace MiniZinc {
             default:
               throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
+        } else if (bo->op()==BOT_EQ && bo->lhs()->type().isann()) {
+          return Expression::equal(eval_par(bo->lhs()), eval_par(bo->rhs()));
         } else {
           throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }
