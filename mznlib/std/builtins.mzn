@@ -380,7 +380,7 @@ function var int: div_t(var int: x, var int: y) :: promise_total =
     constraint int_div(x,y,z); } in z;
 function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
-    var int: yy = if y=0 then 1 else y endif;
+    var ((dom(y) diff {0}) union {1}): yy = if y=0 then 1 else y endif;
   } in div_t(x,yy);
 
 function var int: 'div'(var int: x,var int: y) =
