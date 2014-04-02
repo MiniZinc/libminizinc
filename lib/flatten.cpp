@@ -2078,7 +2078,7 @@ namespace MiniZinc {
                   default: assert(false); break;
                   }
                   if (result || doubleNeg) {
-                    if (doubleNeg) {
+                    if (result && doubleNeg) {
                       ctx.b = -ctx.b;
                       ctx.neg = !ctx.neg;
                     }
@@ -2133,7 +2133,7 @@ namespace MiniZinc {
                       default: break;
                     }
                     if (subsumed || (failed && doubleNeg)) {
-                      if (doubleNeg) {
+                      if (subsumed && doubleNeg) {
                         ctx.b = -ctx.b;
                         ctx.neg = !ctx.neg;
                       }
@@ -2141,7 +2141,8 @@ namespace MiniZinc {
                       ret.r = conj(env,r,ctx,ees);
                       break;
                     } else if (failed) {
-                      ret.r = bind(env,ctx,r,constants().lit_false);
+                      ees[2].b = constants().lit_false;
+                      ret.r = conj(env,r,ctx,ees);
                       break;
                     }
                   }
@@ -3804,6 +3805,13 @@ namespace MiniZinc {
         }
       }
     }
+    
+//    for (unsigned int i=0; i<m.size(); i++) {
+//      GCLock lock;
+//      if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
+//        vdi->e()->addAnnotation(new Annotation(Location(),new IntLit(Location(),env.vo.occurrences(vdi->e()))));
+//      }
+//    }
     
     m.compact();
     
