@@ -321,6 +321,13 @@ namespace MiniZinc {
     IntVal width(void) const { return rs->width(n); }
   };
   
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const IntSetVal& s) {
+    for (IntSetRanges isr(&s); isr(); ++isr)
+      os << isr.min() << ".." << isr.max() << " ";
+    return os;
+  }
   
 }
 
