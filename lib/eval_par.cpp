@@ -46,6 +46,13 @@ namespace MiniZinc {
       return eval_int(e);
     }
   };
+  class EvalFloatVal {
+  public:
+    typedef FloatVal Val;
+    static FloatVal e(Expression* e) {
+      return eval_float(e);
+    }
+  };
   class EvalFloatLit {
   public:
     typedef FloatLit* Val;
@@ -78,12 +85,26 @@ namespace MiniZinc {
       return constants().boollit(eval_bool(e));
     }
   };
+  class EvalBoolVal {
+  public:
+    typedef bool Val;
+    static bool e(Expression* e) {
+      return eval_bool(e);
+    }
+  };
   class EvalArrayLit {
   public:
     typedef ArrayLit* Val;
     typedef Expression* ArrayVal;
     static ArrayLit* e(Expression* e) {
       return eval_array_lit(e);
+    }
+  };
+  class EvalIntSet {
+  public:
+    typedef IntSetVal* Val;
+    static IntSetVal* e(Expression* e) {
+      return eval_intset(e);
     }
   };
   class EvalSetLit {
@@ -111,6 +132,24 @@ namespace MiniZinc {
     }
   };
 
+  template<class Eval>
+  typename Eval::Val eval_call(Call* ce) {
+    std::vector<Expression*> previousParameters(ce->decl()->params().size());
+    for (unsigned int i=ce->decl()->params().size(); i--;) {
+      VarDecl* vd = ce->decl()->params()[i];
+      previousParameters[i] = vd->e();
+      vd->flat(vd);
+      vd->e(ce->args()[i]);
+    }
+    typename Eval::Val ret = Eval::e(ce->decl()->e());
+    for (unsigned int i=ce->decl()->params().size(); i--;) {
+      VarDecl* vd = ce->decl()->params()[i];
+      vd->e(previousParameters[i]);
+      vd->flat(vd->e() ? vd : NULL);
+    }
+    return ret;
+  }
+  
   ArrayLit* eval_array_comp(Comprehension* e) {
     ArrayLit* ret;
     if (e->type() == Type::parint(1)) {
@@ -391,14 +430,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        IntSetVal* ret = eval_intset(ce->decl()->e());
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalIntSet>(ce);
       }
       break;
     case Expression::E_LET:
@@ -577,14 +609,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        bool ret = eval_bool(ce->decl()->e());
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalBoolVal>(ce);
       }
       break;
     case Expression::E_LET:
@@ -677,14 +702,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        IntVal ret = eval_int(ce->decl()->e());
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalIntVal>(ce);
       }
       break;
     case Expression::E_LET:
@@ -776,14 +794,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        FloatVal ret = eval_float(ce->decl()->e());
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalFloatVal>(ce);
       }
         break;
       case Expression::E_LET:
@@ -865,14 +876,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        std::string ret = eval_string(ce->decl()->e());
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalString>(ce);
       }
         break;
       case Expression::E_LET:
