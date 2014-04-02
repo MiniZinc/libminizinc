@@ -664,6 +664,32 @@ namespace MiniZinc {
         } else if (vd->e() != e) {
           e = follow_id_to_decl(e);
           switch (e->eid()) {
+          case Expression::E_BOOLLIT:
+            {
+              Id* id = vd->id();
+              while (id != NULL) {
+                if (id->decl()->ti()->domain() && eval_bool(id->decl()->ti()->domain()) == e->cast<BoolLit>()->v()) {
+                  return constants().lit_true;
+                } else if (id->decl()->ti()->domain() && eval_bool(id->decl()->ti()->domain()) != e->cast<BoolLit>()->v()) {
+                  GCLock lock;
+                  env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                } else {
+                  id->decl()->ti()->domain(e);
+                  GCLock lock;
+                  std::vector<Expression*> args(2);
+                  args[0] = id;
+                  args[1] = e;
+                  Call* c = new Call(Location(),"bool_eq",args);
+                  c->decl(env.orig->matchFn(c));
+                  c->type(c->decl()->rtype(args));
+                  if (c->decl()->e()) {
+                    flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                  }
+                }
+                id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
+              }
+              return constants().lit_true;
+            }
           case Expression::E_VARDECL:
             {
               VarDecl* e_vd = e->cast<VarDecl>();
