@@ -1996,29 +1996,30 @@ namespace MiniZinc {
                   IntSetVal* newdom = eval_intset(e1.r());
                   Id* id = vd->id();
                   while (id != NULL) {
+                    bool changeDom = false;
                     if (id->decl()->ti()->domain()) {
                       IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
                       IntSetRanges dr(domain);
                       IntSetRanges ibr(newdom);
                       Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
                       IntSetVal* newibv = IntSetVal::ai(i);
-                      if (newdom->card() == newibv->card()) {
-                        id->decl()->ti()->setComputedDomain(true);
-                      } else {
+                      if (domain->card() != newibv->card()) {
                         newdom = newibv;
+                        changeDom = true;
                       }
                     } else {
-                      id->decl()->ti()->setComputedDomain(true);
+                      changeDom = true;
                     }
                     if (id->type()._st==Type::ST_PLAIN && newdom->size()==0) {
                       std::cerr << "Warning: model inconsistency detected";
                       env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
-                    } else {
+                    } else if (changeDom) {
+                      id->decl()->ti()->setComputedDomain(false);
                       id->decl()->ti()->domain(new SetLit(Location(),newdom));
                     }
                     id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                   }
-
+                  
                 }
                 break;
               }
