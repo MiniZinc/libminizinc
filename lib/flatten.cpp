@@ -3480,7 +3480,7 @@ namespace MiniZinc {
                 vdi->e()->e(NULL);
                 env.flat_addItem(ci);
               }
-            } else if (vdi->e()->ti()->computedDomain()) {
+            } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
               CollectDecls cd(env.vo,deletedVarDecls,vdi);
               topDown(cd,vdi->e()->e());
               vdi->remove();
