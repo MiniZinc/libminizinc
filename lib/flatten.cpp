@@ -2075,6 +2075,51 @@ namespace MiniZinc {
                   } else {
                     d = -d;
                   }
+                  IntBounds ib = compute_int_bounds(alv[0]());
+                  if (ib.valid) {
+                    bool failed = false;
+                    bool subsumed = false;
+                    switch (bot) {
+                      case BOT_LE:
+                        subsumed = ib.u < d;
+                        failed = ib.l >= d;
+                        break;
+                      case BOT_LQ:
+                        subsumed = ib.u <= d;
+                        failed = ib.l > d;
+                        break;
+                      case BOT_GR:
+                        subsumed = ib.l > d;
+                        failed = ib.u <= d;
+                        break;
+                      case BOT_GQ:
+                        subsumed = ib.l >= d;
+                        failed = ib.u < d;
+                        break;
+                      case BOT_EQ:
+                        subsumed = ib.l==d && ib.u==d;
+                        failed = ib.u < d || ib.l > d;
+                        break;
+                      case BOT_NQ:
+                        subsumed = ib.u < d || ib.l > d;
+                        failed = ib.l==d && ib.u==d;
+                        break;
+                      default: break;
+                    }
+                    if (subsumed || (failed && doubleNeg)) {
+                      if (doubleNeg) {
+                        ctx.b = -ctx.b;
+                        ctx.neg = !ctx.neg;
+                      }
+                      ees[2].b = constants().lit_true;
+                      ret.r = conj(env,r,ctx,ees);
+                      break;
+                    } else if (failed) {
+                      ret.r = bind(env,ctx,r,constants().lit_false);
+                      break;
+                    }
+                  }
+                  
                   if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
                     GCLock lock;
                     VarDecl* vd = alv[0]()->cast<Id>()->decl();
