@@ -4004,7 +4004,7 @@ namespace MiniZinc {
       bool operator() (Item* i, Item* j) {
         if (i->iid()==Item::II_FUN || j->iid()==Item::II_FUN) {
           if (i->iid()==j->iid())
-            return i<j;
+            return false;
           return i->iid()==Item::II_FUN;
         }
         if (i->iid()==Item::II_SOL) {
@@ -4029,17 +4029,7 @@ namespace MiniZinc {
               if (id->decl() == i->cast<VarDeclI>()->e())
                 return true;
         }
-        if (j->iid()==Item::II_VD) {
-          if (j->iid() != i->iid())
-            return false;
-          if (j->cast<VarDeclI>()->e()->type()._dim == 0 &&
-              i->cast<VarDeclI>()->e()->type()._dim != 0)
-            return false;
-          if (j->cast<VarDeclI>()->e()->e()==NULL &&
-              i->cast<VarDeclI>()->e()->e() != NULL)
-            return false;
-        }
-        return i<j;
+        return false;
       }
     } _cmp;
     std::stable_sort(m->_items.begin(),m->_items.end(),_cmp);
