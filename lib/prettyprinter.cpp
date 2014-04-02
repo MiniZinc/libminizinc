@@ -525,6 +525,8 @@ namespace MiniZinc {
     void p(const Item* i) {
       if (i==NULL)
         return;
+      if (i->removed())
+        os << "% ";
       switch (i->iid()) {
       case Item::II_INC:
         os << "include \"" << i->cast<IncludeI>()->f() << "\"";
