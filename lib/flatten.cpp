@@ -357,7 +357,18 @@ namespace MiniZinc {
       }
     }
   }
-  
+
+  Expression* follow_id_to_value(Expression* e) {
+    Expression* decl = follow_id_to_decl(e);
+    if (VarDecl* vd = decl->dyn_cast<VarDecl>()) {
+      if (vd->e() && vd->e()->type().ispar())
+        return vd->e();
+      return vd->id();
+    } else {
+      return decl;
+    }
+  }
+
   void checkIndexSets(VarDecl* vd, Expression* e) {
     ASTExprVec<TypeInst> tis = vd->ti()->ranges();
     std::vector<TypeInst*> newtis(tis.size());
@@ -1080,6 +1091,9 @@ namespace MiniZinc {
   };
 
   void remove_dups(std::vector<Expression*>& x, bool identity) {
+    for (unsigned int i=0; i<x.size(); i++) {
+      x[i] = follow_id_to_value(x[i]);
+    }
     std::sort(x.begin(),x.end(),CmpExp());
     int ci = 0;
     Expression* prev = NULL;
