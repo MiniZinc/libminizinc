@@ -3661,18 +3661,26 @@ namespace MiniZinc {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause_reif);
               } else {
-                std::vector<Expression*> args(c->args().size());
-                std::copy(c->args().begin(),c->args().end(),args.begin());
-                args.push_back(vd->id());
-                ASTString cid = c->id();
-                if (c->type().isbool() && vd->type().isbool()) {
-                  cid = ASTString(c->id().str()+"_reif");
-                }
-                FunctionI* decl = env.orig->matchFn(cid,args);
-                if (decl && decl->e()) {
-                  nc = new Call(c->loc(),cid,args);
-                  nc->type(Type::varbool());
-                  nc->decl(decl);
+                if ( (!vd->type().isbool()) || (!Expression::equal(vd->ti()->domain(), constants().lit_true))) {
+                  std::vector<Expression*> args(c->args().size());
+                  std::copy(c->args().begin(),c->args().end(),args.begin());
+                  args.push_back(vd->id());
+                  ASTString cid = c->id();
+                  if (cid == constants().ids.clause && array_bool_clause_reif) {
+                    nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
+                    nc->type(Type::varbool());
+                    nc->decl(array_bool_clause_reif);
+                  } else {
+                    if (c->type().isbool() && vd->type().isbool()) {
+                      cid = ASTString(c->id().str()+"_reif");
+                    }
+                    FunctionI* decl = env.orig->matchFn(cid,args);
+                    if (decl && decl->e()) {
+                      nc = new Call(c->loc(),cid,args);
+                      nc->type(Type::varbool());
+                      nc->decl(decl);
+                    }
+                  }
                 }
               }
               if (nc != NULL) {
