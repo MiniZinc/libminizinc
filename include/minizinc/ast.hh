@@ -688,7 +688,7 @@ namespace MiniZinc {
     /// Access identifier
     Id* id(void) const { return _id; }
     /// Access initialisation expression
-    Expression* e(void) const { return _e; }
+    Expression* e(void) const;
     /// Set initialisation expression
     void e(Expression* rhs) { assert(!Expression::equal(rhs,_id)); _e = rhs; }
     /// Access flattened version
@@ -706,6 +706,10 @@ namespace MiniZinc {
     bool introduced(void) const;
     /// Whether variable is introduced
     void introduced(bool t);
+    /// Whether variable has been evaluated
+    bool evaluated(void) const;
+    /// Whether variable has been evaluated
+    void evaluated(bool t);
   };
   /// \brief %Let expression
   class Let : public Expression {

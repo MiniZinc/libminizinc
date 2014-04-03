@@ -531,23 +531,8 @@ namespace MiniZinc {
     cmb_hash(_id->hash());
     cmb_hash(Expression::hash(_e));
   }
-  bool
-  VarDecl::toplevel(void) const {
-    return _flag_1;
-  }
-  void
-  VarDecl::toplevel(bool t) {
-    _flag_1 = t;
-  }
-  bool
-  VarDecl::introduced(void) const {
-    return _flag_2;
-  }
-  void
-  VarDecl::introduced(bool t) {
-    _flag_2 = t;
-  }
-
+  
+  
   void
   Let::rehash(void) {
     init_hash();

@@ -27,6 +27,10 @@ namespace MiniZinc {
     if (id->decl()->e() == NULL)
       throw EvalError(e->loc(), "cannot evaluate expression", id->v());
     typename E::Val r = E::e(id->decl()->e());
+    if (id->decl()->toplevel() && !id->decl()->evaluated()) {
+      id->decl()->e(E::exp(r));
+      id->decl()->evaluated(true);
+    }
     return r;
   }
 
@@ -37,6 +41,7 @@ namespace MiniZinc {
     static IntLit* e(Expression* e) {
       return new IntLit(Location(),eval_int(e));
     }
+    static Expression* exp(IntLit* e) { return e; }
   };
   class EvalIntVal {
   public:
@@ -45,6 +50,7 @@ namespace MiniZinc {
     static IntVal e(Expression* e) {
       return eval_int(e);
     }
+    static Expression* exp(IntVal e) { return new IntLit(Location(),e); }
   };
   class EvalFloatVal {
   public:
@@ -52,6 +58,7 @@ namespace MiniZinc {
     static FloatVal e(Expression* e) {
       return eval_float(e);
     }
+    static Expression* exp(FloatVal e) { return new FloatLit(Location(),e); }
   };
   class EvalFloatLit {
   public:
@@ -60,6 +67,7 @@ namespace MiniZinc {
     static FloatLit* e(Expression* e) {
       return new FloatLit(Location(),eval_float(e));
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalString {
   public:
@@ -68,6 +76,7 @@ namespace MiniZinc {
     static std::string e(Expression* e) {
       return eval_string(e);
     }
+    static Expression* exp(const std::string& e) { return new StringLit(Location(),e); }
   };
   class EvalStringLit {
   public:
@@ -76,6 +85,7 @@ namespace MiniZinc {
     static StringLit* e(Expression* e) {
       return new StringLit(Location(),eval_string(e));
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalBoolLit {
   public:
@@ -84,6 +94,7 @@ namespace MiniZinc {
     static BoolLit* e(Expression* e) {
       return constants().boollit(eval_bool(e));
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalBoolVal {
   public:
@@ -91,6 +102,7 @@ namespace MiniZinc {
     static bool e(Expression* e) {
       return eval_bool(e);
     }
+    static Expression* exp(bool e) { return constants().boollit(e); }
   };
   class EvalArrayLit {
   public:
@@ -99,6 +111,7 @@ namespace MiniZinc {
     static ArrayLit* e(Expression* e) {
       return eval_array_lit(e);
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalIntSet {
   public:
@@ -106,6 +119,7 @@ namespace MiniZinc {
     static IntSetVal* e(Expression* e) {
       return eval_intset(e);
     }
+    static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
   };
   class EvalSetLit {
   public:
@@ -114,6 +128,7 @@ namespace MiniZinc {
     static SetLit* e(Expression* e) {
       return new SetLit(e->loc(),eval_intset(e));
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalNone {
   public:
@@ -122,6 +137,7 @@ namespace MiniZinc {
     static Expression* e(Expression* e) {
       return e;
     }
+    static Expression* exp(Expression* e) { return e; }
   };
   class EvalCopy {
   public:
@@ -130,6 +146,7 @@ namespace MiniZinc {
     static Expression* e(Expression* e) {
       return copy(e,true);
     }
+    static Expression* exp(Expression* e) { return e; }
   };
 
   template<class Eval>

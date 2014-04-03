@@ -281,6 +281,40 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline Expression*
+  VarDecl::e(void) const {
+    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~ static_cast<ptrdiff_t>(1));
+  }
+
+  inline bool
+  VarDecl::toplevel(void) const {
+    return _flag_1;
+  }
+  inline void
+  VarDecl::toplevel(bool t) {
+    _flag_1 = t;
+  }
+  inline bool
+  VarDecl::introduced(void) const {
+    return _flag_2;
+  }
+  inline void
+  VarDecl::introduced(bool t) {
+    _flag_2 = t;
+  }
+  inline bool
+  VarDecl::evaluated(void) const {
+    return reinterpret_cast<ptrdiff_t>(_e) & 1;
+  }
+  inline void
+  VarDecl::evaluated(bool t) {
+    if (t)
+      _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) | 1);
+    else
+      _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~static_cast<ptrdiff_t>(1));
+  }
+
+  
   inline
   Let::Let(const Location& loc,
            const std::vector<Expression*>& let, Expression* in)
