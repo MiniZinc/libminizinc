@@ -1463,18 +1463,31 @@ namespace MiniZinc {
     case Expression::E_ARRAYACCESS:
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
+        
+        std::vector<EE> ees(aa->idx().size());
+        Ctx dimctx = ctx;
+        dimctx.neg = false;
+        for (unsigned int i=0; i<aa->idx().size(); i++) {
+          Expression* tmp = follow_id_to_decl(aa->idx()[i]);
+          if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+            tmp = vd->id();
+          ees[i] = flat_exp(env, dimctx, tmp, NULL, NULL);
+        }
+        
         bool parAccess=true;
         for (unsigned int i=0; i<aa->idx().size(); i++) {
-          if (!aa->idx()[i]->type().ispar()) {
+          if (!ees[i].r()->type().ispar()) {
             parAccess = false;
             break;
           }
         }
+        Ctx nctx = ctx;
+        nctx.b = +nctx.b;
+        nctx.neg = false;
+        EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
+        ees.push_back(EE(NULL,eev.b()));
+
         if (parAccess) {
-          Ctx nctx = ctx;
-          nctx.b = +nctx.b;
-          nctx.neg = false;
-          EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
           ArrayLit* al;
           if (eev.r()->isa<ArrayLit>()) {
             al = eev.r()->cast<ArrayLit>();
@@ -1494,25 +1507,23 @@ namespace MiniZinc {
             GCLock lock;
             std::vector<IntVal> dims(aa->idx().size());
             for (unsigned int i=aa->idx().size(); i--;)
-              dims[i] = eval_int(aa->idx()[i]);
+              dims[i] = eval_int(ees[i].r());
             ka = eval_arrayaccess(al,dims,success);
           }
+          ees.push_back(EE(NULL,constants().boollit(success)));
           if (aa->type().isbool()) {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
-            if (success) {
-              ret.r = bind(env,ctx,r,ka());
-            } else {
-              ret.r = bind(env,ctx,r,constants().lit_false);
-            }
+            ees.push_back(EE(NULL,ka()));
+            ret.r = conj(env,r,ctx,ees);
           } else {
-            ret.b = bind(env,Ctx(),b,success ? constants().lit_true : constants().lit_false);
+            ret.b = conj(env,b,ctx,ees);
             ret.r = bind(env,ctx,r,ka());
           }
         } else {
           std::vector<Expression*> args(aa->idx().size()+1);
           for (unsigned int i=aa->idx().size(); i--;)
-            args[i] = aa->idx()[i];
-          args[aa->idx().size()] = aa->v();
+            args[i] = ees[i].r();
+          args[aa->idx().size()] = eev.r();
           KeepAlive ka;
           {
             GCLock lock;
@@ -1524,7 +1535,17 @@ namespace MiniZinc {
             cc->decl(fi);
             ka = cc;
           }
-          ret = flat_exp(env,ctx,ka(),r,b);
+          EE ee = flat_exp(env,ctx,ka(),NULL,NULL);
+          ees.push_back(ee);
+          if (aa->type().isbool()) {
+            ee.b = ee.r;
+            ees.push_back(ee);
+            ret.r = conj(env,r,ctx,ees);
+            ret.b = bind(env,ctx,b,constants().boollit(!ctx.neg));
+          } else {
+            ret.r = bind(env,ctx,r,ee.r());
+            ret.b = conj(env,b,ctx,ees);
+          }
         }
       }
       break;
