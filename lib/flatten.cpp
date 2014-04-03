@@ -1986,7 +1986,7 @@ namespace MiniZinc {
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
               ret.b = bind(env,Ctx(),b,constants().lit_true);
 
-              if (ctx.b==C_ROOT && b==constants().var_true && e1.r()->type().ispar() &&
+              if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
                   e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
                 VarDecl* vd = e0.r()->cast<Id>()->decl();
                 if (vd->ti()->domain()==NULL) {
