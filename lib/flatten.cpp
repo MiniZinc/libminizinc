@@ -3652,16 +3652,14 @@ namespace MiniZinc {
                   nc->type(Type::varbool());
                   nc->decl(array_bool_and);
                 }
-              } else if (c->id() == constants().ids.clause) {
-                if (array_bool_clause_reif) {
-                  std::vector<Expression*> args(3);
-                  args[0] = c->args()[0];
-                  args[1] = c->args()[1];
-                  args[2] = vd->id();
-                  nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
-                  nc->type(Type::varbool());
-                  nc->decl(array_bool_clause_reif);
-                }
+              } else if (c->id() == constants().ids.clause && array_bool_clause_reif) {
+                std::vector<Expression*> args(3);
+                args[0] = c->args()[0];
+                args[1] = c->args()[1];
+                args[2] = vd->id();
+                nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
+                nc->type(Type::varbool());
+                nc->decl(array_bool_clause_reif);
               } else {
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
