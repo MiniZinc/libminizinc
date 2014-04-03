@@ -3865,6 +3865,14 @@ namespace MiniZinc {
     
   }
 
+  Annotation* definesVarAnn(Id* id) {
+    std::vector<Expression*> args(1);
+    args[0] = id;
+    Call* c = new Call(Location(),constants().ann.defines_var,args);
+    c->type(Type::ann());
+    return new Annotation(Location(),c);
+  }
+  
   void oldflatzinc(Env& e) {
     struct {
     public:
@@ -3953,6 +3961,7 @@ namespace MiniZinc {
               if (vd->e()->eid()==Expression::E_CALL) {
                 const Call* c = vd->e()->cast<Call>();
                 vd->e(NULL);
+                vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
                 std::string cid;
                 if (c->id() == constants().ids.exists) {
                   cid = "array_bool_or";
@@ -3968,6 +3977,7 @@ namespace MiniZinc {
                 args.push_back(vd->id());
                 Call * nc = new Call(c->loc(),cid,args);
                 nc->type(c->type());
+                nc->addAnnotation(definesVarAnn(vd->id()));
                 tmp._items.push_back(new ConstraintI(Location(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
@@ -3983,6 +3993,7 @@ namespace MiniZinc {
           if (vd->e() != NULL) {
             if (const Call* cc = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
+              vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
               std::vector<Expression*> args(cc->args().size());
               std::string cid;
               if (cc->id() == constants().ids.lin_exp) {
@@ -4011,6 +4022,7 @@ namespace MiniZinc {
               }
               Call* nc = new Call(cc->loc(),cid,args);
               nc->type(cc->type());
+              nc->addAnnotation(definesVarAnn(vd->id()));
               tmp._items.push_back(new ConstraintI(Location(),nc));
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
