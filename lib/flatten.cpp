@@ -1984,7 +1984,23 @@ namespace MiniZinc {
             {
               EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
               EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
+              
               ret.b = bind(env,Ctx(),b,constants().lit_true);
+
+              std::vector<EE> ees(3);
+              ees[0].b = e0.b; ees[1].b = e1.b;
+
+              if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
+                GCLock lock;
+                BinOp* bo_par = new BinOp(e->loc(),e0.r(),bot,e1.r());
+                bo_par->type(Type::parbool());
+                bool bo_val = eval_bool(bo_par);
+                if (doubleNeg)
+                  bo_val = !bo_val;
+                ees[2].b = constants().boollit(bo_val);
+                ret.r = conj(env,r,ctx,ees);
+                break;
+              }
 
               if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
                   e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
@@ -2026,9 +2042,6 @@ namespace MiniZinc {
               
               std::vector<KeepAlive> args;
               std::string callid;
-
-              std::vector<EE> ees(3);
-              ees[0].b = e0.b; ees[1].b = e1.b;
 
               Expression* le0 = 
                 (boe0->type().isint() && bot != BOT_IN) ?
@@ -2078,16 +2091,10 @@ namespace MiniZinc {
                   case BOT_NQ: result = (0!=-d); break;
                   default: assert(false); break;
                   }
-                  if (result || doubleNeg) {
-                    if (result && doubleNeg) {
-                      ctx.b = -ctx.b;
-                      ctx.neg = !ctx.neg;
-                    }
-                    ees[2].b = constants().lit_true;
-                    ret.r = conj(env,r,ctx,ees);
-                  } else {
-                    ret.r = bind(env,ctx,r,constants().lit_false);
-                  }
+                  if (doubleNeg)
+                    result = !result;
+                  ees[2].b = constants().boollit(result);
+                  ret.r = conj(env,r,ctx,ees);
                   break;
                 } else if (coeffv.size()==1 && 
                            std::abs(coeffv[0])==1) {
@@ -2133,11 +2140,10 @@ namespace MiniZinc {
                         break;
                       default: break;
                     }
-                    if (subsumed || (failed && doubleNeg)) {
-                      if (subsumed && doubleNeg) {
-                        ctx.b = -ctx.b;
-                        ctx.neg = !ctx.neg;
-                      }
+                    if (doubleNeg) {
+                      std::swap(subsumed, failed);
+                    }
+                    if (subsumed) {
                       ees[2].b = constants().lit_true;
                       ret.r = conj(env,r,ctx,ees);
                       break;
