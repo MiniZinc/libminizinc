@@ -3912,7 +3912,7 @@ namespace MiniZinc {
                 } else if (c->id() == constants().ids.forall) {
                   cid = "array_bool_and";
                 } else if (c->id() == constants().ids.clause) {
-                  cid = "bool_clause";
+                  cid = "bool_clause_reif";
                 } else {
                   cid = c->id().str()+"_reif";
                 }
