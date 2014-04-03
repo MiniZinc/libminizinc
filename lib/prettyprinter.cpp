@@ -1902,7 +1902,7 @@ void debugprint(MiniZinc::Item* i) {
   std::cerr << *i;
 }
 void debugprint(MiniZinc::Model* m) {
-  MiniZinc::Printer p(std::cerr); p.print(m);
+  MiniZinc::Printer p(std::cerr,0); p.print(m);
 }
 void debugprint(const MiniZinc::Location& loc) {
   std::cerr << loc << std::endl;
