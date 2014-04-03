@@ -130,13 +130,6 @@ predicate bool_or(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
 predicate bool_xor(var bool: a, var bool: b);
 
-predicate bool_clause_reif(array[int] of var bool: as,
-                           array[int] of var bool: bs,
-                           var bool: b) =
-  bool_clause(as,bs++[b]) /\
-  forall (i in index_set(as)) (as[i] -> b) /\
-  forall (i in index_set(bs)) (bs[i] \/ b);
-
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
 
