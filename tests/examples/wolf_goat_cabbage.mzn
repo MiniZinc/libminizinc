@@ -101,7 +101,7 @@ constraint
       );
 
 
-solve satisfy;
+solve ::bool_search(array1d(1..3*horizon,wolf)++array1d(1..3*horizon,goat)++array1d(1..3*horizon,cabbage)++array1d(1..3*horizon,farmer), input_order, indomain_max, complete) satisfy;
 
 %-----------------------------------------------------------------------------%
 
