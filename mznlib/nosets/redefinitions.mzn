@@ -5,6 +5,7 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   if is_fixed(x) then set2bools(fix(x)) else
   let {
     array[min(ub(x))..max(ub(x))] of var bool: b;
+    constraint forall (i in index_set(b) where not (i in ub(x))) (b[i]=false);
     constraint (x = reverse_map(b)) :: is_reverse_map;
   } in b
   endif;
