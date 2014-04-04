@@ -172,6 +172,24 @@ namespace MiniZinc {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
 
+    /// Cast expression to type \a T*
+    template<class T> static T* cast(Expression* e) {
+      return e==NULL ? NULL : e->cast<T>();
+    }
+    /// Cast expression to type \a const T*
+    template<class T> static const T* cast(const Expression* e) {
+      return e==NULL ? NULL : e->cast<T>();
+    }
+    /// Cast expression to type \a T* or NULL if types do not match
+    template<class T> static T* dyn_cast(Expression* e) {
+      return e==NULL ? NULL : e->dyn_cast<T>();
+    }
+    /// Cast expression to type \a const T* or NULL if types do not match
+    template<class T> static const T* dyn_cast(const Expression* e) {
+      return e==NULL ? NULL : e->dyn_cast<T>();
+    }
+    
+    
     /// Set annotation to \a ann
     void ann(Annotation* ann);
     
@@ -183,6 +201,7 @@ namespace MiniZinc {
       return e==NULL ? 0 : e->_hash;
     }
     
+    /// Check if \a e0 and \a e1 are equal
     static bool equal(const Expression* e0, const Expression* e1);
     
     /// Mark \a e as alive for garbage collection
