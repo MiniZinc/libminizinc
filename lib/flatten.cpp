@@ -152,6 +152,14 @@ namespace MiniZinc {
     }
   }
 
+  Annotation* definesVarAnn(Id* id) {
+    std::vector<Expression*> args(1);
+    args[0] = id;
+    Call* c = new Call(Location(),constants().ann.defines_var,args);
+    c->type(Type::ann());
+    return new Annotation(Location(),c);
+  }
+
   /// Check if \a e is NULL or true
   bool istrue(Expression* e) {
     return e==NULL || (e->type().ispar() && e->type().isbool()
@@ -752,6 +760,8 @@ namespace MiniZinc {
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
                 c->args()[2] = new IntLit(Location(),-d);
               } else {
+                vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
+                
                 args.push_back(vd->id());
 
                 if (c->id() == constants().ids.exists) {
@@ -767,6 +777,7 @@ namespace MiniZinc {
               c->args(ASTExprVec<Expression>(args));
               c->decl(env.orig->matchFn(c));
               c->type(c->decl()->rtype(args));
+              c->addAnnotation(definesVarAnn(vd->id()));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
               return vd->id();
             }
@@ -3886,14 +3897,6 @@ namespace MiniZinc {
     
     m.compact();
     
-  }
-
-  Annotation* definesVarAnn(Id* id) {
-    std::vector<Expression*> args(1);
-    args[0] = id;
-    Call* c = new Call(Location(),constants().ann.defines_var,args);
-    c->type(Type::ann());
-    return new Annotation(Location(),c);
   }
   
   void oldflatzinc(Env& e) {
