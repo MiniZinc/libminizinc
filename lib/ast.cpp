@@ -548,7 +548,7 @@ namespace MiniZinc {
     for (unsigned int i=_let.size(); i--;) {
       if (_let[i]->isa<VarDecl>()) {
         VarDecl* vd = _let[i]->cast<VarDecl>();
-        GC::trail(reinterpret_cast<void**>(&vd->_e),vd->e());
+        GC::trail(&vd->_e,vd->e());
       }
     }
   }

@@ -103,10 +103,10 @@ namespace MiniZinc {
 
     /// A trail item
     struct TItem {
-      void** l;
-      void* v;
+      Expression** l;
+      Expression* v;
       bool mark;
-      TItem(void** l0, void* v0)
+      TItem(Expression** l0, Expression* v0)
         : l(l0), v(v0), mark(false) {}
     };
     /// Trail
@@ -408,6 +408,10 @@ namespace MiniZinc {
       m = m->_roots_next;
     } while (m != _rootset);
     
+    for (unsigned int i=trail.size(); i--;) {
+      Expression::mark(trail[i].v);
+    }
+    
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
       if ((*wr)() && (*wr)()->_gc_mark==0) {
         wr->_e = NULL;
@@ -545,7 +549,7 @@ namespace MiniZinc {
       gc->_heap->trail.back().mark = true;
   }
   void
-  GC::trail(void** l,void* v) {
+  GC::trail(Expression** l,Expression* v) {
     GC* gc = GC::gc();
     gc->_heap->trail.push_back(GC::Heap::TItem(l,v));
   }

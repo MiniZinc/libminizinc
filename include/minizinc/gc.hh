@@ -155,7 +155,7 @@ namespace MiniZinc {
     /// Put a mark on the trail
     static void mark(void);
     /// Add a trail entry
-    static void trail(void**,void*);
+    static void trail(Expression**,Expression*);
     /// Untrail to previous mark
     static void untrail(void);
     
