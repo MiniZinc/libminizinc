@@ -11,6 +11,8 @@
  
 #include <iostream>
 #include <fstream>
+#include <ctime>
+#include <iomanip>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -25,6 +27,14 @@
 using namespace MiniZinc;
 using namespace std;
 
+std::string stoptime(clock_t& start) {
+  std::ostringstream oss;
+  clock_t now = clock();
+  oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
+  start = now;
+  return oss.str();
+}
+
 int main(int argc, char** argv) {
   int i=1;
   string filename;
@@ -36,6 +46,9 @@ int main(int argc, char** argv) {
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
+  
+  clock_t starttime = std::clock();
+  clock_t lasttime = std::clock();
   
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -160,37 +173,48 @@ int main(int argc, char** argv) {
   }
 
   {
+    std::stringstream errstream;
     if (flag_verbose)
-      std::cerr << "Parsing '" << filename << "' ..." << std::endl;
+      std::cerr << "Parsing '" << filename << "' ...";
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
-                         std::cerr)) {
+                         errstream)) {
       try {
         if (flag_typecheck) {
           if (flag_verbose)
-            std::cerr << "Typechecking..." << std::endl;
+            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+          if (flag_verbose)
+            std::cerr << "Typechecking ...";
           MiniZinc::typecheck(m);
           MiniZinc::registerBuiltins(m);
+          if (flag_verbose)
+            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (flag_verbose)
-            std::cerr << "Flattening..." << std::endl;
+            std::cerr << "Flattening ...";
           Env env(m);
           flatten(env,fopts);
           Model* flat = env.flat();
+          if (flag_verbose)
+            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           
           if (flag_optimize) {
             if (flag_verbose)
-              std::cerr << "Optimizing..." << std::endl;
+              std::cerr << "Optimizing ...";
             optimize(env);
+            if (flag_verbose)
+              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           }
 
           if (!flag_newfzn) {
             if (flag_verbose)
-              std::cerr << "Converting to old FlatZinc..." << std::endl;
+              std::cerr << "Converting to old FlatZinc ...";
             oldflatzinc(env);
+            if (flag_verbose)
+              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           }
           
           if (flag_verbose)
-            std::cerr << "Printing FlatZinc..." << std::endl;
+            std::cerr << "Printing FlatZinc ...";
           if (flag_output_fzn_stdout) {
             Printer p(std::cout,0);
             p.print(flat);
@@ -201,7 +225,11 @@ int main(int argc, char** argv) {
             p.print(flat);
             os.close();
           }
+          if (flag_verbose)
+            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (!flag_no_output_ozn) {
+            if (flag_verbose)
+              std::cerr << "Printing .ozn ...";
             if (flag_output_ozn_stdout) {
               Printer p(std::cout,0);
               p.print(env.output());
@@ -212,25 +240,35 @@ int main(int argc, char** argv) {
               p.print(env.output());
               os.close();
             }
+            if (flag_verbose)
+              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           }
         } else { // !flag_typecheck
           Printer p(std::cout);
           p.print(m);
         }
       } catch (LocationException& e) {
+        if (flag_verbose)
+          std::cerr << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
         exit(EXIT_FAILURE);
       } catch (Exception& e) {
+        if (flag_verbose)
+          std::cerr << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         exit(EXIT_FAILURE);
       }
       delete m;
+    } else {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::copy(istreambuf_iterator<char>(errstream),istreambuf_iterator<char>(),ostreambuf_iterator<char>(std::cerr));
     }
   }
 
   if (flag_verbose)
-    std::cerr << "Done." << std::endl;
+    std::cerr << "Done (overall time " << stoptime(starttime) << ")." << std::endl;
   return 0;
 
 error:
