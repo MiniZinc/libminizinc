@@ -1646,6 +1646,7 @@ namespace MiniZinc {
           
           EE ee = flat_exp(env, Ctx(), id, NULL, constants().var_true);
           
+          GCLock lock;
           Call* revMap = new Call(Location(),c->id(),args);
           
           args.push_back(ee.r());
