@@ -895,6 +895,8 @@ namespace MiniZinc {
     VarDeclI(const Location& loc, VarDecl* e);
     /// Access expression
     VarDecl* e(void) const { return _e; }
+    /// Set expression
+    void e(VarDecl* vd) { _e = vd; }
   };
 
   /// \brief Assign item
@@ -914,8 +916,10 @@ namespace MiniZinc {
             const std::string& id, Expression* e);
     /// Access identifier
     ASTString id(void) const { return _id; }
-    /// Access expressions
+    /// Access expression
     Expression* e(void) const { return _e; }
+    /// Set expression
+    void e(Expression* e0) { _e = e0; }
     /// Access declaration
     VarDecl* decl(void) const { return _decl; }
     /// Set declaration

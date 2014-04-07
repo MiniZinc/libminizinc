@@ -199,9 +199,9 @@ namespace MiniZinc {
             id_v = ASTString(id->v().str());
             m.insert(id->v(),id_v);
           }
-          Id* c = new Id(copy_location(m,e),id_v,
-                         static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
+          Id* c = new Id(copy_location(m,e),id_v,NULL);
           m.insert(e,c);
+          c->decl(static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
           ret = c;
         }
       }
@@ -424,16 +424,17 @@ namespace MiniZinc {
         IncludeI* c = 
           new IncludeI(copy_location(m,i),
                       ASTString(ii->f().str()));
-        c->m(copy(m,ii->m()),ii->own());
         m.insert(i,c);
+        c->m(copy(m,ii->m()),ii->own());
         return c;
       }
     case Item::II_VD:
       {
         VarDeclI* v = i->cast<VarDeclI>();
         VarDeclI* c = new VarDeclI(copy_location(m,i),
-          static_cast<VarDecl*>(copy(m,v->e(),followIds)));
+          NULL);
         m.insert(i,c);
+        c->e(static_cast<VarDecl*>(copy(m,v->e(),followIds)));
         return c;
       }
     case Item::II_ASN:
@@ -441,17 +442,18 @@ namespace MiniZinc {
         AssignI* a = i->cast<AssignI>();
         AssignI* c = 
           new AssignI(copy_location(m,i),
-                     a->id().str(),copy(m,a->e(),followIds));
-        c->decl(static_cast<VarDecl*>(copy(m,a->decl(),followIds)));
+                     a->id().str(),NULL);
         m.insert(i,c);
+        c->e(copy(m,a->e(),followIds));
+        c->decl(static_cast<VarDecl*>(copy(m,a->decl(),followIds)));
         return c;
       }
     case Item::II_CON:
       {
         ConstraintI* cc = i->cast<ConstraintI>();
-        ConstraintI* c = new ConstraintI(copy_location(m,i),
-                                         copy(m,cc->e(),followIds));
+        ConstraintI* c = new ConstraintI(copy_location(m,i),NULL);
         m.insert(i,c);
+        c->e(copy(m,cc->e(),followIds));
         return c;
       }
     case Item::II_SOL:
