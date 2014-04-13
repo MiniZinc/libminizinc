@@ -105,11 +105,12 @@ int main(int argc, char** argv) {
         MiniZinc::typecheck(outputm);
         MiniZinc::registerBuiltins(outputm);
 
-        ASTStringMap<VarDecl*>::t declmap;
+        typedef pair<VarDecl*,Expression*> DE;
+        ASTStringMap<DE>::t declmap;
         Expression* outputExpr = NULL;
         for (int i=0; i<outputm->size(); i++) {
           if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
-            declmap.insert(pair<ASTString,VarDecl*>(vdi->e()->id()->v(),vdi->e()));
+            declmap.insert(pair<ASTString,DE>(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
           } else if (OutputI* oi = (*outputm)[i]->dyn_cast<OutputI>()) {
             outputExpr = oi->e();
           }
@@ -122,28 +123,36 @@ int main(int argc, char** argv) {
             getline(solstream, line);
             if (line=="----------") {
               if (outputExpr != NULL) {
+                for (int i=0; i<outputm->size(); i++) {
+                  if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
+                    ASTStringMap<DE>::t::iterator it = declmap.find(vdi->e()->id()->v());
+                    vdi->e()->e(it->second.second);
+                    vdi->e()->evaluated(false);
+                  }
+                }
                 Model* sm = parseFromString(solution, "solution.szn", includePaths, true, cerr);
                 for (int i=0; i<sm->size(); i++) {
                   if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
-                    ASTStringMap<VarDecl*>::t::iterator it = declmap.find(ai->id());
+                    ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
                     if (it==declmap.end()) {
                       cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
                       exit(EXIT_FAILURE);
                     }
-                    ai->e()->type(it->second->type());
-                    ai->decl(it->second);
+                    ai->e()->type(it->second.first->type());
+                    ai->decl(it->second.first);
                     typecheck(outputm, ai);
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
                       for (int i=0; i<c->args().size(); i++)
                         c->args()[i]->type(Type::parsetint());
-                      c->args()[c->args().size()-1]->type(it->second->type());
+                      c->args()[c->args().size()-1]->type(it->second.first->type());
                       c->decl(outputm->matchFn(c));
                     }
-                    it->second->e(ai->e());
+                    it->second.first->e(ai->e());
                   }
                 }
+
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(outputExpr);
                 std::string os;
