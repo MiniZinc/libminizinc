@@ -390,6 +390,7 @@ namespace MiniZinc {
 %token MZN_INCLUDE
 %token MZN_INT
 %token MZN_LET
+%token MZN_LIST
 %token <bValue> MZN_MAXIMIZE
 %token <bValue> MZN_MINIMIZE
 %token MZN_OF
@@ -682,6 +683,13 @@ ti_expr :
         $$ = $6;
         $$->setRanges(*$3);
         delete $3;
+      }
+    | MZN_LIST MZN_OF base_ti_expr
+      {
+        $$ = $3;
+        std::vector<TypeInst*> ti(1);
+        ti[0] = new TypeInst(@$,Type::parint());
+        $$->setRanges(ti);
       }
 
 base_ti_expr :

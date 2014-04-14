@@ -184,6 +184,8 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_INT; }
 "let"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_LET; }
+"list"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_LIST; }
 "maximize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->bValue = false; return MZN_MAXIMIZE; }
 "minimize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
