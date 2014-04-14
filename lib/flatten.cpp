@@ -2947,9 +2947,9 @@ namespace MiniZinc {
             if (v->e()->type()._bt==Type::BT_INT && v->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
               if (v->e()->type().isset()) {
-                ibv = compute_intset_bounds(vd->e());
+                ibv = compute_intset_bounds(v->e());
               } else {
-                IntBounds ib = compute_int_bounds(vd->e());
+                IntBounds ib = compute_int_bounds(v->e());
                 if (ib.valid)
                   ibv = IntSetVal::a(ib.l,ib.u);
               }
