@@ -693,6 +693,7 @@ namespace MiniZinc {
 
   Expression* b_trace(ASTExprVec<Expression> args) {
     assert(args.size()==2);
+    GCLock lock;
     StringLit* msg = eval_par(args[0])->cast<StringLit>();
     std::cerr << msg->v();
     return args[1];
