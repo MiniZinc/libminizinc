@@ -1279,6 +1279,17 @@ namespace MiniZinc {
         _bounds.push_back(Bounds(m,n));
       } else if (c.id() == constants().ids.bool2int) {
           _bounds.push_back(Bounds(0,1));
+      } else if (c.id() == "abs") {
+        BottomUpIterator<ComputeIntBounds> cbi(*this);
+        cbi.run(c.args()[0]);
+        Bounds b0 = _bounds.back();
+        if (b0.first < 0) {
+          _bounds.pop_back();
+          if (b0.second < 0)
+            _bounds.push_back(Bounds(-b0.second,-b0.first));
+          else
+            _bounds.push_back(Bounds(0,std::max(-b0.first,b0.second)));
+        }
       } else {
         valid = false;
         _bounds.push_back(Bounds(0,0));
