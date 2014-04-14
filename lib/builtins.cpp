@@ -809,6 +809,67 @@ namespace MiniZinc {
     return oss.str();
   }
 
+  IntSetVal* b_array_union(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      return IntSetVal::a();
+    IntSetVal* isv = eval_intset(al->v()[0]);
+    for (int i=0; i<al->v().size(); i++) {
+      IntSetRanges i0(isv);
+      IntSetRanges i1(eval_intset(al->v()[i]));
+      Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
+      isv = IntSetVal::ai(u);
+    }
+    return isv;
+  }
+  
+  IntSetVal* b_array_intersect(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    std::vector<IntSetVal::Range> ranges;
+    if (al->v().size() > 0) {
+      IntSetVal* i0 = eval_intset(al->v()[0]);
+      if (i0->size() > 0) {
+        IntSetRanges i0r(i0);
+        IntVal min = i0r.min();
+        while (i0r()) {
+          // Initialize with last interval
+          IntVal max = i0r.max();
+          // Intersect with all other intervals
+        restart:
+          for (int j=al->v().size(); j--;) {
+            IntSetRanges ij(eval_intset(al->v()[j]));
+            // Skip intervals that are too small
+            while (ij() && (ij.max() < min))
+              ++ij;
+            if (!ij())
+              goto done;
+            if (ij.min() > max) {
+              min=ij.min();
+              max=ij.max();
+              goto restart;
+            }
+            // Now the intervals overlap
+            if (min < ij.min())
+              min = ij.min();
+            if (max > ij.max())
+              max = ij.max();
+          }
+          ranges.push_back(IntSetVal::Range(min,max));
+          // The next interval must be at least two elements away
+          min = max + 2;
+        }
+      done:
+        return IntSetVal::a(ranges);
+      } else {
+        return IntSetVal::a();
+      }
+    } else {
+      return IntSetVal::a();
+    }
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -1167,6 +1228,12 @@ namespace MiniZinc {
       t[0] = Type::varint();
       t[1] = Type::varint();
       rb(m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint(1);
+      rb(m, ASTString("array_intersect"), t, b_array_intersect);
+      rb(m, ASTString("array_union"), t, b_array_union);
     }
   }
   
