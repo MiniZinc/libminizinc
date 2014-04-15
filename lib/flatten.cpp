@@ -3921,18 +3921,14 @@ namespace MiniZinc {
     Model* m = e.flat();
     m->_items.erase(remove_if(m->_items.begin(), m->_items.end(), _isOptVar),
       m->_items.end());
-        
-    Model tmp;
-    class FV : public ItemVisitor {
-    public:
-      std::unordered_set<Item*> globals;
-      EnvI& env;
-      Model& tmp;
-      FV(EnvI& env0, Model& tmp0)
-        : env(env0), tmp(tmp0) {}
-      void vVarDeclI(VarDeclI* v) {
+    
+    int msize = m->size();
+    std::unordered_set<Item*> globals;
+    std::vector<int> declsWithIds;
+    for (unsigned int i=0; i<msize; i++) {
+      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
-        VarDecl* vd = v->e();
+        VarDecl* vd = vdi->e();
         Annotation* prevAnn = NULL;
         if (vd->type().ispar()) {
           vd->ann(NULL);
@@ -3952,6 +3948,13 @@ namespace MiniZinc {
           } else {
             prevAnn = a;
           }
+        }
+        
+        if (vd->e() && vd->e()->isa<Id>()) {
+          declsWithIds.push_back(i);
+          vdi->e()->payload(-i-1);
+        } else {
+          vdi->e()->payload(i);
         }
         
         if (vd->type().isvar() && vd->type().isbool()) {
@@ -3990,7 +3993,7 @@ namespace MiniZinc {
                 GCLock lock;
                 ve = new Call(Location(),"bool_eq",args);
               }
-              tmp._items.push_back(new ConstraintI(Location(),ve));
+              m->addItem(new ConstraintI(Location(),ve));
             }
           } else {
             if (vd->e() != NULL) {
@@ -4014,7 +4017,7 @@ namespace MiniZinc {
                 Call * nc = new Call(c->loc(),cid,args);
                 nc->type(c->type());
                 nc->addAnnotation(definesVarAnn(vd->id()));
-                tmp._items.push_back(new ConstraintI(Location(),nc));
+                m->addItem(new ConstraintI(Location(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
                        vd->e()->eid() == Expression::E_BOOLLIT);
@@ -4059,7 +4062,7 @@ namespace MiniZinc {
               Call* nc = new Call(cc->loc(),cid,args);
               nc->type(cc->type());
               nc->addAnnotation(definesVarAnn(vd->id()));
-              tmp._items.push_back(new ConstraintI(Location(),nc));
+              m->addItem(new ConstraintI(Location(),nc));
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
                      vd->e()->eid() == Expression::E_INTLIT ||
@@ -4077,7 +4080,7 @@ namespace MiniZinc {
               vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
             IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
             if (isv && (isv->size()==0 || isv->min(0)==1))
-              return;
+              continue;
           }
           assert(vd->e() != NULL);
           ArrayLit* al = NULL;
@@ -4111,8 +4114,7 @@ namespace MiniZinc {
             vd->ti(ti);
           }
         }
-      }
-      void vConstraintI(ConstraintI* ci) {
+      } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
           if (vc->id() == constants().ids.exists) {
             GCLock lock;
@@ -4122,7 +4124,7 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
-            vc->decl(env.orig->matchFn(vc));
+            vc->decl(e.envi().orig->matchFn(vc));
           } else if (vc->id() == constants().ids.forall) {
             GCLock lock;
             vc->id(ASTString("array_bool_and"));
@@ -4131,16 +4133,16 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             ASTExprVec<Expression> argsv(args);
             vc->args(argsv);
-            vc->decl(env.orig->matchFn(vc));
+            vc->decl(e.envi().orig->matchFn(vc));
           } else if (vc->id() == constants().ids.clause) {
             GCLock lock;
             vc->id(ASTString("bool_clause"));
-            vc->decl(env.orig->matchFn(vc));
+            vc->decl(e.envi().orig->matchFn(vc));
           }
           if (vc->decl() && vc->decl() != constants().var_redef &&
               !vc->decl()->loc().filename.endsWith("/builtins.mzn") &&
               globals.find(vc->decl())==globals.end()) {
-            tmp.addItem(vc->decl());
+            m->addItem(vc->decl());
             globals.insert(vc->decl());
           }
         } else if (Id* id = ci->e()->dyn_cast<Id>()) {
@@ -4159,20 +4161,39 @@ namespace MiniZinc {
             ci->e(neq);
           }
         }
-      }
-      void vSolveI(SolveI* si) {
+      } else if (SolveI* si = (*m)[i]->dyn_cast<SolveI>()) {
         if (si->e() && si->e()->type().ispar()) {
           GCLock lock;
           TypeInst* ti = new TypeInst(Location(),si->e()->type(),NULL);
-          VarDecl* constantobj = new VarDecl(Location(),ti,env.genId("obj"),si->e());
+          VarDecl* constantobj = new VarDecl(Location(),ti,e.envi().genId("obj"),si->e());
           si->e(constantobj->id());
-          tmp.addItem(new VarDeclI(Location(),constantobj));
+          m->addItem(new VarDeclI(Location(),constantobj));
         }
       }
-    } _fv(e.envi(),tmp);
-    iterItems<FV>(_fv,m);
-    for (unsigned int i=0; i<tmp._items.size(); i++)
-      m->addItem(tmp._items[i]);
+    }
+    
+    std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
+    int vdCount = 0;
+    for (unsigned int i=0; i<declsWithIds.size(); i++) {
+      VarDecl* cur = m->_items[declsWithIds[i]]->cast<VarDeclI>()->e();
+      std::vector<int> stack;
+      while (cur && cur->payload() < 0) {
+        stack.push_back(cur->payload());
+        if (Id* id = cur->e()->dyn_cast<Id>()) {
+          cur = id->decl();
+        } else {
+          cur = NULL;
+        }
+      }
+      for (unsigned int i=stack.size(); i--;) {
+        VarDeclI* vdi = m->_items[-stack[i]-1]->cast<VarDeclI>();
+        vdi->e()->payload(-vdi->e()->payload()-1);
+        sortedVarDecls[vdCount++] = vdi;
+      }
+    }
+    for (unsigned int i=0; i<declsWithIds.size(); i++) {
+      m->_items[declsWithIds[i]] = sortedVarDecls[i];
+    }
     
     class Cmp {
     public:
@@ -4196,13 +4217,17 @@ namespace MiniZinc {
           if (i->cast<VarDeclI>()->e()->type()._dim == 0 &&
               j->cast<VarDeclI>()->e()->type()._dim != 0)
             return true;
+          if (i->cast<VarDeclI>()->e()->type()._dim != 0 &&
+              j->cast<VarDeclI>()->e()->type()._dim == 0)
+            return false;
           if (i->cast<VarDeclI>()->e()->e()==NULL &&
               j->cast<VarDeclI>()->e()->e() != NULL)
             return true;
-          if (j->cast<VarDeclI>()->e()->e())
-            if (Id* id = j->cast<VarDeclI>()->e()->e()->dyn_cast<Id>())
-              if (id->decl() == i->cast<VarDeclI>()->e())
-                return true;
+          if (i->cast<VarDeclI>()->e()->e() &&
+              j->cast<VarDeclI>()->e()->e() &&
+              !i->cast<VarDeclI>()->e()->e()->isa<Id>() &&
+              j->cast<VarDeclI>()->e()->e()->isa<Id>())
+            return true;
         }
         return false;
       }

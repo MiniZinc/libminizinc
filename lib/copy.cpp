@@ -344,6 +344,7 @@ namespace MiniZinc {
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
         c->flat(vd->flat());
+        c->payload(vd->payload());
         m.insert(e,c);
         ret = c;
       }

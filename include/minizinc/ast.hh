@@ -690,6 +690,8 @@ namespace MiniZinc {
     Expression* _e;
     /// Flattened version of the VarDecl
     WeakRef _flat;
+    /// Integer payload
+    int _payload;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_VARDECL;
@@ -730,6 +732,10 @@ namespace MiniZinc {
     bool evaluated(void) const;
     /// Whether variable has been evaluated
     void evaluated(bool t);
+    /// Access payload
+    int payload(void) const { return _payload; }
+    /// Set payload
+    void payload(int i) { _payload = i; }
   };
   /// \brief %Let expression
   class Let : public Expression {
