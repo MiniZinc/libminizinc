@@ -163,7 +163,7 @@ namespace MiniZinc {
 
   /// An integer set value
   class IntSetVal : public ASTChunk {
-  private:
+  public:
     /// Contiguous range
     struct Range {
       /// Range minimum
@@ -175,6 +175,7 @@ namespace MiniZinc {
       /// Default constructor
       Range(void) {}
     };
+  private:
     /// Return range at position \a i
     Range& get(int i) {
       return reinterpret_cast<Range*>(_data)[i];
@@ -269,6 +270,11 @@ namespace MiniZinc {
       ranges.push_back(Range(min,max));
       IntSetVal* r = static_cast<IntSetVal*>(
           ASTChunk::alloc(sizeof(Range)*ranges.size()));
+      new (r) IntSetVal(ranges);
+      return r;
+    }
+    static IntSetVal* a(const std::vector<Range>& ranges) {
+      IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)*ranges.size()));
       new (r) IntSetVal(ranges);
       return r;
     }
