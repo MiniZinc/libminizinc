@@ -739,10 +739,9 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
     case Expression::E_ID:
-      // assert(e0->cast<Id>()->_decl != NULL);
       return
         e0->cast<Id>()->decl() == e1->cast<Id>()->decl() ||
-        e0->cast<Id>()->decl()->flat() == e1->cast<Id>()->decl()->flat();
+        (e0->cast<Id>()->decl()->flat() != NULL && e0->cast<Id>()->decl()->flat() == e1->cast<Id>()->decl()->flat());
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT:
