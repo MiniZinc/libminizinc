@@ -3427,11 +3427,6 @@ namespace MiniZinc {
             vdi_copy->e()->ann(NULL);
             vdi_copy->e()->introduced(false);
             ASTStringMap<KeepAlive>::t::iterator it;
-            if (vd->e() == NULL && vd->flat() != NULL && vd->flat()->e() != NULL) {
-              Expression* flat_e = copy(env.cmap, vd->flat()->e());
-              outputVarDecls(env, flat_e);
-              vd->e(flat_e);
-            }
             if (!vdi->e()->type().ispar()) {
               if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
                 VarDecl* reallyFlat = vd->flat();
