@@ -2736,6 +2736,16 @@ namespace MiniZinc {
               Expression* rd = follow_id_to_decl(flat_al.r());
               if (rd->isa<VarDecl>())
                 rd = rd->cast<VarDecl>()->id();
+              if (rd->type().dim()>1) {
+                ArrayLit* al = eval_array_lit(rd);
+                std::vector<std::pair<int,int> > dims(1);
+                dims[0].first = 1;
+                dims[0].second = al->v().size();
+                rd = new ArrayLit(al->loc(),al->v(),dims);
+                Type t = al->type();
+                t._dim = 1;
+                rd->type(t);
+              }
               args.push_back(rd);
             } else {
               ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
