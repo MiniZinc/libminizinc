@@ -560,3 +560,6 @@ predicate aux_float_lt_if_1(var float: x, var float: y, var float: p) =
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
+
+annotation bool_search(array[int] of var int: x, ann:a1, ann:a2, ann:a3) =
+  int_search([bool2int(x[i]) | i in index_set(x)],a1,a2,a3);
