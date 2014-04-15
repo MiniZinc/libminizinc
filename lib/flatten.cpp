@@ -2302,9 +2302,19 @@ namespace MiniZinc {
                     callid = opToBuiltin(bo,bot);
                   }
                 } else if (bot==BOT_EQ && coeffv.size()==2 && coeffv[0]==-coeffv[1] && d==0) {
-                  callid = "int_eq";
-                  args.push_back(alv[0]());
-                  args.push_back(alv[1]());
+                  Id* id0 = alv[0]()->cast<Id>();
+                  Id* id1 = alv[1]()->cast<Id>();
+                  if (ctx.b == C_ROOT && r==constants().var_true &&
+                      (id0->decl()->e()==NULL || id1->decl()->e()==NULL)) {
+                    if (id0->decl()->e())
+                      (void) bind(env,ctx,id1->decl(),id0);
+                    else
+                      (void) bind(env,ctx,id0->decl(),id1);
+                  } else {
+                    callid = "int_eq";
+                    args.push_back(alv[0]());
+                    args.push_back(alv[1]());
+                  }
                 } else {
                   int coeff_sign;
                   switch (bot) {
