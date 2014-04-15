@@ -107,6 +107,7 @@ predicate float_plus(var float, var float, var float);
 % Array constraints
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
 predicate array_bool_or(array[int] of var bool: as, var bool: r);
+predicate array_bool_xor(array[int] of var bool: as);
 predicate array_bool_element(var int: b, array[int] of bool: as, var bool: c);
 predicate array_int_element(var int: b, array[int] of int: as, var int: c);
 predicate array_set_element(var int: b, array[int] of set of int: as, var set of int: c);
@@ -133,6 +134,11 @@ predicate bool_xor(var bool: a, var bool: b);
 
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
+
+predicate xorall(array[int] of var bool: b) = array_bool_xor(b);
+
+predicate xorall_reif(array[int] of var bool: b, var bool: c) =
+  xorall([not c]++b);
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 
@@ -399,7 +405,7 @@ function     float: '/'(    float,    float);
 function var float: '/'(var float,var float);
 
 function     int:   sum(array[$T] of     int);
-function var int:   sum(array[int] of var int: x);
+function var int:   sum(array[$T] of var int: x);
 function     float: sum(array[$T] of     float);
 function var float: sum(array[$T] of var float);
 
@@ -541,7 +547,6 @@ function var bool: forall(array[$T] of var bool);
 function     bool: exists(array[$T] of     bool);
 function var bool: exists(array[$T] of var bool);
 function     bool: xorall(array[$T] of     bool);
-function var bool: xorall(array[$T] of var bool);
 function     bool: iffall(array[$T] of     bool);
 function var bool: iffall(array[$T] of var bool);
 function var bool: clause(array[$T] of var bool, array[$T] of var bool);
