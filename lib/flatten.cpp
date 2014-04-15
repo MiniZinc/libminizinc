@@ -2094,7 +2094,7 @@ namespace MiniZinc {
               }
               
               std::vector<KeepAlive> args;
-              std::string callid;
+              ASTString callid;
 
               Expression* le0 = 
                 (boe0->type().isint() && bot != BOT_IN) ?
@@ -2299,7 +2299,6 @@ namespace MiniZinc {
                     }
                     args.push_back(e0);
                     args.push_back(e1);
-                    callid = opToBuiltin(bo,bot);
                   }
                 } else if (bot==BOT_EQ && coeffv.size()==2 && coeffv[0]==-coeffv[1] && d==0) {
                   Id* id0 = alv[0]()->cast<Id>();
@@ -2311,7 +2310,7 @@ namespace MiniZinc {
                     else
                       (void) bind(env,ctx,id0->decl(),id1);
                   } else {
-                    callid = "int_eq";
+                    callid = constants().ids.int_eq;
                     args.push_back(alv[0]());
                     args.push_back(alv[1]());
                   }
@@ -2319,30 +2318,30 @@ namespace MiniZinc {
                   int coeff_sign;
                   switch (bot) {
                   case BOT_LE:
-                    callid = "int_lin_le";
+                    callid = constants().ids.int_lin_le;
                     coeff_sign = 1;
                     d += 1;
                     break;
                   case BOT_LQ:
-                    callid = "int_lin_le";
+                    callid = constants().ids.int_lin_le;
                     coeff_sign = 1;
                     break;
                   case BOT_GR:
-                    callid = "int_lin_le";
+                    callid = constants().ids.int_lin_le;
                     coeff_sign = -1;
                     d = -d+1;
                     break;
                   case BOT_GQ:
-                    callid = "int_lin_le";
+                    callid = constants().ids.int_lin_le;
                     coeff_sign = -1;
                     d = -d;
                     break;
                   case BOT_EQ:
-                    callid = "int_lin_eq";
+                    callid = constants().ids.int_lin_eq;
                     coeff_sign = 1;
                     break;
                   case BOT_NQ:
-                    callid = "int_lin_ne";
+                    callid = constants().ids.int_lin_ne;
                     coeff_sign = 1;
                     break;
                   default: assert(false); break;
@@ -2387,11 +2386,15 @@ namespace MiniZinc {
                 }
                 args.push_back(e0.r);
                 args.push_back(e1.r);
-                callid = opToBuiltin(bo,bot);
               }
 
               if (args.size() > 0) {
                 GC::lock();
+                
+                if (callid=="") {
+                  callid = opToBuiltin(bo,bot);
+                }
+                
                 std::vector<Expression*> args_e(args.size());
                 for (unsigned int i=args.size(); i--;)
                   args_e[i] = args[i]();

@@ -1134,13 +1134,19 @@ namespace MiniZinc {
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
-        ASTString sum;
-        ASTString lin_exp;
         ASTString bool_eq;
         ASTString assert;
         ASTString trace;
         ASTString promise_total;
+
+        ASTString sum;
+        ASTString lin_exp;
+        ASTString int_lin_eq;
+        ASTString int_lin_le;
+        ASTString int_lin_ne;
+        ASTString int_eq;
       } ids;
+    
       /// Identifiers for Boolean contexts
       struct {
         Id* root;
