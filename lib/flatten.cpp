@@ -2301,6 +2301,10 @@ namespace MiniZinc {
                     args.push_back(e1);
                     callid = opToBuiltin(bo,bot);
                   }
+                } else if (bot==BOT_EQ && coeffv.size()==2 && coeffv[0]==-coeffv[1] && d==0) {
+                  callid = "int_eq";
+                  args.push_back(alv[0]());
+                  args.push_back(alv[1]());
                 } else {
                   int coeff_sign;
                   switch (bot) {
