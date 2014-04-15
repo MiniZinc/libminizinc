@@ -335,7 +335,12 @@ predicate int_div(var int: x, var int: y, var int: q) =
 
 
 predicate int_mod(var int: x, var int: y, var int: r) =
-    let { int: b = max(abs(lb(x)), abs(ub(x))), var -b..b: q }
+    let { 
+      int: bx = max(abs(lb(x)), abs(ub(x)));
+      var -bx..bx: q;
+      int: by = max(abs(lb(y)), abs(ub(y)));
+      constraint r in -by..by;
+    }
     in
     aux_int_division_modulo(x,y,q,r);
 
