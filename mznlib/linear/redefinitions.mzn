@@ -173,6 +173,8 @@ predicate int_ne(var int: x, var int: y) =
     aux_int_lt_if_1(x, y, p) /\
     aux_int_gt_if_0(x, y, p);
 
+predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
+    int_ne(sum(i in index_set(x))( c[i]*x[i] ),d);
 
 predicate int_eq_reif(var int: x, var int: y, var bool: b) =
     aux_int_eq_iff_1(x, y, bool2int(b));
