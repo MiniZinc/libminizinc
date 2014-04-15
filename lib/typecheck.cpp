@@ -700,5 +700,50 @@ namespace MiniZinc {
     }
     
   }
+
+  void typecheck_fzn(Model* m) {
+    ASTStringMap<int>::t declMap;
+    for (unsigned int i=0; i<m->size(); i++) {
+      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
+        Type t = vdi->e()->type();
+        declMap.insert(std::pair<ASTString,int>(vdi->e()->id()->v(), i));
+        if (t.isunknown()) {
+          if (vdi->e()->ti()->domain()) {
+            switch (vdi->e()->ti()->domain()->eid()) {
+              case Expression::E_BINOP:
+              {
+                BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
+                if (bo->op()==BOT_DOTDOT) {
+                  t._bt = bo->lhs()->type()._bt;
+                  if (t.isunknown()) {
+                    throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
+                  }
+                  vdi->e()->type(t);
+                } else {
+                  throw TypeError(vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
+                }
+              }
+              case Expression::E_ID:
+              {
+                ASTStringMap<int>::t::iterator it = declMap.find(vdi->e()->ti()->domain()->cast<Id>()->v());
+                if (it == declMap.end()) {
+                  throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
+                }
+                t._bt = (*m)[it->second]->cast<VarDeclI>()->e()->type()._bt;
+                if (t.isunknown()) {
+                  throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
+                }
+                vdi->e()->type(t);
+              }
+              default:
+                throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
+            }
+          } else {
+            throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
+          }
+        }
+      }
+    }
+  }
   
 }

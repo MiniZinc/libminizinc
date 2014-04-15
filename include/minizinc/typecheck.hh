@@ -45,6 +45,9 @@ namespace MiniZinc {
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Model* m, AssignI* ai);
+
+  /// Typecheck FlatZinc variable declarations
+  void typecheck_fzn(Model* m);
   
 }
 
