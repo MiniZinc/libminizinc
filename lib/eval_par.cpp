@@ -1104,19 +1104,23 @@ namespace MiniZinc {
     }
     /// Visit floating point literal
     void vFloatLit(const FloatLit&) {
-      throw EvalError(Location(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit Boolean literal
     void vBoolLit(const BoolLit&) {
-      throw EvalError(Location(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit set literal
     void vSetLit(const SetLit&) {
-      throw EvalError(Location(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit string literal
     void vStringLit(const StringLit&) {
-      throw EvalError(Location(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit identifier
     void vId(const Id& id) {
@@ -1150,18 +1154,27 @@ namespace MiniZinc {
     /// Visit array access
     void vArrayAccess(const ArrayAccess& aa) {
       if (Id* id = aa.v()->dyn_cast<Id>()) {
-        vId(*id);
-      } else {
-        throw EvalError(aa.loc(), "not yet supported");
+        if (id->decl()->ti()->domain()) {
+          GCLock lock;
+          IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
+          if (isv->size()>0) {
+            _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
+            return;
+          }
+        }
       }
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit array comprehension
     void vComprehension(const Comprehension& c) {
-      throw EvalError(c.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit if-then-else
     void vITE(const ITE& ite) {
-      throw EvalError(ite.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
@@ -1209,7 +1222,8 @@ namespace MiniZinc {
       case BOT_AND:
       case BOT_XOR:
       case BOT_DOTDOT:
-        throw EvalError(bo.loc(), "not yet supported");
+        valid = false;
+        _bounds.push_back(Bounds(0,0));
       }
     }
     /// Visit unary operator
@@ -1222,7 +1236,8 @@ namespace MiniZinc {
         _bounds.back().second = -_bounds.back().second;
         break;
       case UOT_NOT:
-        throw EvalError(uo.loc(), "not yet supported");
+        valid = false;
+        _bounds.push_back(Bounds(0,0));
       }
     }
     /// Visit call
@@ -1297,23 +1312,28 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(const Let& l) {
-      throw EvalError(l.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit variable declaration
     void vVarDecl(const VarDecl& vd) {
-      throw EvalError(vd.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit annotation
     void vAnnotation(const Annotation& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit type inst
     void vTypeInst(const TypeInst& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
     /// Visit TIId
     void vTIId(const TIId& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(Bounds(0,0));
     }
   };
 
@@ -1348,7 +1368,8 @@ namespace MiniZinc {
     }
     /// Visit set literal
     void vSetLit(const SetLit&) {
-      throw EvalError(Location(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit identifier
     void vId(const Id& id) {
@@ -1371,15 +1392,24 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(const ArrayAccess& aa) {
-      throw EvalError(aa.loc(), "not yet supported");
+      if (Id* id = aa.v()->dyn_cast<Id>()) {
+        if (id->decl()->ti()->domain()) {
+          _bounds.push_back(eval_intset(id->decl()->ti()->domain()));
+          return;
+        }
+      }
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit array comprehension
     void vComprehension(const Comprehension& c) {
-      throw EvalError(c.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit if-then-else
     void vITE(const ITE& ite) {
-      throw EvalError(ite.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
@@ -1403,7 +1433,8 @@ namespace MiniZinc {
         }
         break;
       case BOT_SYMDIFF:
-        throw EvalError(bo.loc(), "not yet supported");
+        valid = false;
+        _bounds.push_back(NULL);
         break;
       case BOT_INTERSECT:
         {
@@ -1436,12 +1467,14 @@ namespace MiniZinc {
       case BOT_AND:
       case BOT_XOR:
       case BOT_DOTDOT:
-        throw EvalError(bo.loc(), "not yet supported");
+        valid = false;
+        _bounds.push_back(NULL);
       }
     }
     /// Visit unary operator
     void vUnOp(const UnOp& uo) {
-      throw EvalError(uo.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit call
     void vCall(Call& c) {
@@ -1473,23 +1506,28 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(const Let& l) {
-      throw EvalError(l.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit variable declaration
     void vVarDecl(const VarDecl& vd) {
-      throw EvalError(vd.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit annotation
     void vAnnotation(const Annotation& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit type inst
     void vTypeInst(const TypeInst& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
     /// Visit TIId
     void vTIId(const TIId& e) {
-      throw EvalError(e.loc(), "not yet supported");
+      valid = false;
+      _bounds.push_back(NULL);
     }
   };
 
