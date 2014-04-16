@@ -317,24 +317,10 @@ namespace MiniZinc {
     return isv->max(isv->size()-1);
   }
   IntSetVal* b_ub_set(Expression* e) {
-    for (;;) {
-      switch (e->eid()) {
-      case Expression::E_SETLIT: return eval_intset(e);
-      case Expression::E_ID:
-        {
-          Id* id = e->cast<Id>();
-          if (id->decl()==NULL)
-            throw EvalError(id->loc(),"undefined identifier");
-          if (id->decl()->e()==NULL)
-            return eval_intset(id->decl()->ti()->domain());
-          else
-            e = id->decl()->e();
-        }
-        break;
-      default:
-        throw EvalError(e->loc(),"invalid argument to ub");
-      }
-    }
+    IntSetVal* isv = compute_intset_bounds(e);
+    if (isv)
+      return isv;
+    throw EvalError(e->loc(), "cannot determine bounds of set expression");
   }
   IntSetVal* b_ub_set(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
