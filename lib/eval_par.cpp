@@ -1152,14 +1152,29 @@ namespace MiniZinc {
     void vArrayLit(const ArrayLit& al) {
     }
     /// Visit array access
-    void vArrayAccess(const ArrayAccess& aa) {
-      if (Id* id = aa.v()->dyn_cast<Id>()) {
-        if (id->decl()->ti()->domain()) {
-          GCLock lock;
-          IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
-          if (isv->size()>0) {
-            _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
-            return;
+    void vArrayAccess(ArrayAccess& aa) {
+      bool parAccess = true;
+      for (unsigned int i=aa.idx().size(); i--;) {
+        if (!aa.idx()[i]->type().ispar()) {
+          parAccess = false;
+          break;
+        }
+      }
+      if (parAccess) {
+        bool success;
+        Expression* e = eval_arrayaccess(&aa, success);
+        BottomUpIterator<ComputeIntBounds> cbi(*this);
+        cbi.run(e);
+        return;
+      } else {
+        if (Id* id = aa.v()->dyn_cast<Id>()) {
+          if (id->decl()->ti()->domain()) {
+            GCLock lock;
+            IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
+            if (isv->size()>0) {
+              _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
+              return;
+            }
           }
         }
       }
@@ -1391,11 +1406,26 @@ namespace MiniZinc {
       _bounds.push_back(NULL);
     }
     /// Visit array access
-    void vArrayAccess(const ArrayAccess& aa) {
-      if (Id* id = aa.v()->dyn_cast<Id>()) {
-        if (id->decl()->ti()->domain()) {
-          _bounds.push_back(eval_intset(id->decl()->ti()->domain()));
-          return;
+    void vArrayAccess(ArrayAccess& aa) {
+      bool parAccess = true;
+      for (unsigned int i=aa.idx().size(); i--;) {
+        if (!aa.idx()[i]->type().ispar()) {
+          parAccess = false;
+          break;
+        }
+      }
+      if (parAccess) {
+        bool success;
+        Expression* e = eval_arrayaccess(&aa, success);
+        BottomUpIterator<ComputeIntSetBounds> cbi(*this);
+        cbi.run(e);
+        return;
+      } else {
+        if (Id* id = aa.v()->dyn_cast<Id>()) {
+          if (id->decl()->ti()->domain()) {
+            _bounds.push_back(eval_intset(id->decl()->ti()->domain()));
+            return;
+          }
         }
       }
       valid = false;
