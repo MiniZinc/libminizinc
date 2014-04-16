@@ -1160,21 +1160,22 @@ namespace MiniZinc {
           break;
         }
       }
-      if (parAccess) {
-        bool success;
-        Expression* e = eval_arrayaccess(&aa, success);
-        BottomUpIterator<ComputeIntBounds> cbi(*this);
-        cbi.run(e);
-        return;
-      } else {
-        if (Id* id = aa.v()->dyn_cast<Id>()) {
-          if (id->decl()->ti()->domain()) {
-            GCLock lock;
-            IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
-            if (isv->size()>0) {
-              _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
-              return;
-            }
+      if (Id* id = aa.v()->dyn_cast<Id>()) {
+        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+          bool success;
+          Expression* e = eval_arrayaccess(&aa, success);
+          if (success) {
+            BottomUpIterator<ComputeIntBounds> cbi(*this);
+            cbi.run(e);
+            return;
+          }
+        }
+        if (id->decl()->ti()->domain()) {
+          GCLock lock;
+          IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
+          if (isv->size()>0) {
+            _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
+            return;
           }
         }
       }
@@ -1414,18 +1415,19 @@ namespace MiniZinc {
           break;
         }
       }
-      if (parAccess) {
-        bool success;
-        Expression* e = eval_arrayaccess(&aa, success);
-        BottomUpIterator<ComputeIntSetBounds> cbi(*this);
-        cbi.run(e);
-        return;
-      } else {
-        if (Id* id = aa.v()->dyn_cast<Id>()) {
-          if (id->decl()->ti()->domain()) {
-            _bounds.push_back(eval_intset(id->decl()->ti()->domain()));
+      if (Id* id = aa.v()->dyn_cast<Id>()) {
+        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+          bool success;
+          Expression* e = eval_arrayaccess(&aa, success);
+          if (success) {
+            BottomUpIterator<ComputeIntSetBounds> cbi(*this);
+            cbi.run(e);
             return;
           }
+        }
+        if (id->decl()->ti()->domain()) {
+          _bounds.push_back(eval_intset(id->decl()->ti()->domain()));
+          return;
         }
       }
       valid = false;
