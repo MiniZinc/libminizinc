@@ -605,6 +605,7 @@ namespace MiniZinc {
         }
       } else {
         if (vd->e()==NULL) {
+          Expression* ret = e;
           if (e==NULL || (e->type().ispar() && e->type().isbool())) {
             if (e==NULL || eval_bool(e)) {
               vd->e(constants().lit_true);
@@ -647,13 +648,17 @@ namespace MiniZinc {
                 c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
                   flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
-                  return vd->id();
+                  ret = vd->id();
+                  vd->e(e);
+                  env.vo_add_exp(vd);
                 }
               }
             }
             
-            vd->e(e);
-            env.vo_add_exp(vd);
+            if (ret != vd->id()) {
+              vd->e(ret);
+              env.vo_add_exp(vd);
+            }
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
@@ -683,7 +688,7 @@ namespace MiniZinc {
               }
             }
           }
-          return e;
+          return ret;
         } else if (vd == e) {
           return vd->id();
         } else if (vd->e() != e) {
