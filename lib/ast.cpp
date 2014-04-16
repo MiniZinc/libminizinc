@@ -888,7 +888,6 @@ namespace MiniZinc {
     ids.exists = ASTString("exists");
     ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
-    ids.bool_eq = ASTString("bool_eq");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
     ids.promise_total = ASTString("promise_total");
@@ -898,7 +897,11 @@ namespace MiniZinc {
     ids.int_lin_eq = ASTString("int_lin_eq");
     ids.int_lin_le = ASTString("int_lin_le");
     ids.int_lin_ne = ASTString("int_lin_ne");
+
+    ids.bool_eq = ASTString("bool_eq");
     ids.int_eq = ASTString("int_eq");
+    ids.set_eq = ASTString("set_eq");
+    ids.float_eq = ASTString("float_eq");
 
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -931,11 +934,13 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.bool2int));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
-    v.push_back(new StringLit(Location(),ids.int_eq));
     v.push_back(new StringLit(Location(),ids.int_lin_eq));
     v.push_back(new StringLit(Location(),ids.int_lin_le));
     v.push_back(new StringLit(Location(),ids.int_lin_ne));
     v.push_back(new StringLit(Location(),ids.bool_eq));
+    v.push_back(new StringLit(Location(),ids.int_eq));
+    v.push_back(new StringLit(Location(),ids.set_eq));
+    v.push_back(new StringLit(Location(),ids.float_eq));
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.promise_total));

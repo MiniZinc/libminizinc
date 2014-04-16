@@ -1134,7 +1134,6 @@ namespace MiniZinc {
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
-        ASTString bool_eq;
         ASTString assert;
         ASTString trace;
         ASTString promise_total;
@@ -1144,7 +1143,11 @@ namespace MiniZinc {
         ASTString int_lin_eq;
         ASTString int_lin_le;
         ASTString int_lin_ne;
+
         ASTString int_eq;
+        ASTString bool_eq;
+        ASTString set_eq;
+        ASTString float_eq;
       } ids;
     
       /// Identifiers for Boolean contexts

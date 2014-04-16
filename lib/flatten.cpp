@@ -451,7 +451,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = id;
                 args[1] = constants().lit_false;
-                Call* c = new Call(Location(),"bool_eq",args);
+                Call* c = new Call(Location(),constants().ids.bool_eq,args);
                 c->decl(env.orig->matchFn(c));
                 c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
@@ -496,7 +496,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = id;
                 args[1] = constants().lit_true;
-                Call* c = new Call(Location(),"bool_eq",args);
+                Call* c = new Call(Location(),constants().ids.bool_eq,args);
                 c->decl(env.orig->matchFn(c));
                 c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
@@ -615,7 +615,7 @@ namespace MiniZinc {
             std::vector<Expression*> args(2);
             args[0] = vd->id();
             args[1] = vd->e();
-            Call* c = new Call(Location(),"bool_eq",args);
+            Call* c = new Call(Location(),constants().ids.bool_eq,args);
             c->decl(env.orig->matchFn(c));
             c->type(c->decl()->rtype(args));
             if (c->decl()->e()) {
@@ -627,15 +627,15 @@ namespace MiniZinc {
               // Check that index sets match
               checkIndexSets(vd,e);
             } else if (Id* e_id = e->dyn_cast<Id>()) {
-              std::string cid = "";
+              ASTString cid;
               if (e->type().isint()) {
-                cid = "int_eq";
+                cid = constants().ids.int_eq;
               } else if (e->type().isbool()) {
-                cid = "bool_eq";
+                cid = constants().ids.bool_eq;
               } else if (e->type().isset()) {
-                cid = "set_eq";
+                cid = constants().ids.set_eq;
               } else if (e->type().isfloat()) {
-                cid = "float_eq";
+                cid = constants().ids.float_eq;
               }
               if (cid != "") {
                 GCLock lock;
@@ -704,7 +704,7 @@ namespace MiniZinc {
                   std::vector<Expression*> args(2);
                   args[0] = id;
                   args[1] = e;
-                  Call* c = new Call(Location(),"bool_eq",args);
+                  Call* c = new Call(Location(),constants().ids.bool_eq,args);
                   c->decl(env.orig->matchFn(c));
                   c->type(c->decl()->rtype(args));
                   if (c->decl()->e()) {
@@ -720,17 +720,19 @@ namespace MiniZinc {
               VarDecl* e_vd = e->cast<VarDecl>();
               if (e->type()._dim != 0)
                 throw InternalError("not supported yet");
-              std::string cid;
+              GCLock lock;
+              ASTString cid;
               if (e->type().isint()) {
-                cid = "int_eq";
+                cid = constants().ids.int_eq;
               } else if (e->type().isbool()) {
-                cid = "bool_eq";
+                cid = constants().ids.bool_eq;
               } else if (e->type().isset()) {
-                cid = "set_eq";
+                cid = constants().ids.set_eq;
+              } else if (e->type().isfloat()) {
+                cid = constants().ids.float_eq;
               } else {
                 throw InternalError("not yet implemented");
               }
-              GCLock lock;
               std::vector<Expression*> args(2);
               args[0] = vd->id();
               args[1] = e_vd->id();
@@ -746,7 +748,7 @@ namespace MiniZinc {
               std::vector<Expression*> args(c->args().size());
               GCLock lock;
               if (c->id() == constants().ids.lin_exp) {
-                c->id(ASTString("int_lin_eq"));
+                c->id(constants().ids.int_lin_eq);
                 ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
@@ -2625,7 +2627,7 @@ namespace MiniZinc {
               std::vector<KeepAlive> pos_alv;
               std::vector<KeepAlive> neg_alv;
               for (unsigned int i=0; i<alv.size(); i++) {
-                Call* neg_call = same_call(alv[i](),"bool_eq");
+                Call* neg_call = same_call(alv[i](),constants().ids.bool_eq);
                 if (neg_call && 
                     Expression::equal(neg_call->args()[1],constants().lit_false)) {
                   neg_alv.push_back(neg_call->args()[0]);
@@ -4004,7 +4006,7 @@ namespace MiniZinc {
                 args[0] = id;
                 args[1] = constants().lit_true;
                 GCLock lock;
-                ve = new Call(Location(),"bool_eq",args);
+                ve = new Call(Location(),constants().ids.bool_eq,args);
               }
               m->addItem(new ConstraintI(Location(),ve));
             }
@@ -4163,14 +4165,14 @@ namespace MiniZinc {
           args[0] = id;
           args[1] = constants().lit_true;
           GCLock lock;
-          ci->e(new Call(Location(),"bool_eq",args));
+          ci->e(new Call(Location(),constants().ids.bool_eq,args));
         } else if (BoolLit* bl = ci->e()->dyn_cast<BoolLit>()) {
           if (!bl->v()) {
             GCLock lock;
             std::vector<Expression*> args(2);
             args[0] = constants().lit_false;
             args[1] = constants().lit_true;
-            Call* neq = new Call(Location(),"bool_eq",args);
+            Call* neq = new Call(Location(),constants().ids.bool_eq,args);
             ci->e(neq);
           }
         }
