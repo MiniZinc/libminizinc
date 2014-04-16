@@ -356,7 +356,7 @@ namespace MiniZinc {
     /// Access declaration
     VarDecl* decl(void) const { return _decl; }
     /// Set declaration
-    void decl(VarDecl* d) { _decl = d; }
+    void decl(VarDecl* d);
     /// Recompute hash value
     void rehash(void);
   };
@@ -494,8 +494,10 @@ namespace MiniZinc {
   struct Generators {
     /// %Generators
     std::vector<Generator> _g;
-    //// where-expression
+    /// where-expression
     Expression* _w;
+    /// Constructor
+    Generators(void) : _w(NULL) {}
   };
   /// \brief An expression representing an array- or set-comprehension
   class Comprehension : public Expression {
@@ -536,6 +538,8 @@ namespace MiniZinc {
     Expression* where(void) const { return _where; }
     /// Return generator body
     Expression* e(void) const { return _e; }
+    /// Re-construct (used for copying)
+    void init(Expression* e, Generators& g);
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
@@ -561,6 +565,8 @@ namespace MiniZinc {
     const Expression* e_else(void) const { return _e_else; }
     /// Recompute hash value
     void rehash(void);
+    /// Re-construct (used for copying)
+    void init(const std::vector<Expression*>& e_if_then, Expression* e_else);
   };
 
   /// Type of binary operators

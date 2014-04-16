@@ -90,6 +90,11 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline void
+  Id::decl(VarDecl* d) {
+    _decl = d;
+  }
+
   inline
   TIId::TIId(const Location& loc, const std::string& v)
   : Expression(loc,E_TIID,Type()), _v(ASTString(v)) {
@@ -182,12 +187,8 @@ namespace MiniZinc {
     rehash();
   }
 
-  inline
-  Comprehension::Comprehension(const Location& loc,
-                               Expression* e,
-                               Generators& g,
-                               bool set)
-  : Expression(loc,E_COMP,Type()) {
+  inline void
+  Comprehension::init(Expression *e, Generators &g) {
     _e = e;
     std::vector<Expression*> es;
     std::vector<int> idx;
@@ -202,17 +203,28 @@ namespace MiniZinc {
     _g = ASTExprVec<Expression>(es);
     _g_idx = ASTIntVec(idx);
     _where = g._w;
-    _flag_1 = set;
     rehash();
   }
-
+  inline
+  Comprehension::Comprehension(const Location& loc,
+                               Expression* e,
+                               Generators& g,
+                               bool set)
+  : Expression(loc,E_COMP,Type()) {
+    init(e,g);
+    _flag_1 = set;
+  }
+  inline void
+  ITE::init(const std::vector<Expression*>& e_if_then, Expression* e_else) {
+    _e_if_then = ASTExprVec<Expression>(e_if_then);
+    _e_else = e_else;
+    rehash();
+  }
   inline
   ITE::ITE(const Location& loc,
            const std::vector<Expression*>& e_if_then, Expression* e_else)
   : Expression(loc,E_ITE,Type()) {
-    _e_if_then = ASTExprVec<Expression>(e_if_then);
-    _e_else = e_else;
-    rehash();
+    init(e_if_then,e_else);
   }
 
   inline
