@@ -88,7 +88,7 @@ namespace MiniZinc {
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, const ASTString& s) {
-    return os << s.c_str();
+    return s.size()==0 ? os : (os << s.c_str());
   }
 
 }
