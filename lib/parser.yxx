@@ -340,7 +340,7 @@ namespace MiniZinc {
 
 %}
 
-%union { int iValue; char* sValue; bool bValue; double dValue;
+%union { long long int iValue; char* sValue; bool bValue; double dValue;
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
          std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
