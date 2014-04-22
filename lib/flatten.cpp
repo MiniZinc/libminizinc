@@ -3605,6 +3605,8 @@ namespace MiniZinc {
             if (!v->e()->type().isann())
               throw EvalError(v->e()->loc(), "Undefined parameter", v->e()->id()->v());
           } else {
+            GCLock lock;
+            v->e()->e(eval_par(v->e()->e()));
             if (v->e()->type().dim() > 0)
               checkIndexSets(v->e(), v->e()->e());
           }
