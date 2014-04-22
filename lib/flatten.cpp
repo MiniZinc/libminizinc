@@ -414,6 +414,7 @@ namespace MiniZinc {
     ASTExprVec<TypeInst> tis = vd->ti()->ranges();
     std::vector<TypeInst*> newtis(tis.size());
     bool needNewTypeInst = false;
+    GCLock lock;
     switch (e->eid()) {
       case Expression::E_ID:
       {
@@ -3599,6 +3600,14 @@ namespace MiniZinc {
       void vVarDeclI(VarDeclI* v) {
         if (v->e()->type().isvar()) {
           (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+        } else {
+          if (v->e()->e()==NULL) {
+            if (!v->e()->type().isann())
+              throw EvalError(v->e()->loc(), "Undefined parameter", v->e()->id()->v());
+          } else {
+            if (v->e()->type().dim() > 0)
+              checkIndexSets(v->e(), v->e()->e());
+          }
         }
       }
       void vConstraintI(ConstraintI* ci) {
