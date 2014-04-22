@@ -25,7 +25,7 @@ namespace MiniZinc {
     if (id->decl() == NULL)
       throw EvalError(e->loc(), "undeclared identifier", id->v());
     if (id->decl()->e() == NULL)
-      throw EvalError(e->loc(), "cannot evaluate expression", id->v());
+      throw EvalError(id->decl()->loc(), "cannot evaluate expression", id->v());
     typename E::Val r = E::e(id->decl()->e());
     if (id->decl()->toplevel() && !id->decl()->evaluated()) {
       id->decl()->e(E::exp(r));
