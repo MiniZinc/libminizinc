@@ -192,7 +192,16 @@ int main(int argc, char** argv) {
           if (flag_verbose)
             std::cerr << "Flattening ...";
           Env env(m);
-          flatten(env,fopts);
+          try {
+            flatten(env,fopts);
+          } catch (LocationException& e) {
+            if (flag_verbose)
+              std::cerr << std::endl;
+            std::cerr << e.what() << ": " << e.msg() << std::endl;
+            std::cerr << e.loc() << std::endl;
+            env.dumpErrorStack(std::cerr);
+            exit(EXIT_FAILURE);
+          }
           Model* flat = env.flat();
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;

@@ -30,6 +30,7 @@ namespace MiniZinc {
     Model* flat(void);
     Model* output(void);
     EnvI& envi(void);
+    std::ostream& dumpErrorStack(std::ostream& os);
   };
 
   /// Options for the flattener

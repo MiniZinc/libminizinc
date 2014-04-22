@@ -187,6 +187,8 @@ namespace MiniZinc {
     };
     typedef KeepAliveMap<WW> Map;
     bool ignorePartial;
+    std::vector<const Expression*> callStack;
+    std::vector<const Expression*> errorStack;
   protected:
     Map map;
     Model* _flat;
@@ -288,6 +290,19 @@ namespace MiniZinc {
     
   };
 
+  class CallStackItem {
+  public:
+    EnvI& env;
+    CallStackItem(EnvI& env0, Expression* e) : env(env0) {
+      env.errorStack.clear();
+      env.callStack.push_back(e);
+    }
+    ~CallStackItem(void) {
+      env.errorStack.push_back(env.callStack.back());
+      env.callStack.pop_back();
+    }
+  };
+  
   Env::Env(Model* m) : e(new EnvI(m)) {}
   Env::~Env(void) {
     delete e;
@@ -301,6 +316,18 @@ namespace MiniZinc {
   Env::output(void) { return e->output; }
   EnvI&
   Env::envi(void) { return *e; }
+  std::ostream&
+  Env::dumpErrorStack(std::ostream& os) {
+    if (e->errorStack.size() > 0 && !e->errorStack[0]->isa<Id>())
+      std::cerr << "while evaluating" << std::endl;
+    for (unsigned int i=0; i<e->errorStack.size(); i++) {
+      if (e->errorStack[i]->isa<Id>())
+        break;
+      os << " " << *e->errorStack[i];
+      os << " in file " << e->errorStack[i]->loc().toString() << std::endl;
+    }
+    return os;
+  }
 
   bool isTotal(FunctionI* fi) {
     Annotation* a = fi->ann();
@@ -1241,6 +1268,7 @@ namespace MiniZinc {
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
+    CallStackItem _csi(env,e);
     EE ret;
     assert(!e->type().isunknown());
     if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type()._bt!=Type::BT_ANN) {
