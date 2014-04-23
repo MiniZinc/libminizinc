@@ -53,6 +53,23 @@ namespace MiniZinc {
   /// Compute bounds of an integer expression
   IntBounds compute_int_bounds(Expression* e);
 
+  /// Representation for bounds of a float expression
+  struct FloatBounds {
+    /// Lower bound
+    FloatVal l;
+    /// Upper bound
+    FloatVal u;
+    /// Whether the bounds are valid
+    bool valid;
+    /// Constructor
+    FloatBounds(FloatVal l0, FloatVal u0, bool valid0)
+    : l(l0), u(u0), valid(valid0) {}
+  };
+  
+  /// Compute bounds of an integer expression
+  FloatBounds compute_float_bounds(Expression* e);
+  
+  
   /**
    * \brief Compute bounds of a set of int expression
    *

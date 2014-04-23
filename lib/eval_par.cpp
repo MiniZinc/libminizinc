@@ -1365,6 +1365,11 @@ namespace MiniZinc {
     }
   }
 
+  FloatBounds compute_float_bounds(Expression* e) {
+    FloatBounds b(0.0,0.0,false);
+    return b;
+  }
+  
   class ComputeIntSetBounds : public EVisitor {
   public:
     std::vector<IntSetVal*> _bounds;
