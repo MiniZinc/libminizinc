@@ -1151,6 +1151,7 @@ namespace MiniZinc {
         ASTString int_lin_ne;
 
         ASTString int_eq;
+        ASTString int_ne;
         ASTString bool_eq;
         ASTString set_eq;
         ASTString float_eq;

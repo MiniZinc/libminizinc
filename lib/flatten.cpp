@@ -3653,7 +3653,7 @@ namespace MiniZinc {
       int_lin_eq_t[1] = Type::varint(1);
       int_lin_eq_t[2] = Type::parint(0);
       GCLock lock;
-      FunctionI* fi = env.orig->matchFn(ASTString("int_lin_eq"), int_lin_eq_t);
+      FunctionI* fi = env.orig->matchFn(constants().ids.int_lin_eq, int_lin_eq_t);
       int_lin_eq = (fi && fi->e()) ? fi : NULL;
     }
     FunctionI* array_bool_and;
@@ -3728,7 +3728,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = vdi->e()->id();
                 args[1] = new IntLit(Location(),i);
-                Call* call = new Call(Location(),"int_ne",args);
+                Call* call = new Call(Location(),constants().ids.int_ne,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
                 (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
