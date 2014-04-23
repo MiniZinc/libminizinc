@@ -141,6 +141,7 @@ predicate xorall_reif(array[int] of var bool: b, var bool: c) =
   xorall([not c]++b);
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
+function var float: lin_exp(array[int] of float, array[int] of var float, float);
 
 % Element constraints
 
