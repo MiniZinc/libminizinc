@@ -1030,57 +1030,6 @@ namespace MiniZinc {
       return ce->cast<Call>();
     return NULL;
   }
-
-  KeepAlive mklinexp(EnvI& env, IntVal c0, IntVal c1,
-                     Expression* e0, Expression* e1) {
-    GCLock lock;
-    IntVal d = 0;
-    if (e0->type().ispar() && e0->type().isint()) {
-      d += c0*eval_int(e0);
-      e0 = NULL;
-    }
-    if (e1 && e1->type().ispar() && e1->type().isint()) {
-      d += c1*eval_int(e1);
-      e1 = NULL;
-    }
-    if (e0==NULL && e1==NULL)
-      return new IntLit(Location(),d);
-    if (e0==NULL) {
-      std::swap(e0,e1);
-      std::swap(c0,c1);
-    }
-    std::vector<Expression*> bo_args(e1 ? 2 : 1);
-    bo_args[0] = e0;
-    if (e1)
-      bo_args[1] = e1;
-    std::vector<Expression*> coeffs(e1 ? 2 : 1);
-    coeffs[0] = new IntLit(e0->loc(),c0);
-    if (e1) {
-      if (c0==c1)
-        coeffs[1] = coeffs[0];
-      else
-        coeffs[1] = new IntLit(e0->loc(),c1);
-    }
-    std::vector<Expression*> args(3);
-    args[0]=new ArrayLit(e0->loc(),coeffs);
-    args[0]->type(Type::parint(1));
-    args[1]=new ArrayLit(e0->loc(),bo_args);
-    Type tt = e0->type();
-    tt._dim = 1;
-    if (e0->type()._ti==Type::TI_PAR && e1)
-      tt._ti = e1->type()._ti;
-    args[1]->type(tt);
-    args[2] = new IntLit(e0->loc(),d);
-    args[2]->type(Type::parint());
-    Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
-    tt = args[1]->type();
-    tt._dim = 0;
-    c->decl(env.orig->matchFn(c));
-    c->type(c->decl()->rtype(args));
-    KeepAlive ka = c;
-    return ka;
-  }
-
   
   class CmpExpIdx {
   public:
@@ -1093,9 +1042,226 @@ namespace MiniZinc {
     }
   };
 
-  void simplify_lin(std::vector<IntVal>& c,
+  template<class Lit>
+  class LinearTraits {
+  };
+  template<>
+  class LinearTraits<IntLit> {
+  public:
+    typedef IntVal Val;
+    static Val eval(Expression* e) { return eval_int(e); }
+    static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
+      switch (bot) {
+        case BOT_LE:
+          callid = constants().ids.int_lin_le;
+          coeff_sign = 1;
+          d += 1;
+          break;
+        case BOT_LQ:
+          callid = constants().ids.int_lin_le;
+          coeff_sign = 1;
+          break;
+        case BOT_GR:
+          callid = constants().ids.int_lin_le;
+          coeff_sign = -1;
+          d = -d+1;
+          break;
+        case BOT_GQ:
+          callid = constants().ids.int_lin_le;
+          coeff_sign = -1;
+          d = -d;
+          break;
+        case BOT_EQ:
+          callid = constants().ids.int_lin_eq;
+          coeff_sign = 1;
+          break;
+        case BOT_NQ:
+          callid = constants().ids.int_lin_ne;
+          coeff_sign = 1;
+          break;
+        default: assert(false); break;
+      }
+    }
+    static ASTString id_eq(void) { return constants().ids.int_eq; }
+    typedef IntBounds Bounds;
+    static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
+    typedef IntSetVal* Domain;
+    static Domain eval_domain(Expression* e) { return eval_intset(e); }
+    static Expression* new_domain(Val v) { return new SetLit(Location(),IntSetVal::a(v,v)); }
+    static Expression* new_domain(Domain d) { return new SetLit(Location(),d); }
+    static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
+    static bool domain_equals(Domain dom, Val v) { return dom->size()==1 && dom->min(0)==v && dom->max(0)==v; }
+    static bool domain_equals(Domain dom1, Domain dom2) {
+      IntSetRanges d1(dom1);
+      IntSetRanges d2(dom2);
+      return Ranges::equal(d1,d2);
+    }
+    static bool domain_empty(Domain dom) { return dom->size()==0; }
+    static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
+      IntSetRanges dr(dom);
+      IntSetVal* ndomain;
+      switch (bot) {
+        case BOT_LE:
+          v -= 1;
+          // fall through
+        case BOT_LQ:
+        {
+          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::maxiter(dr,v);
+          ndomain = IntSetVal::ai(b);
+        }
+          break;
+        case BOT_GR:
+          v += 1;
+          // fall through
+        case BOT_GQ:
+        {
+          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::miniter(dr,v);
+          ndomain = IntSetVal::ai(b);
+        }
+          break;
+        case BOT_NQ:
+        {
+          Ranges::Const c(v,v);
+          Ranges::Diff<IntSetRanges,Ranges::Const> d(dr,c);
+          ndomain = IntSetVal::ai(d);
+        }
+          break;
+        default: assert(false);
+      }
+      return ndomain;
+    }
+  };
+  template<>
+  class LinearTraits<FloatLit> {
+  public:
+    typedef FloatVal Val;
+    static Val eval(Expression* e) { return eval_float(e); }
+    static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
+      switch (bot) {
+        case BOT_LE:
+          callid = constants().ids.float_lin_lt;
+          coeff_sign = 1;
+          break;
+        case BOT_LQ:
+          callid = constants().ids.float_lin_le;
+          coeff_sign = 1;
+          break;
+        case BOT_GR:
+          callid = constants().ids.float_lin_lt;
+          coeff_sign = -1;
+          d = -d;
+          break;
+        case BOT_GQ:
+          callid = constants().ids.float_lin_le;
+          coeff_sign = -1;
+          d = -d;
+          break;
+        case BOT_EQ:
+          callid = constants().ids.float_lin_eq;
+          coeff_sign = 1;
+          break;
+        case BOT_NQ:
+          callid = constants().ids.float_lin_ne;
+          coeff_sign = 1;
+          break;
+        default: assert(false); break;
+      }
+    }
+    static ASTString id_eq(void) { return constants().ids.float_eq; }
+    typedef FloatBounds Bounds;
+    static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
+    typedef BinOp* Domain;
+    static Domain eval_domain(Expression* e) {
+      BinOp* bo = e->cast<BinOp>();
+      assert(bo->op() == BOT_DOTDOT);
+      if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
+        return bo;
+      BinOp* ret = new BinOp(bo->loc(),eval_par(bo->lhs()),BOT_DOTDOT,eval_par(bo->rhs()));
+      ret->type(bo->type());
+      return ret;
+    }
+    static Expression* new_domain(Val v) {
+      BinOp* ret = new BinOp(Location(),new FloatLit(Location(),v),BOT_DOTDOT,new FloatLit(Location(),v));
+      ret->type(Type::parsetfloat());
+      return ret;
+    }
+    static Expression* new_domain(Domain d) { return d; }
+    static bool domain_contains(Domain dom, Val v) {
+      return dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v;
+    }
+    static bool domain_equals(Domain dom, Val v) {
+      return dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
+    }
+    static bool domain_equals(Domain dom1, Domain dom2) {
+      return
+        dom1->lhs()->cast<FloatLit>()->v() == dom2->lhs()->cast<FloatLit>()->v() &&
+        dom1->rhs()->cast<FloatLit>()->v() == dom2->rhs()->cast<FloatLit>()->v();
+    }
+    static bool domain_empty(Domain dom) {
+      return dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
+    }
+    static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
+      return NULL;
+    }
+  };
+
+  template<class Lit>
+  KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0, typename LinearTraits<Lit>::Val c1,
+                     Expression* e0, Expression* e1) {
+    typedef typename LinearTraits<Lit>::Val Val;
+    GCLock lock;
+    Val d = 0;
+    if (e0->type().ispar()) {
+      d += c0*LinearTraits<Lit>::eval(e0);
+      e0 = NULL;
+    }
+    if (e1 && e1->type().ispar()) {
+      d += c1*LinearTraits<Lit>::eval(e1);
+      e1 = NULL;
+    }
+    if (e0==NULL && e1==NULL)
+      return new Lit(Location(),d);
+    if (e0==NULL) {
+      std::swap(e0,e1);
+      std::swap(c0,c1);
+    }
+    std::vector<Expression*> bo_args(e1 ? 2 : 1);
+    bo_args[0] = e0;
+    if (e1)
+      bo_args[1] = e1;
+    std::vector<Expression*> coeffs(e1 ? 2 : 1);
+    coeffs[0] = new Lit(e0->loc(),c0);
+    if (e1) {
+      if (c0==c1)
+        coeffs[1] = coeffs[0];
+      else
+        coeffs[1] = new Lit(e0->loc(),c1);
+    }
+    std::vector<Expression*> args(3);
+    args[0]=new ArrayLit(e0->loc(),coeffs);
+    Type t = coeffs[0]->type();
+    t._dim = 1;
+    args[0]->type(t);
+    args[1]=new ArrayLit(e0->loc(),bo_args);
+    Type tt = e0->type();
+    tt._dim = 1;
+    if (e0->type()._ti==Type::TI_PAR && e1)
+      tt._ti = e1->type()._ti;
+    args[1]->type(tt);
+    args[2] = new Lit(e0->loc(),d);
+    Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
+    tt = args[1]->type();
+    tt._dim = 0;
+    c->decl(env.orig->matchFn(c));
+    c->type(c->decl()->rtype(args));
+    KeepAlive ka = c;
+    return ka;
+  }
+
+  template<class Lit>
+  void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c,
                     std::vector<KeepAlive>& x,
-                    IntVal& d) {
+                    typename LinearTraits<Lit>::Val& d) {
     std::vector<int> idx(c.size());
     for (unsigned int i=idx.size(); i--;) {
       idx[i]=i;
@@ -1103,7 +1269,7 @@ namespace MiniZinc {
     std::sort(idx.begin(),idx.end(),CmpExpIdx(x));
     int ci = 0;
     for (; ci<x.size(); ci++) {
-      if (IntLit* il = x[idx[ci]]()->dyn_cast<IntLit>()) {
+      if (Lit* il = x[idx[ci]]()->dyn_cast<Lit>()) {
         d += c[idx[ci]]*il->v();
         c[idx[ci]] = 0;
       } else {
@@ -1114,7 +1280,7 @@ namespace MiniZinc {
       if (Expression::equal(x[idx[i]](),x[idx[ci]]())) {
         c[idx[ci]] += c[idx[i]];
         c[idx[i]] = 0;
-      } else if (IntLit* il = x[idx[i]]()->dyn_cast<IntLit>()) {
+      } else if (Lit* il = x[idx[i]]()->dyn_cast<Lit>()) {
         d += c[idx[i]]*il->v();
         c[idx[i]] = 0;
       } else {
@@ -1163,6 +1329,7 @@ namespace MiniZinc {
   }
 
   /// Return a lin_exp or id if \a e is a lin_exp or id
+  template<class Lit>
   Expression* get_linexp(Expression* e) {
     for (;;) {
       if (e && e->eid()==Expression::E_ID) {
@@ -1175,7 +1342,7 @@ namespace MiniZinc {
         break;
       }
     }
-    if (e && (e->isa<Id>() || e->isa<IntLit>() ||
+    if (e && (e->isa<Id>() || e->isa<Lit>() ||
               (e->isa<Call>() && e->cast<Call>()->id() == constants().ids.lin_exp)))
       return e;
     return NULL;
@@ -1265,6 +1432,315 @@ namespace MiniZinc {
       let->type(r->id()->type());
       return let;
     }
+  }
+  
+  template<class Lit>
+  void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret,
+                            Expression* le0, Expression* le1, BinOpType& bot, bool doubleNeg,
+                            std::vector<EE>& ees, std::vector<KeepAlive>& args, ASTString& callid) {
+    typedef typename LinearTraits<Lit>::Val Val;
+    std::vector<Val> coeffv;
+    std::vector<KeepAlive> alv;
+    Val d = 0;
+    Expression* le[2] = {le0,le1};
+    for (unsigned int i=0; i<2; i++) {
+      Val sign = (i==0 ? 1 : -1);
+      if (Lit* l = le[i]->dyn_cast<Lit>()) {
+        d += sign*l->v();
+      } else if (le[i]->isa<Id>()) {
+        coeffv.push_back(sign);
+        alv.push_back(le[i]);
+      } else if (Call* sc = le[i]->dyn_cast<Call>()) {
+        GCLock lock;
+        ArrayLit* sc_coeff = eval_array_lit(sc->args()[0]);
+        ArrayLit* sc_al = eval_array_lit(sc->args()[1]);
+        d += sign*LinearTraits<Lit>::eval(sc->args()[2]);
+        for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
+          coeffv.push_back(sign*LinearTraits<Lit>::eval(sc_coeff->v()[j]));
+          alv.push_back(sc_al->v()[j]);
+        }
+      } else {
+        throw EvalError(le[i]->loc(), "Internal error, unexpected expression inside linear expression");
+      }
+    }
+    simplify_lin<Lit>(coeffv,alv,d);
+    if (coeffv.size()==0) {
+      bool result;
+      switch (bot) {
+        case BOT_LE: result = (0<-d); break;
+        case BOT_LQ: result = (0<=-d); break;
+        case BOT_GR: result = (0>-d); break;
+        case BOT_GQ: result = (0>=-d); break;
+        case BOT_EQ: result = (0==-d); break;
+        case BOT_NQ: result = (0!=-d); break;
+        default: assert(false); break;
+      }
+      if (doubleNeg)
+        result = !result;
+      ees[2].b = constants().boollit(result);
+      ret.r = conj(env,r,ctx,ees);
+      return;
+    } else if (coeffv.size()==1 &&
+               std::abs(coeffv[0])==1) {
+      if (coeffv[0]==-1) {
+        switch (bot) {
+          case BOT_LE: bot = BOT_GR; break;
+          case BOT_LQ: bot = BOT_GQ; break;
+          case BOT_GR: bot = BOT_LE; break;
+          case BOT_GQ: bot = BOT_LQ; break;
+          default: break;
+        }
+      } else {
+        d = -d;
+      }
+      typename LinearTraits<Lit>::Bounds ib = LinearTraits<Lit>::compute_bounds(alv[0]());
+      if (ib.valid) {
+        bool failed = false;
+        bool subsumed = false;
+        switch (bot) {
+          case BOT_LE:
+            subsumed = ib.u < d;
+            failed = ib.l >= d;
+            break;
+          case BOT_LQ:
+            subsumed = ib.u <= d;
+            failed = ib.l > d;
+            break;
+          case BOT_GR:
+            subsumed = ib.l > d;
+            failed = ib.u <= d;
+            break;
+          case BOT_GQ:
+            subsumed = ib.l >= d;
+            failed = ib.u < d;
+            break;
+          case BOT_EQ:
+            subsumed = ib.l==d && ib.u==d;
+            failed = ib.u < d || ib.l > d;
+            break;
+          case BOT_NQ:
+            subsumed = ib.u < d || ib.l > d;
+            failed = ib.l==d && ib.u==d;
+            break;
+          default: break;
+        }
+        if (doubleNeg) {
+          std::swap(subsumed, failed);
+        }
+        if (subsumed) {
+          ees[2].b = constants().lit_true;
+          ret.r = conj(env,r,ctx,ees);
+          return;
+        } else if (failed) {
+          ees[2].b = constants().lit_false;
+          ret.r = conj(env,r,ctx,ees);
+          return;
+        }
+      }
+      
+      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
+        GCLock lock;
+        VarDecl* vd = alv[0]()->cast<Id>()->decl();
+        if (vd->ti()->domain()) {
+          typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
+          if (LinearTraits<Lit>::domain_contains(domain,d)) {
+            if (!LinearTraits<Lit>::domain_equals(domain,d)) {
+              vd->ti()->setComputedDomain(false);
+              vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+            }
+            ret.r = bind(env,ctx,r,constants().lit_true);
+          } else {
+            ret.r = bind(env,ctx,r,constants().lit_false);
+          }
+        } else {
+          vd->ti()->setComputedDomain(false);
+          vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+          ret.r = bind(env,ctx,r,constants().lit_true);
+        }
+      } else if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+        GCLock lock;
+        VarDecl* vd = alv[0]()->cast<Id>()->decl();
+        typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
+        typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(bot,domain,d);
+        if (domain) {
+          if (LinearTraits<Lit>::domain_empty(ndomain)) {
+            ret.r = bind(env,ctx,r,constants().lit_false);
+          } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
+            ret.r = bind(env,ctx,r,constants().lit_true);
+            vd->ti()->setComputedDomain(false);
+            vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
+          }
+        } else {
+          goto non_domain_binop;
+        }
+      } else {
+      non_domain_binop:
+        GCLock lock;
+        Expression* e0;
+        Expression* e1;
+        switch (bot) {
+          case BOT_LE:
+            e0 = alv[0]();
+            if (e0->type().isint()) {
+              e1 = new Lit(Location(),d-1);
+              bot = BOT_LQ;
+            } else {
+              e1 = new Lit(Location(),d);
+            }
+            break;
+          case BOT_GR:
+            e1 = alv[0]();
+            if (e1->type().isint()) {
+              e0 = new Lit(Location(),d+1);
+              bot = BOT_LQ;
+            } else {
+              e0 = new Lit(Location(),d);
+              bot = BOT_LE;
+            }
+            break;
+          case BOT_GQ:
+            e0 = new Lit(Location(),d);
+            e1 = alv[0]();
+            bot = BOT_LQ;
+            break;
+          default:
+            e0 = alv[0]();
+            e1 = new Lit(Location(),d);
+        }
+        args.push_back(e0);
+        args.push_back(e1);
+      }
+    } else if (bot==BOT_EQ && coeffv.size()==2 && coeffv[0]==-coeffv[1] && d==0) {
+      Id* id0 = alv[0]()->cast<Id>();
+      Id* id1 = alv[1]()->cast<Id>();
+      if (ctx.b == C_ROOT && r==constants().var_true &&
+          (id0->decl()->e()==NULL || id1->decl()->e()==NULL)) {
+        if (id0->decl()->e())
+          (void) bind(env,ctx,id1->decl(),id0);
+        else
+          (void) bind(env,ctx,id0->decl(),id1);
+      } else {
+        callid = LinearTraits<Lit>::id_eq();
+        args.push_back(alv[0]());
+        args.push_back(alv[1]());
+      }
+    } else {
+      int coeff_sign;
+      LinearTraits<Lit>::constructLinBuiltin(bot,callid,coeff_sign,d);
+      GCLock lock;
+      std::vector<Expression*> coeff_ev(coeffv.size());
+      for (unsigned int i=coeff_ev.size(); i--;)
+        coeff_ev[i] = new Lit(Location(),coeff_sign*coeffv[i]);
+      ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
+      Type t = coeff_ev[0]->type();
+      t._dim = 1;
+      ncoeff->type(t);
+      args.push_back(ncoeff);
+      std::vector<Expression*> alv_e(alv.size());
+      Type tt = alv[0]()->type();
+      tt._dim = 1;
+      for (unsigned int i=alv.size(); i--;) {
+        if (alv[i]()->type().isvar())
+          tt._ti = Type::TI_VAR;
+        alv_e[i] = alv[i]();
+      }
+      ArrayLit* nal = new ArrayLit(Location(),alv_e);
+      nal->type(tt);
+      args.push_back(nal);
+      Lit* il = new Lit(Location(),-d);
+      args.push_back(il);
+    }
+  }
+  
+  template<class Lit>
+  void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c,
+                           EE& ret, VarDecl* b, VarDecl* r,
+                           std::vector<EE>& args_ee, std::vector<KeepAlive>& args) {
+    typedef typename LinearTraits<Lit>::Val Val;
+    Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
+    EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
+    ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
+    Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(c->args()[2]));
+    
+    std::vector<Val> c_coeff(al->v().size());
+    if (cid==constants().ids.sum) {
+      for (unsigned int i=al->v().size(); i--;)
+        c_coeff[i] = 1;
+    } else {
+      EE flat_coeff = flat_exp(env,nctx,c->args()[0],NULL,NULL);
+      ArrayLit* coeff = follow_id(flat_coeff.r())->cast<ArrayLit>();
+      for (unsigned int i=coeff->v().size(); i--;)
+        c_coeff[i] = LinearTraits<Lit>::eval(coeff->v()[i]);
+    }
+    cid = constants().ids.lin_exp;
+    std::vector<Val> coeffv;
+    std::vector<KeepAlive> alv;
+    for (unsigned int i=0; i<al->v().size(); i++) {
+      if (Call* sc = same_call(al->v()[i],cid)) {
+        Val cd = c_coeff[i];
+        GCLock lock;
+        ArrayLit* sc_coeff = eval_array_lit(sc->args()[0]);
+        ArrayLit* sc_al = eval_array_lit(sc->args()[1]);
+        Val sc_d = LinearTraits<Lit>::eval(sc->args()[2]);
+        assert(sc_coeff->v().size() == sc_al->v().size());
+        for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
+          coeffv.push_back(cd*LinearTraits<Lit>::eval(sc_coeff->v()[j]));
+          alv.push_back(sc_al->v()[j]);
+        }
+        d += cd*sc_d;
+      } else {
+        coeffv.push_back(c_coeff[i]);
+        alv.push_back(al->v()[i]);
+      }
+    }
+    simplify_lin<Lit>(coeffv,alv,d);
+    if (coeffv.size()==0) {
+      GCLock lock;
+      ret.b = conj(env,b,Ctx(),args_ee);
+      ret.r = bind(env,ctx,r,new Lit(Location(),d));
+      return;
+    } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
+      ret.b = conj(env,b,Ctx(),args_ee);
+      ret.r = bind(env,ctx,r,alv[0]());
+      return;
+    }
+    GCLock lock;
+    std::vector<Expression*> coeff_ev(coeffv.size());
+    for (unsigned int i=coeff_ev.size(); i--;)
+      coeff_ev[i] = new Lit(Location(),coeffv[i]);
+    ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
+    Type t = coeff_ev[0]->type();
+    t._dim = 1;
+    ncoeff->type(t);
+    args.push_back(ncoeff);
+    std::vector<Expression*> alv_e(alv.size());
+    bool al_same_as_before = alv.size()==al->v().size();
+    for (unsigned int i=alv.size(); i--;) {
+      alv_e[i] = alv[i]();
+      al_same_as_before = al_same_as_before && Expression::equal(alv_e[i],al->v()[i]);
+    }
+    if (al_same_as_before) {
+      Expression* rd = follow_id_to_decl(flat_al.r());
+      if (rd->isa<VarDecl>())
+        rd = rd->cast<VarDecl>()->id();
+      if (rd->type().dim()>1) {
+        ArrayLit* al = eval_array_lit(rd);
+        std::vector<std::pair<int,int> > dims(1);
+        dims[0].first = 1;
+        dims[0].second = al->v().size();
+        rd = new ArrayLit(al->loc(),al->v(),dims);
+        Type t = al->type();
+        t._dim = 1;
+        rd->type(t);
+      }
+      args.push_back(rd);
+    } else {
+      ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
+      nal->type(al->type());
+      args.push_back(nal);
+    }
+    Lit* il = new Lit(Location(),d);
+    args.push_back(il);
   }
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
@@ -1747,13 +2223,23 @@ namespace MiniZinc {
           switch (bot) {
           case BOT_PLUS:
             {
-              KeepAlive ka = mklinexp(env,1,1,boe0,boe1);
+              KeepAlive ka;
+              if (boe0->type().isint()) {
+                ka = mklinexp<IntLit>(env,1,1,boe0,boe1);
+              } else {
+                ka = mklinexp<FloatLit>(env,1.0,1.0,boe0,boe1);
+              }
               ret = flat_exp(env,ctx,ka(),r,b);
             }
             break;
           case BOT_MINUS:
             {
-              KeepAlive ka = mklinexp(env,1,-1,boe0,boe1);
+              KeepAlive ka;
+              if (boe0->type().isint()) {
+                ka = mklinexp<IntLit>(env,1,-1,boe0,boe1);
+              } else {
+                ka = mklinexp<FloatLit>(env,1.0,-1.0,boe0,boe1);
+              }
               ret = flat_exp(env,ctx,ka(),r,b);
             }
             break;
@@ -1778,7 +2264,12 @@ namespace MiniZinc {
                   std::swap(e0r,e1r);
                 if (e1r->type().ispar() && e1r->type().isint()) {
                   IntVal coeff = eval_int(e1r);
-                  KeepAlive ka = mklinexp(env,coeff,0,e0r,NULL);
+                  KeepAlive ka = mklinexp<IntLit>(env,coeff,0,e0r,NULL);
+                  ret = flat_exp(env,ctx,ka(),r,b);
+                  break;
+                } else if (e1r->type().ispar() && e1r->type().isfloat()) {
+                  FloatVal coeff = eval_float(e1r);
+                  KeepAlive ka = mklinexp<FloatLit>(env,coeff,0.0,e0r,NULL);
                   ret = flat_exp(env,ctx,ka(),r,b);
                   break;
                 }
@@ -2132,280 +2623,26 @@ namespace MiniZinc {
               std::vector<KeepAlive> args;
               ASTString callid;
 
-              Expression* le0 = 
-                (boe0->type().isint() && bot != BOT_IN) ?
-                  get_linexp(e0.r()) : NULL;
-              Expression* le1 = le0 ? get_linexp(e1.r()) : NULL;
-
-              if (le1) {
-                std::vector<IntVal> coeffv;
-                std::vector<KeepAlive> alv;
-                IntVal d = 0;
-                Expression* le[2] = {le0,le1};
-                for (unsigned int i=0; i<2; i++) {
-                  IntVal sign = (i==0 ? 1 : -1);
-                  switch (le[i]->eid()) {
-                  case Expression::E_INTLIT:
-                    d += sign*(le[i]->cast<IntLit>()->v());
-                    break;
-                  case Expression::E_ID:
-                    coeffv.push_back(sign);
-                    alv.push_back(le[i]);
-                    break;
-                  case Expression::E_CALL:
-                    {
-                      Call* sc = le[i]->cast<Call>();
-                      GCLock lock;
-                      ArrayLit* sc_coeff = eval_array_lit(sc->args()[0]);
-                      ArrayLit* sc_al = eval_array_lit(sc->args()[1]);
-                      d += sign*eval_int(sc->args()[2]);
-                      for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
-                        coeffv.push_back(sign*eval_int(sc_coeff->v()[j]));
-                        alv.push_back(sc_al->v()[j]);
-                      }
-                    }
-                    break;
-                  default: assert(false); break;
-                  }
+              Expression* le0 = NULL;
+              Expression* le1 = NULL;
+              
+              if (boe0->type().isint() && bot != BOT_IN) {
+                le0 = get_linexp<IntLit>(e0.r());
+              } else if (boe0->type().isfloat() && bot != BOT_IN) {
+                le0 = get_linexp<FloatLit>(e0.r());
+              }
+              if (le0) {
+                if (boe1->type().isint()) {
+                  le1 = get_linexp<IntLit>(e1.r());
+                } else if (boe1->type().isfloat()) {
+                  le1 = get_linexp<FloatLit>(e1.r());
                 }
-                simplify_lin(coeffv,alv,d);
-                if (coeffv.size()==0) {
-                  bool result;
-                  switch (bot) {
-                  case BOT_LE: result = (0<-d); break;
-                  case BOT_LQ: result = (0<=-d); break;
-                  case BOT_GR: result = (0>-d); break;
-                  case BOT_GQ: result = (0>=-d); break;
-                  case BOT_EQ: result = (0==-d); break;
-                  case BOT_NQ: result = (0!=-d); break;
-                  default: assert(false); break;
-                  }
-                  if (doubleNeg)
-                    result = !result;
-                  ees[2].b = constants().boollit(result);
-                  ret.r = conj(env,r,ctx,ees);
-                  break;
-                } else if (coeffv.size()==1 && 
-                           std::abs(coeffv[0])==1) {
-                  if (coeffv[0]==-1) {
-                    switch (bot) {
-                    case BOT_LE: bot = BOT_GR; break;
-                    case BOT_LQ: bot = BOT_GQ; break;
-                    case BOT_GR: bot = BOT_LE; break;
-                    case BOT_GQ: bot = BOT_LQ; break;
-                    default: break;
-                    }
-                  } else {
-                    d = -d;
-                  }
-                  IntBounds ib = compute_int_bounds(alv[0]());
-                  if (ib.valid) {
-                    bool failed = false;
-                    bool subsumed = false;
-                    switch (bot) {
-                      case BOT_LE:
-                        subsumed = ib.u < d;
-                        failed = ib.l >= d;
-                        break;
-                      case BOT_LQ:
-                        subsumed = ib.u <= d;
-                        failed = ib.l > d;
-                        break;
-                      case BOT_GR:
-                        subsumed = ib.l > d;
-                        failed = ib.u <= d;
-                        break;
-                      case BOT_GQ:
-                        subsumed = ib.l >= d;
-                        failed = ib.u < d;
-                        break;
-                      case BOT_EQ:
-                        subsumed = ib.l==d && ib.u==d;
-                        failed = ib.u < d || ib.l > d;
-                        break;
-                      case BOT_NQ:
-                        subsumed = ib.u < d || ib.l > d;
-                        failed = ib.l==d && ib.u==d;
-                        break;
-                      default: break;
-                    }
-                    if (doubleNeg) {
-                      std::swap(subsumed, failed);
-                    }
-                    if (subsumed) {
-                      ees[2].b = constants().lit_true;
-                      ret.r = conj(env,r,ctx,ees);
-                      break;
-                    } else if (failed) {
-                      ees[2].b = constants().lit_false;
-                      ret.r = conj(env,r,ctx,ees);
-                      break;
-                    }
-                  }
-                  
-                  if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
-                    GCLock lock;
-                    VarDecl* vd = alv[0]()->cast<Id>()->decl();
-                    if (vd->ti()->domain()) {
-                      IntSetVal* domain = eval_intset(vd->ti()->domain());
-                      if (domain->contains(d)) {
-                        if (domain->size()!=1 || domain->min(0)!=d || domain->max(0)!=d) {
-                          vd->ti()->setComputedDomain(false);
-                          vd->ti()->domain(new SetLit(Location(),IntSetVal::a(d,d)));
-                        }
-                        ret.r = bind(env,ctx,r,constants().lit_true);
-                      } else {
-                        ret.r = bind(env,ctx,r,constants().lit_false);
-                      }
-                    } else {
-                      vd->ti()->setComputedDomain(false);
-                      vd->ti()->domain(new SetLit(Location(),IntSetVal::a(d,d)));
-                      ret.r = bind(env,ctx,r,constants().lit_true);
-                    }
-                  } else if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
-                    GCLock lock;
-                    VarDecl* vd = alv[0]()->cast<Id>()->decl();
-                    IntSetVal* domain = eval_intset(vd->ti()->domain());
-                    IntSetRanges dr(domain);
-                    IntSetVal* ndomain;
-                    switch (bot) {
-                    case BOT_LE:
-                      d -= 1;
-                      // fall through
-                    case BOT_LQ:
-                      {
-                        Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::maxiter(dr,d);
-                        ndomain = IntSetVal::ai(b);
-                      }
-                      break;
-                    case BOT_GR:
-                      d += 1;
-                      // fall through
-                    case BOT_GQ:
-                      {
-                        Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::miniter(dr,d);
-                        ndomain = IntSetVal::ai(b);
-                      }
-                      break;
-                    case BOT_NQ:
-                      {
-                        Ranges::Const c(d,d);
-                        Ranges::Diff<IntSetRanges,Ranges::Const> d(dr,c);
-                        ndomain = IntSetVal::ai(d);
-                      }
-                      break;
-                    default: assert(false);
-                    }
-                    IntSetRanges dr2(domain);
-                    IntSetRanges ndr(ndomain);
-                    Ranges::Inter<IntSetRanges,IntSetRanges> i(dr2,ndr);
-                    IntSetVal* newibv = IntSetVal::ai(i);
-                    if (domain->card() != newibv->card()) {
-                      if (newibv->card() == 0) {
-                        ret.r = bind(env,ctx,r,constants().lit_false);
-                      } else {
-                        ret.r = bind(env,ctx,r,constants().lit_true);
-                        vd->ti()->setComputedDomain(false);
-                        vd->ti()->domain(new SetLit(Location(),newibv));
-                      }
-                    }
-                  } else {
-                    GCLock lock;
-                    Expression* e0;
-                    Expression* e1;
-                    switch (bot) {
-                    case BOT_LE:
-                      e0 = alv[0]();
-                      e1 = new IntLit(Location(),d-1);
-                      bot = BOT_LQ;
-                      break;
-                    case BOT_GR:
-                      e0 = new IntLit(Location(),d+1);
-                      e1 = alv[0]();
-                      bot = BOT_LQ;
-                      break;
-                    case BOT_GQ:
-                      e0 = new IntLit(Location(),d);
-                      e1 = alv[0]();
-                      bot = BOT_LQ;
-                      break;
-                    default:
-                      e0 = alv[0]();
-                      e1 = new IntLit(Location(),d);
-                    }
-                    args.push_back(e0);
-                    args.push_back(e1);
-                  }
-                } else if (bot==BOT_EQ && coeffv.size()==2 && coeffv[0]==-coeffv[1] && d==0) {
-                  Id* id0 = alv[0]()->cast<Id>();
-                  Id* id1 = alv[1]()->cast<Id>();
-                  if (ctx.b == C_ROOT && r==constants().var_true &&
-                      (id0->decl()->e()==NULL || id1->decl()->e()==NULL)) {
-                    if (id0->decl()->e())
-                      (void) bind(env,ctx,id1->decl(),id0);
-                    else
-                      (void) bind(env,ctx,id0->decl(),id1);
-                  } else {
-                    callid = constants().ids.int_eq;
-                    args.push_back(alv[0]());
-                    args.push_back(alv[1]());
-                  }
+              }
+              if (le1) {
+                if (boe0->type().isint()) {
+                  flatten_linexp_binop<IntLit>(env,ctx,r,b,ret,le0,le1,bot,doubleNeg,ees,args,callid);
                 } else {
-                  int coeff_sign;
-                  switch (bot) {
-                  case BOT_LE:
-                    callid = constants().ids.int_lin_le;
-                    coeff_sign = 1;
-                    d += 1;
-                    break;
-                  case BOT_LQ:
-                    callid = constants().ids.int_lin_le;
-                    coeff_sign = 1;
-                    break;
-                  case BOT_GR:
-                    callid = constants().ids.int_lin_le;
-                    coeff_sign = -1;
-                    d = -d+1;
-                    break;
-                  case BOT_GQ:
-                    callid = constants().ids.int_lin_le;
-                    coeff_sign = -1;
-                    d = -d;
-                    break;
-                  case BOT_EQ:
-                    callid = constants().ids.int_lin_eq;
-                    coeff_sign = 1;
-                    break;
-                  case BOT_NQ:
-                    callid = constants().ids.int_lin_ne;
-                    coeff_sign = 1;
-                    break;
-                  default: assert(false); break;
-                  }
-
-                  {
-                    GCLock lock;
-                    std::vector<Expression*> coeff_ev(coeffv.size());
-                    for (unsigned int i=coeff_ev.size(); i--;)
-                      coeff_ev[i] = new IntLit(Location(),coeff_sign*coeffv[i]);
-                    ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
-                    ncoeff->type(Type::parint(1));
-                    args.push_back(ncoeff);
-                    std::vector<Expression*> alv_e(alv.size());
-                    Type tt = alv[0]()->type();
-                    tt._dim = 1;
-                    for (unsigned int i=alv.size(); i--;) {
-                      if (alv[i]()->type().isvar())
-                        tt._ti = Type::TI_VAR;
-                      alv_e[i] = alv[i]();
-                    }
-                    ArrayLit* nal = new ArrayLit(Location(),alv_e);
-                    nal->type(tt);
-                    args.push_back(nal);
-                    IntLit* il = new IntLit(Location(),-d);
-                    il->type(Type::parint());
-                    args.push_back(il);
-                  }
+                  flatten_linexp_binop<FloatLit>(env,ctx,r,b,ret,le0,le1,bot,doubleNeg,ees,args,callid);
                 }
               } else {
                 switch (bot) {
@@ -2724,90 +2961,13 @@ namespace MiniZinc {
               args.push_back(nal);
             }
           } else if (decl->e()==NULL && (cid == constants().ids.lin_exp || cid==constants().ids.sum)) {
-
-            Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
-            EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
-            ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
-            IntVal d = (cid == constants().ids.sum ? IntVal(0) : eval_int(c->args()[2]));
-            
-            std::vector<IntVal> c_coeff(al->v().size());
-            if (cid==constants().ids.sum) {
-              for (unsigned int i=al->v().size(); i--;)
-                c_coeff[i] = 1;
+            if (e->type().isint()) {
+              flatten_linexp_call<IntLit>(env,ctx,nctx,cid,c,ret,b,r,args_ee,args);
             } else {
-              EE flat_coeff = flat_exp(env,nctx,c->args()[0],NULL,NULL);
-              ArrayLit* coeff = follow_id(flat_coeff.r())->cast<ArrayLit>();
-              for (unsigned int i=coeff->v().size(); i--;)
-                c_coeff[i] = eval_int(coeff->v()[i]);
+              flatten_linexp_call<FloatLit>(env,ctx,nctx,cid,c,ret,b,r,args_ee,args);
             }
-            cid = constants().ids.lin_exp;
-            std::vector<IntVal> coeffv;
-            std::vector<KeepAlive> alv;
-            for (unsigned int i=0; i<al->v().size(); i++) {
-              if (Call* sc = same_call(al->v()[i],cid)) {
-                IntVal cd = c_coeff[i];
-                GCLock lock;
-                ArrayLit* sc_coeff = eval_array_lit(sc->args()[0]);
-                ArrayLit* sc_al = eval_array_lit(sc->args()[1]);
-                IntVal sc_d = eval_int(sc->args()[2]);
-                assert(sc_coeff->v().size() == sc_al->v().size());
-                for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
-                  coeffv.push_back(cd*eval_int(sc_coeff->v()[j]));
-                  alv.push_back(sc_al->v()[j]);
-                }
-                d += cd*sc_d;
-              } else {
-                coeffv.push_back(c_coeff[i]);
-                alv.push_back(al->v()[i]);
-              }
-            }
-            simplify_lin(coeffv,alv,d);
-            if (coeffv.size()==0) {
-              GCLock lock;
-              ret.b = conj(env,b,Ctx(),args_ee);
-              ret.r = bind(env,ctx,r,new IntLit(Location(),d));
+            if (args.size()==0)
               break;
-            } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
-              ret.b = conj(env,b,Ctx(),args_ee);
-              ret.r = bind(env,ctx,r,alv[0]());
-              break;
-            }
-            GCLock lock;
-            std::vector<Expression*> coeff_ev(coeffv.size());
-            for (unsigned int i=coeff_ev.size(); i--;)
-              coeff_ev[i] = new IntLit(Location(),coeffv[i]);
-            ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
-            ncoeff->type(Type::parint(1));
-            args.push_back(ncoeff);
-            std::vector<Expression*> alv_e(alv.size());
-            bool al_same_as_before = alv.size()==al->v().size();
-            for (unsigned int i=alv.size(); i--;) {
-              alv_e[i] = alv[i]();
-              al_same_as_before = al_same_as_before && Expression::equal(alv_e[i],al->v()[i]);
-            }
-            if (al_same_as_before) {
-              Expression* rd = follow_id_to_decl(flat_al.r());
-              if (rd->isa<VarDecl>())
-                rd = rd->cast<VarDecl>()->id();
-              if (rd->type().dim()>1) {
-                ArrayLit* al = eval_array_lit(rd);
-                std::vector<std::pair<int,int> > dims(1);
-                dims[0].first = 1;
-                dims[0].second = al->v().size();
-                rd = new ArrayLit(al->loc(),al->v(),dims);
-                Type t = al->type();
-                t._dim = 1;
-                rd->type(t);
-              }
-              args.push_back(rd);
-            } else {
-              ArrayLit* nal = new ArrayLit(al->loc(),alv_e);
-              nal->type(al->type());
-              args.push_back(nal);
-            }
-            IntLit* il = new IntLit(Location(),d);
-            il->type(Type::parint());
-            args.push_back(il);
           } else {
             for (unsigned int i=0; i<args_ee.size(); i++)
               args.push_back(args_ee[i].r());
@@ -4095,19 +4255,33 @@ namespace MiniZinc {
               std::vector<Expression*> args(cc->args().size());
               std::string cid;
               if (cc->id() == constants().ids.lin_exp) {
-                cid = "int_lin_eq";
                 ArrayLit* le_c = follow_id(cc->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
-                nc.push_back(new IntLit(Location(),-1));
-                args[0] = new ArrayLit(Location(),nc);
-                ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
-                std::vector<Expression*> nx(le_x->v().size());
-                std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
-                nx.push_back(vd->id());
-                args[1] = new ArrayLit(Location(),nx);
-                IntVal d = cc->args()[2]->cast<IntLit>()->v();
-                args[2] = new IntLit(Location(),-d);
+                if (le_c->type()._bt==Type::BT_INT) {
+                  cid = "int_lin_eq";
+                  nc.push_back(new IntLit(Location(),-1));
+                  args[0] = new ArrayLit(Location(),nc);
+                  ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
+                  std::vector<Expression*> nx(le_x->v().size());
+                  std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
+                  nx.push_back(vd->id());
+                  args[1] = new ArrayLit(Location(),nx);
+                  IntVal d = cc->args()[2]->cast<IntLit>()->v();
+                  args[2] = new IntLit(Location(),-d);
+                } else {
+                  // float
+                  cid = "float_lin_eq";
+                  nc.push_back(new FloatLit(Location(),-1.0));
+                  args[0] = new ArrayLit(Location(),nc);
+                  ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
+                  std::vector<Expression*> nx(le_x->v().size());
+                  std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
+                  nx.push_back(vd->id());
+                  args[1] = new ArrayLit(Location(),nx);
+                  FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
+                  args[2] = new FloatLit(Location(),-d);
+                }
               } else {
                 if (cc->id() == "card") {
                   // card is 'set_card' in old FlatZinc
