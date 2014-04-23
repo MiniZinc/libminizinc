@@ -898,6 +898,11 @@ namespace MiniZinc {
     ids.int_lin_le = ASTString("int_lin_le");
     ids.int_lin_ne = ASTString("int_lin_ne");
 
+    ids.float_lin_eq = ASTString("float_lin_eq");
+    ids.float_lin_le = ASTString("float_lin_le");
+    ids.float_lin_lt = ASTString("float_lin_lt");
+    ids.float_lin_ne = ASTString("float_lin_ne");
+
     ids.int_eq = ASTString("int_eq");
     ids.int_ne = ASTString("int_ne");
     ids.bool_eq = ASTString("bool_eq");
@@ -938,6 +943,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.int_lin_eq));
     v.push_back(new StringLit(Location(),ids.int_lin_le));
     v.push_back(new StringLit(Location(),ids.int_lin_ne));
+    v.push_back(new StringLit(Location(),ids.float_lin_eq));
+    v.push_back(new StringLit(Location(),ids.float_lin_le));
+    v.push_back(new StringLit(Location(),ids.float_lin_lt));
+    v.push_back(new StringLit(Location(),ids.float_lin_ne));
     v.push_back(new StringLit(Location(),ids.int_eq));
     v.push_back(new StringLit(Location(),ids.int_ne));
     v.push_back(new StringLit(Location(),ids.bool_eq));
