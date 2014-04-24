@@ -156,7 +156,7 @@ namespace MiniZinc {
       VarDecl* vd = ce->decl()->params()[i];
       previousParameters[i] = vd->e();
       vd->flat(vd);
-      vd->e(ce->args()[i]);
+      vd->e(eval_par(ce->args()[i]));
     }
     typename Eval::Val ret = Eval::e(ce->decl()->e());
     for (unsigned int i=ce->decl()->params().size(); i--;) {
