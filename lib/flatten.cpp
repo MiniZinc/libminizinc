@@ -1622,7 +1622,7 @@ namespace MiniZinc {
     typedef typename LinearTraits<Lit>::Val Val;
     Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
     EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
-    ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
+    ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
     Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(c->args()[2]));
     
     std::vector<Val> c_coeff(al->v().size());
@@ -1631,7 +1631,7 @@ namespace MiniZinc {
         c_coeff[i] = 1;
     } else {
       EE flat_coeff = flat_exp(env,nctx,c->args()[0],NULL,NULL);
-      ArrayLit* coeff = follow_id(flat_coeff.r())->cast<ArrayLit>();
+      ArrayLit* coeff = follow_id(flat_coeff.r())->template cast<ArrayLit>();
       for (unsigned int i=coeff->v().size(); i--;)
         c_coeff[i] = LinearTraits<Lit>::eval(coeff->v()[i]);
     }
