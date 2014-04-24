@@ -76,7 +76,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_min(ASTExprVec<Expression> args) {
+  IntVal b_int_min(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
       if (args[0]->type().isset()) {
@@ -100,7 +100,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_max(ASTExprVec<Expression> args) {
+  IntVal b_int_max(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
       if (args[0]->type().isset()) {
@@ -267,7 +267,54 @@ namespace MiniZinc {
     return m;
   }
 
-
+  FloatVal b_float_min(ASTExprVec<Expression> args) {
+    switch (args.size()) {
+      case 1:
+        if (args[0]->type().isset()) {
+          throw EvalError(args[0]->loc(), "sets not supported");
+        } else {
+          GCLock lock;
+          ArrayLit* al = eval_array_lit(args[0]);
+          if (al->v().size()==0)
+            throw EvalError(al->loc(), "min on empty array undefined");
+          FloatVal m = eval_float(al->v()[0]);
+          for (unsigned int i=1; i<al->v().size(); i++)
+            m = std::min(m, eval_float(al->v()[i]));
+          return m;
+        }
+      case 2:
+      {
+        return std::min(eval_float(args[0]),eval_float(args[1]));
+      }
+      default:
+        throw EvalError(Location(), "dynamic type error");
+    }
+  }
+  
+  FloatVal b_float_max(ASTExprVec<Expression> args) {
+    switch (args.size()) {
+      case 1:
+        if (args[0]->type().isset()) {
+          throw EvalError(args[0]->loc(), "sets not supported");
+        } else {
+          GCLock lock;
+          ArrayLit* al = eval_array_lit(args[0]);
+          if (al->v().size()==0)
+            throw EvalError(al->loc(), "max on empty array undefined");
+          FloatVal m = eval_float(al->v()[0]);
+          for (unsigned int i=1; i<al->v().size(); i++)
+            m = std::max(m, eval_float(al->v()[i]));
+          return m;
+        }
+      case 2:
+      {
+        return std::max(eval_float(args[0]),eval_float(args[1]));
+      }
+      default:
+        throw EvalError(Location(), "dynamic type error");
+    }
+  }
+  
   IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
@@ -866,10 +913,10 @@ namespace MiniZinc {
     t_intarray[0] = Type::parint(-1);
     
     GCLock lock;
-    rb(m, ASTString("min"), t_intint, b_min);
-    rb(m, ASTString("min"), t_intarray, b_min);
-    rb(m, ASTString("max"), t_intint, b_max);
-    rb(m, ASTString("max"), t_intarray, b_max);
+    rb(m, ASTString("min"), t_intint, b_int_min);
+    rb(m, ASTString("min"), t_intarray, b_int_min);
+    rb(m, ASTString("max"), t_intint, b_int_max);
+    rb(m, ASTString("max"), t_intarray, b_int_max);
     rb(m, constants().ids.sum, t_intarray, b_sum);
     rb(m, ASTString("product"), t_intarray, b_product);
 
@@ -1169,6 +1216,17 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
       rb(m, constants().ids.sum, t, b_sum_float);      
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat(1);
+      rb(m, ASTString("min"), t, b_float_min);
+      rb(m, ASTString("max"), t, b_float_max);
+
+      t[0] = Type::parfloat();
+      t.push_back(Type::parfloat());
+      rb(m, ASTString("min"), t, b_float_min);
+      rb(m, ASTString("max"), t, b_float_max);      
     }
     {
       std::vector<Type> t(1);
