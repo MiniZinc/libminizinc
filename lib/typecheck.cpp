@@ -13,6 +13,7 @@
 
 #include <minizinc/astiterator.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/hash.hh>
 
 #include <string>
 #include <sstream>
@@ -94,8 +95,8 @@ namespace MiniZinc {
   TopoSorter::run(Expression* e) {
     if (e==NULL)
       return;
-    if (e->ann())
-      run(e->ann());
+    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
+      run(*it);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -196,13 +197,6 @@ namespace MiniZinc {
         }
       }
       break;
-    case Expression::E_ANN:
-      {
-        Annotation* ann = e->cast<Annotation>();
-        run(ann->e());
-        run(ann->next());
-      }
-      break;
     case Expression::E_TI:
       {
         TypeInst* ti = e->cast<TypeInst>();
@@ -240,9 +234,13 @@ namespace MiniZinc {
   public:
     Model* _model;
     Typer(Model* model) : _model(model) {}
-    bool enter(Expression* e) {
-      return ignoreVarDecl || (!e->isa<Annotation>());
+    /// Check annotations when expression is finished
+    void exit(Expression* e) {
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
+        if (!(*it)->type().isann())
+          throw TypeError((*it)->loc(),"expected annotation, got "+(*it)->type().toString());
     }
+    bool enter(Expression*) { return true; }
     /// Visit integer literal
     void vIntLit(const IntLit&) {}
     /// Visit floating point literal
@@ -497,8 +495,6 @@ namespace MiniZinc {
       }
       let.type(let.in()->type());
     }
-    /// Visit annotation
-    void vAnnotation(Annotation& ann) {}
     /// Visit variable declaration
     void vVarDecl(VarDecl& vd) {
       if (ignoreVarDecl) {
@@ -610,13 +606,18 @@ namespace MiniZinc {
         i->decl()->e(i->e());
       }
       void vConstraintI(ConstraintI* i) { ts.run(i->e()); }
-      void vSolveI(SolveI* i) { ts.run(i->ann()); ts.run(i->e()); }
+      void vSolveI(SolveI* i) {
+        for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it)
+          ts.run(*it);
+        ts.run(i->e());
+      }
       void vOutputI(OutputI* i) { ts.run(i->e()); }
       void vFunctionI(FunctionI* fi) {
         ts.run(fi->ti());
         for (unsigned int i=0; i<fi->params().size(); i++)
           ts.run(fi->params()[i]);
-        ts.run(fi->ann());
+        for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it)
+          ts.run(*it);
         for (unsigned int i=0; i<fi->params().size(); i++)
           ts.add(fi->params()[i],false);
         ts.run(fi->e());
@@ -662,7 +663,11 @@ namespace MiniZinc {
             throw TypeError(i->e()->loc(), "constraint must be var bool");
         }
         void vSolveI(SolveI* i) {
-          bu_ty.run(i->ann());
+          for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
+            bu_ty.run(*it);
+            if (!(*it)->type().isann())
+              throw TypeError((*it)->loc(), "not an annotation");
+          }
           bu_ty.run(i->e());
           if (i->e()) {
             Type et = i->e()->type();
@@ -678,7 +683,11 @@ namespace MiniZinc {
             throw TypeError(i->e()->loc(), "output item needs string array");
         }
         void vFunctionI(FunctionI* i) {
-          bu_ty.run(i->ann());
+          for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
+            bu_ty.run(*it);
+            if (!(*it)->type().isann())
+              throw TypeError((*it)->loc(), "not an annotation");
+          }
           bu_ty.run(i->ti());
           bu_ty.run(i->e());
           if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))

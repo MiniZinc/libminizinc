@@ -354,7 +354,6 @@ namespace MiniZinc {
          std::vector<std::string>* string_v;
          std::pair<std::vector<MiniZinc::Expression*>,
                    MiniZinc::Expression*>* expression_p;
-         MiniZinc::Annotation* annotation;
          MiniZinc::Generators* generators;
        }
 
@@ -472,7 +471,7 @@ namespace MiniZinc {
 
 %type <expression_p> comp_or_expr
 
-%type <annotation> annotations ne_annotations
+%type <expression_v> annotations ne_annotations
 
 %type <iValue> quoted_op
 
@@ -550,13 +549,15 @@ include_item :
 
 vardecl_item :
       ti_expr_and_id annotations
-      { $1->addAnnotation($2);
+      { if ($2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
+        delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->e($4);
-        $1->addAnnotation($2);
+        if ($2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
+        delete $2;
       }
 
 assign_item :
@@ -571,11 +572,20 @@ constraint_item :
 
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
-      { $$ = SolveI::sat(@$,$2); }
+      { $$ = SolveI::sat(@$);
+        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        delete $2;
+      }
     | MZN_SOLVE annotations MZN_MINIMIZE expr
-      { $$ = SolveI::min(@$,$4, $2); }
+      { $$ = SolveI::min(@$,$4);
+        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        delete $2;
+      }
     | MZN_SOLVE annotations MZN_MAXIMIZE expr
-      { $$ = SolveI::max(@$,$4, $2); }
+      { $$ = SolveI::max(@$,$4);
+        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        delete $2;
+      }
 
 output_item :
       MZN_OUTPUT expr
@@ -584,27 +594,35 @@ output_item :
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                           Type::varbool()),*$3,$5,$4);
+                           Type::varbool()),*$3,$5);
+        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
+        delete $4;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                           Type::parbool()),*$3,$5,$4);
+                           Type::parbool()),*$3,$5);
+        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
+        delete $4;
       }
 
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
-      { $$ = new FunctionI(@$,$4,$2,*$5,$7,$6);
+      { $$ = new FunctionI(@$,$4,$2,*$5,$7);
+        if ($6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
+        delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
-      { $$ = new FunctionI(@$,$3,$1,*$5,$8,$7);
+      { $$ = new FunctionI(@$,$3,$1,*$5,$8);
+        if ($7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
+        delete $7;
       }
 
 annotation_item :
@@ -615,14 +633,14 @@ annotation_item :
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = new FunctionI(@$,$2,ti,*$3,NULL,NULL);
+          $$ = new FunctionI(@$,$2,ti,*$3,NULL);
         }
         free($2);
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
       { TypeInst* ti=new TypeInst(@1,Type::ann());
-        $$ = new FunctionI(@$,$2,ti,*$3,$5,NULL);
+        $$ = new FunctionI(@$,$2,ti,*$3,$5);
         delete $3;
       }
 
@@ -763,7 +781,7 @@ expr_list_head :
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation(new Annotation(@3,$3)); $$=$1; }
+      { $1->addAnnotation($3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
@@ -806,7 +824,7 @@ set_expr :
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation(new Annotation(@3,$3)); $$=$1; }
+      { $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
@@ -1242,14 +1260,16 @@ let_vardecl_item :
       ti_expr_and_id annotations
       { $$ = $1;
         $$->toplevel(false);
-        $$->addAnnotation($2);
+        if ($2) $$->addAnnotations(*$2);
+        delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
       { $1->e($4);
         $$ = $1;
         $$->loc(@$);
         $$->toplevel(false);
-        $$->addAnnotation($2);
+        if ($2) $$->addAnnotations(*$2);
+        delete $2;
       }
 
 annotations :
@@ -1259,9 +1279,11 @@ annotations :
 
 ne_annotations :
       MZN_COLONCOLON expr_atom_head
-      { $$=new Annotation(@2, $2); }
+      { $$=new std::vector<Expression*>(1);
+        (*$$)[0] = $2;
+      }
     | ne_annotations MZN_COLONCOLON expr_atom_head
-      { $$=$1; $$->merge(new Annotation(@3, $3)); }
+      { $$=$1; $$->push_back($3); }
 
 id_or_quoted_op :
       MZN_IDENTIFIER

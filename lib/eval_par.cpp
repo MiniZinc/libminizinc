@@ -200,7 +200,6 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
     case Expression::E_SETLIT:
     case Expression::E_ANON:
-    case Expression::E_ANN:
     case Expression::E_TI:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
@@ -346,7 +345,6 @@ namespace MiniZinc {
     case Expression::E_ANON:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
-    case Expression::E_ANN:
     case Expression::E_TI:
     case Expression::E_UNOP:
       throw EvalError(e->loc(),"not a set of int expression");
@@ -474,7 +472,6 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
     case Expression::E_COMP:
     case Expression::E_VARDECL:
-    case Expression::E_ANN:
     case Expression::E_TI:
       assert(false);
       throw EvalError(e->loc(),"not a bool expression");
@@ -653,7 +650,6 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
     case Expression::E_COMP:
     case Expression::E_VARDECL:
-    case Expression::E_ANN:
     case Expression::E_TI:
       throw EvalError(e->loc(),"not an integer expression");
       break;
@@ -746,7 +742,6 @@ namespace MiniZinc {
       case Expression::E_ARRAYLIT:
       case Expression::E_COMP:
       case Expression::E_VARDECL:
-      case Expression::E_ANN:
       case Expression::E_TI:
         throw EvalError(e->loc(),"not a float expression");
         break;
@@ -839,7 +834,6 @@ namespace MiniZinc {
       case Expression::E_ARRAYLIT:
       case Expression::E_COMP:
       case Expression::E_VARDECL:
-      case Expression::E_ANN:
       case Expression::E_TI:
         throw EvalError(e->loc(),"not a string expression");
         break;
@@ -943,13 +937,6 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         throw EvalError(vd->loc(),"cannot evaluate variable declaration", vd->id()->v());
-      }
-    case Expression::E_ANN:
-      {
-        Annotation* a = e->cast<Annotation>();
-        Annotation* r = new Annotation(Location(),eval_par(a->e()),
-                                       static_cast<Annotation*>(eval_par(a->next())));
-        return r;
       }
     case Expression::E_TI:
       {

@@ -20,6 +20,7 @@
 #include <minizinc/model.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
 
@@ -160,6 +161,13 @@ namespace MiniZinc {
         }
       } else {
         p(e);
+      }
+    }
+    
+    void p(const Annotation& ann) {
+      for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
+        os << ":: ";
+        p(*it);
       }
     }
     
@@ -436,7 +444,7 @@ namespace MiniZinc {
             assert(false);
             break;
           }
-          bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>() || uo.ann()!=NULL);
+          bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>() || !uo.ann().isEmpty());
           if (needParen)
             os << "(";
           p(uo.e());
@@ -465,9 +473,7 @@ namespace MiniZinc {
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
-          if (vd.ann()) {
-            p(vd.ann());
-          }
+          p(vd.ann());
           if (vd.e()) {
             os << " = ";
             p(vd.e());
@@ -492,16 +498,6 @@ namespace MiniZinc {
           os << ")";
         }
         break;
-      case Expression::E_ANN:
-        {
-          const Annotation* a = e->cast<Annotation>();
-          while (a) {
-            os << " :: ";
-            p(a->e());
-            a = a->next();
-          }
-        }
-        break;
       case Expression::E_TI:
         {
           const TypeInst& ti = *e->cast<TypeInst>();
@@ -517,7 +513,7 @@ namespace MiniZinc {
           p(ti.type(),ti.domain());
         }
       }
-      if (e->ann() && !e->isa<VarDecl>()) {
+      if (!e->isa<VarDecl>()) {
         p(e->ann());
       }
     }
@@ -590,9 +586,7 @@ namespace MiniZinc {
             }
             os << ")";
           }
-          if (fi.ann()) {
-            p(fi.ann());
-          }
+          p(fi.ann());
           if (fi.e()) {
             os << " = ";
             p(fi.e());
@@ -651,8 +645,6 @@ namespace MiniZinc {
         return _t.mapVarDecl(*e->cast<VarDecl>());
       case Expression::E_LET:
         return _t.mapLet(*e->cast<Let>());
-      case Expression::E_ANN:
-        return _t.mapAnnotation(*e->cast<Annotation>());
       case Expression::E_TI:
         return _t.mapTypeInst(*e->cast<TypeInst>());
       case Expression::E_TIID:
@@ -966,6 +958,7 @@ namespace MiniZinc {
   };
 
   Document* expressionToDocument(const Expression* e);
+  Document* annotationToDocument(const Annotation& ann);
   Document* tiexpressionToDocument(const Type& type, const Expression* e) {
     DocumentList* dl = new DocumentList("","","",false);
     if (type._ot==Type::OT_OPTIONAL)
@@ -1387,8 +1380,8 @@ namespace MiniZinc {
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }
-      if (vd.ann()) {
-        dl->addDocumentToList(expressionToDocument(vd.ann()));
+      if (!vd.ann().isEmpty()) {
+        dl->addDocumentToList(annotationToDocument(vd.ann()));
       }
       if (vd.e()) {
         dl->addStringToList(" = ");
@@ -1432,16 +1425,6 @@ namespace MiniZinc {
       dl->addStringToList(")");
       return dl;
     }
-    ret mapAnnotation(const Annotation& an) {
-      const Annotation* a = &an;
-      DocumentList* dl = new DocumentList(" :: ", " :: ", "");
-      while (a) {
-        Document* ann = expressionToDocument(a->e());
-        dl->addDocumentToList(ann);
-        a = a->next();
-      }
-      return dl;
-    }
     ret mapTypeInst(const TypeInst& ti) {
       DocumentList* dl = new DocumentList("", "", "");
       if (ti.isarray()) {
@@ -1458,6 +1441,14 @@ namespace MiniZinc {
     }
   };
 
+  Document* annotationToDocument(const Annotation& ann) {
+    DocumentList* dl = new DocumentList(" :: ", " :: ", "");
+    for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
+      dl->addDocumentToList(expressionToDocument(*it));
+    }
+    return dl;
+  }
+  
   Document* expressionToDocument(const Expression* e) {
     if (e==NULL) return new StringDocument("NULL");
     ExpressionDocumentMapper esm;
@@ -1465,8 +1456,8 @@ namespace MiniZinc {
     DocumentList* dl = new DocumentList("", "", "");
     Document* s = em.map(e);
     dl->addDocumentToList(s);
-    if (!e->isa<VarDecl>() && e->ann()) {
-      dl->addDocumentToList(em.map(e->ann()));
+    if (!e->isa<VarDecl>() && !e->ann().isEmpty()) {
+      dl->addDocumentToList(annotationToDocument(e->ann()));
     }
     return dl;
   }
@@ -1499,8 +1490,8 @@ namespace MiniZinc {
     ret mapSolveI(const SolveI& si) {
       DocumentList* dl = new DocumentList("", "", ";");
       dl->addStringToList("solve");
-      if (si.ann())
-        dl->addDocumentToList(expressionToDocument(si.ann()));
+      if (!si.ann().isEmpty())
+        dl->addDocumentToList(annotationToDocument(si.ann()));
       switch (si.st()) {
       case SolveI::ST_SAT:
         dl->addStringToList(" satisfy");
@@ -1545,8 +1536,8 @@ namespace MiniZinc {
         }
         dl->addDocumentToList(params);
       }
-      if (fi.ann()) {
-        dl->addDocumentToList(expressionToDocument(fi.ann()));
+      if (!fi.ann().isEmpty()) {
+        dl->addDocumentToList(annotationToDocument(fi.ann()));
       }
       if (fi.e()) {
         dl->addStringToList(" = ");

@@ -13,6 +13,7 @@
 #define __MINIZINC_ASTITERATOR_HH__
 
 #include <minizinc/ast.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
   
@@ -144,9 +145,6 @@ namespace MiniZinc {
         case Expression::E_LET:
           _t.vLet(*c._e->template cast<Let>());
           break;
-        case Expression::E_ANN:
-          _t.vAnnotation(*c._e->template cast<Annotation>());
-          break;
         case Expression::E_TI:
           _t.vTypeInst(*c._e->template cast<TypeInst>());
           break;
@@ -154,12 +152,14 @@ namespace MiniZinc {
           _t.vTIId(*c._e->template cast<TIId>());
           break;
         }
+        _t.exit(c._e);
         stack.pop_back();
       } else {
         c._done=true;
         Expression* ce = c._e;
-        if (ce->ann() && _t.enter(ce->ann())) {
-          stack.push_back(C(ce->ann()));
+        for (ExpressionSetIter it = ce->ann().begin(); it != ce->ann().end(); ++it) {
+          if (_t.enter(*it))
+            stack.push_back(C(*it));
         }
         if (_t.enter(ce)) {
           switch (ce->eid()) {
@@ -221,10 +221,6 @@ namespace MiniZinc {
           case Expression::E_LET:
             stack.push_back(C(ce->template cast<Let>()->in()));
             pushVec(stack, ce->template cast<Let>()->let());
-            break;
-          case Expression::E_ANN:
-            stack.push_back(C(ce->template cast<Annotation>()->next()));
-            stack.push_back(C(ce->template cast<Annotation>()->e()));
             break;
           case Expression::E_TI:
             stack.push_back(C(ce->template cast<TypeInst>()->domain()));
@@ -328,11 +324,6 @@ namespace MiniZinc {
         _t.vLet(*e->template cast<Let>());
         stack.push_back(e->template cast<Let>()->in());
         pushVec(stack, e->template cast<Let>()->let());
-        break;
-        case Expression::E_ANN:
-        _t.vAnnotation(*e->template cast<Annotation>());
-        stack.push_back(e->template cast<Annotation>()->next());
-        stack.push_back(e->template cast<Annotation>()->e());
         break;
         case Expression::E_TI:
         _t.vTypeInst(*e->template cast<TypeInst>());

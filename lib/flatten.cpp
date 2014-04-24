@@ -139,25 +139,16 @@ namespace MiniZinc {
         case C_MIX: ctx_id=constants().ctx.mix; break;
         default: assert(false);;
       }
-      Annotation* vdann = vd->ann();
-      while (vdann) {
-        if (Id* id = vdann->e()->dyn_cast<Id>()) {
-          if (id->v()==ctx_id->v())
-            return;
-        }
-        vdann = vdann->next();
-      }
-      GCLock lock;
-      vd->addAnnotation(new Annotation(Location(),ctx_id));
+      vd->addAnnotation(ctx_id);
     }
   }
 
-  Annotation* definesVarAnn(Id* id) {
+  Expression* definesVarAnn(Id* id) {
     std::vector<Expression*> args(1);
     args[0] = id;
     Call* c = new Call(Location(),constants().ann.defines_var,args);
     c->type(Type::ann());
-    return new Annotation(Location(),c);
+    return c;
   }
 
   /// Check if \a e is NULL or true
@@ -267,7 +258,8 @@ namespace MiniZinc {
           SolveI* si = i->cast<SolveI>();
           CollectOccurrencesE ce(vo,si);
           topDown(ce,si->e());
-          topDown(ce,si->ann());
+          for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it)
+            topDown(ce,*it);
         }
         break;
       default:
@@ -330,39 +322,11 @@ namespace MiniZinc {
   }
 
   bool isTotal(FunctionI* fi) {
-    Annotation* a = fi->ann();
-    for (; a!=NULL; a=a->next()) {
-      VarDecl* vd = NULL;
-      Expression * ae = a->e();
-      while (ae && ae->eid()==Expression::E_ID &&
-             ae->cast<Id>()->decl()!=NULL) {
-        vd = ae->cast<Id>()->decl();
-        ae = vd->e();
-      }
-      
-      if (vd && vd->type().isann() && vd->id()->v() == constants().ids.promise_total) {
-        return true;
-      }
-    }
-    return false;
+    return fi->ann().contains(constants().ann.promise_total);
   }
 
   bool isReverseMap(BinOp* e) {
-    Annotation* a = e->ann();
-    for (; a!=NULL; a=a->next()) {
-      VarDecl* vd = NULL;
-      Expression * ae = a->e();
-      while (ae && ae->eid()==Expression::E_ID &&
-             ae->cast<Id>()->decl()!=NULL) {
-        vd = ae->cast<Id>()->decl();
-        ae = vd->e();
-      }
-      
-      if (vd && vd->type().isann() && vd->id()->v() == "is_reverse_map") {
-        return true;
-      }
-    }
-    return false;
+    return e->ann().contains(constants().ann.is_reverse_map);
   }
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
@@ -556,7 +520,6 @@ namespace MiniZinc {
         case Expression::E_TIID:
         case Expression::E_SETLIT:
         case Expression::E_VARDECL:
-        case Expression::E_ANN:
           return e;
         case Expression::E_BINOP:
         case Expression::E_UNOP:
@@ -795,7 +758,7 @@ namespace MiniZinc {
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
                 c->args()[2] = new IntLit(Location(),-d);
               } else {
-                vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
+                vd->addAnnotation(constants().ann.is_defined_var);
                 
                 args.push_back(vd->id());
 
@@ -3154,11 +3117,8 @@ namespace MiniZinc {
           vd->introduced(v->introduced());
           vd->flat(vd);
           v->flat(vd);
-          if (v->ann()) {
-            vd->addAnnotation(
-              static_cast<Annotation*>(
-              flat_exp(env,Ctx(),v->ann(),NULL,constants().var_true).r())
-            );
+          for (ExpressionSetIter it = v->ann().begin(); it != v->ann().end(); ++it) {
+            vd->addAnnotation(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
           }
           VarDeclI* nv = new VarDeclI(Location(),vd);
           env.flat_addItem(nv);
@@ -3314,17 +3274,6 @@ namespace MiniZinc {
         }
       }
       break;
-    case Expression::E_ANN:
-      {
-        GCLock lock;
-        Annotation* ann = e->cast<Annotation>();
-        EE ee = flat_exp(env,Ctx(),ann->e(),NULL,constants().var_true);
-        EE ea = flat_exp(env,Ctx(),ann->next(),NULL,constants().var_true);
-        ret.r = new Annotation(Location(),ee.r(),
-                               static_cast<Annotation*>(ea.r()));
-        ret.b = b;
-      }
-      break;
     case Expression::E_TI:
       throw InternalError("not supported yet");
       break;
@@ -3390,8 +3339,6 @@ namespace MiniZinc {
       void vLet(const Let&) { success = false; }
       /// Visit variable declaration
       void vVarDecl(const VarDecl&) {}
-      /// Visit annotation
-      void vAnnotation(const Annotation&) {}
       /// Visit type inst
       void vTypeInst(const TypeInst&) {}
       /// Visit TIId
@@ -3407,19 +3354,8 @@ namespace MiniZinc {
   void removeIsOutput(VarDecl* vd) {
     if (vd==NULL)
       return;
-    Annotation* prevAnn = NULL;
-    for (Annotation* a = vd->ann(); a != NULL; a=a->next()) {
-      if (a->e()==constants().ann.output_var ||
-          ( a->e()->isa<Call>() && a->e()->cast<Call>()->id()==constants().ann.output_array) ) {
-        if (prevAnn) {
-          prevAnn->next(a->next());
-        } else {
-          vd->ann(a->next());
-        }
-      } else {
-        prevAnn = a;
-      }
-    }
+    vd->ann().remove(constants().ann.output_var);
+    vd->ann().removeCall(constants().ann.output_array);
   }
   
   void outputVarDecls(EnvI& env, Expression* e) {
@@ -3442,7 +3378,7 @@ namespace MiniZinc {
           nvi->e()->ti()->type(t);
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
-          nvi->e()->ann(NULL);
+          nvi->e()->ann().clear();
           nvi->e()->introduced(false);
           id.decl(nvi->e());
           
@@ -3472,7 +3408,7 @@ namespace MiniZinc {
             assert(nvi->e()->flat());
             nvi->e()->e(NULL);
             if (nvi->e()->type().dim() == 0) {
-              reallyFlat->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+              reallyFlat->addAnnotation(constants().ann.output_var);
             } else {
               std::vector<Expression*> args(reallyFlat->e()->type().dim());
               for (int i=0; i<args.size(); i++) {
@@ -3485,9 +3421,7 @@ namespace MiniZinc {
               ArrayLit* al = new ArrayLit(Location(), args);
               args.resize(1);
               args[0] = al;
-              Annotation* ann = new Annotation(Location(),
-                                               new Call(Location(),constants().ann.output_array,args,NULL));
-              reallyFlat->addAnnotation(ann);
+              reallyFlat->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
             }
           } else {
             outputVarDecls(env, nvi->e()->e());
@@ -3556,7 +3490,7 @@ namespace MiniZinc {
                 if (!isOutput(vd->flat())) {
                   GCLock lock;
                   if (vd->type().dim() == 0) {
-                    vd->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+                    vd->flat()->addAnnotation(constants().ann.output_var);
                   } else {
                     std::vector<Expression*> args(vd->type().dim());
                     for (int i=0; i<args.size(); i++) {
@@ -3569,9 +3503,7 @@ namespace MiniZinc {
                     ArrayLit* al = new ArrayLit(Location(), args);
                     args.resize(1);
                     args[0] = al;
-                    Annotation* ann = new Annotation(Location(),
-                                                     new Call(Location(),constants().ann.output_array,args,NULL));
-                    vd->flat()->addAnnotation(ann);
+                    vd->flat()->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
                   }
                 }
               }
@@ -3637,7 +3569,7 @@ namespace MiniZinc {
             vdi_copy->e()->ti()->type(t);
             vdi_copy->e()->ti()->domain(NULL);
             vdi_copy->e()->flat(vdi->e()->flat());
-            vdi_copy->e()->ann(NULL);
+            vdi_copy->e()->ann().clear();
             vdi_copy->e()->introduced(false);
             ASTStringMap<KeepAlive>::t::iterator it;
             if (!vdi->e()->type().ispar()) {
@@ -3675,7 +3607,7 @@ namespace MiniZinc {
                 vd->e(NULL);
                 assert(vdi->e()->flat());
                 if (vdi->e()->type().dim() == 0) {
-                  vdi->e()->flat()->addAnnotation(new Annotation(Location(),constants().ann.output_var));
+                  vdi->e()->flat()->addAnnotation(constants().ann.output_var);
                 } else {
                   std::vector<Expression*> args(vdi->e()->type().dim());
                   for (int i=0; i<args.size(); i++) {
@@ -3688,9 +3620,7 @@ namespace MiniZinc {
                   ArrayLit* al = new ArrayLit(Location(), args);
                   args.resize(1);
                   args[0] = al;
-                  Annotation* ann = new Annotation(Location(),
-                                                   new Call(Location(),constants().ann.output_array,args,NULL));
-                  vdi->e()->flat()->addAnnotation(ann);
+                  vdi->e()->flat()->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
                 }
               }
             }
@@ -3776,24 +3706,23 @@ namespace MiniZinc {
         (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
       }
       void vSolveI(SolveI* si) {
-        EE ee = flat_exp(env,Ctx(),si->ann(),NULL,constants().var_true);
-        Annotation* ann = static_cast<Annotation*>(ee.r());
         GCLock lock;
+        SolveI* nsi = NULL;
         switch (si->st()) {
         case SolveI::ST_SAT:
-          env.flat_addItem(SolveI::sat(Location(),ann));
+          nsi = SolveI::sat(Location());
           break;
         case SolveI::ST_MIN:
-          env.flat_addItem(SolveI::min(Location(),
-            flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
-            ann));
+          nsi = SolveI::min(Location(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
           break;
         case SolveI::ST_MAX:
-          env.flat_addItem(SolveI::max(Location(),
-            flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r(),
-            ann));
+          nsi = SolveI::max(Location(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
           break;
         }
+        for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+          nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
+        }
+        env.flat_addItem(nsi);
       }
     } _fv(env);
     iterItems<FV>(_fv,e.model());
@@ -4148,26 +4077,15 @@ namespace MiniZinc {
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
         VarDecl* vd = vdi->e();
-        Annotation* prevAnn = NULL;
         if (vd->type().ispar()) {
-          vd->ann(NULL);
+          vd->ann().clear();
           vd->introduced(false);
           vd->ti()->domain(NULL);
         }
-        for (Annotation* a = vd->ann(); a != NULL; a=a->next()) {
-          if (a->e()==constants().ctx.mix ||
-              a->e()==constants().ctx.pos ||
-              a->e()==constants().ctx.neg ||
-              a->e()==constants().ctx.root) {
-            if (prevAnn) {
-              prevAnn->next(a->next());
-            } else {
-              vd->ann(a->next());
-            }
-          } else {
-            prevAnn = a;
-          }
-        }
+        vd->ann().remove(constants().ctx.mix);
+        vd->ann().remove(constants().ctx.pos);
+        vd->ann().remove(constants().ctx.neg);
+        vd->ann().remove(constants().ctx.root);
         
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
@@ -4219,7 +4137,7 @@ namespace MiniZinc {
               if (vd->e()->eid()==Expression::E_CALL) {
                 const Call* c = vd->e()->cast<Call>();
                 vd->e(NULL);
-                vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
+                vd->addAnnotation(constants().ann.is_defined_var);
                 std::string cid;
                 if (c->id() == constants().ids.exists) {
                   cid = "array_bool_or";
@@ -4251,7 +4169,7 @@ namespace MiniZinc {
           if (vd->e() != NULL) {
             if (const Call* cc = vd->e()->dyn_cast<Call>()) {
               vd->e(NULL);
-              vd->addAnnotation(new Annotation(Location(),constants().ann.is_defined_var));
+              vd->addAnnotation(constants().ann.is_defined_var);
               std::vector<Expression*> args(cc->args().size());
               std::string cid;
               if (cc->id() == constants().ids.lin_exp) {

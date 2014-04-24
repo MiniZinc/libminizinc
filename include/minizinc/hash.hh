@@ -15,6 +15,7 @@
 #include <minizinc/ast.hh>
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace MiniZinc {
   
@@ -109,6 +110,48 @@ namespace MiniZinc {
         std::cerr << i.first() << ": " << D::d(i.second) << std::endl;
       }
     }
+  };
+  
+  class ExpressionSetIter : public std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator {
+  protected:
+    bool _empty;
+    typedef std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator Iter;
+  public:
+    ExpressionSetIter(void) : _empty(false) {}
+    ExpressionSetIter(bool) : _empty(true) {}
+    ExpressionSetIter(const Iter& i) : Iter(i), _empty(false) {}
+    bool operator ==(const ExpressionSetIter& i) const {
+      return (_empty && i._empty) || static_cast<const Iter&>(*this)==static_cast<const Iter&>(i);
+    }
+  };
+
+  /// Hash set for expressions
+  class ExpressionSet {
+  protected:
+    /// The underlying set implementation
+    std::unordered_set<Expression*,ExpressionHash,ExpressionEq> _s;
+  public:
+    /// Insert \a e
+    void insert(Expression* e) {
+      assert(e != NULL);
+      _s.insert(e);
+    }
+    /// Find \a e in map
+    ExpressionSetIter find(Expression* e) { return _s.find(e); }
+    /// Begin of iterator
+    ExpressionSetIter begin(void) { return _s.begin(); }
+    /// End of iterator
+    ExpressionSetIter end(void) { return _s.end(); }
+    /// Remove binding of \a e from map
+    void remove(Expression* e) {
+      _s.erase(e);
+    }
+    bool contains(Expression* e) { return find(e) != end(); }
+    /// Remove all elements from the map
+    void clear(void) {
+      _s.clear();
+    }
+    bool isEmpty(void) const { return _s.begin() == _s.end(); }
   };
   
 }

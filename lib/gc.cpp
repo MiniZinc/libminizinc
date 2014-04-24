@@ -11,6 +11,7 @@
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/hash.hh>
 #include <minizinc/model.hh>
 #include <config.hh>
 
@@ -245,7 +246,6 @@ namespace MiniZinc {
         sizeof(Call),          // E_CALL
         sizeof(VarDecl),       // E_VARDECL
         sizeof(Let),           // E_LET
-        sizeof(Annotation),    // E_ANN
         sizeof(TypeInst),      // E_TI
         sizeof(TIId),          // E_TIID
         sizeof(IncludeI),      // II_INC
@@ -383,7 +383,12 @@ namespace MiniZinc {
             Expression::mark(i->cast<ConstraintI>()->e());
             break;
           case Item::II_SOL:
-            Expression::mark(i->cast<SolveI>()->ann());
+            {
+              SolveI* si = i->cast<SolveI>();
+              for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+                Expression::mark(*it);
+              }
+            }
             Expression::mark(i->cast<SolveI>()->e());
             break;
           case Item::II_OUT:
@@ -394,7 +399,9 @@ namespace MiniZinc {
               FunctionI* fi = i->cast<FunctionI>();
               fi->id().mark();
               Expression::mark(fi->ti());
-              Expression::mark(fi->ann());
+              for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
+                Expression::mark(*it);
+              }
               Expression::mark(fi->e());
               fi->params().mark();
               for (unsigned int k=0; k<fi->params().size(); k++) {
@@ -448,7 +455,6 @@ namespace MiniZinc {
       "Call          ",          // E_CALL
       "VarDecl       ",       // E_VARDECL
       "Let           ",           // E_LET
-      "Annotation    ",    // E_ANN
       "TypeInst      ",      // E_TI
       "TIId          ",          // E_TIID
       "IncludeI      ",      // II_INC
@@ -477,9 +483,21 @@ namespace MiniZinc {
         stats.first++;
 #endif
         if (n->_gc_mark==0) {
-          if (n->_id == Expression::E_VARDECL) {
-            /// Reset WeakRef inside VarDecl
-            static_cast<VarDecl*>(n)->flat(NULL);
+          switch (n->_id) {
+            case Item::II_FUN:
+              static_cast<FunctionI*>(n)->ann().~Annotation();
+              break;
+            case Item::II_SOL:
+              static_cast<SolveI*>(n)->ann().~Annotation();
+              break;
+            case Expression::E_VARDECL:
+              // Reset WeakRef inside VarDecl
+              static_cast<VarDecl*>(n)->flat(NULL);
+              // fall through
+            default:
+              if (n->_id >= ASTNode::NID_END+1 && n->_id <= Expression::EID_END) {
+                static_cast<Expression*>(n)->ann().~Annotation();
+              }
           }
           if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
             FreeListNode* fln = static_cast<FreeListNode*>(n);

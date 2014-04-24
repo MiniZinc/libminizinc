@@ -27,7 +27,6 @@
 
 namespace MiniZinc {
 
-  class Annotation;
   class IntLit;
   class FloatLit;
   class SetLit;
@@ -49,6 +48,9 @@ namespace MiniZinc {
   class Item;
   class FunctionI;
 
+  class ExpressionSet;
+  class ExpressionSetIter;
+  
   /// %Location of an expression in the source code
   class Location {
   public:
@@ -88,12 +90,37 @@ namespace MiniZinc {
   }
 
   /**
+   * \brief Annotations
+   */
+  class Annotation {
+  private:
+    ExpressionSet* _s;
+
+    /// Delete
+    Annotation(const Annotation&);
+    /// Delete
+    Annotation& operator =(const Annotation&);
+  public:
+    Annotation(void) : _s(NULL) {}
+    ~Annotation(void);
+    bool contains(Expression* e) const;
+    bool isEmpty(void) const;
+    ExpressionSetIter begin(void) const;
+    ExpressionSetIter end(void) const;
+    void add(Expression* e);
+    void add(std::vector<Expression*> e);
+    void remove(Expression* e);
+    void removeCall(const ASTString& id);
+    void clear(void);
+  };
+
+  /**
    * \brief Base class for expressions
    */
   class Expression : public ASTNode {
   protected:
-    /// An annotation (or NULL)
-    Annotation* _ann;
+    /// The annotations
+    Annotation _ann;
     /// The location of the expression
     Location _loc;
     /// The %MiniZinc type of the expression
@@ -107,16 +134,13 @@ namespace MiniZinc {
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
       E_ARRAYACCESS, E_COMP, E_ITE,
       E_BINOP, E_UNOP, E_CALL, E_VARDECL, E_LET,
-      E_ANN, E_TI, E_TIID, EID_END = E_TIID
+      E_TI, E_TIID, EID_END = E_TIID
     };
 
     ExpressionId eid(void) const {
       return static_cast<ExpressionId>(_id);
     }
 
-    Annotation* ann(void) const {
-      return _ann;
-    }
     const Location& loc(void) const {
       return _loc;
     }
@@ -146,7 +170,7 @@ namespace MiniZinc {
 
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
-      : ASTNode(eid), _ann(NULL), _loc(loc), _type(t) {}
+      : ASTNode(eid), _loc(loc), _type(t) {}
 
   public:
 
@@ -191,11 +215,14 @@ namespace MiniZinc {
     }
     
     
-    /// Set annotation to \a ann
-    void ann(Annotation* ann);
-    
     /// Add annotation \a ann to the expression
-    void addAnnotation(Annotation* ann);
+    void addAnnotation(Expression* ann);
+
+    /// Add annotation \a ann to the expression
+    void addAnnotations(std::vector<Expression*> ann);
+
+    const Annotation& ann(void) const { return _ann; }
+    Annotation& ann(void) { return _ann; }
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
@@ -209,35 +236,6 @@ namespace MiniZinc {
     static void mark(Expression* e);
   };
 
-  /**
-   * \brief Annotations
-   */
-  class Annotation : public Expression {
-  protected:
-    /// The actual annotation expression
-    Expression* _e;
-    /// The next annotation in a list or NULL
-    Annotation* _a;
-  public:
-    /// The identifier of this expression type
-    static const ExpressionId eid = E_ANN;
-
-    /// Access expression
-    Expression* e(void) const { return _e; }
-    /// Access next annotation in the list
-    Annotation* next(void) const { return _a; }
-
-    /// Set next annotation in the list to \a a
-    void next(Annotation* a) { _a = a; }
-    
-    /// Constructor
-    Annotation(const Location& loc, Expression* e, Annotation* a = NULL);
-    /// Add annotation \a a to end of list of annotations
-    void merge(Annotation* a);
-    /// Recompute hash value
-    void rehash(void);
-  };
-  
   /// \brief Integer literal expression
   class IntLit : public Expression {
   protected:
@@ -958,27 +956,26 @@ namespace MiniZinc {
   class SolveI : public Item {
   protected:
     /// Solve item annotation
-    Annotation* _ann;
+    Annotation _ann;
     /// Expression for minimisation/maximisation (or NULL)
     Expression* _e;
     /// Constructor
-    SolveI(const Location& loc, Annotation* a, Expression* e);
+    SolveI(const Location& loc, Expression* e);
   public:
     /// The identifier of this item type
     static const ItemId iid = II_SOL;
     /// Type of solving
     enum SolveType { ST_SAT, ST_MIN, ST_MAX };
     /// Allocate solve satisfy item
-    static SolveI* sat(const Location& loc,
-                       Annotation* ann = NULL);
+    static SolveI* sat(const Location& loc);
     /// Allocate solve minimize item
-    static SolveI* min(const Location& loc,
-                       Expression* e, Annotation* ann = NULL);
+    static SolveI* min(const Location& loc, Expression* e);
     /// Allocate solve maximize item
-    static SolveI* max(const Location& loc,
-                       Expression* e, Annotation* ann = NULL);
+    static SolveI* max(const Location& loc, Expression* e);
     /// Access solve annotation
-    Annotation* ann(void) const { return _ann; }
+    const Annotation& ann(void) const { return _ann; }
+    /// Access solve annotation
+    Annotation& ann(void) { return _ann; }
     /// Access expression for optimisation
     Expression* e(void) const { return _e; }
     /// Set expression for optimisation
@@ -1013,7 +1010,7 @@ namespace MiniZinc {
     /// List of parameter declarations
     ASTExprVec<VarDecl> _params;
     /// Annotation
-    Annotation* _ann;
+    Annotation _ann;
     /// Function body (or NULL)
     Expression* _e;
   public:
@@ -1047,7 +1044,7 @@ namespace MiniZinc {
     FunctionI(const Location& loc,
               const std::string& id, TypeInst* ti,
               const std::vector<VarDecl*>& params,
-              Expression* e = NULL, Annotation* ann = NULL);
+              Expression* e = NULL);
 
     /// Access identifier
     ASTString id(void) const { return _id; }
@@ -1056,7 +1053,9 @@ namespace MiniZinc {
     /// Access parameters
     ASTExprVec<VarDecl> params(void) const { return _params; }
     /// Access annotation
-    Annotation* ann(void) const { return _ann; }
+    const Annotation& ann(void) const { return _ann; }
+    /// Access annotation
+    Annotation& ann(void) { return _ann; }
     /// Access body
     Expression* e(void) const { return _e; }
     
@@ -1108,14 +1107,14 @@ namespace MiniZinc {
     void vLet(const Let&) {}
     /// Visit variable declaration
     void vVarDecl(const VarDecl&) {}
-    /// Visit annotation
-    void vAnnotation(const Annotation&) {}
     /// Visit type inst
     void vTypeInst(const TypeInst&) {}
     /// Visit TIId
     void vTIId(const TIId&) {}
     /// Determine whether to enter node
     bool enter(Expression* e) { return true; }
+    /// Exit node after processing has finished
+    void exit(Expression* e) {}
   };
 
   /// Statically allocated constants
@@ -1142,7 +1141,6 @@ namespace MiniZinc {
         ASTString bool2int;
         ASTString assert;
         ASTString trace;
-        ASTString promise_total;
 
         ASTString sum;
         ASTString lin_exp;
@@ -1175,6 +1173,8 @@ namespace MiniZinc {
         ASTString output_array;
         Id* is_defined_var;
         ASTString defines_var;
+        Id* is_reverse_map;
+        Id* promise_total;
       } ann;
       /// Constructor
       Constants(void);

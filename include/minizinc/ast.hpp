@@ -23,12 +23,6 @@ namespace MiniZinc {
   }
 
   inline
-  Annotation::Annotation(const Location& loc, Expression* e, Annotation* a)
-  : Expression(loc,E_ANN,Type::ann()), _e(e), _a(a) {
-    rehash();
-  }
-
-  inline
   IntLit::IntLit(const Location& loc, IntVal v)
   : Expression(loc,E_INTLIT,Type::parint()), _v(v) {
     rehash();
@@ -375,23 +369,23 @@ namespace MiniZinc {
   : Item(loc, II_CON), _e(e) {}
 
   inline
-  SolveI::SolveI(const Location& loc, Annotation* a, Expression* e)
-  : Item(loc, II_SOL), _ann(a), _e(e) {}
+  SolveI::SolveI(const Location& loc, Expression* e)
+  : Item(loc, II_SOL), _e(e) {}
   inline SolveI*
-  SolveI::sat(const Location& loc, Annotation* ann) {
-    SolveI* si = new SolveI(loc,ann,NULL);
+  SolveI::sat(const Location& loc) {
+    SolveI* si = new SolveI(loc,NULL);
     si->_sec_id = ST_SAT;
     return si;
   }
   inline SolveI*
-  SolveI::min(const Location& loc, Expression* e, Annotation* ann) {
-    SolveI* si = new SolveI(loc,ann,e);
+  SolveI::min(const Location& loc, Expression* e) {
+    SolveI* si = new SolveI(loc,e);
     si->_sec_id = ST_MIN;
     return si;
   }
   inline SolveI*
-  SolveI::max(const Location& loc, Expression* e, Annotation* ann) {
-    SolveI* si = new SolveI(loc,ann,e);
+  SolveI::max(const Location& loc, Expression* e) {
+    SolveI* si = new SolveI(loc,e);
     si->_sec_id = ST_MAX;
     return si;
   }
@@ -412,12 +406,11 @@ namespace MiniZinc {
   FunctionI::FunctionI(const Location& loc,
                        const std::string& id, TypeInst* ti,
                        const std::vector<VarDecl*>& params,
-                       Expression* e, Annotation* ann)
+                       Expression* e)
   : Item(loc, II_FUN),
     _id(ASTString(id)),
     _ti(ti),
     _params(ASTExprVec<VarDecl>(params)),
-    _ann(ann),
     _e(e) {
     _builtins.e = NULL;
     _builtins.b = NULL;

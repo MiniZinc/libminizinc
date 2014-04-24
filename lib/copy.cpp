@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/copy.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
 
@@ -80,6 +81,8 @@ namespace MiniZinc {
     return copy_location(m,i->loc());
   }
 
+  void copy_ann(CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds);
+  
   Expression* copy(CopyMap& m, Expression* e, bool followIds) {
     if (e==NULL) return NULL;
     if (Expression* cached = m.find(e))
@@ -367,15 +370,6 @@ namespace MiniZinc {
         ret = c;
       }
       break;
-    case Expression::E_ANN:
-      {
-        Annotation* a = e->cast<Annotation>();
-        Annotation* c = new Annotation(copy_location(m,e),copy(m,a->e(),followIds),
-                                       static_cast<Annotation*>(copy(m,a->next(),followIds)));
-        m.insert(e,c);
-        ret = c;
-      }
-      break;
     case Expression::E_TI:
       {
         TypeInst* t = e->cast<TypeInst>();
@@ -408,10 +402,13 @@ namespace MiniZinc {
         assert(false);
     }
     ret->type(e->type());
-    if (e->ann()) {
-      ret->ann(copy(m,e->ann(),followIds)->cast<Annotation>());
-    }
+    copy_ann(m,e->ann(),ret->ann(),followIds);
     return ret;
+  }
+
+  void copy_ann(CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds) {
+    for (ExpressionSetIter it = oldAnn.begin(); it != oldAnn.end(); ++it)
+      newAnn.add(copy(m,*it,followIds));
   }
 
   Expression* copy(Expression* e, bool followIds) {
@@ -470,18 +467,16 @@ namespace MiniZinc {
         SolveI* c;
         switch (s->st()) {
         case SolveI::ST_SAT:
-          c = SolveI::sat(Location(),
-            static_cast<Annotation*>(copy(m,s->ann(),followIds)));
+          c = SolveI::sat(Location());
           break;
         case SolveI::ST_MIN:
-          c = SolveI::min(Location(),copy(m,s->e(),followIds),
-            static_cast<Annotation*>(copy(m,s->ann(),followIds)));
+          c = SolveI::min(Location(),copy(m,s->e(),followIds));
           break;
         case SolveI::ST_MAX:
-          c = SolveI::min(Location(),copy(m,s->e(),followIds),
-            static_cast<Annotation*>(copy(m,s->ann(),followIds)));
+          c = SolveI::max(Location(),copy(m,s->e(),followIds));
           break;
         }
+        copy_ann(m, s->ann(), c->ann(), followIds);
         m.insert(i,c);
         return c;
       }
@@ -500,8 +495,8 @@ namespace MiniZinc {
           params[j] = static_cast<VarDecl*>(copy(m,f->params()[j],followIds));
         FunctionI* c = new FunctionI(copy_location(m,i),f->id().str(),
           static_cast<TypeInst*>(copy(m,f->ti(),followIds)),
-          params, copy(m,f->e(),followIds),
-          static_cast<Annotation*>(copy(m,f->ann(),followIds)));
+                                     params, copy(m,f->e(),followIds));
+        copy_ann(m, f->ann(), c->ann(), followIds);
         m.insert(i,c);
         return c;
       }

@@ -75,34 +75,21 @@ namespace MiniZinc {
   void CollectOccurrencesI::vSolveI(SolveI* si) {
     CollectOccurrencesE ce(vo,si);
     topDown(ce,si->e());
-    topDown(ce,si->ann());
+    for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++si)
+      topDown(ce,*it);
   }
 
-  class AnnotateVardecl : public ItemVisitor {
-  public:
-    VarOccurrences& vo;
-    AnnotateVardecl(VarOccurrences& vo0) : vo(vo0) {}
-    void vVarDeclI(VarDeclI* v) {
-      GCLock _gcl;
-      std::vector<Expression*> args(1);
-      args[0] = new IntLit(Location(),vo.occurrences(v->e()));
-      Call* c = new Call(Location(),"occ",args);
-      v->e()->addAnnotation(new Annotation(Location(),c));
-    }
-  };
-
   bool isOutput(VarDecl* vd) {
-    Annotation* a = vd->ann();
-    while (a) {
-      if (a->e()) {
-        if (a->e()==constants().ann.output_var)
+    for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
+      if (*it) {
+        if (*it==constants().ann.output_var)
           return true;
-        if (Call* c = a->e()->dyn_cast<Call>()) {
+        if (Call* c = (*it)->dyn_cast<Call>()) {
           if (c->id() == constants().ann.output_array)
             return true;
         }
       }
-      a = a->next();
+      
     }
     return false;
   }

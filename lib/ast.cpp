@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/ast.hh>
+#include <minizinc/hash.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
@@ -37,31 +38,18 @@ namespace MiniZinc {
   }
 
   void
-  Annotation::rehash(void) {
-    init_hash();
-    cmb_hash(Expression::hash(_e));
-    cmb_hash(Expression::hash(_a));
+  Expression::addAnnotation(Expression* ann) {
+    _ann.add(ann);
   }
   void
-  Annotation::merge(Annotation* a) {
-    Annotation* r = this;
-    while (r->_a != NULL) r=r->_a;
-    r->_a = a;
-    r->rehash();
-  }
-
-  
-  void
-  Expression::ann(Annotation* ann) {
-    _ann = ann;
-  }
-  void
-  Expression::addAnnotation(Annotation* ann) {
-    if (_ann) _ann->merge(ann); else _ann=ann;
+  Expression::addAnnotations(std::vector<Expression*> ann) {
+    for (unsigned int i=0; i<ann.size(); i++)
+      _ann.add(ann[i]);
   }
 
 #define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
 #define pushall(v) do { v.mark(); for (unsigned int i=0; i<v.size(); i++) if (v[i]!=NULL) { stack.push_back(v[i]); }} while(0)
+#define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
     if (e==NULL) return;
@@ -72,7 +60,7 @@ namespace MiniZinc {
       if (cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
-        pushstack(cur->ann());
+        pushann(cur->ann());
         switch (cur->eid()) {
         case Expression::E_INTLIT:
         case Expression::E_FLOATLIT:
@@ -123,7 +111,7 @@ namespace MiniZinc {
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
             fi->id().mark();
             pushstack(fi->ti());
-            pushstack(fi->ann());
+            pushann(fi->ann());
             pushstack(fi->e());
             pushall(fi->params());
           }
@@ -136,10 +124,6 @@ namespace MiniZinc {
         case Expression::E_LET:
           pushall(cur->cast<Let>()->let());
           pushstack(cur->cast<Let>()->in());
-          break;
-        case Expression::E_ANN:
-          pushstack(cur->cast<Annotation>()->e());
-          pushstack(cur->cast<Annotation>()->next());
           break;
         case Expression::E_TI:
           pushstack(cur->cast<TypeInst>()->domain());
@@ -739,9 +723,16 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
     case Expression::E_ID:
-      return
-        e0->cast<Id>()->decl() == e1->cast<Id>()->decl() ||
-        (e0->cast<Id>()->decl()->flat() != NULL && e0->cast<Id>()->decl()->flat() == e1->cast<Id>()->decl()->flat());
+      {
+        const Id* id0 = e0->cast<Id>();
+        const Id* id1 = e1->cast<Id>();
+        if (id0->decl()==NULL || id1->decl()==NULL) {
+          assert(id0->type().isann());
+          return id0->v()==id1->v();
+        }
+        return id0->decl()==id1->decl() ||
+          ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
+      }
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT:
@@ -848,14 +839,6 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_ANN:
-      {
-        const Annotation* a0 = e0->cast<Annotation>();
-        const Annotation* a1 = e1->cast<Annotation>();
-        if (!Expression::equal ( a0->e(), a1->e() )) return false;
-        if (!Expression::equal ( a0->next(), a1->next() )) return false;
-        return true;
-      }
     case Expression::E_TI:
       {
         const TypeInst* t0 = e0->cast<TypeInst>();
@@ -890,7 +873,6 @@ namespace MiniZinc {
     ids.bool2int = ASTString("bool2int");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
-    ids.promise_total = ASTString("promise_total");
 
     ids.sum = ASTString("sum");
     ids.lin_exp = ASTString("lin_exp");
@@ -924,6 +906,10 @@ namespace MiniZinc {
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
+    ann.is_reverse_map = new Id(Location(), ASTString("is_reverse_map"), NULL);
+    ann.is_reverse_map->type(Type::ann());
+    ann.promise_total = new Id(Location(), ASTString("promise_total"), NULL);
+    ann.promise_total->type(Type::ann());
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -954,7 +940,6 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_eq));
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
-    v.push_back(new StringLit(Location(),ids.promise_total));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);
@@ -963,6 +948,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));
+    v.push_back(ann.is_reverse_map);
+    v.push_back(ann.promise_total);
     
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
@@ -972,6 +959,75 @@ namespace MiniZinc {
   Constants& constants(void) {
     static Constants _c;
     return _c;
+  }
+
+
+  Annotation::~Annotation(void) {
+    delete _s;
+  }
+  
+  bool
+  Annotation::contains(Expression* e) const {
+    return _s && _s->contains(e);
+  }
+
+  bool
+  Annotation::isEmpty(void) const {
+    return _s == NULL || _s->isEmpty();
+  }
+  
+  ExpressionSetIter
+  Annotation::begin(void) const {
+    return _s == NULL ? ExpressionSetIter(true) : _s->begin();
+  }
+  
+  ExpressionSetIter
+  Annotation::end(void) const {
+    return _s == NULL ? ExpressionSetIter(true) : _s->end();
+  }
+
+  void
+  Annotation::add(Expression* e) {
+    if (_s == NULL)
+      _s = new ExpressionSet;
+    _s->insert(e);
+  }
+  
+  void
+  Annotation::add(std::vector<Expression*> e) {
+    if (_s == NULL)
+      _s = new ExpressionSet;
+    for (unsigned int i=e.size(); i--;)
+      _s->insert(e[i]);
+  }
+  
+  void
+  Annotation::remove(Expression* e) {
+    if (_s) {
+      _s->remove(e);
+    }
+  }
+
+  void
+  Annotation::removeCall(const ASTString& id) {
+    if (_s==NULL)
+      return;
+    std::vector<Expression*> toRemove;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          toRemove.push_back(*it);
+      }
+    }
+    for (unsigned int i=toRemove.size(); i--;)
+      _s->remove(toRemove[i]);
+  }
+  
+  void
+  Annotation::clear(void) {
+    if (_s) {
+      _s->clear();
+    }
   }
   
 }
