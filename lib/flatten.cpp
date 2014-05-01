@@ -4141,6 +4141,7 @@ namespace MiniZinc {
                 } else {
                   Call* nc = new Call(vcc->loc(),cid,args);
                   nc->type(vcc->type());
+                  nc->ann().merge(vcc->ann());
                   ve = nc;
                 }
               } else if (Id* id = ve->dyn_cast<Id>()) {
@@ -4174,6 +4175,7 @@ namespace MiniZinc {
                 Call * nc = new Call(c->loc(),cid,args);
                 nc->type(c->type());
                 nc->addAnnotation(definesVarAnn(vd->id()));
+                nc->ann().merge(c->ann());
                 e.envi().flat_addItem(new ConstraintI(Location(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
@@ -4233,6 +4235,7 @@ namespace MiniZinc {
               Call* nc = new Call(cc->loc(),cid,args);
               nc->type(cc->type());
               nc->addAnnotation(definesVarAnn(vd->id()));
+              nc->ann().merge(cc->ann());
               e.envi().flat_addItem(new ConstraintI(Location(),nc));
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
