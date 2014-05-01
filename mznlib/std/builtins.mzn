@@ -148,7 +148,7 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 function var int: element_t(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
-    constraint array_var_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    constraint array_var_int_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_total =
@@ -157,7 +157,7 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    constraint array_var_int_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
@@ -171,7 +171,7 @@ function var int: element(var int: idx, array[int] of var int: x) =
 function var int: element_t(var int: idx, array[int] of int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r;
-    constraint array_int_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    constraint array_int_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element_mt(var int: idx, array[int] of int: x) :: promise_total =
@@ -180,7 +180,7 @@ function var int: element_mt(var int: idx, array[int] of int: x) :: promise_tota
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_int_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r);
+    constraint array_int_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r);
   } in r;
 
 function var int: element(var int: idx, array[int] of int: x) =
