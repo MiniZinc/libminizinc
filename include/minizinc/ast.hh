@@ -112,6 +112,7 @@ namespace MiniZinc {
     void remove(Expression* e);
     void removeCall(const ASTString& id);
     void clear(void);
+    void merge(const Annotation& ann);
   };
 
   /**

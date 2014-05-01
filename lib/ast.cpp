@@ -1030,4 +1030,16 @@ namespace MiniZinc {
     }
   }
   
+  void
+  Annotation::merge(const Annotation& ann) {
+    if (ann._s == NULL)
+      return;
+    if (_s == NULL) {
+      _s = new ExpressionSet;
+    }
+    for (ExpressionSetIter it=ann.begin(); it != ann.end(); ++it) {
+      _s->insert(*it);
+    }
+  }
+  
 }
