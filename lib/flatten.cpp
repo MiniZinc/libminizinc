@@ -3734,7 +3734,7 @@ namespace MiniZinc {
       EnvI& env;
       FV(EnvI& env0) : env(env0) {}
       void vVarDeclI(VarDeclI* v) {
-        if (v->e()->type().isvar()) {
+        if (v->e()->type().isvar() || v->e()->type().isann()) {
           (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
         } else {
           if (v->e()->e()==NULL) {
