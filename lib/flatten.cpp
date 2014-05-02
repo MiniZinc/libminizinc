@@ -162,6 +162,8 @@ namespace MiniZinc {
            && !eval_bool(e);
   }  
 
+  EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
+
   class EnvI {
   public:
     Model* orig;
@@ -272,7 +274,10 @@ namespace MiniZinc {
       if (toAnnotate && toAnnotate->isa<Call>()) {
         int prev = idStack.size() > 0 ? idStack.back() : 0;
         for (int i = callStack.size()-1; i >= prev; i--) {
-          toAnnotate->ann().merge(callStack[i]->ann());
+          for (ExpressionSetIter it = callStack[i]->ann().begin(); it != callStack[i]->ann().end(); ++it) {
+            EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
+            toAnnotate->addAnnotation(ee_ann.r());
+          }
         }
       }
     }
@@ -285,7 +290,10 @@ namespace MiniZinc {
       if (vd->e() && vd->e()->isa<Call>()) {
         int prev = idStack.size() > 0 ? idStack.back() : 0;
         for (int i = callStack.size()-1; i >= prev; i--) {
-          vd->e()->ann().merge(callStack[i]->ann());
+          for (ExpressionSetIter it = callStack[i]->ann().begin(); it != callStack[i]->ann().end(); ++it) {
+            EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
+            vd->e()->addAnnotation(ee_ann.r());
+          }
         }
       }
       int idx = vo.find(vd);
@@ -312,6 +320,16 @@ namespace MiniZinc {
       if (env.callStack.back()->isa<VarDecl>())
         env.idStack.pop_back();
       env.callStack.pop_back();
+    }
+  };
+  class CallArgItem {
+  public:
+    EnvI& env;
+    CallArgItem(EnvI& env0) : env(env0) {
+      env.idStack.push_back(env.callStack.size());
+    }
+    ~CallArgItem(void) {
+      env.idStack.pop_back();
     }
   };
   
@@ -348,8 +366,6 @@ namespace MiniZinc {
   bool isReverseMap(BinOp* e) {
     return e->ann().contains(constants().ann.is_reverse_map);
   }
-
-  EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
   Expression* follow_id(Expression* e) {
     for (;;) {
@@ -2121,6 +2137,7 @@ namespace MiniZinc {
       {
         BinOp* bo = e->cast<BinOp>();
         if (isReverseMap(bo)) {
+          CallArgItem cai(env);
           Id* id = bo->lhs()->dyn_cast<Id>();
           if (id==NULL)
             throw EvalError(bo->lhs()->loc(), "Reverse mappers are only defined for identifiers");
@@ -2859,6 +2876,7 @@ namespace MiniZinc {
             Expression* tmp = follow_id_to_decl(c->args()[i]);
             if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
               tmp = vd->id();
+            CallArgItem cai(env);
             args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
           }
 
