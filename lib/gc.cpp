@@ -75,6 +75,17 @@ namespace MiniZinc {
   /// Memory managed by the garbage collector
   class GC::Heap {
     friend class GC;
+#if defined(MINIZINC_GC_STATS)
+    static const char* _nodeid[Item::II_END+1];
+    struct GCStat {
+      int first;
+      int second;
+      int keepalive;
+      int inmodel;
+      GCStat(void) : first(0), second(0), keepalive(0), inmodel(0) {}
+    };
+    std::map<int,GCStat> gc_stats;
+#endif
   protected:
     HeapPage* _page;
     Model* _rootset;
@@ -200,25 +211,22 @@ namespace MiniZinc {
     }
 
     void rungc(void) {
-      if (_free_mem < 10000) {
-        if (_alloced_mem > _gc_threshold) {
-#ifdef MZN_GC_DEBUG
-          std::cerr << "GC\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
-                    << ((_alloced_mem-_free_mem)/1024)
-                    << "\n\tthreshold " << (_gc_threshold/1024)
-                    << "\n";
+      if (_alloced_mem > _gc_threshold) {
+#ifdef MINIZINC_GC_STATS
+        std::cerr << "GC\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+                  << ((_alloced_mem-_free_mem)/1024)
+                  << "\n\tthreshold " << (_gc_threshold/1024)
+                  << "\n";
 #endif
-          mark();
-          sweep();
-          while (_alloced_mem > _gc_threshold)
-            _gc_threshold *= 1.5;
-#ifdef MZN_GC_DEBUG
-          std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
-                    << ((_alloced_mem-_free_mem)/1024)
-                    << "\n\tthreshold " << (_gc_threshold/1024)
-                    << "\n";
+        mark();
+        sweep();
+        _gc_threshold = _alloced_mem * 1.5;
+#ifdef MINIZINC_GC_STATS
+        std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+                  << ((_alloced_mem-_free_mem)/1024)
+                  << "\n\tthreshold " << (_gc_threshold/1024)
+                  << "\n";
 #endif
-        }
       }
     }
     void mark(void);
@@ -279,6 +287,40 @@ namespace MiniZinc {
 
   };
 
+#ifdef MINIZINC_GC_STATS
+  const char*
+  GC::Heap::_nodeid[] = {
+    "FreeList      ", // NID_FL
+    "Chunk         ", // NID_CHUNK
+    "Vec           ", // NID_VEC
+    "IntLit        ",        // E_INTLIT
+    "FloatLit      ",      // E_FLOATLIT
+    "SetLit        ",        // E_SETLIT
+    "BoolLit       ",       // E_BOOLLIT
+    "StringLit     ",     // E_STRINGLIT
+    "Id            ",            // E_ID
+    "AnonVar       ",       // E_ANON
+    "ArrayLit      ",      // E_ARRAYLIT
+    "ArrayAccess   ",   // E_ARRAYACCESS
+    "Comprehension ", // E_COMP
+    "ITE           ",           // E_ITE
+    "BinOp         ",         // E_BINOP
+    "UnOp          ",          // E_UNOP
+    "Call          ",          // E_CALL
+    "VarDecl       ",       // E_VARDECL
+    "Let           ",           // E_LET
+    "TypeInst      ",      // E_TI
+    "TIId          ",          // E_TIID
+    "IncludeI      ",      // II_INC
+    "VarDeclI      ",      // II_VD
+    "AssignI       ",       // II_ASN
+    "ConstraintI   ",   // II_CON
+    "SolveI        ",        // II_SOL
+    "OutputI       ",       // II_OUT
+    "FunctionI     "      // II_FUN
+  };
+#endif
+  
   void
   GC::lock(void) {
     assert(gc());
@@ -348,11 +390,16 @@ namespace MiniZinc {
   GC::Heap::mark(void) {
 #if defined(MINIZINC_GC_STATS)
     std::cerr << "================= mark =================: ";
+    gc_stats.clear();
 #endif
 
     for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
-      if ((*e)() && (*e)()->_gc_mark==0)
+      if ((*e)() && (*e)()->_gc_mark==0) {
         Expression::mark((*e)());
+#if defined(MINIZINC_GC_STATS)
+        gc_stats[(*e)()->_id].keepalive++;
+#endif
+      }
     }
 #if defined(MINIZINC_GC_STATS)
     std::cerr << "+";
@@ -373,6 +420,9 @@ namespace MiniZinc {
             break;
           case Item::II_VD:
             Expression::mark(i->cast<VarDeclI>()->e());
+#if defined(MINIZINC_GC_STATS)
+            gc_stats[i->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
+#endif
             break;
           case Item::II_ASN:
             i->cast<AssignI>()->id().mark();
@@ -381,6 +431,9 @@ namespace MiniZinc {
             break;
           case Item::II_CON:
             Expression::mark(i->cast<ConstraintI>()->e());
+#if defined(MINIZINC_GC_STATS)
+            gc_stats[i->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
+#endif
             break;
           case Item::II_SOL:
             {
@@ -435,39 +488,7 @@ namespace MiniZinc {
   void
   GC::Heap::sweep(void) {
 #if defined(MINIZINC_GC_STATS)
-    static const char* _nodeid[Item::II_END+1] = {
-      "FreeList      ", // NID_FL
-      "Chunk         ", // NID_CHUNK
-      "Vec           ", // NID_VEC
-      "IntLit        ",        // E_INTLIT
-      "FloatLit      ",      // E_FLOATLIT
-      "SetLit        ",        // E_SETLIT
-      "BoolLit       ",       // E_BOOLLIT
-      "StringLit     ",     // E_STRINGLIT
-      "Id            ",            // E_ID
-      "AnonVar       ",       // E_ANON
-      "ArrayLit      ",      // E_ARRAYLIT
-      "ArrayAccess   ",   // E_ARRAYACCESS
-      "Comprehension ", // E_COMP
-      "ITE           ",           // E_ITE
-      "BinOp         ",         // E_BINOP
-      "UnOp          ",          // E_UNOP
-      "Call          ",          // E_CALL
-      "VarDecl       ",       // E_VARDECL
-      "Let           ",           // E_LET
-      "TypeInst      ",      // E_TI
-      "TIId          ",          // E_TIID
-      "IncludeI      ",      // II_INC
-      "VarDeclI      ",      // II_VD
-      "AssignI       ",       // II_ASN
-      "ConstraintI   ",   // II_CON
-      "SolveI        ",        // II_SOL
-      "OutputI       ",       // II_OUT
-      "FunctionI     "      // II_FUN
-    };
-    
     std::cerr << "=============== GC sweep =============\n";
-    std::map<int,std::pair<int,int> > gc_stats;
 #endif
     HeapPage* p = _page;
     HeapPage* prev = NULL;
@@ -479,7 +500,7 @@ namespace MiniZinc {
         size_t ns = nodesize(n);
         assert(ns != 0);
 #if defined(MINIZINC_GC_STATS)
-        std::pair<int,int>& stats = gc_stats[n->_id];
+        GCStat& stats = gc_stats[n->_id];
         stats.first++;
 #endif
         if (n->_gc_mark==0) {
@@ -537,7 +558,9 @@ namespace MiniZinc {
     }
 #if defined(MINIZINC_GC_STATS)
     for (auto stat: gc_stats) {
-      std::cerr << _nodeid[stat.first] << ":\t" << stat.second.first << " / " << stat.second.second << std::endl;
+      std::cerr << _nodeid[stat.first] << ":\t" << stat.second.first << " / " << stat.second.second
+      << " / " << stat.second.keepalive << " / " << stat.second.inmodel
+      << std::endl;
     }
 #endif
   }
