@@ -689,6 +689,9 @@ namespace MiniZinc {
         throw EvalError(al->v()[i]->loc(), "expression is not fixed");
     }
     ArrayLit* ret = new ArrayLit(Location(), fixed);
+    Type tt = al->type();
+    tt._ti = Type::TI_PAR;
+    ret->type(tt);
     return ret;
   }
 
