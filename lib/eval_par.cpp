@@ -1140,6 +1140,9 @@ namespace MiniZinc {
         }
       }
       if (Id* id = aa.v()->dyn_cast<Id>()) {
+        while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
+          id = id->decl()->e()->cast<Id>();
+        }
         if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
           bool success;
           Expression* e = eval_arrayaccess(&aa, success);
@@ -1400,6 +1403,9 @@ namespace MiniZinc {
         }
       }
       if (Id* id = aa.v()->dyn_cast<Id>()) {
+        while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
+          id = id->decl()->e()->cast<Id>();
+        }
         if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
           bool success;
           Expression* e = eval_arrayaccess(&aa, success);
