@@ -254,15 +254,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        /// TODO: fix for recursion
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(ce->args()[i]);
-        }
-        ArrayLit* ret = copy(eval_array_lit(ce->decl()->e()),true)->cast<ArrayLit>();
-        for (unsigned int i=ce->decl()->params().size(); i--;) {
-          ce->decl()->params()[i]->e(NULL);
-        }
-        return ret;
+        return eval_call<EvalArrayLit>(ce);
       }
     case Expression::E_LET:
       {
