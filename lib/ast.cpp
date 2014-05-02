@@ -727,7 +727,6 @@ namespace MiniZinc {
         const Id* id0 = e0->cast<Id>();
         const Id* id1 = e1->cast<Id>();
         if (id0->decl()==NULL || id1->decl()==NULL) {
-          assert(id0->type().isann());
           return id0->v()==id1->v();
         }
         return id0->decl()==id1->decl() ||
