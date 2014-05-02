@@ -123,6 +123,9 @@ namespace MiniZinc {
     bool operator ==(const ExpressionSetIter& i) const {
       return (_empty && i._empty) || static_cast<const Iter&>(*this)==static_cast<const Iter&>(i);
     }
+    bool operator !=(const ExpressionSetIter& i) const {
+      return !operator ==(i);
+    }
   };
 
   /// Hash set for expressions
