@@ -1942,6 +1942,10 @@ namespace MiniZinc {
                   new VarDecl(vd->loc(),eval_typeinst(env,vd),
                               env.genId("tl_"+vd->id()->v().str()),vd->e());
                   nvd->introduced(true);
+                  for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
+                    EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
+                    nvd->addAnnotation(ee_ann.r());
+                  }
                   
                   VarDeclI* ni = new VarDeclI(Location(),nvd);
                   env.flat_addItem(ni);
@@ -3262,6 +3266,10 @@ namespace MiniZinc {
               nvd->introduced(true);
               nvd->flat(nvd);
               nvd->type(vd->type());
+              for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
+                EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
+                nvd->addAnnotation(ee_ann.r());
+              }
               VarDeclI* nv = new VarDeclI(Location(),nvd);
               env.flat_addItem(nv);
               let_e = nvd->id();
