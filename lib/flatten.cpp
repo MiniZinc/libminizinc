@@ -2814,11 +2814,11 @@ namespace MiniZinc {
     case Expression::E_CALL:
       {
         Call* c = e->cast<Call>();
-        if (c->decl() == NULL) {
+        FunctionI* decl = env.orig->matchFn(c);
+        if (decl == NULL) {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
         }
-        FunctionI* decl = env.orig->matchFn(c);
 
         Ctx nctx = ctx;
         nctx.neg = false;
