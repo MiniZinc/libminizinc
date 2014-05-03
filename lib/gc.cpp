@@ -82,7 +82,8 @@ namespace MiniZinc {
       int second;
       int keepalive;
       int inmodel;
-      GCStat(void) : first(0), second(0), keepalive(0), inmodel(0) {}
+      size_t total;
+      GCStat(void) : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
     };
     std::map<int,GCStat> gc_stats;
 #endif
@@ -502,6 +503,7 @@ namespace MiniZinc {
 #if defined(MINIZINC_GC_STATS)
         GCStat& stats = gc_stats[n->_id];
         stats.first++;
+        stats.total += ns;
 #endif
         if (n->_gc_mark==0) {
           switch (n->_id) {
@@ -559,8 +561,17 @@ namespace MiniZinc {
 #if defined(MINIZINC_GC_STATS)
     for (auto stat: gc_stats) {
       std::cerr << _nodeid[stat.first] << ":\t" << stat.second.first << " / " << stat.second.second
-      << " / " << stat.second.keepalive << " / " << stat.second.inmodel
-      << std::endl;
+      << " / " << stat.second.keepalive << " / " << stat.second.inmodel << " / ";
+      if (stat.second.total > 1024) {
+        if (stat.second.total > 1024*1024) {
+          std::cerr << (stat.second.total / 1024 / 1024) << "M";
+        } else {
+          std::cerr << (stat.second.total / 1024) << "K";
+        }
+      } else {
+        std::cerr << (stat.second.total);
+      }
+      std::cerr << std::endl;
     }
 #endif
   }
