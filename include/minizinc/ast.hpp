@@ -74,13 +74,19 @@ namespace MiniZinc {
   
   inline
   Id::Id(const Location& loc, const std::string& v, VarDecl* decl)
-  : Expression(loc,E_ID,Type()), _v(ASTString(v)), _decl(decl) {
+  : Expression(loc,E_ID,Type()), _v(ASTString(v)), _idn(-1), _decl(decl) {
     rehash();
   }
 
   inline
   Id::Id(const Location& loc, const ASTString& v, VarDecl* decl)
-  : Expression(loc,E_ID,Type()), _v(v), _decl(decl) {
+  : Expression(loc,E_ID,Type()), _v(v), _idn(-1), _decl(decl) {
+    rehash();
+  }
+
+  inline
+  Id::Id(const Location& loc, long long int idn, VarDecl* decl)
+  : Expression(loc,E_ID,Type()), _idn(idn), _decl(decl) {
     rehash();
   }
 
@@ -267,6 +273,21 @@ namespace MiniZinc {
   : Expression(loc,E_VARDECL,ti ? ti->type() : Type()),
     _id(NULL), _flat(NULL) {
     _id = new Id(loc,id,this);
+    _flag_1 = true;
+    _flag_2 = false;
+    _ti = ti;
+    _e = e;
+    _id->type(type());
+    _payload = 0;
+    rehash();
+  }
+
+  inline
+  VarDecl::VarDecl(const Location& loc,
+                   TypeInst* ti, long long int idn, Expression* e)
+  : Expression(loc,E_VARDECL,ti ? ti->type() : Type()),
+  _id(NULL), _flat(NULL) {
+    _id = new Id(loc,idn,this);
     _flag_1 = true;
     _flag_2 = false;
     _ti = ti;

@@ -184,7 +184,11 @@ namespace MiniZinc {
   void
   Id::rehash(void) {
     init_hash();
-    cmb_hash(_v.hash());
+    std::hash<long long int> h;
+    if (_idn==-1)
+      cmb_hash(_v.hash());
+    else
+      cmb_hash(h(_idn));
   }
 
   void
@@ -727,7 +731,7 @@ namespace MiniZinc {
         const Id* id0 = e0->cast<Id>();
         const Id* id1 = e1->cast<Id>();
         if (id0->decl()==NULL || id1->decl()==NULL) {
-          return id0->v()==id1->v();
+          return id0->v()==id1->v() && id0->idn()==id1->idn();
         }
         return id0->decl()==id1->decl() ||
           ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
@@ -823,7 +827,7 @@ namespace MiniZinc {
         const VarDecl* v0 = e0->cast<VarDecl>();
         const VarDecl* v1 = e1->cast<VarDecl>();
         if (!Expression::equal ( v0->ti(), v1->ti() )) return false;
-        if (v0->id() != v1->id()) return false;
+        if (!Expression::equal ( v0->id(), v1->id())) return false;
         if (!Expression::equal ( v0->e(), v1->e() )) return false;
         return true;
       }
@@ -889,6 +893,8 @@ namespace MiniZinc {
     ids.bool_eq = ASTString("bool_eq");
     ids.set_eq = ASTString("set_eq");
     ids.float_eq = ASTString("float_eq");
+    
+    ids.introduced_var = ASTString("__INTRODUCED");
 
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -939,6 +945,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_eq));
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
+    v.push_back(new StringLit(Location(),ids.introduced_var));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);

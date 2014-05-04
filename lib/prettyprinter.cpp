@@ -468,7 +468,9 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
-          if (vd.id()->v() != "_")
+          if (vd.id()->idn() != -1) {
+            os << ": X_INTRODUCED_" << vd.id()->idn();
+          } else if (vd.id()->v() != "_")
             os << ": " << vd.id()->v();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
@@ -1048,7 +1050,13 @@ namespace MiniZinc {
 
     }
     ret mapId(const Id& id) {
-      return new StringDocument(id.v().str());
+      if (id.idn()==-1)
+        return new StringDocument(id.v().str());
+      else {
+        std::ostringstream oss;
+        oss << "X_INTRODUCED_" << id.idn();
+        return new StringDocument(oss.str());
+      }
     }
     ret mapTIId(const TIId& id) {
       return new StringDocument("$"+id.v().str());
@@ -1376,7 +1384,14 @@ namespace MiniZinc {
       DocumentList* dl = new DocumentList("", "", "");
       dl->addDocumentToList(expressionToDocument(vd.ti()));
       dl->addStringToList(": ");
-      dl->addStringToList(vd.id()->v().str());
+      if (vd.id()->idn()==-1) {
+        dl->addStringToList(vd.id()->v().str());
+      } else {
+        std::ostringstream oss;
+        oss << "X_INTRODUCED_" << vd.id()->idn();
+        dl->addStringToList(oss.str());
+      }
+        
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }

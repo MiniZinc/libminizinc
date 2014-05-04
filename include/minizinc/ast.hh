@@ -339,6 +339,8 @@ namespace MiniZinc {
   protected:
     /// The string identifier
     ASTString _v;
+    /// The identifier number (for introduced identifiers)
+    long long int _idn;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
   public:
@@ -348,10 +350,16 @@ namespace MiniZinc {
     Id(const Location& loc, const std::string& v, VarDecl* decl);
     /// Constructor (\a decl may be NULL)
     Id(const Location& loc, const ASTString& v, VarDecl* decl);
+    /// Constructor (\a decl may be NULL)
+    Id(const Location& loc, long long int idn, VarDecl* decl);
     /// Access identifier
     ASTString v(void) const { return _v; }
     /// Set identifier
     void v(const ASTString& val) { _v = val; }
+    /// Access identifier number
+    long long int idn(void) const { return _idn; }
+    /// Set identifier number
+    void idn(long long int n) { _idn = n; }
     /// Access declaration
     VarDecl* decl(void) const { return _decl; }
     /// Set declaration
@@ -707,6 +715,9 @@ namespace MiniZinc {
     /// Constructor
     VarDecl(const Location& loc,
             TypeInst* ti, const ASTString& id, Expression* e=NULL);
+    /// Constructor
+    VarDecl(const Location& loc,
+            TypeInst* ti, long long int idn, Expression* e=NULL);
 
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }
@@ -1159,6 +1170,8 @@ namespace MiniZinc {
         ASTString bool_eq;
         ASTString set_eq;
         ASTString float_eq;
+        
+        ASTString introduced_var;
       } ids;
     
       /// Identifiers for Boolean contexts

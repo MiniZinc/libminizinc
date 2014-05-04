@@ -195,14 +195,19 @@ namespace MiniZinc {
             return copy(m,cur,false);
           }
         } else {
-          ASTString id_v;
-          if (ASTStringO* cs = m.find(id->v())) {
-            id_v = ASTString(cs);
+          Id* c;
+          if (id->idn()==-1) {
+            c = new Id(copy_location(m,e),id->idn(),NULL);
           } else {
-            id_v = ASTString(id->v().str());
-            m.insert(id->v(),id_v);
+            ASTString id_v;
+            if (ASTStringO* cs = m.find(id->v())) {
+              id_v = ASTString(cs);
+            } else {
+              id_v = ASTString(id->v().str());
+              m.insert(id->v(),id_v);
+            }
+            c = new Id(copy_location(m,e),id_v,NULL);
           }
-          Id* c = new Id(copy_location(m,e),id_v,NULL);
           m.insert(e,c);
           c->decl(static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
           ret = c;

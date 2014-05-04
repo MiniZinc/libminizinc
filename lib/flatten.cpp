@@ -198,6 +198,9 @@ namespace MiniZinc {
       std::ostringstream oss; oss << varPrefix << s << "_" << ids++;
       return ASTString(oss.str());
     }
+    long long int genId(void) {
+      return ids++;
+    }
     void map_insert(Expression* e, const EE& ee) {
       KeepAlive ka(e);
       map.insert(ka,WW(ee.r(),ee.b()));
@@ -575,7 +578,7 @@ namespace MiniZinc {
             GCLock lock;
             /// TODO: handle array types
             TypeInst* ti = new TypeInst(Location(),e->type());
-            VarDecl* vd = new VarDecl(e->loc(),ti,env.genId("X"),e);
+            VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),e);
             vd->introduced(true);
             vd->flat(vd);
 
@@ -1405,7 +1408,7 @@ namespace MiniZinc {
       }
       TypeInst* ti = new TypeInst(Location(),ite->type(),r_bounds);
       
-      VarDecl* r = new VarDecl(ite->loc(),ti,env.genId("r_ite"));
+      VarDecl* r = new VarDecl(ite->loc(),ti,env.genId());
       BinOp* eq_then = new BinOp(Location(),r->id(),BOT_EQ,ite->e_then(i));
       eq_then->type(Type::varbool());
       BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
@@ -1782,7 +1785,7 @@ namespace MiniZinc {
           ASTExprVec<TypeInst> ranges_v(ranges);
           assert(!al->type().isbot());
           TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,NULL);
-          VarDecl* vd = new VarDecl(e->loc(),ti,env.genId("a"),al);
+          VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),al);
           vd->introduced(true);
           vd->flat(vd);
           VarDeclI* ni = new VarDeclI(Location(),vd);
@@ -1911,8 +1914,7 @@ namespace MiniZinc {
             
             std::vector<Expression*> elems(asize.toInt());
             for (int i=0; i<asize; i++) {
-              ASTString nid = env.genId("fresh_"+vd->id()->v().str());
-              VarDecl* nvd = new VarDecl(vd->loc(),vti,nid);
+              VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
               nvd->introduced(vd->introduced());
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
               Id* id = root_vd.r()->cast<Id>();
@@ -1939,8 +1941,7 @@ namespace MiniZinc {
                   rete = vdea;
                 } else {
                   VarDecl* nvd =
-                  new VarDecl(vd->loc(),eval_typeinst(env,vd),
-                              env.genId("tl_"+vd->id()->v().str()),vd->e());
+                  new VarDecl(vd->loc(),eval_typeinst(env,vd),env.genId(),vd->e());
                   nvd->introduced(true);
                   for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
                     EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
@@ -1979,7 +1980,7 @@ namespace MiniZinc {
         }
         GCLock lock;
         VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), av->type()),
-                                  env.genId("Anon"));
+                                  env.genId());
         ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
       }
       break;
@@ -3049,7 +3050,7 @@ namespace MiniZinc {
               GCLock lock;
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
-                VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId("reif"));
+                VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId());
                 nvd->type(Type::varbool());
                 nvd->introduced(true);
                 (void) flat_exp(env, Ctx(), nvd, NULL, constants().var_true);
@@ -3260,8 +3261,7 @@ namespace MiniZinc {
                   "free variable in non-positive context");
               GCLock lock;
               TypeInst* ti = eval_typeinst(env,vd);
-              VarDecl* nvd = new VarDecl(vd->loc(),ti,
-                                         env.genId("FromLet_"+vd->id()->v().str()));
+              VarDecl* nvd = new VarDecl(vd->loc(),ti,env.genId());
               nvd->toplevel(true);
               nvd->introduced(true);
               nvd->flat(nvd);
