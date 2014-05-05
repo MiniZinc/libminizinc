@@ -2169,7 +2169,7 @@ namespace MiniZinc {
           keepAlive->decl(constants().var_redef);
           (void) flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
           
-          env.reverseMappers.insert(std::pair<ASTString, KeepAlive>(ee.r()->cast<Id>()->v(),revMap));
+          env.reverseMappers.insert(std::pair<ASTString, KeepAlive>(ee.r()->cast<Id>()->str(),revMap));
           
           break;
         }
@@ -3426,7 +3426,7 @@ namespace MiniZinc {
           id.decl(nvi->e());
           
           ASTStringMap<KeepAlive>::t::iterator it;
-          if ( (it = env.reverseMappers.find(nvi->e()->id()->v())) != env.reverseMappers.end()) {
+          if ( (it = env.reverseMappers.find(nvi->e()->id()->str())) != env.reverseMappers.end()) {
             Call* rhs = copy(env.cmap,it->second())->cast<Call>();
             {
               std::vector<Type> tv(rhs->args().size());
@@ -3501,7 +3501,7 @@ namespace MiniZinc {
                 Expression* flate = follow_id(reallyFlat->id());
                 outputVarDecls(e,flate);
                 vd->e(flate);
-              } else if ( (it = e.reverseMappers.find(vd->id()->v())) != e.reverseMappers.end()) {
+              } else if ( (it = e.reverseMappers.find(vd->id()->str())) != e.reverseMappers.end()) {
                 Call* rhs = copy(e.cmap,it->second())->cast<Call>();
                 std::vector<Type> tv(rhs->args().size());
                 for (unsigned int i=rhs->args().size(); i--;) {
@@ -3623,7 +3623,7 @@ namespace MiniZinc {
                 Expression* flate = follow_id(reallyFlat->id());
                 outputVarDecls(env,flate);
                 vd->e(flate);
-              } else if ( (it = env.reverseMappers.find(vd->id()->v())) != env.reverseMappers.end()) {
+              } else if ( (it = env.reverseMappers.find(vd->id()->str())) != env.reverseMappers.end()) {
                 Call* rhs = copy(env.cmap,it->second())->cast<Call>();
                 {
                   std::vector<Type> tv(rhs->args().size());
@@ -4039,7 +4039,7 @@ namespace MiniZinc {
         ASTStringMap<KeepAlive>::t::iterator it;
         if (!vdi->e()->type().ispar() &&
             vdi->e()->e()==NULL &&
-            (it = env.reverseMappers.find(vdi->e()->id()->v())) != env.reverseMappers.end()) {
+            (it = env.reverseMappers.find(vdi->e()->id()->str())) != env.reverseMappers.end()) {
           GCLock lock;
           Call* rhs = copy(env.cmap,it->second())->cast<Call>();
           std::vector<Type> tv(rhs->args().size());

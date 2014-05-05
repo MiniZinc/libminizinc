@@ -191,6 +191,15 @@ namespace MiniZinc {
       cmb_hash(h(_idn));
   }
 
+  ASTString
+  Id::str() const {
+    if (idn()==-1)
+      return _v;
+    std::ostringstream oss;
+    oss << "X_INTRODUCED" << _idn;
+    return oss.str();
+  }
+  
   void
   TIId::rehash(void) {
     init_hash();

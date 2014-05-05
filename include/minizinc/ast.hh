@@ -360,6 +360,8 @@ namespace MiniZinc {
     long long int idn(void) const { return _idn; }
     /// Set identifier number
     void idn(long long int n) { _idn = n; }
+    /// Return identifier or X_INTRODUCED plus identifier nunber
+    ASTString str(void) const;
     /// Access declaration
     VarDecl* decl(void) const { return _decl; }
     /// Set declaration
