@@ -1020,12 +1020,6 @@ namespace MiniZinc {
     }
   }
   
-  Call* same_call(Expression* e, const std::string& id) {
-    Expression* ce = follow_id(e);
-    if (ce && ce->isa<Call>() && ce->cast<Call>()->id().str() == id)
-      return ce->cast<Call>();
-    return NULL;
-  }
   Call* same_call(Expression* e, const ASTString& id) {
     Expression* ce = follow_id(e);
     if (ce && ce->isa<Call>() && ce->cast<Call>()->id() == id)
