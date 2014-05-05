@@ -1834,8 +1834,10 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            std::vector<ASTString> gen_id(1);
-            gen_id[0] = env.genId(id->v().str()+"_idx");
+            std::vector<VarDecl*> gen_id(1);
+            gen_id[0] = new VarDecl(id->loc(), new TypeInst(id->loc(),Type::parint()),env.genId(),
+                                    new IntLit(id->loc(),0));
+            
             /// TODO: support arbitrary dimensions
             std::vector<Expression*> idxsetargs(1);
             idxsetargs[0] = id;
