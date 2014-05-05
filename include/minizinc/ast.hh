@@ -718,6 +718,9 @@ namespace MiniZinc {
     /// Constructor
     VarDecl(const Location& loc,
             TypeInst* ti, long long int idn, Expression* e=NULL);
+    /// Constructor
+    VarDecl(const Location& loc,
+            TypeInst* ti, Id* id, Expression* e=NULL);
 
     /// Access TypeInst
     TypeInst* ti(void) const { return _ti; }

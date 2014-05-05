@@ -1128,7 +1128,7 @@ namespace MiniZinc {
           ndomain = IntSetVal::ai(d);
         }
           break;
-        default: assert(false);
+        default: assert(false); return NULL;
       }
       return ndomain;
     }
@@ -1941,7 +1941,8 @@ namespace MiniZinc {
                   rete = vdea;
                 } else {
                   VarDecl* nvd =
-                  new VarDecl(vd->loc(),eval_typeinst(env,vd),env.genId(),vd->e());
+                  new VarDecl(vd->loc(),eval_typeinst(env,vd),
+                              env.genId(),vd->e());
                   nvd->introduced(true);
                   for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
                     EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
@@ -3053,8 +3054,10 @@ namespace MiniZinc {
                 VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId());
                 nvd->type(Type::varbool());
                 nvd->introduced(true);
-                (void) flat_exp(env, Ctx(), nvd, NULL, constants().var_true);
-                reif_b = nvd->flat();
+                nvd->flat(nvd);
+                VarDeclI* nv = new VarDeclI(Location(),nvd);
+                env.flat_addItem(nv);
+                reif_b = nvd;
               }
               args.push_back(reif_b->id());
               Call* cr_real = new Call(Location(),cid.str()+"_reif",toExpVec(args));
@@ -3154,9 +3157,7 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = new VarDecl(v->loc(),
-                                    eval_typeinst(env,v),
-                                    v->id()->v().str());
+          VarDecl* vd = new VarDecl(v->loc(), eval_typeinst(env,v), v->id());
           vd->introduced(v->introduced());
           vd->flat(vd);
           v->flat(vd);

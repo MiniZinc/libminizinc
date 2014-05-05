@@ -312,6 +312,24 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline
+  VarDecl::VarDecl(const Location& loc,
+                   TypeInst* ti, Id* id, Expression* e)
+  : Expression(loc,E_VARDECL,ti->type()),
+  _id(NULL), _flat(NULL) {
+    if (id->idn()==-1)
+      _id = new Id(loc,id->v(),this);
+    else
+      _id = new Id(loc,id->idn(),this);
+    _flag_1 = true;
+    _flag_2 = false;
+    _ti = ti;
+    _e = e;
+    _id->type(type());
+    _payload = 0;
+    rehash();
+  }
+
   inline Expression*
   VarDecl::e(void) const {
     return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~ static_cast<ptrdiff_t>(1));
