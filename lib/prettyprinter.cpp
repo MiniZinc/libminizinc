@@ -225,7 +225,14 @@ namespace MiniZinc {
         os << "\"" << escapeStringLit(e->cast<StringLit>()->v()) << "\"";
         break;
       case Expression::E_ID:
-        os << e->cast<Id>()->v();
+        {
+          const Id* id = e->cast<Id>();
+          if (id->idn() == -1) {
+            os << id->v();
+          } else {
+            os << "X_INTRODUCED_" << id->idn();
+          }
+        }
         break;
       case Expression::E_TIID:
         os << "$" << e->cast<TIId>()->v();
