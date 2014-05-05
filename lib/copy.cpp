@@ -196,7 +196,7 @@ namespace MiniZinc {
           }
         } else {
           Id* c;
-          if (id->idn()==-1) {
+          if (id->idn()!=-1) {
             c = new Id(copy_location(m,e),id->idn(),NULL);
           } else {
             ASTString id_v;
