@@ -3063,6 +3063,8 @@ namespace MiniZinc {
                 cr_real->decl(decl_real);
                 bool ignorePartial = env.ignorePartial;
                 env.ignorePartial = true;
+                reif_b->addAnnotation(constants().ann.is_defined_var);
+                cr_real->addAnnotation(definesVarAnn(reif_b->id()));
                 flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
                 env.ignorePartial = ignorePartial;
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -3963,6 +3965,8 @@ namespace MiniZinc {
                 CollectDecls cd(env.vo,deletedVarDecls,vdi);
                 topDown(cd,c);
                 vd->e(NULL);
+                vd->addAnnotation(constants().ann.is_defined_var);
+                nc->addAnnotation(definesVarAnn(vd->id()));
                 (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               }
             }
