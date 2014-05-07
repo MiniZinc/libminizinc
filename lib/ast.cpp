@@ -954,6 +954,7 @@ namespace MiniZinc {
     ids.float_reif.ne = ASTString("float_ne_reif");
 
     ids.bool_eq = ASTString("bool_eq");
+    ids.bool_eq_reif = ASTString("bool_eq_reif");
     ids.bool_clause = ASTString("bool_clause");
     ids.bool_clause_reif = ASTString("bool_clause_reif");
     ids.array_bool_or = ASTString("array_bool_or");
