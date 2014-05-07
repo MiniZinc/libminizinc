@@ -223,6 +223,7 @@ namespace MiniZinc {
       MZN_FILL_REIFY_MAP(float_,ne);
       reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.forall,constants().ids.forall_reif));
       reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
+      reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
     }
     ~EnvI(void) {
       delete _flat;
@@ -843,9 +844,9 @@ namespace MiniZinc {
                 args.push_back(vd->id());
 
                 if (c->id() == constants().ids.exists) {
-                  c->id(ASTString("array_bool_or"));
+                  c->id(constants().ids.array_bool_or);
                 } else if (c->id() == constants().ids.forall) {
-                  c->id(ASTString("array_bool_and"));
+                  c->id(constants().ids.array_bool_and);
                 } else if (vd->type().isbool()) {
                   c->id(env.reifyId(c->id()));
                 }
@@ -4219,18 +4220,18 @@ namespace MiniZinc {
             vd->ti()->domain(NULL);
             if (ve != NULL) {
               if (Call* vcc = ve->dyn_cast<Call>()) {
-                std::string cid;
+                ASTString cid;
                 std::vector<Expression*> args;
                 if (vcc->id() == constants().ids.exists) {
-                  cid = "array_bool_or";
+                  cid = constants().ids.array_bool_or;
                   args.push_back(vcc->args()[0]);
                   args.push_back(constants().lit_true);
                 } else if (vcc->id() == constants().ids.forall) {
-                  cid = "array_bool_and";
+                  cid = constants().ids.array_bool_and;
                   args.push_back(vcc->args()[0]);
                   args.push_back(constants().lit_true);
                 } else if (vcc->id() == constants().ids.clause) {
-                  cid = "bool_clause";
+                  cid = constants().ids.bool_clause;
                   args.push_back(vcc->args()[0]);
                   args.push_back(vcc->args()[1]);
                 }
@@ -4260,11 +4261,11 @@ namespace MiniZinc {
                 vd->addAnnotation(constants().ann.is_defined_var);
                 ASTString cid;
                 if (c->id() == constants().ids.exists) {
-                  cid = ASTString("array_bool_or");
+                  cid = constants().ids.array_bool_or;
                 } else if (c->id() == constants().ids.forall) {
-                  cid = ASTString("array_bool_and");
+                  cid = constants().ids.array_bool_and;
                 } else if (c->id() == constants().ids.clause) {
-                  cid = ASTString("bool_clause_reif");
+                  cid = constants().ids.bool_clause_reif;
                 } else {
                   cid = e.envi().reifyId(c->id());
                 }

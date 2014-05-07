@@ -1245,6 +1245,10 @@ namespace MiniZinc {
 
         ASTString bool_eq;
         ASTString bool_eq_reif;
+        ASTString array_bool_or;
+        ASTString array_bool_and;
+        ASTString bool_clause;
+        ASTString bool_clause_reif;
         ASTString set_eq;
         ASTString set_in;
         ASTString set_card;
