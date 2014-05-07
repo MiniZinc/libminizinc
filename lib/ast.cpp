@@ -1064,6 +1064,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_reif.ne));
 
     v.push_back(new StringLit(Location(),ids.bool_eq));
+    v.push_back(new StringLit(Location(),ids.bool_eq_reif));
     v.push_back(new StringLit(Location(),ids.bool_clause));
     v.push_back(new StringLit(Location(),ids.bool_clause_reif));
     v.push_back(new StringLit(Location(),ids.array_bool_or));
