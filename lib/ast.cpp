@@ -960,7 +960,7 @@ namespace MiniZinc {
     ids.array_bool_and = ASTString("array_bool_and");
     ids.set_eq = ASTString("set_eq");
     ids.set_in = ASTString("set_in");
-    ids.set_in = ASTString("set_card");
+    ids.set_card = ASTString("set_card");
     
     ids.introduced_var = ASTString("__INTRODUCED");
 
