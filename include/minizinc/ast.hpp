@@ -73,20 +73,23 @@ namespace MiniZinc {
   }
   
   inline
-  Id::Id(const Location& loc, const std::string& v, VarDecl* decl)
-  : Expression(loc,E_ID,Type()), _v(ASTString(v)), _idn(-1), _decl(decl) {
+  Id::Id(const Location& loc, const std::string& v0, VarDecl* decl)
+  : Expression(loc,E_ID,Type()), _decl(decl) {
+    v(v0);
     rehash();
   }
 
   inline
-  Id::Id(const Location& loc, const ASTString& v, VarDecl* decl)
-  : Expression(loc,E_ID,Type()), _v(v), _idn(-1), _decl(decl) {
+  Id::Id(const Location& loc, const ASTString& v0, VarDecl* decl)
+  : Expression(loc,E_ID,Type()), _decl(decl) {
+    v(v0);
     rehash();
   }
 
   inline
-  Id::Id(const Location& loc, long long int idn, VarDecl* decl)
-  : Expression(loc,E_ID,Type()), _idn(idn), _decl(decl) {
+  Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
+  : Expression(loc,E_ID,Type()), _decl(decl) {
+    idn(idn0);
     rehash();
   }
 

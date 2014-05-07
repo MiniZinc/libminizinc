@@ -338,9 +338,7 @@ namespace MiniZinc {
   class Id : public Expression {
   protected:
     /// The string identifier
-    ASTString _v;
-    /// The identifier number (for introduced identifiers)
-    long long int _idn;
+    void* _v_or_idn;
     /// The declaration corresponding to this identifier (may be NULL)
     VarDecl* _decl;
   public:
@@ -353,13 +351,25 @@ namespace MiniZinc {
     /// Constructor (\a decl may be NULL)
     Id(const Location& loc, long long int idn, VarDecl* decl);
     /// Access identifier
-    ASTString v(void) const { return _v; }
+    ASTString v(void) const {
+      assert((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0);
+      return ASTString(reinterpret_cast<ASTStringO*>(_v_or_idn));
+    }
     /// Set identifier
-    void v(const ASTString& val) { _v = val; }
+    void v(const ASTString& val) {
+      _v_or_idn = val.aststr();
+    }
     /// Access identifier number
-    long long int idn(void) const { return _idn; }
+    long long int idn(void) const {
+      if ((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0)
+        return -1;
+      long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn) & ~static_cast<ptrdiff_t>(1);
+      return i >> 1;
+    }
     /// Set identifier number
-    void idn(long long int n) { _idn = n; }
+    void idn(long long int n) {
+      _v_or_idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
+    }
     /// Return identifier or X_INTRODUCED plus identifier nunber
     ASTString str(void) const;
     /// Access declaration

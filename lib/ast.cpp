@@ -77,7 +77,8 @@ namespace MiniZinc {
           cur->cast<StringLit>()->v().mark();
           break;
         case Expression::E_ID:
-          cur->cast<Id>()->v().mark();
+          if (cur->cast<Id>()->idn()==-1)
+            cur->cast<Id>()->v().mark();
           pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
@@ -185,18 +186,18 @@ namespace MiniZinc {
   Id::rehash(void) {
     init_hash();
     std::hash<long long int> h;
-    if (_idn==-1)
-      cmb_hash(_v.hash());
+    if (idn()==-1)
+      cmb_hash(v().hash());
     else
-      cmb_hash(h(_idn));
+      cmb_hash(h(idn()));
   }
 
   ASTString
   Id::str() const {
     if (idn()==-1)
-      return _v;
+      return v();
     std::ostringstream oss;
-    oss << "X_INTRODUCED" << _idn;
+    oss << "X_INTRODUCED" << idn();
     return oss.str();
   }
   
