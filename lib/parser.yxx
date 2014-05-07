@@ -677,7 +677,7 @@ ti_expr_and_id_or_anon :
       ti_expr_and_id
       { $$=$1; }
     | ti_expr
-      { $$=new VarDecl(@$, $1, "_"); }
+      { $$=new VarDecl(@$, $1, ""); }
     
 ti_expr_and_id :
       ti_expr ':' MZN_IDENTIFIER

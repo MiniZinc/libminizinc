@@ -1153,6 +1153,7 @@ namespace MiniZinc {
       /// Identifiers for builtins
       struct {
         ASTString forall;
+        ASTString forall_reif;
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
@@ -1161,20 +1162,82 @@ namespace MiniZinc {
 
         ASTString sum;
         ASTString lin_exp;
-        ASTString int_lin_eq;
-        ASTString int_lin_le;
-        ASTString int_lin_ne;
 
-        ASTString float_lin_eq;
-        ASTString float_lin_le;
-        ASTString float_lin_lt;
-        ASTString float_lin_ne;
+        struct {
+          ASTString lin_eq;
+          ASTString lin_le;
+          ASTString lin_ne;
+          ASTString plus;
+          ASTString minus;
+          ASTString times;
+          ASTString div;
+          ASTString mod;
+          ASTString lt;
+          ASTString le;
+          ASTString gt;
+          ASTString ge;
+          ASTString eq;
+          ASTString ne;
+        } int_;
 
-        ASTString int_eq;
-        ASTString int_ne;
+        struct {
+          ASTString lin_eq;
+          ASTString lin_le;
+          ASTString lin_ne;
+          ASTString plus;
+          ASTString minus;
+          ASTString times;
+          ASTString div;
+          ASTString mod;
+          ASTString lt;
+          ASTString le;
+          ASTString gt;
+          ASTString ge;
+          ASTString eq;
+          ASTString ne;
+        } int_reif;
+
+        struct {
+          ASTString lin_eq;
+          ASTString lin_le;
+          ASTString lin_lt;
+          ASTString lin_ne;
+          ASTString plus;
+          ASTString minus;
+          ASTString times;
+          ASTString div;
+          ASTString mod;
+          ASTString lt;
+          ASTString le;
+          ASTString gt;
+          ASTString ge;
+          ASTString eq;
+          ASTString ne;
+        } float_;
+
+        struct {
+          ASTString lin_eq;
+          ASTString lin_le;
+          ASTString lin_lt;
+          ASTString lin_ne;
+          ASTString plus;
+          ASTString minus;
+          ASTString times;
+          ASTString div;
+          ASTString mod;
+          ASTString lt;
+          ASTString le;
+          ASTString gt;
+          ASTString ge;
+          ASTString eq;
+          ASTString ne;
+        } float_reif;
+
         ASTString bool_eq;
+        ASTString bool_eq_reif;
         ASTString set_eq;
-        ASTString float_eq;
+        ASTString set_in;
+        ASTString set_card;
         
         ASTString introduced_var;
       } ids;

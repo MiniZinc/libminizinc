@@ -880,6 +880,7 @@ namespace MiniZinc {
     var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
     
     ids.forall = ASTString("forall");
+    ids.forall_reif = ASTString("forall_reif");
     ids.exists = ASTString("exists");
     ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
@@ -888,20 +889,73 @@ namespace MiniZinc {
 
     ids.sum = ASTString("sum");
     ids.lin_exp = ASTString("lin_exp");
-    ids.int_lin_eq = ASTString("int_lin_eq");
-    ids.int_lin_le = ASTString("int_lin_le");
-    ids.int_lin_ne = ASTString("int_lin_ne");
+    
+    ids.int_.lin_eq = ASTString("int_lin_eq");
+    ids.int_.lin_le = ASTString("int_lin_le");
+    ids.int_.lin_ne = ASTString("int_lin_ne");
+    ids.int_.plus = ASTString("int_plus");
+    ids.int_.minus = ASTString("int_minus");
+    ids.int_.times = ASTString("int_times");
+    ids.int_.div = ASTString("int_div");
+    ids.int_.mod = ASTString("int_mod");
+    ids.int_.lt = ASTString("int_lt");
+    ids.int_.le = ASTString("int_le");
+    ids.int_.gt = ASTString("int_gt");
+    ids.int_.ge = ASTString("int_ge");
+    ids.int_.eq = ASTString("int_eq");
+    ids.int_.ne = ASTString("int_ne");
 
-    ids.float_lin_eq = ASTString("float_lin_eq");
-    ids.float_lin_le = ASTString("float_lin_le");
-    ids.float_lin_lt = ASTString("float_lin_lt");
-    ids.float_lin_ne = ASTString("float_lin_ne");
+    ids.int_reif.lin_eq = ASTString("int_lin_eq_reif");
+    ids.int_reif.lin_le = ASTString("int_lin_le_reif");
+    ids.int_reif.lin_ne = ASTString("int_lin_ne_reif");
+    ids.int_reif.plus = ASTString("int_plus_reif");
+    ids.int_reif.minus = ASTString("int_minus_reif");
+    ids.int_reif.times = ASTString("int_times_reif");
+    ids.int_reif.div = ASTString("int_div_reif");
+    ids.int_reif.mod = ASTString("int_mod_reif");
+    ids.int_reif.lt = ASTString("int_lt_reif");
+    ids.int_reif.le = ASTString("int_le_reif");
+    ids.int_reif.gt = ASTString("int_gt_reif");
+    ids.int_reif.ge = ASTString("int_ge_reif");
+    ids.int_reif.eq = ASTString("int_eq_reif");
+    ids.int_reif.ne = ASTString("int_ne_reif");
 
-    ids.int_eq = ASTString("int_eq");
-    ids.int_ne = ASTString("int_ne");
+    ids.float_.lin_eq = ASTString("float_lin_eq");
+    ids.float_.lin_le = ASTString("float_lin_le");
+    ids.float_.lin_lt = ASTString("float_lin_lt");
+    ids.float_.lin_ne = ASTString("float_lin_ne");
+    ids.float_.plus = ASTString("float_plus");
+    ids.float_.minus = ASTString("float_minus");
+    ids.float_.times = ASTString("float_times");
+    ids.float_.div = ASTString("float_div");
+    ids.float_.mod = ASTString("float_mod");
+    ids.float_.lt = ASTString("float_lt");
+    ids.float_.le = ASTString("float_le");
+    ids.float_.gt = ASTString("float_gt");
+    ids.float_.ge = ASTString("float_ge");
+    ids.float_.eq = ASTString("float_eq");
+    ids.float_.ne = ASTString("float_ne");
+
+    ids.float_reif.lin_eq = ASTString("float_lin_eq_reif");
+    ids.float_reif.lin_le = ASTString("float_lin_le_reif");
+    ids.float_reif.lin_lt = ASTString("float_lin_lt_reif");
+    ids.float_reif.lin_ne = ASTString("float_lin_ne_reif");
+    ids.float_reif.plus = ASTString("float_plus_reif");
+    ids.float_reif.minus = ASTString("float_minus_reif");
+    ids.float_reif.times = ASTString("float_times_reif");
+    ids.float_reif.div = ASTString("float_div_reif");
+    ids.float_reif.mod = ASTString("float_mod_reif");
+    ids.float_reif.lt = ASTString("float_lt_reif");
+    ids.float_reif.le = ASTString("float_le_reif");
+    ids.float_reif.gt = ASTString("float_gt_reif");
+    ids.float_reif.ge = ASTString("float_ge_reif");
+    ids.float_reif.eq = ASTString("float_eq_reif");
+    ids.float_reif.ne = ASTString("float_ne_reif");
+
     ids.bool_eq = ASTString("bool_eq");
     ids.set_eq = ASTString("set_eq");
-    ids.float_eq = ASTString("float_eq");
+    ids.set_in = ASTString("set_in");
+    ids.set_in = ASTString("set_card");
     
     ids.introduced_var = ASTString("__INTRODUCED");
 
@@ -940,18 +994,74 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.bool2int));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
-    v.push_back(new StringLit(Location(),ids.int_lin_eq));
-    v.push_back(new StringLit(Location(),ids.int_lin_le));
-    v.push_back(new StringLit(Location(),ids.int_lin_ne));
-    v.push_back(new StringLit(Location(),ids.float_lin_eq));
-    v.push_back(new StringLit(Location(),ids.float_lin_le));
-    v.push_back(new StringLit(Location(),ids.float_lin_lt));
-    v.push_back(new StringLit(Location(),ids.float_lin_ne));
-    v.push_back(new StringLit(Location(),ids.int_eq));
-    v.push_back(new StringLit(Location(),ids.int_ne));
+    
+    v.push_back(new StringLit(Location(),ids.int_.lin_eq));
+    v.push_back(new StringLit(Location(),ids.int_.lin_le));
+    v.push_back(new StringLit(Location(),ids.int_.lin_ne));
+    v.push_back(new StringLit(Location(),ids.int_.plus));
+    v.push_back(new StringLit(Location(),ids.int_.minus));
+    v.push_back(new StringLit(Location(),ids.int_.times));
+    v.push_back(new StringLit(Location(),ids.int_.div));
+    v.push_back(new StringLit(Location(),ids.int_.mod));
+    v.push_back(new StringLit(Location(),ids.int_.lt));
+    v.push_back(new StringLit(Location(),ids.int_.le));
+    v.push_back(new StringLit(Location(),ids.int_.gt));
+    v.push_back(new StringLit(Location(),ids.int_.ge));
+    v.push_back(new StringLit(Location(),ids.int_.eq));
+    v.push_back(new StringLit(Location(),ids.int_.ne));
+
+    v.push_back(new StringLit(Location(),ids.int_reif.lin_eq));
+    v.push_back(new StringLit(Location(),ids.int_reif.lin_le));
+    v.push_back(new StringLit(Location(),ids.int_reif.lin_ne));
+    v.push_back(new StringLit(Location(),ids.int_reif.plus));
+    v.push_back(new StringLit(Location(),ids.int_reif.minus));
+    v.push_back(new StringLit(Location(),ids.int_reif.times));
+    v.push_back(new StringLit(Location(),ids.int_reif.div));
+    v.push_back(new StringLit(Location(),ids.int_reif.mod));
+    v.push_back(new StringLit(Location(),ids.int_reif.lt));
+    v.push_back(new StringLit(Location(),ids.int_reif.le));
+    v.push_back(new StringLit(Location(),ids.int_reif.gt));
+    v.push_back(new StringLit(Location(),ids.int_reif.ge));
+    v.push_back(new StringLit(Location(),ids.int_reif.eq));
+    v.push_back(new StringLit(Location(),ids.int_reif.ne));
+
+    v.push_back(new StringLit(Location(),ids.float_.lin_eq));
+    v.push_back(new StringLit(Location(),ids.float_.lin_le));
+    v.push_back(new StringLit(Location(),ids.float_.lin_lt));
+    v.push_back(new StringLit(Location(),ids.float_.lin_ne));
+    v.push_back(new StringLit(Location(),ids.float_.plus));
+    v.push_back(new StringLit(Location(),ids.float_.minus));
+    v.push_back(new StringLit(Location(),ids.float_.times));
+    v.push_back(new StringLit(Location(),ids.float_.div));
+    v.push_back(new StringLit(Location(),ids.float_.mod));
+    v.push_back(new StringLit(Location(),ids.float_.lt));
+    v.push_back(new StringLit(Location(),ids.float_.le));
+    v.push_back(new StringLit(Location(),ids.float_.gt));
+    v.push_back(new StringLit(Location(),ids.float_.ge));
+    v.push_back(new StringLit(Location(),ids.float_.eq));
+    v.push_back(new StringLit(Location(),ids.float_.ne));
+
+    v.push_back(new StringLit(Location(),ids.float_reif.lin_eq));
+    v.push_back(new StringLit(Location(),ids.float_reif.lin_le));
+    v.push_back(new StringLit(Location(),ids.float_reif.lin_lt));
+    v.push_back(new StringLit(Location(),ids.float_reif.lin_ne));
+    v.push_back(new StringLit(Location(),ids.float_reif.plus));
+    v.push_back(new StringLit(Location(),ids.float_reif.minus));
+    v.push_back(new StringLit(Location(),ids.float_reif.times));
+    v.push_back(new StringLit(Location(),ids.float_reif.div));
+    v.push_back(new StringLit(Location(),ids.float_reif.mod));
+    v.push_back(new StringLit(Location(),ids.float_reif.lt));
+    v.push_back(new StringLit(Location(),ids.float_reif.le));
+    v.push_back(new StringLit(Location(),ids.float_reif.gt));
+    v.push_back(new StringLit(Location(),ids.float_reif.ge));
+    v.push_back(new StringLit(Location(),ids.float_reif.eq));
+    v.push_back(new StringLit(Location(),ids.float_reif.ne));
+
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.set_eq));
-    v.push_back(new StringLit(Location(),ids.float_eq));
+    v.push_back(new StringLit(Location(),ids.set_in));
+    v.push_back(new StringLit(Location(),ids.set_card));
+
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.introduced_var));

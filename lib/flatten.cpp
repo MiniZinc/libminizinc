@@ -164,6 +164,8 @@ namespace MiniZinc {
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
+#define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
+
   class EnvI {
   public:
     Model* orig;
@@ -187,8 +189,40 @@ namespace MiniZinc {
     Map map;
     Model* _flat;
     unsigned int ids;
+    ASTStringMap<ASTString>::t reifyMap;
   public:
     EnvI(Model* orig0) : orig(orig0), output(new Model), varPrefix("X_"), ignorePartial(false), _flat(new Model), ids(0) {
+      MZN_FILL_REIFY_MAP(int_,lin_eq);
+      MZN_FILL_REIFY_MAP(int_,lin_le);
+      MZN_FILL_REIFY_MAP(int_,lin_ne);
+      MZN_FILL_REIFY_MAP(int_,plus);
+      MZN_FILL_REIFY_MAP(int_,minus);
+      MZN_FILL_REIFY_MAP(int_,times);
+      MZN_FILL_REIFY_MAP(int_,div);
+      MZN_FILL_REIFY_MAP(int_,mod);
+      MZN_FILL_REIFY_MAP(int_,lt);
+      MZN_FILL_REIFY_MAP(int_,le);
+      MZN_FILL_REIFY_MAP(int_,gt);
+      MZN_FILL_REIFY_MAP(int_,ge);
+      MZN_FILL_REIFY_MAP(int_,eq);
+      MZN_FILL_REIFY_MAP(int_,ne);
+      MZN_FILL_REIFY_MAP(float_,lin_eq);
+      MZN_FILL_REIFY_MAP(float_,lin_le);
+      MZN_FILL_REIFY_MAP(float_,lin_lt);
+      MZN_FILL_REIFY_MAP(float_,lin_ne);
+      MZN_FILL_REIFY_MAP(float_,plus);
+      MZN_FILL_REIFY_MAP(float_,minus);
+      MZN_FILL_REIFY_MAP(float_,times);
+      MZN_FILL_REIFY_MAP(float_,div);
+      MZN_FILL_REIFY_MAP(float_,mod);
+      MZN_FILL_REIFY_MAP(float_,lt);
+      MZN_FILL_REIFY_MAP(float_,le);
+      MZN_FILL_REIFY_MAP(float_,gt);
+      MZN_FILL_REIFY_MAP(float_,ge);
+      MZN_FILL_REIFY_MAP(float_,eq);
+      MZN_FILL_REIFY_MAP(float_,ne);
+      reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.forall,constants().ids.forall_reif));
+      reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
     }
     ~EnvI(void) {
       delete _flat;
@@ -306,7 +340,14 @@ namespace MiniZinc {
     Model* flat(void) {
       return _flat;
     }
-    
+    ASTString reifyId(const ASTString& id) {
+      ASTStringMap<ASTString>::t::iterator it = reifyMap.find(id);
+      if (it == reifyMap.end()) {
+        return id.str()+"_reif";
+      } else {
+        return it->second;
+      }
+    }
   };
 
   class CallStackItem {
@@ -660,13 +701,13 @@ namespace MiniZinc {
             } else if (Id* e_id = e->dyn_cast<Id>()) {
               ASTString cid;
               if (e->type().isint()) {
-                cid = constants().ids.int_eq;
+                cid = constants().ids.int_.eq;
               } else if (e->type().isbool()) {
                 cid = constants().ids.bool_eq;
               } else if (e->type().isset()) {
                 cid = constants().ids.set_eq;
               } else if (e->type().isfloat()) {
-                cid = constants().ids.float_eq;
+                cid = constants().ids.float_.eq;
               }
               if (cid != "") {
                 GCLock lock;
@@ -758,13 +799,13 @@ namespace MiniZinc {
               GCLock lock;
               ASTString cid;
               if (e->type().isint()) {
-                cid = constants().ids.int_eq;
+                cid = constants().ids.int_.eq;
               } else if (e->type().isbool()) {
                 cid = constants().ids.bool_eq;
               } else if (e->type().isset()) {
                 cid = constants().ids.set_eq;
               } else if (e->type().isfloat()) {
-                cid = constants().ids.float_eq;
+                cid = constants().ids.float_.eq;
               } else {
                 throw InternalError("not yet implemented");
               }
@@ -783,7 +824,7 @@ namespace MiniZinc {
               std::vector<Expression*> args(c->args().size());
               GCLock lock;
               if (c->id() == constants().ids.lin_exp) {
-                c->id(constants().ids.int_lin_eq);
+                c->id(constants().ids.int_.lin_eq);
                 ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
@@ -806,7 +847,7 @@ namespace MiniZinc {
                 } else if (c->id() == constants().ids.forall) {
                   c->id(ASTString("array_bool_and"));
                 } else if (vd->type().isbool()) {
-                  c->id(ASTString(c->id().str()+"_reif"));
+                  c->id(env.reifyId(c->id()));
                 }
 
               }
@@ -947,17 +988,47 @@ namespace MiniZinc {
       return new TypeInst(vd->ti()->loc(), vd->ti()->type(), dims, eval_par(vd->ti()->domain()));
     }
   }
-
-  std::string opToBuiltin(BinOp* op, BinOpType bot) {
+  
+  ASTString opToBuiltin(BinOp* op, BinOpType bot) {
     std::string builtin;
     if (op->rhs()->type().isint()) {
-      builtin = "int_";
+      switch (bot) {
+        case BOT_PLUS: return constants().ids.int_.plus;
+        case BOT_MINUS: return constants().ids.int_.minus;
+        case BOT_MULT: return constants().ids.int_.times;
+        case BOT_IDIV: return constants().ids.int_.div;
+        case BOT_MOD: return constants().ids.int_.mod;
+        case BOT_LE: return constants().ids.int_.lt;
+        case BOT_LQ: return constants().ids.int_.le;
+        case BOT_GR: return constants().ids.int_.gt;
+        case BOT_GQ: return constants().ids.int_.ge;
+        case BOT_EQ: return constants().ids.int_.eq;
+        case BOT_NQ: return constants().ids.int_.ne;
+        default:
+          throw InternalError("not yet implemented");
+      }
     } else if (op->rhs()->type().isbool()) {
+      if (bot==BOT_EQ || bot==BOT_EQUIV)
+        return constants().ids.bool_eq;
       builtin = "bool_";
     } else if (op->rhs()->type().isset()) {
       builtin = "set_";
     } else if (op->rhs()->type().isfloat()) {
-      builtin = "float_";
+      switch (bot) {
+        case BOT_PLUS: return constants().ids.float_.plus;
+        case BOT_MINUS: return constants().ids.float_.minus;
+        case BOT_MULT: return constants().ids.float_.times;
+        case BOT_IDIV: return constants().ids.float_.div;
+        case BOT_MOD: return constants().ids.float_.mod;
+        case BOT_LE: return constants().ids.float_.lt;
+        case BOT_LQ: return constants().ids.float_.le;
+        case BOT_GR: return constants().ids.float_.gt;
+        case BOT_GQ: return constants().ids.float_.ge;
+        case BOT_EQ: return constants().ids.float_.eq;
+        case BOT_NQ: return constants().ids.float_.ne;
+        default:
+          throw InternalError("not yet implemented");
+      }
     } else {
       throw InternalError(op->opToString().str()+" not yet implemented");
     }
@@ -987,7 +1058,7 @@ namespace MiniZinc {
     case BOT_NQ:
       return builtin+"ne";
     case BOT_IN:
-      return "set_in";
+      return constants().ids.set_in;
     case BOT_SUBSET:
       return builtin+"subset";
     case BOT_SUPERSET:
@@ -1016,7 +1087,7 @@ namespace MiniZinc {
     case BOT_XOR:
       return builtin+"xor";
     default:
-      assert(false); return "";
+      assert(false); return ASTString("");
     }
   }
   
@@ -1049,36 +1120,36 @@ namespace MiniZinc {
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
-          callid = constants().ids.int_lin_le;
+          callid = constants().ids.int_.lin_le;
           coeff_sign = 1;
           d += 1;
           break;
         case BOT_LQ:
-          callid = constants().ids.int_lin_le;
+          callid = constants().ids.int_.lin_le;
           coeff_sign = 1;
           break;
         case BOT_GR:
-          callid = constants().ids.int_lin_le;
+          callid = constants().ids.int_.lin_le;
           coeff_sign = -1;
           d = -d+1;
           break;
         case BOT_GQ:
-          callid = constants().ids.int_lin_le;
+          callid = constants().ids.int_.lin_le;
           coeff_sign = -1;
           d = -d;
           break;
         case BOT_EQ:
-          callid = constants().ids.int_lin_eq;
+          callid = constants().ids.int_.lin_eq;
           coeff_sign = 1;
           break;
         case BOT_NQ:
-          callid = constants().ids.int_lin_ne;
+          callid = constants().ids.int_.lin_ne;
           coeff_sign = 1;
           break;
         default: assert(false); break;
       }
     }
-    static ASTString id_eq(void) { return constants().ids.int_eq; }
+    static ASTString id_eq(void) { return constants().ids.int_.eq; }
     typedef IntBounds Bounds;
     static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
     typedef IntSetVal* Domain;
@@ -1135,35 +1206,35 @@ namespace MiniZinc {
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
-          callid = constants().ids.float_lin_lt;
+          callid = constants().ids.float_.lin_lt;
           coeff_sign = 1;
           break;
         case BOT_LQ:
-          callid = constants().ids.float_lin_le;
+          callid = constants().ids.float_.lin_le;
           coeff_sign = 1;
           break;
         case BOT_GR:
-          callid = constants().ids.float_lin_lt;
+          callid = constants().ids.float_.lin_lt;
           coeff_sign = -1;
           d = -d;
           break;
         case BOT_GQ:
-          callid = constants().ids.float_lin_le;
+          callid = constants().ids.float_.lin_le;
           coeff_sign = -1;
           d = -d;
           break;
         case BOT_EQ:
-          callid = constants().ids.float_lin_eq;
+          callid = constants().ids.float_.lin_eq;
           coeff_sign = 1;
           break;
         case BOT_NQ:
-          callid = constants().ids.float_lin_ne;
+          callid = constants().ids.float_.lin_ne;
           coeff_sign = 1;
           break;
         default: assert(false); break;
       }
     }
-    static ASTString id_eq(void) { return constants().ids.float_eq; }
+    static ASTString id_eq(void) { return constants().ids.float_.eq; }
     typedef FloatBounds Bounds;
     static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
     typedef BinOp* Domain;
@@ -3056,7 +3127,7 @@ namespace MiniZinc {
                 reif_b = nvd;
               }
               args.push_back(reif_b->id());
-              Call* cr_real = new Call(Location(),cid.str()+"_reif",toExpVec(args));
+              Call* cr_real = new Call(Location(),env.reifyId(cid),toExpVec(args));
               cr_real->type(Type::varbool());
               FunctionI* decl_real = env.orig->matchFn(cr_real);
               if (decl_real && decl_real->e()) {
@@ -3787,7 +3858,7 @@ namespace MiniZinc {
       int_lin_eq_t[1] = Type::varint(1);
       int_lin_eq_t[2] = Type::parint(0);
       GCLock lock;
-      FunctionI* fi = env.orig->matchFn(constants().ids.int_lin_eq, int_lin_eq_t);
+      FunctionI* fi = env.orig->matchFn(constants().ids.int_.lin_eq, int_lin_eq_t);
       int_lin_eq = (fi && fi->e()) ? fi : NULL;
     }
     FunctionI* array_bool_and;
@@ -3862,7 +3933,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = vdi->e()->id();
                 args[1] = new IntLit(Location(),i);
-                Call* call = new Call(Location(),constants().ids.int_ne,args);
+                Call* call = new Call(Location(),constants().ids.int_.ne,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
                 (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
@@ -3950,7 +4021,7 @@ namespace MiniZinc {
                     nc->decl(array_bool_clause_reif);
                   } else {
                     if (c->type().isbool() && vd->type().isbool()) {
-                      cid = ASTString(c->id().str()+"_reif");
+                      cid = env.reifyId(c->id());
                     }
                     FunctionI* decl = env.orig->matchFn(cid,args);
                     if (decl && decl->e()) {
@@ -4184,17 +4255,18 @@ namespace MiniZinc {
             if (vd->e() != NULL) {
               if (vd->e()->eid()==Expression::E_CALL) {
                 const Call* c = vd->e()->cast<Call>();
+                GCLock lock;
                 vd->e(NULL);
                 vd->addAnnotation(constants().ann.is_defined_var);
-                std::string cid;
+                ASTString cid;
                 if (c->id() == constants().ids.exists) {
-                  cid = "array_bool_or";
+                  cid = ASTString("array_bool_or");
                 } else if (c->id() == constants().ids.forall) {
-                  cid = "array_bool_and";
+                  cid = ASTString("array_bool_and");
                 } else if (c->id() == constants().ids.clause) {
-                  cid = "bool_clause_reif";
+                  cid = ASTString("bool_clause_reif");
                 } else {
-                  cid = c->id().str()+"_reif";
+                  cid = e.envi().reifyId(c->id());
                 }
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
@@ -4220,13 +4292,13 @@ namespace MiniZinc {
               vd->e(NULL);
               vd->addAnnotation(constants().ann.is_defined_var);
               std::vector<Expression*> args(cc->args().size());
-              std::string cid;
+              ASTString cid;
               if (cc->id() == constants().ids.lin_exp) {
                 ArrayLit* le_c = follow_id(cc->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 if (le_c->type()._bt==Type::BT_INT) {
-                  cid = "int_lin_eq";
+                  cid = constants().ids.int_.lin_eq;
                   nc.push_back(new IntLit(Location(),-1));
                   args[0] = new ArrayLit(Location(),nc);
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
@@ -4238,7 +4310,7 @@ namespace MiniZinc {
                   args[2] = new IntLit(Location(),-d);
                 } else {
                   // float
-                  cid = "float_lin_eq";
+                  cid = constants().ids.float_.lin_eq;
                   nc.push_back(new FloatLit(Location(),-1.0));
                   args[0] = new ArrayLit(Location(),nc);
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
@@ -4252,9 +4324,9 @@ namespace MiniZinc {
               } else {
                 if (cc->id() == "card") {
                   // card is 'set_card' in old FlatZinc
-                  cid = "set_card";
+                  cid = constants().ids.set_card;
                 } else {
-                  cid = cc->id().str();
+                  cid = cc->id();
                 }
                 std::copy(cc->args().begin(),cc->args().end(),args.begin());
                 args.push_back(vd->id());

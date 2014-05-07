@@ -477,7 +477,7 @@ namespace MiniZinc {
           p(vd.ti());
           if (vd.id()->idn() != -1) {
             os << ": X_INTRODUCED_" << vd.id()->idn();
-          } else if (vd.id()->v() != "_")
+          } else if (vd.id()->v().size() != 0)
             os << ": " << vd.id()->v();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
