@@ -717,7 +717,10 @@ function int: round(float);
 function int: bool2int(bool);
 function var int: bool2int(var bool);
 function float: int2float(int);
-function var float: int2float(var int);
+function var float: int2float(var int: x) =
+  let { var int2float(lb(x))..int2float(ub(x)): y;
+        constraint int2float(x,y); } in y;
+predicate int2float(var int, var float);
 
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
