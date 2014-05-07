@@ -4339,6 +4339,7 @@ namespace MiniZinc {
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
                      vd->e()->eid() == Expression::E_INTLIT ||
+                     vd->e()->eid() == Expression::E_FLOATLIT ||
                      vd->e()->eid() == Expression::E_BOOLLIT ||
                      vd->e()->eid() == Expression::E_SETLIT);
               
