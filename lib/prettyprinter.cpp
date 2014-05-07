@@ -183,7 +183,7 @@ namespace MiniZinc {
           std::ostringstream oss;
           oss << std::setprecision(std::numeric_limits<double>::digits10);
           oss << e->cast<FloatLit>()->v();
-          if (oss.str().find(".") == std::string::npos)
+          if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
             oss << ".0";
           os << oss.str();
         }
@@ -1008,7 +1008,7 @@ namespace MiniZinc {
       std::ostringstream oss;
       oss << std::setprecision(std::numeric_limits<double>::digits10);
       oss << fl.v();
-      if (oss.str().find(".") == std::string::npos)
+      if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
         oss << ".0";
       return new StringDocument(oss.str());
     }
