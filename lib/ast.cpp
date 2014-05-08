@@ -197,7 +197,7 @@ namespace MiniZinc {
     if (idn()==-1)
       return v();
     std::ostringstream oss;
-    oss << "X_INTRODUCED" << idn();
+    oss << "X_INTRODUCED_" << idn();
     return oss.str();
   }
   
