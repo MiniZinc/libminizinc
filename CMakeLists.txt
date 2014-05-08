@@ -125,6 +125,7 @@ include/minizinc/prettyprinter.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
+include/minizinc/stl_map_set.hh
 )
 
 # add the executable

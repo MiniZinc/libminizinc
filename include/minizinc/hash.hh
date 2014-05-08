@@ -14,8 +14,7 @@
 
 #include <minizinc/ast.hh>
 
-#include <unordered_map>
-#include <unordered_set>
+#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
   
@@ -38,10 +37,10 @@ namespace MiniZinc {
   class ExpressionMap {
   protected:
     /// The underlying map implementation
-    std::unordered_map<Expression*,T,ExpressionHash,ExpressionEq> _m;
+    UNORDERED_NAMESPACE::unordered_map<Expression*,T,ExpressionHash,ExpressionEq> _m;
   public:
     /// Iterator type
-    typedef typename std::unordered_map<Expression*,T,
+    typedef typename UNORDERED_NAMESPACE::unordered_map<Expression*,T,
       ExpressionHash,ExpressionEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
     void insert(Expression* e, const T& t) {
@@ -85,10 +84,10 @@ namespace MiniZinc {
   class KeepAliveMap {
   protected:
     /// The underlying map implementation
-    std::unordered_map<KeepAlive,T,KAHash,KAEq> _m;
+    UNORDERED_NAMESPACE::unordered_map<KeepAlive,T,KAHash,KAEq> _m;
   public:
     /// Iterator type
-    typedef typename std::unordered_map<KeepAlive,T,
+    typedef typename UNORDERED_NAMESPACE::unordered_map<KeepAlive,T,
       KAHash,KAEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
     void insert(KeepAlive& e, const T& t) {
@@ -112,10 +111,10 @@ namespace MiniZinc {
     }
   };
   
-  class ExpressionSetIter : public std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator {
+  class ExpressionSetIter : public UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator {
   protected:
     bool _empty;
-    typedef std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator Iter;
+    typedef UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator Iter;
   public:
     ExpressionSetIter(void) : _empty(false) {}
     ExpressionSetIter(bool) : _empty(true) {}
@@ -132,7 +131,7 @@ namespace MiniZinc {
   class ExpressionSet {
   protected:
     /// The underlying set implementation
-    std::unordered_set<Expression*,ExpressionHash,ExpressionEq> _s;
+    UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq> _s;
   public:
     /// Insert \a e
     void insert(Expression* e) {

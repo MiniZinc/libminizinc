@@ -21,7 +21,7 @@ namespace MiniZinc {
   public:
     typedef std::vector<VarDecl*> Decls;
     typedef ASTStringMap<Decls>::t DeclMap;
-    typedef std::unordered_map<VarDecl*,int> PosMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*,int> PosMap;
     
     /// List of all declarations
     Decls decls;

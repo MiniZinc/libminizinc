@@ -13,10 +13,10 @@
 #define __MINIZINC_ASTSTRING_HH__
 
 #include <minizinc/gc.hh>
+#include <minizinc/stl_map_set.hh>
 #include <string>
 #include <cstring>
 #include <functional>
-#include <unordered_map>
 #include <iostream>
 
 namespace MiniZinc {
@@ -78,7 +78,7 @@ namespace MiniZinc {
   template<typename T>
   struct ASTStringMap {
     /// The map type specialised for ASTString
-    typedef std::unordered_map<ASTString,T> t;
+    typedef UNORDERED_NAMESPACE::unordered_map<ASTString,T> t;
   };
 
   /**
@@ -93,12 +93,15 @@ namespace MiniZinc {
 
 }
 
-namespace std {
+OPEN_HASH_NAMESPACE {
   template<>
   struct hash<MiniZinc::ASTString> {
   public:
     size_t operator()(const MiniZinc::ASTString& s) const;
   };
+CLOSE_HASH_NAMESPACE }
+
+namespace std {
   template<>
   struct equal_to<MiniZinc::ASTString> {
   public:
@@ -195,12 +198,15 @@ namespace MiniZinc {
 
 }
 
-namespace std {
+OPEN_HASH_NAMESPACE {
   inline size_t
   hash<MiniZinc::ASTString>::operator()(
-      const MiniZinc::ASTString& s) const {
-      return s.hash();
+                                        const MiniZinc::ASTString& s) const {
+    return s.hash();
   }
+CLOSE_HASH_NAMESPACE }
+
+namespace std {
   inline bool
   equal_to<MiniZinc::ASTString>::operator()(const MiniZinc::ASTString& s0,
                                             const MiniZinc::ASTString& s1) 

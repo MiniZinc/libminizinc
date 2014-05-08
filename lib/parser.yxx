@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <cerrno>
 
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location

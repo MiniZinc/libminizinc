@@ -15,8 +15,6 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten.hh>
 
-#include <unordered_set>
-
 namespace MiniZinc {
 
   void VarOccurrences::add(VarDeclI *i, int idx_i)

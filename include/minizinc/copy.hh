@@ -18,7 +18,7 @@ namespace MiniZinc {
 
   class CopyMap {
   protected:
-    typedef std::unordered_map<void*,void*> MyMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<void*,void*> MyMap;
     MyMap m;
   public:
     void insert(Expression* e0, Expression* e1);

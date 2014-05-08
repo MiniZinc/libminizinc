@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
             p.print(flat);
           } else {
             std::ofstream os;
-            os.open(flag_output_fzn, ios::out);
+            os.open(flag_output_fzn.c_str(), ios::out);
             Printer p(os,0);
             p.print(flat);
             os.close();
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
               p.print(env.output());
             } else {
               std::ofstream os;
-              os.open(flag_output_ozn, ios::out);
+              os.open(flag_output_ozn.c_str(), ios::out);
               Printer p(os,0);
               p.print(env.output());
               os.close();

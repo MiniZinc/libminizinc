@@ -18,6 +18,7 @@
 
 #include <iomanip>
 #include <climits>
+#include <cmath>
 
 namespace MiniZinc {
   
@@ -705,7 +706,7 @@ namespace MiniZinc {
     return std::floor(eval_float(args[0]));
   }
   IntVal b_round(ASTExprVec<Expression> args) {
-    return std::round(eval_float(args[0]));
+    return round(eval_float(args[0]));
   }
   FloatVal b_log10(ASTExprVec<Expression> args) {
     return std::log10(eval_float(args[0]));

@@ -17,7 +17,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/astiterator.hh>
 
-#include <unordered_set>
+#include <minizinc/stl_map_set.hh>
 
 // temporary
 #include <minizinc/prettyprinter.hh>
@@ -4436,7 +4436,7 @@ namespace MiniZinc {
       m->_items.end());
     
     int msize = m->size();
-    std::unordered_set<Item*> globals;
+    UNORDERED_NAMESPACE::unordered_set<Item*> globals;
     std::vector<int> declsWithIds;
     for (unsigned int i=0; i<msize; i++) {
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {

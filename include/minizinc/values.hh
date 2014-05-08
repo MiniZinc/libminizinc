@@ -13,6 +13,7 @@
 #define __MINIZINC_VALUES_HH__
 
 #include <minizinc/gc.hh>
+#include <minizinc/stl_map_set.hh>
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -138,14 +139,6 @@ namespace std {
   }
   
   template<>
-  struct hash<MiniZinc::IntVal> {
-  public:
-    size_t operator()(const MiniZinc::IntVal& s) const {
-      std::hash<long long int> h;
-      return h(s.toInt());
-    }
-  };
-  template<>
   struct equal_to<MiniZinc::IntVal> {
   public:
     bool operator()(const MiniZinc::IntVal& s0,
@@ -154,6 +147,17 @@ namespace std {
     }
   };
 }
+
+OPEN_HASH_NAMESPACE {
+  template<>
+  struct hash<MiniZinc::IntVal> {
+  public:
+    size_t operator()(const MiniZinc::IntVal& s) const {
+      HASH_NAMESPACE::hash<long long int> h;
+      return h(s.toInt());
+    }
+  };
+CLOSE_HASH_NAMESPACE }
 
 namespace MiniZinc {
 

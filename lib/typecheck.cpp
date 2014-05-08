@@ -21,12 +21,12 @@
 namespace MiniZinc {
   
   struct VarDeclCmp {
-    std::unordered_map<VarDecl*,int>& _pos;
-    VarDeclCmp(std::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
+    UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
+    VarDeclCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
     bool operator()(Expression* e0, Expression* e1) {
       if (VarDecl* vd0 = e0->dyn_cast<VarDecl>()) {
         if (VarDecl* vd1 = e1->dyn_cast<VarDecl>()) {
-          return _pos.at(vd0) < _pos.at(vd1);
+          return _pos[vd0] < _pos[vd1];
         } else {
           return true;
         }
@@ -36,12 +36,12 @@ namespace MiniZinc {
     }
   };
   struct ItemCmp {
-    std::unordered_map<VarDecl*,int>& _pos;
-    ItemCmp(std::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
+    UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
+    ItemCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
     bool operator()(Item* i0, Item* i1) {
       if (VarDeclI* vd0 = i0->cast<VarDeclI>()) {
         if (VarDeclI* vd1 = i1->cast<VarDeclI>()) {
-          return _pos.at(vd0->e()) < _pos.at(vd1->e());
+          return _pos[vd0->e()] < _pos[vd1->e()];
         } else {
           return true;
         }
