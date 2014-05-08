@@ -350,7 +350,8 @@ namespace MiniZinc {
       }
     }
   };
-
+#undef MZN_FILL_REIFY_MAP
+  
   class CallStackItem {
   public:
     EnvI& env;
