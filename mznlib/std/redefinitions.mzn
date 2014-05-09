@@ -4,7 +4,7 @@
 predicate bool_clause_reif(array[int] of var bool: as,
                            array[int] of var bool: bs,
                            var bool: b) =
-  bool_clause(as,bs++[b]) /\
+  clause(as,bs++[b]) /\
   forall (i in index_set(as)) (as[i] -> b) /\
   forall (i in index_set(bs)) (bs[i] \/ b);
 
