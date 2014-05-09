@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
                     std::cout << os;
                   }
                 }
-                if (os.empty() || os.back() != '\n')
+                if (os.empty() || os[os.size()-1] != '\n')
                   std::cout << std::endl;
               }
               solution = "";
