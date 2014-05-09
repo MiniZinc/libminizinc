@@ -14,8 +14,14 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
+if (USE_STDLIBCPP)
+  set(MZN_LIBCPP libstdc++)
+else()
+  set(MZN_LIBCPP libc++)
+endif()
+
 set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
-set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
@@ -27,14 +33,27 @@ else()
   endif()
 endif()
 
-check_cxx_compiler_flag(-stdlib=libc++ HAS_STDLIBLIBCPP)
+check_cxx_compiler_flag(-stdlib=${MZN_LIBCPP} HAS_STDLIBLIBCPP)
 
 if (HAS_STDLIBLIBCPP)
   set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=${MZN_LIBCPP}")
   check_cxx_source_compiles("int main(void) {return 0;}" LINKS_STDLIBLIBCPP)
   if (NOT LINKS_STDLIBLIBCPP)
     set(CMAKE_CXX_FLAGS "${SAFE_CMAKE_CXX_FLAGS}")
+  endif()
+endif()
+
+check_cxx_source_compiles("#include <unordered_set>
+int main(void) { std::unordered_set<int> x; return 0; }" HAS_CPP11)
+
+if (NOT HAS_CPP11)
+  check_cxx_source_compiles("#include <tr1/unordered_set>
+                             int main(void) { std::tr1::unordered_set<int> x; return 0; }" HAS_CPP11_TR1)
+  if (HAS_CPP11_TR1)
+    set(MZN_NEED_TR1 1)
+  else()
+    message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
   endif()
 endif()
    

@@ -2,3 +2,4 @@
 
 #cmakedefine HAS_ATTR_THREAD
 
+#cmakedefine MZN_NEED_TR1
