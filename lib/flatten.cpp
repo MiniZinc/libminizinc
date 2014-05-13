@@ -1457,25 +1457,30 @@ namespace MiniZinc {
 
       // Translate into the following expression:
       // let {
-      //   var $T: r;
+      //   var $T: r ::promise_total;
       //   constraint e_if -> r=e_then_arg;
       //   constraint (not e_if) -> r=e_else_arg;
       // } in r;
       
       SetLit* r_bounds = NULL;
-      IntBounds ib_then = compute_int_bounds(ite->e_then(i));
-      if (ib_then.valid) {
-        IntBounds ib_else = compute_int_bounds(e_else());
-        if (ib_else.valid) {
-          r_bounds = new SetLit(Location(),
-                                IntSetVal::a(std::min(ib_then.l,ib_else.l),
-                                             std::max(ib_then.u,ib_else.u)));
-          r_bounds->type(Type::parsetint());
+      if (ite->e_then(i)->type().isint()) {
+        IntBounds ib_then = compute_int_bounds(ite->e_then(i));
+        if (ib_then.valid) {
+          IntBounds ib_else = compute_int_bounds(e_else());
+          if (ib_else.valid) {
+            r_bounds = new SetLit(Location(),
+                                  IntSetVal::a(std::min(ib_then.l,ib_else.l),
+                                               std::max(ib_then.u,ib_else.u)));
+            r_bounds->type(Type::parsetint());
+          }
         }
       }
       TypeInst* ti = new TypeInst(Location(),ite->type(),r_bounds);
       
       VarDecl* r = new VarDecl(ite->loc(),ti,env.genId());
+      r->introduced(true);
+      r->flat(r);
+      r->addAnnotation(constants().ann.promise_total);
       BinOp* eq_then = new BinOp(Location(),r->id(),BOT_EQ,ite->e_then(i));
       eq_then->type(Type::varbool());
       BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
@@ -3373,7 +3378,7 @@ namespace MiniZinc {
                 cs.push_back(ee);
               }
             } else {
-              if (ctx.b==C_NEG || ctx.b==C_MIX)
+              if ((ctx.b==C_NEG || ctx.b==C_MIX) && !vd->ann().contains(constants().ann.promise_total))
                 throw FlatteningError(vd->loc(),
                   "free variable in non-positive context");
               GCLock lock;
