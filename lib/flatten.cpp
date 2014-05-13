@@ -1031,6 +1031,10 @@ namespace MiniZinc {
         default:
           throw InternalError("not yet implemented");
       }
+    } else if (op->rhs()->type().isopt() &&
+               (bot==BOT_EQUIV || bot==BOT_EQ)) {
+      /// TODO: extend to all option type operators
+      return constants().ids.bool_eq;
     } else {
       throw InternalError(op->opToString().str()+" not yet implemented");
     }
@@ -2219,9 +2223,101 @@ namespace MiniZinc {
     case Expression::E_COMP:
       {
         Comprehension* c = e->cast<Comprehension>();
+        KeepAlive c_ka(c);
+        
         if (c->set()) {
           throw InternalError("not supported yet");
         }
+        
+        if (c->type().isopt()) {
+          std::vector<Expression*> in(c->n_generators());
+          std::vector<Expression*> where;
+          GCLock lock;
+          for (unsigned int i=0; i<c->n_generators(); i++) {
+            if (c->in(i)->type().isvar()) {
+              std::vector<Expression*> args(1);
+              args[0] = c->in(i);
+              Call* ub = new Call(Location(),"ub",args);
+              ub->type(Type::parsetint());
+              ub->decl(env.orig->matchFn(ub));
+              in[i] = ub;
+              for (unsigned int j=0; j<c->n_decls(i); j++) {
+                BinOp* bo = new BinOp(Location(),c->decl(i,j)->id(), BOT_IN, c->in(i));
+                bo->type(Type::varbool());
+                where.push_back(bo);
+              }
+            } else {
+              in[i] = c->in(i);
+            }
+          }
+          if (where.size() > 0 || c->where()->type().isvar()) {
+            Generators gs;
+            if (c->where()==NULL || c->where()->type().ispar())
+              gs._w = c->where();
+            else
+              where.push_back(c->where());
+            for (unsigned int i=0; i<c->n_generators(); i++) {
+              std::vector<VarDecl*> vds(c->n_decls(i));
+              for (unsigned int j=0; j<c->n_decls(i); j++)
+                vds[i] = c->decl(i, j);
+              gs._g.push_back(Generator(vds,in[i]));
+            }
+            Expression* cond;
+            if (where.size() > 1) {
+              ArrayLit* al = new ArrayLit(Location(), where);
+              al->type(Type::varbool(1));
+              std::vector<Expression*> args(1);
+              args[0] = al;
+              Call* forall = new Call(Location(), constants().ids.forall, args);
+              forall->type(Type::varbool());
+              forall->decl(env.orig->matchFn(forall));
+              cond = forall;
+            } else {
+              cond = where[0];
+            }
+            
+
+            SetLit* r_bounds = NULL;
+            if (c->e()->type().isint()) {
+              IntBounds ib_then = compute_int_bounds(c->e());
+              if (ib_then.valid) {
+                r_bounds = new SetLit(Location(), IntSetVal::a(ib_then.l,ib_then.u));
+                r_bounds->type(Type::parsetint());
+              }
+            }
+            Type tt;
+            tt = c->e()->type();
+            tt._ti = Type::TI_VAR;
+            tt._ot = Type::OT_OPTIONAL;
+            
+            TypeInst* ti = new TypeInst(Location(),tt,r_bounds);
+            VarDecl* r = new VarDecl(c->loc(),ti,env.genId());
+            r->addAnnotation(constants().ann.promise_total);
+            r->introduced(true);
+            r->flat(r);
+
+            std::vector<Expression*> let_exprs(3);
+            let_exprs[0] = r;
+            BinOp* r_eq_e = new BinOp(Location(),r->id(),BOT_EQ,c->e());
+            r_eq_e->type(Type::varbool());
+            let_exprs[1] = new BinOp(Location(),cond,BOT_IMPL,r_eq_e);
+            let_exprs[1]->type(Type::varbool());
+            std::vector<Expression*> absent_r_args(1);
+            absent_r_args[0] = r->id();
+            Call* absent_r = new Call(Location(), "absent", absent_r_args);
+            absent_r->type(Type::varbool());
+            absent_r->decl(env.orig->matchFn(absent_r));
+            let_exprs[2] = new BinOp(Location(),cond,BOT_OR,absent_r);
+            let_exprs[2]->type(Type::varbool());
+            Let* let = new Let(Location(), let_exprs, r->id());
+            let->type(r->type());
+            Comprehension* nc = new Comprehension(c->loc(),let,gs,c->set());
+            nc->type(c->type());
+            c = nc;
+            c_ka = c;
+          }
+        }
+        
         class EvalF {
         public:
           EnvI& env;

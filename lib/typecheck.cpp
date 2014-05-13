@@ -362,19 +362,25 @@ namespace MiniZinc {
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
+      bool needsOptionTypes = false;
       for (unsigned int i=0; i<c.n_generators(); i++) {
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
-        if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
+        if (ty_in == Type::varsetint()) {
+          needsOptionTypes = true;
+        } else if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
           throw TypeError(g_in->loc(),
             "generator expression must be par set of int or array[int] of int, but is "+ty_in.toString());
         }
       }
-      if (c.where() && c.where()->type() != Type::parbool()) {
-        throw TypeError(c.where()->loc(),
-                        "where clause must be par bool, but is "+
-                        c.where()->type().toString());
-        
+      if (c.where()) {
+        if (c.where()->type() == Type::varbool()) {
+          needsOptionTypes = true;
+        } else if (c.where()->type() != Type::parbool()) {
+          throw TypeError(c.where()->loc(),
+                          "where clause must be par bool, but is "+
+                          c.where()->type().toString());
+        }
       }
       Type tt = c.e()->type();
       if (c.set()) {
@@ -388,6 +394,10 @@ namespace MiniZinc {
           throw TypeError(c.e()->loc(),
             "array comprehension expression cannot be an array");
         tt._dim = 1;
+      }
+      if (needsOptionTypes) {
+        tt._ot = Type::OT_OPTIONAL;
+        tt._ti = Type::TI_VAR;
       }
       c.type(tt);
     }
