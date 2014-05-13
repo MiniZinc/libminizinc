@@ -370,7 +370,7 @@ namespace MiniZinc {
     void idn(long long int n) {
       _v_or_idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
     }
-    /// Return identifier or X_INTRODUCED plus identifier nunber
+    /// Return identifier or X_INTRODUCED plus identifier number
     ASTString str(void) const;
     /// Access declaration
     VarDecl* decl(void) const { return _decl; }
