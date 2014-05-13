@@ -130,6 +130,41 @@ annotation time;
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
+%-----------------------------------------------------------------------------%
+%
+% Option type predicates.
+%
+
+function var bool: getVal(var opt bool: b) ::promise_total =
+  let { var bool: bo; } in bo;
+
+function var bool: getPresent(var opt bool: b) ::promise_total =
+  let { var bool: bo; } in bo;
+
+predicate deopt(var opt bool: b) = getVal(b);
+predicate present(var opt bool: b) = getPresent(b);
+
+predicate deopt(var bool: b) = b;
+predicate present(var bool: b) = true;
+
+predicate absent(var opt bool: b) = not present(b);
+predicate absent(var bool: b) = false;
+
+predicate bool_eq(var opt bool: b0, var opt bool: b1) =
+  (absent(b0) /\ absent(b1)) \/ (present(b0) /\ present(b1) /\ deopt(b0)=deopt(b1));
+
+predicate bool_eq(var opt bool: b0, var bool: b1) =
+  present(b0) /\ deopt(b0)=b1;
+
+predicate bool_eq(var bool: b0, var opt bool: b1) =
+  present(b1) /\ deopt(b1)=b0;
+
+predicate forall (array[int] of var opt bool: x) =
+  forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
+
+%-----------------------------------------------------------------------------%
+%-----------------------------------------------------------------------------%
+
 % Include solver-specific redefinitions for any FlatZinc built-ins.
 %
 include "redefinitions.mzn"
