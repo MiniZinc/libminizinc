@@ -1850,13 +1850,9 @@ namespace MiniZinc {
         for (unsigned int j=al->v().size(); j--;) {
           if (al->v()[j]->type().ispar())
             nonFixedVars--;
-          else if (Id* id = al->v()[j]->dyn_cast<Id>()) {
-            if (id->decl()->ti()->domain()==constants().lit_false ||
-                id->decl()->ti()->domain()==constants().lit_true)
-              nonFixedVars--;
-          }
         }
       }
+      nonFixedVars--; // for the identifier we're currently processing
       nonFixedLiteralCount.insert(c, nonFixedVars);
       return nonFixedVars;
     } else {
@@ -4293,7 +4289,7 @@ namespace MiniZinc {
 
     createOutput(env);
     
-    
+    std::vector<int> toAssignBoolVars;
     std::vector<int> assignedBoolVars;
     ExpressionMap<int> nonFixedLiteralCount;
     
@@ -4301,11 +4297,28 @@ namespace MiniZinc {
       if (m[i]->removed())
         continue;
       if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
-        if (Call* c = ci->e()->dyn_cast<Call>()) {
-          if (c->decl()==constants().var_redef) {
-            CollectDecls cd(env.vo,deletedVarDecls,ci);
-            topDown(cd,c);
-            ci->remove();
+        if (!ci->removed()) {
+          if (Call* c = ci->e()->dyn_cast<Call>()) {
+            if (c->decl()==constants().var_redef) {
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              ci->remove();
+            } else if (c->id()==constants().ids.forall) {
+              ArrayLit* al = follow_id(c->args()[0])->cast<ArrayLit>();
+              for (unsigned int i=al->v().size(); i--;) {
+                if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                  if (id->decl()->ti()->domain()==NULL) {
+                    toAssignBoolVars.push_back(env.vo.idx.find(id->decl())->second);
+                  } else if (id->decl()->ti()->domain() == constants().lit_false) {
+                    MZN_MODEL_INCONSISTENT
+                    id->decl()->e(constants().lit_true);
+                  }
+                }
+              }
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              ci->remove();
+            }
           }
         }
       } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -4316,7 +4329,16 @@ namespace MiniZinc {
         }
       }
     }
-
+    for (unsigned int i=toAssignBoolVars.size(); i--;) {
+      if (m[toAssignBoolVars[i]]->removed())
+        continue;
+      VarDeclI* vdi = m[toAssignBoolVars[i]]->cast<VarDeclI>();
+      if (vdi->e()->ti()->domain()==NULL) {
+        vdi->e()->ti()->domain(constants().lit_true);
+        assignedBoolVars.push_back(toAssignBoolVars[i]);
+      }
+    }
+    
     while (!assignedBoolVars.empty()) {
       int bv = assignedBoolVars.back();
       assignedBoolVars.pop_back();
@@ -4490,45 +4512,7 @@ namespace MiniZinc {
           remove = false;
         }
       } else if (c->id()==constants().ids.forall || c->id()==constants().ids.exists || c->id()==constants().ids.clause) {
-        int nonfixed = decrementNonFixedVars(nonFixedLiteralCount,c);
-        if (nonfixed==0) {
-          bool result = (c->id() == constants().ids.forall);
-          for (unsigned int i=0; i<c->args().size(); i++) {
-            bool ispos = i==0;
-            bool curResult = ispos ? result : !result;
-
-            ArrayLit* al = follow_id(c->args()[i])->cast<ArrayLit>();
-            for (unsigned int i=al->v().size(); i--;) {
-              if (al->v()[i]->type().ispar() && eval_bool(al->v()[i]) != curResult) {
-                result = !result;
-                break;
-              } else {
-                Id* id = al->v()[i]->cast<Id>();
-                bool idv = (id->decl()->ti()->domain()==constants().boollit(ispos));
-                if (result != idv) {
-                  result = !result;
-                  break;
-                }
-              }
-            }
-          }
-          if (ci) {
-            if (result || (c->id() != constants().ids.forall)) {
-              toRemove.push_back(ci);
-            } else {
-              MZN_MODEL_INCONSISTENT
-              ci->e(constants().lit_false);
-            }
-          } else {
-            if (vdi->e()->ti()->domain()==NULL) {
-              vdi->e()->ti()->domain(constants().boollit(result));
-              assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
-            } else if (vdi->e()->ti()->domain()!=constants().boollit(result)) {
-              MZN_MODEL_INCONSISTENT
-              vdi->e()->e(constants().boollit(result));
-            }
-          }
-        } else if (isTrue && c->id()==constants().ids.exists) {
+        if (isTrue && c->id()==constants().ids.exists) {
           if (ci) {
             toRemove.push_back(ci);
           } else {
@@ -4553,53 +4537,147 @@ namespace MiniZinc {
               vdi->e()->e(constants().lit_false);
             }
           }
-        } else if (c->id()==constants().ids.clause) {
-          int posOrNeg = isTrue ? 0 : 1;
-          ArrayLit* al = follow_id(c->args()[posOrNeg])->cast<ArrayLit>();
-          ArrayLit* al_other = follow_id(c->args()[1-posOrNeg])->cast<ArrayLit>();
-          
-          if (ci && al->v().size()==1 && al->v()[0]!=vd->id() && al_other->v().size()==1) {
-            // simple implication
-            assert(al_other->v()[0]==vd->id());
-            if (ci) {
-              if (al->v()[0]->type().ispar()) {
-                if (eval_bool(al->v()[0])==isTrue) {
+        } else {
+          int nonfixed = decrementNonFixedVars(nonFixedLiteralCount,c);
+          bool isConjunction = (c->id() == constants().ids.forall);
+          assert(nonfixed >=0);
+          if (nonfixed<=1) {
+            bool subsumed = false;
+            int nonfixed_i=-1;
+            int nonfixed_j=-1;
+            int realNonFixed = 0;
+            for (unsigned int i=0; i<c->args().size(); i++) {
+              bool unit = (i==0 ? isConjunction : !isConjunction);
+              ArrayLit* al = follow_id(c->args()[i])->cast<ArrayLit>();
+              realNonFixed += al->v().size();
+              for (unsigned int j=al->v().size(); j--;) {
+                if (al->v()[j]->type().ispar() || al->v()[j]->cast<Id>()->decl()->ti()->domain())
+                  realNonFixed--;
+                if (al->v()[j]->type().ispar() && eval_bool(al->v()[j]) != unit) {
+                  subsumed = true;
+                  i=2; // break out of outer loop
+                  break;
+                } else {
+                  Id* id = al->v()[j]->cast<Id>();
+                  if (id->decl()->ti()->domain()) {
+                    bool idv = (id->decl()->ti()->domain()==constants().lit_true);
+                    if (unit != idv) {
+                      subsumed = true;
+                      i=2; // break out of outer loop
+                      break;
+                    }
+                  } else {
+                    nonfixed_i = i;
+                    nonfixed_j = j;
+                  }
+                }
+              }
+            }
+            
+            if (subsumed) {
+              if (ci) {
+                if (isConjunction) {
+                  MZN_MODEL_INCONSISTENT
+                  ci->e(constants().lit_false);
+                } else {
+                  toRemove.push_back(ci);
+                }
+              } else {
+                if (vdi->e()->ti()->domain()==NULL) {
+                  vdi->e()->ti()->domain(constants().boollit(!isConjunction));
+                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                } else if (vdi->e()->ti()->domain()!=constants().boollit(!isConjunction)) {
+                  MZN_MODEL_INCONSISTENT
+                  vdi->e()->e(constants().boollit(!isConjunction));
+                }
+              }
+            } else if (realNonFixed==0) {
+              if (ci) {
+                if (isConjunction) {
                   toRemove.push_back(ci);
                 } else {
                   MZN_MODEL_INCONSISTENT
-                  remove = false;
+                  ci->e(constants().lit_false);
                 }
               } else {
-                Id* id = al->v()[0]->cast<Id>();
-                if (id->decl()->ti()->domain()==NULL) {
-                  id->decl()->ti()->domain(constants().boollit(isTrue));
-                  assignedBoolVars.push_back(env.vo.idx.find(id->decl())->second);
-                } else {
-                  if (id->decl()->ti()->domain()==constants().boollit(isTrue)) {
+                if (vdi->e()->ti()->domain()==NULL) {
+                  vdi->e()->ti()->domain(constants().boollit(isConjunction));
+                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                } else if (vdi->e()->ti()->domain()!=constants().boollit(isConjunction)) {
+                  MZN_MODEL_INCONSISTENT
+                  vdi->e()->e(constants().boollit(isConjunction));
+                }
+              }
+            } else {
+              // not subsumed, nonfixed==1
+              assert(nonfixed_i != -1);
+              ArrayLit* al = follow_id(c->args()[nonfixed_i])->cast<ArrayLit>();
+              Id* id = al->v()[nonfixed_j]->cast<Id>();
+              if (ci || vdi->e()->ti()->domain()) {
+                bool result = nonfixed_i==0;
+                if (vdi && vdi->e()->ti()->domain()==constants().lit_false)
+                  result = !result;
+                VarDecl* vd = id->decl();
+                if (vd->ti()->domain()==NULL) {
+                  vd->ti()->domain(constants().boollit(result));
+                  assignedBoolVars.push_back(env.vo.idx.find(vd)->second);
+                } else if (vd->ti()->domain()!=constants().boollit(result)) {
+                  MZN_MODEL_INCONSISTENT
+                  vd->e(constants().lit_true);
+                }
+              } else {
+                vdi->e()->e(id);
+              }
+            }
+            
+          } else if (c->id()==constants().ids.clause) {
+            int posOrNeg = isTrue ? 0 : 1;
+            ArrayLit* al = follow_id(c->args()[posOrNeg])->cast<ArrayLit>();
+            ArrayLit* al_other = follow_id(c->args()[1-posOrNeg])->cast<ArrayLit>();
+            
+            if (ci && al->v().size()==1 && al->v()[0]!=vd->id() && al_other->v().size()==1) {
+              // simple implication
+              assert(al_other->v()[0]==vd->id());
+              if (ci) {
+                if (al->v()[0]->type().ispar()) {
+                  if (eval_bool(al->v()[0])==isTrue) {
                     toRemove.push_back(ci);
                   } else {
                     MZN_MODEL_INCONSISTENT
                     remove = false;
                   }
-                }
-              }
-            }
-          } else {
-            // proper clause
-            for (unsigned int i=0; i<al->v().size(); i++) {
-              if (al->v()[i]==vd->id()) {
-                if (ci) {
-                  toRemove.push_back(ci);
                 } else {
-                  if (vdi->e()->ti()->domain()==NULL) {
-                    vdi->e()->ti()->domain(constants().lit_true);
-                    assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
-                  } else if (vdi->e()->ti()->domain()!=constants().lit_true) {
-                    MZN_MODEL_INCONSISTENT
-                    vdi->e()->e(constants().lit_true);
+                  Id* id = al->v()[0]->cast<Id>();
+                  if (id->decl()->ti()->domain()==NULL) {
+                    id->decl()->ti()->domain(constants().boollit(isTrue));
+                    assignedBoolVars.push_back(env.vo.idx.find(id->decl())->second);
+                  } else {
+                    if (id->decl()->ti()->domain()==constants().boollit(isTrue)) {
+                      toRemove.push_back(ci);
+                    } else {
+                      MZN_MODEL_INCONSISTENT
+                      remove = false;
+                    }
                   }
                 }
-                break;
+              }
+            } else {
+              // proper clause
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (al->v()[i]==vd->id()) {
+                  if (ci) {
+                    toRemove.push_back(ci);
+                  } else {
+                    if (vdi->e()->ti()->domain()==NULL) {
+                      vdi->e()->ti()->domain(constants().lit_true);
+                      assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                    } else if (vdi->e()->ti()->domain()!=constants().lit_true) {
+                      MZN_MODEL_INCONSISTENT
+                      vdi->e()->e(constants().lit_true);
+                    }
+                  }
+                  break;
+                }
               }
             }
           }
