@@ -2,8 +2,9 @@ cmake_minimum_required (VERSION 2.6)
 project (libminizinc CXX)
 
 # The version number.
-set (libminizinc_VERSION_MAJOR 0)
-set (libminizinc_VERSION_MINOR 8)
+set (libminizinc_VERSION_MAJOR 2)
+set (libminizinc_VERSION_MINOR 0)
+set (libminizinc_VERSION_PATCH "b1")
 
 include(CheckCXXCompilerFlag)
 
@@ -153,3 +154,34 @@ target_link_libraries(mzn2fzn minizinc)
 
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
+
+INSTALL(TARGETS mzn2fzn solns2out minizinc
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+INSTALL(DIRECTORY mznlib/ DESTINATION share/minizinc/lib)
+INSTALL(DIRECTORY include/minizinc
+DESTINATION include
+PATTERN config.hh.in EXCLUDE
+)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/config.hh DESTINATION include/minizinc)
+INSTALL(FILES README LICENSE.txt DESTINATION doc)
+
+SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${libminizinc_VERSION_PATCH})
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+IF(WIN32 AND NOT UNIX)
+  SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+  SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.minizinc.org")
+  SET(CPACK_NSIS_CONTACT "info@minizinc.org")
+  SET(CPACK_NSIS_MODIFY_PATH ON)
+  SET(CPACK_GENERATOR "ZIP")
+ELSE(WIN32 AND NOT UNIX)
+  SET(CPACK_STRIP_FILES "bin/MyExecutable")
+  SET(CPACK_SOURCE_STRIP_FILES "")
+  SET(CPACK_GENERATOR "TGZ")
+ENDIF(WIN32 AND NOT UNIX)
+include(CPack)
