@@ -170,7 +170,6 @@ namespace MiniZinc {
   public:
     Model* orig;
     Model* output;
-    std::string varPrefix;
     VarOccurrences vo;
     VarOccurrences output_vo;
     CopyMap cmap;
@@ -191,7 +190,7 @@ namespace MiniZinc {
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
   public:
-    EnvI(Model* orig0) : orig(orig0), output(new Model), varPrefix("X_"), ignorePartial(false), _flat(new Model), ids(0) {
+    EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0) {
       MZN_FILL_REIFY_MAP(int_,lin_eq);
       MZN_FILL_REIFY_MAP(int_,lin_le);
       MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -228,10 +227,6 @@ namespace MiniZinc {
     ~EnvI(void) {
       delete _flat;
       delete output;
-    }
-    ASTString genId(const std::string& s) {
-      std::ostringstream oss; oss << varPrefix << s << "_" << ids++;
-      return ASTString(oss.str());
     }
     long long int genId(void) {
       return ids++;
@@ -4042,18 +4037,6 @@ namespace MiniZinc {
   
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
-
-    // Collect variable declarations to determine clean namespace for temporaries
-    class DeclV : public ItemVisitor {
-    public:
-      std::string& prefix;
-      DeclV(EnvI& envi) : prefix(envi.varPrefix) {}
-      void vVarDeclI(VarDeclI* v) {
-        while (v->e()->id()->v().beginsWith(prefix))
-          prefix += "_";
-      }
-    } _declv(e.envi());
-    iterItems(_declv, e.model());
     
     // Flatten main model
     class FV : public ItemVisitor {
@@ -5082,7 +5065,7 @@ namespace MiniZinc {
         if (si->e() && si->e()->type().ispar()) {
           GCLock lock;
           TypeInst* ti = new TypeInst(Location(),si->e()->type(),NULL);
-          VarDecl* constantobj = new VarDecl(Location(),ti,e.envi().genId("obj"),si->e());
+          VarDecl* constantobj = new VarDecl(Location(),ti,e.envi().genId(),si->e());
           si->e(constantobj->id());
           e.envi().flat_addItem(new VarDeclI(Location(),constantobj));
         }
