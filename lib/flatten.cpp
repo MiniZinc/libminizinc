@@ -1347,6 +1347,31 @@ namespace MiniZinc {
       return dom != NULL && dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
     }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
+      if (dom) {
+        Val lb = dom->lhs()->cast<FloatLit>()->v();
+        Val ub = dom->rhs()->cast<FloatLit>()->v();
+        Domain ndomain;
+        switch (bot) {
+          case BOT_LE:
+            return NULL;
+          case BOT_LQ:
+            if (v < ub)
+              return new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location(),v));
+            else
+              return dom;
+          case BOT_GR:
+            return NULL;
+          case BOT_GQ:
+            if (v > lb)
+              return new BinOp(dom->loc(),new FloatLit(Location(),v),BOT_DOTDOT,dom->rhs());
+            else
+              return dom;
+          case BOT_NQ:
+            return NULL;
+          default: assert(false); return NULL;
+        }
+        return ndomain;
+      }
       return NULL;
     }
   };
@@ -1718,7 +1743,7 @@ namespace MiniZinc {
         VarDecl* vd = alv[0]()->cast<Id>()->decl();
         typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
         typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(bot,domain,d);
-        if (domain) {
+        if (domain && ndomain) {
           if (LinearTraits<Lit>::domain_empty(ndomain)) {
             ret.r = bind(env,ctx,r,constants().lit_false);
           } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
