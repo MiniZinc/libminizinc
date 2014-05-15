@@ -1385,7 +1385,7 @@ namespace MiniZinc {
     }
   };
 
-  void remove_dups(std::vector<KeepAlive>& x, bool identity) {
+  bool remove_dups(std::vector<KeepAlive>& x, bool identity) {
     for (unsigned int i=0; i<x.size(); i++) {
       x[i] = follow_id_to_value(x[i]());
     }
@@ -1395,14 +1395,19 @@ namespace MiniZinc {
     for (unsigned int i=0; i<x.size(); i++) {
       if (!Expression::equal(x[i](),prev)) {
         prev = x[i]();
-        if (x[i]()->isa<BoolLit>() && x[i]()->cast<BoolLit>()->v()==identity) {
-          // skip
+        if (x[i]()->isa<BoolLit>()) {
+          if (x[i]()->cast<BoolLit>()->v()==identity) {
+            // skip
+          } else {
+            return true;
+          }
         } else {
           x[ci++] = x[i];
         }
       }
     }
     x.resize(ci);
+    return false;
   }
 
   /// Return a lin_exp or id if \a e is a lin_exp or id
@@ -3140,8 +3145,13 @@ namespace MiniZinc {
                   }
                 }
               }
-              remove_dups(pos_alv,false);
-              remove_dups(neg_alv,true);
+              bool subsumed = remove_dups(pos_alv,false);
+              subsumed = subsumed || remove_dups(neg_alv,true);
+              if (subsumed) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,constants().lit_true);
+                return ret;
+              }
               if (neg_alv.empty()) {
                 if (pos_alv.size()==0) {
                   ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -3167,7 +3177,12 @@ namespace MiniZinc {
                 args.push_back(neg_al);
               }
             } else /* cid=="forall" */ {
-              remove_dups(alv,true);
+              bool subsumed = remove_dups(alv,true);
+              if (subsumed) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,constants().lit_false);
+                return ret;
+              }
               if (alv.size()==0) {
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 ret.r = bind(env,ctx,r,constants().lit_true);
@@ -4319,6 +4334,18 @@ namespace MiniZinc {
               topDown(cd,c);
               ci->remove();
             }
+          } else if (Id* id = ci->e()->dyn_cast<Id>()) {
+            if (id->decl()->ti()->domain() == constants().lit_false) {
+              MZN_MODEL_INCONSISTENT
+              ci->e(constants().lit_false);
+            } else {
+              if (id->decl()->ti()->domain()==NULL) {
+                toAssignBoolVars.push_back(env.vo.idx.find(id->decl())->second);
+              }
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              ci->remove();
+            }
           }
         }
       } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -4758,13 +4785,19 @@ namespace MiniZinc {
                   ve = nc;
                 }
               } else if (Id* id = ve->dyn_cast<Id>()) {
-                std::vector<Expression*> args(2);
-                args[0] = id;
-                args[1] = constants().lit_true;
-                GCLock lock;
-                ve = new Call(Location(),constants().ids.bool_eq,args);
+                if (id->decl()->ti()->domain() != constants().lit_true) {
+                  std::vector<Expression*> args(2);
+                  args[0] = id;
+                  args[1] = constants().lit_true;
+                  GCLock lock;
+                  ve = new Call(Location(),constants().ids.bool_eq,args);
+                } else {
+                  ve = constants().lit_true;
+                }
               }
-              e.envi().flat_addItem(new ConstraintI(Location(),ve));
+              if (ve != constants().lit_true) {
+                e.envi().flat_addItem(new ConstraintI(Location(),ve));
+              }
             }
           } else {
             if (vd->e() != NULL) {
