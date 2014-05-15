@@ -139,13 +139,13 @@ namespace MiniZinc {
     PlainPrinter(std::ostream& os0, bool flatZinc) : os(os0), _flatZinc(flatZinc) {}
 
     void p(const Type& type, const Expression* e) {
-      if (type._ot==Type::OT_OPTIONAL)
-        os << "opt ";
       switch (type._ti) {
       case Type::TI_PAR: break;
       case Type::TI_VAR: os << "var "; break;
       case Type::TI_SVAR: os << "svar "; break;
       }
+      if (type._ot==Type::OT_OPTIONAL)
+        os << "opt ";
       if (type._st==Type::ST_SET)
         os << "set of ";
       if (e==NULL) {
@@ -970,13 +970,13 @@ namespace MiniZinc {
   Document* annotationToDocument(const Annotation& ann);
   Document* tiexpressionToDocument(const Type& type, const Expression* e) {
     DocumentList* dl = new DocumentList("","","",false);
-    if (type._ot==Type::OT_OPTIONAL)
-      dl->addStringToList("opt ");
     switch (type._ti) {
     case Type::TI_PAR: break;
     case Type::TI_VAR: dl->addStringToList("var "); break;
     case Type::TI_SVAR: dl->addStringToList("svar "); break;
     }
+    if (type._ot==Type::OT_OPTIONAL)
+      dl->addStringToList("opt ");
     if (type._st==Type::ST_SET)
       dl->addStringToList("set of ");
     if (e==NULL) {
