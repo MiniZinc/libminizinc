@@ -1331,18 +1331,20 @@ namespace MiniZinc {
     }
     static Expression* new_domain(Domain d) { return d; }
     static bool domain_contains(Domain dom, Val v) {
-      return dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v;
+      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
     }
     static bool domain_equals(Domain dom, Val v) {
-      return dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
+      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
     }
     static bool domain_equals(Domain dom1, Domain dom2) {
+      if (dom1==dom2) return true;
+      if (dom1==NULL || dom2==NULL) return false;
       return
         dom1->lhs()->cast<FloatLit>()->v() == dom2->lhs()->cast<FloatLit>()->v() &&
         dom1->rhs()->cast<FloatLit>()->v() == dom2->rhs()->cast<FloatLit>()->v();
     }
     static bool domain_empty(Domain dom) {
-      return dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
+      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
     }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
       return NULL;
