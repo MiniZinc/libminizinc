@@ -135,32 +135,65 @@ annotation time;
 % Option type predicates.
 %
 
-function var bool: getVal(var opt bool: b) ::promise_total =
+
+predicate deopt(var opt bool: b) ::promise_total =
   let { var bool: bo; } in bo;
-
-function var bool: getPresent(var opt bool: b) ::promise_total =
+predicate occurs(var opt bool: b) ::promise_total =
   let { var bool: bo; } in bo;
-
-predicate deopt(var opt bool: b) = getVal(b);
-predicate present(var opt bool: b) = getPresent(b);
-
+  
 predicate deopt(var bool: b) = b;
-predicate present(var bool: b) = true;
+predicate occurs(var bool: b) = true;
 
-predicate absent(var opt bool: b) = not present(b);
+predicate absent(var opt bool: b) = not occurs(b);
 predicate absent(var bool: b) = false;
 
 predicate bool_eq(var opt bool: b0, var opt bool: b1) =
-  (absent(b0) /\ absent(b1)) \/ (present(b0) /\ present(b1) /\ deopt(b0)=deopt(b1));
+     (absent(b0) /\ absent(b1))
+  \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0)=deopt(b1));
 
 predicate bool_eq(var opt bool: b0, var bool: b1) =
-  present(b0) /\ deopt(b0)=b1;
+  occurs(b0) /\ deopt(b0)=b1;
 
 predicate bool_eq(var bool: b0, var opt bool: b1) =
-  present(b1) /\ deopt(b1)=b0;
+  occurs(b1) /\ deopt(b1)=b0;
 
 predicate forall (array[int] of var opt bool: x) =
   forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
+
+predicate exists (array[int] of var opt bool: x) =
+  exists ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
+
+function bool: occurs(var int: x) ::promise_total = true;
+function var int: deopt(var int: x) ::promise_total = x;
+
+function bool: absent(var int: x) ::promise_total = false;
+function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
+
+function var bool: occurs_internal(var opt int: x) ::promise_total =
+  let { var bool : b; } in b;
+function var int : deopt_internal(var opt int : x) ::promise_total =
+  let { var lb(x)..ub(x): y } in y;
+
+function var opt int: reverse_map(var bool: occ, var int: d);
+function int: reverse_map(bool: occ, int: d) ::promise_total =
+  if occ then d else 0 endif;
+
+function var bool : occurs(var opt int : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var int  : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in b;
+  
+function var int : deopt(var opt int : x) ::promise_total =
+  let { var lb(x)..ub(x): y } in y;
+
+predicate int_eq(var opt int : x, var opt int : y) =
+     (absent(x) /\ absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
+
+function var int: sum(array[int] of var opt int: x) =
+  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
