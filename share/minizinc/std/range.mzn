@@ -18,3 +18,9 @@ predicate range(array[int] of var int: x, var set of int: s,
         )
     );
 
+function var set of int: range(array[int] of var int: x, var set of int: s) 
+    ::promise_total =
+    let {
+      var set of lb_array(x)..ub_array(x): t;
+      constraint range(x,s,t);
+    } in t;
