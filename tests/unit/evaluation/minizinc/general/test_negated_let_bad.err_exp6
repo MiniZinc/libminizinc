@@ -1,7 +1,5 @@
 MiniZinc: flattening error: free variable in non-positive context
  in file test_negated_let_bad.mzn:4
 while evaluating
- let {var 1..10: y,} in (x==y)
- in file test_negated_let_bad.mzn:4.17
- not let {var 1..10: y,} in (x==y)
- in file test_negated_let_bad.mzn:4.12
+  let expression in file test_negated_let_bad.mzn:4.17
+  unary operator @not in file test_negated_let_bad.mzn:4.12
