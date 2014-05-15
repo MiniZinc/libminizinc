@@ -1096,7 +1096,18 @@ namespace MiniZinc {
     } else if (op->rhs()->type().isopt() &&
                (bot==BOT_EQUIV || bot==BOT_EQ)) {
       /// TODO: extend to all option type operators
-      return constants().ids.bool_eq;
+      switch (op->lhs()->type()._bt) {
+        case Type::BT_BOOL: return constants().ids.bool_eq;
+        case Type::BT_FLOAT: return constants().ids.float_.eq;
+        case Type::BT_INT:
+          if (op->lhs()->type()._st==Type::ST_PLAIN)
+            return constants().ids.int_.eq;
+          else
+            return constants().ids.set_eq;
+        default:
+          throw InternalError("not yet implemented");
+      }
+      
     } else {
       throw InternalError(op->opToString().str()+" not yet implemented");
     }
