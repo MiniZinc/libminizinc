@@ -2383,10 +2383,18 @@ namespace MiniZinc {
             
 
             SetLit* r_bounds = NULL;
-            if (c->e()->type().isint()) {
-              IntBounds ib_then = compute_int_bounds(c->e());
-              if (ib_then.valid) {
-                r_bounds = new SetLit(Location(), IntSetVal::a(ib_then.l,ib_then.u));
+            if (c->e()->type()._bt==Type::BT_INT && c->e()->type()._dim == 0) {
+              IntSetVal* ibv = NULL;
+              if (c->e()->type().isset()) {
+                ibv = compute_intset_bounds(c->e());
+              } else {
+                IntBounds ib = compute_int_bounds(c->e());
+                if (ib.valid) {
+                  ibv = IntSetVal::a(ib.l,ib.u);
+                }
+              }
+              if (ibv != NULL) {
+                r_bounds = new SetLit(Location(), ibv);
                 r_bounds->type(Type::parsetint());
               }
             }
