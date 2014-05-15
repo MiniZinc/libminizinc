@@ -337,6 +337,7 @@ function     bool: '>='(    $T,    $T);
 function var bool: '>='(var $T,var $T);
 function     bool: '='(    $T,    $T);
 function var bool: '='(var $T,var $T);
+function var bool: '='(var opt $T,var opt $T);
 function     bool: '!='(    $T,    $T);
 function var bool: '!='(var $T,var $T);
 
