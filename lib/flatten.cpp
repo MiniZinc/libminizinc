@@ -2270,7 +2270,7 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            Call* cc = new Call(Location(),"element",args);
+            Call* cc = new Call(e->loc(),constants().ids.element,args);
             cc->type(aa->type());
             FunctionI* fi = env.orig->matchFn(cc->id(),args);
             assert(fi);
