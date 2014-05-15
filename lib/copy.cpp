@@ -344,14 +344,19 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
       {
         VarDecl* vd = e->cast<VarDecl>();
-        ASTString id_v;
-        if (ASTStringO* cs = m.find(vd->id()->v())) {
-          id_v = ASTString(cs);
+        VarDecl* c;
+        if (vd->id()->idn()==-1) {
+          ASTString id_v;
+          if (ASTStringO* cs = m.find(vd->id()->v())) {
+            id_v = ASTString(cs);
+          } else {
+            id_v = ASTString(vd->id()->v().str());
+            m.insert(vd->id()->v(),id_v);
+          }
+          c = new VarDecl(copy_location(m,e),NULL,id_v,NULL);
         } else {
-          id_v = ASTString(vd->id()->v().str());
-          m.insert(vd->id()->v(),id_v);
+          c = new VarDecl(copy_location(m,e),NULL,vd->id()->idn(),NULL);
         }
-        VarDecl* c = new VarDecl(copy_location(m,e),NULL,id_v,NULL);
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
         c->flat(vd->flat());
