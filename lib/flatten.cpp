@@ -4848,6 +4848,7 @@ namespace MiniZinc {
         vd->ann().remove(constants().ctx.pos);
         vd->ann().remove(constants().ctx.neg);
         vd->ann().remove(constants().ctx.root);
+        vd->ann().remove(constants().ann.promise_total);
         
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
