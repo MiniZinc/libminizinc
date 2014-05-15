@@ -4,7 +4,8 @@ MiniZinc 2.0 beta release
 Installation Instructions
 -------------------------
 
-If you have downloaded a binary package, simply uncompress the archive anywhere in your file system. 
+If you have downloaded a binary package, simply uncompress the archive anywhere
+in your file system.
 
 If you are compiling from the sources, please see the INSTALL.txt document.
 
@@ -16,7 +17,8 @@ Prerequisite software:
 - clang, gcc or Microsoft Visual C++
 - bison, flex (can be installed e.g. with Cygwin)
 
-Download the source code from the git repository or uncompress a source archive. Then change into the toplevel directory (the one containing this file).
+Download the source code from the git repository or uncompress a source
+archive. Then change into the toplevel directory (the one containing this file).
 
 To build it on Linux or other Unix-like systems:
 > mkdir build
@@ -35,12 +37,17 @@ Open a Visual Studio console (e.g. from the Start menu), then
 Running
 -------
 
-IF YOU INSTALLED A BINARY PACKAGE, add the "bin" directory inside that package to your PATH environment variable. In addition, you need to set the MZN_STDLIB_DIR environment variable to the directory "share/minizinc/lib" inside package directory.
+IF YOU INSTALLED A BINARY PACKAGE, add the "bin" directory inside that package
+to your PATH environment variable. In addition, you need to set the
+MZN_STDLIB_DIR environment variable to the directory "share/minizinc" inside
+package directory.
 
-IF YOU COMPILED FROM SOURCES, add the "build" directory to your PATH environment variable. In addition, you need to set the MZN_STDLIB_DIR environment variable to the directory "share/minizinc/lib" inside the source tree.
+IF YOU COMPILED FROM SOURCES, add the "build" directory to your PATH
+environment variable. In addition, you need to set the MZN_STDLIB_DIR
+environment variable to the directory "share/minizinc" inside the source tree.
 
 Alternatives:
  - copy the two executables mzn2fzn and solns2out to somewhere on your PATH 
    instead of setting your PATH
- - add the command line option --stdlib-dir=MINIZINC/share/minizinc/lib (where 
+ - add the command line option --stdlib-dir=MINIZINC/share/minizinc (where 
    you replace MINIZINC by the actual path mentioned above)
