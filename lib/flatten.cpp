@@ -3005,7 +3005,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args_e(args.size());
                 for (unsigned int i=args.size(); i--;)
                   args_e[i] = args[i]();
-                Call* cc = new Call(Location(),callid,args_e);
+                Call* cc = new Call(e->loc(),callid,args_e);
                 cc->type(bo->type());
 
                 EnvI::Map::iterator cit = env.map_find(cc);
@@ -3023,6 +3023,9 @@ namespace MiniZinc {
                   GC::unlock();
                 } else {
                   cc->decl(env.orig->matchFn(cc->id(),args_e));
+                  if (cc->decl()==NULL) {
+                    throw FlatteningError(cc->loc(), "cannot find matching declaration");
+                  }
                   cc->type(cc->decl()->rtype(args_e));
                   assert(cc->decl());
                   bool singleExp = true;
@@ -3323,6 +3326,8 @@ namespace MiniZinc {
             std::vector<Expression*> e_args = toExpVec(args);
             Call* cr_c = new Call(Location(),cid,e_args);
             decl = env.orig->matchFn(cr_c);
+            if (decl==NULL)
+              throw FlatteningError(cr_c->loc(), "cannot find matching declaration");
             cr_c->type(decl->rtype(e_args));
             assert(decl);
             cr_c->decl(decl);
