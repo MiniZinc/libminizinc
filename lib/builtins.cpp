@@ -726,6 +726,9 @@ namespace MiniZinc {
   FloatVal b_pow(ASTExprVec<Expression> args) {
     return std::pow(eval_float(args[0]),eval_float(args[1]));
   }
+  FloatVal b_sqrt(ASTExprVec<Expression> args) {
+    return std::sqrt(eval_float(args[0]));
+  }
   
   bool b_assert_bool(ASTExprVec<Expression> args) {
     assert(args.size()==2);
@@ -1233,6 +1236,7 @@ namespace MiniZinc {
       rb(m, ASTString("log2"), t, b_log2);
       rb(m, ASTString("ln"), t, b_ln);
       rb(m, ASTString("exp"), t, b_exp);
+      rb(m, ASTString("sqrt"), t, b_sqrt);
       t.push_back(Type::parfloat());
       rb(m, ASTString("log"), t, b_log);
       rb(m, ASTString("pow"), t, b_pow);
