@@ -399,7 +399,74 @@ namespace MiniZinc {
     for (unsigned int i=0; i<e->errorStack.size(); i++) {
       if (e->errorStack[i]->isa<Id>())
         break;
-      os << " " << *e->errorStack[i];
+      std::cerr << "  ";
+      switch (e->errorStack[i]->eid()) {
+        case Expression::E_INTLIT:
+          std::cerr << "integer literal";
+          break;
+        case Expression::E_FLOATLIT:
+          std::cerr << "float literal";
+          break;
+        case Expression::E_SETLIT:
+          std::cerr << "set literal";
+          break;
+        case Expression::E_BOOLLIT:
+          std::cerr << "bool literal";
+          break;
+        case Expression::E_STRINGLIT:
+          std::cerr << "string literal";
+          break;
+        case Expression::E_ID:
+          std::cerr << "identifier";
+          break;
+        case Expression::E_ANON:
+          std::cerr << "anonymous variable";
+          break;
+        case Expression::E_ARRAYLIT:
+          std::cerr << "array literal";
+          break;
+        case Expression::E_ARRAYACCESS:
+          std::cerr << "array access";
+          break;
+        case Expression::E_COMP:
+          if (e->errorStack[i]->cast<Comprehension>()->set())
+            std::cerr << "set ";
+          else
+            std::cerr << "array ";
+          std::cerr << "comprehension";
+          break;
+        case Expression::E_ITE:
+          std::cerr << "if-then-else expression";
+          break;
+        case Expression::E_BINOP:
+          std::cerr << "binary operator " << e->errorStack[i]->cast<BinOp>()->opToString();
+          break;
+        case Expression::E_UNOP:
+          std::cerr << "unary operator " << e->errorStack[i]->cast<UnOp>()->opToString();
+          break;
+        case Expression::E_CALL:
+          std::cerr << "call '" << e->errorStack[i]->cast<Call>()->id() << "'";
+          break;
+        case Expression::E_VARDECL:
+        {
+          GCLock lock;
+          std::cerr << "variable declaration " << e->errorStack[i]->cast<VarDecl>()->id()->str();
+        }
+          break;
+        case Expression::E_LET:
+          std::cerr << "let expression";
+          break;
+        case Expression::E_TI:
+          std::cerr << "type-inst expression";
+          break;
+        case Expression::E_TIID:
+          std::cerr << "type identifier";
+          break;
+        default:
+          assert(false);
+          std::cerr << "unknown expression (internal error)";
+          break;
+      }
       os << " in file " << e->errorStack[i]->loc().toString() << std::endl;
     }
     return os;
@@ -3974,6 +4041,7 @@ namespace MiniZinc {
             if (!v->e()->type().isann())
               throw EvalError(v->e()->loc(), "Undefined parameter", v->e()->id()->v());
           } else {
+            CallStackItem csi(env,v->e());
             GCLock lock;
             v->e()->e(eval_par(v->e()->e()));
             if (v->e()->type().dim() > 0)
