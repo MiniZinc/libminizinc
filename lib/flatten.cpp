@@ -3676,6 +3676,11 @@ namespace MiniZinc {
     return ret;
   }
   
+  bool isBuiltin(FunctionI* decl) {
+    return (decl->loc().filename.endsWith("/builtins.mzn") ||
+            decl->loc().filename.endsWith("/stdlib.mzn"));
+  }
+  
   bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
       return true;
@@ -3715,9 +3720,13 @@ namespace MiniZinc {
           if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
             success = false;
           } else {
-            decl = copy(env.cmap,origdecl)->cast<FunctionI>();
-            env.output->registerFn(decl);
-            env.output->addItem(decl);
+            if (!isBuiltin(origdecl)) {
+              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              env.output->registerFn(decl);
+              env.output->addItem(decl);
+            } else {
+              decl = origdecl;
+            }
             c.decl(decl);
           }
         }
@@ -3788,9 +3797,13 @@ namespace MiniZinc {
               if (decl==NULL) {
                 FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
                 assert(origdecl != NULL);
-                decl = copy(env.cmap,origdecl)->cast<FunctionI>();
-                env.output->registerFn(decl);
-                env.output->addItem(decl);
+                if (!isBuiltin(origdecl)) {
+                  decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                  env.output->registerFn(decl);
+                  env.output->addItem(decl);
+                } else {
+                  decl = origdecl;
+                }
                 rhs->decl(decl);
               }
             }
@@ -3841,6 +3854,7 @@ namespace MiniZinc {
           {
             VarDecl* vd = item->cast<VarDeclI>()->e();
             ASTStringMap<KeepAlive>::t::iterator it;
+            GCLock lock;
             if (vd->e()==NULL) {
               if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
                 VarDecl* reallyFlat = vd->flat();
@@ -3862,9 +3876,13 @@ namespace MiniZinc {
                 if (decl==NULL) {
                   FunctionI* origdecl = e.orig->matchFn(rhs->id(), tv);
                   assert(origdecl != NULL);
-                  decl = copy(e.cmap,origdecl)->cast<FunctionI>();
-                  e.output->registerFn(decl);
-                  e.output->addItem(decl);
+                  if (!isBuiltin(origdecl)) {
+                    decl = copy(e.cmap,origdecl)->cast<FunctionI>();
+                    e.output->registerFn(decl);
+                    e.output->addItem(decl);
+                  } else {
+                    decl = origdecl;
+                  }
                   rhs->decl(decl);
                 }
                 
@@ -3985,9 +4003,13 @@ namespace MiniZinc {
                   if (decl==NULL) {
                     FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
                     assert(origdecl != NULL);
-                    decl = copy(env.cmap,origdecl)->cast<FunctionI>();
-                    env.output->registerFn(decl);
-                    env.output->addItem(decl);
+                    if (!isBuiltin(origdecl)) {
+                      decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                      env.output->registerFn(decl);
+                      env.output->addItem(decl);
+                    } else {
+                      decl = origdecl;
+                    }
                     rhs->decl(decl);
                   }
                 }
@@ -4377,6 +4399,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<env.output->size(); i++) {
       if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
         ASTStringMap<KeepAlive>::t::iterator it;
+        GCLock lock;
         if (!vdi->e()->type().ispar() &&
             vdi->e()->e()==NULL &&
             (it = env.reverseMappers.find(vdi->e()->id()->str())) != env.reverseMappers.end()) {
@@ -4392,9 +4415,13 @@ namespace MiniZinc {
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
             assert(origdecl != NULL);
-            decl = copy(env.cmap,origdecl)->cast<FunctionI>();
-            env.output->registerFn(decl);
-            env.output->addItem(decl);
+            if (!isBuiltin(origdecl)) {
+              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              env.output->registerFn(decl);
+              env.output->addItem(decl);
+            } else {
+              decl = origdecl;
+            }
             rhs->decl(decl);
           }
           outputVarDecls(env,rhs);
