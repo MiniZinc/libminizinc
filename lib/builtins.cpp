@@ -711,6 +711,21 @@ namespace MiniZinc {
   FloatVal b_log10(ASTExprVec<Expression> args) {
     return std::log10(eval_float(args[0]));
   }
+  FloatVal b_log2(ASTExprVec<Expression> args) {
+    return std::log(eval_float(args[0])) / std::log(2.0);
+  }
+  FloatVal b_ln(ASTExprVec<Expression> args) {
+    return std::log(eval_float(args[0]));
+  }
+  FloatVal b_log(ASTExprVec<Expression> args) {
+    return std::log(eval_float(args[1])) / std::log(eval_float(args[0]));
+  }
+  FloatVal b_exp(ASTExprVec<Expression> args) {
+    return std::exp(eval_float(args[0]));
+  }
+  FloatVal b_pow(ASTExprVec<Expression> args) {
+    return std::pow(eval_float(args[0]),eval_float(args[1]));
+  }
   
   bool b_assert_bool(ASTExprVec<Expression> args) {
     assert(args.size()==2);
@@ -1215,6 +1230,12 @@ namespace MiniZinc {
       rb(m, ASTString("floor"), t, b_floor);
       rb(m, ASTString("round"), t, b_round);
       rb(m, ASTString("log10"), t, b_log10);
+      rb(m, ASTString("log2"), t, b_log2);
+      rb(m, ASTString("ln"), t, b_ln);
+      rb(m, ASTString("exp"), t, b_exp);
+      t.push_back(Type::parfloat());
+      rb(m, ASTString("log"), t, b_log);
+      rb(m, ASTString("pow"), t, b_pow);
     }
     {
       std::vector<Type> t(1);
