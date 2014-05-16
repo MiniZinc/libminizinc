@@ -274,6 +274,8 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PLUSPLUS; }
 "'++'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PLUSPLUS_QUOTED; }
+"<>"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_ABSENT; }
 "<"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_LE; }
 "'<'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);

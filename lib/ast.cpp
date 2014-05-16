@@ -879,6 +879,13 @@ namespace MiniZinc {
     var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
     lit_false = new BoolLit(Location(), false);
     var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
+    absent = new Id(Location(),"_absent",NULL);
+    Type absent_t;
+    absent_t._bt = Type::BT_BOT;
+    absent_t._dim = 0;
+    absent_t._st = Type::ST_PLAIN;
+    absent_t._ot = Type::OT_OPTIONAL;
+    absent->type(absent_t);
     
     ids.forall = ASTString("forall");
     ids.forall_reif = ASTString("forall_reif");
@@ -995,6 +1002,7 @@ namespace MiniZinc {
     v.push_back(var_true);
     v.push_back(lit_false);
     v.push_back(var_false);
+    v.push_back(absent);
     v.push_back(new StringLit(Location(),ids.forall));
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.clause));

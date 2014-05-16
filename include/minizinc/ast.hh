@@ -1160,6 +1160,8 @@ namespace MiniZinc {
       VarDecl* var_false;
       /// Function item used to keep track of redefined variables
       FunctionI* var_redef;
+      /// Literal absent value
+      Expression* absent;
       /// Identifiers for builtins
       struct {
         ASTString forall;

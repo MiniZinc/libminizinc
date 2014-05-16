@@ -372,6 +372,7 @@ namespace MiniZinc {
 
 %token MZN_VAR MZN_PAR MZN_SVAR
 
+%token MZN_ABSENT
 %token MZN_ANN
 %token MZN_ANNOTATION
 %token MZN_ANY
@@ -712,10 +713,22 @@ ti_expr :
       }
 
 base_ti_expr :
-      base_ti_expr_tail
-      { $$ = $1; }
-    | MZN_PAR base_ti_expr_tail
-      { $$ = $2; }
+      opt_opt base_ti_expr_tail
+      { $$ = $2;
+        if ($1) {
+          Type tt = $$->type();
+          tt._ot = Type::OT_OPTIONAL;
+          $$->type(tt);
+        }
+      }
+    | MZN_PAR opt_opt base_ti_expr_tail
+      { $$ = $3;
+        if ($2) {
+          Type tt = $$->type();
+          tt._ot = Type::OT_OPTIONAL;
+          $$->type(tt);
+        }
+      }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
         Type tt = $$->type();
@@ -723,16 +736,18 @@ base_ti_expr :
         if ($2) tt._ot = Type::OT_OPTIONAL;
         $$->type(tt);
       }
-    | MZN_SET MZN_OF base_ti_expr_tail
-      { $$ = $3;
-        Type tt = $$->type();
-        tt._st = Type::ST_SET;
-        $$->type(tt);
-      }
-    | MZN_PAR MZN_SET MZN_OF base_ti_expr_tail
+    | opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         Type tt = $$->type();
         tt._st = Type::ST_SET;
+        if ($1) tt._ot = Type::OT_OPTIONAL;
+        $$->type(tt);
+      }
+    | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = $5;
+        Type tt = $$->type();
+        tt._st = Type::ST_SET;
+        if ($2) tt._ot = Type::OT_OPTIONAL;
         $$->type(tt);
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
@@ -932,6 +947,8 @@ expr_atom_head :
       { $$=new FloatLit(@$, $1); }
     | MZN_STRING_LITERAL
       { $$=new StringLit(@$, $1); free($1); }
+    | MZN_ABSENT
+      { $$=constants().absent; }
     | set_literal
     | set_comp
     | simple_array_literal

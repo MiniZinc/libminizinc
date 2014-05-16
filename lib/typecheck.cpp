@@ -114,7 +114,8 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
-        e->cast<Id>()->decl(checkId(e->cast<Id>()->v(),e->loc()));
+        if (e != constants().absent)
+          e->cast<Id>()->decl(checkId(e->cast<Id>()->v(),e->loc()));
       }
       break;
     case Expression::E_ARRAYLIT:
@@ -267,8 +268,10 @@ namespace MiniZinc {
     void vStringLit(const StringLit&) {}
     /// Visit identifier
     void vId(Id& id) {
-      assert(!id.decl()->type().isunknown());
-      id.type(id.decl()->type());
+      if (&id != constants().absent) {
+        assert(!id.decl()->type().isunknown());
+        id.type(id.decl()->type());
+      }
     }
     /// Visit anonymous variable
     void vAnonVar(const AnonVar&) {}

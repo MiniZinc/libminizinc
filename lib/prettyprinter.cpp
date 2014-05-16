@@ -226,11 +226,15 @@ namespace MiniZinc {
         break;
       case Expression::E_ID:
         {
-          const Id* id = e->cast<Id>();
-          if (id->idn() == -1) {
-            os << id->v();
+          if (e==constants().absent) {
+            os << "<>";
           } else {
-            os << "X_INTRODUCED_" << id->idn();
+            const Id* id = e->cast<Id>();
+            if (id->idn() == -1) {
+              os << id->v();
+            } else {
+              os << "X_INTRODUCED_" << id->idn();
+            }
           }
         }
         break;
@@ -1057,6 +1061,8 @@ namespace MiniZinc {
 
     }
     ret mapId(const Id& id) {
+      if (&id == constants().absent)
+        return new StringDocument("<>");
       if (id.idn()==-1)
         return new StringDocument(id.v().str());
       else {

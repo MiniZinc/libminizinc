@@ -148,6 +148,15 @@ namespace MiniZinc {
     }
     static Expression* exp(Expression* e) { return e; }
   };
+  class EvalPar {
+  public:
+    typedef Expression* Val;
+    typedef Expression* ArrayVal;
+    static Expression* e(Expression* e) {
+      return eval_par(e);
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
 
   template<class Eval>
   typename Eval::Val eval_call(Call* ce) {
@@ -945,6 +954,8 @@ namespace MiniZinc {
       }
     case Expression::E_ID:
       {
+        if (e == constants().absent)
+          return e;
         Id* id = e->cast<Id>();
         if (id->decl()==NULL)
           throw EvalError(e->loc(),"undefined identifier", id->v());
@@ -1014,8 +1025,14 @@ namespace MiniZinc {
           case Expression::E_CALL:
           {
             Call* c = e->cast<Call>();
-            if (c->decl() && c->decl()->_builtins.e) {
-              return eval_par(c->decl()->_builtins.e(c->args()));
+            if (c->decl()) {
+              if (c->decl()->_builtins.e) {
+                return eval_par(c->decl()->_builtins.e(c->args()));
+              } else {
+                if (c->decl()->e()==NULL)
+                  throw EvalError(c->loc(), "internal error: missing builtin '"+c->id().str()+"'");
+                return eval_call<EvalPar>(c);
+              }
             } else {
               std::vector<Expression*> args(c->args().size());
               for (unsigned int i=0; i<args.size(); i++) {

@@ -175,8 +175,8 @@ function var int : deopt_internal(var opt int : x) ::promise_total =
   let { var lb(x)..ub(x): y } in y;
 
 function var opt int: reverse_map(var bool: occ, var int: d);
-function int: reverse_map(bool: occ, int: d) ::promise_total =
-  if occ then d else 0 endif;
+function opt int: reverse_map(bool: occ, int: d) ::promise_total =
+  if occ then d else <> endif;
 
 function var bool : occurs(var opt int : x) ::promise_total =
   let {
@@ -186,7 +186,11 @@ function var bool : occurs(var opt int : x) ::promise_total =
   } in b;
   
 function var int : deopt(var opt int : x) ::promise_total =
-  let { var lb(x)..ub(x): y } in y;
+  let {
+    var bool : b = occurs_internal(x);
+    var int  : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in dx;
 
 predicate int_eq(var opt int : x, var opt int : y) =
      (absent(x) /\ absent(y))

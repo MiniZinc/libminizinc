@@ -479,7 +479,7 @@ namespace MiniZinc {
     for (;;) {
       if (e==NULL)
         return NULL;
-      if (e->eid()==Expression::E_ID) {
+      if (e->eid()==Expression::E_ID && e != constants().absent) {
         e = e->cast<Id>()->decl()->e();
       } else {
         return e;
@@ -491,6 +491,8 @@ namespace MiniZinc {
     for (;;) {
       if (e==NULL)
         return NULL;
+      if (e==constants().absent)
+        return e;
       switch (e->eid()) {
         case Expression::E_ID:
           e = e->cast<Id>()->decl();
@@ -1514,7 +1516,7 @@ namespace MiniZinc {
   template<class Lit>
   Expression* get_linexp(Expression* e) {
     for (;;) {
-      if (e && e->eid()==Expression::E_ID) {
+      if (e && e->eid()==Expression::E_ID && e != constants().absent) {
         if (e->cast<Id>()->decl()->e()) {
           e = e->cast<Id>()->decl()->e();
         } else {
@@ -2505,6 +2507,21 @@ namespace MiniZinc {
           
           break;
         }
+        if (bo->lhs()==constants().absent || bo->rhs()==constants().absent) {
+          GCLock lock;
+          std::vector<Expression*> args(1);
+          args[0] = bo->lhs()==constants().absent ? bo->rhs() : bo->lhs();
+          if (args[0] != constants().absent) {
+            Call* cr = new Call(bo->loc(),"absent",args);
+            cr->decl(env.orig->matchFn(cr));
+            cr->type(cr->decl()->rtype(args));
+            ret = flat_exp(env, ctx, cr, r, b);
+          } else {
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
+            ret.r = bind(env,ctx,r,constants().lit_true);
+          }
+          break;
+        }
         if (bo->decl()) {
           std::vector<Expression*> args(2);
           args[0] = bo->lhs();
@@ -2512,7 +2529,7 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            Call* cr = new Call(bo->loc(),bo->opToString().str(),args);
+            Call* cr = new Call(bo->loc(),bo->opToString(),args);
             cr->decl(env.orig->matchFn(cr));
             cr->type(cr->decl()->rtype(args));
             ka = cr;
@@ -3765,6 +3782,8 @@ namespace MiniZinc {
       EnvI& env;
       O(EnvI& env0) : env(env0) {}
       void vId(Id& id) {
+        if (&id==constants().absent)
+          return;
         VarDecl* vd = id.decl();
         VarDecl* reallyFlat = vd->flat();
         while (reallyFlat != reallyFlat->flat())

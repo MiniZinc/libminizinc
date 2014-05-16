@@ -160,6 +160,8 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
+        if (e==constants().absent)
+          return e;
         Id* id = e->cast<Id>();
         
         if (followIds) {
