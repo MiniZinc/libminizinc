@@ -713,13 +713,14 @@ ti_expr :
       }
 
 base_ti_expr :
-      opt_opt base_ti_expr_tail
+      base_ti_expr_tail
+      { $$ = $1;
+      }
+    | MZN_OPT base_ti_expr_tail
       { $$ = $2;
-        if ($1) {
-          Type tt = $$->type();
-          tt._ot = Type::OT_OPTIONAL;
-          $$->type(tt);
-        }
+        Type tt = $$->type();
+        tt._ot = Type::OT_OPTIONAL;
+        $$->type(tt);
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
