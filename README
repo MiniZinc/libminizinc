@@ -26,6 +26,9 @@ MiniZinc:
     to evaluate to contiguous ranges)
   - has a generalised if-then-else expression where the condition can be a
     var bool expression (instead of only par bool).
+  - uses a different method for finding included files. Paths are now interpreted
+    as relative to the file that has the include item. That way, the mzn2fzn
+    compiler can be called from a different working directory.
 
 mzn2fzn:
   - is now based on the libminizinc C++ library. The current beta version ships
