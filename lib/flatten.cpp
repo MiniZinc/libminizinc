@@ -2357,7 +2357,7 @@ namespace MiniZinc {
               in[i] = c->in(i);
             }
           }
-          if (where.size() > 0 || c->where()->type().isvar()) {
+          if (where.size() > 0 || (c->where() && c->where()->type().isvar())) {
             Generators gs;
             if (c->where()==NULL || c->where()->type().ispar())
               gs._w = c->where();
