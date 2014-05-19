@@ -2384,19 +2384,23 @@ namespace MiniZinc {
             }
             
 
-            SetLit* r_bounds = NULL;
+            Expression* r_bounds = NULL;
             if (c->e()->type()._bt==Type::BT_INT && c->e()->type()._dim == 0) {
-              IntSetVal* ibv = NULL;
-              if (c->e()->type().isset()) {
-                ibv = compute_intset_bounds(c->e());
+              std::vector<Expression*> ubargs(1);
+              ubargs[0] = c->e();
+              if (c->e()->type()._st==Type::ST_SET) {
+                Call* bc = new Call(Location(),"ub",ubargs);
+                bc->type(Type::parsetint());
+                bc->decl(env.orig->matchFn(bc));
+                r_bounds = bc;
               } else {
-                IntBounds ib = compute_int_bounds(c->e());
-                if (ib.valid) {
-                  ibv = IntSetVal::a(ib.l,ib.u);
-                }
-              }
-              if (ibv != NULL) {
-                r_bounds = new SetLit(Location(), ibv);
+                Call* lbc = new Call(Location(),"lb",ubargs);
+                lbc->type(Type::parint());
+                lbc->decl(env.orig->matchFn(lbc));
+                Call* ubc = new Call(Location(),"ub",ubargs);
+                ubc->type(Type::parint());
+                ubc->decl(env.orig->matchFn(ubc));
+                r_bounds = new BinOp(Location(),lbc,BOT_DOTDOT,ubc);
                 r_bounds->type(Type::parsetint());
               }
             }
@@ -2977,15 +2981,15 @@ namespace MiniZinc {
               Expression* le0 = NULL;
               Expression* le1 = NULL;
               
-              if (boe0->type().isint() && bot != BOT_IN) {
+              if (boe0->type().isint() && !boe0->type().isopt() && bot != BOT_IN) {
                 le0 = get_linexp<IntLit>(e0.r());
-              } else if (boe0->type().isfloat() && bot != BOT_IN) {
+              } else if (boe0->type().isfloat() && !boe0->type().isopt() && bot != BOT_IN) {
                 le0 = get_linexp<FloatLit>(e0.r());
               }
               if (le0) {
-                if (boe1->type().isint()) {
+                if (boe1->type().isint() && !boe0->type().isopt()) {
                   le1 = get_linexp<IntLit>(e1.r());
-                } else if (boe1->type().isfloat()) {
+                } else if (boe1->type().isfloat() && !boe0->type().isopt()) {
                   le1 = get_linexp<FloatLit>(e1.r());
                 }
               }
