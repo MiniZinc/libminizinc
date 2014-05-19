@@ -48,6 +48,12 @@ int main(int argc, char** argv) {
   GC::init();
   
   for (;;) {
+    if (string(argv[i])==string("--version")) {
+      std::cout << "NICTA MiniZinc solution printing tool, version "
+      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
+      std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
+      std::exit(EXIT_SUCCESS);
+    }
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help")) {
         goto error;
     } else if (string(argv[i])=="-o" || string(argv[i])=="--output-to-file") {
@@ -201,6 +207,7 @@ error:
             << std::endl
             << "Options:" << std::endl
             << "  --help, -h\n    Print this help message" << std::endl
+            << "  --version\n    Print version information" << std::endl
             << "  -o <file>, --output-to-file <file>\n    Filename for generated output" << std::endl
   ;
 

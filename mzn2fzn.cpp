@@ -72,6 +72,12 @@ int main(int argc, char** argv) {
   for (;;) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
+    if (string(argv[i])==string("--version")) {
+      std::cout << "NICTA MiniZinc to FlatZinc converter, version "
+        << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
+      std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
+      std::exit(EXIT_SUCCESS);
+    }
     if (string(argv[i])==string("-I")) {
       i++;
       if (i==argc) {
@@ -286,6 +292,7 @@ error:
             << std::endl
             << "Options:" << std::endl
             << "  --help, -h\n    Print this help message" << std::endl
+            << "  --version\n    Print version information" << std::endl
             << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
             << "  --newfzn\n    Output in the new FlatZinc format" << std::endl
             << "  --verbose\n    Print progress statements" << std::endl
