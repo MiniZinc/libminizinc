@@ -4886,6 +4886,8 @@ namespace MiniZinc {
     UNORDERED_NAMESPACE::unordered_set<Item*> globals;
     std::vector<int> declsWithIds;
     for (unsigned int i=0; i<msize; i++) {
+      if ((*m)[i]->removed())
+        continue;
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
         VarDecl* vd = vdi->e();
