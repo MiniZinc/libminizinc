@@ -3880,7 +3880,7 @@ namespace MiniZinc {
                 while (reallyFlat!=reallyFlat->flat())
                   reallyFlat=reallyFlat->flat();
                 removeIsOutput(reallyFlat);
-                Expression* flate = follow_id(reallyFlat->id());
+                Expression* flate = copy(e.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(e,flate);
                 vd->e(flate);
               } else if ( (it = e.reverseMappers.find(vd->id()->str())) != e.reverseMappers.end()) {
@@ -4006,7 +4006,7 @@ namespace MiniZinc {
                 VarDecl* reallyFlat = vd->flat();
                 while (reallyFlat!=reallyFlat->flat())
                   reallyFlat=reallyFlat->flat();
-                Expression* flate = follow_id(reallyFlat->id());
+                Expression* flate = copy(env.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(env,flate);
                 vd->e(flate);
               } else if ( (it = env.reverseMappers.find(vd->id()->str())) != env.reverseMappers.end()) {
