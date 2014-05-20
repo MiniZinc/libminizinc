@@ -3741,13 +3741,20 @@ namespace MiniZinc {
         Type t;
         if (decl==NULL) {
           FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
-          assert(origdecl != NULL);
+          if (origdecl == NULL) {
+            throw FlatteningError(c.loc(),"function is used in output, par version needed");
+          }
 
           if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
             success = false;
           } else {
             if (!isBuiltin(origdecl)) {
               decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              CollectOccurrencesE ce(env.output_vo,decl);
+              topDown(ce, decl->e());
+              topDown(ce, decl->ti());
+              for (unsigned int i = decl->params().size(); i--;)
+                topDown(ce, decl->params()[i]);
               env.output->registerFn(decl);
               env.output->addItem(decl);
             } else {
@@ -3795,7 +3802,7 @@ namespace MiniZinc {
           return;
         VarDecl* vd = id.decl();
         VarDecl* reallyFlat = vd->flat();
-        while (reallyFlat != reallyFlat->flat())
+        while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
           reallyFlat = reallyFlat->flat();
         ExpressionMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat);
         ExpressionMap<int>::iterator idx2 = env.output_vo.idx.find(vd);
@@ -3810,7 +3817,8 @@ namespace MiniZinc {
           nvi->e()->flat(vd->flat());
           nvi->e()->ann().clear();
           nvi->e()->introduced(false);
-          env.output_vo.add(reallyFlat, env.output->size());
+          if (reallyFlat)
+            env.output_vo.add(reallyFlat, env.output->size());
           env.output_vo.add(nvi, env.output->size());
           env.output->addItem(nvi);
           
@@ -3827,9 +3835,16 @@ namespace MiniZinc {
               Type t;
               if (decl==NULL) {
                 FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
-                assert(origdecl != NULL);
+                if (origdecl == NULL) {
+                  throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                }
                 if (!isBuiltin(origdecl)) {
                   decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                  CollectOccurrencesE ce(env.output_vo,decl);
+                  topDown(ce, decl->e());
+                  topDown(ce, decl->ti());
+                  for (unsigned int i = decl->params().size(); i--;)
+                    topDown(ce, decl->params()[i]);
                   env.output->registerFn(decl);
                   env.output->addItem(decl);
                 } else {
@@ -3903,12 +3918,18 @@ namespace MiniZinc {
                   tv[i]._ti = Type::TI_PAR;
                 }
                 FunctionI* decl = e.output->matchFn(rhs->id(), tv);
-                Type t;
                 if (decl==NULL) {
                   FunctionI* origdecl = e.orig->matchFn(rhs->id(), tv);
-                  assert(origdecl != NULL);
+                  if (origdecl == NULL) {
+                    throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                  }
                   if (!isBuiltin(origdecl)) {
                     decl = copy(e.cmap,origdecl)->cast<FunctionI>();
+                    CollectOccurrencesE ce(e.output_vo,decl);
+                    topDown(ce, decl->e());
+                    topDown(ce, decl->ti());
+                    for (unsigned int i = decl->params().size(); i--;)
+                      topDown(ce, decl->params()[i]);
                     e.output->registerFn(decl);
                     e.output->addItem(decl);
                   } else {
@@ -3981,6 +4002,9 @@ namespace MiniZinc {
           {
             CollectOccurrencesE ce(e.output_vo,item);
             topDown(ce, item->cast<FunctionI>()->e());
+            topDown(ce, item->cast<FunctionI>()->ti());
+            for (unsigned int i = item->cast<FunctionI>()->params().size(); i--;)
+              topDown(ce, item->cast<FunctionI>()->params()[i]);
           }
             break;
           default:
@@ -4011,6 +4035,42 @@ namespace MiniZinc {
         outputItem = new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>()));
         e.output->addItem(outputItem);
       }
+      
+      class CollectFunctions : public EVisitor {
+      public:
+        EnvI& env;
+        CollectFunctions(EnvI& env0) : env(env0) {}
+        void vCall(Call& c) {
+          std::vector<Type> tv(c.args().size());
+          for (unsigned int i=c.args().size(); i--;) {
+            tv[i] = c.args()[i]->type();
+            tv[i]._ti = Type::TI_PAR;
+          }
+          FunctionI* decl = env.output->matchFn(c.id(), tv);
+          Type t;
+          if (decl==NULL) {
+            FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
+            if (origdecl == NULL) {
+              throw FlatteningError(c.loc(),"function is used in output, par version needed");
+            }
+            if (!isBuiltin(origdecl)) {
+              GCLock lock;
+              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              CollectOccurrencesE ce(env.output_vo,decl);
+              topDown(ce, decl->e());
+              topDown(ce, decl->ti());
+              for (unsigned int i = decl->params().size(); i--;)
+                topDown(ce, decl->params()[i]);
+              env.output->registerFn(decl);
+              env.output->addItem(decl);
+            } else {
+              decl = origdecl;
+            }
+            c.decl(decl);
+          }
+        }
+      } _cf(e);
+      topDown(_cf, outputItem->e());
       
       class OV2 : public ItemVisitor {
       public:
@@ -4046,12 +4106,18 @@ namespace MiniZinc {
                     tv[i]._ti = Type::TI_PAR;
                   }
                   FunctionI* decl = env.output->matchFn(rhs->id(), tv);
-                  Type t;
                   if (decl==NULL) {
                     FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
-                    assert(origdecl != NULL);
+                    if (origdecl == NULL) {
+                      throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                    }
                     if (!isBuiltin(origdecl)) {
                       decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                      CollectOccurrencesE ce(env.output_vo,decl);
+                      topDown(ce, decl->e());
+                      topDown(ce, decl->ti());
+                      for (unsigned int i = decl->params().size(); i--;)
+                        topDown(ce, decl->params()[i]);
                       env.output->registerFn(decl);
                       env.output->addItem(decl);
                     } else {
@@ -4479,9 +4545,16 @@ namespace MiniZinc {
           Type t;
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
-            assert(origdecl != NULL);
+            if (origdecl == NULL) {
+              throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+            }
             if (!isBuiltin(origdecl)) {
               decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              CollectOccurrencesE ce(env.output_vo,decl);
+              topDown(ce, decl->e());
+              topDown(ce, decl->ti());
+              for (unsigned int i = decl->params().size(); i--;)
+                topDown(ce, decl->params()[i]);
               env.output->registerFn(decl);
               env.output->addItem(decl);
             } else {
