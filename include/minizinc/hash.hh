@@ -62,6 +62,49 @@ namespace MiniZinc {
       _m.clear();
     }
   };
+  
+  /// Equality test for identifiers
+  struct IdEq {
+    bool operator() (const Id* e0, const Id* e1) const {
+      if (e0->idn() == e1->idn()) {
+        if (e0->idn() == -1)
+          return e0->v() == e1->v();
+        return true;
+      }
+      return false;
+    }
+  };
+
+  /// Hash map from identifier to \a T
+  template<class T>
+  class IdMap {
+  protected:
+    /// The underlying map implementation
+    UNORDERED_NAMESPACE::unordered_map<Id*,T,ExpressionHash,IdEq> _m;
+  public:
+    /// Iterator type
+    typedef typename UNORDERED_NAMESPACE::unordered_map<Id*,T,
+    ExpressionHash,IdEq>::iterator iterator;
+    /// Insert mapping from \a e to \a t
+    void insert(Id* e, const T& t) {
+      assert(e != NULL);
+      _m.insert(std::pair<Id*,T>(e,t));
+    }
+    /// Find \a e in map
+    iterator find(Id* e) { return _m.find(e); }
+    /// Begin of iterator
+    iterator begin(void) { return _m.begin(); }
+    /// End of iterator
+    iterator end(void) { return _m.end(); }
+    /// Remove binding of \a e from map
+    void remove(Id* e) {
+      _m.erase(e);
+    }
+    /// Remove all elements from the map
+    void clear(void) {
+      _m.clear();
+    }
+  };
 
 
   /// Hash class for KeepAlive objects
