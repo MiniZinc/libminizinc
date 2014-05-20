@@ -4,18 +4,23 @@ MiniZinc 2.0 beta release
 Installation Instructions
 -------------------------
 
-If you have downloaded a binary package, simply uncompress the archive anywhere
-in your file system.
+These instructions are for compiling and installing MiniZinc 2.0 beta from the
+source distribution.
 
-If you are compiling from the sources, please see the INSTALL.txt document.
+MiniZinc 2.0 beta is based on the libminizinc C++ library. In order
+to compile and install libminizinc you will need the following
+software:
 
 Compilation instructions:
 -------------------------
 
 Prerequisite software:
 - cmake
-- clang, gcc or Microsoft Visual C++
-- bison, flex (can be installed e.g. with Cygwin)
+- A recent C++ compiler, libminizinc has been tested with recent versions of
+  clang, g++, and Microsoft Visual C++.
+- The bison and flex parser/lexer generators. These usually come packaged for
+  Linux distributions, and they are part of the Xcode developer tools for Mac
+  OS. On Windows, you can e.g. install them via cygwin.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
@@ -37,14 +42,17 @@ Open a Visual Studio console (e.g. from the Start menu), then
 Running
 -------
 
-IF YOU INSTALLED A BINARY PACKAGE, add the "bin" directory inside that package
-to your PATH environment variable. In addition, you need to set the
-MZN_STDLIB_DIR environment variable to the directory "share/minizinc" inside
-package directory.
-
-IF YOU COMPILED FROM SOURCES, add the "build" directory to your PATH
+Add the "build" directory to your PATH
 environment variable. In addition, you need to set the MZN_STDLIB_DIR
 environment variable to the directory "share/minizinc" inside the source tree.
+
+The build directory contains the 2.0 beta versions of the mzn2fzn and
+solns2out tools. These are drop-in replacements for the MiniZinc 1.6 versions.
+
+We currently do not provide the minizinc driver program that was part
+of MiniZinc 1.6. However, if you have both systems installed (and MiniZinc 2.0
+occurs on the PATH before 1.6), you can use the old minizinc driver
+with the new versions of mzn2fzn and solns2out.
 
 Alternatives:
  - copy the two executables mzn2fzn and solns2out to somewhere on your PATH 
