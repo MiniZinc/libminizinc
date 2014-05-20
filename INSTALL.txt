@@ -1,0 +1,61 @@
+MiniZinc 2.0 beta release
+=========================
+
+Installation Instructions
+-------------------------
+
+These instructions are for compiling and installing MiniZinc 2.0 beta from the
+source distribution.
+
+MiniZinc 2.0 beta is based on the libminizinc C++ library. In order
+to compile and install libminizinc you will need the following
+software:
+
+Compilation instructions:
+-------------------------
+
+Prerequisite software:
+- cmake
+- A recent C++ compiler, libminizinc has been tested with recent versions of
+  clang, g++, and Microsoft Visual C++.
+- The bison and flex parser/lexer generators. These usually come packaged for
+  Linux distributions, and they are part of the Xcode developer tools for Mac
+  OS. On Windows, you can e.g. install them via cygwin.
+
+Download the source code from the git repository or uncompress a source
+archive. Then change into the toplevel directory (the one containing this file).
+
+To build it on Linux or other Unix-like systems:
+> mkdir build
+> cd build/
+> cmake ..
+> make
+
+To build it on Windows:
+Open a Visual Studio console (e.g. from the Start menu), then
+> mkdir build
+> cd build
+> cmake ..
+> nmake
+
+
+Running
+-------
+
+Add the "build" directory to your PATH
+environment variable. In addition, you need to set the MZN_STDLIB_DIR
+environment variable to the directory "share/minizinc" inside the source tree.
+
+The build directory contains the 2.0 beta versions of the mzn2fzn and
+solns2out tools. These are drop-in replacements for the MiniZinc 1.6 versions.
+
+We currently do not provide the minizinc driver program that was part
+of MiniZinc 1.6. However, if you have both systems installed (and MiniZinc 2.0
+occurs on the PATH before 1.6), you can use the old minizinc driver
+with the new versions of mzn2fzn and solns2out.
+
+Alternatives:
+ - copy the two executables mzn2fzn and solns2out to somewhere on your PATH 
+   instead of setting your PATH
+ - add the command line option --stdlib-dir=MINIZINC/share/minizinc (where 
+   you replace MINIZINC by the actual path mentioned above)

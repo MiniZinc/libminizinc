@@ -1,0 +1,4 @@
+bug85.fzn:2:
+  syntax error: model must have a solve item
+bug85.fzn:3:
+  syntax error at `3'; expected identifier or array access after `solve minimize'

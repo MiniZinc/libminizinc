@@ -18,15 +18,17 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wdeprecated"
 #elif defined _MSC_VER
 #pragma warning(push, 1)
 #endif
 
-#include <minizinc/parser.hh>
-
 namespace MiniZinc{ class Location; }
 #define YYLTYPE MiniZinc::Location
 #define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 0
+
+#include <minizinc/parser.hh>
 
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
@@ -47,7 +49,33 @@ void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
   yyloc->last_column = pp->nTokenNextStart-1;
 }
 
+void clearBuffer(void* parm) {
+  MiniZinc::ParserState* pp =
+    static_cast<MiniZinc::ParserState*>(parm);
+  pp->stringBuffer = "";
+}
+
+void appendBufferString(void* parm, const char* s) {
+  MiniZinc::ParserState* pp =
+  static_cast<MiniZinc::ParserState*>(parm);
+  pp->stringBuffer += s;
+}
+
+void appendBufferChar(void* parm, char s) {
+  MiniZinc::ParserState* pp =
+  static_cast<MiniZinc::ParserState*>(parm);
+  pp->stringBuffer += s;
+}
+
+char* bufferData(void* parm) {
+  MiniZinc::ParserState* pp =
+    static_cast<MiniZinc::ParserState*>(parm);
+  return strdup(pp->stringBuffer.c_str());
+}
+
 %}
+
+%x string
 
 %%
 
@@ -77,11 +105,11 @@ void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
 "false"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 [0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = atoi(yytext); return MZN_INTEGER_LITERAL; }
+                    yylval->iValue = atoll(yytext); return MZN_INTEGER_LITERAL; }
 0x[0-9A-Fa-f]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = atoi(yytext); return MZN_INTEGER_LITERAL; }
+                    yylval->iValue = atoll(yytext); return MZN_INTEGER_LITERAL; }
 0o[0-7]+        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = atoi(yytext); return MZN_INTEGER_LITERAL; }
+                    yylval->iValue = atoll(yytext); return MZN_INTEGER_LITERAL; }
 [0-9]+\.[0-9]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->dValue = strtod(yytext,NULL);
                     return MZN_FLOAT_LITERAL; }
@@ -156,6 +184,8 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_INT; }
 "let"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_LET; }
+"list"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_LIST; }
 "maximize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->bValue = false; return MZN_MAXIMIZE; }
 "minimize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -170,16 +200,18 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_NOT_QUOTED; }
 "of"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_OF; }
-"satisfy"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SATISFY; }
 "output"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_OUTPUT; }
+"opt"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_OPT; }
 "par"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PAR; }
 "predicate"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PREDICATE; }
 "record"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_RECORD; }
+"satisfy"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_SATISFY; }
 "set"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_SET; }
 "solve"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -242,6 +274,8 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PLUSPLUS; }
 "'++'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_PLUSPLUS_QUOTED; }
+"<>"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    return MZN_ABSENT; }
 "<"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_LE; }
 "'<'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -293,14 +327,29 @@ _                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
 [A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+_[A-Za-z][A-Za-z0-9_]* {
+                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                    MiniZinc::ParserState* parm =
+                    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
+                    if (parm->isFlatZinc) {
+                      yylval->sValue = strdup(yytext); return MZN_IDENTIFIER;
+                    } else {
+                      return FLATZINC_IDENTIFIER;
+                    }
+                    }
 $[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
-\"[^"\n]*\"       {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->sValue = strdup(yytext+1);
-                    yylval->sValue[strlen(yytext)-2] = 0; 
-                    return MZN_STRING_LITERAL; }
+
+\"                { BEGIN string; clearBuffer(yyget_extra(yyscanner)); }
+<string>[^\\"\n]* { appendBufferString(yyget_extra(yyscanner), yytext); }
+<string>\\n         { appendBufferChar(yyget_extra(yyscanner), '\n'); }
+<string>\\t         { appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string>\\[\\']     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\\[\\"]     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
+                      BEGIN 0; return MZN_STRING_LITERAL; }
+
 `[A-Za-z][A-Za-z0-9_]*` {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1);

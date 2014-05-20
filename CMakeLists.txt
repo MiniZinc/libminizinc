@@ -1,0 +1,195 @@
+cmake_minimum_required (VERSION 2.6)
+project (libminizinc CXX)
+
+# The version number.
+set (libminizinc_VERSION_MAJOR 2)
+set (libminizinc_VERSION_MINOR 0)
+set (libminizinc_VERSION_PATCH "b1")
+
+include(CheckCXXCompilerFlag)
+
+SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+check_cxx_compiler_flag(-Werror HAS_WERROR)
+
+if (HAS_WERROR)
+  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif()
+
+if (USE_STDLIBCPP)
+  set(MZN_LIBCPP libstdc++)
+else()
+  set(MZN_LIBCPP libc++)
+endif()
+
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
+
+check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
+if (HAS_STDCPP11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+else()
+  check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
+  if (HAS_STDCPP0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  endif()
+endif()
+
+check_cxx_compiler_flag(-stdlib=${MZN_LIBCPP} HAS_STDLIBLIBCPP)
+
+if (HAS_STDLIBLIBCPP)
+  set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=${MZN_LIBCPP}")
+  check_cxx_source_compiles("int main(void) {return 0;}" LINKS_STDLIBLIBCPP)
+  if (NOT LINKS_STDLIBLIBCPP)
+    set(CMAKE_CXX_FLAGS "${SAFE_CMAKE_CXX_FLAGS}")
+  endif()
+endif()
+
+check_cxx_source_compiles("#include <unordered_set>
+int main(void) { std::unordered_set<int> x; return 0; }" HAS_CPP11)
+
+if (NOT HAS_CPP11)
+  check_cxx_source_compiles("#include <tr1/unordered_set>
+                             int main(void) { std::tr1::unordered_set<int> x; return 0; }" HAS_CPP11_TR1)
+  if (HAS_CPP11_TR1)
+    set(MZN_NEED_TR1 1)
+  else()
+    message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
+  endif()
+endif()
+   
+CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
+
+if (NOT HAS_ATTR_THREAD)
+  CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
+endif()
+
+
+SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
+
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+  "${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in"
+  "${PROJECT_BINARY_DIR}/config.hh"
+  )
+
+include_directories("${PROJECT_BINARY_DIR}")
+
+include_directories("${PROJECT_SOURCE_DIR}/include")
+
+add_custom_target(MZNParser echo "Creating parser")
+
+add_custom_command(
+  SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+  COMMAND "flex"
+  ARGS -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+       "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+  TARGET MZNParser
+  OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+)
+
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+
+add_custom_command(
+  SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+  COMMAND "bison"
+  ARGS -o "${PROJECT_BINARY_DIR}/parser.tab.cpp"
+       --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+       "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+  TARGET MZNParser
+  DEPENDS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+  OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp" 
+          "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+)
+
+set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
+set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
+
+add_library(minizinc
+lib/ast.cpp
+lib/aststring.cpp
+lib/astvec.cpp
+lib/builtins.cpp
+lib/copy.cpp
+lib/eval_par.cpp
+lib/gc.cpp
+"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+lib/model.cpp
+"${PROJECT_BINARY_DIR}/parser.tab.cpp"
+lib/prettyprinter.cpp
+lib/typecheck.cpp
+lib/flatten.cpp
+lib/optimize.cpp
+lib/parser.yxx
+lib/lexer.lxx
+lib/values.cpp
+include/minizinc/ast.hh
+include/minizinc/ast.hpp
+include/minizinc/astiterator.hh
+include/minizinc/aststring.hh
+include/minizinc/astvec.hh
+include/minizinc/builtins.hh
+include/minizinc/config.hh.in
+include/minizinc/copy.hh
+include/minizinc/eval_par.hh
+include/minizinc/exception.hh
+include/minizinc/flatten.hh
+include/minizinc/gc.hh
+include/minizinc/hash.hh
+include/minizinc/iter.hh
+include/minizinc/model.hh
+include/minizinc/optimize.hh
+include/minizinc/parser.hh
+include/minizinc/prettyprinter.hh
+include/minizinc/type.hh
+include/minizinc/typecheck.hh
+include/minizinc/values.hh
+include/minizinc/stl_map_set.hh
+)
+
+# add the executable
+add_executable(mzn2fzn mzn2fzn.cpp)
+target_link_libraries(mzn2fzn minizinc)
+
+add_executable(solns2out solns2out.cpp)
+target_link_libraries(solns2out minizinc)
+
+INSTALL(TARGETS mzn2fzn solns2out minizinc
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+INSTALL(DIRECTORY share/minizinc DESTINATION share)
+INSTALL(DIRECTORY include/minizinc
+DESTINATION include
+PATTERN config.hh.in EXCLUDE
+)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/config.hh DESTINATION include/minizinc)
+INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
+INSTALL(DIRECTORY doc/pdf DESTINATION doc)
+
+SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${libminizinc_VERSION_PATCH})
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+IF(WIN32 AND NOT UNIX)
+  SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+  SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.minizinc.org")
+  SET(CPACK_NSIS_CONTACT "info@minizinc.org")
+  SET(CPACK_NSIS_MODIFY_PATH ON)
+  SET(CPACK_GENERATOR "ZIP")
+ELSE(WIN32 AND NOT UNIX)
+  SET(CPACK_STRIP_FILES "bin/MyExecutable")
+  SET(CPACK_SOURCE_STRIP_FILES "")
+  SET(CPACK_GENERATOR "TGZ")
+ENDIF(WIN32 AND NOT UNIX)
+
+set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME
+  "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(CPACK_SOURCE_IGNORE_FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/;/tests/;/.git/;/.gitignore;~$;${CPACK_SOURCE_IGNORE_FILES}")
+
+include(CPack)
