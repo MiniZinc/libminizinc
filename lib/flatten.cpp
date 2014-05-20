@@ -151,6 +151,10 @@ namespace MiniZinc {
     return c;
   }
 
+  bool isDefinesVarAnn(Expression* e) {
+    return e->isa<Call>() && e->cast<Call>()->id()==constants().ann.defines_var;
+  }
+  
   /// Check if \a e is NULL or true
   bool istrue(Expression* e) {
     return e==NULL || (e->type().ispar() && e->type().isbool()
@@ -309,7 +313,8 @@ namespace MiniZinc {
         for (int i = callStack.size()-1; i >= prev; i--) {
           for (ExpressionSetIter it = callStack[i]->ann().begin(); it != callStack[i]->ann().end(); ++it) {
             EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-            toAnnotate->addAnnotation(ee_ann.r());
+            if (i==callStack.size()-1 || !isDefinesVarAnn(ee_ann.r()))
+              toAnnotate->addAnnotation(ee_ann.r());
           }
         }
       }
