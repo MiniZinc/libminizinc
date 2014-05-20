@@ -35,6 +35,10 @@ std::string stoptime(clock_t& start) {
   return oss.str();
 }
 
+bool beginswith(string s, string t) {
+  return s.compare(0, t.length(), t)==0;
+}
+
 int main(int argc, char** argv) {
   int i=1;
   string filename;
@@ -78,12 +82,17 @@ int main(int argc, char** argv) {
       std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
-    if (string(argv[i])==string("-I")) {
-      i++;
-      if (i==argc) {
-        goto error;
+    if (beginswith(string(argv[i]),"-I")) {
+      string include(argv[i]);
+      if (include.length() > 2) {
+        includePaths.push_back(include.substr(2)+string("/"));
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        includePaths.push_back(argv[i]+string("/"));
       }
-      includePaths.push_back(argv[i]+string("/"));
     } else if (string(argv[i])==string("--ignore-stdlib")) {
       flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-typecheck")) {
@@ -104,7 +113,18 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       flag_output_base = argv[i];
-    } else if (string(argv[i])=="-o" || string(argv[i])=="--output-to-file" ||
+    } else if (beginswith(string(argv[i]),"-o")) {
+        string filename(argv[i]);
+        if (filename.length() > 2) {
+          flag_output_fzn = filename.substr(2);
+        } else {
+          i++;
+          if (i==argc) {
+            goto error;
+          }
+          flag_output_fzn = argv[i];
+        }
+    } else if (string(argv[i])=="--output-to-file" ||
                string(argv[i])=="--output-fzn-to-file") {
       i++;
       if (i==argc)
@@ -125,8 +145,18 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       std_lib_dir = argv[i];
-    } else if (string(argv[i])=="-G" ||
-               string(argv[i])=="--globals-dir" ||
+    } else if (beginswith(string(argv[i]),"-G")) {
+      string filename(argv[i]);
+      if (filename.length() > 2) {
+        globals_dir = filename.substr(2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        globals_dir = argv[i];
+      }
+    } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
       if (i==argc)
@@ -138,6 +168,8 @@ int main(int argc, char** argv) {
       break;
     }
     i++;
+    if (i==argc)
+      goto error;
   }
 
   if (std_lib_dir=="") {
