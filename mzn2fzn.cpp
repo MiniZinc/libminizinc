@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
       flag_typecheck = false; flag_eval=false;
     } else if (string(argv[i])==string("--no-eval")) {
       flag_eval = false;
-    } else if (string(argv[i])==string("--verbose")) {
+    } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
       flag_newfzn = true;
@@ -140,6 +140,32 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (beginswith(string(argv[i]),"-d")) {
+      string filename(argv[i]);
+      string datafile;
+      if (filename.length() > 2) {
+        datafile = filename.substr(2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        datafile = argv[i];
+      }
+      if (datafile.length()<=4 ||
+          datafile.substr(datafile.length()-4,string::npos) != ".dzn")
+        goto error;
+      datafiles.push_back(datafile);
+    } else if (string(argv[i])=="--data") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      string datafile = argv[i];
+      if (datafile.length()<=4 ||
+          datafile.substr(datafile.length()-4,string::npos) != ".dzn")
+        goto error;
+      datafiles.push_back(datafile);
     } else if (string(argv[i])=="--stdlib-dir") {
       i++;
       if (i==argc)
