@@ -312,13 +312,18 @@ namespace MiniZinc {
     
     for (unsigned int i=0; i<datafiles.size(); i++) {
       string f = datafiles[i];
-      std::ifstream file;
-      file.open(f.c_str());
-      if (!file.is_open()) {
-        err << "Error: cannot open data file '" << f << "'." << endl;
-        goto error;
+      std::string s;
+      if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
+        s = f.substr(5);
+      } else {
+        std::ifstream file;
+        file.open(f.c_str());
+        if (!file.is_open()) {
+          err << "Error: cannot open data file '" << f << "'." << endl;
+          goto error;
+        }
+        s = get_file_contents(file);
       }
-      std::string s = get_file_contents(file);
 
       ParserState pp(f, s, err, files, seenModels, model, true, false);
       yylex_init(&pp.yyscanner);
