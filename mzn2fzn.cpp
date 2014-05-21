@@ -182,6 +182,23 @@ int main(int argc, char** argv) {
         }
         globals_dir = argv[i];
       }
+    } else if (beginswith(string(argv[i]),"-D")) {
+      string cmddata(argv[i]);
+      if (cmddata.length() > 2) {
+        datafiles.push_back("cmd:/"+cmddata.substr(2));
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        datafiles.push_back("cmd:/"+string(argv[i]));
+      }
+    } else if (string(argv[i])=="--cmdline-data") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      datafiles.push_back("cmd:/"+string(argv[i]));
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
