@@ -2294,7 +2294,7 @@ namespace MiniZinc {
             ka = eval_arrayaccess(al,dims,success);
           }
           ees.push_back(EE(NULL,constants().boollit(success)));
-          if (aa->type().isbool()) {
+          if (aa->type().isbool() && !aa->type().isopt()) {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             ees.push_back(EE(NULL,ka()));
             ret.r = conj(env,r,ctx,ees);
@@ -2320,7 +2320,7 @@ namespace MiniZinc {
           }
           EE ee = flat_exp(env,ctx,ka(),NULL,NULL);
           ees.push_back(ee);
-          if (aa->type().isbool()) {
+          if (aa->type().isbool() && !aa->type().isopt()) {
             ee.b = ee.r;
             ees.push_back(ee);
             ret.r = conj(env,r,ctx,ees);
@@ -2449,7 +2449,7 @@ namespace MiniZinc {
           EvalF(EnvI& env0, Ctx ctx0) : env(env0), ctx(ctx0) {}
           typedef EE ArrayVal;
           EE e(Expression* e) {
-            if (ctx.b == C_ROOT && e->type().isbool()) {
+            if (ctx.b == C_ROOT && e->type().isbool() && !e->type().isopt()) {
               return flat_exp(env,ctx,e,constants().var_true,constants().var_true);
             } else {
               return flat_exp(env,ctx,e,NULL,NULL);
@@ -3416,7 +3416,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (cr()->type().isbool() && (ctx.b != C_ROOT || r != constants().var_true)) {
+            if (cr()->type().isbool() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
               GCLock lock;
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
@@ -3485,7 +3485,7 @@ namespace MiniZinc {
                   vd->e(args[i]());
                 }
                 
-                if (decl->e()->type().isbool()) {
+                if (decl->e()->type().isbool() && !decl->e()->type().isopt()) {
                   ret.b = bind(env,Ctx(),b,constants().lit_true);
                   if (ctx.b==C_ROOT && r==constants().var_true) {
                     (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
@@ -3671,7 +3671,7 @@ namespace MiniZinc {
           Ctx nctx = ctx;
           ctx.neg = false;
           EE ee = flat_exp(env,nctx,let->in(),NULL,NULL);
-          if (let->type().isbool()) {
+          if (let->type().isbool() && !let->type().isopt()) {
             ee.b = ee.r;
             cs.push_back(ee);
             ret.r = conj(env,r,ctx,cs);
@@ -4310,6 +4310,7 @@ namespace MiniZinc {
         if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
           if (vdi->e()->e() && vdi->e()->ti()->domain()) {
             if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
+                !vdi->e()->type().isopt() &&
                 Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
               GCLock lock;
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
