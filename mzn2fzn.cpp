@@ -369,6 +369,7 @@ int main(int argc, char** argv) {
       if (flag_verbose)
         std::cerr << std::endl;
       std::copy(istreambuf_iterator<char>(errstream),istreambuf_iterator<char>(),ostreambuf_iterator<char>(std::cerr));
+      exit(EXIT_FAILURE);
     }
   }
 
