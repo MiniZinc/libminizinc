@@ -587,7 +587,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Model* m) {
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors) {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
@@ -646,8 +646,15 @@ namespace MiniZinc {
     {
       Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
-      for (unsigned int i=0; i<ts.decls.size(); i++)
+      for (unsigned int i=0; i<ts.decls.size(); i++) {
         bu_ty.run(ts.decls[i]);
+        if (ts.decls[i]->toplevel() &&
+            ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
+          typeErrors.push_back(TypeError(ts.decls[i]->loc(),
+                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
+                                         + "' must be defined (did you forget to specify a data file?)"));
+        }
+      }
       for (unsigned int i=0; i<functionItems.size(); i++) {
         bu_ty.run(functionItems[i]->ti());
         for (unsigned int j=0; j<functionItems[i]->params().size(); j++)

@@ -97,18 +97,13 @@ int main(int argc, char** argv) {
   if (filename.length()<=4 ||
       filename.substr(filename.length()-4,string::npos) != ".ozn")
     goto error;
-//  if (i==argc) {
-//    goto error;
-//  }
-  
-//  solfile = argv[i++];
-//  solstream = ifstream(solfile);
   
   {
     if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false,
                                std::cerr)) {
       try {
-        MiniZinc::typecheck(outputm);
+        std::vector<TypeError> typeErrors;
+        MiniZinc::typecheck(outputm,typeErrors);
         MiniZinc::registerBuiltins(outputm);
 
         typedef pair<VarDecl*,Expression*> DE;

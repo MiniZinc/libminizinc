@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
   string flag_output_ozn;
   bool flag_output_fzn_stdout = false;
   bool flag_output_ozn_stdout = false;
+  bool flag_instance_check_only = false;
   FlatteningOptions fopts;
   
   if (argc < 2)
@@ -97,6 +98,8 @@ int main(int argc, char** argv) {
       flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-typecheck")) {
       flag_typecheck = false; flag_eval=false;
+    } else if (string(argv[i])==string("--instance-check-only")) {
+      flag_instance_check_only = true;
     } else if (string(argv[i])==string("--no-eval")) {
       flag_eval = false;
     } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
@@ -265,73 +268,85 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
-          MiniZinc::typecheck(m);
+          vector<TypeError> typeErrors;
+          MiniZinc::typecheck(m, typeErrors);
+          if (typeErrors.size() > 0) {
+            for (unsigned int i=0; i<typeErrors.size(); i++) {
+              if (flag_verbose)
+                std::cerr << std::endl;
+              std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+              std::cerr << typeErrors[i].loc() << std::endl;              
+            }
+            exit(EXIT_FAILURE);
+          }
           MiniZinc::registerBuiltins(m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
-          if (flag_verbose)
-            std::cerr << "Flattening ...";
-          Env env(m);
-          try {
-            flatten(env,fopts);
-          } catch (LocationException& e) {
+          if (!flag_instance_check_only) {
             if (flag_verbose)
-              std::cerr << std::endl;
-            std::cerr << e.what() << ": " << e.msg() << std::endl;
-            std::cerr << e.loc() << std::endl;
-            env.dumpErrorStack(std::cerr);
-            exit(EXIT_FAILURE);
-          }
-          Model* flat = env.flat();
-          if (flag_verbose)
-            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-          
-          if (flag_optimize) {
-            if (flag_verbose)
-              std::cerr << "Optimizing ...";
-            optimize(env);
+              std::cerr << "Flattening ...";
+            Env env(m);
+            try {
+              flatten(env,fopts);
+            } catch (LocationException& e) {
+              if (flag_verbose)
+                std::cerr << std::endl;
+              std::cerr << e.what() << ": " << e.msg() << std::endl;
+              std::cerr << e.loc() << std::endl;
+              env.dumpErrorStack(std::cerr);
+              exit(EXIT_FAILURE);
+            }
+            Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-          }
-
-          if (!flag_newfzn) {
+            
+            if (flag_optimize) {
+              if (flag_verbose)
+                std::cerr << "Optimizing ...";
+              optimize(env);
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+            
+            if (!flag_newfzn) {
+              if (flag_verbose)
+                std::cerr << "Converting to old FlatZinc ...";
+              oldflatzinc(env);
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+            
             if (flag_verbose)
-              std::cerr << "Converting to old FlatZinc ...";
-            oldflatzinc(env);
-            if (flag_verbose)
-              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-          }
-          
-          if (flag_verbose)
-            std::cerr << "Printing FlatZinc ...";
-          if (flag_output_fzn_stdout) {
-            Printer p(std::cout,0);
-            p.print(flat);
-          } else {
-            std::ofstream os;
-            os.open(flag_output_fzn.c_str(), ios::out);
-            Printer p(os,0);
-            p.print(flat);
-            os.close();
-          }
-          if (flag_verbose)
-            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-          if (!flag_no_output_ozn) {
-            if (flag_verbose)
-              std::cerr << "Printing .ozn ...";
-            if (flag_output_ozn_stdout) {
+              std::cerr << "Printing FlatZinc ...";
+            if (flag_output_fzn_stdout) {
               Printer p(std::cout,0);
-              p.print(env.output());
+              p.print(flat);
             } else {
               std::ofstream os;
-              os.open(flag_output_ozn.c_str(), ios::out);
+              os.open(flag_output_fzn.c_str(), ios::out);
               Printer p(os,0);
-              p.print(env.output());
+              p.print(flat);
               os.close();
             }
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            if (!flag_no_output_ozn) {
+              if (flag_verbose)
+                std::cerr << "Printing .ozn ...";
+              if (flag_output_ozn_stdout) {
+                Printer p(std::cout,0);
+                p.print(env.output());
+              } else {
+                std::ofstream os;
+                os.open(flag_output_ozn.c_str(), ios::out);
+                Printer p(os,0);
+                p.print(env.output());
+                os.close();
+              }
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
           }
         } else { // !flag_typecheck
           Printer p(std::cout);
