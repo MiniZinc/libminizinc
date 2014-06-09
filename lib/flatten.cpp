@@ -2313,6 +2313,9 @@ namespace MiniZinc {
             Call* cc = new Call(e->loc(),constants().ids.element,args);
             cc->type(aa->type());
             FunctionI* fi = env.orig->matchFn(cc->id(),args);
+            if (fi==NULL) {
+              throw FlatteningError(cc->loc(), "cannot find matching declaration");
+            }
             assert(fi);
             assert(cc->type() == fi->rtype(args));
             cc->decl(fi);
