@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
       flag_verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
       flag_newfzn = true;
-    } else if (string(argv[i])==string("--no-optimize")) {
+    } else if (string(argv[i])==string("--no-optimize") || string(argv[i])==string("--no-optimise")) {
       flag_optimize = false;
     } else if (string(argv[i])==string("--no-output-ozn") ||
                string(argv[i])==string("-O-")) {
