@@ -1063,7 +1063,7 @@ namespace MiniZinc {
           }
           case Expression::E_ARRAYACCESS:
           {
-            throw EvalError(e->loc(),"cannot partially evaluate array access expression");
+            return eval_par(eval_arrayaccess(e->cast<ArrayAccess>()));
           }
           default:
             throw EvalError(e->loc(),"cannot partially evaluate expression");
