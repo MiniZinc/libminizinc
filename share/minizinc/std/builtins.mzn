@@ -476,6 +476,50 @@ function var int: min(array[$U] of var int: x) =
     constraint length(x) >= 1;
   } in min_t(xx);
 
+% Floating point min and max
+% TODO: add bounds reasoning
+
+function var float: max(var float: x, var float: y) :: promise_total =
+  let { var float: m;
+        constraint float_max(x,y,m);
+  } in m;
+
+function var float: max_t(array[int] of var float: x) :: promise_total =
+  if length(x)=0 then 0.0
+  elseif length(x)=1 then x[min(index_set(x))]
+  elseif length(x)=2 then min(x[1],x[2])
+  else let {
+    var float: m;
+    constraint maximum(m,x);
+  } in m
+  endif;
+function var float: max(array[$U] of var float: x) =
+  let {
+    array[int] of var float: xx = array1d(1..length(x),x);
+    constraint length(x) >= 1;
+  } in max_t(xx);
+
+function var float: min(var float: x, var float: y) :: promise_total =
+  let { var float: m;
+        constraint float_min(x,y,m);
+  } in m;
+
+function var float: min_t(array[int] of var float: x) :: promise_total =
+  if length(x)=0 then 0.0
+  elseif length(x)=1 then x[1]
+  elseif length(x)=2 then min(x[1],x[2])
+  else let {
+    var float: m;
+    constraint minimum(m,x);
+  } in m
+  endif;
+function var float: min(array[$U] of var float: x) =
+  let {
+    array[int] of var float: xx = array1d(1..length(x),x);
+    constraint length(x) >= 1;
+  } in min_t(xx);
+
+
 function int: abs(int);
 
 function var int: abs(var int: x) :: promise_total =
