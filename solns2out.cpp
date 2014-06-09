@@ -118,6 +118,7 @@ int main(int argc, char** argv) {
         }
         
         string solution;
+        string comments;
         for (;;) {
           if (solstream.good()) {
             string line;
@@ -168,6 +169,8 @@ int main(int argc, char** argv) {
                   std::cout << std::endl;
               }
               solution = "";
+              comments = "";
+              cout << comments;
               cout << line << std::endl;
             } else if (line=="==========" ||
                        line=="=====UNSATISFIABLE=====" ||
@@ -176,12 +179,17 @@ int main(int argc, char** argv) {
               cout << line << std::endl;
             } else {
               solution += line+"\n";
+              size_t comment_pos = line.find('%');
+              if (comment_pos != string::npos) {
+                comments += line.substr(comment_pos);
+                comments += "\n";
+              }
             }
           } else {
             break;
           }
         }
-        
+        cout << comments;
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
