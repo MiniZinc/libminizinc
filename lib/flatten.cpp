@@ -2312,7 +2312,7 @@ namespace MiniZinc {
               throw FlatteningError(cc->loc(), "cannot find matching declaration");
             }
             assert(fi);
-            assert(cc->type() == fi->rtype(args));
+            assert(fi->rtype(args).isSubtypeOf(cc->type()));
             cc->decl(fi);
             ka = cc;
           }
