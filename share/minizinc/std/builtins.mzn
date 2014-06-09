@@ -349,8 +349,47 @@ function     bool: '<='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '<='(array[$U] of var $T,array[$U] of var $T);
 function     bool: '>='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '>='(array[$U] of var $T,array[$U] of var $T);
-function     bool: '='(array[$U] of     $T,array[$U] of     $T);
-function var bool: '='(array[$U] of var $T,array[$U] of var $T);
+
+function var bool: '='(array[int] of     int: x,array[int] of     int: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of var int: x,array[int] of var int: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of     bool: x,array[int] of     bool: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of var bool: x,array[int] of var bool: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of     set of int: x,array[int] of     set of int: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of var set of int: x,array[int] of var set of int: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of     float: x,array[int] of     float: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
+function var bool: '='(array[int] of var float: x,array[int] of var float: y) =
+    assert(index_set(x)=index_set(y), "array index sets do not match",
+      forall (i in index_set(x)) (x[i]=y[i])
+    );
+
 function     bool: '!='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '!='(array[$U] of var $T,array[$U] of var $T);
 
