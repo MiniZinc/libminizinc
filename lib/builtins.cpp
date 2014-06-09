@@ -731,6 +731,16 @@ namespace MiniZinc {
   FloatVal b_pow(ASTExprVec<Expression> args) {
     return std::pow(eval_float(args[0]),eval_float(args[1]));
   }
+  IntVal b_pow_int(ASTExprVec<Expression> args) {
+    IntVal p = eval_int(args[0]);
+    IntVal r = 1;
+    int e = eval_int(args[1]).toInt();
+    if (e < 0)
+      throw EvalError(args[1]->loc(), "Cannot raise integer to a negative power");
+    for (int i=e; i--;)
+      r = r*p;
+    return r;
+  }
   FloatVal b_sqrt(ASTExprVec<Expression> args) {
     return std::sqrt(eval_float(args[0]));
   }
@@ -946,6 +956,7 @@ namespace MiniZinc {
     rb(m, ASTString("max"), t_intarray, b_int_max);
     rb(m, constants().ids.sum, t_intarray, b_sum);
     rb(m, ASTString("product"), t_intarray, b_product);
+    rb(m, ASTString("pow"), t_intint, b_pow_int);
 
     {
       std::vector<Type> t_anyarray1(1);
