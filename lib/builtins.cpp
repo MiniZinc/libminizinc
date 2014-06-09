@@ -323,8 +323,13 @@ namespace MiniZinc {
   IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
     if (args.size() != 1)
       throw EvalError(Location(), "index_set needs exactly one argument");
-    if (args[0]->eid() != Expression::E_ID)
-      throw EvalError(Location(), "index_set only supported for identifiers");
+    if (args[0]->eid() != Expression::E_ID) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(args[0]);
+      if (al->dims() < i)
+        throw EvalError(args[0]->loc(), "index_set: wrong dimension");
+      return IntSetVal::a(al->min(i-1),al->max(i-1));
+    }
     Id* id = args[0]->cast<Id>();
     if (id->decl() == NULL)
       throw EvalError(id->loc(), "undefined identifier");
