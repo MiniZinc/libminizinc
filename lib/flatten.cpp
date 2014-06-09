@@ -2514,7 +2514,7 @@ namespace MiniZinc {
           
           break;
         }
-        if (bo->lhs()==constants().absent || bo->rhs()==constants().absent) {
+        if ( (bo->op()==BOT_EQ ||  bo->op()==BOT_EQUIV) && (bo->lhs()==constants().absent || bo->rhs()==constants().absent) ) {
           GCLock lock;
           std::vector<Expression*> args(1);
           args[0] = bo->lhs()==constants().absent ? bo->rhs() : bo->lhs();
