@@ -4788,22 +4788,21 @@ namespace MiniZinc {
             if (b1s==2) {
               b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
               assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl())->second);
-              toRemove.push_back(ci);
+              if (ci)
+                toRemove.push_back(ci);
             } else {
               MZN_MODEL_INCONSISTENT
               remove = false;
             }
           } else {
-            toRemove.push_back(ci);
+            if (ci)
+              toRemove.push_back(ci);
           }
         } else if (vdi && vdi->e()->ti()->domain()==constants().lit_false) {
           if (b0s != b1s) {
             if (b1s==2) {
               b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
               assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl())->second);
-              toRemove.push_back(ci);
-            } else {
-              toRemove.push_back(ci);
             }
           } else {
             MZN_MODEL_INCONSISTENT
@@ -4858,8 +4857,7 @@ namespace MiniZinc {
                   subsumed = true;
                   i=2; // break out of outer loop
                   break;
-                } else {
-                  Id* id = al->v()[j]->cast<Id>();
+                } else if (Id* id = al->v()[j]->dyn_cast<Id>()) {
                   if (id->decl()->ti()->domain()) {
                     bool idv = (id->decl()->ti()->domain()==constants().lit_true);
                     if (unit != idv) {
