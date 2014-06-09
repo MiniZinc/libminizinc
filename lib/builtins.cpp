@@ -149,6 +149,10 @@ namespace MiniZinc {
     return lb_varoptint(args[0]);
   }
 
+  bool b_occurs(ASTExprVec<Expression> args) {
+    return eval_par(args[0]) != constants().absent;
+  }
+  
   Expression* deref_id(Expression* e) {
     Expression* cur = e;
     for (;;) {
@@ -1308,6 +1312,14 @@ namespace MiniZinc {
       t[0] = Type::parsetint(1);
       rb(m, ASTString("array_intersect"), t, b_array_intersect);
       rb(m, ASTString("array_union"), t, b_array_union);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("occurs"), t, b_occurs);
+      t[0]._bt = Type::BT_BOOL;
+      rb(m, ASTString("occurs"), t, b_occurs);
     }
   }
   

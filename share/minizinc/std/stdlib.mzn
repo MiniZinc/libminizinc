@@ -159,10 +159,12 @@ function var bool : deopt(var opt bool : x) ::promise_total =
   } in dx;
   
 predicate deopt(var bool: b) = b;
-predicate occurs(var bool: b) = true;
+test occurs(var bool: b) = true;
+test occurs(opt bool: x) ::promise_total;
 
 predicate absent(var opt bool: b) = not occurs(b);
 predicate absent(var bool: b) = false;
+test absent(opt bool: x) ::promise_total = not occurs(x);
 
 predicate bool_eq(var opt bool: b0, var opt bool: b1) =
      (absent(b0) /\ absent(b1))
@@ -178,12 +180,16 @@ predicate forall (array[int] of var opt bool: x) =
   forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
 
 predicate exists (array[int] of var opt bool: x) =
-  exists ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
+  exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
 
 function bool: occurs(var int: x) ::promise_total = true;
+function bool: occurs(int: x) ::promise_total = true;
+test occurs(opt int: x) ::promise_total;
 function var int: deopt(var int: x) ::promise_total = x;
+function int: deopt(int: x) ::promise_total = x;
 
 function bool: absent(var int: x) ::promise_total = false;
+function bool: absent(opt int: x) ::promise_total = not occurs(x);
 function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 
 function var bool: occurs_internal(var opt int: x) ::promise_total =
