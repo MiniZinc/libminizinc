@@ -319,11 +319,6 @@ namespace MiniZinc {
         }
       }
     }
-    void flat_replaceItem(int idx, Item* i) {
-      if (_flat->_items[idx]->isa<VarDeclI>() && !i->isa<VarDeclI>())
-        vo.remove(_flat->_items[idx]->cast<VarDeclI>()->e());
-      _flat->_items[idx] = i;
-    }
     void vo_add_exp(VarDecl* vd) {
       if (vd->e() && vd->e()->isa<Call>()) {
         int prev = idStack.size() > 0 ? idStack.back() : 0;
@@ -4318,12 +4313,15 @@ namespace MiniZinc {
               GCLock lock;
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
-                env.flat_replaceItem(i,ci);
+                CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                topDown(cd,vdi->e()->e());
+                vdi->remove();
                 keptVariable = false;
+                env.flat_addItem(ci);
               } else {
                 vdi->e()->e(NULL);
-                env.flat_addItem(ci);
               }
+              env.flat_addItem(ci);
             } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
               CollectDecls cd(env.vo,deletedVarDecls,vdi);
               topDown(cd,vdi->e()->e());
@@ -4577,7 +4575,6 @@ namespace MiniZinc {
     
     std::vector<int> toAssignBoolVars;
     std::vector<int> assignedBoolVars;
-    ExpressionMap<int> nonFixedLiteralCount;
     
     for (unsigned int i=0; i<m.size(); i++) {
       if (m[i]->removed())
@@ -4636,7 +4633,8 @@ namespace MiniZinc {
         assignedBoolVars.push_back(toAssignBoolVars[i]);
       }
     }
-    
+
+    ExpressionMap<int> nonFixedLiteralCount;
     while (!assignedBoolVars.empty()) {
       int bv = assignedBoolVars.back();
       assignedBoolVars.pop_back();
