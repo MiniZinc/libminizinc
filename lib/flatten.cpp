@@ -2601,6 +2601,21 @@ namespace MiniZinc {
             EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
             EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
             
+            if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
+              GCLock lock;
+              BinOp* parbo = new BinOp(bo->loc(),e0.r(),bo->op(),e1.r());
+              Type tt = bo->type();
+              tt._ti = Type::TI_PAR;
+              parbo->type(tt);
+              Expression* res = eval_par(parbo);
+              assert(!res->type().isunknown());
+              ret.r = bind(env,ctx,r,res);
+              std::vector<EE> ees(2);
+              ees[0].b = e0.b; ees[1].b = e1.b;
+              ret.b = conj(env,b,Ctx(),ees);
+              break;
+            }
+            
             if (bot==BOT_MULT) {
               Expression* e0r = e0.r();
               Expression* e1r = e1.r();
