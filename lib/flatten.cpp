@@ -3213,8 +3213,12 @@ namespace MiniZinc {
           break;
         case UOT_MINUS:
           {
-            BinOp* bo = new BinOp(Location(),new IntLit(Location(),0),
-                                 BOT_MINUS,uo->e());
+            Expression* zero;
+            if (uo->e()->type()._bt==Type::BT_INT)
+              zero = new IntLit(Location(),0);
+            else
+              zero = new FloatLit(Location(),0.0);
+            BinOp* bo = new BinOp(Location(),zero,BOT_MINUS,uo->e());
             bo->type(uo->type());
             ret = flat_exp(env,ctx,bo,r,b);
           }
