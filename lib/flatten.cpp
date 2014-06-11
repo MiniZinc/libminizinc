@@ -1166,7 +1166,7 @@ namespace MiniZinc {
     case BOT_AND:
       return builtin+"and";
     case BOT_XOR:
-      return builtin+"xor";
+      return constants().ids.bool_xor;
     default:
       assert(false); return ASTString("");
     }
@@ -5240,6 +5240,15 @@ namespace MiniZinc {
           } else if (vc->id() == constants().ids.clause) {
             GCLock lock;
             vc->id(ASTString("bool_clause"));
+            vc->decl(e.envi().orig->matchFn(vc));
+          } else if (vc->id() == constants().ids.bool_xor && vc->args().size()==2) {
+            GCLock lock;
+            std::vector<Expression*> args(3);
+            args[0] = vc->args()[0];
+            args[1] = vc->args()[1];
+            args[2] = constants().lit_true;
+            ASTExprVec<Expression> argsv(args);
+            vc->args(argsv);
             vc->decl(e.envi().orig->matchFn(vc));
           }
           if (vc->decl() && vc->decl() != constants().var_redef &&
