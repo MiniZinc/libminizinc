@@ -68,8 +68,11 @@ function var set of int: set_symdiff(var set of int, var set of int);
 % Float constraints
 predicate float_abs(var float, var float);
 predicate float_acos(var float, var float);
+predicate float_acosh(var float, var float);
 predicate float_asin(var float, var float);
+predicate float_asinh(var float, var float);
 predicate float_atan(var float, var float);
+predicate float_atanh(var float, var float);
 predicate float_cos(var float, var float);
 predicate float_cosh(var float, var float);
 predicate float_exp(var float, var float);
@@ -577,40 +580,104 @@ function int: pow(int, int);
 function float: pow(float, float);
 
 function float: exp(float);
-function var float: exp(var float);
+function var float: exp(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_exp(x,r);
+  } in r;
 function float: ln(float);
-function var float: ln(var float);
+function var float: ln(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_ln(x,r);
+  } in r;
 function float: log10(float);
-function var float: log10(var float);
+function var float: log10(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_log10(x,r);
+  } in r;
 function float: log2(float);
-function var float: log2(var float);
+function var float: log2(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_log2(x,r);
+  } in r;
 
 function float: log(float, float);
 
 function float: sin(float);
-function var float: sin(var float);
+function var float: sin(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_sin(x,r);
+  } in r;
 function float: cos(float);
-function var float: cos(var float);
+function var float: cos(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_cos(x,r);
+  } in r;
 function float: tan(float);
-function var float: tan(var float);
+function var float: tan(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_tan(x,r);
+  } in r;
 function float: asin(float);
-function var float: asin(var float);
+function var float: asin(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_asin(x,r);
+  } in r;
 function float: acos(float);
-function var float: acos(var float);
+function var float: acos(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_acos(x,r);
+  } in r;
 function float: atan(float);
-function var float: atan(var float);
+function var float: atan(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_atan(x,r);
+  } in r;
 function float: sinh(float);
-function var float: sinh(var float);
+function var float: sinh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_sinh(x,r);
+  } in r;
 function float: cosh(float);
-function var float: cosh(var float);
+function var float: cosh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_cosh(x,r);
+  } in r;
 function float: tanh(float);
-function var float: tanh(var float);
+function var float: tanh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_tanh(x,r);
+  } in r;
 function float: asinh(float);
-function var float: asinh(var float);
+function var float: asinh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_asinh(x,r);
+  } in r;
 function float: acosh(float);
-function var float: acosh(var float);
+function var float: acosh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_acosh(x,r);
+  } in r;
 function float: atanh(float);
-function var float: atanh(var float);
+function var float: atanh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_atanh(x,r);
+  } in r;
 
 % Logical operations
 function     bool: '/\'(    bool,     bool);
