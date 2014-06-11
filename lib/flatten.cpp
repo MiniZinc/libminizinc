@@ -1521,6 +1521,9 @@ namespace MiniZinc {
       tt = args[1]->type();
       tt._dim = 0;
       c->decl(env.orig->matchFn(c));
+      if (c->decl()==NULL) {
+        throw FlatteningError(c->loc(), "cannot find matching declaration");
+      }
       c->type(c->decl()->rtype(args));
       ka = c;
     }
