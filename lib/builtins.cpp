@@ -794,6 +794,9 @@ namespace MiniZinc {
     assert(args.size()==1);
     std::ostringstream oss;
     Expression* e = eval_par(args[0]);
+    if (StringLit* sl = e->dyn_cast<StringLit>()) {
+      return sl->v().str();
+    }
     Printer p(oss,0,false);
     if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
       oss << "[";
