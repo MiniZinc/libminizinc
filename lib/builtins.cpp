@@ -685,6 +685,9 @@ namespace MiniZinc {
   bool b_fix_bool(ASTExprVec<Expression> args) {
     return eval_bool(b_fix(args));
   }
+  FloatVal b_fix_float(ASTExprVec<Expression> args) {
+    return eval_float(b_fix(args));
+  }
   IntSetVal* b_fix_set(ASTExprVec<Expression> args) {
     return eval_intset(b_fix(args));
   }
@@ -1236,6 +1239,7 @@ namespace MiniZinc {
       rb(m, ASTString("fix"), t, b_fix_bool);
       rb(m, ASTString("fix"), t, b_fix_int);
       rb(m, ASTString("fix"), t, b_fix_set);
+      rb(m, ASTString("fix"), t, b_fix_float);
     }
     {
       std::vector<Type> t(1);
