@@ -1385,56 +1385,60 @@ namespace MiniZinc {
   };
 
   template<class Lit>
-  KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0, typename LinearTraits<Lit>::Val c1,
-                     Expression* e0, Expression* e1) {
+  void collectLinExps(typename LinearTraits<Lit>::Val c, Expression* exp,
+                      std::vector<typename LinearTraits<Lit>::Val>& coeffs,
+                      std::vector<KeepAlive>& vars,
+                      typename LinearTraits<Lit>::Val& constval) {
     typedef typename LinearTraits<Lit>::Val Val;
-    GCLock lock;
-    Val d = 0;
-    if (e0->type().ispar()) {
-      d += c0*LinearTraits<Lit>::eval(e0);
-      e0 = NULL;
+    struct StackItem {
+      Expression* e;
+      Val c;
+      StackItem(Expression* e0, Val c0) : e(e0), c(c0) {}
+    };
+    std::vector<StackItem> stack;
+    stack.push_back(StackItem(exp,c));
+    while (!stack.empty()) {
+      Expression* e = stack.back().e;
+      Val c = stack.back().c;
+      stack.pop_back();
+      if (e==NULL)
+        continue;
+      if (e->type().ispar()) {
+        constval += c * LinearTraits<Lit>::eval(e);
+      } else if (Lit* l = e->dyn_cast<Lit>()) {
+        constval += c * l->v();
+      } else if (BinOp* bo = e->dyn_cast<BinOp>()) {
+        switch (bo->op()) {
+          case BOT_PLUS:
+            stack.push_back(StackItem(bo->lhs(),c));
+            stack.push_back(StackItem(bo->rhs(),c));
+            break;
+          case BOT_MINUS:
+            stack.push_back(StackItem(bo->lhs(),c));
+            stack.push_back(StackItem(bo->rhs(),-c));
+            break;
+          case BOT_MULT:
+            if (bo->lhs()->type().ispar()) {
+              stack.push_back(StackItem(bo->rhs(),c*LinearTraits<Lit>::eval(bo->lhs())));
+            } else if (bo->rhs()->type().ispar()) {
+              stack.push_back(StackItem(bo->lhs(),c*LinearTraits<Lit>::eval(bo->rhs())));
+            } else {
+              coeffs.push_back(c);
+              vars.push_back(e);
+            }
+            break;
+          default:
+            coeffs.push_back(c);
+            vars.push_back(e);
+            break;
+        }
+//      } else if (Call* call = e->dyn_cast<Call>()) {
+//        /// TODO! Handle sum, lin_exp (maybe not that important?)
+      } else {
+        coeffs.push_back(c);
+        vars.push_back(e);
+      }
     }
-    if (e1 && e1->type().ispar()) {
-      d += c1*LinearTraits<Lit>::eval(e1);
-      e1 = NULL;
-    }
-    if (e0==NULL && e1==NULL)
-      return new Lit(Location(),d);
-    if (e0==NULL) {
-      std::swap(e0,e1);
-      std::swap(c0,c1);
-    }
-    std::vector<Expression*> bo_args(e1 ? 2 : 1);
-    bo_args[0] = e0;
-    if (e1)
-      bo_args[1] = e1;
-    std::vector<Expression*> coeffs(e1 ? 2 : 1);
-    coeffs[0] = new Lit(e0->loc(),c0);
-    if (e1) {
-      if (c0==c1)
-        coeffs[1] = coeffs[0];
-      else
-        coeffs[1] = new Lit(e0->loc(),c1);
-    }
-    std::vector<Expression*> args(3);
-    args[0]=new ArrayLit(e0->loc(),coeffs);
-    Type t = coeffs[0]->type();
-    t._dim = 1;
-    args[0]->type(t);
-    args[1]=new ArrayLit(e0->loc(),bo_args);
-    Type tt = e0->type();
-    tt._dim = 1;
-    if (e0->type()._ti==Type::TI_PAR && e1)
-      tt._ti = e1->type()._ti;
-    args[1]->type(tt);
-    args[2] = new Lit(e0->loc(),d);
-    Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
-    tt = args[1]->type();
-    tt._dim = 0;
-    c->decl(env.orig->matchFn(c));
-    c->type(c->decl()->rtype(args));
-    KeepAlive ka = c;
-    return ka;
   }
 
   template<class Lit>
@@ -1476,6 +1480,52 @@ namespace MiniZinc {
     }
     c.resize(ci);
     x.resize(ci);
+  }
+
+  template<class Lit>
+  KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0, typename LinearTraits<Lit>::Val c1,
+                     Expression* e0, Expression* e1) {
+    typedef typename LinearTraits<Lit>::Val Val;
+    GCLock lock;
+    
+    std::vector<Val> coeffs;
+    std::vector<KeepAlive> vars;
+    Val constval = 0;
+    collectLinExps<Lit>(c0, e0, coeffs, vars, constval);
+    collectLinExps<Lit>(c1, e1, coeffs, vars, constval);
+    simplify_lin<Lit>(coeffs, vars, constval);
+    KeepAlive ka;
+    if (coeffs.size()==0) {
+      ka = new Lit(e0->loc(),constval);
+    } else if (coeffs.size()==1 && coeffs[0]==1 && constval==0) {
+      ka = vars[0];
+    } else {
+      std::vector<Expression*> coeffs_e(coeffs.size());
+      for (unsigned int i=coeffs.size(); i--;)
+        coeffs_e[i] = new Lit(e0->loc(),coeffs[i]);
+      std::vector<Expression*> vars_e(vars.size());
+      for (unsigned int i=vars.size(); i--;)
+        vars_e[i] = vars[i]();
+      
+      std::vector<Expression*> args(3);
+      args[0]=new ArrayLit(e0->loc(),coeffs_e);
+      Type t = coeffs_e[0]->type();
+      t._dim = 1;
+      args[0]->type(t);
+      args[1]=new ArrayLit(e0->loc(),vars_e);
+      Type tt = vars_e[0]->type();
+      tt._dim = 1;
+      args[1]->type(tt);
+      args[2] = new Lit(e0->loc(),constval);
+      Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
+      tt = args[1]->type();
+      tt._dim = 0;
+      c->decl(env.orig->matchFn(c));
+      c->type(c->decl()->rtype(args));
+      ka = c;
+    }
+    assert(ka());
+    return ka;
   }
 
   class CmpExp {
