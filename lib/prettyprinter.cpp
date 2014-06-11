@@ -103,13 +103,8 @@ namespace MiniZinc {
     int pbo = precedence(bo);
     int pl = precedence(left);
     int pr = precedence(right);
-    bool nl = (left->isa<IntLit>() && left->cast<IntLit>()->v() < 0);
-    nl = nl || (left->isa<FloatLit>() && left->cast<FloatLit>()->v() < 0.0);
-    bool nr = (right->isa<IntLit>() && right->cast<IntLit>()->v() < 0);
-    nr = nr || (right->isa<FloatLit>() && right->cast<FloatLit>()->v() < 0.0);
-    nr = nr || right->isa<UnOp>();
-    int ret = (pbo < pl) || (pbo == pl && pbo == 200) || nl;
-    ret += 2 * ((pbo < pr) || (pbo == pr && pbo != 200) || nr);
+    int ret = (pbo < pl) || (pbo == pl && pbo == 200);
+    ret += 2 * ((pbo < pr) || (pbo == pr && pbo != 200));
     return static_cast<Parentheses>(ret);
   }
   
@@ -369,13 +364,13 @@ namespace MiniZinc {
             os<<" mod ";
             break;
           case BOT_LE:
-            os<<"<";
+            os<<" < ";
             break;
           case BOT_LQ:
             os<<"<=";
             break;
           case BOT_GR:
-            os<<">";
+            os<<" > ";
             break;
           case BOT_GQ:
             os<<">=";
@@ -1223,13 +1218,13 @@ namespace MiniZinc {
         op = " mod ";
         break;
       case BOT_LE:
-        op = "<";
+        op = " < ";
         break;
       case BOT_LQ:
         op = "<=";
         break;
       case BOT_GR:
-        op = ">";
+        op = " > ";
         break;
       case BOT_GQ:
         op = ">=";
