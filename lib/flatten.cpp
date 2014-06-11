@@ -1084,7 +1084,7 @@ namespace MiniZinc {
         case BOT_PLUS: return constants().ids.float_.plus;
         case BOT_MINUS: return constants().ids.float_.minus;
         case BOT_MULT: return constants().ids.float_.times;
-        case BOT_IDIV: return constants().ids.float_.div;
+        case BOT_DIV: return constants().ids.float_.div;
         case BOT_MOD: return constants().ids.float_.mod;
         case BOT_LE: return constants().ids.float_.lt;
         case BOT_LQ: return constants().ids.float_.le;
