@@ -1240,6 +1240,7 @@ namespace MiniZinc {
     typedef IntSetVal* Domain;
     static Domain eval_domain(Expression* e) { return eval_intset(e); }
     static Expression* new_domain(Val v) { return new SetLit(Location(),IntSetVal::a(v,v)); }
+    static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location(),IntSetVal::a(v0,v1)); }
     static Expression* new_domain(Domain d) { return new SetLit(Location(),d); }
     static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
     static bool domain_equals(Domain dom, Val v) { return dom->size()==1 && dom->min(0)==v && dom->max(0)==v; }
@@ -1247,6 +1248,9 @@ namespace MiniZinc {
       IntSetRanges d1(dom1);
       IntSetRanges d2(dom2);
       return Ranges::equal(d1,d2);
+    }
+    static bool domain_intersects(Domain dom, Val v0, Val v1) {
+      return dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1);
     }
     static bool domain_empty(Domain dom) { return dom->size()==0; }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
@@ -1282,6 +1286,14 @@ namespace MiniZinc {
       }
       return ndomain;
     }
+    static Domain intersect_domain(Domain dom, Val v0, Val v1) {
+      IntSetRanges dr(dom);
+      Ranges::Const c(v0,v1);
+      Ranges::Inter<IntSetRanges,Ranges::Const> inter(dr,c);
+      return IntSetVal::ai(inter);
+    }
+    static Val floor_div(Val v0, Val v1) { return floor(v0.toInt() / v1.toInt()); }
+    static Val ceil_div(Val v0, Val v1) { return ceil(v0.toInt() / v1.toInt()); }
   };
   template<>
   class LinearTraits<FloatLit> {
@@ -1337,9 +1349,17 @@ namespace MiniZinc {
       ret->type(Type::parsetfloat());
       return ret;
     }
+    static Expression* new_domain(Val v0, Val v1) {
+      BinOp* ret = new BinOp(Location(),new FloatLit(Location(),v0),BOT_DOTDOT,new FloatLit(Location(),v1));
+      ret->type(Type::parsetfloat());
+      return ret;
+    }
     static Expression* new_domain(Domain d) { return d; }
     static bool domain_contains(Domain dom, Val v) {
       return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
+    }
+    static bool domain_intersects(Domain dom, Val v0, Val v1) {
+      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v1 && dom->rhs()->cast<FloatLit>()->v() >= v0);
     }
     static bool domain_equals(Domain dom, Val v) {
       return dom != NULL && dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
@@ -1354,6 +1374,21 @@ namespace MiniZinc {
     static bool domain_empty(Domain dom) {
       return dom != NULL && dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
     }
+    static Domain intersect_domain(Domain dom, Val v0, Val v1) {
+      if (dom) {
+        Val lb = dom->lhs()->cast<FloatLit>()->v();
+        Val ub = dom->rhs()->cast<FloatLit>()->v();
+        lb = std::max(lb,v0);
+        ub = std::min(ub,v1);
+        Domain d = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+        d->type(Type::parsetfloat());
+        return d;
+      } else {
+        Domain d = new BinOp(Location(), new FloatLit(Location(),v0), BOT_DOTDOT, new FloatLit(Location(),v1));
+        d->type(Type::parsetfloat());
+        return d;
+      }
+    }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
       if (dom) {
         Val lb = dom->lhs()->cast<FloatLit>()->v();
@@ -1363,17 +1398,23 @@ namespace MiniZinc {
           case BOT_LE:
             return NULL;
           case BOT_LQ:
-            if (v < ub)
-              return new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location(),v));
-            else
+            if (v < ub) {
+              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location(),v));
+              d->type(Type::parsetfloat());
+              return d;
+            } else {
               return dom;
+            }
           case BOT_GR:
             return NULL;
           case BOT_GQ:
-            if (v > lb)
-              return new BinOp(dom->loc(),new FloatLit(Location(),v),BOT_DOTDOT,dom->rhs());
-            else
+            if (v > lb) {
+              Domain d = new BinOp(dom->loc(),new FloatLit(Location(),v),BOT_DOTDOT,dom->rhs());
+              d->type(Type::parsetfloat());
+              return d;
+            } else {
               return dom;
+            }
           case BOT_NQ:
             return NULL;
           default: assert(false); return NULL;
@@ -1382,6 +1423,8 @@ namespace MiniZinc {
       }
       return NULL;
     }
+    static Val floor_div(Val v0, Val v1) { return floor(v0 / v1); }
+    static Val ceil_div(Val v0, Val v1) { return ceil(v0 / v1); }
   };
 
   template<class Lit>
@@ -1685,6 +1728,16 @@ namespace MiniZinc {
     std::vector<KeepAlive> alv;
     Val d = 0;
     Expression* le[2] = {le0,le1};
+    
+    Id* assignTo = NULL;
+    if (bot==BOT_EQ && ctx.b == C_ROOT) {
+      if (le0->isa<Id>()) {
+        assignTo = le0->cast<Id>();
+      } else if (le1->isa<Id>()) {
+        assignTo = le1->cast<Id>();
+      }
+    }
+    
     for (unsigned int i=0; i<2; i++) {
       Val sign = (i==0 ? 1 : -1);
       if (Lit* l = le[i]->dyn_cast<Lit>()) {
@@ -1867,9 +1920,60 @@ namespace MiniZinc {
         args.push_back(alv[1]());
       }
     } else {
+      GCLock lock;
+      if (assignTo != NULL) {
+        Val resultCoeff;
+        // TODO: possibly add defines_var annotations
+        typename LinearTraits<Lit>::Bounds bounds(d,d,true);
+        for (unsigned int i=coeffv.size(); i--;) {
+          if (alv[i]()==assignTo) {
+            resultCoeff = coeffv[i];
+            continue;
+          }
+          typename LinearTraits<Lit>::Bounds b = LinearTraits<Lit>::compute_bounds(alv[i]());
+          if (b.valid) {
+            if (coeffv[i] > 0) {
+              bounds.l += coeffv[i]*b.l;
+              bounds.u += coeffv[i]*b.u;
+            } else {
+              bounds.l += coeffv[i]*b.u;
+              bounds.u += coeffv[i]*b.l;
+            }
+          } else {
+            bounds.valid = false;
+            break;
+          }
+        }
+        if (bounds.valid) {
+          if (resultCoeff < 0) {
+            bounds.l = LinearTraits<Lit>::floor_div(bounds.l,-resultCoeff);
+            bounds.u = LinearTraits<Lit>::ceil_div(bounds.u,-resultCoeff);
+          } else {
+            Val bl = bounds.l;
+            bounds.l = LinearTraits<Lit>::ceil_div(bounds.u,-resultCoeff);
+            bounds.u = LinearTraits<Lit>::floor_div(bl,-resultCoeff);
+          }
+          VarDecl* vd = assignTo->decl();
+          if (vd->ti()->domain()) {
+            typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
+            if (LinearTraits<Lit>::domain_intersects(domain,bounds.l,bounds.u)) {
+              typename LinearTraits<Lit>::Domain new_domain = LinearTraits<Lit>::intersect_domain(domain,bounds.l,bounds.u);
+              if (!LinearTraits<Lit>::domain_equals(domain,new_domain)) {
+                vd->ti()->setComputedDomain(false);
+                vd->ti()->domain(LinearTraits<Lit>::new_domain(new_domain));
+              }
+            } else {
+              ret.r = bind(env,ctx,r,constants().lit_false);
+            }
+          } else {
+            vd->ti()->setComputedDomain(true);
+            vd->ti()->domain(LinearTraits<Lit>::new_domain(bounds.l,bounds.u));
+          }
+        }
+      }
+
       int coeff_sign;
       LinearTraits<Lit>::constructLinBuiltin(bot,callid,coeff_sign,d);
-      GCLock lock;
       std::vector<Expression*> coeff_ev(coeffv.size());
       for (unsigned int i=coeff_ev.size(); i--;)
         coeff_ev[i] = new Lit(Location(),coeff_sign*coeffv[i]);
