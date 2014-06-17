@@ -3933,10 +3933,11 @@ namespace MiniZinc {
             success = false;
         }
       }
+      void vId(const Id& id) {}
       /// Visit let
       void vLet(const Let&) { success = false; }
       /// Visit variable declaration
-      void vVarDecl(const VarDecl&) {}
+      void vVarDecl(const VarDecl& vd) {}
       /// Visit type inst
       void vTypeInst(const TypeInst&) {}
       /// Visit TIId
@@ -3956,11 +3957,12 @@ namespace MiniZinc {
     vd->ann().removeCall(constants().ann.output_array);
   }
   
-  void outputVarDecls(EnvI& env, Expression* e) {
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
     public:
       EnvI& env;
-      O(EnvI& env0) : env(env0) {}
+      Item* ci;
+      O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
       void vId(Id& id) {
         if (&id==constants().absent)
           return;
@@ -3984,6 +3986,7 @@ namespace MiniZinc {
           if (reallyFlat)
             env.output_vo.add(reallyFlat, env.output->size());
           env.output_vo.add(nvi, env.output->size());
+          env.output_vo.add(nvi->e(), ci);
           env.output->addItem(nvi);
           
           IdMap<KeepAlive>::iterator it;
@@ -4017,7 +4020,7 @@ namespace MiniZinc {
                 rhs->decl(decl);
               }
             }
-            outputVarDecls(env,it->second());
+            outputVarDecls(env,nvi,it->second());
             nvi->e()->e(rhs);
           } else if (cannotUseRHSForOutput(env, reallyFlat->e())) {
             assert(nvi->e()->flat());
@@ -4039,13 +4042,13 @@ namespace MiniZinc {
               reallyFlat->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
             }
           } else {
-            outputVarDecls(env, nvi->e()->e());
+            outputVarDecls(env, nvi, nvi->e()->e());
           }
           CollectOccurrencesE ce(env.output_vo,nvi);
           topDown(ce, nvi->e());
         }
       }
-    } _o(env);
+    } _o(env,ci);
     topDown(_o, e);
   }
   
@@ -4072,7 +4075,7 @@ namespace MiniZinc {
                   reallyFlat=reallyFlat->flat();
                 removeIsOutput(reallyFlat);
                 Expression* flate = copy(e.cmap,follow_id(reallyFlat->id()));
-                outputVarDecls(e,flate);
+                outputVarDecls(e,item,flate);
                 vd->e(flate);
               } else if ( (it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
                 Call* rhs = copy(e.cmap,it->second())->cast<Call>();
@@ -4101,10 +4104,9 @@ namespace MiniZinc {
                   }
                   rhs->decl(decl);
                 }
-                
                 removeIsOutput(reallyFlat);
                 
-                outputVarDecls(e,rhs);
+                outputVarDecls(e,item,rhs);
                 vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
@@ -4124,7 +4126,7 @@ namespace MiniZinc {
                   }
                   if (!needOutputAnn) {
                     removeIsOutput(vd);
-                    outputVarDecls(e, al);
+                    outputVarDecls(e, item, al);
                     vd->e(copy(e.cmap,al));
                   }
                 }
@@ -4259,7 +4261,7 @@ namespace MiniZinc {
                 reallyFlat=reallyFlat->flat();
               if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
                 Expression* flate = copy(env.cmap,follow_id(reallyFlat->id()));
-                outputVarDecls(env,flate);
+                outputVarDecls(env,vdi_copy,flate);
                 vd->e(flate);
               } else if ( (it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
                 Call* rhs = copy(env.cmap,it->second())->cast<Call>();
@@ -4290,7 +4292,7 @@ namespace MiniZinc {
                     rhs->decl(decl);
                   }
                 }
-                outputVarDecls(env,rhs);
+                outputVarDecls(env,vdi_copy,rhs);
                 vd->e(rhs);
               } else if (cannotUseRHSForOutput(env,vd->e())) {
                 // If the VarDecl does not have a usable right hand side, it needs to be
@@ -4312,7 +4314,7 @@ namespace MiniZinc {
                       }
                     }
                     if (!needOutputAnn) {
-                      outputVarDecls(env, al);
+                      outputVarDecls(env, vdi_copy, al);
                       vd->e(copy(env.cmap,al));
                     }
                   }
@@ -4730,7 +4732,8 @@ namespace MiniZinc {
             }
             rhs->decl(decl);
           }
-          outputVarDecls(env,rhs);
+          outputVarDecls(env,vdi,rhs);
+          
           removeIsOutput(vdi->e()->flat());
           vdi->e()->e(rhs);
         }
