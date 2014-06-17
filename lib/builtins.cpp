@@ -958,6 +958,32 @@ namespace MiniZinc {
     }
   }
   
+  Expression* b_sort_by(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    ArrayLit* al = eval_array_lit(args[0]);
+    ArrayLit* order_e = eval_array_lit(args[1]);
+    std::vector<IntVal> order(order_e->v().size());
+    std::vector<int> a(order_e->v().size());
+    for (int i=0; i<order.size(); i++) {
+      a[i] = i;
+      order[i] = eval_int(order_e->v()[i]);
+    }
+    struct Ord {
+      std::vector<IntVal>& order;
+      Ord(std::vector<IntVal>& order0) : order(order0) {}
+      bool operator()(int i, int j) {
+        return order[i] > order[j];
+      }
+    } _ord(order);
+    std::sort(a.begin(), a.end(), _ord);
+    std::vector<Expression*> sorted(a.size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[a[i]];
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -1350,6 +1376,12 @@ namespace MiniZinc {
       rb(m, ASTString("occurs"), t, b_occurs);
       t[0]._bt = Type::BT_BOOL;
       rb(m, ASTString("occurs"), t, b_occurs);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varbot(1);
+      t[1] = Type::parint(1);
+      rb(m, ASTString("sort_by"), t, b_sort_by);
     }
   }
   

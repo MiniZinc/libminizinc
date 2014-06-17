@@ -931,3 +931,5 @@ function bool: is_fixed(var opt $T);
 function bool: is_fixed(array[$U] of var opt $T);
 
 function bool: abort(string);
+
+function array[int] of var $T: sort_by(array[int] of var $T, array[int] of int);
