@@ -3214,7 +3214,11 @@ namespace MiniZinc {
               GC::lock();
               
               if (callid=="") {
-                callid = opToBuiltin(bo,bot);
+                if (bo->decl()) {
+                  callid = bo->decl()->id();
+                } else {
+                  callid = opToBuiltin(bo,bot);
+                }
               }
               
               std::vector<Expression*> args_e(args.size());
