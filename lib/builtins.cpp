@@ -150,6 +150,7 @@ namespace MiniZinc {
   }
 
   bool b_occurs(ASTExprVec<Expression> args) {
+    GCLock lock;
     return eval_par(args[0]) != constants().absent;
   }
   
@@ -629,6 +630,7 @@ namespace MiniZinc {
   }
   
   Expression* exp_is_fixed(Expression* e) {
+    GCLock lock;
     Expression* cur = eval_par(e);
     for (;;) {
       if (cur==NULL)
@@ -755,6 +757,7 @@ namespace MiniZinc {
   
   bool b_assert_bool(ASTExprVec<Expression> args) {
     assert(args.size()==2);
+    GCLock lock;
     if (eval_bool(args[0]))
       return true;
     StringLit* err = eval_par(args[1])->cast<StringLit>();
@@ -763,6 +766,7 @@ namespace MiniZinc {
 
   Expression* b_assert(ASTExprVec<Expression> args) {
     assert(args.size()==3);
+    GCLock lock;
     if (eval_bool(args[0]))
       return args[2];
     StringLit* err = eval_par(args[1])->cast<StringLit>();
@@ -793,6 +797,7 @@ namespace MiniZinc {
   std::string b_show(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     std::ostringstream oss;
+    GCLock lock;
     Expression* e = eval_par(args[0]);
     if (StringLit* sl = e->dyn_cast<StringLit>()) {
       return sl->v().str();
@@ -814,6 +819,7 @@ namespace MiniZinc {
 
   std::string b_show_int(ASTExprVec<Expression> args) {
     assert(args.size()==2);
+    GCLock lock;
     Expression* e = eval_par(args[1]);
     std::ostringstream oss;
     if (IntLit* iv = e->dyn_cast<IntLit>()) {
@@ -839,6 +845,7 @@ namespace MiniZinc {
 
   std::string b_show_float(ASTExprVec<Expression> args) {
     assert(args.size()==3);
+    GCLock lock;
     Expression* e = eval_par(args[2]);
     std::ostringstream oss;
     if (FloatLit* fv = e->dyn_cast<FloatLit>()) {
