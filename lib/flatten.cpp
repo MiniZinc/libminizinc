@@ -2894,6 +2894,34 @@ namespace MiniZinc {
             // fall through
           case BOT_IMPL:
           {
+            if (r==constants().var_true && boe0->type().ispar()) {
+              if (eval_bool(boe0)) {
+                Ctx ctx;
+                ctx.neg = negArgs;
+                ctx.b = negArgs ? C_NEG : C_ROOT;
+                (void) flat_exp(env,ctx,boe1,constants().var_true,constants().var_true);
+              } else {
+                Ctx ctx;
+                ctx.neg = negArgs;
+                ctx.b = negArgs ? C_NEG : C_ROOT;
+                (void) flat_exp(env,ctx,constants().lit_true,constants().var_true,constants().var_true);
+              }
+              break;
+            }
+            if (r==constants().var_true && boe1->type().ispar()) {
+              if (eval_bool(boe1)) {
+                Ctx ctx;
+                ctx.neg = negArgs;
+                ctx.b = negArgs ? C_NEG : C_ROOT;
+                (void) flat_exp(env,ctx,constants().lit_true,constants().var_true,constants().var_true);
+              } else {
+                Ctx ctx;
+                ctx.neg = negArgs;
+                ctx.b = negArgs ? C_NEG : C_ROOT;
+                (void) flat_exp(env,ctx,boe0,constants().var_true,constants().var_true);
+              }
+              break;
+            }
             GC::lock();
             std::vector<Expression*> bo_args(2);
             ASTString id;
