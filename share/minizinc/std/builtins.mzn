@@ -353,44 +353,76 @@ function var bool: '<='(array[$U] of var $T,array[$U] of var $T);
 function     bool: '>='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '>='(array[$U] of var $T,array[$U] of var $T);
 
-function var bool: '='(array[int] of     int: x,array[int] of     int: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
+    let {
+        array[int] of int: xx = array1d(1..length(x),x);
+        array[int] of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-function var bool: '='(array[int] of var int: x,array[int] of var int: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+function var bool: '='(array[$T] of var int: x,array[$T] of var int: y) =
+    let {
+        array[int] of var int: xx = array1d(1..length(x),x);
+        array[int] of var int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-function var bool: '='(array[int] of     bool: x,array[int] of     bool: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+function     bool: '='(array[int] of     bool: x,array[int] of     bool: y) =
+    let {
+        array[int] of bool: xx = array1d(1..length(x),x);
+        array[int] of bool: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 function var bool: '='(array[int] of var bool: x,array[int] of var bool: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+    let {
+        array[int] of var bool: xx = array1d(1..length(x),x);
+        array[int] of var bool: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-function var bool: '='(array[int] of     set of int: x,array[int] of     set of int: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+function     bool: '='(array[int] of     set of int: x,array[int] of     set of int: y) =
+    let {
+        array[int] of set of int: xx = array1d(1..length(x),x);
+        array[int] of set of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 function var bool: '='(array[int] of var set of int: x,array[int] of var set of int: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+    let {
+        array[int] of var set of int: xx = array1d(1..length(x),x);
+        array[int] of var set of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-function var bool: '='(array[int] of     float: x,array[int] of     float: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+function     bool: '='(array[int] of     float: x,array[int] of     float: y) =
+    let {
+        array[int] of float: xx = array1d(1..length(x),x);
+        array[int] of float: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 function var bool: '='(array[int] of var float: x,array[int] of var float: y) =
-    assert(index_set(x)=index_set(y), "array index sets do not match",
-      forall (i in index_set(x)) (x[i]=y[i])
+    let {
+        array[int] of var float: xx = array1d(1..length(x),x);
+        array[int] of var float: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 function     bool: '!='(array[$U] of     $T,array[$U] of     $T);
