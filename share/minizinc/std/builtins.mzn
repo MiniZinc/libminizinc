@@ -753,6 +753,8 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 % Array operations
 function int: length(array[$T] of var opt $U);
 
+test index_sets_agree(array[$T] of var opt $U, array[$T] of var opt $W);
+
 function set of int: index_set(array[int] of var opt $U);
 function set of int: index_set_1of2(array[int,int] of var opt $U);
 function set of int: index_set_2of2(array[int,int] of var opt $U);

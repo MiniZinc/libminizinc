@@ -321,47 +321,78 @@ namespace MiniZinc {
     }
   }
   
-  IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
-    if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
-    if (args[0]->eid() != Expression::E_ID) {
+  IntSetVal* b_index_set(Expression* e, int i) {
+    if (e->eid() != Expression::E_ID) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(args[0]);
+      ArrayLit* al = eval_array_lit(e);
       if (al->dims() < i)
-        throw EvalError(args[0]->loc(), "index_set: wrong dimension");
+        throw EvalError(e->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
-    Id* id = args[0]->cast<Id>();
+    Id* id = e->cast<Id>();
     if (id->decl() == NULL)
       throw EvalError(id->loc(), "undefined identifier");
-    if (id->decl()->ti()->ranges().size() < i)
-      throw EvalError(id->loc(), "index_set: wrong dimension");
-    if (id->decl()->ti()->ranges()[i-1]->domain() == NULL) {
+    if ( ( id->decl()->ti()->ranges().size()==1 &&
+           id->decl()->ti()->ranges()[0]->domain() != NULL &&
+           id->decl()->ti()->ranges()[0]->domain()->isa<TIId>() ) ||
+         ( id->decl()->ti()->ranges().size() >= i &&
+           ( id->decl()->ti()->ranges()[i-1]->domain() == NULL ||
+             id->decl()->ti()->ranges()[i-1]->domain()->isa<TIId>()) )) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(id);
       if (al->dims() < i)
         throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
+    if (id->decl()->ti()->ranges().size() < i)
+      throw EvalError(id->loc(), "index_set: wrong dimension");
     return eval_intset(id->decl()->ti()->ranges()[i-1]->domain());
   }
+  bool b_index_sets_agree(ASTExprVec<Expression> args) {
+    if (args.size() != 2)
+      throw EvalError(Location(), "index_sets_agree needs exactly two arguments");
+    GCLock lock;
+    ArrayLit* al0 = eval_array_lit(args[0]);
+    ArrayLit* al1 = eval_array_lit(args[1]);
+    if (al0->type().dim() != al1->type().dim())
+      return false;
+    for (unsigned int i=1; i<=al0->type().dim(); i++) {
+      IntSetVal* index0 = b_index_set(al0, i);
+      IntSetVal* index1 = b_index_set(al1, i);
+      if (!index0->equal(index1))
+        return false;
+    }
+    return true;
+  }
   IntSetVal* b_index_set1(ASTExprVec<Expression> args) {
-    return b_index_set(args,1);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],1);
   }
   IntSetVal* b_index_set2(ASTExprVec<Expression> args) {
-    return b_index_set(args,2);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],2);
   }
   IntSetVal* b_index_set3(ASTExprVec<Expression> args) {
-    return b_index_set(args,3);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],3);
   }
   IntSetVal* b_index_set4(ASTExprVec<Expression> args) {
-    return b_index_set(args,4);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],4);
   }
   IntSetVal* b_index_set5(ASTExprVec<Expression> args) {
-    return b_index_set(args,5);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],5);
   }
   IntSetVal* b_index_set6(ASTExprVec<Expression> args) {
-    return b_index_set(args,6);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],6);
   }
 
   IntVal b_min_parsetint(ASTExprVec<Expression> args) {
@@ -1002,6 +1033,12 @@ namespace MiniZinc {
     rb(m, ASTString("product"), t_intarray, b_product);
     rb(m, ASTString("pow"), t_intint, b_pow_int);
 
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::top(-1);
+      t[1] = Type::top(-1);
+      rb(m, ASTString("index_sets_agree"), t, b_index_sets_agree);
+    }
     {
       std::vector<Type> t_anyarray1(1);
       t_anyarray1[0] = Type::optvartop(1);
