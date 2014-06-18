@@ -466,10 +466,10 @@ function var int: 'div'(var int: x,var int: y) =
 function     int: 'mod'(int,int);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
-  let { var int: z; constraint int_mod(x,y,z); } in z;
+  let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z; constraint int_mod(x,y,z); } in z;
 function var int: mod_mt(var int: x, var int: y) :: promise_total =
   let {
-    var int: yy = if y=0 then 1 else y endif;
+    var {1} union dom(y): yy = if y=0 then 1 else y endif;
   } in mod_t(x,yy);
 
 function var int: 'mod'(var int: x,var int: y) =
