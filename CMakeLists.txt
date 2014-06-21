@@ -111,6 +111,7 @@ lib/ast.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
+lib/codeprinter.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/gc.cpp
@@ -130,6 +131,7 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
+include/minizinc/codeprinter.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
