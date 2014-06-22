@@ -316,13 +316,30 @@ namespace MiniZinc {
         break;
       }
     }
+    if (!e->ann().isEmpty()) {
+      int ann = print(e->ann());
+      _os << "  ex"<<ret<<"->ann().merge(ann"<<ann<<");\n";
+    }
     _emap.insert(e, ret);
     return ret;
   }
   
   int
   CodePrinter::print(Annotation& ann) {
-    return 0;
+    std::vector<int> exprs;
+    for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
+      exprs.push_back(print(*it));
+    }
+    int ret = _acount++;
+    _os << "  Annotation ann"<<ret<<";\n";
+    _os << "  {\n";
+    _os << "    std::vector<Expression*> exprs;\n";
+    for (unsigned int i=0; i<exprs.size(); i++) {
+      _os << "    exprs.push_back(ex"<<exprs[i]<<");\n";
+    }
+    _os << "    ann"<<ret<<".add(exprs);\n";
+    _os << "  }\n";
+    return ret;
   }
   
   int
@@ -361,7 +378,6 @@ namespace MiniZinc {
         SolveI* si = item->cast<SolveI>();
         int ex = si->e()==NULL ? -1 : print(si->e());
         _os << "  Item* item" << ret << " = SolveI::";
-        /// TODO: p(si->ann());
         switch (si->st()) {
           case SolveI::ST_SAT:
             _os << " sat(Location());\n";
@@ -375,7 +391,7 @@ namespace MiniZinc {
         }
         if (!si->ann().isEmpty()) {
           int ann = print(si->ann());
-          _os << "item"<<ret<<"->ann() = ann" << ann << ";\n";
+          _os << "  item"<<ret<<"->cast<SolveI>()->ann().merge(ann" << ann << ");\n";
         }
         break;
       }
