@@ -320,7 +320,7 @@ namespace MiniZinc {
       int ann = print(e->ann());
       _os << "  ex"<<ret<<"->ann().merge(ann"<<ann<<");\n";
     }
-    _emap.insert(e, ret);
+    _emap.insert(std::pair<Expression*,int>(e, ret));
     return ret;
   }
   
