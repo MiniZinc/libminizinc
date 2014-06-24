@@ -2802,24 +2802,32 @@ namespace MiniZinc {
               cc = new Call(bo->loc(),opToBuiltin(bo,bot),args);
             }
             cc->type(bo->type());
-            
-            if (FunctionI* fi = env.orig->matchFn(cc->id(),args)) {
-              assert(cc->type() == fi->rtype(args));
-              cc->decl(fi);
-              cc->type(cc->decl()->rtype(args));
-              KeepAlive ka(cc);
-              GC::unlock();
-              EE ee = flat_exp(env,ctx,cc,r,NULL);
-              GC::lock();
-              ret.r = ee.r;
-              std::vector<EE> ees(3);
-              ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = ee.b;
-              ret.b = conj(env,b,Ctx(),ees);
+
+            EnvI::Map::iterator cit;
+            if ( (cit = env.map_find(cc)) != env.map_end()) {
+              ret.b = bind(env,Ctx(),b,env.ignorePartial ? constants().lit_true : cit->second.b());
+              ret.r = bind(env,ctx,r,cit->second.r());
             } else {
-              ret.r = bind(env,ctx,r,cc);
-              std::vector<EE> ees(2);
-              ees[0].b = e0.b; ees[1].b = e1.b;
-              ret.b = conj(env,b,Ctx(),ees);
+              if (FunctionI* fi = env.orig->matchFn(cc->id(),args)) {
+                assert(cc->type() == fi->rtype(args));
+                cc->decl(fi);
+                cc->type(cc->decl()->rtype(args));
+                KeepAlive ka(cc);
+                GC::unlock();
+                EE ee = flat_exp(env,ctx,cc,r,NULL);
+                GC::lock();
+                ret.r = ee.r;
+                std::vector<EE> ees(3);
+                ees[0].b = e0.b; ees[1].b = e1.b; ees[2].b = ee.b;
+                ret.b = conj(env,b,Ctx(),ees);
+              } else {
+                ret.r = bind(env,ctx,r,cc);
+                std::vector<EE> ees(2);
+                ees[0].b = e0.b; ees[1].b = e1.b;
+                ret.b = conj(env,b,Ctx(),ees);
+                if (!ctx.neg)
+                  env.map_insert(cc,ret);
+              }
             }
           }
             GC::unlock();
