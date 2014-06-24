@@ -110,7 +110,13 @@ namespace MiniZinc {
                          const std::vector<std::string>& includePaths,
                          bool ignoreStdlib,
                          std::ostream& err);
-  
+
+  Model* parseData(Model* m,
+                   const std::vector<std::string>& datafiles,
+                   const std::vector<std::string>& includePaths,
+                   bool ignoreStdlib,
+                   std::ostream& err);
+
 }
 
 #endif
