@@ -1257,12 +1257,9 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == constants().ids.lin_exp &&
-          c.args()[0]->isa<ArrayLit>() &&
-          c.args()[1]->isa<ArrayLit>() &&
-          c.args()[2]->isa<IntLit>()) {
-        ArrayLit* coeff = c.args()[0]->cast<ArrayLit>();
-        ArrayLit* al = c.args()[1]->cast<ArrayLit>();
+      if (c.id() == constants().ids.lin_exp) {
+        ArrayLit* coeff = eval_array_lit(c.args()[0]);
+        ArrayLit* al = eval_array_lit(c.args()[1]);
         IntVal d = c.args()[2]->cast<IntLit>()->v();
         int stacktop = _bounds.size();
         for (unsigned int i=al->v().size(); i--;) {
