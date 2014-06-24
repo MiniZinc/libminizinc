@@ -19,7 +19,7 @@
 
 namespace MiniZinc {
 
-  CodePrinter::CodePrinter(std::ostream& os) : _os(os), _icount(0), _ecount(0), _acount(0) {}
+  CodePrinter::CodePrinter(std::ostream& os) : _os(os), _icount(0), _ecount(0), _acount(0), _mcount(0) {}
   
   void
   CodePrinter::print(ASTString& s) {
@@ -29,7 +29,7 @@ namespace MiniZinc {
   int
   CodePrinter::print(Expression* e) {
     int ret;
-    ExpressionMap<int>::iterator it = _emap.find(e);
+    EMap::iterator it = _emap.find(e);
     if (it != _emap.end())
       return it->second;
 
@@ -99,7 +99,11 @@ namespace MiniZinc {
         if (id->idn() != -1) {
           _os << "  Expression* ex"<<ret<<" = new Id(Location(), "<<id->idn()<<", NULL);\n";
         } else {
-          _os << "  Expression* ex"<<ret<<" = new Id(Location(), \""<<id->v()<<"\", NULL);\n";
+          if (id == constants().absent) {
+            _os << "  Expression* ex"<<ret<<" = constants().absent;\n";
+          } else {
+            _os << "  Expression* ex"<<ret<<" = new Id(Location(), \""<<id->v()<<"\", NULL);\n";
+          }
         }
         break;
       }
@@ -247,10 +251,30 @@ namespace MiniZinc {
         int id = print(vd->id());
         int ex = vd->e() == NULL ? -1 : print(vd->e());
         ret = _ecount++;
-        _os << "  Expression* ex"<<ret<<" = new VarDecl(Location(),";
+        int locstring=-1;
+        if (e->loc().filename != "") {
+          ASTStringMap<int>::t::iterator it = _smap.find(e->loc().filename);
+          if (it==_smap.end()) {
+            locstring = _ecount++;
+            _os << "  ASTString str"<<locstring<<"(\""<<e->loc().filename<<"\");\n";
+            _smap.insert(std::pair<ASTString,int>(e->loc().filename,locstring));
+          } else {
+            locstring = it->second;
+          }
+        }
+        _os << "  Expression* ex"<<ret<<";\n";
+        _os << "  {\n";
+        _os << "    Location loc;";
+        if (locstring != -1)
+          _os << "    loc.filename = str"<<locstring<<";\n";
+        _os << "    loc.first_line = "<<e->loc().first_line<<";\n";
+        _os << "    ex"<<ret<<" = new VarDecl(loc,";
         _os << "ex"<<ti<<"->cast<TypeInst>(), ex"<<id<<"->cast<Id>()";
         if (ex!=-1) _os << ", ex"<<ex;
         _os << ");\n";
+        _os << "    ex"<<ret<<"->cast<VarDecl>()->toplevel("<<vd->toplevel()<<");\n";
+        _os << "    ex"<<ret<<"->cast<VarDecl>()->introduced("<<vd->introduced()<<");\n";
+        _os << "  }\n";
         break;
       }
       case Expression::E_LET:
@@ -312,7 +336,7 @@ namespace MiniZinc {
       case Expression::E_TIID:
       {
         ret = _ecount++;
-        _os << "  ex"<<ret<<" = new TIId(Location(),\""<<e->cast<TIId>()->v()<<"\");\n";
+        _os << "  Expression* ex"<<ret<<" = new TIId(Location(),\""<<e->cast<TIId>()->v()<<"\");\n";
         break;
       }
     }
@@ -347,16 +371,15 @@ namespace MiniZinc {
     int ret = _icount++;
     switch (item->iid()) {
       case Item::II_INC:
-        if (item->cast<IncludeI>()->f()!="builtins.mzn" &&
-            item->cast<IncludeI>()->f()!="stdlib.mzn") {
-          _os << "  Item* item" << ret << " = new IncludeI(Location(), ASTString(\"";
-          _os << item->cast<IncludeI>()->f();
-          _os << "\"));\n";
-        } else {
-          _icount--;
-          return -1;
-        }
+      {
+        IncludeI* ii = item->cast<IncludeI>();
+        int model = print(ii->m());
+        _os << "  Item* item" << ret << " = new IncludeI(Location(), ASTString(\"";
+        _os << item->cast<IncludeI>()->f();
+        _os << "\"));\n";
+        _os << "  item"<<ret<<"->cast<IncludeI>()->m(m"<<model<<","<<ii->own()<<");\n";
         break;
+      }
       case Item::II_VD:
       {
         int vd = print(item->cast<VarDeclI>()->e());
@@ -424,7 +447,7 @@ namespace MiniZinc {
           _os << "    params.push_back(ex"<<params[i]<<"->cast<VarDecl>());\n";
         }
         _os << "    item"<<ret<<" = new FunctionI(Location(), \"";
-        _os << fi->id() << "\", ex"<<ti<<"->cast<TypeInst>(), params, ";
+        _os << escapeStringLit(fi->id()) << "\", ex"<<ti<<"->cast<TypeInst>(), params, ";
         if (ex==-1) _os << "NULL"; else _os << "ex"<<ex;
         _os << ");\n";
         _os << "  }\n";
@@ -434,18 +457,30 @@ namespace MiniZinc {
     return ret;
   }
   
+  int
+  CodePrinter::print(Model* m) {
+    MMap::iterator it = _mmap.find(m);
+    if (it != _mmap.end())
+      return it->second;
+
+    int ret = _mcount++;
+    _os << "  Model* m"<<ret<<" = new Model();\n";
+    _mmap.insert(std::pair<Model*,int>(m,ret));
+    for (unsigned int i=0; i<m->size(); i++) {
+      int item = print((*m)[i]);
+      if (item >= 0) {
+        _os << "  m"<<ret<<"->addItem(item"<<item<<");\n";
+      }
+    }
+    return ret;
+  }
+
   void
   CodePrinter::print(Model* m, const std::string& functionName) {
     _os << "Model* " << functionName << "(void) {\n";
     _os << "  GCLock lock;\n";
-    _os << "  Model* m = new Model();\n";
-    for (unsigned int i=0; i<m->size(); i++) {
-      int item = print((*m)[i]);
-      if (item >= 0) {
-        _os << "  m->addItem(item"<<item<<");\n";
-      }
-    }
-    _os << "  return m;\n";
+    int ret = print(m);
+    _os << "  return m"<<ret<<";\n";
     _os << "}\n";
   }
 
