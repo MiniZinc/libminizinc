@@ -2474,7 +2474,9 @@ namespace MiniZinc {
             cc->decl(fi);
             ka = cc;
           }
-          EE ee = flat_exp(env,ctx,ka(),NULL,NULL);
+          Ctx elemctx = ctx;
+          elemctx.neg = false;
+          EE ee = flat_exp(env,elemctx,ka(),NULL,NULL);
           ees.push_back(ee);
           if (aa->type().isbool() && !aa->type().isopt()) {
             ee.b = ee.r;
