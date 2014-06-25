@@ -46,7 +46,6 @@ int main(int argc, char** argv) {
   vector<string> includePaths;  
   bool flag_ignoreStdlib = false;
   bool flag_typecheck = true;
-  bool flag_eval = true;
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
@@ -97,11 +96,9 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])==string("--ignore-stdlib")) {
       flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-typecheck")) {
-      flag_typecheck = false; flag_eval=false;
+      flag_typecheck = false;
     } else if (string(argv[i])==string("--instance-check-only")) {
       flag_instance_check_only = true;
-    } else if (string(argv[i])==string("--no-eval")) {
-      flag_eval = false;
     } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
@@ -385,19 +382,21 @@ error:
             << "  --help, -h\n    Print this help message" << std::endl
             << "  --version\n    Print version information" << std::endl
             << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-            << "  --newfzn\n    Output in the new FlatZinc format" << std::endl
-            << "  --verbose\n    Print progress statements" << std::endl
-            << "  --no-typecheck\n    Do not typecheck (implies --no-eval)" << std::endl
-            << "  --no-eval\n    Do not evaluate" << std::endl
-            << "  --no-optimize\n    Do not optimize the FlatZinc (may speed up large instances)" << std::endl
+            << "  -v, --verbose\n    Print progress statements" << std::endl
+            << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+            << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+            << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
+            << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
+            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+            << std::endl
+            << "Output options:" << std::endl << std::endl
             << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl
             << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
             << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
             << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
             << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
-            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
   ;
 
   exit(EXIT_FAILURE);

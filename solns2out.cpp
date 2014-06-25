@@ -123,6 +123,10 @@ int main(int argc, char** argv) {
           if (solstream.good()) {
             string line;
             getline(solstream, line);
+            if (flag_ignore_lines > 0) {
+              flag_ignore_lines--;
+              continue;
+            }
             if (line=="----------") {
               if (outputExpr != NULL) {
                 for (int i=0; i<outputm->size(); i++) {
@@ -209,9 +213,12 @@ error:
             << " [<options>] <model>.ozn" << std::endl
             << std::endl
             << "Options:" << std::endl
-            << "  --help, -h\n    Print this help message" << std::endl
-            << "  --version\n    Print version information" << std::endl
-            << "  -o <file>, --output-to-file <file>\n    Filename for generated output" << std::endl
+            << "  --help, -h\n    Print this help message." << std::endl
+            << "  --version\n    Print version information." << std::endl
+            << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
+            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
+            << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+            << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   ;
 
   exit(EXIT_FAILURE);
