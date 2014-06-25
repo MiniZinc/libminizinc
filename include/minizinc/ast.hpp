@@ -389,17 +389,6 @@ namespace MiniZinc {
   inline
   TypeInst::TypeInst(const Location& loc,
                      const Type& type,
-                     std::vector<TypeInst*> ranges,
-                     Expression* domain)
-  : Expression(loc,E_TI,type), _domain(domain) {
-    _flag_1 = false;
-    _ranges = ASTExprVec<TypeInst>(ranges);
-    rehash();
-  }
-
-  inline
-  TypeInst::TypeInst(const Location& loc,
-                     const Type& type,
                      Expression* domain)
   : Expression(loc,E_TI,type), _domain(domain) {
     _flag_1 = false;

@@ -23,8 +23,6 @@ namespace MiniZinc {
   class ItemDocumentMapper;
   class PrettyPrinter;
 
-  std::string escapeStringLit(const ASTString& s);
-
   class Printer {
   private:
     ItemDocumentMapper* ism;

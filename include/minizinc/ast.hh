@@ -814,11 +814,6 @@ namespace MiniZinc {
     /// Constructor
     TypeInst(const Location& loc,
              const Type& t,
-             std::vector<TypeInst*> ranges,
-             Expression* domain=NULL);
-    /// Constructor
-    TypeInst(const Location& loc,
-             const Type& t,
              Expression* domain=NULL);
     
     /// Access ranges
