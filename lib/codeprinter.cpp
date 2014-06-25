@@ -347,15 +347,9 @@ namespace MiniZinc {
     int ret = _icount++;
     switch (item->iid()) {
       case Item::II_INC:
-        if (item->cast<IncludeI>()->f()!="builtins.mzn" &&
-            item->cast<IncludeI>()->f()!="stdlib.mzn") {
-          _os << "  Item* item" << ret << " = new IncludeI(Location(), ASTString(\"";
-          _os << item->cast<IncludeI>()->f();
-          _os << "\"));\n";
-        } else {
-          _icount--;
-          return -1;
-        }
+        _os << "  Item* item" << ret << " = new IncludeI(Location(), ASTString(\"";
+        _os << item->cast<IncludeI>()->f();
+        _os << "\"));\n";
         break;
       case Item::II_VD:
       {
@@ -441,9 +435,7 @@ namespace MiniZinc {
     _os << "  Model* m = new Model();\n";
     for (unsigned int i=0; i<m->size(); i++) {
       int item = print((*m)[i]);
-      if (item >= 0) {
-        _os << "  m->addItem(item"<<item<<");\n";
-      }
+      _os << "  m->addItem(item"<<item<<");\n";
     }
     _os << "  return m;\n";
     _os << "}\n";
