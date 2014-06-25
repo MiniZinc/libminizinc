@@ -795,6 +795,7 @@ namespace MiniZinc {
             if (ret != vd->id()) {
               vd->e(ret);
               env.vo_add_exp(vd);
+              ret = vd->id();
             }
             if (vd->e()->type()._bt==Type::BT_INT && vd->e()->type()._dim==0) {
               GCLock lock;
@@ -830,6 +831,8 @@ namespace MiniZinc {
           return vd->id();
         } else if (vd->e() != e) {
           e = follow_id_to_decl(e);
+          if (vd == e)
+            return vd->id();
           switch (e->eid()) {
           case Expression::E_BOOLLIT:
             {
@@ -860,6 +863,8 @@ namespace MiniZinc {
           case Expression::E_VARDECL:
             {
               VarDecl* e_vd = e->cast<VarDecl>();
+              if (vd->e()==e_vd->id() || e_vd->e()==vd->id())
+                return vd->id();
               if (e->type()._dim != 0)
                 throw InternalError("not supported yet");
               GCLock lock;
@@ -3237,7 +3242,11 @@ namespace MiniZinc {
               for (unsigned int i=args.size(); i--;)
                 args_e[i] = args[i]();
               Call* cc = new Call(e->loc(),callid,args_e);
-              cc->type(bo->type());
+              cc->decl(env.orig->matchFn(cc->id(),args_e));
+              if (cc->decl()==NULL) {
+                throw FlatteningError(cc->loc(), "cannot find matching declaration");
+              }
+              cc->type(cc->decl()->rtype(args_e));
               
               EnvI::Map::iterator cit = env.map_find(cc);
               if (cit != env.map_end()) {
@@ -3253,12 +3262,6 @@ namespace MiniZinc {
                 ret.r = conj(env,r,ctx,ees);
                 GC::unlock();
               } else {
-                cc->decl(env.orig->matchFn(cc->id(),args_e));
-                if (cc->decl()==NULL) {
-                  throw FlatteningError(cc->loc(), "cannot find matching declaration");
-                }
-                cc->type(cc->decl()->rtype(args_e));
-                assert(cc->decl());
                 bool singleExp = true;
                 for (unsigned int i=0; i<ees.size(); i++) {
                   if (!istrue(ees[i].b())) {
