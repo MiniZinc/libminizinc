@@ -25,18 +25,12 @@ namespace MiniZinc {
     int _icount;
     int _ecount;
     int _acount;
-    int _mcount;
-    typedef UNORDERED_NAMESPACE::unordered_map<Expression*,int> EMap;
-    EMap _emap;
-    typedef UNORDERED_NAMESPACE::unordered_map<Model*,int> MMap;
-    MMap _mmap;
-    ASTStringMap<int>::t _smap;
+    UNORDERED_NAMESPACE::unordered_map<Expression*,int> _emap;
     
     void print(ASTString& s);
     int print(Expression* e);
     int print(Item* i);
     int print(Annotation& ann);
-    int print(Model* m);
   public:
     CodePrinter(std::ostream& os);
     void print(Model* m, const std::string& functionName);

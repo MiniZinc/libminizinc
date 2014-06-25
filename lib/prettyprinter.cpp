@@ -125,9 +125,6 @@ namespace MiniZinc {
         case '\'':
           ret += "\\\'";
           break;
-        case '\\':
-          ret += "\\\\";
-          break;
         default:
           ret += sc[i];
       }
