@@ -15,7 +15,7 @@
 #include <iostream>
 
 #include <minizinc/ast.hh>
-#include <minizinc/stl_map_set.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
   
@@ -25,7 +25,7 @@ namespace MiniZinc {
     int _icount;
     int _ecount;
     int _acount;
-    UNORDERED_NAMESPACE::unordered_map<Expression*,int> _emap;
+    ExpressionMap<int> _emap;
     
     void print(ASTString& s);
     int print(Expression* e);
