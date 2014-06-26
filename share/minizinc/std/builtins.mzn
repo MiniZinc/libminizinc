@@ -68,8 +68,11 @@ function var set of int: set_symdiff(var set of int, var set of int);
 % Float constraints
 predicate float_abs(var float, var float);
 predicate float_acos(var float, var float);
+predicate float_acosh(var float, var float);
 predicate float_asin(var float, var float);
+predicate float_asinh(var float, var float);
 predicate float_atan(var float, var float);
+predicate float_atanh(var float, var float);
 predicate float_cos(var float, var float);
 predicate float_cosh(var float, var float);
 predicate float_exp(var float, var float);
@@ -349,8 +352,79 @@ function     bool: '<='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '<='(array[$U] of var $T,array[$U] of var $T);
 function     bool: '>='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '>='(array[$U] of var $T,array[$U] of var $T);
-function     bool: '='(array[$U] of     $T,array[$U] of     $T);
-function var bool: '='(array[$U] of var $T,array[$U] of var $T);
+
+function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
+    let {
+        array[int] of int: xx = array1d(1..length(x),x);
+        array[int] of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function var bool: '='(array[$T] of var int: x,array[$T] of var int: y) =
+    let {
+        array[int] of var int: xx = array1d(1..length(x),x);
+        array[int] of var int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function     bool: '='(array[int] of     bool: x,array[int] of     bool: y) =
+    let {
+        array[int] of bool: xx = array1d(1..length(x),x);
+        array[int] of bool: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function var bool: '='(array[int] of var bool: x,array[int] of var bool: y) =
+    let {
+        array[int] of var bool: xx = array1d(1..length(x),x);
+        array[int] of var bool: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function     bool: '='(array[int] of     set of int: x,array[int] of     set of int: y) =
+    let {
+        array[int] of set of int: xx = array1d(1..length(x),x);
+        array[int] of set of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function var bool: '='(array[int] of var set of int: x,array[int] of var set of int: y) =
+    let {
+        array[int] of var set of int: xx = array1d(1..length(x),x);
+        array[int] of var set of int: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function     bool: '='(array[int] of     float: x,array[int] of     float: y) =
+    let {
+        array[int] of float: xx = array1d(1..length(x),x);
+        array[int] of float: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
+function var bool: '='(array[int] of var float: x,array[int] of var float: y) =
+    let {
+        array[int] of var float: xx = array1d(1..length(x),x);
+        array[int] of var float: yy = array1d(1..length(y),y);
+    } in
+    assert(index_sets_agree(x,y), "array index sets do not match",
+      forall (i in index_set(xx)) (xx[i]=yy[i])
+    );
+
 function     bool: '!='(array[$U] of     $T,array[$U] of     $T);
 function var bool: '!='(array[$U] of var $T,array[$U] of var $T);
 
@@ -392,10 +466,10 @@ function var int: 'div'(var int: x,var int: y) =
 function     int: 'mod'(int,int);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
-  let { var int: z; constraint int_mod(x,y,z); } in z;
+  let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z; constraint int_mod(x,y,z); } in z;
 function var int: mod_mt(var int: x, var int: y) :: promise_total =
   let {
-    var int: yy = if y=0 then 1 else y endif;
+    var {1} union dom(y): yy = if y=0 then 1 else y endif;
   } in mod_t(x,yy);
 
 function var int: 'mod'(var int: x,var int: y) =
@@ -476,6 +550,50 @@ function var int: min(array[$U] of var int: x) =
     constraint length(x) >= 1;
   } in min_t(xx);
 
+% Floating point min and max
+% TODO: add bounds reasoning
+
+function var float: max(var float: x, var float: y) :: promise_total =
+  let { var float: m;
+        constraint float_max(x,y,m);
+  } in m;
+
+function var float: max_t(array[int] of var float: x) :: promise_total =
+  if length(x)=0 then 0.0
+  elseif length(x)=1 then x[min(index_set(x))]
+  elseif length(x)=2 then min(x[1],x[2])
+  else let {
+    var float: m;
+    constraint maximum(m,x);
+  } in m
+  endif;
+function var float: max(array[$U] of var float: x) =
+  let {
+    array[int] of var float: xx = array1d(1..length(x),x);
+    constraint length(x) >= 1;
+  } in max_t(xx);
+
+function var float: min(var float: x, var float: y) :: promise_total =
+  let { var float: m;
+        constraint float_min(x,y,m);
+  } in m;
+
+function var float: min_t(array[int] of var float: x) :: promise_total =
+  if length(x)=0 then 0.0
+  elseif length(x)=1 then x[1]
+  elseif length(x)=2 then min(x[1],x[2])
+  else let {
+    var float: m;
+    constraint minimum(m,x);
+  } in m
+  endif;
+function var float: min(array[$U] of var float: x) =
+  let {
+    array[int] of var float: xx = array1d(1..length(x),x);
+    constraint length(x) >= 1;
+  } in min_t(xx);
+
+
 function int: abs(int);
 
 function var int: abs(var int: x) :: promise_total =
@@ -494,40 +612,104 @@ function int: pow(int, int);
 function float: pow(float, float);
 
 function float: exp(float);
-function var float: exp(var float);
+function var float: exp(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_exp(x,r);
+  } in r;
 function float: ln(float);
-function var float: ln(var float);
+function var float: ln(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_ln(x,r);
+  } in r;
 function float: log10(float);
-function var float: log10(var float);
+function var float: log10(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_log10(x,r);
+  } in r;
 function float: log2(float);
-function var float: log2(var float);
+function var float: log2(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_log2(x,r);
+  } in r;
 
 function float: log(float, float);
 
 function float: sin(float);
-function var float: sin(var float);
+function var float: sin(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_sin(x,r);
+  } in r;
 function float: cos(float);
-function var float: cos(var float);
+function var float: cos(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_cos(x,r);
+  } in r;
 function float: tan(float);
-function var float: tan(var float);
+function var float: tan(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_tan(x,r);
+  } in r;
 function float: asin(float);
-function var float: asin(var float);
+function var float: asin(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_asin(x,r);
+  } in r;
 function float: acos(float);
-function var float: acos(var float);
+function var float: acos(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_acos(x,r);
+  } in r;
 function float: atan(float);
-function var float: atan(var float);
+function var float: atan(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_atan(x,r);
+  } in r;
 function float: sinh(float);
-function var float: sinh(var float);
+function var float: sinh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_sinh(x,r);
+  } in r;
 function float: cosh(float);
-function var float: cosh(var float);
+function var float: cosh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_cosh(x,r);
+  } in r;
 function float: tanh(float);
-function var float: tanh(var float);
+function var float: tanh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_tanh(x,r);
+  } in r;
 function float: asinh(float);
-function var float: asinh(var float);
+function var float: asinh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_asinh(x,r);
+  } in r;
 function float: acosh(float);
-function var float: acosh(var float);
+function var float: acosh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_acosh(x,r);
+  } in r;
 function float: atanh(float);
-function var float: atanh(var float);
+function var float: atanh(var float: x) ::promise_total =
+  let {
+    var float: r;
+    constraint float_atanh(x,r);
+  } in r;
 
 % Logical operations
 function     bool: '/\'(    bool,     bool);
@@ -602,6 +784,8 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 
 % Array operations
 function int: length(array[$T] of var opt $U);
+
+test index_sets_agree(array[$T] of var opt $U, array[$T] of var opt $W);
 
 function set of int: index_set(array[int] of var opt $U);
 function set of int: index_set_1of2(array[int,int] of var opt $U);
@@ -781,3 +965,5 @@ function bool: is_fixed(var opt $T);
 function bool: is_fixed(array[$U] of var opt $T);
 
 function bool: abort(string);
+
+function array[int] of var $T: sort_by(array[int] of var $T, array[int] of int);

@@ -364,13 +364,13 @@ namespace MiniZinc {
             os<<" mod ";
             break;
           case BOT_LE:
-            os<<"<";
+            os<<" < ";
             break;
           case BOT_LQ:
             os<<"<=";
             break;
           case BOT_GR:
-            os<<">";
+            os<<" > ";
             break;
           case BOT_GQ:
             os<<">=";
@@ -1218,13 +1218,13 @@ namespace MiniZinc {
         op = " mod ";
         break;
       case BOT_LE:
-        op = "<";
+        op = " < ";
         break;
       case BOT_LQ:
         op = "<=";
         break;
       case BOT_GR:
-        op = ">";
+        op = " > ";
         break;
       case BOT_GQ:
         op = ">=";

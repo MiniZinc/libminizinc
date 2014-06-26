@@ -16,6 +16,7 @@ namespace MiniZinc {
 
   void CopyMap::insert(Expression* e0, Expression* e1) {
     m.insert(std::pair<void*,void*>(e0,e1));
+    m.insert(std::pair<void*,void*>(e1,e1));
   }
   Expression* CopyMap::find(Expression* e) {
     MyMap::iterator it = m.find(e);

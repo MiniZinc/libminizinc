@@ -13,6 +13,7 @@
 #define __MINIZINC_TYPECHECK_HH__
 
 #include <minizinc/model.hh>
+#include <minizinc/exception.hh>
 
 namespace MiniZinc {
 
@@ -41,7 +42,7 @@ namespace MiniZinc {
   };
   
   /// Type check the model \a m
-  void typecheck(Model* m);
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors);
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Model* m, AssignI* ai);

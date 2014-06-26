@@ -97,7 +97,7 @@ char* bufferData(void* parm) {
                     parm->lineStartPos += parm->nTokenNextStart;
                     parm->nTokenNextStart=1;
                   }
-[ \t\r]           { /* ignore whitespace */
+[ \f\r\t]         { /* ignore whitespace */
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   }
 "["               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -352,13 +352,13 @@ $[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 
-\"                { BEGIN string; clearBuffer(yyget_extra(yyscanner)); }
-<string>[^\\"\n]* { appendBufferString(yyget_extra(yyscanner), yytext); }
-<string>\\n         { appendBufferChar(yyget_extra(yyscanner), '\n'); }
-<string>\\t         { appendBufferChar(yyget_extra(yyscanner), '\t'); }
-<string>\\[\\']     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string>\\[\\"]     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
+\"                { BEGIN string; beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+<string>[^\\"\n]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+<string>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
+<string>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\\[\\"]     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
                       BEGIN 0; return MZN_STRING_LITERAL; }
 
 `[A-Za-z][A-Za-z0-9_]*` {

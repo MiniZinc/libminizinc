@@ -408,6 +408,7 @@ namespace MiniZinc {
     void vITE(ITE& ite) {
       Type tret = ite.e_else()->type();
       bool allpar = !(tret.isvar());
+      bool allpresent = !(tret.isopt());
       bool varcond = false;
       for (int i=0; i<ite.size(); i++) {
         Expression* eif = ite.e_if(i);
@@ -429,12 +430,15 @@ namespace MiniZinc {
             tret.toString());
         }
         if (ethen->type().isvar()) allpar=false;
+        if (ethen->type().isopt()) allpresent=false;
       }
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
       if (!allpar)
         tret._ti = Type::TI_VAR;
+      if (!allpresent)
+        tret._ot = Type::OT_OPTIONAL;
       ite.type(tret);
     }
     /// Visit binary operator
@@ -587,7 +591,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Model* m) {
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors) {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
@@ -646,8 +650,15 @@ namespace MiniZinc {
     {
       Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
-      for (unsigned int i=0; i<ts.decls.size(); i++)
+      for (unsigned int i=0; i<ts.decls.size(); i++) {
         bu_ty.run(ts.decls[i]);
+        if (ts.decls[i]->toplevel() &&
+            ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
+          typeErrors.push_back(TypeError(ts.decls[i]->loc(),
+                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
+                                         + "' must be defined (did you forget to specify a data file?)"));
+        }
+      }
       for (unsigned int i=0; i<functionItems.size(); i++) {
         bu_ty.run(functionItems[i]->ti());
         for (unsigned int j=0; j<functionItems[i]->params().size(); j++)

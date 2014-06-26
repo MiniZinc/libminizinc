@@ -391,6 +391,7 @@ namespace MiniZinc {
                      const Type& type,
                      Expression* domain)
   : Expression(loc,E_TI,type), _domain(domain) {
+    _flag_1 = false;
     rehash();
   }
 
