@@ -64,6 +64,8 @@ if (NOT HAS_ATTR_THREAD)
   CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
 endif()
 
+CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
+int main(void) { long long int x = atoll(\"123\");}" HAS_ATOLL)
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
