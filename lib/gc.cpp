@@ -221,7 +221,7 @@ namespace MiniZinc {
 #endif
         mark();
         sweep();
-        _gc_threshold = _alloced_mem * 1.5;
+        _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
 #ifdef MINIZINC_GC_STATS
         std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
                   << ((_alloced_mem-_free_mem)/1024)
@@ -617,7 +617,7 @@ namespace MiniZinc {
   }  
 
   void*
-  ASTNode::operator new(size_t size) throw (std::bad_alloc) {
+  ASTNode::operator new(size_t size) {
     return GC::gc()->alloc(size);
   }
 

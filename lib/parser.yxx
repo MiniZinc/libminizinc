@@ -56,9 +56,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->err << "In file " << location->filename << ", line "
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
-  for (int i=0; i<location->first_column-1; i++)
+  for (unsigned int i=0; i<location->first_column-1; i++)
     pp->err << " ";
-  for (int i=location->first_column; i<=location->last_column; i++)
+  for (unsigned int i=location->first_column; i<=location->last_column; i++)
     pp->err << "^";
   pp->err << std::endl << "Error: " << str << std::endl << std::endl;
   pp->hadError = true;
@@ -92,7 +92,7 @@ std::string get_file_contents(std::ifstream &in)
   {
     std::string contents;
     in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
+    contents.resize(static_cast<unsigned int>(in.tellg()));
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     in.close();
@@ -946,7 +946,7 @@ expr_atom_head :
       { $$=new ArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
-      { $$=new BoolLit(@$, $1); }
+      { $$=new BoolLit(@$, ($1!=0)); }
     | MZN_INTEGER_LITERAL
       { $$=new IntLit(@$, $1); }
     | MZN_FLOAT_LITERAL

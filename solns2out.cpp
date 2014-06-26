@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         typedef pair<VarDecl*,Expression*> DE;
         ASTStringMap<DE>::t declmap;
         Expression* outputExpr = NULL;
-        for (int i=0; i<outputm->size(); i++) {
+        for (unsigned int i=0; i<outputm->size(); i++) {
           if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
             declmap.insert(pair<ASTString,DE>(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
           } else if (OutputI* oi = (*outputm)[i]->dyn_cast<OutputI>()) {
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
             getline(solstream, line);
             if (line=="----------") {
               if (outputExpr != NULL) {
-                for (int i=0; i<outputm->size(); i++) {
+                for (unsigned int i=0; i<outputm->size(); i++) {
                   if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(vdi->e()->id()->v());
                     vdi->e()->e(it->second.second);
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
                   }
                 }
                 Model* sm = parseFromString(solution, "solution.szn", includePaths, true, cerr);
-                for (int i=0; i<sm->size(); i++) {
+                for (unsigned int i=0; i<sm->size(); i++) {
                   if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
                     if (it==declmap.end()) {
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
-                      for (int i=0; i<c->args().size(); i++)
+                      for (unsigned int i=0; i<c->args().size(); i++)
                         c->args()[i]->type(Type::parsetint());
                       c->args()[c->args().size()-1]->type(it->second.first->type());
                       c->decl(outputm->matchFn(c));
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(outputExpr);
                 std::string os;
-                for (int i=0; i<al->v().size(); i++) {
+                for (unsigned int i=0; i<al->v().size(); i++) {
                   std::string s = eval_string(al->v()[i]);
                   if (!s.empty()) {
                     os = s;

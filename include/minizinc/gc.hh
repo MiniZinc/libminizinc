@@ -42,7 +42,7 @@ namespace MiniZinc {
 
   public:
     /// Allocate node
-    void* operator new(size_t size) throw (std::bad_alloc);
+    void* operator new(size_t size);
 
     /// Placement-new
     void* operator new(size_t, void* n) throw() {

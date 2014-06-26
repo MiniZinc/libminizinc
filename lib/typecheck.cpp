@@ -136,17 +136,17 @@ namespace MiniZinc {
     case Expression::E_COMP:
       {
         Comprehension* ce = e->cast<Comprehension>();
-        for (unsigned int i=0; i<ce->n_generators(); i++) {
+        for (int i=0; i<ce->n_generators(); i++) {
           run(ce->in(i));
-          for (unsigned int j=0; j<ce->n_decls(i); j++) {
+          for (int j=0; j<ce->n_decls(i); j++) {
             add(ce->decl(i,j), false);
           }
         }
         if (ce->where())
           run(ce->where());
         run(ce->e());
-        for (unsigned int i=0; i<ce->n_generators(); i++) {
-          for (unsigned int j=0; j<ce->n_decls(i); j++) {
+        for (int i=0; i<ce->n_generators(); i++) {
+          for (int j=0; j<ce->n_decls(i); j++) {
             remove(ce->decl(i,j));
           }
         }
@@ -155,7 +155,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           run(ite->e_if(i));
           run(ite->e_then(i));
         }
@@ -366,7 +366,7 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       bool needsOptionTypes = false;
-      for (unsigned int i=0; i<c.n_generators(); i++) {
+      for (int i=0; i<c.n_generators(); i++) {
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
@@ -409,7 +409,7 @@ namespace MiniZinc {
       Type tret = ite.e_else()->type();
       bool allpar = !(tret.isvar());
       bool varcond = false;
-      for (unsigned int i=0; i<ite.size(); i++) {
+      for (int i=0; i<ite.size(); i++) {
         Expression* eif = ite.e_if(i);
         Expression* ethen = ite.e_then(i);
         varcond = varcond || (eif->type() == Type::varbool());
