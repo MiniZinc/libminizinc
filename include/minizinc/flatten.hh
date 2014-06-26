@@ -37,7 +37,10 @@ namespace MiniZinc {
   struct FlatteningOptions {
     /// Variables support only ranges, convert holes into != constraints
     bool onlyRangeDomains;
-    FlatteningOptions(void) : onlyRangeDomains(false) {}
+    /// Keep output in resulting flat model
+    bool keepOutputInFzn;
+    /// Default constructor
+    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false) {}
   };
   
   /// Flatten model \a m

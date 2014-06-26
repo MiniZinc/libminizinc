@@ -305,6 +305,13 @@ namespace MiniZinc {
             topDown(ce,*it);
         }
         break;
+      case Item::II_OUT:
+        {
+          OutputI* si = i->cast<OutputI>();
+          CollectOccurrencesE ce(vo,si);
+          topDown(ce,si->e());
+        }
+        break;
       default:
         break;
       }
@@ -4099,6 +4106,38 @@ namespace MiniZinc {
     } _o(env,ci);
     topDown(_o, e);
   }
+
+  
+  void copyOutput(EnvI& e) {
+    struct CopyOutput : public EVisitor {
+      EnvI& env;
+      CopyOutput(EnvI& env0) : env(env0) {}
+      void vId(Id& _id) {
+        _id.decl(_id.decl()->flat());
+      }
+      void vCall(Call& c) {
+        std::vector<Type> tv(c.args().size());
+        for (unsigned int i=c.args().size(); i--;) {
+          tv[i] = c.args()[i]->type();
+          tv[i]._ti = Type::TI_PAR;
+        }
+        FunctionI* decl = c.decl();
+        if (!isBuiltin(decl)) {
+          env.flat_addItem(decl);
+        }
+      }
+    };
+    for (unsigned int i=e.orig->size(); i--;) {
+      if (OutputI* oi = (*e.orig)[i]->dyn_cast<OutputI>()) {
+        GCLock lock;
+        OutputI* noi = copy(oi)->cast<OutputI>();
+        CopyOutput co(e);
+        topDown(co, noi->e());
+        e.flat_addItem(noi);
+        break;
+      }
+    }
+  }
   
   void createOutput(EnvI& e) {
     if (e.output->size() > 0) {
@@ -4476,7 +4515,11 @@ namespace MiniZinc {
     iterItems<FV>(_fv,e.model());
 
     // Create output model
-    createOutput(env);
+    if (opt.keepOutputInFzn) {
+      copyOutput(env);
+    } else {
+      createOutput(env);
+    }
     
     // Flatten remaining redefinitions
     Model& m = *e.flat();
@@ -4788,7 +4831,9 @@ namespace MiniZinc {
       }
     }
 
-    createOutput(env);
+    if (!opt.keepOutputInFzn) {
+      createOutput(env);
+    }
     
     std::vector<int> toAssignBoolVars;
     std::vector<int> assignedBoolVars;
