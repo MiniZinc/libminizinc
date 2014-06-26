@@ -4,7 +4,7 @@ project (libminizinc CXX)
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH "b1")
+set (libminizinc_VERSION_PATCH "b2")
 
 include(CheckCXXCompilerFlag)
 
