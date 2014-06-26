@@ -4303,7 +4303,7 @@ namespace MiniZinc {
           Type t;
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
-            if (origdecl == NULL) {
+            if (origdecl == NULL || !origdecl->rtype(tv).ispar()) {
               throw FlatteningError(c.loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
