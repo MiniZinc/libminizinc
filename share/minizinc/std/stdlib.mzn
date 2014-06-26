@@ -135,17 +135,36 @@ annotation time;
 % Option type predicates.
 %
 
+function var bool: occurs_internal(var opt bool: x) ::promise_total =
+  let { var bool : b; } in b;
+function var bool : deopt_internal(var opt bool : x) ::promise_total =
+  let { var bool: y } in y;
 
-predicate deopt(var opt bool: b) ::promise_total =
-  let { var bool: bo; } in bo;
-predicate occurs(var opt bool: b) ::promise_total =
-  let { var bool: bo; } in bo;
+function var opt bool: reverse_map(var bool: occ, var bool: d);
+function opt bool: reverse_map(bool: occ, bool: d) ::promise_total =
+  if occ then d else <> endif;
+
+function var bool : occurs(var opt bool : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var bool : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in b;
+  
+function var bool : deopt(var opt bool : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var bool : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in dx;
   
 predicate deopt(var bool: b) = b;
-predicate occurs(var bool: b) = true;
+test occurs(var bool: b) = true;
+test occurs(opt bool: x) ::promise_total;
 
 predicate absent(var opt bool: b) = not occurs(b);
 predicate absent(var bool: b) = false;
+test absent(opt bool: x) ::promise_total = not occurs(x);
 
 predicate bool_eq(var opt bool: b0, var opt bool: b1) =
      (absent(b0) /\ absent(b1))
@@ -161,12 +180,16 @@ predicate forall (array[int] of var opt bool: x) =
   forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
 
 predicate exists (array[int] of var opt bool: x) =
-  exists ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
+  exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
 
 function bool: occurs(var int: x) ::promise_total = true;
+function bool: occurs(int: x) ::promise_total = true;
+test occurs(opt int: x) ::promise_total;
 function var int: deopt(var int: x) ::promise_total = x;
+function int: deopt(int: x) ::promise_total = x;
 
 function bool: absent(var int: x) ::promise_total = false;
+function bool: absent(opt int: x) ::promise_total = not occurs(x);
 function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 
 function var bool: occurs_internal(var opt int: x) ::promise_total =
@@ -198,6 +221,69 @@ predicate int_eq(var opt int : x, var opt int : y) =
 
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+
+function var opt int: element(var opt int: idx, array[int] of var int: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var int: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+function var opt int: element(var int: idx, array[int] of var opt int: x) =
+  let {
+    var opt int: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
+  let {
+    var opt int: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+
+
+
+
+
+
+
+function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

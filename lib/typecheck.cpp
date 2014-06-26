@@ -53,31 +53,34 @@ namespace MiniZinc {
   
   void
   TopoSorter::add(VarDecl* vd, bool unique) {
-    DeclMap::iterator vdi = env.find(vd->id()->v());
+    DeclMap::iterator vdi = env.find(vd->id());
     if (vdi == env.end()) {
       Decls nd; nd.push_back(vd);
-      env.insert(std::pair<ASTString,Decls>(vd->id()->v(),nd));
+      env.insert(vd->id(),nd);
     } else {
-      if (unique)
-        throw TypeError(vd->loc(),"identifier `"+vd->id()->v().str()+
+      if (unique) {
+        GCLock lock;
+        throw TypeError(vd->loc(),"identifier `"+vd->id()->str().str()+
                         "' already defined");
+      }
       vdi->second.push_back(vd);
     }
   }
   void
   TopoSorter::remove(VarDecl* vd) {
-    DeclMap::iterator vdi = env.find(vd->id()->v());
+    DeclMap::iterator vdi = env.find(vd->id());
     assert(vdi != env.end());
     vdi->second.pop_back();
     if (vdi->second.empty())
-      env.erase(vdi);
+      env.remove(vd->id());
   }
   
   VarDecl*
-  TopoSorter::checkId(const ASTString& id, const Location& loc) {
+  TopoSorter::checkId(Id* id, const Location& loc) {
     DeclMap::iterator decl = env.find(id);
     if (decl==env.end()) {
-      throw TypeError(loc,"undefined identifier "+id.str());
+      GCLock lock;
+      throw TypeError(loc,"undefined identifier "+id->str().str());
     }
     PosMap::iterator pi = pos.find(decl->second.back());
     if (pi==pos.end()) {
@@ -85,12 +88,21 @@ namespace MiniZinc {
       run(decl->second.back());
     } else {
       // previously seen, check if circular
-      if (pi->second==-1)
-        throw TypeError(loc,"circular definition of "+id.str());
+      if (pi->second==-1) {
+        GCLock lock;
+        throw TypeError(loc,"circular definition of "+id->str().str());
+      }
     }
     return decl->second.back();
   }
-  
+
+  VarDecl*
+  TopoSorter::checkId(const ASTString& id_v, const Location& loc) {
+    GCLock lock;
+    Id* id = new Id(loc,id_v,NULL);
+    return checkId(id, loc);
+  }
+
   void
   TopoSorter::run(Expression* e) {
     if (e==NULL)
@@ -115,7 +127,7 @@ namespace MiniZinc {
     case Expression::E_ID:
       {
         if (e != constants().absent)
-          e->cast<Id>()->decl(checkId(e->cast<Id>()->v(),e->loc()));
+          e->cast<Id>()->decl(checkId(e->cast<Id>(),e->loc()));
       }
       break;
     case Expression::E_ARRAYLIT:
@@ -136,17 +148,17 @@ namespace MiniZinc {
     case Expression::E_COMP:
       {
         Comprehension* ce = e->cast<Comprehension>();
-        for (unsigned int i=0; i<ce->n_generators(); i++) {
+        for (int i=0; i<ce->n_generators(); i++) {
           run(ce->in(i));
-          for (unsigned int j=0; j<ce->n_decls(i); j++) {
+          for (int j=0; j<ce->n_decls(i); j++) {
             add(ce->decl(i,j), false);
           }
         }
         if (ce->where())
           run(ce->where());
         run(ce->e());
-        for (unsigned int i=0; i<ce->n_generators(); i++) {
-          for (unsigned int j=0; j<ce->n_decls(i); j++) {
+        for (int i=0; i<ce->n_generators(); i++) {
+          for (int j=0; j<ce->n_decls(i); j++) {
             remove(ce->decl(i,j));
           }
         }
@@ -155,7 +167,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           run(ite->e_if(i));
           run(ite->e_then(i));
         }
@@ -366,7 +378,7 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       bool needsOptionTypes = false;
-      for (unsigned int i=0; i<c.n_generators(); i++) {
+      for (int i=0; i<c.n_generators(); i++) {
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
@@ -408,8 +420,9 @@ namespace MiniZinc {
     void vITE(ITE& ite) {
       Type tret = ite.e_else()->type();
       bool allpar = !(tret.isvar());
+      bool allpresent = !(tret.isopt());
       bool varcond = false;
-      for (unsigned int i=0; i<ite.size(); i++) {
+      for (int i=0; i<ite.size(); i++) {
         Expression* eif = ite.e_if(i);
         Expression* ethen = ite.e_then(i);
         varcond = varcond || (eif->type() == Type::varbool());
@@ -429,12 +442,15 @@ namespace MiniZinc {
             tret.toString());
         }
         if (ethen->type().isvar()) allpar=false;
+        if (ethen->type().isopt()) allpresent=false;
       }
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
       if (!allpar)
         tret._ti = Type::TI_VAR;
+      if (!allpresent)
+        tret._ot = Type::OT_OPTIONAL;
       ite.type(tret);
     }
     /// Visit binary operator
@@ -587,7 +603,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Model* m) {
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors) {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
@@ -646,8 +662,15 @@ namespace MiniZinc {
     {
       Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
-      for (unsigned int i=0; i<ts.decls.size(); i++)
+      for (unsigned int i=0; i<ts.decls.size(); i++) {
         bu_ty.run(ts.decls[i]);
+        if (ts.decls[i]->toplevel() &&
+            ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
+          typeErrors.push_back(TypeError(ts.decls[i]->loc(),
+                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
+                                         + "' must be defined (did you forget to specify a data file?)"));
+        }
+      }
       for (unsigned int i=0; i<functionItems.size(); i++) {
         bu_ty.run(functionItems[i]->ti());
         for (unsigned int j=0; j<functionItems[i]->params().size(); j++)

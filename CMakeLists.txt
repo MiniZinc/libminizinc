@@ -4,7 +4,7 @@ project (libminizinc CXX)
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH "b1")
+set (libminizinc_VERSION_PATCH "b2")
 
 include(CheckCXXCompilerFlag)
 
@@ -64,6 +64,8 @@ if (NOT HAS_ATTR_THREAD)
   CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
 endif()
 
+CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
+int main(void) { long long int x = atoll(\"123\");}" HAS_ATOLL)
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
@@ -169,6 +171,7 @@ PATTERN config.hh.in EXCLUDE
 INSTALL(FILES ${PROJECT_BINARY_DIR}/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
+INSTALL(DIRECTORY share/examples DESTINATION share)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})

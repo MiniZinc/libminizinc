@@ -149,6 +149,11 @@ namespace MiniZinc {
     return lb_varoptint(args[0]);
   }
 
+  bool b_occurs(ASTExprVec<Expression> args) {
+    GCLock lock;
+    return eval_par(args[0]) != constants().absent;
+  }
+  
   Expression* deref_id(Expression* e) {
     Expression* cur = e;
     for (;;) {
@@ -316,42 +321,78 @@ namespace MiniZinc {
     }
   }
   
-  IntSetVal* b_index_set(ASTExprVec<Expression> args, int i) {
-    if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
-    if (args[0]->eid() != Expression::E_ID)
-      throw EvalError(Location(), "index_set only supported for identifiers");
-    Id* id = args[0]->cast<Id>();
+  IntSetVal* b_index_set(Expression* e, int i) {
+    if (e->eid() != Expression::E_ID) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(e);
+      if (al->dims() < i)
+        throw EvalError(e->loc(), "index_set: wrong dimension");
+      return IntSetVal::a(al->min(i-1),al->max(i-1));
+    }
+    Id* id = e->cast<Id>();
     if (id->decl() == NULL)
       throw EvalError(id->loc(), "undefined identifier");
-    if (id->decl()->ti()->ranges().size() < i)
-      throw EvalError(id->loc(), "index_set: wrong dimension");
-    if (id->decl()->ti()->ranges()[i-1]->domain() == NULL) {
+    if ( ( id->decl()->ti()->ranges().size()==1 &&
+           id->decl()->ti()->ranges()[0]->domain() != NULL &&
+           id->decl()->ti()->ranges()[0]->domain()->isa<TIId>() ) ||
+         ( id->decl()->ti()->ranges().size() >= i &&
+           ( id->decl()->ti()->ranges()[i-1]->domain() == NULL ||
+             id->decl()->ti()->ranges()[i-1]->domain()->isa<TIId>()) )) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(id);
       if (al->dims() < i)
         throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
+    if (id->decl()->ti()->ranges().size() < i)
+      throw EvalError(id->loc(), "index_set: wrong dimension");
     return eval_intset(id->decl()->ti()->ranges()[i-1]->domain());
   }
+  bool b_index_sets_agree(ASTExprVec<Expression> args) {
+    if (args.size() != 2)
+      throw EvalError(Location(), "index_sets_agree needs exactly two arguments");
+    GCLock lock;
+    ArrayLit* al0 = eval_array_lit(args[0]);
+    ArrayLit* al1 = eval_array_lit(args[1]);
+    if (al0->type().dim() != al1->type().dim())
+      return false;
+    for (unsigned int i=1; i<=al0->type().dim(); i++) {
+      IntSetVal* index0 = b_index_set(al0, i);
+      IntSetVal* index1 = b_index_set(al1, i);
+      if (!index0->equal(index1))
+        return false;
+    }
+    return true;
+  }
   IntSetVal* b_index_set1(ASTExprVec<Expression> args) {
-    return b_index_set(args,1);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],1);
   }
   IntSetVal* b_index_set2(ASTExprVec<Expression> args) {
-    return b_index_set(args,2);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],2);
   }
   IntSetVal* b_index_set3(ASTExprVec<Expression> args) {
-    return b_index_set(args,3);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],3);
   }
   IntSetVal* b_index_set4(ASTExprVec<Expression> args) {
-    return b_index_set(args,4);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],4);
   }
   IntSetVal* b_index_set5(ASTExprVec<Expression> args) {
-    return b_index_set(args,5);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],5);
   }
   IntSetVal* b_index_set6(ASTExprVec<Expression> args) {
-    return b_index_set(args,6);
+    if (args.size() != 1)
+      throw EvalError(Location(), "index_set needs exactly one argument");
+    return b_index_set(args[0],6);
   }
 
   IntVal b_min_parsetint(ASTExprVec<Expression> args) {
@@ -535,7 +576,8 @@ namespace MiniZinc {
       } else if (di->size() != 1) {
         throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
       } else {
-        dims[i] = std::pair<int,int>(di->min(0).toInt(),di->max(0).toInt());
+        dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
+                                     static_cast<int>(di->max(0).toInt()));
         dim1d *= dims[i].second-dims[i].first+1;
       }
     }
@@ -620,6 +662,7 @@ namespace MiniZinc {
   }
   
   Expression* exp_is_fixed(Expression* e) {
+    GCLock lock;
     Expression* cur = eval_par(e);
     for (;;) {
       if (cur==NULL)
@@ -676,6 +719,9 @@ namespace MiniZinc {
   bool b_fix_bool(ASTExprVec<Expression> args) {
     return eval_bool(b_fix(args));
   }
+  FloatVal b_fix_float(ASTExprVec<Expression> args) {
+    return eval_float(b_fix(args));
+  }
   IntSetVal* b_fix_set(ASTExprVec<Expression> args) {
     return eval_intset(b_fix(args));
   }
@@ -698,16 +744,16 @@ namespace MiniZinc {
   }
 
   FloatVal b_int2float(ASTExprVec<Expression> args) {
-    return eval_int(args[0]).toInt();
+    return static_cast<FloatVal>(eval_int(args[0]).toInt());
   }
   IntVal b_ceil(ASTExprVec<Expression> args) {
-    return std::ceil(eval_float(args[0]));
+    return static_cast<long long int>(std::ceil(eval_float(args[0])));
   }
   IntVal b_floor(ASTExprVec<Expression> args) {
-    return std::floor(eval_float(args[0]));
+    return static_cast<long long int>(std::floor(eval_float(args[0])));
   }
   IntVal b_round(ASTExprVec<Expression> args) {
-    return round(eval_float(args[0]));
+    return static_cast<long long int>(eval_float(args[0])+0.5);
   }
   FloatVal b_log10(ASTExprVec<Expression> args) {
     return std::log10(eval_float(args[0]));
@@ -727,12 +773,23 @@ namespace MiniZinc {
   FloatVal b_pow(ASTExprVec<Expression> args) {
     return std::pow(eval_float(args[0]),eval_float(args[1]));
   }
+  IntVal b_pow_int(ASTExprVec<Expression> args) {
+    IntVal p = eval_int(args[0]);
+    IntVal r = 1;
+    int e = eval_int(args[1]).toInt();
+    if (e < 0)
+      throw EvalError(args[1]->loc(), "Cannot raise integer to a negative power");
+    for (int i=e; i--;)
+      r = r*p;
+    return r;
+  }
   FloatVal b_sqrt(ASTExprVec<Expression> args) {
     return std::sqrt(eval_float(args[0]));
   }
   
   bool b_assert_bool(ASTExprVec<Expression> args) {
     assert(args.size()==2);
+    GCLock lock;
     if (eval_bool(args[0]))
       return true;
     StringLit* err = eval_par(args[1])->cast<StringLit>();
@@ -741,6 +798,7 @@ namespace MiniZinc {
 
   Expression* b_assert(ASTExprVec<Expression> args) {
     assert(args.size()==3);
+    GCLock lock;
     if (eval_bool(args[0]))
       return args[2];
     StringLit* err = eval_par(args[1])->cast<StringLit>();
@@ -771,7 +829,11 @@ namespace MiniZinc {
   std::string b_show(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     std::ostringstream oss;
+    GCLock lock;
     Expression* e = eval_par(args[0]);
+    if (StringLit* sl = e->dyn_cast<StringLit>()) {
+      return sl->v().str();
+    }
     Printer p(oss,0,false);
     if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
       oss << "[";
@@ -789,10 +851,11 @@ namespace MiniZinc {
 
   std::string b_show_int(ASTExprVec<Expression> args) {
     assert(args.size()==2);
+    GCLock lock;
     Expression* e = eval_par(args[1]);
     std::ostringstream oss;
     if (IntLit* iv = e->dyn_cast<IntLit>()) {
-      int justify = eval_int(args[0]).toInt();
+      int justify = static_cast<int>(eval_int(args[0]).toInt());
       std::ostringstream oss_length;
       oss_length << iv->v();
       int iv_length = static_cast<int>(oss_length.str().size());
@@ -814,11 +877,12 @@ namespace MiniZinc {
 
   std::string b_show_float(ASTExprVec<Expression> args) {
     assert(args.size()==3);
+    GCLock lock;
     Expression* e = eval_par(args[2]);
     std::ostringstream oss;
     if (FloatLit* fv = e->dyn_cast<FloatLit>()) {
-      int justify = eval_int(args[0]).toInt();
-      int prec = eval_int(args[1]).toInt();
+      int justify = static_cast<int>(eval_int(args[0]).toInt());
+      int prec = static_cast<int>(eval_int(args[1]).toInt());
       if (prec < 0)
         throw EvalError(args[1]->loc(), "number of digits in show_float cannot be negative");
       std::ostringstream oss_length;
@@ -871,7 +935,7 @@ namespace MiniZinc {
     if (al->v().size()==0)
       return IntSetVal::a();
     IntSetVal* isv = eval_intset(al->v()[0]);
-    for (int i=0; i<al->v().size(); i++) {
+    for (unsigned int i=0; i<al->v().size(); i++) {
       IntSetRanges i0(isv);
       IntSetRanges i1(eval_intset(al->v()[i]));
       Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
@@ -926,6 +990,32 @@ namespace MiniZinc {
     }
   }
   
+  Expression* b_sort_by(ASTExprVec<Expression> args) {
+    assert(args.size()==2);
+    ArrayLit* al = eval_array_lit(args[0]);
+    ArrayLit* order_e = eval_array_lit(args[1]);
+    std::vector<IntVal> order(order_e->v().size());
+    std::vector<int> a(order_e->v().size());
+    for (int i=0; i<order.size(); i++) {
+      a[i] = i;
+      order[i] = eval_int(order_e->v()[i]);
+    }
+    struct Ord {
+      std::vector<IntVal>& order;
+      Ord(std::vector<IntVal>& order0) : order(order0) {}
+      bool operator()(int i, int j) {
+        return order[i] > order[j];
+      }
+    } _ord(order);
+    std::sort(a.begin(), a.end(), _ord);
+    std::vector<Expression*> sorted(a.size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[a[i]];
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -942,7 +1032,14 @@ namespace MiniZinc {
     rb(m, ASTString("max"), t_intarray, b_int_max);
     rb(m, constants().ids.sum, t_intarray, b_sum);
     rb(m, ASTString("product"), t_intarray, b_product);
+    rb(m, ASTString("pow"), t_intint, b_pow_int);
 
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::top(-1);
+      t[1] = Type::top(-1);
+      rb(m, ASTString("index_sets_agree"), t, b_index_sets_agree);
+    }
     {
       std::vector<Type> t_anyarray1(1);
       t_anyarray1[0] = Type::optvartop(1);
@@ -1216,6 +1313,7 @@ namespace MiniZinc {
       rb(m, ASTString("fix"), t, b_fix_bool);
       rb(m, ASTString("fix"), t, b_fix_int);
       rb(m, ASTString("fix"), t, b_fix_set);
+      rb(m, ASTString("fix"), t, b_fix_float);
     }
     {
       std::vector<Type> t(1);
@@ -1308,6 +1406,20 @@ namespace MiniZinc {
       t[0] = Type::parsetint(1);
       rb(m, ASTString("array_intersect"), t, b_array_intersect);
       rb(m, ASTString("array_union"), t, b_array_union);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      t[0]._ot = Type::OT_OPTIONAL;
+      rb(m, ASTString("occurs"), t, b_occurs);
+      t[0]._bt = Type::BT_BOOL;
+      rb(m, ASTString("occurs"), t, b_occurs);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varbot(1);
+      t[1] = Type::parint(1);
+      rb(m, ASTString("sort_by"), t, b_sort_by);
     }
   }
   

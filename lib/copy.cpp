@@ -16,6 +16,7 @@ namespace MiniZinc {
 
   void CopyMap::insert(Expression* e0, Expression* e1) {
     m.insert(std::pair<void*,void*>(e0,e1));
+    m.insert(std::pair<void*,void*>(e1,e1));
   }
   Expression* CopyMap::find(Expression* e) {
     MyMap::iterator it = m.find(e);
@@ -280,9 +281,9 @@ namespace MiniZinc {
         m.insert(c,cc);
 
         g._w = copy(m,c->where(),followIds);
-        for (unsigned int i=0; i<c->n_generators(); i++) {
+        for (int i=0; i<c->n_generators(); i++) {
           std::vector<VarDecl*> vv;
-          for (unsigned int j=0; j<c->n_decls(i); j++)
+          for (int j=0; j<c->n_decls(i); j++)
             vv.push_back(static_cast<VarDecl*>(copy(m,c->decl(i,j),followIds)));
           g._g.push_back(Generator(vv,copy(m,c->in(i),followIds)));
         }

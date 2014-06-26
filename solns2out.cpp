@@ -97,24 +97,19 @@ int main(int argc, char** argv) {
   if (filename.length()<=4 ||
       filename.substr(filename.length()-4,string::npos) != ".ozn")
     goto error;
-//  if (i==argc) {
-//    goto error;
-//  }
-  
-//  solfile = argv[i++];
-//  solstream = ifstream(solfile);
   
   {
     if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false,
                                std::cerr)) {
       try {
-        MiniZinc::typecheck(outputm);
+        std::vector<TypeError> typeErrors;
+        MiniZinc::typecheck(outputm,typeErrors);
         MiniZinc::registerBuiltins(outputm);
 
         typedef pair<VarDecl*,Expression*> DE;
         ASTStringMap<DE>::t declmap;
         Expression* outputExpr = NULL;
-        for (int i=0; i<outputm->size(); i++) {
+        for (unsigned int i=0; i<outputm->size(); i++) {
           if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
             declmap.insert(pair<ASTString,DE>(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
           } else if (OutputI* oi = (*outputm)[i]->dyn_cast<OutputI>()) {
@@ -123,13 +118,18 @@ int main(int argc, char** argv) {
         }
         
         string solution;
+        string comments;
         for (;;) {
           if (solstream.good()) {
             string line;
             getline(solstream, line);
+            if (flag_ignore_lines > 0) {
+              flag_ignore_lines--;
+              continue;
+            }
             if (line=="----------") {
               if (outputExpr != NULL) {
-                for (int i=0; i<outputm->size(); i++) {
+                for (unsigned int i=0; i<outputm->size(); i++) {
                   if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(vdi->e()->id()->v());
                     vdi->e()->e(it->second.second);
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
                   }
                 }
                 Model* sm = parseFromString(solution, "solution.szn", includePaths, true, cerr);
-                for (int i=0; i<sm->size(); i++) {
+                for (unsigned int i=0; i<sm->size(); i++) {
                   if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
                     if (it==declmap.end()) {
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
-                      for (int i=0; i<c->args().size(); i++)
+                      for (unsigned int i=0; i<c->args().size(); i++)
                         c->args()[i]->type(Type::parsetint());
                       c->args()[c->args().size()-1]->type(it->second.first->type());
                       c->decl(outputm->matchFn(c));
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(outputExpr);
                 std::string os;
-                for (int i=0; i<al->v().size(); i++) {
+                for (unsigned int i=0; i<al->v().size(); i++) {
                   std::string s = eval_string(al->v()[i]);
                   if (!s.empty()) {
                     os = s;
@@ -173,6 +173,8 @@ int main(int argc, char** argv) {
                   std::cout << std::endl;
               }
               solution = "";
+              comments = "";
+              cout << comments;
               cout << line << std::endl;
             } else if (line=="==========" ||
                        line=="=====UNSATISFIABLE=====" ||
@@ -181,12 +183,17 @@ int main(int argc, char** argv) {
               cout << line << std::endl;
             } else {
               solution += line+"\n";
+              size_t comment_pos = line.find('%');
+              if (comment_pos != string::npos) {
+                comments += line.substr(comment_pos);
+                comments += "\n";
+              }
             }
           } else {
             break;
           }
         }
-        
+        cout << comments;
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
@@ -206,9 +213,12 @@ error:
             << " [<options>] <model>.ozn" << std::endl
             << std::endl
             << "Options:" << std::endl
-            << "  --help, -h\n    Print this help message" << std::endl
-            << "  --version\n    Print version information" << std::endl
-            << "  -o <file>, --output-to-file <file>\n    Filename for generated output" << std::endl
+            << "  --help, -h\n    Print this help message." << std::endl
+            << "  --version\n    Print version information." << std::endl
+            << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
+            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
+            << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+            << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   ;
 
   exit(EXIT_FAILURE);

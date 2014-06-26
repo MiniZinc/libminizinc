@@ -270,7 +270,7 @@ namespace MiniZinc {
             os << "|]";
           } else {
             os << "array" << n << "d(";
-            for (unsigned int i = 0; i < al.dims(); i++) {
+            for (int i = 0; i < al.dims(); i++) {
               os << al.min(i) << ".." << al.max(i);
               os << ",";
             }
@@ -303,8 +303,8 @@ namespace MiniZinc {
           os << (c.set() ? "{" : "[");
           p(c.e());
           os << " | ";
-          for (unsigned int i=0; i<c.n_generators(); i++) {
-            for (unsigned int j=0; j<c.n_decls(i); j++) {
+          for (int i=0; i<c.n_generators(); i++) {
+            for (int j=0; j<c.n_decls(i); j++) {
               os << c.decl(i,j)->id()->v();
               if (j < c.n_decls(i)-1)
                 os << ",";
@@ -324,7 +324,7 @@ namespace MiniZinc {
       case Expression::E_ITE:
         {
           const ITE& ite = *e->cast<ITE>();
-          for (unsigned int i = 0; i < ite.size(); i++) {
+          for (int i = 0; i < ite.size(); i++) {
             os << (i == 0 ? "if " : " elseif ");
             p(ite.e_if(i));
             os << " then ";
@@ -364,13 +364,13 @@ namespace MiniZinc {
             os<<" mod ";
             break;
           case BOT_LE:
-            os<<"<";
+            os<<" < ";
             break;
           case BOT_LQ:
             os<<"<=";
             break;
           case BOT_GR:
-            os<<">";
+            os<<" > ";
             break;
           case BOT_GQ:
             os<<">=";
@@ -729,7 +729,7 @@ namespace MiniZinc {
     bool unbreakable;
     bool alignment;
   public:
-    DocumentList() {}
+
     virtual ~DocumentList() {
       std::vector<Document*>::iterator it;
       for (it = docs.begin(); it != docs.end(); it++) {
@@ -1104,7 +1104,7 @@ namespace MiniZinc {
         dl->addStringToList(oss.str());
         DocumentList* args = new DocumentList("(", ", ", ")");
 
-        for (unsigned int i = 0; i < al.dims(); i++) {
+        for (int i = 0; i < al.dims(); i++) {
           oss.str("");
           oss << al.min(i) << ".." << al.max(i);
           args->addStringToList(oss.str());
@@ -1138,10 +1138,10 @@ namespace MiniZinc {
       dl->addDocumentToList(expressionToDocument(c.e()));
       DocumentList* head = new DocumentList("", " ", "");
       DocumentList* generators = new DocumentList("", ", ", "");
-      for (unsigned int i = 0; i < c.n_generators(); i++) {
+      for (int i = 0; i < c.n_generators(); i++) {
         DocumentList* gen = new DocumentList("", "", "");
         DocumentList* idents = new DocumentList("", ", ", "");
-        for (unsigned int j = 0; j < c.n_decls(i); j++) {
+        for (int j = 0; j < c.n_decls(i); j++) {
           idents->addStringToList(c.decl(i, j)->id()->v().str());
         }
         gen->addDocumentToList(idents);
@@ -1161,7 +1161,7 @@ namespace MiniZinc {
     ret mapITE(const ITE& ite) {
 
       DocumentList* dl = new DocumentList("", "", "");
-      for (unsigned int i = 0; i < ite.size(); i++) {
+      for (int i = 0; i < ite.size(); i++) {
         std::string beg = (i == 0 ? "if " : " elseif ");
         dl->addStringToList(beg);
         dl->addDocumentToList(expressionToDocument(ite.e_if(i)));
@@ -1218,13 +1218,13 @@ namespace MiniZinc {
         op = " mod ";
         break;
       case BOT_LE:
-        op = "<";
+        op = " < ";
         break;
       case BOT_LQ:
         op = "<=";
         break;
       case BOT_GR:
-        op = ">";
+        op = " > ";
         break;
       case BOT_GQ:
         op = ">=";
@@ -1349,10 +1349,10 @@ namespace MiniZinc {
             DocumentList* args = new DocumentList("", " ", "", false);
             DocumentList* generators = new DocumentList("", ", ", "");
 
-            for (unsigned int i = 0; i < com->n_generators(); i++) {
+            for (int i = 0; i < com->n_generators(); i++) {
               DocumentList* gen = new DocumentList("", "", "");
               DocumentList* idents = new DocumentList("", ", ", "");
-              for (unsigned int j = 0; j<com->n_decls(i); j++) {
+              for (int j = 0; j<com->n_decls(i); j++) {
                 idents->addStringToList(
                   com->decl(i,j)->id()->v().str());
               }

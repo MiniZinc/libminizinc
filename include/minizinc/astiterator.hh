@@ -198,7 +198,7 @@ namespace MiniZinc {
             {
               ITE* ite = ce->template cast<ITE>();
               stack.push_back(C(ite->e_else()));
-              for (unsigned int i=0; i<ite->size(); i++) {
+              for (int i=0; i<ite->size(); i++) {
                 stack.push_back(C(ite->e_if(i)));
                 stack.push_back(C(ite->e_then(i)));
               }
@@ -296,7 +296,7 @@ namespace MiniZinc {
         {
           ITE* ite = e->template cast<ITE>();
           stack.push_back(ite->e_else());
-          for (unsigned int i=0; i<ite->size(); i++) {
+          for (int i=0; i<ite->size(); i++) {
             stack.push_back(ite->e_if(i));
             stack.push_back(ite->e_then(i));
           }

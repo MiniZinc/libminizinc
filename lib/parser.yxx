@@ -56,9 +56,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->err << "In file " << location->filename << ", line "
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
-  for (int i=0; i<location->first_column-1; i++)
+  for (unsigned int i=0; i<location->first_column-1; i++)
     pp->err << " ";
-  for (int i=location->first_column; i<=location->last_column; i++)
+  for (unsigned int i=location->first_column; i<=location->last_column; i++)
     pp->err << "^";
   pp->err << std::endl << "Error: " << str << std::endl << std::endl;
   pp->hadError = true;
@@ -92,7 +92,7 @@ std::string get_file_contents(std::ifstream &in)
   {
     std::string contents;
     in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
+    contents.resize(static_cast<unsigned int>(in.tellg()));
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     in.close();
@@ -342,6 +342,121 @@ namespace MiniZinc {
       delete files[i].second;
     return NULL;
   }
+
+  Model* parseData(Model* model,
+                   const vector<string>& datafiles,
+                   const vector<string>& includePaths,
+                   bool ignoreStdlib,
+                   ostream& err) {
+  GCLock lock;
+
+  vector<pair<string,Model*> > files;
+  map<string,Model*> seenModels;
+  
+  if (!ignoreStdlib) {
+    Model* stdlib = new Model;
+    stdlib->_filename = ASTString("stdlib.mzn");
+    files.push_back(pair<string,Model*>("./",stdlib));
+    seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
+    IncludeI* stdlibinc =
+      new IncludeI(Location(),stdlib->_filename);
+    stdlibinc->m(stdlib,true);
+    model->addItem(stdlibinc);
+    
+    Model* builtins = new Model;
+    ASTString bn("builtins.mzn");
+    builtins->_filename = bn;
+    files.push_back(pair<string,Model*>("./",builtins));
+    seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
+    IncludeI* builtinsinc =
+      new IncludeI(Location(),builtins->_filename);
+    builtinsinc->m(builtins,true);
+    model->addItem(builtinsinc);
+  }
+  
+  while (!files.empty()) {
+    pair<string,Model*>& np = files.back();
+    string parentPath = np.first;
+    Model* m = np.second;
+    files.pop_back();
+    string f(m->_filename.str());
+    
+    for (Model* p=m->_parent; p; p=p->_parent) {
+      if (f == p->_filename.c_str()) {
+        err << "Error: cyclic includes: " << std::endl;
+        for (Model* pe=m; pe; pe=pe->_parent) {
+          err << "  " << pe->_filename << std::endl;
+        }
+        goto error;
+      }
+    }
+    ifstream file;
+    string fullname;
+    if (parentPath=="") {
+      err << "Internal error." << std::endl;
+      goto error;
+    } else {
+      for (unsigned int i=0; i<includePaths.size(); i++) {
+        fullname = includePaths[i]+f;
+        file.open(fullname.c_str());
+        if (file.is_open())
+        break;
+      }
+    }
+    if (!file.is_open()) {
+      err << "Error: cannot open file '" << f << "'." << endl;
+      goto error;
+    }
+    std::string s = get_file_contents(file);
+    
+    m->_filepath = ASTString(fullname);
+    bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
+    isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
+    isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
+    ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn);
+    yylex_init(&pp.yyscanner);
+    yyset_extra(&pp, pp.yyscanner);
+    yyparse(&pp);
+    if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+    if (pp.hadError) {
+      goto error;
+    }
+  }
+  
+  for (unsigned int i=0; i<datafiles.size(); i++) {
+    string f = datafiles[i];
+    std::string s;
+    if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
+      s = f.substr(5);
+    } else {
+      std::ifstream file;
+      file.open(f.c_str());
+      if (!file.is_open()) {
+        err << "Error: cannot open data file '" << f << "'." << endl;
+        goto error;
+      }
+      s = get_file_contents(file);
+    }
+    
+    ParserState pp(f, s, err, files, seenModels, model, true, false);
+    yylex_init(&pp.yyscanner);
+    yyset_extra(&pp, pp.yyscanner);
+    yyparse(&pp);
+    if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+    if (pp.hadError) {
+      goto error;
+    }
+  }
+  
+  return model;
+  error:
+  for (unsigned int i=0; i<files.size(); i++)
+  delete files[i].second;
+  return NULL;
+}
+
 }
 
 %}
@@ -946,7 +1061,7 @@ expr_atom_head :
       { $$=new ArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
-      { $$=new BoolLit(@$, $1); }
+      { $$=new BoolLit(@$, ($1!=0)); }
     | MZN_INTEGER_LITERAL
       { $$=new IntLit(@$, $1); }
     | MZN_FLOAT_LITERAL

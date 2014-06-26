@@ -224,7 +224,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_array_lit(ite->e_then(i));
         }
@@ -283,9 +283,9 @@ namespace MiniZinc {
     assert(al->dims() == dims.size());
     IntVal realidx = 0;
     int realdim = 1;
-    for (unsigned int i=0; i<al->dims(); i++)
+    for (int i=0; i<al->dims(); i++)
       realdim *= al->max(i)-al->min(i)+1;
-    for (unsigned int i=0; i<al->dims(); i++) {
+    for (int i=0; i<al->dims(); i++) {
       IntVal ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
@@ -380,7 +380,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_intset(ite->e_then(i));
         }
@@ -492,7 +492,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_bool(ite->e_then(i));
         }
@@ -669,7 +669,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_int(ite->e_then(i));
         }
@@ -761,7 +761,7 @@ namespace MiniZinc {
       case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_float(ite->e_then(i));
         }
@@ -853,7 +853,7 @@ namespace MiniZinc {
       case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        for (unsigned int i=0; i<ite->size(); i++) {
+        for (int i=0; i<ite->size(); i++) {
           if (eval_bool(ite->e_if(i)))
             return eval_string(ite->e_then(i));
         }
@@ -1005,13 +1005,13 @@ namespace MiniZinc {
           case Expression::E_ITE:
           {
             ITE* ite = e->cast<ITE>();
-            for (unsigned int i=0; i<ite->size(); i++) {
+            for (int i=0; i<ite->size(); i++) {
               if (ite->e_if(i)->type()==Type::parbool()) {
                 if (eval_bool(ite->e_if(i)))
                   return eval_par(ite->e_then(i));
               } else {
                 std::vector<Expression*> e_ifthen(ite->size()*2);
-                for (unsigned int i=0; i<ite->size(); i++) {
+                for (int i=0; i<ite->size(); i++) {
                   e_ifthen[2*i] = eval_par(ite->e_if(i));
                   e_ifthen[2*i+1] = eval_par(ite->e_then(i));
                 }
@@ -1063,7 +1063,7 @@ namespace MiniZinc {
           }
           case Expression::E_ARRAYACCESS:
           {
-            throw EvalError(e->loc(),"cannot partially evaluate array access expression");
+            return eval_par(eval_arrayaccess(e->cast<ArrayAccess>()));
           }
           default:
             throw EvalError(e->loc(),"cannot partially evaluate expression");
@@ -1257,12 +1257,9 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == constants().ids.lin_exp &&
-          c.args()[0]->isa<ArrayLit>() &&
-          c.args()[1]->isa<ArrayLit>() &&
-          c.args()[2]->isa<IntLit>()) {
-        ArrayLit* coeff = c.args()[0]->cast<ArrayLit>();
-        ArrayLit* al = c.args()[1]->cast<ArrayLit>();
+      if (c.id() == constants().ids.lin_exp) {
+        ArrayLit* coeff = eval_array_lit(c.args()[0]);
+        ArrayLit* al = eval_array_lit(c.args()[1]);
         IntVal d = c.args()[2]->cast<IntLit>()->v();
         int stacktop = _bounds.size();
         for (unsigned int i=al->v().size(); i--;) {
