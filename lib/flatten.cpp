@@ -3922,7 +3922,9 @@ namespace MiniZinc {
   }
   
   bool isBuiltin(FunctionI* decl) {
-    return (decl->loc().filename.endsWith("/builtins.mzn") ||
+    return (decl->loc().filename == "builtins.mzn" ||
+            decl->loc().filename.endsWith("/builtins.mzn") ||
+            decl->loc().filename == "stdlib.mzn" ||
             decl->loc().filename.endsWith("/stdlib.mzn"));
   }
   
