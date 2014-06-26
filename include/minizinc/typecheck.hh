@@ -13,6 +13,7 @@
 #define __MINIZINC_TYPECHECK_HH__
 
 #include <minizinc/model.hh>
+#include <minizinc/hash.hh>
 #include <minizinc/exception.hh>
 
 namespace MiniZinc {
@@ -21,7 +22,7 @@ namespace MiniZinc {
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef ASTStringMap<Decls>::t DeclMap;
+    typedef IdMap<Decls> DeclMap;
     typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*,int> PosMap;
     
     /// List of all declarations
@@ -37,6 +38,7 @@ namespace MiniZinc {
     void remove(VarDecl* vd);
     
     VarDecl* checkId(const ASTString& id, const Location& loc);
+    VarDecl* checkId(Id* id, const Location& loc);
     /// Run the topological sorting for expression \a e
     void run(Expression* e);
   };

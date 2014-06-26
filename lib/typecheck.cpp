@@ -53,31 +53,34 @@ namespace MiniZinc {
   
   void
   TopoSorter::add(VarDecl* vd, bool unique) {
-    DeclMap::iterator vdi = env.find(vd->id()->v());
+    DeclMap::iterator vdi = env.find(vd->id());
     if (vdi == env.end()) {
       Decls nd; nd.push_back(vd);
-      env.insert(std::pair<ASTString,Decls>(vd->id()->v(),nd));
+      env.insert(vd->id(),nd);
     } else {
-      if (unique)
-        throw TypeError(vd->loc(),"identifier `"+vd->id()->v().str()+
+      if (unique) {
+        GCLock lock;
+        throw TypeError(vd->loc(),"identifier `"+vd->id()->str().str()+
                         "' already defined");
+      }
       vdi->second.push_back(vd);
     }
   }
   void
   TopoSorter::remove(VarDecl* vd) {
-    DeclMap::iterator vdi = env.find(vd->id()->v());
+    DeclMap::iterator vdi = env.find(vd->id());
     assert(vdi != env.end());
     vdi->second.pop_back();
     if (vdi->second.empty())
-      env.erase(vdi);
+      env.remove(vd->id());
   }
   
   VarDecl*
-  TopoSorter::checkId(const ASTString& id, const Location& loc) {
+  TopoSorter::checkId(Id* id, const Location& loc) {
     DeclMap::iterator decl = env.find(id);
     if (decl==env.end()) {
-      throw TypeError(loc,"undefined identifier "+id.str());
+      GCLock lock;
+      throw TypeError(loc,"undefined identifier "+id->str().str());
     }
     PosMap::iterator pi = pos.find(decl->second.back());
     if (pi==pos.end()) {
@@ -85,12 +88,21 @@ namespace MiniZinc {
       run(decl->second.back());
     } else {
       // previously seen, check if circular
-      if (pi->second==-1)
-        throw TypeError(loc,"circular definition of "+id.str());
+      if (pi->second==-1) {
+        GCLock lock;
+        throw TypeError(loc,"circular definition of "+id->str().str());
+      }
     }
     return decl->second.back();
   }
-  
+
+  VarDecl*
+  TopoSorter::checkId(const ASTString& id_v, const Location& loc) {
+    GCLock lock;
+    Id* id = new Id(loc,id_v,NULL);
+    return checkId(id, loc);
+  }
+
   void
   TopoSorter::run(Expression* e) {
     if (e==NULL)
@@ -115,7 +127,7 @@ namespace MiniZinc {
     case Expression::E_ID:
       {
         if (e != constants().absent)
-          e->cast<Id>()->decl(checkId(e->cast<Id>()->v(),e->loc()));
+          e->cast<Id>()->decl(checkId(e->cast<Id>(),e->loc()));
       }
       break;
     case Expression::E_ARRAYLIT:
