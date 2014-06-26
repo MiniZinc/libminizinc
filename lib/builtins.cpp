@@ -576,7 +576,8 @@ namespace MiniZinc {
       } else if (di->size() != 1) {
         throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
       } else {
-        dims[i] = std::pair<int,int>(di->min(0).toInt(),di->max(0).toInt());
+        dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
+                                     static_cast<int>(di->max(0).toInt()));
         dim1d *= dims[i].second-dims[i].first+1;
       }
     }
@@ -743,16 +744,16 @@ namespace MiniZinc {
   }
 
   FloatVal b_int2float(ASTExprVec<Expression> args) {
-    return eval_int(args[0]).toInt();
+    return static_cast<FloatVal>(eval_int(args[0]).toInt());
   }
   IntVal b_ceil(ASTExprVec<Expression> args) {
-    return std::ceil(eval_float(args[0]));
+    return static_cast<long long int>(std::ceil(eval_float(args[0])));
   }
   IntVal b_floor(ASTExprVec<Expression> args) {
-    return std::floor(eval_float(args[0]));
+    return static_cast<long long int>(std::floor(eval_float(args[0])));
   }
   IntVal b_round(ASTExprVec<Expression> args) {
-    return round(eval_float(args[0]));
+    return static_cast<long long int>(eval_float(args[0])+0.5);
   }
   FloatVal b_log10(ASTExprVec<Expression> args) {
     return std::log10(eval_float(args[0]));
@@ -854,7 +855,7 @@ namespace MiniZinc {
     Expression* e = eval_par(args[1]);
     std::ostringstream oss;
     if (IntLit* iv = e->dyn_cast<IntLit>()) {
-      int justify = eval_int(args[0]).toInt();
+      int justify = static_cast<int>(eval_int(args[0]).toInt());
       std::ostringstream oss_length;
       oss_length << iv->v();
       int iv_length = static_cast<int>(oss_length.str().size());
@@ -880,8 +881,8 @@ namespace MiniZinc {
     Expression* e = eval_par(args[2]);
     std::ostringstream oss;
     if (FloatLit* fv = e->dyn_cast<FloatLit>()) {
-      int justify = eval_int(args[0]).toInt();
-      int prec = eval_int(args[1]).toInt();
+      int justify = static_cast<int>(eval_int(args[0]).toInt());
+      int prec = static_cast<int>(eval_int(args[1]).toInt());
       if (prec < 0)
         throw EvalError(args[1]->loc(), "number of digits in show_float cannot be negative");
       std::ostringstream oss_length;
@@ -934,7 +935,7 @@ namespace MiniZinc {
     if (al->v().size()==0)
       return IntSetVal::a();
     IntSetVal* isv = eval_intset(al->v()[0]);
-    for (int i=0; i<al->v().size(); i++) {
+    for (unsigned int i=0; i<al->v().size(); i++) {
       IntSetRanges i0(isv);
       IntSetRanges i1(eval_intset(al->v()[i]));
       Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);

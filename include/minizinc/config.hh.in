@@ -8,4 +8,6 @@
 
 #cmakedefine HAS_ATTR_THREAD
 
+#cmakedefine HAS_ATOLL
+
 #cmakedefine MZN_NEED_TR1

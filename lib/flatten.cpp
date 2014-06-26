@@ -115,11 +115,11 @@ namespace MiniZinc {
   };
 
   void dumpEEb(const std::vector<EE>& ee) {
-    for (int i=0; i<ee.size(); i++)
+    for (unsigned int i=0; i<ee.size(); i++)
       std::cerr << *ee[i].b();
   }
   void dumpEEr(const std::vector<EE>& ee) {
-    for (int i=0; i<ee.size(); i++)
+    for (unsigned int i=0; i<ee.size(); i++)
       std::cerr << *ee[i].r();
   }
   std::vector<Expression*> toExpVec(std::vector<KeepAlive>& v) {
@@ -303,6 +303,13 @@ namespace MiniZinc {
           topDown(ce,si->e());
           for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it)
             topDown(ce,*it);
+        }
+        break;
+      case Item::II_OUT:
+        {
+          OutputI* si = i->cast<OutputI>();
+          CollectOccurrencesE ce(vo,si);
+          topDown(ce,si->e());
         }
         break;
       default:
@@ -1297,8 +1304,8 @@ namespace MiniZinc {
       Ranges::Inter<IntSetRanges,Ranges::Const> inter(dr,c);
       return IntSetVal::ai(inter);
     }
-    static Val floor_div(Val v0, Val v1) { return floor(v0.toInt() / v1.toInt()); }
-    static Val ceil_div(Val v0, Val v1) { return ceil(v0.toInt() / v1.toInt()); }
+    static Val floor_div(Val v0, Val v1) { return static_cast<Val>(floor(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
+    static Val ceil_div(Val v0, Val v1) { return static_cast<Val>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
   };
   template<>
   class LinearTraits<FloatLit> {
@@ -1498,7 +1505,7 @@ namespace MiniZinc {
       idx[i]=i;
     }
     std::sort(idx.begin(),idx.end(),CmpExpIdx(x));
-    int ci = 0;
+    unsigned int ci = 0;
     for (; ci<x.size(); ci++) {
       if (Lit* il = x[idx[ci]]()->dyn_cast<Lit>()) {
         d += c[idx[ci]]*il->v();
@@ -2297,15 +2304,16 @@ namespace MiniZinc {
                 if (isv->size() != 1)
                   throw FlatteningError(ti->loc(),"invalid array index set");
                 asize *= (isv->max(0)-isv->min(0)+1);
-                dims.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(0).toInt()));
+                dims.push_back(std::pair<int,int>(static_cast<int>(isv->min(0).toInt()),
+					          static_cast<int>(isv->max(0).toInt())));
               }
             }
             Type tt = vd->ti()->type();
             tt._dim = 0;
             TypeInst* vti = new TypeInst(Location(),tt,vd->ti()->domain());
             
-            std::vector<Expression*> elems(asize.toInt());
-            for (int i=0; i<asize; i++) {
+            std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
+            for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
               nvd->introduced(vd->introduced());
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
@@ -2508,7 +2516,7 @@ namespace MiniZinc {
           std::vector<Expression*> in(c->n_generators());
           std::vector<Expression*> where;
           GCLock lock;
-          for (unsigned int i=0; i<c->n_generators(); i++) {
+          for (int i=0; i<c->n_generators(); i++) {
             if (c->in(i)->type().isvar()) {
               std::vector<Expression*> args(1);
               args[0] = c->in(i);
@@ -2516,7 +2524,7 @@ namespace MiniZinc {
               ub->type(Type::parsetint());
               ub->decl(env.orig->matchFn(ub));
               in[i] = ub;
-              for (unsigned int j=0; j<c->n_decls(i); j++) {
+              for (int j=0; j<c->n_decls(i); j++) {
                 BinOp* bo = new BinOp(Location(),c->decl(i,j)->id(), BOT_IN, c->in(i));
                 bo->type(Type::varbool());
                 where.push_back(bo);
@@ -2531,9 +2539,9 @@ namespace MiniZinc {
               gs._w = c->where();
             else
               where.push_back(c->where());
-            for (unsigned int i=0; i<c->n_generators(); i++) {
+            for (int i=0; i<c->n_generators(); i++) {
               std::vector<VarDecl*> vds(c->n_decls(i));
-              for (unsigned int j=0; j<c->n_decls(i); j++)
+              for (int j=0; j<c->n_decls(i); j++)
                 vds[i] = c->decl(i, j);
               gs._g.push_back(Generator(vds,in[i]));
             }
@@ -3914,7 +3922,9 @@ namespace MiniZinc {
   }
   
   bool isBuiltin(FunctionI* decl) {
-    return (decl->loc().filename.endsWith("/builtins.mzn") ||
+    return (decl->loc().filename == "builtins.mzn" ||
+            decl->loc().filename.endsWith("/builtins.mzn") ||
+            decl->loc().filename == "stdlib.mzn" ||
             decl->loc().filename.endsWith("/stdlib.mzn"));
   }
   
@@ -4076,7 +4086,7 @@ namespace MiniZinc {
               reallyFlat->addAnnotation(constants().ann.output_var);
             } else {
               std::vector<Expression*> args(reallyFlat->e()->type().dim());
-              for (int i=0; i<args.size(); i++) {
+              for (unsigned int i=0; i<args.size(); i++) {
                 if (nvi->e()->ti()->ranges()[i]->domain() == NULL) {
                   args[i] = new SetLit(Location(), eval_intset(reallyFlat->ti()->ranges()[i]->domain()));
                 } else {
@@ -4097,6 +4107,38 @@ namespace MiniZinc {
       }
     } _o(env,ci);
     topDown(_o, e);
+  }
+
+  
+  void copyOutput(EnvI& e) {
+    struct CopyOutput : public EVisitor {
+      EnvI& env;
+      CopyOutput(EnvI& env0) : env(env0) {}
+      void vId(Id& _id) {
+        _id.decl(_id.decl()->flat());
+      }
+      void vCall(Call& c) {
+        std::vector<Type> tv(c.args().size());
+        for (unsigned int i=c.args().size(); i--;) {
+          tv[i] = c.args()[i]->type();
+          tv[i]._ti = Type::TI_PAR;
+        }
+        FunctionI* decl = c.decl();
+        if (!isBuiltin(decl)) {
+          env.flat_addItem(decl);
+        }
+      }
+    };
+    for (unsigned int i=e.orig->size(); i--;) {
+      if (OutputI* oi = (*e.orig)[i]->dyn_cast<OutputI>()) {
+        GCLock lock;
+        OutputI* noi = copy(oi)->cast<OutputI>();
+        CopyOutput co(e);
+        topDown(co, noi->e());
+        e.flat_addItem(noi);
+        break;
+      }
+    }
   }
   
   void createOutput(EnvI& e) {
@@ -4184,7 +4226,7 @@ namespace MiniZinc {
                       vd->flat()->addAnnotation(constants().ann.output_var);
                     } else {
                       std::vector<Expression*> args(vd->type().dim());
-                      for (int i=0; i<args.size(); i++) {
+                      for (unsigned int i=0; i<args.size(); i++) {
                         if (vd->ti()->ranges()[i]->domain() == NULL) {
                           args[i] = new SetLit(Location(), eval_intset(vd->flat()->ti()->ranges()[i]->domain()));
                         } else {
@@ -4263,7 +4305,7 @@ namespace MiniZinc {
           Type t;
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
-            if (origdecl == NULL) {
+            if (origdecl == NULL || !origdecl->rtype(tv).ispar()) {
               throw FlatteningError(c.loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
@@ -4367,7 +4409,7 @@ namespace MiniZinc {
                   }
                   if (needOutputAnn) {
                     std::vector<Expression*> args(vdi->e()->type().dim());
-                    for (int i=0; i<args.size(); i++) {
+                    for (unsigned int i=0; i<args.size(); i++) {
                       if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
                         args[i] = new SetLit(Location(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
                       } else {
@@ -4475,7 +4517,11 @@ namespace MiniZinc {
     iterItems<FV>(_fv,e.model());
 
     // Create output model
-    createOutput(env);
+    if (opt.keepOutputInFzn) {
+      copyOutput(env);
+    } else {
+      createOutput(env);
+    }
     
     // Flatten remaining redefinitions
     Model& m = *e.flat();
@@ -4517,7 +4563,7 @@ namespace MiniZinc {
     
     std::vector<VarDecl*> deletedVarDecls;
     while (startItem <= endItem) {
-      for (unsigned int i=startItem; i<=endItem; i++) {
+      for (int i=startItem; i<=endItem; i++) {
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
         bool keptVariable = true;
         if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
@@ -4589,7 +4635,7 @@ namespace MiniZinc {
           }
         }
       }
-      for (unsigned int i=startItem; i<=endItem; i++) {
+      for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
           if (!vdi->removed() && vd->e()) {
@@ -4787,7 +4833,9 @@ namespace MiniZinc {
       }
     }
 
-    createOutput(env);
+    if (!opt.keepOutputInFzn) {
+      createOutput(env);
+    }
     
     std::vector<int> toAssignBoolVars;
     std::vector<int> assignedBoolVars;
@@ -5222,7 +5270,7 @@ namespace MiniZinc {
     int msize = m->size();
     UNORDERED_NAMESPACE::unordered_set<Item*> globals;
     std::vector<int> declsWithIds;
-    for (unsigned int i=0; i<msize; i++) {
+    for (int i=0; i<msize; i++) {
       if ((*m)[i]->removed())
         continue;
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
@@ -5241,7 +5289,7 @@ namespace MiniZinc {
         
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
-          vdi->e()->payload(-i-1);
+          vdi->e()->payload(-static_cast<int>(i)-1);
         } else {
           vdi->e()->payload(i);
         }
