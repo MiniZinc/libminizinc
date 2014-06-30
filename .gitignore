@@ -1,6 +1,7 @@
 *.o
 *~
 mzn2fzn
+solns2out
 makefile
 Makefile
 include/minizinc/parser.tab.hh
