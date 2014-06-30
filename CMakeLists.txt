@@ -67,6 +67,31 @@ endif()
 CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
 int main(void) { long long int x = atoll(\"123\");}" HAS_ATOLL)
 
+CHECK_CXX_SOURCE_COMPILES("
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <libproc.h>
+#include <unistd.h>
+
+int main (int argc, char* argv[])
+{
+    pid_t pid = getpid(); 
+    char path[PROC_PIDPATHINFO_MAXSIZE];
+    (void) proc_pidpath (pid, path, sizeof(path));
+    return 0;
+}
+" HAS_PIDPATH)
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <windows.h>
+int main (int argc, char* argv[]) {
+  char path[MAX_PATH];
+  (void) GetModuleFileName(NULL, path, MAX_PATH);
+  return 0;
+}" HAS_GETMODULEFILENAME)
+
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 # configure a header file to pass some of the CMake settings

@@ -8,7 +8,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
+
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -37,6 +41,58 @@ std::string stoptime(clock_t& start) {
 
 bool beginswith(string s, string t) {
   return s.compare(0, t.length(), t)==0;
+}
+
+#ifdef HAS_PIDPATH
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <libproc.h>
+#include <unistd.h>
+std::string progpath(void) {
+  pid_t pid = getpid();
+  char path[PROC_PIDPATHINFO_MAXSIZE];
+  int ret = proc_pidpath (pid, path, sizeof(path));
+  if ( ret <= 0 ) {
+    return "";
+  } else {
+    std::string p(path);
+    size_t slash = p.find_last_of("/");
+    if (slash != std::string::npos) {
+      p = p.substr(0,slash);
+    }
+    return p;
+  }
+}
+#elif defined(HAS_GETMODULEFILENAME)
+#include <windows.h>
+std::string progpath(void) {
+  char path[MAX_PATH];
+  int ret = GetModuleFileName(NULL, path, MAX_PATH);
+  if ( ret <= 0 ) {
+    return "";
+  } else {
+    std::string p(path);
+    size_t slash = p.find_last_of("/\\");
+    if (slash != std::string::npos) {
+      p = p.substr(0,slash);
+    }
+    return p;
+  }
+}
+#else
+std::string progpath(void) {
+  return "";
+}
+#endif
+
+bool file_exists(std::string filename) {
+  if (FILE *file = fopen(filename.c_str(), "r")) {
+    fclose(file);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 int main(int argc, char** argv) {
@@ -215,6 +271,19 @@ int main(int argc, char** argv) {
       goto error;
   }
 
+  if (std_lib_dir=="") {
+    std::string mypath = progpath();
+    if (!mypath.empty()) {
+      if (file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/share/minizinc";
+      } else if (file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../share/minizinc";
+      } else if (file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../../share/minizinc";
+      }
+    }
+  }
+  
   if (std_lib_dir=="") {
     std::cerr << "Error: unknown minizinc standard library directory.\n"
               << "Specify --stdlib-dir on the command line or set the\n"
