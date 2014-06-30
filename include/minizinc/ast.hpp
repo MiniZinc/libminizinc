@@ -16,7 +16,7 @@ namespace MiniZinc {
     if (eid()==E_VARDECL) {
       this->cast<VarDecl>()->id()->_type = t;
     } else if (eid()==E_ID && this->cast<Id>()->decl()) {
-      assert(_type._bt == Type::BT_UNKNOWN || _type._dim==t._dim || t._dim != -1);
+      assert(_type.bt() == Type::BT_UNKNOWN || _type.dim()==t.dim() || t.dim() != -1);
       this->cast<Id>()->decl()->_type = t;
     }
     _type = t;

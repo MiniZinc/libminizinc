@@ -290,7 +290,7 @@ namespace MiniZinc {
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
         Type t = al->type();
-        t._dim = 0;
+        t.dim(0);
         if (t.isint())
           return new IntLit(Location(),0);
         if (t.isbool())
@@ -929,7 +929,7 @@ namespace MiniZinc {
         ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
         Type t = al->type();
         if (t.isbot() && ret->v().size() > 0) {
-          t._bt = ret->v()[0]->type()._bt;
+          t.bt(ret->v()[0]->type().bt());
         }
         ret->type(t);
         return ret;
@@ -968,7 +968,7 @@ namespace MiniZinc {
       return e;
     default:
       {
-        if (e->type()._dim != 0) {
+        if (e->type().dim() != 0) {
           ArrayLit* al = eval_array_lit(e);
           std::vector<Expression*> args(al->v().size());
           for (unsigned int i=al->v().size(); i--;)
@@ -981,7 +981,7 @@ namespace MiniZinc {
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
           Type t = al->type();
           if (t.isbot() && ret->v().size() > 0) {
-            t._bt = ret->v()[0]->type()._bt;
+            t.bt(ret->v()[0]->type().bt());
           }
           ret->type(t);
           return ret;
@@ -1080,7 +1080,7 @@ namespace MiniZinc {
     bool valid;
     ComputeIntBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->type()._dim > 0)
+      if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {
@@ -1372,7 +1372,7 @@ namespace MiniZinc {
     bool valid;
     ComputeIntSetBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->type()._dim > 0)
+      if (e->type().dim() > 0)
         return false;
       if (!e->type().isintset())
         return false;

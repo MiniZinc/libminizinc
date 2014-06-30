@@ -585,7 +585,7 @@ namespace MiniZinc {
       throw EvalError(al->loc(), "mismatch in array dimensions");
     ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
     Type t = al->type();
-    t._dim = d;
+    t.dim(d);
     ret->type(t);
     return ret;
   }
@@ -674,7 +674,7 @@ namespace MiniZinc {
           cur = cur->cast<Id>()->decl();
           break;
         case Expression::E_VARDECL:
-          if (cur->type()._st != Type::ST_SET) {
+          if (cur->type().st() != Type::ST_SET) {
             Expression* dom = cur->cast<VarDecl>()->ti()->domain();
             if (dom && (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>()))
               return dom;
@@ -738,7 +738,7 @@ namespace MiniZinc {
     }
     ArrayLit* ret = new ArrayLit(Location(), fixed);
     Type tt = al->type();
-    tt._ti = Type::TI_PAR;
+    tt.ti(Type::TI_PAR);
     ret->type(tt);
     return ret;
   }
@@ -1246,13 +1246,13 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("lb"), t, b_lb_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("ub"), t, b_ub_varoptint);
     }
     {
@@ -1268,13 +1268,13 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("lb_array"), t, b_array_lb_int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("ub_array"), t, b_array_ub_int);
     }
     {
@@ -1410,9 +1410,9 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("occurs"), t, b_occurs);
-      t[0]._bt = Type::BT_BOOL;
+      t[0].bt(Type::BT_BOOL);
       rb(m, ASTString("occurs"), t, b_occurs);
     }
     {

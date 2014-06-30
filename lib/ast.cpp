@@ -572,9 +572,9 @@ namespace MiniZinc {
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
         ranges[0]->cast<TypeInst>()->domain() &&
         ranges[0]->cast<TypeInst>()->domain()->isa<TIId>())
-      _type._dim=-1;
+      _type.dim(-1);
     else
-      _type._dim=ranges.size();
+      _type.dim(ranges.size());
     rehash();
   }
 
@@ -613,28 +613,28 @@ namespace MiniZinc {
         if (tii->domain() && tii->domain()->isa<TIId>()) {
           ASTString tiid = tii->domain()->cast<TIId>()->v();
           Type tiit = getType(ta[i]);
-          tiit._dim=0;
-          if (tii->type()._st==Type::ST_SET)
-            tiit._st = Type::ST_PLAIN;
+          tiit.dim(0);
+          if (tii->type().st()==Type::ST_SET)
+            tiit.st(Type::ST_PLAIN);
           ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
-            if (it->second._dim > 0) {
+            if (it->second.dim() > 0) {
               throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else {
               Type tiit_par = tiit;
-              tiit_par._ti = Type::TI_PAR;
-              tiit_par._ot = Type::OT_PRESENT;
+              tiit_par.ti(Type::TI_PAR);
+              tiit_par.ot(Type::OT_PRESENT);
               Type its_par = it->second;
-              its_par._ti = Type::TI_PAR;
-              its_par._ot = Type::OT_PRESENT;
-              if (tiit_par._bt==Type::BT_TOP || tiit_par._bt==Type::BT_BOT) {
-                tiit_par._bt = its_par._bt;
+              its_par.ti(Type::TI_PAR);
+              its_par.ot(Type::OT_PRESENT);
+              if (tiit_par.bt()==Type::BT_TOP || tiit_par.bt()==Type::BT_BOT) {
+                tiit_par.bt(its_par.bt());
               }
-              if (its_par._bt==Type::BT_TOP || its_par._bt==Type::BT_BOT) {
-                its_par._bt = tiit_par._bt;
+              if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
+                its_par.bt(tiit_par.bt());
               }
               if (tiit_par != its_par) {
                 throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
@@ -642,8 +642,8 @@ namespace MiniZinc {
                                 tiit.toString()+" vs "+
                                 it->second.toString()+")");
               }
-              if (it->second._bt == Type::BT_TOP)
-                it->second._bt = tiit._bt;
+              if (it->second.bt() == Type::BT_TOP)
+                it->second.bt(tiit.bt());
             }
           }
         }
@@ -651,16 +651,16 @@ namespace MiniZinc {
             tii->ranges()[0]->domain() &&
             tii->ranges()[0]->domain()->isa<TIId>()) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-          if (getType(ta[i])._dim==0) {
+          if (getType(ta[i]).dim()==0) {
             throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
                             " must be an array index");
           }
-          Type tiit = Type::top(getType(ta[i])._dim);
+          Type tiit = Type::top(getType(ta[i]).dim());
           ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
-            if (it->second._dim == 0) {
+            if (it->second.dim() == 0) {
               throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else if (it->second!=tiit) {
@@ -676,15 +676,15 @@ namespace MiniZinc {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
           throw TypeError(fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
-        ret._bt = it->second._bt;
-        if (ret._st==Type::ST_PLAIN)
-          ret._st = it->second._st;
+        ret.bt(it->second.bt());
+        if (ret.st()==Type::ST_PLAIN)
+          ret.st(it->second.st());
       }
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
           throw TypeError(fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
-        ret._dim = it->second._dim;
+        ret.dim(it->second.dim());
       }
       return ret;
     }
@@ -881,10 +881,10 @@ namespace MiniZinc {
     var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
     absent = new Id(Location(),"_absent",NULL);
     Type absent_t;
-    absent_t._bt = Type::BT_BOT;
-    absent_t._dim = 0;
-    absent_t._st = Type::ST_PLAIN;
-    absent_t._ot = Type::OT_OPTIONAL;
+    absent_t.bt(Type::BT_BOT);
+    absent_t.dim(0);
+    absent_t.st(Type::ST_PLAIN);
+    absent_t.ot(Type::OT_OPTIONAL);
     absent->type(absent_t);
     
     ids.forall = ASTString("forall");

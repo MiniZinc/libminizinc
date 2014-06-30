@@ -839,44 +839,44 @@ base_ti_expr :
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
         Type tt = $$->type();
-        tt._ot = Type::OT_OPTIONAL;
+        tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
         if ($2) {
           Type tt = $$->type();
-          tt._ot = Type::OT_OPTIONAL;
+          tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
         }
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
         Type tt = $$->type();
-        tt._ti = Type::TI_VAR;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.ti(Type::TI_VAR);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         Type tt = $$->type();
-        tt._st = Type::ST_SET;
-        if ($1) tt._ot = Type::OT_OPTIONAL;
+        tt.st(Type::ST_SET);
+        if ($1) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         Type tt = $$->type();
-        tt._st = Type::ST_SET;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.st(Type::ST_SET);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         Type tt = $$->type();
-        tt._ti = Type::TI_VAR;
-        tt._st = Type::ST_SET;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.ti(Type::TI_VAR);
+        tt.st(Type::ST_SET);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
 
