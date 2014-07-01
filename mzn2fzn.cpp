@@ -81,8 +81,24 @@ std::string progpath(void) {
   }
 }
 #else
+// Linux: try to read /proc/self/exe
+#include <unistd.h>
 std::string progpath(void) {
-  return "";
+  const int bufsz = 20000;
+  char *path = new char[bufsz];
+  ssize_t sz = readlink("/proc/self/exe", path, bufsz);
+  if ( sz < 0 ) {
+    return "";
+  } else {
+    path[sz] = '\0';
+    std::string p(path);
+    delete path;
+    size_t slash = p.find_last_of("/");
+    if (slash != std::string::npos) {
+      p = p.substr(0,slash);
+    }
+    return p;
+  }
 }
 #endif
 
