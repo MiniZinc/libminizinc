@@ -1935,7 +1935,6 @@ namespace MiniZinc {
       GCLock lock;
       if (assignTo != NULL) {
         Val resultCoeff;
-        // TODO: possibly add defines_var annotations
         typename LinearTraits<Lit>::Bounds bounds(d,d,true);
         for (unsigned int i=coeffv.size(); i--;) {
           if (alv[i]()==assignTo) {
@@ -3255,7 +3254,21 @@ namespace MiniZinc {
                 throw FlatteningError(cc->loc(), "cannot find matching declaration");
               }
               cc->type(cc->decl()->rtype(args_e));
-              
+
+              // add defines_var annotation if applicable
+              Id* assignTo = NULL;
+              if (bot==BOT_EQ && ctx.b == C_ROOT) {
+                if (le0 && le0->isa<Id>()) {
+                  assignTo = le0->cast<Id>();
+                } else if (le1 && le1->isa<Id>()) {
+                  assignTo = le1->cast<Id>();
+                }
+                if (assignTo) {
+                  cc->addAnnotation(definesVarAnn(assignTo));
+                  assignTo->decl()->flat()->addAnnotation(constants().ann.is_defined_var);
+                }
+              }
+
               EnvI::Map::iterator cit = env.map_find(cc);
               if (cit != env.map_end()) {
                 ees[2].b = cit->second.r();
