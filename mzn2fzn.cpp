@@ -27,6 +27,7 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
+#include <minizinc/file_utils.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -43,60 +44,7 @@ bool beginswith(string s, string t) {
   return s.compare(0, t.length(), t)==0;
 }
 
-#ifdef HAS_PIDPATH
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <libproc.h>
-#include <unistd.h>
-std::string progpath(void) {
-  pid_t pid = getpid();
-  char path[PROC_PIDPATHINFO_MAXSIZE];
-  int ret = proc_pidpath (pid, path, sizeof(path));
-  if ( ret <= 0 ) {
-    return "";
-  } else {
-    std::string p(path);
-    size_t slash = p.find_last_of("/");
-    if (slash != std::string::npos) {
-      p = p.substr(0,slash);
-    }
-    return p;
-  }
-}
-#elif defined(HAS_GETMODULEFILENAME)
-#include <windows.h>
-std::string progpath(void) {
-  char path[MAX_PATH];
-  int ret = GetModuleFileName(NULL, path, MAX_PATH);
-  if ( ret <= 0 ) {
-    return "";
-  } else {
-    std::string p(path);
-    size_t slash = p.find_last_of("/\\");
-    if (slash != std::string::npos) {
-      p = p.substr(0,slash);
-    }
-    return p;
-  }
-}
-#else
-std::string progpath(void) {
-  return "";
-}
-#endif
-
-bool file_exists(std::string filename) {
-  if (FILE *file = fopen(filename.c_str(), "r")) {
-    fclose(file);
-    return true;
-  } else {
-    return false;
-  }
-}
-
 int main(int argc, char** argv) {
-  int i=1;
   string filename;
   vector<string> datafiles;
   vector<string> includePaths;  
@@ -129,7 +77,7 @@ int main(int argc, char** argv) {
 
   GC::init();
   
-  for (;;) {
+  for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
     if (string(argv[i])==string("--version")) {
@@ -264,21 +212,41 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])=="--only-range-domains") {
       fopts.onlyRangeDomains = true;
     } else {
-      break;
+      std::string input_file(argv[i]);
+      if (input_file.length()<=4) {
+        std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
+        goto error;
+      }
+      std::string extension = input_file.substr(input_file.length()-4,string::npos);
+      if (extension == ".mzn") {
+        if (filename=="") {
+          filename = input_file;
+        } else {
+          std::cerr << "Error: Multiple .mzn files given." << std::endl;
+          goto error;
+        }
+      } else if (extension == ".dzn") {
+        datafiles.push_back(input_file);
+      } else {
+        std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+        goto error;
+      }
     }
-    i++;
-    if (i==argc)
-      goto error;
   }
 
+  if (filename=="") {
+    std::cerr << "Error: no model file given." << std::endl;
+    goto error;
+  }
+  
   if (std_lib_dir=="") {
-    std::string mypath = progpath();
+    std::string mypath = FileUtils::progpath();
     if (!mypath.empty()) {
-      if (file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
         std_lib_dir = mypath+"/share/minizinc";
-      } else if (file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
         std_lib_dir = mypath+"/../share/minizinc";
-      } else if (file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
         std_lib_dir = mypath+"/../../share/minizinc";
       }
     }
@@ -296,14 +264,6 @@ int main(int argc, char** argv) {
   }
   includePaths.push_back(std_lib_dir+"/std/");
   
-  if (i==argc) {
-    goto error;
-  }
-  filename = argv[i++];
-  if (filename.length()<=4 ||
-      filename.substr(filename.length()-4,string::npos) != ".mzn")
-    goto error;
-  
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
@@ -312,14 +272,6 @@ int main(int argc, char** argv) {
   }
   if (flag_output_ozn == "") {
     flag_output_ozn = flag_output_base+".ozn";
-  }
-  
-  while (i<argc) {
-    std::string datafile = argv[i++];
-    if (datafile.length()<=4 ||
-        datafile.substr(datafile.length()-4,string::npos) != ".dzn")
-      goto error;
-    datafiles.push_back(datafile);
   }
 
   {

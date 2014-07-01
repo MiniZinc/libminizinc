@@ -19,14 +19,13 @@
 #include <minizinc/exception.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/eval_par.hh>
-
 #include <minizinc/builtins.hh>
+#include <minizinc/file_utils.hh>
 
 using namespace MiniZinc;
 using namespace std;
 
 int main(int argc, char** argv) {
-  int i=1;
   string filename;
   
   string flag_output_file;
@@ -47,7 +46,7 @@ int main(int argc, char** argv) {
 
   GC::init();
   
-  for (;;) {
+  for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc solution printing tool, version "
       << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
@@ -76,9 +75,26 @@ int main(int argc, char** argv) {
         goto error;
       flag_ignore_lines = atoi(argv[i]);
     } else {
-      break;
+      filename = argv[i++];
+      if (filename.length()<=4 ||
+          filename.substr(filename.length()-4,string::npos) != ".ozn") {
+        std::cerr << "Invalid .ozn file " << filename << "." << std::endl;
+        goto error;
+      }
     }
-    i++;
+  }
+
+  if (std_lib_dir=="") {
+    std::string mypath = FileUtils::progpath();
+    if (!mypath.empty()) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../../share/minizinc";
+      }
+    }
   }
 
   if (std_lib_dir=="") {
@@ -89,14 +105,6 @@ int main(int argc, char** argv) {
   }
   
   includePaths.push_back(std_lib_dir+"/std/");
-
-  if (i==argc) {
-    goto error;
-  }
-  filename = argv[i++];
-  if (filename.length()<=4 ||
-      filename.substr(filename.length()-4,string::npos) != ".ozn")
-    goto error;
   
   {
     if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false,

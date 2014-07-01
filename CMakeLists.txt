@@ -140,6 +140,7 @@ lib/astvec.cpp
 lib/builtins.cpp
 lib/copy.cpp
 lib/eval_par.cpp
+lib/file_utils.cpp
 lib/gc.cpp
 "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
 lib/model.cpp
@@ -161,6 +162,7 @@ include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
 include/minizinc/exception.hh
+include/minizinc/file_utils.hh
 include/minizinc/flatten.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
