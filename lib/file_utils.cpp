@@ -20,6 +20,8 @@
 #include <unistd.h>
 #elif defined(HAS_GETMODULEFILENAME)
 #include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 namespace MiniZinc { namespace FileUtils {
@@ -57,10 +59,23 @@ namespace MiniZinc { namespace FileUtils {
   }
 #else
   std::string progpath(void) {
-    return "";
+    const int bufsz = 2000;
+    char path[bufsz+1];
+    ssize_t sz = readlink("/proc/self/exe", path, bufsz);
+    if ( sz < 0 ) {
+      return "";
+    } else {
+      path[sz] = '\0';
+      std::string p(path);
+      size_t slash = p.find_last_of("/");
+      if (slash != std::string::npos) {
+        p = p.substr(0,slash);
+      }
+      return p;
+    }
   }
 #endif
-
+  
   bool file_exists(const std::string& filename) {
     if (FILE *file = fopen(filename.c_str(), "r")) {
       fclose(file);
@@ -69,5 +84,5 @@ namespace MiniZinc { namespace FileUtils {
       return false;
     }
   }
-
+  
 }}
