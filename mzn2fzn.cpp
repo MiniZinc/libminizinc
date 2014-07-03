@@ -292,8 +292,8 @@ int main(int argc, char** argv) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
                 std::cerr << std::endl;
+              std::cerr << typeErrors[i].loc() << ":" << std::endl;
               std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-              std::cerr << typeErrors[i].loc() << std::endl;              
             }
             exit(EXIT_FAILURE);
           }
@@ -310,8 +310,8 @@ int main(int argc, char** argv) {
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;
+              std::cerr << e.loc() << ":" << std::endl;
               std::cerr << e.what() << ": " << e.msg() << std::endl;
-              std::cerr << e.loc() << std::endl;
               env.dumpErrorStack(std::cerr);
               exit(EXIT_FAILURE);
             }
@@ -373,8 +373,8 @@ int main(int argc, char** argv) {
       } catch (LocationException& e) {
         if (flag_verbose)
           std::cerr << std::endl;
+        std::cerr << e.loc() << ":" << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
-        std::cerr << e.loc() << std::endl;
         exit(EXIT_FAILURE);
       } catch (Exception& e) {
         if (flag_verbose)

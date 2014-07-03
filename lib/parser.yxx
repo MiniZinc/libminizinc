@@ -53,7 +53,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << "In file " << location->filename << ", line "
+  pp->err << location->filename << ":"
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
   for (unsigned int i=0; i<location->first_column-1; i++)
