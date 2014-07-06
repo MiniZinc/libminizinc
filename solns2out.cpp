@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
   string flag_output_file;
 
   bool flag_output_comments = true;
+  bool flag_output_flush = false;
   string solfile;
   int flag_ignore_lines = 0;
   istream& solstream = cin;
@@ -65,6 +66,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       std_lib_dir = argv[i];
+    } else if (string(argv[i])=="--flush-output") {
+      flag_output_flush = true;
     } else if (string(argv[i])=="--no-output-comments") {
       flag_output_comments = false;
     } else if (string(argv[i])=="-i" ||
@@ -175,20 +178,28 @@ int main(int argc, char** argv) {
                   if (!s.empty()) {
                     os = s;
                     std::cout << os;
+                    if (flag_output_flush)
+                      std::cout.flush();
                   }
                 }
                 if (os.empty() || os[os.size()-1] != '\n')
                   std::cout << std::endl;
+                  if (flag_output_flush)
+                    std::cout.flush();
               }
-              solution = "";
-              comments = "";
               cout << comments;
               cout << line << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
+              solution = "";
+              comments = "";
             } else if (line=="==========" ||
                        line=="=====UNSATISFIABLE=====" ||
                        line=="=====UNBOUNDED=====" ||
                        line=="=====UNKNOWN=====") {
               cout << line << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
             } else {
               solution += line+"\n";
               size_t comment_pos = line.find('%');
@@ -202,6 +213,8 @@ int main(int argc, char** argv) {
           }
         }
         cout << comments;
+        if (flag_output_flush)
+          std::cout.flush();
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
@@ -226,6 +239,7 @@ error:
             << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
             << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+            << "  --flush-output\n    Flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   ;
 
