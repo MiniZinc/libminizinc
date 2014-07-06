@@ -65,7 +65,7 @@ if (NOT HAS_ATTR_THREAD)
 endif()
 
 CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
-int main(void) { long long int x = atoll(\"123\");}" HAS_ATOLL)
+int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
 
 CHECK_CXX_SOURCE_COMPILES("
 #include <stdio.h>
