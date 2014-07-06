@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   string flag_output_file;
 
   bool flag_output_comments = true;
-  bool flag_output_flush = false;
+  bool flag_output_flush = true;
   string solfile;
   int flag_ignore_lines = 0;
   istream& solstream = cin;
@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       std_lib_dir = argv[i];
-    } else if (string(argv[i])=="--flush-output") {
-      flag_output_flush = true;
+    } else if (string(argv[i])=="--no-flush-output") {
+      flag_output_flush = false;
     } else if (string(argv[i])=="--no-output-comments") {
       flag_output_comments = false;
     } else if (string(argv[i])=="-i" ||
@@ -239,7 +239,7 @@ error:
             << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
             << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
-            << "  --flush-output\n    Flush output stream after every line." << std::endl
+            << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   ;
 
