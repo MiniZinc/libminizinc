@@ -90,14 +90,14 @@ char* bufferData(void* parm) {
 
 %%
 
-\n                { MiniZinc::ParserState* parm =
+\xa               { MiniZinc::ParserState* parm =
                       static_cast<MiniZinc::ParserState*>(
                         yyget_extra(yyscanner));
                     parm->lineno++;
                     parm->lineStartPos += parm->nTokenNextStart;
                     parm->nTokenNextStart=1;
                   }
-[ \f\r\t]         { /* ignore whitespace */
+[ \f\xd\t]         { /* ignore whitespace */
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   }
 "["               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -108,7 +108,7 @@ char* bufferData(void* parm) {
                     return MZN_RIGHT_BRACKET; }
 "|]"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_RIGHT_2D_BRACKET; }
-%.*               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+%[^\xa]*          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     /* ignore comments */ }
 
 "true"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -353,7 +353,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 
 \"                { BEGIN string; beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
-<string>[^\\"\n]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+<string>[^\\"\xa\xd]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
 <string>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
 <string>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
 <string>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
