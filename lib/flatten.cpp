@@ -2405,7 +2405,7 @@ namespace MiniZinc {
           ka = alr;
         }
         ret.b = conj(env,b,Ctx(),elems_ee);
-        ret.r = bind(env,ctx,r,ka());
+        ret.r = bind(env,Ctx(),r,ka());
       }
       break;
     case Expression::E_ARRAYACCESS:
