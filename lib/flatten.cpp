@@ -2541,7 +2541,7 @@ namespace MiniZinc {
             for (int i=0; i<c->n_generators(); i++) {
               std::vector<VarDecl*> vds(c->n_decls(i));
               for (int j=0; j<c->n_decls(i); j++)
-                vds[i] = c->decl(i, j);
+                vds[j] = c->decl(i, j);
               gs._g.push_back(Generator(vds,in[i]));
             }
             Expression* cond;
