@@ -9,3 +9,10 @@ lib/lexer.yy.cpp
 lib/parser.tab.cpp
 core
 res/
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+cmake_install.cmake
+install_manifest.txt
+libminizinc.build
+libminizinc.xcodeproj
