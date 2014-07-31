@@ -502,6 +502,12 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if ( bo->op()==BOT_EQ && (bo->lhs()->type().isopt() || bo->rhs()->type().isopt()) ) {
+          Expression* elhs = eval_par(bo->lhs());
+          Expression* erhs = eval_par(bo->rhs());
+          if (elhs == constants().absent || erhs==constants().absent)
+            return bo->lhs()==bo->rhs();
+        }
         if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
           switch (bo->op()) {
           case BOT_LE: return eval_bool(bo->lhs())<eval_bool(bo->rhs());
