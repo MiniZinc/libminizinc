@@ -154,6 +154,22 @@ namespace MiniZinc {
     return eval_par(args[0]) != constants().absent;
   }
   
+  IntVal b_deopt_int(ASTExprVec<Expression> args) {
+    GCLock lock;
+    Expression* e = eval_par(args[0]);
+    if (e==constants().absent)
+      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+    return eval_int(e);
+  }
+
+  bool b_deopt_bool(ASTExprVec<Expression> args) {
+    GCLock lock;
+    Expression* e = eval_par(args[0]);
+    if (e==constants().absent)
+      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+    return eval_bool(e);
+  }
+  
   Expression* deref_id(Expression* e) {
     Expression* cur = e;
     for (;;) {
@@ -1412,8 +1428,10 @@ namespace MiniZinc {
       t[0] = Type::parint();
       t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("occurs"), t, b_occurs);
+      rb(m, ASTString("deopt"), t, b_deopt_int);
       t[0].bt(Type::BT_BOOL);
       rb(m, ASTString("occurs"), t, b_occurs);
+      rb(m, ASTString("deopt"), t, b_deopt_bool);
     }
     {
       std::vector<Type> t(2);

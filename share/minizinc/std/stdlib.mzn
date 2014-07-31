@@ -135,6 +135,8 @@ annotation time;
 % Option type predicates.
 %
 
+function $T: deopt(opt $T);
+
 function var bool: occurs_internal(var opt bool: x) ::promise_total =
   let { var bool : b; } in b;
 function var bool : deopt_internal(var opt bool : x) ::promise_total =
