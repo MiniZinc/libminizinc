@@ -821,6 +821,11 @@ namespace MiniZinc {
     throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
   }
 
+  bool b_abort(ASTExprVec<Expression> args) {
+    StringLit* err = eval_par(args[0])->cast<StringLit>();
+    throw EvalError(args[0]->loc(),"Abort: "+err->v().str());
+  }
+  
   Expression* b_trace(ASTExprVec<Expression> args) {
     assert(args.size()==2);
     GCLock lock;
@@ -1192,6 +1197,11 @@ namespace MiniZinc {
       rb(m, constants().ids.assert, t, b_assert);
       t[2] = Type::optvartop();
       rb(m, constants().ids.assert, t, b_assert);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring();
+      rb(m, ASTString("abort"), t, b_abort);
     }
     {
       std::vector<Type> t(2);
