@@ -356,6 +356,9 @@ namespace MiniZinc {
       bool allpresent=true;
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
+        if (aai->isa<AnonVar>()) {
+          aai->type(Type::varint());
+        }
         if (aai->type().isset() || aai->type().bt() != Type::BT_INT ||
             aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be int");
