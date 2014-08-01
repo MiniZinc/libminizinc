@@ -16,7 +16,7 @@
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/builtins.hh>

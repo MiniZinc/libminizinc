@@ -22,7 +22,7 @@
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>

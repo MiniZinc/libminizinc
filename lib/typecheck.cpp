@@ -12,7 +12,7 @@
 #include <minizinc/typecheck.hh>
 
 #include <minizinc/astiterator.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/hash.hh>
 
 #include <string>

@@ -13,7 +13,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/astiterator.hh>
 

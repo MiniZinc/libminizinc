@@ -12,7 +12,7 @@
 #include <minizinc/builtins.hh>
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 

@@ -13,6 +13,7 @@
 #define __MINIZINC_VALUES_HH__
 
 #include <minizinc/gc.hh>
+#include <minizinc/exception.hh>
 #include <minizinc/stl_map_set.hh>
 #include <algorithm>
 #include <functional>
@@ -20,18 +21,6 @@
 #include <string>
 
 namespace MiniZinc {
-
-  class ArithmeticException : public std::exception {
-  protected:
-    std::string _msg;
-  public:
-    ArithmeticException(const std::string& msg) : _msg(msg) {}
-    virtual ~ArithmeticException(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: arithmetic exception";
-    }
-    const std::string& msg(void) const { return _msg; }
-  };
 
   class IntVal {
   private:
@@ -50,25 +39,25 @@ namespace MiniZinc {
     
     IntVal& operator +=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       _v += x._v;
       return *this;
     }
     IntVal& operator -=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       _v -= x._v;
       return *this;
     }
     IntVal& operator *=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       _v *= x._v;
       return *this;
     }
     IntVal& operator /=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       _v /= x._v;
       return *this;
     }
@@ -79,22 +68,22 @@ namespace MiniZinc {
     }
     void operator ++() {
       if (!isFinite())
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       ++_v;
     }
     void operator ++(int) {
       if (!isFinite())
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       ++_v;
     }
     void operator --() {
       if (!isFinite())
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       --_v;
     }
     void operator --(int) {
       if (!isFinite())
-        throw ArithmeticException("arithmetic operation on infinite value");
+        throw ArithmeticError("arithmetic operation on infinite value");
       --_v;
     }
     static const IntVal minint;
@@ -147,31 +136,31 @@ namespace MiniZinc {
   inline
   IntVal operator +(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticException("arithmetic operation on infinite value");
+      throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()+y.toInt();
   }
   inline
   IntVal operator -(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticException("arithmetic operation on infinite value");
+      throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()-y.toInt();
   }
   inline
   IntVal operator *(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticException("arithmetic operation on infinite value");
+      throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()*y.toInt();
   }
   inline
   IntVal operator /(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticException("arithmetic operation on infinite value");
+      throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()/y.toInt();
   }
   inline
   IntVal operator %(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticException("arithmetic operation on infinite value");
+      throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()%y.toInt();
   }
   template<class Char, class Traits>

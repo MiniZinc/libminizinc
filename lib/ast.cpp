@@ -11,7 +11,7 @@
 
 #include <minizinc/ast.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
 
