@@ -1248,6 +1248,7 @@ namespace MiniZinc {
     }
     static ASTString id_eq(void) { return constants().ids.int_.eq; }
     typedef IntBounds Bounds;
+    static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
     static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
     typedef IntSetVal* Domain;
     static Domain eval_domain(Expression* e) { return eval_intset(e); }
@@ -1345,6 +1346,7 @@ namespace MiniZinc {
     }
     static ASTString id_eq(void) { return constants().ids.float_.eq; }
     typedef FloatBounds Bounds;
+    static bool finite(const FloatBounds& ib) { return true; }
     static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
     typedef BinOp* Domain;
     static Domain eval_domain(Expression* e) {
@@ -1942,7 +1944,8 @@ namespace MiniZinc {
             continue;
           }
           typename LinearTraits<Lit>::Bounds b = LinearTraits<Lit>::compute_bounds(alv[i]());
-          if (b.valid) {
+
+          if (b.valid && LinearTraits<Lit>::finite(b)) {
             if (coeffv[i] > 0) {
               bounds.l += coeffv[i]*b.l;
               bounds.u += coeffv[i]*b.u;
@@ -4609,29 +4612,62 @@ namespace MiniZinc {
             keptVariable = false;
           }
         }
-        if (vdi && opt.onlyRangeDomains && keptVariable &&
+        if (vdi && keptVariable &&
             vdi->e()->type().isint() && vdi->e()->type().isvar() &&
             vdi->e()->ti()->domain() != NULL) {
+
           GCLock lock;
           IntSetVal* dom = eval_intset(vdi->e()->ti()->domain());
-          if (dom->size() > 1) {
-            SetLit* newDom = new SetLit(Location(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
-            TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
-            nti->domain(newDom);
-            vdi->e()->ti(nti);
-            IntVal firstHole = dom->max(0)+1;
-            IntSetRanges domr(dom);
-            ++domr;
-            for (; domr(); ++domr) {
-              for (IntVal i=firstHole; i<domr.min(); i++) {
+
+          bool needRangeDomain = opt.onlyRangeDomains;
+          if (!needRangeDomain && dom->size() > 0) {
+            if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity())
+              needRangeDomain = true;
+          }
+          
+          if (needRangeDomain) {
+            if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity()) {
+              TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
+              nti->domain(NULL);
+              vdi->e()->ti(nti);
+              if (dom->min(0).isFinite()) {
                 std::vector<Expression*> args(2);
-                args[0] = vdi->e()->id();
-                args[1] = new IntLit(Location(),i);
-                Call* call = new Call(Location(),constants().ids.int_.ne,args);
+                args[0] = new IntLit(Location(),dom->min(0));
+                args[1] = vdi->e()->id();
+                Call* call = new Call(Location(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
                 (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
-                firstHole = domr.max()+1;
+              } else if (dom->max(dom->size()-1).isFinite()) {
+                std::vector<Expression*> args(2);
+                args[0] = vdi->e()->id();
+                args[1] = new IntLit(Location(),dom->max(dom->size()-1));
+                Call* call = new Call(Location(),constants().ids.int_.le,args);
+                call->type(Type::varbool());
+                call->decl(env.orig->matchFn(call));
+                (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+              }
+            } else if (dom->size() > 1) {
+              SetLit* newDom = new SetLit(Location(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
+              TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
+              nti->domain(newDom);
+              vdi->e()->ti(nti);
+            }
+            if (dom->size() > 1) {
+              IntVal firstHole = dom->max(0)+1;
+              IntSetRanges domr(dom);
+              ++domr;
+              for (; domr(); ++domr) {
+                for (IntVal i=firstHole; i<domr.min(); i++) {
+                  std::vector<Expression*> args(2);
+                  args[0] = vdi->e()->id();
+                  args[1] = new IntLit(Location(),i);
+                  Call* call = new Call(Location(),constants().ids.int_.ne,args);
+                  call->type(Type::varbool());
+                  call->decl(env.orig->matchFn(call));
+                  (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+                  firstHole = domr.max().plus(1);
+                }
               }
             }
           }

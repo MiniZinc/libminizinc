@@ -1158,6 +1158,8 @@ namespace MiniZinc {
       BoolLit* lit_false;
       /// Variable bound to false
       VarDecl* var_false;
+      /// Infinite set
+      SetLit* infinity;
       /// Function item used to keep track of redefined variables
       FunctionI* var_redef;
       /// Literal absent value

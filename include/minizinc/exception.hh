@@ -28,6 +28,13 @@ namespace MiniZinc {
     virtual const char* what(void) const throw()  = 0;
     const std::string& msg(void) const { return _msg; }
   };
+
+  class ArithmeticError : public Exception {
+  public:
+    ArithmeticError(const std::string& msg)
+    : Exception(msg) {}
+    virtual ~ArithmeticError(void) throw() {}
+  };
   
   class LocationException : public Exception {
   protected:

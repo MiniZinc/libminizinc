@@ -17,13 +17,27 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <string>
 
 namespace MiniZinc {
-  
+
+  class ArithmeticException : public std::exception {
+  protected:
+    std::string _msg;
+  public:
+    ArithmeticException(const std::string& msg) : _msg(msg) {}
+    virtual ~ArithmeticException(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: arithmetic exception";
+    }
+    const std::string& msg(void) const { return _msg; }
+  };
+
   class IntVal {
   private:
     long long int _v;
     bool _infinity;
+    IntVal(long long int v, bool infinity) : _v(v), _infinity(infinity) {}
   public:
     IntVal(void) : _v(0), _infinity(false) {}
     IntVal(long long int v) : _v(v), _infinity(false) {}
@@ -35,40 +49,72 @@ namespace MiniZinc {
     bool isMinusInfinity(void) const { return _infinity && _v==-1; }
     
     IntVal& operator +=(const IntVal& x) {
-      if (_infinity)
-        return *this;
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticException("arithmetic operation on infinite value");
       _v += x._v;
       return *this;
     }
     IntVal& operator -=(const IntVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticException("arithmetic operation on infinite value");
       _v -= x._v;
       return *this;
     }
     IntVal& operator *=(const IntVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticException("arithmetic operation on infinite value");
       _v *= x._v;
       return *this;
     }
     IntVal& operator /=(const IntVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticException("arithmetic operation on infinite value");
       _v /= x._v;
       return *this;
     }
-    IntVal operator -() {
-      return -_v;
+    IntVal operator -() const {
+      IntVal r = *this;
+      r._v = -r._v;
+      return r;
     }
     void operator ++() {
+      if (!isFinite())
+        throw ArithmeticException("arithmetic operation on infinite value");
       ++_v;
     }
     void operator ++(int) {
+      if (!isFinite())
+        throw ArithmeticException("arithmetic operation on infinite value");
       ++_v;
     }
     void operator --() {
+      if (!isFinite())
+        throw ArithmeticException("arithmetic operation on infinite value");
       --_v;
     }
     void operator --(int) {
+      if (!isFinite())
+        throw ArithmeticException("arithmetic operation on infinite value");
       --_v;
     }
     static const IntVal minint;
     static const IntVal maxint;
+    static const IntVal infinity;
+    
+    /// Infinity-safe addition
+    IntVal plus(int x) {
+      if (isFinite())
+        return toInt()+x;
+      else
+        return *this;
+    }
+    /// Infinity-safe subtraction
+    IntVal minus(int x) {
+      if (isFinite())
+        return toInt()-x;
+      else
+        return *this;
+    }
   };
 
   inline
@@ -77,48 +123,66 @@ namespace MiniZinc {
   }
   inline
   bool operator <=(const IntVal& x, const IntVal& y) {
-    return x.toInt() <= y.toInt();
+    return y.isPlusInfinity() || x.isMinusInfinity() || (x.isFinite() && y.isFinite() && x.toInt() <= y.toInt());
   }
   inline
   bool operator <(const IntVal& x, const IntVal& y) {
-    return x.toInt() < y.toInt();
+    return
+      (y.isPlusInfinity() && !x.isPlusInfinity()) ||
+      (x.isMinusInfinity() && !y.isMinusInfinity()) ||
+      (x.isFinite() && y.isFinite() && x.toInt() < y.toInt());
   }
   inline
   bool operator >=(const IntVal& x, const IntVal& y) {
-    return x.toInt() >= y.toInt();
+    return y <= x;
   }
   inline
   bool operator >(const IntVal& x, const IntVal& y) {
-    return x.toInt() > y.toInt();
+    return y < x;
   }
   inline
   bool operator !=(const IntVal& x, const IntVal& y) {
-    return x.toInt() != y.toInt();
+    return !(x==y);
   }
   inline
   IntVal operator +(const IntVal& x, const IntVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticException("arithmetic operation on infinite value");
     return x.toInt()+y.toInt();
   }
   inline
   IntVal operator -(const IntVal& x, const IntVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticException("arithmetic operation on infinite value");
     return x.toInt()-y.toInt();
   }
   inline
   IntVal operator *(const IntVal& x, const IntVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticException("arithmetic operation on infinite value");
     return x.toInt()*y.toInt();
   }
   inline
   IntVal operator /(const IntVal& x, const IntVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticException("arithmetic operation on infinite value");
     return x.toInt()/y.toInt();
   }
   inline
   IntVal operator %(const IntVal& x, const IntVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticException("arithmetic operation on infinite value");
     return x.toInt()%y.toInt();
   }
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, const IntVal& s) {
-    return os << s.toInt();
+    if (s.isMinusInfinity())
+      return os << "-infinity";
+    else if (s.isPlusInfinity())
+      return os << "infinity";
+    else
+      return os << s.toInt();
   }
 }
 
@@ -126,16 +190,16 @@ namespace MiniZinc {
 namespace std {
   inline
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-    return abs(x.toInt());
+    return x.isFinite() ? MiniZinc::IntVal(abs(x.toInt())) : MiniZinc::IntVal::infinity;
   }
   
   inline
   MiniZinc::IntVal min(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
-    return min(x.toInt(),y.toInt());
+    return x <= y ? x : y;
   }
   inline
   MiniZinc::IntVal max(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
-    return max(x.toInt(),y.toInt());
+    return x >= y ? x : y;
   }
   
   template<>
@@ -153,8 +217,11 @@ OPEN_HASH_NAMESPACE {
   struct hash<MiniZinc::IntVal> {
   public:
     size_t operator()(const MiniZinc::IntVal& s) const {
-      HASH_NAMESPACE::hash<long long int> h;
-      return h(s.toInt());
+      HASH_NAMESPACE::hash<long long int> longhash;
+      size_t h = longhash(s.toInt());
+      HASH_NAMESPACE::hash<bool> boolhash;
+      h ^= boolhash(s.isFinite()) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      return h;
     }
   };
 CLOSE_HASH_NAMESPACE }
@@ -214,12 +281,22 @@ namespace MiniZinc {
     /// Return maximum of range \a i
     IntVal max(int i) const { assert(i<size()); return get(i).max; }
     /// Return width of range \a i
-    IntVal width(int i) const { assert(i<size()); return max(i)-min(i)+1; }
+    IntVal width(int i) const {
+      assert(i<size());
+      if (min(i).isFinite() && max(i).isFinite())
+        return max(i)-min(i)+1;
+      else
+        return IntVal::infinity;
+    }
     /// Return cardinality
     IntVal card(void) const {
       IntVal c = 0;
-      for (unsigned int i=size(); i--;)
-        c += width(i);
+      for (unsigned int i=size(); i--;) {
+        if (width(i).isFinite())
+          c += width(i);
+        else
+          return IntVal::infinity;
+      }
       return c;
     }
 

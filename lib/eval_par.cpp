@@ -1140,8 +1140,7 @@ namespace MiniZinc {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(id.decl()->e());
         } else {
-          valid = false;
-          _bounds.push_back(Bounds(0,0));
+          _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
         }
       }
     }
@@ -1281,11 +1280,35 @@ namespace MiniZinc {
           Bounds b = _bounds.back(); _bounds.pop_back();
           IntVal cv = eval_int(coeff->v()[i]);
           if (cv > 0) {
-            lb += cv*b.first;
-            ub += cv*b.second;
+            if (b.first.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.first;
+              }
+            } else {
+              lb = b.first;
+            }
+            if (b.second.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.second;
+              }
+            } else {
+              ub = b.second;
+            }
           } else {
-            lb += cv*b.second;
-            ub += cv*b.first;
+            if (b.second.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.second;
+              }
+            } else {
+              lb = -b.second;
+            }
+            if (b.first.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.first;
+              }
+            } else {
+              ub = -b.first;
+            }
           }
         }
         _bounds.push_back(Bounds(lb,ub));

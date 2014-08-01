@@ -887,6 +887,8 @@ namespace MiniZinc {
     absent_t.ot(Type::OT_OPTIONAL);
     absent->type(absent_t);
     
+    infinity = new SetLit(Location(), IntSetVal::a(-IntVal::infinity, IntVal::infinity));
+    
     ids.forall = ASTString("forall");
     ids.forall_reif = ASTString("forall_reif");
     ids.exists = ASTString("exists");
@@ -1004,6 +1006,7 @@ namespace MiniZinc {
     v.push_back(lit_false);
     v.push_back(var_false);
     v.push_back(absent);
+    v.push_back(infinity);
     v.push_back(new StringLit(Location(),ids.forall));
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.clause));

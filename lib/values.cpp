@@ -16,5 +16,6 @@ namespace MiniZinc {
   
   const IntVal IntVal::minint = IntVal(INT_MIN);
   const IntVal IntVal::maxint = IntVal(INT_MAX);
+  const IntVal IntVal::infinity = IntVal(1,true);
   
 }

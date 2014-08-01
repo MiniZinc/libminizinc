@@ -197,15 +197,24 @@ namespace MiniZinc {
             } else if (sl.isv()->size()==1) {
               os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
             } else {
+              if (!sl.isv()->min(0).isFinite())
+                os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << "++";
               os << "{";
-              IntSetRanges isr(sl.isv());
-              Ranges::ToValues<IntSetRanges> isv(isr);
-              while (isv()) {
-                os << isv.val();
-                ++isv;
-                if (isv()) os << ",";
-              };
+              for (IntSetRanges isr(sl.isv()); isr();) {
+                if (isr.min().isFinite() && isr.max().isFinite()) {
+                  for (IntVal i=isr.min(); i<=isr.max(); i++) {
+                    os << i;
+                    if (i<isr.max())
+                      os << ",";
+                  }
+                  ++isr;
+                  if (isr())
+                    os << ",";
+                }
+              }
               os << "}";
+              if (!sl.isv()->max(sl.isv()->size()-1).isFinite())
+                os << "++" << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
             }
           } else {
             os << "{";

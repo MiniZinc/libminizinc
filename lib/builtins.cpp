@@ -133,7 +133,8 @@ namespace MiniZinc {
   bool b_has_bounds(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
-    return compute_int_bounds(args[0]).valid;
+    IntBounds ib = compute_int_bounds(args[0]);
+    return ib.valid && ib.l.isFinite() && ib.u.isFinite();
   }
   
   IntVal lb_varoptint(Expression* e) {
@@ -548,9 +549,14 @@ namespace MiniZinc {
     IntBounds bx = compute_int_bounds(args[0]);
     if (!bx.valid)
       throw EvalError(args[0]->loc(),"cannot determine bounds");
+    /// TODO: better bounds if only some input bounds are infinite
+    if (!bx.l.isFinite() || !bx.u.isFinite())
+      return constants().infinity->isv();
     IntBounds by = compute_int_bounds(args[1]);
     if (!by.valid)
       throw EvalError(args[1]->loc(),"cannot determine bounds");
+    if (!by.l.isFinite() || !by.u.isFinite())
+      return constants().infinity->isv();
     Ranges::Const byr(by.l,by.u);
     Ranges::Const by0(0,0);
     Ranges::Diff<Ranges::Const, Ranges::Const> byr0(byr,by0);
