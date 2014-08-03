@@ -646,94 +646,98 @@ namespace MiniZinc {
   }
 
   IntVal eval_int(Expression* e) {
-    switch (e->eid()) {
-    case Expression::E_INTLIT: return e->cast<IntLit>()->v();
-    case Expression::E_FLOATLIT:
-    case Expression::E_BOOLLIT:
-    case Expression::E_STRINGLIT:
-    case Expression::E_ANON:
-    case Expression::E_TIID:
-    case Expression::E_SETLIT:
-    case Expression::E_ARRAYLIT:
-    case Expression::E_COMP:
-    case Expression::E_VARDECL:
-    case Expression::E_TI:
-      throw EvalError(e->loc(),"not an integer expression");
-      break;
-    case Expression::E_ID:
-      {
-        GCLock lock;
-        return eval_id<EvalIntLit>(e)->v();
-      }
-      break;
-    case Expression::E_ARRAYACCESS:
-      {
-        GCLock lock;
-        return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
-      }
-      break;
-    case Expression::E_ITE:
-      {
-        ITE* ite = e->cast<ITE>();
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(ite->e_if(i)))
-            return eval_int(ite->e_then(i));
+    try {
+      switch (e->eid()) {
+        case Expression::E_INTLIT: return e->cast<IntLit>()->v();
+        case Expression::E_FLOATLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_STRINGLIT:
+        case Expression::E_ANON:
+        case Expression::E_TIID:
+        case Expression::E_SETLIT:
+        case Expression::E_ARRAYLIT:
+        case Expression::E_COMP:
+        case Expression::E_VARDECL:
+        case Expression::E_TI:
+          throw EvalError(e->loc(),"not an integer expression");
+          break;
+        case Expression::E_ID:
+        {
+          GCLock lock;
+          return eval_id<EvalIntLit>(e)->v();
         }
-        return eval_int(ite->e_else());
-      }
-      break;
-    case Expression::E_BINOP:
-      {
-        BinOp* bo = e->cast<BinOp>();
-        IntVal v0 = eval_int(bo->lhs());
-        IntVal v1 = eval_int(bo->rhs());
-        switch (bo->op()) {
-        case BOT_PLUS: return v0+v1;
-        case BOT_MINUS: return v0-v1;
-        case BOT_MULT: return v0*v1;
-        case BOT_IDIV: return v0 / v1;
-        case BOT_MOD: return v0 % v1;
-        default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
+          break;
+        case Expression::E_ARRAYACCESS:
+        {
+          GCLock lock;
+          return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
         }
-      }
-      break;
-    case Expression::E_UNOP:
-      {
-        UnOp* uo = e->cast<UnOp>();
-        IntVal v0 = eval_int(uo->e());
-        switch (uo->op()) {
-        case UOT_PLUS: return v0;
-        case UOT_MINUS: return -v0;
-        default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
+          break;
+        case Expression::E_ITE:
+        {
+          ITE* ite = e->cast<ITE>();
+          for (int i=0; i<ite->size(); i++) {
+            if (eval_bool(ite->e_if(i)))
+              return eval_int(ite->e_then(i));
+          }
+          return eval_int(ite->e_else());
         }
+          break;
+        case Expression::E_BINOP:
+        {
+          BinOp* bo = e->cast<BinOp>();
+          IntVal v0 = eval_int(bo->lhs());
+          IntVal v1 = eval_int(bo->rhs());
+          switch (bo->op()) {
+            case BOT_PLUS: return v0+v1;
+            case BOT_MINUS: return v0-v1;
+            case BOT_MULT: return v0*v1;
+            case BOT_IDIV: return v0 / v1;
+            case BOT_MOD: return v0 % v1;
+            default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
+          }
+        }
+          break;
+        case Expression::E_UNOP:
+        {
+          UnOp* uo = e->cast<UnOp>();
+          IntVal v0 = eval_int(uo->e());
+          switch (uo->op()) {
+            case UOT_PLUS: return v0;
+            case UOT_MINUS: return -v0;
+            default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
+          }
+        }
+          break;
+        case Expression::E_CALL:
+        {
+          Call* ce = e->cast<Call>();
+          if (ce->decl()==NULL)
+            throw EvalError(e->loc(), "undeclared function", ce->id());
+          if (ce->decl()->_builtins.i)
+            return ce->decl()->_builtins.i(ce->args());
+          
+          if (ce->decl()->_builtins.e)
+            return eval_int(ce->decl()->_builtins.e(ce->args()));
+          
+          if (ce->decl()->e()==NULL)
+            throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          
+          return eval_call<EvalIntVal>(ce);
+        }
+          break;
+        case Expression::E_LET:
+        {
+          Let* l = e->cast<Let>();
+          l->pushbindings();
+          IntVal ret = eval_int(l->in());
+          l->popbindings();
+          return ret;
+        }
+          break;
       }
-      break;
-    case Expression::E_CALL:
-      {
-        Call* ce = e->cast<Call>();
-        if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
-        if (ce->decl()->_builtins.i)
-          return ce->decl()->_builtins.i(ce->args());
-
-        if (ce->decl()->_builtins.e)
-          return eval_int(ce->decl()->_builtins.e(ce->args()));
-
-        if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
-        return eval_call<EvalIntVal>(ce);
-      }
-      break;
-    case Expression::E_LET:
-      {
-        Let* l = e->cast<Let>();
-        l->pushbindings();
-        IntVal ret = eval_int(l->in());
-        l->popbindings();
-        return ret;
-      }
-      break;
+    } catch (ArithmeticError& err) {
+      throw EvalError(e->loc(), err.msg());
     }
   }
 
