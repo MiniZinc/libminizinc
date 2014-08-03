@@ -179,6 +179,7 @@ lib/lexer.lxx
 lib/values.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
+include/minizinc/astexception.hh
 include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
