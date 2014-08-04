@@ -60,15 +60,6 @@ namespace MiniZinc {
     }
   };
 
-  class InternalError : public Exception {
-  public:
-    InternalError(const std::string& msg) : Exception(msg) {}
-    ~InternalError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: internal error";
-    }
-  };
-
 }
 
 #endif

@@ -28,6 +28,15 @@ namespace MiniZinc {
     const std::string& msg(void) const { return _msg; }
   };
 
+  class InternalError : public Exception {
+  public:
+    InternalError(const std::string& msg) : Exception(msg) {}
+    ~InternalError(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: internal error";
+    }
+  };
+
   class ArithmeticError : public Exception {
   public:
     ArithmeticError(const std::string& msg)
