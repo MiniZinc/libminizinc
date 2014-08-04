@@ -29,15 +29,43 @@ namespace MiniZinc {
     enum SetType { ST_PLAIN, ST_SET };
     /// Whether the expression is normal or optional
     enum OptType { OT_PRESENT, OT_OPTIONAL };
-    TypeInst _ti : 3;
-    BaseType _bt : 4;
-    SetType _st  : 1;
-    OptType _ot  : 1;
+  private:
+    unsigned int _ti : 3;
+    unsigned int _bt : 4;
+    unsigned int _st  : 1;
+    unsigned int _ot  : 1;
     /// Number of array dimensions
     int _dim : 20;
+  public:
     /// Default constructor
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN),
                  _ot(OT_PRESENT), _dim(0) {}
+    
+    /// Access type-inst
+    TypeInst ti(void) const { return static_cast<TypeInst>(_ti); }
+    /// Set type-inst
+    void ti(const TypeInst& t) { _ti = t; }
+
+    /// Access basic type
+    BaseType bt(void) const { return static_cast<BaseType>(_bt); }
+    /// Set basic type
+    void bt(const BaseType& b) { _bt = b; }
+    
+    /// Access set type
+    SetType st(void) const { return static_cast<SetType>(_st); }
+    /// Set set type
+    void st(const SetType& s) { _st = s; }
+    
+    /// Access opt type
+    OptType ot(void) const { return static_cast<OptType>(_ot); }
+    /// Set opt type
+    void ot(const OptType& o) { _ot = o; }
+    
+    /// Access dimensions
+    int dim(void) const { return _dim; }
+    /// Set dimensions
+    void dim(int d) { _dim = d; }
+
   protected:
     /// Constructor
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
@@ -136,9 +164,6 @@ namespace MiniZinc {
     }
     bool operator!= (const Type& t) const {
       return !this->operator==(t);
-    }
-    int dim(void) const {
-      return _dim;
     }
   // protected:
 

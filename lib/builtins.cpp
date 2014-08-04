@@ -12,7 +12,7 @@
 #include <minizinc/builtins.hh>
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 
@@ -133,7 +133,8 @@ namespace MiniZinc {
   bool b_has_bounds(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
-    return compute_int_bounds(args[0]).valid;
+    IntBounds ib = compute_int_bounds(args[0]);
+    return ib.valid && ib.l.isFinite() && ib.u.isFinite();
   }
   
   IntVal lb_varoptint(Expression* e) {
@@ -152,6 +153,22 @@ namespace MiniZinc {
   bool b_occurs(ASTExprVec<Expression> args) {
     GCLock lock;
     return eval_par(args[0]) != constants().absent;
+  }
+  
+  IntVal b_deopt_int(ASTExprVec<Expression> args) {
+    GCLock lock;
+    Expression* e = eval_par(args[0]);
+    if (e==constants().absent)
+      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+    return eval_int(e);
+  }
+
+  bool b_deopt_bool(ASTExprVec<Expression> args) {
+    GCLock lock;
+    Expression* e = eval_par(args[0]);
+    if (e==constants().absent)
+      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+    return eval_bool(e);
   }
   
   Expression* deref_id(Expression* e) {
@@ -532,9 +549,14 @@ namespace MiniZinc {
     IntBounds bx = compute_int_bounds(args[0]);
     if (!bx.valid)
       throw EvalError(args[0]->loc(),"cannot determine bounds");
+    /// TODO: better bounds if only some input bounds are infinite
+    if (!bx.l.isFinite() || !bx.u.isFinite())
+      return constants().infinity->isv();
     IntBounds by = compute_int_bounds(args[1]);
     if (!by.valid)
       throw EvalError(args[1]->loc(),"cannot determine bounds");
+    if (!by.l.isFinite() || !by.u.isFinite())
+      return constants().infinity->isv();
     Ranges::Const byr(by.l,by.u);
     Ranges::Const by0(0,0);
     Ranges::Diff<Ranges::Const, Ranges::Const> byr0(byr,by0);
@@ -585,7 +607,7 @@ namespace MiniZinc {
       throw EvalError(al->loc(), "mismatch in array dimensions");
     ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
     Type t = al->type();
-    t._dim = d;
+    t.dim(d);
     ret->type(t);
     return ret;
   }
@@ -674,7 +696,7 @@ namespace MiniZinc {
           cur = cur->cast<Id>()->decl();
           break;
         case Expression::E_VARDECL:
-          if (cur->type()._st != Type::ST_SET) {
+          if (cur->type().st() != Type::ST_SET) {
             Expression* dom = cur->cast<VarDecl>()->ti()->domain();
             if (dom && (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>()))
               return dom;
@@ -738,7 +760,7 @@ namespace MiniZinc {
     }
     ArrayLit* ret = new ArrayLit(Location(), fixed);
     Type tt = al->type();
-    tt._ti = Type::TI_PAR;
+    tt.ti(Type::TI_PAR);
     ret->type(tt);
     return ret;
   }
@@ -805,6 +827,11 @@ namespace MiniZinc {
     throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
   }
 
+  bool b_abort(ASTExprVec<Expression> args) {
+    StringLit* err = eval_par(args[0])->cast<StringLit>();
+    throw EvalError(args[0]->loc(),"Abort: "+err->v().str());
+  }
+  
   Expression* b_trace(ASTExprVec<Expression> args) {
     assert(args.size()==2);
     GCLock lock;
@@ -1178,6 +1205,11 @@ namespace MiniZinc {
       rb(m, constants().ids.assert, t, b_assert);
     }
     {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring();
+      rb(m, ASTString("abort"), t, b_abort);
+    }
+    {
       std::vector<Type> t(2);
       t[0] = Type::parstring();
       t[1] = Type::top();
@@ -1246,13 +1278,13 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("lb"), t, b_lb_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("ub"), t, b_ub_varoptint);
     }
     {
@@ -1268,13 +1300,13 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("lb_array"), t, b_array_lb_int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("ub_array"), t, b_array_ub_int);
     }
     {
@@ -1410,10 +1442,12 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
-      t[0]._ot = Type::OT_OPTIONAL;
+      t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("occurs"), t, b_occurs);
-      t[0]._bt = Type::BT_BOOL;
+      rb(m, ASTString("deopt"), t, b_deopt_int);
+      t[0].bt(Type::BT_BOOL);
       rb(m, ASTString("occurs"), t, b_occurs);
+      rb(m, ASTString("deopt"), t, b_deopt_bool);
     }
     {
       std::vector<Type> t(2);

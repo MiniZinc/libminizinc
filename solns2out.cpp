@@ -16,22 +16,22 @@
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/eval_par.hh>
-
 #include <minizinc/builtins.hh>
+#include <minizinc/file_utils.hh>
 
 using namespace MiniZinc;
 using namespace std;
 
 int main(int argc, char** argv) {
-  int i=1;
   string filename;
   
   string flag_output_file;
 
   bool flag_output_comments = true;
+  bool flag_output_flush = true;
   string solfile;
   int flag_ignore_lines = 0;
   istream& solstream = cin;
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
   GC::init();
   
-  for (;;) {
+  for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc solution printing tool, version "
       << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
@@ -66,6 +66,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       std_lib_dir = argv[i];
+    } else if (string(argv[i])=="--no-flush-output") {
+      flag_output_flush = false;
     } else if (string(argv[i])=="--no-output-comments") {
       flag_output_comments = false;
     } else if (string(argv[i])=="-i" ||
@@ -76,9 +78,26 @@ int main(int argc, char** argv) {
         goto error;
       flag_ignore_lines = atoi(argv[i]);
     } else {
-      break;
+      filename = argv[i++];
+      if (filename.length()<=4 ||
+          filename.substr(filename.length()-4,string::npos) != ".ozn") {
+        std::cerr << "Invalid .ozn file " << filename << "." << std::endl;
+        goto error;
+      }
     }
-    i++;
+  }
+
+  if (std_lib_dir=="") {
+    std::string mypath = FileUtils::progpath();
+    if (!mypath.empty()) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../../share/minizinc";
+      }
+    }
   }
 
   if (std_lib_dir=="") {
@@ -89,14 +108,6 @@ int main(int argc, char** argv) {
   }
   
   includePaths.push_back(std_lib_dir+"/std/");
-
-  if (i==argc) {
-    goto error;
-  }
-  filename = argv[i++];
-  if (filename.length()<=4 ||
-      filename.substr(filename.length()-4,string::npos) != ".ozn")
-    goto error;
   
   {
     if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false,
@@ -167,20 +178,28 @@ int main(int argc, char** argv) {
                   if (!s.empty()) {
                     os = s;
                     std::cout << os;
+                    if (flag_output_flush)
+                      std::cout.flush();
                   }
                 }
                 if (os.empty() || os[os.size()-1] != '\n')
                   std::cout << std::endl;
+                  if (flag_output_flush)
+                    std::cout.flush();
               }
-              solution = "";
-              comments = "";
               cout << comments;
               cout << line << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
+              solution = "";
+              comments = "";
             } else if (line=="==========" ||
                        line=="=====UNSATISFIABLE=====" ||
                        line=="=====UNBOUNDED=====" ||
                        line=="=====UNKNOWN=====") {
               cout << line << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
             } else {
               solution += line+"\n";
               size_t comment_pos = line.find('%');
@@ -194,6 +213,8 @@ int main(int argc, char** argv) {
           }
         }
         cout << comments;
+        if (flag_output_flush)
+          std::cout.flush();
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
@@ -218,6 +239,7 @@ error:
             << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
             << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+            << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   ;
 

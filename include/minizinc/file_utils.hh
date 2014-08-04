@@ -9,13 +9,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <minizinc/values.hh>
-#include <climits>
+#ifndef __MINIZINC_FILE_UTILS_HH__
+#define __MINIZINC_FILE_UTILS_HH__
 
-namespace MiniZinc {
-  
-  const IntVal IntVal::minint = IntVal(INT_MIN);
-  const IntVal IntVal::maxint = IntVal(INT_MAX);
-  const IntVal IntVal::infinity = IntVal(1,true);
-  
-}
+#include <string>
+
+namespace MiniZinc { namespace FileUtils {
+
+  /// Return full path to current executable
+  std::string progpath(void);
+  /// Test if \a filename exists
+  bool file_exists(const std::string& filename);
+
+}}
+
+#endif

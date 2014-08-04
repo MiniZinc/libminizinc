@@ -113,9 +113,11 @@ predicate array_bool_or(array[int] of var bool: as, var bool: r);
 predicate array_bool_xor(array[int] of var bool: as);
 predicate array_bool_element(var int: b, array[int] of bool: as, var bool: c);
 predicate array_int_element(var int: b, array[int] of int: as, var int: c);
+predicate array_float_element(var int: b, array[int] of float: as, var float: c);
 predicate array_set_element(var int: b, array[int] of set of int: as, var set of int: c);
 predicate array_var_bool_element(var int: b, array[int] of var bool: as, var bool: c);
 predicate array_var_int_element(var int: b, array[int] of var int: as, var int: c);
+predicate array_var_float_element(var int: b, array[int] of var float: as, var float: c);
 predicate array_var_set_element(var int: b, array[int] of var set of int: as, var set of int: c);
 
 %Boolean constraints
@@ -250,19 +252,124 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     constraint idx3 in index_set_3of3(x);
   } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
 
-function var int: element(var int: idx1, var int: idx2, var int: idx3,
+function var int: element(int: idx1, int: idx2, var int: idx3,
                           array[int,int,int] of int: x) =
+  if (idx1 in index_set_1of3(x) /\ idx2 in index_set_2of3(x) /\
+      has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) then
+  (let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+  } in element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+  )
+  else (
   let {
     int: dim2 = card(index_set_2of3(x));
     int: dim3 = card(index_set_3of3(x));
-
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
     constraint idx1 in index_set_1of3(x);
     constraint idx2 in index_set_2of3(x);
     constraint idx3 in index_set_3of3(x);
-  } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
+  } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+  ) endif;
+
+%%%%%%%%%%%%%%%%%%%
+% Element on floats
+
+function var float: element_t(var int: idx, array[int] of var float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    constraint array_var_float_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+  } in r;
+
+function var float: element_mt(var int: idx, array[int] of var float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    var min(index_set(x))..max(index_set(x)): idx2;
+    constraint idx in index_set(x) -> idx2=idx;
+    constraint idx in index_set(x) \/ idx2=min(index_set(x));
+    constraint array_var_float_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+  } in r;
+
+function var float: element(var int: idx, array[int] of var float: x) =
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+    element_t(idx,x)
+  else let {
+    constraint idx in index_set(x)
+  } in element_mt(idx,x)
+  endif;
+
+function var float: element_t(var int: idx, array[int] of float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    constraint array_float_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+  } in r;
+
+function var float: element_mt(var int: idx, array[int] of float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    var min(index_set(x))..max(index_set(x)): idx2;
+    constraint idx in index_set(x) -> idx2=idx;
+    constraint idx in index_set(x) \/ idx2=min(index_set(x));
+    constraint array_float_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+  } in r;
+
+function var float: element(var int: idx, array[int] of float: x) =
+  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+    element_t(idx,x)
+  else let {
+    constraint idx in index_set(x)
+  } in element_mt(idx,x)
+  endif;
+
+function var float: element(var int: idx1, int: idx2,
+                            array[int,int] of var float: x) =
+  element(idx1,
+          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
+                  [x[i,idx2] | i in index_set_1of2(x)]));
+
+function var float: element(int: idx1, var int: idx2,
+                            array[int,int] of var float: x) =
+  element(idx2,
+          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
+                  [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var float: element(var int: idx1, var int: idx2,
+                            array[int,int] of var float: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
+function var float: element(var int: idx1, int: idx2,
+                            array[int,int] of float: x) =
+  element(idx1,
+          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
+                  [x[i,idx2] | i in index_set_1of2(x)]));
+
+function var float: element(int: idx1, var int: idx2,
+                            array[int,int] of float: x) =
+  element(idx2,
+          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
+                  [x[idx1,i] | i in index_set_2of2(x)]));
+
+function var float: element(var int: idx1, var int: idx2,
+                            array[int,int] of float: x) =
+  let {
+    int: dim = card(index_set_2of2(x));
+    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+
+%%%%%%%%%%%%%%%%%
+% Element on sets
 
 function var set of int: element_t(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
@@ -339,6 +446,7 @@ function var bool: '<='(var $T,var $T);
 function     bool: '>='(    $T,    $T);
 function var bool: '>='(var $T,var $T);
 function     bool: '='(    $T,    $T);
+function     bool: '='(opt $T, opt $T);
 function var bool: '='(var $T,var $T);
 function var bool: '='(var opt $T,var opt $T);
 function     bool: '!='(    $T,    $T);
@@ -781,6 +889,8 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
   else x[min(index_set(x))] intersect
        array_intersect_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
   endif;
+
+function set of int: '++'(set of int: x, set of int: y) = x union y;
 
 % Array operations
 function int: length(array[$T] of var opt $U);
