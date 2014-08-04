@@ -82,9 +82,9 @@ namespace MiniZinc {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
     if (loc.filename=="") {
-      s << " in unknown file";
+      s << "unknown file";
     } else {
-      s << " in file " << loc.filename << ":" << loc.first_line;
+      s << loc.filename << ":" << loc.first_line;
     }
     return os << s.str();
   }
@@ -1158,6 +1158,8 @@ namespace MiniZinc {
       BoolLit* lit_false;
       /// Variable bound to false
       VarDecl* var_false;
+      /// Infinite set
+      SetLit* infinity;
       /// Function item used to keep track of redefined variables
       FunctionI* var_redef;
       /// Literal absent value

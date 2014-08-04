@@ -53,7 +53,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << "In file " << location->filename << ", line "
+  pp->err << location->filename << ":"
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
   for (unsigned int i=0; i<location->first_column-1; i++)
@@ -87,7 +87,6 @@ void filepath(const string& f, string& dirname, string& basename) {
 // see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
 std::string get_file_contents(std::ifstream &in)
 {
-  //std::ifstream in(filename, std::ios::in | std::ios::binary);
   if (in)
   {
     std::string contents;
@@ -173,12 +172,12 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
-        file.open(fullname.c_str());
+        file.open(fullname.c_str(), std::ios::binary);
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
-          file.open(fullname.c_str());
+          file.open(fullname.c_str(), std::ios::binary);
           if (file.is_open())
             break;
         }
@@ -278,12 +277,12 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
-        file.open(fullname.c_str());
+        file.open(fullname.c_str(), std::ios::binary);
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
-          file.open(fullname.c_str());
+          file.open(fullname.c_str(), std::ios::binary);
           if (file.is_open())
             break;
         }
@@ -317,7 +316,7 @@ namespace MiniZinc {
         s = f.substr(5);
       } else {
         std::ifstream file;
-        file.open(f.c_str());
+        file.open(f.c_str(), std::ios::binary);
         if (!file.is_open()) {
           err << "Error: cannot open data file '" << f << "'." << endl;
           goto error;
@@ -398,9 +397,9 @@ namespace MiniZinc {
     } else {
       for (unsigned int i=0; i<includePaths.size(); i++) {
         fullname = includePaths[i]+f;
-        file.open(fullname.c_str());
+        file.open(fullname.c_str(), std::ios::binary);
         if (file.is_open())
-        break;
+          break;
       }
     }
     if (!file.is_open()) {
@@ -431,7 +430,7 @@ namespace MiniZinc {
       s = f.substr(5);
     } else {
       std::ifstream file;
-      file.open(f.c_str());
+      file.open(f.c_str(), std::ios::binary);
       if (!file.is_open()) {
         err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
@@ -483,7 +482,8 @@ namespace MiniZinc {
 
 %initial-action
 {
-  @$.filename = static_cast<ParserState*>(parm)->model->filepath();
+  GCLock lock;
+  @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
 }
 
 %token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
@@ -509,6 +509,7 @@ namespace MiniZinc {
 %token MZN_FUNCTION
 %token MZN_IF
 %token MZN_INCLUDE
+%token MZN_INFINITY
 %token MZN_INT
 %token MZN_LET
 %token MZN_LIST
@@ -839,44 +840,44 @@ base_ti_expr :
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
         Type tt = $$->type();
-        tt._ot = Type::OT_OPTIONAL;
+        tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
         if ($2) {
           Type tt = $$->type();
-          tt._ot = Type::OT_OPTIONAL;
+          tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
         }
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
         Type tt = $$->type();
-        tt._ti = Type::TI_VAR;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.ti(Type::TI_VAR);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         Type tt = $$->type();
-        tt._st = Type::ST_SET;
-        if ($1) tt._ot = Type::OT_OPTIONAL;
+        tt.st(Type::ST_SET);
+        if ($1) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         Type tt = $$->type();
-        tt._st = Type::ST_SET;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.st(Type::ST_SET);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         Type tt = $$->type();
-        tt._ti = Type::TI_VAR;
-        tt._st = Type::ST_SET;
-        if ($2) tt._ot = Type::OT_OPTIONAL;
+        tt.ti(Type::TI_VAR);
+        tt.st(Type::ST_SET);
+        if ($2) tt.ot(Type::OT_OPTIONAL);
         $$->type(tt);
       }
 
@@ -954,7 +955,16 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { $$=new UnOp(@$, UOT_MINUS, $2); }
+      { if ($2->isa<IntLit>()) {
+          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
+          $$ = $2;
+        } else if ($2->isa<FloatLit>()) {
+          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
+          $$ = $2;
+        } else {
+          $$=new UnOp(@$, UOT_MINUS, $2);
+        }
+      }
 
 ///
 
@@ -1064,6 +1074,8 @@ expr_atom_head :
       { $$=new BoolLit(@$, ($1!=0)); }
     | MZN_INTEGER_LITERAL
       { $$=new IntLit(@$, $1); }
+    | MZN_INFINITY
+      { $$=new IntLit(@$, IntVal::infinity); }
     | MZN_FLOAT_LITERAL
       { $$=new FloatLit(@$, $1); }
     | MZN_STRING_LITERAL

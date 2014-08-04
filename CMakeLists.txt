@@ -1,10 +1,10 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX)
 
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH "b1")
+set (libminizinc_VERSION_PATCH "b3")
 
 include(CheckCXXCompilerFlag)
 
@@ -65,7 +65,46 @@ if (NOT HAS_ATTR_THREAD)
 endif()
 
 CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
-int main(void) { long long int x = atoll(\"123\");}" HAS_ATOLL)
+int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <libproc.h>
+#include <unistd.h>
+
+int main (int argc, char* argv[])
+{
+    pid_t pid = getpid(); 
+    char path[PROC_PIDPATHINFO_MAXSIZE];
+    (void) proc_pidpath (pid, path, sizeof(path));
+    return 0;
+}
+" HAS_PIDPATH)
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <windows.h>
+int main (int argc, char* argv[]) {
+  char path[MAX_PATH];
+  (void) GetModuleFileName(NULL, path, MAX_PATH);
+  return 0;
+}" HAS_GETMODULEFILENAME)
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <windows.h>
+int main (int argc, char* argv[]) {
+  (void) GetFileAttributes(NULL);
+  return 0;
+}" HAS_GETFILEATTRIBUTES)
+
+CHECK_CXX_SOURCE_COMPILES("
+#include <string.h>
+int main (int argc, char* argv[]) {
+  (void) strncpy_s(NULL,0,NULL,0);
+  return 0;
+}" HAS_STRNCPY_S)
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
@@ -82,31 +121,56 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 
 add_custom_target(MZNParser echo "Creating parser")
 
-add_custom_command(
-  SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-  COMMAND "flex"
-  ARGS -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
-       "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-  TARGET MZNParser
-  OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
-)
+# When updating the cached files, update MD5 sums defined in this file
+include(${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake)
+
+macro(MD5 filename md5sum)
+	file(READ "${filename}" RAW_MD5_FILE)
+	string(REGEX REPLACE "\r" "" STRIPPED_MD5_FILE "${RAW_MD5_FILE}")
+	string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
+endmacro(MD5)
+
+find_program(FLEX_EXEC flex)
+if(FLEX_EXEC)
+	add_custom_command(
+		SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+		COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+		TARGET MZNParser
+		OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+		)
+	set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
+	set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
+else(FLEX_EXEC)
+	MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
+	if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+		message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
+	endif()
+	set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
+endif(FLEX_EXEC)
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
 
-add_custom_command(
-  SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-  COMMAND "bison"
-  ARGS -o "${PROJECT_BINARY_DIR}/parser.tab.cpp"
-       --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
-       "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-  TARGET MZNParser
-  DEPENDS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
-  OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp" 
-          "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
-)
+find_program(BISON_EXEC bison)
+if(BISON_EXEC)
+	add_custom_command(
+		SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+		COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+		TARGET MZNParser
+		DEPENDS "${lexer_cpp}"
+		OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp"
+		"${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+		)
+	set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
+	set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
+else(BISON_EXEC)
+	MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
+	if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
+		message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
+	endif()
+	include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
+	set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
+endif(BISON_EXEC)
 
-set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
-set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 
 add_library(minizinc
 lib/ast.cpp
@@ -115,10 +179,11 @@ lib/astvec.cpp
 lib/builtins.cpp
 lib/copy.cpp
 lib/eval_par.cpp
+lib/file_utils.cpp
 lib/gc.cpp
-"${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+"${lexer_cpp}"
 lib/model.cpp
-"${PROJECT_BINARY_DIR}/parser.tab.cpp"
+"${parser_cpp}"
 lib/prettyprinter.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
@@ -128,6 +193,7 @@ lib/lexer.lxx
 lib/values.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
+include/minizinc/astexception.hh
 include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
@@ -136,6 +202,7 @@ include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
 include/minizinc/exception.hh
+include/minizinc/file_utils.hh
 include/minizinc/flatten.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
@@ -172,6 +239,7 @@ INSTALL(FILES ${PROJECT_BINARY_DIR}/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)
+INSTALL(DIRECTORY lib/cached DESTINATION lib)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})

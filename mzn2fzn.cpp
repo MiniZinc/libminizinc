@@ -8,7 +8,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
+
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -18,11 +22,12 @@
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
+#include <minizinc/file_utils.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -40,7 +45,6 @@ bool beginswith(string s, string t) {
 }
 
 int main(int argc, char** argv) {
-  int i=1;
   string filename;
   vector<string> datafiles;
   vector<string> includePaths;  
@@ -73,7 +77,7 @@ int main(int argc, char** argv) {
 
   GC::init();
   
-  for (;;) {
+  for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
     if (string(argv[i])==string("--version")) {
@@ -208,13 +212,46 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])=="--only-range-domains") {
       fopts.onlyRangeDomains = true;
     } else {
-      break;
+      std::string input_file(argv[i]);
+      if (input_file.length()<=4) {
+        std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
+        goto error;
+      }
+      std::string extension = input_file.substr(input_file.length()-4,string::npos);
+      if (extension == ".mzn") {
+        if (filename=="") {
+          filename = input_file;
+        } else {
+          std::cerr << "Error: Multiple .mzn files given." << std::endl;
+          goto error;
+        }
+      } else if (extension == ".dzn") {
+        datafiles.push_back(input_file);
+      } else {
+        std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+        goto error;
+      }
     }
-    i++;
-    if (i==argc)
-      goto error;
   }
 
+  if (filename=="") {
+    std::cerr << "Error: no model file given." << std::endl;
+    goto error;
+  }
+  
+  if (std_lib_dir=="") {
+    std::string mypath = FileUtils::progpath();
+    if (!mypath.empty()) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../share/minizinc";
+      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+        std_lib_dir = mypath+"/../../share/minizinc";
+      }
+    }
+  }
+  
   if (std_lib_dir=="") {
     std::cerr << "Error: unknown minizinc standard library directory.\n"
               << "Specify --stdlib-dir on the command line or set the\n"
@@ -227,13 +264,12 @@ int main(int argc, char** argv) {
   }
   includePaths.push_back(std_lib_dir+"/std/");
   
-  if (i==argc) {
-    goto error;
+  for (unsigned int i=0; i<includePaths.size(); i++) {
+    if (!FileUtils::directory_exists(includePaths[i])) {
+      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+      std::exit(EXIT_FAILURE);
+    }
   }
-  filename = argv[i++];
-  if (filename.length()<=4 ||
-      filename.substr(filename.length()-4,string::npos) != ".mzn")
-    goto error;
   
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
@@ -243,14 +279,6 @@ int main(int argc, char** argv) {
   }
   if (flag_output_ozn == "") {
     flag_output_ozn = flag_output_base+".ozn";
-  }
-  
-  while (i<argc) {
-    std::string datafile = argv[i++];
-    if (datafile.length()<=4 ||
-        datafile.substr(datafile.length()-4,string::npos) != ".dzn")
-      goto error;
-    datafiles.push_back(datafile);
   }
 
   {
@@ -271,8 +299,8 @@ int main(int argc, char** argv) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
                 std::cerr << std::endl;
+              std::cerr << typeErrors[i].loc() << ":" << std::endl;
               std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-              std::cerr << typeErrors[i].loc() << std::endl;              
             }
             exit(EXIT_FAILURE);
           }
@@ -289,8 +317,8 @@ int main(int argc, char** argv) {
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;
+              std::cerr << e.loc() << ":" << std::endl;
               std::cerr << e.what() << ": " << e.msg() << std::endl;
-              std::cerr << e.loc() << std::endl;
               env.dumpErrorStack(std::cerr);
               exit(EXIT_FAILURE);
             }
@@ -352,8 +380,8 @@ int main(int argc, char** argv) {
       } catch (LocationException& e) {
         if (flag_verbose)
           std::cerr << std::endl;
+        std::cerr << e.loc() << ":" << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
-        std::cerr << e.loc() << std::endl;
         exit(EXIT_FAILURE);
       } catch (Exception& e) {
         if (flag_verbose)

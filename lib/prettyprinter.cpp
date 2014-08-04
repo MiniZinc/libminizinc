@@ -18,7 +18,7 @@
 #include <map>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/model.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/hash.hh>
 
@@ -125,6 +125,9 @@ namespace MiniZinc {
         case '\'':
           ret += "\\\'";
           break;
+        case '\\':
+          ret += "\\\\";
+          break;
         default:
           ret += sc[i];
       }
@@ -139,17 +142,17 @@ namespace MiniZinc {
     PlainPrinter(std::ostream& os0, bool flatZinc) : os(os0), _flatZinc(flatZinc) {}
 
     void p(const Type& type, const Expression* e) {
-      switch (type._ti) {
+      switch (type.ti()) {
       case Type::TI_PAR: break;
       case Type::TI_VAR: os << "var "; break;
       case Type::TI_SVAR: os << "svar "; break;
       }
-      if (type._ot==Type::OT_OPTIONAL)
+      if (type.ot()==Type::OT_OPTIONAL)
         os << "opt ";
-      if (type._st==Type::ST_SET)
+      if (type.st()==Type::ST_SET)
         os << "set of ";
       if (e==NULL) {
-        switch (type._bt) {
+        switch (type.bt()) {
         case Type::BT_INT: os << "int"; break;
         case Type::BT_BOOL: os << "bool"; break;
         case Type::BT_FLOAT: os << "float"; break;
@@ -197,15 +200,24 @@ namespace MiniZinc {
             } else if (sl.isv()->size()==1) {
               os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
             } else {
+              if (!sl.isv()->min(0).isFinite())
+                os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << "++";
               os << "{";
-              IntSetRanges isr(sl.isv());
-              Ranges::ToValues<IntSetRanges> isv(isr);
-              while (isv()) {
-                os << isv.val();
-                ++isv;
-                if (isv()) os << ",";
-              };
+              for (IntSetRanges isr(sl.isv()); isr();) {
+                if (isr.min().isFinite() && isr.max().isFinite()) {
+                  for (IntVal i=isr.min(); i<=isr.max(); i++) {
+                    os << i;
+                    if (i<isr.max())
+                      os << ",";
+                  }
+                  ++isr;
+                  if (isr())
+                    os << ",";
+                }
+              }
               os << "}";
+              if (!sl.isv()->max(sl.isv()->size()-1).isFinite())
+                os << "++" << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
             }
           } else {
             os << "{";
@@ -664,6 +676,7 @@ namespace MiniZinc {
         return _t.mapTIId(*e->cast<TIId>());
       default:
         assert(false);
+	return typename T::ret();
         break;
       }
     }
@@ -974,17 +987,17 @@ namespace MiniZinc {
   Document* annotationToDocument(const Annotation& ann);
   Document* tiexpressionToDocument(const Type& type, const Expression* e) {
     DocumentList* dl = new DocumentList("","","",false);
-    switch (type._ti) {
+    switch (type.ti()) {
     case Type::TI_PAR: break;
     case Type::TI_VAR: dl->addStringToList("var "); break;
     case Type::TI_SVAR: dl->addStringToList("svar "); break;
     }
-    if (type._ot==Type::OT_OPTIONAL)
+    if (type.ot()==Type::OT_OPTIONAL)
       dl->addStringToList("opt ");
-    if (type._st==Type::ST_SET)
+    if (type.st()==Type::ST_SET)
       dl->addStringToList("set of ");
     if (e==NULL) {
-      switch (type._bt) {
+      switch (type.bt()) {
       case Type::BT_INT: dl->addStringToList("int"); break;
       case Type::BT_BOOL: dl->addStringToList("bool"); break;
       case Type::BT_FLOAT: dl->addStringToList("float"); break;

@@ -28,6 +28,10 @@ extern "C" int isatty(int);
 #define fileno _fileno
 #endif
 
+#if defined(_MSC_VER)
+#pragma warning(disable:4065)
+#endif
+
 #include <minizinc/model.hh>
 #include <minizinc/parser.tab.hh>
 

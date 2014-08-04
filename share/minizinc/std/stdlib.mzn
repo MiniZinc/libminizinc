@@ -135,6 +135,8 @@ annotation time;
 % Option type predicates.
 %
 
+function $T: deopt(opt $T);
+
 function var bool: occurs_internal(var opt bool: x) ::promise_total =
   let { var bool : b; } in b;
 function var bool : deopt_internal(var opt bool : x) ::promise_total =
@@ -182,6 +184,8 @@ predicate forall (array[int] of var opt bool: x) =
 predicate exists (array[int] of var opt bool: x) =
   exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
 
+function var bool: 'not'(var opt bool: x) = absent(x) \/ not deopt(x);
+
 function bool: occurs(var int: x) ::promise_total = true;
 function bool: occurs(int: x) ::promise_total = true;
 test occurs(opt int: x) ::promise_total;
@@ -218,6 +222,10 @@ function var int : deopt(var opt int : x) ::promise_total =
 predicate int_eq(var opt int : x, var opt int : y) =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
+
+predicate int_ne(var opt int : x, var opt int : y) =
+     (absent(x) != absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ deopt(x)!=deopt(y));
 
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
@@ -284,6 +292,11 @@ function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) 
 
 function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

@@ -14,7 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 
 namespace MiniZinc {
 

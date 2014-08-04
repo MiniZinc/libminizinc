@@ -88,7 +88,11 @@ namespace MiniZinc { namespace Ranges {
   }
   inline IntVal
   MinMax::width(void) const {
-    return ma-mi+1;
+    if (mi > ma)
+      return 0;
+    if (mi.isFinite() && ma.isFinite())
+      return ma-mi+1;
+    return IntVal::infinity;
   }
   
   
@@ -121,7 +125,7 @@ namespace MiniZinc { namespace Ranges {
     /// Return largest value of range
     IntVal max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    UIntVal width(void) const;
+    IntVal width(void) const;
     //@}
   };
 
@@ -171,9 +175,13 @@ namespace MiniZinc { namespace Ranges {
     return use_max ? std::min(_max,i.max()) : i.max();
   }
   template<class I>
-  inline UIntVal
+  inline IntVal
   Bounded<I>::width(void) const {
-    return static_cast<UIntVal>(max()-min())+1;
+    if (min() > max())
+      return 0;
+    if (min().isFinite() && max().isFinite())
+      return max()-min()+1;
+    return IntVal::infinity;
   }
 
   class Const {
@@ -218,7 +226,13 @@ namespace MiniZinc { namespace Ranges {
   inline IntVal
   Const::max(void) const { return _max; }
   inline IntVal
-  Const::width(void) const { return max()-min()+1; }
+  Const::width(void) const {
+    if (min() > max())
+      return 0;
+    if (min().isFinite() && max().isFinite())
+      return max()-min()+1;
+    return IntVal::infinity;
+  }
   
   /**
    * \brief Range iterator for computing union (binary)
@@ -266,10 +280,10 @@ namespace MiniZinc { namespace Ranges {
       finish(); return;
     }
 
-    if (!i() || (j() && (j.max()+1 < i.min()))) {
+    if (!i() || (j() && (j.max().plus(1) < i.min()))) {
       mi = j.min(); ma = j.max(); ++j; return;
     }
-    if (!j() || (i() && (i.max()+1 < j.min()))) {
+    if (!j() || (i() && (i.max().plus(1) < j.min()))) {
       mi = i.min(); ma = i.max(); ++i; return;
     }
 
@@ -279,11 +293,11 @@ namespace MiniZinc { namespace Ranges {
     ++i; ++j;
 
   next:
-    if (i() && (i.min() <= ma+1)) {
+    if (i() && (i.min() <= ma.plus(1))) {
       ma = std::max(ma,i.max()); ++i;
       goto next;
     }
-    if (j() && (j.min() <= ma+1)) {
+    if (j() && (j.min() <= ma.plus(1))) {
       ma = std::max(ma,j.max()); ++j;
       goto next;
     }
@@ -423,7 +437,7 @@ namespace MiniZinc { namespace Ranges {
     // Task: find next mi greater than ma
     while (true) {
       if (!i()) break;
-      mi = ma+1;
+      mi = ma.plus(1);
       ma = i.max();
       if (mi > i.max()) {
         ++i;
@@ -440,13 +454,13 @@ namespace MiniZinc { namespace Ranges {
           continue;
         // Does [mi ... ma] overlap on the left?
         if (j.min() <= mi) {
-          mi = j.max()+1;
+          mi = j.max().plus(1);
           // Search for max!
           ++j;
           if (j() && (j.min() <= ma))
-            ma = j.min()-1;
+            ma = j.min().minus(1);
         } else {
-          ma = j.min()-1;
+          ma = j.min().minus(1);
         }
       }
       return;
@@ -465,7 +479,7 @@ namespace MiniZinc { namespace Ranges {
     if (!i()) {
       finish();
     } else {
-      mi = i.min()-1; ma = mi;
+      mi = i.min().minus(1); ma = mi;
       operator ++();
     }
   }
@@ -477,7 +491,7 @@ namespace MiniZinc { namespace Ranges {
     if (!i()) {
       finish();
     } else {
-      mi = i.min()-1; ma = mi;
+      mi = i.min().minus(1); ma = mi;
       operator ++();
     }
   }
@@ -620,7 +634,11 @@ namespace MiniZinc { namespace Ranges {
   size(I& i) {
     IntVal s = 0;
     while (i()) {
-      s += i.width(); ++i;
+      if (i.width().isFinite()) {
+        s += i.width(); ++i;
+      } else {
+        return IntVal::infinity;
+      }
     }
     return s;
   }

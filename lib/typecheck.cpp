@@ -12,7 +12,7 @@
 #include <minizinc/typecheck.hh>
 
 #include <minizinc/astiterator.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/hash.hh>
 
 #include <string>
@@ -262,18 +262,18 @@ namespace MiniZinc {
     void vBoolLit(const BoolLit&) {}
     /// Visit set literal
     void vSetLit(SetLit& sl) {
-      Type ty; ty._st = Type::ST_SET;
+      Type ty; ty.st(Type::ST_SET);
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().isvar())
-          ty._ti = Type::TI_VAR;
-        if (ty._bt!=sl.v()[i]->type()._bt) {
-          if (ty._bt!=Type::BT_UNKNOWN)
+          ty.ti(Type::TI_VAR);
+        if (ty.bt() != sl.v()[i]->type().bt()) {
+          if (ty.bt() != Type::BT_UNKNOWN)
             throw TypeError(sl.loc(),"non-uniform set literal");
-          ty._bt = sl.v()[i]->type()._bt;
+          ty.bt(sl.v()[i]->type().bt());
         }
       }
-      if (ty._bt == Type::BT_UNKNOWN)
-        ty._bt = Type::BT_BOT;
+      if (ty.bt() == Type::BT_UNKNOWN)
+        ty.bt(Type::BT_BOT);
       sl.type(ty);
     }
     /// Visit string literal
@@ -289,57 +289,57 @@ namespace MiniZinc {
     void vAnonVar(const AnonVar&) {}
     /// Visit array literal
     void vArrayLit(ArrayLit& al) {
-      Type ty; ty._dim = al.dims();
+      Type ty; ty.dim(al.dims());
       std::vector<AnonVar*> anons;
       bool haveInferredType = false;
       for (unsigned int i=0; i<al.v().size(); i++) {
         Expression* vi = al.v()[i];
         AnonVar* av = vi->dyn_cast<AnonVar>();
         if (av) {
-          ty._ti = Type::TI_VAR;
+          ty.ti(Type::TI_VAR);
           anons.push_back(av);
         } else if (vi->type().isvar()) {
-          ty._ti = Type::TI_VAR;
+          ty.ti(Type::TI_VAR);
         }
         if (vi->type().isopt()) {
-          ty._ot = Type::OT_OPTIONAL;
+          ty.ot(Type::OT_OPTIONAL);
         }
         
-        if (ty._bt==Type::BT_UNKNOWN) {
+        if (ty.bt()==Type::BT_UNKNOWN) {
           if (av == NULL) {
             if (haveInferredType) {
-              if (ty._st != vi->type()._st) {
+              if (ty.st() != vi->type().st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             } else {
               haveInferredType = true;
-              ty._st = vi->type()._st;
+              ty.st(vi->type().st());
             }
-            if (vi->type()._bt != Type::BT_BOT) {
-              ty._bt = vi->type()._bt;
+            if (vi->type().bt() != Type::BT_BOT) {
+              ty.bt(vi->type().bt());
             }
           }
         } else {
           if (av == NULL) {
-            if (vi->type()._bt == Type::BT_BOT) {
-              if (vi->type()._st != ty._st) {
+            if (vi->type().bt() == Type::BT_BOT) {
+              if (vi->type().st() != ty.st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             } else {
-              if (ty._bt != vi->type()._bt || ty._st != vi->type()._st) {
+              if (ty.bt() != vi->type().bt() || ty.st() != vi->type().st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             }
           }
         }
       }
-      if (ty._bt == Type::BT_UNKNOWN) {
-        ty._bt = Type::BT_BOT;
+      if (ty.bt() == Type::BT_UNKNOWN) {
+        ty.bt(Type::BT_BOT);
         if (!anons.empty())
           throw TypeError(al.loc(),"array literal must contain at least one non-anonymous variable");
       } else {
         Type at = ty;
-        at._dim = 0;
+        at.dim(0);
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
         }
@@ -348,16 +348,19 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(ArrayAccess& aa) {
-      if (aa.v()->type()._dim==0)
+      if (aa.v()->type().dim()==0)
         throw TypeError(aa.v()->loc(),"not an array in array access");
-      if (aa.v()->type()._dim != aa.idx().size())
+      if (aa.v()->type().dim() != aa.idx().size())
         throw TypeError(aa.v()->loc(),"array dimensions do not match");
       bool allpar=true;
       bool allpresent=true;
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
-        if (aai->type().isset() || aai->type()._bt != Type::BT_INT ||
-            aai->type()._dim != 0) {
+        if (aai->isa<AnonVar>()) {
+          aai->type(Type::varint());
+        }
+        if (aai->type().isset() || aai->type().bt() != Type::BT_INT ||
+            aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be int");
         }
         if (aai->type().isopt()) {
@@ -368,11 +371,11 @@ namespace MiniZinc {
         }
       }
       Type tt = aa.v()->type();
-      tt._dim = 0;
+      tt.dim(0);
       if (!allpar)
-        tt._ti = Type::TI_VAR;
+        tt.ti(Type::TI_VAR);
       if (!allpresent)
-        tt._ot = Type::OT_OPTIONAL;
+        tt.ot(Type::OT_OPTIONAL);
       aa.type(tt);
     }
     /// Visit array comprehension
@@ -399,20 +402,20 @@ namespace MiniZinc {
       }
       Type tt = c.e()->type();
       if (c.set()) {
-        if (c.e()->type()._dim != 0 || c.e()->type()._st == Type::ST_SET)
+        if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(c.e()->loc(),
               "set comprehension expression must be scalar, but is "
               +c.e()->type().toString());
-        tt._st = Type::ST_SET;
+        tt.st(Type::ST_SET);
       } else {
-        if (c.e()->type()._dim != 0)
+        if (c.e()->type().dim() != 0)
           throw TypeError(c.e()->loc(),
             "array comprehension expression cannot be an array");
-        tt._dim = 1;
+        tt.dim(1);
       }
       if (needsOptionTypes) {
-        tt._ot = Type::OT_OPTIONAL;
-        tt._ti = Type::TI_VAR;
+        tt.ot(Type::OT_OPTIONAL);
+        tt.ti(Type::TI_VAR);
       }
       c.type(tt);
     }
@@ -431,11 +434,11 @@ namespace MiniZinc {
             "expected bool conditional expression, got\n  "+
             eif->type().toString());
         if (tret.isbot()) {
-          tret._bt = ethen->type()._bt;
+          tret.bt(ethen->type().bt());
         }
-        if ( (!ethen->type().isbot() && ethen->type()._bt != tret._bt) ||
-            ethen->type()._st != tret._st ||
-            ethen->type()._dim != tret._dim) {
+        if ( (!ethen->type().isbot() && ethen->type().bt() != tret.bt()) ||
+            ethen->type().st() != tret.st() ||
+            ethen->type().dim() != tret.dim()) {
           throw TypeError(ethen->loc(),
             "type mismatch in branches of conditional. Then-branch has type "+
             ethen->type().toString()+", but else branch has type "+
@@ -447,10 +450,10 @@ namespace MiniZinc {
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
-      if (!allpar)
-        tret._ti = Type::TI_VAR;
+      if (varcond || !allpar)
+        tret.ti(Type::TI_VAR);
       if (!allpresent)
-        tret._ot = Type::OT_OPTIONAL;
+        tret.ot(Type::OT_OPTIONAL);
       ite.type(tret);
     }
     /// Visit binary operator
@@ -458,9 +461,9 @@ namespace MiniZinc {
       std::vector<Expression*> args(2);
       args[0] = bop.lhs(); args[1] = bop.rhs();
       if (bop.op()==BOT_PLUSPLUS &&
-        bop.lhs()->type()._dim==1 && bop.rhs()->type()._dim==1 &&
-        bop.lhs()->type()._st==bop.rhs()->type()._st &&
-        bop.lhs()->type()._bt==bop.rhs()->type()._bt) {
+        bop.lhs()->type().dim()==1 && bop.rhs()->type().dim()==1 &&
+        bop.lhs()->type().st()==bop.rhs()->type().st() &&
+        bop.lhs()->type().bt()==bop.rhs()->type().bt()) {
         if (bop.lhs()->type().isvar())
           bop.type(bop.lhs()->type());
         else
@@ -566,27 +569,27 @@ namespace MiniZinc {
               ri->type().toString());
           }
         }
-        tt._dim = foundTIId ? -1 : ti.ranges().size();
+        tt.dim(foundTIId ? -1 : ti.ranges().size());
       }
       if (ti.domain() && !ti.domain()->isa<TIId>()) {
-        if (ti.domain()->type()._ti != Type::TI_PAR ||
-            ti.domain()->type()._st != Type::ST_SET)
+        if (ti.domain()->type().ti() != Type::TI_PAR ||
+            ti.domain()->type().st() != Type::ST_SET)
           throw TypeError(ti.domain()->loc(),
             "type-inst must be par set");
-        if (ti.domain()->type()._dim != 0)
+        if (ti.domain()->type().dim() != 0)
           throw TypeError(ti.domain()->loc(),
             "type-inst cannot be an array");
       }
       if (tt.isunknown()) {
         assert(ti.domain());
-        switch (ti.domain()->type()._bt) {
+        switch (ti.domain()->type().bt()) {
         case Type::BT_INT:
         case Type::BT_FLOAT:
           break;
         case Type::BT_BOT:
           {
             Type tidt = ti.domain()->type();
-            tidt._bt = Type::BT_INT;
+            tidt.bt(Type::BT_INT);
             ti.domain()->type(tidt);
           }
           break;
@@ -594,7 +597,7 @@ namespace MiniZinc {
           throw TypeError(ti.domain()->loc(),
             "type-inst must be int or float");
         }
-        tt._bt = ti.domain()->type()._bt;
+        tt.bt(ti.domain()->type().bt());
       } else {
 //        assert(ti.domain()==NULL || ti.domain()->isa<TIId>());
       }
@@ -760,7 +763,7 @@ namespace MiniZinc {
               {
                 BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
                 if (bo->op()==BOT_DOTDOT) {
-                  t._bt = bo->lhs()->type()._bt;
+                  t.bt(bo->lhs()->type().bt());
                   if (t.isunknown()) {
                     throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
                   }
@@ -775,7 +778,7 @@ namespace MiniZinc {
                 if (it == declMap.end()) {
                   throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
                 }
-                t._bt = (*m)[it->second]->cast<VarDeclI>()->e()->type()._bt;
+                t.bt((*m)[it->second]->cast<VarDeclI>()->e()->type().bt());
                 if (t.isunknown()) {
                   throw TypeError(vdi->e()->loc(), "Cannot determine type of variable declaration");
                 }

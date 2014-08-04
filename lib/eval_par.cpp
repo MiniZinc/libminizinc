@@ -10,7 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include <minizinc/exception.hh>
+#include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/copy.hh>
@@ -274,7 +274,7 @@ namespace MiniZinc {
         return ret;
       }
     }
-    assert(false);
+    assert(false); return NULL;
   }
 
   Expression* eval_arrayaccess(ArrayLit* al, const std::vector<IntVal>& dims,
@@ -290,7 +290,7 @@ namespace MiniZinc {
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
         Type t = al->type();
-        t._dim = 0;
+        t.dim(0);
         if (t.isint())
           return new IntLit(Location(),0);
         if (t.isbool())
@@ -308,7 +308,7 @@ namespace MiniZinc {
       realidx += (ix-al->min(i))*realdim;
     }
     assert(realidx >= 0 && realidx <= al->v().size());
-    return al->v()[realidx.toInt()];
+    return al->v()[static_cast<unsigned int>(realidx.toInt())];
   }
   Expression* eval_arrayaccess(ArrayAccess* e, bool& success) {
     ArrayLit* al = eval_array_lit(e->v());
@@ -458,6 +458,7 @@ namespace MiniZinc {
         return ret;
       }
       break;
+    default: assert(false); return NULL;
     }
   }
 
@@ -502,6 +503,12 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if ( bo->op()==BOT_EQ && (bo->lhs()->type().isopt() || bo->rhs()->type().isopt()) ) {
+          Expression* elhs = eval_par(bo->lhs());
+          Expression* erhs = eval_par(bo->rhs());
+          if (elhs == constants().absent || erhs==constants().absent)
+            return bo->lhs()==bo->rhs();
+        }
         if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
           switch (bo->op()) {
           case BOT_LE: return eval_bool(bo->lhs())<eval_bool(bo->rhs());
@@ -636,98 +643,104 @@ namespace MiniZinc {
         return ret;
       }
       break;
+    default: assert(false); return NULL;
     }
   }
 
   IntVal eval_int(Expression* e) {
-    switch (e->eid()) {
-    case Expression::E_INTLIT: return e->cast<IntLit>()->v();
-    case Expression::E_FLOATLIT:
-    case Expression::E_BOOLLIT:
-    case Expression::E_STRINGLIT:
-    case Expression::E_ANON:
-    case Expression::E_TIID:
-    case Expression::E_SETLIT:
-    case Expression::E_ARRAYLIT:
-    case Expression::E_COMP:
-    case Expression::E_VARDECL:
-    case Expression::E_TI:
-      throw EvalError(e->loc(),"not an integer expression");
-      break;
-    case Expression::E_ID:
-      {
-        GCLock lock;
-        return eval_id<EvalIntLit>(e)->v();
-      }
-      break;
-    case Expression::E_ARRAYACCESS:
-      {
-        GCLock lock;
-        return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
-      }
-      break;
-    case Expression::E_ITE:
-      {
-        ITE* ite = e->cast<ITE>();
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(ite->e_if(i)))
-            return eval_int(ite->e_then(i));
+    try {
+      switch (e->eid()) {
+        case Expression::E_INTLIT: return e->cast<IntLit>()->v();
+        case Expression::E_FLOATLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_STRINGLIT:
+        case Expression::E_ANON:
+        case Expression::E_TIID:
+        case Expression::E_SETLIT:
+        case Expression::E_ARRAYLIT:
+        case Expression::E_COMP:
+        case Expression::E_VARDECL:
+        case Expression::E_TI:
+          throw EvalError(e->loc(),"not an integer expression");
+          break;
+        case Expression::E_ID:
+        {
+          GCLock lock;
+          return eval_id<EvalIntLit>(e)->v();
         }
-        return eval_int(ite->e_else());
-      }
-      break;
-    case Expression::E_BINOP:
-      {
-        BinOp* bo = e->cast<BinOp>();
-        IntVal v0 = eval_int(bo->lhs());
-        IntVal v1 = eval_int(bo->rhs());
-        switch (bo->op()) {
-        case BOT_PLUS: return v0+v1;
-        case BOT_MINUS: return v0-v1;
-        case BOT_MULT: return v0*v1;
-        case BOT_IDIV: return v0 / v1;
-        case BOT_MOD: return v0 % v1;
-        default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
+          break;
+        case Expression::E_ARRAYACCESS:
+        {
+          GCLock lock;
+          return eval_int(eval_arrayaccess(e->cast<ArrayAccess>()));
         }
-      }
-      break;
-    case Expression::E_UNOP:
-      {
-        UnOp* uo = e->cast<UnOp>();
-        IntVal v0 = eval_int(uo->e());
-        switch (uo->op()) {
-        case UOT_PLUS: return v0;
-        case UOT_MINUS: return -v0;
-        default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
+          break;
+        case Expression::E_ITE:
+        {
+          ITE* ite = e->cast<ITE>();
+          for (int i=0; i<ite->size(); i++) {
+            if (eval_bool(ite->e_if(i)))
+              return eval_int(ite->e_then(i));
+          }
+          return eval_int(ite->e_else());
         }
+          break;
+        case Expression::E_BINOP:
+        {
+          BinOp* bo = e->cast<BinOp>();
+          IntVal v0 = eval_int(bo->lhs());
+          IntVal v1 = eval_int(bo->rhs());
+          switch (bo->op()) {
+            case BOT_PLUS: return v0+v1;
+            case BOT_MINUS: return v0-v1;
+            case BOT_MULT: return v0*v1;
+            case BOT_IDIV: return v0 / v1;
+            case BOT_MOD: return v0 % v1;
+            default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
+          }
+        }
+          break;
+        case Expression::E_UNOP:
+        {
+          UnOp* uo = e->cast<UnOp>();
+          IntVal v0 = eval_int(uo->e());
+          switch (uo->op()) {
+            case UOT_PLUS: return v0;
+            case UOT_MINUS: return -v0;
+            default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
+          }
+        }
+          break;
+        case Expression::E_CALL:
+        {
+          Call* ce = e->cast<Call>();
+          if (ce->decl()==NULL)
+            throw EvalError(e->loc(), "undeclared function", ce->id());
+          if (ce->decl()->_builtins.i)
+            return ce->decl()->_builtins.i(ce->args());
+          
+          if (ce->decl()->_builtins.e)
+            return eval_int(ce->decl()->_builtins.e(ce->args()));
+          
+          if (ce->decl()->e()==NULL)
+            throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          
+          return eval_call<EvalIntVal>(ce);
+        }
+          break;
+        case Expression::E_LET:
+        {
+          Let* l = e->cast<Let>();
+          l->pushbindings();
+          IntVal ret = eval_int(l->in());
+          l->popbindings();
+          return ret;
+        }
+          break;
+        default: assert(false); return 0;
       }
-      break;
-    case Expression::E_CALL:
-      {
-        Call* ce = e->cast<Call>();
-        if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
-        if (ce->decl()->_builtins.i)
-          return ce->decl()->_builtins.i(ce->args());
-
-        if (ce->decl()->_builtins.e)
-          return eval_int(ce->decl()->_builtins.e(ce->args()));
-
-        if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
-        return eval_call<EvalIntVal>(ce);
-      }
-      break;
-    case Expression::E_LET:
-      {
-        Let* l = e->cast<Let>();
-        l->pushbindings();
-        IntVal ret = eval_int(l->in());
-        l->popbindings();
-        return ret;
-      }
-      break;
+    } catch (ArithmeticError& err) {
+      throw EvalError(e->loc(), err.msg());
     }
   }
 
@@ -819,6 +832,7 @@ namespace MiniZinc {
         return ret;
       }
         break;
+      default: assert(false); return 0.0;
     }
   }
 
@@ -900,6 +914,7 @@ namespace MiniZinc {
         return ret;
       }
         break;
+      default: assert(false); return NULL;
     }
   }
 
@@ -929,7 +944,7 @@ namespace MiniZinc {
         ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
         Type t = al->type();
         if (t.isbot() && ret->v().size() > 0) {
-          t._bt = ret->v()[0]->type()._bt;
+          t.bt(ret->v()[0]->type().bt());
         }
         ret->type(t);
         return ret;
@@ -968,7 +983,7 @@ namespace MiniZinc {
       return e;
     default:
       {
-        if (e->type()._dim != 0) {
+        if (e->type().dim() != 0) {
           ArrayLit* al = eval_array_lit(e);
           std::vector<Expression*> args(al->v().size());
           for (unsigned int i=al->v().size(); i--;)
@@ -981,7 +996,7 @@ namespace MiniZinc {
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
           Type t = al->type();
           if (t.isbot() && ret->v().size() > 0) {
-            t._bt = ret->v()[0]->type()._bt;
+            t.bt(ret->v()[0]->type().bt());
           }
           ret->type(t);
           return ret;
@@ -1080,7 +1095,7 @@ namespace MiniZinc {
     bool valid;
     ComputeIntBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->type()._dim > 0)
+      if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {
@@ -1134,8 +1149,7 @@ namespace MiniZinc {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(id.decl()->e());
         } else {
-          valid = false;
-          _bounds.push_back(Bounds(0,0));
+          _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
         }
       }
     }
@@ -1195,50 +1209,55 @@ namespace MiniZinc {
     void vBinOp(const BinOp& bo) {
       Bounds b1 = _bounds.back(); _bounds.pop_back();
       Bounds b0 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-      case BOT_PLUS:
-        _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
-        break;
-      case BOT_MINUS:
-        _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
-        break;
-      case BOT_MULT:
-        {
-          IntVal x0 = b0.first*b1.first;
-          IntVal x1 = b0.first*b1.second;
-          IntVal x2 = b0.second*b1.first;
-          IntVal x3 = b0.second*b1.second;
-          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-          _bounds.push_back(Bounds(m,n));
-        }
-        break;
-      case BOT_DIV:
-      case BOT_IDIV:
-      case BOT_MOD:
-      case BOT_LE:
-      case BOT_LQ:
-      case BOT_GR:
-      case BOT_GQ:
-      case BOT_EQ:
-      case BOT_NQ:
-      case BOT_IN:
-      case BOT_SUBSET:
-      case BOT_SUPERSET:
-      case BOT_UNION:
-      case BOT_DIFF:
-      case BOT_SYMDIFF:
-      case BOT_INTERSECT:
-      case BOT_PLUSPLUS:
-      case BOT_EQUIV:
-      case BOT_IMPL:
-      case BOT_RIMPL:
-      case BOT_OR:
-      case BOT_AND:
-      case BOT_XOR:
-      case BOT_DOTDOT:
+      if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
         valid = false;
         _bounds.push_back(Bounds(0,0));
+      } else {
+        switch (bo.op()) {
+          case BOT_PLUS:
+            _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
+            break;
+          case BOT_MINUS:
+            _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
+            break;
+          case BOT_MULT:
+          {
+            IntVal x0 = b0.first*b1.first;
+            IntVal x1 = b0.first*b1.second;
+            IntVal x2 = b0.second*b1.first;
+            IntVal x3 = b0.second*b1.second;
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
+          case BOT_DIV:
+          case BOT_IDIV:
+          case BOT_MOD:
+          case BOT_LE:
+          case BOT_LQ:
+          case BOT_GR:
+          case BOT_GQ:
+          case BOT_EQ:
+          case BOT_NQ:
+          case BOT_IN:
+          case BOT_SUBSET:
+          case BOT_SUPERSET:
+          case BOT_UNION:
+          case BOT_DIFF:
+          case BOT_SYMDIFF:
+          case BOT_INTERSECT:
+          case BOT_PLUSPLUS:
+          case BOT_EQUIV:
+          case BOT_IMPL:
+          case BOT_RIMPL:
+          case BOT_OR:
+          case BOT_AND:
+          case BOT_XOR:
+          case BOT_DOTDOT:
+            valid = false;
+            _bounds.push_back(Bounds(0,0));
+        }
       }
     }
     /// Visit unary operator
@@ -1265,7 +1284,7 @@ namespace MiniZinc {
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(al->v()[i]);
-          if (!valid)
+          if (!valid || !_bounds.back().first.isFinite() || !_bounds.back().second.isFinite())
             return;
         }
         assert(stacktop+al->v().size()==_bounds.size());
@@ -1275,11 +1294,35 @@ namespace MiniZinc {
           Bounds b = _bounds.back(); _bounds.pop_back();
           IntVal cv = eval_int(coeff->v()[i]);
           if (cv > 0) {
-            lb += cv*b.first;
-            ub += cv*b.second;
+            if (b.first.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.first;
+              }
+            } else {
+              lb = b.first;
+            }
+            if (b.second.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.second;
+              }
+            } else {
+              ub = b.second;
+            }
           } else {
-            lb += cv*b.second;
-            ub += cv*b.first;
+            if (b.second.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.second;
+              }
+            } else {
+              lb = -b.second;
+            }
+            if (b.first.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.first;
+              }
+            } else {
+              ub = -b.first;
+            }
           }
         }
         _bounds.push_back(Bounds(lb,ub));
@@ -1297,13 +1340,18 @@ namespace MiniZinc {
         cbi.run(c.args()[1]);
         Bounds b1 = _bounds.back(); _bounds.pop_back();
         Bounds b0 = _bounds.back(); _bounds.pop_back();
-        IntVal x0 = b0.first*b1.first;
-        IntVal x1 = b0.first*b1.second;
-        IntVal x2 = b0.second*b1.first;
-        IntVal x3 = b0.second*b1.second;
-        IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-        IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-        _bounds.push_back(Bounds(m,n));
+        if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+        } else {
+          IntVal x0 = b0.first*b1.first;
+          IntVal x1 = b0.first*b1.second;
+          IntVal x2 = b0.second*b1.first;
+          IntVal x3 = b0.second*b1.second;
+          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(Bounds(m,n));
+        }
       } else if (c.id() == constants().ids.bool2int) {
           _bounds.push_back(Bounds(0,1));
       } else if (c.id() == "abs") {
@@ -1372,7 +1420,7 @@ namespace MiniZinc {
     bool valid;
     ComputeIntSetBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->type()._dim > 0)
+      if (e->type().dim() > 0)
         return false;
       if (!e->type().isintset())
         return false;
@@ -1384,9 +1432,24 @@ namespace MiniZinc {
       }
     }
     /// Visit set literal
-    void vSetLit(const SetLit&) {
-      valid = false;
-      _bounds.push_back(NULL);
+    void vSetLit(const SetLit& sl) {
+      assert(sl.type().isvar());
+      assert(sl.isv()==NULL);
+
+      IntSetVal* isv = IntSetVal::a();
+      for (unsigned int i=0; i<sl.v().size(); i++) {
+        IntSetRanges i0(isv);
+        IntBounds ib = compute_int_bounds(sl.v()[i]);
+        if (!ib.valid || !ib.l.isFinite() || !ib.u.isFinite()) {
+          valid = false;
+          _bounds.push_back(NULL);
+          return;
+        }
+        Ranges::Const cr(ib.l,ib.u);
+        Ranges::Union<IntSetRanges, Ranges::Const> u(i0,cr);
+        isv = IntSetVal::ai(u);
+      }
+      _bounds.push_back(isv);
     }
     /// Visit identifier
     void vId(const Id& id) {

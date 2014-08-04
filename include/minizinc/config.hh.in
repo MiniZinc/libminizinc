@@ -11,3 +11,11 @@
 #cmakedefine HAS_ATOLL
 
 #cmakedefine MZN_NEED_TR1
+
+#cmakedefine HAS_PIDPATH
+
+#cmakedefine HAS_GETMODULEFILENAME
+
+#cmakedefine HAS_GETFILEATTRIBUTES
+
+#cmakedefine HAS_STRNCPY_S
