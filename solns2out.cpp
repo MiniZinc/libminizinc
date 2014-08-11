@@ -36,6 +36,12 @@ int main(int argc, char** argv) {
   int flag_ignore_lines = 0;
   istream& solstream = cin;
 
+  string solution_separator = "----------";
+  string unsatisfiable_msg  = "=====UNSATISFIABLE=====";
+  string unbounded_msg      = "=====UNBOUNDED=====";
+  string unknown_msg        = "=====UNKNOWN=====";
+  string search_complete_msg= "==========";
+
   vector<string> includePaths;
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -77,6 +83,34 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       flag_ignore_lines = atoi(argv[i]);
+    } else if (string(argv[i])=="--soln-sep" ||
+               string(argv[i])=="--soln-separator" ||
+               string(argv[i])=="--solution-separator") {
+      ++i;
+      if (i==argc)
+        goto error;
+      solution_separator = string(argv[i]);
+    } else if (string(argv[i])=="--unsat-msg" ||
+               string(argv[i])=="--unsatisfiable-msg") {
+      ++i;
+      if (i==argc)
+        goto error;
+      unsatisfiable_msg = string(argv[i]);
+    } else if (string(argv[i])=="--unbounded-msg") {
+      ++i;
+      if (i==argc)
+        goto error;
+      unbounded_msg = string(argv[i]);
+    } else if (string(argv[i])=="--unknown-msg") {
+      ++i;
+      if (i==argc)
+        goto error;
+      unknown_msg = string(argv[i]);
+    } else if (string(argv[i])=="--search-complete-msg") {
+      ++i;
+      if (i==argc)
+        goto error;
+      search_complete_msg = string(argv[i]);
     } else {
       filename = argv[i++];
       if (filename.length()<=4 ||
@@ -188,16 +222,25 @@ int main(int argc, char** argv) {
                     std::cout.flush();
               }
               cout << comments;
-              cout << line << std::endl;
+              cout << solution_separator << std::endl;
               if (flag_output_flush)
                 std::cout.flush();
               solution = "";
               comments = "";
-            } else if (line=="==========" ||
-                       line=="=====UNSATISFIABLE=====" ||
-                       line=="=====UNBOUNDED=====" ||
-                       line=="=====UNKNOWN=====") {
-              cout << line << std::endl;
+            } else if (line=="==========") {
+              cout << search_complete_msg << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
+            } else if(line=="=====UNSATISFIABLE=====") {
+              cout << unsatisfiable_msg << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
+            } else if(line=="=====UNBOUNDED=====") {
+              cout << unbounded_msg << std::endl;
+              if (flag_output_flush)
+                std::cout.flush();
+            } else if(line=="=====UNKNOWN=====") {
+              cout << unknown_msg << std::endl;
               if (flag_output_flush)
                 std::cout.flush();
             } else {
@@ -241,6 +284,11 @@ error:
             << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
             << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
+            << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string used to separate solutions.\n    The default is to use the FlatZinc solution separator,\n    \"----------\"." << std::endl
+            << "  --unsat-msg <msg>, --unsatisfiable-msg <msg>\n    Specify the message to print if the model instance is\n    unsatisfiable.\n    The default is to print \"=====UNSATISFIABLE=====\"." << std::endl
+            << "  --unbounded-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unbounded.\n    The default is to print \"=====UNBOUNDED=====\"." << std::endl
+            << "  --unknown-msg <msg>\n    Specify the message to print if search terminates without\n    the entire search space having been explored and no\n    solution has been found.\n    The default is to print \"=====UNKNOWN=====\"." << std::endl
+            << "  --search-complete-msg <msg>\n    Specify the message to print if search terminates having\n    explored the entire search space.\n    The default is to print \"==========\"." << std::endl
   ;
 
   exit(EXIT_FAILURE);
