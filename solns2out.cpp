@@ -161,7 +161,13 @@ int main(int argc, char** argv) {
             outputExpr = oi->e();
           }
         }
-        
+
+        //ostream& fout(flag_output_file.empty() ? std::cout : new fstream(flag_output_file));
+        fstream file_ostream;
+        if (!flag_output_file.empty())
+            file_ostream.open(flag_output_file, std::fstream::out);
+        ostream& fout = flag_output_file.empty() ? std::cout : file_ostream;
+
         string solution;
         string comments;
         for (;;) {
@@ -211,38 +217,38 @@ int main(int argc, char** argv) {
                   std::string s = eval_string(al->v()[i]);
                   if (!s.empty()) {
                     os = s;
-                    std::cout << os;
+                    fout << os;
                     if (flag_output_flush)
-                      std::cout.flush();
+                      fout.flush();
                   }
                 }
                 if (os.empty() || os[os.size()-1] != '\n')
-                  std::cout << std::endl;
+                  fout << std::endl;
                   if (flag_output_flush)
-                    std::cout.flush();
+                    fout.flush();
               }
-              cout << comments;
-              cout << solution_separator << std::endl;
+              fout << comments;
+              fout << solution_separator << std::endl;
               if (flag_output_flush)
-                std::cout.flush();
+                fout.flush();
               solution = "";
               comments = "";
             } else if (line=="==========") {
-              cout << search_complete_msg << std::endl;
+              fout << search_complete_msg << std::endl;
               if (flag_output_flush)
-                std::cout.flush();
+                fout.flush();
             } else if(line=="=====UNSATISFIABLE=====") {
-              cout << unsatisfiable_msg << std::endl;
+              fout << unsatisfiable_msg << std::endl;
               if (flag_output_flush)
-                std::cout.flush();
+                fout.flush();
             } else if(line=="=====UNBOUNDED=====") {
-              cout << unbounded_msg << std::endl;
+              fout << unbounded_msg << std::endl;
               if (flag_output_flush)
-                std::cout.flush();
+                fout.flush();
             } else if(line=="=====UNKNOWN=====") {
-              cout << unknown_msg << std::endl;
+              fout << unknown_msg << std::endl;
               if (flag_output_flush)
-                std::cout.flush();
+                fout.flush();
             } else {
               solution += line+"\n";
               size_t comment_pos = line.find('%');
@@ -255,9 +261,9 @@ int main(int argc, char** argv) {
             break;
           }
         }
-        cout << comments;
+        fout << comments;
         if (flag_output_flush)
-          std::cout.flush();
+          fout.flush();
       } catch (LocationException& e) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         std::cerr << e.loc() << std::endl;
