@@ -1204,50 +1204,55 @@ namespace MiniZinc {
     void vBinOp(const BinOp& bo) {
       Bounds b1 = _bounds.back(); _bounds.pop_back();
       Bounds b0 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-      case BOT_PLUS:
-        _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
-        break;
-      case BOT_MINUS:
-        _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
-        break;
-      case BOT_MULT:
-        {
-          IntVal x0 = b0.first*b1.first;
-          IntVal x1 = b0.first*b1.second;
-          IntVal x2 = b0.second*b1.first;
-          IntVal x3 = b0.second*b1.second;
-          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-          _bounds.push_back(Bounds(m,n));
-        }
-        break;
-      case BOT_DIV:
-      case BOT_IDIV:
-      case BOT_MOD:
-      case BOT_LE:
-      case BOT_LQ:
-      case BOT_GR:
-      case BOT_GQ:
-      case BOT_EQ:
-      case BOT_NQ:
-      case BOT_IN:
-      case BOT_SUBSET:
-      case BOT_SUPERSET:
-      case BOT_UNION:
-      case BOT_DIFF:
-      case BOT_SYMDIFF:
-      case BOT_INTERSECT:
-      case BOT_PLUSPLUS:
-      case BOT_EQUIV:
-      case BOT_IMPL:
-      case BOT_RIMPL:
-      case BOT_OR:
-      case BOT_AND:
-      case BOT_XOR:
-      case BOT_DOTDOT:
+      if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
         valid = false;
         _bounds.push_back(Bounds(0,0));
+      } else {
+        switch (bo.op()) {
+          case BOT_PLUS:
+            _bounds.push_back(Bounds(b0.first+b1.first,b0.second+b1.second));
+            break;
+          case BOT_MINUS:
+            _bounds.push_back(Bounds(b0.first-b1.second,b0.second-b1.first));
+            break;
+          case BOT_MULT:
+          {
+            IntVal x0 = b0.first*b1.first;
+            IntVal x1 = b0.first*b1.second;
+            IntVal x2 = b0.second*b1.first;
+            IntVal x3 = b0.second*b1.second;
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
+          case BOT_DIV:
+          case BOT_IDIV:
+          case BOT_MOD:
+          case BOT_LE:
+          case BOT_LQ:
+          case BOT_GR:
+          case BOT_GQ:
+          case BOT_EQ:
+          case BOT_NQ:
+          case BOT_IN:
+          case BOT_SUBSET:
+          case BOT_SUPERSET:
+          case BOT_UNION:
+          case BOT_DIFF:
+          case BOT_SYMDIFF:
+          case BOT_INTERSECT:
+          case BOT_PLUSPLUS:
+          case BOT_EQUIV:
+          case BOT_IMPL:
+          case BOT_RIMPL:
+          case BOT_OR:
+          case BOT_AND:
+          case BOT_XOR:
+          case BOT_DOTDOT:
+            valid = false;
+            _bounds.push_back(Bounds(0,0));
+        }
       }
     }
     /// Visit unary operator
@@ -1274,7 +1279,7 @@ namespace MiniZinc {
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(al->v()[i]);
-          if (!valid)
+          if (!valid || !_bounds.back().first.isFinite() || !_bounds.back().second.isFinite())
             return;
         }
         assert(stacktop+al->v().size()==_bounds.size());
@@ -1330,13 +1335,18 @@ namespace MiniZinc {
         cbi.run(c.args()[1]);
         Bounds b1 = _bounds.back(); _bounds.pop_back();
         Bounds b0 = _bounds.back(); _bounds.pop_back();
-        IntVal x0 = b0.first*b1.first;
-        IntVal x1 = b0.first*b1.second;
-        IntVal x2 = b0.second*b1.first;
-        IntVal x3 = b0.second*b1.second;
-        IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-        IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-        _bounds.push_back(Bounds(m,n));
+        if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+        } else {
+          IntVal x0 = b0.first*b1.first;
+          IntVal x1 = b0.first*b1.second;
+          IntVal x2 = b0.second*b1.first;
+          IntVal x3 = b0.second*b1.second;
+          IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(Bounds(m,n));
+        }
       } else if (c.id() == constants().ids.bool2int) {
           _bounds.push_back(Bounds(0,1));
       } else if (c.id() == "abs") {
