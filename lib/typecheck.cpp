@@ -450,7 +450,7 @@ namespace MiniZinc {
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
-      if (!allpar)
+      if (varcond || !allpar)
         tret.ti(Type::TI_VAR);
       if (!allpresent)
         tret.ot(Type::OT_OPTIONAL);
