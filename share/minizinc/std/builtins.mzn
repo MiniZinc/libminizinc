@@ -23,6 +23,12 @@ test var_dom(array[$T] of int: x, set of int: d) =
     let { array[int] of int: xx = array1d(1..length(x),x) }
     in forall (i in index_set(xx)) (xx[i] in d);
 
+function var set of int: array2set(array[int] of var int: x) ::promise_total =
+    let {
+      var set of lb_array(x)..ub_array(x): y;
+      constraint forall (i in index_set(x)) (x[i] in y);
+    } in y;
+
 % integer constraints
 predicate int_abs(var int: a, var int: b);
 predicate int_eq(var int: a, var int: b);

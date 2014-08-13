@@ -1427,9 +1427,24 @@ namespace MiniZinc {
       }
     }
     /// Visit set literal
-    void vSetLit(const SetLit&) {
-      valid = false;
-      _bounds.push_back(NULL);
+    void vSetLit(const SetLit& sl) {
+      assert(sl.type().isvar());
+      assert(sl.isv()==NULL);
+
+      IntSetVal* isv = IntSetVal::a();
+      for (unsigned int i=0; i<sl.v().size(); i++) {
+        IntSetRanges i0(isv);
+        IntBounds ib = compute_int_bounds(sl.v()[i]);
+        if (!ib.valid || !ib.l.isFinite() || !ib.u.isFinite()) {
+          valid = false;
+          _bounds.push_back(NULL);
+          return;
+        }
+        Ranges::Const cr(ib.l,ib.u);
+        Ranges::Union<IntSetRanges, Ranges::Const> u(i0,cr);
+        isv = IntSetVal::ai(u);
+      }
+      _bounds.push_back(isv);
     }
     /// Visit identifier
     void vId(const Id& id) {
