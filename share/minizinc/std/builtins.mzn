@@ -56,6 +56,7 @@ predicate set_in_reif(var int, var set of int, var bool);
 predicate set_subset(var set of int, var set of int);
 predicate set_subset_reif(var set of int, var set of int, var bool);
 predicate set_le(var set of int, var set of int);
+predicate set_lt(var set of int, var set of int);
 predicate set_eq(var set of int, var set of int);
 predicate set_eq_reif(var set of int, var set of int, var bool);
 predicate set_ne(var set of int, var set of int);
