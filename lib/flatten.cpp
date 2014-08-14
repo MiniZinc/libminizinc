@@ -3763,7 +3763,12 @@ namespace MiniZinc {
                   if (ctx.b==C_ROOT && r==constants().var_true) {
                     (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
                   } else {
-                    EE ee = flat_exp(env,Ctx(),decl->e(),NULL,constants().var_true);
+                    Ctx nctx;
+                    if (!isTotal(decl)) {
+                      nctx = ctx;
+                      nctx.neg = false;
+                    }
+                    EE ee = flat_exp(env,nctx,decl->e(),NULL,constants().var_true);
                     ee.b = ee.r;
                     args_ee.push_back(ee);
                   }
