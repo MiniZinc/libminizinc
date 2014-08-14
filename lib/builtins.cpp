@@ -472,7 +472,7 @@ namespace MiniZinc {
 
   IntSetVal* b_dom_varint(Expression* e) {
     Id* lastid = NULL;
-    Expression* cur = eval_par(e);
+    Expression* cur = e;
     for (;;) {
       if (cur==NULL) {
         if (lastid==NULL) {
@@ -496,6 +496,15 @@ namespace MiniZinc {
           if (lastid->decl()==NULL)
             throw EvalError(lastid->loc(),"undefined identifier");
           cur = lastid->decl()->e();
+        }
+        break;
+      case Expression::E_ARRAYACCESS:
+        {
+          bool success;
+          cur = eval_arrayaccess(cur->cast<ArrayAccess>(), success);
+          if (!success) {
+            cur = NULL;
+          }
         }
         break;
       default:
