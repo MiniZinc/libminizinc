@@ -954,7 +954,16 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { $$=new UnOp(@$, UOT_MINUS, $2); }
+      { if ($2->isa<IntLit>()) {
+          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
+          $$ = $2;
+        } else if ($2->isa<FloatLit>()) {
+          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
+          $$ = $2;
+        } else {
+          $$=new UnOp(@$, UOT_MINUS, $2);
+        }
+      }
 
 ///
 
