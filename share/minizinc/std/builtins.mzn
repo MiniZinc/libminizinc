@@ -25,8 +25,10 @@ test var_dom(array[$T] of int: x, set of int: d) =
 
 function var set of int: array2set(array[int] of var int: x) ::promise_total =
     let {
-      var set of lb_array(x)..ub_array(x): y;
-      constraint forall (i in index_set(x)) (x[i] in y);
+      var set of int: y = array_union([
+        let { var set of dom(x[i]): s;
+        constraint x[i] in s /\ card(s)=1;
+        } in s | i in index_set(x)]);
     } in y;
 
 % integer constraints
