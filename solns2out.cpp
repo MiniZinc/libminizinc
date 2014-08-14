@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
                       fout.flush();
                   }
                 }
-                if (os.empty() || os[os.size()-1] != '\n')
+                if (!os.empty() && os[os.size()-1] != '\n')
                   fout << std::endl;
                   if (flag_output_flush)
                     fout.flush();
