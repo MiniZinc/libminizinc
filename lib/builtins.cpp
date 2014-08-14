@@ -472,7 +472,7 @@ namespace MiniZinc {
 
   IntSetVal* b_dom_varint(Expression* e) {
     Id* lastid = NULL;
-    Expression* cur = e;
+    Expression* cur = eval_par(e);
     for (;;) {
       if (cur==NULL) {
         if (lastid==NULL) {
