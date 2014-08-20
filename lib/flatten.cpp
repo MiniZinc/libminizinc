@@ -4345,8 +4345,31 @@ namespace MiniZinc {
       iterItems(_ov1,e.orig);
       
       if (outputItem==NULL) {
+        // Create output item for all variables defined at toplevel in the MiniZinc source
         GCLock lock;
-        outputItem = new OutputI(Location(),new ArrayLit(Location(),std::vector<Expression*>()));
+        std::vector<Expression*> outputVars;
+        for (unsigned int i=0; i<e.orig->size(); i++) {
+          if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
+            VarDecl* vd = vdi->e();
+            if (vd->type().isvar()) {
+              StringLit* sl = new StringLit(Location(),vd->id()->str().str()+" = ");
+              outputVars.push_back(sl);
+              std::vector<Expression*> showArgs(1);
+              showArgs[0] = vd->id();
+              Call* show = new Call(Location(),ASTString("show"),showArgs);
+              show->type(Type::parstring());
+              FunctionI* fi = e.orig->matchFn(show);
+              assert(fi);
+              show->decl(fi);
+              outputVars.push_back(show);
+              StringLit* eol = new StringLit(Location(),";\n");
+              outputVars.push_back(eol);
+            }
+          }
+        }
+        OutputI* newOutputItem = new OutputI(Location(),new ArrayLit(Location(),outputVars));
+        e.orig->addItem(newOutputItem);
+        outputItem = copy(e.cmap, newOutputItem)->cast<OutputI>();
         e.output->addItem(outputItem);
       }
       
