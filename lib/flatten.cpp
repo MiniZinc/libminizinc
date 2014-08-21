@@ -2669,13 +2669,20 @@ namespace MiniZinc {
         } _evalf(env,ctx);
         std::vector<EE> elems_ee = eval_comp<EvalF>(_evalf,c);
         std::vector<Expression*> elems(elems_ee.size());
-        for (unsigned int i=elems.size(); i--;)
+        bool allPar = true;
+        for (unsigned int i=elems.size(); i--;) {
           elems[i] = elems_ee[i].r();
+          if (!elems[i]->type().ispar())
+            allPar = false;
+        }
         KeepAlive ka;
         {
           GCLock lock;
           ArrayLit* alr = new ArrayLit(Location(),elems);
-          alr->type(c->type());
+          Type alt = c->type();
+          if (allPar)
+            alt.ti(Type::TI_PAR);
+          alr->type(alt);
           ka = alr;
         }
         ret.b = conj(env,b,Ctx(),elems_ee);
