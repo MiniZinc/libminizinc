@@ -221,10 +221,17 @@ function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of var int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-    constraint idx1 in index_set_1of2(x);
-    constraint idx2 in index_set_2of2(x);
-  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+       then
+         element_t(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
+       else
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_mt(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
+       endif;
 
 function var int: element(var int: idx1, int: idx2,
                           array[int,int] of int: x) =
@@ -242,10 +249,17 @@ function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-    constraint idx1 in index_set_1of2(x);
-    constraint idx2 in index_set_2of2(x);
-  } in element_mt(idx1*dim+idx2-min, array1d(1..dim*card(index_set_1of2(x)),x));
+    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+       then
+         element_t(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
+       else
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_mt(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
+       endif;
 
 function var int: element(var int: idx1, var int: idx2, var int: idx3,
                           array[int,int,int] of var int: x) =
