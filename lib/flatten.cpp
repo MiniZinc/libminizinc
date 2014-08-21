@@ -4549,6 +4549,30 @@ namespace MiniZinc {
     e.output->compact();
   }
   
+  bool checkParDomain(Expression* e, Expression* domain) {
+    if (e->type()==Type::parint()) {
+      IntSetVal* isv = eval_intset(domain);
+      if (!isv->contains(eval_int(e)))
+        return false;
+    } else if (e->type()==Type::parfloat()) {
+      BinOp* bo = domain->cast<BinOp>();
+      assert(bo->op()==BOT_DOTDOT);
+      FloatVal d_min = eval_float(bo->lhs());
+      FloatVal d_max = eval_float(bo->rhs());
+      FloatVal de = eval_float(e);
+      if (de < d_min || de > d_max)
+        return false;
+    } else if (e->type()==Type::parsetint()) {
+      IntSetVal* isv = eval_intset(domain);
+      IntSetRanges ir(isv);
+      IntSetVal* rsv = eval_intset(e);
+      IntSetRanges rr(rsv);
+      if (!Ranges::subset(rr, ir))
+        return false;
+    }
+    return true;
+  }
+  
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
     
@@ -4569,9 +4593,25 @@ namespace MiniZinc {
           } else {
             CallStackItem csi(env,v->e());
             GCLock lock;
+            Location v_loc = v->e()->e()->loc();
             v->e()->e(eval_par(v->e()->e()));
-            if (v->e()->type().dim() > 0)
+            if (v->e()->type().dim() > 0) {
               checkIndexSets(v->e(), v->e()->e());
+              if (v->e()->ti()->domain() != NULL) {
+                ArrayLit* al = eval_array_lit(v->e()->e());
+                for (unsigned int i=0; i<al->v().size(); i++) {
+                  if (!checkParDomain(al->v()[i], v->e()->ti()->domain())) {
+                    throw EvalError(v_loc, "parameter value out of range");
+                  }
+                }
+              }
+            } else {
+              if (v->e()->ti()->domain() != NULL) {
+                if (!checkParDomain(v->e()->e(), v->e()->ti()->domain())) {
+                  throw EvalError(v_loc, "parameter value out of range");
+                }
+              }
+            }
           }
         }
       }
