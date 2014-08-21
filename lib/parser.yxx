@@ -482,7 +482,8 @@ namespace MiniZinc {
 
 %initial-action
 {
-  @$.filename = static_cast<ParserState*>(parm)->model->filepath();
+  GCLock lock;
+  @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
 }
 
 %token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
