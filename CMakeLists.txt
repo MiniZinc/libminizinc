@@ -92,6 +92,13 @@ int main (int argc, char* argv[]) {
   return 0;
 }" HAS_GETMODULEFILENAME)
 
+CHECK_CXX_SOURCE_COMPILES("
+#include <windows.h>
+int main (int argc, char* argv[]) {
+  (void) GetFileAttributes(NULL);
+  return 0;
+}" HAS_GETFILEATTRIBUTES)
+
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 # configure a header file to pass some of the CMake settings

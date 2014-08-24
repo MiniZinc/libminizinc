@@ -18,7 +18,7 @@
 #include <string.h>
 #include <libproc.h>
 #include <unistd.h>
-#elif defined(HAS_GETMODULEFILENAME)
+#elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
 #include <windows.h>
 #else
 #include <unistd.h>

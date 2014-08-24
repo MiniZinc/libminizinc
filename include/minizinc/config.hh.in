@@ -15,3 +15,6 @@
 #cmakedefine HAS_PIDPATH
 
 #cmakedefine HAS_GETMODULEFILENAME
+
+#cmakedefine HAS_GETFILEATTRIBUTES
+
