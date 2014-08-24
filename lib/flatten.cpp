@@ -4552,11 +4552,13 @@ namespace MiniZinc {
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
     
+    bool hadSolveItem = false;
     // Flatten main model
     class FV : public ItemVisitor {
     public:
       EnvI& env;
-      FV(EnvI& env0) : env(env0) {}
+      bool& hadSolveItem;
+      FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
       void vVarDeclI(VarDeclI* v) {
         if (v->e()->type().isvar() || v->e()->type().isann()) {
           (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
@@ -4577,6 +4579,9 @@ namespace MiniZinc {
         (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
       }
       void vSolveI(SolveI* si) {
+        if (hadSolveItem)
+          throw FlatteningError(si->loc(), "Only one solve item allowed");
+        hadSolveItem = true;
         GCLock lock;
         SolveI* nsi = NULL;
         switch (si->st()) {
@@ -4595,9 +4600,16 @@ namespace MiniZinc {
         }
         env.flat_addItem(nsi);
       }
-    } _fv(env);
+    } _fv(env,hadSolveItem);
     iterItems<FV>(_fv,e.model());
 
+    if (!hadSolveItem) {
+      e.envi().errorStack.clear();
+      Location modelLoc;
+      modelLoc.filename = e.model()->filepath();
+      throw FlatteningError(modelLoc, "Model does not have a solve item");
+    }
+    
     // Create output model
     if (opt.keepOutputInFzn) {
       copyOutput(env);
