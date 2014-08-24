@@ -1,5 +1,5 @@
 
-#line 3 "/Users/tack/Programming/libmzn/build/lexer.yy.cpp"
+#line 3 "/Users/tack/MiniZinc/libmzn/build/lexer.yy.cpp"
 
 #define  YY_INT_ALIGNED short int
 
