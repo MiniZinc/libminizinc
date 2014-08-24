@@ -264,6 +264,13 @@ int main(int argc, char** argv) {
   }
   includePaths.push_back(std_lib_dir+"/std/");
   
+  for (unsigned int i=0; i<includePaths.size(); i++) {
+    if (!FileUtils::directory_exists(includePaths[i])) {
+      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+      std::exit(EXIT_FAILURE);
+    }
+  }
+  
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
