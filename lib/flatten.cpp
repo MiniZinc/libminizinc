@@ -3367,6 +3367,8 @@ namespace MiniZinc {
                 if (!ctx.neg)
                   env.map_insert(cc,ret);
               }
+            } else {
+              ret.r = conj(env,r,ctx,ees);
             }
           }
             break;
