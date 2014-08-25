@@ -2976,12 +2976,12 @@ namespace MiniZinc {
                 Ctx nctx = ctx;
                 nctx.neg = negArgs;
                 nctx.b = negArgs ? C_NEG : C_ROOT;
-                (void) flat_exp(env,nctx,boe1,constants().var_true,constants().var_true);
+                ret = flat_exp(env,nctx,boe1,constants().var_true,constants().var_true);
               } else {
                 Ctx nctx = ctx;
                 nctx.neg = negArgs;
                 nctx.b = negArgs ? C_NEG : C_ROOT;
-                (void) flat_exp(env,nctx,constants().lit_true,constants().var_true,constants().var_true);
+                ret = flat_exp(env,nctx,constants().lit_true,constants().var_true,constants().var_true);
               }
               break;
             }
@@ -2990,13 +2990,13 @@ namespace MiniZinc {
                 Ctx nctx = ctx;
                 nctx.neg = negArgs;
                 nctx.b = negArgs ? C_NEG : C_ROOT;
-                (void) flat_exp(env,nctx,constants().lit_true,constants().var_true,constants().var_true);
+                ret = flat_exp(env,nctx,constants().lit_true,constants().var_true,constants().var_true);
                 break;
               } else {
                 Ctx nctx = ctx;
                 nctx.neg = !negArgs;
                 nctx.b = !negArgs ? C_NEG : C_ROOT;
-                (void) flat_exp(env,nctx,boe0,constants().var_true,constants().var_true);
+                ret = flat_exp(env,nctx,boe0,constants().var_true,constants().var_true);
                 break;
               }
             }
@@ -3242,8 +3242,8 @@ namespace MiniZinc {
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
-                
               }
+              ret.r = bind(env,ctx,r,constants().lit_true);
               break;
             }
             
