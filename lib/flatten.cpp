@@ -1651,7 +1651,10 @@ namespace MiniZinc {
     if (i>=ite->size())
       return ite->e_else();
     if (ite->e_if(i)->type()==Type::parbool()) {
-      if (eval_bool(ite->e_if(i)))
+      GC::lock();
+      bool cond = eval_bool(ite->e_if(i));
+      GC::unlock();
+      if (cond)
         return ite->e_then(i);
       else
         return flat_ite(env,ite,i+1);
