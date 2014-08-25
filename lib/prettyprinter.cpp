@@ -94,6 +94,30 @@ namespace MiniZinc {
     }
   }
   
+  enum Assoc {
+    AS_LEFT, AS_RIGHT, AS_NONE
+  };
+  
+  bool assoc(const BinOp* bo) {
+    switch (bo->op()) {
+      case BOT_LE:
+      case BOT_LQ:
+      case BOT_GR:
+      case BOT_GQ:
+      case BOT_NQ:
+      case BOT_EQ:
+      case BOT_IN:
+      case BOT_SUBSET:
+      case BOT_SUPERSET:
+      case BOT_DOTDOT:
+        return AS_NONE;
+      case BOT_PLUSPLUS:
+        return AS_RIGHT;
+      default:
+        return AS_LEFT;
+    }
+  }
+  
   enum Parentheses {
     PN_LEFT = 1, PN_RIGHT = 2
   };
@@ -103,8 +127,8 @@ namespace MiniZinc {
     int pbo = precedence(bo);
     int pl = precedence(left);
     int pr = precedence(right);
-    int ret = (pbo < pl) || (pbo == pl && pbo == 200);
-    ret += 2 * ((pbo < pr) || (pbo == pr && pbo != 200));
+    int ret = (pbo < pl) || (pbo == pl && assoc(bo) != AS_LEFT);
+    ret += 2 * ((pbo < pr) || (pbo == pr && assoc(bo) != AS_RIGHT));
     return static_cast<Parentheses>(ret);
   }
   
