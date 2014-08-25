@@ -26,6 +26,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#define _CRT_SECURE_NO_WARNINGS
+
 namespace MiniZinc { namespace FileUtils {
   
 #ifdef HAS_PIDPATH
