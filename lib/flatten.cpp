@@ -2903,11 +2903,12 @@ namespace MiniZinc {
           case BOT_AND:
           {
             if (r==constants().var_true) {
-              Ctx ctx;
-              ctx.neg = negArgs;
-              ctx.b = negArgs ? C_NEG : C_ROOT;
-              (void) flat_exp(env,ctx,boe0,constants().var_true,constants().var_true);
-              (void) flat_exp(env,ctx,boe1,constants().var_true,constants().var_true);
+              Ctx nctx;
+              nctx.neg = negArgs;
+              nctx.b = negArgs ? C_NEG : C_ROOT;
+              (void) flat_exp(env,nctx,boe0,constants().var_true,constants().var_true);
+              (void) flat_exp(env,nctx,boe1,constants().var_true,constants().var_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
               break;
             } else {
               GC::lock();
@@ -3509,6 +3510,7 @@ namespace MiniZinc {
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->v().size(); i++)
             (void) flat_exp(env,nctx,al->v()[i],r,b);
+          ret.r = bind(env,ctx,r,constants().lit_true);
         } else {
           std::vector<EE> args_ee(c->args().size());
           bool mixContext = decl->e()!=NULL ||
@@ -3991,6 +3993,7 @@ namespace MiniZinc {
       throw InternalError("not supported yet");
       break;
     }
+    assert(ret.r());
     return ret;
   }
   
