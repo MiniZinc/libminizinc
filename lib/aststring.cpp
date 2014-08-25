@@ -14,7 +14,7 @@
 
 #ifndef HAS_STRNCPY_S
 namespace {
-  void strncpy_s(char* dest, size_t, char* src, size_t count) {
+  void strncpy_s(char* dest, size_t, const char* src, size_t count) {
     strncpy(dest,src,count);
   }
 }
