@@ -737,7 +737,7 @@ namespace MiniZinc {
           return ret;
         }
           break;
-        default: assert(false); return NULL;
+        default: assert(false); return 0;
       }
     } catch (ArithmeticError& err) {
       throw EvalError(e->loc(), err.msg());
@@ -832,7 +832,7 @@ namespace MiniZinc {
         return ret;
       }
         break;
-      default: assert(false); return NULL;
+      default: assert(false); return 0.0;
     }
   }
 
