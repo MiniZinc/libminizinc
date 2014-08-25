@@ -18,3 +18,4 @@
 
 #cmakedefine HAS_GETFILEATTRIBUTES
 
+#cmakedefine HAS_STRNCPY_S

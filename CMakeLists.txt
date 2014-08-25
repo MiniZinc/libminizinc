@@ -99,6 +99,13 @@ int main (int argc, char* argv[]) {
   return 0;
 }" HAS_GETFILEATTRIBUTES)
 
+CHECK_CXX_SOURCE_COMPILES("
+#include <string.h>
+int main (int argc, char* argv[]) {
+  (void) strncpy_s(NULL,0,NULL,0);
+  return 0;
+}" HAS_STRNCPY_S)
+
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 # configure a header file to pass some of the CMake settings
