@@ -747,7 +747,7 @@ namespace MiniZinc {
     /// Access flattened version
     VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
     /// Set flattened version
-    void flat(VarDecl* vd) { _flat = WeakRef(vd); }
+    void flat(VarDecl* vd);
     
     /// Recompute hash value
     void rehash(void);
