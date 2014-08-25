@@ -1063,7 +1063,8 @@ namespace MiniZinc {
           dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), NULL);
         }
       }
-      return new TypeInst(vd->ti()->loc(), vd->ti()->type(), dims, eval_par(vd->ti()->domain()));
+      Type t = vd->e() ? vd->e()->type() : vd->ti()->type();
+      return new TypeInst(vd->ti()->loc(), t, dims, eval_par(vd->ti()->domain()));
     }
   }
   
@@ -2158,7 +2159,8 @@ namespace MiniZinc {
       ret.b = bind(env,Ctx(),b,constants().lit_true);
       if (e->type().dim() > 0) {
         EnvI::Map::iterator it;
-        if (Id* id = e->dyn_cast<Id>()) {
+        Id* id = e->dyn_cast<Id>();
+        if (id && (id->decl()->flat()==NULL || id->decl()->toplevel())) {
           VarDecl* vd = id->decl()->flat();
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
