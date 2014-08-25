@@ -274,7 +274,7 @@ namespace MiniZinc {
         return ret;
       }
     }
-    assert(false);
+    assert(false); return NULL;
   }
 
   Expression* eval_arrayaccess(ArrayLit* al, const std::vector<IntVal>& dims,
@@ -308,7 +308,7 @@ namespace MiniZinc {
       realidx += (ix-al->min(i))*realdim;
     }
     assert(realidx >= 0 && realidx <= al->v().size());
-    return al->v()[realidx.toInt()];
+    return al->v()[static_cast<unsigned int>(realidx.toInt())];
   }
   Expression* eval_arrayaccess(ArrayAccess* e, bool& success) {
     ArrayLit* al = eval_array_lit(e->v());
@@ -458,6 +458,7 @@ namespace MiniZinc {
         return ret;
       }
       break;
+    default: assert(false); return NULL;
     }
   }
 
@@ -642,6 +643,7 @@ namespace MiniZinc {
         return ret;
       }
       break;
+    default: assert(false); return NULL;
     }
   }
 
@@ -735,6 +737,7 @@ namespace MiniZinc {
           return ret;
         }
           break;
+        default: assert(false); return NULL;
       }
     } catch (ArithmeticError& err) {
       throw EvalError(e->loc(), err.msg());
@@ -829,6 +832,7 @@ namespace MiniZinc {
         return ret;
       }
         break;
+      default: assert(false); return NULL;
     }
   }
 
@@ -910,6 +914,7 @@ namespace MiniZinc {
         return ret;
       }
         break;
+      default: assert(false); return NULL;
     }
   }
 

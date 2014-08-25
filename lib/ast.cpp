@@ -484,7 +484,7 @@ namespace MiniZinc {
     case BOT_AND: return OpToString::o().sBOT_AND->v();
     case BOT_XOR: return OpToString::o().sBOT_XOR->v();
     case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT->v();
-    default: assert(false);
+    default: assert(false); return ASTString("");
     }
   }
 
@@ -506,7 +506,7 @@ namespace MiniZinc {
     case UOT_PLUS: return OpToString::o().sBOT_PLUS->v();
     case UOT_MINUS: return OpToString::o().sBOT_MINUS->v();
     case UOT_NOT: return OpToString::o().sBOT_NOT->v();
-    default: assert(false);
+    default: assert(false); return ASTString("");
     }
   }
 

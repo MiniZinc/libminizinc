@@ -9,6 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <minizinc/file_utils.hh>
 #include <config.hh>
 
@@ -25,8 +29,6 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#define _CRT_SECURE_NO_WARNINGS
 
 namespace MiniZinc { namespace FileUtils {
   

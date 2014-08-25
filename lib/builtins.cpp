@@ -352,7 +352,7 @@ namespace MiniZinc {
     if ( ( id->decl()->ti()->ranges().size()==1 &&
            id->decl()->ti()->ranges()[0]->domain() != NULL &&
            id->decl()->ti()->ranges()[0]->domain()->isa<TIId>() ) ||
-         ( id->decl()->ti()->ranges().size() >= i &&
+         ( static_cast<int>(id->decl()->ti()->ranges().size()) >= i &&
            ( id->decl()->ti()->ranges()[i-1]->domain() == NULL ||
              id->decl()->ti()->ranges()[i-1]->domain()->isa<TIId>()) )) {
       GCLock lock;
@@ -361,7 +361,7 @@ namespace MiniZinc {
         throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
-    if (id->decl()->ti()->ranges().size() < i)
+    if (static_cast<int>(id->decl()->ti()->ranges().size()) < i)
       throw EvalError(id->loc(), "index_set: wrong dimension");
     return eval_intset(id->decl()->ti()->ranges()[i-1]->domain());
   }
@@ -373,7 +373,7 @@ namespace MiniZinc {
     ArrayLit* al1 = eval_array_lit(args[1]);
     if (al0->type().dim() != al1->type().dim())
       return false;
-    for (unsigned int i=1; i<=al0->type().dim(); i++) {
+    for (int i=1; i<=al0->type().dim(); i++) {
       IntSetVal* index0 = b_index_set(al0, i);
       IntSetVal* index1 = b_index_set(al1, i);
       if (!index0->equal(index1))
@@ -807,10 +807,10 @@ namespace MiniZinc {
   IntVal b_pow_int(ASTExprVec<Expression> args) {
     IntVal p = eval_int(args[0]);
     IntVal r = 1;
-    int e = eval_int(args[1]).toInt();
+    long long int e = eval_int(args[1]).toInt();
     if (e < 0)
       throw EvalError(args[1]->loc(), "Cannot raise integer to a negative power");
-    for (int i=e; i--;)
+    for (long long int i=e; i--;)
       r = r*p;
     return r;
   }
@@ -1032,7 +1032,7 @@ namespace MiniZinc {
     ArrayLit* order_e = eval_array_lit(args[1]);
     std::vector<IntVal> order(order_e->v().size());
     std::vector<int> a(order_e->v().size());
-    for (int i=0; i<order.size(); i++) {
+    for (unsigned int i=0; i<order.size(); i++) {
       a[i] = i;
       order[i] = eval_int(order_e->v()[i]);
     }

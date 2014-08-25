@@ -1305,8 +1305,10 @@ namespace MiniZinc {
       Ranges::Inter<IntSetRanges,Ranges::Const> inter(dr,c);
       return IntSetVal::ai(inter);
     }
-    static Val floor_div(Val v0, Val v1) { return static_cast<Val>(floor(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
-    static Val ceil_div(Val v0, Val v1) { return static_cast<Val>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
+    static Val floor_div(Val v0, Val v1) {
+      return static_cast<long long int>(floor(static_cast<FloatVal>(v0.toInt()) / static_cast<FloatVal>(v1.toInt())));
+    }
+    static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
   };
   template<>
   class LinearTraits<FloatLit> {

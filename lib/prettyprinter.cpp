@@ -676,6 +676,7 @@ namespace MiniZinc {
         return _t.mapTIId(*e->cast<TIId>());
       default:
         assert(false);
+	return typename T::ret();
         break;
       }
     }

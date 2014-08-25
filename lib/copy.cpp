@@ -513,6 +513,7 @@ namespace MiniZinc {
         m.insert(i,c);
         return c;
       }
+    default: assert(false); return NULL;
     }
   }
 
