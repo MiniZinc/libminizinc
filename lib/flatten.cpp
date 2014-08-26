@@ -381,6 +381,12 @@ namespace MiniZinc {
     }
   };
   
+  FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
+  : LocationException(loc,msg) {
+    env.errorStack.clear();
+  }
+
+  
   Env::Env(Model* m) : e(new EnvI(m)) {}
   Env::~Env(void) {
     delete e;
@@ -396,80 +402,100 @@ namespace MiniZinc {
   Env::envi(void) { return *e; }
   std::ostream&
   Env::dumpErrorStack(std::ostream& os) {
-    if (e->errorStack.size() > 0 && !e->errorStack[0]->isa<Id>())
-      std::cerr << "while evaluating" << std::endl;
-    for (unsigned int i=0; i<e->errorStack.size(); i++) {
-      if (e->errorStack[i]->isa<Id>())
+    int lastError = 0;
+    for (; lastError < e->errorStack.size(); lastError++) {
+      if (e->errorStack[lastError]->isa<Id>()) {
         break;
-      std::cerr << "  ";
+      }
+    }
+
+    ASTString curloc_f;
+    int curloc_l = -1;
+    
+    for (int i=lastError-1; i>=0; i--) {
+      ASTString newloc_f = e->errorStack[i]->loc().filename;
+      int newloc_l = e->errorStack[i]->loc().first_line;
+      if (newloc_f != curloc_f || newloc_l != curloc_l) {
+        os << "  " << newloc_f << ":" << newloc_l << std::endl;
+        curloc_f = newloc_f;
+        curloc_l = newloc_l;
+      }
+      os << "  in ";
       switch (e->errorStack[i]->eid()) {
         case Expression::E_INTLIT:
-          std::cerr << "integer literal";
+          os << "integer literal" << std::endl;
           break;
         case Expression::E_FLOATLIT:
-          std::cerr << "float literal";
+          os << "float literal" << std::endl;
           break;
         case Expression::E_SETLIT:
-          std::cerr << "set literal";
+          os << "set literal" << std::endl;
           break;
         case Expression::E_BOOLLIT:
-          std::cerr << "bool literal";
+          os << "bool literal" << std::endl;
           break;
         case Expression::E_STRINGLIT:
-          std::cerr << "string literal";
+          os << "string literal" << std::endl;
           break;
         case Expression::E_ID:
-          std::cerr << "identifier";
+          os << "identifier" << std::endl;
           break;
         case Expression::E_ANON:
-          std::cerr << "anonymous variable";
+          os << "anonymous variable" << std::endl;
           break;
         case Expression::E_ARRAYLIT:
-          std::cerr << "array literal";
+          os << "array literal" << std::endl;
           break;
         case Expression::E_ARRAYACCESS:
-          std::cerr << "array access";
+          os << "array access" << std::endl;
           break;
         case Expression::E_COMP:
-          if (e->errorStack[i]->cast<Comprehension>()->set())
-            std::cerr << "set ";
+        {
+          const Comprehension* cmp = e->errorStack[i]->cast<Comprehension>();
+          if (cmp->set())
+            os << "set ";
           else
-            std::cerr << "array ";
-          std::cerr << "comprehension";
+            os << "array ";
+          os << "comprehension expression with" << std::endl;
+          for (unsigned int i=0; i<cmp->n_generators(); i++) {
+            for (unsigned int j=0; j<cmp->n_decls(i); j++) {
+              os << "    " << cmp->decl(i, j)->id()->str() << " = " << eval_int(cmp->decl(i, j)->e()) << std::endl;
+            }
+          }
+        }
           break;
         case Expression::E_ITE:
-          std::cerr << "if-then-else expression";
+          os << "if-then-else expression" << std::endl;
           break;
         case Expression::E_BINOP:
-          std::cerr << "binary operator " << e->errorStack[i]->cast<BinOp>()->opToString();
+          os << "binary '" << e->errorStack[i]->cast<BinOp>()->opToString() << "' operator expression" << std::endl;
           break;
         case Expression::E_UNOP:
-          std::cerr << "unary operator " << e->errorStack[i]->cast<UnOp>()->opToString();
+          os << "unary '" << e->errorStack[i]->cast<UnOp>()->opToString() << "' operator expression" << std::endl;
           break;
         case Expression::E_CALL:
-          std::cerr << "call '" << e->errorStack[i]->cast<Call>()->id() << "'";
+          os << "call '" << e->errorStack[i]->cast<Call>()->id() << "'" << std::endl;
           break;
         case Expression::E_VARDECL:
         {
           GCLock lock;
-          std::cerr << "variable declaration " << e->errorStack[i]->cast<VarDecl>()->id()->str();
+          os << "variable declaration for '" << e->errorStack[i]->cast<VarDecl>()->id()->str() << "'" << std::endl;
         }
           break;
         case Expression::E_LET:
-          std::cerr << "let expression";
+          os << "let expression" << std::endl;
           break;
         case Expression::E_TI:
-          std::cerr << "type-inst expression";
+          os << "type-inst expression" << std::endl;
           break;
         case Expression::E_TIID:
-          std::cerr << "type identifier";
+          os << "type identifier" << std::endl;
           break;
         default:
           assert(false);
-          std::cerr << "unknown expression (internal error)";
+          os << "unknown expression (internal error)" << std::endl;
           break;
       }
-      os << " in file " << e->errorStack[i]->loc().toString() << std::endl;
     }
     return os;
   }
@@ -1582,7 +1608,7 @@ namespace MiniZinc {
       tt.dim(0);
       c->decl(env.orig->matchFn(c));
       if (c->decl()==NULL) {
-        throw FlatteningError(c->loc(), "cannot find matching declaration");
+        throw FlatteningError(env,c->loc(), "cannot find matching declaration");
       }
       c->type(c->decl()->rtype(args));
       ka = c;
@@ -2248,7 +2274,7 @@ namespace MiniZinc {
           cc->type(Type::varsetint());
           FunctionI* fi = env.orig->matchFn(cc->id(),args);
           if (fi==NULL) {
-            throw FlatteningError(cc->loc(), "cannot find matching declaration");
+            throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
           }
           assert(fi);
           assert(fi->rtype(args).isSubtypeOf(cc->type()));
@@ -2275,7 +2301,7 @@ namespace MiniZinc {
             ret.r = bind(env,ctx,r,e);
             return ret;
           } else {
-            throw FlatteningError(e->loc(), "undefined identifier");
+            throw FlatteningError(env,e->loc(), "undefined identifier");
           }
         }
         if (ctx.neg && id->type().dim() > 0) {
@@ -2342,14 +2368,14 @@ namespace MiniZinc {
             for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
               TypeInst* ti = vd->ti()->ranges()[i];
               if (ti->domain()==NULL)
-                throw FlatteningError(ti->loc(),"array dimensions unknown");
+                throw FlatteningError(env,ti->loc(),"array dimensions unknown");
               IntSetVal* isv = eval_intset(ti->domain());
               if (isv->size() == 0) {
                 dims.push_back(std::pair<int,int>(1,0));
                 asize = 0;
               } else {
                 if (isv->size() != 1)
-                  throw FlatteningError(ti->loc(),"invalid array index set");
+                  throw FlatteningError(env,ti->loc(),"invalid array index set");
                 asize *= (isv->max(0)-isv->min(0)+1);
                 dims.push_back(std::pair<int,int>(static_cast<int>(isv->min(0).toInt()),
 					          static_cast<int>(isv->max(0).toInt())));
@@ -2506,6 +2532,9 @@ namespace MiniZinc {
               dims[i] = eval_int(ees[i].r());
             ka = eval_arrayaccess(al,dims,success);
           }
+          if (!success && ctx.b==C_ROOT && b==constants().var_true) {
+            throw FlatteningError(env,e->loc(),"array access out of bounds");
+          }
           ees.push_back(EE(NULL,constants().boollit(success)));
           if (aa->type().isbool() && !aa->type().isopt()) {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -2527,7 +2556,7 @@ namespace MiniZinc {
             cc->type(aa->type());
             FunctionI* fi = env.orig->matchFn(cc->id(),args);
             if (fi==NULL) {
-              throw FlatteningError(cc->loc(), "cannot find matching declaration");
+              throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
             }
             assert(fi);
             assert(fi->rtype(args).isSubtypeOf(cc->type()));
@@ -3305,7 +3334,7 @@ namespace MiniZinc {
               Call* cc = new Call(e->loc(),callid,args_e);
               cc->decl(env.orig->matchFn(cc->id(),args_e));
               if (cc->decl()==NULL) {
-                throw FlatteningError(cc->loc(), "cannot find matching declaration");
+                throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
               }
               cc->type(cc->decl()->rtype(args_e));
 
@@ -3642,7 +3671,7 @@ namespace MiniZinc {
             Call* cr_c = new Call(Location(),cid,e_args);
             decl = env.orig->matchFn(cr_c);
             if (decl==NULL)
-              throw FlatteningError(cr_c->loc(), "cannot find matching declaration");
+              throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
             cr_c->type(decl->rtype(e_args));
             assert(decl);
             cr_c->decl(decl);
@@ -3818,7 +3847,7 @@ namespace MiniZinc {
       {
         GCLock lock;
         if (ctx.b != C_ROOT)
-          throw FlatteningError(e->loc(), "not in root context");
+          throw FlatteningError(env,e->loc(), "not in root context");
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
@@ -3922,9 +3951,11 @@ namespace MiniZinc {
                 cs.push_back(ee);
               }
             } else {
-              if ((ctx.b==C_NEG || ctx.b==C_MIX) && !vd->ann().contains(constants().ann.promise_total))
-                throw FlatteningError(vd->loc(),
-                  "free variable in non-positive context");
+              if ((ctx.b==C_NEG || ctx.b==C_MIX) && !vd->ann().contains(constants().ann.promise_total)) {
+                CallStackItem csi_vd(env, vd);
+                throw FlatteningError(env,vd->loc(),
+                                      "free variable in non-positive context");
+              }
               GCLock lock;
               TypeInst* ti = eval_typeinst(env,vd);
               VarDecl* nvd = new VarDecl(vd->loc(),ti,env.genId());
@@ -4039,7 +4070,7 @@ namespace MiniZinc {
         if (decl==NULL) {
           FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
           if (origdecl == NULL) {
-            throw FlatteningError(c.loc(),"function is used in output, par version needed");
+            throw FlatteningError(env,c.loc(),"function is used in output, par version needed");
           }
 
           if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
@@ -4136,7 +4167,7 @@ namespace MiniZinc {
               if (decl==NULL) {
                 FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
                 if (origdecl == NULL) {
-                  throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                  throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
                 }
                 if (!isBuiltin(origdecl)) {
                   decl = copy(env.cmap,origdecl)->cast<FunctionI>();
@@ -4253,7 +4284,7 @@ namespace MiniZinc {
                 if (decl==NULL) {
                   FunctionI* origdecl = e.orig->matchFn(rhs->id(), tv);
                   if (origdecl == NULL) {
-                    throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                    throw FlatteningError(e,rhs->loc(),"function is used in output, par version needed");
                   }
                   if (!isBuiltin(origdecl)) {
                     decl = copy(e.cmap,origdecl)->cast<FunctionI>();
@@ -4339,7 +4370,7 @@ namespace MiniZinc {
           }
             break;
           default:
-            throw FlatteningError(item->loc(), "invalid item in output model");
+            throw FlatteningError(e,item->loc(), "invalid item in output model");
         }
       }
     } else {
@@ -4405,7 +4436,7 @@ namespace MiniZinc {
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(c.id(), tv);
             if (origdecl == NULL || !origdecl->rtype(tv).ispar()) {
-              throw FlatteningError(c.loc(),"function is used in output, par version needed");
+              throw FlatteningError(env,c.loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
               GCLock lock;
@@ -4463,7 +4494,7 @@ namespace MiniZinc {
                   if (decl==NULL) {
                     FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
                     if (origdecl == NULL) {
-                      throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+                      throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
                     }
                     if (!isBuiltin(origdecl)) {
                       decl = copy(env.cmap,origdecl)->cast<FunctionI>();
@@ -4637,7 +4668,7 @@ namespace MiniZinc {
       }
       void vSolveI(SolveI* si) {
         if (hadSolveItem)
-          throw FlatteningError(si->loc(), "Only one solve item allowed");
+          throw FlatteningError(env,si->loc(), "Only one solve item allowed");
         hadSolveItem = true;
         GCLock lock;
         SolveI* nsi = NULL;
@@ -4664,7 +4695,7 @@ namespace MiniZinc {
       e.envi().errorStack.clear();
       Location modelLoc;
       modelLoc.filename = e.model()->filepath();
-      throw FlatteningError(modelLoc, "Model does not have a solve item");
+      throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
     }
     
     // Create output model
@@ -4993,7 +5024,7 @@ namespace MiniZinc {
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(rhs->id(), tv);
             if (origdecl == NULL) {
-              throw FlatteningError(rhs->loc(),"function is used in output, par version needed");
+              throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
               decl = copy(env.cmap,origdecl)->cast<FunctionI>();
