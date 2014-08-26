@@ -5025,6 +5025,7 @@ namespace MiniZinc {
     
     std::vector<int> toAssignBoolVars;
     std::vector<int> assignedBoolVars;
+    std::vector<int> toRemoveConstraints;
     
     for (unsigned int i=0; i<m.size(); i++) {
       if (m[i]->removed())
@@ -5048,9 +5049,7 @@ namespace MiniZinc {
                   }
                 }
               }
-              CollectDecls cd(env.vo,deletedVarDecls,ci);
-              topDown(cd,c);
-              ci->remove();
+              toRemoveConstraints.push_back(i);
             }
           } else if (Id* id = ci->e()->dyn_cast<Id>()) {
             if (id->decl()->ti()->domain() == constants().lit_false) {
@@ -5060,9 +5059,7 @@ namespace MiniZinc {
               if (id->decl()->ti()->domain()==NULL) {
                 toAssignBoolVars.push_back(env.vo.idx.find(id->decl())->second);
               }
-              CollectDecls cd(env.vo,deletedVarDecls,ci);
-              topDown(cd,c);
-              ci->remove();
+              toRemoveConstraints.push_back(i);
             }
           }
         }
@@ -5173,6 +5170,12 @@ namespace MiniZinc {
       if (remove) {
         deletedVarDecls.push_back(vd);
       }
+    }
+    for (unsigned int i=toRemoveConstraints.size(); i--;) {
+      ConstraintI* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
+      CollectDecls cd(env.vo,deletedVarDecls,ci);
+      topDown(cd,ci->e());
+      ci->remove();
     }
     
     while (!deletedVarDecls.empty()) {
