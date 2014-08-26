@@ -2667,11 +2667,9 @@ namespace MiniZinc {
           EvalF(EnvI& env0, Ctx ctx0) : env(env0), ctx(ctx0) {}
           typedef EE ArrayVal;
           EE e(Expression* e) {
-            if (ctx.b == C_ROOT && e->type().isbool() && !e->type().isopt()) {
-              return flat_exp(env,ctx,e,constants().var_true,constants().var_true);
-            } else {
-              return flat_exp(env,ctx,e,NULL,NULL);
-            }
+            VarDecl* b = ctx.b==C_ROOT ? constants().var_true : NULL;
+            VarDecl* r = (ctx.b == C_ROOT && e->type().isbool() && !e->type().isopt()) ? constants().var_true : NULL;
+            return flat_exp(env,ctx,e,r,b);
           }
         } _evalf(env,ctx);
         std::vector<EE> elems_ee = eval_comp<EvalF>(_evalf,c);
@@ -2825,8 +2823,8 @@ namespace MiniZinc {
           {
             assert(!ctx0.neg);
             assert(!ctx1.neg);
-            EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
+            EE e0 = flat_exp(env,ctx0,boe0,NULL,b);
+            EE e1 = flat_exp(env,ctx1,boe1,NULL,b);
             
             if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
               GCLock lock;
