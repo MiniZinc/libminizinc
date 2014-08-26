@@ -1440,58 +1440,58 @@ id_or_quoted_op :
       MZN_IDENTIFIER
       { $$=$1; }
     | MZN_EQUIV_QUOTED
-      { $$=strdup("@<->"); }
+      { $$=strdup("<->"); }
     | MZN_IMPL_QUOTED
-      { $$=strdup("@->"); }
+      { $$=strdup("->"); }
     | MZN_RIMPL_QUOTED
-      { $$=strdup("@<-"); }
+      { $$=strdup("<-"); }
     | MZN_OR_QUOTED
-      { $$=strdup("@\\/"); }
+      { $$=strdup("\\/"); }
     | MZN_XOR_QUOTED
-      { $$=strdup("@xor"); }
+      { $$=strdup("xor"); }
     | MZN_AND_QUOTED
-      { $$=strdup("@/\\"); }
+      { $$=strdup("/\\"); }
     | MZN_LE_QUOTED
-      { $$=strdup("@<"); }
+      { $$=strdup("<"); }
     | MZN_GR_QUOTED
-      { $$=strdup("@>"); }
+      { $$=strdup(">"); }
     | MZN_LQ_QUOTED
-      { $$=strdup("@<="); }
+      { $$=strdup("<="); }
     | MZN_GQ_QUOTED
-      { $$=strdup("@>="); }
+      { $$=strdup(">="); }
     | MZN_EQ_QUOTED
-      { $$=strdup("@="); }
+      { $$=strdup("="); }
     | MZN_NQ_QUOTED
-      { $$=strdup("@!="); }
+      { $$=strdup("!="); }
     | MZN_IN_QUOTED
-      { $$=strdup("@in"); }
+      { $$=strdup("in"); }
     | MZN_SUBSET_QUOTED
-      { $$=strdup("@subset"); }
+      { $$=strdup("subset"); }
     | MZN_SUPERSET_QUOTED
-      { $$=strdup("@superset"); }
+      { $$=strdup("superset"); }
     | MZN_UNION_QUOTED
-      { $$=strdup("@union"); }
+      { $$=strdup("union"); }
     | MZN_DIFF_QUOTED
-      { $$=strdup("@diff"); }
+      { $$=strdup("diff"); }
     | MZN_SYMDIFF_QUOTED
-      { $$=strdup("@symdiff"); }
+      { $$=strdup("symdiff"); }
     | MZN_DOTDOT_QUOTED
-      { $$=strdup("@.."); }
+      { $$=strdup(".."); }
     | MZN_PLUS_QUOTED
-      { $$=strdup("@+"); }
+      { $$=strdup("+"); }
     | MZN_MINUS_QUOTED
-      { $$=strdup("@-"); }
+      { $$=strdup("-"); }
     | MZN_MULT_QUOTED
-      { $$=strdup("@*"); }
+      { $$=strdup("*"); }
     | MZN_DIV_QUOTED
-      { $$=strdup("@/"); }
+      { $$=strdup("/"); }
     | MZN_IDIV_QUOTED
-      { $$=strdup("@div"); }
+      { $$=strdup("div"); }
     | MZN_MOD_QUOTED
-      { $$=strdup("@mod"); }
+      { $$=strdup("mod"); }
     | MZN_INTERSECT_QUOTED
-      { $$=strdup("@intersect"); }
+      { $$=strdup("intersect"); }
     | MZN_NOT_QUOTED
-      { $$=strdup("@not"); }
+      { $$=strdup("not"); }
     | MZN_PLUSPLUS_QUOTED
-      { $$=strdup("@++"); }
+      { $$=strdup("++"); }
