@@ -98,7 +98,7 @@ namespace MiniZinc {
     AS_LEFT, AS_RIGHT, AS_NONE
   };
   
-  bool assoc(const BinOp* bo) {
+  Assoc assoc(const BinOp* bo) {
     switch (bo->op()) {
       case BOT_LE:
       case BOT_LQ:
