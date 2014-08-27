@@ -3523,8 +3523,8 @@ namespace MiniZinc {
               nctx.b = ctx.i;
             }
           } else if (cid == constants().ids.assert || cid == constants().ids.trace) {
-            Expression* callres = decl->_builtins.e(c->args());
-            ret = flat_exp(env,ctx,callres,r,b);
+            KeepAlive callres = decl->_builtins.e(c->args());
+            ret = flat_exp(env,ctx,callres(),r,b);
             // This is all we need to do for assert, so break out of the E_CALL
             break;
           }
@@ -3781,8 +3781,8 @@ namespace MiniZinc {
                   // Do not insert into map, since par results will quickly become
                   // garbage anyway and then disappear from the map
                 } else if (decl->_builtins.e) {
-                  Expression* callres = decl->_builtins.e(cr_c->args());
-                  EE res = flat_exp(env,ctx,callres,r,b);
+                  KeepAlive callres = decl->_builtins.e(cr_c->args());
+                  EE res = flat_exp(env,ctx,callres(),r,b);
                   args_ee.push_back(res);
                   ret.b = conj(env,b,Ctx(),args_ee);
                   ret.r = bind(env,ctx,r,res.r());
