@@ -102,9 +102,9 @@ int main (int argc, char* argv[]) {
 CHECK_CXX_SOURCE_COMPILES("
 #include <string.h>
 int main (int argc, char* argv[]) {
-  (void) strncpy_s(NULL,0,NULL,0);
+  (void) memcpy_s(NULL,0,NULL,0);
   return 0;
-}" HAS_STRNCPY_S)
+}" HAS_MEMCPY_S)
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
