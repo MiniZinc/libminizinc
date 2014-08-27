@@ -12,3 +12,4 @@ constraint
     [x, y][_] = z;
 
 solve :: int_search([x, y, z], input_order, indomain_min, complete) satisfy;
+output [];
