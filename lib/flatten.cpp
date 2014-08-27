@@ -4399,9 +4399,19 @@ namespace MiniZinc {
         for (unsigned int i=0; i<e.orig->size(); i++) {
           if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
             VarDecl* vd = vdi->e();
-            if (vd->type().isvar()) {
-              StringLit* sl = new StringLit(Location(),vd->id()->str().str()+" = ");
+            if (vd->type().isvar() && vd->e()==NULL) {
+              std::ostringstream s;
+              s << vd->id()->str().str() << " = ";
+              if (vd->type().dim() > 0) {
+                s << "array" << vd->type().dim() << "d(";
+                for (unsigned int i=0; i<vd->type().dim(); i++) {
+                  IntSetVal* idxset = eval_intset(vd->ti()->ranges()[i]->domain());
+                  s << *idxset << ",";
+                }
+              }
+              StringLit* sl = new StringLit(Location(),s.str());
               outputVars.push_back(sl);
+              
               std::vector<Expression*> showArgs(1);
               showArgs[0] = vd->id();
               Call* show = new Call(Location(),ASTString("show"),showArgs);
@@ -4410,7 +4420,9 @@ namespace MiniZinc {
               assert(fi);
               show->decl(fi);
               outputVars.push_back(show);
-              StringLit* eol = new StringLit(Location(),";\n");
+              std::string ends = vd->type().dim() > 0 ? ")" : "";
+              ends += ";\n";
+              StringLit* eol = new StringLit(Location(),ends);
               outputVars.push_back(eol);
             }
           }
