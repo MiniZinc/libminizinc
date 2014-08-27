@@ -365,6 +365,10 @@ namespace MiniZinc {
     else
       _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~static_cast<ptrdiff_t>(1));
   }
+  inline void
+  VarDecl::flat(VarDecl* vd) {
+    _flat = WeakRef(vd);
+  }
 
   
   inline

@@ -1,0 +1,4 @@
+MiniZinc: evaluation error: 
+  assert_bad_1.mzn:9
+  in call 'assert'
+  Assertion failed: a not decreasing

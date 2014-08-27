@@ -317,9 +317,9 @@ int main(int argc, char** argv) {
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;
-              std::cerr << e.loc() << ":" << std::endl;
-              std::cerr << e.what() << ": " << e.msg() << std::endl;
+              std::cerr << e.what() << ": " << std::endl;
               env.dumpErrorStack(std::cerr);
+              std::cerr << "  " << e.msg() << std::endl;
               exit(EXIT_FAILURE);
             }
             Model* flat = env.flat();

@@ -50,16 +50,6 @@ namespace MiniZinc {
     }
   };
 
-  class FlatteningError : public LocationException {
-  public:
-    FlatteningError(const Location& loc, const std::string& msg)
-      : LocationException(loc,msg) {}
-    ~FlatteningError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: flattening error";
-    }
-  };
-
 }
 
 #endif
