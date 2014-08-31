@@ -31,6 +31,9 @@ function var set of int: array2set(array[int] of var int: x) ::promise_total =
         } in s | i in index_set(x)]);
     } in y;
 
+function set of int: array2set(array[int] of int: x) =
+  { x[i] | i in index_set(x) };
+
 % integer constraints
 predicate int_abs(var int: a, var int: b);
 predicate int_eq(var int: a, var int: b);
