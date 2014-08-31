@@ -118,8 +118,10 @@ namespace MiniZinc {
   public:
     ItemIter(I& iter0) : iter(iter0) {}
     void run(Model* m) {
+      UNORDERED_NAMESPACE::unordered_set<Model*> seen;
       std::vector<Model*> models;
       models.push_back(m);
+      seen.insert(m);
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
@@ -128,8 +130,10 @@ namespace MiniZinc {
             continue;
           switch (cm->_items[i]->iid()) {
           case Item::II_INC:
-            if (cm->_items[i]->cast<IncludeI>()->own())
+            if (seen.find(cm->_items[i]->cast<IncludeI>()->m()) == seen.end()) {
               models.push_back(cm->_items[i]->cast<IncludeI>()->m());
+              seen.insert(cm->_items[i]->cast<IncludeI>()->m());
+            }
             break;
           case Item::II_VD:
             iter.vVarDeclI(cm->_items[i]->cast<VarDeclI>());
