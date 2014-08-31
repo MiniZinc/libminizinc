@@ -743,7 +743,7 @@ namespace MiniZinc {
     /// Access initialisation expression
     Expression* e(void) const;
     /// Set initialisation expression
-    void e(Expression* rhs) { assert(!Expression::equal(rhs,_id)); _e = rhs; }
+    void e(Expression* rhs);
     /// Access flattened version
     VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
     /// Set flattened version

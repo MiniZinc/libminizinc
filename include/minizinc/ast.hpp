@@ -338,6 +338,12 @@ namespace MiniZinc {
     return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~ static_cast<ptrdiff_t>(1));
   }
 
+  inline void
+  VarDecl::e(Expression* rhs) {
+    assert(!Expression::equal(rhs,_id));
+    _e = rhs;
+  }
+  
   inline bool
   VarDecl::toplevel(void) const {
     return _flag_1;
