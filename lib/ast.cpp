@@ -355,7 +355,7 @@ namespace MiniZinc {
     
     class OpToString {
     protected:
-      std::vector<KeepAlive> rootSet;
+      Model* rootSetModel;
     public:
       Id* sBOT_PLUS;
       Id* sBOT_MINUS;
@@ -388,6 +388,8 @@ namespace MiniZinc {
       
       OpToString(void) {
         GCLock lock;
+        rootSetModel = new Model();
+        std::vector<Expression*> rootSet;
         sBOT_PLUS = new Id(Location(),"+",NULL);
         rootSet.push_back(sBOT_PLUS);
         sBOT_MINUS = new Id(Location(),"-",NULL);
@@ -444,6 +446,7 @@ namespace MiniZinc {
         rootSet.push_back(sBOT_DOTDOT);
         sBOT_NOT = new Id(Location(),"not",NULL);
         rootSet.push_back(sBOT_NOT);
+        rootSetModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(),rootSet)));
       }
             
       static OpToString& o(void) {
