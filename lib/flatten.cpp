@@ -416,7 +416,7 @@ namespace MiniZinc {
       ASTString newloc_f = e->errorStack[i]->loc().filename;
       int newloc_l = e->errorStack[i]->loc().first_line;
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
-        os << "  " << newloc_f << ":" << newloc_l << std::endl;
+        os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;
         curloc_l = newloc_l;
       }
