@@ -14,7 +14,7 @@
 #endif
 
 #include <minizinc/file_utils.hh>
-#include <config.hh>
+#include <minizinc/config.hh>
 
 #ifdef HAS_PIDPATH
 #include <stdio.h>

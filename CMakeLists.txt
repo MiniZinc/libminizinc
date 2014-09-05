@@ -113,11 +113,13 @@ int main (int argc, char* argv[]) {
 
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
   "${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in"
-  "${PROJECT_BINARY_DIR}/config.hh"
+  "${PROJECT_BINARY_DIR}/minizinc/config.hh"
   )
 
 include_directories("${PROJECT_BINARY_DIR}")
@@ -153,8 +155,6 @@ else(FLEX_EXEC)
 	set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
 endif(FLEX_EXEC)
 
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
-
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
 	add_custom_command(
@@ -167,6 +167,7 @@ if(BISON_EXEC)
 		)
 	set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 	set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
+	set(parser_hh "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh")
 else(BISON_EXEC)
 	MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
 	if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
@@ -174,6 +175,7 @@ else(BISON_EXEC)
 	endif()
 	include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
 	set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
+	set(parser_hh "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh")
 endif(BISON_EXEC)
 
 
@@ -220,6 +222,7 @@ include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
+"${parser_hh}"
 )
 
 # add the executable
@@ -240,11 +243,12 @@ INSTALL(DIRECTORY include/minizinc
 DESTINATION include
 PATTERN config.hh.in EXCLUDE
 )
-INSTALL(FILES ${PROJECT_BINARY_DIR}/config.hh DESTINATION include/minizinc)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)
-INSTALL(DIRECTORY lib/cached DESTINATION lib)
+INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
+INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})
