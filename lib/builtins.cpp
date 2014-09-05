@@ -86,7 +86,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "min on empty array undefined");
+          return IntVal::infinity;
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(al->v()[i]));
@@ -110,7 +110,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "max on empty array undefined");
+          return -IntVal::infinity;
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(al->v()[i]));
@@ -415,12 +415,12 @@ namespace MiniZinc {
   IntVal b_min_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
-    return isv->min(0);
+    return isv->min();
   }
   IntVal b_max_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
-    return isv->max(isv->size()-1);
+    return isv->max();
   }
   IntSetVal* b_ub_set(Expression* e) {
     IntSetVal* isv = compute_intset_bounds(e);

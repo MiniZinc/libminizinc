@@ -265,6 +265,10 @@ namespace MiniZinc {
   public:
     /// Return number of ranges
     int size(void) const { return _size / sizeof(Range); }
+    /// Return minimum, or infinity if set is empty
+    IntVal min(void) const { return size()==0 ? IntVal::infinity : get(0).min; }
+    /// Return maximum, or minus infinity if set is empty
+    IntVal max(void) const { return size()==0 ? -IntVal::infinity : get(size()-1).max; }
     /// Return minimum of range \a i
     IntVal min(int i) const { assert(i<size()); return get(i).min; }
     /// Return maximum of range \a i
