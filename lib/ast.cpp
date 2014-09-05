@@ -257,20 +257,24 @@ namespace MiniZinc {
   Generator::Generator(const std::vector<ASTString>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->loc(),
-        new TypeInst(in->loc(),Type::parint()),v[i],
-        new IntLit(in->loc(),0)));
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(in->loc(),
+                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
     _v = vd;
     _in = in;
   }
   Generator::Generator(const std::vector<std::string>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->loc(),
-        new TypeInst(in->loc(),Type::parint()),ASTString(v[i]),
-        new IntLit(in->loc(),0)));
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(in->loc(),
+                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
     _v = vd;
     _in = in;
   }

@@ -386,9 +386,6 @@ namespace MiniZinc {
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
           needsOptionTypes = true;
-        } else if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
-          throw TypeError(g_in->loc(),
-            "generator expression must be par set of int or array[int] of int, but is "+ty_in.toString());
         }
       }
       if (c.where()) {
@@ -396,7 +393,7 @@ namespace MiniZinc {
           needsOptionTypes = true;
         } else if (c.where()->type() != Type::parbool()) {
           throw TypeError(c.where()->loc(),
-                          "where clause must be par bool, but is "+
+                          "where clause must be bool, but is "+
                           c.where()->type().toString());
         }
       }
@@ -418,6 +415,32 @@ namespace MiniZinc {
         tt.ti(Type::TI_VAR);
       }
       c.type(tt);
+    }
+    /// Visit array comprehension generator
+    void vComprehensionGenerator(Comprehension& c, int gen_i) {
+      Expression* g_in = c.in(gen_i);
+      const Type& ty_in = g_in->type();
+      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
+        throw TypeError(g_in->loc(),
+                        "generator expression must be (par or var) set of int or one-dimensional array, but is "+ty_in.toString());
+      }
+      Type ty_id;
+      bool needIntLit = false;
+      if (ty_in.dim()==0) {
+        ty_id = Type::parint();
+        needIntLit = true;
+      } else {
+        ty_id = ty_in;
+        ty_id.dim(0);
+      }
+      for (int j=0; j<c.n_decls(gen_i); j++) {
+        if (needIntLit) {
+          GCLock lock;
+          c.decl(gen_i,j)->e(new IntLit(Location(),0));
+        }
+        c.decl(gen_i,j)->type(ty_id);
+        c.decl(gen_i,j)->ti()->type(ty_id);
+      }
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {

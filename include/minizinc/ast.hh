@@ -1122,6 +1122,8 @@ namespace MiniZinc {
     void vArrayAccess(const ArrayAccess&) {}
     /// Visit array comprehension
     void vComprehension(const Comprehension&) {}
+    /// Visit array comprehension (only generator \a gen_i)
+    void vComprehensionGenerator(const Comprehension&, int gen_i) {}
     /// Visit if-then-else
     void vITE(const ITE&) {}
     /// Visit binary operator
