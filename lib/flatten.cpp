@@ -2762,7 +2762,7 @@ namespace MiniZinc {
           Call* keepAlive = new Call(Location(),constants().var_redef->id(),args);
           keepAlive->type(Type::varbool());
           keepAlive->decl(constants().var_redef);
-          (void) flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
+          ret = flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
           
           env.reverseMappers.insert(ee.r()->cast<Id>(),revMap);
           
