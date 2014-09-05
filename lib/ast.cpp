@@ -904,6 +904,10 @@ namespace MiniZinc {
     ids.lin_exp = ASTString("lin_exp");
     ids.element = ASTString("element");
     
+    ids.show = ASTString("show");
+    ids.output = ASTString("output");
+    ids.fix = ASTString("fix");
+    
     ids.int_.lin_eq = ASTString("int_lin_eq");
     ids.int_.lin_le = ASTString("int_lin_le");
     ids.int_.lin_ne = ASTString("int_lin_ne");
@@ -1017,6 +1021,9 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.element));
+    v.push_back(new StringLit(Location(),ids.show));
+    v.push_back(new StringLit(Location(),ids.output));
+    v.push_back(new StringLit(Location(),ids.fix));
     
     v.push_back(new StringLit(Location(),ids.int_.lin_eq));
     v.push_back(new StringLit(Location(),ids.int_.lin_le));

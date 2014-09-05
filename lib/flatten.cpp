@@ -4414,7 +4414,7 @@ namespace MiniZinc {
               
               std::vector<Expression*> showArgs(1);
               showArgs[0] = vd->id();
-              Call* show = new Call(Location(),ASTString("show"),showArgs);
+              Call* show = new Call(Location(),constants().ids.show,showArgs);
               show->type(Type::parstring());
               FunctionI* fi = e.orig->matchFn(show);
               assert(fi);

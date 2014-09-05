@@ -1177,6 +1177,10 @@ namespace MiniZinc {
         ASTString sum;
         ASTString lin_exp;
         ASTString element;
+	
+	ASTString show;
+	ASTString fix;
+	ASTString output;
 
         struct {
           ASTString lin_eq;
