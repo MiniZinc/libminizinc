@@ -643,7 +643,7 @@ namespace MiniZinc {
         return ret;
       }
       break;
-    default: assert(false); return NULL;
+    default: assert(false); return false;
     }
   }
 
