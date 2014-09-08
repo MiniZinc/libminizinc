@@ -224,6 +224,18 @@ namespace MiniZinc {
   unsigned int
   Model::size(void) const { return _items.size(); }
   
+  std::vector<Item*>::iterator
+  Model::begin(void) { return _items.begin(); }
+
+  std::vector<Item*>::const_iterator
+  Model::begin(void) const { return _items.begin(); }
+
+  std::vector<Item*>::iterator
+  Model::end(void) { return _items.end(); }
+
+  std::vector<Item*>::const_iterator
+  Model::end(void) const { return _items.end(); }
+  
   void
   Model::compact(void) {
     struct { bool operator() (const Item* i) {

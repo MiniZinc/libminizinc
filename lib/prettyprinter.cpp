@@ -1938,13 +1938,13 @@ namespace MiniZinc {
   Printer::print(const Model* m) {
     if (_width==0) {
       PlainPrinter p(_os,_flatZinc);
-      for (unsigned int i = 0; i < m->_items.size(); i++) {
-        p.p(m->_items[i]);
+      for (unsigned int i = 0; i < m->size(); i++) {
+        p.p((*m)[i]);
       }
     } else {
       init();
-      for (unsigned int i = 0; i < m->_items.size(); i++) {
-        p(m->_items[i]);
+      for (unsigned int i = 0; i < m->size(); i++) {
+        p((*m)[i]);
       }
     }
   }

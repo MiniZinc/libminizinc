@@ -246,7 +246,7 @@ namespace MiniZinc {
         if (it->second.r()) {
           if (it->second.r()->isa<VarDecl>()) {
             int idx = vo.find(it->second.r()->cast<VarDecl>());
-            if (idx >= 0 && _flat->_items[idx]->removed())
+            if (idx >= 0 && (*_flat)[idx]->removed())
               return map.end();
           }
         } else {
@@ -337,7 +337,7 @@ namespace MiniZinc {
         }
       }
       int idx = vo.find(vd);
-      CollectOccurrencesE ce(vo,_flat->_items[idx]);
+      CollectOccurrencesE ce(vo,(*_flat)[idx]);
       topDown(ce, vd->e());
     }
     Model* flat(void) {
@@ -5485,17 +5485,15 @@ namespace MiniZinc {
   }
   
   void oldflatzinc(Env& e) {
-    struct {
-    public:
-      bool operator() (const Item* i) {
-        return i->isa<VarDeclI>() &&
-          (i->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
-           i->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN);
-      }
-    } _isOptVar;
     Model* m = e.flat();
-    m->_items.erase(remove_if(m->_items.begin(), m->_items.end(), _isOptVar),
-      m->_items.end());
+    for (unsigned int i=0; i<m->size(); i++) {
+      Item* item = (*m)[i];
+      if (item->isa<VarDeclI>() &&
+          (item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
+           item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) ) {
+            item->remove();
+          }
+    }
     
     int msize = m->size();
     UNORDERED_NAMESPACE::unordered_set<Item*> globals;
@@ -5776,7 +5774,7 @@ namespace MiniZinc {
     std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
     int vdCount = 0;
     for (unsigned int i=0; i<declsWithIds.size(); i++) {
-      VarDecl* cur = m->_items[declsWithIds[i]]->cast<VarDeclI>()->e();
+      VarDecl* cur = (*m)[declsWithIds[i]]->cast<VarDeclI>()->e();
       std::vector<int> stack;
       while (cur && cur->payload() < 0) {
         stack.push_back(cur->payload());
@@ -5787,14 +5785,16 @@ namespace MiniZinc {
         }
       }
       for (unsigned int i=stack.size(); i--;) {
-        VarDeclI* vdi = m->_items[-stack[i]-1]->cast<VarDeclI>();
+        VarDeclI* vdi = (*m)[-stack[i]-1]->cast<VarDeclI>();
         vdi->e()->payload(-vdi->e()->payload()-1);
         sortedVarDecls[vdCount++] = vdi;
       }
     }
     for (unsigned int i=0; i<declsWithIds.size(); i++) {
-      m->_items[declsWithIds[i]] = sortedVarDecls[i];
+      (*m)[declsWithIds[i]] = sortedVarDecls[i];
     }
+    
+    m->compact();
     
     class Cmp {
     public:
@@ -5833,7 +5833,7 @@ namespace MiniZinc {
         return false;
       }
     } _cmp;
-    std::stable_sort(m->_items.begin(),m->_items.end(),_cmp);
+    std::stable_sort(m->begin(),m->end(),_cmp);
 
   }
 
