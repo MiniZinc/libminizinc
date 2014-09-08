@@ -44,7 +44,7 @@ namespace MiniZinc {
     /// Element access
     int& operator[](unsigned int i);
     /// Element access
-    const int operator[](unsigned int i) const;
+    int operator[](unsigned int i) const;
     /// Iterator begin
     int* begin(void);
     /// Iterator end
@@ -109,7 +109,7 @@ namespace MiniZinc {
       return reinterpret_cast<int*>(_data)[i];
     }
     /// Return element at position \a i
-    const int operator[](unsigned int i) const {
+    int operator[](unsigned int i) const {
       assert(i<size());
       return reinterpret_cast<const int*>(_data)[i];
     }
@@ -180,7 +180,7 @@ namespace MiniZinc {
   ASTIntVec::operator[](unsigned int i) {
     return (*_v)[i];
   }
-  inline const int
+  inline int
   ASTIntVec::operator[](unsigned int i) const {
     return (*_v)[i];
   }
