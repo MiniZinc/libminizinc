@@ -4035,6 +4035,8 @@ namespace MiniZinc {
             decl->loc().filename.endsWith("/stdlib.mzn"));
   }
   
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e);
+
   bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
       return true;
@@ -4085,6 +4087,7 @@ namespace MiniZinc {
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(decl);
               env.output->addItem(decl);
+              outputVarDecls(env,origdecl,decl->e());
             } else {
               decl = origdecl;
             }
@@ -4129,6 +4132,8 @@ namespace MiniZinc {
       O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
       void vId(Id& id) {
         if (&id==constants().absent)
+          return;
+        if (!id.decl()->toplevel())
           return;
         VarDecl* vd = id.decl();
         VarDecl* reallyFlat = vd->flat();
@@ -4186,7 +4191,7 @@ namespace MiniZinc {
             }
             outputVarDecls(env,nvi,it->second());
             nvi->e()->e(rhs);
-          } else if (cannotUseRHSForOutput(env, reallyFlat->e())) {
+          } else if (reallyFlat && cannotUseRHSForOutput(env, reallyFlat->e())) {
             assert(nvi->e()->flat());
             nvi->e()->e(NULL);
             if (nvi->e()->type().dim() == 0) {
