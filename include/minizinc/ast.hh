@@ -1283,6 +1283,7 @@ namespace MiniZinc {
         ASTString defines_var;
         Id* is_reverse_map;
         Id* promise_total;
+        ASTString doc_comment;
       } ann;
       /// Constructor
       Constants(void);
