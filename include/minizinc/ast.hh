@@ -1180,9 +1180,9 @@ namespace MiniZinc {
         ASTString lin_exp;
         ASTString element;
 	
-	ASTString show;
-	ASTString fix;
-	ASTString output;
+        ASTString show;
+        ASTString fix;
+        ASTString output;
 
         struct {
           ASTString lin_eq;
