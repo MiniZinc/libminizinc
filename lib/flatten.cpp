@@ -4777,7 +4777,6 @@ namespace MiniZinc {
                 topDown(cd,vdi->e()->e());
                 vdi->remove();
                 keptVariable = false;
-                env.flat_addItem(ci);
               } else {
                 vdi->e()->e(NULL);
               }
