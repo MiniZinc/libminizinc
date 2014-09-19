@@ -43,9 +43,9 @@ namespace MiniZinc {
     typedef typename UNORDERED_NAMESPACE::unordered_map<Expression*,T,
       ExpressionHash,ExpressionEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
-    void insert(Expression* e, const T& t) {
+    iterator insert(Expression* e, const T& t) {
       assert(e != NULL);
-      _m.insert(std::pair<Expression*,T>(e,t));
+      return _m.insert(std::pair<Expression*,T>(e,t)).first;
     }
     /// Find \a e in map
     iterator find(Expression* e) { return _m.find(e); }

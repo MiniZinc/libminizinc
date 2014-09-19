@@ -4570,6 +4570,7 @@ namespace MiniZinc {
                   }
                 }
               }
+              env.output_vo.add(reallyFlat, env.output->size());
             }
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
@@ -4866,6 +4867,8 @@ namespace MiniZinc {
           }
         }
       }
+      
+      // rewrite some constraints if there are redefinitions
       for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
@@ -4985,6 +4988,78 @@ namespace MiniZinc {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
+            } else if ( (c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq || c->id() == constants().ids.float_.eq || c->id() == constants().ids.set_eq) &&
+                       c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
+                       (c->args()[0]->cast<Id>()->decl()->e()==NULL || c->args()[1]->cast<Id>()->decl()->e()==NULL)) {
+              Id* id0 = c->args()[0]->cast<Id>();
+              Id* id1 = c->args()[1]->cast<Id>();
+              if (id0->decl() != id1->decl()) {
+                if (isOutput(id0->decl())) {
+                  std::swap(id0,id1);
+                }
+                
+                if (id0->decl()->e() != NULL) {
+                  id1->decl()->e(id0->decl()->e());
+                  id0->decl()->e(NULL);
+                }
+
+                // Compute intersection of domains
+                if (id0->decl()->ti()->domain() != NULL) {
+                  if (id1->decl()->ti()->domain() != NULL) {
+
+                    if (id0->type().isint() || id0->type().isintset()) {
+                      IntSetVal* isv0 = eval_intset(id0->decl()->ti()->domain());
+                      IntSetVal* isv1 = eval_intset(id1->decl()->ti()->domain());
+                      IntSetRanges isv0r(isv0);
+                      IntSetRanges isv1r(isv1);
+                      Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
+                      IntSetVal* nd = IntSetVal::ai(inter);
+                      if (nd->size()==0) {
+                        MZN_MODEL_INCONSISTENT
+                      } else {
+                        id1->decl()->ti()->domain(new SetLit(Location(), nd));
+                      }
+                    } else if (id0->type().isbool()) {
+                      if (eval_bool(id0->decl()->ti()->domain()) != eval_bool(id1->decl()->ti()->domain()))
+                        MZN_MODEL_INCONSISTENT
+                    } else {
+                      // float
+                      BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
+                      BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
+                      FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
+                      FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
+                      FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
+                      FloatVal ub1 = dom1->rhs()->cast<FloatLit>()->v();
+                      FloatVal lb = std::max(lb0,lb1);
+                      FloatVal ub = std::min(ub0,ub1);
+                      if (lb != lb1 || ub != ub1) {
+                        BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+                        newdom->type(Type::parsetfloat());
+                        id1->decl()->ti()->domain(newdom);
+                      }
+                    }
+                  
+                  } else {
+                    id1->decl()->ti()->domain(id0->decl()->ti()->domain());
+                  }
+                }
+              
+                // If both variables are output variables, unify them in the output model
+                if (isOutput(id0->decl())) {
+                  VarDecl* id0_output = (*env.output)[env.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
+                  VarDecl* id1_output = (*env.output)[env.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
+                  if (id0_output->e() == NULL) {
+                    id0_output->e(id1_output->id());
+                  }
+                }
+                
+                env.vo.unify(&m, id0, id1);
+              }
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              ci->e(constants().lit_true);
+              ci->remove();
+
             } else {
               FunctionI* decl = env.orig->matchFn(c);
               if (decl && decl->e()) {
