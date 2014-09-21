@@ -23,6 +23,8 @@ namespace MiniZinc {
     typedef UNORDERED_NAMESPACE::unordered_set<Item*> Items;
     ExpressionMap<Items> _m;
     ExpressionMap<int> idx;
+    typedef UNORDERED_NAMESPACE::unordered_set<Id*> Identifiers;
+    ExpressionMap<Identifiers> _unified;
 
     /// Add \a to the index
     void add(VarDeclI* i, int idx_i);
@@ -41,6 +43,9 @@ namespace MiniZinc {
     
     /// Return number of occurrences of \a v
     int occurrences(VarDecl* v);
+    
+    /// Unify \a v0 and \a v1 (removing \a v0)
+    void unify(Model* m, Id* id0, Id* id1);
     
     /// Clear all entries
     void clear(void);

@@ -830,7 +830,7 @@ namespace MiniZinc {
               env.vo_add_exp(vd);
               ret = vd->id();
             }
-            if (vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
+            if (vd->e() && vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
               if (vd->e()->type().isset()) {
@@ -1671,100 +1671,122 @@ namespace MiniZinc {
     return NULL;
   }
 
+  
+  Expression* createImplication(EnvI& env, const std::vector<Expression*>& elseconds, Expression* ifcond, Expression* then) {
+    std::vector<Expression*> clauseArgs(2);
+    std::vector<Expression*> pos = elseconds;
+    pos.push_back(then);
+    std::vector<Expression*> neg;
+    if (ifcond)
+      neg.push_back(ifcond);
+    clauseArgs[0] = new ArrayLit(Location(), pos);
+    clauseArgs[0]->type(Type::varbool(1));
+    clauseArgs[1] = new ArrayLit(Location(), neg);
+    clauseArgs[1]->type(Type::varbool(1));
+    Call* clause = new Call(Location(), constants().ids.clause, clauseArgs);
+    clause->decl(env.orig->matchFn(clause));
+    clause->type(clause->decl()->rtype(clauseArgs));
+    return clause;
+  }
+
   /// TODO: check if all expressions are total
   /// If yes, use element encoding
   /// If not, use implication encoding
-  KeepAlive flat_ite(EnvI& env,ITE* ite,int i) {
-    if (i>=ite->size())
-      return ite->e_else();
-    if (ite->e_if(i)->type()==Type::parbool()) {
-      GC::lock();
-      bool cond = eval_bool(ite->e_if(i));
-      GC::unlock();
-      if (cond)
-        return ite->e_then(i);
-      else
-        return flat_ite(env,ite,i+1);
-    } else {
-      KeepAlive e_else = flat_ite(env,ite,i+1);
-      GCLock lock;
-      
-      // TODO: translate to [e_else,e_then][bool2int(e_if)+1]
-      // if both e_else and e_then do not contain partial function calls
-//      std::vector<Expression*> alv(2);
-//      alv[1] = ite->e_then(i);
-//      alv[0] = flat_ite(env,ite,i+1)();
-//      std::vector<std::pair<int,int> > aldims(1);
-//      aldims[0].first = 0;
-//      aldims[0].second = 1;
-//      ArrayLit* al = new ArrayLit(ite->loc(),alv,aldims);
-//      Type alt = ite->type();
-//      alt._dim++;
-//      al->type(alt);
-//      std::vector<Expression*> b2iargs(1);
-//      b2iargs[0] = ite->e_if(i);
-//      Call* b2i = new Call(ite->loc(),"bool2int",b2iargs);
-//      b2i->type(Type::varint());
-//      b2i->decl(env.orig->matchFn(b2i));
-//      std::vector<Expression*> aaidx(1);
-//      aaidx[0] = b2i;
-//      ArrayAccess* aa = new ArrayAccess(ite->loc(),al,aaidx);
-//      aa->type(ite->type());
-//      return aa;
+  EE flat_ite(EnvI& env,Ctx ctx, ITE* ite, VarDecl* r, VarDecl* b) {
+    
+    std::vector<Expression*> clauses;
+    std::vector<Expression*> elseconds;
+    
+    GC::lock();
+    
+    IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
+    if (r) {
+      r_bounds = compute_int_bounds(r);
+    }
+    
+    VarDecl* nr = r;
+    
+    for (int i=0; i<ite->size(); i++) {
+      if (ite->e_if(i)->type()==Type::parbool()) {
+        bool cond = eval_bool(ite->e_if(i));
+        if (cond) {
+          if (nr==NULL) {
+            GC::unlock();
+            return flat_exp(env,ctx,ite->e_then(i),r,b);
+          }
+          Expression* eq_then;
+          if (nr == constants().var_true) {
+            eq_then = ite->e_then(i);
+          } else {
+            eq_then = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_then(i));
+            eq_then->type(Type::varbool());
+          }
+          clauses.push_back(createImplication(env, elseconds, NULL, eq_then));
+          break;
+        }
+      } else {
+        if (nr==NULL) {
+          TypeInst* ti = new TypeInst(Location(),ite->type(),NULL);
+          nr = new VarDecl(ite->loc(),ti,env.genId());
+          nr->introduced(true);
+          nr->flat(nr);
+          nr->addAnnotation(constants().ann.promise_total);
+          clauses.push_back(nr);
+        }
+        Expression* eq_then;
+        if (nr == constants().var_true) {
+          eq_then = ite->e_then(i);
+        } else {
+          eq_then = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_then(i));
+          eq_then->type(Type::varbool());
+        }
+        clauses.push_back(createImplication(env, elseconds, ite->e_if(i), eq_then));
+        elseconds.push_back(ite->e_if(i));
+      }
 
-      // Translate into the following expression:
-      // let {
-      //   var $T: r ::promise_total;
-      //   constraint e_if -> r=e_then_arg;
-      //   constraint (not e_if) -> r=e_else_arg;
-      // } in r;
-      
-      SetLit* r_bounds = NULL;
-      if (ite->e_then(i)->type().isint()) {
+      if (r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(ite->e_then(i));
         if (ib_then.valid) {
-          IntBounds ib_else = compute_int_bounds(e_else());
-          if (ib_else.valid) {
-            r_bounds = new SetLit(Location(),
-                                  IntSetVal::a(std::min(ib_then.l,ib_else.l),
-                                               std::max(ib_then.u,ib_else.u)));
-            r_bounds->type(Type::parsetint());
-          }
+          IntVal lb = std::min(r_bounds.l, ib_then.l);
+          IntVal ub = std::max(r_bounds.u, ib_then.u);
+          r_bounds = IntBounds(lb,ub,true);
+        } else {
+          r_bounds = IntBounds(0,0,false);
         }
       }
-      TypeInst* ti = new TypeInst(Location(),ite->type(),r_bounds);
-      
-      VarDecl* r = new VarDecl(ite->loc(),ti,env.genId());
-      r->introduced(true);
-      r->flat(r);
-      r->addAnnotation(constants().ann.promise_total);
-      BinOp* eq_then = new BinOp(Location(),r->id(),BOT_EQ,ite->e_then(i));
-      eq_then->type(Type::varbool());
-      BinOp* eq_else = new BinOp(Location(),r->id(),BOT_EQ,e_else());
-      eq_else->type(Type::varbool());
-      std::vector<Expression*> clauseargs(2);
-      std::vector<Expression*> posargs(1);
-      posargs[0] = eq_then;
-      clauseargs[0] = new ArrayLit(Location(),posargs);
-      clauseargs[0]->type(Type::varbool(1));
-      posargs[0] = ite->e_if(i);
-      clauseargs[1] = new ArrayLit(Location(),posargs);
-      clauseargs[1]->type(Type::varbool(1));
-      Call* if_op = new Call(Location(), constants().ids.clause, clauseargs);
-      if_op->decl(env.orig->matchFn(if_op));
-      if_op->type(if_op->decl()->rtype(clauseargs));
-      BinOp* else_op = new BinOp(Location(),ite->e_if(i),BOT_OR,eq_else);
-      else_op->type(Type::varbool());
-      std::vector<Expression*> e_let(3);
-      e_let[0] = r;
-      e_let[1] = if_op;
-      e_let[2] = else_op;
-      Let* let = new Let(Location(),e_let,r->id());
-      let->type(r->id()->type());
-      return let;
+    
     }
+    if (nr==NULL) {
+      GC::unlock();
+      return flat_exp(env,ctx,ite->e_else(),r,b);
+    }
+
+    if (r_bounds.valid && ite->e_else()->type().isint()) {
+      IntBounds ib_else = compute_int_bounds(ite->e_else());
+      if (ib_else.valid) {
+        IntVal lb = std::min(r_bounds.l, ib_else.l);
+        IntVal ub = std::max(r_bounds.u, ib_else.u);
+        SetLit* r_dom = new SetLit(Location(), IntSetVal::a(lb,ub));
+        nr->ti()->domain(r_dom);
+      }
+    }
+
+    Expression* eq_else;
+    if (nr == constants().var_true) {
+      eq_else = ite->e_else();
+    } else {
+      eq_else = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_else());
+      eq_else->type(Type::varbool());
+    }
+    clauses.push_back(createImplication(env, elseconds, NULL, eq_else));
+    
+    Let* let = new Let(Location(),clauses,nr->id());
+    let->type(nr->id()->type());
+    KeepAlive ka = let;
+    GC::unlock();
+    return flat_exp(env, ctx, ka(), r, b);
   }
-  
+
   template<class Lit>
   void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret,
                             Expression* le0, Expression* le1, BinOpType& bot, bool doubleNeg,
@@ -2726,8 +2748,7 @@ namespace MiniZinc {
     case Expression::E_ITE:
       {
         ITE* ite = e->cast<ITE>();
-        KeepAlive ka = flat_ite(env,ite,0);
-        ret = flat_exp(env,ctx,ka(),r,b);
+        ret = flat_ite(env,ctx,ite,r,b);
       }
       break;
     case Expression::E_BINOP:
@@ -4035,6 +4056,8 @@ namespace MiniZinc {
             decl->loc().filename.endsWith("/stdlib.mzn"));
   }
   
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e);
+
   bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
       return true;
@@ -4085,6 +4108,7 @@ namespace MiniZinc {
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(decl);
               env.output->addItem(decl);
+              outputVarDecls(env,origdecl,decl->e());
             } else {
               decl = origdecl;
             }
@@ -4129,6 +4153,8 @@ namespace MiniZinc {
       O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
       void vId(Id& id) {
         if (&id==constants().absent)
+          return;
+        if (!id.decl()->toplevel())
           return;
         VarDecl* vd = id.decl();
         VarDecl* reallyFlat = vd->flat();
@@ -4186,7 +4212,7 @@ namespace MiniZinc {
             }
             outputVarDecls(env,nvi,it->second());
             nvi->e()->e(rhs);
-          } else if (cannotUseRHSForOutput(env, reallyFlat->e())) {
+          } else if (reallyFlat && cannotUseRHSForOutput(env, reallyFlat->e())) {
             assert(nvi->e()->flat());
             nvi->e()->e(NULL);
             if (nvi->e()->type().dim() == 0) {
@@ -4565,6 +4591,7 @@ namespace MiniZinc {
                   }
                 }
               }
+              env.output_vo.add(reallyFlat, env.output->size());
             }
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
@@ -4772,7 +4799,6 @@ namespace MiniZinc {
                 topDown(cd,vdi->e()->e());
                 vdi->remove();
                 keptVariable = false;
-                env.flat_addItem(ci);
               } else {
                 vdi->e()->e(NULL);
               }
@@ -4862,6 +4888,8 @@ namespace MiniZinc {
           }
         }
       }
+      
+      // rewrite some constraints if there are redefinitions
       for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
@@ -4981,6 +5009,78 @@ namespace MiniZinc {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
+            } else if ( (c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq || c->id() == constants().ids.float_.eq || c->id() == constants().ids.set_eq) &&
+                       c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
+                       (c->args()[0]->cast<Id>()->decl()->e()==NULL || c->args()[1]->cast<Id>()->decl()->e()==NULL)) {
+              Id* id0 = c->args()[0]->cast<Id>();
+              Id* id1 = c->args()[1]->cast<Id>();
+              if (id0->decl() != id1->decl()) {
+                if (isOutput(id0->decl())) {
+                  std::swap(id0,id1);
+                }
+                
+                if (id0->decl()->e() != NULL) {
+                  id1->decl()->e(id0->decl()->e());
+                  id0->decl()->e(NULL);
+                }
+
+                // Compute intersection of domains
+                if (id0->decl()->ti()->domain() != NULL) {
+                  if (id1->decl()->ti()->domain() != NULL) {
+
+                    if (id0->type().isint() || id0->type().isintset()) {
+                      IntSetVal* isv0 = eval_intset(id0->decl()->ti()->domain());
+                      IntSetVal* isv1 = eval_intset(id1->decl()->ti()->domain());
+                      IntSetRanges isv0r(isv0);
+                      IntSetRanges isv1r(isv1);
+                      Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
+                      IntSetVal* nd = IntSetVal::ai(inter);
+                      if (nd->size()==0) {
+                        MZN_MODEL_INCONSISTENT
+                      } else {
+                        id1->decl()->ti()->domain(new SetLit(Location(), nd));
+                      }
+                    } else if (id0->type().isbool()) {
+                      if (eval_bool(id0->decl()->ti()->domain()) != eval_bool(id1->decl()->ti()->domain()))
+                        MZN_MODEL_INCONSISTENT
+                    } else {
+                      // float
+                      BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
+                      BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
+                      FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
+                      FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
+                      FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
+                      FloatVal ub1 = dom1->rhs()->cast<FloatLit>()->v();
+                      FloatVal lb = std::max(lb0,lb1);
+                      FloatVal ub = std::min(ub0,ub1);
+                      if (lb != lb1 || ub != ub1) {
+                        BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+                        newdom->type(Type::parsetfloat());
+                        id1->decl()->ti()->domain(newdom);
+                      }
+                    }
+                  
+                  } else {
+                    id1->decl()->ti()->domain(id0->decl()->ti()->domain());
+                  }
+                }
+              
+                // If both variables are output variables, unify them in the output model
+                if (isOutput(id0->decl())) {
+                  VarDecl* id0_output = (*env.output)[env.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
+                  VarDecl* id1_output = (*env.output)[env.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
+                  if (id0_output->e() == NULL) {
+                    id0_output->e(id1_output->id());
+                  }
+                }
+                
+                env.vo.unify(&m, id0, id1);
+              }
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              ci->e(constants().lit_true);
+              ci->remove();
+
             } else {
               FunctionI* decl = env.orig->matchFn(c);
               if (decl && decl->e()) {

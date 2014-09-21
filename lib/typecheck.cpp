@@ -689,7 +689,13 @@ namespace MiniZinc {
       Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
-        bu_ty.run(ts.decls[i]);
+        /// TODO:
+        /// Currently only type checks the TypeInst and the actual declaration.
+        /// This can be a problem if the TypeInst calls functions, because functions
+        /// are only type-checked after the VarDecls and therefore may still contain
+        /// unknown types.
+        bu_ty.run(ts.decls[i]->ti());
+        ty.vVarDecl(*ts.decls[i]);
         if (ts.decls[i]->toplevel() &&
             ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
           typeErrors.push_back(TypeError(ts.decls[i]->loc(),

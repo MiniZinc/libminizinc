@@ -1180,9 +1180,9 @@ namespace MiniZinc {
         ASTString lin_exp;
         ASTString element;
 	
-	ASTString show;
-	ASTString fix;
-	ASTString output;
+        ASTString show;
+        ASTString fix;
+        ASTString output;
 
         struct {
           ASTString lin_eq;
@@ -1283,6 +1283,7 @@ namespace MiniZinc {
         ASTString defines_var;
         Id* is_reverse_map;
         Id* promise_total;
+        ASTString doc_comment;
       } ann;
       /// Constructor
       Constants(void);
