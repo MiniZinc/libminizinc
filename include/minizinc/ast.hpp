@@ -98,6 +98,37 @@ namespace MiniZinc {
     _decl = d;
   }
 
+  inline ASTString
+  Id::v(void) const {
+    if (_decl && _decl->isa<Id>()) {
+      Expression* d = _decl;
+      while (d && d->isa<Id>()) {
+        d = d->cast<Id>()->_decl;
+      }
+      return d->cast<VarDecl>()->id()->v();
+    } else {
+      assert((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0);
+      return ASTString(reinterpret_cast<ASTStringO*>(_v_or_idn));
+    }
+  }
+
+  inline long long int
+  Id::idn(void) const {
+    if (_decl && _decl->isa<Id>()) {
+      Expression* d = _decl;
+      while (d && d->isa<Id>()) {
+        d = d->cast<Id>()->_decl;
+      }
+      return d->cast<VarDecl>()->id()->idn();
+    } else {
+      if ((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0)
+        return -1;
+      long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn) & ~static_cast<ptrdiff_t>(1);
+      return i >> 1;
+    }
+  }
+
+  
   inline
   TIId::TIId(const Location& loc, const std::string& v)
   : Expression(loc,E_TIID,Type()), _v(ASTString(v)) {

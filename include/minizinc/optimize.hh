@@ -23,8 +23,6 @@ namespace MiniZinc {
     typedef UNORDERED_NAMESPACE::unordered_set<Item*> Items;
     ExpressionMap<Items> _m;
     ExpressionMap<int> idx;
-    typedef UNORDERED_NAMESPACE::unordered_set<Id*> Identifiers;
-    ExpressionMap<Identifiers> _unified;
 
     /// Add \a to the index
     void add(VarDeclI* i, int idx_i);

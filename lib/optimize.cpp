@@ -52,39 +52,28 @@ namespace MiniZinc {
     return vi->second.size();
   }
   
-  void VarOccurrences::unify(Model* m, Id* id0, Id *id1) {
+  void VarOccurrences::unify(Model* m, Id* id0_0, Id *id1_0) {
+    Id* id0 = id0_0->decl()->id();
+    Id* id1 = id1_0->decl()->id();
+    
     VarDecl* v0 = id0->decl();
     VarDecl* v1 = id1->decl();
-    ExpressionMap<Items>::iterator vi0 = _m.find(v0);
-    ExpressionMap<Items>::iterator vi1 = _m.find(v1);
-    vi1->second.insert(vi0->second.begin(), vi0->second.end());
-    
-    id0->decl(v1);
-    id0->idn(id1->idn());
-    if (id0->idn()==-1)
-      id0->v(id1->v());
-    
-    ExpressionMap<Identifiers>::iterator to_unify_ids = _unified.find(v1);
-    if (to_unify_ids == _unified.end()) {
-      Identifiers ids;
-      to_unify_ids = _unified.insert(v1, ids);
-    }
-    to_unify_ids->second.insert(id0);
-    
-    ExpressionMap<Identifiers>::iterator unified_ids = _unified.find(v0);
-    if (unified_ids != _unified.end()) {
-      for (Identifiers::iterator it = unified_ids->second.begin(); it != unified_ids->second.end(); ++it) {
-        Id* uid = *it;
-        uid->decl(v1);
-        uid->idn(id1->idn());
-        if (uid->idn()==-1)
-          uid->v(id1->v());
-        to_unify_ids->second.insert(uid);
-      }
-    }
+
+    if (v0==v1)
+      return;
     
     int v0idx = find(v0);
+    assert(v0idx != -1);
     (*m)[v0idx]->remove();
+
+    ExpressionMap<Items>::iterator vi0 = _m.find(v0);
+    assert(vi0 != _m.end());
+    ExpressionMap<Items>::iterator vi1 = _m.find(v1);
+    assert(vi1 != _m.end());
+    vi1->second.insert(vi0->second.begin(), vi0->second.end());
+    
+    id0->redirect(id1);
+    
     remove(v0);
   }
   
