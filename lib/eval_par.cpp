@@ -1165,9 +1165,9 @@ namespace MiniZinc {
     void vArrayAccess(ArrayAccess& aa) {
       bool parAccess = true;
       for (unsigned int i=aa.idx().size(); i--;) {
+        _bounds.pop_back();
         if (!aa.idx()[i]->type().ispar()) {
           parAccess = false;
-          break;
         }
       }
       if (Id* id = aa.v()->dyn_cast<Id>()) {
