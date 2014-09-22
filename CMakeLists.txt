@@ -211,6 +211,7 @@ include/minizinc/eval_par.hh
 include/minizinc/exception.hh
 include/minizinc/file_utils.hh
 include/minizinc/flatten.hh
+include/minizinc/flatten_internal.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
 include/minizinc/iter.hh
