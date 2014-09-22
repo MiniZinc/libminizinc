@@ -132,7 +132,7 @@ namespace MiniZinc {
     return static_cast<Parentheses>(ret);
   }
   
-  std::string escapeStringLit(const ASTString& s) {
+  std::string Printer::escapeStringLit(const ASTString& s) {
     const char* sc = s.c_str();
     std::string ret;
     for (unsigned int i=0; i<s.size(); i++) {
@@ -258,7 +258,7 @@ namespace MiniZinc {
         os << (e->cast<BoolLit>()->v() ? "true" : "false");
         break;
       case Expression::E_STRINGLIT:
-        os << "\"" << escapeStringLit(e->cast<StringLit>()->v()) << "\"";
+        os << "\"" << Printer::escapeStringLit(e->cast<StringLit>()->v()) << "\"";
         break;
       case Expression::E_ID:
         {
@@ -1092,7 +1092,7 @@ namespace MiniZinc {
     }
     ret mapStringLit(const StringLit& sl) {
       std::ostringstream oss;
-      oss << "\"" << escapeStringLit(sl.v()) << "\"";
+      oss << "\"" << Printer::escapeStringLit(sl.v()) << "\"";
       return new StringDocument(oss.str());
 
 
