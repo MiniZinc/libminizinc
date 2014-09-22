@@ -1710,7 +1710,7 @@ namespace MiniZinc {
       if (ite->e_if(i)->type()==Type::parbool()) {
         bool cond = eval_bool(ite->e_if(i));
         if (cond) {
-          if (nr==NULL) {
+          if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
             return flat_exp(env,ctx,ite->e_then(i),r,b);
           }
@@ -1756,7 +1756,7 @@ namespace MiniZinc {
       }
     
     }
-    if (nr==NULL) {
+    if (nr==NULL || elseconds.size()==0) {
       GC::unlock();
       return flat_exp(env,ctx,ite->e_else(),r,b);
     }
