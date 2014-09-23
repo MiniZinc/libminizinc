@@ -4090,8 +4090,8 @@ namespace MiniZinc {
         VarDecl* reallyFlat = vd->flat();
         while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
           reallyFlat = reallyFlat->flat();
-        ExpressionMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat);
-        ExpressionMap<int>::iterator idx2 = env.output_vo.idx.find(vd);
+        IdMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat->id());
+        IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
           VarDeclI* nvi = new VarDeclI(Location(), copy(env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
@@ -4551,7 +4551,7 @@ namespace MiniZinc {
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
       if (e.output_vo.occurrences(cur) == 0) {
-        ExpressionMap<int>::iterator cur_idx = e.output_vo.idx.find(cur);
+        IdMap<int>::iterator cur_idx = e.output_vo.idx.find(cur->id());
         if (cur_idx != e.output_vo.idx.end()) {
           VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
           if (!vdi->removed()) {
@@ -4810,7 +4810,7 @@ namespace MiniZinc {
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
           if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
             CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
             topDown(cd,cur->e());
@@ -4962,7 +4962,7 @@ namespace MiniZinc {
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          ExpressionMap<int>::iterator cur_idx = env.vo.idx.find(cur);
+          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
           if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
             CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
             topDown(cd,cur->e());

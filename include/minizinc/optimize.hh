@@ -21,8 +21,8 @@ namespace MiniZinc {
   class VarOccurrences {
   public:
     typedef UNORDERED_NAMESPACE::unordered_set<Item*> Items;
-    ExpressionMap<Items> _m;
-    ExpressionMap<int> idx;
+    IdMap<Items> _m;
+    IdMap<int> idx;
 
     /// Add \a to the index
     void add(VarDeclI* i, int idx_i);
