@@ -340,7 +340,7 @@ namespace MiniZinc {
     /// The string identifier
     void* _v_or_idn;
     /// The declaration corresponding to this identifier (may be NULL)
-    VarDecl* _decl;
+    Expression* _decl;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ID;
@@ -351,21 +351,13 @@ namespace MiniZinc {
     /// Constructor (\a decl may be NULL)
     Id(const Location& loc, long long int idn, VarDecl* decl);
     /// Access identifier
-    ASTString v(void) const {
-      assert((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0);
-      return ASTString(reinterpret_cast<ASTStringO*>(_v_or_idn));
-    }
+    ASTString v(void) const;
     /// Set identifier
     void v(const ASTString& val) {
       _v_or_idn = val.aststr();
     }
     /// Access identifier number
-    long long int idn(void) const {
-      if ((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0)
-        return -1;
-      long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn) & ~static_cast<ptrdiff_t>(1);
-      return i >> 1;
-    }
+    long long int idn(void) const;
     /// Set identifier number
     void idn(long long int n) {
       _v_or_idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
@@ -373,9 +365,19 @@ namespace MiniZinc {
     /// Return identifier or X_INTRODUCED plus identifier number
     ASTString str(void) const;
     /// Access declaration
-    VarDecl* decl(void) const { return _decl; }
+    VarDecl* decl(void) const {
+      Expression* d = _decl;
+      while (d && d->isa<Id>())
+        d = d->cast<Id>()->_decl;
+      return Expression::cast<VarDecl>(d);
+    }
     /// Set declaration
     void decl(VarDecl* d);
+    /// Redirect to another Id \a id
+    void redirect(Id* id) {
+      assert(_decl==NULL || _decl->isa<VarDecl>());
+      _decl = id;
+    }
     /// Recompute hash value
     void rehash(void);
   };
