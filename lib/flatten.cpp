@@ -259,7 +259,7 @@ namespace MiniZinc {
         ConstraintI* ci = i->cast<ConstraintI>();
         toAnnotate = ci->e();
         if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v())
-          std::cerr << "Warning: model inconsistency detected" << std::endl;
+          addWarning("model inconsistency detected");
         CollectOccurrencesE ce(vo,ci);
         topDown(ce,ci->e());
       }
@@ -321,6 +321,12 @@ namespace MiniZinc {
   }
 #undef MZN_FILL_REIFY_MAP
   
+  void EnvI::addWarning(const std::string& msg) {
+    std::ostringstream oss;
+    dumpStack(oss, false);
+    warnings.push_back(msg+"\n"+oss.str());
+  }
+  
   class CallStackItem {
   public:
     EnvI& env;
@@ -369,9 +375,16 @@ namespace MiniZinc {
   Env::envi(void) { return *e; }
   std::ostream&
   Env::dumpErrorStack(std::ostream& os) {
+    return e->dumpStack(os, true);
+  }
+  std::ostream&
+  EnvI::dumpStack(std::ostream& os, bool errStack) {
     int lastError = 0;
-    for (; lastError < e->errorStack.size(); lastError++) {
-      if (e->errorStack[lastError]->isa<Id>()) {
+    
+    std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
+    
+    for (; lastError < stack.size(); lastError++) {
+      if (stack[lastError]->isa<Id>()) {
         break;
       }
     }
@@ -380,15 +393,15 @@ namespace MiniZinc {
     int curloc_l = -1;
     
     for (int i=lastError-1; i>=0; i--) {
-      ASTString newloc_f = e->errorStack[i]->loc().filename;
-      int newloc_l = e->errorStack[i]->loc().first_line;
+      ASTString newloc_f = stack[i]->loc().filename;
+      int newloc_l = stack[i]->loc().first_line;
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;
         curloc_l = newloc_l;
       }
       os << "  in ";
-      switch (e->errorStack[i]->eid()) {
+      switch (stack[i]->eid()) {
         case Expression::E_INTLIT:
           os << "integer literal" << std::endl;
           break;
@@ -418,7 +431,7 @@ namespace MiniZinc {
           break;
         case Expression::E_COMP:
         {
-          const Comprehension* cmp = e->errorStack[i]->cast<Comprehension>();
+          const Comprehension* cmp = stack[i]->cast<Comprehension>();
           if (cmp->set())
             os << "set ";
           else
@@ -435,18 +448,18 @@ namespace MiniZinc {
           os << "if-then-else expression" << std::endl;
           break;
         case Expression::E_BINOP:
-          os << "binary '" << e->errorStack[i]->cast<BinOp>()->opToString() << "' operator expression" << std::endl;
+          os << "binary '" << stack[i]->cast<BinOp>()->opToString() << "' operator expression" << std::endl;
           break;
         case Expression::E_UNOP:
-          os << "unary '" << e->errorStack[i]->cast<UnOp>()->opToString() << "' operator expression" << std::endl;
+          os << "unary '" << stack[i]->cast<UnOp>()->opToString() << "' operator expression" << std::endl;
           break;
         case Expression::E_CALL:
-          os << "call '" << e->errorStack[i]->cast<Call>()->id() << "'" << std::endl;
+          os << "call '" << stack[i]->cast<Call>()->id() << "'" << std::endl;
           break;
         case Expression::E_VARDECL:
         {
           GCLock lock;
-          os << "variable declaration for '" << e->errorStack[i]->cast<VarDecl>()->id()->str() << "'" << std::endl;
+          os << "variable declaration for '" << stack[i]->cast<VarDecl>()->id()->str() << "'" << std::endl;
         }
           break;
         case Expression::E_LET:
@@ -467,6 +480,10 @@ namespace MiniZinc {
     return os;
   }
 
+  const std::vector<std::string>& Env::warnings(void) {
+    return envi().warnings;
+  }
+  
   bool isTotal(FunctionI* fi) {
     return fi->ann().contains(constants().ann.promise_total);
   }
@@ -717,7 +734,7 @@ namespace MiniZinc {
                     id->decl()->ti()->setComputedDomain(true);
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
-                    std::cerr << "Warning: model inconsistency detected";
+                    env.addWarning("model inconsistency detected");
                     env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location(),ibv));
@@ -2125,9 +2142,6 @@ namespace MiniZinc {
   }
 
   
-#define MZN_MODEL_INCONSISTENT std::cerr << "Model inconsistency detected\n";
-//#define MZN_MODEL_INCONSISTENT throw InternalError("Model inconsistency detected");
-  
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     CallStackItem _csi(env,e);
@@ -3214,7 +3228,7 @@ namespace MiniZinc {
                     changeDom = true;
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
-                    std::cerr << "Warning: model inconsistency detected";
+                    env.addWarning("model inconsistency detected");
                     env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);

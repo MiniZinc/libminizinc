@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
+  bool flag_werror = false;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -211,6 +212,8 @@ int main(int argc, char** argv) {
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
       fopts.onlyRangeDomains = true;
+    } else if (string(argv[i])=="-Werror") {
+      flag_werror = true;
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -322,6 +325,12 @@ int main(int argc, char** argv) {
               std::cerr << "  " << e.msg() << std::endl;
               exit(EXIT_FAILURE);
             }
+            for (unsigned int i=0; i<env.warnings().size(); i++) {
+              std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+            }
+            if (flag_werror && env.warnings().size() > 0) {
+              exit(EXIT_FAILURE);
+            }
             Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -425,6 +434,7 @@ error:
             << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
             << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
             << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+            << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 
   exit(EXIT_FAILURE);

@@ -1,0 +1,5 @@
+Warning: model inconsistency detected
+  :0:
+  in binary 'in' operator expression
+  bug69_1.mzn:6:
+  in call 'p'

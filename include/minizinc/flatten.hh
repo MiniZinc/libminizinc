@@ -32,6 +32,7 @@ namespace MiniZinc {
     Model* output(void);
     EnvI& envi(void);
     std::ostream& dumpErrorStack(std::ostream& os);
+    const std::vector<std::string>& warnings(void);
   };
 
   /// Exception thrown for errors during flattening
