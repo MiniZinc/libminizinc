@@ -1,1 +1,6 @@
 Warning: model inconsistency detected
+  test_div5.mzn:6:
+  in binary '!=' operator expression
+Warning: model inconsistency detected
+  test_div5.mzn:6:
+  in binary '!=' operator expression

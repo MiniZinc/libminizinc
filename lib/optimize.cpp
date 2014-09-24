@@ -23,34 +23,35 @@ namespace MiniZinc {
 
   void VarOccurrences::add(VarDeclI *i, int idx_i)
   {
-    idx.insert(i->e(), idx_i);
+    idx.insert(i->e()->id(), idx_i);
   }
   void VarOccurrences::add(VarDecl *e, int idx_i)
   {
-    idx.insert(e, idx_i);
+    assert(find(e) == -1);
+    idx.insert(e->id(), idx_i);
   }
   int VarOccurrences::find(VarDecl* vd)
   {
-    ExpressionMap<int>::iterator it = idx.find(vd);
+    IdMap<int>::iterator it = idx.find(vd->id());
     return it==idx.end() ? -1 : it->second;
   }
   void VarOccurrences::remove(VarDecl *vd)
   {
-    idx.remove(vd);
+    idx.remove(vd->id());
   }
   
   void VarOccurrences::add(VarDecl* v, Item* i) {
-    ExpressionMap<Items>::iterator vi = _m.find(v);
+    IdMap<Items>::iterator vi = _m.find(v->id());
     if (vi==_m.end()) {
       Items items; items.insert(i);
-      _m.insert(v, items);
+      _m.insert(v->id(), items);
     } else {
       vi->second.insert(i);
     }
   }
   
   int VarOccurrences::remove(VarDecl* v, Item* i) {
-    ExpressionMap<Items>::iterator vi = _m.find(v);
+    IdMap<Items>::iterator vi = _m.find(v->id());
     assert(vi!=_m.end());
     vi->second.erase(i);
     return vi->second.size();
@@ -70,11 +71,15 @@ namespace MiniZinc {
     assert(v0idx != -1);
     (*m)[v0idx]->remove();
 
-    ExpressionMap<Items>::iterator vi0 = _m.find(v0);
-    assert(vi0 != _m.end());
-    ExpressionMap<Items>::iterator vi1 = _m.find(v1);
-    assert(vi1 != _m.end());
-    vi1->second.insert(vi0->second.begin(), vi0->second.end());
+    IdMap<Items>::iterator vi0 = _m.find(v0->id());
+    if (vi0 != _m.end()) {
+      IdMap<Items>::iterator vi1 = _m.find(v1->id());
+      if (vi1 == _m.end()) {
+        _m.insert(v1->id(), vi0->second);
+      } else {
+        vi1->second.insert(vi0->second.begin(), vi0->second.end());
+      }
+    }
     
     id0->redirect(id1);
     
@@ -87,7 +92,7 @@ namespace MiniZinc {
   }
   
   int VarOccurrences::occurrences(VarDecl* v) {
-    ExpressionMap<Items>::iterator vi = _m.find(v);
+    IdMap<Items>::iterator vi = _m.find(v->id());
     return (vi==_m.end() ? 0 : vi->second.size());
   }
   
@@ -127,8 +132,73 @@ namespace MiniZinc {
                               ExpressionMap<int>& nonFixedLiteralCount);
 
   
-#define MZN_MODEL_INCONSISTENT std::cerr << "Model inconsistency detected\n";
-
+  void unify(EnvI& env, Id* id0, Id* id1) {
+    if (id0->decl() != id1->decl()) {
+      if (isOutput(id0->decl())) {
+        std::swap(id0,id1);
+      }
+      
+      if (id0->decl()->e() != NULL) {
+        id1->decl()->e(id0->decl()->e());
+        id0->decl()->e(NULL);
+      }
+      
+      // Compute intersection of domains
+      if (id0->decl()->ti()->domain() != NULL) {
+        if (id1->decl()->ti()->domain() != NULL) {
+          
+          if (id0->type().isint() || id0->type().isintset()) {
+            IntSetVal* isv0 = eval_intset(id0->decl()->ti()->domain());
+            IntSetVal* isv1 = eval_intset(id1->decl()->ti()->domain());
+            IntSetRanges isv0r(isv0);
+            IntSetRanges isv1r(isv1);
+            Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
+            IntSetVal* nd = IntSetVal::ai(inter);
+            if (nd->size()==0) {
+              env.addWarning("model inconsistency detected");
+            } else {
+              id1->decl()->ti()->domain(new SetLit(Location(), nd));
+            }
+          } else if (id0->type().isbool()) {
+            if (eval_bool(id0->decl()->ti()->domain()) != eval_bool(id1->decl()->ti()->domain()))
+              env.addWarning("model inconsistency detected");
+          } else {
+            // float
+            BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
+            BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
+            FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
+            FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
+            FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
+            FloatVal ub1 = dom1->rhs()->cast<FloatLit>()->v();
+            FloatVal lb = std::max(lb0,lb1);
+            FloatVal ub = std::min(ub0,ub1);
+            if (lb != lb1 || ub != ub1) {
+              BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+              newdom->type(Type::parsetfloat());
+              id1->decl()->ti()->domain(newdom);
+            }
+          }
+          
+        } else {
+          id1->decl()->ti()->domain(id0->decl()->ti()->domain());
+        }
+      }
+      
+      // If both variables are output variables, unify them in the output model
+      if (isOutput(id0->decl())) {
+        assert(env.output_vo.find(id0->decl()) != -1);
+        VarDecl* id0_output = (*env.output)[env.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
+        assert(env.output_vo.find(id1->decl()) != -1);
+        VarDecl* id1_output = (*env.output)[env.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
+        if (id0_output->e() == NULL) {
+          id0_output->e(id1_output->id());
+        }
+      }
+      
+      env.vo.unify(env.flat(), id0, id1);
+    }
+  }
+  
   void optimize(Env& env) {
     EnvI& envi = env.envi();
     Model& m = *envi.flat();
@@ -148,86 +218,19 @@ namespace MiniZinc {
             if ( (c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq || c->id() == constants().ids.float_.eq || c->id() == constants().ids.set_eq) &&
                 c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
                 (c->args()[0]->cast<Id>()->decl()->e()==NULL || c->args()[1]->cast<Id>()->decl()->e()==NULL)) {
-              Id* id0 = c->args()[0]->cast<Id>();
-              Id* id1 = c->args()[1]->cast<Id>();
-              if (id0->decl() != id1->decl()) {
-                if (isOutput(id0->decl())) {
-                  std::swap(id0,id1);
-                }
-                
-                if (id0->decl()->e() != NULL) {
-                  id1->decl()->e(id0->decl()->e());
-                  id0->decl()->e(NULL);
-                }
-                
-                // Compute intersection of domains
-                if (id0->decl()->ti()->domain() != NULL) {
-                  if (id1->decl()->ti()->domain() != NULL) {
-                    
-                    if (id0->type().isint() || id0->type().isintset()) {
-                      IntSetVal* isv0 = eval_intset(id0->decl()->ti()->domain());
-                      IntSetVal* isv1 = eval_intset(id1->decl()->ti()->domain());
-                      IntSetRanges isv0r(isv0);
-                      IntSetRanges isv1r(isv1);
-                      Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
-                      IntSetVal* nd = IntSetVal::ai(inter);
-                      if (nd->size()==0) {
-                        MZN_MODEL_INCONSISTENT
-                      } else {
-                        id1->decl()->ti()->domain(new SetLit(Location(), nd));
-                      }
-                    } else if (id0->type().isbool()) {
-                      if (eval_bool(id0->decl()->ti()->domain()) != eval_bool(id1->decl()->ti()->domain()))
-                        MZN_MODEL_INCONSISTENT
-                        } else {
-                          // float
-                          BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
-                          BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
-                          FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
-                          FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
-                          FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
-                          FloatVal ub1 = dom1->rhs()->cast<FloatLit>()->v();
-                          FloatVal lb = std::max(lb0,lb1);
-                          FloatVal ub = std::min(ub0,ub1);
-                          if (lb != lb1 || ub != ub1) {
-                            BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
-                            newdom->type(Type::parsetfloat());
-                            id1->decl()->ti()->domain(newdom);
-                          }
-                        }
-                    
-                  } else {
-                    id1->decl()->ti()->domain(id0->decl()->ti()->domain());
-                  }
-                }
-                
-                // If both variables are output variables, unify them in the output model
-                if (isOutput(id0->decl())) {
-                  VarDecl* id0_output = (*envi.output)[envi.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
-                  VarDecl* id1_output = (*envi.output)[envi.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
-                  if (id0_output->e() == NULL) {
-                    id0_output->e(id1_output->id());
-                  }
-                }
-                
-                envi.vo.unify(&m, id0, id1);
-              }
+              unify(envi, c->args()[0]->cast<Id>(), c->args()[1]->cast<Id>());
               CollectDecls cd(envi.vo,deletedVarDecls,ci);
               topDown(cd,c);
               ci->e(constants().lit_true);
-              ci->remove();
-            } else if (c->decl()==constants().var_redef) {
-              CollectDecls cd(envi.vo,deletedVarDecls,ci);
-              topDown(cd,c);
               ci->remove();
             } else if (c->id()==constants().ids.forall) {
               ArrayLit* al = follow_id(c->args()[0])->cast<ArrayLit>();
               for (unsigned int i=al->v().size(); i--;) {
                 if (Id* id = al->v()[i]->dyn_cast<Id>()) {
                   if (id->decl()->ti()->domain()==NULL) {
-                    toAssignBoolVars.push_back(envi.vo.idx.find(id->decl())->second);
+                    toAssignBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
                   } else if (id->decl()->ti()->domain() == constants().lit_false) {
-                    MZN_MODEL_INCONSISTENT
+                    envi.addWarning("model inconsistency detected");
                     id->decl()->e(constants().lit_true);
                   }
                 }
@@ -236,17 +239,22 @@ namespace MiniZinc {
             }
           } else if (Id* id = ci->e()->dyn_cast<Id>()) {
             if (id->decl()->ti()->domain() == constants().lit_false) {
-              MZN_MODEL_INCONSISTENT
+              envi.addWarning("model inconsistency detected");
               ci->e(constants().lit_false);
             } else {
               if (id->decl()->ti()->domain()==NULL) {
-                toAssignBoolVars.push_back(envi.vo.idx.find(id->decl())->second);
+                toAssignBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
               }
               toRemoveConstraints.push_back(i);
             }
           }
         }
       } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
+        if (!vdi->removed() && vdi->e()->e() && vdi->e()->e()->isa<Id>() && vdi->e()->type().dim()==0) {
+          Id* id1 = vdi->e()->e()->cast<Id>();
+          vdi->e()->e(NULL);
+          unify(envi, vdi->e()->id(), id1);
+        }
         if (!vdi->removed() &&
             vdi->e()->type().isbool() && vdi->e()->type().isvar() && vdi->e()->type().dim()==0
             && (vdi->e()->ti()->domain() == constants().lit_true || vdi->e()->ti()->domain() == constants().lit_false)) {
@@ -275,10 +283,10 @@ namespace MiniZinc {
         if (Id* id = vd->e()->dyn_cast<Id>()) {
           if (id->decl()->ti()->domain()==NULL) {
             id->decl()->ti()->domain(vd->ti()->domain());
-            assignedBoolVars.push_back(envi.vo.idx.find(id->decl())->second);
+            assignedBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
             remove = true;
           } else if (id->decl()->ti()->domain() != vd->ti()->domain()) {
-            MZN_MODEL_INCONSISTENT
+            envi.addWarning("model inconsistency detected");
             remove = false;
           } else {
             remove = true;
@@ -291,9 +299,9 @@ namespace MiniZinc {
               if (Id* id = al->v()[i]->dyn_cast<Id>()) {
                 if (id->decl()->ti()->domain()==NULL) {
                   id->decl()->ti()->domain(constants().lit_true);
-                  assignedBoolVars.push_back(envi.vo.idx.find(id->decl())->second);
+                  assignedBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
                 } else if (id->decl()->ti()->domain() == constants().lit_false) {
-                  MZN_MODEL_INCONSISTENT
+                  envi.addWarning("model inconsistency detected");
                   remove = false;
                 }
               }
@@ -307,9 +315,9 @@ namespace MiniZinc {
                 if (Id* id = al->v()[j]->dyn_cast<Id>()) {
                   if (id->decl()->ti()->domain()==NULL) {
                     id->decl()->ti()->domain(constants().boollit(!ispos));
-                    assignedBoolVars.push_back(envi.vo.idx.find(id->decl())->second);
+                    assignedBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
                   } else if (id->decl()->ti()->domain() == constants().boollit(ispos)) {
-                    MZN_MODEL_INCONSISTENT
+                    envi.addWarning("model inconsistency detected");
                     remove = false;
                   }
                 }
@@ -321,12 +329,12 @@ namespace MiniZinc {
         remove = true;
       }
       std::vector<Item*> toRemove;
-      ExpressionMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd);
+      IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id());
       if (it != envi.vo._m.end()) {
         for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
           if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
             if (vdi->e()->e() && vdi->e()->e()->isa<ArrayLit>()) {
-              ExpressionMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e());
+              IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id());
               if (ait != envi.vo._m.end()) {
                 for (VarOccurrences::Items::iterator aitem = ait->second.begin(); aitem != ait->second.end(); ++aitem) {
                   simplifyBoolConstraint(envi,*aitem,vd,remove,assignedBoolVars,toRemove,nonFixedLiteralCount);
@@ -364,7 +372,7 @@ namespace MiniZinc {
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
       if (envi.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-        ExpressionMap<int>::iterator cur_idx = envi.vo.idx.find(cur);
+        IdMap<int>::iterator cur_idx = envi.vo.idx.find(cur->id());
         if (cur_idx != envi.vo.idx.end() && !m[cur_idx->second]->removed()) {
           CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
           topDown(cd,cur->e());
@@ -418,14 +426,15 @@ namespace MiniZinc {
       e = ci->e();
     } else if (vdi) {
       e = vdi->e()->e();
-      assert(e != NULL);
+      if (e==NULL)
+        return;
       if (Id* id = e->dyn_cast<Id>()) {
         assert(id->decl()==vd);
         if (vdi->e()->ti()->domain()==NULL) {
           vdi->e()->ti()->domain(constants().boollit(isTrue));
-          assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+          assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
         } else if (id->decl()->ti()->domain() == constants().boollit(!isTrue)) {
-          MZN_MODEL_INCONSISTENT
+          env.addWarning("model inconsistency detected");
           remove = false;
         }
         return;
@@ -446,11 +455,11 @@ namespace MiniZinc {
           if (b0s != b1s) {
             if (b1s==2) {
               b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
-              assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl())->second);
+              assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl()->id())->second);
               if (ci)
                 toRemove.push_back(ci);
             } else {
-              MZN_MODEL_INCONSISTENT
+              env.addWarning("model inconsistency detected");
               remove = false;
             }
           } else {
@@ -461,10 +470,10 @@ namespace MiniZinc {
           if (b0s != b1s) {
             if (b1s==2) {
               b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
-              assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl())->second);
+              assignedBoolVars.push_back(env.vo.idx.find(b1->cast<Id>()->decl()->id())->second);
             }
           } else {
-            MZN_MODEL_INCONSISTENT
+            env.addWarning("model inconsistency detected");
             remove = false;
           }
         } else {
@@ -477,22 +486,22 @@ namespace MiniZinc {
           } else {
             if (vdi->e()->ti()->domain()==NULL) {
               vdi->e()->ti()->domain(constants().lit_true);
-              assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+              assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
             } else if (vdi->e()->ti()->domain()!=constants().lit_true) {
-              MZN_MODEL_INCONSISTENT
+              env.addWarning("model inconsistency detected");
               vdi->e()->e(constants().lit_true);
             }
           }
         } else if (!isTrue && c->id()==constants().ids.forall) {
           if (ci) {
-            MZN_MODEL_INCONSISTENT
+            env.addWarning("model inconsistency detected");
             toRemove.push_back(ci);
           } else {
             if (vdi->e()->ti()->domain()==NULL) {
               vdi->e()->ti()->domain(constants().lit_false);
-              assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+              assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
             } else if (vdi->e()->ti()->domain()!=constants().lit_false) {
-              MZN_MODEL_INCONSISTENT
+              env.addWarning("model inconsistency detected");
               vdi->e()->e(constants().lit_false);
             }
           }
@@ -535,7 +544,7 @@ namespace MiniZinc {
             if (subsumed) {
               if (ci) {
                 if (isConjunction) {
-                  MZN_MODEL_INCONSISTENT
+                  env.addWarning("model inconsistency detected");
                   ci->e(constants().lit_false);
                 } else {
                   toRemove.push_back(ci);
@@ -543,9 +552,9 @@ namespace MiniZinc {
               } else {
                 if (vdi->e()->ti()->domain()==NULL) {
                   vdi->e()->ti()->domain(constants().boollit(!isConjunction));
-                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
                 } else if (vdi->e()->ti()->domain()!=constants().boollit(!isConjunction)) {
-                  MZN_MODEL_INCONSISTENT
+                  env.addWarning("model inconsistency detected");
                   vdi->e()->e(constants().boollit(!isConjunction));
                 }
               }
@@ -554,15 +563,15 @@ namespace MiniZinc {
                 if (isConjunction) {
                   toRemove.push_back(ci);
                 } else {
-                  MZN_MODEL_INCONSISTENT
+                  env.addWarning("model inconsistency detected");
                   ci->e(constants().lit_false);
                 }
               } else {
                 if (vdi->e()->ti()->domain()==NULL) {
                   vdi->e()->ti()->domain(constants().boollit(isConjunction));
-                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                  assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
                 } else if (vdi->e()->ti()->domain()!=constants().boollit(isConjunction)) {
-                  MZN_MODEL_INCONSISTENT
+                  env.addWarning("model inconsistency detected");
                   vdi->e()->e(constants().boollit(isConjunction));
                 }
               }
@@ -578,9 +587,9 @@ namespace MiniZinc {
                 VarDecl* vd = id->decl();
                 if (vd->ti()->domain()==NULL) {
                   vd->ti()->domain(constants().boollit(result));
-                  assignedBoolVars.push_back(env.vo.idx.find(vd)->second);
+                  assignedBoolVars.push_back(env.vo.idx.find(vd->id())->second);
                 } else if (vd->ti()->domain()!=constants().boollit(result)) {
-                  MZN_MODEL_INCONSISTENT
+                  env.addWarning("model inconsistency detected");
                   vd->e(constants().lit_true);
                 }
               } else {
@@ -601,19 +610,19 @@ namespace MiniZinc {
                   if (eval_bool(al->v()[0])==isTrue) {
                     toRemove.push_back(ci);
                   } else {
-                    MZN_MODEL_INCONSISTENT
+                    env.addWarning("model inconsistency detected");
                     remove = false;
                   }
                 } else {
                   Id* id = al->v()[0]->cast<Id>();
                   if (id->decl()->ti()->domain()==NULL) {
                     id->decl()->ti()->domain(constants().boollit(isTrue));
-                    assignedBoolVars.push_back(env.vo.idx.find(id->decl())->second);
+                    assignedBoolVars.push_back(env.vo.idx.find(id->decl()->id())->second);
                   } else {
                     if (id->decl()->ti()->domain()==constants().boollit(isTrue)) {
                       toRemove.push_back(ci);
                     } else {
-                      MZN_MODEL_INCONSISTENT
+                      env.addWarning("model inconsistency detected");
                       remove = false;
                     }
                   }
@@ -628,9 +637,9 @@ namespace MiniZinc {
                   } else {
                     if (vdi->e()->ti()->domain()==NULL) {
                       vdi->e()->ti()->domain(constants().lit_true);
-                      assignedBoolVars.push_back(env.vo.idx.find(vdi->e())->second);
+                      assignedBoolVars.push_back(env.vo.idx.find(vdi->e()->id())->second);
                     } else if (vdi->e()->ti()->domain()!=constants().lit_true) {
-                      MZN_MODEL_INCONSISTENT
+                      env.addWarning("model inconsistency detected");
                       vdi->e()->e(constants().lit_true);
                     }
                   }
