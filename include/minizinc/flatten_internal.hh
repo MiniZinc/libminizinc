@@ -14,6 +14,7 @@
 
 #include <minizinc/copy.hh>
 #include <minizinc/flatten.hh>
+#include <minizinc/optimize.hh>
 
 namespace MiniZinc {
 
