@@ -26,32 +26,6 @@
 
 namespace MiniZinc {
 
-  /// Boolean evaluation context
-  enum BCtx { C_ROOT, C_POS, C_NEG, C_MIX };
-
-  /// Evaluation context
-  struct Ctx {
-    /// Boolean context
-    BCtx b;
-    /// Integer context
-    BCtx i;
-    /// Boolen negation flag
-    bool neg;
-    /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
-    /// Copy constructor
-    Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
-    /// Assignment operator
-    Ctx& operator =(const Ctx& ctx) {
-      if (this!=&ctx) {
-        b = ctx.b;
-        i = ctx.i;
-        neg = ctx.neg;
-      }
-      return *this;
-    }
-  };
-
   /// Output operator for contexts
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
@@ -74,7 +48,6 @@ namespace MiniZinc {
     return os;
   }
 
-  /// Turn \a c into positive context
   BCtx operator +(const BCtx& c) {
     switch (c) {
     case C_ROOT: return C_POS;
@@ -85,7 +58,6 @@ namespace MiniZinc {
     }
   }
 
-  /// Turn \a c into negative context
   BCtx operator -(const BCtx& c) {
     switch (c) {
     case C_ROOT: return C_NEG;

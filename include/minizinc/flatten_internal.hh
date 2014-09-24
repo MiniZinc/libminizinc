@@ -29,6 +29,37 @@ namespace MiniZinc {
     explicit EE(Expression* r0=NULL, Expression* b0=NULL) : r(r0), b(b0) {}
   };
 
+  /// Boolean evaluation context
+  enum BCtx { C_ROOT, C_POS, C_NEG, C_MIX };
+  
+  /// Evaluation context
+  struct Ctx {
+    /// Boolean context
+    BCtx b;
+    /// Integer context
+    BCtx i;
+    /// Boolen negation flag
+    bool neg;
+    /// Default constructor (root context)
+    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    /// Copy constructor
+    Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
+    /// Assignment operator
+    Ctx& operator =(const Ctx& ctx) {
+      if (this!=&ctx) {
+        b = ctx.b;
+        i = ctx.i;
+        neg = ctx.neg;
+      }
+      return *this;
+    }
+  };
+  
+  /// Turn \a c into positive context
+  BCtx operator +(const BCtx& c);
+  /// Negate context \a c
+  BCtx operator -(const BCtx& c);
+  
   class EnvI {
   public:
     Model* orig;
@@ -72,7 +103,8 @@ namespace MiniZinc {
   };
 
   Expression* follow_id(Expression* e);
-  
+  EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
+
 }
 
 #endif
