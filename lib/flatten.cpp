@@ -5036,13 +5036,6 @@ namespace MiniZinc {
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
-    
-//    for (unsigned int i=0; i<m.size(); i++) {
-//      GCLock lock;
-//      if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
-//        vdi->e()->addAnnotation(new Annotation(Location(),new IntLit(Location(),env.vo.occurrences(vdi->e()))));
-//      }
-//    }
 
   }
   
