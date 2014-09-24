@@ -2380,10 +2380,12 @@ namespace MiniZinc {
                   rete = vdea;
                 } else {
                   VarDecl* nvd =
-                  new VarDecl(vd->loc(),eval_typeinst(env,vd),
-                              env.genId(),vd->e());
+                  new VarDecl(vd->loc(),eval_typeinst(env,vd),env.genId(),NULL);
                   nvd->introduced(true);
                   nvd->flat(nvd);
+                  if (vd->e()) {
+                    (void) flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
+                  }
                   for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
                     EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
                     nvd->addAnnotation(ee_ann.r());
