@@ -223,10 +223,6 @@ namespace MiniZinc {
               topDown(cd,c);
               ci->e(constants().lit_true);
               ci->remove();
-            } else if (c->decl()==constants().var_redef) {
-              CollectDecls cd(envi.vo,deletedVarDecls,ci);
-              topDown(cd,c);
-              ci->remove();
             } else if (c->id()==constants().ids.forall) {
               ArrayLit* al = follow_id(c->args()[0])->cast<ArrayLit>();
               for (unsigned int i=al->v().size(); i--;) {

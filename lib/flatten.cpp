@@ -5033,6 +5033,18 @@ namespace MiniZinc {
       }
     }
 
+    for (unsigned int i=0; i<m.size(); i++) {
+      if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+        if (Call* c = ci->e()->dyn_cast<Call>()) {
+          if (c->decl()==constants().var_redef) {
+            CollectDecls cd(env.vo,deletedVarDecls,ci);
+            topDown(cd,c);
+            ci->remove();
+          }
+        }
+      }
+    }
+    
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
