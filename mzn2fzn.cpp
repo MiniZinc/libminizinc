@@ -349,6 +349,8 @@ int main(int argc, char** argv) {
               oldflatzinc(env);
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            } else {
+              env.flat()->compact();
             }
             
             if (flag_verbose)
