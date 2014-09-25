@@ -2362,6 +2362,9 @@ namespace MiniZinc {
                   
                   VarDeclI* ni = new VarDeclI(Location(),nvd);
                   env.flat_addItem(ni);
+                  if (vd->e()) {
+                    (void) flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
+                  }
                   vd = nvd;
                   EE ee(vd,NULL);
                   if (vd->e())
