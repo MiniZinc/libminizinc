@@ -192,6 +192,9 @@ lib/gc.cpp
 lib/model.cpp
 "${parser_cpp}"
 lib/prettyprinter.cpp
+lib/solver.cpp
+lib/solver_instance.cpp
+lib/solver_instance_base.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
@@ -219,6 +222,9 @@ include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/solver.hh
+include/minizinc/solver_instance.hh
+include/minizinc/solver_instance_base.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
