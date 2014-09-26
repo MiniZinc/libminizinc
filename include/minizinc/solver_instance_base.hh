@@ -22,8 +22,7 @@ namespace MiniZinc {
   protected:
     Env& _env;
     Options& _options;
-    Statistics _statistics;
-
+    
     typedef void (*poster) (SolverInstanceBase&, const Call* call);
 
     class Registry {
@@ -67,8 +66,6 @@ namespace MiniZinc {
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
     
-    Statistics& getStatistics() { return _statistics; }
-    
   private:
     SolverInstanceBase(const SolverInstanceBase&);
     SolverInstanceBase& operator= (const SolverInstanceBase&);
@@ -77,8 +74,12 @@ namespace MiniZinc {
   template<class Solver>
   class SolverInstanceImpl : public SolverInstanceBase {
   protected:
+    typename Solver::Statistics _statistics;
+    
     IdMap<typename Solver::Variable> _variableMap;
   public:
+    
+    Statistics& getStatistics() { return _statistics; }
   };
   
 }

@@ -29,14 +29,14 @@ namespace MiniZinc {
   public:
       Statistics() : _time(0), _nodes(0), _failures(0) {}
     
-      void print(std::ostream& os) {
+      virtual void print(std::ostream& os) {
         os << "Time(ms):\t"  << _time      << std::endl
            << "Nodes:\t"     << _nodes     << std::endl
            << "Failures:\t"  << _failures  << std::endl
            << "Objective:\t" << _objective << std::endl;
       };
       
-      void printLine(std::ostream& os) {
+      virtual void printLine(std::ostream& os) {
         os << _time     << '\t'
            << _nodes    << '\t'
            << _failures << '\t'
