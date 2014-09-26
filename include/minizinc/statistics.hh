@@ -42,7 +42,7 @@ namespace MiniZinc {
       unsigned long long failures();
       double objective();
 
-      operator+=(Statistics& s);
+      Statistics& operator+=(Statistics& s);
   };
 }
 
