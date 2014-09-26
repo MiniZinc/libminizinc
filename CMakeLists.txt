@@ -239,6 +239,30 @@ target_link_libraries(mzn2fzn minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
+set(HAS_CPLEX TRUE)
+
+if(HAS_CPLEX)
+	add_definitions(-DIL_STD)
+	
+  include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
+  include_directories("${CPLEX_STUDIO_DIR}/concert/include")
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_osx/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_osx/static_pic")
+
+	add_library(minizinc_cplex
+		solvers/cplex/cplex_solverinstance.cpp
+		solvers/cplex/cplex_solverinstance.hh
+	)
+
+	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
+
+  INSTALL(TARGETS minizinc_cplex
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
+
 INSTALL(TARGETS mzn2fzn solns2out minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
