@@ -104,14 +104,18 @@ namespace MiniZinc {
     const Item* operator[] (int i) const;
     /// Return number of items
     unsigned int size(void) const;
+    
+    typedef std::vector<Item*>::iterator iterator;
+    typedef std::vector<Item*>::const_iterator const_iterator;
+    
     /// Iterator for beginning of items
-    std::vector<Item*>::iterator begin(void);
+    iterator begin(void);
     /// Iterator for beginning of items
-    std::vector<Item*>::const_iterator begin(void) const;
+    const_iterator begin(void) const;
     /// Iterator for end of items
-    std::vector<Item*>::iterator end(void);
+    iterator end(void);
     /// Iterator for end of items
-    std::vector<Item*>::const_iterator end(void) const;
+    const_iterator end(void) const;
 
     ConstraintIterator begin_constraints(void);
     ConstraintIterator end_constraints(void);
