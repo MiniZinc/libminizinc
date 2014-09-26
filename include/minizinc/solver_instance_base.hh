@@ -15,13 +15,15 @@
 #include <minizinc/model.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/options.hh>
+#include <minizinc/statistics.hh>
 
 namespace MiniZinc {
 
   class SolverInstanceBase {
   protected:
     Env& _env;
-    Options& _options;
+    Options _options;
     
     typedef void (*poster) (SolverInstanceBase&, const Call* call);
 
@@ -43,7 +45,7 @@ namespace MiniZinc {
     
   public:
     
-    SolverInstanceBase(Env& env) : _env(env), _constraintRegistry(*this) {}
+    SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
     
     enum Status { OPT, SAT, UNSAT, UNKNOWN, ERROR };
     
@@ -78,7 +80,7 @@ namespace MiniZinc {
     
     IdMap<typename Solver::Variable> _variableMap;
   public:
-    
+    SolverInstanceImpl(Env& env, const Options& options) : SolverInstanceBase(env,options) {}
     Statistics& getStatistics() { return _statistics; }
   };
   
