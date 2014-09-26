@@ -513,6 +513,7 @@ namespace MiniZinc {
         m.insert(i,c);
         return c;
       }
+    default: assert(false); return NULL;
     }
   }
 
@@ -526,8 +527,8 @@ namespace MiniZinc {
     if (Model* cached = cm.find(m))
       return cached;
     Model* c = new Model;
-    for (unsigned int i=0; i<m->_items.size(); i++)
-      c->addItem(copy(cm,m->_items[i]));
+    for (unsigned int i=0; i<m->size(); i++)
+      c->addItem(copy(cm,(*m)[i]));
     cm.insert(m,c);
     return c;
   }

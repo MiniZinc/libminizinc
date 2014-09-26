@@ -1,0 +1,6 @@
+MiniZinc: flattening error: 
+  test_negated_let_bad.mzn:4:
+  in unary 'not' operator expression
+  in let expression
+  in variable declaration for 'y'
+  free variable in non-positive context

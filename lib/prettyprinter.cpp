@@ -94,6 +94,30 @@ namespace MiniZinc {
     }
   }
   
+  enum Assoc {
+    AS_LEFT, AS_RIGHT, AS_NONE
+  };
+  
+  Assoc assoc(const BinOp* bo) {
+    switch (bo->op()) {
+      case BOT_LE:
+      case BOT_LQ:
+      case BOT_GR:
+      case BOT_GQ:
+      case BOT_NQ:
+      case BOT_EQ:
+      case BOT_IN:
+      case BOT_SUBSET:
+      case BOT_SUPERSET:
+      case BOT_DOTDOT:
+        return AS_NONE;
+      case BOT_PLUSPLUS:
+        return AS_RIGHT;
+      default:
+        return AS_LEFT;
+    }
+  }
+  
   enum Parentheses {
     PN_LEFT = 1, PN_RIGHT = 2
   };
@@ -103,12 +127,12 @@ namespace MiniZinc {
     int pbo = precedence(bo);
     int pl = precedence(left);
     int pr = precedence(right);
-    int ret = (pbo < pl) || (pbo == pl && pbo == 200);
-    ret += 2 * ((pbo < pr) || (pbo == pr && pbo != 200));
+    int ret = (pbo < pl) || (pbo == pl && assoc(bo) != AS_LEFT);
+    ret += 2 * ((pbo < pr) || (pbo == pr && assoc(bo) != AS_RIGHT));
     return static_cast<Parentheses>(ret);
   }
   
-  std::string escapeStringLit(const ASTString& s) {
+  std::string Printer::escapeStringLit(const ASTString& s) {
     const char* sc = s.c_str();
     std::string ret;
     for (unsigned int i=0; i<s.size(); i++) {
@@ -124,6 +148,9 @@ namespace MiniZinc {
           break;
         case '\'':
           ret += "\\\'";
+          break;
+        case '\\':
+          ret += "\\\\";
           break;
         default:
           ret += sc[i];
@@ -231,7 +258,7 @@ namespace MiniZinc {
         os << (e->cast<BoolLit>()->v() ? "true" : "false");
         break;
       case Expression::E_STRINGLIT:
-        os << "\"" << escapeStringLit(e->cast<StringLit>()->v()) << "\"";
+        os << "\"" << Printer::escapeStringLit(e->cast<StringLit>()->v()) << "\"";
         break;
       case Expression::E_ID:
         {
@@ -673,6 +700,7 @@ namespace MiniZinc {
         return _t.mapTIId(*e->cast<TIId>());
       default:
         assert(false);
+	return typename T::ret();
         break;
       }
     }
@@ -1064,7 +1092,7 @@ namespace MiniZinc {
     }
     ret mapStringLit(const StringLit& sl) {
       std::ostringstream oss;
-      oss << "\"" << escapeStringLit(sl.v()) << "\"";
+      oss << "\"" << Printer::escapeStringLit(sl.v()) << "\"";
       return new StringDocument(oss.str());
 
 
@@ -1910,13 +1938,13 @@ namespace MiniZinc {
   Printer::print(const Model* m) {
     if (_width==0) {
       PlainPrinter p(_os,_flatZinc);
-      for (unsigned int i = 0; i < m->_items.size(); i++) {
-        p.p(m->_items[i]);
+      for (unsigned int i = 0; i < m->size(); i++) {
+        p.p((*m)[i]);
       }
     } else {
       init();
-      for (unsigned int i = 0; i < m->_items.size(); i++) {
-        p(m->_items[i]);
+      for (unsigned int i = 0; i < m->size(); i++) {
+        p((*m)[i]);
       }
     }
   }

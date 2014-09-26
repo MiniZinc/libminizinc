@@ -20,6 +20,8 @@ namespace MiniZinc { namespace FileUtils {
   std::string progpath(void);
   /// Test if \a filename exists
   bool file_exists(const std::string& filename);
+  /// Test if \a dirname exists and is a directory
+  bool directory_exists(const std::string& dirname);
 
 }}
 

@@ -32,7 +32,6 @@ namespace MiniZinc {
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
-  public:
     /// Filename of the model
     ASTString _filename;
     /// Path of the model
@@ -41,6 +40,7 @@ namespace MiniZinc {
     Model* _parent;
     /// Items in the model
     std::vector<Item*> _items;
+  public:
     
     /// Construct empty model
     Model(void);
@@ -88,6 +88,14 @@ namespace MiniZinc {
     const Item* operator[] (int i) const;
     /// Return number of items
     unsigned int size(void) const;
+    /// Iterator for beginning of items
+    std::vector<Item*>::iterator begin(void);
+    /// Iterator for beginning of items
+    std::vector<Item*>::const_iterator begin(void) const;
+    /// Iterator for end of items
+    std::vector<Item*>::iterator end(void);
+    /// Iterator for end of items
+    std::vector<Item*>::const_iterator end(void) const;
 
     /// Remove all items marked as removed
     void compact(void);
@@ -118,36 +126,40 @@ namespace MiniZinc {
   public:
     ItemIter(I& iter0) : iter(iter0) {}
     void run(Model* m) {
+      UNORDERED_NAMESPACE::unordered_set<Model*> seen;
       std::vector<Model*> models;
       models.push_back(m);
+      seen.insert(m);
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
-        for (unsigned int i=0; i<cm->_items.size(); i++) {
-          if (cm->_items[i]->removed())
+        for (unsigned int i=0; i<cm->size(); i++) {
+          if ((*cm)[i]->removed())
             continue;
-          switch (cm->_items[i]->iid()) {
+          switch ((*cm)[i]->iid()) {
           case Item::II_INC:
-            if (cm->_items[i]->cast<IncludeI>()->own())
-              models.push_back(cm->_items[i]->cast<IncludeI>()->m());
+            if (seen.find((*cm)[i]->cast<IncludeI>()->m()) == seen.end()) {
+              models.push_back((*cm)[i]->cast<IncludeI>()->m());
+              seen.insert((*cm)[i]->cast<IncludeI>()->m());
+            }
             break;
           case Item::II_VD:
-            iter.vVarDeclI(cm->_items[i]->cast<VarDeclI>());
+            iter.vVarDeclI((*cm)[i]->cast<VarDeclI>());
             break;
           case Item::II_ASN:
-            iter.vAssignI(cm->_items[i]->cast<AssignI>());
+            iter.vAssignI((*cm)[i]->cast<AssignI>());
             break;
           case Item::II_CON:
-            iter.vConstraintI(cm->_items[i]->cast<ConstraintI>());
+            iter.vConstraintI((*cm)[i]->cast<ConstraintI>());
             break;
           case Item::II_SOL:
-            iter.vSolveI(cm->_items[i]->cast<SolveI>());
+            iter.vSolveI((*cm)[i]->cast<SolveI>());
             break;
           case Item::II_OUT:
-            iter.vOutputI(cm->_items[i]->cast<OutputI>());
+            iter.vOutputI((*cm)[i]->cast<OutputI>());
             break;
           case Item::II_FUN:
-            iter.vFunctionI(cm->_items[i]->cast<FunctionI>());
+            iter.vFunctionI((*cm)[i]->cast<FunctionI>());
             break;      
           }
         }

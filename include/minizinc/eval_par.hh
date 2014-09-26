@@ -15,6 +15,8 @@
 #include <minizinc/model.hh>
 #include <minizinc/iter.hh>
 
+#include <minizinc/prettyprinter.hh>
+
 namespace MiniZinc {
   
   /// Evaluate par int expression \a e
@@ -79,13 +81,18 @@ namespace MiniZinc {
 
   template<class Eval>
   void
-  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
+  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+                  KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
 
   template<class Eval>
   void
-  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+                KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
+
+  template<class Eval>
+  void
+  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+                IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     e->decl(gen,id)->e()->cast<IntLit>()->v(i);
     if (id == e->n_decls(gen)-1) {
       if (gen == e->n_generators()-1) {
@@ -100,14 +107,64 @@ namespace MiniZinc {
       } else {
         KeepAlive nextin;
         {
-          GCLock lock;
-          nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
+          if (e->in(gen+1)->type().dim()==0) {
+            GCLock lock;
+            nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
+          } else {
+            GCLock lock;
+            nextin = eval_array_lit(e->in(gen+1));
+          }
         }
-        eval_comp<Eval>(eval,e,gen+1,0,nextin,a);
+        if (e->in(gen+1)->type().dim()==0) {
+          eval_comp_set<Eval>(eval,e,gen+1,0,nextin,a);
+        } else {
+          eval_comp_array<Eval>(eval,e,gen+1,0,nextin,a);
+        }
       }
     } else {
-      eval_comp<Eval>(eval,e,gen,id+1,in,a);
+      eval_comp_set<Eval>(eval,e,gen,id+1,in,a);
     }
+  }
+
+  template<class Eval>
+  void
+  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+                  IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+    ArrayLit* al = in()->cast<ArrayLit>();
+    e->decl(gen,id)->e(al->v()[i.toInt()]);
+    e->rehash();
+    if (id == e->n_decls(gen)-1) {
+      if (gen == e->n_generators()-1) {
+        bool where = true;
+        if (e->where() != NULL) {
+          GCLock lock;
+          where = eval_bool(e->where());
+        }
+        if (where) {
+          a.push_back(eval.e(e->e()));
+        }
+      } else {
+        KeepAlive nextin;
+        {
+          if (e->in(gen+1)->type().dim()==0) {
+            GCLock lock;
+            nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
+          } else {
+            GCLock lock;
+            nextin = eval_array_lit(e->in(gen+1));
+          }
+        }
+        if (e->in(gen+1)->type().dim()==0) {
+          eval_comp_set<Eval>(eval,e,gen+1,0,nextin,a);
+        } else {
+          eval_comp_array<Eval>(eval,e,gen+1,0,nextin,a);
+        }
+      }
+    } else {
+      eval_comp_array<Eval>(eval,e,gen,id+1,in,a);
+    }
+    e->decl(gen,id)->e(NULL);
+    e->decl(gen,id)->flat(NULL);
   }
 
   /**
@@ -120,12 +177,30 @@ namespace MiniZinc {
    */
   template<class Eval>
   void
-  eval_comp(Eval& eval, Comprehension* e, int gen, int id,
-            KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+                KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     IntSetRanges rsi(in()->cast<SetLit>()->isv());
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
-      eval_comp<Eval>(eval,e,gen,id,rsv.val(),in,a);
+      eval_comp_set<Eval>(eval,e,gen,id,rsv.val(),in,a);
+    }
+  }
+
+  /**
+   * \brief Evaluate comprehension expression
+   *
+   * Calls \a eval.e for every element of the comprehension \a e,
+   * where \a gen is the current generator, \a id is the current identifier
+   * in that generator, \a in is the expression of that generator, and
+   * \a a is the array in which to place the result.
+   */
+  template<class Eval>
+  void
+  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+                  KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+    ArrayLit* al = in()->cast<ArrayLit>();
+    for (unsigned int i=0; i<al->v().size(); i++) {
+      eval_comp_array<Eval>(eval,e,gen,id,i,in,a);
     }
   }
 
@@ -142,9 +217,17 @@ namespace MiniZinc {
     KeepAlive in;
     {
       GCLock lock;
-      in = new SetLit(Location(),eval_intset(e->in(0)));
+      if (e->in(0)->type().dim()==0) {
+        in = new SetLit(Location(),eval_intset(e->in(0)));
+      } else {
+        in = eval_array_lit(e->in(0));
+      }
     }
-    eval_comp<Eval>(eval,e,0,0,in,a);
+    if (e->in(0)->type().dim()==0) {
+      eval_comp_set<Eval>(eval,e,0,0,in,a);
+    } else {
+      eval_comp_array<Eval>(eval,e,0,0,in,a);
+    }
     return a;
   }  
 

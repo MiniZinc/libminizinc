@@ -218,11 +218,23 @@ namespace MiniZinc {
   }
 
   Item*&
-  Model::operator[] (int i) { return _items[i]; }
+  Model::operator[] (int i) { assert(i < _items.size()); return _items[i]; }
   const Item*
-  Model::operator[] (int i) const { return _items[i]; }
+  Model::operator[] (int i) const { assert(i < _items.size()); return _items[i]; }
   unsigned int
   Model::size(void) const { return _items.size(); }
+  
+  std::vector<Item*>::iterator
+  Model::begin(void) { return _items.begin(); }
+
+  std::vector<Item*>::const_iterator
+  Model::begin(void) const { return _items.begin(); }
+
+  std::vector<Item*>::iterator
+  Model::end(void) { return _items.end(); }
+
+  std::vector<Item*>::const_iterator
+  Model::end(void) const { return _items.end(); }
   
   void
   Model::compact(void) {

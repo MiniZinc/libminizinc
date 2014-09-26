@@ -86,7 +86,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "min on empty array undefined");
+          return IntVal::infinity;
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(al->v()[i]));
@@ -110,7 +110,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "max on empty array undefined");
+          return -IntVal::infinity;
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(al->v()[i]));
@@ -352,7 +352,7 @@ namespace MiniZinc {
     if ( ( id->decl()->ti()->ranges().size()==1 &&
            id->decl()->ti()->ranges()[0]->domain() != NULL &&
            id->decl()->ti()->ranges()[0]->domain()->isa<TIId>() ) ||
-         ( id->decl()->ti()->ranges().size() >= i &&
+         ( static_cast<int>(id->decl()->ti()->ranges().size()) >= i &&
            ( id->decl()->ti()->ranges()[i-1]->domain() == NULL ||
              id->decl()->ti()->ranges()[i-1]->domain()->isa<TIId>()) )) {
       GCLock lock;
@@ -361,7 +361,7 @@ namespace MiniZinc {
         throw EvalError(id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
-    if (id->decl()->ti()->ranges().size() < i)
+    if (static_cast<int>(id->decl()->ti()->ranges().size()) < i)
       throw EvalError(id->loc(), "index_set: wrong dimension");
     return eval_intset(id->decl()->ti()->ranges()[i-1]->domain());
   }
@@ -373,7 +373,7 @@ namespace MiniZinc {
     ArrayLit* al1 = eval_array_lit(args[1]);
     if (al0->type().dim() != al1->type().dim())
       return false;
-    for (unsigned int i=1; i<=al0->type().dim(); i++) {
+    for (int i=1; i<=al0->type().dim(); i++) {
       IntSetVal* index0 = b_index_set(al0, i);
       IntSetVal* index1 = b_index_set(al1, i);
       if (!index0->equal(index1))
@@ -415,12 +415,12 @@ namespace MiniZinc {
   IntVal b_min_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
-    return isv->min(0);
+    return isv->min();
   }
   IntVal b_max_parsetint(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     IntSetVal* isv = eval_intset(args[0]);
-    return isv->max(isv->size()-1);
+    return isv->max();
   }
   IntSetVal* b_ub_set(Expression* e) {
     IntSetVal* isv = compute_intset_bounds(e);
@@ -496,6 +496,15 @@ namespace MiniZinc {
           if (lastid->decl()==NULL)
             throw EvalError(lastid->loc(),"undefined identifier");
           cur = lastid->decl()->e();
+        }
+        break;
+      case Expression::E_ARRAYACCESS:
+        {
+          bool success;
+          cur = eval_arrayaccess(cur->cast<ArrayAccess>(), success);
+          if (!success) {
+            cur = NULL;
+          }
         }
         break;
       default:
@@ -798,10 +807,10 @@ namespace MiniZinc {
   IntVal b_pow_int(ASTExprVec<Expression> args) {
     IntVal p = eval_int(args[0]);
     IntVal r = 1;
-    int e = eval_int(args[1]).toInt();
+    long long int e = eval_int(args[1]).toInt();
     if (e < 0)
       throw EvalError(args[1]->loc(), "Cannot raise integer to a negative power");
-    for (int i=e; i--;)
+    for (long long int i=e; i--;)
       r = r*p;
     return r;
   }
@@ -857,21 +866,26 @@ namespace MiniZinc {
     assert(args.size()==1);
     std::ostringstream oss;
     GCLock lock;
-    Expression* e = eval_par(args[0]);
-    if (StringLit* sl = e->dyn_cast<StringLit>()) {
-      return sl->v().str();
-    }
-    Printer p(oss,0,false);
-    if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
-      oss << "[";
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        p.print(al->v()[i]);
-        if (i<al->v().size()-1)
-          oss << ", ";
-      }
-      oss << "]";
+    if (args[0]->type().isvar()) {
+      Printer p(oss,0,false);
+      p.print(args[0]);
     } else {
-      p.print(e);
+      Expression* e = eval_par(args[0]);
+      if (StringLit* sl = e->dyn_cast<StringLit>()) {
+        return sl->v().str();
+      }
+      Printer p(oss,0,false);
+      if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+        oss << "[";
+        for (unsigned int i=0; i<al->v().size(); i++) {
+          p.print(al->v()[i]);
+          if (i<al->v().size()-1)
+            oss << ", ";
+        }
+        oss << "]";
+      } else {
+        p.print(e);
+      }
     }
     return oss.str();
   }
@@ -1023,7 +1037,7 @@ namespace MiniZinc {
     ArrayLit* order_e = eval_array_lit(args[1]);
     std::vector<IntVal> order(order_e->v().size());
     std::vector<int> a(order_e->v().size());
-    for (int i=0; i<order.size(); i++) {
+    for (unsigned int i=0; i<order.size(); i++) {
       a[i] = i;
       order[i] = eval_int(order_e->v()[i]);
     }

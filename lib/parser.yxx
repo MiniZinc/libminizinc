@@ -100,6 +100,14 @@ std::string get_file_contents(std::ifstream &in)
   throw(errno);
 }
 
+Expression* createDocComment(const Location& loc, const std::string& s) {
+  std::vector<Expression*> args(1);
+  args[0] = new StringLit(loc, s);
+  Call* c = new Call(loc, constants().ann.doc_comment, args);
+  c->type(Type::ann());
+  return c;
+}
+
 namespace MiniZinc {
 
   Model* parseFromString(const string& text,
@@ -117,28 +125,27 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
 
     Model* model = new Model();
-    model->_filename = ASTString(filename);
+    model->setFilename(filename);
 
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
-      stdlib->_filename = ASTString("stdlib.mzn");
+      stdlib->setFilename("stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      IncludeI* stdlibinc = new IncludeI(Location(),stdlib->_filename);
+      IncludeI* stdlibinc = new IncludeI(Location(),stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
 
       Model* builtins = new Model;
-      ASTString bn("builtins.mzn");
-      builtins->_filename = bn;
+      builtins->setFilename("builtins.mzn");
       files.push_back(pair<string,Model*>("./",builtins));
       seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
-      IncludeI* builtinsinc = new IncludeI(Location(),builtins->_filename);
+      IncludeI* builtinsinc = new IncludeI(Location(),builtins->filename());
       builtinsinc->m(builtins,true);
       model->addItem(builtinsinc);
     }
 
-    model->_filepath = ASTString(filename);
+    model->setFilepath(filename);
     bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
     isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
     isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
@@ -157,13 +164,13 @@ namespace MiniZinc {
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
-      string f(m->_filename.str());
+      string f(m->filename().str());
 
-      for (Model* p=m->_parent; p; p=p->_parent) {
-        if (f == p->_filename.c_str()) {
+      for (Model* p=m->parent(); p; p=p->parent()) {
+        if (f == p->filename().c_str()) {
           err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename << std::endl;
+          for (Model* pe=m; pe; pe=pe->parent()) {
+            err << "  " << pe->filename() << std::endl;
           }
           goto error;
         }
@@ -189,7 +196,7 @@ namespace MiniZinc {
       }
       std::string s = get_file_contents(file);
 
-      m->_filepath = ASTString(fullname);
+      m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
@@ -228,29 +235,28 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
     
     Model* model = new Model();
-    model->_filename = ASTString(fileBasename);
+    model->setFilename(fileBasename);
 
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
-      stdlib->_filename = ASTString("stdlib.mzn");
+      stdlib->setFilename("stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
       stdlibloc.filename=ASTString(filename);
       IncludeI* stdlibinc = 
-        new IncludeI(stdlibloc,stdlib->_filename);
+        new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
 
       Model* builtins = new Model;
-      ASTString bn("builtins.mzn");
-      builtins->_filename = bn;
+      builtins->setFilename("builtins.mzn");
       files.push_back(pair<string,Model*>("./",builtins));
       seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
       Location builtinsloc;
       builtinsloc.filename=ASTString(filename);
       IncludeI* builtinsinc = 
-        new IncludeI(builtinsloc,builtins->_filename);
+        new IncludeI(builtinsloc,builtins->filename());
       builtinsinc->m(builtins,true);
       model->addItem(builtinsinc);
     }
@@ -262,13 +268,13 @@ namespace MiniZinc {
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
-      string f(m->_filename.str());
+      string f(m->filename().str());
             
-      for (Model* p=m->_parent; p; p=p->_parent) {
-        if (f == p->_filename.c_str()) {
+      for (Model* p=m->parent(); p; p=p->parent()) {
+        if (f == p->filename().c_str()) {
           err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->_parent) {
-            err << "  " << pe->_filename << std::endl;
+          for (Model* pe=m; pe; pe=pe->parent()) {
+            err << "  " << pe->filename() << std::endl;
           }
           goto error;
         }
@@ -294,7 +300,7 @@ namespace MiniZinc {
       }
       std::string s = get_file_contents(file);
 
-      m->_filepath = ASTString(fullname);
+      m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
@@ -354,21 +360,20 @@ namespace MiniZinc {
   
   if (!ignoreStdlib) {
     Model* stdlib = new Model;
-    stdlib->_filename = ASTString("stdlib.mzn");
+    stdlib->setFilename("stdlib.mzn");
     files.push_back(pair<string,Model*>("./",stdlib));
     seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
     IncludeI* stdlibinc =
-      new IncludeI(Location(),stdlib->_filename);
+      new IncludeI(Location(),stdlib->filename());
     stdlibinc->m(stdlib,true);
     model->addItem(stdlibinc);
     
     Model* builtins = new Model;
-    ASTString bn("builtins.mzn");
-    builtins->_filename = bn;
+    builtins->setFilename("builtins.mzn");
     files.push_back(pair<string,Model*>("./",builtins));
     seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
     IncludeI* builtinsinc =
-      new IncludeI(Location(),builtins->_filename);
+      new IncludeI(Location(),builtins->filename());
     builtinsinc->m(builtins,true);
     model->addItem(builtinsinc);
   }
@@ -378,13 +383,13 @@ namespace MiniZinc {
     string parentPath = np.first;
     Model* m = np.second;
     files.pop_back();
-    string f(m->_filename.str());
+    string f(m->filename().str());
     
-    for (Model* p=m->_parent; p; p=p->_parent) {
-      if (f == p->_filename.c_str()) {
+    for (Model* p=m->parent(); p; p=p->parent()) {
+      if (f == p->filename().c_str()) {
         err << "Error: cyclic includes: " << std::endl;
-        for (Model* pe=m; pe; pe=pe->_parent) {
-          err << "  " << pe->_filename << std::endl;
+        for (Model* pe=m; pe; pe=pe->parent()) {
+          err << "  " << pe->filename() << std::endl;
         }
         goto error;
       }
@@ -408,7 +413,7 @@ namespace MiniZinc {
     }
     std::string s = get_file_contents(file);
     
-    m->_filepath = ASTString(fullname);
+    m->setFilepath(fullname);
     bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
     isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
     isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
@@ -482,12 +487,13 @@ namespace MiniZinc {
 
 %initial-action
 {
-  @$.filename = static_cast<ParserState*>(parm)->model->filepath();
+  GCLock lock;
+  @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
 }
 
 %token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
 %token <dValue> MZN_FLOAT_LITERAL
-%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_TI_IDENTIFIER
+%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_TI_IDENTIFIER MZN_DOC_COMMENT
 
 %token MZN_VAR MZN_PAR MZN_SVAR
 
@@ -572,7 +578,7 @@ namespace MiniZinc {
 %token MZN_COLONCOLON_QUOTED
 %token MZN_PLUSPLUS_QUOTED
 
-%type <item> item include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
+%type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item
 %type <vardeclexpr_v> params params_list params_list_head
@@ -627,7 +633,21 @@ item_list_head:
 
 semi_or_none : | ';'
 
-item :
+item : MZN_DOC_COMMENT item_tail
+      { $$ = $2;
+        if (FunctionI* fi = $$->dyn_cast<FunctionI>()) {
+          fi->ann().add(createDocComment(@1,$1));
+        } else if (VarDeclI* vdi = $$->dyn_cast<VarDeclI>()) {
+          vdi->e()->addAnnotation(createDocComment(@1,$1));
+        } else {
+          yyerror(&@2, parm, "documentation comments are only supported for function, predicate and variable declarations");
+        }
+        free($1);
+      }
+    | item_tail
+      { $$ = $1; }
+
+item_tail :
       include_item
       { $$=notInDatafile(&@$,parm,"include") ? $1 : NULL; }
     | vardecl_item
@@ -954,7 +974,16 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { $$=new UnOp(@$, UOT_MINUS, $2); }
+      { if ($2->isa<IntLit>()) {
+          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
+          $$ = $2;
+        } else if ($2->isa<FloatLit>()) {
+          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
+          $$ = $2;
+        } else {
+          $$=new UnOp(@$, UOT_MINUS, $2);
+        }
+      }
 
 ///
 
@@ -1430,58 +1459,58 @@ id_or_quoted_op :
       MZN_IDENTIFIER
       { $$=$1; }
     | MZN_EQUIV_QUOTED
-      { $$=strdup("@<->"); }
+      { $$=strdup("<->"); }
     | MZN_IMPL_QUOTED
-      { $$=strdup("@->"); }
+      { $$=strdup("->"); }
     | MZN_RIMPL_QUOTED
-      { $$=strdup("@<-"); }
+      { $$=strdup("<-"); }
     | MZN_OR_QUOTED
-      { $$=strdup("@\\/"); }
+      { $$=strdup("\\/"); }
     | MZN_XOR_QUOTED
-      { $$=strdup("@xor"); }
+      { $$=strdup("xor"); }
     | MZN_AND_QUOTED
-      { $$=strdup("@/\\"); }
+      { $$=strdup("/\\"); }
     | MZN_LE_QUOTED
-      { $$=strdup("@<"); }
+      { $$=strdup("<"); }
     | MZN_GR_QUOTED
-      { $$=strdup("@>"); }
+      { $$=strdup(">"); }
     | MZN_LQ_QUOTED
-      { $$=strdup("@<="); }
+      { $$=strdup("<="); }
     | MZN_GQ_QUOTED
-      { $$=strdup("@>="); }
+      { $$=strdup(">="); }
     | MZN_EQ_QUOTED
-      { $$=strdup("@="); }
+      { $$=strdup("="); }
     | MZN_NQ_QUOTED
-      { $$=strdup("@!="); }
+      { $$=strdup("!="); }
     | MZN_IN_QUOTED
-      { $$=strdup("@in"); }
+      { $$=strdup("in"); }
     | MZN_SUBSET_QUOTED
-      { $$=strdup("@subset"); }
+      { $$=strdup("subset"); }
     | MZN_SUPERSET_QUOTED
-      { $$=strdup("@superset"); }
+      { $$=strdup("superset"); }
     | MZN_UNION_QUOTED
-      { $$=strdup("@union"); }
+      { $$=strdup("union"); }
     | MZN_DIFF_QUOTED
-      { $$=strdup("@diff"); }
+      { $$=strdup("diff"); }
     | MZN_SYMDIFF_QUOTED
-      { $$=strdup("@symdiff"); }
+      { $$=strdup("symdiff"); }
     | MZN_DOTDOT_QUOTED
-      { $$=strdup("@.."); }
+      { $$=strdup(".."); }
     | MZN_PLUS_QUOTED
-      { $$=strdup("@+"); }
+      { $$=strdup("+"); }
     | MZN_MINUS_QUOTED
-      { $$=strdup("@-"); }
+      { $$=strdup("-"); }
     | MZN_MULT_QUOTED
-      { $$=strdup("@*"); }
+      { $$=strdup("*"); }
     | MZN_DIV_QUOTED
-      { $$=strdup("@/"); }
+      { $$=strdup("/"); }
     | MZN_IDIV_QUOTED
-      { $$=strdup("@div"); }
+      { $$=strdup("div"); }
     | MZN_MOD_QUOTED
-      { $$=strdup("@mod"); }
+      { $$=strdup("mod"); }
     | MZN_INTERSECT_QUOTED
-      { $$=strdup("@intersect"); }
+      { $$=strdup("intersect"); }
     | MZN_NOT_QUOTED
-      { $$=strdup("@not"); }
+      { $$=strdup("not"); }
     | MZN_PLUSPLUS_QUOTED
-      { $$=strdup("@++"); }
+      { $$=strdup("++"); }

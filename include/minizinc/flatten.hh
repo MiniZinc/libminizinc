@@ -13,6 +13,7 @@
 #define __MINIZINC_FLATTEN_HH__
 
 #include <minizinc/model.hh>
+#include <minizinc/astexception.hh>
 
 namespace MiniZinc {
 
@@ -31,6 +32,17 @@ namespace MiniZinc {
     Model* output(void);
     EnvI& envi(void);
     std::ostream& dumpErrorStack(std::ostream& os);
+    const std::vector<std::string>& warnings(void);
+  };
+
+  /// Exception thrown for errors during flattening
+  class FlatteningError : public LocationException {
+  public:
+    FlatteningError(EnvI& env, const Location& loc, const std::string& msg);
+    ~FlatteningError(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: flattening error";
+    }
   };
 
   /// Options for the flattener

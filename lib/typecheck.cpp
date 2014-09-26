@@ -386,9 +386,6 @@ namespace MiniZinc {
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
           needsOptionTypes = true;
-        } else if (ty_in != Type::parsetint() && !ty_in.isintarray()) {
-          throw TypeError(g_in->loc(),
-            "generator expression must be par set of int or array[int] of int, but is "+ty_in.toString());
         }
       }
       if (c.where()) {
@@ -396,7 +393,7 @@ namespace MiniZinc {
           needsOptionTypes = true;
         } else if (c.where()->type() != Type::parbool()) {
           throw TypeError(c.where()->loc(),
-                          "where clause must be par bool, but is "+
+                          "where clause must be bool, but is "+
                           c.where()->type().toString());
         }
       }
@@ -418,6 +415,32 @@ namespace MiniZinc {
         tt.ti(Type::TI_VAR);
       }
       c.type(tt);
+    }
+    /// Visit array comprehension generator
+    void vComprehensionGenerator(Comprehension& c, int gen_i) {
+      Expression* g_in = c.in(gen_i);
+      const Type& ty_in = g_in->type();
+      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
+        throw TypeError(g_in->loc(),
+                        "generator expression must be (par or var) set of int or one-dimensional array, but is "+ty_in.toString());
+      }
+      Type ty_id;
+      bool needIntLit = false;
+      if (ty_in.dim()==0) {
+        ty_id = Type::parint();
+        needIntLit = true;
+      } else {
+        ty_id = ty_in;
+        ty_id.dim(0);
+      }
+      for (int j=0; j<c.n_decls(gen_i); j++) {
+        if (needIntLit) {
+          GCLock lock;
+          c.decl(gen_i,j)->e(new IntLit(Location(),0));
+        }
+        c.decl(gen_i,j)->type(ty_id);
+        c.decl(gen_i,j)->ti()->type(ty_id);
+      }
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
@@ -450,7 +473,7 @@ namespace MiniZinc {
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
-      if (!allpar)
+      if (varcond || !allpar)
         tret.ti(Type::TI_VAR);
       if (!allpresent)
         tret.ot(Type::OT_OPTIONAL);
@@ -666,7 +689,13 @@ namespace MiniZinc {
       Typer<false> ty(m);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
-        bu_ty.run(ts.decls[i]);
+        /// TODO:
+        /// Currently only type checks the TypeInst and the actual declaration.
+        /// This can be a problem if the TypeInst calls functions, because functions
+        /// are only type-checked after the VarDecls and therefore may still contain
+        /// unknown types.
+        bu_ty.run(ts.decls[i]->ti());
+        ty.vVarDecl(*ts.decls[i]);
         if (ts.decls[i]->toplevel() &&
             ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
           typeErrors.push_back(TypeError(ts.decls[i]->loc(),

@@ -32,7 +32,12 @@ namespace MiniZinc {
       Expression* _e;
       /// Whether this expression has been visited before
       bool _done;
-      C(Expression* e) : _e(e), _done(false) {}
+      /// If part of a generator expression, which one it is
+      int _gen_i;
+      /// Constructor
+      C(Expression* e) : _e(e), _done(false), _gen_i(-1) {}
+      /// Constructor for generator expression
+      C(Expression* e, int gen_i) : _e(e), _done(true), _gen_i(gen_i) {}
     };
     
     /// Push all elements of \a v onto \a stack
@@ -125,7 +130,11 @@ namespace MiniZinc {
           _t.vArrayAccess(*c._e->template cast<ArrayAccess>());
           break;
         case Expression::E_COMP:
-          _t.vComprehension(*c._e->template cast<Comprehension>());
+          if (c._gen_i >= 0) {
+            _t.vComprehensionGenerator(*c._e->template cast<Comprehension>(), c._gen_i);
+          } else {
+            _t.vComprehension(*c._e->template cast<Comprehension>());
+          }
           break;
         case Expression::E_ITE:
           _t.vITE(*c._e->template cast<ITE>());
@@ -184,14 +193,15 @@ namespace MiniZinc {
           case Expression::E_COMP:
             {
               Comprehension* comp = ce->template cast<Comprehension>();
+              stack.push_back(C(comp->e()));
               stack.push_back(C(comp->where()));
               for (unsigned int i=comp->n_generators(); i--; ) {
-                stack.push_back(C(comp->in(i)));
                 for (unsigned int j=comp->n_decls(i); j--; ) {
                   stack.push_back(C(comp->decl(i, j)));
                 }
+                stack.push_back(C(comp,i));
+                stack.push_back(C(comp->in(i)));
               }
-              stack.push_back(C(comp->e()));
             }
             break;
           case Expression::E_ITE:

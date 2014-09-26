@@ -87,6 +87,8 @@ char* bufferData(void* parm) {
 %}
 
 %x string
+%x multilinecomment
+%x doccomment
 
 %%
 
@@ -100,6 +102,38 @@ char* bufferData(void* parm) {
 [ \f\xd\t]         { /* ignore whitespace */
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   }
+
+"/**"             { BEGIN doccomment; beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+<doccomment>{
+  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+    BEGIN 0; return MZN_DOC_COMMENT; }
+  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa               { MiniZinc::ParserState* parm =
+    static_cast<MiniZinc::ParserState*>(
+    yyget_extra(yyscanner));
+    parm->lineno++;
+    parm->lineStartPos += parm->nTokenNextStart;
+    parm->nTokenNextStart=1;
+    appendBufferString(yyget_extra(yyscanner), yytext);
+  }
+}
+
+"/*"              { BEGIN multilinecomment; beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+<multilinecomment>{
+  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); BEGIN 0; }
+  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+  \xa               { MiniZinc::ParserState* parm =
+    static_cast<MiniZinc::ParserState*>(
+    yyget_extra(yyscanner));
+    parm->lineno++;
+    parm->lineStartPos += parm->nTokenNextStart;
+    parm->nTokenNextStart=1;
+  }
+}
+
+
 "["               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return MZN_LEFT_BRACKET; }
 "[|"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);

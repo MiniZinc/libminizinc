@@ -9,8 +9,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <minizinc/file_utils.hh>
-#include <config.hh>
+#include <minizinc/config.hh>
 
 #ifdef HAS_PIDPATH
 #include <stdio.h>
@@ -18,11 +22,13 @@
 #include <string.h>
 #include <libproc.h>
 #include <unistd.h>
-#elif defined(HAS_GETMODULEFILENAME)
+#elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace MiniZinc { namespace FileUtils {
   
@@ -83,6 +89,18 @@ namespace MiniZinc { namespace FileUtils {
     } else {
       return false;
     }
+  }
+  
+  bool directory_exists(const std::string& dirname) {
+#if defined(HAS_GETFILEATTRIBUTES)
+    DWORD dwAttrib = GetFileAttributes(dirname.c_str());
+      
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+            (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat info;
+    return stat(dirname.c_str(), &info)==0 && (info.st_mode & S_IFDIR);
+#endif
   }
   
 }}

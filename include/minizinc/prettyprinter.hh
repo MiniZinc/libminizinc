@@ -41,6 +41,9 @@ namespace MiniZinc {
     void print(const Expression* e);
     void print(const Item* i);
     void print(const Model* m);
+    
+    static std::string escapeStringLit(const ASTString& s);
+
   };
 
   /// Output operator for expressions

@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
   bool flag_verbose = false;
   bool flag_newfzn = false;
   bool flag_optimize = true;
+  bool flag_werror = false;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -211,6 +212,8 @@ int main(int argc, char** argv) {
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
       fopts.onlyRangeDomains = true;
+    } else if (string(argv[i])=="-Werror") {
+      flag_werror = true;
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -264,6 +267,13 @@ int main(int argc, char** argv) {
   }
   includePaths.push_back(std_lib_dir+"/std/");
   
+  for (unsigned int i=0; i<includePaths.size(); i++) {
+    if (!FileUtils::directory_exists(includePaths[i])) {
+      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+      std::exit(EXIT_FAILURE);
+    }
+  }
+  
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
@@ -310,9 +320,15 @@ int main(int argc, char** argv) {
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;
-              std::cerr << e.loc() << ":" << std::endl;
-              std::cerr << e.what() << ": " << e.msg() << std::endl;
+              std::cerr << e.what() << ": " << std::endl;
               env.dumpErrorStack(std::cerr);
+              std::cerr << "  " << e.msg() << std::endl;
+              exit(EXIT_FAILURE);
+            }
+            for (unsigned int i=0; i<env.warnings().size(); i++) {
+              std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+            }
+            if (flag_werror && env.warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
             Model* flat = env.flat();
@@ -333,6 +349,8 @@ int main(int argc, char** argv) {
               oldflatzinc(env);
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            } else {
+              env.flat()->compact();
             }
             
             if (flag_verbose)
@@ -418,6 +436,7 @@ error:
             << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
             << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
             << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+            << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 
   exit(EXIT_FAILURE);

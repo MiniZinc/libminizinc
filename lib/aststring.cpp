@@ -10,14 +10,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/aststring.hh>
-
 #include <iostream>
+
+#ifndef HAS_MEMCPY_S
+namespace {
+  void memcpy_s(char* dest, size_t, const char* src, size_t count) {
+    memcpy(dest,src,count);
+  }
+}
+#endif
 
 namespace MiniZinc {
 
   ASTStringO::ASTStringO(const std::string& s)
     : ASTChunk(s.size()+sizeof(size_t)+1) {
-    strncpy(_data+sizeof(size_t),s.c_str(),s.size());
+    memcpy_s(_data+sizeof(size_t),s.size()+1,s.c_str(),s.size());
     *(_data+sizeof(size_t)+s.size())=0;
     HASH_NAMESPACE::hash<std::string> h;
     reinterpret_cast<size_t*>(_data)[0] = h(s);

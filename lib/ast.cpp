@@ -257,20 +257,24 @@ namespace MiniZinc {
   Generator::Generator(const std::vector<ASTString>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->loc(),
-        new TypeInst(in->loc(),Type::parint()),v[i],
-        new IntLit(in->loc(),0)));
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(in->loc(),
+                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
     _v = vd;
     _in = in;
   }
   Generator::Generator(const std::vector<std::string>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
-    for (unsigned int i=0; i<v.size(); i++)
-      vd.push_back(new VarDecl(in->loc(),
-        new TypeInst(in->loc(),Type::parint()),ASTString(v[i]),
-        new IntLit(in->loc(),0)));
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(in->loc(),
+                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
     _v = vd;
     _in = in;
   }
@@ -355,7 +359,7 @@ namespace MiniZinc {
     
     class OpToString {
     protected:
-      std::vector<KeepAlive> rootSet;
+      Model* rootSetModel;
     public:
       Id* sBOT_PLUS;
       Id* sBOT_MINUS;
@@ -388,62 +392,65 @@ namespace MiniZinc {
       
       OpToString(void) {
         GCLock lock;
-        sBOT_PLUS = new Id(Location(),"@+",NULL);
+        rootSetModel = new Model();
+        std::vector<Expression*> rootSet;
+        sBOT_PLUS = new Id(Location(),"+",NULL);
         rootSet.push_back(sBOT_PLUS);
-        sBOT_MINUS = new Id(Location(),"@-",NULL);
+        sBOT_MINUS = new Id(Location(),"-",NULL);
         rootSet.push_back(sBOT_MINUS);
-        sBOT_MULT = new Id(Location(),"@*",NULL);
+        sBOT_MULT = new Id(Location(),"*",NULL);
         rootSet.push_back(sBOT_MULT);
-        sBOT_DIV = new Id(Location(),"@/",NULL);
+        sBOT_DIV = new Id(Location(),"/",NULL);
         rootSet.push_back(sBOT_DIV);
-        sBOT_IDIV = new Id(Location(),"@div",NULL);
+        sBOT_IDIV = new Id(Location(),"div",NULL);
         rootSet.push_back(sBOT_IDIV);
-        sBOT_MOD = new Id(Location(),"@mod",NULL);
+        sBOT_MOD = new Id(Location(),"mod",NULL);
         rootSet.push_back(sBOT_MOD);
-        sBOT_LE = new Id(Location(),"@<",NULL);
+        sBOT_LE = new Id(Location(),"<",NULL);
         rootSet.push_back(sBOT_LE);
-        sBOT_LQ = new Id(Location(),"@<=",NULL);
+        sBOT_LQ = new Id(Location(),"<=",NULL);
         rootSet.push_back(sBOT_LQ);
-        sBOT_GR = new Id(Location(),"@>",NULL);
+        sBOT_GR = new Id(Location(),">",NULL);
         rootSet.push_back(sBOT_GR);
-        sBOT_GQ = new Id(Location(),"@>=",NULL);
+        sBOT_GQ = new Id(Location(),">=",NULL);
         rootSet.push_back(sBOT_GQ);
-        sBOT_EQ = new Id(Location(),"@=",NULL);
+        sBOT_EQ = new Id(Location(),"=",NULL);
         rootSet.push_back(sBOT_EQ);
-        sBOT_NQ = new Id(Location(),"@!=",NULL);
+        sBOT_NQ = new Id(Location(),"!=",NULL);
         rootSet.push_back(sBOT_NQ);
-        sBOT_IN = new Id(Location(),"@in",NULL);
+        sBOT_IN = new Id(Location(),"in",NULL);
         rootSet.push_back(sBOT_IN);
-        sBOT_SUBSET = new Id(Location(),"@subset",NULL);
+        sBOT_SUBSET = new Id(Location(),"subset",NULL);
         rootSet.push_back(sBOT_SUBSET);
-        sBOT_SUPERSET = new Id(Location(),"@superset",NULL);
+        sBOT_SUPERSET = new Id(Location(),"superset",NULL);
         rootSet.push_back(sBOT_SUPERSET);
-        sBOT_UNION = new Id(Location(),"@union",NULL);
+        sBOT_UNION = new Id(Location(),"union",NULL);
         rootSet.push_back(sBOT_UNION);
-        sBOT_DIFF = new Id(Location(),"@diff",NULL);
+        sBOT_DIFF = new Id(Location(),"diff",NULL);
         rootSet.push_back(sBOT_DIFF);
-        sBOT_SYMDIFF = new Id(Location(),"@symdiff",NULL);
+        sBOT_SYMDIFF = new Id(Location(),"symdiff",NULL);
         rootSet.push_back(sBOT_SYMDIFF);
-        sBOT_INTERSECT = new Id(Location(),"@intersect",NULL);
+        sBOT_INTERSECT = new Id(Location(),"intersect",NULL);
         rootSet.push_back(sBOT_INTERSECT);
-        sBOT_PLUSPLUS = new Id(Location(),"@++",NULL);
+        sBOT_PLUSPLUS = new Id(Location(),"++",NULL);
         rootSet.push_back(sBOT_PLUSPLUS);
-        sBOT_EQUIV = new Id(Location(),"@<->",NULL);
+        sBOT_EQUIV = new Id(Location(),"<->",NULL);
         rootSet.push_back(sBOT_EQUIV);
-        sBOT_IMPL = new Id(Location(),"@->",NULL);
+        sBOT_IMPL = new Id(Location(),"->",NULL);
         rootSet.push_back(sBOT_IMPL);
-        sBOT_RIMPL = new Id(Location(),"@<-",NULL);
+        sBOT_RIMPL = new Id(Location(),"<-",NULL);
         rootSet.push_back(sBOT_RIMPL);
-        sBOT_OR = new Id(Location(),"@\\/",NULL);
+        sBOT_OR = new Id(Location(),"\\/",NULL);
         rootSet.push_back(sBOT_OR);
-        sBOT_AND = new Id(Location(),"@/\\",NULL);
+        sBOT_AND = new Id(Location(),"/\\",NULL);
         rootSet.push_back(sBOT_AND);
-        sBOT_XOR = new Id(Location(),"@xor",NULL);
+        sBOT_XOR = new Id(Location(),"xor",NULL);
         rootSet.push_back(sBOT_XOR);
-        sBOT_DOTDOT = new Id(Location(),"@..",NULL);
+        sBOT_DOTDOT = new Id(Location(),"..",NULL);
         rootSet.push_back(sBOT_DOTDOT);
-        sBOT_NOT = new Id(Location(),"@not",NULL);
+        sBOT_NOT = new Id(Location(),"not",NULL);
         rootSet.push_back(sBOT_NOT);
+        rootSetModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(),rootSet)));
       }
             
       static OpToString& o(void) {
@@ -484,7 +491,7 @@ namespace MiniZinc {
     case BOT_AND: return OpToString::o().sBOT_AND->v();
     case BOT_XOR: return OpToString::o().sBOT_XOR->v();
     case BOT_DOTDOT: return OpToString::o().sBOT_DOTDOT->v();
-    default: assert(false);
+    default: assert(false); return ASTString("");
     }
   }
 
@@ -506,7 +513,7 @@ namespace MiniZinc {
     case UOT_PLUS: return OpToString::o().sBOT_PLUS->v();
     case UOT_MINUS: return OpToString::o().sBOT_MINUS->v();
     case UOT_NOT: return OpToString::o().sBOT_NOT->v();
-    default: assert(false);
+    default: assert(false); return ASTString("");
     }
   }
 
@@ -901,6 +908,10 @@ namespace MiniZinc {
     ids.lin_exp = ASTString("lin_exp");
     ids.element = ASTString("element");
     
+    ids.show = ASTString("show");
+    ids.output = ASTString("output");
+    ids.fix = ASTString("fix");
+    
     ids.int_.lin_eq = ASTString("int_lin_eq");
     ids.int_.lin_le = ASTString("int_lin_le");
     ids.int_.lin_ne = ASTString("int_lin_ne");
@@ -995,6 +1006,7 @@ namespace MiniZinc {
     ann.is_reverse_map->type(Type::ann());
     ann.promise_total = new Id(Location(), ASTString("promise_total"), NULL);
     ann.promise_total->type(Type::ann());
+    ann.doc_comment = ASTString("doc_comment");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1014,6 +1026,9 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.element));
+    v.push_back(new StringLit(Location(),ids.show));
+    v.push_back(new StringLit(Location(),ids.output));
+    v.push_back(new StringLit(Location(),ids.fix));
     
     v.push_back(new StringLit(Location(),ids.int_.lin_eq));
     v.push_back(new StringLit(Location(),ids.int_.lin_le));
@@ -1101,6 +1116,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.defines_var));
     v.push_back(ann.is_reverse_map);
     v.push_back(ann.promise_total);
+    v.push_back(new StringLit(Location(),ann.doc_comment));
     
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
