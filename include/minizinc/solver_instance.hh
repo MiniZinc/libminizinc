@@ -12,7 +12,15 @@
 #ifndef __MINIZINC_SOLVER_INSTANCE_HH__
 #define __MINIZINC_SOLVER_INSTANCE_HH__
 
+#include <minizinc/solver_instance_base.hh>
+
 namespace MiniZinc {
+
+  class SolverInstance {
+  protected:
+    SolverInstanceBase* _si;
+  public:
+  };
   
 }
 
