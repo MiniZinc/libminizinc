@@ -27,6 +27,8 @@ namespace MiniZinc {
     double _objective;
     
   public:
+      Statistics() : _time(0), _nodes(0), _failures(0) {}
+    
       void print(std::ostream& os) {
         os << "Time(ms):\t"  << _time      << std::endl
            << "Nodes:\t"     << _nodes     << std::endl

@@ -21,6 +21,8 @@ namespace MiniZinc {
   class SolverInstanceBase {
   protected:
     Env& _env;
+    Options& _options;
+    Statistics _statistics;
 
     typedef void (*poster) (SolverInstanceBase&, const Call* call);
 
@@ -61,8 +63,12 @@ namespace MiniZinc {
     virtual void resetWithConstraints(Model::iterator begin, Model::iterator end);
     
     virtual void processPermanentConstraints(Model::iterator begin, Model::iterator end);
-    
 
+    void setOptions(Options& o) { _options = o; }
+    Options& getOptions() { return _options; }
+    
+    Statistics& getStatistics() { return _statistics; }
+    
   private:
     SolverInstanceBase(const SolverInstanceBase&);
     SolverInstanceBase& operator= (const SolverInstanceBase&);
