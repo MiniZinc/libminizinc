@@ -140,10 +140,9 @@ endmacro(MD5)
 find_program(FLEX_EXEC flex)
 if(FLEX_EXEC)
 	add_custom_command(
-		SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+		OUTPUT "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+		DEPENDS "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
 		COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-		TARGET MZNParser
-		OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
 		)
 	set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
 	set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
@@ -158,12 +157,9 @@ endif(FLEX_EXEC)
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
 	add_custom_command(
-		SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+		OUTPUT "${PROJECT_BINARY_DIR}/parser.tab.cpp"	"${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+		DEPENDS "${lexer_cpp}" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
 		COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-		TARGET MZNParser
-		DEPENDS "${lexer_cpp}"
-		OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp"
-		"${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
 		)
 	set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
 	set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
