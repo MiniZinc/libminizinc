@@ -13,10 +13,15 @@
 #define __MINIZINC_MODEL_HH__
 
 #include <vector>
+#include <iterator>
+
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
 
 namespace MiniZinc {
+  
+  class VarDeclIterator;
+  class ConstraintIterator;
   
   /// A MiniZinc model
   class Model {
@@ -40,6 +45,8 @@ namespace MiniZinc {
     Model* _parent;
     /// Items in the model
     std::vector<Item*> _items;
+    /// Pointer to the solve item
+    SolveI* _solveItem;
   public:
     
     /// Construct empty model
@@ -48,7 +55,12 @@ namespace MiniZinc {
     ~Model(void);
     
     /// Add \a i to the model
-    void addItem(Item* i) { _items.push_back(i); }
+    void addItem(Item* i) {
+      _items.push_back(i);
+      if (i->isa<SolveI>()) {
+        _solveItem = i->cast<SolveI>();
+      }
+    }
     
     /// Get parent model
     Model* parent(void) const { return _parent; }
@@ -97,8 +109,83 @@ namespace MiniZinc {
     /// Iterator for end of items
     std::vector<Item*>::const_iterator end(void) const;
 
+    ConstraintIterator begin_constraints(void);
+    ConstraintIterator end_constraints(void);
+    VarDeclIterator begin_vardecls(void);
+    VarDeclIterator end_vardecls(void);
+    
+    SolveI* solveItem(void);
+    
     /// Remove all items marked as removed
     void compact(void);
+  };
+
+  class VarDeclIterator {
+    Model* _model;
+    Model::iterator _it;
+  public:
+    typedef typename Model::iterator::difference_type difference_type;
+    typedef typename Model::iterator::value_type value_type;
+    typedef VarDeclI& reference;
+    typedef VarDeclI* pointer;
+    typedef std::forward_iterator_tag iterator_category;
+    
+    VarDeclIterator() {}
+    VarDeclIterator(const VarDeclIterator& vi) : _it(vi._it) {}
+    VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {}
+    ~VarDeclIterator() {}
+    
+    VarDeclIterator& operator=(const VarDeclIterator& vi) {
+      if (this != &vi) {
+        _it = vi._it;
+      }
+      return *this;
+    }
+    bool operator==(const VarDeclIterator& vi) const { return _it == vi._it; }
+    bool operator!=(const VarDeclIterator& vi) const { return _it != vi._it; }
+    VarDeclIterator& operator++() {
+      do {
+        ++_it;
+      } while (_it != _model->end() && !(*_it)->isa<VarDeclI>());
+      return *this;
+    }
+    
+    reference operator*() const { return *(*_it)->cast<VarDeclI>(); }
+    pointer operator->() const { return (*_it)->cast<VarDeclI>(); }
+  };
+
+  class ConstraintIterator {
+    Model* _model;
+    Model::iterator _it;
+  public:
+    typedef typename Model::iterator::difference_type difference_type;
+    typedef typename Model::iterator::value_type value_type;
+    typedef ConstraintI& reference;
+    typedef ConstraintI* pointer;
+    typedef std::forward_iterator_tag iterator_category;
+    
+    ConstraintIterator() {}
+    ConstraintIterator(const ConstraintIterator& vi) : _it(vi._it) {}
+    ConstraintIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {}
+    ~ConstraintIterator() {}
+    
+    ConstraintIterator& operator=(const ConstraintIterator& vi) {
+      if (this != &vi) {
+        _it = vi._it;
+      }
+      return *this;
+    }
+    bool operator==(const ConstraintIterator& vi) const { return _it == vi._it; }
+    bool operator!=(const ConstraintIterator& vi) const { return _it != vi._it; }
+    ConstraintIterator& operator++() {
+      do {
+        ++_it;
+      } while (_it != _model->end() && !(*_it)->isa<ConstraintI>());
+      return *this;
+    }
+    
+    reference operator*() const { return *(*_it)->cast<ConstraintI>(); }
+    pointer operator->() const { return (*_it)->cast<ConstraintI>(); }
   };
 
   /// Visitor for model items
