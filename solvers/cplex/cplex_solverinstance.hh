@@ -34,13 +34,19 @@ namespace MiniZinc {
     virtual ~CPLEXSolverInstance(void);
     
     virtual Status next(void);
-    
+
+    virtual Status solve(void);
+
     virtual void processFlatZinc(void);
     
     virtual void resetSolver(void);
 
     IloModel* getIloModel(void);
-    IloExpr exprToIloExpr(Expression* e);
+    IloNum exprToIloNum(Expression* e);
+    IloNumExpr exprToIloExpr(Expression* e);
+    IloNumVar exprToIloNumVar(Expression* e);
+    IloNumArray exprToIloNumArray(Expression* e);
+    IloNumVarArray exprToIloNumVarArray(Expression* e);
     
   protected:
     virtual Expression* getSolutionValue(Id* id);
