@@ -12,5 +12,36 @@
 #include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
+
+  SolverInstanceBase::Status
+  SolverInstanceBase::solve(void) { return ERROR; }
+  
+  void
+  SolverInstanceBase::reset(void) { assert(false); }
+  
+  void
+  SolverInstanceBase::resetWithConstraints(Model::iterator begin, Model::iterator end) {
+    assert(false);
+  }
+
+  void
+  SolverInstanceBase::processPermanentConstraints(Model::iterator begin, Model::iterator end) {
+    assert(false);
+  }
+  
+  void
+  SolverInstanceBase::Registry::add(const ASTString& name, poster p) {
+    _registry.insert(std::make_pair(name, p));
+  }
+  void
+  SolverInstanceBase::Registry::post(Call* c) {
+    ASTStringMap<poster>::t::iterator it = _registry.find(c->id());
+    if (it == _registry.end()) {
+      std::cerr << "Error: constraint not found: " << c->id() << "\n";
+      exit(EXIT_FAILURE);
+    }
+    it->second(_base, c);
+  }
+
   
 }

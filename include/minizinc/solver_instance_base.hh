@@ -29,7 +29,7 @@ namespace MiniZinc {
 
     class Registry {
     protected:
-      ASTStringMap<poster> _registry;
+      ASTStringMap<poster>::t _registry;
       SolverInstanceBase& _base;
     public:
       Registry(SolverInstanceBase& base) : _base(base) {}
@@ -49,7 +49,7 @@ namespace MiniZinc {
     
     enum Status { OPT, SAT, UNSAT, UNKNOWN, ERROR };
     
-    virtual ~SolverInstanceBase(void);
+    virtual ~SolverInstanceBase(void) {}
     /// find the next solution
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model
