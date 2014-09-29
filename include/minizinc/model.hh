@@ -132,7 +132,11 @@ namespace MiniZinc {
     
     VarDeclIterator() {}
     VarDeclIterator(const VarDeclIterator& vi) : _it(vi._it) {}
-    VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {}
+    VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
+      while (_it != _model->end() && !(*_it)->isa<VarDeclI>()) {
+        ++_it;
+      }
+    }
     ~VarDeclIterator() {}
     
     VarDeclIterator& operator=(const VarDeclIterator& vi) {
@@ -166,7 +170,11 @@ namespace MiniZinc {
     
     ConstraintIterator() {}
     ConstraintIterator(const ConstraintIterator& vi) : _it(vi._it) {}
-    ConstraintIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {}
+    ConstraintIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
+      while (_it != _model->end() && !(*_it)->isa<ConstraintI>()) {
+        ++_it;
+      }
+    }
     ~ConstraintIterator() {}
     
     ConstraintIterator& operator=(const ConstraintIterator& vi) {
