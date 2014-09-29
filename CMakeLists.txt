@@ -260,7 +260,12 @@ if(HAS_CPLEX)
 
 	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
 
-  INSTALL(TARGETS minizinc_cplex
+	add_executable(mzn-cplex
+	  solvers/cplex/mzn-cplex.cpp
+	)
+	target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert)
+
+  INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
