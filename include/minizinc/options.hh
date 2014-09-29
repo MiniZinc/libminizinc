@@ -17,7 +17,7 @@
 namespace MiniZinc {
   class Options {
     protected:
-      IdMap<Expression*> _options;
+      ASTStringMap<Expression*>::t _options;
 
       inline Expression* getParam(ASTString name);
 
