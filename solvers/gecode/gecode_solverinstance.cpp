@@ -225,7 +225,7 @@ namespace MiniZinc {
     }
     
     
-    IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
+  /*  IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
         ArrayLit* a = getArrayLit(arg);
         if (a->v().size() == 0) {
             IntVarArgs emptyIa(0);
@@ -247,4 +247,5 @@ namespace MiniZinc {
         }
         return ia;
     }
+    */
 }

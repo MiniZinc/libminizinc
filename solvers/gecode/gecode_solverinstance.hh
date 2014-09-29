@@ -40,7 +40,7 @@ namespace MiniZinc {
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {
   protected:
-    Gecode::Space* model; /// we could also call it 'solver'
+    Gecode::Space* model; /// we could also call it 'solver', 'working_instance' etc
   public:
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
@@ -53,10 +53,30 @@ namespace MiniZinc {
     
   protected:
     void registerConstraints(void);
-    
-    IntVarArgs arg2intvarargs(Expression* e, int offset);
-      
-    
+    /// Convert \a arg (array of integers) to IntArgs
+    Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
+    /// Convert \a arg (array of Booleans) to IntArgs
+    Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
+    /// Convert \a n to IntSet
+    Gecode::IntSet arg2intset(Expression* sl);
+    /// Convert \a arg to IntVarArgs
+    Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
+    /// Convert \a arg to BoolVarArgs
+    Gecode::BoolVarArgs arg2boolvarargs(Expression* a, int offset = 0, int siv=-1);
+    /// Convert \a n to BoolVar
+    Gecode::BoolVar arg2BoolVar(Expression* e);
+    /// Convert \a n to IntVar
+    Gecode::IntVar arg2IntVar(Expression* e);
+#ifdef GECODE_HAS_FLOAT_VARS
+    /// Convert \a n to FloatValArgs
+    Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
+    /// Convert \a n to FloatVar
+    Gecode::FloatVar arg2FloatVar(Expression* n);
+    /// Convert \a n to FloatVarArgs
+    Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
+#endif
+    /// Convert \a ann to IntConLevel
+    Gecode::IntConLevel ann2icl(const Annotation& ann);
   };
 }
 
