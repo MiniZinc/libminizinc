@@ -220,8 +220,10 @@ namespace MiniZinc {
       cmb_hash(h(_dims[i]));
       cmb_hash(h(_dims[i+1]));
     }
-    for (unsigned int i=_v.size(); i--;)
+    for (unsigned int i=_v.size(); i--;) {
+      cmb_hash(h(i));
       cmb_hash(Expression::hash(_v[i]));
+    }
   }
   int
   ArrayLit::dims(void) const {
