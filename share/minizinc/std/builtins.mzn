@@ -237,17 +237,9 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
   } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x));
 
 function var int: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of int: x) =
-  if (idx1 in index_set_1of3(x) /\ idx2 in index_set_2of3(x) /\
-      has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) then
-  (let {
-    int: dim2 = card(index_set_2of3(x));
-    int: dim3 = card(index_set_3of3(x));
-    int: min = min(index_set_1of3(x))*dim2*dim3+
-               min(index_set_2of3(x))*dim3+
-               min(index_set_3of3(x))-1;
-  } in element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
-  )
+                          array[int,int,int] of var int: x) =
+  if (idx1 in index_set_1of3(x) /\ idx2 in index_set_2of3(x)) then
+    element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]))
   else (
   let {
     int: dim2 = card(index_set_2of3(x));
