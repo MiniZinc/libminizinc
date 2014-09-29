@@ -169,6 +169,9 @@ namespace MiniZinc {
     /// Compute base hash value
     void init_hash(void) { _hash = cmb_hash(0,_id); }
 
+    /// Check if \a e0 and \a e1 are equal
+    static bool equal_internal(const Expression* e0, const Expression* e1);
+
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
       : ASTNode(eid), _loc(loc), _type(t) {}

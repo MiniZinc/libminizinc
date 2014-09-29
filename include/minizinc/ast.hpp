@@ -10,6 +10,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 namespace MiniZinc {
+  
+  inline bool
+  Expression::equal(const Expression* e0, const Expression* e1) {
+    if (e0==e1) return true;
+    if (e0 == NULL || e1 == NULL) return false;
+    if (e0->_id != e1->_id) return false;
+    if (e0->type() != e1->type()) return false;
+    if (e0->hash() != e1->hash()) return false;
+    return equal_internal(e0, e1);
+  }
 
   inline void
   Expression::type(const Type& t) {
