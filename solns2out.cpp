@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
         //ostream& fout(flag_output_file.empty() ? std::cout : new fstream(flag_output_file));
         fstream file_ostream;
         if (!flag_output_file.empty())
-            file_ostream.open(flag_output_file, std::fstream::out);
+            file_ostream.open(flag_output_file.c_str(), std::fstream::out);
         ostream& fout = flag_output_file.empty() ? std::cout : file_ostream;
 
         string solution;
