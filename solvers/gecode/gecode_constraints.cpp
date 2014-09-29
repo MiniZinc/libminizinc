@@ -691,7 +691,7 @@ namespace MiniZinc {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             BoolVar x0 = gi.arg2BoolVar(call->args()[0]);
             IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            if (isBoolVar(call->args()[0]) && call->args()[0]->type().isvarint()) { // TODO: bug? cannot be TRUE
+            if (call->args()[0]->type().isvarbool() && call->args()[0]->type().isvarint()) { // TODO: bug? 
                 gi.model->aliasBool2Int(*(int*)gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
                         *(int*)gi.resolveVar(call->args()[0]->cast<Id>()->decl()));
             }
@@ -702,7 +702,7 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntSet d = gi.arg2intset(call->args()[1]);
-            if (isBoolVar(call->args()[0])) {
+            if (call->args()[0]->type().isvarbool()) {
                 Gecode::IntSetRanges dr(d);
                 Iter::Ranges::Singleton sr(0,1);
                 Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
@@ -721,7 +721,7 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntSet d = gi.arg2intset(call->args()[1]);
-            if (isBoolVar(call->args()[0])) {
+            if (call->args()[0]->type().isvarbool()) {
                 Gecode::IntSetRanges dr(d);
                 Iter::Ranges::Singleton sr(0,1);
                 Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
@@ -743,7 +743,7 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntSet d = gi.arg2intset(call->args()[1]);
-            if (isBoolVar(call->args()[0])) {
+            if (call->args()[0]->type().isvarbool()) {
                 Gecode::IntSetRanges dr(d);
                 Iter::Ranges::Singleton sr(0,1);
                 Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
