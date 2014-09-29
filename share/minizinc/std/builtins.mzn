@@ -273,6 +273,47 @@ function var int: element(int: idx1, var int: idx2, var int: idx3,
                               min(index_set_3of3(x))..max(index_set_3of3(x)),
                               [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
 
+function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                          array[int,int,int,int] of var int: x) =
+  let {
+    int: dim2 = card(index_set_2of4(x));
+    int: dim3 = card(index_set_3of4(x));
+    int: dim4 = card(index_set_4of4(x));
+    
+    int: min = min(index_set_1of4(x))*dim2*dim3*dim4+
+               min(index_set_2of4(x))*dim3*dim4+
+               min(index_set_3of4(x))*dim4+
+               min(index_set_4of4(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       then
+         element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       else let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       endif;
+
+function var int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
+                          array[int,int,int,int] of var int: x) =
+  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
+
+function var int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
+                          array[int,int,int,int] of var int: x) =
+  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
+
+function var int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
+                          array[int,int,int,int] of var int: x) =
+  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
+function var int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                          array[int,int,int,int] of var int: x) =
+  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
 %%%%%%%%%%%%%%%%%%%
 % Element on floats
 
@@ -327,7 +368,100 @@ function var float: element(var int: idx1, var int: idx2,
          } in element_mt(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
        endif;
 
+function var float: element(var int: idx1, var int: idx2, var int: idx3,
+                            array[int,int,int] of var float: x) =
+  let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+    
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       then
+         element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       else let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       endif;
 
+function var float: element(var int: idx1, int: idx2, int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
+
+function var float: element(int: idx1, var int: idx2, int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
+
+function var float: element(int: idx1, int: idx2, var int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
+
+function var float: element(var int: idx1, var int: idx2, int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
+
+function var float: element(var int: idx1, int: idx2, var int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
+
+function var float: element(int: idx1, var int: idx2, var int: idx3,
+                          array[int,int,int] of var float: x) =
+  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
+
+
+function var float: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var float: x) =
+  let {
+    int: dim2 = card(index_set_2of4(x));
+    int: dim3 = card(index_set_3of4(x));
+    int: dim4 = card(index_set_4of4(x));
+    
+    int: min = min(index_set_1of4(x))*dim2*dim3*dim4+
+               min(index_set_2of4(x))*dim3*dim4+
+               min(index_set_3of4(x))*dim4+
+               min(index_set_4of4(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       then
+         element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       else let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       endif;
+
+function var float: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
+                            array[int,int,int,int] of var float: x) =
+  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
+
+function var float: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
+                            array[int,int,int,int] of var float: x) =
+  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
+
+function var float: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var float: x) =
+  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
+function var float: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var float: x) =
+  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
+                      
 %%%%%%%%%%%%%%%%%
 % Element on sets
 
@@ -382,6 +516,98 @@ function var set of int: element(var int: idx1, var int: idx2,
          } in element_mt(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
        endif;
 
+function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+    
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       then
+         element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       else let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       endif;
+
+function var set of int: element(var int: idx1, int: idx2, int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
+
+function var set of int: element(int: idx1, var int: idx2, int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
+
+function var set of int: element(int: idx1, int: idx2, var int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
+
+function var set of int: element(var int: idx1, var int: idx2, int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
+
+function var set of int: element(var int: idx1, int: idx2, var int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
+
+function var set of int: element(int: idx1, var int: idx2, var int: idx3,
+                                 array[int,int,int] of var set of int: x) =
+  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
+
+function var set of int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                                 array[int,int,int,int] of var set of int: x) =
+  let {
+    int: dim2 = card(index_set_2of4(x));
+    int: dim3 = card(index_set_3of4(x));
+    int: dim4 = card(index_set_4of4(x));
+    
+    int: min = min(index_set_1of4(x))*dim2*dim3*dim4+
+               min(index_set_2of4(x))*dim3*dim4+
+               min(index_set_3of4(x))*dim4+
+               min(index_set_4of4(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       then
+         element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       else let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       endif;
+
+function var set of int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
+                                 array[int,int,int,int] of var set of int: x) =
+  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
+
+function var set of int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
+                                 array[int,int,int,int] of var set of int: x) =
+  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
+
+function var set of int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
+                                 array[int,int,int,int] of var set of int: x) =
+  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
+function var set of int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                                 array[int,int,int,int] of var set of int: x) =
+  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
 %%%%%%%%%%%%%%%%%%
 % Element on bools
 
@@ -434,6 +660,97 @@ function var bool: element(var int: idx1, var int: idx2,
          } in element_mt(idx1*dim+idx2-min_flat, array1d(1..dim*card(index_set_1of2(x)),x))
        endif;
 
+function var bool: element(var int: idx1, var int: idx2, var int: idx3,
+                            array[int,int,int] of var bool: x) =
+  let {
+    int: dim2 = card(index_set_2of3(x));
+    int: dim3 = card(index_set_3of3(x));
+    
+    int: min = min(index_set_1of3(x))*dim2*dim3+
+               min(index_set_2of3(x))*dim3+
+               min(index_set_3of3(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       then
+         element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       else let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(1..dim2*dim3*card(index_set_1of3(x)),x))
+       endif;
+
+function var bool: element(var int: idx1, int: idx2, int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
+
+function var bool: element(int: idx1, var int: idx2, int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
+
+function var bool: element(int: idx1, int: idx2, var int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
+
+function var bool: element(var int: idx1, var int: idx2, int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
+
+function var bool: element(var int: idx1, int: idx2, var int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
+
+function var bool: element(int: idx1, var int: idx2, var int: idx3,
+                          array[int,int,int] of var bool: x) =
+  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
+                              min(index_set_3of3(x))..max(index_set_3of3(x)),
+                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
+
+function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var bool: x) =
+  let {
+    int: dim2 = card(index_set_2of4(x));
+    int: dim3 = card(index_set_3of4(x));
+    int: dim4 = card(index_set_4of4(x));
+    
+    int: min = min(index_set_1of4(x))*dim2*dim3*dim4+
+               min(index_set_2of4(x))*dim3*dim4+
+               min(index_set_3of4(x))*dim4+
+               min(index_set_4of4(x))-1;
+  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       then
+         element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       else let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(1..dim2*dim3*dim4*card(index_set_1of4(x)),x))
+       endif;
+
+function var bool: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
+                            array[int,int,int,int] of var bool: x) =
+  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
+
+function var bool: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
+                            array[int,int,int,int] of var bool: x) =
+  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
+
+function var bool: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var bool: x) =
+  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
+
+function var bool: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
+                            array[int,int,int,int] of var bool: x) =
+  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
 
 % Comparisons
 function     bool: '<'(    $T,    $T);
