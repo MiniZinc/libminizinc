@@ -10,34 +10,41 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/statistics.hh>
+#include <iostream>
 
-void Statistics::print(std::ostream& os) {
-  os << "Time(ms):\t"  << _time      << std::endl
+namespace MiniZinc {
+
+  void Statistics::print(std::ostream& os) {
+    os << "Time(ms):\t"  << _time      << std::endl
     << "Nodes:\t"     << _nodes     << std::endl
     << "Failures:\t"  << _failures  << std::endl
     << "Objective:\t" << _objective << std::endl;
-};
-
-void Statistics::printLine(std::ostream& os) {
-  os << _time     << '\t'
+  };
+  
+  void Statistics::printLine(std::ostream& os) {
+    os << _time     << '\t'
     << _nodes    << '\t'
     << _failures << '\t'
     << _objective << std::endl;
-}
+  }
+  
+  void Statistics::time(unsigned long long t) { _time = t; }
+  void Statistics::nodes(unsigned long long n) { _nodes = n; }
+  void Statistics::failures(unsigned long long f) { _failures = f; }
+  void Statistics::objective(double o) { _objective = o; }
+  
+  unsigned long long Statistics::time() { return _time; };
+  unsigned long long Statistics::nodes() { return _nodes; };
+  unsigned long long Statistics::failures() { return _failures; };
+  double Statistics::objective() { return _objective; };
+  
+  Statistics&
+  Statistics::operator+=(Statistics& s) {
+    _time += s.time();
+    _nodes += s.nodes();
+    _failures += s.failures();
+    _objective = s.objective();
+    return *this;
+  }
 
-void Statistics::time(unsigned long long t) { _time = t; }
-void Statistics::nodes(unsigned long long n) { _nodes = n; }
-void Statistics::failures(unsigned long long f) { _failures = f; }
-void Statistics::objective(double o) { _objective = o; }
-
-unsigned long long Statistics::time() { return _time; };
-unsigned long long Statistics::nodes() { return _nodes; };
-unsigned long long Statistics::failures() { return _failures; };
-double Statistics::objective() { return _objective; };
-
-Statistics::operator+=(Statistics& s) {
-  _time += s.time();
-  _nodes += s.nodes();
-  _failures += s.failures();
-  _objective = s.objective();
 }

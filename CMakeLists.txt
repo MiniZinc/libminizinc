@@ -198,7 +198,9 @@ lib/solver_instance_base.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+lib/options.cpp
 lib/parser.yxx
+lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
 include/minizinc/ast.hh
@@ -220,11 +222,13 @@ include/minizinc/hash.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
+include/minizinc/options.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
+include/minizinc/statistics.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
@@ -256,7 +260,12 @@ if(HAS_CPLEX)
 
 	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
 
-  INSTALL(TARGETS minizinc_cplex
+	add_executable(mzn-cplex
+	  solvers/cplex/mzn-cplex.cpp
+	)
+	target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert)
+
+  INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
