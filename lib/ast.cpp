@@ -220,8 +220,10 @@ namespace MiniZinc {
       cmb_hash(h(_dims[i]));
       cmb_hash(h(_dims[i+1]));
     }
-    for (unsigned int i=_v.size(); i--;)
+    for (unsigned int i=_v.size(); i--;) {
+      cmb_hash(h(i));
       cmb_hash(Expression::hash(_v[i]));
+    }
   }
   int
   ArrayLit::dims(void) const {
@@ -708,17 +710,13 @@ namespace MiniZinc {
   }
 
   bool
-  Expression::equal(const Expression* e0, const Expression* e1) {
-    if (e0==e1) return true;
-    if (e0 == NULL || e1 == NULL) return false;
-    if (e0->_id != e1->_id) return false;
-    if (e0->type() != e1->type()) return false;
+  Expression::equal_internal(const Expression* e0, const Expression* e1) {
     switch (e0->eid()) {
-    case Expression::E_INTLIT:
-      return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
-    case Expression::E_FLOATLIT:
-      return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
-    case Expression::E_SETLIT:
+      case Expression::E_INTLIT:
+        return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
+      case Expression::E_FLOATLIT:
+        return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
+      case Expression::E_SETLIT:
       {
         const SetLit* s0 = e0->cast<SetLit>();
         const SetLit* s1 = e1->cast<SetLit>();
@@ -739,11 +737,11 @@ namespace MiniZinc {
           return true;
         }
       }
-    case Expression::E_BOOLLIT:
-      return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
-    case Expression::E_STRINGLIT:
-      return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
-    case Expression::E_ID:
+      case Expression::E_BOOLLIT:
+        return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
+      case Expression::E_STRINGLIT:
+        return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
+      case Expression::E_ID:
       {
         const Id* id0 = e0->cast<Id>();
         const Id* id1 = e1->cast<Id>();
@@ -751,24 +749,29 @@ namespace MiniZinc {
           return id0->v()==id1->v() && id0->idn()==id1->idn();
         }
         return id0->decl()==id1->decl() ||
-          ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
+        ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
       }
-    case Expression::E_ANON:
-      return false;
-    case Expression::E_ARRAYLIT:
+      case Expression::E_ANON:
+        return false;
+      case Expression::E_ARRAYLIT:
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
         if (a0->v().size() != a1->v().size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
-        for (unsigned int i=0; i<a0->_dims.size(); i++)
-          if ( a0->_dims[i] != a1->_dims[i] ) return false;
-        for (unsigned int i=0; i<a0->v().size(); i++)
-          if (!Expression::equal( a0->v()[i], a1->v()[i] ))
+        for (unsigned int i=0; i<a0->_dims.size(); i++) {
+          if ( a0->_dims[i] != a1->_dims[i] ) {
             return false;
+          }
+        }
+        for (unsigned int i=0; i<a0->v().size(); i++) {
+          if (!Expression::equal( a0->v()[i], a1->v()[i] )) {
+            return false;
+          }
+        }
         return true;
       }
-    case Expression::E_ARRAYACCESS:
+      case Expression::E_ARRAYACCESS:
       {
         const ArrayAccess* a0 = e0->cast<ArrayAccess>();
         const ArrayAccess* a1 = e1->cast<ArrayAccess>();
@@ -779,7 +782,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_COMP:
+      case Expression::E_COMP:
       {
         const Comprehension* c0 = e0->cast<Comprehension>();
         const Comprehension* c1 = e1->cast<Comprehension>();
@@ -797,20 +800,20 @@ namespace MiniZinc {
         }
         return true;
       }
-    case Expression::E_ITE:
+      case Expression::E_ITE:
       {
         const ITE* i0 = e0->cast<ITE>();
         const ITE* i1 = e1->cast<ITE>();
         if (i0->_e_if_then.size() != i1->_e_if_then.size()) return false;
         for (unsigned int i=i0->_e_if_then.size(); i--; ) {
           if (!Expression::equal ( i0->_e_if_then[i],
-                                   i1->_e_if_then[i]))
+                                  i1->_e_if_then[i]))
             return false;
         }
         if (!Expression::equal (i0->e_else(), i1->e_else())) return false;
         return true;
       }
-    case Expression::E_BINOP:
+      case Expression::E_BINOP:
       {
         const BinOp* b0 = e0->cast<BinOp>();
         const BinOp* b1 = e1->cast<BinOp>();
@@ -819,7 +822,7 @@ namespace MiniZinc {
         if (!Expression::equal (b0->rhs(), b1->rhs())) return false;
         return true;
       }
-    case Expression::E_UNOP:
+      case Expression::E_UNOP:
       {
         const UnOp* b0 = e0->cast<UnOp>();
         const UnOp* b1 = e1->cast<UnOp>();
@@ -827,7 +830,7 @@ namespace MiniZinc {
         if (!Expression::equal (b0->e(), b1->e())) return false;
         return true;
       }
-    case Expression::E_CALL:
+      case Expression::E_CALL:
       {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
@@ -839,7 +842,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_VARDECL:
+      case Expression::E_VARDECL:
       {
         const VarDecl* v0 = e0->cast<VarDecl>();
         const VarDecl* v1 = e1->cast<VarDecl>();
@@ -848,7 +851,7 @@ namespace MiniZinc {
         if (!Expression::equal ( v0->e(), v1->e() )) return false;
         return true;
       }
-    case Expression::E_LET:
+      case Expression::E_LET:
       {
         const Let* l0 = e0->cast<Let>();
         const Let* l1 = e1->cast<Let>();
@@ -859,7 +862,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_TI:
+      case Expression::E_TI:
       {
         const TypeInst* t0 = e0->cast<TypeInst>();
         const TypeInst* t1 = e1->cast<TypeInst>();
@@ -870,14 +873,14 @@ namespace MiniZinc {
         if (!Expression::equal (t0->domain(), t1->domain())) return false;
         return true;
       }
-    case Expression::E_TIID:
-      return false;
-    default:
-      assert(false);
-      return false;
+      case Expression::E_TIID:
+        return false;
+      default:
+        assert(false);
+        return false;
     }
-  }    
-
+  }
+  
   Constants::Constants(void) {
     GC::init();
     GCLock lock;
