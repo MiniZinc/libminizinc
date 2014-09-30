@@ -38,7 +38,60 @@ namespace MiniZinc {
   };
   
   class FznSpace : Gecode::Space {
+  public:
+    /// copy constructor
+    FznSpace(bool share, FznSpace&);
+    /// standard constructor
+    FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
+            setVarCount(-1), needAuxVars(true) {} ; 
+  
   protected:
+    /// Implement optimization
+    virtual void constrain(const Space& s);
+    /// Copy function
+    virtual Gecode::Space* copy(bool share);
+    
+    /// Number of integer variables
+    int intVarCount;
+    /// Number of Boolean variables
+    int boolVarCount;
+    /// Number of float variables
+    int floatVarCount;
+    /// Number of set variables
+    int setVarCount;
+
+    /// The integer variables
+    std::vector<Gecode::IntVar> iv;
+    /// The introduced integer variables
+    Gecode::IntVarArray iv_aux;
+    /// Indicates whether an integer variable is introduced by mzn2fzn
+    std::vector<bool> iv_introduced;
+    /// Indicates whether an integer variable aliases a Boolean variable
+    std::vector<int> iv_boolalias;
+    /// The Boolean variables
+    std::vector<Gecode::BoolVar> bv;
+    /// The introduced Boolean variables
+    Gecode::BoolVarArray bv_aux;
+    /// Indicates whether a Boolean variable is introduced by mzn2fzn
+    std::vector<bool> bv_introduced;
+#ifdef GECODE_HAS_SET_VARS
+    /// The set variables
+    std::vector<Gecode::SetVar> sv;
+    /// The introduced set variables
+    Gecode::SetVarArray sv_aux;
+    /// Indicates whether a set variable is introduced by mzn2fzn
+    std::vector<bool> sv_introduced;
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    /// The float variables
+    std::vector<Gecode::FloatVar> fv;
+    /// The introduced float variables
+    Gecode::FloatVarArray fv_aux;
+    /// Indicates whether a float variable is introduced by mzn2fzn
+    std::vector<bool> fv_introduced;
+#endif
+    /// Whether the introduced variables still need to be copied
+    bool needAuxVars;
     /// Link integer variable \a iv to Boolean variable \a bv TODO: copied from old interface, do we still need this?
     void aliasBool2Int(int iv, int bv);
     /// Return linked Boolean variable for integer variable \a iv TODO: copied from old interface, do we still need this?
