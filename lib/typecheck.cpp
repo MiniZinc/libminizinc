@@ -504,8 +504,8 @@ namespace MiniZinc {
         } else {
           throw TypeError(bop.loc(),
             std::string("type error in operator application for ")+
-            bop.opToString().str()+". Left-hand side has type "+bop.lhs()->type().toString()+
-                          ", but right-hand side has type "+bop.rhs()->type().toString());
+            bop.opToString().str()+". No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
+                          "and right-hand side has type "+bop.rhs()->type().toString());
         }
       }
     }
