@@ -17,7 +17,7 @@
 
 namespace MiniZinc {
   
-  Model::Model(void) : _parent(NULL), _solveItem(NULL) {
+  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {
     GC::add(this);
   }
 
@@ -54,6 +54,11 @@ namespace MiniZinc {
   SolveI*
   Model::solveItem() {
     return _solveItem;
+  }
+  
+  OutputI*
+  Model::outputItem() {
+    return _outputItem;
   }
   
   void
