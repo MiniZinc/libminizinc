@@ -255,6 +255,8 @@ namespace MiniZinc {
       if (e==NULL) {
         continue;
       }
+      if (!_t.enter(e))
+        continue;
       switch (e->eid()) {
         case Expression::E_INTLIT:
         _t.vIntLit(*e->template cast<IntLit>());
