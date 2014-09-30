@@ -14,7 +14,7 @@
 namespace MiniZinc {
 
   SolverInstanceBase::Status
-  SolverInstanceBase::solve(void) { return ERROR; }
+  SolverInstanceBase::solve(void) { return SolverInstance::ERROR; }
   
   void
   SolverInstanceBase::reset(void) { assert(false); }
@@ -43,5 +43,14 @@ namespace MiniZinc {
     it->second(_base, c);
   }
 
+  void
+  SolverInstanceBase::assignSolutionToOutput(void) {
+    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+      if (it->e()->e() == NULL) {
+        it->e()->e(getSolutionValue(it->e()->id()));
+      }
+    }
+  }
+  
   
 }

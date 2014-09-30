@@ -17,6 +17,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/options.hh>
 #include <minizinc/statistics.hh>
+#include <minizinc/solver_instance.hh>
 
 namespace MiniZinc {
 
@@ -44,10 +45,8 @@ namespace MiniZinc {
     void assignSolutionToOutput(void);
     
   public:
-    
+    typedef SolverInstance::Status Status;
     SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
-    
-    enum Status { OPT, SAT, UNSAT, UNKNOWN, ERROR };
     
     virtual ~SolverInstanceBase(void) {}
     /// find the next solution

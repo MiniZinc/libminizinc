@@ -128,7 +128,7 @@ namespace MiniZinc {
   }
   
   SolverInstanceBase::Status CPLEXSolverInstance::next(void) {
-    return ERROR;
+    return SolverInstance::ERROR;
   }
   
   SolverInstanceBase::Status CPLEXSolverInstance::solve(void) {
@@ -146,7 +146,7 @@ namespace MiniZinc {
 
     _ilocplex = new IloCplex(*_ilomodel);
     
-//    _ilocplex->setOut(_iloenv.getNullStream());
+    _ilocplex->setOut(_iloenv.getNullStream());
     
     try{
       _ilocplex->solve();
@@ -160,22 +160,24 @@ namespace MiniZinc {
     switch(ss) {
       case IloCplex::Status::Optimal:
       case IloCplex::Status::OptimalTol:
-        s = OPT;
+        s = SolverInstance::OPT;
+        assignSolutionToOutput();
         break;
       case IloCplex::Status::Feasible:
-        s = SAT;
+        s = SolverInstance::SAT;
+        assignSolutionToOutput();
         break;
       case IloCplex::Status::Infeasible:
-        s = UNSAT;
+        s = SolverInstance::UNSAT;
         break;
       case IloCplex::Status::Unbounded:
-        s = ERROR;
+        s = SolverInstance::ERROR;
         break;
       case IloCplex::Status::AbortTimeLim:
-        s = UNKNOWN;
+        s = SolverInstance::UNKNOWN;
         break;
       default:
-        s = UNKNOWN;
+        s = SolverInstance::UNKNOWN;
     }
     return s;
     
@@ -243,7 +245,13 @@ namespace MiniZinc {
   void CPLEXSolverInstance::resetSolver(void) {}
 
   Expression* CPLEXSolverInstance::getSolutionValue(Id* id) {
-    return NULL;
+    IloNum val = _ilocplex->getValue(exprToIloNumVar(id));
+    switch (id->type().bt()) {
+      case Type::BT_INT: return new IntLit(Location(), val);
+      case Type::BT_FLOAT: return new FloatLit(Location(), val);
+      case Type::BT_BOOL: return new BoolLit(Location(), val);
+      default: return NULL;
+    }
   }
 
   IloModel* CPLEXSolverInstance::getIloModel(void) { return _ilomodel; }

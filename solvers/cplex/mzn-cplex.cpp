@@ -29,6 +29,7 @@
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
 
+#include <minizinc/solver_instance.hh>
 #include "cplex_solverinstance.hh"
 
 using namespace MiniZinc;
@@ -333,7 +334,7 @@ int main(int argc, char** argv) {
             if (flag_werror && env.warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
-            Model* flat = env.flat();
+//            Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             
@@ -360,7 +361,13 @@ int main(int argc, char** argv) {
               Options options;
               CPLEXSolverInstance cplex(env,options);
               cplex.processFlatZinc();
-              (void) cplex.solve();
+              SolverInstance::Status status = cplex.solve();
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+                env.evalOutput(std::cout);
+                std::cout << "----------\n";
+                if (status==SolverInstance::OPT)
+                  std::cout << "==========\n";
+              }
             }
             
           }
