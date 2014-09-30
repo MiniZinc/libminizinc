@@ -11,6 +11,7 @@
 
 #include <minizinc/eval_par.hh>
 #include "gecode_solverinstance.hh";
+#include "gecode_constraints.hh";
 
 using namespace Gecode;
 

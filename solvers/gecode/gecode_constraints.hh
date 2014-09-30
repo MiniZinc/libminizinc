@@ -22,29 +22,29 @@ namespace MiniZinc {
 
     namespace GecodeConstraints {
       
-     inline Gecode::IntRelType swap(Gecode::IntRelType irt) {
-            switch (irt) {
+      inline Gecode::IntRelType swap(Gecode::IntRelType irt) {
+	    switch (irt) {
 		case Gecode::IRT_LQ: return Gecode::IRT_GQ;
 		case Gecode::IRT_LE: return Gecode::IRT_GR;
 		case Gecode::IRT_GQ: return Gecode::IRT_LQ;
 		case Gecode::IRT_GR: return Gecode::IRT_LE;
 		default:     return irt;
-            }
-        }
+	    }
+	}
 
-        inline Gecode::IntRelType neg(Gecode::IntRelType irt) {
-            switch (irt) {
-	      case Gecode::IRT_EQ: return Gecode::IRT_NQ;
-                case Gecode::IRT_NQ: return Gecode::IRT_EQ;
-                case Gecode::IRT_LQ: return Gecode::IRT_GR;
-                case Gecode::IRT_LE: return Gecode::IRT_GQ;
-                case Gecode::IRT_GQ: return Gecode::IRT_LE;
-                case Gecode::IRT_GR:
-                default:
-                             assert(irt == Gecode::IRT_GR);
-            }
-            return Gecode::IRT_LQ;
-        }
+      inline Gecode::IntRelType neg(Gecode::IntRelType irt) {
+	  switch (irt) {
+	    case Gecode::IRT_EQ: return Gecode::IRT_NQ;
+	      case Gecode::IRT_NQ: return Gecode::IRT_EQ;
+	      case Gecode::IRT_LQ: return Gecode::IRT_GR;
+	      case Gecode::IRT_LE: return Gecode::IRT_GQ;
+	      case Gecode::IRT_GQ: return Gecode::IRT_LE;
+	      case Gecode::IRT_GR:
+	      default:
+			    assert(irt == Gecode::IRT_GR);
+	  }
+	  return Gecode::IRT_LQ;
+      }
 
 
       void p_distinct(SolverInstanceBase& s, const Call* call);

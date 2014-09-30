@@ -37,10 +37,18 @@ namespace MiniZinc {
     typedef MiniZinc::Statistics Statistics;
   };
   
+  class FznSpace : Gecode::Space {
+  protected:
+    /// Link integer variable \a iv to Boolean variable \a bv TODO: copied from old interface, do we still need this?
+    void aliasBool2Int(int iv, int bv);
+    /// Return linked Boolean variable for integer variable \a iv TODO: copied from old interface, do we still need this?
+    int aliasBool2Int(int iv);
+  };
+  
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {
   protected:
-    Gecode::Space* model; /// we could also call it 'solver', 'working_instance' etc
+    FznSpace* model; /// we could also call it 'solver', 'working_instance' etc
   public:
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
@@ -67,6 +75,8 @@ namespace MiniZinc {
     Gecode::BoolVar arg2BoolVar(Expression* e);
     /// Convert \a n to IntVar
     Gecode::IntVar arg2IntVar(Expression* e);
+    /// Check if \a b is array of Booleans (or has a single integer)
+    bool isBoolArray(ArrayLit* a, int& singleInt);
 #ifdef GECODE_HAS_FLOAT_VARS
     /// Convert \a n to FloatValArgs
     Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
@@ -76,7 +86,11 @@ namespace MiniZinc {
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
-    Gecode::IntConLevel ann2icl(const Annotation& ann);
+    Gecode::IntConLevel ann2icl(const Annotation& ann);  
+    /// TODO: copied this function from SolverInterface -> should be moved somewhere else?
+    ArrayLit* getArrayLit(Expression* arg);  
+    /// TODO: copied from SolverInterface -> needs to be adapted/changed (void pointer!)
+    void* resolveVar(Expression* e);
   };
 }
 
