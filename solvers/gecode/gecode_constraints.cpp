@@ -22,7 +22,7 @@ namespace MiniZinc {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
             IntConLevel icl = gi.ann2icl(call->ann());
-            distinct(*gi.model, va, icl == ICL_DEF ? ICL_DOM : icl);
+            distinct(*gi.model, va, icl == Gecode::ICL_DEF ? ICL_DOM : icl);
         }
 
         void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
@@ -140,12 +140,13 @@ namespace MiniZinc {
         void p_int_lin_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
             const Annotation& ann =call->ann();
             IntArgs ia = s.arg2intargs(call->args()[0]);
+	    ArrayLit* vars = s.getArrayLit(call->args()[1]);
             int singleIntVar;
-            if (s.isBoolArray(call->args()[1]->cast<ArrayLit>(),singleIntVar)) {
+	    if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
                     if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-                        IntVar siv = s.arg2IntVar(call->args()[1]->cast<ArrayLit>()->v()[singleIntVar]);
-                        BoolVarArgs iv = s.arg2boolvarargs(call->args()[1], 0, singleIntVar);
+		        IntVar siv = s.arg2IntVar(vars->v()[singleIntVar]);
+                        BoolVarArgs iv = s.arg2boolvarargs(vars, 0, singleIntVar);
                         IntArgs ia_tmp(ia.size()-1);
                         int count = 0;
                         for (int i=0; i<ia.size(); i++) {
@@ -155,15 +156,15 @@ namespace MiniZinc {
                         IntRelType t = (ia[singleIntVar] == -1 ? irt : swap(irt));
                         linear(*s.model, ia_tmp, iv, t, siv, s.ann2icl(ann));
                     } else {
-                        IntVarArgs iv = s.arg2intvarargs(call->args()[1]);
+                        IntVarArgs iv = s.arg2intvarargs(vars);
                         linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
                     }
                 } else {
-                    BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
+                    BoolVarArgs iv = s.arg2boolvarargs(vars);
                     linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
                 }
             } else {
-                IntVarArgs iv = s.arg2intvarargs(call->args()[1]);
+                IntVarArgs iv = s.arg2intvarargs(vars);
                 linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
             }
         }
@@ -178,12 +179,13 @@ namespace MiniZinc {
                 return;
             }
             IntArgs ia = s.arg2intargs(call->args()[0]);
+	    ArrayLit* vars = s.getArrayLit(call->args()[1]);
             int singleIntVar;
-            if (s.isBoolArray(call->args()[1]->cast<ArrayLit>(),singleIntVar)) {
+            if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
                     if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-                        IntVar siv = s.arg2IntVar(call->args()[1]->cast<ArrayLit>()->v()[singleIntVar]);
-                        BoolVarArgs iv = s.arg2boolvarargs(call->args()[1], 0, singleIntVar);
+                        IntVar siv = s.arg2IntVar(vars->v()[singleIntVar]);
+                        BoolVarArgs iv = s.arg2boolvarargs(vars, 0, singleIntVar);
                         IntArgs ia_tmp(ia.size()-1);
                         int count = 0;
                         for (int i=0; i<ia.size(); i++) {
@@ -194,17 +196,17 @@ namespace MiniZinc {
                         linear(*s.model, ia_tmp, iv, t, siv, Reify(s.arg2BoolVar(call->args()[3]), rm), 
                                 s.ann2icl(ann));
                     } else {
-                        IntVarArgs iv = s.arg2intvarargs(call->args()[1]);
+                        IntVarArgs iv = s.arg2intvarargs(vars);
                         linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
                                 Reify(s.arg2BoolVar(call->args()[3]), rm), s.ann2icl(ann));
                     }
                 } else {
-                    BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
+                    BoolVarArgs iv = s.arg2boolvarargs(vars);
                     linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
                             Reify(s.arg2BoolVar(call->args()[3]), rm), s.ann2icl(ann));
                 }
             } else {
-                IntVarArgs iv = s.arg2intvarargs(call->args()[1]);
+                IntVarArgs iv = s.arg2intvarargs(vars);
                 linear(*s.model, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
                         Reify(s.arg2BoolVar(call->args()[3]), rm), 
                         s.ann2icl(ann));
