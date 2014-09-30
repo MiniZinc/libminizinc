@@ -350,6 +350,10 @@ namespace MiniZinc {
     return e->dumpStack(os, true);
   }
   std::ostream&
+  Env::evalOutput(std::ostream& os) {
+    return e->evalOutput(os);
+  }
+  std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {
     int lastError = 0;
     
@@ -452,6 +456,23 @@ namespace MiniZinc {
     return os;
   }
 
+  std::ostream&
+  EnvI::evalOutput(std::ostream &os) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(output->outputItem()->e());
+    std::string output;
+    for (int i=0; i<al->v().size(); i++) {
+      std::string s = eval_string(al->v()[i]);
+      if (!s.empty()) {
+        output = s;
+        os << output;
+      }
+    }
+    if (output.empty() || output[output.size()-1] != '\n')
+      os << std::endl;
+    return os;
+  }
+  
   const std::vector<std::string>& Env::warnings(void) {
     return envi().warnings;
   }

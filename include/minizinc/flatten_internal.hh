@@ -100,6 +100,7 @@ namespace MiniZinc {
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+    std::ostream& evalOutput(std::ostream& os);
   };
 
   Expression* follow_id(Expression* e);
