@@ -47,6 +47,8 @@ namespace MiniZinc {
     std::vector<Item*> _items;
     /// Pointer to the solve item
     SolveI* _solveItem;
+    /// Pointer to the output item
+    OutputI* _outputItem;
   public:
     
     /// Construct empty model
@@ -59,6 +61,8 @@ namespace MiniZinc {
       _items.push_back(i);
       if (i->isa<SolveI>()) {
         _solveItem = i->cast<SolveI>();
+      } else if (i->isa<OutputI>()) {
+        _outputItem = i->cast<OutputI>();
       }
     }
     
@@ -119,7 +123,9 @@ namespace MiniZinc {
     VarDeclIterator end_vardecls(void);
     
     SolveI* solveItem(void);
-    
+
+    OutputI* outputItem(void);
+
     /// Remove all items marked as removed
     void compact(void);
   };
