@@ -1677,7 +1677,7 @@ namespace MiniZinc {
     GC::lock();
     
     IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
-    if (r) {
+    if (r && r->type().isint()) {
       r_bounds = compute_int_bounds(r);
     }
     

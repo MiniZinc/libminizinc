@@ -1393,3 +1393,6 @@ function bool: is_fixed(array[$U] of var opt $T);
 function bool: abort(string);
 
 function array[int] of var $T: sort_by(array[int] of var $T, array[int] of int);
+function array[int] of int: sort(array[int] of int);
+function array[int] of float: sort(array[int] of float);
+function array[int] of bool: sort(array[int] of bool);

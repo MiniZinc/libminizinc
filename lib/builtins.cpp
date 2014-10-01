@@ -1056,7 +1056,29 @@ namespace MiniZinc {
     al_sorted->type(al->type());
     return al_sorted;
   }
-  
+
+  Expression* b_sort(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    std::vector<Expression*> sorted(al->v().size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[i];
+    struct Ord {
+      bool operator()(Expression* e0, Expression* e1) {
+        switch (e0->type().bt()) {
+          case Type::BT_INT: return eval_int(e0) < eval_int(e1);
+          case Type::BT_BOOL: return eval_bool(e0) < eval_bool(e1);
+          case Type::BT_FLOAT: return eval_float(e0) < eval_float(e1);
+          default: throw EvalError(e0->loc(), "unsupported type for sorting");
+        }
+      }
+    } _ord;
+    std::sort(sorted.begin(),sorted.end(),_ord);
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -1468,6 +1490,15 @@ namespace MiniZinc {
       t[0] = Type::varbot(1);
       t[1] = Type::parint(1);
       rb(m, ASTString("sort_by"), t, b_sort_by);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint(1);
+      rb(m, ASTString("sort"), t, b_sort);
+      t[0] = Type::parbool(1);
+      rb(m, ASTString("sort"), t, b_sort);
+      t[0] = Type::parfloat(1);
+      rb(m, ASTString("sort"), t, b_sort);
     }
   }
   

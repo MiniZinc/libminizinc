@@ -486,11 +486,14 @@ namespace MiniZinc {
       if (bop.op()==BOT_PLUSPLUS &&
         bop.lhs()->type().dim()==1 && bop.rhs()->type().dim()==1 &&
         bop.lhs()->type().st()==bop.rhs()->type().st() &&
-        bop.lhs()->type().bt()==bop.rhs()->type().bt()) {
-        if (bop.lhs()->type().isvar())
-          bop.type(bop.lhs()->type());
-        else
-          bop.type(bop.rhs()->type());
+        (bop.lhs()->type().bt()==Type::BT_BOT || bop.rhs()->type().bt()==Type::BT_BOT ||
+         bop.lhs()->type().bt()==bop.rhs()->type().bt())) {
+        Type t = bop.lhs()->type();
+        if (bop.rhs()->type().isvar())
+          t.ti(Type::TI_VAR);
+        if (t.bt()==Type::BT_BOT)
+          t.bt(bop.rhs()->type().bt());
+        bop.type(t);
       } else {
         if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
           bop.type(fi->rtype(args));
@@ -501,8 +504,8 @@ namespace MiniZinc {
         } else {
           throw TypeError(bop.loc(),
             std::string("type error in operator application for ")+
-            bop.opToString().str()+". Left-hand side has type "+bop.lhs()->type().toString()+
-                          ", but right-hand side has type "+bop.rhs()->type().toString());
+            bop.opToString().str()+". No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
+                          "and right-hand side has type "+bop.rhs()->type().toString());
         }
       }
     }
