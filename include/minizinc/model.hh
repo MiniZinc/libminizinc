@@ -134,8 +134,8 @@ namespace MiniZinc {
     Model* _model;
     Model::iterator _it;
   public:
-    typedef typename Model::iterator::difference_type difference_type;
-    typedef typename Model::iterator::value_type value_type;
+    typedef Model::iterator::difference_type difference_type;
+    typedef Model::iterator::value_type value_type;
     typedef VarDeclI& reference;
     typedef VarDeclI* pointer;
     typedef std::forward_iterator_tag iterator_category;
@@ -172,8 +172,8 @@ namespace MiniZinc {
     Model* _model;
     Model::iterator _it;
   public:
-    typedef typename Model::iterator::difference_type difference_type;
-    typedef typename Model::iterator::value_type value_type;
+    typedef Model::iterator::difference_type difference_type;
+    typedef Model::iterator::value_type value_type;
     typedef ConstraintI& reference;
     typedef ConstraintI* pointer;
     typedef std::forward_iterator_tag iterator_category;
