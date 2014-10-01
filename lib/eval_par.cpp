@@ -1515,6 +1515,7 @@ namespace MiniZinc {
       IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
       IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
       switch (bo.op()) {
+      case BOT_INTERSECT:
       case BOT_UNION:
         {
           IntSetRanges b0r(b0);
@@ -1525,23 +1526,12 @@ namespace MiniZinc {
         break;
       case BOT_DIFF:
         {
-          IntSetRanges b0r(b0);
-          IntSetRanges b1r(b1);
-          Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
-          _bounds.push_back(IntSetVal::ai(u));
+          _bounds.push_back(b0);
         }
         break;
       case BOT_SYMDIFF:
         valid = false;
         _bounds.push_back(NULL);
-        break;
-      case BOT_INTERSECT:
-        {
-          IntSetRanges b0r(b0);
-          IntSetRanges b1r(b1);
-          Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
-          _bounds.push_back(IntSetVal::ai(u));
-        }
         break;
       case BOT_PLUS:
       case BOT_MINUS:
@@ -1577,14 +1567,7 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == "set_intersect") {
-        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
-        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
-        IntSetRanges b0r(b0);
-        IntSetRanges b1r(b1);
-        Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
-        _bounds.push_back(IntSetVal::ai(u));
-      } else if (c.id() == "set_union") {
+      if (c.id() == "set_intersect" || c.id() == "set_union") {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
@@ -1592,12 +1575,9 @@ namespace MiniZinc {
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
       } else if (c.id() == "set_diff") {
-        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        _bounds.pop_back(); // don't need bounds of right hand side
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
-        IntSetRanges b0r(b0);
-        IntSetRanges b1r(b1);
-        Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
-        _bounds.push_back(IntSetVal::ai(u));
+        _bounds.push_back(b0);
       } else {
         valid = false;
         _bounds.push_back(NULL);
