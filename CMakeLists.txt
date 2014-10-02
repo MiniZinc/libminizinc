@@ -240,6 +240,7 @@ add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
 set(HAS_CPLEX TRUE)
+set(HAS_GECODE TRUE)
 
 if(HAS_CPLEX)
 	add_definitions(-DIL_STD)
@@ -267,6 +268,27 @@ if(HAS_CPLEX)
     ARCHIVE DESTINATION lib)
 endif()
 
+if(HAS_GECODE)
+  include_directories("${GECODE_HOME}/include")
+  link_directories("${GECODE_HOME}/lib")
+
+  add_library(minizinc_gecode
+	  solvers/gecode/gecode_solverinstance.cpp
+		solvers/gecode/gecode_constraints.cpp
+	  solvers/gecode/gecode_solverinstance.hh
+		solvers/gecode/gecode_constraints.hh)
+
+  target_link_libraries(gecode_interface
+    minizinc
+    gecodedriver gecodesearch gecodeminimodel
+    gecodefloat gecodeint gecodeset
+    gecodekernel gecodesupport)
+
+  INSTALL(TARGETS minizinc_gecode
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
 
 INSTALL(TARGETS mzn2fzn solns2out minizinc
   RUNTIME DESTINATION bin
