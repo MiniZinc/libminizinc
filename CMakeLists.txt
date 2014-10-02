@@ -239,7 +239,7 @@ target_link_libraries(mzn2fzn minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
-set(HAS_CPLEX TRUE)
+set(HAS_CPLEX FALSE)
 set(HAS_GECODE TRUE)
 
 if(HAS_CPLEX)
@@ -278,7 +278,7 @@ if(HAS_GECODE)
 	  solvers/gecode/gecode_solverinstance.hh
 		solvers/gecode/gecode_constraints.hh)
 
-  target_link_libraries(gecode_interface
+  target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
