@@ -37,29 +37,8 @@ namespace MiniZinc {
     typedef MiniZinc::Statistics Statistics;
   };
   
-  class FznSpace : Gecode::Space {
+  class FznSpace : public Gecode::Space {
   public:
-    /// copy constructor
-    FznSpace(bool share, FznSpace&);
-    /// standard constructor
-    FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
-            setVarCount(-1), needAuxVars(true) {} ; 
-  
-  protected:
-    /// Implement optimization
-    virtual void constrain(const Space& s);
-    /// Copy function
-    virtual Gecode::Space* copy(bool share);
-    
-    /// Number of integer variables
-    int intVarCount;
-    /// Number of Boolean variables
-    int boolVarCount;
-    /// Number of float variables
-    int floatVarCount;
-    /// Number of set variables
-    int setVarCount;
-
     /// The integer variables
     std::vector<Gecode::IntVar> iv;
     /// The introduced integer variables
@@ -90,19 +69,41 @@ namespace MiniZinc {
     /// Indicates whether a float variable is introduced by mzn2fzn
     std::vector<bool> fv_introduced;
 #endif
-    /// Whether the introduced variables still need to be copied
-    bool needAuxVars;
+    
+    /// copy constructor
+    FznSpace(bool share, FznSpace&);
+    /// standard constructor
+    FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
+            setVarCount(-1), needAuxVars(true) {} ; 
+            
     /// Link integer variable \a iv to Boolean variable \a bv TODO: copied from old interface, do we still need this?
     void aliasBool2Int(int iv, int bv);
     /// Return linked Boolean variable for integer variable \a iv TODO: copied from old interface, do we still need this?
     int aliasBool2Int(int iv);
+  
+  protected:
+    /// Implement optimization
+    virtual void constrain(const Space& s);
+    /// Copy function
+    virtual Gecode::Space* copy(bool share);
+    
+    /// Number of integer variables
+    int intVarCount;
+    /// Number of Boolean variables
+    int boolVarCount;
+    /// Number of float variables
+    int floatVarCount;
+    /// Number of set variables
+    int setVarCount;
+    /// Whether the introduced variables still need to be copied
+    bool needAuxVars;    
   };
   
   
-  class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {
-  protected:
-    FznSpace* model; /// we could also call it 'solver', 'working_instance' etc
+  class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   public:
+    FznSpace* model; /// we could also call it 'solver', 'working_instance' etc
+     
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
     
@@ -112,8 +113,7 @@ namespace MiniZinc {
     
     Gecode::Space* getGecodeModel(void);
     
-  protected:
-    void registerConstraints(void);
+    // helper functions for processing flatzinc constraints
     /// Convert \a arg (array of integers) to IntArgs
     Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
     /// Convert \a arg (array of Booleans) to IntArgs
@@ -142,8 +142,13 @@ namespace MiniZinc {
     Gecode::IntConLevel ann2icl(const Annotation& ann);  
     /// TODO: copied this function from SolverInterface -> should be moved somewhere else?
     ArrayLit* getArrayLit(Expression* arg);  
-    /// TODO: copied from SolverInterface -> needs to be adapted/changed (void pointer!)
+    /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
     void* resolveVar(Expression* e);
+    /// TODO: copied from old SolverInterface -> do we really need this?
+    VarDecl* getVarDecl(Expression* expr);
+    
+  protected:
+    void registerConstraints(void);
   };
 }
 

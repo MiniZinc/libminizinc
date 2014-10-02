@@ -262,3 +262,5 @@ namespace MiniZinc {
 	
     }
 }
+
+#endif

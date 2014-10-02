@@ -10,21 +10,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/solver_instance_base.hh>
-#include "gecode_solverinstance.hh";
-#include "gecode_constraints.hh";
+#include "gecode_solverinstance.hh"
+#include "gecode_constraints.hh"
 
 using namespace Gecode;
 
 namespace MiniZinc {
  
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
-     : SolverInstanceImpl<CPLEXSolver>(env,options), model(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), model(NULL) {
        registerConstraints(); // TODO: move this into the super-class since it's always the same for each solver?
        processFlatZinc();
      }
   
     GecodeSolverInstance::~GecodeSolverInstance(void) {
-      delete model;
+      //delete model;
     }
     
     void GecodeSolverInstance::registerConstraints(void) {

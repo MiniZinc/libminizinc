@@ -10,8 +10,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include "gecode_solverinstance.hh";
-#include "gecode_constraints.hh";
+#include "gecode_solverinstance.hh"
+#include "gecode_constraints.hh"
 
 using namespace Gecode;
 
@@ -562,7 +562,7 @@ namespace MiniZinc {
         void p_array_bool_and(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            BOOL_ARRAY_OP(BoolOpType::BOT_AND);
+            BOOL_ARRAY_OP(Gecode::BoolOpType::BOT_AND);
         }
         void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
@@ -570,7 +570,7 @@ namespace MiniZinc {
             BoolVarArgs bv = gi.arg2boolvarargs(call->args()[0]);
             BoolVar b1 = gi.arg2BoolVar(call->args()[1]);
             for (unsigned int i=bv.size(); i--;)
-                rel(*gi.model, b1, BoolOpType::BOT_IMP, bv[i], 1, gi.ann2icl(ann));
+                rel(*gi.model, b1, Gecode::BoolOpType::BOT_IMP, bv[i], 1, gi.ann2icl(ann));
         }
         void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
