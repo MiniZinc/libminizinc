@@ -2113,6 +2113,51 @@ namespace MiniZinc {
     args.push_back(il);
   }
 
+  Call* aggregateAndOrOps(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
+    assert(bot == BOT_AND || bot == BOT_OR);
+    BinOpType negbot = (bot == BOT_AND ? BOT_OR : BOT_AND);
+    typedef std::pair<Expression*,bool> arg_literal;
+    std::vector<arg_literal> bo_args(2);
+    bo_args[0] = arg_literal(bo->lhs(), !negateArgs);
+    bo_args[1] = arg_literal(bo->rhs(), !negateArgs);
+    std::vector<Expression*> output_args;
+    unsigned int processed = 0;
+    while (processed < bo_args.size()) {
+      BinOp* bo_arg = bo_args[processed].first->dyn_cast<BinOp>();
+      UnOp* uo_arg = bo_args[processed].first->dyn_cast<UnOp>();
+      bool positive = bo_args[processed].second;
+      if (bo_arg && positive && bo_arg->op() == bot) {
+        bo_args[processed].first = bo_arg->lhs();
+        bo_args.push_back(arg_literal(bo_arg->rhs(),true));
+      } else if (bo_arg && !positive && bo_arg->op() == negbot) {
+        bo_args[processed].first = bo_arg->lhs();
+        bo_args.push_back(arg_literal(bo_arg->rhs(),false));
+      } else if (uo_arg && !positive && uo_arg->op() == UOT_NOT) {
+        bo_args[processed].first = uo_arg->e();
+        bo_args[processed].second = true;
+      } else {
+        if (positive) {
+          output_args.push_back(bo_args[processed].first);
+        } else {
+          UnOp* neg_arg = new UnOp(bo_args[processed].first->loc(),UOT_NOT,bo_args[processed].first);
+          neg_arg->type(bo_args[processed].first->type());
+          output_args.push_back(neg_arg);
+        }
+        processed++;
+      }
+    }
+    ArrayLit* al = new ArrayLit(Location(), output_args);
+    Type al_t = bo->type();
+    al_t.dim(1);
+    al->type(al_t);
+    std::vector<Expression*> c_args(1);
+    c_args[0] = al;
+    Call* c = new Call(bo->loc(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
+    c->decl(env.orig->matchFn(c));
+    assert(c->decl());
+    c->type(c->decl()->rtype(c_args));
+    return c;
+  }
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
@@ -2880,22 +2925,7 @@ namespace MiniZinc {
               break;
             } else {
               GC::lock();
-              std::vector<Expression*> bo_args(2);
-              if (negArgs) {
-                bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
-                bo_args[0]->type(boe0->type());
-                bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
-                bo_args[1]->type(boe1->type());
-              } else {
-                bo_args[0] = boe0;
-                bo_args[1] = boe1;
-              }
-              std::vector<Expression*> args(1);
-              args[0]=new ArrayLit(bo->loc(),bo_args);
-              args[0]->type(Type::varbool(1));
-              Call* c = new Call(bo->loc(),constants().ids.forall,args);
-              c->decl(env.orig->matchFn(c));
-              c->type(c->decl()->rtype(args));
+              Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
               KeepAlive ka(c);
               GC::unlock();
               ret = flat_exp(env,ctx,c,r,b);
@@ -2908,22 +2938,7 @@ namespace MiniZinc {
           case BOT_OR:
           {
             GC::lock();
-            std::vector<Expression*> bo_args(2);
-            if (negArgs) {
-              bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
-              bo_args[0]->type(boe0->type());
-              bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
-              bo_args[1]->type(boe1->type());
-            } else {
-              bo_args[0] = boe0;
-              bo_args[1] = boe1;
-            }
-            std::vector<Expression*> args(1);
-            args[0]= new ArrayLit(bo->loc(),bo_args);
-            args[0]->type(Type::varbool(1));
-            Call* c = new Call(bo->loc(),constants().ids.exists,args);
-            c->decl(env.orig->matchFn(c));
-            c->type(c->decl()->rtype(args));
+            Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
             KeepAlive ka(c);
             GC::unlock();
             ret = flat_exp(env,ctx,c,r,b);
