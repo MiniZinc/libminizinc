@@ -3396,7 +3396,6 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
-        GCLock lock;
         UnOp* uo = e->cast<UnOp>();
         switch (uo->op()) {
         case UOT_NOT:
@@ -3412,6 +3411,7 @@ namespace MiniZinc {
           break;
         case UOT_MINUS:
           {
+            GC::lock();
             Expression* zero;
             if (uo->e()->type().bt()==Type::BT_INT)
               zero = new IntLit(Location(),0);
@@ -3419,7 +3419,9 @@ namespace MiniZinc {
               zero = new FloatLit(Location(),0.0);
             BinOp* bo = new BinOp(Location(),zero,BOT_MINUS,uo->e());
             bo->type(uo->type());
-            ret = flat_exp(env,ctx,bo,r,b);
+            KeepAlive ka(bo);
+            GC::unlock();
+            ret = flat_exp(env,ctx,ka(),r,b);
           }
           break;
         default: break;
