@@ -102,7 +102,7 @@ namespace MiniZinc {
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   public:
-    FznSpace* model; /// we could also call it 'solver', 'working_instance' etc
+    FznSpace* _current_space; /// TODO: rename it to 'solver', 'working_instance' etc
      
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);

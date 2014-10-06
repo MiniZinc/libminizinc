@@ -18,13 +18,13 @@ using namespace Gecode;
 namespace MiniZinc {
  
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
-     : SolverInstanceImpl<GecodeSolver>(env,options), model(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL) {
        registerConstraints(); // TODO: move this into the super-class since it's always the same for each solver?
        processFlatZinc();
      }
   
     GecodeSolverInstance::~GecodeSolverInstance(void) {
-      //delete model;
+      //delete _current_space;
     }
     
     void GecodeSolverInstance::registerConstraints(void) {
@@ -225,27 +225,12 @@ namespace MiniZinc {
     }
     
     
-  /*  IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
-        ArrayLit* a = getArrayLit(arg);
-        if (a->v().size() == 0) {
-            IntVarArgs emptyIa(0);
-            return emptyIa;
-        }
-        IntVarArgs ia(a->v().size()+offset);
-        for (int i=offset; i--;)
-            ia[i] = IntVar(*this->model, 0, 0);
-        for (int i=a->v().size(); i--;) {
-            Expression* e = a->v()[i];
-            int idx;
-            if (e->type().isvar()) {
-                ia[i+offset] = model->iv[*(int*)resolveVar(getVarDecl(e))];
-            } else {
-                int value = e->cast<IntLit>()->v().toInt();
-                IntVar iv(*this->model, value, value);
-                ia[i+offset] = iv;
-            }
-        }
-        return ia;
-    }
-    */
+  void GecodeSolverInstance::processFlatZinc(void) {
+    
+    _current_space = new FznSpace(); 
+    
+    // TODO
+  }
+  
+  
 }
