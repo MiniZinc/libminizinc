@@ -58,7 +58,7 @@ namespace MiniZinc {
   
   /// Get the par bounds of expression \a e that has been obtained by ti->domain() (moved here from old SolverInterface)
    // TODO: remove and replace as soon as compute_int_bounds is repaired
-  static std::pair<double,double> getIntBounds(Expression* e){
+  inline std::pair<double,double> getIntBounds(Expression* e){
     if(e->isa<BinOp>()){
         BinOp* bo = e->cast<BinOp>();
         long long int b, u;
@@ -92,7 +92,7 @@ namespace MiniZinc {
   }
   /// Get the par bounds of expression \a e that has been obtained by ti->domain() (moved here from SolverInterface)
   // TODO: remove and replace as soon as compute_float_bounds is repaired
-  static std::pair<double,double> getFloatBounds(Expression* e){
+  inline std::pair<double,double> getFloatBounds(Expression* e){
     if(e->isa<BinOp>()){
         BinOp* bo = e->cast<BinOp>();
         double b, u;
