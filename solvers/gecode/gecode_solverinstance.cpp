@@ -12,6 +12,7 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/eval_par.hh>
 
 #include "gecode_solverinstance.hh"
 #include "gecode_constraints.hh"
@@ -246,15 +247,13 @@ namespace MiniZinc {
                     if(domain->isa<SetLit>()) {
                         IntVar intVar(*this->_current_space, arg2intset(domain));
                         _current_space->iv.push_back(intVar);
-                    } else {
-                      // TODO: move  getIntBounds into eval_par
-                       /* std::pair<int,int> bounds;
+                    } else {                 
+                        std::pair<int,int> bounds;
                         bounds = getIntBounds(domain);
-                        lb = bounds.first;
-                        ub = bounds.second;                       
-                        IntVar intVar(_current_space, lb, ub);
-                        _current_space->iv.push_back(intVar);
-                        */
+                        int lb = bounds.first;
+                        int ub = bounds.second;                       
+                        IntVar intVar(*this->_current_space, lb, ub);
+                        _current_space->iv.push_back(intVar);                        
                     }
                 } else {
                     int lb = Gecode::Int::Limits::min;
