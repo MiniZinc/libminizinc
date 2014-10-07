@@ -10,6 +10,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/solver_instance_base.hh>
+#include <minizinc/exception.hh>
+#include <minizinc/ast.hh>
+
 #include "gecode_solverinstance.hh"
 #include "gecode_constraints.hh"
 
@@ -19,7 +22,7 @@ namespace MiniZinc {
  
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
      : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL) {
-       registerConstraints(); // TODO: move this into the super-class since it's always the same for each solver?
+       registerConstraints(); 
        processFlatZinc();
      }
   
@@ -225,11 +228,67 @@ namespace MiniZinc {
     }
     
     
-  void GecodeSolverInstance::processFlatZinc(void) {
-    
+  void GecodeSolverInstance::processFlatZinc(void) {    
     _current_space = new FznSpace(); 
     
-    // TODO
+    // iterate over VarDecls of the flat model and create variables
+    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
+      if (it->e()->type().isvar()) {
+        if (it->e()->type().dim() != 0) 
+          throw InternalError("Error. Expected non-array variable in flat model");  
+        
+        MiniZinc::TypeInst* ti = it->e()->ti();             
+        switch(ti->type().bt()) {
+          case Type::BT_INT:
+            if(it->e()->e()) { // if there is no initialisation expression
+                Expression* domain = ti->domain();                
+                if(domain) {
+                    if(domain->isa<SetLit>()) {
+                        IntVar intVar(*this->_current_space, arg2intset(domain));
+                        _current_space->iv.push_back(intVar);
+                    } else {
+                      // TODO: move  getIntBounds into eval_par
+                       /* std::pair<int,int> bounds;
+                        bounds = getIntBounds(domain);
+                        lb = bounds.first;
+                        ub = bounds.second;                       
+                        IntVar intVar(_current_space, lb, ub);
+                        _current_space->iv.push_back(intVar);
+                        */
+                    }
+                } else {
+                    int lb = Gecode::Int::Limits::min;
+                    int ub = Gecode::Int::Limits::max;
+                    _current_space->iv.push_back(IntVar(*this->_current_space, lb, ub));
+                }
+            } else { // there is an initialisation expression
+                Expression* init = it->e()->e();
+                if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+                   // TODO: root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
+                } else {
+                    double il = init->cast<IntLit>()->v().toInt();
+                    //root->iv[root->intVarCount++] = IntVar(*this->root, il, il);
+                    _current_space->iv.push_back(IntVar(*this->_current_space, il, il));
+                }
+            }            
+            break;
+          case Type::BT_BOOL:            
+            break;
+          case Type::BT_FLOAT:            
+            break;
+          //TODO: set variables?
+          default:
+            std::stringstream ssm; 
+            ssm << "Type " << ti->type().bt() << " is not supported by Gecode." 
+                << std::endl;
+            throw InternalError(ssm.str());        
+          
+        }
+        // TODO: generate variable
+        // create right variable type
+        // add the variable(s) to the model -> better for Gecode
+      }
+    }
   }
   
   
