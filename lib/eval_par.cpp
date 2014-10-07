@@ -1515,6 +1515,7 @@ namespace MiniZinc {
       IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
       IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
       switch (bo.op()) {
+      case BOT_INTERSECT:
       case BOT_UNION:
         {
           IntSetRanges b0r(b0);
@@ -1525,23 +1526,12 @@ namespace MiniZinc {
         break;
       case BOT_DIFF:
         {
-          IntSetRanges b0r(b0);
-          IntSetRanges b1r(b1);
-          Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
-          _bounds.push_back(IntSetVal::ai(u));
+          _bounds.push_back(b0);
         }
         break;
       case BOT_SYMDIFF:
         valid = false;
         _bounds.push_back(NULL);
-        break;
-      case BOT_INTERSECT:
-        {
-          IntSetRanges b0r(b0);
-          IntSetRanges b1r(b1);
-          Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
-          _bounds.push_back(IntSetVal::ai(u));
-        }
         break;
       case BOT_PLUS:
       case BOT_MINUS:
@@ -1577,14 +1567,7 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == "set_intersect") {
-        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
-        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
-        IntSetRanges b0r(b0);
-        IntSetRanges b1r(b1);
-        Ranges::Inter<IntSetRanges,IntSetRanges> u(b0r,b1r);
-        _bounds.push_back(IntSetVal::ai(u));
-      } else if (c.id() == "set_union") {
+      if (c.id() == "set_intersect" || c.id() == "set_union") {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
@@ -1592,12 +1575,9 @@ namespace MiniZinc {
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
       } else if (c.id() == "set_diff") {
-        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        _bounds.pop_back(); // don't need bounds of right hand side
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
-        IntSetRanges b0r(b0);
-        IntSetRanges b1r(b1);
-        Ranges::Diff<IntSetRanges,IntSetRanges> u(b0r,b1r);
-        _bounds.push_back(IntSetVal::ai(u));
+        _bounds.push_back(b0);
       } else {
         valid = false;
         _bounds.push_back(NULL);
@@ -1638,6 +1618,40 @@ namespace MiniZinc {
       return cb._bounds.back();
     else
       return NULL;  
+  }
+  
+  static std::pair<double,double> getIntBounds(Expression* e){
+      if(e->isa<BinOp>()){
+          BinOp* bo = e->cast<BinOp>();
+          long long int b, u;
+          b = getNumber<long long int>(bo->lhs());
+          u = getNumber<long long int>(bo->rhs());
+          return std::pair<long long int,long long int>(b,u);
+      } else if(e->isa<TypeInst>()){
+          TypeInst* ti = e->cast<TypeInst>();
+          e = ti->domain();
+          if(e)
+              return getIntBounds(e);
+          else
+              throw -1;
+      } else if(e->isa<SetLit>()) {
+          long long int b,u;
+          IntSetVal* isv = e->cast<SetLit>()->isv();
+          if(isv) {
+              b = isv->min(0).toInt();
+              u = isv->max(isv->size()-1).toInt();
+          } else {
+              ASTExprVec<Expression> v = e->cast<SetLit>()->v();
+              b = getNumber<long long int>(v[0]);
+              u = getNumber<long long int>(v[v.size()-1]);
+          }
+          return std::pair<long long int,long long int>(b,u);
+      } else {
+          std::stringstream ssm; 
+          ssm << "getIntBounds : Expected BinOp or TypeInst, got this : " 
+              << *e <<  std::endl;          
+          throw InternalError(ssm.str());
+      }
   }
 
 }

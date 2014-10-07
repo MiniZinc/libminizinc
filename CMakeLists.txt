@@ -6,6 +6,10 @@ set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
 set (libminizinc_VERSION_PATCH "b4")
 
+if (ADDITIONAL_DATE_STRING)
+	set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
+endif()
+
 include(CheckCXXCompilerFlag)
 
 SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
