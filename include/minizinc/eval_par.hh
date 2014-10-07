@@ -38,7 +38,9 @@ namespace MiniZinc {
   std::string eval_string(Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
   Expression* eval_par(Expression* e);
-
+  /// Get the par bounds of expression \a e that has been obtained by ti->domain() (moved here from old SolverInterface)
+  static std::pair<double,double> getIntBounds(Expression* e);
+  
   /// Representation for bounds of an integer expression
   struct IntBounds {
     /// Lower bound
@@ -243,6 +245,21 @@ namespace MiniZinc {
     Eval eval;
     return eval_comp(eval,e);
   }  
+  
+  /// returns the value of the given literal expression (moved here from old SolverInterface)
+  template<typename T>
+  T getNumber(Expression* e) {
+      if(IntLit* il = e->dyn_cast<IntLit>())
+          return il->v().toInt();
+      else if(FloatLit* fl = e->dyn_cast<FloatLit>())
+          return fl->v();
+      else if(BoolLit* bl = e->dyn_cast<BoolLit>())
+          return bl->v();
+      else if(UnOp* uo = e->dyn_cast<UnOp>())
+          return -1 * getNumber<T>(uo->e());
+      assert(false);
+      return 0;
+  }
 }
 
 #endif
