@@ -114,6 +114,9 @@ namespace MiniZinc {
     void clear(void);
     void merge(const Annotation& ann);
   };
+  
+  /// returns the Annotation specified by the string; returns NULL if not exists
+  Expression* getAnnotation(const Annotation& ann, std::string str);
 
   /**
    * \brief Base class for expressions
