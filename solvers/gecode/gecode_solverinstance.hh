@@ -44,7 +44,9 @@ namespace MiniZinc {
     /// The introduced integer variables
     Gecode::IntVarArray iv_aux;
     /// Indicates whether an integer variable is introduced by mzn2fzn
-    std::vector<bool> iv_introduced;
+    std::vector<bool> iv_introduced;    
+    /// Indicates whether an integer variable is defined
+    std::vector<bool> iv_defined;
     /// Indicates whether an integer variable aliases a Boolean variable
     std::vector<int> iv_boolalias;
     /// The Boolean variables
@@ -53,6 +55,8 @@ namespace MiniZinc {
     Gecode::BoolVarArray bv_aux;
     /// Indicates whether a Boolean variable is introduced by mzn2fzn
     std::vector<bool> bv_introduced;
+    /// Indicates whether a Boolean variable is defined
+    std::vector<bool> bv_defined;
 #ifdef GECODE_HAS_SET_VARS
     /// The set variables
     std::vector<Gecode::SetVar> sv;
@@ -68,6 +72,8 @@ namespace MiniZinc {
     Gecode::FloatVarArray fv_aux;
     /// Indicates whether a float variable is introduced by mzn2fzn
     std::vector<bool> fv_introduced;
+    /// Indicates whether a float variable is defined
+    std::vector<bool> fv_defined;
 #endif
     
     /// copy constructor

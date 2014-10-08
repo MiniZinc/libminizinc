@@ -285,7 +285,8 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), intVar);
                 }
             }
-            _current_space->iv_introduced.push_back(it->e()->introduced());
+            _current_space->iv_introduced.push_back(it->e()->introduced());// TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
+            _current_space->iv_defined.push_back(false); // set to false also in old GecodeInterface
             // TODO: _current_space->iv_boolalias.push_back(it->e()->??);           
             break;
             
@@ -328,8 +329,8 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), boolVar);
                 }
             }
-            // TODO: root->bv_introduced[2*(root->boolVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
-            // TODO: root->bv_introduced[2*(root->boolVarCount-1)+1] = false; // vd->funcDep;
+            _current_space->bv_introduced.push_back(it->e()->introduced()); // TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
+            _current_space->bv_defined.push_back(false);           
             // TODO: *i = root->boolVarCount - 1;
             break;
           }
@@ -372,8 +373,8 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), floatVar);
                 }
             }
-            // TODO: root->fv_introduced[2*(root->floatVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
-            // TODO: root->fv_introduced[2*(root->floatVarCount-1)+1] = false; //vd->funcDep;
+            _current_space->fv_introduced.push_back(it->e()->introduced()); // TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
+            _current_space->fv_defined.push_back(false);
             // TODO: *i = root->floatVarCount - 1;
           }
           break;                     
