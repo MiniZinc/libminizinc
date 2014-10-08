@@ -103,6 +103,8 @@ namespace MiniZinc {
   };
 
   Expression* follow_id(Expression* e);
+  Expression* follow_id_to_decl(Expression* e);
+
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 }
