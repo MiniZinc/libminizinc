@@ -263,8 +263,16 @@ namespace MiniZinc {
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
                    // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
-                   // TODO: what if the variable 'init' has not yet been added to the model?
-                   _current_space->iv.push_back(_current_space->iv[*(int*) resolveVar(init)]);
+                   int index = *(int*) resolveVar(init);
+                   if(index >= 0 && index < _current_space->iv.size())                   
+                      _current_space->iv.push_back(_current_space->iv[index]);
+                    else {
+                      std::stringstream ssm; 
+                      ssm << "Cannot assign initialisation expression \"" << init 
+                          << "\" to var decl \"" << *it 
+                          << "\" when creating new Gecode variable." << std::endl;
+                      throw InternalError(ssm.str());
+                    }                    
                 } else {
                     double il = init->cast<IntLit>()->v().toInt();                    
                     _current_space->iv.push_back(IntVar(*this->_current_space, il, il));
@@ -291,9 +299,17 @@ namespace MiniZinc {
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                    // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];
-                    // TODO: what if the variable 'init' has not yet been added to the space?
-                    _current_space->bv.push_back(_current_space->bv[*(int*) resolveVar(init)]);
+                    // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];                  
+                    int index = *(int*) resolveVar(init);
+                    if(index >= 0 && index < _current_space->bv.size())
+                      _current_space->bv.push_back(_current_space->bv[index]);
+                    else {
+                      std::stringstream ssm; 
+                      ssm << "Cannot assign initialisation expression \"" << init 
+                          << "\" to var decl \"" << *it 
+                          << "\" when creating new Gecode variable." << std::endl;
+                      throw InternalError(ssm.str());
+                    }                    
                 } else {
                     double b = (double) init->cast<BoolLit>()->v();
                     _current_space->bv.push_back(BoolVar(*this->_current_space, b, b));
@@ -310,12 +326,10 @@ namespace MiniZinc {
             if(it->e()->e() == NULL) { // there is NO initialisation expression
                 Expression* domain = ti->domain();
                 double lb, ub;
-                if (domain) {                    
-                   /* TODO: de-comment after getFloatBounds added to eval_par in develop branch
+                if (domain) {                                      
                     std::pair<double,double> bounds = getFloatBounds(domain); 
                     lb = bounds.first;
-                    ub = bounds.second;
-                    */
+                    ub = bounds.second;                   
                 } else {
                     lb = Gecode::Int::Limits::min;
                     ub = Gecode::Int::Limits::max;
@@ -324,9 +338,17 @@ namespace MiniZinc {
             } else {
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                    // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];
-                    // TODO: what if the id has not yet been defined/added to the space?
-                    _current_space->fv.push_back(_current_space->fv[*(int*) resolveVar(init)]);
+                    // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];                    
+                    int index = *(int*) resolveVar(init);
+                    if(index >= 0 && index < _current_space->fv.size())
+                      _current_space->fv.push_back(_current_space->fv[index]);
+                    else {
+                      std::stringstream ssm; 
+                      ssm << "Cannot assign initialisation expression \"" << init 
+                          << "\" to var decl \"" << *it 
+                          << "\" when creating new Gecode variable." << std::endl;
+                      throw InternalError(ssm.str());
+                    }
                 } else {
                     double il = init->cast<FloatLit>()->v();
                     _current_space->fv.push_back(FloatVar(*this->_current_space, il, il));
