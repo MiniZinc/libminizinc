@@ -15,6 +15,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/flatten_internal.hh>
 
 #include <iomanip>
 #include <climits>
@@ -171,45 +172,45 @@ namespace MiniZinc {
     return eval_bool(e);
   }
   
-  Expression* deref_id(Expression* e) {
-    Expression* cur = e;
-    for (;;) {
-      Id* id = cur->dyn_cast<Id>();
-      if (id) {
-        if (id->decl()->e()==NULL)
-          return id;
-        else
-          cur = id->decl()->e();
-      } else {
-        return cur;
-      }
-    }
-  }
-  
   IntVal b_array_lb_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
-    Expression* e = deref_id(args[0]);
-    if (Id* id = e->dyn_cast<Id>()) {
-      if (id->decl()->ti()->domain()) {
+    Expression* e = follow_id_to_decl(args[0]);
+    
+    bool foundMin = false;
+    IntVal array_lb = -IntVal::infinity;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
         GCLock lock;
-        IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
-        if (isv->size()==0) {
-          throw EvalError(e->loc(),"cannot determine bounds");
-        } else {
-          return isv->min(0);
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
+        if (isv->size()!=0) {
+          array_lb = isv->min();
+          foundMin = true;
         }
-      } else {
-        throw EvalError(e->loc(),"cannot determine bounds");
       }
-    } else {
+      e = vd->e();
+    }
+    
+    if (e != NULL) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(args[0]);
+      ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
         throw EvalError(Location(), "lower bound of empty array undefined");
-      IntVal min = lb_varoptint(al->v()[0]);
-      for (unsigned int i=1; i<al->v().size(); i++)
-        min = std::min(min, lb_varoptint(al->v()[i]));
-      return min;
+      IntVal min = IntVal::infinity;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        IntBounds ib = compute_int_bounds(al->v()[i]);
+        if (!ib.valid)
+          goto b_array_lb_int_done;
+        min = std::min(min, ib.l);
+      }
+      array_lb = std::max(array_lb, min);
+      foundMin = true;
+    }
+  b_array_lb_int_done:
+    if (foundMin) {
+      return array_lb;
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
     }
   }
 
@@ -228,28 +229,43 @@ namespace MiniZinc {
 
   IntVal b_array_ub_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
-    Expression* e = deref_id(args[0]);
-    if (Id* id = e->dyn_cast<Id>()) {
-      if (id->decl()->ti()->domain()) {
+    Expression* e = follow_id_to_decl(args[0]);
+    
+    bool foundMax = false;
+    IntVal array_ub = IntVal::infinity;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
         GCLock lock;
-        IntSetVal* isv = eval_intset(id->decl()->ti()->domain());
-        if (isv->size()==0) {
-          throw EvalError(e->loc(),"cannot determine bounds");
-        } else {
-          return isv->max(isv->size()-1);
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
+        if (isv->size()!=0) {
+          array_ub = isv->max();
+          foundMax = true;
         }
-      } else {
-        throw EvalError(e->loc(),"cannot determine bounds");
       }
-    } else {
+      e = vd->e();
+    }
+    
+    if (e != NULL) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(args[0]);
+      ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "upper bound of empty array undefined");
-      IntVal max = ub_varoptint(al->v()[0]);
-      for (unsigned int i=1; i<al->v().size(); i++)
-        max = std::max(max, ub_varoptint(al->v()[i]));
-      return max;
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      IntVal max = -IntVal::infinity;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        IntBounds ib = compute_int_bounds(al->v()[i]);
+        if (!ib.valid)
+          goto b_array_ub_int_done;
+        max = std::max(max, ib.u);
+      }
+      array_ub = std::min(array_ub, max);
+      foundMax = true;
+    }
+  b_array_ub_int_done:
+    if (foundMax) {
+      return array_ub;
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
     }
   }
 
