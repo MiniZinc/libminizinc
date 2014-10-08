@@ -1086,39 +1086,6 @@ namespace MiniZinc {
       }
     }
   }
-
-  static std::pair<double,double> getIntBounds(Expression* e){
-    if(e->isa<BinOp>()){
-        BinOp* bo = e->cast<BinOp>();
-        long long int b, u;
-        b = getNumber<long long int>(bo->lhs());
-        u = getNumber<long long int>(bo->rhs());
-        return std::pair<long long int,long long int>(b,u);
-    } else if(e->isa<TypeInst>()){
-        TypeInst* ti = e->cast<TypeInst>();
-        e = ti->domain();
-        if(e)
-            return getIntBounds(e);
-        else
-            throw -1;
-    } else if(e->isa<SetLit>()) {
-        long long int b,u;
-        IntSetVal* isv = e->cast<SetLit>()->isv();
-        if(isv) {
-            b = isv->min(0).toInt();
-            u = isv->max(isv->size()-1).toInt();
-        } else {
-            ASTExprVec<Expression> v = e->cast<SetLit>()->v();
-            b = getNumber<long long int>(v[0]);
-            u = getNumber<long long int>(v[v.size()-1]);
-        }
-        return std::pair<long long int,long long int>(b,u);
-    } else {
-        std::stringstream ssm; 
-        ssm << "getIntBounds : Expected BinOp or TypeInst, got this : " << *e;
-        throw InternalError(ssm.str());
-    }
-  }
   
   class ComputeIntBounds : public EVisitor {
   protected:
