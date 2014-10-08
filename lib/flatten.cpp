@@ -2141,7 +2141,8 @@ namespace MiniZinc {
     std::vector<arg_literal> bo_args(2);
     bo_args[0] = arg_literal(bo->lhs(), !negateArgs);
     bo_args[1] = arg_literal(bo->rhs(), !negateArgs);
-    std::vector<Expression*> output_args;
+    std::vector<Expression*> output_pos;
+    std::vector<Expression*> output_neg;
     unsigned int processed = 0;
     while (processed < bo_args.size()) {
       BinOp* bo_arg = bo_args[processed].first->dyn_cast<BinOp>();
@@ -2156,24 +2157,45 @@ namespace MiniZinc {
       } else if (uo_arg && !positive && uo_arg->op() == UOT_NOT) {
         bo_args[processed].first = uo_arg->e();
         bo_args[processed].second = true;
+      } else if (bot==BOT_OR && uo_arg && positive && uo_arg->op() == UOT_NOT) {
+        output_neg.push_back(uo_arg->e());
+        processed++;
       } else {
         if (positive) {
-          output_args.push_back(bo_args[processed].first);
+          output_pos.push_back(bo_args[processed].first);
         } else {
-          UnOp* neg_arg = new UnOp(bo_args[processed].first->loc(),UOT_NOT,bo_args[processed].first);
-          neg_arg->type(bo_args[processed].first->type());
-          output_args.push_back(neg_arg);
+          output_neg.push_back(bo_args[processed].first);
         }
         processed++;
       }
     }
-    ArrayLit* al = new ArrayLit(Location(), output_args);
-    Type al_t = bo->type();
-    al_t.dim(1);
-    al->type(al_t);
+    Call* c;
     std::vector<Expression*> c_args(1);
-    c_args[0] = al;
-    Call* c = new Call(bo->loc(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
+    if (bot == BOT_AND) {
+      for (unsigned int i=0; i<output_neg.size(); i++) {
+        UnOp* neg_arg = new UnOp(output_neg[i]->loc(),UOT_NOT,output_neg[i]);
+        neg_arg->type(output_neg[i]->type());
+        output_pos.push_back(neg_arg);
+      }
+      ArrayLit* al = new ArrayLit(Location(), output_pos);
+      Type al_t = bo->type();
+      al_t.dim(1);
+      al->type(al_t);
+      c_args[0] = al;
+      c = new Call(bo->loc(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
+    } else {
+      ArrayLit* al_pos = new ArrayLit(Location(), output_pos);
+      Type al_t = bo->type();
+      al_t.dim(1);
+      al_pos->type(al_t);
+      c_args[0] = al_pos;
+      if (output_neg.size() > 0) {
+        ArrayLit* al_neg = new ArrayLit(Location(), output_neg);
+        al_neg->type(al_t);
+        c_args.push_back(al_neg);
+      }
+      c = new Call(bo->loc(), output_neg.empty() ? constants().ids.exists : constants().ids.clause, c_args);
+    }
     c->decl(env.orig->matchFn(c));
     assert(c->decl());
     c->type(c->decl()->rtype(c_args));
