@@ -236,10 +236,10 @@ namespace MiniZinc {
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
         if (it->e()->type().dim() != 0) 
-          throw InternalError("Error. Expected non-array variable in flat model");  
-        
+          throw InternalError("Error. Expected non-array variable in flat model");          
         MiniZinc::TypeInst* ti = it->e()->ti();             
         switch(ti->type().bt()) {
+          
           case Type::BT_INT:
             if(it->e()->e()) { // if there is no initialisation expression
                 Expression* domain = ti->domain();                
@@ -247,11 +247,10 @@ namespace MiniZinc {
                     if(domain->isa<SetLit>()) {
                         IntVar intVar(*this->_current_space, arg2intset(domain));
                         _current_space->iv.push_back(intVar);
-                    } else {                 
-                        std::pair<int,int> bounds;
-                        bounds = getIntBounds(domain);
+                    } else {                                      
+                        std::pair<double,double> bounds = getIntBounds(domain); 
                         int lb = bounds.first;
-                        int ub = bounds.second;                       
+                        int ub = bounds.second;  
                         IntVar intVar(*this->_current_space, lb, ub);
                         _current_space->iv.push_back(intVar);                        
                     }
@@ -263,17 +262,81 @@ namespace MiniZinc {
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                   // TODO: root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
+                   // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
+                   // TODO: what if the variable 'init' has not yet been added to the model?
+                   _current_space->iv.push_back(_current_space->iv[*(int*) resolveVar(init)]);
                 } else {
-                    double il = init->cast<IntLit>()->v().toInt();
-                    //root->iv[root->intVarCount++] = IntVar(*this->root, il, il);
+                    double il = init->cast<IntLit>()->v().toInt();                    
                     _current_space->iv.push_back(IntVar(*this->_current_space, il, il));
                 }
-            }            
+            }
+            _current_space->iv_introduced.push_back(it->e()->introduced());
+            // TODO: _current_space->iv_boolalias.push_back(it->e()->??);           
             break;
-          case Type::BT_BOOL:            
+            
+          case Type::BT_BOOL: 
+          {
+            double lb=0, ub=1;
+            if(it->e()->e() == NULL) { // there is NO initialisation expression
+                Expression* domain = ti->domain();
+                if(domain) {                  
+                    std::pair<double,double> bounds = getIntBounds(domain); 
+                    lb = bounds.first;
+                    ub = bounds.second;
+                } else {
+                    lb = 0;
+                    ub = 1;
+                }
+                _current_space->bv.push_back(BoolVar(*this->_current_space, lb, ub));
+            } else { // there is an initialisation expression
+                Expression* init = it->e()->e();
+                if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+                    // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];
+                    // TODO: what if the variable 'init' has not yet been added to the space?
+                    _current_space->bv.push_back(_current_space->bv[*(int*) resolveVar(init)]);
+                } else {
+                    double b = (double) init->cast<BoolLit>()->v();
+                    _current_space->bv.push_back(BoolVar(*this->_current_space, b, b));
+                }
+            }
+            // TODO: root->bv_introduced[2*(root->boolVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
+            // TODO: root->bv_introduced[2*(root->boolVarCount-1)+1] = false; // vd->funcDep;
+            // TODO: *i = root->boolVarCount - 1;
             break;
-          case Type::BT_FLOAT:            
+          }
+          
+          case Type::BT_FLOAT:  
+          {
+            if(it->e()->e() == NULL) { // there is NO initialisation expression
+                Expression* domain = ti->domain();
+                double lb, ub;
+                if (domain) {                    
+                   /* TODO: de-comment after getFloatBounds added to eval_par in develop branch
+                    std::pair<double,double> bounds = getFloatBounds(domain); 
+                    lb = bounds.first;
+                    ub = bounds.second;
+                    */
+                } else {
+                    lb = Gecode::Int::Limits::min;
+                    ub = Gecode::Int::Limits::max;
+                }
+                _current_space->fv.push_back(FloatVar(*this->_current_space, lb, ub));
+            } else {
+                Expression* init = it->e()->e();
+                if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+                    // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];
+                    // TODO: what if the id has not yet been defined/added to the space?
+                    _current_space->fv.push_back(_current_space->fv[*(int*) resolveVar(init)]);
+                } else {
+                    double il = init->cast<FloatLit>()->v();
+                    _current_space->fv.push_back(FloatVar(*this->_current_space, il, il));
+                }
+
+            }
+            // TODO: root->fv_introduced[2*(root->floatVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
+            // TODO: root->fv_introduced[2*(root->floatVarCount-1)+1] = false; //vd->funcDep;
+            // TODO: *i = root->floatVarCount - 1;
+          }
             break;
           //TODO: set variables?
           default:
@@ -283,9 +346,7 @@ namespace MiniZinc {
             throw InternalError(ssm.str());        
           
         }
-        // TODO: generate variable
-        // create right variable type
-        // add the variable(s) to the model -> better for Gecode
+        // TODO: continue with other iv_* variables (see old GecodeInterface::addSolverVar)              
       }
     }
   }
