@@ -47,6 +47,7 @@ namespace MiniZinc {
       _ann.add(ann[i]);
   }
 
+
 #define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
 #define pushall(v) do { v.mark(); for (unsigned int i=0; i<v.size(); i++) if (v[i]!=NULL) { stack.push_back(v[i]); }} while(0)
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
@@ -1212,4 +1213,13 @@ namespace MiniZinc {
     }
   }
   
+  Expression* getAnnotation(const Annotation& ann, std::string str) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+        Expression* e = *i;
+        if((e->isa<Id>() && e->cast<Id>()->str().str() == str) || 
+                (e->isa<Call>() && e->cast<Call>()->id().str() == str))
+            return e;
+    }
+    return NULL;
+  }
 }
