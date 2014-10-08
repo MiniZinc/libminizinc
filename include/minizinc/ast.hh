@@ -1292,6 +1292,7 @@ namespace MiniZinc {
         Id* is_reverse_map;
         Id* promise_total;
         ASTString doc_comment;
+        ASTString is_introduced;
       } ann;
       /// Constructor
       Constants(void);
