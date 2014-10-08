@@ -240,33 +240,38 @@ namespace MiniZinc {
         MiniZinc::TypeInst* ti = it->e()->ti();             
         switch(ti->type().bt()) {
           
-          case Type::BT_INT:
+          case Type::BT_INT:            
             if(it->e()->e()) { // if there is no initialisation expression
                 Expression* domain = ti->domain();                
                 if(domain) {
                     if(domain->isa<SetLit>()) {
                         IntVar intVar(*this->_current_space, arg2intset(domain));
                         _current_space->iv.push_back(intVar);
+                        _variableMap.insert(it->e()->id(), intVar);
                     } else {                                      
                         std::pair<double,double> bounds = getIntBounds(domain); 
                         int lb = bounds.first;
                         int ub = bounds.second;  
                         IntVar intVar(*this->_current_space, lb, ub);
-                        _current_space->iv.push_back(intVar);                        
+                        _current_space->iv.push_back(intVar);    
+                        _variableMap.insert(it->e()->id(), intVar);
                     }
                 } else {
                     int lb = Gecode::Int::Limits::min;
                     int ub = Gecode::Int::Limits::max;
-                    _current_space->iv.push_back(IntVar(*this->_current_space, lb, ub));
+                    IntVar intVar(*this->_current_space, lb, ub);
+                    _current_space->iv.push_back(intVar);
+                    _variableMap.insert(it->e()->id(), intVar);
                 }
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
                    // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
                    int index = *(int*) resolveVar(init);
-                   if(index >= 0 && index < _current_space->iv.size())                   
+                   if(index >= 0 && index < _current_space->iv.size()) {
                       _current_space->iv.push_back(_current_space->iv[index]);
-                    else {
+                      _variableMap.insert(it->e()->id(), _current_space->iv[index]);
+                   } else {
                       std::stringstream ssm; 
                       ssm << "Cannot assign initialisation expression \"" << init 
                           << "\" to var decl \"" << *it 
@@ -274,8 +279,10 @@ namespace MiniZinc {
                       throw InternalError(ssm.str());
                     }                    
                 } else {
-                    double il = init->cast<IntLit>()->v().toInt();                    
-                    _current_space->iv.push_back(IntVar(*this->_current_space, il, il));
+                    double il = init->cast<IntLit>()->v().toInt();
+                    IntVar intVar(*this->_current_space, il, il);
+                    _current_space->iv.push_back(intVar);
+                    _variableMap.insert(it->e()->id(), intVar);
                 }
             }
             _current_space->iv_introduced.push_back(it->e()->introduced());
@@ -295,14 +302,18 @@ namespace MiniZinc {
                     lb = 0;
                     ub = 1;
                 }
-                _current_space->bv.push_back(BoolVar(*this->_current_space, lb, ub));
+                BoolVar boolVar(*this->_current_space, lb, ub);
+                _current_space->bv.push_back(boolVar);
+                _variableMap.insert(it->e()->id(), boolVar);
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
                     // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];                  
                     int index = *(int*) resolveVar(init);
-                    if(index >= 0 && index < _current_space->bv.size())
+                    if(index >= 0 && index < _current_space->bv.size()) {
                       _current_space->bv.push_back(_current_space->bv[index]);
+                      _variableMap.insert(it->e()->id(), _current_space->bv[index]);
+                    }
                     else {
                       std::stringstream ssm; 
                       ssm << "Cannot assign initialisation expression \"" << init 
@@ -312,7 +323,9 @@ namespace MiniZinc {
                     }                    
                 } else {
                     double b = (double) init->cast<BoolLit>()->v();
-                    _current_space->bv.push_back(BoolVar(*this->_current_space, b, b));
+                    BoolVar boolVar(*this->_current_space, b, b);
+                    _current_space->bv.push_back(boolVar);
+                    _variableMap.insert(it->e()->id(), boolVar);
                 }
             }
             // TODO: root->bv_introduced[2*(root->boolVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
@@ -334,15 +347,18 @@ namespace MiniZinc {
                     lb = Gecode::Int::Limits::min;
                     ub = Gecode::Int::Limits::max;
                 }
-                _current_space->fv.push_back(FloatVar(*this->_current_space, lb, ub));
+                FloatVar floatVar(*this->_current_space, lb, ub);
+                _current_space->fv.push_back(floatVar);
+                _variableMap.insert(it->e()->id(), floatVar);
             } else {
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
                     // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];                    
                     int index = *(int*) resolveVar(init);
-                    if(index >= 0 && index < _current_space->fv.size())
+                    if(index >= 0 && index < _current_space->fv.size()) {
                       _current_space->fv.push_back(_current_space->fv[index]);
-                    else {
+                      _variableMap.insert(it->e()->id(), _current_space->fv[index]);       
+                    } else {
                       std::stringstream ssm; 
                       ssm << "Cannot assign initialisation expression \"" << init 
                           << "\" to var decl \"" << *it 
@@ -351,24 +367,31 @@ namespace MiniZinc {
                     }
                 } else {
                     double il = init->cast<FloatLit>()->v();
-                    _current_space->fv.push_back(FloatVar(*this->_current_space, il, il));
+                    FloatVar floatVar(*this->_current_space, il, il);
+                    _current_space->fv.push_back(floatVar);
+                    _variableMap.insert(it->e()->id(), floatVar);
                 }
-
             }
             // TODO: root->fv_introduced[2*(root->floatVarCount-1)] = vd->introduced() || (getAnnotation(vd->ann(), introduced) != NULL);
             // TODO: root->fv_introduced[2*(root->floatVarCount-1)+1] = false; //vd->funcDep;
             // TODO: *i = root->floatVarCount - 1;
           }
-            break;
-          //TODO: set variables?
+          break;                     
+            
           default:
             std::stringstream ssm; 
-            ssm << "Type " << ti->type().bt() << " is not supported by Gecode." 
+            ssm << "Type " << ti->type().bt() << " is currently not supported by Gecode." 
                 << std::endl;
             throw InternalError(ssm.str());        
           
-        }
-        // TODO: continue with other iv_* variables (see old GecodeInterface::addSolverVar)              
+        }                   
+      } // end if it is a variable
+    } // end for all var decls
+    
+    // post the constraints
+    for (ConstraintIterator it = _env.flat()->begin_constraints(); it != _env.flat()->end_constraints(); ++it) {
+      if (Call* c = it->e()->dyn_cast<Call>()) {
+        _constraintRegistry.post(c);
       }
     }
   }
