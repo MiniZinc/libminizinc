@@ -237,7 +237,8 @@ namespace MiniZinc {
       if (it->e()->type().isvar()) {
         if (it->e()->type().dim() != 0) 
           throw InternalError("Error. Expected non-array variable in flat model");          
-        MiniZinc::TypeInst* ti = it->e()->ti();             
+        MiniZinc::TypeInst* ti = it->e()->ti();  
+        bool isDefined, isIntroduced = false;
         switch(ti->type().bt()) {
           
           case Type::BT_INT:            
@@ -285,8 +286,11 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), intVar);
                 }
             }
-            _current_space->iv_introduced.push_back(it->e()->introduced());// TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
-            _current_space->iv_defined.push_back(false); // set to false also in old GecodeInterface
+            isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
+            _current_space->iv_introduced.push_back(isIntroduced);
+            isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+            _current_space->iv_defined.push_back(isDefined);
+            // TODO: iv_defined is set to false (for all variables) in old implementation. Ask Guido!
             // TODO: _current_space->iv_boolalias.push_back(it->e()->??);           
             break;
             
@@ -329,8 +333,10 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), boolVar);
                 }
             }
-            _current_space->bv_introduced.push_back(it->e()->introduced()); // TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
-            _current_space->bv_defined.push_back(false);           
+            isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
+            _current_space->bv_introduced.push_back(isIntroduced);
+            isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+            _current_space->bv_defined.push_back(isDefined);           
             // TODO: *i = root->boolVarCount - 1;
             break;
           }
@@ -373,8 +379,10 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), floatVar);
                 }
             }
-            _current_space->fv_introduced.push_back(it->e()->introduced()); // TODO: || (getAnnotation(it->e()->ann(), introduced) != NULL);
-            _current_space->fv_defined.push_back(false);
+            isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
+            _current_space->fv_introduced.push_back(isIntroduced);
+            isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+            _current_space->fv_defined.push_back(isDefined);
             // TODO: *i = root->floatVarCount - 1;
           }
           break;                     
