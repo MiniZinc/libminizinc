@@ -1135,9 +1135,13 @@ namespace MiniZinc {
     }
     /// Visit identifier
     void vId(const Id& id) {
-      if (id.decl()->ti()->domain()) {
+      Bounds result(-IntVal::infinity,IntVal::infinity);
+      VarDecl* vd = id.decl();
+      while (vd->flat() && vd->flat() != vd)
+        vd = vd->flat();
+      if (vd->ti()->domain()) {
         GCLock lock;
-        IntSetVal* isv = eval_intset(id.decl()->ti()->domain());
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
         if (isv->size()==0) {
           valid = false;
           _bounds.push_back(Bounds(0,0));
@@ -1145,9 +1149,9 @@ namespace MiniZinc {
           _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
         }
       } else {
-        if (id.decl()->e()) {
+        if (vd->e()) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
-          cbi.run(id.decl()->e());
+          cbi.run(vd->e());
         } else {
           _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
         }
