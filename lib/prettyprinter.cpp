@@ -208,7 +208,7 @@ namespace MiniZinc {
       case Expression::E_FLOATLIT:
         {
           std::ostringstream oss;
-          oss << std::setprecision(std::numeric_limits<double>::digits10);
+          oss << std::setprecision(std::numeric_limits<double>::digits10+2);
           oss << e->cast<FloatLit>()->v();
           if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
             oss << ".0";
@@ -1047,7 +1047,7 @@ namespace MiniZinc {
     }
     ret mapFloatLit(const FloatLit& fl) {
       std::ostringstream oss;
-      oss << std::setprecision(std::numeric_limits<double>::digits10);
+      oss << std::setprecision(std::numeric_limits<double>::digits10+2);
       oss << fl.v();
       if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
         oss << ".0";
