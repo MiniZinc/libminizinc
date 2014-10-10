@@ -560,6 +560,75 @@ namespace MiniZinc {
     }
   }
   
+  /// Turn \a c into domain constraints if possible.
+  /// Return whether \a c is still required in the model.
+  bool checkDomainConstraints(EnvI& env, Call* c) {
+    if (c->id()==constants().ids.int_.le) {
+      Expression* e0 = c->args()[0];
+      Expression* e1 = c->args()[1];
+      if (e0->type().ispar() && e1->isa<Id>()) {
+        // greater than
+        Id* id = e1->cast<Id>();
+        IntVal lb = eval_int(e0);
+        if (id->decl()->ti()->domain()) {
+          IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
+          if (domain->min() >= lb)
+            return false;
+          IntSetRanges dr(domain);
+          Ranges::Const cr(lb,IntVal::infinity);
+          Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
+          IntSetVal* newibv = IntSetVal::ai(i);
+          id->decl()->ti()->domain(new SetLit(Location(), newibv));
+        } else {
+          id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(lb,IntVal::infinity)));
+        }
+        return false;
+      } else if (e1->type().ispar() && e0->isa<Id>()) {
+        // less than
+        Id* id = e0->cast<Id>();
+        IntVal ub = eval_int(e1);
+        if (id->decl()->ti()->domain()) {
+          IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
+          if (domain->max() <= ub)
+            return false;
+          IntSetRanges dr(domain);
+          Ranges::Const cr(-IntVal::infinity, ub);
+          Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
+          IntSetVal* newibv = IntSetVal::ai(i);
+          id->decl()->ti()->domain(new SetLit(Location(), newibv));
+        } else {
+          id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(-IntVal::infinity, ub)));
+        }
+      }
+    } else if (c->id()==constants().ids.int_.lin_le) {
+      ArrayLit* al_c = follow_id(c->args()[0])->cast<ArrayLit>();
+      if (al_c->v().size()==1) {
+        ArrayLit* al_x = follow_id(c->args()[1])->cast<ArrayLit>();
+        IntVal coeff = eval_int(al_c->v()[0]);
+        IntVal y = eval_int(c->args()[2]);
+        IntVal ub = y / coeff;
+        IntVal r = y % coeff;
+        if ((r!=0) && ((r<0) != (coeff<0))) --ub;
+        if (Id* id = al_x->v()[0]->dyn_cast<Id>()) {
+          if (id->decl()->ti()->domain()) {
+            IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
+            if (domain->max() <= ub)
+              return false;
+            IntSetRanges dr(domain);
+            Ranges::Const cr(-IntVal::infinity, ub);
+            Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
+            IntSetVal* newibv = IntSetVal::ai(i);
+            id->decl()->ti()->domain(new SetLit(Location(), newibv));
+          } else {
+            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(-IntVal::infinity, ub)));
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
     if (ctx.neg) {
@@ -634,7 +703,10 @@ namespace MiniZinc {
             }
           } else {
             GCLock lock;
-            env.flat_addItem(new ConstraintI(Location(),e));
+            // extract domain information from added constraint if possible
+            if (!e->isa<Call>() || checkDomainConstraints(env,e->cast<Call>())) {
+              env.flat_addItem(new ConstraintI(Location(),e));
+            }
           }
         }
         return constants().lit_true;
@@ -4808,7 +4880,7 @@ namespace MiniZinc {
                 Call* call = new Call(Location(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
-                (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+                env.flat_addItem(new ConstraintI(Location(), call));
               } else if (dom->max(dom->size()-1).isFinite()) {
                 std::vector<Expression*> args(2);
                 args[0] = vdi->e()->id();
@@ -4816,7 +4888,7 @@ namespace MiniZinc {
                 Call* call = new Call(Location(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
-                (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+                env.flat_addItem(new ConstraintI(Location(), call));
               }
             } else if (dom->size() > 1) {
               SetLit* newDom = new SetLit(Location(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
@@ -4836,7 +4908,7 @@ namespace MiniZinc {
                   Call* call = new Call(Location(),constants().ids.int_.ne,args);
                   call->type(Type::varbool());
                   call->decl(env.orig->matchFn(call));
-                  (void) flat_exp(env, Ctx(), call, constants().var_true, constants().var_true);
+                  env.flat_addItem(new ConstraintI(Location(), call));
                   firstHole = domr.max().plus(1);
                 }
               }
