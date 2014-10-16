@@ -4047,7 +4047,7 @@ namespace MiniZinc {
           ret.r = conj(env,r,Ctx(),cs);
         } else {
           Ctx nctx = ctx;
-          ctx.neg = false;
+          nctx.neg = false;
           EE ee = flat_exp(env,nctx,let->in(),NULL,NULL);
           if (let->type().isbool() && !let->type().isopt()) {
             ee.b = ee.r;
