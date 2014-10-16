@@ -79,11 +79,11 @@ namespace MiniZinc {
 
   void dumpEEb(const std::vector<EE>& ee) {
     for (unsigned int i=0; i<ee.size(); i++)
-      std::cerr << *ee[i].b();
+      std::cerr << *ee[i].b() << "\n";
   }
   void dumpEEr(const std::vector<EE>& ee) {
     for (unsigned int i=0; i<ee.size(); i++)
-      std::cerr << *ee[i].r();
+      std::cerr << *ee[i].r() << "\n";
   }
   std::vector<Expression*> toExpVec(std::vector<KeepAlive>& v) {
     std::vector<Expression*> r(v.size());

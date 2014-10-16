@@ -52,7 +52,7 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Expression& e) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    Printer p(s);
+    Printer p(s,0);
     p.print(&e);
     return os << s.str();
   }
