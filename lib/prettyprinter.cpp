@@ -1650,7 +1650,7 @@ namespace MiniZinc {
     void printDocument(Document* d, bool alignment, int startColAlignment,
                        const std::string& before = "",
                        const std::string& after = "");
-    void printDocList(DocumentList* d, bool alignment, int startColAlignment,
+    void printDocList(DocumentList* d, int startColAlignment,
                       const std::string& before = "",
                       const std::string& after = "");
     void printStringDoc(StringDocument* d, bool alignment,
@@ -1724,9 +1724,8 @@ namespace MiniZinc {
                                     int alignmentCol,
                                     const std::string& before,
                                     const std::string& after) {
-    std::string s;
     if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
-      printDocList(dl, alignment, alignmentCol, before, after);
+      printDocList(dl, alignmentCol, before, after);
     } else if (StringDocument* sd = dynamic_cast<StringDocument*>(d)) {
       printStringDoc(sd, alignment, alignmentCol, before, after);
     } else if (BreakPoint* bp = dynamic_cast<BreakPoint*>(d)) {
@@ -1765,11 +1764,8 @@ namespace MiniZinc {
     }
   }
 
-  void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
-      int alignmentCol, const std::string& super_before,
+  void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::string& super_before,
       const std::string& super_after) {
-    // Apparently "alignment" is not used.
-    (void) alignment;
 
     std::vector<Document*> ld = d->getDocs();
     std::string beginToken = d->getBeginToken();
@@ -1821,15 +1817,6 @@ namespace MiniZinc {
       simplify(currentItem, currentLine, NULL);
     }
 
-  }
-  void showVector(std::vector<int>* vec) {
-    if (vec != NULL) {
-      std::vector<int>::iterator it;
-      for (it = vec->begin(); it != vec->end(); it++) {
-        std::cout << *it << " ";
-      }
-      std::cout << std::endl;
-    }
   }
   void PrettyPrinter::simplifyItem(int item) {
     linesToSimplify[item].remove(linesNotToSimplify[item]);
