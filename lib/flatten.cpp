@@ -2470,6 +2470,9 @@ namespace MiniZinc {
               Id* id = root_vd.r()->cast<Id>();
               elems[i] = id;
             }
+            // After introducing variables for each array element, the original domain can be
+            // set to "computed" (since it is a consequence of the individual variable domains)
+            vd->ti()->setComputedDomain(true);
 
             ArrayLit* al = new ArrayLit(Location(),elems,dims);
             al->type(vd->type());
