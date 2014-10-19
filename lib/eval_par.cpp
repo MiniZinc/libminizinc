@@ -1088,9 +1088,8 @@ namespace MiniZinc {
   }
   
   class ComputeIntBounds : public EVisitor {
-  protected:
-    typedef std::pair<IntVal,IntVal> Bounds;
   public:
+    typedef std::pair<IntVal,IntVal> Bounds;
     std::vector<Bounds> _bounds;
     bool valid;
     ComputeIntBounds(void) : valid(true) {}
@@ -1135,9 +1134,12 @@ namespace MiniZinc {
     }
     /// Visit identifier
     void vId(const Id& id) {
-      if (id.decl()->ti()->domain()) {
+      VarDecl* vd = id.decl();
+      while (vd->flat() && vd->flat() != vd)
+        vd = vd->flat();
+      if (vd->ti()->domain()) {
         GCLock lock;
-        IntSetVal* isv = eval_intset(id.decl()->ti()->domain());
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
         if (isv->size()==0) {
           valid = false;
           _bounds.push_back(Bounds(0,0));
@@ -1145,9 +1147,9 @@ namespace MiniZinc {
           _bounds.push_back(Bounds(isv->min(0),isv->max(isv->size()-1)));
         }
       } else {
-        if (id.decl()->e()) {
+        if (vd->e()) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
-          cbi.run(id.decl()->e());
+          cbi.run(vd->e());
         } else {
           _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
         }
@@ -1409,9 +1411,289 @@ namespace MiniZinc {
     }
   }
 
+  class ComputeFloatBounds : public EVisitor {
+  protected:
+    typedef std::pair<FloatVal,FloatVal> FBounds;
+  public:
+    std::vector<FBounds> _bounds;
+    bool valid;
+    ComputeFloatBounds(void) : valid(true) {}
+    bool enter(Expression* e) {
+      if (e->type().dim() > 0)
+        return false;
+      if (e->type().ispar()) {
+        if (e->type().isfloat()) {
+          FloatVal v = eval_float(e);
+          _bounds.push_back(FBounds(v,v));
+        }
+        return false;
+      } else {
+        return e->type().isfloat();
+      }
+    }
+    /// Visit integer literal
+    void vIntLit(const IntLit& i) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit floating point literal
+    void vFloatLit(const FloatLit& f) {
+      _bounds.push_back(FBounds(f.v(),f.v()));
+    }
+    /// Visit Boolean literal
+    void vBoolLit(const BoolLit&) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit set literal
+    void vSetLit(const SetLit&) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit string literal
+    void vStringLit(const StringLit&) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit identifier
+    void vId(const Id& id) {
+      VarDecl* vd = id.decl();
+      while (vd->flat() && vd->flat() != vd)
+        vd = vd->flat();
+      if (vd->ti()->domain()) {
+        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        assert(bo->op() == BOT_DOTDOT);
+        _bounds.push_back(FBounds(eval_float(bo->lhs()),eval_float(bo->rhs())));
+      } else {
+        if (vd->e()) {
+          BottomUpIterator<ComputeFloatBounds> cbi(*this);
+          cbi.run(vd->e());
+        } else {
+          valid = false;
+        }
+      }
+    }
+    /// Visit anonymous variable
+    void vAnonVar(const AnonVar& v) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit array literal
+    void vArrayLit(const ArrayLit& al) {
+    }
+    /// Visit array access
+    void vArrayAccess(ArrayAccess& aa) {
+      bool parAccess = true;
+      for (unsigned int i=aa.idx().size(); i--;) {
+        if (!aa.idx()[i]->type().ispar()) {
+          parAccess = false;
+        }
+      }
+      if (Id* id = aa.v()->dyn_cast<Id>()) {
+        while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
+          id = id->decl()->e()->cast<Id>();
+        }
+        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+          bool success;
+          Expression* e = eval_arrayaccess(&aa, success);
+          if (success) {
+            BottomUpIterator<ComputeFloatBounds> cbi(*this);
+            cbi.run(e);
+            return;
+          }
+        }
+        if (id->decl()->ti()->domain()) {
+          BinOp* bo = id->decl()->ti()->domain()->cast<BinOp>();
+          assert(bo->op() == BOT_DOTDOT);
+          FBounds b(eval_float(bo->lhs()),eval_float(bo->rhs()));
+          _bounds.push_back(b);
+          return;
+        }
+      }
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit array comprehension
+    void vComprehension(const Comprehension& c) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit if-then-else
+    void vITE(const ITE& ite) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit binary operator
+    void vBinOp(const BinOp& bo) {
+      FBounds b1 = _bounds.back(); _bounds.pop_back();
+      FBounds b0 = _bounds.back(); _bounds.pop_back();
+      switch (bo.op()) {
+        case BOT_PLUS:
+          _bounds.push_back(FBounds(b0.first+b1.first,b0.second+b1.second));
+          break;
+        case BOT_MINUS:
+          _bounds.push_back(FBounds(b0.first-b1.second,b0.second-b1.first));
+          break;
+        case BOT_MULT:
+        {
+          FloatVal x0 = b0.first*b1.first;
+          FloatVal x1 = b0.first*b1.second;
+          FloatVal x2 = b0.second*b1.first;
+          FloatVal x3 = b0.second*b1.second;
+          FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(FBounds(m,n));
+        }
+          break;
+        case BOT_DIV:
+        case BOT_IDIV:
+        case BOT_MOD:
+        case BOT_LE:
+        case BOT_LQ:
+        case BOT_GR:
+        case BOT_GQ:
+        case BOT_EQ:
+        case BOT_NQ:
+        case BOT_IN:
+        case BOT_SUBSET:
+        case BOT_SUPERSET:
+        case BOT_UNION:
+        case BOT_DIFF:
+        case BOT_SYMDIFF:
+        case BOT_INTERSECT:
+        case BOT_PLUSPLUS:
+        case BOT_EQUIV:
+        case BOT_IMPL:
+        case BOT_RIMPL:
+        case BOT_OR:
+        case BOT_AND:
+        case BOT_XOR:
+        case BOT_DOTDOT:
+          valid = false;
+          _bounds.push_back(FBounds(0,0));
+      }
+    }
+    /// Visit unary operator
+    void vUnOp(const UnOp& uo) {
+      switch (uo.op()) {
+        case UOT_PLUS:
+          break;
+        case UOT_MINUS:
+          _bounds.back().first = -_bounds.back().first;
+          _bounds.back().second = -_bounds.back().second;
+          break;
+        case UOT_NOT:
+          valid = false;
+          _bounds.push_back(FBounds(0.0,0.0));
+      }
+    }
+    /// Visit call
+    void vCall(Call& c) {
+      if (c.id() == constants().ids.lin_exp) {
+        ArrayLit* coeff = eval_array_lit(c.args()[0]);
+        ArrayLit* al = eval_array_lit(c.args()[1]);
+        FloatVal d = c.args()[2]->cast<FloatLit>()->v();
+        int stacktop = _bounds.size();
+        for (unsigned int i=al->v().size(); i--;) {
+          BottomUpIterator<ComputeFloatBounds> cbi(*this);
+          cbi.run(al->v()[i]);
+          if (!valid)
+            return;
+        }
+        assert(stacktop+al->v().size()==_bounds.size());
+        FloatVal lb = d;
+        FloatVal ub = d;
+        for (unsigned int i=0; i<al->v().size(); i++) {
+          FBounds b = _bounds.back(); _bounds.pop_back();
+          FloatVal cv = eval_float(coeff->v()[i]);
+          if (cv > 0) {
+            lb += cv*b.first;
+            ub += cv*b.second;
+          } else {
+            lb += cv*b.second;
+            ub += cv*b.first;
+          }
+        }
+        _bounds.push_back(FBounds(lb,ub));
+      } else if (c.id() == "float_times") {
+        BottomUpIterator<ComputeFloatBounds> cbi(*this);
+        cbi.run(c.args()[0]);
+        cbi.run(c.args()[1]);
+        FBounds b1 = _bounds.back(); _bounds.pop_back();
+        FBounds b0 = _bounds.back(); _bounds.pop_back();
+        FloatVal x0 = b0.first*b1.first;
+        FloatVal x1 = b0.first*b1.second;
+        FloatVal x2 = b0.second*b1.first;
+        FloatVal x3 = b0.second*b1.second;
+        FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+        FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+        _bounds.push_back(FBounds(m,n));
+      } else if (c.id() == "int2float") {
+        ComputeIntBounds ib;
+        BottomUpIterator<ComputeIntBounds> cbi(ib);
+        cbi.run(c.args()[0]);
+        if (!ib.valid)
+          valid = false;
+        ComputeIntBounds::Bounds result = ib._bounds.back();
+        if (!result.first.isFinite() || !result.second.isFinite()) {
+          valid = false;
+          _bounds.push_back(FBounds(0.0,0.0));
+        } else {
+          _bounds.push_back(FBounds(result.first.toInt(),result.second.toInt()));
+        }
+      } else if (c.id() == "abs") {
+        BottomUpIterator<ComputeFloatBounds> cbi(*this);
+        cbi.run(c.args()[0]);
+        FBounds b0 = _bounds.back();
+        if (b0.first < 0) {
+          _bounds.pop_back();
+          if (b0.second < 0)
+            _bounds.push_back(FBounds(-b0.second,-b0.first));
+          else
+            _bounds.push_back(FBounds(0.0,std::max(-b0.first,b0.second)));
+        }
+      } else {
+        valid = false;
+        _bounds.push_back(FBounds(0.0,0.0));
+      }
+    }
+    /// Visit let
+    void vLet(const Let& l) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit variable declaration
+    void vVarDecl(const VarDecl& vd) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit annotation
+    void vAnnotation(const Annotation& e) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit type inst
+    void vTypeInst(const TypeInst& e) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+    /// Visit TIId
+    void vTIId(const TIId& e) {
+      valid = false;
+      _bounds.push_back(FBounds(0.0,0.0));
+    }
+  };
+  
   FloatBounds compute_float_bounds(Expression* e) {
-    FloatBounds b(0.0,0.0,false);
-    return b;
+    ComputeFloatBounds cb;
+    BottomUpIterator<ComputeFloatBounds> cbi(cb);
+    cbi.run(e);
+    if (cb.valid) {
+      assert(cb._bounds.size() > 0);
+      return FloatBounds(cb._bounds.back().first,cb._bounds.back().second,true);
+    } else {
+      return FloatBounds(0.0,0.0,false);
+    }
   }
   
   class ComputeIntSetBounds : public EVisitor {

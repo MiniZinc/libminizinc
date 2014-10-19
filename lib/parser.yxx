@@ -1389,6 +1389,12 @@ let_expr :
       { $$=new Let(@$, *$3, $6); delete $3; }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
       { $$=new Let(@$, *$3, $7); delete $3; }
+//    | MZN_LET '(' let_vardecl_item_list ')' MZN_IN expr %prec PREC_ANNO
+//      { $$=new Let(@$, *$3, $6); delete $3; }
+//    | MZN_LET '(' let_vardecl_item_list comma_or_semi ')' MZN_IN expr %prec PREC_ANNO
+//      { $$=new Let(@$, *$3, $7); delete $3; }
+//        MZN_LET let_vardecl_item_list ';' MZN_IN expr %prec PREC_ANNO
+//        { $$=new Let(@$, *$2, $5); delete $2; }
 //    | MZN_LET '{' slet_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
 //      { $$=new SLetExpr(@$, *$3, $6); delete $3; }
 //    | MZN_LET '{' slet_vardecl_item_list ',' '}' MZN_IN expr %prec PREC_ANNO
