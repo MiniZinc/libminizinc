@@ -385,6 +385,25 @@ _[A-Za-z][A-Za-z0-9_]* {
                       return FLATZINC_IDENTIFIER;
                     }
                     }
+
+"\xE2\x88\x80"      { yylval->sValue = strdup("forall"); return MZN_IDENTIFIER; }
+"\xE2\x88\x83"      { yylval->sValue = strdup("exists"); return MZN_IDENTIFIER; }
+"\xE2\x88\x88"      { return MZN_IN; }
+"\xE2\x8A\x86"      { return MZN_SUBSET; }
+"\xE2\x8A\x87"      { return MZN_SUPERSET; }
+"\xE2\x88\x9E"      { return MZN_INFINITY; }
+"\xC2\xAC"          { return MZN_NOT; }
+"\xE2\x86\x90"      { return MZN_RIMPL; }
+"\xE2\x86\x92"      { return MZN_IMPL; }
+"\xE2\x86\x94"      { return MZN_EQUIV; }
+"\xE2\x88\xA7"      { return MZN_AND; }
+"\xE2\x88\xA8"      { return MZN_OR; }
+"\xE2\x89\xA0"      { return MZN_NQ; }
+"\xE2\x89\xA4"      { return MZN_LQ; }
+"\xE2\x89\xA5"      { return MZN_GQ; }
+"\xE2\x88\xAA"      { return MZN_UNION; }
+"\xE2\x88\xA9"      { return MZN_INTERSECT; }
+
 $[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
