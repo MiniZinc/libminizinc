@@ -1374,6 +1374,7 @@ function set of int: dom_array(array[$T] of var int);
 function int: dom_size(var int: x) = card(dom(x));
 
 function par bool: has_bounds(var int);
+function par bool: has_bounds(var float);
 function par bool: has_ub_set(var set of int);
 
 % Other operations

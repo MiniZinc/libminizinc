@@ -131,11 +131,17 @@ namespace MiniZinc {
     return std::abs(eval_int(args[0]));
   }
   
-  bool b_has_bounds(ASTExprVec<Expression> args) {
+  bool b_has_bounds_int(ASTExprVec<Expression> args) {
     if (args.size() != 1)
       throw EvalError(Location(), "dynamic type error");
     IntBounds ib = compute_int_bounds(args[0]);
     return ib.valid && ib.l.isFinite() && ib.u.isFinite();
+  }
+  bool b_has_bounds_float(ASTExprVec<Expression> args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    FloatBounds fb = compute_float_bounds(args[0]);
+    return fb.valid;
   }
   
   IntVal lb_varoptint(Expression* e) {
@@ -293,6 +299,125 @@ namespace MiniZinc {
     return m;
   }
   
+  FloatVal lb_varoptfloat(Expression* e) {
+    FloatBounds b = compute_float_bounds(e);
+    if (b.valid)
+      return b.l;
+    else
+      throw EvalError(e->loc(),"cannot determine bounds");
+  }
+  FloatVal ub_varoptfloat(Expression* e) {
+    FloatBounds b = compute_float_bounds(e);
+    if (b.valid)
+      return b.u;
+    else
+      throw EvalError(e->loc(),"cannot determine bounds");
+  }
+
+  FloatVal b_lb_varoptfloat(ASTExprVec<Expression> args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return lb_varoptfloat(args[0]);
+  }
+  FloatVal b_ub_varoptfloat(ASTExprVec<Expression> args) {
+    if (args.size() != 1)
+      throw EvalError(Location(), "dynamic type error");
+    return ub_varoptfloat(args[0]);
+  }
+
+  FloatVal b_array_lb_float(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    Expression* e = follow_id_to_decl(args[0]);
+    
+    bool foundMin = false;
+    FloatVal array_lb = 0.0;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
+        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        assert(bo->op() == BOT_DOTDOT);
+        array_lb = eval_float(bo->lhs());
+        foundMin = true;
+      }
+      e = vd->e();
+    }
+    
+    if (e != NULL) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(e);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      bool min_valid = false;
+      FloatVal min = 0.0;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        FloatBounds fb = compute_float_bounds(al->v()[i]);
+        if (!fb.valid)
+          goto b_array_lb_float_done;
+        if (min_valid) {
+          min = std::min(min, fb.l);
+        } else {
+          min_valid = true;
+          min = fb.l;
+        }
+      }
+      assert(min_valid);
+      array_lb = std::max(array_lb, min);
+      foundMin = true;
+    }
+  b_array_lb_float_done:
+    if (foundMin) {
+      return array_lb;
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
+    }
+  }
+  
+  FloatVal b_array_ub_float(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    Expression* e = follow_id_to_decl(args[0]);
+    
+    bool foundMax = false;
+    FloatVal array_ub = 0.0;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
+        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        assert(bo->op() == BOT_DOTDOT);
+        array_ub = eval_float(bo->rhs());
+        foundMax = true;
+      }
+      e = vd->e();
+    }
+    
+    if (e != NULL) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(e);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      bool max_valid = false;
+      FloatVal max = 0.0;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        FloatBounds fb = compute_float_bounds(al->v()[i]);
+        if (!fb.valid)
+          goto b_array_ub_float_done;
+        if (max_valid) {
+          max = std::max(max, fb.u);
+        } else {
+          max_valid = true;
+          max = fb.u;
+        }
+      }
+      assert(max_valid);
+      array_ub = std::min(array_ub, max);
+      foundMax = true;
+    }
+  b_array_ub_float_done:
+    if (foundMax) {
+      return array_ub;
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
+    }
+  }
   
   FloatVal b_sum_float(ASTExprVec<Expression> args) {
     assert(args.size()==1);
@@ -1363,6 +1488,26 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t(1);
+      t[0] = Type::varfloat();
+      rb(m, ASTString("lb"), t, b_lb_varoptfloat);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat();
+      rb(m, ASTString("ub"), t, b_ub_varoptfloat);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat(-1);
+      rb(m, ASTString("lb_array"), t, b_array_lb_float);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat(-1);
+      rb(m, ASTString("ub_array"), t, b_array_ub_float);
+    }
+    {
+      std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("card"), t, b_card);
     }
@@ -1374,7 +1519,12 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      rb(m, ASTString("has_bounds"), t, b_has_bounds);
+      rb(m, ASTString("has_bounds"), t, b_has_bounds_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat();
+      rb(m, ASTString("has_bounds"), t, b_has_bounds_float);
     }
     {
       std::vector<Type> t(1);
