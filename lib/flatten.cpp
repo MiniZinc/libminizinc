@@ -606,21 +606,28 @@ namespace MiniZinc {
         ArrayLit* al_x = follow_id(c->args()[1])->cast<ArrayLit>();
         IntVal coeff = eval_int(al_c->v()[0]);
         IntVal y = eval_int(c->args()[2]);
-        IntVal ub = y / coeff;
+        IntVal lb = -IntVal::infinity;
+        IntVal ub = IntVal::infinity;
         IntVal r = y % coeff;
-        if ((r!=0) && ((r<0) != (coeff<0))) --ub;
+        if (coeff >= 0) {
+          ub = y / coeff;
+          if (r<0) --ub;
+        } else {
+          lb = y / coeff;
+          if (r>0) --lb;
+        }
         if (Id* id = al_x->v()[0]->dyn_cast<Id>()) {
           if (id->decl()->ti()->domain()) {
             IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
             if (domain->max() <= ub)
               return false;
             IntSetRanges dr(domain);
-            Ranges::Const cr(-IntVal::infinity, ub);
+            Ranges::Const cr(lb, ub);
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
             IntSetVal* newibv = IntSetVal::ai(i);
             id->decl()->ti()->domain(new SetLit(Location(), newibv));
           } else {
-            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(-IntVal::infinity, ub)));
+            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(lb, ub)));
           }
           return false;
         }
