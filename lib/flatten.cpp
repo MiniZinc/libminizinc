@@ -79,11 +79,11 @@ namespace MiniZinc {
 
   void dumpEEb(const std::vector<EE>& ee) {
     for (unsigned int i=0; i<ee.size(); i++)
-      std::cerr << *ee[i].b();
+      std::cerr << *ee[i].b() << "\n";
   }
   void dumpEEr(const std::vector<EE>& ee) {
     for (unsigned int i=0; i<ee.size(); i++)
-      std::cerr << *ee[i].r();
+      std::cerr << *ee[i].r() << "\n";
   }
   std::vector<Expression*> toExpVec(std::vector<KeepAlive>& v) {
     std::vector<Expression*> r(v.size());
@@ -627,21 +627,28 @@ namespace MiniZinc {
         ArrayLit* al_x = follow_id(c->args()[1])->cast<ArrayLit>();
         IntVal coeff = eval_int(al_c->v()[0]);
         IntVal y = eval_int(c->args()[2]);
-        IntVal ub = y / coeff;
+        IntVal lb = -IntVal::infinity;
+        IntVal ub = IntVal::infinity;
         IntVal r = y % coeff;
-        if ((r!=0) && ((r<0) != (coeff<0))) --ub;
+        if (coeff >= 0) {
+          ub = y / coeff;
+          if (r<0) --ub;
+        } else {
+          lb = y / coeff;
+          if (r>0) --lb;
+        }
         if (Id* id = al_x->v()[0]->dyn_cast<Id>()) {
           if (id->decl()->ti()->domain()) {
             IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
             if (domain->max() <= ub)
               return false;
             IntSetRanges dr(domain);
-            Ranges::Const cr(-IntVal::infinity, ub);
+            Ranges::Const cr(lb, ub);
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
             IntSetVal* newibv = IntSetVal::ai(i);
             id->decl()->ti()->domain(new SetLit(Location(), newibv));
           } else {
-            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(-IntVal::infinity, ub)));
+            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(lb, ub)));
           }
           return false;
         }
@@ -2491,6 +2498,9 @@ namespace MiniZinc {
               Id* id = root_vd.r()->cast<Id>();
               elems[i] = id;
             }
+            // After introducing variables for each array element, the original domain can be
+            // set to "computed" (since it is a consequence of the individual variable domains)
+            vd->ti()->setComputedDomain(true);
 
             ArrayLit* al = new ArrayLit(Location(),elems,dims);
             al->type(vd->type());
@@ -4065,7 +4075,7 @@ namespace MiniZinc {
           ret.r = conj(env,r,Ctx(),cs);
         } else {
           Ctx nctx = ctx;
-          ctx.neg = false;
+          nctx.neg = false;
           EE ee = flat_exp(env,nctx,let->in(),NULL,NULL);
           if (let->type().isbool() && !let->type().isopt()) {
             ee.b = ee.r;

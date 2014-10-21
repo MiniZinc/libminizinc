@@ -503,9 +503,9 @@ namespace MiniZinc {
             bop.decl(NULL);
         } else {
           throw TypeError(bop.loc(),
-            std::string("type error in operator application for ")+
-            bop.opToString().str()+". No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
-                          "and right-hand side has type "+bop.rhs()->type().toString());
+            std::string("type error in operator application for `")+
+            bop.opToString().str()+"'. No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
+                          " and right-hand side type "+bop.rhs()->type().toString());
         }
       }
     }
@@ -519,8 +519,8 @@ namespace MiniZinc {
           uop.decl(fi);
       } else {
         throw TypeError(uop.loc(),
-          std::string("type error in operator application for ")+
-          uop.opToString().str());
+          std::string("type error in operator application for `")+
+          uop.opToString().str()+"'");
       }
     }
     /// Visit call
