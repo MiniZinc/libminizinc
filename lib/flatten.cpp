@@ -2130,6 +2130,12 @@ namespace MiniZinc {
     Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
     EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
     ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
+    if (al->dims()>1) {
+      Type alt = al->type();
+      alt.dim(1);
+      al = new ArrayLit(al->loc(),al->v());
+      al->type(alt);
+    }
     Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(c->args()[2]));
     
     std::vector<Val> c_coeff(al->v().size());
