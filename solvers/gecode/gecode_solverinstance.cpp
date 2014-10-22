@@ -405,6 +405,33 @@ namespace MiniZinc {
     }
   }
   
+  Gecode::IntArgs 
+  GecodeSolverInstance::arg2intargs(Expression* arg, int offset) {
+    ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
+    IntArgs ia(a->v().size()+offset);
+    for (int i=offset; i--;)
+        ia[i] = 0;
+    for (int i=a->v().size(); i--;) {
+        ia[i+offset] = a->v()[i]->cast<IntLit>()->v().toInt();
+    }
+    return ia;
+  }
+  
+  Gecode::IntArgs 
+  GecodeSolverInstance::arg2boolargs(Expression* arg, int offset) {
+    if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
+      std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
+      ssm << ". Expected Id or ArrayLit.";
+      throw InternalError(ssm.str());
+    }
+    ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
+    IntArgs ia(a->v().size()+offset);
+    for (int i=offset; i--;)
+        ia[i] = 0;
+    for (int i=a->v().size(); i--;)
+        ia[i+offset] = a->v()[i]->cast<BoolLit>()->v();
+    return ia;
+  }
   
   ArrayLit* 
   GecodeSolverInstance::arg2arrayLit(Expression* arg) {
@@ -424,6 +451,7 @@ namespace MiniZinc {
           a = al;
       } else {
           std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
+          ssm << ". Expected Id or ArrayLit."; 
           throw new InternalError(ssm.str());
       }
       return a; 

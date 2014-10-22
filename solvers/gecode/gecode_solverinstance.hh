@@ -148,7 +148,7 @@ namespace MiniZinc {
 #endif
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);  
-    /// TODO: copied this function from SolverInterface -> should be moved somewhere else?
+    /// convert \a arg to an ArrayLit (throws InternalError if not possible)
     ArrayLit* arg2arrayLit(Expression* arg);  
     /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
     void* resolveVar(Expression* e);
