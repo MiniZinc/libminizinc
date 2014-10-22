@@ -1939,7 +1939,7 @@ namespace MiniZinc {
 }
 
 void debugprint(MiniZinc::Expression* e) {
-  std::cerr << *e;
+  std::cerr << *e << "\n";
 }
 void debugprint(MiniZinc::Item* i) {
   std::cerr << *i;
