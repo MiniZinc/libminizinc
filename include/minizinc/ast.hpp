@@ -183,6 +183,18 @@ namespace MiniZinc {
 
   inline
   ArrayLit::ArrayLit(const Location& loc,
+                     ASTExprVec<Expression> v)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    std::vector<int> dims(2);
+    dims[0]=1;
+    dims[1]=v.size();
+    _v = v;
+    _dims = ASTIntVec(dims);
+    rehash();
+  }
+
+  inline
+  ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     std::vector<int> dims(2);

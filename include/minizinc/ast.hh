@@ -433,6 +433,9 @@ namespace MiniZinc {
     ArrayLit(const Location& loc,
              ASTExprVec<Expression> v,
              const std::vector<std::pair<int,int> >& dims);
+    /// Constructor (one-dimensional, existing content)
+    ArrayLit(const Location& loc,
+             ASTExprVec<Expression> v);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
