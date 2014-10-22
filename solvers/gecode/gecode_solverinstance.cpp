@@ -406,4 +406,30 @@ namespace MiniZinc {
   }
   
   
+  ArrayLit* 
+  GecodeSolverInstance::arg2arrayLit(Expression* arg) {
+    ArrayLit* a;
+      if(Id* id = arg->dyn_cast<Id>()) {
+          VarDecl* vd = id->decl();
+          if(vd->e()) {
+              a = vd->e()->cast<ArrayLit>();
+          } else {
+              std::vector<Expression*>* array = arrayMap[vd];
+              std::vector<Expression*> ids;
+              for(unsigned int i=0; i<array->size(); i++)
+                  ids.push_back(((*array)[i])->cast<VarDecl>()->id());
+              a = new ArrayLit(vd->loc(), ids);
+          }
+      } else if(ArrayLit* al = arg->dyn_cast<ArrayLit>()) {
+          a = al;
+      } else {
+          std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
+          throw new InternalError(ssm.str());
+      }
+      return a; 
+  }
+  
+  
+  
+  
 }

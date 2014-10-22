@@ -108,7 +108,9 @@ namespace MiniZinc {
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   public:
-    FznSpace* _current_space; /// TODO: rename it to 'solver', 'working_instance' etc
+    FznSpace* _current_space; 
+    /// TODO: we can probably get rid of this
+    UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
      
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
@@ -147,7 +149,7 @@ namespace MiniZinc {
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);  
     /// TODO: copied this function from SolverInterface -> should be moved somewhere else?
-    ArrayLit* getArrayLit(Expression* arg);  
+    ArrayLit* arg2arrayLit(Expression* arg);  
     /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
     void* resolveVar(Expression* e);
     /// TODO: copied from old SolverInterface -> do we really need this?

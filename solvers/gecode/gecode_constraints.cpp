@@ -141,7 +141,7 @@ namespace MiniZinc {
         void p_int_lin_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
             const Annotation& ann =call->ann();
             IntArgs ia = s.arg2intargs(call->args()[0]);
-	    ArrayLit* vars = s.getArrayLit(call->args()[1]);
+	    ArrayLit* vars = s.arg2arrayLit(call->args()[1]);
             int singleIntVar;
 	    if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
@@ -180,7 +180,7 @@ namespace MiniZinc {
                 return;
             }
             IntArgs ia = s.arg2intargs(call->args()[0]);
-	    ArrayLit* vars = s.getArrayLit(call->args()[1]);
+	    ArrayLit* vars = s.arg2arrayLit(call->args()[1]);
             int singleIntVar;
             if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
