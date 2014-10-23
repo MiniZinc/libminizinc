@@ -831,6 +831,7 @@ namespace MiniZinc {
           } else {
             if (e->type().dim() > 0) {
               // Check that index sets match
+              env.errorStack.clear();
               checkIndexSets(vd,e);
             } else if (Id* e_id = e->dyn_cast<Id>()) {
               if (e_id == vd->id()) {
