@@ -246,7 +246,8 @@ namespace MiniZinc {
   class Typer {
   public:
     Model* _model;
-    Typer(Model* model) : _model(model) {}
+    std::vector<TypeError>& _typeErrors;
+    Typer(Model* model, std::vector<TypeError>& typeErrors) : _model(model), _typeErrors(typeErrors) {}
     /// Check annotations when expression is finished
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
@@ -560,9 +561,9 @@ namespace MiniZinc {
         assert(!vd.type().isunknown());
         if (vd.e()) {
           if (! vd.e()->type().isSubtypeOf(vd.ti()->type()))
-            throw TypeError(vd.e()->loc(),
-                            "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
-                            vd.ti()->type().toString()+"', actual `"+vd.e()->type().toString()+"'");
+            _typeErrors.push_back(TypeError(vd.e()->loc(),
+                                            "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
+                                            vd.ti()->type().toString()+"', actual `"+vd.e()->type().toString()+"'"));
         }
       } else {
         vd.type(vd.ti()->type());
@@ -684,7 +685,7 @@ namespace MiniZinc {
     m->sortFn();
 
     {
-      Typer<false> ty(m);
+      Typer<false> ty(m, typeErrors);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
         /// TODO:
@@ -703,20 +704,21 @@ namespace MiniZinc {
     }
     
     {
-      Typer<true> ty(m);
+      Typer<true> ty(m, typeErrors);
       BottomUpIterator<Typer<true> > bu_ty(ty);
       
       class TSV2 : public ItemVisitor {
       public:
         BottomUpIterator<Typer<true> >& bu_ty;
-        TSV2(BottomUpIterator<Typer<true> >& b) : bu_ty(b) {}
+        std::vector<TypeError>& _typeErrors;
+        TSV2(BottomUpIterator<Typer<true> >& b, std::vector<TypeError>& typeErrors) : bu_ty(b), _typeErrors(typeErrors) {}
         void vVarDeclI(VarDeclI* i) { bu_ty.run(i->e()); }
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
-            throw TypeError(i->e()->loc(),
-                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
-                            i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'");
+            _typeErrors.push_back(TypeError(i->e()->loc(),
+                                           "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
+                                           i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'"));
           }
         }
         void vConstraintI(ConstraintI* i) {
@@ -756,7 +758,7 @@ namespace MiniZinc {
             throw TypeError(i->e()->loc(), "return type of function does not match body, declared type is `"+i->ti()->type().toString()+
                             "', body type is `"+i->e()->type().toString()+"'");
         }
-      } _tsv2(bu_ty);
+      } _tsv2(bu_ty, typeErrors);
       iterItems(_tsv2,m);
     }
     
@@ -780,9 +782,13 @@ namespace MiniZinc {
   }
   
   void typecheck(Model* m, AssignI* ai) {
-    Typer<true> ty(m);
+    std::vector<TypeError> typeErrors;
+    Typer<true> ty(m, typeErrors);
     BottomUpIterator<Typer<true> > bu_ty(ty);
     bu_ty.run(ai->e());
+    if (!typeErrors.empty()) {
+      throw typeErrors[0];
+    }
     if (!ai->e()->type().isSubtypeOf(ai->decl()->ti()->type())) {
       throw TypeError(ai->e()->loc(),
                       "assignment value for `"+ai->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
