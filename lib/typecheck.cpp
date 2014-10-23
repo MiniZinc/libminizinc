@@ -361,7 +361,10 @@ namespace MiniZinc {
             } else {
               /// TODO: add coercion if types don't match
               /// Need to find common supertype first, then add all coercions
-              if (ty.bt() != vi->type().bt() || ty.st() != vi->type().st()) {
+              if (Type::bt_subtype(ty.bt(), vi->type().bt())) {
+                ty.bt(vi->type().bt());
+              }
+              if (!Type::bt_subtype(vi->type().bt(),ty.bt()) || ty.st() != vi->type().st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             }
@@ -377,6 +380,9 @@ namespace MiniZinc {
         at.dim(0);
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
+        }
+        for (unsigned int i=0; i<al.v().size(); i++) {
+          al.v()[i] = addCoercion(_model, al.v()[i], ty)();
         }
       }
       al.type(ty);
@@ -612,7 +618,7 @@ namespace MiniZinc {
               "type error in initialization, LHS is\n  "+
               vd.ti()->type().toString()+"\nbut RHS is\n  "+
               vd.e()->type().toString());
-          vd.e(addCoercion(_model, vd.e(), vd.ti()->type()));
+          vd.e(addCoercion(_model, vd.e(), vd.ti()->type())());
         }
       } else {
         vd.type(vd.ti()->type());
