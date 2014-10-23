@@ -80,7 +80,7 @@ namespace MiniZinc {
     DeclMap::iterator decl = env.find(id);
     if (decl==env.end()) {
       GCLock lock;
-      throw TypeError(loc,"undefined identifier "+id->str().str());
+      throw TypeError(loc,"undefined identifier `"+id->str().str()+"'");
     }
     PosMap::iterator pi = pos.find(decl->second.back());
     if (pi==pos.end()) {
@@ -90,7 +90,7 @@ namespace MiniZinc {
       // previously seen, check if circular
       if (pi->second==-1) {
         GCLock lock;
-        throw TypeError(loc,"circular definition of "+id->str().str());
+        throw TypeError(loc,"circular definition of `"+id->str().str()+"'");
       }
     }
     return decl->second.back();
@@ -251,7 +251,7 @@ namespace MiniZinc {
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
         if (!(*it)->type().isann())
-          throw TypeError((*it)->loc(),"expected annotation, got "+(*it)->type().toString());
+          throw TypeError((*it)->loc(),"expected annotation, got `"+(*it)->type().toString()+"'");
     }
     bool enter(Expression*) { return true; }
     /// Visit integer literal
@@ -361,7 +361,7 @@ namespace MiniZinc {
         }
         if (aai->type().isset() || aai->type().bt() != Type::BT_INT ||
             aai->type().dim() != 0) {
-          throw TypeError(aai->loc(),"array index must be int");
+          throw TypeError(aai->loc(),"array index must be `int', but is `"+aai->type().toString()+"'");
         }
         if (aai->type().isopt()) {
           allpresent = false;
@@ -393,16 +393,16 @@ namespace MiniZinc {
           needsOptionTypes = true;
         } else if (c.where()->type() != Type::parbool()) {
           throw TypeError(c.where()->loc(),
-                          "where clause must be bool, but is "+
-                          c.where()->type().toString());
+                          "where clause must be bool, but is `"+
+                          c.where()->type().toString()+"'");
         }
       }
       Type tt = c.e()->type();
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(c.e()->loc(),
-              "set comprehension expression must be scalar, but is "
-              +c.e()->type().toString());
+              "set comprehension expression must be scalar, but is `"
+              +c.e()->type().toString()+"'");
         tt.st(Type::ST_SET);
       } else {
         if (c.e()->type().dim() != 0)
@@ -422,7 +422,7 @@ namespace MiniZinc {
       const Type& ty_in = g_in->type();
       if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
         throw TypeError(g_in->loc(),
-                        "generator expression must be (par or var) set of int or one-dimensional array, but is "+ty_in.toString());
+                        "generator expression must be (par or var) set of int or one-dimensional array, but is `"+ty_in.toString()+"'");
       }
       Type ty_id;
       bool needIntLit = false;
@@ -454,8 +454,8 @@ namespace MiniZinc {
         varcond = varcond || (eif->type() == Type::varbool());
         if (eif->type() != Type::parbool() && eif->type() != Type::varbool())
           throw TypeError(eif->loc(),
-            "expected bool conditional expression, got\n  "+
-            eif->type().toString());
+            "expected bool conditional expression, got `"+
+            eif->type().toString()+"'");
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
         }
@@ -463,9 +463,9 @@ namespace MiniZinc {
             ethen->type().st() != tret.st() ||
             ethen->type().dim() != tret.dim()) {
           throw TypeError(ethen->loc(),
-            "type mismatch in branches of conditional. Then-branch has type "+
-            ethen->type().toString()+", but else branch has type "+
-            tret.toString());
+            "type mismatch in branches of conditional. Then-branch has type `"+
+            ethen->type().toString()+"', but else branch has type `"+
+            tret.toString()+"'");
         }
         if (ethen->type().isvar()) allpar=false;
         if (ethen->type().isopt()) allpresent=false;
@@ -505,7 +505,7 @@ namespace MiniZinc {
           throw TypeError(bop.loc(),
             std::string("type error in operator application for `")+
             bop.opToString().str()+"'. No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
-                          " and right-hand side type "+bop.rhs()->type().toString());
+                          " and right-hand side type `"+bop.rhs()->type().toString()+"'");
         }
       }
     }
@@ -520,7 +520,7 @@ namespace MiniZinc {
       } else {
         throw TypeError(uop.loc(),
           std::string("type error in operator application for `")+
-          uop.opToString().str()+"'");
+          uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString()+"'");
       }
     }
     /// Visit call
@@ -549,7 +549,7 @@ namespace MiniZinc {
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(vdi->loc(),
-              "let variable `"+vdi->id()->v().str()+"' must be defined");
+              "let variable `"+vdi->id()->v().str()+"' must be initialised");
         }
       }
       let.type(let.in()->type());
@@ -560,10 +560,9 @@ namespace MiniZinc {
         assert(!vd.type().isunknown());
         if (vd.e()) {
           if (! vd.e()->type().isSubtypeOf(vd.ti()->type()))
-            throw TypeError(vd.loc(),
-              "type error in initialization, LHS is\n  "+
-              vd.ti()->type().toString()+"\nbut RHS is\n  "+
-              vd.e()->type().toString());
+            throw TypeError(vd.e()->loc(),
+                            "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
+                            vd.ti()->type().toString()+"', actual `"+vd.e()->type().toString()+"'");
         }
       } else {
         vd.type(vd.ti()->type());
@@ -587,12 +586,9 @@ namespace MiniZinc {
             }
           } else if (ri->type() != Type::parint()) {
             assert(ri->isa<TypeInst>());
-            std::cerr << "expected set of int for array index, but got " <<
-              ri->type().toString() << "\n";
-            assert(false);
             throw TypeError(ri->loc(),
-              "expected set of int for array index, but got\n"+
-              ri->type().toString());
+              "invalid type in array index, expected `set of int', actual `"+
+              ri->type().toString()+"'");
           }
         }
         tt.dim(foundTIId ? -1 : ti.ranges().size());
@@ -661,8 +657,7 @@ namespace MiniZinc {
         ts.run(i->e());
         i->decl(ts.checkId(i->id(),i->loc()));
         if (i->decl()->e())
-          throw TypeError(i->loc(),"multiple assignment to same variable");
-        i->decl()->e(i->e());
+          throw TypeError(i->loc(),"multiple assignment to the same variable");
       }
       void vConstraintI(ConstraintI* i) { ts.run(i->e()); }
       void vSolveI(SolveI* i) {
@@ -699,12 +694,6 @@ namespace MiniZinc {
         /// unknown types.
         bu_ty.run(ts.decls[i]->ti());
         ty.vVarDecl(*ts.decls[i]);
-        if (ts.decls[i]->toplevel() &&
-            ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
-          typeErrors.push_back(TypeError(ts.decls[i]->loc(),
-                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
-                                         + "' must be defined (did you forget to specify a data file?)"));
-        }
       }
       for (unsigned int i=0; i<functionItems.size(); i++) {
         bu_ty.run(functionItems[i]->ti());
@@ -726,19 +715,20 @@ namespace MiniZinc {
           bu_ty.run(i->e());
           if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
             throw TypeError(i->e()->loc(),
-              "RHS of assignment does not agree with LHS");
+                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
+                            i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'");
           }
         }
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
           if (!i->e()->type().isSubtypeOf(Type::varbool()))
-            throw TypeError(i->e()->loc(), "constraint must be var bool");
+            throw TypeError(i->e()->loc(), "invalid type of constraint, expected `"+Type::varbool().toString()+"', actual `"+i->e()->type().toString()+"'");
         }
         void vSolveI(SolveI* i) {
           for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
             bu_ty.run(*it);
             if (!(*it)->type().isann())
-              throw TypeError((*it)->loc(), "not an annotation");
+              throw TypeError((*it)->loc(), "expected annotation, got `"+(*it)->type().toString()+"'");
           }
           bu_ty.run(i->e());
           if (i->e()) {
@@ -746,29 +736,47 @@ namespace MiniZinc {
             if (! (et.isSubtypeOf(Type::varint()) || 
                    et.isSubtypeOf(Type::varfloat())))
               throw TypeError(i->e()->loc(),
-                "objective must be int or float");
+                "objective has invalid type, expected int or float, actual `"+et.toString()+"'");
           }
         }
         void vOutputI(OutputI* i) {
           bu_ty.run(i->e());
           if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1))
-            throw TypeError(i->e()->loc(), "output item needs string array");
+            throw TypeError(i->e()->loc(), "invalid type in output item, expected `"+Type::parstring(1).toString()+"', actual `"+i->e()->type().toString()+"'");
         }
         void vFunctionI(FunctionI* i) {
           for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
             bu_ty.run(*it);
             if (!(*it)->type().isann())
-              throw TypeError((*it)->loc(), "not an annotation");
+              throw TypeError((*it)->loc(), "expected annotation, got `"+(*it)->type().toString()+"'");
           }
           bu_ty.run(i->ti());
           bu_ty.run(i->e());
           if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))
-            throw TypeError(i->e()->loc(), "return type of function does not match body");
+            throw TypeError(i->e()->loc(), "return type of function does not match body, declared type is `"+i->ti()->type().toString()+
+                            "', body type is `"+i->e()->type().toString()+"'");
         }
       } _tsv2(bu_ty);
       iterItems(_tsv2,m);
     }
     
+    class TSV3 : public ItemVisitor {
+    public:
+      void vAssignI(AssignI* i) {
+        i->decl()->e(i->e());
+      }
+    } _tsv3;
+    iterItems(_tsv3,m);
+
+    for (unsigned int i=0; i<ts.decls.size(); i++) {
+      if (ts.decls[i]->toplevel() &&
+          ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
+        typeErrors.push_back(TypeError(ts.decls[i]->loc(),
+                                       "  symbol error: variable `" + ts.decls[i]->id()->str().str()
+                                       + "' must be defined (did you forget to specify a data file?)"));
+      }
+    }
+
   }
   
   void typecheck(Model* m, AssignI* ai) {
@@ -777,7 +785,8 @@ namespace MiniZinc {
     bu_ty.run(ai->e());
     if (!ai->e()->type().isSubtypeOf(ai->decl()->ti()->type())) {
       throw TypeError(ai->e()->loc(),
-                      "RHS of assignment does not agree with LHS");
+                      "assignment value for `"+ai->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
+                      ai->decl()->ti()->type().toString()+"', actual `"+ai->e()->type().toString()+"'");
     }
     
   }
