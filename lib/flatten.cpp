@@ -833,29 +833,33 @@ namespace MiniZinc {
               // Check that index sets match
               checkIndexSets(vd,e);
             } else if (Id* e_id = e->dyn_cast<Id>()) {
-              ASTString cid;
-              if (e->type().isint()) {
-                cid = constants().ids.int_.eq;
-              } else if (e->type().isbool()) {
-                cid = constants().ids.bool_eq;
-              } else if (e->type().isset()) {
-                cid = constants().ids.set_eq;
-              } else if (e->type().isfloat()) {
-                cid = constants().ids.float_.eq;
-              }
-              if (cid != "") {
-                GCLock lock;
-                std::vector<Expression*> args(2);
-                args[0] = vd->id();
-                args[1] = e_id;
-                Call* c = new Call(Location(),cid,args);
-                c->decl(env.orig->matchFn(c));
-                c->type(c->decl()->rtype(args));
-                if (c->decl()->e()) {
-                  flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
-                  ret = vd->id();
-                  vd->e(e);
-                  env.vo_add_exp(vd);
+              if (e_id == vd->id()) {
+                ret = vd->id();
+              } else {
+                ASTString cid;
+                if (e->type().isint()) {
+                  cid = constants().ids.int_.eq;
+                } else if (e->type().isbool()) {
+                  cid = constants().ids.bool_eq;
+                } else if (e->type().isset()) {
+                  cid = constants().ids.set_eq;
+                } else if (e->type().isfloat()) {
+                  cid = constants().ids.float_.eq;
+                }
+                if (cid != "") {
+                  GCLock lock;
+                  std::vector<Expression*> args(2);
+                  args[0] = vd->id();
+                  args[1] = e_id;
+                  Call* c = new Call(Location(),cid,args);
+                  c->decl(env.orig->matchFn(c));
+                  c->type(c->decl()->rtype(args));
+                  if (c->decl()->e()) {
+                    flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                    ret = vd->id();
+                    vd->e(e);
+                    env.vo_add_exp(vd);
+                  }
                 }
               }
             }
