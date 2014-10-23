@@ -156,6 +156,7 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
       d[i*2] = dims[i].first;
@@ -171,6 +172,7 @@ namespace MiniZinc {
                      ASTExprVec<Expression> v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
       d[i*2] = dims[i].first;
@@ -185,6 +187,7 @@ namespace MiniZinc {
   ArrayLit::ArrayLit(const Location& loc,
                      ASTExprVec<Expression> v)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> dims(2);
     dims[0]=1;
     dims[1]=v.size();
@@ -197,6 +200,7 @@ namespace MiniZinc {
   ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> dims(2);
     dims[0]=1;
     dims[1]=v.size();
@@ -209,6 +213,7 @@ namespace MiniZinc {
   ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<std::vector<Expression*> >& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> dims(4);
     dims[0]=1;
     dims[1]=v.size();

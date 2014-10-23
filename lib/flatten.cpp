@@ -831,6 +831,7 @@ namespace MiniZinc {
           } else {
             if (e->type().dim() > 0) {
               // Check that index sets match
+              env.errorStack.clear();
               checkIndexSets(vd,e);
             } else if (Id* e_id = e->dyn_cast<Id>()) {
               if (e_id == vd->id()) {
@@ -2561,24 +2562,30 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
-        std::vector<EE> elems_ee(al->v().size());
-        for (unsigned int i=al->v().size(); i--;)
-          elems_ee[i] = flat_exp(env,ctx,al->v()[i],NULL,NULL);
-        std::vector<Expression*> elems(elems_ee.size());
-        for (unsigned int i=elems.size(); i--;)
-          elems[i] = elems_ee[i].r();
-        std::vector<std::pair<int,int> > dims(al->dims());
-        for (unsigned int i=al->dims(); i--;)
-          dims[i] = std::pair<int,int>(al->min(i), al->max(i));
-        KeepAlive ka;
-        {
-          GCLock lock;
-          ArrayLit* alr = new ArrayLit(Location(),elems,dims);
-          alr->type(al->type());
-          ka = alr;
+        if (al->flat()) {
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
+          ret.r = bind(env,Ctx(),r,al);
+        } else {
+          std::vector<EE> elems_ee(al->v().size());
+          for (unsigned int i=al->v().size(); i--;)
+            elems_ee[i] = flat_exp(env,ctx,al->v()[i],NULL,NULL);
+          std::vector<Expression*> elems(elems_ee.size());
+          for (unsigned int i=elems.size(); i--;)
+            elems[i] = elems_ee[i].r();
+          std::vector<std::pair<int,int> > dims(al->dims());
+          for (unsigned int i=al->dims(); i--;)
+            dims[i] = std::pair<int,int>(al->min(i), al->max(i));
+          KeepAlive ka;
+          {
+            GCLock lock;
+            ArrayLit* alr = new ArrayLit(Location(),elems,dims);
+            alr->type(al->type());
+            alr->flat(true);
+            ka = alr;
+          }
+          ret.b = conj(env,b,Ctx(),elems_ee);
+          ret.r = bind(env,Ctx(),r,ka());
         }
-        ret.b = conj(env,b,Ctx(),elems_ee);
-        ret.r = bind(env,Ctx(),r,ka());
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -2816,6 +2823,7 @@ namespace MiniZinc {
           if (allPar)
             alt.ti(Type::TI_PAR);
           alr->type(alt);
+          alr->flat(true);
           ka = alr;
         }
         ret.b = conj(env,b,Ctx(),elems_ee);

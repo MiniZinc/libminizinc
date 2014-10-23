@@ -242,6 +242,7 @@ namespace MiniZinc {
           for (unsigned int i=al1->v().size(); i--;)
             v[al0->v().size()+i] = al1->v()[i];
           ArrayLit* ret = new ArrayLit(e->loc(),v);
+          ret->flat(al0->flat() && al1->flat());
           ret->type(e->type());
           return ret;
         } else {
@@ -269,7 +270,9 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
-        ArrayLit* ret = copy(eval_array_lit(l->in()),true)->cast<ArrayLit>();
+        ArrayLit* l_in = eval_array_lit(l->in());
+        ArrayLit* ret = copy(l_in,true)->cast<ArrayLit>();
+        ret->flat(l_in->flat());
         l->popbindings();
         return ret;
       }

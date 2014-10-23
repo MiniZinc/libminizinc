@@ -190,13 +190,17 @@ namespace MiniZinc {
     }
     std::string toString(void) const {
       std::ostringstream oss;
-      if (_dim>0)
-        oss<<"array["<<_dim<<"] of ";
+      if (_dim>0) {
+        oss<<"array[int";
+        for (int i=1; i<_dim; i++)
+          oss << ",int";
+        oss<<"] of ";
+      }
       if (_dim<0)
         oss<<"array[$_] of ";
       if (_ot==OT_OPTIONAL) oss<<"opt ";
       switch (_ti) {
-        case TI_PAR: oss<<"par "; break;
+        case TI_PAR: break;
         case TI_VAR: oss<<"var "; break;
         case TI_SVAR: oss<<"svar "; break;
       }
