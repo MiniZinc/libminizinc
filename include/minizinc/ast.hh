@@ -593,6 +593,8 @@ namespace MiniZinc {
     const Expression* e_if(int i) const { return _e_if_then[2*i]; }
     const Expression* e_then(int i) const { return _e_if_then[2*i+1]; }
     const Expression* e_else(void) const { return _e_else; }
+    void e_then(int i, Expression* e) { _e_if_then[2*i+1] = e; }
+    void e_else(Expression* e) { _e_else = e; }
     /// Recompute hash value
     void rehash(void);
     /// Re-construct (used for copying)

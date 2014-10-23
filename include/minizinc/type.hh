@@ -213,15 +213,6 @@ namespace MiniZinc {
       }
       return oss.str();
     }
-    static bool bt_subtype(const BaseType& bt0, const BaseType& bt1) {
-      if (bt0==bt1)
-        return true;
-      switch (bt0) {
-        case BT_BOOL: return (bt1==BT_INT || bt1==BT_FLOAT);
-        case BT_INT: return bt1==BT_FLOAT;
-        default: return false;
-      }
-    }
   public:
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
@@ -253,6 +244,16 @@ namespace MiniZinc {
       return toInt()<t.toInt() ? -1 : (toInt()>t.toInt() ? 1 : 0);
     }
 
+    /// Check if \a bt0 is a subtype of \a bt1
+    static bool bt_subtype(const BaseType& bt0, const BaseType& bt1) {
+      if (bt0==bt1)
+        return true;
+      switch (bt0) {
+        case BT_BOOL: return (bt1==BT_INT || bt1==BT_FLOAT);
+        case BT_INT: return bt1==BT_FLOAT;
+        default: return false;
+      }
+    }
   };
   
 };

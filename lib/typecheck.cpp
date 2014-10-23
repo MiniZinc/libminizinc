@@ -242,21 +242,21 @@ namespace MiniZinc {
     }
   }
   
-  KeepAlive addCoercion(Model* m, Expression* e, Expression* funarg) {
-    if (funarg->type().bt()==Type::BT_TOP || e->type().bt()==funarg->type().bt())
+  KeepAlive addCoercion(Model* m, Expression* e, const Type& funarg_t) {
+    if (funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT)
       return e;
     std::vector<Expression*> args(1);
     args[0] = e;
     GCLock lock;
     Call* c = NULL;
     if (e->type().bt()==Type::BT_BOOL) {
-      if (funarg->type().bt()==Type::BT_INT) {
+      if (funarg_t.bt()==Type::BT_INT) {
         c = new Call(e->loc(), constants().ids.bool2int, args);
-      } else if (funarg->type().bt()==Type::BT_FLOAT) {
+      } else if (funarg_t.bt()==Type::BT_FLOAT) {
         c = new Call(e->loc(), constants().ids.bool2float, args);
       }
     } else if (e->type().bt()==Type::BT_INT) {
-      if (funarg->type().bt()==Type::BT_FLOAT) {
+      if (funarg_t.bt()==Type::BT_FLOAT) {
         c = new Call(e->loc(), constants().ids.int2float, args);
       }
     }
@@ -268,7 +268,10 @@ namespace MiniZinc {
       KeepAlive ka(c);
       return ka;
     }
-    throw TypeError(e->loc(),"cannot determine coercion from type "+e->type().toString()+" to type "+funarg->type().toString());
+    throw TypeError(e->loc(),"cannot determine coercion from type "+e->type().toString()+" to type "+funarg_t.toString());
+  }
+  KeepAlive addCoercion(Model* m, Expression* e, Expression* funarg) {
+    return addCoercion(m, e, funarg->type());
   }
   
   template<bool ignoreVarDecl>
@@ -295,6 +298,7 @@ namespace MiniZinc {
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
+        /// TODO: add coercion if types don't match
         if (ty.bt() != sl.v()[i]->type().bt()) {
           if (ty.bt() != Type::BT_UNKNOWN)
             throw TypeError(sl.loc(),"non-uniform set literal");
@@ -355,6 +359,8 @@ namespace MiniZinc {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             } else {
+              /// TODO: add coercion if types don't match
+              /// Need to find common supertype first, then add all coercions
               if (ty.bt() != vi->type().bt() || ty.st() != vi->type().st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
@@ -388,10 +394,10 @@ namespace MiniZinc {
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().isset() || aai->type().bt() != Type::BT_INT ||
-            aai->type().dim() != 0) {
+        if (aai->type().isset() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be int");
         }
+        aa.idx()[i] = addCoercion(_model, aai, Type::varint())();
         if (aai->type().isopt()) {
           allpresent = false;
         }
@@ -488,7 +494,7 @@ namespace MiniZinc {
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
         }
-        if ( (!ethen->type().isbot() && ethen->type().bt() != tret.bt()) ||
+        if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
             ethen->type().st() != tret.st() ||
             ethen->type().dim() != tret.dim()) {
           throw TypeError(ethen->loc(),
@@ -496,9 +502,16 @@ namespace MiniZinc {
             ethen->type().toString()+", but else branch has type "+
             tret.toString());
         }
+        if (Type::bt_subtype(tret.bt(), ethen->type().bt())) {
+          tret.bt(ethen->type().bt());
+        }
         if (ethen->type().isvar()) allpar=false;
         if (ethen->type().isopt()) allpresent=false;
       }
+      for (int i=0; i<ite.size(); i++) {
+        ite.e_then(i, addCoercion(_model,ite.e_then(i), tret)());
+      }
+      ite.e_else(addCoercion(_model, ite.e_else(), tret)());
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
@@ -599,6 +612,7 @@ namespace MiniZinc {
               "type error in initialization, LHS is\n  "+
               vd.ti()->type().toString()+"\nbut RHS is\n  "+
               vd.e()->type().toString());
+          vd.e(addCoercion(_model, vd.e(), vd.ti()->type()));
         }
       } else {
         vd.type(vd.ti()->type());
