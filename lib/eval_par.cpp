@@ -648,6 +648,9 @@ namespace MiniZinc {
   }
 
   IntVal eval_int(Expression* e) {
+    if (e->type().isbool()) {
+      return eval_bool(e);
+    }
     try {
       switch (e->eid()) {
         case Expression::E_INTLIT: return e->cast<IntLit>()->v();
@@ -745,6 +748,11 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(Expression* e) {
+    if (e->type().isint()) {
+      return eval_int(e).toInt();
+    } else if (e->type().isbool()) {
+      return eval_bool(e);
+    }
     switch (e->eid()) {
       case Expression::E_FLOATLIT: return e->cast<FloatLit>()->v();
       case Expression::E_INTLIT:

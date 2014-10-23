@@ -242,6 +242,35 @@ namespace MiniZinc {
     }
   }
   
+  KeepAlive addCoercion(Model* m, Expression* e, Expression* funarg) {
+    if (funarg->type().bt()==Type::BT_TOP || e->type().bt()==funarg->type().bt())
+      return e;
+    std::vector<Expression*> args(1);
+    args[0] = e;
+    GCLock lock;
+    Call* c = NULL;
+    if (e->type().bt()==Type::BT_BOOL) {
+      if (funarg->type().bt()==Type::BT_INT) {
+        c = new Call(e->loc(), constants().ids.bool2int, args);
+      } else if (funarg->type().bt()==Type::BT_FLOAT) {
+        c = new Call(e->loc(), constants().ids.bool2float, args);
+      }
+    } else if (e->type().bt()==Type::BT_INT) {
+      if (funarg->type().bt()==Type::BT_FLOAT) {
+        c = new Call(e->loc(), constants().ids.int2float, args);
+      }
+    }
+    if (c) {
+      FunctionI* fi = m->matchFn(c);
+      assert(fi);
+      c->type(fi->rtype(args));
+      c->decl(fi);
+      KeepAlive ka(c);
+      return ka;
+    }
+    throw TypeError(e->loc(),"cannot determine coercion from type "+e->type().toString()+" to type "+funarg->type().toString());
+  }
+  
   template<bool ignoreVarDecl>
   class Typer {
   public:
@@ -496,6 +525,8 @@ namespace MiniZinc {
         bop.type(t);
       } else {
         if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
+          bop.lhs(addCoercion(_model,bop.lhs(),fi->params()[0])());
+          bop.rhs(addCoercion(_model,bop.rhs(),fi->params()[1])());
           bop.type(fi->rtype(args));
           if (fi->e())
             bop.decl(fi);
@@ -514,6 +545,7 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = uop.e();
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
+        uop.e(addCoercion(_model,uop.e(),fi->params()[0])());
         uop.type(fi->rtype(args));
         if (fi->e())
           uop.decl(fi);
@@ -528,6 +560,9 @@ namespace MiniZinc {
       std::vector<Expression*> args(call.args().size());
       std::copy(call.args().begin(),call.args().end(),args.begin());
       if (FunctionI* fi = _model->matchFn(call.id(),args)) {
+        for (unsigned int i=0; i<args.size(); i++) {
+          call.args()[i] = addCoercion(_model,call.args()[i],fi->params()[i])();
+        }
         call.type(fi->rtype(args));
         call.decl(fi);
       } else {

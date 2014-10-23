@@ -1184,6 +1184,8 @@ namespace MiniZinc {
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
+        ASTString int2float;
+        ASTString bool2float;
         ASTString assert;
         ASTString trace;
 

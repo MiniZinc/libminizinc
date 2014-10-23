@@ -23,8 +23,8 @@ namespace MiniZinc {
     /// Type-inst
     enum TypeInst { TI_PAR, TI_VAR, TI_SVAR };
     /// Basic type
-    enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
-                    BT_BOT, BT_TOP, BT_UNKNOWN };
+    enum BaseType { BT_TOP, BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
+                    BT_BOT, BT_UNKNOWN };
     /// Whether the expression is plain or set
     enum SetType { ST_PLAIN, ST_SET };
     /// Whether the expression is normal or optional
@@ -173,18 +173,18 @@ namespace MiniZinc {
        (and subtract it again in fromInt). */
     int toInt(void) const {
       return
-      + (static_cast<int>(_ot)<<28)
-      + (static_cast<int>(_ti)<<25)
-      + (static_cast<int>(_bt)<<21)
-      + (static_cast<int>(_st)<<20)
+      + (static_cast<int>(_st)<<28)
+      + (static_cast<int>(_bt)<<24)
+      + (static_cast<int>(_ti)<<21)
+      + (static_cast<int>(_ot)<<20)
       + (_dim + 1);
     }
     static Type fromInt(int i) {
       Type t;
-      t._ot = static_cast<OptType>((i >> 28) & 0x1);
-      t._ti = static_cast<TypeInst>((i >> 25) & 0x7);
-      t._bt = static_cast<BaseType>((i >> 21) & 0xF);
-      t._st = static_cast<SetType>((i >> 20) & 0x1);
+      t._st = static_cast<SetType>((i >> 28) & 0x1);
+      t._bt = static_cast<BaseType>((i >> 24) & 0xF);
+      t._ti = static_cast<TypeInst>((i >> 21) & 0x7);
+      t._ot = static_cast<OptType>((i >> 20) & 0x1);
       t._dim = (i & 0xFFFFF) - 1;
       return t;
     }
@@ -213,6 +213,15 @@ namespace MiniZinc {
       }
       return oss.str();
     }
+    static bool bt_subtype(const BaseType& bt0, const BaseType& bt1) {
+      if (bt0==bt1)
+        return true;
+      switch (bt0) {
+        case BT_BOOL: return (bt1==BT_INT || bt1==BT_FLOAT);
+        case BT_INT: return bt1==BT_FLOAT;
+        default: return false;
+      }
+    }
   public:
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
@@ -220,13 +229,13 @@ namespace MiniZinc {
       if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
       // same type, this is present or both optional
-      if (_ti==t._ti && _bt==t._bt && _st==t._st)
+      if (_ti==t._ti && bt_subtype(bt(),t.bt()) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       // this is par or svar, other than that same type as t
-      if ((_ti==TI_PAR || _ti==TI_SVAR) && _bt==t._bt && _st==t._st)
+      if ((_ti==TI_PAR || _ti==TI_SVAR) && bt_subtype(bt(),t.bt()) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       // t is svar, other than that same type as this
-      if (t._ti==TI_SVAR && _bt==t._bt && _st==t._st)
+      if (t._ti==TI_SVAR && bt_subtype(bt(),t.bt()) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
         return true;

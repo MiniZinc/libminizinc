@@ -924,13 +924,9 @@ function     float: product(array[$T] of     float);
 function var float: product(array[$T] of var float);
 
 function     $T: min(    $T,     $T);
-function var $T: min(var $T, var $T);
-function     $T: min(array[$U] of     $T);
-function var $T: min(array[$U] of var $T);
+function     $T: min(array[$U] of     par $T);
 function     $T: max(    $T,     $T);
-function var $T: max(var $T, var $T);
 function     $T: max(array[$U] of     $T);
-function var $T: max(array[$U] of var $T);
 function int: min(set of int);
 function int: max(set of int);
 
@@ -1326,7 +1322,10 @@ function int: floor(float);
 function int: round(float);
 
 function int: bool2int(bool);
+function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
 function var int: bool2int(var bool);
+function array[int] of var int: bool2int(array[int] of var bool);
+function var float: bool2float(var bool: b) = int2float(bool2int(b));
 function float: int2float(int);
 function var float: int2float(var int: x) =
   let { var int2float(lb(x))..int2float(ub(x)): y;

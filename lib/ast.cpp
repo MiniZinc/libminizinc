@@ -905,6 +905,8 @@ namespace MiniZinc {
     ids.exists = ASTString("exists");
     ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
+    ids.int2float = ASTString("int2float");
+    ids.bool2float = ASTString("bool2float");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
 
@@ -1028,6 +1030,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.clause));
     v.push_back(new StringLit(Location(),ids.bool2int));
+    v.push_back(new StringLit(Location(),ids.int2float));
+    v.push_back(new StringLit(Location(),ids.bool2float));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.element));
