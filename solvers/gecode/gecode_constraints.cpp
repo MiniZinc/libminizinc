@@ -46,12 +46,12 @@ namespace MiniZinc {
             Expression* rhs = ce->args()[1];
             if (lhs->type().isvarint()) { 
                 if (rhs->type().isvarint()) {
-                    rel(*s._current_space, s.arg2IntVar(lhs), irt, s.arg2IntVar(rhs), s.ann2icl(ann));
+                    rel(*s._current_space, s.arg2intvar(lhs), irt, s.arg2intvar(rhs), s.ann2icl(ann));
                 } else {
-                    rel(*s._current_space, s.arg2IntVar(lhs), irt, rhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
+                    rel(*s._current_space, s.arg2intvar(lhs), irt, rhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
                 }
             } else {
-                rel(*s._current_space, s.arg2IntVar(rhs), swap(irt), lhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
+                rel(*s._current_space, s.arg2intvar(rhs), swap(irt), lhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
             }
         }
 
@@ -85,15 +85,15 @@ namespace MiniZinc {
             }
             if (call->args()[0]->type().isvarint()) {
                 if (call->args()[1]->type().isvarint()) {
-                    rel(*s._current_space, s.arg2IntVar(call->args()[0]), irt, s.arg2IntVar(call->args()[1]),
+                    rel(*s._current_space, s.arg2intvar(call->args()[0]), irt, s.arg2intvar(call->args()[1]),
                             Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
                 } else {
-                    rel(*s._current_space, s.arg2IntVar(call->args()[0]), irt,
+                    rel(*s._current_space, s.arg2intvar(call->args()[0]), irt,
                             call->args()[1]->cast<IntLit>()->v().toInt(),
                             Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
                 }
             } else {
-                rel(*s._current_space, s.arg2IntVar(call->args()[1]), swap(irt),
+                rel(*s._current_space, s.arg2intvar(call->args()[1]), swap(irt),
                         call->args()[0]->cast<IntLit>()->v().toInt(),
                         Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
             }
@@ -141,12 +141,12 @@ namespace MiniZinc {
         void p_int_lin_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
             const Annotation& ann =call->ann();
             IntArgs ia = s.arg2intargs(call->args()[0]);
-	    ArrayLit* vars = s.arg2arrayLit(call->args()[1]);
+	    ArrayLit* vars = s.arg2arraylit(call->args()[1]);
             int singleIntVar;
 	    if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
                     if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-		        IntVar siv = s.arg2IntVar(vars->v()[singleIntVar]);
+		        IntVar siv = s.arg2intvar(vars->v()[singleIntVar]);
                         BoolVarArgs iv = s.arg2boolvarargs(vars, 0, singleIntVar);
                         IntArgs ia_tmp(ia.size()-1);
                         int count = 0;
@@ -180,12 +180,12 @@ namespace MiniZinc {
                 return;
             }
             IntArgs ia = s.arg2intargs(call->args()[0]);
-	    ArrayLit* vars = s.arg2arrayLit(call->args()[1]);
+	    ArrayLit* vars = s.arg2arraylit(call->args()[1]);
             int singleIntVar;
             if (s.isBoolArray(vars,singleIntVar)) {
                 if (singleIntVar != -1) {
                     if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-                        IntVar siv = s.arg2IntVar(vars->v()[singleIntVar]);
+                        IntVar siv = s.arg2intvar(vars->v()[singleIntVar]);
                         BoolVarArgs iv = s.arg2boolvarargs(vars, 0, singleIntVar);
                         IntArgs ia_tmp(ia.size()-1);
                         int count = 0;
@@ -372,77 +372,77 @@ namespace MiniZinc {
         void p_int_plus(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             if (!call->args()[0]->type().isvarint()) {
-                rel(*gi._current_space, call->args()[0]->cast<IntLit>()->v().toInt() + gi.arg2IntVar(call->args()[1])
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, call->args()[0]->cast<IntLit>()->v().toInt() + gi.arg2intvar(call->args()[1])
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             } else if (!call->args()[1]->type().isvarint()) {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) + call->args()[1]->cast<IntLit>()->v().toInt()
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) + call->args()[1]->cast<IntLit>()->v().toInt()
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             } else if (!call->args()[2]->type().isvarint()) {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) + gi.arg2IntVar(call->args()[1]) 
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) + gi.arg2intvar(call->args()[1]) 
                         == call->args()[2]->cast<IntLit>()->v().toInt(), gi.ann2icl(call->ann()));
             } else {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) + gi.arg2IntVar(call->args()[1]) 
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) + gi.arg2intvar(call->args()[1]) 
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             }
         }
 
         void p_int_minus(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             if (!call->args()[0]->type().isvarint()) {
-                rel(*gi._current_space, call->args()[0]->cast<IntLit>()->v().toInt() - gi.arg2IntVar(call->args()[1])
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, call->args()[0]->cast<IntLit>()->v().toInt() - gi.arg2intvar(call->args()[1])
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             } else if (!call->args()[1]->type().isvarint()) {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) - call->args()[1]->cast<IntLit>()->v().toInt()
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) - call->args()[1]->cast<IntLit>()->v().toInt()
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             } else if (!call->args()[2]->type().isvarint()) {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) - gi.arg2IntVar(call->args()[1]) 
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) - gi.arg2intvar(call->args()[1]) 
                         == call->args()[2]->cast<IntLit>()->v().toInt(), gi.ann2icl(call->ann()));
             } else {
-                rel(*gi._current_space, gi.arg2IntVar(call->args()[0]) - gi.arg2IntVar(call->args()[1]) 
-                        == gi.arg2IntVar(call->args()[2]), gi.ann2icl(call->ann()));
+                rel(*gi._current_space, gi.arg2intvar(call->args()[0]) - gi.arg2intvar(call->args()[1]) 
+                        == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
             }
         }
 
         void p_int_times(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            IntVar x2 = gi.arg2IntVar(call->args()[2]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
+            IntVar x2 = gi.arg2intvar(call->args()[2]);
             mult(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
         }
         void p_int_div(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            IntVar x2 = gi.arg2IntVar(call->args()[2]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
+            IntVar x2 = gi.arg2intvar(call->args()[2]);
             div(*gi._current_space,x0,x1,x2, gi.ann2icl(call->ann()));
         }
         void p_int_mod(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            IntVar x2 = gi.arg2IntVar(call->args()[2]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
+            IntVar x2 = gi.arg2intvar(call->args()[2]);
             mod(*gi._current_space,x0,x1,x2, gi.ann2icl(call->ann()));
         }
 
         void p_int_min(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            IntVar x2 = gi.arg2IntVar(call->args()[2]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
+            IntVar x2 = gi.arg2intvar(call->args()[2]);
             min(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
         }
         void p_int_max(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
-            IntVar x2 = gi.arg2IntVar(call->args()[2]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
+            IntVar x2 = gi.arg2intvar(call->args()[2]);
             max(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
         }
         void p_int_negate(SolverInstanceBase& s, const Call* call) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
             rel(*gi._current_space, x0 == -x1, gi.ann2icl(call->ann()));
         }
 
@@ -664,20 +664,20 @@ namespace MiniZinc {
         void p_array_int_element(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar selector = gi.arg2IntVar(call->args()[0]);
+            IntVar selector = gi.arg2intvar(call->args()[0]);
             rel(*gi._current_space, selector > 0);
             if (call->args()[1]->type().isvar()) {
                 IntVarArgs iv = gi.arg2intvarargs(call->args()[1], 1);
-                element(*gi._current_space, iv, selector, gi.arg2IntVar(call->args()[2]), gi.ann2icl(ann));
+                element(*gi._current_space, iv, selector, gi.arg2intvar(call->args()[2]), gi.ann2icl(ann));
             } else {
                 IntArgs ia = gi.arg2intargs(call->args()[1], 1);
-                element(*gi._current_space, ia, selector, gi.arg2IntVar(call->args()[2]), gi.ann2icl(ann));
+                element(*gi._current_space, ia, selector, gi.arg2intvar(call->args()[2]), gi.ann2icl(ann));
             }
         }
         void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar selector = gi.arg2IntVar(call->args()[0]);
+            IntVar selector = gi.arg2intvar(call->args()[0]);
             rel(*gi._current_space, selector > 0);
             if (call->args()[1]->type().isvar()) {
                 BoolVarArgs iv = gi.arg2boolvarargs(call->args()[1], 1);
@@ -693,7 +693,7 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             BoolVar x0 = gi.arg2boolvar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
             if (call->args()[0]->type().isvarbool() && call->args()[0]->type().isvarint()) { // TODO: bug? 
                 gi._current_space->aliasBool2Int(*(int*)gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
                         *(int*)gi.resolveVar(call->args()[0]->cast<Id>()->decl()));
@@ -717,7 +717,7 @@ namespace MiniZinc {
                     rel(*gi._current_space, gi.arg2boolvar(call->args()[0]), IRT_LQ, d01.max());
                 }
             } else {
-                dom(*gi._current_space, gi.arg2IntVar(call->args()[0]), d);
+                dom(*gi._current_space, gi.arg2intvar(call->args()[0]), d);
             }
         }
         void p_int_in_reif(SolverInstanceBase& s, const Call* call) {
@@ -739,7 +739,7 @@ namespace MiniZinc {
                     rel(*gi._current_space, gi.arg2boolvar(call->args()[2]) == 1);
                 }
             } else {
-                dom(*gi._current_space, gi.arg2IntVar(call->args()[0]), d, gi.arg2boolvar(call->args()[2]));
+                dom(*gi._current_space, gi.arg2intvar(call->args()[0]), d, gi.arg2boolvar(call->args()[2]));
             }
         }
         void p_int_in_imp(SolverInstanceBase& s, const Call* call) {
@@ -759,7 +759,7 @@ namespace MiniZinc {
                     rel(*gi._current_space, gi.arg2boolvar(call->args()[2]) >> gi.arg2boolvar(call->args()[0]));
                 }
             } else {
-                dom(*gi._current_space, gi.arg2IntVar(call->args()[0]), d, Reify(gi.arg2boolvar(call->args()[2]),RM_IMP));
+                dom(*gi._current_space, gi.arg2intvar(call->args()[0]), d, Reify(gi.arg2boolvar(call->args()[2]),RM_IMP));
             }
         }
 
@@ -768,8 +768,8 @@ namespace MiniZinc {
         void p_abs(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(call->args()[0]);
-            IntVar x1 = gi.arg2IntVar(call->args()[1]);
+            IntVar x0 = gi.arg2intvar(call->args()[0]);
+            IntVar x1 = gi.arg2intvar(call->args()[1]);
             abs(*gi._current_space, x0, x1, gi.ann2icl(ann));
         }
 
@@ -814,14 +814,14 @@ namespace MiniZinc {
                     count(*gi._current_space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
                             gi.ann2icl(ann));
                 } else {
-                    count(*gi._current_space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, gi.arg2IntVar(call->args()[2]), 
+                    count(*gi._current_space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, gi.arg2intvar(call->args()[2]), 
                             gi.ann2icl(ann));
                 }
             } else if (!call->args()[2]->type().isvarint()) {
-                count(*gi._current_space, iv, gi.arg2IntVar(call->args()[1]), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
+                count(*gi._current_space, iv, gi.arg2intvar(call->args()[1]), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
                         gi.ann2icl(ann));
             } else {
-                count(*gi._current_space, iv, gi.arg2IntVar(call->args()[1]), IRT_EQ, gi.arg2IntVar(call->args()[2]), 
+                count(*gi._current_space, iv, gi.arg2intvar(call->args()[1]), IRT_EQ, gi.arg2intvar(call->args()[2]), 
                         gi.ann2icl(ann));
             }
         }
@@ -830,8 +830,8 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
-            IntVar x = gi.arg2IntVar(call->args()[1]);
-            IntVar y = gi.arg2IntVar(call->args()[2]);
+            IntVar x = gi.arg2intvar(call->args()[1]);
+            IntVar y = gi.arg2intvar(call->args()[2]);
             BoolVar b = gi.arg2boolvar(call->args()[3]);
             IntVar c(*gi._current_space,0,Int::Limits::max);
             count(*gi._current_space,iv,x,IRT_EQ,c,gi.ann2icl(ann));
@@ -841,8 +841,8 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
-            IntVar x = gi.arg2IntVar(call->args()[1]);
-            IntVar y = gi.arg2IntVar(call->args()[2]);
+            IntVar x = gi.arg2intvar(call->args()[1]);
+            IntVar y = gi.arg2intvar(call->args()[2]);
             BoolVar b = gi.arg2boolvar(call->args()[3]);
             IntVar c(*gi._current_space,0,Int::Limits::max);
             count(*gi._current_space,iv,x,IRT_EQ,c,gi.ann2icl(ann));
@@ -984,14 +984,14 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs iv = gi.arg2intvarargs(call->args()[1]);
-            min(*gi._current_space, iv, gi.arg2IntVar(call->args()[0]), gi.ann2icl(ann));
+            min(*gi._current_space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
         }
 
         void p_maximum(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs iv = gi.arg2intvarargs(call->args()[1]);
-            max(*gi._current_space, iv, gi.arg2IntVar(call->args()[0]), gi.ann2icl(ann));
+            max(*gi._current_space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
         }
 
         //void p_regular(SolverInstanceBase& s, const Call* call) {
@@ -1147,7 +1147,7 @@ namespace MiniZinc {
             IntVarArgs duration = gi.arg2intvarargs(call->args()[1]);
             IntVarArgs height = gi.arg2intvarargs(call->args()[2]);
             int n = start.size();
-            IntVar bound = gi.arg2IntVar(call->args()[3]);
+            IntVar bound = gi.arg2intvar(call->args()[3]);
 
             int minHeight = INT_MAX; int minHeight2 = INT_MAX;
             for (int i=n; i--;)
@@ -1269,7 +1269,7 @@ namespace MiniZinc {
             IntArgs c = gi.arg2intargs(call->args()[0]);
             IntVarArgs xv = gi.arg2intvarargs(call->args()[1]);
             IntVarArgs yv = gi.arg2intvarargs(call->args()[2]);
-            IntVar z = gi.arg2IntVar(call->args()[3]);
+            IntVar z = gi.arg2intvar(call->args()[3]);
             circuit(*gi._current_space,c,xv,yv,z,gi.ann2icl(ann));
         }
         void p_circuit_cost(SolverInstanceBase& s, const Call* call) {
@@ -1277,7 +1277,7 @@ namespace MiniZinc {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntArgs c = gi.arg2intargs(call->args()[0]);
             IntVarArgs xv = gi.arg2intvarargs(call->args()[1]);
-            IntVar z = gi.arg2IntVar(call->args()[2]);
+            IntVar z = gi.arg2intvar(call->args()[2]);
             circuit(*gi._current_space,c,xv,z,gi.ann2icl(ann));
         }
 
@@ -1320,7 +1320,7 @@ namespace MiniZinc {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs x = gi.arg2intvarargs(call->args()[1]);
             if (call->args()[0]->type().isvarint()) {
-                IntVar y = gi.arg2IntVar(call->args()[0]);
+                IntVar y = gi.arg2intvar(call->args()[0]);
                 nvalues(*gi._current_space,x,IRT_EQ,y,gi.ann2icl(ann));
             } else {
                 nvalues(*gi._current_space,x,IRT_EQ,call->args()[0]->cast<IntLit>()->v().toInt(),gi.ann2icl(ann));
@@ -1333,7 +1333,7 @@ namespace MiniZinc {
             IntVarArgs x = gi.arg2intvarargs(call->args()[1]);
             IntSet v = gi.arg2intset(call->args()[2]);
             if (call->args()[0]->type().isvarint()) {
-                IntVar n = gi.arg2IntVar(call->args()[0]);
+                IntVar n = gi.arg2intvar(call->args()[0]);
                 count(*gi._current_space,x,v,IRT_EQ,n,gi.ann2icl(ann));
             } else {
                 count(*gi._current_space,x,v,IRT_EQ,call->args()[0]->cast<IntLit>()->v().toInt(),gi.ann2icl(ann));
@@ -1344,14 +1344,14 @@ namespace MiniZinc {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
-            IntVar y = gi.arg2IntVar(call->args()[1]);
+            IntVar y = gi.arg2intvar(call->args()[1]);
             member(*gi._current_space,x,y,gi.ann2icl(ann));
         }
         void p_member_int_reif(SolverInstanceBase& s, const Call* call) {
             const Annotation& ann =call->ann();
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
-            IntVar y = gi.arg2IntVar(call->args()[1]);
+            IntVar y = gi.arg2intvar(call->args()[1]);
             BoolVar b = gi.arg2boolvar(call->args()[2]);
             member(*gi._current_space,x,y,b,gi.ann2icl(ann));
         }
@@ -1376,8 +1376,8 @@ namespace MiniZinc {
 
         void p_int2float(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            IntVar x0 = gi.arg2IntVar(ce->args()[0]);
-            FloatVar x1 = gi.arg2FloatVar(ce->args()[1]);
+            IntVar x0 = gi.arg2intvar(ce->args()[0]);
+            FloatVar x1 = gi.arg2floatvar(ce->args()[1]);
             channel(*gi._current_space, x0, x1);
         }
 
@@ -1410,94 +1410,94 @@ namespace MiniZinc {
 
         void p_float_times(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
-            FloatVar z = gi.arg2FloatVar(ce->args()[2]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
+            FloatVar z = gi.arg2floatvar(ce->args()[2]);
             mult(*gi._current_space,x,y,z);
         }
 
         void p_float_div(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
-            FloatVar z = gi.arg2FloatVar(ce->args()[2]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
+            FloatVar z = gi.arg2floatvar(ce->args()[2]);
             div(*gi._current_space,x,y,z);
         }
 
         void p_float_plus(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
-            FloatVar z = gi.arg2FloatVar(ce->args()[2]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
+            FloatVar z = gi.arg2floatvar(ce->args()[2]);
             rel(*gi._current_space,x+y==z);
         }
 
         void p_float_sqrt(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             sqrt(*gi._current_space,x,y);
         }
 
         void p_float_abs(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             abs(*gi._current_space,x,y);
         }
 
         void p_float_eq(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             rel(*gi._current_space,x,FRT_EQ,y);
         }
         void p_float_eq_reif(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             BoolVar  b = gi.arg2boolvar(ce->args()[2]);
             rel(*gi._current_space,x,FRT_EQ,y,b);
         }
         void p_float_le(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             rel(*gi._current_space,x,FRT_LQ,y);
         }
         void p_float_le_reif(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             BoolVar  b = gi.arg2boolvar(ce->args()[2]);
             rel(*gi._current_space,x,FRT_LQ,y,b);
         }
         void p_float_max(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
-            FloatVar z = gi.arg2FloatVar(ce->args()[2]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
+            FloatVar z = gi.arg2floatvar(ce->args()[2]);
             max(*gi._current_space,x,y,z);
         }
         void p_float_min(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
-            FloatVar z = gi.arg2FloatVar(ce->args()[2]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
+            FloatVar z = gi.arg2floatvar(ce->args()[2]);
             min(*gi._current_space,x,y,z);
         }
         void p_float_lt(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             rel(*gi._current_space, x, FRT_LQ, y);
             rel(*gi._current_space, x, FRT_EQ, y, BoolVar(*gi._current_space,0,0));
         }
 
         void p_float_lt_reif(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             BoolVar b = gi.arg2boolvar(ce->args()[2]);
             BoolVar b0(*gi._current_space,0,1);
             BoolVar b1(*gi._current_space,0,1);
@@ -1508,8 +1508,8 @@ namespace MiniZinc {
 
         void p_float_ne(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             rel(*gi._current_space, x, FRT_EQ, y, BoolVar(*gi._current_space,0,0));
         }
 
@@ -1517,8 +1517,8 @@ namespace MiniZinc {
 #define P_FLOAT_OP(Op) \
         void p_float_ ## Op (SolverInstanceBase& s, const Call* ce) {\
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s); \
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);\
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);\
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);\
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);\
             Op(gi ,x,y);\
         }
         P_FLOAT_OP(acos)
@@ -1535,20 +1535,20 @@ namespace MiniZinc {
 
             void p_float_ln(SolverInstanceBase& s, const Call* ce) {
                 GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-                FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-                FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+                FloatVar x = gi.arg2floatvar(ce->args()[0]);
+                FloatVar y = gi.arg2floatvar(ce->args()[1]);
                 log(*gi._current_space,x,y);
             }
         void p_float_log10(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             log(*gi._current_space,10.0,x,y);
         }
         void p_float_log2(SolverInstanceBase& s, const Call* ce) {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-            FloatVar x = gi.arg2FloatVar(ce->args()[0]);
-            FloatVar y = gi.arg2FloatVar(ce->args()[1]);
+            FloatVar x = gi.arg2floatvar(ce->args()[0]);
+            FloatVar y = gi.arg2floatvar(ce->args()[1]);
             log(*gi._current_space,2.0,x,y);
         }
 

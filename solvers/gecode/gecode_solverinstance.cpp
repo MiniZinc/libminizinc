@@ -477,7 +477,7 @@ namespace MiniZinc {
   
   Gecode::IntVarArgs 
   GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
-    ArrayLit* a = arg2arrayLit(arg);
+    ArrayLit* a = arg2arraylit(arg);
     if (a->v().size() == 0) {
         IntVarArgs emptyIa(0);
         return emptyIa;
@@ -501,7 +501,7 @@ namespace MiniZinc {
   
   Gecode::BoolVarArgs 
   GecodeSolverInstance::arg2boolvarargs(Expression* arg, int offset, int siv) {
-    ArrayLit* a = arg2arrayLit(arg);
+    ArrayLit* a = arg2arraylit(arg);
     if (a->length() == 0) {
         BoolVarArgs emptyIa(0);
         return emptyIa;
@@ -551,8 +551,26 @@ namespace MiniZinc {
     return x0;
   }
   
+  Gecode::IntVar 
+  GecodeSolverInstance::arg2intvar(Expression* e) {
+    IntVar x0;
+    if (e->type().isvar()) {
+        x0 = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
+    } else {
+        IntVal i;
+        if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
+        else if(BoolLit* bl = e->dyn_cast<BoolLit>()) i = bl->v();
+        else { 
+          std::stringstream ssm; ssm << "Expected bool or int literal instead of: " << *e;
+          throw InternalError(ssm.str());
+        }
+        x0 = IntVar(*this->_current_space, i.toInt(), i.toInt());
+    }
+    return x0;
+  }
+  
   ArrayLit* 
-  GecodeSolverInstance::arg2arrayLit(Expression* arg) {
+  GecodeSolverInstance::arg2arraylit(Expression* arg) {
     ArrayLit* a;
       if(Id* id = arg->dyn_cast<Id>()) {
           VarDecl* vd = id->decl();
@@ -573,6 +591,110 @@ namespace MiniZinc {
           throw new InternalError(ssm.str());
       }
       return a; 
+  }
+  
+  bool 
+  GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {
+    singleInt = -1;
+    if (a->length() == 0)
+        return true;
+    for (int i=a->length(); i--;) {
+        if (a->v()[i]->type().isbool()) {
+        } else if ((a->v()[i])->type().isvarint()) {
+            int idx = *(int*)resolveVar(getVarDecl(a->v()[i]));
+
+            if (_current_space->aliasBool2Int(idx) == -1) {
+                if (singleInt != -1) {
+                    return false;
+                }
+                singleInt = idx;
+            }
+        } else {
+            return false;
+        }
+    }
+    return singleInt==-1 || a->length() > 1;
+  }
+  
+#ifdef GECODE_HAS_FLOAT_VARS
+  Gecode::FloatValArgs 
+  GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
+    if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
+      std::stringstream ssm; ssm << "Invalid argument in arg2floatargs: " << *arg;
+      ssm << ". Expected Id or ArrayLit.";
+      throw InternalError(ssm.str());
+    }
+    ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
+    FloatValArgs fa(a->v().size()+offset);
+    for (int i=offset; i--;)
+        fa[i] = 0.0;
+    for (int i=a->v().size(); i--;)
+        fa[i+offset] = a->v()[i]->cast<FloatLit>()->v();
+    return fa;
+  }
+  
+  Gecode::FloatVar 
+  GecodeSolverInstance::arg2floatvar(Expression* e) {
+    FloatVar x0;
+    if (e->type().isvar()) {
+        x0 = _current_space->fv[*(int*)resolveVar(getVarDecl(e))];
+    } else {
+        FloatVal i;
+        if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
+        else if(BoolLit* bl = e->dyn_cast<BoolLit>()) i = bl->v();
+        else if(FloatLit* fl = e->dyn_cast<FloatLit>()) i = fl->v();
+        else {
+          std::stringstream ssm; ssm << "Expected bool, int or float literal instead of: " << *e;
+          throw InternalError(ssm.str());
+        }
+        x0 = FloatVar(*this->_current_space, i, i);
+    }
+    return x0;
+  }
+  
+  Gecode::FloatVarArgs 
+  GecodeSolverInstance::arg2floatvarargs(Expression* arg, int offset) {
+    ArrayLit* a = arg2arraylit(arg);
+    if (a->v().size() == 0) {
+        FloatVarArgs emptyFa(0);
+        return emptyFa;
+    }
+    FloatVarArgs fa(a->v().size()+offset);
+    for (int i=offset; i--;)
+        fa[i] = FloatVar(*this->_current_space, 0.0, 0.0);
+    for (int i=a->v().size(); i--;) {
+        Expression* e = a->v()[i];
+        if (e->type().isvar()) {
+            fa[i+offset] = _current_space->fv[*(int*)resolveVar(getVarDecl(e))];
+        } else {
+          if(FloatLit* fl = e->dyn_cast<FloatLit>()) {
+            double value = fl->v();
+            FloatVar fv(*this->_current_space, value, value);
+            fa[i+offset] = fv;
+          } else {
+            std::stringstream ssm; ssm << "Expected float literal instead of: " << *e;
+            throw InternalError(ssm.str());
+          }           
+        }
+    }
+    return fa;
+  }
+#endif
+
+  Gecode::IntConLevel 
+  GecodeSolverInstance::ann2icl(const Annotation& ann) {
+    if (!ann.isEmpty()) {
+      if (getAnnotation(ann, "val"))
+          return Gecode::ICL_VAL;
+      if (getAnnotation(ann, "domain"))
+          return Gecode::ICL_DOM;
+      if (getAnnotation(ann, "bounds") ||
+              getAnnotation(ann, "boundsR") ||
+              getAnnotation(ann, "boundsD") ||
+              getAnnotation(ann, "boundsZ"))
+          return Gecode::ICL_BND;
+    }
+    return Gecode::ICL_DEF;
   }
   
 }

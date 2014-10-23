@@ -135,21 +135,21 @@ namespace MiniZinc {
     /// Convert \a n to BoolVar
     Gecode::BoolVar arg2boolvar(Expression* e);
     /// Convert \a n to IntVar
-    Gecode::IntVar arg2IntVar(Expression* e);
+    Gecode::IntVar arg2intvar(Expression* e);
+     /// convert \a arg to an ArrayLit (throws InternalError if not possible)
+    ArrayLit* arg2arraylit(Expression* arg);  
     /// Check if \a b is array of Booleans (or has a single integer)
     bool isBoolArray(ArrayLit* a, int& singleInt);
 #ifdef GECODE_HAS_FLOAT_VARS
     /// Convert \a n to FloatValArgs
     Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
     /// Convert \a n to FloatVar
-    Gecode::FloatVar arg2FloatVar(Expression* n);
+    Gecode::FloatVar arg2floatvar(Expression* n);
     /// Convert \a n to FloatVarArgs
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);  
-    /// convert \a arg to an ArrayLit (throws InternalError if not possible)
-    ArrayLit* arg2arrayLit(Expression* arg);  
     /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
     void* resolveVar(Expression* e);
     /// TODO: copied from old SolverInterface -> do we really need this?
