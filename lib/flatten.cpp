@@ -2822,6 +2822,7 @@ namespace MiniZinc {
           if (allPar)
             alt.ti(Type::TI_PAR);
           alr->type(alt);
+          alr->flat(true);
           ka = alr;
         }
         ret.b = conj(env,b,Ctx(),elems_ee);
