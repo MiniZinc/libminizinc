@@ -407,6 +407,11 @@ namespace MiniZinc {
   
   Gecode::IntArgs 
   GecodeSolverInstance::arg2intargs(Expression* arg, int offset) {
+    if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
+      std::stringstream ssm; ssm << "Invalid argument in arg2intargs: " << *arg;
+      ssm << ". Expected Id or ArrayLit.";
+      throw InternalError(ssm.str());
+    }
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
     IntArgs ia(a->v().size()+offset);
     for (int i=offset; i--;)
@@ -420,7 +425,7 @@ namespace MiniZinc {
   Gecode::IntArgs 
   GecodeSolverInstance::arg2boolargs(Expression* arg, int offset) {
     if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
-      std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
+      std::stringstream ssm; ssm << "Invalid argument in arg2boolargs: " << *arg;
       ssm << ". Expected Id or ArrayLit.";
       throw InternalError(ssm.str());
     }
@@ -431,6 +436,119 @@ namespace MiniZinc {
     for (int i=a->v().size(); i--;)
         ia[i+offset] = a->v()[i]->cast<BoolLit>()->v();
     return ia;
+  }
+  
+  Gecode::IntSet 
+  GecodeSolverInstance::arg2intset(Expression* arg) {
+    SetLit* sl = NULL;
+    if(Id* id = arg->dyn_cast<Id>()) {
+        sl = id->decl()->e()->cast<SetLit>();
+    } else if(SetLit* s = arg->dyn_cast<SetLit>()) {
+        sl = s;
+    } else if(BinOp* b = arg->dyn_cast<BinOp>()) {
+        sl = new SetLit(arg->loc(), IntSetVal::a(getNumber<long long int>(b->lhs()),
+                                                  getNumber<long long int>(b->rhs())));
+    } else {
+        std::stringstream ssm; ssm << "Invalid argument in arg2intset: " << *arg;
+        ssm << ". Expected Id, SetLit or BinOp.";
+        throw new InternalError(ssm.str());
+    }
+    IntSet d;
+    ASTExprVec<Expression> v = sl->v();
+    Region re(*this->_current_space);
+    if(v.size() > 0) {
+        int* is = re.alloc<int>(static_cast<unsigned long int>(v.size()));
+        for(int i=0; i<v.size(); i++)
+            is[i] = v[i]->cast<IntLit>()->v().toInt();
+        d = IntSet(is, v.size());
+    } else {
+        int card = sl->isv()->card().toInt();
+        int* is = re.alloc<int>(static_cast<unsigned long int>(card));
+        int idx =0;
+        IntSetRanges isv = IntSetRanges(sl->isv());
+        for(; isv();++isv) {
+            for(int i=isv.min().toInt(); i<=isv.max().toInt();i++, idx++)
+                is[idx] = i;
+        }
+        d = IntSet(is, card);
+    }
+    return d;
+   }
+  
+  Gecode::IntVarArgs 
+  GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
+    ArrayLit* a = arg2arrayLit(arg);
+    if (a->v().size() == 0) {
+        IntVarArgs emptyIa(0);
+        return emptyIa;
+    }
+    IntVarArgs ia(a->v().size()+offset);
+    for (int i=offset; i--;)
+        ia[i] = IntVar(*this->_current_space, 0, 0);
+    for (int i=a->v().size(); i--;) {
+        Expression* e = a->v()[i];
+        int idx;
+        if (e->type().isvar()) {
+            ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
+        } else {
+            int value = e->cast<IntLit>()->v().toInt();
+            IntVar iv(*this->_current_space, value, value);
+            ia[i+offset] = iv;
+        }
+    }
+    return ia;
+  }
+  
+  Gecode::BoolVarArgs 
+  GecodeSolverInstance::arg2boolvarargs(Expression* arg, int offset, int siv) {
+    ArrayLit* a = arg2arrayLit(arg);
+    if (a->length() == 0) {
+        BoolVarArgs emptyIa(0);
+        return emptyIa;
+    }
+    BoolVarArgs ia(a->length()+offset-(siv==-1?0:1));
+    for (int i=offset; i--;)
+        ia[i] = BoolVar(*this->_current_space, 0, 0);
+    for (int i=0; i<static_cast<int>(a->length()); i++) {
+        if (i==siv)
+            continue;
+        Expression* e = a->v()[i];
+        int idx=-1;
+        if(e->type().isvar()) {
+            idx = *(int*)resolveVar(getVarDecl(e));
+            if (e->type().isbool()) {
+                ia[offset++] = _current_space->bv[idx];
+            } else if (e->type().isvarint() && _current_space->aliasBool2Int(idx) != -1) {
+                ia[offset++] = _current_space->bv[_current_space->aliasBool2Int(idx)];
+            }
+        } else {
+          if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
+            bool value = bl->v();
+            BoolVar iv(*this->_current_space, value, value);
+            ia[offset++] = iv;
+          } else {
+            std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;            
+            throw new InternalError(ssm.str());
+          }
+        }
+    }
+    return ia;
+  }
+  
+  Gecode::BoolVar 
+  GecodeSolverInstance::arg2boolvar(Expression* e) {
+    BoolVar x0;
+    if (e->type().isvar()) {
+        x0 = _current_space->bv[*(int*)resolveVar(getVarDecl(e))];
+    } else {
+      if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
+        x0 = BoolVar(*this->_current_space, bl->v(), bl->v());
+      } else {
+        std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;            
+        throw new InternalError(ssm.str());
+      }
+    }
+    return x0;
   }
   
   ArrayLit* 
@@ -456,8 +574,5 @@ namespace MiniZinc {
       }
       return a; 
   }
-  
-  
-  
   
 }
