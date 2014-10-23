@@ -759,6 +759,19 @@ namespace MiniZinc {
     Type t = al->type();
     t.dim(d);
     ret->type(t);
+    ret->flat(al->flat());
+    return ret;
+  }
+  Expression* b_array1d_list(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->dims()==1 && al->min(0)==1)
+      return al;
+    ArrayLit* ret = new ArrayLit(al->loc(), al->v());
+    Type t = al->type();
+    t.dim(1);
+    ret->type(t);
+    ret->flat(al->flat());
     return ret;
   }
   Expression* b_array1d(ASTExprVec<Expression> args) {
@@ -1288,6 +1301,13 @@ namespace MiniZinc {
       rb(m, ASTString("index_set_4of6"), t_anyarray6, b_index_set4);
       rb(m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
       rb(m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
+    }
+    {
+      std::vector<Type> t_arrayXd(1);
+      t_arrayXd[0] = Type::top(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      t_arrayXd[0] = Type::vartop(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
     }
     {
       std::vector<Type> t_arrayXd(2);
