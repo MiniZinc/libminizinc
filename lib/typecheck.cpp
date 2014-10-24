@@ -300,14 +300,20 @@ namespace MiniZinc {
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
         /// TODO: add coercion if types don't match
-        if (ty.bt() != sl.v()[i]->type().bt()) {
-          if (ty.bt() != Type::BT_UNKNOWN)
+        if (!Type::bt_subtype(sl.v()[i]->type().bt(), ty.bt())) {
+          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt()))
+            ty.bt(sl.v()[i]->type().bt());
+          else
             throw TypeError(sl.loc(),"non-uniform set literal");
-          ty.bt(sl.v()[i]->type().bt());
         }
       }
-      if (ty.bt() == Type::BT_UNKNOWN)
+      if (ty.bt() == Type::BT_UNKNOWN) {
         ty.bt(Type::BT_BOT);
+      } else {
+        for (unsigned int i=0; i<sl.v().size(); i++) {
+          sl.v()[i] = addCoercion(_model, sl.v()[i], ty)();
+        }
+      }
       sl.type(ty);
     }
     /// Visit string literal
@@ -360,8 +366,6 @@ namespace MiniZinc {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             } else {
-              /// TODO: add coercion if types don't match
-              /// Need to find common supertype first, then add all coercions
               if (Type::bt_subtype(ty.bt(), vi->type().bt())) {
                 ty.bt(vi->type().bt());
               }
