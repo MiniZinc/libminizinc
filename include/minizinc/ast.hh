@@ -1109,6 +1109,9 @@ namespace MiniZinc {
     /** \brief Compute return type given argument types \a ta
      */
     Type rtype(const std::vector<Type>& ta);
+    /** \brief Compute expected type of argument \a n given argument types \a ta
+     */
+    Type argtype(const std::vector<Expression*>& ta, int n);
   };
 
   /**

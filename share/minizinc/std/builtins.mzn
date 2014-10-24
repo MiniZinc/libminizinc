@@ -1204,6 +1204,10 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 
 function set of int: '++'(set of int: x, set of int: y) = x union y;
 
+function array[int] of $T: '++'(array[int] of $T, array[int] of $T);
+function array[int] of var $T: '++'(array[int] of var $T, array[int] of var $T);
+function array[int] of var opt $T: '++'(array[int] of var opt $T, array[int] of var opt $T);
+
 % Array operations
 function int: length(array[$T] of var opt $U);
 
@@ -1371,6 +1375,7 @@ function array[int] of int: set2array(set of int);
 
 % String operations
 
+function string: show(var opt set of $T);
 function string: show(var opt $T);
 function string: show(array[$U] of var opt $T);
 function string: show_int(int, var int);

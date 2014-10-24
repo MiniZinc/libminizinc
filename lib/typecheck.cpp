@@ -243,12 +243,26 @@ namespace MiniZinc {
   }
   
   KeepAlive addCoercion(Model* m, Expression* e, const Type& funarg_t) {
-    if (funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT)
+    if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
       return e;
     std::vector<Expression*> args(1);
     args[0] = e;
     GCLock lock;
     Call* c = NULL;
+    if (e->type().dim()==0 && funarg_t.dim()!=0) {
+      std::vector<Expression*> set2a_args(1);
+      set2a_args[0] = e;
+      Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
+      FunctionI* fi = m->matchFn(set2a);
+      assert(fi);
+      set2a->type(fi->rtype(args));
+      set2a->decl(fi);
+      e = set2a;
+    }
+    if (funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT) {
+      KeepAlive ka(e);
+      return ka;
+    }
     if (e->type().bt()==Type::BT_BOOL) {
       if (funarg_t.bt()==Type::BT_INT) {
         c = new Call(e->loc(), constants().ids.bool2int, args);
@@ -387,7 +401,7 @@ namespace MiniZinc {
           anons[i]->type(at);
         }
         for (unsigned int i=0; i<al.v().size(); i++) {
-          al.v()[i] = addCoercion(_model, al.v()[i], ty)();
+          al.v()[i] = addCoercion(_model, al.v()[i], at)();
         }
       }
       al.type(ty);
@@ -536,32 +550,20 @@ namespace MiniZinc {
     void vBinOp(BinOp& bop) {
       std::vector<Expression*> args(2);
       args[0] = bop.lhs(); args[1] = bop.rhs();
-      if (bop.op()==BOT_PLUSPLUS &&
-        bop.lhs()->type().dim()==1 && bop.rhs()->type().dim()==1 &&
-        bop.lhs()->type().st()==bop.rhs()->type().st() &&
-        (bop.lhs()->type().bt()==Type::BT_BOT || bop.rhs()->type().bt()==Type::BT_BOT ||
-         bop.lhs()->type().bt()==bop.rhs()->type().bt())) {
-        Type t = bop.lhs()->type();
-        if (bop.rhs()->type().isvar())
-          t.ti(Type::TI_VAR);
-        if (t.bt()==Type::BT_BOT)
-          t.bt(bop.rhs()->type().bt());
-        bop.type(t);
+      if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
+        bop.lhs(addCoercion(_model,bop.lhs(),fi->argtype(args, 0))());
+        bop.rhs(addCoercion(_model,bop.rhs(),fi->argtype(args, 1))());
+        args[0] = bop.lhs(); args[1] = bop.rhs();
+        bop.type(fi->rtype(args));
+        if (fi->e())
+          bop.decl(fi);
+        else
+          bop.decl(NULL);
       } else {
-        if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
-          bop.lhs(addCoercion(_model,bop.lhs(),fi->params()[0])());
-          bop.rhs(addCoercion(_model,bop.rhs(),fi->params()[1])());
-          bop.type(fi->rtype(args));
-          if (fi->e())
-            bop.decl(fi);
-          else
-            bop.decl(NULL);
-        } else {
-          throw TypeError(bop.loc(),
-            std::string("type error in operator application for `")+
-            bop.opToString().str()+"'. No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
-                          " and right-hand side type `"+bop.rhs()->type().toString()+"'");
-        }
+        throw TypeError(bop.loc(),
+          std::string("type error in operator application for `")+
+          bop.opToString().str()+"'. No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
+                        " and right-hand side type `"+bop.rhs()->type().toString()+"'");
       }
     }
     /// Visit unary operator
@@ -569,7 +571,8 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = uop.e();
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
-        uop.e(addCoercion(_model,uop.e(),fi->params()[0])());
+        uop.e(addCoercion(_model,uop.e(),fi->argtype(args,0))());
+        args[0] = uop.e();
         uop.type(fi->rtype(args));
         if (fi->e())
           uop.decl(fi);
@@ -585,7 +588,8 @@ namespace MiniZinc {
       std::copy(call.args().begin(),call.args().end(),args.begin());
       if (FunctionI* fi = _model->matchFn(call.id(),args)) {
         for (unsigned int i=0; i<args.size(); i++) {
-          call.args()[i] = addCoercion(_model,call.args()[i],fi->params()[i])();
+          args[i] = addCoercion(_model,call.args()[i],fi->argtype(args,i))();
+          call.args()[i] = args[i];
         }
         call.type(fi->rtype(args));
         call.decl(fi);

@@ -1658,6 +1658,10 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::vartop();
       rb(m, ASTString("show"), t, b_show);
+      t[0] = Type::vartop();
+      t[0].st(Type::ST_SET);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(m, ASTString("show"), t, b_show);
     }
     {
       std::vector<Type> t(2);

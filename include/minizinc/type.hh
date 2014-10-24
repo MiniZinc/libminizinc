@@ -169,23 +169,22 @@ namespace MiniZinc {
     }
   // protected:
 
-    /* We add 1 to _dim in toInt to ensure that it is non-negative
-       (and subtract it again in fromInt). */
     int toInt(void) const {
       return
-      + (static_cast<int>(_st)<<28)
+      + ((1-static_cast<int>(_st))<<28)
       + (static_cast<int>(_bt)<<24)
       + (static_cast<int>(_ti)<<21)
       + (static_cast<int>(_ot)<<20)
-      + (_dim + 1);
+      + (_dim == -1 ? 1 : (_dim == 0 ? 0 : _dim+1));
     }
     static Type fromInt(int i) {
       Type t;
-      t._st = static_cast<SetType>((i >> 28) & 0x1);
+      t._st = 1-static_cast<SetType>((i >> 28) & 0x1);
       t._bt = static_cast<BaseType>((i >> 24) & 0xF);
       t._ti = static_cast<TypeInst>((i >> 21) & 0x7);
       t._ot = static_cast<OptType>((i >> 20) & 0x1);
-      t._dim = (i & 0xFFFFF) - 1;
+      int dim = (i & 0xFFFFF);
+      t._dim =  (dim == 0 ? 0 : (dim==1 ? -1 : dim-1));
       return t;
     }
     std::string toString(void) const {
@@ -220,6 +219,10 @@ namespace MiniZinc {
   public:
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
+      if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
+          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==t._ti || _ti==TI_PAR || _ti==TI_SVAR) &&
+          (_ot==OT_PRESENT || _ot==t._ot) )
+        return true;
       // either same dimension or t has variable dimension
       if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
