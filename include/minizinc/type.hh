@@ -198,12 +198,12 @@ namespace MiniZinc {
       }
       if (_dim<0)
         oss<<"array[$_] of ";
-      if (_ot==OT_OPTIONAL) oss<<"opt ";
       switch (_ti) {
         case TI_PAR: break;
         case TI_VAR: oss<<"var "; break;
         case TI_SVAR: oss<<"svar "; break;
       }
+      if (_ot==OT_OPTIONAL) oss<<"opt ";
       if (_st==ST_SET) oss<<"set of ";
       switch (_bt) {
         case BT_INT: oss<<"int"; break;
