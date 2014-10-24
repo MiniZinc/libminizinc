@@ -1233,6 +1233,7 @@ function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U
 
 function array[int] of $V: array1d(array[$U] of $V);
 function array[int] of var $V: array1d(array[$U] of var $V);
+function array[int] of var opt $V: array1d(array[$U] of var opt $V);
 
 function array[int] of $V: array1d(set of int,
                                    array[$U] of $V);
@@ -1318,6 +1319,10 @@ function array[int,int,int,int,int,int] of var opt $V: array6d(set of int,
                                                                set of int,
                                                                array[$U] of var opt $V);
 
+function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
+function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
+function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
+
 % Coercion operations
 
 function int: ceil(float);
@@ -1334,6 +1339,31 @@ function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
 predicate int2float(var int, var float);
+
+function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
+  let {
+    array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var int: bool2int(array[$T] of var bool: x) ::promise_total =
+  let {
+    array[int] of var bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var opt int: bool2int(array[$T] of var opt bool: x) ::promise_total =
+  let {
+    array[int] of var opt bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of float: int2float(array[$T] of int: x) ::promise_total =
+  let {
+    array[int] of int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_total =
+  let {
+    array[int] of var int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
 
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);

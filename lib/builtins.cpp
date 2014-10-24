@@ -793,6 +793,33 @@ namespace MiniZinc {
     return b_arrayXd(args,6);
   }
 
+  Expression* b_arrayXd(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al0 = eval_array_lit(args[0]);
+    ArrayLit* al1 = eval_array_lit(args[1]);
+    if (al0->dims()==al1->dims()) {
+      bool sameDims = true;
+      for (unsigned int i=al0->dims(); i--;) {
+        if (al0->min(i)!=al1->min(i) || al0->max(i)!=al1->max(i)) {
+          sameDims = false;
+          break;
+        }
+      }
+      if (sameDims)
+        return al1;
+    }
+    std::vector<std::pair<int,int> > dims(al0->dims());
+    for (unsigned int i=al0->dims(); i--;) {
+      dims[i] = std::make_pair(al0->min(i), al0->max(i));
+    }
+    ArrayLit* ret = new ArrayLit(al1->loc(), al1->v(), dims);
+    Type t = al1->type();
+    t.dim(dims.size());
+    ret->type(t);
+    ret->flat(al1->flat());
+    return ret;
+  }
+  
   IntVal b_length(ASTExprVec<Expression> args) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
@@ -1308,6 +1335,8 @@ namespace MiniZinc {
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
       t_arrayXd[0] = Type::vartop(-1);
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      t_arrayXd[0] = Type::optvartop(-1);
+      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
     }
     {
       std::vector<Type> t_arrayXd(2);
@@ -1318,6 +1347,16 @@ namespace MiniZinc {
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
       t_arrayXd[1] = Type::optvartop(-1);
       rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+    }
+    {
+      std::vector<Type> t_arrayXd(2);
+      t_arrayXd[0] = Type::top(-1);
+      t_arrayXd[1] = Type::top(-1);
+      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      t_arrayXd[1] = Type::vartop(-1);
+      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      t_arrayXd[1] = Type::optvartop(-1);
+      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
     }
     {
       std::vector<Type> t_arrayXd(3);
