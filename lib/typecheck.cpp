@@ -242,6 +242,52 @@ namespace MiniZinc {
     }
   }
   
+  KeepAlive addCoercion(Model* m, Expression* e, const Type& funarg_t) {
+    if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
+      return e;
+    std::vector<Expression*> args(1);
+    args[0] = e;
+    GCLock lock;
+    Call* c = NULL;
+    if (e->type().dim()==0 && funarg_t.dim()!=0) {
+      std::vector<Expression*> set2a_args(1);
+      set2a_args[0] = e;
+      Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
+      FunctionI* fi = m->matchFn(set2a);
+      assert(fi);
+      set2a->type(fi->rtype(args));
+      set2a->decl(fi);
+      e = set2a;
+    }
+    if (funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT) {
+      KeepAlive ka(e);
+      return ka;
+    }
+    if (e->type().bt()==Type::BT_BOOL) {
+      if (funarg_t.bt()==Type::BT_INT) {
+        c = new Call(e->loc(), constants().ids.bool2int, args);
+      } else if (funarg_t.bt()==Type::BT_FLOAT) {
+        c = new Call(e->loc(), constants().ids.bool2float, args);
+      }
+    } else if (e->type().bt()==Type::BT_INT) {
+      if (funarg_t.bt()==Type::BT_FLOAT) {
+        c = new Call(e->loc(), constants().ids.int2float, args);
+      }
+    }
+    if (c) {
+      FunctionI* fi = m->matchFn(c);
+      assert(fi);
+      c->type(fi->rtype(args));
+      c->decl(fi);
+      KeepAlive ka(c);
+      return ka;
+    }
+    throw TypeError(e->loc(),"cannot determine coercion from type "+e->type().toString()+" to type "+funarg_t.toString());
+  }
+  KeepAlive addCoercion(Model* m, Expression* e, Expression* funarg) {
+    return addCoercion(m, e, funarg->type());
+  }
+  
   template<bool ignoreVarDecl>
   class Typer {
   public:
@@ -267,14 +313,21 @@ namespace MiniZinc {
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
-        if (ty.bt() != sl.v()[i]->type().bt()) {
-          if (ty.bt() != Type::BT_UNKNOWN)
+        /// TODO: add coercion if types don't match
+        if (!Type::bt_subtype(sl.v()[i]->type().bt(), ty.bt())) {
+          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt()))
+            ty.bt(sl.v()[i]->type().bt());
+          else
             throw TypeError(sl.loc(),"non-uniform set literal");
-          ty.bt(sl.v()[i]->type().bt());
         }
       }
-      if (ty.bt() == Type::BT_UNKNOWN)
+      if (ty.bt() == Type::BT_UNKNOWN) {
         ty.bt(Type::BT_BOT);
+      } else {
+        for (unsigned int i=0; i<sl.v().size(); i++) {
+          sl.v()[i] = addCoercion(_model, sl.v()[i], ty)();
+        }
+      }
       sl.type(ty);
     }
     /// Visit string literal
@@ -327,7 +380,10 @@ namespace MiniZinc {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             } else {
-              if (ty.bt() != vi->type().bt() || ty.st() != vi->type().st()) {
+              if (Type::bt_subtype(ty.bt(), vi->type().bt())) {
+                ty.bt(vi->type().bt());
+              }
+              if (!Type::bt_subtype(vi->type().bt(),ty.bt()) || ty.st() != vi->type().st()) {
                 throw TypeError(al.loc(),"non-uniform array literal");
               }
             }
@@ -344,13 +400,24 @@ namespace MiniZinc {
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
         }
+        for (unsigned int i=0; i<al.v().size(); i++) {
+          al.v()[i] = addCoercion(_model, al.v()[i], at)();
+        }
       }
       al.type(ty);
     }
     /// Visit array access
     void vArrayAccess(ArrayAccess& aa) {
-      if (aa.v()->type().dim()==0)
-        throw TypeError(aa.v()->loc(),"not an array in array access");
+      if (aa.v()->type().dim()==0) {
+        if (aa.v()->type().st() == Type::ST_SET) {
+          Type tv = aa.v()->type();
+          tv.st(Type::ST_PLAIN);
+          tv.dim(1);
+          aa.v(addCoercion(_model, aa.v(), tv)());
+        } else {
+          throw TypeError(aa.v()->loc(),"not an array in array access");
+        }
+      }
       if (aa.v()->type().dim() != aa.idx().size())
         throw TypeError(aa.v()->loc(),"array dimensions do not match");
       bool allpar=true;
@@ -360,10 +427,10 @@ namespace MiniZinc {
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().isset() || aai->type().bt() != Type::BT_INT ||
-            aai->type().dim() != 0) {
+        if (aai->type().isset() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be `int', but is `"+aai->type().toString()+"'");
         }
+        aa.idx()[i] = addCoercion(_model, aai, Type::varint())();
         if (aai->type().isopt()) {
           allpresent = false;
         }
@@ -460,7 +527,7 @@ namespace MiniZinc {
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
         }
-        if ( (!ethen->type().isbot() && ethen->type().bt() != tret.bt()) ||
+        if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
             ethen->type().st() != tret.st() ||
             ethen->type().dim() != tret.dim()) {
           throw TypeError(ethen->loc(),
@@ -468,9 +535,16 @@ namespace MiniZinc {
             ethen->type().toString()+"', but else branch has type `"+
             tret.toString()+"'");
         }
+        if (Type::bt_subtype(tret.bt(), ethen->type().bt())) {
+          tret.bt(ethen->type().bt());
+        }
         if (ethen->type().isvar()) allpar=false;
         if (ethen->type().isopt()) allpresent=false;
       }
+      for (int i=0; i<ite.size(); i++) {
+        ite.e_then(i, addCoercion(_model,ite.e_then(i), tret)());
+      }
+      ite.e_else(addCoercion(_model, ite.e_else(), tret)());
       /// TODO: perhaps extend flattener to array types, but for now throw an error
       if (varcond && tret.dim() > 0)
         throw TypeError(ite.loc(), "conditional with var condition cannot have array type");
@@ -484,30 +558,20 @@ namespace MiniZinc {
     void vBinOp(BinOp& bop) {
       std::vector<Expression*> args(2);
       args[0] = bop.lhs(); args[1] = bop.rhs();
-      if (bop.op()==BOT_PLUSPLUS &&
-        bop.lhs()->type().dim()==1 && bop.rhs()->type().dim()==1 &&
-        bop.lhs()->type().st()==bop.rhs()->type().st() &&
-        (bop.lhs()->type().bt()==Type::BT_BOT || bop.rhs()->type().bt()==Type::BT_BOT ||
-         bop.lhs()->type().bt()==bop.rhs()->type().bt())) {
-        Type t = bop.lhs()->type();
-        if (bop.rhs()->type().isvar())
-          t.ti(Type::TI_VAR);
-        if (t.bt()==Type::BT_BOT)
-          t.bt(bop.rhs()->type().bt());
-        bop.type(t);
+      if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
+        bop.lhs(addCoercion(_model,bop.lhs(),fi->argtype(args, 0))());
+        bop.rhs(addCoercion(_model,bop.rhs(),fi->argtype(args, 1))());
+        args[0] = bop.lhs(); args[1] = bop.rhs();
+        bop.type(fi->rtype(args));
+        if (fi->e())
+          bop.decl(fi);
+        else
+          bop.decl(NULL);
       } else {
-        if (FunctionI* fi = _model->matchFn(bop.opToString(),args)) {
-          bop.type(fi->rtype(args));
-          if (fi->e())
-            bop.decl(fi);
-          else
-            bop.decl(NULL);
-        } else {
-          throw TypeError(bop.loc(),
-            std::string("type error in operator application for `")+
-            bop.opToString().str()+"'. No matching operator found with left-hand side type `"+bop.lhs()->type().toString()+
-                          "' and right-hand side type `"+bop.rhs()->type().toString()+"'");
-        }
+        throw TypeError(bop.loc(),
+          std::string("type error in operator application for `")+
+          bop.opToString().str()+"'. No matching operator found with left-hand side type `"+bop.lhs()->type().toString()+
+                        "' and right-hand side type `"+bop.rhs()->type().toString()+"'");
       }
     }
     /// Visit unary operator
@@ -515,6 +579,8 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = uop.e();
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
+        uop.e(addCoercion(_model,uop.e(),fi->argtype(args,0))());
+        args[0] = uop.e();
         uop.type(fi->rtype(args));
         if (fi->e())
           uop.decl(fi);
@@ -529,6 +595,10 @@ namespace MiniZinc {
       std::vector<Expression*> args(call.args().size());
       std::copy(call.args().begin(),call.args().end(),args.begin());
       if (FunctionI* fi = _model->matchFn(call.id(),args)) {
+        for (unsigned int i=0; i<args.size(); i++) {
+          args[i] = addCoercion(_model,call.args()[i],fi->argtype(args,i))();
+          call.args()[i] = args[i];
+        }
         call.type(fi->rtype(args));
         call.decl(fi);
       } else {
@@ -560,10 +630,13 @@ namespace MiniZinc {
       if (ignoreVarDecl) {
         assert(!vd.type().isunknown());
         if (vd.e()) {
-          if (! vd.e()->type().isSubtypeOf(vd.ti()->type()))
+          if (! vd.e()->type().isSubtypeOf(vd.ti()->type())) {
             _typeErrors.push_back(TypeError(vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
                                             vd.ti()->type().toString()+"', actual `"+vd.e()->type().toString()+"'"));
+          } else {
+            vd.e(addCoercion(_model, vd.e(), vd.ti()->type())());
+          }
         }
       } else {
         vd.type(vd.ti()->type());
