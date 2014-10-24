@@ -408,8 +408,16 @@ namespace MiniZinc {
     }
     /// Visit array access
     void vArrayAccess(ArrayAccess& aa) {
-      if (aa.v()->type().dim()==0)
-        throw TypeError(aa.v()->loc(),"not an array in array access");
+      if (aa.v()->type().dim()==0) {
+        if (aa.v()->type().st() == Type::ST_SET) {
+          Type tv = aa.v()->type();
+          tv.st(Type::ST_PLAIN);
+          tv.dim(1);
+          aa.v(addCoercion(_model, aa.v(), tv)());
+        } else {
+          throw TypeError(aa.v()->loc(),"not an array in array access");
+        }
+      }
       if (aa.v()->type().dim() != aa.idx().size())
         throw TypeError(aa.v()->loc(),"array dimensions do not match");
       bool allpar=true;
