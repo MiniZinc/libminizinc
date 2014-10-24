@@ -570,8 +570,8 @@ namespace MiniZinc {
       } else {
         throw TypeError(bop.loc(),
           std::string("type error in operator application for `")+
-          bop.opToString().str()+"'. No matching operator found with left-hand side type "+bop.lhs()->type().toString()+
-                        " and right-hand side type `"+bop.rhs()->type().toString()+"'");
+          bop.opToString().str()+"'. No matching operator found with left-hand side type `"+bop.lhs()->type().toString()+
+                        "' and right-hand side type `"+bop.rhs()->type().toString()+"'");
       }
     }
     /// Visit unary operator
@@ -603,13 +603,13 @@ namespace MiniZinc {
         call.decl(fi);
       } else {
         std::ostringstream oss;
-        oss << "no function or predicate with this signature found: ";
+        oss << "no function or predicate with this signature found: `";
         oss << call.id() << "(";
         for (unsigned int i=0; i<call.args().size(); i++) {
           oss << call.args()[i]->type().toString();
           if (i<call.args().size()-1) oss << ",";
         }
-        oss << ")";
+        oss << ")'";
         throw TypeError(call.loc(), oss.str());
       }
     }
