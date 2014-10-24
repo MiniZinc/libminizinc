@@ -460,6 +460,10 @@ namespace MiniZinc {
     int length(void) const;
     /// Set dimension vector
     void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Check if this array was produced by flattening
+    bool flat(void) const { return _flag_1; }
+    /// Set whether this array was produced by flattening
+    void flat(bool b) { _flag_1 = b; }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
