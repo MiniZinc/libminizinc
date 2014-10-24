@@ -154,6 +154,10 @@ namespace MiniZinc {
     void* resolveVar(Expression* e);
     /// TODO: copied from old SolverInterface -> do we really need this?
     VarDecl* getVarDecl(Expression* expr);
+    /// Returns the VarDecl of \a aa 
+    VarDecl* resolveArrayAccess(ArrayAccess* aa);
+    /// Returns the VarDecl of \a array at index \a index
+    VarDecl* resolveArrayAccess(VarDecl* array, int index);
     
   protected:
     void registerConstraints(void);

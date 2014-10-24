@@ -697,4 +697,40 @@ namespace MiniZinc {
     return Gecode::ICL_DEF;
   }
   
+  VarDecl* 
+  GecodeSolverInstance::getVarDecl(Expression* expr) {
+    VarDecl* vd=NULL;
+    if( (vd = expr->dyn_cast<VarDecl>()) ) {
+        vd = expr->cast<VarDecl>();
+    } else if(Id* id = expr->dyn_cast<Id>()) {
+        vd = id->decl();
+    } else if(ArrayAccess* aa = expr->dyn_cast<ArrayAccess>()) {
+        vd = resolveArrayAccess(aa);
+    } else {
+        std::stringstream ssm; ssm << "Can not extract vardecl from " << *expr; 
+        throw new InternalError(ssm.str());
+    }
+    return vd;
+  }
+  
+  VarDecl* 
+  GecodeSolverInstance::resolveArrayAccess(ArrayAccess* aa) {
+    VarDecl* vd = aa->v()->cast<Id>()->decl();
+    int idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
+    return resolveArrayAccess(vd, idx);
+  }
+  
+  VarDecl* 
+  GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, int index) {
+    UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* >::iterator it = arrayMap.find(vd);
+    if(it != arrayMap.end()) {
+        std::vector<Expression*>* exprs = it->second;
+        Expression* expr = (*exprs)[index-1];
+        return expr->cast<VarDecl>();
+    } else {
+        std::stringstream ssm; ssm << "Unknown array: " << vd->id();
+        throw new InternalError(ssm.str());
+    }
+  }
+  
 }
