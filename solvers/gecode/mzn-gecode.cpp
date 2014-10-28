@@ -363,12 +363,16 @@ int main(int argc, char** argv) {
               Options options;
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
+              std::cout << "DEBUG: finished processing flatzinc" << std::endl;
               SolverInstance::Status status = gecode.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
                 if (status==SolverInstance::OPT)
                   std::cout << "==========\n";
+              }
+              else if(status == SolverInstance::ERROR) {
+                std::cout << "DEBUG: solving finished with error." << std::endl;
               }
             }
             

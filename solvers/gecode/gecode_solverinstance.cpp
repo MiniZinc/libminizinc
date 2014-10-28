@@ -24,7 +24,7 @@ namespace MiniZinc {
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
      : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL) {
        registerConstraints(); 
-       processFlatZinc();
+       // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
      }
   
     GecodeSolverInstance::~GecodeSolverInstance(void) {
@@ -235,8 +235,12 @@ namespace MiniZinc {
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
-        if (it->e()->type().dim() != 0) 
-          throw InternalError("Error. Expected non-array variable in flat model");          
+        if (it->e()->type().dim() != 0) {
+          //std::stringstream ssm; ssm << "Expected non-array variable in flat model instead of " << *(it->e());
+          //throw InternalError(ssm.str());
+          // TODO: is it OK to just ignore the arrays, since they are defined as single variables?
+          continue;
+        }
         MiniZinc::TypeInst* ti = it->e()->ti();  
         bool isDefined, isIntroduced = false;
         switch(ti->type().bt()) {
@@ -383,6 +387,21 @@ namespace MiniZinc {
         _constraintRegistry.post(c);
       }
     }
+    
+    std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
+              << "iv has " << _current_space->iv.size() << " variables " << std::endl
+              << "bv has " << _current_space->bv.size() << " variables " << std::endl
+              << "fv has " << _current_space->fv.size() << " variables " << std::endl
+              << "sv has " << _current_space->sv.size() << " variables " << std::endl;
+    std::cout << "DEBUG: Checking status of space..." << std::endl;
+    Gecode::SpaceStatus status = _current_space->status();
+    if(status == Gecode::SpaceStatus::SS_FAILED)
+      std::cout << "DEBUG: space failed." << std::endl;
+    else if(status == Gecode::SpaceStatus::SS_BRANCH)
+      std::cout << "DEBUG: space ready to be branched." << std::endl;
+    else if(status == Gecode::SpaceStatus::SS_SOLVED)
+      std::cout << "DEBUG: space is already solved." << std::endl;
+    // TODO: Check why the state is already solved in all testcases...
   }
   
   Gecode::IntArgs 
