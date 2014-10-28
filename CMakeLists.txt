@@ -288,7 +288,15 @@ if(HAS_GECODE)
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport)
 
-  INSTALL(TARGETS minizinc_gecode
+  add_executable(mzn-gecode
+    solvers/gecode/mzn-gecode.cpp
+  )
+  target_link_libraries(mzn-gecode minizinc_gecode minizinc 
+    gecodedriver gecodesearch gecodeminimodel
+    gecodefloat gecodeint gecodeset
+    gecodekernel gecodesupport)
+
+  INSTALL(TARGETS minizinc_gecode mzn-gecode
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)

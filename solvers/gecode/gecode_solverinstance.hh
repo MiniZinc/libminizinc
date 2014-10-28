@@ -138,11 +138,12 @@ namespace MiniZinc {
     /// standard constructor
     FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
             setVarCount(-1), needAuxVars(true) {} ; 
+    ~FznSpace(void) {} // TODO: more sophisticated!
             
-    /// Link integer variable \a iv to Boolean variable \a bv TODO: implement
-    void aliasBool2Int(Gecode::IntVar iv, Gecode::BoolVar bv);
-    /// Return linked Boolean variable for integer variable \a iv TODO: copied from old interface, do we still need this?
-    int aliasBool2Int(int iv);
+    /// Link integer variable \a iv to Boolean variable \a bv 
+    void aliasBool2Int(Gecode::IntVar iv, Gecode::BoolVar bv) {
+      assert(false); // TODO: implement
+    }
   
   protected:
     /// Implement optimization
@@ -175,6 +176,8 @@ namespace MiniZinc {
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual void resetSolver(void);
+    
+    virtual Expression* getSolutionValue(Id* id);
     
     Gecode::Space* getGecodeModel(void);
     

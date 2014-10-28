@@ -20,7 +20,7 @@
 using namespace Gecode;
 
 namespace MiniZinc {
- 
+  
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
      : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL) {
        registerConstraints(); 
@@ -752,4 +752,29 @@ namespace MiniZinc {
     }
   }
   
+  SolverInstance::Status 
+  GecodeSolverInstance::next(void) {
+    assert(false); // TODO: implement
+  }
+  
+  void 
+  GecodeSolverInstance::resetSolver(void) {
+    assert(false); // TODO: implement
+  }
+  
+  Expression* 
+  GecodeSolverInstance::getSolutionValue(Id* id) {
+    assert(false); // TODO: implement
+  }
+  
+  void 
+  FznSpace::constrain(const Space& s) {
+    assert(false); // TODO: implement
+  }
+  
+  Gecode::Space* 
+  FznSpace::copy(bool share) {
+    assert(false); // TODO implement
+    return this;
+  }
 }
