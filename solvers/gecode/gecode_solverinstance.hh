@@ -29,11 +29,68 @@
 #include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
- 
+  
+  class GecodeVariable {
+  public:
+    enum vartype {BOOL_TYPE,FLOAT_TYPE,INT_TYPE,SET_TYPE};
+  protected:
+    Gecode::VarImpBase* _var;
+    vartype _t;
+  public:
+    GecodeVariable(Gecode::IntVar x) : _var(x.varimp()), _t(INT_TYPE) {}
+    GecodeVariable(Gecode::BoolVar x) : _var(x.varimp()), _t(BOOL_TYPE) {}
+    GecodeVariable(Gecode::FloatVar x) : _var(x.varimp()), _t(FLOAT_TYPE) {}
+    GecodeVariable(Gecode::SetVar x) : _var(x.varimp()), _t(SET_TYPE) {}
+    
+    Gecode::IntVar intVar(void) {
+      assert(_t == INT_TYPE);
+      Gecode::Int::IntView iv(static_cast<Gecode::Int::IntVarImp*>(_var));
+      return Gecode::IntVar(iv);
+    }
+    
+    Gecode::BoolVar boolVar(void) {
+      assert(_t == BOOL_TYPE);
+      Gecode::Int::BoolView bv(static_cast<Gecode::Int::BoolVarImp*>(_var));
+      return Gecode::BoolVar(bv);
+    }
+    
+    Gecode::FloatVar floatVar(void) {
+      assert(_t == FLOAT_TYPE);
+      Gecode::Float::FloatView fv(static_cast<Gecode::Float::FloatVarImp*>(_var));
+      return Gecode::FloatVar(fv);
+    }
+    
+    Gecode::SetVar setVar(void) {
+      assert(_t == FLOAT_TYPE);
+      Gecode::Set::SetView sv(static_cast<Gecode::Set::SetVarImp*>(_var));
+      return Gecode::SetVar(sv);
+    }
+    
+    bool isint(void) const {
+      return _t == INT_TYPE;
+    }
+    
+    bool isbool(void) const {
+      return _t == BOOL_TYPE;
+    }
+    
+    bool isfloat(void) const {
+      return _t == FLOAT_TYPE;
+    }
+    
+    bool isset(void) const {
+      return _t == SET_TYPE;
+    }
+      
+    vartype t(void) const {
+      return _t;
+    }
+  };
+  
   
   class GecodeSolver {
   public:
-    typedef Gecode::Var Variable;
+    typedef GecodeVariable Variable;
     typedef MiniZinc::Statistics Statistics;
   };
   
@@ -82,8 +139,8 @@ namespace MiniZinc {
     FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
             setVarCount(-1), needAuxVars(true) {} ; 
             
-    /// Link integer variable \a iv to Boolean variable \a bv TODO: copied from old interface, do we still need this?
-    void aliasBool2Int(int iv, int bv);
+    /// Link integer variable \a iv to Boolean variable \a bv TODO: implement
+    void aliasBool2Int(Gecode::IntVar iv, Gecode::BoolVar bv);
     /// Return linked Boolean variable for integer variable \a iv TODO: copied from old interface, do we still need this?
     int aliasBool2Int(int iv);
   
@@ -150,14 +207,17 @@ namespace MiniZinc {
 #endif
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);  
-    /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
-    void* resolveVar(Expression* e);
-    /// TODO: copied from old SolverInterface -> do we really need this?
+    
+    /// Returns the VarDecl of \a expr and throws an InternalError if not possible
     VarDecl* getVarDecl(Expression* expr);
     /// Returns the VarDecl of \a aa 
     VarDecl* resolveArrayAccess(ArrayAccess* aa);
     /// Returns the VarDecl of \a array at index \a index
     VarDecl* resolveArrayAccess(VarDecl* array, int index);
+    
+    /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
+    GecodeSolver::Variable resolveVar(Expression* e);       
+    
     
   protected:
     void registerConstraints(void);

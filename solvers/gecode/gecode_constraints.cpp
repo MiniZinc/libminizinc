@@ -23,7 +23,7 @@ namespace MiniZinc {
             GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
             IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
             IntConLevel icl = gi.ann2icl(call->ann());
-            distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? ICL_DOM : icl);
+            distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
         }
 
         void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
@@ -274,7 +274,7 @@ namespace MiniZinc {
             IntArgs ia = s.arg2intargs(call->args()[0]);
             BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
             if (call->args()[2]->type().isvarint())
-                linear(*s._current_space, ia, iv, irt, s._current_space->iv[*(int*)s.resolveVar(call->args()[2]->cast<Id>()->decl())], s.ann2icl(ann));
+                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(), s.ann2icl(ann));
             else
                 linear(*s._current_space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
         }
@@ -291,7 +291,7 @@ namespace MiniZinc {
             IntArgs ia = s.arg2intargs(call->args()[0]);
             BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
             if (call->args()[2]->type().isvarint())
-                linear(*s._current_space, ia, iv, irt, s._current_space->iv[*(int*)s.resolveVar(call->args()[2]->cast<Id>()->decl())],
+                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(),
                         Reify(s.arg2boolvar(call->args()[3]), rm), 
                         s.ann2icl(ann));
             else
@@ -517,7 +517,7 @@ namespace MiniZinc {
         if (!call->args()[2]->type().isvar() && call->args()[2]->type().isbool()) { \
             rel(*gi._current_space, b0, op, b1, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann)); \
         } else { \
-            rel(*gi._current_space, b0, op, b1, gi._current_space->bv[*(int*)gi.resolveVar(gi.getVarDecl(call->args()[2]))], gi.ann2icl(ann)); \
+            rel(*gi._current_space, b0, op, b1, gi.resolveVar(gi.getVarDecl(call->args()[2])).boolVar(), gi.ann2icl(ann)); \
         }
 
 
@@ -528,7 +528,7 @@ namespace MiniZinc {
         } else if (!call->args()[1]->type().isvar() && call->args()[1]->type().isbool()) { \
             rel(*gi._current_space, op, bv, call->args()[1]->cast<BoolLit>()->v(), gi.ann2icl(ann)); \
         } else { \
-            rel(*gi._current_space, op, bv, gi._current_space->bv[*(int*)gi.resolveVar(gi.getVarDecl(call->args()[1]))], gi.ann2icl(ann)); \
+            rel(*gi._current_space, op, bv, gi.resolveVar(gi.getVarDecl(call->args()[1])).boolVar(), gi.ann2icl(ann)); \
         }
 
         void p_bool_or(SolverInstanceBase& s, const Call* call) {
@@ -644,7 +644,7 @@ namespace MiniZinc {
             if (call->args()[2]->type().isbool()) {
                 rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann));
             } else {
-                rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, gi._current_space->bv[*(int*)gi.resolveVar(call->args()[2]->cast<Id>()->decl())], gi.ann2icl(ann));
+                rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, gi.resolveVar(call->args()[2]->cast<Id>()->decl()).boolVar(), gi.ann2icl(ann));
             }
         }
         void p_bool_r_imp(SolverInstanceBase& s, const Call* call) {
@@ -695,8 +695,8 @@ namespace MiniZinc {
             BoolVar x0 = gi.arg2boolvar(call->args()[0]);
             IntVar x1 = gi.arg2intvar(call->args()[1]);
             if (call->args()[0]->type().isvarbool() && call->args()[0]->type().isvarint()) { // TODO: bug? 
-                gi._current_space->aliasBool2Int(*(int*)gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
-                        *(int*)gi.resolveVar(call->args()[0]->cast<Id>()->decl()));
+                gi._current_space->aliasBool2Int(gi.resolveVar(call->args()[1]->cast<Id>()->decl()).intVar(),
+                        gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());
             }
             channel(*gi._current_space, x0, x1, gi.ann2icl(ann));
         }
