@@ -242,7 +242,7 @@ namespace MiniZinc {
         switch(ti->type().bt()) {
           
           case Type::BT_INT:            
-            if(it->e()->e()) { // if there is no initialisation expression
+            if(!it->e()->e()) { // if there is no initialisation expression
                 Expression* domain = ti->domain();                
                 if(domain) {
                     if(domain->isa<SetLit>()) {
@@ -266,7 +266,7 @@ namespace MiniZinc {
                     _variableMap.insert(it->e()->id(), GecodeVariable(intVar));
                 }
             } else { // there is an initialisation expression
-                Expression* init = it->e()->e();
+                Expression* init = it->e()->e();                
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
                    // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];                                      
                    GecodeVariable var = resolveVar(init);
@@ -291,7 +291,7 @@ namespace MiniZinc {
           case Type::BT_BOOL: 
           {
             double lb=0, ub=1;
-            if(it->e()->e() == NULL) { // there is NO initialisation expression
+            if(!it->e()->e()) { // there is NO initialisation expression
                 Expression* domain = ti->domain();
                 if(domain) {                  
                     std::pair<double,double> bounds = getIntBounds(domain); 
