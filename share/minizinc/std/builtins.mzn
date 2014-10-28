@@ -924,13 +924,9 @@ function     float: product(array[$T] of     float);
 function var float: product(array[$T] of var float);
 
 function     $T: min(    $T,     $T);
-function var $T: min(var $T, var $T);
-function     $T: min(array[$U] of     $T);
-function var $T: min(array[$U] of var $T);
+function     $T: min(array[$U] of     par $T);
 function     $T: max(    $T,     $T);
-function var $T: max(var $T, var $T);
 function     $T: max(array[$U] of     $T);
-function var $T: max(array[$U] of var $T);
 function int: min(set of int);
 function int: max(set of int);
 
@@ -1208,6 +1204,10 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 
 function set of int: '++'(set of int: x, set of int: y) = x union y;
 
+function array[int] of $T: '++'(array[int] of $T, array[int] of $T);
+function array[int] of var $T: '++'(array[int] of var $T, array[int] of var $T);
+function array[int] of var opt $T: '++'(array[int] of var opt $T, array[int] of var opt $T);
+
 % Array operations
 function int: length(array[$T] of var opt $U);
 
@@ -1237,6 +1237,7 @@ function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U
 
 function array[int] of $V: array1d(array[$U] of $V);
 function array[int] of var $V: array1d(array[$U] of var $V);
+function array[int] of var opt $V: array1d(array[$U] of var opt $V);
 
 function array[int] of $V: array1d(set of int,
                                    array[$U] of $V);
@@ -1322,6 +1323,10 @@ function array[int,int,int,int,int,int] of var opt $V: array6d(set of int,
                                                                set of int,
                                                                array[$U] of var opt $V);
 
+function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
+function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
+function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
+
 % Coercion operations
 
 function int: ceil(float);
@@ -1329,12 +1334,40 @@ function int: floor(float);
 function int: round(float);
 
 function int: bool2int(bool);
+function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
 function var int: bool2int(var bool);
+function array[int] of var int: bool2int(array[int] of var bool);
+function var float: bool2float(var bool: b) = int2float(bool2int(b));
 function float: int2float(int);
 function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
 predicate int2float(var int, var float);
+
+function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
+  let {
+    array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var int: bool2int(array[$T] of var bool: x) ::promise_total =
+  let {
+    array[int] of var bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var opt int: bool2int(array[$T] of var opt bool: x) ::promise_total =
+  let {
+    array[int] of var opt bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of float: int2float(array[$T] of int: x) ::promise_total =
+  let {
+    array[int] of int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_total =
+  let {
+    array[int] of var int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
 
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
@@ -1342,6 +1375,7 @@ function array[int] of int: set2array(set of int);
 
 % String operations
 
+function string: show(var opt set of $T);
 function string: show(var opt $T);
 function string: show(array[$U] of var opt $T);
 function string: show_int(int, var int);

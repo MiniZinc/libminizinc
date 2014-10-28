@@ -710,6 +710,31 @@ namespace MiniZinc {
     return return_type(this, ta);
   }
 
+  Type
+  FunctionI::argtype(const std::vector<Expression *>& ta, int n) {
+    TypeInst* tii = params()[n]->ti();
+    if (tii->domain() && tii->domain()->isa<TIId>()) {
+      Type ty = ta[n]->type();
+      ty.st(tii->type().st());
+      ty.dim(tii->type().dim());
+      ASTString tv = tii->domain()->cast<TIId>()->v();
+      for (unsigned int i=0; i<params().size(); i++) {
+        if (params()[i]->ti()->domain() && params()[i]->ti()->domain()->isa<TIId>() &&
+            params()[i]->ti()->domain()->cast<TIId>()->v() == tv) {
+          Type toCheck = ta[i]->type();
+          toCheck.st(tii->type().st());
+          toCheck.dim(tii->type().dim());
+          if (toCheck != ty && ty.isSubtypeOf(toCheck)) {
+            ty = toCheck;
+          }
+        }
+      }
+      return ty;
+    } else {
+      return tii->type();
+    }
+  }
+  
   bool
   Expression::equal_internal(const Expression* e0, const Expression* e1) {
     switch (e0->eid()) {
@@ -905,6 +930,8 @@ namespace MiniZinc {
     ids.exists = ASTString("exists");
     ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
+    ids.int2float = ASTString("int2float");
+    ids.bool2float = ASTString("bool2float");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
 
@@ -1028,6 +1055,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.clause));
     v.push_back(new StringLit(Location(),ids.bool2int));
+    v.push_back(new StringLit(Location(),ids.int2float));
+    v.push_back(new StringLit(Location(),ids.bool2float));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.element));
