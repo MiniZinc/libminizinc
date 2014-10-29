@@ -1393,6 +1393,18 @@ function string: '++'(string, string);
 function string: concat(array[$T] of string);
 function string: join(string, array[$T] of string);
 
+function string: format(var opt $T: x) = show(x);
+function string: format(var opt set of $T: x) = show(x);
+function string: format(array[$U] of var opt $T: x) = show(x);
+
+function string: format(int: width, int: prec, var opt $T);
+function string: format(int: width, int: prec, var opt set of $T);
+function string: format(int: width, int: prec, array[$U] of var opt $T);
+
+function string: format(int: width, var opt $T);
+function string: format(int: width, var opt set of $T);
+function string: format(int: width, array[$U] of var opt $T);
+
 % Bound and domain operations
 
 function int: lb(var int);
