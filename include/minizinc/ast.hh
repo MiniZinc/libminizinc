@@ -460,6 +460,10 @@ namespace MiniZinc {
     int length(void) const;
     /// Set dimension vector
     void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Check if this array was produced by flattening
+    bool flat(void) const { return _flag_1; }
+    /// Set whether this array was produced by flattening
+    void flat(bool b) { _flag_1 = b; }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -593,6 +597,8 @@ namespace MiniZinc {
     const Expression* e_if(int i) const { return _e_if_then[2*i]; }
     const Expression* e_then(int i) const { return _e_if_then[2*i+1]; }
     const Expression* e_else(void) const { return _e_else; }
+    void e_then(int i, Expression* e) { _e_if_then[2*i+1] = e; }
+    void e_else(Expression* e) { _e_else = e; }
     /// Recompute hash value
     void rehash(void);
     /// Re-construct (used for copying)
@@ -1103,6 +1109,9 @@ namespace MiniZinc {
     /** \brief Compute return type given argument types \a ta
      */
     Type rtype(const std::vector<Type>& ta);
+    /** \brief Compute expected type of argument \a n given argument types \a ta
+     */
+    Type argtype(const std::vector<Expression*>& ta, int n);
   };
 
   /**
@@ -1184,6 +1193,8 @@ namespace MiniZinc {
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
+        ASTString int2float;
+        ASTString bool2float;
         ASTString assert;
         ASTString trace;
 

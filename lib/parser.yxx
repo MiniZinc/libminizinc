@@ -1102,7 +1102,13 @@ expr_atom_head :
     | MZN_ABSENT
       { $$=constants().absent; }
     | set_literal
+    | set_literal array_access_tail
+      { $$=new ArrayAccess(@$, $1, *$2);
+        delete $2; }
     | set_comp
+    | set_comp array_access_tail
+      { $$=new ArrayAccess(@$, $1, *$2);
+        delete $2; }
     | simple_array_literal
     | simple_array_literal array_access_tail
       { $$=new ArrayAccess(@$, $1, *$2);

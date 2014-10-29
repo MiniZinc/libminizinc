@@ -174,7 +174,7 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 function var int: element_t(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    constraint array_var_int_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_int_element((idx-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
   } in r;
 
 function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_total =
@@ -183,7 +183,7 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_int_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_int_element((idx2-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
@@ -320,7 +320,7 @@ function var int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4
 function var float: element_t(var int: idx, array[int] of var float: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    constraint array_var_float_element((idx-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_float_element((idx-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
   } in r;
 
 function var float: element_mt(var int: idx, array[int] of var float: x) :: promise_total =
@@ -329,7 +329,7 @@ function var float: element_mt(var int: idx, array[int] of var float: x) :: prom
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_float_element((idx2-(min(index_set(x))-1))::domain,[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_float_element((idx2-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
   } in r;
 
 function var float: element(var int: idx, array[int] of var float: x) =
@@ -468,7 +468,7 @@ function var float: element(int: idx1, var int: idx2, var int: idx3, var int: id
 function var set of int: element_t(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
-    constraint array_var_set_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_set_element(idx-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
   } in r;
 
 function var set of int: element_mt(var int: idx, array[int] of var set of int: x) :: promise_total =
@@ -477,7 +477,7 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_set_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_set_element(idx2-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
   } in r;
 
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
@@ -614,7 +614,7 @@ function var set of int: element(int: idx1, var int: idx2, var int: idx3, var in
 function var bool: element_t(var int: idx, array[int] of var bool: x) :: promise_total =
   let {
     var bool: r ::is_defined_var;
-    constraint array_var_bool_element(idx-(min(index_set(x))-1),[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_bool_element(idx-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
   } in r;
 
 function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promise_total =
@@ -623,7 +623,7 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_bool_element(idx2-(min(index_set(x))-1),[x[i] | i in index_set(x)],r) ::defines_var(r);
+    constraint array_var_bool_element(idx2-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
   } in r;
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
@@ -924,13 +924,9 @@ function     float: product(array[$T] of     float);
 function var float: product(array[$T] of var float);
 
 function     $T: min(    $T,     $T);
-function var $T: min(var $T, var $T);
-function     $T: min(array[$U] of     $T);
-function var $T: min(array[$U] of var $T);
+function     $T: min(array[$U] of     par $T);
 function     $T: max(    $T,     $T);
-function var $T: max(var $T, var $T);
 function     $T: max(array[$U] of     $T);
-function var $T: max(array[$U] of var $T);
 function int: min(set of int);
 function int: max(set of int);
 
@@ -1208,6 +1204,10 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 
 function set of int: '++'(set of int: x, set of int: y) = x union y;
 
+function array[int] of $T: '++'(array[int] of $T, array[int] of $T);
+function array[int] of var $T: '++'(array[int] of var $T, array[int] of var $T);
+function array[int] of var opt $T: '++'(array[int] of var opt $T, array[int] of var opt $T);
+
 % Array operations
 function int: length(array[$T] of var opt $U);
 
@@ -1234,6 +1234,10 @@ function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U
 function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U);
 function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U);
 function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U);
+
+function array[int] of $V: array1d(array[$U] of $V);
+function array[int] of var $V: array1d(array[$U] of var $V);
+function array[int] of var opt $V: array1d(array[$U] of var opt $V);
 
 function array[int] of $V: array1d(set of int,
                                    array[$U] of $V);
@@ -1319,6 +1323,10 @@ function array[int,int,int,int,int,int] of var opt $V: array6d(set of int,
                                                                set of int,
                                                                array[$U] of var opt $V);
 
+function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
+function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
+function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
+
 % Coercion operations
 
 function int: ceil(float);
@@ -1326,12 +1334,40 @@ function int: floor(float);
 function int: round(float);
 
 function int: bool2int(bool);
+function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
 function var int: bool2int(var bool);
+function array[int] of var int: bool2int(array[int] of var bool);
+function var float: bool2float(var bool: b) = int2float(bool2int(b));
 function float: int2float(int);
-function var float: int2float(var int: x) =
+function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
 predicate int2float(var int, var float);
+
+function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
+  let {
+    array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var int: bool2int(array[$T] of var bool: x) ::promise_total =
+  let {
+    array[int] of var bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var opt int: bool2int(array[$T] of var opt bool: x) ::promise_total =
+  let {
+    array[int] of var opt bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of float: int2float(array[$T] of int: x) ::promise_total =
+  let {
+    array[int] of int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
+
+function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_total =
+  let {
+    array[int] of var int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
 
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
@@ -1339,6 +1375,7 @@ function array[int] of int: set2array(set of int);
 
 % String operations
 
+function string: show(var opt set of $T);
 function string: show(var opt $T);
 function string: show(array[$U] of var opt $T);
 function string: show_int(int, var int);

@@ -220,6 +220,13 @@ function var int : deopt(var opt int : x) ::promise_total =
     constraint (x = reverse_map(b,dx)) :: is_reverse_map;
   } in dx;
 
+function var opt int: bool2int(var opt bool: x) ::promise_total =
+  let {
+    var opt 0..1: xi;
+    constraint absent(xi)=absent(x);
+    constraint deopt(xi)=bool2int(deopt(x));
+  } in xi;
+
 predicate int_eq(var opt int : x, var opt int : y) =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
