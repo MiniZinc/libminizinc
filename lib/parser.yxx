@@ -493,7 +493,7 @@ namespace MiniZinc {
 
 %token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
 %token <dValue> MZN_FLOAT_LITERAL
-%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_TI_IDENTIFIER MZN_DOC_COMMENT
+%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_STRING_QUOTE_START MZN_STRING_QUOTE_MID MZN_STRING_QUOTE_END MZN_TI_IDENTIFIER MZN_DOC_COMMENT
 
 %token MZN_VAR MZN_PAR MZN_SVAR
 
@@ -542,7 +542,7 @@ namespace MiniZinc {
 %token MZN_RIGHT_BRACKET
 %token MZN_RIGHT_2D_BRACKET
 
-%token UNKNOWN_CHAR
+%token INVALID_CHAR
 
 // Used to signal an error when parsing a MiniZinc file
 // that contains identifiers starting with _
@@ -586,7 +586,7 @@ namespace MiniZinc {
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
 %type <expression> expr expr_atom_head
-%type <expression> set_expr
+%type <expression> set_expr string_expr string_quote_rest
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
 %type <expression_v> expr_list expr_list_head array_access_tail elseif_list let_vardecl_item_list
@@ -1097,8 +1097,7 @@ expr_atom_head :
       { $$=new IntLit(@$, IntVal::infinity); }
     | MZN_FLOAT_LITERAL
       { $$=new FloatLit(@$, $1); }
-    | MZN_STRING_LITERAL
-      { $$=new StringLit(@$, $1); free($1); }
+    | string_expr
     | MZN_ABSENT
       { $$=constants().absent; }
     | set_literal
@@ -1130,6 +1129,27 @@ expr_atom_head :
     | call_expr array_access_tail
       { $$=new ArrayAccess(@$, $1, *$2);
         delete $2; }
+
+string_expr:
+      MZN_STRING_LITERAL
+      { $$=new StringLit(@$, $1); free($1); }
+    | MZN_STRING_QUOTE_START string_quote_rest
+      { $$=new BinOp(@$, new StringLit(@$, $1), BOT_PLUSPLUS, $2);
+        free($1);
+      }
+
+string_quote_rest:
+      expr_list_head MZN_STRING_QUOTE_END
+      { $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS, new StringLit(@$,$2));
+        free($2);
+        delete $1;
+      }
+    | expr_list_head MZN_STRING_QUOTE_MID string_quote_rest
+      { $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS,
+                     new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+        free($2);
+        delete $1;
+      }
 
 array_access_tail :
       MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET

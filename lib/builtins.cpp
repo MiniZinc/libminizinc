@@ -1043,15 +1043,14 @@ namespace MiniZinc {
     return al;
   }
   
-  std::string b_show(ASTExprVec<Expression> args) {
-    assert(args.size()==1);
+  std::string show(Expression* e) {
     std::ostringstream oss;
     GCLock lock;
-    if (args[0]->type().isvar()) {
+    if (e->type().isvar()) {
       Printer p(oss,0,false);
-      p.print(args[0]);
+      p.print(e);
     } else {
-      Expression* e = eval_par(args[0]);
+      e = eval_par(e);
       if (StringLit* sl = e->dyn_cast<StringLit>()) {
         return sl->v().str();
       }
@@ -1070,7 +1069,78 @@ namespace MiniZinc {
     }
     return oss.str();
   }
-
+  std::string b_show(ASTExprVec<Expression> args) {
+    return show(args[0]);
+  }
+  
+  std::string b_format(ASTExprVec<Expression> args) {
+    int width = 0;
+    int prec = -1;
+    GCLock lock;
+    Expression* e;
+    if (args.size()>1) {
+      width = eval_int(args[0]).toInt();
+      if (args.size()==2) {
+        e = eval_par(args[1]);
+      } else {
+        assert(args.size()==3);
+        prec = eval_int(args[1]).toInt();
+        e = eval_par(args[2]);
+      }
+    } else {
+      assert(args.size()==1);
+      return show(args[0]);
+    }
+    if (e->type() == Type::parint()) {
+      long long int i = eval_int(e).toInt();
+      std::ostringstream format;
+      format << "%";
+      if (width != 0)
+        format << width;
+      if (prec != -1)
+        format << "." << prec;
+      format << "i";
+      char* ret_buf;
+      (void) asprintf(&ret_buf, format.str().c_str(), i);
+      std::string ret(ret_buf);
+      free(ret_buf);
+      return ret;
+    } else if (e->type() == Type::parfloat()) {
+      FloatVal i = eval_float(e);
+      std::ostringstream format;
+      format << "%";
+      if (width != 0)
+        format << width;
+      if (prec != -1)
+        format << "." << prec;
+      format << "f";
+      char* ret_buf;
+      (void) asprintf(&ret_buf, format.str().c_str(), i);
+      std::string ret(ret_buf);
+      free(ret_buf);
+      return ret;
+    } else {
+      std::string s = show(e);
+      if (prec >= 0 && prec < s.size())
+        s = s.substr(0,prec);
+      std::ostringstream oss;
+      if (s.size() < std::abs(width)) {
+        int addLeft = width < 0 ? 0 : (width - s.size());
+        if (addLeft < 0) addLeft = 0;
+        int addRight = width < 0 ? (-width-s.size()) : 0;
+        if (addRight < 0) addRight = 0;
+        for (int i=addLeft; i--;)
+          oss << " ";
+        oss << s;
+        for (int i=addRight; i--;)
+          oss << " ";
+        return oss.str();
+      } else {
+        return s;
+      }
+    }
+  }
+  
   std::string b_show_int(ASTExprVec<Expression> args) {
     assert(args.size()==2);
     GCLock lock;
@@ -1662,6 +1732,32 @@ namespace MiniZinc {
       t[0].st(Type::ST_SET);
       t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("show"), t, b_show);
+      t[0] = Type::vartop(-1);
+      rb(m, ASTString("show"), t, b_show);
+    }
+    {
+      std::vector<Type> t(3);
+      t[0] = t[1] = Type::parint();
+      t[2] = Type::vartop();
+      rb(m, ASTString("format"), t, b_format);
+      t[2] = Type::vartop();
+      t[2].st(Type::ST_SET);
+      t[2].ot(Type::OT_OPTIONAL);
+      rb(m, ASTString("format"), t, b_format);
+      t[2] = Type::vartop(-1);
+      rb(m, ASTString("format"), t, b_format);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parint();
+      t[1] = Type::vartop();
+      rb(m, ASTString("format"), t, b_format);
+      t[1] = Type::vartop();
+      t[1].st(Type::ST_SET);
+      t[1].ot(Type::OT_OPTIONAL);
+      rb(m, ASTString("format"), t, b_format);
+      t[1] = Type::vartop(-1);
+      rb(m, ASTString("format"), t, b_format);
     }
     {
       std::vector<Type> t(2);
@@ -1675,11 +1771,6 @@ namespace MiniZinc {
       t[1] = Type::parint();
       t[2] = Type::varfloat();
       rb(m, ASTString("show_float"), t, b_show_float);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::vartop(-1);
-      rb(m, ASTString("show"), t, b_show);
     }
     {
       std::vector<Type> t(1);

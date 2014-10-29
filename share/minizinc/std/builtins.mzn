@@ -1327,6 +1327,15 @@ function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
 function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
 function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
 
+function array[int] of $T: row(array[int, int] of $T: x, int: r) =
+  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+function array[int] of $T: col(array[int,int] of $T: x, int: c) =
+  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+
+test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
+test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
+predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+
 % Coercion operations
 
 function int: ceil(float);
@@ -1384,6 +1393,18 @@ function string: '++'(string, string);
 function string: concat(array[$T] of string);
 function string: join(string, array[$T] of string);
 
+function string: format(var opt $T: x) = show(x);
+function string: format(var opt set of $T: x) = show(x);
+function string: format(array[$U] of var opt $T: x) = show(x);
+
+function string: format(int: width, int: prec, var opt $T);
+function string: format(int: width, int: prec, var opt set of $T);
+function string: format(int: width, int: prec, array[$U] of var opt $T);
+
+function string: format(int: width, var opt $T);
+function string: format(int: width, var opt set of $T);
+function string: format(int: width, array[$U] of var opt $T);
+
 % Bound and domain operations
 
 function int: lb(var int);
@@ -1394,12 +1415,18 @@ function float: lb(var float);
 function float: ub(var float);
 function set of int: lb(var set of int);
 function set of int: ub(var set of int);
-function array[$U] of int: lb(array[$U] of var int);
-function array[$U] of int: ub(array[$U] of var int);
-function array[$U] of float: lb(array[$U] of var float);
-function array[$U] of float: ub(array[$U] of var float);
-function array[$U] of set of int: lb(array[$U] of var set of int);
-function array[$U] of set of int: ub(array[$U] of var set of int);
+function array[$U] of int: lb(array[$U] of var int: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of int: ub(array[$U] of var int: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
+function array[$U] of float: lb(array[$U] of var float: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of float: ub(array[$U] of var float: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
+function array[$U] of set of int: lb(array[$U] of var set of int: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of set of int: ub(array[$U] of var set of int: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
 function int: lb_array(array[$U] of var opt int);
 function int: ub_array(array[$U] of var opt int);
 function float: lb_array(array[$U] of var float);

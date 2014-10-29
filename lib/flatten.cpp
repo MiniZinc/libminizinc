@@ -4739,6 +4739,18 @@ namespace MiniZinc {
   
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
+
+    class ExpandArrayDecls : public ItemVisitor {
+    public:
+      EnvI& env;
+      ExpandArrayDecls(EnvI& env0) : env(env0) {}
+      void vVarDeclI(VarDeclI* v) {
+        if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
+          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+        }
+      }
+    } _ead(env);
+    iterItems<ExpandArrayDecls>(_ead,e.model());;
     
     bool hadSolveItem = false;
     // Flatten main model

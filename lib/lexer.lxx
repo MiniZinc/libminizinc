@@ -12,6 +12,7 @@
 %option reentrant
 %option bison-bridge bison-locations
 %option noyywrap
+%option stack
 
 %{
 #if defined __GNUC__
@@ -87,8 +88,11 @@ char* bufferData(void* parm) {
 %}
 
 %x string
+%x string_quote
 %x multilinecomment
 %x doccomment
+%s bracket_exp
+%s quoted_exp
 
 %%
 
@@ -103,10 +107,10 @@ char* bufferData(void* parm) {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   }
 
-"/**"             { BEGIN doccomment; beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+"/**"             { yy_push_state(doccomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
 <doccomment>{
   "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
-    BEGIN 0; return MZN_DOC_COMMENT; }
+                    yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
   [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
   "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
   \xa               { MiniZinc::ParserState* parm =
@@ -119,9 +123,9 @@ char* bufferData(void* parm) {
   }
 }
 
-"/*"              { BEGIN multilinecomment; beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+"/*"              { yy_push_state(multilinecomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); }
 <multilinecomment>{
-  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); BEGIN 0; }
+  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yy_pop_state(yyscanner); }
   [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
   "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
   \xa               { MiniZinc::ParserState* parm =
@@ -166,7 +170,7 @@ char* bufferData(void* parm) {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->dValue = strtod(yytext,NULL);
                     return MZN_FLOAT_LITERAL; }
-[:;|{}(),\[\]\.]    { 
+[:;|{},\[\]\.]    {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return *yytext; }
 \.\.              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -408,14 +412,26 @@ $[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 
-\"                { BEGIN string; beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
-<string>[^\\"\xa\xd]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-<string>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
-<string>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
-<string>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string>\\[\\"]     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+"(" { yy_push_state(bracket_exp,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
+<bracket_exp,INITIAL>")" { yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
+<quoted_exp>")" { yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
+                  beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+
+\"                { yy_push_state(string,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+<string,string_quote>[^\\"\xa\xd]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+<string,string_quote>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
+<string,string_quote>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string,string_quote>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string,string_quote>\\[\\"]     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\\"("       { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
+<string_quote>\\"(" { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
 <string>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
-                      BEGIN 0; return MZN_STRING_LITERAL; }
+                      yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
+<string_quote>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+                            yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
+<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return INVALID_CHAR; }
 
 `[A-Za-z][A-Za-z0-9_]*` {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
@@ -423,7 +439,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                     yylval->sValue[strlen(yytext)-2] = 0; 
                     return MZN_QUOTED_IDENTIFIER; }
 .                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return UNKNOWN_CHAR; }
+                    return INVALID_CHAR; }
 %%
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
   MiniZinc::ParserState* parm = 
