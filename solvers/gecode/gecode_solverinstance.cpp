@@ -236,9 +236,7 @@ namespace MiniZinc {
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
         if (it->e()->type().dim() != 0) {
-          //std::stringstream ssm; ssm << "Expected non-array variable in flat model instead of " << *(it->e());
-          //throw InternalError(ssm.str());
-          // TODO: is it OK to just ignore the arrays, since they are defined as single variables?
+          // we ignore arrays - all their elements are defined
           continue;
         }
         MiniZinc::TypeInst* ti = it->e()->ti();  
@@ -327,8 +325,7 @@ namespace MiniZinc {
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->bv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->bv_defined.push_back(isDefined);           
-            // TODO: *i = root->boolVarCount - 1;
+            _current_space->bv_defined.push_back(isDefined);                      
             break;
           }
           
@@ -366,8 +363,7 @@ namespace MiniZinc {
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->fv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->fv_defined.push_back(isDefined);
-            // TODO: *i = root->floatVarCount - 1;
+            _current_space->fv_defined.push_back(isDefined);            
           }
           break;                     
             
@@ -386,22 +382,12 @@ namespace MiniZinc {
       if (Call* c = it->e()->dyn_cast<Call>()) {
         _constraintRegistry.post(c);
       }
-    }
-    
+    }    
     std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
               << "iv has " << _current_space->iv.size() << " variables " << std::endl
               << "bv has " << _current_space->bv.size() << " variables " << std::endl
               << "fv has " << _current_space->fv.size() << " variables " << std::endl
-              << "sv has " << _current_space->sv.size() << " variables " << std::endl;
-    std::cout << "DEBUG: Checking status of space..." << std::endl;
-    Gecode::SpaceStatus status = _current_space->status();
-    if(status == Gecode::SpaceStatus::SS_FAILED)
-      std::cout << "DEBUG: space failed." << std::endl;
-    else if(status == Gecode::SpaceStatus::SS_BRANCH)
-      std::cout << "DEBUG: space ready to be branched." << std::endl;
-    else if(status == Gecode::SpaceStatus::SS_SOLVED)
-      std::cout << "DEBUG: space is already solved." << std::endl;
-    // TODO: Check why the state is already solved in all testcases...
+              << "sv has " << _current_space->sv.size() << " variables " << std::endl;              
   }
   
   Gecode::IntArgs 
@@ -521,12 +507,10 @@ namespace MiniZinc {
             if (e->type().isbool()) {
               assert(var.isbool());
               ia[offset++] = var.boolVar();
-            }/* TODO: Don't know how to deal with this case
-            else if (e->type().isvarint() && _current_space->aliasBool2Int(idx) != -1) {
-              assert(var.isint());
-              ia[offset++] = _current_space->bv[_current_space->aliasBool2Int(idx)];
-            }
-            */
+            } else {
+              assert(e->type().isvarint() && var.hasBoolAlias());
+              ia[offset++] = _current_space->bv[var.boolAliasIndex()];
+            }            
         } else {
           if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
             bool value = bl->v();
@@ -606,41 +590,32 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {
-    return a->type().isbool();
-    /*// TODO: move index into the GecodeVariable, including the respective BoolVar
-               to detect the special case when the array is actually an array of 
-               booleans and can be replaced by the bool vars
+  GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {    
     singleInt = -1;
     if (a->length() == 0)
         return true;
     for (int i=a->length(); i--;) {
         if (a->v()[i]->type().isbool()) {
+          continue;
         } else if ((a->v()[i])->type().isvarint()) {
-            int idx = *(int*)resolveVar(getVarDecl(a->v()[i]));
-
-            if (_current_space->aliasBool2Int(idx) == -1) {
-                if (singleInt != -1) {
-                    return false;
-                }
-                singleInt = idx;
+          GecodeVariable var = resolveVar(getVarDecl(a->v()[i]));
+          if (var.hasBoolAlias()) {
+            if (singleInt != -1) {
+              return false;
             }
+            singleInt = var.boolAliasIndex();
+          }
         } else {
-            return false;
+          return false;
         }
     }
-    return singleInt==-1 || a->length() > 1;
-    */
+    return singleInt==-1 || a->length() > 1;    
   }
   
 #ifdef GECODE_HAS_FLOAT_VARS
   Gecode::FloatValArgs 
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
-    if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
-      std::stringstream ssm; ssm << "Invalid argument in arg2floatargs: " << *arg;
-      ssm << ". Expected Id or ArrayLit.";
-      throw InternalError(ssm.str());
-    }
+    assert(!arg->isa<Id>() && !arg->isa<ArrayLit>());
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
     FloatValArgs fa(a->v().size()+offset);
     for (int i=offset; i--;)
@@ -653,8 +628,7 @@ namespace MiniZinc {
   Gecode::FloatVar 
   GecodeSolverInstance::arg2floatvar(Expression* e) {
     FloatVar x0;
-    if (e->type().isvar()) {
-      //x0 = _current_space->fv[*(int*)resolveVar(getVarDecl(e))];
+    if (e->type().isvar()) {      
       GecodeVariable var = resolveVar(getVarDecl(e));
       assert(var.isfloat());
       x0 = var.floatVar();        
@@ -684,8 +658,7 @@ namespace MiniZinc {
         fa[i] = FloatVar(*this->_current_space, 0.0, 0.0);
     for (int i=a->v().size(); i--;) {
         Expression* e = a->v()[i];
-        if (e->type().isvar()) {
-            //fa[i+offset] = _current_space->fv[*(int*)resolveVar(getVarDecl(e))];
+        if (e->type().isvar()) {            
             GecodeVariable var = resolveVar(getVarDecl(e));
             assert(var.isfloat());
             fa[i+offset] = var.floatVar();
@@ -786,6 +759,10 @@ namespace MiniZinc {
     assert(false); // TODO: implement
   }
   
+  FznSpace::FznSpace(bool share, FznSpace&) {
+    assert(false); // TODO: implement
+  }
+  
   void 
   FznSpace::constrain(const Space& s) {
     assert(false); // TODO: implement
@@ -793,7 +770,7 @@ namespace MiniZinc {
   
   Gecode::Space* 
   FznSpace::copy(bool share) {
-    assert(false); // TODO implement
-    return this;
+   return new FznSpace(share, *this);
   }
+ 
 }

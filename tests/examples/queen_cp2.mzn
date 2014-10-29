@@ -17,6 +17,9 @@ constraint
     /\
     alldifferent(i in 1..n)(q[i] + n-i);
 
+constraint q[1] = 2;
+%constraint q[2] = 1;
+
 include "alldifferent.mzn";
 
 

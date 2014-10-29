@@ -36,11 +36,13 @@ namespace MiniZinc {
   protected:
     Gecode::VarImpBase* _var;
     vartype _t;
+    /// the index in FznSpace::bv of the boolean variable that corresponds to the int var; if not exists then -1
+    int _boolAliasIndex;
   public:
-    GecodeVariable(Gecode::IntVar x) : _var(x.varimp()), _t(INT_TYPE) {}
-    GecodeVariable(Gecode::BoolVar x) : _var(x.varimp()), _t(BOOL_TYPE) {}
-    GecodeVariable(Gecode::FloatVar x) : _var(x.varimp()), _t(FLOAT_TYPE) {}
-    GecodeVariable(Gecode::SetVar x) : _var(x.varimp()), _t(SET_TYPE) {}
+    GecodeVariable(Gecode::IntVar x) : _var(x.varimp()), _t(INT_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::BoolVar x) : _var(x.varimp()), _t(BOOL_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::FloatVar x) : _var(x.varimp()), _t(FLOAT_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::SetVar x) : _var(x.varimp()), _t(SET_TYPE), _boolAliasIndex(-1) {}
     
     Gecode::IntVar intVar(void) {
       assert(_t == INT_TYPE);
@@ -81,7 +83,22 @@ namespace MiniZinc {
     bool isset(void) const {
       return _t == SET_TYPE;
     }
-      
+    
+    bool hasBoolAlias(void) {
+      return _boolAliasIndex >= 0;
+    }
+    
+    /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
+    void setBoolAliasIndex(int index) {
+      assert(_t == INT_TYPE);
+      assert(index >= 0);
+      _boolAliasIndex = index;
+    }
+    
+    int boolAliasIndex(void) {
+      return  _boolAliasIndex;
+    }
+    
     vartype t(void) const {
       return _t;
     }
@@ -138,11 +155,16 @@ namespace MiniZinc {
     /// standard constructor
     FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
             setVarCount(-1), needAuxVars(true) {} ; 
-    ~FznSpace(void) {} // TODO: more sophisticated!
+    ~FznSpace(void) {} 
             
     /// Link integer variable \a iv to Boolean variable \a bv 
-    void aliasBool2Int(Gecode::IntVar iv, Gecode::BoolVar bv) {
-      assert(false); // TODO: implement
+    void aliasBool2Int(GecodeVariable intvar, Gecode::BoolVar bvar) {
+      for(int i=0; i<bv.size(); i++) 
+        if(&bv[i] == &bvar) { // TODO: is this the proper way of comparing them?
+          intvar.setBoolAliasIndex(i);
+          return;
+        }            
+      assert(false); // we should have found the boolvar in bv
     }
   
   protected:
