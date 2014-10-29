@@ -359,6 +359,12 @@ int main(int argc, char** argv) {
             }
             
             {
+              // DEBUG stuff
+              Printer p(std::cout, 80, false);
+              std::cout << "DEBUG: printing flat model:" << std::endl;
+              p.print(env.flat());
+              
+              
               GCLock lock;
               Options options;
               GecodeSolverInstance gecode(env,options);

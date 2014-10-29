@@ -504,13 +504,18 @@ namespace MiniZinc {
         Expression* e = a->v()[i];
         if(e->type().isvar()) {
             GecodeVariable var = resolveVar(getVarDecl(e));
-            if (e->type().isbool()) {
+            if (e->type().isvarbool()) {
               assert(var.isbool());
               ia[offset++] = var.boolVar();
-            } else {
-              assert(e->type().isvarint() && var.hasBoolAlias());
+            } else if(e->type().isvarint() && var.hasBoolAlias()) {
               ia[offset++] = _current_space->bv[var.boolAliasIndex()];
             }            
+            else {
+              std::stringstream ssm; 
+              ssm << "expected bool-var or alias int var instead of " << *e 
+                  << " with type " << e->type().toString() ;
+              throw InternalError(ssm.str());             
+            }
         } else {
           if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
             bool value = bl->v();
@@ -599,12 +604,13 @@ namespace MiniZinc {
           continue;
         } else if ((a->v()[i])->type().isvarint()) {
           GecodeVariable var = resolveVar(getVarDecl(a->v()[i]));
-          if (var.hasBoolAlias()) {
+          if (var.hasBoolAlias()) {            
             if (singleInt != -1) {
               return false;
             }
             singleInt = var.boolAliasIndex();
           }
+          else return false;
         } else {
           return false;
         }

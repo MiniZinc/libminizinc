@@ -91,7 +91,7 @@ namespace MiniZinc {
     /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
     void setBoolAliasIndex(int index) {
       assert(_t == INT_TYPE);
-      assert(index >= 0);
+      assert(index >= 0);    
       _boolAliasIndex = index;
     }
     
@@ -160,6 +160,7 @@ namespace MiniZinc {
       for(int i=0; i<bv.size(); i++) 
         if(&bv[i] == &bvar) { // TODO: is this the proper way of comparing them?
           intvar.setBoolAliasIndex(i);
+          std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
           return;
         }            
       assert(false); // we should have found the boolvar in bv
