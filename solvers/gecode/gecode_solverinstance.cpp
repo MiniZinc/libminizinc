@@ -759,8 +759,77 @@ namespace MiniZinc {
     assert(false); // TODO: implement
   }
   
-  FznSpace::FznSpace(bool share, FznSpace&) {
-    assert(false); // TODO: implement
+  FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {
+    // integer variables
+    iv.resize(f.iv.size());
+    for(int i=0; i<iv.size(); i++) 
+      iv[i].update(*this, share, f.iv[i]);
+    for(int i=0; i<f.iv_introduced.size(); i++) 
+      iv_introduced.push_back(f.iv_introduced[i]);
+    for(int i=0; i<f.iv_defined.size(); i++) 
+      iv_defined.push_back(f.iv_defined[i]);
+    if(f.needAuxVars) {
+      IntVarArgs iva;
+      for (int i=0; i<f.iv_aux.size(); i++) {
+        if (!f.iv_aux[i].assigned()) {
+          iva << IntVar();
+          iva[iva.size()-1].update(*this, share, f.iv_aux[i]);
+        }
+      }
+      iv_aux = IntVarArray(*this, iva);
+    }    
+    
+    // boolean variables    
+    bv.resize(f.bv.size());
+    for(int i=0; i<bv.size(); i++) 
+    bv[i].update(*this, share, f.bv[i]);
+    if (needAuxVars) {
+      BoolVarArgs bva;
+      for (int i=0; i<f.bv_aux.size(); i++) {
+        if (!f.bv_aux[i].assigned()) {
+          bva << BoolVar();
+          bva[bva.size()-1].update(*this, share, f.bv_aux[i]);
+        }
+      }
+      bv_aux = BoolVarArray(*this, bva);
+    }
+    for(int i=0; i<f.bv_introduced.size(); i++) 
+      bv_introduced.push_back(f.bv_introduced[i]);
+    
+    
+#ifdef GECODE_HAS_SET_VARS
+    sv.resize(f.sv.size());
+    for(int i=0; i<sv.size(); i++)
+      sv[i].update(*this, share, f.sv[i]);  
+    if (needAuxVars) {
+      SetVarArgs sva;
+      for (int i=0; i<f.sv_aux.size(); i++) {
+        if (!f.sv_aux[i].assigned()) {
+          sva << SetVar();
+          sva[sva.size()-1].update(*this, share, f.sv_aux[i]);
+        }
+      }
+      sv_aux = SetVarArray(*this, sva);
+    }
+    for(int i=0; i<f.sv_introduced.size(); i++) 
+      sv_introduced.push_back(f.sv_introduced[i]);            
+#endif
+      
+#ifdef GECODE_HAS_FLOAT_VARS
+    fv.resize(f.fv.size());
+    for(int i=0; i<fv.size(); i++)
+      fv[i].update(*this, share, f.fv[i]);
+    if (needAuxVars) {
+      FloatVarArgs fva;
+      for (int i=0; i<f.fv_aux.size(); i++) {
+        if (!f.fv_aux[i].assigned()) {
+          fva << FloatVar();
+          fva[fva.size()-1].update(*this, share, f.fv_aux[i]);
+        }
+      }
+      fv_aux = FloatVarArray(*this, fva);
+    }    
+#endif
   }
   
   void 

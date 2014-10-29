@@ -120,9 +120,7 @@ namespace MiniZinc {
     /// Indicates whether an integer variable is introduced by mzn2fzn
     std::vector<bool> iv_introduced;    
     /// Indicates whether an integer variable is defined
-    std::vector<bool> iv_defined;
-    /// Indicates whether an integer variable aliases a Boolean variable
-    std::vector<int> iv_boolalias;
+    std::vector<bool> iv_defined;    
     /// The Boolean variables
     std::vector<Gecode::BoolVar> bv;
     /// The introduced Boolean variables
@@ -148,7 +146,7 @@ namespace MiniZinc {
     std::vector<bool> fv_introduced;
     /// Indicates whether a float variable is defined
     std::vector<bool> fv_defined;
-#endif
+#endif 
     
     /// copy constructor
     FznSpace(bool share, FznSpace&);
