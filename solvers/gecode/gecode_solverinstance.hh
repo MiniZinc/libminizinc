@@ -39,10 +39,10 @@ namespace MiniZinc {
     /// the index in FznSpace::bv of the boolean variable that corresponds to the int var; if not exists then -1
     int _boolAliasIndex;
   public:
-    GecodeVariable(Gecode::IntVar x) : _var(x.varimp()), _t(INT_TYPE), _boolAliasIndex(-1) {}
-    GecodeVariable(Gecode::BoolVar x) : _var(x.varimp()), _t(BOOL_TYPE), _boolAliasIndex(-1) {}
-    GecodeVariable(Gecode::FloatVar x) : _var(x.varimp()), _t(FLOAT_TYPE), _boolAliasIndex(-1) {}
-    GecodeVariable(Gecode::SetVar x) : _var(x.varimp()), _t(SET_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::IntVar& x) : _var(x.varimp()), _t(INT_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::BoolVar& x) : _var(x.varimp()), _t(BOOL_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::FloatVar& x) : _var(x.varimp()), _t(FLOAT_TYPE), _boolAliasIndex(-1) {}
+    GecodeVariable(Gecode::SetVar& x) : _var(x.varimp()), _t(SET_TYPE), _boolAliasIndex(-1) {}
     
     Gecode::IntVar intVar(void) {
       assert(_t == INT_TYPE);
@@ -162,12 +162,13 @@ namespace MiniZinc {
             
     /// Link integer variable \a iv to Boolean variable \a bv 
     void aliasBool2Int(GecodeVariable intvar, Gecode::BoolVar bvar) {
-      for(int i=0; i<bv.size(); i++) 
-        if(&bv[i] == &bvar) { // TODO: is this the proper way of comparing them?
+      for(int i=0; i<bv.size(); i++) {        
+        if(bv[i].same(bvar)) { // TODO: is this the proper way of comparing them?
           intvar.setBoolAliasIndex(i);
           std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
           return;
         }            
+      }
       assert(false); // we should have found the boolvar in bv
     }
   

@@ -392,7 +392,7 @@ namespace MiniZinc {
         if(_current_space->_optVarIsInt) {
           IntVar intVar = var.intVar();
           for(int i=0; i<_current_space->iv.size(); i++) {
-            if(&(_current_space->iv[i]) == &intVar) {
+            if(_current_space->iv[i].same(intVar)) {
               _current_space->_optVarIdx = i;
               break;
             }
