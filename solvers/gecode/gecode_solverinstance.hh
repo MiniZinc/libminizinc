@@ -163,9 +163,9 @@ namespace MiniZinc {
     /// Link integer variable \a iv to Boolean variable \a bv 
     void aliasBool2Int(GecodeVariable intvar, Gecode::BoolVar bvar) {
       for(int i=0; i<bv.size(); i++) {        
-        if(bv[i].same(bvar)) { // TODO: is this the proper way of comparing them?
+        if(bv[i].same(bvar)) { 
           intvar.setBoolAliasIndex(i);
-          std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
+          // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
           return;
         }            
       }

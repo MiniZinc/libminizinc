@@ -401,7 +401,7 @@ namespace MiniZinc {
         } else {
           FloatVar floatVar = var.floatVar();
           for(int i=0; i<_current_space->fv.size(); i++) {
-            if(&(_current_space->fv[i]) == &floatVar) {
+            if(_current_space->fv[i].same(floatVar)) {
               _current_space->_optVarIdx = i;
               break;
             }
