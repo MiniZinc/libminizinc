@@ -147,12 +147,17 @@ namespace MiniZinc {
     /// Indicates whether a float variable is defined
     std::vector<bool> fv_defined;
 #endif 
+    /// Indicates if the objective variable is integer (float otherwise)
+    bool _optVarIsInt;
+    /// Index of the variable to optimize 
+    int _optVarIdx;    
+    /// solve type (SAT, MIN or MAX)
+    MiniZinc::SolveI::SolveType _solveType;
     
     /// copy constructor
     FznSpace(bool share, FznSpace&);
     /// standard constructor
-    FznSpace(void) : intVarCount(-1), boolVarCount(-1), floatVarCount(-1),
-            setVarCount(-1), needAuxVars(true) {} ; 
+    FznSpace(void) : _copyAuxVars(true), _optVarIdx(-1), _optVarIsInt(true) {} ; 
     ~FznSpace(void) {} 
             
     /// Link integer variable \a iv to Boolean variable \a bv 
@@ -166,22 +171,13 @@ namespace MiniZinc {
       assert(false); // we should have found the boolvar in bv
     }
   
-  protected:
+  protected:     
+    /// Whether the introduced variables still need to be copied
+    bool _copyAuxVars;    
     /// Implement optimization
     virtual void constrain(const Space& s);
     /// Copy function
     virtual Gecode::Space* copy(bool share);
-    
-    /// Number of integer variables
-    int intVarCount;
-    /// Number of Boolean variables
-    int boolVarCount;
-    /// Number of float variables
-    int floatVarCount;
-    /// Number of set variables
-    int setVarCount;
-    /// Whether the introduced variables still need to be copied
-    bool needAuxVars;    
   };
   
   
@@ -196,6 +192,7 @@ namespace MiniZinc {
     
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
+    virtual Status solve(void);
     virtual void resetSolver(void);
     
     virtual Expression* getSolutionValue(Id* id);

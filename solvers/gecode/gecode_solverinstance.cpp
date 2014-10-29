@@ -285,9 +285,7 @@ namespace MiniZinc {
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->iv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->iv_defined.push_back(isDefined);
-            // TODO: iv_defined is set to false (for all variables) in old implementation. Ask Guido!
-            // TODO: _current_space->iv_boolalias.push_back(it->e()->??);           
+            _current_space->iv_defined.push_back(isDefined);                    
             break;
             
           case Type::BT_BOOL: 
@@ -383,6 +381,41 @@ namespace MiniZinc {
         _constraintRegistry.post(c);
       }
     }    
+    
+    // objective
+    SolveI* si = _env.flat()->solveItem();
+    _current_space->_solveType = si->st();
+    if(si->e()) {
+      _current_space->_optVarIsInt = (si->e()->type().isvarint());      
+      if(Id* id = si->e()->dyn_cast<Id>()) {
+        GecodeVariable var = resolveVar(id->decl());
+        if(_current_space->_optVarIsInt) {
+          IntVar intVar = var.intVar();
+          for(int i=0; i<_current_space->iv.size(); i++) {
+            if(&(_current_space->iv[i]) == &intVar) {
+              _current_space->_optVarIdx = i;
+              break;
+            }
+          }
+          assert(_current_space->_optVarIdx >= 0);
+        } else {
+          FloatVar floatVar = var.floatVar();
+          for(int i=0; i<_current_space->fv.size(); i++) {
+            if(&(_current_space->fv[i]) == &floatVar) {
+              _current_space->_optVarIdx = i;
+              break;
+            }
+          }
+          assert(_current_space->_optVarIdx >= 0);
+        }        
+      }
+      else { // the solve expression has to be a variable/id
+        assert(false);
+      }
+      
+    }
+   
+    
     std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
               << "iv has " << _current_space->iv.size() << " variables " << std::endl
               << "bv has " << _current_space->bv.size() << " variables " << std::endl
@@ -765,6 +798,11 @@ namespace MiniZinc {
     assert(false); // TODO: implement
   }
   
+  SolverInstanceBase::Status 
+  GecodeSolverInstance::solve(void) {
+   return SolverInstanceBase::Status::ERROR; // TODO: implement   
+  }
+  
   FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {
     // integer variables
     iv.resize(f.iv.size());
@@ -774,7 +812,7 @@ namespace MiniZinc {
       iv_introduced.push_back(f.iv_introduced[i]);
     for(int i=0; i<f.iv_defined.size(); i++) 
       iv_defined.push_back(f.iv_defined[i]);
-    if(f.needAuxVars) {
+    if(f._copyAuxVars) {
       IntVarArgs iva;
       for (int i=0; i<f.iv_aux.size(); i++) {
         if (!f.iv_aux[i].assigned()) {
@@ -789,7 +827,7 @@ namespace MiniZinc {
     bv.resize(f.bv.size());
     for(int i=0; i<bv.size(); i++) 
     bv[i].update(*this, share, f.bv[i]);
-    if (needAuxVars) {
+    if (f._copyAuxVars) {
       BoolVarArgs bva;
       for (int i=0; i<f.bv_aux.size(); i++) {
         if (!f.bv_aux[i].assigned()) {
@@ -807,7 +845,7 @@ namespace MiniZinc {
     sv.resize(f.sv.size());
     for(int i=0; i<sv.size(); i++)
       sv[i].update(*this, share, f.sv[i]);  
-    if (needAuxVars) {
+    if (f._copyAuxVars) {
       SetVarArgs sva;
       for (int i=0; i<f.sv_aux.size(); i++) {
         if (!f.sv_aux[i].assigned()) {
@@ -825,7 +863,7 @@ namespace MiniZinc {
     fv.resize(f.fv.size());
     for(int i=0; i<fv.size(); i++)
       fv[i].update(*this, share, f.fv[i]);
-    if (needAuxVars) {
+    if (f._copyAuxVars) {
       FloatVarArgs fva;
       for (int i=0; i<f.fv_aux.size(); i++) {
         if (!f.fv_aux[i].assigned()) {
@@ -840,7 +878,23 @@ namespace MiniZinc {
   
   void 
   FznSpace::constrain(const Space& s) {
-    assert(false); // TODO: implement
+    if (_optVarIsInt) {
+            if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN)
+                rel(*this, iv[_optVarIdx], IRT_LE,
+                    static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
+            else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX)
+                rel(*this, iv[_optVarIdx], IRT_GR,
+                    static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
+        } else {
+#ifdef GECODE_HAS_FLOAT_VARS
+            if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN)
+                rel(*this, fv[_optVarIdx], FRT_LE,
+                    static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
+            else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX)
+                rel(*this, fv[_optVarIdx], FRT_GR,
+                    static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
+#endif
+        }   
   }
   
   Gecode::Space* 
