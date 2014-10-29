@@ -22,14 +22,17 @@ namespace MiniZinc {
   template<class E>
   typename E::Val eval_id(Expression* e) {
     Id* id = e->cast<Id>();
-    if (id->decl() == NULL)
+    VarDecl* vd = id->decl();
+    while (vd->flat() && vd->flat() != vd)
+      vd = vd->flat();
+    if (vd == NULL)
       throw EvalError(e->loc(), "undeclared identifier", id->v());
-    if (id->decl()->e() == NULL)
-      throw EvalError(id->decl()->loc(), "cannot evaluate expression", id->v());
-    typename E::Val r = E::e(id->decl()->e());
-    if (id->decl()->toplevel() && !id->decl()->evaluated()) {
-      id->decl()->e(E::exp(r));
-      id->decl()->evaluated(true);
+    if (vd->e() == NULL)
+      throw EvalError(vd->loc(), "cannot evaluate expression", id->v());
+    typename E::Val r = E::e(vd->e());
+    if (vd->toplevel() && !vd->evaluated()) {
+      vd->e(E::exp(r));
+      vd->evaluated(true);
     }
     return r;
   }
