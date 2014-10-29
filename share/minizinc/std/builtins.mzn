@@ -1327,6 +1327,15 @@ function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
 function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
 function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
 
+function array[int] of $T: row(array[int, int] of $T: x, int: r) =
+  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+function array[int] of $T: col(array[int,int] of $T: x, int: c) =
+  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+
+test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
+test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
+predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+
 % Coercion operations
 
 function int: ceil(float);
