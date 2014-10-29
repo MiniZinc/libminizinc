@@ -1394,12 +1394,18 @@ function float: lb(var float);
 function float: ub(var float);
 function set of int: lb(var set of int);
 function set of int: ub(var set of int);
-function array[$U] of int: lb(array[$U] of var int);
-function array[$U] of int: ub(array[$U] of var int);
-function array[$U] of float: lb(array[$U] of var float);
-function array[$U] of float: ub(array[$U] of var float);
-function array[$U] of set of int: lb(array[$U] of var set of int);
-function array[$U] of set of int: ub(array[$U] of var set of int);
+function array[$U] of int: lb(array[$U] of var int: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of int: ub(array[$U] of var int: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
+function array[$U] of float: lb(array[$U] of var float: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of float: ub(array[$U] of var float: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
+function array[$U] of set of int: lb(array[$U] of var set of int: x) =
+  arrayXd(x,[lb(xx) | xx in array1d(x)]);
+function array[$U] of set of int: ub(array[$U] of var set of int: x) =
+  arrayXd(x,[ub(xx) | xx in array1d(x)]);
 function int: lb_array(array[$U] of var opt int);
 function int: ub_array(array[$U] of var opt int);
 function float: lb_array(array[$U] of var float);
