@@ -832,13 +832,135 @@ namespace MiniZinc {
         break;
       default:
         assert(false);
-    }
+    }    
+    createBranchers(_env.flat()->solveItem()->ann(), optSearch, 
+                    111 /* _options.getFloatParam("seed")  */, // TODO: implement
+                    0.5 /* _options.getFloatParam("decay") */, // TODO: implement
+                    false, /* ignoreUnknown */
+                    std::cerr); 
+    
     // TODO: continue
-    //createBranchers(solveItem->ann(), optSearch, opts->seed(), opts->decay(), false, std::cerr); 
-    
-    
     return SolverInstanceBase::Status::ERROR; // TODO: implement   
   }
+  
+  void 
+  GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn, 
+                                        int seed, double decay, bool ignoreUnknown, 
+                                        std::ostream& err) {
+    // default search heuristics
+    Rnd rnd(static_cast<unsigned int>(seed));
+    TieBreak<IntVarBranch> def_int_varsel = INT_VAR_AFC_SIZE_MAX(0.99);
+    IntValBranch def_int_valsel = INT_VAL_MIN();
+    TieBreak<IntVarBranch> def_bool_varsel = INT_VAR_AFC_MAX(0.99);
+    IntValBranch def_bool_valsel = INT_VAL_MIN();
+#ifdef GECODE_HAS_SET_VARS
+    SetVarBranch def_set_varsel = SET_VAR_AFC_SIZE_MAX(0.99);
+    SetValBranch def_set_valsel = SET_VAL_MIN_INC();
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    TieBreak<FloatVarBranch> def_float_varsel = FLOAT_VAR_SIZE_MIN();
+    FloatValBranch def_float_valsel = FLOAT_VAL_SPLIT_MIN();
+#endif
+    
+    std::vector<bool> iv_searched(_current_space->iv.size());
+    for (unsigned int i=_current_space->iv.size(); i--;)
+      iv_searched[i] = false;
+    std::vector<bool> bv_searched(_current_space->bv.size());
+    for (unsigned int i=_current_space->bv.size(); i--;)
+      bv_searched[i] = false;
+#ifdef GECODE_HAS_SET_VARS
+    std::vector<bool> sv_searched(_current_space->sv.size());
+    for (unsigned int i=_current_space->sv.size(); i--;)
+      sv_searched[i] = false;
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    std::vector<bool> fv_searched(_current_space->fv.size());
+    for (unsigned int i=_current_space->fv.size(); i--;)
+      fv_searched[i] = false;
+#endif
+    
+    // solving annotations 
+    std::vector<Expression*> flatAnn;
+    if (!ann.isEmpty()) {
+      // flattenAnnotations(ann, flatAnn); // TODO: implement
+    }
+    if (additionalAnn != NULL) {
+      flatAnn.push_back(additionalAnn);
+    }    
+    if (flatAnn.size() > 0) {
+      // TODO: implement
+      std::cout << "Ignoring solving annotations for now..." << std::endl;
+    }
+    
+    int introduced = 0;
+    int funcdep = 0;
+    int searched = 0;
+    for (int i=_current_space->iv.size(); i--;) {
+      if (iv_searched[i]) {        
+        searched++;         
+      } else if (_current_space->iv_introduced[i]) {                  
+          if (_current_space->iv_defined[i]) {
+            funcdep++;
+          } else {
+            introduced++;
+          }             
+      }
+    }       
+    IntVarArgs iv_sol(_current_space->iv.size()-(introduced+funcdep+searched));
+    IntVarArgs iv_tmp(introduced);
+    for (int i=_current_space->iv.size(), j=0, k=0; i--;) {      
+      if (iv_searched[i])
+        continue;           
+      if(_current_space->iv_introduced[i]) {                
+        if(_current_space->iv_introduced.size() >= i) {
+          if (!_current_space->iv_defined[i]) {                 
+            iv_tmp[j++] = _current_space->iv[i];
+          }                     
+        }               
+      } else {
+          iv_sol[k++] = _current_space->iv[i];
+      }
+    }
+    // Collecting Boolean variables
+    introduced = 0;
+    funcdep = 0;
+    searched = 0;
+    for (int i=_current_space->bv.size(); i--;) {
+      if (bv_searched[i]) {
+        searched++;
+      } else if (_current_space->bv_introduced[i]) {
+        if (_current_space->bv_defined[i]) {
+          funcdep++;
+        } else {
+            introduced++;
+        }               
+      }
+    }        
+    BoolVarArgs bv_sol(_current_space->bv.size()-(introduced+funcdep+searched));
+    BoolVarArgs bv_tmp(introduced);
+    for (int i=_current_space->bv.size(), j=0, k=0; i--;) {
+      if (bv_searched[i])
+        continue;
+      if (_current_space->bv_introduced[i]) {
+        if (!_current_space->bv_defined[i]) {
+            bv_tmp[j++] = _current_space->bv[i];
+        }
+      } else {
+          bv_sol[k++] = _current_space->bv[i];
+      }
+    }      
+    
+    if (iv_sol.size() > 0)
+      branch(*this->_current_space, iv_sol, def_int_varsel, def_int_valsel);
+    if (bv_sol.size() > 0)
+      branch(*this->_current_space, bv_sol, def_bool_varsel, def_bool_valsel);
+    
+    std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
+    std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
+    // TODO: continue
+  }
+  
+  
   
   FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {
     // integer variables
