@@ -28,6 +28,7 @@
 
 #include <minizinc/solver_instance_base.hh>
 
+
 namespace MiniZinc {
   
   class GecodeVariable {
@@ -153,6 +154,8 @@ namespace MiniZinc {
     bool _optVarIsInt;
     /// Index of the variable to optimize 
     int _optVarIdx;    
+    /// Whether the introduced variables still need to be copied
+    bool _copyAuxVars;  
     /// solve type (SAT, MIN or MAX)
     MiniZinc::SolveI::SolveType _solveType;
     
@@ -174,9 +177,7 @@ namespace MiniZinc {
       assert(false); // we should have found the boolvar in bv
     }
   
-  protected:     
-    /// Whether the introduced variables still need to be copied
-    bool _copyAuxVars;    
+  protected:       
     /// Implement optimization
     virtual void constrain(const Space& s);
     /// Copy function

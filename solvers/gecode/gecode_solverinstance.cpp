@@ -16,6 +16,7 @@
 
 #include "gecode_solverinstance.hh"
 #include "gecode_constraints.hh"
+#include "aux_brancher.hh"
 
 using namespace Gecode;
 
@@ -1034,8 +1035,7 @@ namespace MiniZinc {
     _current_space->fv_aux = FloatVarArray(*this->_current_space, fv_tmp);
     n_aux += _current_space->fv_aux.size();
 #endif
-    if (n_aux > 0) {
-      /*
+    if (n_aux > 0) {      
       AuxVarBrancher::post(*this->_current_space, def_int_varsel, def_int_valsel,
                           def_bool_varsel, def_bool_valsel
 #ifdef GECODE_HAS_SET_VARS
@@ -1044,12 +1044,11 @@ namespace MiniZinc {
 #ifdef GECODE_HAS_FLOAT_VARS
                         , def_float_varsel, def_float_valsel
 #endif
-                    );
-                    */
-      std::cout << "DEBUG: Ignoring aux-var brancher for now" << std::endl; // TODO: implement
-    }
-    
-    // TODO: continue
+                    ); // end post                    
+      std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" << std::endl;
+    } // end if n_aux > 0 
+    else 
+      std::cout << "DEBUG: No aux vars to branch on." << std::endl;
   }
   
   

@@ -280,7 +280,8 @@ if(HAS_GECODE)
 	  solvers/gecode/gecode_solverinstance.cpp
 		solvers/gecode/gecode_constraints.cpp
 	  solvers/gecode/gecode_solverinstance.hh
-		solvers/gecode/gecode_constraints.hh)
+		solvers/gecode/gecode_constraints.hh
+                solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode
     minizinc
