@@ -800,7 +800,44 @@ namespace MiniZinc {
   
   SolverInstanceBase::Status 
   GecodeSolverInstance::solve(void) {
-   return SolverInstanceBase::Status::ERROR; // TODO: implement   
+    // TODO: check what we need to do options-wise
+    std::vector<Expression*> branch_vars;
+    std::vector<Expression*> solve_args;
+    Expression* solveExpr = _env.flat()->solveItem()->e();
+    Expression* optSearch = NULL;
+    
+    switch(_current_space->_solveType) {
+      case MiniZinc::SolveI::SolveType::ST_MIN:      
+        assert(solveExpr != NULL);
+        branch_vars.push_back(solveExpr);
+        solve_args.push_back(new ArrayLit(Location(), branch_vars));
+        if (!_current_space->_optVarIsInt) // TODO: why??
+          solve_args.push_back(new FloatLit(Location(), 0.0));
+        solve_args.push_back(new Id(Location(), "input_order", NULL));
+        solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
+        solve_args.push_back(new Id(Location(), "complete", NULL));
+        optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
+        break;      
+      case MiniZinc::SolveI::SolveType::ST_MAX:
+        branch_vars.push_back(solveExpr);
+        solve_args.push_back(new ArrayLit(Location(), branch_vars));
+        if (!_current_space->_optVarIsInt)
+          solve_args.push_back(new FloatLit(Location(), 0.0));
+        solve_args.push_back(new Id(Location(), "input_order", NULL));
+        solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse", NULL));
+        solve_args.push_back(new Id(Location(), "complete", NULL));
+        optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
+        break;
+      case MiniZinc::SolveI::SolveType::ST_SAT:        
+        break;
+      default:
+        assert(false);
+    }
+    // TODO: continue
+    //createBranchers(solveItem->ann(), optSearch, opts->seed(), opts->decay(), false, std::cerr); 
+    
+    
+    return SolverInstanceBase::Status::ERROR; // TODO: implement   
   }
   
   FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {

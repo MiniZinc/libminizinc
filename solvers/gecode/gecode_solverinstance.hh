@@ -237,11 +237,13 @@ namespace MiniZinc {
     /// Returns the VarDecl of \a array at index \a index
     VarDecl* resolveArrayAccess(VarDecl* array, int index);
     
-    /// TODO: copied from old SolverInterface -> needs to be adapted/changed (void pointer!)
+    /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
     GecodeSolver::Variable resolveVar(Expression* e);       
     
     
   protected:
+    /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
+    // FlatZincOptions* opts;
     void registerConstraints(void);
   };
 }
