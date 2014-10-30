@@ -364,7 +364,7 @@ namespace MiniZinc {
             _current_space->fv_defined.push_back(isDefined);            
           }
           break;                     
-            
+          // TODO: SetVars
           default:
             std::stringstream ssm; 
             ssm << "Type " << ti->type().bt() << " is currently not supported by Gecode." 
@@ -957,6 +957,98 @@ namespace MiniZinc {
     
     std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
     std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
+#ifdef GECODE_HAS_FLOAT_VARS
+    introduced = 0;
+    funcdep = 0;
+    searched = 0;
+    for (int i=_current_space->fv.size(); i--;) {
+      if (fv_searched[i]) {
+        searched++;
+      } else if (_current_space->fv_introduced[i]) {
+        if (_current_space->fv_defined[i]) {
+          funcdep++;
+        } else {
+          introduced++;
+        }
+      }
+    }
+    FloatVarArgs fv_sol(_current_space->fv.size()-(introduced+funcdep+searched));
+    FloatVarArgs fv_tmp(introduced);
+    for (int i=_current_space->fv.size(), j=0, k=0; i--;) {
+      if (fv_searched[i])
+        continue;
+      if (_current_space->fv_introduced[i]) {
+        if (!_current_space->fv_defined[i]) {
+          fv_tmp[j++] = _current_space->fv[i];
+        }
+      } else {
+        fv_sol[k++] = _current_space->fv[i];
+      }
+    }
+
+    if (fv_sol.size() > 0)
+      branch(*this->_current_space, fv_sol, def_float_varsel, def_float_valsel);
+#endif
+#ifdef GECODE_HAS_SET_VARS
+    introduced = 0;
+    funcdep = 0;
+    searched = 0;
+    for (int i=_current_space->sv.size(); i--;) {
+      if (sv_searched[i]) {
+          searched++;
+      } else if (_current_space->sv_introduced[i]) {
+          if (_current_space->sv_defined[i]) {
+              funcdep++;
+          } else {
+              introduced++;
+          }
+      }
+    }
+    SetVarArgs sv_sol(_current_space->sv.size()-(introduced+funcdep+searched));
+    SetVarArgs sv_tmp(introduced);
+    for (int i=_current_space->sv.size(), j=0, k=0; i--;) {
+      if (sv_searched[i])
+          continue;
+      if (_current_space->sv_introduced[i]) {
+          if (!_current_space->sv_defined[i]) {
+              sv_tmp[j++] = _current_space->sv[i];
+          }
+      } else {
+          sv_sol[k++] = _current_space->sv[i];
+      }
+    }
+
+    if (sv_sol.size() > 0)
+      branch(*this->_current_space, sv_sol, def_set_varsel, def_set_valsel);
+#endif
+      
+    // branching on auxiliary variables
+    _current_space->iv_aux = IntVarArray(*this->_current_space, iv_tmp);
+    _current_space->bv_aux = BoolVarArray(*this->_current_space, bv_tmp);
+    int n_aux = _current_space->iv_aux.size() + _current_space->bv_aux.size();
+#ifdef GECODE_HAS_SET_VARS
+    _current_space->sv_aux = SetVarArray(*this->_current_space, sv_tmp);
+    n_aux += _current_space->sv_aux.size();
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    _current_space->fv_aux = FloatVarArray(*this->_current_space, fv_tmp);
+    n_aux += _current_space->fv_aux.size();
+#endif
+    if (n_aux > 0) {
+      /*
+      AuxVarBrancher::post(*this->_current_space, def_int_varsel, def_int_valsel,
+                          def_bool_varsel, def_bool_valsel
+#ifdef GECODE_HAS_SET_VARS
+                        , def_set_varsel, def_set_valsel
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+                        , def_float_varsel, def_float_valsel
+#endif
+                    );
+                    */
+      std::cout << "DEBUG: Ignoring aux-var brancher for now" << std::endl; // TODO: implement
+    }
+    
     // TODO: continue
   }
   

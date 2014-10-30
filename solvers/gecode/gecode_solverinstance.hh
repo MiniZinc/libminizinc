@@ -136,6 +136,8 @@ namespace MiniZinc {
     Gecode::SetVarArray sv_aux;
     /// Indicates whether a set variable is introduced by mzn2fzn
     std::vector<bool> sv_introduced;
+        /// Indicates whether a set variable is introduced by mzn2fzn
+    std::vector<bool> sv_defined;
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
     /// The float variables
