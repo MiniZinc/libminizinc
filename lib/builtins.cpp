@@ -1726,7 +1726,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
       rb(m, constants().ids.sum, t, b_sum_float);      
-      rb(m, constants().ids.sum, t, b_product_float);
+      rb(m, ASTString("product"), t, b_product_float);
     }
     {
       std::vector<Type> t(1);
