@@ -1225,6 +1225,19 @@ namespace MiniZinc {
       _s->remove(toRemove[i]);
   }
   
+  bool
+  Annotation::containsCall(const MiniZinc::ASTString& id) {
+    if (_s==NULL)
+      return false;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          return true;
+      }
+    }
+    return false;
+  }
+  
   void
   Annotation::clear(void) {
     if (_s) {
