@@ -314,6 +314,8 @@ namespace MiniZinc {
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
+        if (sl.v()[i]->type().cv())
+          ty.cv(true);
         /// TODO: add coercion if types don't match
         if (!Type::bt_subtype(sl.v()[i]->type().bt(), ty.bt())) {
           if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt()))
@@ -356,6 +358,8 @@ namespace MiniZinc {
         } else if (vi->type().isvar()) {
           ty.ti(Type::TI_VAR);
         }
+        if (vi->type().cv())
+          ty.cv(true);
         if (vi->type().isopt()) {
           ty.ot(Type::OT_OPTIONAL);
         }
@@ -421,8 +425,8 @@ namespace MiniZinc {
       }
       if (aa.v()->type().dim() != aa.idx().size())
         throw TypeError(aa.v()->loc(),"array dimensions do not match");
-      bool allpar=true;
-      bool allpresent=true;
+      Type tt = aa.v()->type();
+      tt.dim(0);
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
         if (aai->isa<AnonVar>()) {
@@ -433,40 +437,41 @@ namespace MiniZinc {
         }
         aa.idx()[i] = addCoercion(_model, aai, Type::varint())();
         if (aai->type().isopt()) {
-          allpresent = false;
+          tt.ot(Type::OT_OPTIONAL);
         }
         if (aai->type().isvar()) {
-          allpar=false;
+          tt.ti(Type::TI_VAR);
         }
+        if (aai->type().cv())
+          tt.cv(true);
       }
-      Type tt = aa.v()->type();
-      tt.dim(0);
-      if (!allpar)
-        tt.ti(Type::TI_VAR);
-      if (!allpresent)
-        tt.ot(Type::OT_OPTIONAL);
       aa.type(tt);
     }
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
-      bool needsOptionTypes = false;
+      Type tt = c.e()->type();
       for (int i=0; i<c.n_generators(); i++) {
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
-          needsOptionTypes = true;
+          tt.ot(Type::OT_OPTIONAL);
+          tt.ti(Type::TI_VAR);
         }
+        if (ty_in.cv())
+          tt.cv(true);
       }
       if (c.where()) {
         if (c.where()->type() == Type::varbool()) {
-          needsOptionTypes = true;
+          tt.ot(Type::OT_OPTIONAL);
+          tt.ti(Type::TI_VAR);
         } else if (c.where()->type() != Type::parbool()) {
           throw TypeError(c.where()->loc(),
                           "where clause must be bool, but is `"+
                           c.where()->type().toString()+"'");
         }
+        if (c.where()->type().cv())
+          tt.cv(true);
       }
-      Type tt = c.e()->type();
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(c.e()->loc(),
@@ -478,10 +483,6 @@ namespace MiniZinc {
           throw TypeError(c.e()->loc(),
             "array comprehension expression cannot be an array");
         tt.dim(1);
-      }
-      if (needsOptionTypes) {
-        tt.ot(Type::OT_OPTIONAL);
-        tt.ti(Type::TI_VAR);
       }
       c.type(tt);
     }
@@ -528,6 +529,8 @@ namespace MiniZinc {
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
         }
+        if (eif->type().cv())
+          tret.cv(true);
         if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
             ethen->type().st() != tret.st() ||
             ethen->type().dim() != tret.dim()) {
@@ -541,6 +544,8 @@ namespace MiniZinc {
         }
         if (ethen->type().isvar()) allpar=false;
         if (ethen->type().isopt()) allpresent=false;
+        if (ethen->type().cv())
+          tret.cv(true);
       }
       for (int i=0; i<ite.size(); i++) {
         ite.e_then(i, addCoercion(_model,ite.e_then(i), tret)());
@@ -563,7 +568,10 @@ namespace MiniZinc {
         bop.lhs(addCoercion(_model,bop.lhs(),fi->argtype(args, 0))());
         bop.rhs(addCoercion(_model,bop.rhs(),fi->argtype(args, 1))());
         args[0] = bop.lhs(); args[1] = bop.rhs();
-        bop.type(fi->rtype(args));
+        Type ty = fi->rtype(args);
+        ty.cv(bop.lhs()->type().cv() || bop.rhs()->type().cv());
+        bop.type(ty);
+        
         if (fi->e())
           bop.decl(fi);
         else
@@ -582,7 +590,9 @@ namespace MiniZinc {
       if (FunctionI* fi = _model->matchFn(uop.opToString(),args)) {
         uop.e(addCoercion(_model,uop.e(),fi->argtype(args,0))());
         args[0] = uop.e();
-        uop.type(fi->rtype(args));
+        Type ty = fi->rtype(args);
+        ty.cv(uop.e()->type().cv());
+        uop.type(ty);
         if (fi->e())
           uop.decl(fi);
       } else {
@@ -596,11 +606,15 @@ namespace MiniZinc {
       std::vector<Expression*> args(call.args().size());
       std::copy(call.args().begin(),call.args().end(),args.begin());
       if (FunctionI* fi = _model->matchFn(call.id(),args)) {
+        bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
           args[i] = addCoercion(_model,call.args()[i],fi->argtype(args,i))();
           call.args()[i] = args[i];
+          cv = cv || args[i]->type().cv();
         }
-        call.type(fi->rtype(args));
+        Type ty = fi->rtype(args);
+        ty.cv(cv);
+        call.type(ty);
         call.decl(fi);
       } else {
         std::ostringstream oss;
@@ -616,15 +630,19 @@ namespace MiniZinc {
     }
     /// Visit let
     void vLet(Let& let) {
+      bool cv = false;
       for (unsigned int i=0; i<let.let().size(); i++) {
         Expression* li = let.let()[i];
+        cv = cv || li->type().cv();
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(vdi->loc(),
               "let variable `"+vdi->id()->v().str()+"' must be initialised");
         }
       }
-      let.type(let.in()->type());
+      Type ty = let.in()->type();
+      ty.cv(cv);
+      let.type(ty);
     }
     /// Visit variable declaration
     void vVarDecl(VarDecl& vd) {
@@ -652,6 +670,8 @@ namespace MiniZinc {
         for (unsigned int i=0; i<ti.ranges().size(); i++) {
           TypeInst* ri = ti.ranges()[i];
           assert(ri != NULL);
+          if (ri->type().cv())
+            tt.cv(true);
           if (ri->type() == Type::top()) {
             if (foundTIId) {
               throw TypeError(ri->loc(),
@@ -668,6 +688,8 @@ namespace MiniZinc {
         }
         tt.dim(foundTIId ? -1 : ti.ranges().size());
       }
+      if (ti.domain() && ti.domain()->type().cv())
+        tt.cv(true);
       if (ti.domain() && !ti.domain()->isa<TIId>()) {
         if (ti.domain()->type().ti() != Type::TI_PAR ||
             ti.domain()->type().st() != Type::ST_SET)
