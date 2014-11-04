@@ -1731,6 +1731,34 @@ namespace MiniZinc {
     return clause;
   }
 
+  Expression* pre_flatten(EnvI& env, Expression* e) {
+    typedef UNORDERED_NAMESPACE::unordered_map<Expression*, Expression*> Map;
+    Map map;
+
+    class PreFlattener : public EVisitor {
+    protected:
+      EnvI& env;
+      Map& map;
+    public:
+      PreFlattener(EnvI& env0, Map& map0) : env(env0), map(map0) {}
+      bool enter(Expression* e) {
+        if (e->type().cv()) {
+          if (e->type().isvar()) {
+            if (!e->isa<Id>()) {
+              EE ee = flat_exp(env, Ctx(), e, NULL, constants().var_true);
+              map.insert(std::make_pair(e, ee.r()));
+            }
+          } else {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+
+    return eval_par(e);
+  }
+
   /// TODO: check if all expressions are total
   /// If yes, use element encoding
   /// If not, use implication encoding
@@ -2329,7 +2357,7 @@ namespace MiniZinc {
         }
       }
       GCLock lock;
-      ret.r = bind(env,ctx,r,eval_par(e));
+      ret.r = bind(env,ctx,r,pre_flatten(env,e));
       return ret;
     }
     switch (e->eid()) {
@@ -4762,7 +4790,7 @@ namespace MiniZinc {
             CallStackItem csi(env,v->e());
             GCLock lock;
             Location v_loc = v->e()->e()->loc();
-            v->e()->e(eval_par(v->e()->e()));
+            v->e()->e(pre_flatten(env, v->e()->e()));
             if (v->e()->type().dim() > 0) {
               checkIndexSets(v->e(), v->e()->e());
               if (v->e()->ti()->domain() != NULL) {
