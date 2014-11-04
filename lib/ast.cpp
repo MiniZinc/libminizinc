@@ -23,7 +23,8 @@ namespace MiniZinc {
   : first_line(0),
     first_column(0),
     last_line(0),
-    last_column(0) {}
+    last_column(0),
+    is_introduced(0) {}
 
   std::string
   Location::toString(void) const {
@@ -35,6 +36,13 @@ namespace MiniZinc {
   void
   Location::mark(void) const {
     filename.mark();
+  }
+  
+  Location
+  Location::introduce() const {
+    Location l = *this;
+    l.is_introduced = 1;
+    return l;
   }
 
   void

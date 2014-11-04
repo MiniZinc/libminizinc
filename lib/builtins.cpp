@@ -87,7 +87,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          return IntVal::infinity;
+          throw EvalError(al->loc(), "Array is empty");
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(al->v()[i]));
@@ -111,7 +111,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          return -IntVal::infinity;
+          throw EvalError(al->loc(), "Array is empty");
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(al->v()[i]));

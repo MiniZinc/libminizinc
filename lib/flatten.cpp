@@ -109,7 +109,7 @@ namespace MiniZinc {
   Expression* definesVarAnn(Id* id) {
     std::vector<Expression*> args(1);
     args[0] = id;
-    Call* c = new Call(Location(),constants().ann.defines_var,args);
+    Call* c = new Call(Location().introduce(),constants().ann.defines_var,args);
     c->type(Type::ann());
     return c;
   }
@@ -366,6 +366,8 @@ namespace MiniZinc {
     
     for (int i=lastError-1; i>=0; i--) {
       ASTString newloc_f = stack[i]->loc().filename;
+      if (stack[i]->loc().is_introduced)
+        continue;
       int newloc_l = stack[i]->loc().first_line;
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
@@ -537,7 +539,7 @@ namespace MiniZinc {
         ArrayLit* al = e->cast<ArrayLit>();
         for (unsigned int i=0; i<tis.size(); i++) {
           if (tis[i]->domain()==NULL) {
-            newtis[i] = new TypeInst(Location(),Type(),new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+            newtis[i] = new TypeInst(Location().introduce(),Type(),new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
             needNewTypeInst = true;
           } else {
             IntSetVal* isv = eval_intset(tis[i]->domain());
@@ -578,9 +580,9 @@ namespace MiniZinc {
           Ranges::Const cr(lb,IntVal::infinity);
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
-          id->decl()->ti()->domain(new SetLit(Location(), newibv));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
         } else {
-          id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(lb,IntVal::infinity)));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb,IntVal::infinity)));
         }
         return false;
       } else if (e1->type().ispar() && e0->isa<Id>()) {
@@ -595,9 +597,9 @@ namespace MiniZinc {
           Ranges::Const cr(-IntVal::infinity, ub);
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
-          id->decl()->ti()->domain(new SetLit(Location(), newibv));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
         } else {
-          id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(-IntVal::infinity, ub)));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity, ub)));
         }
       }
     } else if (c->id()==constants().ids.int_.lin_le) {
@@ -625,9 +627,9 @@ namespace MiniZinc {
             Ranges::Const cr(lb, ub);
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
             IntSetVal* newibv = IntSetVal::ai(i);
-            id->decl()->ti()->domain(new SetLit(Location(), newibv));
+            id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
           } else {
-            id->decl()->ti()->domain(new SetLit(Location(), IntSetVal::a(lb, ub)));
+            id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
           }
           return false;
         }
@@ -647,14 +649,14 @@ namespace MiniZinc {
               assert(id->decl() != NULL);
               if (id->decl()->ti()->domain() && istrue(id->decl()->ti()->domain())) {
                 GCLock lock;
-                env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
               } else {
                 id->decl()->ti()->domain(constants().lit_false);
                 GCLock lock;
                 std::vector<Expression*> args(2);
                 args[0] = id;
                 args[1] = constants().lit_false;
-                Call* c = new Call(Location(),constants().ids.bool_eq,args);
+                Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
                 c->decl(env.orig->matchFn(c));
                 c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
@@ -692,14 +694,14 @@ namespace MiniZinc {
             while (id != NULL) {
               if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
                 GCLock lock;
-                env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
               } else {
                 id->decl()->ti()->domain(constants().lit_true);
                 GCLock lock;
                 std::vector<Expression*> args(2);
                 args[0] = id;
                 args[1] = constants().lit_true;
-                Call* c = new Call(Location(),constants().ids.bool_eq,args);
+                Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
                 c->decl(env.orig->matchFn(c));
                 c->type(c->decl()->rtype(args));
                 if (c->decl()->e()) {
@@ -712,7 +714,7 @@ namespace MiniZinc {
             GCLock lock;
             // extract domain information from added constraint if possible
             if (!e->isa<Call>() || checkDomainConstraints(env,e->cast<Call>())) {
-              env.flat_addItem(new ConstraintI(Location(),e));
+              env.flat_addItem(new ConstraintI(Location().introduce(),e));
             }
           }
         }
@@ -752,7 +754,7 @@ namespace MiniZinc {
               return e;
             GCLock lock;
             /// TODO: handle array types
-            TypeInst* ti = new TypeInst(Location(),e->type());
+            TypeInst* ti = new TypeInst(Location().introduce(),e->type());
             VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),e);
             vd->introduced(true);
             vd->flat(vd);
@@ -786,9 +788,9 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
                   } else {
-                    id->decl()->ti()->domain(new SetLit(Location(),ibv));
+                    id->decl()->ti()->domain(new SetLit(Location().introduce(),ibv));
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
@@ -797,7 +799,7 @@ namespace MiniZinc {
               addCtxAnn(vd, ctx.b);
             }
 
-            VarDeclI* nv = new VarDeclI(Location(),vd);
+            VarDeclI* nv = new VarDeclI(Location().introduce(),vd);
             env.flat_addItem(nv);
 
             EE ee(vd,NULL);
@@ -821,7 +823,7 @@ namespace MiniZinc {
             std::vector<Expression*> args(2);
             args[0] = vd->id();
             args[1] = vd->e();
-            Call* c = new Call(Location(),constants().ids.bool_eq,args);
+            Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
             c->decl(env.orig->matchFn(c));
             c->type(c->decl()->rtype(args));
             if (c->decl()->e()) {
@@ -852,7 +854,7 @@ namespace MiniZinc {
                   std::vector<Expression*> args(2);
                   args[0] = vd->id();
                   args[1] = e_id;
-                  Call* c = new Call(Location(),cid,args);
+                  Call* c = new Call(Location().introduce(),cid,args);
                   c->decl(env.orig->matchFn(c));
                   c->type(c->decl()->rtype(args));
                   if (c->decl()->e()) {
@@ -895,7 +897,7 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location(),ibv));
+                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
               }
             }
           }
@@ -915,14 +917,14 @@ namespace MiniZinc {
                   return constants().lit_true;
                 } else if (id->decl()->ti()->domain() && eval_bool(id->decl()->ti()->domain()) != e->cast<BoolLit>()->v()) {
                   GCLock lock;
-                  env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                  env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
                 } else {
                   id->decl()->ti()->domain(e);
                   GCLock lock;
                   std::vector<Expression*> args(2);
                   args[0] = id;
                   args[1] = e;
-                  Call* c = new Call(Location(),constants().ids.bool_eq,args);
+                  Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
                   c->decl(env.orig->matchFn(c));
                   c->type(c->decl()->rtype(args));
                   if (c->decl()->e()) {
@@ -956,7 +958,7 @@ namespace MiniZinc {
               std::vector<Expression*> args(2);
               args[0] = vd->id();
               args[1] = e_vd->id();
-              Call* c = new Call(Location(),cid,args);
+              Call* c = new Call(Location().introduce(),cid,args);
               c->decl(env.orig->matchFn(c));
               c->type(c->decl()->rtype(args));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
@@ -972,15 +974,15 @@ namespace MiniZinc {
                 ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> nc(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
-                nc.push_back(new IntLit(Location(),-1));
-                c->args()[0] = new ArrayLit(Location(),nc);
+                nc.push_back(new IntLit(Location().introduce(),-1));
+                c->args()[0] = new ArrayLit(Location().introduce(),nc);
                 ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                 nx.push_back(vd->id());
-                c->args()[1] = new ArrayLit(Location(),nx);
+                c->args()[1] = new ArrayLit(Location().introduce(),nx);
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
-                c->args()[2] = new IntLit(Location(),-d);
+                c->args()[2] = new IntLit(Location().introduce(),-d);
               } else {
                 vd->addAnnotation(constants().ann.is_defined_var);
                 
@@ -1037,10 +1039,10 @@ namespace MiniZinc {
         } else {
           GC::lock();
           std::vector<Expression*> args;
-          ArrayLit* al = new ArrayLit(Location(),nontrue);
+          ArrayLit* al = new ArrayLit(Location().introduce(),nontrue);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location(),constants().ids.forall,args);
+          Call* ret = new Call(Location().introduce(),constants().ids.forall,args);
           ret->decl(env.orig->matchFn(ret));
           ret->type(ret->decl()->rtype(args));
           KeepAlive ka(ret);
@@ -1083,10 +1085,10 @@ namespace MiniZinc {
             uo->type(Type::varbool());
             nonfalse[i] = uo;
           }
-          ArrayLit* al = new ArrayLit(Location(),nonfalse);
+          ArrayLit* al = new ArrayLit(Location().introduce(),nonfalse);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location(),constants().ids.exists,args);
+          Call* ret = new Call(Location().introduce().introduce(),constants().ids.exists,args);
           ret->decl(env.orig->matchFn(ret));
           ret->type(ret->decl()->rtype(args));
           assert(ret->decl());
@@ -1107,13 +1109,13 @@ namespace MiniZinc {
     if (hasTiVars) {
       assert(vd->e());
       if (vd->e()->type().dim()==0)
-        return new TypeInst(Location(),vd->e()->type());
+        return new TypeInst(Location().introduce(),vd->e()->type());
       ArrayLit* al = eval_array_lit(vd->e());
       std::vector<TypeInst*> dims(al->dims());
       for (unsigned int i=0; i<dims.size(); i++) {
-        dims[i] = new TypeInst(Location(), Type(), new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+        dims[i] = new TypeInst(Location().introduce(), Type(), new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
       }
-      return new TypeInst(Location(), vd->e()->type(), dims, eval_par(vd->ti()->domain()));
+      return new TypeInst(Location().introduce(), vd->e()->type(), dims, eval_par(vd->ti()->domain()));
     } else {
       std::vector<TypeInst*> dims(vd->ti()->ranges().size());
       for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
@@ -1319,9 +1321,9 @@ namespace MiniZinc {
     static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
     typedef IntSetVal* Domain;
     static Domain eval_domain(Expression* e) { return eval_intset(e); }
-    static Expression* new_domain(Val v) { return new SetLit(Location(),IntSetVal::a(v,v)); }
-    static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location(),IntSetVal::a(v0,v1)); }
-    static Expression* new_domain(Domain d) { return new SetLit(Location(),d); }
+    static Expression* new_domain(Val v) { return new SetLit(Location().introduce(),IntSetVal::a(v,v)); }
+    static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location().introduce(),IntSetVal::a(v0,v1)); }
+    static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(),d); }
     static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
     static bool domain_equals(Domain dom, Val v) { return dom->size()==1 && dom->min(0)==v && dom->max(0)==v; }
     static bool domain_equals(Domain dom1, Domain dom2) {
@@ -1428,12 +1430,12 @@ namespace MiniZinc {
       return ret;
     }
     static Expression* new_domain(Val v) {
-      BinOp* ret = new BinOp(Location(),new FloatLit(Location(),v),BOT_DOTDOT,new FloatLit(Location(),v));
+      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
       ret->type(Type::parsetfloat());
       return ret;
     }
     static Expression* new_domain(Val v0, Val v1) {
-      BinOp* ret = new BinOp(Location(),new FloatLit(Location(),v0),BOT_DOTDOT,new FloatLit(Location(),v1));
+      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v0),BOT_DOTDOT,new FloatLit(Location().introduce(),v1));
       ret->type(Type::parsetfloat());
       return ret;
     }
@@ -1463,11 +1465,11 @@ namespace MiniZinc {
         Val ub = dom->rhs()->cast<FloatLit>()->v();
         lb = std::max(lb,v0);
         ub = std::min(ub,v1);
-        Domain d = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),lb), BOT_DOTDOT, new FloatLit(Location().introduce(),ub));
         d->type(Type::parsetfloat());
         return d;
       } else {
-        Domain d = new BinOp(Location(), new FloatLit(Location(),v0), BOT_DOTDOT, new FloatLit(Location(),v1));
+        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),v0), BOT_DOTDOT, new FloatLit(Location().introduce(),v1));
         d->type(Type::parsetfloat());
         return d;
       }
@@ -1482,7 +1484,7 @@ namespace MiniZinc {
             return NULL;
           case BOT_LQ:
             if (v < ub) {
-              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location(),v));
+              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
               d->type(Type::parsetfloat());
               return d;
             } else {
@@ -1492,7 +1494,7 @@ namespace MiniZinc {
             return NULL;
           case BOT_GQ:
             if (v > lb) {
-              Domain d = new BinOp(dom->loc(),new FloatLit(Location(),v),BOT_DOTDOT,dom->rhs());
+              Domain d = new BinOp(dom->loc(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,dom->rhs());
               d->type(Type::parsetfloat());
               return d;
             } else {
@@ -1643,7 +1645,7 @@ namespace MiniZinc {
       tt.dim(1);
       args[1]->type(tt);
       args[2] = new Lit(e0->loc(),constval);
-      Call* c = new Call(e0->loc(),constants().ids.lin_exp,args);
+      Call* c = new Call(e0->loc().introduce(),constants().ids.lin_exp,args);
       tt = args[1]->type();
       tt.dim(0);
       c->decl(env.orig->matchFn(c));
@@ -1719,11 +1721,11 @@ namespace MiniZinc {
     std::vector<Expression*> neg;
     if (ifcond)
       neg.push_back(ifcond);
-    clauseArgs[0] = new ArrayLit(Location(), pos);
+    clauseArgs[0] = new ArrayLit(Location().introduce(), pos);
     clauseArgs[0]->type(Type::varbool(1));
-    clauseArgs[1] = new ArrayLit(Location(), neg);
+    clauseArgs[1] = new ArrayLit(Location().introduce(), neg);
     clauseArgs[1]->type(Type::varbool(1));
-    Call* clause = new Call(Location(), constants().ids.clause, clauseArgs);
+    Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
     clause->decl(env.orig->matchFn(clause));
     clause->type(clause->decl()->rtype(clauseArgs));
     return clause;
@@ -1758,7 +1760,7 @@ namespace MiniZinc {
           if (nr == constants().var_true) {
             eq_then = ite->e_then(i);
           } else {
-            eq_then = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_then(i));
+            eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_then(i));
             eq_then->type(Type::varbool());
           }
           clauses.push_back(createImplication(env, elseconds, NULL, eq_then));
@@ -1766,7 +1768,7 @@ namespace MiniZinc {
         }
       } else {
         if (nr==NULL) {
-          TypeInst* ti = new TypeInst(Location(),ite->type(),NULL);
+          TypeInst* ti = new TypeInst(Location().introduce(),ite->type(),NULL);
           nr = new VarDecl(ite->loc(),ti,env.genId());
           nr->introduced(true);
           nr->flat(nr);
@@ -1777,7 +1779,7 @@ namespace MiniZinc {
         if (nr == constants().var_true) {
           eq_then = ite->e_then(i);
         } else {
-          eq_then = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_then(i));
+          eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_then(i));
           eq_then->type(Type::varbool());
         }
         clauses.push_back(createImplication(env, elseconds, ite->e_if(i), eq_then));
@@ -1806,7 +1808,7 @@ namespace MiniZinc {
       if (ib_else.valid) {
         IntVal lb = std::min(r_bounds.l, ib_else.l);
         IntVal ub = std::max(r_bounds.u, ib_else.u);
-        SetLit* r_dom = new SetLit(Location(), IntSetVal::a(lb,ub));
+        SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
         nr->ti()->domain(r_dom);
       }
     }
@@ -1815,12 +1817,12 @@ namespace MiniZinc {
     if (nr == constants().var_true) {
       eq_else = ite->e_else();
     } else {
-      eq_else = new BinOp(Location(),nr->id(),BOT_EQ,ite->e_else());
+      eq_else = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_else());
       eq_else->type(Type::varbool());
     }
     clauses.push_back(createImplication(env, elseconds, NULL, eq_else));
     
-    Let* let = new Let(Location(),clauses,nr->id());
+    Let* let = new Let(Location().introduce(),clauses,nr->id());
     let->type(nr->id()->type());
     KeepAlive ka = let;
     GC::unlock();
@@ -1985,30 +1987,30 @@ namespace MiniZinc {
           case BOT_LE:
             e0 = alv[0]();
             if (e0->type().isint()) {
-              e1 = new Lit(Location(),d-1);
+              e1 = new Lit(Location().introduce(),d-1);
               bot = BOT_LQ;
             } else {
-              e1 = new Lit(Location(),d);
+              e1 = new Lit(Location().introduce(),d);
             }
             break;
           case BOT_GR:
             e1 = alv[0]();
             if (e1->type().isint()) {
-              e0 = new Lit(Location(),d+1);
+              e0 = new Lit(Location().introduce(),d+1);
               bot = BOT_LQ;
             } else {
-              e0 = new Lit(Location(),d);
+              e0 = new Lit(Location().introduce(),d);
               bot = BOT_LE;
             }
             break;
           case BOT_GQ:
-            e0 = new Lit(Location(),d);
+            e0 = new Lit(Location().introduce(),d);
             e1 = alv[0]();
             bot = BOT_LQ;
             break;
           default:
             e0 = alv[0]();
-            e1 = new Lit(Location(),d);
+            e1 = new Lit(Location().introduce(),d);
         }
         args.push_back(e0);
         args.push_back(e1);
@@ -2084,8 +2086,8 @@ namespace MiniZinc {
       LinearTraits<Lit>::constructLinBuiltin(bot,callid,coeff_sign,d);
       std::vector<Expression*> coeff_ev(coeffv.size());
       for (unsigned int i=coeff_ev.size(); i--;)
-        coeff_ev[i] = new Lit(Location(),coeff_sign*coeffv[i]);
-      ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
+        coeff_ev[i] = new Lit(Location().introduce(),coeff_sign*coeffv[i]);
+      ArrayLit* ncoeff = new ArrayLit(Location().introduce(),coeff_ev);
       Type t = coeff_ev[0]->type();
       t.dim(1);
       ncoeff->type(t);
@@ -2098,10 +2100,10 @@ namespace MiniZinc {
           tt.ti(Type::TI_VAR);
         alv_e[i] = alv[i]();
       }
-      ArrayLit* nal = new ArrayLit(Location(),alv_e);
+      ArrayLit* nal = new ArrayLit(Location().introduce(),alv_e);
       nal->type(tt);
       args.push_back(nal);
-      Lit* il = new Lit(Location(),-d);
+      Lit* il = new Lit(Location().introduce(),-d);
       args.push_back(il);
     }
   }
@@ -2157,7 +2159,7 @@ namespace MiniZinc {
     if (coeffv.size()==0) {
       GCLock lock;
       ret.b = conj(env,b,Ctx(),args_ee);
-      ret.r = bind(env,ctx,r,new Lit(Location(),d));
+      ret.r = bind(env,ctx,r,new Lit(Location().introduce(),d));
       return;
     } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
       ret.b = conj(env,b,Ctx(),args_ee);
@@ -2167,8 +2169,8 @@ namespace MiniZinc {
     GCLock lock;
     std::vector<Expression*> coeff_ev(coeffv.size());
     for (unsigned int i=coeff_ev.size(); i--;)
-      coeff_ev[i] = new Lit(Location(),coeffv[i]);
-    ArrayLit* ncoeff = new ArrayLit(Location(),coeff_ev);
+      coeff_ev[i] = new Lit(Location().introduce(),coeffv[i]);
+    ArrayLit* ncoeff = new ArrayLit(Location().introduce(),coeff_ev);
     Type t = coeff_ev[0]->type();
     t.dim(1);
     ncoeff->type(t);
@@ -2199,7 +2201,7 @@ namespace MiniZinc {
       nal->type(al->type());
       args.push_back(nal);
     }
-    Lit* il = new Lit(Location(),d);
+    Lit* il = new Lit(Location().introduce(),d);
     args.push_back(il);
   }
 
@@ -2246,24 +2248,24 @@ namespace MiniZinc {
         neg_arg->type(output_neg[i]->type());
         output_pos.push_back(neg_arg);
       }
-      ArrayLit* al = new ArrayLit(Location(), output_pos);
+      ArrayLit* al = new ArrayLit(Location().introduce(), output_pos);
       Type al_t = bo->type();
       al_t.dim(1);
       al->type(al_t);
       c_args[0] = al;
-      c = new Call(bo->loc(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
+      c = new Call(bo->loc().introduce(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
     } else {
-      ArrayLit* al_pos = new ArrayLit(Location(), output_pos);
+      ArrayLit* al_pos = new ArrayLit(Location().introduce(), output_pos);
       Type al_t = bo->type();
       al_t.dim(1);
       al_pos->type(al_t);
       c_args[0] = al_pos;
       if (output_neg.size() > 0) {
-        ArrayLit* al_neg = new ArrayLit(Location(), output_neg);
+        ArrayLit* al_neg = new ArrayLit(Location().introduce(), output_neg);
         al_neg->type(al_t);
         c_args.push_back(al_neg);
       }
-      c = new Call(bo->loc(), output_neg.empty() ? constants().ids.exists : constants().ids.clause, c_args);
+      c = new Call(bo->loc().introduce(), output_neg.empty() ? constants().ids.exists : constants().ids.clause, c_args);
     }
     c->decl(env.orig->matchFn(c));
     assert(c->decl());
@@ -2307,7 +2309,7 @@ namespace MiniZinc {
           for (unsigned int i=0; i<ranges.size(); i++) {
             ranges[i] = new TypeInst(e->loc(),
                                      Type(),
-                                     new SetLit(Location(),IntSetVal::a(al->min(i),al->max(i))));
+                                     new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
           }
           ASTExprVec<TypeInst> ranges_v(ranges);
           assert(!al->type().isbot());
@@ -2315,7 +2317,7 @@ namespace MiniZinc {
           VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),al);
           vd->introduced(true);
           vd->flat(vd);
-          VarDeclI* ni = new VarDeclI(Location(),vd);
+          VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
           env.flat_addItem(ni);
           EE ee(vd,NULL);
           env.map_insert(al,ee);
@@ -2365,7 +2367,7 @@ namespace MiniZinc {
           al->type(Type::varint(1));
           std::vector<Expression*> args(1);
           args[0] = al;
-          Call* cc = new Call(sl->loc(), "array2set", args);
+          Call* cc = new Call(sl->loc().introduce(), "array2set", args);
           cc->type(Type::varsetint());
           FunctionI* fi = env.orig->matchFn(cc->id(),args);
           if (fi==NULL) {
@@ -2412,7 +2414,7 @@ namespace MiniZinc {
             /// TODO: support arbitrary dimensions
             std::vector<Expression*> idxsetargs(1);
             idxsetargs[0] = id;
-            Call* idxset = new Call(id->loc(),"index_set",idxsetargs);
+            Call* idxset = new Call(id->loc().introduce(),"index_set",idxsetargs);
             idxset->decl(env.orig->matchFn(idxset));
             idxset->type(idxset->decl()->rtype(idxsetargs));
             Generator gen(gen_id,idxset);
@@ -2478,7 +2480,7 @@ namespace MiniZinc {
             }
             Type tt = vd->ti()->type();
             tt.dim(0);
-            TypeInst* vti = new TypeInst(Location(),tt,vd->ti()->domain());
+            TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
             
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
@@ -2492,7 +2494,7 @@ namespace MiniZinc {
             // set to "computed" (since it is a consequence of the individual variable domains)
             vd->ti()->setComputedDomain(true);
 
-            ArrayLit* al = new ArrayLit(Location(),elems,dims);
+            ArrayLit* al = new ArrayLit(Location().introduce(),elems,dims);
             al->type(vd->type());
             vd->e(al);
             env.vo_add_exp(vd);
@@ -2520,7 +2522,7 @@ namespace MiniZinc {
                     nvd->addAnnotation(ee_ann.r());
                   }
                   
-                  VarDeclI* ni = new VarDeclI(Location(),nvd);
+                  VarDeclI* ni = new VarDeclI(Location().introduce(),nvd);
                   env.flat_addItem(ni);
                   if (vd->e()) {
                     (void) flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
@@ -2554,7 +2556,7 @@ namespace MiniZinc {
           throw InternalError("type of anonymous variable could not be inferred");
         }
         GCLock lock;
-        VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), av->type()),
+        VarDecl* vd = new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), av->type()),
                                   env.genId());
         ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
       }
@@ -2578,7 +2580,7 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            ArrayLit* alr = new ArrayLit(Location(),elems,dims);
+            ArrayLit* alr = new ArrayLit(Location().introduce(),elems,dims);
             alr->type(al->type());
             alr->flat(true);
             ka = alr;
@@ -2658,7 +2660,7 @@ namespace MiniZinc {
           KeepAlive ka;
           {
             GCLock lock;
-            Call* cc = new Call(e->loc(),constants().ids.element,args);
+            Call* cc = new Call(e->loc().introduce(),constants().ids.element,args);
             cc->type(aa->type());
             FunctionI* fi = env.orig->matchFn(cc->id(),args);
             if (fi==NULL) {
@@ -2702,12 +2704,12 @@ namespace MiniZinc {
             if (c->in(i)->type().isvar()) {
               std::vector<Expression*> args(1);
               args[0] = c->in(i);
-              Call* ub = new Call(Location(),"ub",args);
+              Call* ub = new Call(Location().introduce(),"ub",args);
               ub->type(Type::parsetint());
               ub->decl(env.orig->matchFn(ub));
               in[i] = ub;
               for (int j=0; j<c->n_decls(i); j++) {
-                BinOp* bo = new BinOp(Location(),c->decl(i,j)->id(), BOT_IN, c->in(i));
+                BinOp* bo = new BinOp(Location().introduce(),c->decl(i,j)->id(), BOT_IN, c->in(i));
                 bo->type(Type::varbool());
                 where.push_back(bo);
               }
@@ -2729,11 +2731,11 @@ namespace MiniZinc {
             }
             Expression* cond;
             if (where.size() > 1) {
-              ArrayLit* al = new ArrayLit(Location(), where);
+              ArrayLit* al = new ArrayLit(Location().introduce(), where);
               al->type(Type::varbool(1));
               std::vector<Expression*> args(1);
               args[0] = al;
-              Call* forall = new Call(Location(), constants().ids.forall, args);
+              Call* forall = new Call(Location().introduce(), constants().ids.forall, args);
               forall->type(Type::varbool());
               forall->decl(env.orig->matchFn(forall));
               cond = forall;
@@ -2747,18 +2749,18 @@ namespace MiniZinc {
               std::vector<Expression*> ubargs(1);
               ubargs[0] = c->e();
               if (c->e()->type().st()==Type::ST_SET) {
-                Call* bc = new Call(Location(),"ub",ubargs);
+                Call* bc = new Call(Location().introduce(),"ub",ubargs);
                 bc->type(Type::parsetint());
                 bc->decl(env.orig->matchFn(bc));
                 r_bounds = bc;
               } else {
-                Call* lbc = new Call(Location(),"lb",ubargs);
+                Call* lbc = new Call(Location().introduce(),"lb",ubargs);
                 lbc->type(Type::parint());
                 lbc->decl(env.orig->matchFn(lbc));
-                Call* ubc = new Call(Location(),"ub",ubargs);
+                Call* ubc = new Call(Location().introduce(),"ub",ubargs);
                 ubc->type(Type::parint());
                 ubc->decl(env.orig->matchFn(ubc));
-                r_bounds = new BinOp(Location(),lbc,BOT_DOTDOT,ubc);
+                r_bounds = new BinOp(Location().introduce(),lbc,BOT_DOTDOT,ubc);
                 r_bounds->type(Type::parsetint());
               }
             }
@@ -2767,7 +2769,7 @@ namespace MiniZinc {
             tt.ti(Type::TI_VAR);
             tt.ot(Type::OT_OPTIONAL);
             
-            TypeInst* ti = new TypeInst(Location(),tt,r_bounds);
+            TypeInst* ti = new TypeInst(Location().introduce(),tt,r_bounds);
             VarDecl* r = new VarDecl(c->loc(),ti,env.genId());
             r->addAnnotation(constants().ann.promise_total);
             r->introduced(true);
@@ -2775,18 +2777,18 @@ namespace MiniZinc {
 
             std::vector<Expression*> let_exprs(3);
             let_exprs[0] = r;
-            BinOp* r_eq_e = new BinOp(Location(),r->id(),BOT_EQ,c->e());
+            BinOp* r_eq_e = new BinOp(Location().introduce(),r->id(),BOT_EQ,c->e());
             r_eq_e->type(Type::varbool());
-            let_exprs[1] = new BinOp(Location(),cond,BOT_IMPL,r_eq_e);
+            let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
             let_exprs[1]->type(Type::varbool());
             std::vector<Expression*> absent_r_args(1);
             absent_r_args[0] = r->id();
-            Call* absent_r = new Call(Location(), "absent", absent_r_args);
+            Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
             absent_r->type(Type::varbool());
             absent_r->decl(env.orig->matchFn(absent_r));
-            let_exprs[2] = new BinOp(Location(),cond,BOT_OR,absent_r);
+            let_exprs[2] = new BinOp(Location().introduce(),cond,BOT_OR,absent_r);
             let_exprs[2]->type(Type::varbool());
-            Let* let = new Let(Location(), let_exprs, r->id());
+            Let* let = new Let(Location().introduce(), let_exprs, r->id());
             let->type(r->type());
             Comprehension* nc = new Comprehension(c->loc(),let,gs,c->set());
             nc->type(c->type());
@@ -2818,7 +2820,7 @@ namespace MiniZinc {
         KeepAlive ka;
         {
           GCLock lock;
-          ArrayLit* alr = new ArrayLit(Location(),elems);
+          ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
           Type alt = c->type();
           if (allPar)
             alt.ti(Type::TI_PAR);
@@ -2862,10 +2864,10 @@ namespace MiniZinc {
           EE ee = flat_exp(env, Ctx(), id, NULL, constants().var_true);
           
           GCLock lock;
-          Call* revMap = new Call(Location(),c->id(),args);
+          Call* revMap = new Call(Location().introduce(),c->id(),args);
           
           args.push_back(ee.r());
-          Call* keepAlive = new Call(Location(),constants().var_redef->id(),args);
+          Call* keepAlive = new Call(Location().introduce(),constants().var_redef->id(),args);
           keepAlive->type(Type::varbool());
           keepAlive->decl(constants().var_redef);
           ret = flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
@@ -2879,7 +2881,7 @@ namespace MiniZinc {
           std::vector<Expression*> args(1);
           args[0] = bo->lhs()==constants().absent ? bo->rhs() : bo->lhs();
           if (args[0] != constants().absent) {
-            Call* cr = new Call(bo->loc(),"absent",args);
+            Call* cr = new Call(bo->loc().introduce(),"absent",args);
             cr->decl(env.orig->matchFn(cr));
             cr->type(cr->decl()->rtype(args));
             ret = flat_exp(env, ctx, cr, r, b);
@@ -2999,9 +3001,9 @@ namespace MiniZinc {
             args[0] = e0.r(); args[1] = e1.r();
             Call* cc;
             if (bo->decl()) {
-              cc = new Call(bo->loc(),bo->opToString(),args);
+              cc = new Call(bo->loc().introduce(),bo->opToString(),args);
             } else {
-              cc = new Call(bo->loc(),opToBuiltin(bo,bot),args);
+              cc = new Call(bo->loc().introduce(),opToBuiltin(bo,bot),args);
             }
             cc->type(bo->type());
 
@@ -3123,7 +3125,7 @@ namespace MiniZinc {
             std::vector<Expression*> args(1);
             args[0]= new ArrayLit(bo->loc(),bo_args);
             args[0]->type(Type::varbool(1));
-            Call* c = new Call(bo->loc(),id,args);
+            Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(c));
             c->type(c->decl()->rtype(args));
             KeepAlive ka(c);
@@ -3340,10 +3342,10 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location(),constants().lit_false));
+                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
-                    id->decl()->ti()->domain(new SetLit(Location(),newdom));
+                    id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
@@ -3407,7 +3409,7 @@ namespace MiniZinc {
               std::vector<Expression*> args_e(args.size());
               for (unsigned int i=args.size(); i--;)
                 args_e[i] = args[i]();
-              Call* cc = new Call(e->loc(),callid,args_e);
+              Call* cc = new Call(e->loc().introduce(),callid,args_e);
               cc->decl(env.orig->matchFn(cc->id(),args_e));
               if (cc->decl()==NULL) {
                 throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
@@ -3433,7 +3435,7 @@ namespace MiniZinc {
                 ees[2].b = cit->second.r();
                 if (doubleNeg) {
                   Type t = ees[2].b()->type();
-                  ees[2].b = new UnOp(Location(),UOT_NOT,ees[2].b());
+                  ees[2].b = new UnOp(Location().introduce(),UOT_NOT,ees[2].b());
                   ees[2].b()->type(t);
                 }
                 if (Id* id = ees[2].b()->dyn_cast<Id>()) {
@@ -3462,7 +3464,7 @@ namespace MiniZinc {
                   if (doubleNeg) {
                     GCLock lock;
                     Type t = ees[2].b()->type();
-                    ees[2].b = new UnOp(Location(),UOT_NOT,ees[2].b());
+                    ees[2].b = new UnOp(Location().introduce(),UOT_NOT,ees[2].b());
                     ees[2].b()->type(t);
                   }
                   if (Id* id = ees[2].b()->dyn_cast<Id>()) {
@@ -3551,10 +3553,10 @@ namespace MiniZinc {
             GC::lock();
             Expression* zero;
             if (uo->e()->type().bt()==Type::BT_INT)
-              zero = new IntLit(Location(),0);
+              zero = new IntLit(Location().introduce(),0);
             else
-              zero = new FloatLit(Location(),0.0);
-            BinOp* bo = new BinOp(Location(),zero,BOT_MINUS,uo->e());
+              zero = new FloatLit(Location().introduce(),0.0);
+            BinOp* bo = new BinOp(Location().introduce(),zero,BOT_MINUS,uo->e());
             bo->type(uo->type());
             KeepAlive ka(bo);
             GC::unlock();
@@ -3746,7 +3748,7 @@ namespace MiniZinc {
           {
             GCLock lock;
             std::vector<Expression*> e_args = toExpVec(args);
-            Call* cr_c = new Call(Location(),cid,e_args);
+            Call* cr_c = new Call(Location().introduce(),cid,e_args);
             decl = env.orig->matchFn(cr_c);
             if (decl==NULL)
               throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
@@ -3788,12 +3790,12 @@ namespace MiniZinc {
                         std::vector<Expression*> domargs(2);
                         domargs[0] = args[i]();
                         domargs[1] = dom;
-                        Call* c = new Call(Location(),"var_dom",domargs);
+                        Call* c = new Call(Location().introduce(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(c));
                         domconstraint = c;
                       } else {
-                        domconstraint = new BinOp(Location(),args[i](),bot,dom);
+                        domconstraint = new BinOp(Location().introduce(),args[i](),bot,dom);
                       }
                       domconstraint->type(args[i]()->type().ispar() ? Type::parbool() : Type::varbool());
                       if (ctx.b == C_ROOT) {
@@ -3816,16 +3818,16 @@ namespace MiniZinc {
               GCLock lock;
               VarDecl* reif_b = r;
               if (reif_b == NULL) {
-                VarDecl* nvd = new VarDecl(Location(), new TypeInst(Location(),Type::varbool()), env.genId());
+                VarDecl* nvd = new VarDecl(Location().introduce(), new TypeInst(Location().introduce(),Type::varbool()), env.genId());
                 nvd->type(Type::varbool());
                 nvd->introduced(true);
                 nvd->flat(nvd);
-                VarDeclI* nv = new VarDeclI(Location(),nvd);
+                VarDeclI* nv = new VarDeclI(Location().introduce(),nvd);
                 env.flat_addItem(nv);
                 reif_b = nvd;
               }
               args.push_back(reif_b->id());
-              Call* cr_real = new Call(Location(),env.reifyId(cid),toExpVec(args));
+              Call* cr_real = new Call(Location().introduce(),env.reifyId(cid),toExpVec(args));
               cr_real->type(Type::varbool());
               FunctionI* decl_real = env.orig->matchFn(cr_real);
               if (decl_real && decl_real->e()) {
@@ -3936,7 +3938,7 @@ namespace MiniZinc {
           for (ExpressionSetIter it = v->ann().begin(); it != v->ann().end(); ++it) {
             vd->addAnnotation(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
           }
-          VarDeclI* nv = new VarDeclI(Location(),vd);
+          VarDeclI* nv = new VarDeclI(Location().introduce(),vd);
           env.flat_addItem(nv);
           Ctx nctx;
           if (v->e() && v->e()->type().bt() == Type::BT_BOOL)
@@ -3967,7 +3969,7 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location(),ibv));
+                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
               }
             } else if (v->e()->type().dim() > 0) {
               Expression* ee = follow_id_to_decl(vd->e());
@@ -4019,7 +4021,7 @@ namespace MiniZinc {
                 std::vector<Expression*> domargs(2);
                 domargs[0] = ee.r();
                 domargs[1] = vd->ti()->domain();
-                Call* c = new Call(vd->ti()->loc(),"var_dom",domargs);
+                Call* c = new Call(vd->ti()->loc().introduce(),"var_dom",domargs);
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
                 VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
@@ -4045,7 +4047,7 @@ namespace MiniZinc {
                 EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
                 nvd->addAnnotation(ee_ann.r());
               }
-              VarDeclI* nv = new VarDeclI(Location(),nvd);
+              VarDeclI* nv = new VarDeclI(Location().introduce(),nvd);
               env.flat_addItem(nv);
               let_e = nvd->id();
             }
@@ -4220,7 +4222,7 @@ namespace MiniZinc {
         IdMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat->id());
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
-          VarDeclI* nvi = new VarDeclI(Location(), copy(env.cmap,vd)->cast<VarDecl>());
+          VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
@@ -4279,15 +4281,15 @@ namespace MiniZinc {
               std::vector<Expression*> args(reallyFlat->e()->type().dim());
               for (unsigned int i=0; i<args.size(); i++) {
                 if (nvi->e()->ti()->ranges()[i]->domain() == NULL) {
-                  args[i] = new SetLit(Location(), eval_intset(reallyFlat->ti()->ranges()[i]->domain()));
+                  args[i] = new SetLit(Location().introduce(), eval_intset(reallyFlat->ti()->ranges()[i]->domain()));
                 } else {
-                  args[i] = new SetLit(Location(), eval_intset(nvi->e()->ti()->ranges()[i]->domain()));
+                  args[i] = new SetLit(Location().introduce(), eval_intset(nvi->e()->ti()->ranges()[i]->domain()));
                 }
               }
-              ArrayLit* al = new ArrayLit(Location(), args);
+              ArrayLit* al = new ArrayLit(Location().introduce(), args);
               args.resize(1);
               args[0] = al;
-              reallyFlat->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
+              reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
             }
           } else {
             outputVarDecls(env, nvi, nvi->e()->e());
@@ -4419,15 +4421,15 @@ namespace MiniZinc {
                       std::vector<Expression*> args(vd->type().dim());
                       for (unsigned int i=0; i<args.size(); i++) {
                         if (vd->ti()->ranges()[i]->domain() == NULL) {
-                          args[i] = new SetLit(Location(), eval_intset(vd->flat()->ti()->ranges()[i]->domain()));
+                          args[i] = new SetLit(Location().introduce(), eval_intset(vd->flat()->ti()->ranges()[i]->domain()));
                         } else {
-                          args[i] = new SetLit(Location(), eval_intset(vd->ti()->ranges()[i]->domain()));
+                          args[i] = new SetLit(Location().introduce(), eval_intset(vd->ti()->ranges()[i]->domain()));
                         }
                       }
-                      ArrayLit* al = new ArrayLit(Location(), args);
+                      ArrayLit* al = new ArrayLit(Location().introduce(), args);
                       args.resize(1);
                       args[0] = al;
-                      vd->flat()->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
+                      vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
                     }
                   }
                 }
@@ -4493,12 +4495,12 @@ namespace MiniZinc {
                   s << *idxset << ",";
                 }
               }
-              StringLit* sl = new StringLit(Location(),s.str());
+              StringLit* sl = new StringLit(Location().introduce(),s.str());
               outputVars.push_back(sl);
               
               std::vector<Expression*> showArgs(1);
               showArgs[0] = vd->id();
-              Call* show = new Call(Location(),constants().ids.show,showArgs);
+              Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
               show->type(Type::parstring());
               FunctionI* fi = e.orig->matchFn(show);
               assert(fi);
@@ -4506,12 +4508,12 @@ namespace MiniZinc {
               outputVars.push_back(show);
               std::string ends = vd->type().dim() > 0 ? ")" : "";
               ends += ";\n";
-              StringLit* eol = new StringLit(Location(),ends);
+              StringLit* eol = new StringLit(Location().introduce(),ends);
               outputVars.push_back(eol);
             }
           }
         }
-        OutputI* newOutputItem = new OutputI(Location(),new ArrayLit(Location(),outputVars));
+        OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e.cmap, newOutputItem)->cast<OutputI>();
         e.output->addItem(outputItem);
@@ -4646,15 +4648,15 @@ namespace MiniZinc {
                     std::vector<Expression*> args(vdi->e()->type().dim());
                     for (unsigned int i=0; i<args.size(); i++) {
                       if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
-                        args[i] = new SetLit(Location(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
+                        args[i] = new SetLit(Location().introduce(), eval_intset(vdi->e()->flat()->ti()->ranges()[i]->domain()));
                       } else {
-                        args[i] = new SetLit(Location(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
+                        args[i] = new SetLit(Location().introduce(), eval_intset(vdi->e()->ti()->ranges()[i]->domain()));
                       }
                     }
-                    ArrayLit* al = new ArrayLit(Location(), args);
+                    ArrayLit* al = new ArrayLit(Location().introduce(), args);
                     args.resize(1);
                     args[0] = al;
-                    vdi->e()->flat()->addAnnotation(new Call(Location(),constants().ann.output_array,args,NULL));
+                    vdi->e()->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
                   }
                 }
               }
@@ -4795,10 +4797,10 @@ namespace MiniZinc {
           nsi = SolveI::sat(Location());
           break;
         case SolveI::ST_MIN:
-          nsi = SolveI::min(Location(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+          nsi = SolveI::min(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
           break;
         case SolveI::ST_MAX:
-          nsi = SolveI::max(Location(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+          nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
           break;
         }
         for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
@@ -4915,23 +4917,23 @@ namespace MiniZinc {
               vdi->e()->ti(nti);
               if (dom->min(0).isFinite()) {
                 std::vector<Expression*> args(2);
-                args[0] = new IntLit(Location(),dom->min(0));
+                args[0] = new IntLit(Location().introduce(),dom->min(0));
                 args[1] = vdi->e()->id();
-                Call* call = new Call(Location(),constants().ids.int_.le,args);
+                Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
-                env.flat_addItem(new ConstraintI(Location(), call));
+                env.flat_addItem(new ConstraintI(Location().introduce(), call));
               } else if (dom->max(dom->size()-1).isFinite()) {
                 std::vector<Expression*> args(2);
                 args[0] = vdi->e()->id();
-                args[1] = new IntLit(Location(),dom->max(dom->size()-1));
-                Call* call = new Call(Location(),constants().ids.int_.le,args);
+                args[1] = new IntLit(Location().introduce(),dom->max(dom->size()-1));
+                Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
-                env.flat_addItem(new ConstraintI(Location(), call));
+                env.flat_addItem(new ConstraintI(Location().introduce(), call));
               }
             } else if (dom->size() > 1) {
-              SetLit* newDom = new SetLit(Location(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
+              SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
               TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
               nti->domain(newDom);
               vdi->e()->ti(nti);
@@ -4944,11 +4946,11 @@ namespace MiniZinc {
                 for (IntVal i=firstHole; i<domr.min(); i++) {
                   std::vector<Expression*> args(2);
                   args[0] = vdi->e()->id();
-                  args[1] = new IntLit(Location(),i);
-                  Call* call = new Call(Location(),constants().ids.int_.ne,args);
+                  args[1] = new IntLit(Location().introduce(),i);
+                  Call* call = new Call(Location().introduce(),constants().ids.int_.ne,args);
                   call->type(Type::varbool());
                   call->decl(env.orig->matchFn(call));
-                  env.flat_addItem(new ConstraintI(Location(), call));
+                  env.flat_addItem(new ConstraintI(Location().introduce(), call));
                   firstHole = domr.max().plus(1);
                 }
               }
@@ -4982,19 +4984,19 @@ namespace MiniZinc {
                   ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->v().size());
                   std::copy(le_c->v().begin(),le_c->v().end(),nc_c.begin());
-                  nc_c.push_back(new IntLit(Location(),-1));
-                  args[0] = new ArrayLit(Location(),nc_c);
+                  nc_c.push_back(new IntLit(Location().introduce(),-1));
+                  args[0] = new ArrayLit(Location().introduce(),nc_c);
                   args[0]->type(Type::parint(1));
                   ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
-                  args[1] = new ArrayLit(Location(),nx);
+                  args[1] = new ArrayLit(Location().introduce(),nx);
                   args[1]->type(Type::varint(1));
                   IntVal d = c->args()[2]->cast<IntLit>()->v();
-                  args[2] = new IntLit(Location(),-d);
+                  args[2] = new IntLit(Location().introduce(),-d);
                   args[2]->type(Type::parint(0));
-                  nc = new Call(c->loc(),ASTString("int_lin_eq"),args);
+                  nc = new Call(c->loc().introduce(),ASTString("int_lin_eq"),args);
                   nc->type(Type::varbool());
                   nc->decl(int_lin_eq);
                 }
@@ -5003,7 +5005,7 @@ namespace MiniZinc {
                   std::vector<Expression*> args(2);
                   args[0] = c->args()[0];
                   args[1] = vd->id();
-                  nc = new Call(c->loc(),array_bool_or->id(),args);
+                  nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_or);
                 }
@@ -5012,7 +5014,7 @@ namespace MiniZinc {
                   std::vector<Expression*> args(2);
                   args[0] = c->args()[0];
                   args[1] = vd->id();
-                  nc = new Call(c->loc(),array_bool_and->id(),args);
+                  nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_and);
                 }
@@ -5021,7 +5023,7 @@ namespace MiniZinc {
                 args[0] = c->args()[0];
                 args[1] = c->args()[1];
                 args[2] = vd->id();
-                nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
+                nc = new Call(c->loc().introduce(),array_bool_clause_reif->id(),args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause_reif);
               } else {
@@ -5031,7 +5033,7 @@ namespace MiniZinc {
                   args.push_back(vd->id());
                   ASTString cid = c->id();
                   if (cid == constants().ids.clause && array_bool_clause_reif) {
-                    nc = new Call(c->loc(),array_bool_clause_reif->id(),args);
+                    nc = new Call(c->loc().introduce(),array_bool_clause_reif->id(),args);
                     nc->type(Type::varbool());
                     nc->decl(array_bool_clause_reif);
                   } else {
@@ -5040,7 +5042,7 @@ namespace MiniZinc {
                     }
                     FunctionI* decl = env.orig->matchFn(cid,args);
                     if (decl && decl->e()) {
-                      nc = new Call(c->loc(),cid,args);
+                      nc = new Call(c->loc().introduce(),cid,args);
                       nc->type(Type::varbool());
                       nc->decl(decl);
                     }
@@ -5066,7 +5068,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = c->args()[0];
                 args[1] = constants().lit_true;
-                nc = new Call(c->loc(),array_bool_or->id(),args);
+                nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_or);
               }
@@ -5075,7 +5077,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = c->args()[0];
                 args[1] = constants().lit_true;
-                nc = new Call(c->loc(),array_bool_and->id(),args);
+                nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_and);
               }
@@ -5084,7 +5086,7 @@ namespace MiniZinc {
                 std::vector<Expression*> args(2);
                 args[0] = c->args()[0];
                 args[1] = c->args()[1];
-                nc = new Call(c->loc(),array_bool_clause->id(),args);
+                nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
@@ -5251,7 +5253,7 @@ namespace MiniZinc {
                 if (args.size()==0) {
                   ve = vcc;
                 } else {
-                  Call* nc = new Call(vcc->loc(),cid,args);
+                  Call* nc = new Call(vcc->loc().introduce(),cid,args);
                   nc->type(vcc->type());
                   nc->ann().merge(vcc->ann());
                   ve = nc;
@@ -5262,13 +5264,13 @@ namespace MiniZinc {
                   args[0] = id;
                   args[1] = constants().lit_true;
                   GCLock lock;
-                  ve = new Call(Location(),constants().ids.bool_eq,args);
+                  ve = new Call(Location().introduce(),constants().ids.bool_eq,args);
                 } else {
                   ve = constants().lit_true;
                 }
               }
               if (ve != constants().lit_true) {
-                e.envi().flat_addItem(new ConstraintI(Location(),ve));
+                e.envi().flat_addItem(new ConstraintI(Location().introduce(),ve));
               }
             }
           } else {
@@ -5291,11 +5293,11 @@ namespace MiniZinc {
                 std::vector<Expression*> args(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
                 args.push_back(vd->id());
-                Call * nc = new Call(c->loc(),cid,args);
+                Call * nc = new Call(c->loc().introduce(),cid,args);
                 nc->type(c->type());
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
-                e.envi().flat_addItem(new ConstraintI(Location(),nc));
+                e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
                        vd->e()->eid() == Expression::E_BOOLLIT);
@@ -5319,27 +5321,27 @@ namespace MiniZinc {
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 if (le_c->type().bt()==Type::BT_INT) {
                   cid = constants().ids.int_.lin_eq;
-                  nc.push_back(new IntLit(Location(),-1));
-                  args[0] = new ArrayLit(Location(),nc);
+                  nc.push_back(new IntLit(Location().introduce(),-1));
+                  args[0] = new ArrayLit(Location().introduce(),nc);
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
-                  args[1] = new ArrayLit(Location(),nx);
+                  args[1] = new ArrayLit(Location().introduce(),nx);
                   IntVal d = cc->args()[2]->cast<IntLit>()->v();
-                  args[2] = new IntLit(Location(),-d);
+                  args[2] = new IntLit(Location().introduce(),-d);
                 } else {
                   // float
                   cid = constants().ids.float_.lin_eq;
-                  nc.push_back(new FloatLit(Location(),-1.0));
-                  args[0] = new ArrayLit(Location(),nc);
+                  nc.push_back(new FloatLit(Location().introduce(),-1.0));
+                  args[0] = new ArrayLit(Location().introduce(),nc);
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
-                  args[1] = new ArrayLit(Location(),nx);
+                  args[1] = new ArrayLit(Location().introduce(),nx);
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
-                  args[2] = new FloatLit(Location(),-d);
+                  args[2] = new FloatLit(Location().introduce(),-d);
                 }
               } else {
                 if (cc->id() == "card") {
@@ -5351,11 +5353,11 @@ namespace MiniZinc {
                 std::copy(cc->args().begin(),cc->args().end(),args.begin());
                 args.push_back(vd->id());
               }
-              Call* nc = new Call(cc->loc(),cid,args);
+              Call* nc = new Call(cc->loc().introduce(),cid,args);
               nc->type(cc->type());
               nc->addAnnotation(definesVarAnn(vd->id()));
               nc->ann().merge(cc->ann());
-              e.envi().flat_addItem(new ConstraintI(Location(),nc));
+              e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
             } else {
               assert(vd->e()->eid() == Expression::E_ID ||
                      vd->e()->eid() == Expression::E_INTLIT ||
@@ -5397,12 +5399,12 @@ namespace MiniZinc {
           al->setDims(ASTIntVec(dims));
           IntSetVal* isv = IntSetVal::a(1,al->length());
           if (vd->ti()->ranges().size() == 1) {
-            vd->ti()->ranges()[0]->domain(new SetLit(Location(),isv));
+            vd->ti()->ranges()[0]->domain(new SetLit(Location().introduce(),isv));
           } else {
             std::vector<TypeInst*> r(1);
             r[0] = new TypeInst(vd->ti()->ranges()[0]->loc(),
                                 vd->ti()->ranges()[0]->type(),
-                                new SetLit(Location(),isv));
+                                new SetLit(Location().introduce(),isv));
             ASTExprVec<TypeInst> ranges(r);
             TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
             vd->ti(ti);
@@ -5453,24 +5455,24 @@ namespace MiniZinc {
           args[0] = id;
           args[1] = constants().lit_true;
           GCLock lock;
-          ci->e(new Call(Location(),constants().ids.bool_eq,args));
+          ci->e(new Call(Location().introduce(),constants().ids.bool_eq,args));
         } else if (BoolLit* bl = ci->e()->dyn_cast<BoolLit>()) {
           if (!bl->v()) {
             GCLock lock;
             std::vector<Expression*> args(2);
             args[0] = constants().lit_false;
             args[1] = constants().lit_true;
-            Call* neq = new Call(Location(),constants().ids.bool_eq,args);
+            Call* neq = new Call(Location().introduce(),constants().ids.bool_eq,args);
             ci->e(neq);
           }
         }
       } else if (SolveI* si = (*m)[i]->dyn_cast<SolveI>()) {
         if (si->e() && si->e()->type().ispar()) {
           GCLock lock;
-          TypeInst* ti = new TypeInst(Location(),si->e()->type(),NULL);
-          VarDecl* constantobj = new VarDecl(Location(),ti,e.envi().genId(),si->e());
+          TypeInst* ti = new TypeInst(Location().introduce(),si->e()->type(),NULL);
+          VarDecl* constantobj = new VarDecl(Location().introduce(),ti,e.envi().genId(),si->e());
           si->e(constantobj->id());
-          e.envi().flat_addItem(new VarDeclI(Location(),constantobj));
+          e.envi().flat_addItem(new VarDeclI(Location().introduce(),constantobj));
         }
       }
     }
