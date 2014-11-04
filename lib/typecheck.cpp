@@ -202,6 +202,7 @@ namespace MiniZinc {
           pos.insert(std::pair<VarDecl*,int>(ve,-1));
           run(ve->ti());
           run(ve->e());
+          ve->payload(decls.size());
           decls.push_back(ve);
           pi = pos.find(ve);
           pi->second = decls.size()-1;
@@ -758,6 +759,26 @@ namespace MiniZinc {
     m->sortFn();
 
     {
+      struct SortByPayload {
+        bool operator ()(Item* i0, Item* i1) {
+          if (i0->isa<IncludeI>())
+            return !i1->isa<IncludeI>();
+          if (VarDeclI* vdi0 = i0->dyn_cast<VarDeclI>()) {
+            if (VarDeclI* vdi1 = i1->dyn_cast<VarDeclI>()) {
+              return vdi0->e()->payload() < vdi1->e()->payload();
+            } else {
+              return !i1->isa<IncludeI>();
+            }
+          }
+          return false;
+        }
+      } _sbp;
+      
+      std::stable_sort(m->begin(), m->end(), _sbp);
+    }
+
+    
+    {
       Typer<false> ty(m, typeErrors);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
@@ -766,6 +787,7 @@ namespace MiniZinc {
         /// This can be a problem if the TypeInst calls functions, because functions
         /// are only type-checked after the VarDecls and therefore may still contain
         /// unknown types.
+        ts.decls[i]->payload(0);
         bu_ty.run(ts.decls[i]->ti());
         ty.vVarDecl(*ts.decls[i]);
       }
