@@ -868,9 +868,13 @@ namespace MiniZinc {
     for (unsigned int i=0; i<ts.decls.size(); i++) {
       if (ts.decls[i]->toplevel() &&
           ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
-        typeErrors.push_back(TypeError(ts.decls[i]->loc(),
-                                       "  symbol error: variable `" + ts.decls[i]->id()->str().str()
-                                       + "' must be defined (did you forget to specify a data file?)"));
+        if (ts.decls[i]->type().isopt()) {
+          ts.decls[i]->e(constants().absent);
+        } else {
+          typeErrors.push_back(TypeError(ts.decls[i]->loc(),
+                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
+                                         + "' must be defined (did you forget to specify a data file?)"));
+        }
       }
     }
 
