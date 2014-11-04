@@ -1731,34 +1731,6 @@ namespace MiniZinc {
     return clause;
   }
 
-  Expression* pre_flatten(EnvI& env, Expression* e) {
-    typedef UNORDERED_NAMESPACE::unordered_map<Expression*, Expression*> Map;
-    Map map;
-
-    class PreFlattener : public EVisitor {
-    protected:
-      EnvI& env;
-      Map& map;
-    public:
-      PreFlattener(EnvI& env0, Map& map0) : env(env0), map(map0) {}
-      bool enter(Expression* e) {
-        if (e->type().cv()) {
-          if (e->type().isvar()) {
-            if (!e->isa<Id>()) {
-              EE ee = flat_exp(env, Ctx(), e, NULL, constants().var_true);
-              map.insert(std::make_pair(e, ee.r()));
-            }
-          } else {
-            return true;
-          }
-        }
-        return false;
-      }
-    };
-
-    return eval_par(e);
-  }
-
   /// TODO: check if all expressions are total
   /// If yes, use element encoding
   /// If not, use implication encoding
@@ -2306,7 +2278,7 @@ namespace MiniZinc {
     CallStackItem _csi(env,e);
     EE ret;
     assert(!e->type().isunknown());
-    if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
+    if (e->type().ispar() && !e->type().cv() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
       ret.b = bind(env,Ctx(),b,constants().lit_true);
       if (e->type().dim() > 0) {
         EnvI::Map::iterator it;
@@ -2357,7 +2329,7 @@ namespace MiniZinc {
         }
       }
       GCLock lock;
-      ret.r = bind(env,ctx,r,pre_flatten(env,e));
+      ret.r = bind(env,ctx,r,eval_par(e));
       return ret;
     }
     switch (e->eid()) {
@@ -3557,7 +3529,20 @@ namespace MiniZinc {
             break;
             
           case BOT_DOTDOT:
-            throw InternalError("not yet implemented");
+          {
+            if (bo->type().ispar()) {
+              EE ee0 = flat_exp(env,ctx,boe0,NULL,constants().var_true);
+              EE ee1 = flat_exp(env,ctx,boe1,NULL,constants().var_true);
+              ret.b = bind(env,ctx,b,constants().lit_true);
+              GCLock lock;
+              BinOp* nbo = new BinOp(Location().introduce(),ee0.r(),BOT_DOTDOT,ee1.r());
+              nbo->type(bo->type());
+              Expression* nbo_eval = eval_par(nbo);
+              ret.r = bind(env,ctx,r,nbo_eval);
+            } else {
+              throw InternalError("not yet implemented");
+            }
+          }
         }
       }
       break;
@@ -4790,7 +4775,12 @@ namespace MiniZinc {
             CallStackItem csi(env,v->e());
             GCLock lock;
             Location v_loc = v->e()->e()->loc();
-            v->e()->e(pre_flatten(env, v->e()->e()));
+            if (!v->e()->e()->type().cv()) {
+              v->e()->e(eval_par(v->e()->e()));
+            } else {
+              EE ee = flat_exp(env, Ctx(), v->e()->e(), NULL, constants().var_true);
+              v->e()->e(ee.r());
+            }
             if (v->e()->type().dim() > 0) {
               checkIndexSets(v->e(), v->e()->e());
               if (v->e()->ti()->domain() != NULL) {
