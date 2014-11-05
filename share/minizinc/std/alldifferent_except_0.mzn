@@ -1,8 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Constrains the elements of the array 'vs' to be all different except those
-% elements that are assigned the value 0.
-%-----------------------------------------------------------------------------%
-
 /**  @group alldifferent
   Constrain the array of integers \a vs to be all different except those
   elements that are assigned the value 0.

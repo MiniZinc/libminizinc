@@ -1,18 +1,10 @@
-%-----------------------------------------------------------------------------%
-% Requires that each item i with weight w[i], be put into bin[i] such that the
-% sum of the weights of the items in each bin does not exceed the capacity c.
-% Assumptions:
-% - forall i, w[i] >=0
-% - c >=0
-%-----------------------------------------------------------------------------%
-
 /**  @group packing
-  Requires that each item \p i with weight \a w[i], be put into \a bin[i] such 
+  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such 
   that the sum of the weights of the items in each bin does not exceed the 
   capacity \a c.
 
   Assumptions:
-  - forall \p i, \a w[i] >=0
+  - forall \p i, \a w[\p i] >=0
   - \a c >=0
 */
 predicate bin_packing(int: c,

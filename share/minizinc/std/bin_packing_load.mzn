@@ -1,17 +1,10 @@
-%-----------------------------------------------------------------------------%
-% Requires that each item i with weight w[i], be put into bin[i] such
-% that the sum of the weights of the items in each bin b is equal to load[b].
-% Assumptions:
-% - forall i, w[i] >= 0
-%-----------------------------------------------------------------------------%
-
 /**  @group packing
-  Requires that each item \p i with weight \a w[i], be put into \a bin[i] such 
+  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such 
   that the sum of the weights of the items in each bin \p b is equal to
-  \a load[b].
+  \a load[\p b].
 
   Assumptions:
-  - forall \p i, \a w[i] >=0
+  - forall \p i, \a w[\p i] >=0
 */
 predicate bin_packing_load(array[int] of var int: load,
                            array[int] of var int: bin,

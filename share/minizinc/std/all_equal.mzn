@@ -1,7 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Constraints the array of objects 'x' to be all equal.
-%-----------------------------------------------------------------------------%
-
 include "all_equal_int.mzn";
 include "all_equal_set.mzn";
 

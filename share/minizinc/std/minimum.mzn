@@ -1,14 +1,17 @@
-%-----------------------------------------------------------------------------%
-% Constrains 'm' to be the minimum of the values in 'x'.
-% Assumptions: |x| > 0.
-%-----------------------------------------------------------------------------%
-
 include "minimum_float.mzn";
 include "minimum_int.mzn";
 
+/** Constrains \a m to be the minimum of the values in \a x.
+
+  Assumptions: |\a x| > 0.
+*/
 predicate minimum(var float: m, array[int] of var float: x) =
     minimum_float(m, x);
 
+/** Constrains \a m to be the minimum of the values in \a x.
+
+  Assumptions: |\a x| > 0.
+*/
 predicate minimum(var int: m, array[int] of var int: x) =
     minimum_int(m, x);
 

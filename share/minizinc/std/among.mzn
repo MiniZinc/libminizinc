@@ -1,7 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Requires exactly 'n' variables in 'x' to take one of the values in 'v'.
-%-----------------------------------------------------------------------------%
-
 /**  @group counting
   Requires exactly \a n variables in \a x to take one of the values in \a v.
 */

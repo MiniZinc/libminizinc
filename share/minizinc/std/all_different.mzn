@@ -1,7 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Constrains the array of objects 'x' to be all different.
-%-----------------------------------------------------------------------------%
-
 include "all_different_int.mzn";
 include "all_different_set.mzn";
 

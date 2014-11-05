@@ -1,7 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Requires that each pair of sets in s overlap in at most one element.
-%-----------------------------------------------------------------------------%
-
 /**  @group counting
   Requires that each pair of sets in \a s overlap in at most one element.
 */

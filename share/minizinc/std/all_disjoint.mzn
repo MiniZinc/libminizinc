@@ -1,7 +1,3 @@
-%-----------------------------------------------------------------------------%
-% Ensures that every pair of sets in the array 'S' is disjoint.
-%-----------------------------------------------------------------------------%
-
 /**  @group alldifferent
   Constrain the array of sets of integers \a S to be pairwise disjoint.
 */
