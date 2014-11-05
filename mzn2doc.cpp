@@ -108,6 +108,11 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
+    } else if (string(argv[i])=="--output-base") {
+      i++;
+      if (i==argc)
+        goto error;
+      flag_output_base = argv[i];
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -199,13 +204,17 @@ int main(int argc, char** argv) {
         if (flag_single_page) {
           HtmlDocument doc = HtmlPrinter::printHtmlSinglePage(m);
           std::ofstream os(flag_output_base+".html");
+          HtmlPrinter::htmlHeader(os, "");
           os << doc.document();
+          HtmlPrinter::htmlFooter(os);
           os.close();
         } else {
           std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m);
           for (unsigned int i=0; i<docs.size(); i++) {
             std::ofstream os(flag_output_base+"_"+docs[i].filename()+".html");
+            HtmlPrinter::htmlHeader(os, docs[i].filename());
             os << docs[i].document();
+            HtmlPrinter::htmlFooter(os);
             os.close();
           }
         }

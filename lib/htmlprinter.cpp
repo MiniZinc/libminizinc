@@ -14,6 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/copy.hh>
 
 #include <sstream>
 
@@ -51,7 +52,7 @@ namespace MiniZinc {
             if (cur_t != -1)
               oss << "</div>\n";
             cur_t = it->t;
-            oss << "<div class='mzn-decl-type" << dt[cur_t] << ">";
+            oss << "<div class='mzn-decl-type-" << dt[cur_t] << "'>\n";
             oss << "<div class='mzn-decl-type-heading'>" << dt_desc[cur_t] << "</div>\n";
           }
           oss << it->doc;
@@ -112,11 +113,11 @@ namespace MiniZinc {
       std::vector<std::string> replacements;
       std::ostringstream oss;
       size_t lastpos = 0;
-      size_t pos = s.find("\\a");
+      size_t pos = std::min(s.find("\\a"), s.find("\\p"));
       if (pos == std::string::npos)
         return replacements;
       while (pos != std::string::npos) {
-        oss << s.substr(lastpos, pos);
+        oss << s.substr(lastpos, pos-lastpos);
         size_t start = pos;
         while (start < s.size() && s[start]!=' ' && s[start]!='\t')
           start++;
@@ -125,28 +126,71 @@ namespace MiniZinc {
         int end = start+1;
         while (end < s.size() && (isalnum(s[end]) || s[end]=='_'))
           end++;
-        replacements.push_back(s.substr(start,end-start));
-        oss << "<span class='mzn-arg'>" << replacements.back() << "</span>";
+        if (s[pos+1]=='a') {
+          replacements.push_back(s.substr(start,end-start));
+          oss << "<span class='mzn-arg'>" << replacements.back() << "</span>";
+        } else {
+          oss << "<span class='mzn-parm'>" << s.substr(start,end-start) << "</span>";
+        }
         lastpos = end;
-        pos = s.find("\\a", lastpos);
+        pos = std::min(s.find("\\a", lastpos), s.find("\\p", lastpos));
       }
       oss << s.substr(lastpos, std::string::npos);
       s = oss.str();
       return replacements;
     }
     
-    void replaceEOLs(const std::string& s, std::ostream& os) {
+    std::string addHTML(const std::string& s) {
+      std::ostringstream oss;
       size_t lastpos = 0;
       size_t pos = s.find('\n');
-      std::cerr << "found pos " << pos << "\n";
+      bool inUl = false;
+      oss << "<p>\n";
       while (pos != std::string::npos) {
-        std::cerr << "  found pos " << pos << "\n";
-        os << s.substr(lastpos, pos-lastpos);
-        os << "<br>";
-        lastpos = pos+1;
-        pos = s.find('\n', lastpos);
+        oss << s.substr(lastpos, pos-lastpos);
+        size_t next = std::min(s.find('\n', pos+1),s.find('-', pos+1));
+        if (next==std::string::npos) {
+          lastpos = pos+1;
+          break;
+        }
+        bool allwhite = true;
+        for (size_t cur = pos+1; cur < next; cur++) {
+          if (s[cur]!=' ' && s[cur]!='\t') {
+            allwhite = false;
+            break;
+          }
+        }
+        if (allwhite) {
+          if (s[next]=='-') {
+            if (!inUl) {
+              oss << "<ul>\n";
+              inUl = true;
+            }
+            oss << "<li>";
+          } else {
+            if (inUl) {
+              oss << "</ul>\n";
+              inUl = false;
+            } else {
+              oss << "</p><p>\n";
+            }
+          }
+          lastpos = next+1;
+          pos = s.find('\n', lastpos);
+        } else {
+          lastpos = pos+1;
+          if (s[next]=='-') {
+            pos = s.find('\n', next+1);
+          } else {
+            pos = next;
+          }
+        }
       }
-      os << s.substr(lastpos, std::string::npos);
+      oss << s.substr(lastpos, std::string::npos);
+      if (inUl)
+        oss << "</ul>\n";
+      oss << "</p>\n";
+      return oss.str();
     }
     
   public:
@@ -167,7 +211,7 @@ namespace MiniZinc {
         os << "<div class='mzn-vardecl-code'>\n";
         os << *vdi->e()->ti() << ": " << *vdi->e()->id();
         os << "</div><div class='mzn-vardecl-doc'>\n";
-        os << ds;
+        os << addHTML(ds);
         os << "</div>";
         GCLock lock;
         HtmlDocOutput::DocItem di(vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR: HtmlDocOutput::DocItem::T_VAR,
@@ -212,31 +256,21 @@ namespace MiniZinc {
         os << "<div class='mzn-fundecl-code'>\n";
         
         Expression* doc_comment_fn_body = fi->e() ? getAnnotation(fi->ann(), "doc_comment_fn_body") : NULL;
+        fi->ann().remove(docstring);
         if (doc_comment_fn_body) {
-          fi->ann().remove(docstring);
           fi->ann().remove(doc_comment_fn_body);
-          Printer pp(os, 80);
+          Printer pp(os, 70);
           pp.print(fi);
-          fi->ann().add(docstring);
           fi->ann().add(doc_comment_fn_body);
         } else {
-          if (fi->ti()->type() == Type::varbool()) {
-            os << "predicate ";
-          } else if (fi->ti()->type() == Type::parbool()) {
-            os << "test ";
-          } else {
-            os << "function " << *fi->ti() << ": ";
-          }
-          os << fi->id() << "(";
-          for (unsigned int i=0; i<fi->params().size(); i++) {
-            os << *fi->params()[i]->ti() << ": " << *fi->params()[i]->id();
-            if (i < fi->params().size()-1)
-              os << ", ";
-          }
-          os << ")";
+          FunctionI* fi_c = copy(fi)->cast<FunctionI>();
+          fi_c->e(NULL);
+          Printer pp(os, 70);
+          pp.print(fi_c);
         }
-        os << "</div><div class='mzn-fundecl-doc'>\n";
-        os << ds;
+        fi->ann().add(docstring);
+        os << "</div>\n<div class='mzn-fundecl-doc'>\n";
+        os << addHTML(ds);
         if (params.size() > 0) {
           os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
           os << "<ul class='mzn-fundecl-params'>\n";
@@ -281,5 +315,32 @@ namespace MiniZinc {
     }
     return HtmlDocument("model.html", masterGroup.toHTML());
   }
-  
+ 
+  void
+  HtmlPrinter::htmlHeader(std::ostream& os, const std::string& title) {
+    os << "<!doctype html>\n";
+    
+    os << "<html lang='en'>\n";
+    os << "<head>\n";
+    os << "<meta charset='utf-8'>\n";
+    os << "<link rel='stylesheet' type='text/css' href='style.css'>\n";
+    os << "<title>" << title << "</title>\n";
+    
+//    os << "<style>\n";
+//    os << "  .mzn-arg { font-style: italic; }\n";
+//    os << "  .mzn-decl-type-heading { font-size: 180%; font-weight: bold; }\n";
+//    os << "  .mzn-fundecl { padding: 10px; width: 80%; background-color: #DDDDDD; border-style: solid; border-width: thin; }\n";
+//    os << "</style>\n";
+    
+    os << "</head>\n";
+    
+    os << "<body>\n";
+  }
+
+  void
+  HtmlPrinter::htmlFooter(std::ostream& os) {
+    os << "</body>\n";
+    os << "</html>\n";
+  }
+
 }

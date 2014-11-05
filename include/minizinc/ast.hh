@@ -1110,6 +1110,8 @@ namespace MiniZinc {
     Annotation& ann(void) { return _ann; }
     /// Access body
     Expression* e(void) const { return _e; }
+    /// Set body
+    void e(Expression* b) { _e = b; }
     
     /** \brief Compute return type given argument types \a ta
      */

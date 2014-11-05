@@ -35,6 +35,8 @@ namespace MiniZinc {
   public:
     static std::vector<HtmlDocument> printHtml(Model* m);
     static HtmlDocument printHtmlSinglePage(Model* m);
+    static void htmlHeader(std::ostream& os, const std::string& title);
+    static void htmlFooter(std::ostream& os);
   };
   
 }
