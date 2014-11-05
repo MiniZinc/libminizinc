@@ -17,6 +17,7 @@ annotation output_array(array[$u] of set of int:a);
 annotation output_var;
 annotation is_reverse_map;
 annotation doc_comment(string);
+annotation doc_comment_fn_body;
 
 %-----------------------------------------------------------------------------%
 %

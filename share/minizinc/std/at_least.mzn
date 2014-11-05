@@ -5,9 +5,15 @@
 include "at_least_int.mzn";
 include "at_least_set.mzn";
 
+/**  @group counting
+  Requires at least \a n variables in \a x to take the value \a v.
+*/
 predicate at_least(int: n, array[int] of var int: x, int: v) =
     at_least_int(n, x, v);
 
+/**  @group counting
+  Requires at least \a n variables in \a x to take the value \a v.
+*/
 predicate at_least(int: n, array[int] of var set of int: x, set of int: v) =
     at_least_set(n, x, v);
 

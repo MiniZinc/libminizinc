@@ -123,6 +123,9 @@ namespace MiniZinc {
   /// returns the Annotation specified by the string; returns NULL if not exists
   Expression* getAnnotation(const Annotation& ann, std::string str);
 
+  /// returns the Annotation specified by the string; returns NULL if not exists
+  Expression* getAnnotation(const Annotation& ann, const ASTString& str);
+
   /**
    * \brief Base class for expressions
    */

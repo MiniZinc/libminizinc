@@ -725,7 +725,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Model* m, std::vector<TypeError>& typeErrors) {
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters) {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
@@ -892,7 +892,7 @@ namespace MiniZinc {
           ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
         if (ts.decls[i]->type().isopt()) {
           ts.decls[i]->e(constants().absent);
-        } else {
+        } else if (!ignoreUndefinedParameters) {
           typeErrors.push_back(TypeError(ts.decls[i]->loc(),
                                          "  symbol error: variable `" + ts.decls[i]->id()->str().str()
                                          + "' must be defined (did you forget to specify a data file?)"));

@@ -1261,4 +1261,13 @@ namespace MiniZinc {
     }
     return NULL;
   }
+  Expression* getAnnotation(const Annotation& ann, const ASTString& str) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+      Expression* e = *i;
+      if((e->isa<Id>() && e->cast<Id>()->str() == str) ||
+         (e->isa<Call>() && e->cast<Call>()->id() == str))
+        return e;
+    }
+    return NULL;
+  }
 }

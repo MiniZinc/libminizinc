@@ -6,6 +6,15 @@
 % - forall b, c[b] >= 0
 %-----------------------------------------------------------------------------%
 
+/**  @group packing
+  Requires that each item \p i with weight \a w[i], be put into \a bin[i] such 
+  that the sum of the weights of the items in each bin \p b does not exceed the 
+  capacity \a c[b].
+
+  Assumptions:
+  - forall \p i, \a w[i] >=0
+  - forall \p b, \a c[b] >=0
+*/
 predicate bin_packing_capa(array[int] of int: c,
                            array[int] of var int: bin,
                            array[int] of int: w) =
