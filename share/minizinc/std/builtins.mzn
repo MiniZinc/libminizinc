@@ -1,5 +1,20 @@
 include "flatzinc_builtins.mzn";
 
+/***
+  @groupdef builtins Builtins
+  
+  These functions and predicates define built-in operations of the MiniZinc language.
+  
+  @groupdef builtins.compare Comparison Builtins
+  
+  These builtins implement comparison operations.
+
+  @groupdef builtins.arithmetic Arithmetic Builtins
+
+  These builtins implement arithmetic operations.
+  
+*/
+
 %-----------------------------------------------------------------------------%
 %
 % Built-in operations
@@ -187,44 +202,65 @@ function var int: 'mod'(var int: x,var int: y) =
   if not (0 in dom(y)) then mod_t(x,y) else
   let { constraint y != 0 } in mod_mt(x,y) endif;
 
-function     float: '/'(    float,    float);
-function var float: '/'(var float,var float);
+/** @group builtins.arithmetic Return result of floating point division \a x / \a y */
+function     float: '/'(    float: x,    float: y);
+/** @group builtins.arithmetic Return result of floating point division \a x / \a y */
+function var float: '/'(var float: x,var float: y);
 
-function     int:   sum(array[$T] of     int);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
+function     int:   sum(array[$T] of     int: x);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
 function var int:   sum(array[$T] of var int: x);
-function     float: sum(array[$T] of     float);
-function var float: sum(array[$T] of var float);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
+function     float: sum(array[$T] of     float: x);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
+function var float: sum(array[$T] of var float: x);
 
-function     int:   product(array[$T] of     int);
+/** @group builtins.arithmetic Return product of elements in array \a x */
+function     int:   product(array[$T] of     int: x);
+/** @group builtins.arithmetic Return product of elements in array \a x */
 function var int:   product(array[$T] of var int: x) =
   product_rec(array1d(x));
 
-function     float: product(array[$T] of     float);
-function var float: product(array[$T] of var float);
+/** @group builtins.arithmetic Return product of elements in array \a x */
+function     float: product(array[$T] of     float: x);
+/** @group builtins.arithmetic Return product of elements in array \a x */
+function var float: product(array[$T] of var float: x) =
+  product_rec(array1d(x));
 
-function     $T: min(    $T,     $T);
-function     $T: min(array[$U] of     par $T);
-function     $T: max(    $T,     $T);
-function     $T: max(array[$U] of     $T);
-function int: min(set of int);
-function int: max(set of int);
+/** @group builtins.arithmetic Return minimum of \a x and \a y */
+function     $T: min(    $T: x,     $T: y);
+/** @group builtins.arithmetic Return minimum of elements in array \a x */
+function     $T: min(array[$U] of     par $T: x);
+/** @group builtins.arithmetic Return maximum of \a x and \a y */
+function     $T: max(    $T: x,     $T: y);
+/** @group builtins.arithmetic Return maximum of elements in array \a x */
+function     $T: max(array[$U] of     $T: x);
+/** @group builtins.arithmetic Return minimum of elements in set \a x */
+function int: min(set of int: x);
+/** @group builtins.arithmetic Return maximum of elements in set \a x */
+function int: max(set of int: x);
 
+/** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var int: max(var int: x, var int: y) :: promise_total =
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
         constraint int_max(x,y,m);
   } in m;
 
+/** @group builtins.arithmetic Return maximum of elements in array \a x */
 function var int: max(array[$U] of var int: x) =
   let {
     array[int] of var int: xx = array1d(x);
     constraint length(x) >= 1;
   } in max_t(xx);
 
+/** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var int: min(var int: x, var int: y) :: promise_total =
   let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
         constraint int_min(x,y,m);
   } in m;
 
+/** @group builtins.arithmetic Return minimum of elements in array \a x */
 function var int: min(array[$U] of var int: x) =
   let {
     array[int] of var int: xx = array1d(x);
@@ -234,139 +270,198 @@ function var int: min(array[$U] of var int: x) =
 % Floating point min and max
 % TODO: add bounds reasoning
 
+/** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total =
   let { var float: m;
         constraint float_max(x,y,m);
   } in m;
 
+/** @group builtins.arithmetic Return maximum of elements in array \a x */
 function var float: max(array[$U] of var float: x) =
   let {
     array[int] of var float: xx = array1d(x);
     constraint length(x) >= 1;
   } in max_t(xx);
 
+/** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var float: min(var float: x, var float: y) :: promise_total =
   let { var float: m;
         constraint float_min(x,y,m);
   } in m;
 
+/** @group builtins.arithmetic Return minimum of elements in array \a x */
 function var float: min(array[$U] of var float: x) =
   let {
     array[int] of var float: xx = array1d(x);
     constraint length(x) >= 1;
   } in min_t(xx);
 
-function int: abs(int);
+/** @group builtins.arithmetic Return absolute value of \a x */
+function int: abs(int: x);
 
+/** @group builtins.arithmetic Return absolute value of \a x */
 function var int: abs(var int: x) :: promise_total =
   let { var 0..max(-lb(x),ub(x)): m;
         constraint int_abs(x,m);
   } in m;
 
 
-function float: abs(float);
-function var float: abs(var float);
+/** @group builtins.arithmetic Return absolute value of \a x */
+function float: abs(float: x);
+/** @group builtins.arithmetic Return absolute value of \a x */
+function var float: abs(var float: x);
 
-function float: sqrt(float);
-function var float: sqrt(var float);
+/** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
+function float: sqrt(float: x);
+/** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
+function var float: sqrt(var float: x);
 
-function int: pow(int, int);
-function float: pow(float, float);
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function int: pow(int: x, int: y);
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function float: pow(float: x, float: y);
 
-function float: exp(float);
+/** @group builtins.explog Return \(e ^ {\a x}\) */
+function float: exp(float: x);
+/** @group builtins.explog Return \(e ^ {\a x}\) */
 function var float: exp(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_exp(x,r);
   } in r;
-function float: ln(float);
+
+/** @group builtins.explog Return \(\ln \a x\) */
+function float: ln(float: x);
+/** @group builtins.explog Return \(\ln \a x\) */
 function var float: ln(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_ln(x,r);
   } in r;
-function float: log10(float);
+
+/** @group builtins.explog Return \(\log_{10} \a x\) */
+function float: log10(float: x);
+/** @group builtins.explog Return \(\log_{10} \a x\) */
 function var float: log10(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_log10(x,r);
   } in r;
-function float: log2(float);
+
+/** @group builtins.explog Return \(\log_{2} \a x\) */
+function float: log2(float: x);
+/** @group builtins.explog Return \(\log_{2} \a x\) */
 function var float: log2(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_log2(x,r);
   } in r;
 
-function float: log(float, float);
+/** @group builtins.explog Return \(\log_{\a x} \a y\) */
+function float: log(float: x, float: y);
 
-function float: sin(float);
+/** @group builtins.trigonometric Return \(\sin \a x\) */
+function float: sin(float: x);
+/** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_sin(x,r);
   } in r;
-function float: cos(float);
+
+/** @group builtins.trigonometric Return \(\cos \a x\) */
+function float: cos(float: x);
+/** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_cos(x,r);
   } in r;
-function float: tan(float);
+
+/** @group builtins.trigonometric Return \(\tan \a x\) */
+function float: tan(float: x);
+/** @group builtins.trigonometric Return \(\tan \a x\) */
 function var float: tan(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_tan(x,r);
   } in r;
-function float: asin(float);
+
+/** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
+function float: asin(float: x);
+/** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
 function var float: asin(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_asin(x,r);
   } in r;
-function float: acos(float);
+
+/** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
+function float: acos(float: x);
+/** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
 function var float: acos(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_acos(x,r);
   } in r;
-function float: atan(float);
+
+/** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
+function float: atan(float: x);
+/** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
 function var float: atan(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_atan(x,r);
   } in r;
-function float: sinh(float);
+
+/** @group builtins.trigonometric Return \(\sinh \a x\) */
+function float: sinh(float: x);
+/** @group builtins.trigonometric Return \(\sinh \a x\) */
 function var float: sinh(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_sinh(x,r);
   } in r;
-function float: cosh(float);
+
+/** @group builtins.trigonometric Return \(\cosh \a x\) */
+function float: cosh(float: x);
+/** @group builtins.trigonometric Return \(\cosh \a x\) */
 function var float: cosh(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_cosh(x,r);
   } in r;
-function float: tanh(float);
+
+/** @group builtins.trigonometric Return \(\tanh \a x\) */
+function float: tanh(float: x);
+/** @group builtins.trigonometric Return \(\tanh \a x\) */
 function var float: tanh(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_tanh(x,r);
   } in r;
-function float: asinh(float);
+
+/** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
+function float: asinh(float: x);
+/** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
 function var float: asinh(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_asinh(x,r);
   } in r;
-function float: acosh(float);
+
+/** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
+function float: acosh(float: x);
+/** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
 function var float: acosh(var float: x) ::promise_total =
   let {
     var float: r;
     constraint float_acosh(x,r);
   } in r;
-function float: atanh(float);
+
+/** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
+function float: atanh(float: x);
+/** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
 function var float: atanh(var float: x) ::promise_total =
   let {
     var float: r;
@@ -374,232 +469,408 @@ function var float: atanh(var float: x) ::promise_total =
   } in r;
 
 % Logical operations
-function     bool: '/\'(    bool,     bool);
-function var bool: '/\'(var bool, var bool);
-function     bool: '\/'(    bool,     bool);
-function var bool: '\/'(var bool, var bool);
-function     bool: '->'(    bool,     bool);
-function var bool: '->'(var bool, var bool);
-function     bool: '<-'(    bool,     bool);
-function var bool: '<-'(var bool, var bool);
-function     bool: '<->'(    bool,     bool);
-function var bool: '<->'(var bool, var bool);
-function     bool: 'xor'(    bool,     bool);
-function var bool: 'xor'(var bool, var bool);
-function     bool: 'not'(    bool);
-function var bool: 'not'(var bool);
-function     bool: forall(array[$T] of     bool);
-function var bool: forall(array[$T] of var bool);
-function     bool: exists(array[$T] of     bool);
-function var bool: exists(array[$T] of var bool);
-function     bool: xorall(array[$T] of     bool);
-function     bool: iffall(array[$T] of     bool);
-function var bool: iffall(array[$T] of var bool);
-function var bool: clause(array[$T] of var bool, array[$T] of var bool);
-function var bool: clause(array[$T] of     bool, array[$T] of     bool);
+
+/***
+  @groupdef builtins.logic Logical operations
+  
+  Logical operations are the standard operators of Boolean logic.
+*/
+
+/** @group builtins.logic Return truth value of \a x &and; \a y */
+function     bool: '/\'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a x &and; \a y */
+function var bool: '/\'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of \a x &or; \a y */
+function     bool: '\/'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a x &or; \a y */
+function var bool: '\/'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of \a x implies \a y */
+function     bool: '->'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a x implies \a y */
+function var bool: '->'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of \a y implies \a x */
+function     bool: '<-'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a y implies \a x */
+function var bool: '<-'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of \a x if-and-only-if \a y */
+function     bool: '<->'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a x if-and-only-if \a y */
+function var bool: '<->'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of \a x xor \a y */
+function     bool: 'xor'(    bool: x,     bool: y);
+/** @group builtins.logic Return truth value of \a x xor \a y */
+function var bool: 'xor'(var bool: x, var bool: y);
+/** @group builtins.logic Return truth value of the negation of \a x */
+function     bool: 'not'(    bool: x);
+/** @group builtins.logic Return truth value of the negation of \a x */
+function var bool: 'not'(var bool: x);
+
+/** @group builtins.logic Return truth value of \(\bigwedge_i \a x[i]\) */
+function     bool: forall(array[$T] of     bool: x);
+/** @group builtins.logic Return truth value of \(\bigwedge_i \a x[i]\) */
+function var bool: forall(array[$T] of var bool: x);
+/** @group builtins.logic Return truth value of \(\bigvee_i \a x[i]\) */
+function     bool: exists(array[$T] of     bool: x);
+/** @group builtins.logic Return truth value of \(\bigvee_i \a x[i]\) */
+function var bool: exists(array[$T] of var bool: x);
+/** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
+function     bool: xorall(array[$T] of     bool: x);
+/** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
+function var bool: xorall(array[int] of var bool: x) = array_bool_xor(x);
+/** @group builtins.logic TODO */
+function     bool: iffall(array[$T] of     bool: x);
+/** @group builtins.logic TODO */
+function var bool: iffall(array[$T] of var bool: x);
+/** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
+function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
+/** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
+function var bool: clause(array[$T] of     bool: x, array[$T] of     bool: y);
 
 % Set operations
-function     bool: 'in'(    int,     set of int);
-function var bool: 'in'(var int, var set of int);
 
-function     bool: 'subset'(    set of $T,      set of $T);
-function var bool: 'subset'(var set of int, var set of int);
-function     bool: 'superset'(    set of $T,      set of $T);
-function var bool: 'superset'(var set of int, var set of int);
+/***
+  @groupdef builtins.set Set operations
+  
+  These functions implement the basic operations on sets.
+*/
 
-function     set of $T:  'union'(    set of $T,      set of $T);
-function var set of int: 'union'(var set of int, var set of int);
-function     set of $T:  'intersect'(    set of $T,      set of $T);
-function var set of int: 'intersect'(var set of int, var set of int);
-function     set of $T:  'diff'(    set of $T,      set of $T);
-function var set of int: 'diff'(var set of int, var set of int);
-function     set of $T:  'symdiff'(    set of $T,      set of $T);
-function var set of int: 'symdiff'(var set of int, var set of int);
+/** @group builtins.set Test if \a x is an element of the set \a y */
+function     bool: 'in'(    int: x,     set of int: y);
+/** @group builtins.set \a x is an element of the set \a y */
+function var bool: 'in'(var int: x, var set of int: y);
 
-function set of int: '..'(int,int);
-function set of float: '..'(float,float);
+/** @group builtins.set Test if \a x is a subset of \a y */
+function     bool: 'subset'(    set of $T: x,      set of $T: y);
+/** @group builtins.set \a x is a subset of \a y */
+function var bool: 'subset'(var set of int: x, var set of int: y);
+/** @group builtins.set Test if \a x is a superset of \a y */
+function     bool: 'superset'(    set of $T: x,      set of $T: y);
+/** @group builtins.set \a x is a superset of \a y */
+function var bool: 'superset'(var set of int: x, var set of int: y);
 
-function     int: card(    set of $T);
-function var int: card(var set of int);
+/** @group builtins.set Return the union of sets \a x and \a y */
+function     set of $T:  'union'(    set of $T: x,      set of $T: y);
+/** @group builtins.set Return the union of sets \a x and \a y */
+function var set of int: 'union'(var set of int: x, var set of int: y);
+/** @group builtins.set Return the intersection of sets \a x and \a y */
+function     set of $T:  'intersect'(    set of $T: x,      set of $T: y);
+/** @group builtins.set Return the intersection of sets \a x and \a y */
+function var set of int: 'intersect'(var set of int: x, var set of int: y);
+/** @group builtins.set Return the set difference of sets \a x &minus; \a y */
+function     set of $T:  'diff'(    set of $T: x,      set of $T: y);
+/** @group builtins.set Return the set difference of sets \a x &minus; \a y */
+function var set of int: 'diff'(var set of int: x, var set of int: y);
+/** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
+function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
+/** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
+function var set of int: 'symdiff'(var set of int: x, var set of int: y);
 
-function     set of $U:  array_union(array[$T] of     set of $U);
+/** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
+function set of int: '..'(int: a,int: b);
+/** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
+function set of float: '..'(float: a,float: b);
+
+/** @group builtins.set Return the cardinality of the set \a x */
+function     int: card(    set of $T: x);
+/** @group builtins.set Return the cardinality of the set \a x */
+function var int: card(var set of int: x);
+
+/** @group builtins.set Return the union of the sets in array \a x */
+function     set of $U:  array_union(array[$T] of     set of $U: x);
+/** @group builtins.set Return the union of the sets in array \a x */
 function var set of int: array_union(array[$T] of var set of int: x) =
   array_union_rec(array1d(x));
 
-function     set of $U:  array_intersect(array[$T] of     set of $U);
+/** @group builtins.set Return the intersection of the sets in array \a x */
+function     set of $U:  array_intersect(array[$T] of     set of $U: x);
 function var set of int: array_intersect(array[$T] of var set of int: x) =
   array_intersect_rec(array1d(x));
 
-function set of int: '++'(set of int: x, set of int: y) = x union y;
-
-function array[int] of $T: '++'(array[int] of $T, array[int] of $T);
-function array[int] of var $T: '++'(array[int] of var $T, array[int] of var $T);
-function array[int] of var opt $T: '++'(array[int] of var opt $T, array[int] of var opt $T);
-
 % Array operations
-function int: length(array[$T] of var opt $U);
 
-test index_sets_agree(array[$T] of var opt $U, array[$T] of var opt $W);
+/***
+  @groupdef builtins.array Array operations
+  
+  These functions implement the basic operations on arrays.
+*/
 
-function set of int: index_set(array[int] of var opt $U);
-function set of int: index_set_1of2(array[int,int] of var opt $U);
-function set of int: index_set_2of2(array[int,int] of var opt $U);
-function set of int: index_set_1of3(array[int,int,int] of var opt $U);
-function set of int: index_set_2of3(array[int,int,int] of var opt $U);
-function set of int: index_set_3of3(array[int,int,int] of var opt $U);
-function set of int: index_set_1of4(array[int,int,int,int] of var opt $U);
-function set of int: index_set_2of4(array[int,int,int,int] of var opt $U);
-function set of int: index_set_3of4(array[int,int,int,int] of var opt $U);
-function set of int: index_set_4of4(array[int,int,int,int] of var opt $U);
-function set of int: index_set_1of5(array[int,int,int,int,int] of var opt $U);
-function set of int: index_set_2of5(array[int,int,int,int,int] of var opt $U);
-function set of int: index_set_3of5(array[int,int,int,int,int] of var opt $U);
-function set of int: index_set_4of5(array[int,int,int,int,int] of var opt $U);
-function set of int: index_set_5of5(array[int,int,int,int,int] of var opt $U);
-function set of int: index_set_1of6(array[int,int,int,int,int,int] of var opt $U);
-function set of int: index_set_2of6(array[int,int,int,int,int,int] of var opt $U);
-function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U);
-function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U);
-function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U);
-function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U);
+/** @group builtins.array Return the concatenation of arrays \a x and \a y */
+function array[int] of $T: '++'(array[int] of $T: x, array[int] of $T: y);
+/** @group builtins.array Return the concatenation of arrays \a x and \a y */
+function array[int] of var $T: '++'(array[int] of var $T: x, array[int] of var $T: y);
+/** @group builtins.array Return the concatenation of arrays \a x and \a y */
+function array[int] of var opt $T: '++'(array[int] of var opt $T: x, array[int] of var opt $T: y);
 
-function array[int] of $V: array1d(array[$U] of $V);
-function array[int] of var $V: array1d(array[$U] of var $V);
-function array[int] of var opt $V: array1d(array[$U] of var opt $V);
+/** @group builtins.array Return the length of array \a x
 
-function array[int] of $V: array1d(set of int,
-                                   array[$U] of $V);
-function array[int] of var $V: array1d(set of int,
-                                       array[$U] of var $V);
-function array[int] of var opt $V: array1d(set of int,
-                                           array[$U] of var opt $V);
+  Note that the length is defined as the number of elements in the
+  array, regardless of its dimensionality.
+*/
+function int: length(array[$T] of var opt $U: x);
 
-function array[int,int] of $V: array2d(set of int, set of int, 
-                                       array[$U] of $V);
-function array[int,int] of var $V: array2d(set of int, set of int, 
-                                           array[$U] of var $V);
-function array[int,int] of var opt $V: array2d(set of int, set of int, 
-                                               array[$U] of var opt $V);
+/** @group builtins.array Test if \a x and \a y have the same index sets */
+test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
 
-function array[int,int,int] of $V: array3d(set of int,
-                                           set of int,
-                                           set of int,
-                                           array[$U] of $V);
-function array[int,int,int] of var $V: array3d(set of int,
-                                               set of int,
-                                               set of int,
-                                               array[$U] of var $V);
-function array[int,int,int] of var opt $V: array3d(set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   array[$U] of var opt $V);
+/** @group builtins.array Return index set of one-dimensional array \a x */
+function set of int: index_set(array[int] of var opt $U: x);
+/** @group builtins.array Return index set of first dimension of two-dimensional array \a x */
+function set of int: index_set_1of2(array[int,int] of var opt $U: x);
+/** @group builtins.array Return index set of second dimension of two-dimensional array \a x */
+function set of int: index_set_2of2(array[int,int] of var opt $U: x);
+/** @group builtins.array Return index set of first dimension of 3-dimensional array \a x */
+function set of int: index_set_1of3(array[int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of second dimension of 3-dimensional array \a x */
+function set of int: index_set_2of3(array[int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of third dimension of 3-dimensional array \a x */
+function set of int: index_set_3of3(array[int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of first dimension of 4-dimensional array \a x */
+function set of int: index_set_1of4(array[int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of second dimension of 4-dimensional array \a x */
+function set of int: index_set_2of4(array[int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of third dimension of 4-dimensional array \a x */
+function set of int: index_set_3of4(array[int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of fourth dimension of 4-dimensional array \a x */
+function set of int: index_set_4of4(array[int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of first dimension of 5-dimensional array \a x */
+function set of int: index_set_1of5(array[int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of second dimension of 5-dimensional array \a x */
+function set of int: index_set_2of5(array[int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of third dimension of 5-dimensional array \a x */
+function set of int: index_set_3of5(array[int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of fourth dimension of 5-dimensional array \a x */
+function set of int: index_set_4of5(array[int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of fifth dimension of 5-dimensional array \a x */
+function set of int: index_set_5of5(array[int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of first dimension of 6-dimensional array \a x */
+function set of int: index_set_1of6(array[int,int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of second dimension of 6-dimensional array \a x */
+function set of int: index_set_2of6(array[int,int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of third dimension of 6-dimensional array \a x */
+function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of fourth dimension of 6-dimensional array \a x */
+function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of fifth dimension of 6-dimensional array \a x */
+function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U: x);
+/** @group builtins.array Return index set of sixth dimension of 6-dimensional array \a x */
+function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U: x);
 
-function array[int,int,int,int] of $V: array4d(set of int,
-                                               set of int,
-                                               set of int,
-                                               set of int,
-                                               array[$U] of $V);
-function array[int,int,int,int] of var $V: array4d(set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   array[$U] of var $V);
-function array[int,int,int,int] of var opt $V: array4d(set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       array[$U] of var opt $V);
+/** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
+function array[int] of $V: array1d(array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
+function array[int] of var $V: array1d(array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
+function array[int] of var opt $V: array1d(array[$U] of var opt $V: x);
 
-function array[int,int,int,int,int] of $V: array5d(set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   set of int,
-                                                   array[$U] of $V);
-function array[int,int,int,int,int] of var $V: array5d(set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       array[$U] of var $V);
-function array[int,int,int,int,int] of var opt $V: array5d(set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           array[$U] of var opt $V);
+/** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
+function array[int] of $V: array1d(set of int: S,
+                                   array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
+function array[int] of var $V: array1d(set of int: S,
+                                       array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
+function array[int] of var opt $V: array1d(set of int: S,
+                                           array[$U] of var opt $V: x);
 
-function array[int,int,int,int,int,int] of $V: array6d(set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       set of int,
-                                                       array[$U] of $V);
-function array[int,int,int,int,int,int] of var $V: array6d(set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           set of int,
-                                                           array[$U] of var $V);
-function array[int,int,int,int,int,int] of var opt $V: array6d(set of int,
-                                                               set of int,
-                                                               set of int,
-                                                               set of int,
-                                                               set of int,
-                                                               set of int,
-                                                               array[$U] of var opt $V);
+/** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
+function array[int,int] of $V: array2d(set of int: S1, set of int: S2, 
+                                       array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
+function array[int,int] of var $V: array2d(set of int: S1, set of int: S2, 
+                                           array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
+function array[int,int] of var opt $V: array2d(set of int: S1, set of int: S2, 
+                                               array[$U] of var opt $V: x);
 
-function array[$T] of $V: arrayXd(array[$T] of var opt $X, array[$U] of $V);
-function array[$T] of var $V: arrayXd(array[$T] of var opt $X, array[$U] of var $V);
-function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X, array[$U] of var opt $V);
+/** @group builtins.array Return array \a x coerced to three-dimensional array with
+  index sets \a S1, \a S2 and \a S3
+*/
+function array[int,int,int] of $V: array3d(set of int: S1,
+                                           set of int: S2,
+                                           set of int: S3,
+                                           array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to three-dimensional array with
+  index sets \a S1, \a S2 and \a S3
+*/
+function array[int,int,int] of var $V: array3d(set of int: S1,
+                                               set of int: S2,
+                                               set of int: S3,
+                                               array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to three-dimensional array with
+  index sets \a S1, \a S2 and \a S3
+*/
+function array[int,int,int] of var opt $V: array3d(set of int: S1,
+                                                   set of int: S2,
+                                                   set of int: S3,
+                                                   array[$U] of var opt $V: x);
 
+/** @group builtins.array Return array \a x coerced to 4-dimensional array with
+  index sets \a S1, \a S2, \a S3 and \a S4
+*/
+function array[int,int,int,int] of $V: array4d(set of int: S1,
+                                               set of int: S2,
+                                               set of int: S3,
+                                               set of int: S4,
+                                               array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to 4-dimensional array with
+  index sets \a S1, \a S2, \a S3 and \a S4
+*/
+function array[int,int,int,int] of var $V: array4d(set of int: S1,
+                                                   set of int: S2,
+                                                   set of int: S3,
+                                                   set of int: S4,
+                                                   array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to 4-dimensional array with
+  index sets \a S1, \a S2, \a S3 and \a S4
+*/
+function array[int,int,int,int] of var opt $V: array4d(set of int: S1,
+                                                       set of int: S2,
+                                                       set of int: S3,
+                                                       set of int: S4,
+                                                       array[$U] of var opt $V: x);
+
+/** @group builtins.array Return array \a x coerced to 5-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4 and \a S5
+*/
+function array[int,int,int,int,int] of $V: array5d(set of int: S1,
+                                                   set of int: S2,
+                                                   set of int: S3,
+                                                   set of int: S4,
+                                                   set of int: S5,
+                                                   array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to 5-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4 and \a S5
+*/
+function array[int,int,int,int,int] of var $V: array5d(set of int: S1,
+                                                       set of int: S2,
+                                                       set of int: S3,
+                                                       set of int: S4,
+                                                       set of int: S5,
+                                                       array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to 5-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4 and \a S5
+*/
+function array[int,int,int,int,int] of var opt $V: array5d(set of int: S1,
+                                                           set of int: S2,
+                                                           set of int: S3,
+                                                           set of int: S4,
+                                                           set of int: S5,
+                                                           array[$U] of var opt $V: x);
+
+/** @group builtins.array Return array \a x coerced to 6-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
+*/
+function array[int,int,int,int,int,int] of $V: array6d(set of int: S1,
+                                                       set of int: S2,
+                                                       set of int: S3,
+                                                       set of int: S4,
+                                                       set of int: S5,
+                                                       set of int: S6,
+                                                       array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to 6-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
+*/
+function array[int,int,int,int,int,int] of var $V: array6d(set of int: S1,
+                                                           set of int: S2,
+                                                           set of int: S3,
+                                                           set of int: S4,
+                                                           set of int: S5,
+                                                           set of int: S6,
+                                                           array[$U] of var $V: x);
+/** @group builtins.array Return array \a x coerced to 6-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
+*/
+function array[int,int,int,int,int,int] of var opt $V: array6d(set of int: S1,
+                                                               set of int: S2,
+                                                               set of int: S3,
+                                                               set of int: S4,
+                                                               set of int: S5,
+                                                               set of int: S6,
+                                                               array[$U] of var opt $V: x);
+
+/** @group builtins.array Return array \a y coerced to array with same number of
+  dimensions and same index sets as array \a x
+*/
+function array[$T] of $V: arrayXd(array[$T] of var opt $X: x, array[$U] of $V: y);
+/** @group builtins.array Return array \a y coerced to array with same number of
+  dimensions and same index sets as array \a x
+*/
+function array[$T] of var $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var $V: y);
+/** @group builtins.array Return array \a y coerced to array with same number of
+  dimensions and same index sets as array \a x
+*/
+function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var opt $V: y);
+
+/** @group builtins.array Return row \a r of array \a x */
 function array[int] of $T: row(array[int, int] of $T: x, int: r) =
   array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+/** @group builtins.array Return column \a c of array \a x */
 function array[int] of $T: col(array[int,int] of $T: x, int: c) =
   array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
 
+/** @group builtins.array Test if \a i is in the index set of \a x */
 test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
+/** @group builtins.array Test if \a e is an element of array \a x */
 test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
+/** @group builtins.array Test if \a e is an element of array \a x */
 predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
 % Coercion operations
 
-function int: ceil(float);
-function int: floor(float);
-function int: round(float);
+/***
+  @groupdef builtins.coercion Coercions
+  
+  These functions implement coercions, or channeling, between different types.
+*/
 
-function int: bool2int(bool);
+/** @group builtins.coercion Return \( \lceil{ \a x} \rceil \) */
+function int: ceil(float: x);
+/** @group builtins.coercion Return \( \lfloor{ \a x} \rfloor \) */
+function int: floor(float: x);
+/** @group builtins.coercion Return \a x rounded to nearest integer */
+function int: round(float: x);
+
+/** @group builtins.coercion Return Boolean \a b coerced to an integer  */
+function int: bool2int(bool: b);
+/** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
-function var int: bool2int(var bool);
-function array[int] of var int: bool2int(array[int] of var bool);
+/** @group builtins.coercion Return Boolean \a b coerced to an integer  */
+function var int: bool2int(var bool: b);
+/** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
+function array[int] of var int: bool2int(array[int] of var bool: b);
+/** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function var float: bool2float(var bool: b) = int2float(bool2int(b));
-function float: int2float(int);
+/** @group builtins.coercion Return integer \a x coerced to a float  */
+function float: int2float(int: x);
+/** @group builtins.coercion Return integer \a x coerced to a float  */
 function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
 
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
 function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
   let {
     array[int] of bool: xx = array1d(x)
   } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
 function array[$T] of var int: bool2int(array[$T] of var bool: x) ::promise_total =
   let {
     array[int] of var bool: xx = array1d(x)
   } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
 function array[$T] of var opt int: bool2int(array[$T] of var opt bool: x) ::promise_total =
   let {
     array[int] of var opt bool: xx = array1d(x)
   } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.coercion Return array of integers \a x coerced to an array of floats  */
 function array[$T] of float: int2float(array[$T] of int: x) ::promise_total =
   let {
     array[int] of int: xx = array1d(x)
   } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.coercion Return array of integers \a x coerced to an array of floats  */
 function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_total =
   let {
     array[int] of var int: xx = array1d(x)
@@ -607,30 +878,105 @@ function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_to
 
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
-function array[int] of int: set2array(set of int);
+/** @group builtins.coercion Return a set of integers \a x coerced to an array of integers  */
+function array[int] of int: set2array(set of int: x);
 
 % String operations
 
-function string: show(var opt set of $T);
-function string: show(var opt $T);
-function string: show(array[$U] of var opt $T);
-function string: show_int(int, var int);
-function string: show_float(int, int, var float);
-function string: '++'(string, string);
-function string: concat(array[$T] of string);
-function string: join(string, array[$T] of string);
+/***
+  @groupdef builtins.string String operations
+  
+  These functions implement operations on strings.
+*/
 
+/** @group builtins.string Convert \a x into a string */
+function string: show(var opt set of $T: x);
+/** @group builtins.string Convert \a x into a string */
+function string: show(var opt $T: x);
+/** @group builtins.string Convert \a x into a string */
+function string: show(array[$U] of var opt $T: x);
+/** @group builtins.string Formatted to-string conversion for integers
+
+Converts the integer \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+*/
+function string: show_int(int: w, var int: x);
+/** @group builtins.string Formatted to-string conversion for floats.
+
+Converts the float \a x into a string right justified
+by the number of characters given by \a w, or left justified if
+\a w is negative. The number of digits to appear after the decimal
+point is given by \a p. It is a run-time error for \a p to be negative.
+*/
+function string: show_float(int: w, int: p, var float: x);
+/** @group builtins.string Return concatenation of \a s1 and \a s2 */
+function string: '++'(string: s1, string: s2);
+/** @group builtins.string Return concatenation of strings in array \a s */
+function string: concat(array[$T] of string: s);
+/** @group builtins.string Join string in array \a s using delimiter \a d */
+function string: join(string: d, array[$T] of string: s);
+
+/** @group builtins.string Convert \a x into a string */
 function string: format(var opt $T: x) = show(x);
+/** @group builtins.string Convert \a x into a string */
 function string: format(var opt set of $T: x) = show(x);
+/** @group builtins.string Convert \a x into a string */
 function string: format(array[$U] of var opt $T: x) = show(x);
 
-function string: format(int: width, int: prec, var opt $T);
-function string: format(int: width, int: prec, var opt set of $T);
-function string: format(int: width, int: prec, array[$U] of var opt $T);
+/** @group builtins.string Formatted to-string conversion
 
-function string: format(int: width, var opt $T);
-function string: format(int: width, var opt set of $T);
-function string: format(int: width, array[$U] of var opt $T);
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+
+The maximum length of the string representation of \a x is given by
+\a p, or the maximum number of digits after the decimal point for floating
+point numbers. It is a run-time error for \a p to be negative.
+*/
+function string: format(int: w, int: p, var opt $T: x);
+/** @group builtins.string Formatted to-string conversion
+
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+
+The maximum length of the string representation of \a x is given by
+\a p. It is a run-time error for \a p to be negative.
+*/
+function string: format(int: w, int: p, var opt set of $T: x);
+/** @group builtins.string Formatted to-string conversion
+
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+
+The maximum length of the string representation of \a x is given by
+\a p. It is a run-time error for \a p to be negative.
+*/
+function string: format(int: w, int: p, array[$U] of var opt $T: x);
+
+/** @group builtins.string Formatted to-string conversion
+
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+*/
+function string: format(int: w, var opt $T: x);
+/** @group builtins.string Formatted to-string conversion
+
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+*/
+function string: format(int: w, var opt set of $T: x);
+/** @group builtins.string Formatted to-string conversion
+
+Converts the value \a x into a string right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+*/
+function string: format(int: w, array[$U] of var opt $T: x);
 
 % Bound and domain operations
 
@@ -742,8 +1088,6 @@ predicate array_var_set_element(var int: x, array[int] of set of int: y, var set
 
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
-
-predicate xorall(array[int] of var bool: b) = array_bool_xor(b);
 
 predicate xorall_reif(array[int] of var bool: b, var bool: c) =
   xorall([not c]++b);
@@ -1369,6 +1713,13 @@ function var int: mod_mt(var int: x, var int: y) :: promise_total =
 
 function var int:   product_rec(array[int] of var int: x) =
   if length(x)=0 then 1
+  elseif length(x)=1 then x[min(index_set(x))]
+  else x[min(index_set(x))]*
+       product_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
+  endif;
+
+function var float:   product_rec(array[int] of var float: x) =
+  if length(x)=0 then 1.0
   elseif length(x)=1 then x[min(index_set(x))]
   else x[min(index_set(x))]*
        product_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])

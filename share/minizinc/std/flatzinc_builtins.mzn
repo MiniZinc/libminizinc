@@ -4,6 +4,13 @@
   solver globals library.
 */
 
+/***
+  @groupdef flatzinc FlatZinc builtins
+  
+  These are the standard constraints that need to be supported by FlatZinc
+  solvers (or redefined in the redefinitions.mzn file).
+*/
+
 % Integer constraints
 
 /** @group flatzinc Constrains \a b to be the absolute value of \a a */
