@@ -30,20 +30,38 @@ namespace MiniZinc {
       std::string id;
       std::string doc;
     };
-    
+
+    class Group;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, Group> GroupMap;
+
     class Group {
     public:
       Group(const std::string& name0) : name(name0) {}
       std::string name;
+      std::string desc;
+      std::string htmlName;
+      GroupMap subgroups;
       std::vector<DocItem> items;
-      std::string toHTML(void) {
+      std::string toHTML(int level = 0) {
+        std::ostringstream oss;
+
+        oss << "<div class='mzn-group-level-" << level << "'>\n";
+        if (!desc.empty()) {
+          oss << "<div class='mzn-group-name'>" << htmlName << "</div>\n";
+          oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
+        }
+        
+        for (GroupMap::iterator it = subgroups.begin(); it != subgroups.end(); ++it) {
+          oss << it->second.toHTML(level+1);
+        }
+
         struct SortById {
           bool operator ()(const DocItem& i0, const DocItem& i1) {
             return i0.t < i1.t || (i0.t==i1.t && i0.id < i1.id);
           }
         } _cmp;
         std::stable_sort(items.begin(), items.end(), _cmp);
-        std::ostringstream oss;
+
         int cur_t = -1;
         const char* dt[] = {"par","var","fun"};
         const char* dt_desc[] = {"Parameters","Variables","Functions and Predicates"};
@@ -59,17 +77,71 @@ namespace MiniZinc {
         }
         if (cur_t != -1)
           oss << "</div>\n";
+        oss << "</div>";
         return oss.str();
       }
     };
-
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string, Group> GroupMap;
     
     void addToGroup(GroupMap& gm, const std::string& group, DocItem& di) {
-      if (gm.find(group) == gm.end()) {
-        gm.insert(std::make_pair(group,Group(group)));
+      std::vector<std::string> subgroups;
+      size_t lastpos = 0;
+      size_t pos = group.find(".");
+      while (pos != std::string::npos) {
+        subgroups.push_back(group.substr(lastpos, pos-lastpos));
+        lastpos = pos+1;
+        pos = group.find(".", lastpos);
       }
-      gm.find(group)->second.items.push_back(di);
+      subgroups.push_back(group.substr(lastpos, std::string::npos));
+      
+      GroupMap* cgm = &gm;
+      std::string gprefix;
+      for (unsigned int i=0; i<subgroups.size(); i++) {
+        if (i > 0)
+          gprefix += ".";
+        gprefix += subgroups[i];
+        if (cgm->find(subgroups[i]) == cgm->end()) {
+          cgm->insert(std::make_pair(subgroups[i],Group(gprefix)));
+        }
+        Group& g = cgm->find(subgroups[i])->second;
+        if (i==subgroups.size()-1) {
+          g.items.push_back(di);
+        } else {
+          cgm = &g.subgroups;
+        }
+      }
+    }
+    
+    void setGroupDesc(GroupMap& gm, const std::string& group, std::string htmlName, std::string s) {
+      std::vector<std::string> subgroups;
+      size_t lastpos = 0;
+      size_t pos = group.find(".");
+      while (pos != std::string::npos) {
+        subgroups.push_back(group.substr(lastpos, pos-lastpos));
+        lastpos = pos+1;
+        pos = group.find(".", lastpos);
+      }
+      subgroups.push_back(group.substr(lastpos, std::string::npos));
+
+      GroupMap* cgm = &gm;
+      std::string gprefix;
+      for (unsigned int i=0; i<subgroups.size(); i++) {
+        if (i > 0)
+          gprefix += ".";
+        gprefix += subgroups[i];
+        if (cgm->find(subgroups[i]) == cgm->end()) {
+          cgm->insert(std::make_pair(subgroups[i],Group(gprefix)));
+        }
+        Group& g = cgm->find(subgroups[i])->second;
+        if (i==subgroups.size()-1) {
+          if (!g.desc.empty()) {
+            std::cerr << "Warning: two descriptions for group `" << group << "'\n";
+          }
+          g.htmlName = htmlName;
+          g.desc = s;
+        } else {
+          cgm = &g.subgroups;
+        }
+      }
     }
     
   }
@@ -189,6 +261,9 @@ namespace MiniZinc {
           pos = s.find('\n', lastpos);
         } else {
           lastpos = pos+1;
+          if (s[pos]=='\n') {
+            oss << " ";
+          }
           if (s[next]=='-') {
             pos = s.find('\n', next+1);
           } else {
@@ -205,10 +280,35 @@ namespace MiniZinc {
     
   public:
     PrintHtmlVisitor(HtmlDocOutput::GroupMap& gm) : _gm(gm) {}
+    void enterModel(Model* m) {
+      const std::string& dc = m->docComment();
+      if (!dc.empty()) {
+        size_t gpos = dc.find("@groupdef");
+        while (gpos != std::string::npos) {
+          size_t start = gpos;
+          while (start < dc.size() && dc[start]!=' ' && dc[start]!='\t')
+            start++;
+          while (start < dc.size() && (dc[start]==' ' || dc[start]=='\t'))
+            start++;
+          size_t end = start+1;
+          while (end < dc.size() && (isalnum(dc[end]) || dc[end]=='_' || dc[end]=='.'))
+            end++;
+          std::string groupName = dc.substr(start,end-start);
+          size_t doc_start = end+1;
+          while (end < dc.size() && dc[end]!='\n')
+            end++;
+          std::string groupHTMLName = dc.substr(doc_start,end-doc_start);
+          
+          size_t next = dc.find("@groupdef", gpos+1);
+          HtmlDocOutput::setGroupDesc(_gm, groupName, groupHTMLName,
+                                      addHTML(dc.substr(end, next == std::string::npos ? next : next-end)));
+          gpos = next;
+        }
+      }
+    }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI* vdi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-        
         std::string ds = eval_string(docstring->args()[0]);
         std::string group("main");
         size_t group_idx = ds.find("@group");
@@ -286,12 +386,24 @@ namespace MiniZinc {
         os << "<span class='mzn-fn-id'>" << fi->id() << "</span>(";
         size_t align = fs.str().size();
         for (unsigned int i=0; i<fi->params().size(); i++) {
+          fs << *fi->params()[i]->ti() << ": " << *fi->params()[i]->id();
+          if (i < fi->params().size()-1) {
+            fs << ", ";
+          }
+        }
+        bool splitArgs = (fs.str().size() > 70);
+        for (unsigned int i=0; i<fi->params().size(); i++) {
           os << "<span class='mzn-ti'>" << *fi->params()[i]->ti() << "</span>: "
              << "<span class='mzn-id'>" << *fi->params()[i]->id() << "</span>";
           if (i < fi->params().size()-1) {
-            os << ",\n";
-            for (unsigned int j=align; j--;)
+            os << ",";
+            if (splitArgs) {
+              os << "\n";
+              for (unsigned int j=align; j--;)
+                os << " ";
+            } else {
               os << " ";
+            }
           }
         }
         os << ")";
@@ -304,7 +416,13 @@ namespace MiniZinc {
         }
         fi->ann().add(docstring);
         os << "</div>\n<div class='mzn-fundecl-doc'>\n";
-        os << addHTML(ds);
+        std::string dshtml = addHTML(ds);
+        if (dshtml.find("rightjust") != std::string::npos) {
+          std::cerr << "found it\n";
+          std::cerr << ds << "\n" << dshtml << "\n";
+        }
+
+        os << dshtml;
         if (params.size() > 0) {
           os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
           os << "<ul class='mzn-fundecl-params'>\n";
@@ -341,13 +459,11 @@ namespace MiniZinc {
     GroupMap gm;
     PrintHtmlVisitor phv(gm);
     iterItems(phv, m);
-    Group masterGroup("master");
+    std::ostringstream oss;
     for (GroupMap::iterator it = gm.begin(); it != gm.end(); ++it) {
-      for (std::vector<DocItem>::iterator git = it->second.items.begin(); git != it->second.items.end(); ++git) {
-        masterGroup.items.push_back(*git);
-      }
+      oss << it->second.toHTML();
     }
-    return HtmlDocument("model.html", masterGroup.toHTML());
+    return HtmlDocument("model.html", oss.str());
   }
  
   void

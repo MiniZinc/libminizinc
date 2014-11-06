@@ -133,7 +133,7 @@ namespace MiniZinc {
     void addDocComment(std::string s) { _docComment += s; }
 
     /// Return the file-level documentation comment
-    std::string docComment(void) const { return _docComment; }
+    const std::string& docComment(void) const { return _docComment; }
     
     /// Remove all items marked as removed
     void compact(void);
@@ -218,6 +218,8 @@ namespace MiniZinc {
   /// Visitor for model items
   class ItemVisitor {
   public:
+    /// Enter model
+    void enterModel(Model* m) {}
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -247,6 +249,7 @@ namespace MiniZinc {
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
+        iter.enterModel(cm);
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
             continue;
