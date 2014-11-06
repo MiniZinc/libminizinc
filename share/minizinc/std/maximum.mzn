@@ -1,19 +1,16 @@
-include "maximum_int.mzn";
-include "maximum_float.mzn";
-
 /** Constrains \a m to be the maximum of the values in \a x.
 
   Assumptions: |\a x| > 0.
 */
 predicate maximum(var int: m, array[int] of var int: x) =
-    maximum_int(m, x);
+    array_int_maximum(m, x);
 
 /** Constrains \a m to be the maximum of the values in \a x.
 
   Assumptions: |\a x| > 0.
 */
 predicate maximum(var float: m, array[int] of var float: x) =
-    maximum_float(m, x);
+    array_float_maximum(m, x);
 
     % XXX: currently doesn't work:  same problem as 'minimum' above.
 %predicate maximum(var set of int: m, array[int] of var set of int: x) =

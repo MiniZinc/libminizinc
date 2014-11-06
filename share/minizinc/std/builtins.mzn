@@ -1,4 +1,3 @@
-include "globals.mzn";
 % domain constraints
 predicate var_dom(var int:x, set of int: s) =
   if has_bounds(x) /\ dom(x) subset s then true
@@ -930,6 +929,11 @@ function     $T: max(array[$U] of     $T);
 function int: min(set of int);
 function int: max(set of int);
 
+predicate array_int_maximum(var int: m, array[int] of var int: x);
+predicate array_float_maximum(var int: m, array[int] of var int: x);
+predicate array_int_minimum(var int: m, array[int] of var int: x);
+predicate array_float_minimum(var int: m, array[int] of var int: x);
+
 function var int: max(var int: x, var int: y) :: promise_total =
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
         constraint int_max(x,y,m);
@@ -941,7 +945,7 @@ function var int: max_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=2 then max(x[1],x[2])
   else let {
     var lb_array(x)..ub_array(x): m;
-    constraint maximum(m,x);
+    constraint array_int_maximum(m,x);
   } in m
   endif;
 function var int: max(array[$U] of var int: x) =
@@ -961,7 +965,7 @@ function var int: min_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=2 then min(x[1],x[2])
   else let {
     var lb_array(x)..ub_array(x): m;
-    constraint minimum(m,x);
+    constraint array_int_minimum(m,x);
   } in m
   endif;
 function var int: min(array[$U] of var int: x) =
@@ -984,7 +988,7 @@ function var float: max_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=2 then min(x[1],x[2])
   else let {
     var float: m;
-    constraint maximum(m,x);
+    constraint array_float_maximum(m,x);
   } in m
   endif;
 function var float: max(array[$U] of var float: x) =
@@ -1004,7 +1008,7 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=2 then min(x[1],x[2])
   else let {
     var float: m;
-    constraint minimum(m,x);
+    constraint array_float_minimum(m,x);
   } in m
   endif;
 function var float: min(array[$U] of var float: x) =
