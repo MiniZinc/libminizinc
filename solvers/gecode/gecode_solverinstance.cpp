@@ -797,7 +797,22 @@ namespace MiniZinc {
   
   Expression* 
   GecodeSolverInstance::getSolutionValue(Id* id) {
-    assert(false); // TODO: implement
+    Printer p(std::cout, 80, false);
+    std::cout << "DEBUG: getting solution value of id: ";
+    p.print(id);
+    GecodeVariable var = resolveVar(id);
+    switch (id->type().bt()) {
+      case Type::BT_INT: 
+        assert(var.intVar().assigned());
+        return new IntLit(Location(), var.intVar().val());
+      case Type::BT_BOOL: 
+        assert(var.boolVar().assigned());
+        return new BoolLit(Location(), var.boolVar().val());
+      case Type::BT_FLOAT: 
+        assert(var.floatVar().assigned());
+        return new FloatLit(Location(), (var.floatVar().val()).med());
+      default: return NULL;          
+    }    
   }
   
   SolverInstanceBase::Status 
@@ -1199,16 +1214,19 @@ namespace MiniZinc {
       if(_solution) {
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
           status = SolverInstance::SAT;
+          assignSolutionToOutput();
         } else 
           status = SolverInstance::OPT;
+          assignSolutionToOutput();
       } else {
         status = SolverInstance::UNSAT;
       }
     } else {         
+      if(_solution) 
+         assignSolutionToOutput();
         // TODO: is that correct? what if(_solution)??
-        status = SolverInstance::UNKNOWN;            
+      status = SolverInstance::UNKNOWN;            
     }
-
     return status;
   }
  
