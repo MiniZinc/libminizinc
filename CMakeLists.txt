@@ -247,7 +247,8 @@ target_link_libraries(solns2out minizinc)
 
 
 set(HAS_CPLEX FALSE)
-set(HAS_GECODE TRUE)
+set(HAS_GECODE FALSE)
+set(HAS_FZN FALSE)
 
 if(HAS_CPLEX)
 	add_definitions(-DIL_STD)
@@ -306,8 +307,23 @@ if(HAS_GECODE)
     ARCHIVE DESTINATION lib)
 endif()
 
+
 add_executable(mzn2doc mzn2doc.cpp)
 target_link_libraries(mzn2doc minizinc)
+
+if(HAS_FZN)
+	add_library(minizinc_fzn
+		solvers/fzn/fzn_solverinstance.cpp
+		solvers/fzn/fzn_solverinstance.hh
+	)
+	target_link_libraries(minizinc_fzn minizinc)
+	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
+	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
+	INSTALL(TARGETS minizinc_fzn mzn-fzn
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib)
+endif()
 
 INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin

@@ -4468,6 +4468,7 @@ namespace MiniZinc {
                   }
                 }
               }
+              vd->flat(NULL);
             }
             e.output_vo.add(item->cast<VarDeclI>(), i);
             CollectOccurrencesE ce(e.output_vo,item);

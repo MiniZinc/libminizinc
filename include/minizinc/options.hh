@@ -31,6 +31,7 @@ namespace MiniZinc {
       long long int getIntParam(ASTString name);
       double getFloatParam(ASTString name);
       bool getBoolParam(ASTString name);
+      bool hasParam(ASTString name);
   };
 }
 

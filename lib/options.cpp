@@ -100,4 +100,7 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
+  bool Options::hasParam(MiniZinc::ASTString name) {
+    return _options.find(name) != _options.end();
+  }
 }
