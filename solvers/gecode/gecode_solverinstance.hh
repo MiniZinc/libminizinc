@@ -187,7 +187,10 @@ namespace MiniZinc {
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   public:
+    /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
+    /// the solution (or NULL if does not exist or not yet computed)
+    FznSpace* _solution;
     /// TODO: we can probably get rid of this
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
      
@@ -250,7 +253,14 @@ namespace MiniZinc {
     void registerConstraints(void);
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
-            bool ignoreUnknown, std::ostream& err);
+            bool ignoreUnknown, std::ostream& err);    
+    /// Run the search engine
+    template<template<class> class Engine>
+        SolverInstanceBase::Status runEngine();        
+    /// Run the meta search engine
+    template<template<class> class Engine,
+        template<template<class> class,class> class Meta>
+            SolverInstanceBase::Status runMeta();
   };
 }
 

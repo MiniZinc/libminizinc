@@ -247,7 +247,7 @@ target_link_libraries(solns2out minizinc)
 
 
 set(HAS_CPLEX FALSE)
-set(HAS_GECODE FALSE)
+set(HAS_GECODE TRUE)
 set(HAS_FZN FALSE)
 
 if(HAS_CPLEX)

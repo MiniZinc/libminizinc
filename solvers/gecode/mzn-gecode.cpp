@@ -372,6 +372,25 @@ int main(int argc, char** argv) {
               gecode.processFlatZinc();
               std::cout << "DEBUG: finished processing flatzinc" << std::endl;
               SolverInstance::Status status = gecode.solve();
+              std::cout << "DEBUG: Solved with status: ";
+              switch(status) {
+                case SolverInstance::SAT:
+                  std::cout << "SAT";
+                  break;
+                case SolverInstance::OPT:
+                  std::cout << "OPT";
+                  break;
+                case SolverInstance::UNKNOWN:
+                  std::cout << "UNKNOWN";
+                  break;  
+                case SolverInstance::ERROR:
+                  std::cout << "ERROR";
+                  break;  
+                case SolverInstance::UNSAT:
+                  std::cout << "UNSAT";
+                  break;                    
+              }
+              std::cout << std::endl;
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";

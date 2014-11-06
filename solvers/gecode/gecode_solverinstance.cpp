@@ -23,13 +23,14 @@ using namespace Gecode;
 namespace MiniZinc {
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
-     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL), _solution(NULL) {
        registerConstraints(); 
        // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
      }
   
     GecodeSolverInstance::~GecodeSolverInstance(void) {
       //delete _current_space;
+      // delete _solution; // TODO: is this necessary?
     }
     
     void GecodeSolverInstance::registerConstraints(void) {
@@ -840,8 +841,16 @@ namespace MiniZinc {
                     false, /* ignoreUnknown */
                     std::cerr); 
     
-    // TODO: continue: run solver
-    return SolverInstanceBase::Status::ERROR; // TODO: implement   
+    // TODO: add presolving part
+            
+    SolverInstanceBase::Status status;
+    if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+      status = runEngine<DFS>();
+    }
+    else {
+      status = runEngine<BAB>();
+    }    
+    return status;
   }
   
   void 
@@ -1150,6 +1159,57 @@ namespace MiniZinc {
   Gecode::Space* 
   FznSpace::copy(bool share) {
    return new FznSpace(share, *this);
+  }
+    
+  template<template<class> class Engine>
+    SolverInstanceBase::Status GecodeSolverInstance::runEngine() {
+    if (true) {//_options.getBoolParam(ASTString("restarts"))) { // TODO: implement option
+      return runMeta<Engine,Driver::EngineToMeta>();
+    } else {
+      return runMeta<Engine,RBS>();
+    }     
+   }
+      
+  template<template<class> class Engine,
+    template<template<class> class,class> class Meta>
+        SolverInstanceBase::Status GecodeSolverInstance::runMeta() {
+    Search::Options o;
+    o.stop = Driver::CombinedStop::create(100000, //_options.getIntParam(ASTString("nodes")), // TODO: implement option
+                                          100000, //_options.getIntParam(ASTString("fails")), // TODO: implement option
+                                          (unsigned int) (1000 //_options.getFloatParam(ASTString("time")) 
+                                          * 1000), // TODO: implement option
+                                          true);
+    // TODO: other options (see below)
+    //o.c_d = opts->c_d();
+    //o.a_d = opts->a_d();
+    //o.threads = opts->threads();
+    //o.nogoods_limit = opts->nogoods() ? opts->nogoods_limit() : 0;
+    //o.cutoff  = Driver::createCutoff(*opts);
+    //if (opts->interrupt())
+    //    Driver::CombinedStop::installCtrlHandler(true);
+    Meta<Engine,FznSpace> se(this->_current_space,o);
+        
+    while (FznSpace* next_sol = se.next()) {
+      if(_solution) delete _solution;
+      _solution = next_sol;      
+    }
+    
+    SolverInstance::Status status = SolverInstance::ERROR;
+    if (!se.stopped()) {
+      if(_solution) {
+        if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
+          status = SolverInstance::SAT;
+        } else 
+          status = SolverInstance::OPT;
+      } else {
+        status = SolverInstance::UNSAT;
+      }
+    } else {         
+        // TODO: is that correct? what if(_solution)??
+        status = SolverInstance::UNKNOWN;            
+    }
+
+    return status;
   }
  
 }
