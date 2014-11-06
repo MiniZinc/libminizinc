@@ -85,7 +85,7 @@ namespace MiniZinc {
       while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
         start++;
       int end = start+1;
-      while (end < s.size() && (isalnum(s[end]) || s[end]=='_'))
+      while (end < s.size() && (isalnum(s[end]) || s[end]=='_' || s[end]=='.'))
         end++;
       std::string ret = s.substr(start,end-start);
       s = s.substr(0,n)+s.substr(end,std::string::npos);
@@ -114,6 +114,8 @@ namespace MiniZinc {
       std::ostringstream oss;
       size_t lastpos = 0;
       size_t pos = std::min(s.find("\\a"), s.find("\\p"));
+      size_t mathjax_open = s.find("\\(");
+      size_t mathjax_close = s.rfind("\\)");
       if (pos == std::string::npos)
         return replacements;
       while (pos != std::string::npos) {
@@ -128,9 +130,17 @@ namespace MiniZinc {
           end++;
         if (s[pos+1]=='a') {
           replacements.push_back(s.substr(start,end-start));
-          oss << "<span class='mzn-arg'>" << replacements.back() << "</span>";
+          if (pos >= mathjax_open && pos <= mathjax_close) {
+            oss << "{\\bf " << replacements.back() << "}";
+          } else {
+            oss << "<span class='mzn-arg'>" << replacements.back() << "</span>";
+          }
         } else {
-          oss << "<span class='mzn-parm'>" << s.substr(start,end-start) << "</span>";
+          if (pos >= mathjax_open && pos <= mathjax_close) {
+            oss << "{\\bf " << s.substr(start,end-start) << "}";
+          } else {
+            oss << "<span class='mzn-parm'>" << s.substr(start,end-start) << "</span>";
+          }
         }
         lastpos = end;
         pos = std::min(s.find("\\a", lastpos), s.find("\\p", lastpos));
@@ -259,14 +269,38 @@ namespace MiniZinc {
         fi->ann().remove(docstring);
         if (doc_comment_fn_body) {
           fi->ann().remove(doc_comment_fn_body);
-          Printer pp(os, 70);
-          pp.print(fi);
-          fi->ann().add(doc_comment_fn_body);
+        }
+        
+        std::ostringstream fs;
+        if (fi->ti()->type() == Type::parbool()) {
+          fs << "test ";
+          os << "<span class='mzn-kw'>test</span> ";
+        } else if (fi->ti()->type() == Type::varbool()) {
+          fs << "predicate ";
+          os << "<span class='mzn-kw'>predicate</span> ";
         } else {
-          FunctionI* fi_c = copy(fi)->cast<FunctionI>();
-          fi_c->e(NULL);
+          fs << "function " << *fi->ti() << ": ";
+          os << "<span class='mzn-kw'>function</span> <span class='mzn-ti'>" << *fi->ti() << "</span>: ";
+        }
+        fs << fi->id() << "(";
+        os << "<span class='mzn-fn-id'>" << fi->id() << "</span>(";
+        size_t align = fs.str().size();
+        for (unsigned int i=0; i<fi->params().size(); i++) {
+          os << "<span class='mzn-ti'>" << *fi->params()[i]->ti() << "</span>: "
+             << "<span class='mzn-id'>" << *fi->params()[i]->id() << "</span>";
+          if (i < fi->params().size()-1) {
+            os << ",\n";
+            for (unsigned int j=align; j--;)
+              os << " ";
+          }
+        }
+        os << ")";
+        
+        if (doc_comment_fn_body) {
+          os << " = \n";
           Printer pp(os, 70);
-          pp.print(fi_c);
+          pp.print(fi->e());
+          fi->ann().add(doc_comment_fn_body);
         }
         fi->ann().add(docstring);
         os << "</div>\n<div class='mzn-fundecl-doc'>\n";
@@ -325,12 +359,7 @@ namespace MiniZinc {
     os << "<meta charset='utf-8'>\n";
     os << "<link rel='stylesheet' type='text/css' href='style.css'>\n";
     os << "<title>" << title << "</title>\n";
-    
-//    os << "<style>\n";
-//    os << "  .mzn-arg { font-style: italic; }\n";
-//    os << "  .mzn-decl-type-heading { font-size: 180%; font-weight: bold; }\n";
-//    os << "  .mzn-fundecl { padding: 10px; width: 80%; background-color: #DDDDDD; border-style: solid; border-width: thin; }\n";
-//    os << "</style>\n";
+    os << "<script type='text/javascript' src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>\n";
     
     os << "</head>\n";
     

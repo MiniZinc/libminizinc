@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
-    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib,
+    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          errstream)) {
       try {
         if (flag_verbose)

@@ -4125,7 +4125,9 @@ namespace MiniZinc {
     return (decl->loc().filename == "builtins.mzn" ||
             decl->loc().filename.endsWith("/builtins.mzn") ||
             decl->loc().filename == "stdlib.mzn" ||
-            decl->loc().filename.endsWith("/stdlib.mzn"));
+            decl->loc().filename.endsWith("/stdlib.mzn") ||
+            decl->loc().filename == "flatzinc_builtins.mzn" ||
+            decl->loc().filename.endsWith("/flatzinc_builtins.mzn"));
   }
   
   void outputVarDecls(EnvI& env, Item* ci, Expression* e);
@@ -5463,7 +5465,7 @@ namespace MiniZinc {
             vc->decl(e.envi().orig->matchFn(vc));
           }
           if (vc->decl() && vc->decl() != constants().var_redef &&
-              !vc->decl()->loc().filename.endsWith("/builtins.mzn") &&
+              !isBuiltin(vc->decl()) &&
               globals.find(vc->decl())==globals.end()) {
             e.envi().flat_addItem(vc->decl());
             globals.insert(vc->decl());

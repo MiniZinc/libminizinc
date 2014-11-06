@@ -307,12 +307,3 @@ function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y)
 function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
-%-----------------------------------------------------------------------------%
-%-----------------------------------------------------------------------------%
-
-% Include solver-specific redefinitions for any FlatZinc built-ins.
-%
-include "redefinitions.mzn"
-
-%-----------------------------------------------------------------------------%
-%-----------------------------------------------------------------------------%
