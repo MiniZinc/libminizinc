@@ -1,13 +1,15 @@
-%-----------------------------------------------------------------------------%
-% Requires at most 'n' variables in 'x' to take the value 'v'.
-%-----------------------------------------------------------------------------%
-
 include "at_most_int.mzn";
 include "at_most_set.mzn";
 
+/**  @group counting
+  Requires at most \a n variables in \a x to take the value \a v.
+*/
 predicate at_most(int: n, array[int] of var int: x, int: v) =
     at_most_int(n, x, v);
 
+/**  @group counting
+  Requires at most \a n variables in \a x to take the value \a v.
+*/
 predicate at_most(int: n, array[int] of var set of int: x, set of int: v) =
     at_most_set(n, x, v);
 

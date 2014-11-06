@@ -1,6 +1,6 @@
-%-----------------------------------------------------------------------------%
-% Requires that the number of distinct values in 'x' is 'n'.
-%-----------------------------------------------------------------------------%
+/** @group alldifferent
+  Requires that the number of distinct values in \a x is \a n.
+*/
 predicate nvalue(var int: n, array[int] of var int: x) =
     let { int: lx = lb_array(x),
           int: ux = ub_array(x),
@@ -9,5 +9,8 @@ predicate nvalue(var int: n, array[int] of var int: x) =
 	   bool2int(exists(i in index_set(x)) ( x[i] = j ))
         );
 
+/** @group alldifferent
+  Returns the number of distinct values in \a x.
+*/
 function var int: nvalue(array[int] of var int: x) =
   let { var 0..length(x): n; constraint nvalue(n,x); } in n;

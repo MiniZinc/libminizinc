@@ -1292,10 +1292,11 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == constants().ids.lin_exp) {
-        ArrayLit* coeff = eval_array_lit(c.args()[0]);
-        ArrayLit* al = eval_array_lit(c.args()[1]);
-        IntVal d = c.args()[2]->cast<IntLit>()->v();
+      if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
+        bool le = c.id() == constants().ids.lin_exp;
+        ArrayLit* coeff = le ? eval_array_lit(c.args()[0]): NULL;
+        ArrayLit* al = eval_array_lit(c.args()[le ? 1 : 0]);
+        IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
@@ -1308,7 +1309,7 @@ namespace MiniZinc {
         IntVal ub = d;
         for (unsigned int i=0; i<al->v().size(); i++) {
           Bounds b = _bounds.back(); _bounds.pop_back();
-          IntVal cv = eval_int(coeff->v()[i]);
+          IntVal cv = le ? eval_int(coeff->v()[i]) : 1;
           if (cv > 0) {
             if (b.first.isFinite()) {
               if (lb.isFinite()) {
@@ -1603,10 +1604,11 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == constants().ids.lin_exp) {
-        ArrayLit* coeff = eval_array_lit(c.args()[0]);
-        ArrayLit* al = eval_array_lit(c.args()[1]);
-        FloatVal d = c.args()[2]->cast<FloatLit>()->v();
+      if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
+        bool le = c.id() == constants().ids.lin_exp;
+        ArrayLit* coeff = le ? eval_array_lit(c.args()[0]): NULL;
+        ArrayLit* al = eval_array_lit(c.args()[le ? 1 : 0]);
+        FloatVal d = le ? c.args()[2]->cast<FloatLit>()->v() : 0.0;
         int stacktop = _bounds.size();
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -1619,7 +1621,7 @@ namespace MiniZinc {
         FloatVal ub = d;
         for (unsigned int i=0; i<al->v().size(); i++) {
           FBounds b = _bounds.back(); _bounds.pop_back();
-          FloatVal cv = eval_float(coeff->v()[i]);
+          FloatVal cv = le ? eval_float(coeff->v()[i]) : 1.0;
           if (cv > 0) {
             lb += cv*b.first;
             ub += cv*b.second;

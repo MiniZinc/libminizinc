@@ -188,6 +188,7 @@ lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
 lib/gc.cpp
+lib/htmlprinter.cpp
 "${lexer_cpp}"
 lib/model.cpp
 "${parser_cpp}"
@@ -219,6 +220,7 @@ include/minizinc/flatten.hh
 include/minizinc/flatten_internal.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
+include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
@@ -242,6 +244,7 @@ target_link_libraries(mzn2fzn minizinc)
 
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
+
 
 set(HAS_CPLEX FALSE)
 set(HAS_GECODE TRUE)
@@ -303,7 +306,10 @@ if(HAS_GECODE)
     ARCHIVE DESTINATION lib)
 endif()
 
-INSTALL(TARGETS mzn2fzn solns2out minizinc
+add_executable(mzn2doc mzn2doc.cpp)
+target_link_libraries(mzn2doc minizinc)
+
+INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

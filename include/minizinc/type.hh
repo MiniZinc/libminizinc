@@ -29,22 +29,29 @@ namespace MiniZinc {
     enum SetType { ST_PLAIN, ST_SET };
     /// Whether the expression is normal or optional
     enum OptType { OT_PRESENT, OT_OPTIONAL };
+    /// Whether the par expression contains a var argument
+    enum ContainsVarType { CV_NO, CV_YES };
   private:
     unsigned int _ti : 3;
     unsigned int _bt : 4;
     unsigned int _st  : 1;
     unsigned int _ot  : 1;
+    unsigned int _cv  : 1;
     /// Number of array dimensions
-    int _dim : 20;
+    int _dim : 19;
   public:
     /// Default constructor
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN),
-                 _ot(OT_PRESENT), _dim(0) {}
+                 _ot(OT_PRESENT), _cv(CV_NO), _dim(0) {}
     
     /// Access type-inst
     TypeInst ti(void) const { return static_cast<TypeInst>(_ti); }
     /// Set type-inst
-    void ti(const TypeInst& t) { _ti = t; }
+    void ti(const TypeInst& t) {
+      _ti = t;
+      if (t==TI_VAR)
+        _cv=CV_YES;
+    }
 
     /// Access basic type
     BaseType bt(void) const { return static_cast<BaseType>(_bt); }
@@ -61,6 +68,11 @@ namespace MiniZinc {
     /// Set opt type
     void ot(const OptType& o) { _ot = o; }
     
+    /// Access var-in-par type
+    bool cv(void) const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
+    /// Set var-in-par type
+    void cv(bool b) { _cv = b ? CV_YES : CV_NO; }
+    
     /// Access dimensions
     int dim(void) const { return _dim; }
     /// Set dimensions
@@ -70,7 +82,7 @@ namespace MiniZinc {
     /// Constructor
     Type(const TypeInst& ti, const BaseType& bt, const SetType& st,
          int dim)
-      : _ti(ti), _bt(bt), _st(st), _ot(OT_PRESENT), _dim(dim) {}
+      : _ti(ti), _bt(bt), _st(st), _ot(OT_PRESENT), _cv(ti==TI_VAR ? CV_YES : CV_NO), _dim(dim) {}
   public:
     static Type parint(int dim=0) {
       return Type(TI_PAR,BT_INT,ST_PLAIN,dim);

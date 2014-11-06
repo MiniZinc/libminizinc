@@ -44,7 +44,8 @@ namespace MiniZinc {
   };
   
   /// Type check the model \a m
-  void typecheck(Model* m, std::vector<TypeError>& typeErrors);
+  void typecheck(Model* m, std::vector<TypeError>& typeErrors,
+                 bool ignoreUndefinedParameters = false);
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Model* m, AssignI* ai);

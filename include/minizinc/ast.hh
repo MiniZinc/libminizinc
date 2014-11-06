@@ -63,7 +63,9 @@ namespace MiniZinc {
     /// Line where expression ends
     unsigned int last_line;
     /// Column where expression ends
-    unsigned int last_column;
+    unsigned int last_column : 30;
+    /// Whether the location was introduced during compilation
+    unsigned int is_introduced : 1;
     
     /// Construct empty location
     Location(void);
@@ -73,6 +75,9 @@ namespace MiniZinc {
     
     /// Mark as alive for garbage collection
     void mark(void) const;
+    
+    /// Return location with introduced flag set
+    Location introduce(void) const;
   };
 
   /// Output operator for locations
@@ -117,6 +122,9 @@ namespace MiniZinc {
   
   /// returns the Annotation specified by the string; returns NULL if not exists
   Expression* getAnnotation(const Annotation& ann, std::string str);
+
+  /// returns the Annotation specified by the string; returns NULL if not exists
+  Expression* getAnnotation(const Annotation& ann, const ASTString& str);
 
   /**
    * \brief Base class for expressions
@@ -1102,6 +1110,8 @@ namespace MiniZinc {
     Annotation& ann(void) { return _ann; }
     /// Access body
     Expression* e(void) const { return _e; }
+    /// Set body
+    void e(Expression* b) { _e = b; }
     
     /** \brief Compute return type given argument types \a ta
      */

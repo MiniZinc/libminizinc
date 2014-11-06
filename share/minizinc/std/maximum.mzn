@@ -1,14 +1,17 @@
-%-----------------------------------------------------------------------------%
-% Constrains 'm' to be the maximum of the values in 'x'.
-% Assumptions: |x| > 0.
-%-----------------------------------------------------------------------------%
-
 include "maximum_int.mzn";
 include "maximum_float.mzn";
 
+/** Constrains \a m to be the maximum of the values in \a x.
+
+  Assumptions: |\a x| > 0.
+*/
 predicate maximum(var int: m, array[int] of var int: x) =
     maximum_int(m, x);
 
+/** Constrains \a m to be the maximum of the values in \a x.
+
+  Assumptions: |\a x| > 0.
+*/
 predicate maximum(var float: m, array[int] of var float: x) =
     maximum_float(m, x);
 

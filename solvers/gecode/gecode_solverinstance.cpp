@@ -840,7 +840,7 @@ namespace MiniZinc {
                     false, /* ignoreUnknown */
                     std::cerr); 
     
-    // TODO: continue
+    // TODO: continue: run solver
     return SolverInstanceBase::Status::ERROR; // TODO: implement   
   }
   

@@ -87,7 +87,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          return IntVal::infinity;
+          throw EvalError(al->loc(), "Array is empty");
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(al->v()[i]));
@@ -111,7 +111,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(args[0]);
         if (al->v().size()==0)
-          return -IntVal::infinity;
+          throw EvalError(al->loc(), "Array is empty");
         IntVal m = eval_int(al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(al->v()[i]));
@@ -126,9 +126,14 @@ namespace MiniZinc {
     }
   }
   
-  IntVal b_abs(ASTExprVec<Expression> args) {
+  IntVal b_abs_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     return std::abs(eval_int(args[0]));
+  }
+
+  FloatVal b_abs_float(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    return std::abs(eval_float(args[0]));
   }
   
   bool b_has_bounds_int(ASTExprVec<Expression> args) {
@@ -275,7 +280,7 @@ namespace MiniZinc {
     }
   }
 
-  IntVal b_sum(ASTExprVec<Expression> args) {
+  IntVal b_sum_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
@@ -287,7 +292,7 @@ namespace MiniZinc {
     return m;
   }
 
-  IntVal b_product(ASTExprVec<Expression> args) {
+  IntVal b_product_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
@@ -298,7 +303,19 @@ namespace MiniZinc {
       m *= eval_int(al->v()[i]);
     return m;
   }
-  
+
+  FloatVal b_product_float(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      return 1;
+    FloatVal m = 1.0;
+    for (unsigned int i=0; i<al->v().size(); i++)
+      m *= eval_float(al->v()[i]);
+    return m;
+  }
+
   FloatVal lb_varoptfloat(Expression* e) {
     FloatBounds b = compute_float_bounds(e);
     if (b.valid)
@@ -1344,8 +1361,8 @@ namespace MiniZinc {
     rb(m, ASTString("min"), t_intarray, b_int_min);
     rb(m, ASTString("max"), t_intint, b_int_max);
     rb(m, ASTString("max"), t_intarray, b_int_max);
-    rb(m, constants().ids.sum, t_intarray, b_sum);
-    rb(m, ASTString("product"), t_intarray, b_product);
+    rb(m, constants().ids.sum, t_intarray, b_sum_int);
+    rb(m, ASTString("product"), t_intarray, b_product_int);
     rb(m, ASTString("pow"), t_intint, b_pow_int);
 
     {
@@ -1643,7 +1660,9 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
-      rb(m, ASTString("abs"), t, b_abs);
+      rb(m, ASTString("abs"), t, b_abs_int);
+      t[0] = Type::parfloat();
+      rb(m, ASTString("abs"), t, b_abs_float);
     }
     {
       std::vector<Type> t(1);
@@ -1707,6 +1726,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
       rb(m, constants().ids.sum, t, b_sum_float);      
+      rb(m, ASTString("product"), t, b_product_float);
     }
     {
       std::vector<Type> t(1);

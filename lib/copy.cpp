@@ -62,6 +62,7 @@ namespace MiniZinc {
     loc.first_column = _loc.first_column;
     loc.last_line = _loc.last_line;
     loc.last_column = _loc.last_column;
+    loc.is_introduced = _loc.is_introduced;
     if (_loc.filename != "") {
       if (ASTStringO* f = m.find(ASTString(_loc.filename))) {
         loc.filename = ASTString(f);

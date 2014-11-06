@@ -1856,7 +1856,7 @@ namespace MiniZinc {
   Printer::init(void) {
     if (ism==NULL) {
       ism = new ItemDocumentMapper();
-      printer =  new PrettyPrinter(80, 4, true, true);
+      printer =  new PrettyPrinter(_width, 4, true, true);
     }
   }
   Printer::~Printer(void) {
