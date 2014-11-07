@@ -46,7 +46,7 @@ namespace MiniZinc {
         std::ostringstream oss;
 
         oss << "<div class='mzn-group-level-" << level << "'>\n";
-        if (!desc.empty()) {
+        if (!htmlName.empty()) {
           oss << "<div class='mzn-group-name'>" << htmlName << "</div>\n";
           oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
         }
@@ -133,7 +133,7 @@ namespace MiniZinc {
         }
         Group& g = cgm->find(subgroups[i])->second;
         if (i==subgroups.size()-1) {
-          if (!g.desc.empty()) {
+          if (!g.htmlName.empty()) {
             std::cerr << "Warning: two descriptions for group `" << group << "'\n";
           }
           g.htmlName = htmlName;
@@ -319,7 +319,12 @@ namespace MiniZinc {
         std::ostringstream os;
         os << "<div class='mzn-vardecl'>\n";
         os << "<div class='mzn-vardecl-code'>\n";
-        os << *vdi->e()->ti() << ": " << *vdi->e()->id();
+        if (vdi->e()->ti()->type() == Type::ann()) {
+          os << "<span class='mzn-kw'>annotation</span> ";
+          os << "<span class='mzn-fn-id'>" << *vdi->e()->id() << "</span>";
+        } else {
+          os << *vdi->e()->ti() << ": " << *vdi->e()->id();
+        }
         os << "</div><div class='mzn-vardecl-doc'>\n";
         os << addHTML(ds);
         os << "</div>";
@@ -365,14 +370,13 @@ namespace MiniZinc {
         os << "<div class='mzn-fundecl'>\n";
         os << "<div class='mzn-fundecl-code'>\n";
         
-        Expression* doc_comment_fn_body = fi->e() ? getAnnotation(fi->ann(), "doc_comment_fn_body") : NULL;
         fi->ann().remove(docstring);
-        if (doc_comment_fn_body) {
-          fi->ann().remove(doc_comment_fn_body);
-        }
         
         std::ostringstream fs;
-        if (fi->ti()->type() == Type::parbool()) {
+        if (fi->ti()->type() == Type::ann()) {
+          fs << "annotation ";
+          os << "<span class='mzn-kw'>annotation</span> ";
+        } else if (fi->ti()->type() == Type::parbool()) {
           fs << "test ";
           os << "<span class='mzn-kw'>test</span> ";
         } else if (fi->ti()->type() == Type::varbool()) {
@@ -408,12 +412,6 @@ namespace MiniZinc {
         }
         os << ")";
         
-        if (doc_comment_fn_body) {
-          os << " = \n";
-          Printer pp(os, 70);
-          pp.print(fi->e());
-          fi->ann().add(doc_comment_fn_body);
-        }
         fi->ann().add(docstring);
         os << "</div>\n<div class='mzn-fundecl-doc'>\n";
         std::string dshtml = addHTML(ds);
