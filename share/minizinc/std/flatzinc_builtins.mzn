@@ -1,8 +1,11 @@
-/*
-  This file contains declarations for the standard FlatZinc builtins.
-  They can be redefined by providing a custom redefinitions.mzn in the
-  solver globals library.
-*/
+%-----------------------------------------------------------------------------%
+%
+% FlatZinc builtins
+%
+%  This section contains declarations for the standard FlatZinc builtins.
+%  They can be redefined by providing a custom redefinitions.mzn in the
+%  solver globals library.
+%
 
 /***
   @groupdef flatzinc FlatZinc builtins

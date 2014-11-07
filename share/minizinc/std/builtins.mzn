@@ -1,24 +1,22 @@
 include "flatzinc_builtins.mzn";
 
+%-----------------------------------------------------------------------------%
+%
+% MiniZinc operations
+%
+
 /***
   @groupdef builtins Builtins
   
   These functions and predicates define built-in operations of the MiniZinc language.
   
+*/
+
+/***
   @groupdef builtins.compare Comparison Builtins
   
   These builtins implement comparison operations.
-
-  @groupdef builtins.arithmetic Arithmetic Builtins
-
-  These builtins implement arithmetic operations.
-  
 */
-
-%-----------------------------------------------------------------------------%
-%
-% Built-in operations
-%
 
 /** @group builtins.compare Return if \a x is less than \a y */
 function     bool: '<'(    $T: x,    $T: y);
@@ -151,7 +149,11 @@ function     bool: '!='(array[$U] of     $T: x,array[$U] of     $T: y);
 /** @group builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$U] of var $T: x,array[$U] of var $T: y);
 
-% Arithmetic operations
+/***
+  @groupdef builtins.arithmetic Arithmetic Builtins
+
+  These builtins implement arithmetic operations.
+*/
 
 /** @group builtins.arithmetic Return \a x + \a y */
 function     int:   '+'(    int: x,     int: y);
@@ -468,7 +470,6 @@ function var float: atanh(var float: x) ::promise_total =
     constraint float_atanh(x,r);
   } in r;
 
-% Logical operations
 
 /***
   @groupdef builtins.logic Logical operations
@@ -525,8 +526,6 @@ function var bool: iffall(array[$T] of var bool: x);
 function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
 function var bool: clause(array[$T] of     bool: x, array[$T] of     bool: y);
-
-% Set operations
 
 /***
   @groupdef builtins.set Set operations
@@ -585,8 +584,6 @@ function var set of int: array_union(array[$T] of var set of int: x) =
 function     set of $U:  array_intersect(array[$T] of     set of $U: x);
 function var set of int: array_intersect(array[$T] of var set of int: x) =
   array_intersect_rec(array1d(x));
-
-% Array operations
 
 /***
   @groupdef builtins.array Array operations
@@ -823,7 +820,6 @@ function array[int] of float: sort(array[int] of float: x);
 /** @group builtins.array Return values from array \a x sorted in non-decreasing order */
 function array[int] of bool: sort(array[int] of bool: x);
 
-% Coercion operations
 
 /***
   @groupdef builtins.coercion Coercions
@@ -890,7 +886,6 @@ function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_to
 /** @group builtins.coercion Return a set of integers \a x coerced to an array of integers  */
 function array[int] of int: set2array(set of int: x);
 
-% String operations
 
 /***
   @groupdef builtins.string String operations
@@ -987,7 +982,6 @@ justified if \a w is negative.
 */
 function string: format(int: w, array[$U] of var opt $T: x);
 
-% Bound and domain operations
 
 /***
   @groupdef builtins.reflect Reflection operations

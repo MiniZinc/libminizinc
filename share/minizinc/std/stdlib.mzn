@@ -1,38 +1,62 @@
 %-----------------------------------------------------------------------------%
 % MiniZinc standard library.
 %-----------------------------------------------------------------------------%
-% This file contains built-in operations that can be expressed in MiniZinc,
-% and so are not implemented as true built-ins within the compiler.
+% This file contains declarations of all functions, predicates and annotations
+% available in the base MiniZinc language.
 
-%-----------------------------------------------------------------------------%
-%
-% General annotations
-%
+/***
+ @groupdef annotations Annotations
+ 
+ These annotations control evaluation and solving behaviour.
+*/
 
+
+/***
+ @groupdef annotations.general General annotations
+*/
+
+/** @group annotations.general Declare function as total, i.e. it does not put
+  any constraints on its arguments. */
 annotation promise_total;
+
+/** @group annotations.general Declare the annotated variable as being functionally defined.
+  This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
+/** @group annotations.general Declare a variable as being introduced by the compiler. */
 annotation var_is_introduced;
+/** @group annotations.general Declare variable: \a c as being functionally defined
+  by the annotated constraint. This annotation is introduced into FlatZinc code by the compiler. */
 annotation defines_var(var $t: c);
+/** @group annotations.general Declare that the annotated array should be printed by
+  the solver with the given index sets \a a. This annotation is introduced into FlatZinc code by
+  the compiler. */
 annotation output_array(array[$u] of set of int:a);
+/** @group annotations.general Declare that the annotated variable should be printed by
+  the solver. This annotation is introduced into FlatZinc code by
+  the compiler. */
 annotation output_var;
+/** @group annotations.general Declare that the annotated expression is used to map
+  an expression back from FlatZinc to MiniZinc.  */
 annotation is_reverse_map;
-annotation doc_comment(string);
-annotation doc_comment_fn_body;
+/** @group annotations.general Document the function or variable declaration item with
+  the string \a s. */
+annotation doc_comment(string: s);
 
-%-----------------------------------------------------------------------------%
-%
-% Propagation strength
-%
+/***
+ @groupdef annotations.prop Propagation strength annotations
+*/
 
+/** @group annotations.prop Annotate a constraint to use domain propagation */
 annotation domain;
+/** @group annotations.prop Annotate a constraint to use bounds propagation */
 annotation bounds;
 
 
-%-----------------------------------------------------------------------------%
-%
-% Search annotations
-%
+/***
+ @groupdef annotations.search Search annotations
+*/
 
+/** @group annotation.search Sequentially perform the searches specified in array \a s */
 annotation seq_search(array[int] of ann: s);
 
 annotation int_search(
