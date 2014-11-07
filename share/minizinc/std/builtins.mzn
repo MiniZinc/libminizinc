@@ -814,6 +814,15 @@ test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=
 /** @group builtins.array Test if \a e is an element of array \a x */
 predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
+/** @group builtins.array Return array \a x sorted by the values in \a y */
+function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
+/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+function array[int] of int: sort(array[int] of int: x);
+/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+function array[int] of float: sort(array[int] of float: x);
+/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+function array[int] of bool: sort(array[int] of bool: x);
+
 % Coercion operations
 
 /***
@@ -980,60 +989,108 @@ function string: format(int: w, array[$U] of var opt $T: x);
 
 % Bound and domain operations
 
-function int: lb(var int);
-function int: ub(var int);
-function int: lb(var opt int);
-function int: ub(var opt int);
-function float: lb(var float);
-function float: ub(var float);
-function set of int: lb(var set of int);
-function set of int: ub(var set of int);
+/***
+  @groupdef builtins.reflect Reflection operations
+  
+  These functions return information about declared or inferred variable
+  bounds and domains.
+*/
+
+/** @group builtins.reflect Return lower bound of \a x */
+function int: lb(var int: x);
+/** @group builtins.reflect Return upper bound of \a x */
+function int: ub(var int: x);
+/** @group builtins.reflect Return lower bound of \a x */
+function int: lb(var opt int: x);
+/** @group builtins.reflect Return upper bound of \a x */
+function int: ub(var opt int: x);
+/** @group builtins.reflect Return lower bound of \a x */
+function float: lb(var float: x);
+/** @group builtins.reflect Return upper bound of \a x */
+function float: ub(var float: x);
+/** @group builtins.reflect Return lower bound of \a x */
+function set of int: lb(var set of int: x);
+/** @group builtins.reflect Return upper bound of \a x */
+function set of int: ub(var set of int: x);
+/** @group builtins.reflect Return array of lower bounds of the elements in array \a x */
 function array[$U] of int: lb(array[$U] of var int: x) =
   arrayXd(x,[lb(xx) | xx in array1d(x)]);
+/** @group builtins.reflect Return array of upper bounds of the elements in array \a x */
 function array[$U] of int: ub(array[$U] of var int: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
+/** @group builtins.reflect Return array of lower bounds of the elements in array \a x */
 function array[$U] of float: lb(array[$U] of var float: x) =
   arrayXd(x,[lb(xx) | xx in array1d(x)]);
+/** @group builtins.reflect Return array of upper bounds of the elements in array \a x */
 function array[$U] of float: ub(array[$U] of var float: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
+/** @group builtins.reflect Return array of lower bounds of the elements in array \a x */
 function array[$U] of set of int: lb(array[$U] of var set of int: x) =
   arrayXd(x,[lb(xx) | xx in array1d(x)]);
+/** @group builtins.reflect Return array of upper bounds of the elements in array \a x */
 function array[$U] of set of int: ub(array[$U] of var set of int: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
-function int: lb_array(array[$U] of var opt int);
-function int: ub_array(array[$U] of var opt int);
-function float: lb_array(array[$U] of var float);
-function float: ub_array(array[$U] of var float);
-function set of int: lb_array(array[$U] of var set of int);
-function set of int: ub_array(array[$U] of var set of int);
-function set of int: dom(var int);
-function set of int: dom_array(array[$T] of var int);
+/** @group builtins.reflect Return minimum of all lower bounds of the elements in array \a x */
+function int: lb_array(array[$U] of var opt int: x);
+/** @group builtins.reflect Return maximum of all upper bounds of the elements in array \a x */
+function int: ub_array(array[$U] of var opt int: x);
+/** @group builtins.reflect Return minimum of all lower bounds of the elements in array \a x */
+function float: lb_array(array[$U] of var float: x);
+/** @group builtins.reflect Return maximum of all upper bounds of the elements in array \a x */
+function float: ub_array(array[$U] of var float: x);
+/** @group builtins.reflect Return intersection of all lower bounds of the elements in array \a x */
+function set of int: lb_array(array[$U] of var set of int: x);
+/** @group builtins.reflect Return union of all upper bounds of the elements in array \a x */
+function set of int: ub_array(array[$U] of var set of int: x);
+/** @group builtins.reflect Return domain of \a x */
+function set of int: dom(var int: x);
+/** @group builtins.reflect Return union of all domains of the elements in array \a x */
+function set of int: dom_array(array[$T] of var int: x);
+/** @group builtins.reflect Return cardinality of the domain of \a x */
 function int: dom_size(var int: x) = card(dom(x));
 
-function par bool: has_bounds(var int);
-function par bool: has_bounds(var float);
-function par bool: has_ub_set(var set of int);
+/** @group builtins.reflect Test if variable \a x has declared, finite bounds */
+function par bool: has_bounds(var int: x);
+/** @group builtins.reflect Test if variable \a x has declared, finite bounds */
+function par bool: has_bounds(var float: x);
+/** @group builtins.reflect Test if variable \a x has a declared, finite upper bound */
+function par bool: has_ub_set(var set of int: x);
 
-% Other operations
+/** @group builtins.reflect Check if the value of \a x is fixed at this point
+  in evaluation. If it is fixed, return its value, otherwise abort. */
+function $T: fix(var opt $T: x);
+/** @group builtins.reflect Check if the value of every element of the array \a x is fixed
+at this point in evaluation. If all are fixed, return an array of their values, otherwise abort. */
+function array[$U] of $T: fix(array[$U] of var opt $T: x);
+/** @group builtins.reflect Test if \a x is fixed */
+function bool: is_fixed(var opt $T: x);
+/** @group builtins.reflect Test if every element of array \a x is fixed */
+function bool: is_fixed(array[$U] of var opt $T: x);
 
-function $T: assert(bool, string, $T);
-function var $T: assert(bool, string, var $T);
-function var opt $T: assert(bool, string, var opt $T);
-function bool: assert(bool, string);
-function $T: trace(string, $T);
-function var $T: trace(string, var $T);
-function var opt $T: trace(string, var opt $T);
-function $T: fix(var opt $T);
-function array[$U] of $T: fix(array[$U] of var opt $T);
-function bool: is_fixed(var opt $T);
-function bool: is_fixed(array[$U] of var opt $T);
+/***
+  @groupdef builtins.debug Assertions and debugging functions
+  
+  These functions help debug models and check that input data conforms to
+  the expectations.
+*/
 
-function bool: abort(string);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function $T: assert(bool: b, string: msg, $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function var $T: assert(bool: b, string: msg, var $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function var opt $T: assert(bool: b, string: msg, var opt $T: x);
+/** @group builtins.debug If \a b is true, return true, otherwise abort with message \a msg. */
+function bool: assert(bool: b, string: msg);
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function $T: trace(string: msg, $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function var $T: trace(string: msg, var $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function var opt $T: trace(string: msg, var opt $T: x);
 
-function array[int] of var $T: sort_by(array[int] of var $T, array[int] of int);
-function array[int] of int: sort(array[int] of int);
-function array[int] of float: sort(array[int] of float);
-function array[int] of bool: sort(array[int] of bool);
+/** @group builtins.debug Abort evaluation and print message \a msg. */
+function bool: abort(string: msg);
 
 %-----------------------------------------------------------------------------%
 %
