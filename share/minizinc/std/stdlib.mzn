@@ -178,15 +178,53 @@ annotation outdomain_random;
 /** @group annotations.search.explore Perform a complete search */
 annotation complete;
 
-%-----------------------------------------------------------------------------%
-%-----------------------------------------------------------------------------%
 
-%-----------------------------------------------------------------------------%
-%
-% Option type predicates.
-%
+/***
+  @groupdef optiontypes Option type support
+  
+  These functions and predicates implement the standard library for working
+  with option types. Note that option type support is still incomplete.
+*/
 
-function $T: deopt(opt $T);
+/** @group optiontypes Return value of \a x if \a x is not absent. Aborts 
+  when evaluated on absent value. */
+function $T: deopt(opt $T: x);
+
+/** @group optiontypes Return value \a x unchanged (since \a x is guaranteed
+  to be non-optional). */
+function var $T: deopt(var $T: x) = x;
+
+/** @group optiontypes Test if \a x is not absent (always returns true) */
+test occurs(var $T: x) = true;
+/** @group optiontypes Test if \a x is not absent */
+test occurs(opt $T: x);
+/** @group optiontypes Test if \a x is absent (always returns false) */
+test absent(var $T: x) = false;
+/** @group optiontypes Test if \a x is absent */
+test absent(opt $T: x) = not occurs(x);
+
+/***
+  @groupdef optiontypes.bool Option type support for Booleans
+*/
+
+/** @group optiontypes.bool True iff \a x is not absent */
+function var bool : occurs(var opt bool: x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var bool : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in b;
+  
+/** @group optiontypes.bool Return value of \a x (assumes that \a x is not absent) */
+function var bool : deopt(var opt bool : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var bool : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in dx;
+
+/** @group optiontypes.bool True iff \a x is absent */
+predicate absent(var opt bool: x) = not occurs(x);
 
 function var bool: occurs_internal(var opt bool: x) ::promise_total =
   let { var bool : b; } in b;
@@ -197,54 +235,89 @@ function var opt bool: reverse_map(var bool: occ, var bool: d);
 function opt bool: reverse_map(bool: occ, bool: d) ::promise_total =
   if occ then d else <> endif;
 
-function var bool : occurs(var opt bool : x) ::promise_total =
-  let {
-    var bool : b = occurs_internal(x);
-    var bool : dx = deopt_internal(x);
-    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
-  } in b;
-  
-function var bool : deopt(var opt bool : x) ::promise_total =
-  let {
-    var bool : b = occurs_internal(x);
-    var bool : dx = deopt_internal(x);
-    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
-  } in dx;
-  
-predicate deopt(var bool: b) = b;
-test occurs(var bool: b) = true;
-test occurs(opt bool: x) ::promise_total;
 
-predicate absent(var opt bool: b) = not occurs(b);
-predicate absent(var bool: b) = false;
-test absent(opt bool: x) ::promise_total = not occurs(x);
-
+/** @group optiontypes.bool True iff both \a b0 and \a b1 are absent or
+  both are present and have the same value. */
 predicate bool_eq(var opt bool: b0, var opt bool: b1) =
      (absent(b0) /\ absent(b1))
   \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0)=deopt(b1));
 
+/** @group optiontypes.bool True iff \a b0 occurs and is equal to \a b1 */
 predicate bool_eq(var opt bool: b0, var bool: b1) =
   occurs(b0) /\ deopt(b0)=b1;
 
+  /** @group optiontypes.bool True iff \a b1 occurs and is equal to \a b0 */
 predicate bool_eq(var bool: b0, var opt bool: b1) =
   occurs(b1) /\ deopt(b1)=b0;
 
+/** @group optiontypes.bool True iff for any \p i, \a x[i] is absent or true */
 predicate forall (array[int] of var opt bool: x) =
   forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
 
+/** @group optiontypes.bool True iff for at least one \p i, \a x[i] occurs and is true */
 predicate exists (array[int] of var opt bool: x) =
   exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
 
+/** @group optiontypes.bool True iff \a x is absent or false */
 function var bool: 'not'(var opt bool: x) = absent(x) \/ not deopt(x);
 
-function bool: occurs(var int: x) ::promise_total = true;
-function bool: occurs(int: x) ::promise_total = true;
-test occurs(opt int: x) ::promise_total;
-function var int: deopt(var int: x) ::promise_total = x;
-function int: deopt(int: x) ::promise_total = x;
+/** @group optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
 
-function bool: absent(var int: x) ::promise_total = false;
-function bool: absent(opt int: x) ::promise_total = not occurs(x);
+/** @group optiontypes.bool Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+/** @group optiontypes.bool Return \a x[\a idx] */
+function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+/** @group optiontypes.bool Return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+/** @group optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** @group optiontypes.bool Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+
+
+/***
+  @groupdef optiontypes.int Option type support for integers
+*/
+
+/** @group optiontypes.int True iff \a x is not absent */
+function var bool : occurs(var opt int : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var int  : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in b;
+
+/** @group optiontypes.bool Return value of \a x (assumes that \a x is not absent) */
+function var int : deopt(var opt int : x) ::promise_total =
+  let {
+    var bool : b = occurs_internal(x);
+    var int  : dx = deopt_internal(x);
+    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
+  } in dx;
+
+/** @group optiontypes.bool True iff \a x is absent */
 function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 
 function var bool: occurs_internal(var opt int: x) ::promise_total =
@@ -256,20 +329,21 @@ function var opt int: reverse_map(var bool: occ, var int: d);
 function opt int: reverse_map(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
 
-function var bool : occurs(var opt int : x) ::promise_total =
-  let {
-    var bool : b = occurs_internal(x);
-    var int  : dx = deopt_internal(x);
-    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
-  } in b;
-  
-function var int : deopt(var opt int : x) ::promise_total =
-  let {
-    var bool : b = occurs_internal(x);
-    var int  : dx = deopt_internal(x);
-    constraint (x = reverse_map(b,dx)) :: is_reverse_map;
-  } in dx;
+/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+  occur and the value of \a x is greater than the value of \a y. */
+function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+  occur and the value of \a x is greater than or equal to the value of \a y. */
+function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+  occur and the value of \a x is less than the value of \a y. */
+function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+  occur and the value of \a x is less than or equal to the value of \a y. */
+function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
+/** @group optiontypes.int Return optional 0/1 integer that is absent iff \a x
+  is absent, and 1 iff \a x occurs and is true. */
 function var opt int: bool2int(var opt bool: x) ::promise_total =
   let {
     var opt 0..1: xi;
@@ -277,23 +351,31 @@ function var opt int: bool2int(var opt bool: x) ::promise_total =
     constraint deopt(xi)=bool2int(deopt(x));
   } in xi;
 
-predicate int_eq(var opt int : x, var opt int : y) =
+/** @group optiontypes.int True iff both \a x and \a y are absent or
+  both are present and have the same value. */
+predicate int_eq(var opt int: x, var opt int: y) =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
 
+/** @group optiontypes.int True iff only one of \a x and \a y is absent or
+  both are present and have different values. */
 predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ deopt(x)!=deopt(y));
 
+/** @group optiontypes.int Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
 
+/** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
+/** @group optiontypes.int Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+/** @group optiontypes.int Return \a x[\a idx] */
 function var opt int: element(var int: idx, array[int] of var opt int: x) =
   let {
     var opt int: r;
@@ -301,6 +383,7 @@ function var opt int: element(var int: idx, array[int] of var opt int: x) =
     constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
   } in r;
 
+/** @group optiontypes.int Return \a x[\a idx1, \a idx2] */
 function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
   let {
     var opt int: r;
@@ -310,49 +393,11 @@ function var opt int: element(var int: idx1, var int: idx2, array[int,int] of va
       array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in r;
 
+/** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
+/** @group optiontypes.int Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-
-
-
-
-
-
-
-function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
-  let {
-    var opt bool: r;
-    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
-  } in r;
-
-function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
-  let {
-    var opt bool: r;
-    constraint occurs(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-    constraint deopt(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-  } in r;
-
-function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
