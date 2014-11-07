@@ -32,8 +32,14 @@ namespace MiniZinc {
     };
 
     class Group;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string, Group> GroupMap;
 
+    class GroupMap {
+    public:
+      typedef UNORDERED_NAMESPACE::unordered_map<std::string, Group*> Map;
+      Map m;
+      ~GroupMap();
+    };
+    
     class Group {
     public:
       Group(const std::string& name0) : name(name0) {}
@@ -51,8 +57,8 @@ namespace MiniZinc {
           oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
         }
         
-        for (GroupMap::iterator it = subgroups.begin(); it != subgroups.end(); ++it) {
-          oss << it->second.toHTML(level+1);
+        for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
+          oss << it->second->toHTML(level+1);
         }
 
         struct SortById {
@@ -80,8 +86,15 @@ namespace MiniZinc {
         oss << "</div>";
         return oss.str();
       }
+      
     };
-    
+
+    GroupMap::~GroupMap() {
+      for (Map::iterator it = m.begin(); it != m.end(); ++it) {
+        delete it->second;
+      }
+    }
+
     void addToGroup(GroupMap& gm, const std::string& group, DocItem& di) {
       std::vector<std::string> subgroups;
       size_t lastpos = 0;
@@ -99,10 +112,10 @@ namespace MiniZinc {
         if (i > 0)
           gprefix += ".";
         gprefix += subgroups[i];
-        if (cgm->find(subgroups[i]) == cgm->end()) {
-          cgm->insert(std::make_pair(subgroups[i],Group(gprefix)));
+        if (cgm->m.find(subgroups[i]) == cgm->m.end()) {
+          cgm->m.insert(std::make_pair(subgroups[i],new Group(gprefix)));
         }
-        Group& g = cgm->find(subgroups[i])->second;
+        Group& g = *cgm->m.find(subgroups[i])->second;
         if (i==subgroups.size()-1) {
           g.items.push_back(di);
         } else {
@@ -128,10 +141,10 @@ namespace MiniZinc {
         if (i > 0)
           gprefix += ".";
         gprefix += subgroups[i];
-        if (cgm->find(subgroups[i]) == cgm->end()) {
-          cgm->insert(std::make_pair(subgroups[i],Group(gprefix)));
+        if (cgm->m.find(subgroups[i]) == cgm->m.end()) {
+          cgm->m.insert(std::make_pair(subgroups[i],new Group(gprefix)));
         }
-        Group& g = cgm->find(subgroups[i])->second;
+        Group& g = *cgm->m.find(subgroups[i])->second;
         if (i==subgroups.size()-1) {
           if (!g.htmlName.empty()) {
             std::cerr << "Warning: two descriptions for group `" << group << "'\n";
@@ -145,7 +158,7 @@ namespace MiniZinc {
     }
     
   }
-  
+
   class PrintHtmlVisitor : public ItemVisitor {
   protected:
     HtmlDocOutput::GroupMap& _gm;
@@ -446,8 +459,8 @@ namespace MiniZinc {
     PrintHtmlVisitor phv(gm);
     iterItems(phv, m);
     std::vector<HtmlDocument> ret;
-    for (GroupMap::iterator it = gm.begin(); it != gm.end(); ++it) {
-      ret.push_back(HtmlDocument(it->second.name, it->second.toHTML()));
+    for (GroupMap::Map::iterator it = gm.m.begin(); it != gm.m.end(); ++it) {
+      ret.push_back(HtmlDocument(it->second->name, it->second->toHTML()));
     }
     return ret;
   }
@@ -459,8 +472,8 @@ namespace MiniZinc {
     PrintHtmlVisitor phv(gm);
     iterItems(phv, m);
     std::ostringstream oss;
-    for (GroupMap::iterator it = gm.begin(); it != gm.end(); ++it) {
-      oss << it->second.toHTML();
+    for (GroupMap::Map::iterator it = gm.m.begin(); it != gm.m.end(); ++it) {
+      oss << it->second->toHTML();
     }
     return HtmlDocument("model.html", oss.str());
   }
