@@ -628,28 +628,38 @@ item_list_head:
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($1);
       }
-    | MZN_DOC_FILE_COMMENT item
+    | doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($2);
-        if (pp->parseDocComments) {
-          pp->model->addDocComment($1);
-        }
-        free($1);
       }
     | item_list_head ';' item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($3);
       }
-    | item_list_head ';' MZN_DOC_FILE_COMMENT item
+    | item_list_head ';' doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($4);
+      }
+
+doc_file_comments:
+      MZN_DOC_FILE_COMMENT
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->parseDocComments) {
-          pp->model->addDocComment($3);
+          pp->model->addDocComment($1);
         }
-        free($3);
+        free($1);
+      }
+    | doc_file_comments MZN_DOC_FILE_COMMENT
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if (pp->parseDocComments) {
+          pp->model->addDocComment($2);
+        }
+        free($2);
       }
 
 semi_or_none : | ';'
