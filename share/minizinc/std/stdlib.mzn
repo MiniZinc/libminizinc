@@ -56,102 +56,127 @@ annotation bounds;
  @groupdef annotations.search Search annotations
 */
 
-/** @group annotation.search Sequentially perform the searches specified in array \a s */
+/** @group annotations.search Sequentially perform the searches specified in array \a s */
 annotation seq_search(array[int] of ann: s);
 
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+*/
 annotation int_search(
-    array[int] of var int: vars,
+    array[int] of var int: x,
     ann: select,
     ann: choice,
     ann: explore,
 );
 
-annotation int_search_all(
-    ann: select,
-    ann: choice,
-    ann: explore
-);
-
-annotation int_search_bd(
-    ann: a,
-    ann: b,
-    ann: c,
-    ann: d
-);
-
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+*/
 annotation bool_search(
-    array[int] of var bool: vars,
+    array[int] of var bool: x,
     ann: select,
     ann: choice,
     ann: explore
 );
 
+/** @group annotations.search Specify search on variables \a x, 
+  with precision \a prec, variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+*/
 annotation float_search(
-    array[int] of var float: vars,
+    array[int] of var float: x,
     float: prec,
     ann: select,
     ann: choice,
     ann: explore
 );
 
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+*/
 annotation set_search(
-    array[int] of var set of int: vars,
+    array[int] of var set of int: x,
     ann: select,
     ann: choice,
     ann: explore
 );
 
-annotation labelling_ff;
+/***
+ @groupdef annotations.search.varsel Variable selection annotations.
+*/
 
-%-----------------------------------------------------------------------------%
-%
-% Variable selection annotations.
-%
-
+/** @group annotations.search.varsel Search variables in the given order */
 annotation input_order;
+/** @group annotations.search.varsel Choose the variable with the smallest domain */
 annotation first_fail;
+/** @group annotations.search.varsel Choose the variable with the largest domain */
 annotation anti_first_fail;
+/** @group annotations.search.varsel Choose the variable with the smallest value in its domain */
 annotation smallest;
+/** @group annotations.search.varsel Choose the variable with the largest value in its domain */
 annotation largest;
+/** @group annotations.search.varsel Choose the variable with the largest number of attached constraints */
 annotation occurrence;
+/** @group annotations.search.varsel Choose the variable with the smallest domain,
+  breaking ties using the number of attached constraints */
 annotation most_constrained;
+/** @group annotations.search.varsel Choose the variable with largest difference
+  between the two smallest values in its domain  */
 annotation max_regret;
+/** @group annotations.search.varsel Choose the variable with largest domain, divided
+  by the number of attached constraints weighted by how often they have caused failure */
 annotation dom_w_deg;
+/** @group annotations.search.varsel Choose the variable with the highest impact so
+  far during the search  */
 annotation impact;
 
-%-----------------------------------------------------------------------------%
-%
-% Domain reduction strategies.
-%
+/***
+ @groupdef annotations.search.choice Value choice annotations.
+*/
 
+/** @group annotations.search.choice Assign values in ascending order */
 annotation indomain;
+/** @group annotations.search.choice Assign the smallest value in the domain */
 annotation indomain_min;
+/** @group annotations.search.choice Assign the largest value in the domain */
 annotation indomain_max;
+/** @group annotations.search.choice Assign the value in the domain closest to
+  the mean of its current bounds */
 annotation indomain_middle;
+/** @group annotations.search.choice Assign the middle value in the domain */
 annotation indomain_median;
+/** @group annotations.search.choice Assign a random value from the domain */
 annotation indomain_random;
+/** @group annotations.search.choice Bisect the domain, excluding the upper half first */
 annotation indomain_split;
+/** @group annotations.search.choice Bisect the domain, randomly selecting which half to exclude first */
 annotation indomain_split_random;
+/** @group annotations.search.choice Bisect the domain, excluding the lower half first */
 annotation indomain_reverse_split;
+/** @group annotations.search.choice 
+  If the domain consists of several contiguous intervals, reduce the
+  domain to the first interval. Otherwise bisect the domain.
+ */
 annotation indomain_interval;
+/** @group annotations.search.choice Exclude the smallest value from the domain */
 annotation outdomain_min;
+/** @group annotations.search.choice Exclude the largest value from the domain */
+annotation outdomain_max;
+/** @group annotations.search.choice Exclude the middle value from the domain */
 annotation outdomain_median;
+/** @group annotations.search.choice Exclude a random value from the domain */
 annotation outdomain_random;
 
-%-----------------------------------------------------------------------------%
-%
-% Exploration strategies.
-%
+/***
+ @groupdef annotations.search.explore Exploration strategy annotations
+*/
 
+/** @group annotations.search.explore Perform a complete search */
 annotation complete;
-annotation bbs(int: s);
-annotation fail;
-annotation lds(int: d);
-annotation credit(int: c, ann: explore);
-annotation dbs(int: d, ann: explore);
-annotation restart_geometric(float: i, float: s, ann: search);
-annotation limit(ann: measure, int: value, ann: search);
-annotation time;
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
