@@ -209,9 +209,16 @@ int main(int argc, char** argv) {
           HtmlPrinter::htmlFooter(os);
           os.close();
         } else {
-          std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m);
+          std::string basename = flag_output_base;
+          std::string basedir;
+          size_t lastSlash = flag_output_base.find_last_of("/");
+          if (lastSlash != std::string::npos) {
+            basedir = basename.substr(0, lastSlash)+"/";
+            basename = basename.substr(lastSlash+1, std::string::npos);
+          }
+          std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,1);
           for (unsigned int i=0; i<docs.size(); i++) {
-            std::ofstream os(flag_output_base+"_"+docs[i].filename()+".html");
+            std::ofstream os(basedir+docs[i].filename()+".html");
             HtmlPrinter::htmlHeader(os, docs[i].filename());
             os << docs[i].document();
             HtmlPrinter::htmlFooter(os);

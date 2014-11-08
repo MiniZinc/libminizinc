@@ -33,7 +33,7 @@ namespace MiniZinc {
 
   class HtmlPrinter {
   public:
-    static std::vector<HtmlDocument> printHtml(Model* m);
+    static std::vector<HtmlDocument> printHtml(Model* m, const std::string& basename, int splitLevel);
     static HtmlDocument printHtmlSinglePage(Model* m);
     static void htmlHeader(std::ostream& os, const std::string& title);
     static void htmlFooter(std::ostream& os);

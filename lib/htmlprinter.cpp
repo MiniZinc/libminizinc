@@ -50,10 +50,11 @@ namespace MiniZinc {
       std::string htmlName;
       GroupMap subgroups;
       std::vector<DocItem> items;
-      std::string toHTML(int level = 0) {
+      std::string toHTML(int level, int indivFileLevel, const std::string& basename) {
         std::ostringstream oss;
 
-        oss << "<div class='mzn-group-level-" << level << "'>\n";
+        int realLevel = (level < indivFileLevel) ? level : level - indivFileLevel;
+        oss << "<div class='mzn-group-level-" << realLevel << "'>\n";
         if (!htmlName.empty()) {
           oss << "<div class='mzn-group-name'><a name='" << fullPath << "'>" << htmlName << "</a></div>\n";
           oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
@@ -63,7 +64,13 @@ namespace MiniZinc {
           oss << "<p>Sections:</p>\n";
           oss << "<ul>\n";
           for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
-            oss << "<li><a href='#" << fullPath << "-" << (*it)->name << "'>" << (*it)->htmlName << "</a>\n";
+            std::string subpath = fullPath + "-" + (*it)->name;
+            if (level < indivFileLevel) {
+              subpath += ".html";
+            } else {
+              subpath = "#" + subpath;
+            }
+            oss << "<li><a href='" << subpath << "'>" << (*it)->htmlName << "</a>\n";
             
             if ((*it)->htmlName.empty()) {
               std::cerr << "Warning: undocumented group " << (*it)->fullPath << "\n";
@@ -97,10 +104,12 @@ namespace MiniZinc {
         if (cur_t != -1)
           oss << "</div>\n";
         
-        for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
-          oss << (*it)->toHTML(level+1);
+        if (level >= indivFileLevel) {
+          for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
+            oss << (*it)->toHTML(level+1, indivFileLevel, basename);
+          }
         }
-
+        
         oss << "</div>";
         return oss.str();
       }
@@ -486,15 +495,28 @@ namespace MiniZinc {
   };
   
   std::vector<HtmlDocument>
-  HtmlPrinter::printHtml(MiniZinc::Model* m) {
+  HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel) {
     using namespace HtmlDocOutput;
     Group g("main","main");
     PrintHtmlVisitor phv(g);
     iterItems(phv, m);
+    
     std::vector<HtmlDocument> ret;
-    for (GroupMap::Map::iterator it = g.subgroups.m.begin(); it != g.subgroups.m.end(); ++it) {
-      ret.push_back(HtmlDocument((*it)->name, (*it)->toHTML()));
+
+    std::vector<std::pair<Group*,int> > stack;
+    stack.push_back(std::make_pair(&g,0));
+    while (!stack.empty()) {
+      Group& g = *stack.back().first;
+      int curLevel = stack.back().second;
+      stack.pop_back();
+      ret.push_back(HtmlDocument(g.fullPath, g.toHTML(curLevel, splitLevel, basename)));
+      if (curLevel < splitLevel) {
+        for (GroupMap::Map::iterator it = g.subgroups.m.begin(); it != g.subgroups.m.end(); ++it) {
+          stack.push_back(std::make_pair(*it, curLevel+1));
+        }
+      }
     }
+    
     return ret;
   }
   
@@ -504,7 +526,7 @@ namespace MiniZinc {
     Group g("main","main");
     PrintHtmlVisitor phv(g);
     iterItems(phv, m);
-    return HtmlDocument("model.html", g.toHTML());
+    return HtmlDocument("model.html", g.toHTML(0,0,""));
   }
  
   void
