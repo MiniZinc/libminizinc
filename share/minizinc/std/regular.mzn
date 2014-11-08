@@ -1,4 +1,4 @@
-/**
+/** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
   function \a d (which maps (1..\a Q, 1..\a S) -> 0..\a Q)) and initial state \a q0

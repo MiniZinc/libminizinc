@@ -5,6 +5,10 @@
 % available in the base MiniZinc language.
 
 /***
+ @groupdef MAIN The MiniZinc library
+*/
+
+/***
  @groupdef annotations Annotations
  
  These annotations control evaluation and solving behaviour.
@@ -329,16 +333,16 @@ function var opt int: reverse_map(var bool: occ, var int: d);
 function opt int: reverse_map(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
 
-/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group optiontypes.int Weak comparison: true iff either \a x or \y is absent, or both
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 

@@ -1,6 +1,6 @@
 include "lex_lesseq.mzn";
 
-/** @group lexicographic
+/** @group globals.lexicographic
   Require adjacent rows and adjacent columns in the array \a x to be
   lexicographically ordered.  Adjacent rows and adjacent columns may be equal.
 */

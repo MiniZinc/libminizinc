@@ -1,4 +1,4 @@
-/**  @group packing
+/**  @group globals.packing
   Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such 
   that the sum of the weights of the items in each bin \p b does not exceed the 
   capacity \a c[\p b].

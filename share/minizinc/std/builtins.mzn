@@ -1,10 +1,5 @@
 include "flatzinc_builtins.mzn";
 
-%-----------------------------------------------------------------------------%
-%
-% MiniZinc operations
-%
-
 /***
   @groupdef builtins Builtins
   
@@ -323,6 +318,12 @@ function int: pow(int: x, int: y);
 /** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function float: pow(float: x, float: y);
 
+/***
+  @groupdef builtins.explog Exponential and logarithmic builtins
+
+  These builtins implement exponential and logarithmic functions.
+*/
+
 /** @group builtins.explog Return \(e ^ {\a x}\) */
 function float: exp(float: x);
 /** @group builtins.explog Return \(e ^ {\a x}\) */
@@ -361,6 +362,12 @@ function var float: log2(var float: x) ::promise_total =
 
 /** @group builtins.explog Return \(\log_{\a x} \a y\) */
 function float: log(float: x, float: y);
+
+/***
+  @groupdef builtins.trigonometric Trigonometric functions
+
+  These builtins implement the standard trigonometric functions.
+*/
 
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function float: sin(float: x);
@@ -1088,7 +1095,7 @@ function bool: abort(string: msg);
 
 %-----------------------------------------------------------------------------%
 %
-% Intermediate compiler functions
+% Internal compiler functions
 %
 % These functions are used internally by the compiler.
 %

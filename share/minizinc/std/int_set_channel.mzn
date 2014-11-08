@@ -1,4 +1,4 @@
-/** @group channeling
+/** @group globals.channeling
   Requires that array of int variables \a x and array of set variables \a y
   are related such that (\a x[\p i] = \p j) &#8596; (\p i in \a y[\p j]).
 */

@@ -1,11 +1,11 @@
-/** Constrains \a m to be the maximum of the values in \a x.
+/** @group globals Constrains \a m to be the maximum of the values in \a x.
 
   Assumptions: |\a x| > 0.
 */
 predicate maximum(var int: m, array[int] of var int: x) =
     array_int_maximum(m, x);
 
-/** Constrains \a m to be the maximum of the values in \a x.
+/** @group globals Constrains \a m to be the maximum of the values in \a x.
 
   Assumptions: |\a x| > 0.
 */

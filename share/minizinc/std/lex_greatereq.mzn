@@ -1,6 +1,6 @@
 include "lex_lesseq.mzn";
 
-/** @group lexicographic
+/** @group globals.lexicographic
   Requires that the array \a x is lexicographically greater than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
@@ -8,7 +8,7 @@ predicate lex_greatereq(array[int] of var bool: x,
                         array[int] of var bool: y) =
     lex_lesseq(y, x);
 
-/** @group lexicographic
+/** @group globals.lexicographic
   Requires that the array \a x is lexicographically greater than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
@@ -16,7 +16,7 @@ predicate lex_greatereq(array[int] of var int: x,
                       array[int] of var int: y) =
     lex_lesseq(y, x);
  
-/** @group lexicographic
+/** @group globals.lexicographic
   Requires that the array \a x is lexicographically greater than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
@@ -24,7 +24,7 @@ predicate lex_greatereq(array[int] of var float: x,
                       array[int] of var float: y) =
     lex_lesseq(y, x);
 
-/** @group lexicographic
+/** @group globals.lexicographic
   Requires that the array \a x is lexicographically greater than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */

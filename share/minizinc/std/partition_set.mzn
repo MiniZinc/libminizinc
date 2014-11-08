@@ -1,6 +1,6 @@
 include "all_disjoint.mzn";
 
-/**
+/** @group globals
   Constrains the sets in array \a S to partition the \a universe.
 */
 predicate partition_set(array[int] of var set of int: S,
