@@ -219,7 +219,7 @@ namespace MiniZinc {
   class ItemVisitor {
   public:
     /// Enter model
-    void enterModel(Model* m) {}
+    bool enterModel(Model* m) { return true; }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -249,7 +249,8 @@ namespace MiniZinc {
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
-        iter.enterModel(cm);
+        if (!iter.enterModel(cm))
+          continue;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
             continue;
