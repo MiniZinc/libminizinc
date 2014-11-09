@@ -405,3 +405,4 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+include "builtins.mzn";

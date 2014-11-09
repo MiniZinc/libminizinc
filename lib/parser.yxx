@@ -136,14 +136,6 @@ namespace MiniZinc {
       IncludeI* stdlibinc = new IncludeI(Location(),stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
-
-      Model* builtins = new Model;
-      builtins->setFilename("builtins.mzn");
-      files.push_back(pair<string,Model*>("./",builtins));
-      seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
-      IncludeI* builtinsinc = new IncludeI(Location(),builtins->filename());
-      builtinsinc->m(builtins,true);
-      model->addItem(builtinsinc);
     }
 
     model->setFilepath(filename);
@@ -250,17 +242,6 @@ namespace MiniZinc {
         new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
-
-      Model* builtins = new Model;
-      builtins->setFilename("builtins.mzn");
-      files.push_back(pair<string,Model*>("./",builtins));
-      seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
-      Location builtinsloc;
-      builtinsloc.filename=ASTString(filename);
-      IncludeI* builtinsinc = 
-        new IncludeI(builtinsloc,builtins->filename());
-      builtinsinc->m(builtins,true);
-      model->addItem(builtinsinc);
     }
     
     files.push_back(pair<string,Model*>("",model));
@@ -370,15 +351,6 @@ namespace MiniZinc {
       new IncludeI(Location(),stdlib->filename());
     stdlibinc->m(stdlib,true);
     model->addItem(stdlibinc);
-    
-    Model* builtins = new Model;
-    builtins->setFilename("builtins.mzn");
-    files.push_back(pair<string,Model*>("./",builtins));
-    seenModels.insert(pair<string,Model*>("builtins.mzn",builtins));
-    IncludeI* builtinsinc =
-      new IncludeI(Location(),builtins->filename());
-    builtinsinc->m(builtins,true);
-    model->addItem(builtinsinc);
   }
   
   while (!files.empty()) {
