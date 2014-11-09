@@ -46,6 +46,7 @@ int main(int argc, char** argv) {
   vector<string> includePaths;
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
+  bool flag_include_stdlib = false;
   int toplevel_groups = 0;
   string output_base;
   string html_header_file;
@@ -117,6 +118,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       html_footer_file = string(argv[i]);
+    } else if (string(argv[i])=="--include-stdlib") {
+      flag_include_stdlib = true;
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -249,7 +252,7 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,toplevel_groups);
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,toplevel_groups,flag_include_stdlib);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
           std::string header = html_header;

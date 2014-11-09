@@ -228,6 +228,7 @@ namespace MiniZinc {
   class PrintHtmlVisitor : public ItemVisitor {
   protected:
     HtmlDocOutput::Group& _maingroup;
+    bool _includeStdLib;
     
     std::string extractArgWord(std::string& s, size_t n) {
       size_t start = n;
@@ -358,8 +359,10 @@ namespace MiniZinc {
     }
     
   public:
-    PrintHtmlVisitor(HtmlDocOutput::Group& mg) : _maingroup(mg) {}
-    void enterModel(Model* m) {
+    PrintHtmlVisitor(HtmlDocOutput::Group& mg, bool includeStdLib) : _maingroup(mg), _includeStdLib(includeStdLib) {}
+    bool enterModel(Model* m) {
+      if (!_includeStdLib && m->filename()=="stdlib.mzn")
+        return false;
       const std::string& dc = m->docComment();
       if (!dc.empty()) {
         size_t gpos = dc.find("@groupdef");
@@ -384,6 +387,7 @@ namespace MiniZinc {
           gpos = next;
         }
       }
+      return true;
     }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI* vdi) {
@@ -523,10 +527,10 @@ namespace MiniZinc {
   };
   
   std::vector<HtmlDocument>
-  HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel) {
+  HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib) {
     using namespace HtmlDocOutput;
     Group g(basename,basename);
-    PrintHtmlVisitor phv(g);
+    PrintHtmlVisitor phv(g,includeStdLib);
     iterItems(phv, m);
     
     std::vector<HtmlDocument> ret;
