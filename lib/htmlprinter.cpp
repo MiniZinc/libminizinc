@@ -50,11 +50,41 @@ namespace MiniZinc {
       std::string htmlName;
       GroupMap subgroups;
       std::vector<DocItem> items;
-      std::string toHTML(int level, int indivFileLevel, const std::string& basename) {
+      
+      std::string getAnchor(int level, int indivFileLevel) {
+        if (level < indivFileLevel) {
+          return fullPath + ".html";
+        } else {
+          return "#" + fullPath;
+        }
+      }
+      
+      std::string toHTML(int level, int indivFileLevel, Group* parent, int idx, const std::string& basename) {
         std::ostringstream oss;
 
-        int realLevel = (level < indivFileLevel) ? level : level - indivFileLevel;
+        int realLevel = (level < indivFileLevel) ? 0 : level - indivFileLevel;
         oss << "<div class='mzn-group-level-" << realLevel << "'>\n";
+        if (parent) {
+          oss << "<div class='mzn-group-nav'>";
+          if (idx > 0) {
+            oss << "<a class='mzn-nav-prev' href='" << parent->subgroups.m[idx-1]->getAnchor(level-1, indivFileLevel)
+            <<"' title='" << parent->subgroups.m[idx-1]->htmlName
+            << "'>&#8656;</a> ";
+          }
+          oss << "<a class='mzn-nav-up' href='" << parent->getAnchor(level-1, indivFileLevel)
+              << "' title='" << parent->htmlName
+              << "'>&#8679;</a> ";
+          if (idx < parent->subgroups.m.size()-1) {
+            oss << "<a class='mzn-nav-next' href='" << parent->subgroups.m[idx+1]->getAnchor(level-1, indivFileLevel)
+                <<"' title='" << parent->subgroups.m[idx+1]->htmlName
+                << "'>&#8658;</a> ";
+          }
+          if (items.size() > 0) {
+            oss << "<a href='javascript:void(0)' onclick='revealAll()' class='mzn-nav-text'>reveal all</a>\n";
+            oss << "<a href='javascript:void(0)' onclick='hideAll()' class='mzn-nav-text'>hide all</a>\n";
+          }
+          oss << "</div>";
+        }
         if (!htmlName.empty()) {
           oss << "<div class='mzn-group-name'><a name='" << fullPath << "'>" << htmlName << "</a></div>\n";
           oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
@@ -64,13 +94,7 @@ namespace MiniZinc {
           oss << "<p>Sections:</p>\n";
           oss << "<ul>\n";
           for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
-            std::string subpath = fullPath + "-" + (*it)->name;
-            if (level < indivFileLevel) {
-              subpath += ".html";
-            } else {
-              subpath = "#" + subpath;
-            }
-            oss << "<li><a href='" << subpath << "'>" << (*it)->htmlName << "</a>\n";
+            oss << "<li><a href='" << (*it)->getAnchor(level, indivFileLevel) << "'>" << (*it)->htmlName << "</a>\n";
             
             if ((*it)->htmlName.empty()) {
               std::cerr << "Warning: undocumented group " << (*it)->fullPath << "\n";
@@ -78,7 +102,7 @@ namespace MiniZinc {
           }
           oss << "</ul>\n";
           if (items.size() > 0)
-            oss << "<p>Toplevel declarations:</p>\n";
+            oss << "<p>Declarations in this section:</p>\n";
         }
 
         struct SortById {
@@ -105,8 +129,8 @@ namespace MiniZinc {
           oss << "</div>\n";
         
         if (level >= indivFileLevel) {
-          for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
-            oss << (*it)->toHTML(level+1, indivFileLevel, basename);
+          for (unsigned int i=0; i<subgroups.m.size(); i++) {
+            oss << subgroups.m[i]->toHTML(level+1, indivFileLevel, this, i, basename);
           }
         }
         
@@ -425,9 +449,8 @@ namespace MiniZinc {
         std::ostringstream os;
         os << "<div class='mzn-fundecl'>\n";
         os << "<div class='mzn-fundecl-code'>";
-        
-        fi->ann().remove(docstring);
-        
+        os << "<a href='javascript:void(0)' onclick='revealMore(this)' class='mzn-fundecl-more'>&#9664;</a>";
+
         std::ostringstream fs;
         if (fi->ti()->type() == Type::ann()) {
           fs << "annotation ";
@@ -467,14 +490,19 @@ namespace MiniZinc {
           }
         }
         os << ")";
-        
-        fi->ann().add(docstring);
-        os << "</div>\n<div class='mzn-fundecl-doc'>\n";
-        std::string dshtml = addHTML(ds);
-        if (dshtml.find("rightjust") != std::string::npos) {
-          std::cerr << "found it\n";
-          std::cerr << ds << "\n" << dshtml << "\n";
+
+        os << "\n<div class='mzn-fundecl-more-code'>";
+        std::string filename = fi->loc().filename.str();
+        size_t lastSlash = filename.find_last_of("/");
+        if (lastSlash != std::string::npos) {
+          filename = filename.substr(lastSlash+1, std::string::npos);
         }
+
+        os << "Defined in " << filename << ":" << fi->loc().first_line << "\n";
+        os << "</div>";
+        
+        os << "</div>\n<div class='mzn-fundecl-more-code'><div class='mzn-fundecl-doc'>\n";
+        std::string dshtml = addHTML(ds);
 
         os << dshtml;
         if (params.size() > 0) {
@@ -485,7 +513,7 @@ namespace MiniZinc {
           }
           os << "</ul>\n";
         }
-        os << "</div>";
+        os << "</div></div>";
         os << "</div>";
 
         HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), os.str());
@@ -503,16 +531,26 @@ namespace MiniZinc {
     
     std::vector<HtmlDocument> ret;
 
-    std::vector<std::pair<Group*,int> > stack;
-    stack.push_back(std::make_pair(&g,0));
+    struct SI {
+      Group* g;
+      Group* p;
+      int level;
+      int idx;
+      SI(Group* g0, Group* p0, int level0, int idx0) : g(g0), p(p0), level(level0), idx(idx0) {}
+    };
+    
+    std::vector<SI> stack;
+    stack.push_back(SI(&g,NULL,0,0));
     while (!stack.empty()) {
-      Group& g = *stack.back().first;
-      int curLevel = stack.back().second;
+      Group& g = *stack.back().g;
+      int curLevel = stack.back().level;
+      int curIdx = stack.back().idx;
+      Group* p = stack.back().p;
       stack.pop_back();
-      ret.push_back(HtmlDocument(g.fullPath, g.toHTML(curLevel, splitLevel, basename)));
+      ret.push_back(HtmlDocument(g.fullPath, g.toHTML(curLevel, splitLevel, p, curIdx, basename)));
       if (curLevel < splitLevel) {
-        for (GroupMap::Map::iterator it = g.subgroups.m.begin(); it != g.subgroups.m.end(); ++it) {
-          stack.push_back(std::make_pair(*it, curLevel+1));
+        for (unsigned int i=0; i<g.subgroups.m.size(); i++) {
+          stack.push_back(SI(g.subgroups.m[i],&g,curLevel+1,i));
         }
       }
     }
@@ -526,7 +564,7 @@ namespace MiniZinc {
     Group g("main","main");
     PrintHtmlVisitor phv(g);
     iterItems(phv, m);
-    return HtmlDocument("model.html", g.toHTML(0,0,""));
+    return HtmlDocument("model.html", g.toHTML(0,0,NULL,0,""));
   }
  
   void
@@ -539,7 +577,24 @@ namespace MiniZinc {
     os << "<link rel='stylesheet' type='text/css' href='style.css'>\n";
     os << "<title>" << title << "</title>\n";
     os << "<script type='text/javascript' src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>\n";
-    
+    os << "<script src='http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'></script>\n";
+    os << "<script type='text/javascript'>\n";
+    os << "function revealMore(anchor) { morecode = jQuery( anchor ).parent().parent().find('div.mzn-fundecl-more-code');";
+    os << "morecode.toggleClass('mzn-fundecl-reveal-code');\n";
+    os << "if (morecode.hasClass('mzn-fundecl-reveal-code')) {\n";
+    os << "  jQuery(anchor).html('&#9660;');\n";
+    os << "} else {\n";
+    os << "  jQuery(anchor).html('&#9664;');\n";
+    os << "}\n}\n";
+    os << "function revealAll() {";
+    os << "  jQuery('a.mzn-fundecl-more').html('&#9660;');\n";
+    os << "  jQuery('div.mzn-fundecl-more-code').addClass('mzn-fundecl-reveal-code');\n";
+    os << "}\n";
+    os << "function hideAll() {\n";
+    os << "  jQuery('a.mzn-fundecl-more').html('&#9664;');\n";
+    os << "  jQuery('div.mzn-fundecl-more-code').removeClass('mzn-fundecl-reveal-code');\n";
+    os << "}\n";
+    os << "</script>\n";
     os << "</head>\n";
     
     os << "<body>\n";

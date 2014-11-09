@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
   vector<string> includePaths;
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
-  bool flag_single_page = false;
-  string flag_output_base;
+  int toplevel_groups = 0;
+  string output_base;
   
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -100,8 +100,11 @@ int main(int argc, char** argv) {
         }
         globals_dir = argv[i];
       }
-    } else if (string(argv[i])=="--single-page") {
-      flag_single_page = true;
+    } else if (string(argv[i])=="--toplevel-groups") {
+      i++;
+      if (i==argc)
+        goto error;
+      toplevel_groups = atoi(argv[i]);
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -112,7 +115,7 @@ int main(int argc, char** argv) {
       i++;
       if (i==argc)
         goto error;
-      flag_output_base = argv[i];
+      output_base = argv[i];
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -173,8 +176,8 @@ int main(int argc, char** argv) {
     }
   }
   
-  if (flag_output_base == "") {
-    flag_output_base = filename.substr(0,filename.length()-4);
+  if (output_base == "") {
+    output_base = filename.substr(0,filename.length()-4);
   }
 
   {
@@ -201,22 +204,22 @@ int main(int argc, char** argv) {
         }
         if (flag_verbose)
           std::cerr << " done" << std::endl;
-        if (flag_single_page) {
+        if (false) {
           HtmlDocument doc = HtmlPrinter::printHtmlSinglePage(m);
-          std::ofstream os(flag_output_base+".html");
+          std::ofstream os(output_base+".html");
           HtmlPrinter::htmlHeader(os, "");
           os << doc.document();
           HtmlPrinter::htmlFooter(os);
           os.close();
         } else {
-          std::string basename = flag_output_base;
+          std::string basename = output_base;
           std::string basedir;
-          size_t lastSlash = flag_output_base.find_last_of("/");
+          size_t lastSlash = output_base.find_last_of("/");
           if (lastSlash != std::string::npos) {
             basedir = basename.substr(0, lastSlash)+"/";
             basename = basename.substr(lastSlash+1, std::string::npos);
           }
-          std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,1);
+          std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,toplevel_groups);
           for (unsigned int i=0; i<docs.size(); i++) {
             std::ofstream os(basedir+docs[i].filename()+".html");
             HtmlPrinter::htmlHeader(os, docs[i].filename());
