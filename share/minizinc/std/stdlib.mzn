@@ -110,7 +110,7 @@ annotation set_search(
 );
 
 /***
- @groupdef annotations.search.varsel Variable selection annotations.
+ @groupdef annotations.search.varsel Variable selection annotations
 */
 
 /** @group annotations.search.varsel Search variables in the given order */
@@ -139,7 +139,7 @@ annotation dom_w_deg;
 annotation impact;
 
 /***
- @groupdef annotations.search.choice Value choice annotations.
+ @groupdef annotations.search.choice Value choice annotations
 */
 
 /** @group annotations.search.choice Assign values in ascending order */
