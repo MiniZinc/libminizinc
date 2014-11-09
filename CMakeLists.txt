@@ -118,6 +118,7 @@ int main (int argc, char* argv[]) {
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/html)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -243,6 +244,18 @@ INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
+
+option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" ON)
+
+if (BUILD_HTML_DOCUMENTATION)
+	add_custom_target(docs
+		DEPENDS "mzn2doc"
+		WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+		COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2 --output-base ${PROJECT_BINARY_DIR}/doc/html/ share/minizinc/std/globals.mzn
+	)
+	INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+	INSTALL(FILES ${PROJECT_SOURCE_DIR}/doc/html/style.css DESTINATION doc/html)
+endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(DIRECTORY include/minizinc
