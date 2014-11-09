@@ -245,16 +245,24 @@ INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   ARCHIVE DESTINATION lib
 )
 
-option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" ON)
+option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
 
 if (BUILD_HTML_DOCUMENTATION)
-	add_custom_target(docs
+	add_custom_target(doc ALL
 		DEPENDS "mzn2doc"
 		WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-		COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2 --output-base ${PROJECT_BINARY_DIR}/doc/html/ share/minizinc/std/globals.mzn
+		COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2
+		--html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
+		--html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
+			--output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
 	)
 	INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
-	INSTALL(FILES ${PROJECT_SOURCE_DIR}/doc/html/style.css DESTINATION doc/html)
+	INSTALL(FILES
+		${PROJECT_SOURCE_DIR}/doc/html/style.css
+		${PROJECT_SOURCE_DIR}/doc/html/header.html
+		${PROJECT_SOURCE_DIR}/doc/html/footer.html
+		${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
+		DESTINATION doc/html)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)

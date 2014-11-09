@@ -165,7 +165,7 @@ namespace MiniZinc {
       subgroups.push_back(group.substr(lastpos, std::string::npos));
       
       GroupMap* cgm = &gm.subgroups;
-      std::string gpath("main");
+      std::string gpath(gm.fullPath);
       for (unsigned int i=0; i<subgroups.size(); i++) {
         gpath += "-";
         gpath += subgroups[i];
@@ -203,7 +203,7 @@ namespace MiniZinc {
       subgroups.push_back(group.substr(lastpos, std::string::npos));
 
       GroupMap* cgm = &maingroup.subgroups;
-      std::string gpath("main");
+      std::string gpath(maingroup.fullPath);
       for (unsigned int i=0; i<subgroups.size(); i++) {
         gpath += "-";
         gpath += subgroups[i];
@@ -525,7 +525,7 @@ namespace MiniZinc {
   std::vector<HtmlDocument>
   HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel) {
     using namespace HtmlDocOutput;
-    Group g("main","main");
+    Group g(basename,basename);
     PrintHtmlVisitor phv(g);
     iterItems(phv, m);
     
@@ -547,7 +547,7 @@ namespace MiniZinc {
       int curIdx = stack.back().idx;
       Group* p = stack.back().p;
       stack.pop_back();
-      ret.push_back(HtmlDocument(g.fullPath, g.toHTML(curLevel, splitLevel, p, curIdx, basename)));
+      ret.push_back(HtmlDocument(g.fullPath, g.htmlName, g.toHTML(curLevel, splitLevel, p, curIdx, basename)));
       if (curLevel < splitLevel) {
         for (unsigned int i=0; i<g.subgroups.m.size(); i++) {
           stack.push_back(SI(g.subgroups.m[i],&g,curLevel+1,i));
@@ -556,54 +556,6 @@ namespace MiniZinc {
     }
     
     return ret;
-  }
-  
-  HtmlDocument
-  HtmlPrinter::printHtmlSinglePage(MiniZinc::Model* m) {
-    using namespace HtmlDocOutput;
-    Group g("main","main");
-    PrintHtmlVisitor phv(g);
-    iterItems(phv, m);
-    return HtmlDocument("model.html", g.toHTML(0,0,NULL,0,""));
-  }
- 
-  void
-  HtmlPrinter::htmlHeader(std::ostream& os, const std::string& title) {
-    os << "<!doctype html>\n";
-    
-    os << "<html lang='en'>\n";
-    os << "<head>\n";
-    os << "<meta charset='utf-8'>\n";
-    os << "<link rel='stylesheet' type='text/css' href='style.css'>\n";
-    os << "<title>" << title << "</title>\n";
-    os << "<script type='text/javascript' src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>\n";
-    os << "<script src='http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'></script>\n";
-    os << "<script type='text/javascript'>\n";
-    os << "function revealMore(anchor) { morecode = jQuery( anchor ).parent().parent().find('div.mzn-fundecl-more-code');";
-    os << "morecode.toggleClass('mzn-fundecl-reveal-code');\n";
-    os << "if (morecode.hasClass('mzn-fundecl-reveal-code')) {\n";
-    os << "  jQuery(anchor).html('&#9660;');\n";
-    os << "} else {\n";
-    os << "  jQuery(anchor).html('&#9664;');\n";
-    os << "}\n}\n";
-    os << "function revealAll() {";
-    os << "  jQuery('a.mzn-fundecl-more').html('&#9660;');\n";
-    os << "  jQuery('div.mzn-fundecl-more-code').addClass('mzn-fundecl-reveal-code');\n";
-    os << "}\n";
-    os << "function hideAll() {\n";
-    os << "  jQuery('a.mzn-fundecl-more').html('&#9664;');\n";
-    os << "  jQuery('div.mzn-fundecl-more-code').removeClass('mzn-fundecl-reveal-code');\n";
-    os << "}\n";
-    os << "</script>\n";
-    os << "</head>\n";
-    
-    os << "<body>\n";
-  }
-
-  void
-  HtmlPrinter::htmlFooter(std::ostream& os) {
-    os << "</body>\n";
-    os << "</html>\n";
   }
 
 }
