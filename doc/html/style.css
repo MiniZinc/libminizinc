@@ -1,0 +1,80 @@
+.mzn-arg {
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 110%;
+}
+.mzn-parm {
+  font-style: italic;
+}
+
+.mzn-group-level-0 .mzn-group-name {
+  font-size: 150%; font-weight: bold;  
+}
+.mzn-group-level-1 .mzn-group-name {
+  font-size: 120%; font-weight: bold;  
+}
+
+.mzn-decl-type-heading {
+  display: none;
+/*  font-size: 150%; font-weight: bold;*/
+}
+
+.mzn-fundecl, .mzn-vardecl {
+  width: 75%;
+  margin-bottom: 10px;
+  margin-left: 5%;
+  border: 1px solid #C0C0C0;
+}
+
+.mzn-fundecl-code, .mzn-vardecl-code {
+  font-family: monospace;
+/*  font-weight: bold;*/
+  font-size: 110%;
+  white-space: pre;
+  margin-bottom: 2px;
+  background-color: #EAEAEA;
+  border-bottom: 1px solid #C0C0C0;
+  padding: 3px;
+}
+
+.mzn-fundecl-more {
+  float: right;
+  text-decoration: none;
+  color: black;
+}
+
+.mzn-fundecl-more-code {
+  display: none;
+}
+
+.mzn-fundecl-code .mzn-fundecl-reveal-code {
+  font-size: 10pt;
+}
+
+.mzn-fundecl-reveal-code {
+  font-family: sans-serif;
+  font-size: 11pt;
+  display: block;
+  margin-top: 5px;
+}
+
+.mzn-fundecl-doc, .mzn-vardecl-doc {
+  padding-left: 3px;
+}
+
+.mzn-id {
+  font-weight: bold;
+}
+
+.mzn-fn-id {
+	font-style: italic;
+	color: blue;
+}
+
+/*.mzn-group-nav {
+  float: right;
+}
+*/
+a.mzn-nav-up, a.mzn-nav-next, a.mzn-nav-prev {
+  text-decoration: none;
+}
