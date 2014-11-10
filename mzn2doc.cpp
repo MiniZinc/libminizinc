@@ -46,8 +46,11 @@ int main(int argc, char** argv) {
   vector<string> includePaths;
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
-  bool flag_single_page = false;
-  string flag_output_base;
+  bool flag_include_stdlib = false;
+  int toplevel_groups = 0;
+  string output_base;
+  string html_header_file;
+  string html_footer_file;
   
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -100,8 +103,23 @@ int main(int argc, char** argv) {
         }
         globals_dir = argv[i];
       }
-    } else if (string(argv[i])=="--single-page") {
-      flag_single_page = true;
+    } else if (string(argv[i])=="--toplevel-groups") {
+      i++;
+      if (i==argc)
+        goto error;
+      toplevel_groups = atoi(argv[i]);
+    } else if (string(argv[i])=="--html-header") {
+      i++;
+      if (i==argc)
+        goto error;
+      html_header_file = string(argv[i]);
+    } else if (string(argv[i])=="--html-footer") {
+      i++;
+      if (i==argc)
+        goto error;
+      html_footer_file = string(argv[i]);
+    } else if (string(argv[i])=="--include-stdlib") {
+      flag_include_stdlib = true;
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -112,7 +130,7 @@ int main(int argc, char** argv) {
       i++;
       if (i==argc)
         goto error;
-      flag_output_base = argv[i];
+      output_base = argv[i];
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -173,15 +191,41 @@ int main(int argc, char** argv) {
     }
   }
   
-  if (flag_output_base == "") {
-    flag_output_base = filename.substr(0,filename.length()-4);
+  if (output_base == "") {
+    output_base = filename.substr(0,filename.length()-4);
   }
-
+  
   {
+    string html_header;
+    size_t html_header_title = std::string::npos;
+    size_t title_size = std::string("@TITLE").size();
+    if (!html_header_file.empty()) {
+      std::ifstream hs(html_header_file);
+      if (!hs.good()) {
+        std::cerr << "Cannot open HTML header file " << html_header_file << "\n";
+        std::exit(EXIT_FAILURE);
+      }
+      std::string str((std::istreambuf_iterator<char>(hs)),
+                      std::istreambuf_iterator<char>());
+      html_header = str;
+      html_header_title = str.find("@TITLE");
+    }
+    string html_footer;
+    if (!html_footer_file.empty()) {
+      std::ifstream hs(html_footer_file);
+      if (!hs.good()) {
+        std::cerr << "Cannot open HTML footer file " << html_footer_file << "\n";
+        std::exit(EXIT_FAILURE);
+      }
+      std::string str((std::istreambuf_iterator<char>(hs)),
+                      std::istreambuf_iterator<char>());
+      html_footer = str;
+    }
+
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
-    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib,
+    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          errstream)) {
       try {
         if (flag_verbose)
@@ -201,22 +245,24 @@ int main(int argc, char** argv) {
         }
         if (flag_verbose)
           std::cerr << " done" << std::endl;
-        if (flag_single_page) {
-          HtmlDocument doc = HtmlPrinter::printHtmlSinglePage(m);
-          std::ofstream os(flag_output_base+".html");
-          HtmlPrinter::htmlHeader(os, "");
-          os << doc.document();
-          HtmlPrinter::htmlFooter(os);
-          os.close();
-        } else {
-          std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m);
-          for (unsigned int i=0; i<docs.size(); i++) {
-            std::ofstream os(flag_output_base+"_"+docs[i].filename()+".html");
-            HtmlPrinter::htmlHeader(os, docs[i].filename());
-            os << docs[i].document();
-            HtmlPrinter::htmlFooter(os);
-            os.close();
+        std::string basename = output_base;
+        std::string basedir;
+        size_t lastSlash = output_base.find_last_of("/");
+        if (lastSlash != std::string::npos) {
+          basedir = basename.substr(0, lastSlash)+"/";
+          basename = basename.substr(lastSlash+1, std::string::npos);
+        }
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,toplevel_groups,flag_include_stdlib);
+        for (unsigned int i=0; i<docs.size(); i++) {
+          std::ofstream os(basedir+docs[i].filename()+".html");
+          std::string header = html_header;
+          if (html_header_title != std::string::npos) {
+            header = header.replace(html_header_title, title_size, docs[i].title());
           }
+          os << header;
+          os << docs[i].document();
+          os << html_footer;
+          os.close();
         }
       } catch (LocationException& e) {
         if (flag_verbose)

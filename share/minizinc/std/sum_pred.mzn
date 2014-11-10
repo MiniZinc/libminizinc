@@ -1,4 +1,4 @@
-/**
+/** @group globals
   Requires that the sum of \a cs[\p i1]..\a cs[\p iN] equals \a s,
   where \p i1..\p iN are the elements of the \a i th set in \a sets.
   

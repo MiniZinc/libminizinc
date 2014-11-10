@@ -91,6 +91,7 @@ char* bufferData(void* parm) {
 %x string_quote
 %x multilinecomment
 %x doccomment
+%x doccomment_file
 %s bracket_exp
 %s quoted_exp
 
@@ -111,6 +112,22 @@ char* bufferData(void* parm) {
 <doccomment>{
   "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
                     yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
+  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa               { MiniZinc::ParserState* parm =
+    static_cast<MiniZinc::ParserState*>(
+    yyget_extra(yyscanner));
+    parm->lineno++;
+    parm->lineStartPos += parm->nTokenNextStart;
+    parm->nTokenNextStart=1;
+    appendBufferString(yyget_extra(yyscanner), yytext);
+  }
+}
+
+"/***"             { yy_push_state(doccomment_file,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+<doccomment_file>{
+  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+    yy_pop_state(yyscanner); return MZN_DOC_FILE_COMMENT; }
   [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
   "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
   \xa               { MiniZinc::ParserState* parm =

@@ -1,7 +1,7 @@
 include "value_precede_chain_int.mzn";
 include "value_precede_chain_set.mzn";
 
-/**
+/** @group globals.lexicographic
   Requires that \a c[\p i] precedes \a c[\p i +1] in the array \a x.
   
   Precedence means that if any element of \a x
@@ -11,7 +11,7 @@ include "value_precede_chain_set.mzn";
 predicate value_precede_chain(array[int] of int: c, array[int] of var int: x) =
     value_precede_chain_int(c, x);
 
-/**
+/** @group globals.lexicographic
   Requires that \a c[\p i] precedes \a c[\p i +1] in the array \a x.
 
   Precedence means that if an element of \a x

@@ -1,4 +1,4 @@
-/**  @group alldifferent
+/**  @group globals.alldifferent
   Constrain the array of integers \a vs to be all different except those
   elements that are assigned the value 0.
 */

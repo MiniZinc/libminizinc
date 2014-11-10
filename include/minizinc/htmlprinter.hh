@@ -22,21 +22,21 @@ namespace MiniZinc {
   class HtmlDocument {
   protected:
     std::string _filename;
+    std::string _title;
     std::string _doc;
   public:
-    HtmlDocument(std::string filename, std::string document)
-    : _filename(filename), _doc(document) {}
+    HtmlDocument(const std::string& filename, const std::string& title, const std::string& document)
+    : _filename(filename), _title(title), _doc(document) {}
     std::string filename(void) const { return _filename; }
+    std::string title(void) const { return _title; }
     std::string document(void) const { return _doc; }
   };
   
 
   class HtmlPrinter {
   public:
-    static std::vector<HtmlDocument> printHtml(Model* m);
-    static HtmlDocument printHtmlSinglePage(Model* m);
-    static void htmlHeader(std::ostream& os, const std::string& title);
-    static void htmlFooter(std::ostream& os);
+    static std::vector<HtmlDocument> printHtml(Model* m, const std::string& basename,
+                                               int splitLevel, bool includeStdLib);
   };
   
 }

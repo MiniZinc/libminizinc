@@ -1,3 +1,28 @@
+/***
+  @groupdef globals Global constraints
+  
+  These constraints represent high-level modelling abstractions, for which
+  many solvers implement special, efficient inference algorithms.
+*/
+
+/***
+  @groupdef globals.alldifferent All-Different and related constraints
+
+  @groupdef globals.lexicographic Lexicographic constraints
+  
+  @groupdef globals.sort Sorting constraints
+  
+  @groupdef globals.channeling Channeling constraints
+  
+  @groupdef globals.counting Counting constraints
+  
+  @groupdef globals.packing Packing constraints
+  
+  @groupdef globals.scheduling Scheduling constraints
+  
+  @groupdef globals.extensional Extensional constraints (table, regular etc.)
+*/
+
 include "all_different.mzn";
 include "alldifferent_except_0.mzn";
 include "all_disjoint.mzn";

@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
+    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false,
                          errstream)) {
       try {
         if (flag_typecheck) {

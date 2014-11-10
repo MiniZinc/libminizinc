@@ -1,4 +1,4 @@
-/** @group channeling
+/** @group globals.channeling
   Constrain the array of Booleans \a b to be a representation of the set \a s:
   \p i in \a s &#8596; \a b[\p i].
   

@@ -49,6 +49,8 @@ namespace MiniZinc {
     SolveI* _solveItem;
     /// Pointer to the output item
     OutputI* _outputItem;
+    /// File-level documentation comment
+    std::string _docComment;
   public:
     
     /// Construct empty model
@@ -126,6 +128,13 @@ namespace MiniZinc {
 
     OutputI* outputItem(void);
 
+    
+    /// Add a file-level documentation comment
+    void addDocComment(std::string s) { _docComment += s; }
+
+    /// Return the file-level documentation comment
+    const std::string& docComment(void) const { return _docComment; }
+    
     /// Remove all items marked as removed
     void compact(void);
   };
@@ -209,6 +218,8 @@ namespace MiniZinc {
   /// Visitor for model items
   class ItemVisitor {
   public:
+    /// Enter model
+    bool enterModel(Model* m) { return true; }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -238,6 +249,8 @@ namespace MiniZinc {
       while (!models.empty()) {
         Model* cm = models.back();
         models.pop_back();
+        if (!iter.enterModel(cm))
+          continue;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
             continue;

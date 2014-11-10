@@ -1,4 +1,4 @@
-/** @group packing
+/** @group globals.packing
   Constrains rectangles \p i, given by their origins (\a x[\p i], \a y[\p i])
   and sizes (\a dx[\p i], \a dy[\p i]), to be non-overlapping.
 */

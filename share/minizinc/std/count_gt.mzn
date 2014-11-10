@@ -1,4 +1,4 @@
-/** @group counting
+/** @group globals.counting
   Constrains \a c to be strictly greater than the number of occurrences
   of \a y in \a x. 
 */

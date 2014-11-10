@@ -1,7 +1,7 @@
 include "value_precede_int.mzn";
 include "value_precede_set.mzn";
 
-/**
+/** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
   
   Precedence means that if any element of \a x
@@ -11,7 +11,7 @@ include "value_precede_set.mzn";
 predicate value_precede(int: s, int: t, array[int] of var int: x) =
     value_precede_int(s, t, x);
 
-/**
+/** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
 
   Precedence means that if an element of \a x

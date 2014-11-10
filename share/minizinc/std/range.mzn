@@ -1,4 +1,4 @@
-/**
+/** @group globals
   Requires that the image of function \a x (represented as an array) on set
   of values \a s is \a t.  ub(\a s) must be a subset of index_set(\a x) otherwise an
   assertion failure will occur.
@@ -18,7 +18,7 @@ predicate range(array[int] of var int: x, var set of int: s,
         )
     );
 
-/**
+/** @group globals
   Returns the image of function \a x (represented as an array) on set
   of values \a s.  ub(\a s) must be a subset of index_set(\a x) otherwise an
   assertion failure will occur.

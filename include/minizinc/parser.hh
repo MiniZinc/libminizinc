@@ -53,11 +53,11 @@ namespace MiniZinc {
                 std::vector<std::pair<std::string,Model*> >& files0,
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
-                bool isDatafile0, bool isFlatZinc0)
+                bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
     : filename(f.c_str()), buf(b.c_str()), pos(0), length(b.size()),
       lineno(1), lineStartPos(0), nTokenNextStart(1),
       files(files0), seenModels(seenModels0), model(model0),
-      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0),
+      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), parseDocComments(parseDocComments0),
       hadError(false), err(err0) {}
   
     const char* filename;
@@ -77,6 +77,7 @@ namespace MiniZinc {
 
     bool isDatafile;
     bool isFlatZinc;
+    bool parseDocComments;
     bool hadError;
     std::ostream& err;
     
@@ -106,19 +107,19 @@ namespace MiniZinc {
   Model* parse(const std::string& filename,
                const std::vector<std::string>& datafiles,
                const std::vector<std::string>& includePaths,
-               bool ignoreStdlib,
+               bool ignoreStdlib, bool parseDocComments,
                std::ostream& err);
 
   Model* parseFromString(const std::string& model,
                          const std::string& filename,
                          const std::vector<std::string>& includePaths,
-                         bool ignoreStdlib,
+                         bool ignoreStdlib, bool parseDocComments,
                          std::ostream& err);
 
   Model* parseData(Model* m,
                    const std::vector<std::string>& datafiles,
                    const std::vector<std::string>& includePaths,
-                   bool ignoreStdlib,
+                   bool ignoreStdlib, bool parseDocComments,
                    std::ostream& err);
 
 }

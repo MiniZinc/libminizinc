@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
   includePaths.push_back(std_lib_dir+"/std/");
   
   {
-    if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false,
+    if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false, false,
                                std::cerr)) {
       try {
         std::vector<TypeError> typeErrors;
@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
                     vdi->e()->evaluated(false);
                   }
                 }
-                Model* sm = parseFromString(solution, "solution.szn", includePaths, true, cerr);
+                Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, cerr);
                 for (unsigned int i=0; i<sm->size(); i++) {
                   if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
