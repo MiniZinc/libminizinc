@@ -291,10 +291,11 @@ int main(int argc, char** argv) {
 
   {
     std::stringstream errstream;
+    bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
-                         errstream)) {
+                        parseDocComments, errstream)) {
       try {
         if (flag_typecheck) {
           if (flag_verbose)
