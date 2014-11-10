@@ -31,6 +31,8 @@ namespace MiniZinc {
       std::string doc;
     };
 
+    typedef UNORDERED_NAMESPACE::unordered_map<FunctionI*,std::string> FunMap;
+    
     class Group;
 
     class GroupMap {
@@ -223,13 +225,6 @@ namespace MiniZinc {
       }
     }
     
-  }
-
-  class PrintHtmlVisitor : public ItemVisitor {
-  protected:
-    HtmlDocOutput::Group& _maingroup;
-    bool _includeStdLib;
-    
     std::string extractArgWord(std::string& s, size_t n) {
       size_t start = n;
       while (start < s.size() && s[start]!=' ' && s[start]!='\t')
@@ -243,6 +238,37 @@ namespace MiniZinc {
       s = s.substr(0,n)+s.substr(end,std::string::npos);
       return ret;
     }
+
+  }
+
+  class CollectFunctionsVisitor : public ItemVisitor {
+  protected:
+    HtmlDocOutput::FunMap& _funmap;
+    bool _includeStdLib;
+  public:
+    CollectFunctionsVisitor(HtmlDocOutput::FunMap& funmap, bool includeStdLib) : _funmap(funmap), _includeStdLib(includeStdLib) {}
+    bool enterModel(Model* m) {
+      return _includeStdLib || m->filename()!="stdlib.mzn";
+    }
+    void vFunctionI(FunctionI* fi) {
+      if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
+        std::string ds = eval_string(docstring->args()[0]);
+        std::string group("main");
+        size_t group_idx = ds.find("@group");
+        if (group_idx!=std::string::npos) {
+          group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        }
+        _funmap.insert(std::make_pair(fi, group));
+      }
+    }
+  };
+  
+  class PrintHtmlVisitor : public ItemVisitor {
+  protected:
+    HtmlDocOutput::Group& _maingroup;
+    HtmlDocOutput::FunMap& _funmap;
+    bool _includeStdLib;
+    
     std::pair<std::string,std::string> extractArgLine(std::string& s, size_t n) {
       size_t start = n;
       while (start < s.size() && s[start]!=' ' && s[start]!='\t')
@@ -359,7 +385,7 @@ namespace MiniZinc {
     }
     
   public:
-    PrintHtmlVisitor(HtmlDocOutput::Group& mg, bool includeStdLib) : _maingroup(mg), _includeStdLib(includeStdLib) {}
+    PrintHtmlVisitor(HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm, bool includeStdLib) : _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
     bool enterModel(Model* m) {
       if (!_includeStdLib && m->filename()=="stdlib.mzn")
         return false;
@@ -396,7 +422,7 @@ namespace MiniZinc {
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
-          group = extractArgWord(ds, group_idx);
+          group = HtmlDocOutput::extractArgWord(ds, group_idx);
         }
         
         std::ostringstream os;
@@ -424,7 +450,7 @@ namespace MiniZinc {
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
-          group = extractArgWord(ds, group_idx);
+          group = HtmlDocOutput::extractArgWord(ds, group_idx);
         }
 
         size_t param_idx = ds.find("@param");
@@ -494,16 +520,47 @@ namespace MiniZinc {
           }
         }
         os << ")";
+        
+        if (fi->e()) {
+          FunctionI* f_body = fi;
+          bool alias;
+          do {
+            alias = false;
+            Call* c = Expression::dyn_cast<Call>(f_body->e());
+            if (c && c->args().size()==f_body->params().size()) {
+              bool sameParams = true;
+              for (unsigned int i=0; i<f_body->params().size(); i++) {
+                Id* ident = c->args()[i]->dyn_cast<Id>();
+                if (ident == NULL || ident->decl() != f_body->params()[i] || ident->str() != c->decl()->params()[i]->id()->str()) {
+                  sameParams = false;
+                  break;
+                }
+              }
+              if (sameParams) {
+                alias = true;
+                f_body = c->decl();
+              }
+            }
+          } while (alias);
+          if (f_body->e()) {
+            std::ostringstream body_os;
+            Printer p(body_os, 70);
+            p.print(f_body->e());
 
-        os << "\n<div class='mzn-fundecl-more-code'>";
-        std::string filename = fi->loc().filename.str();
-        size_t lastSlash = filename.find_last_of("/");
-        if (lastSlash != std::string::npos) {
-          filename = filename.substr(lastSlash+1, std::string::npos);
+            std::string filename = f_body->loc().filename.str();
+            size_t lastSlash = filename.find_last_of("/");
+            if (lastSlash != std::string::npos) {
+              filename = filename.substr(lastSlash+1, std::string::npos);
+            }
+            os << "<span class='mzn-fundecl-equals'> =</span>";
+            os << "\n<div class='mzn-fundecl-more-code'>";
+            os << "<div class='mzn-fundecl-body'>";
+            os << body_os.str();
+            os << "</div>\n";
+            os << "(standard decomposition from "<<filename << ":" << f_body->loc().first_line<<")";
+            os << "</div>";
+          }
         }
-
-        os << "Defined in " << filename << ":" << fi->loc().first_line << "\n";
-        os << "</div>";
         
         os << "</div>\n<div class='mzn-fundecl-more-code'><div class='mzn-fundecl-doc'>\n";
         std::string dshtml = addHTML(ds);
@@ -530,7 +587,10 @@ namespace MiniZinc {
   HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib) {
     using namespace HtmlDocOutput;
     Group g(basename,basename);
-    PrintHtmlVisitor phv(g,includeStdLib);
+    FunMap funMap;
+    CollectFunctionsVisitor fv(funMap,includeStdLib);
+    iterItems(fv, m);
+    PrintHtmlVisitor phv(g,funMap,includeStdLib);
     iterItems(phv, m);
     
     std::vector<HtmlDocument> ret;
