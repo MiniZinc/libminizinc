@@ -1059,7 +1059,7 @@ namespace MiniZinc {
                 return eval_par(c->decl()->_builtins.e(c->args()));
               } else {
                 if (c->decl()->e()==NULL)
-                  throw EvalError(c->loc(), "internal error: missing builtin '"+c->id().str()+"'");
+                  return c;
                 return eval_call<EvalPar>(c);
               }
             } else {
