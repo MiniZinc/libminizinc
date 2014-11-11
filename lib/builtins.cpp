@@ -1063,6 +1063,8 @@ namespace MiniZinc {
   std::string show(Expression* e) {
     std::ostringstream oss;
     GCLock lock;
+    e = follow_id(e);
+    e = eval_par(e);
     if (e->type().isvar()) {
       Printer p(oss,0,false);
       p.print(e);
@@ -1090,6 +1092,18 @@ namespace MiniZinc {
     return show(args[0]);
   }
   
+  template<class Val>
+  std::string format_printf(const std::string& format, const Val& i) {
+    char check_length[2];
+    int len = snprintf(check_length, 2, format.c_str(), i);
+    char* buf = static_cast<char*>(::malloc(len+1));
+    snprintf(buf, len+1, format.c_str(), i);
+    buf[len] = '\0';
+    std::string ret(buf);
+    ::free(buf);
+    return ret;
+  }
+  
   std::string b_format(ASTExprVec<Expression> args) {
     int width = 0;
     int prec = -1;
@@ -1105,8 +1119,7 @@ namespace MiniZinc {
         e = eval_par(args[2]);
       }
     } else {
-      assert(args.size()==1);
-      return show(args[0]);
+      e = eval_par(args[0]);
     }
     if (e->type() == Type::parint()) {
       long long int i = eval_int(e).toInt();
@@ -1117,11 +1130,7 @@ namespace MiniZinc {
       if (prec != -1)
         format << "." << prec;
       format << "i";
-      char* ret_buf;
-      (void) asprintf(&ret_buf, format.str().c_str(), i);
-      std::string ret(ret_buf);
-      free(ret_buf);
-      return ret;
+      return format_printf(format.str(), i);
     } else if (e->type() == Type::parfloat()) {
       FloatVal i = eval_float(e);
       std::ostringstream format;
@@ -1131,11 +1140,7 @@ namespace MiniZinc {
       if (prec != -1)
         format << "." << prec;
       format << "f";
-      char* ret_buf;
-      (void) asprintf(&ret_buf, format.str().c_str(), i);
-      std::string ret(ret_buf);
-      free(ret_buf);
-      return ret;
+      return format_printf(format.str(), i);
     } else {
       std::string s = show(e);
       if (prec >= 0 && prec < s.size())
