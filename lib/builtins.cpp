@@ -1092,18 +1092,6 @@ namespace MiniZinc {
     return show(args[0]);
   }
   
-  template<class Val>
-  std::string format_printf(const std::string& format, const Val& i) {
-    char check_length[2];
-    int len = snprintf(check_length, 2, format.c_str(), i);
-    char* buf = static_cast<char*>(::malloc(len+1));
-    snprintf(buf, len+1, format.c_str(), i);
-    buf[len] = '\0';
-    std::string ret(buf);
-    ::free(buf);
-    return ret;
-  }
-  
   std::string b_format(ASTExprVec<Expression> args) {
     int width = 0;
     int prec = -1;
@@ -1116,6 +1104,8 @@ namespace MiniZinc {
       } else {
         assert(args.size()==3);
         prec = eval_int(args[1]).toInt();
+        if (prec < 0)
+          throw EvalError(args[1]->loc(),"output precision cannot be negative");
         e = eval_par(args[2]);
       }
     } else {
@@ -1123,24 +1113,32 @@ namespace MiniZinc {
     }
     if (e->type() == Type::parint()) {
       long long int i = eval_int(e).toInt();
-      std::ostringstream format;
-      format << "%";
-      if (width != 0)
-        format << width;
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
       if (prec != -1)
-        format << "." << prec;
-      format << "i";
-      return format_printf(format.str(), i);
+        formatted.precision(prec);
+      formatted << i;
+      return formatted.str();
     } else if (e->type() == Type::parfloat()) {
       FloatVal i = eval_float(e);
-      std::ostringstream format;
-      format << "%";
-      if (width != 0)
-        format << width;
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
+      formatted.setf(std::ios::fixed);
+      formatted.precision(std::numeric_limits<double>::digits10+2);
       if (prec != -1)
-        format << "." << prec;
-      format << "f";
-      return format_printf(format.str(), i);
+        formatted.precision(prec);
+      formatted << i;
+      return formatted.str();
     } else {
       std::string s = show(e);
       if (prec >= 0 && prec < s.size())
