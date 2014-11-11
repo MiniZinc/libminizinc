@@ -959,6 +959,14 @@ namespace MiniZinc {
     VarDecl* e(void) const { return _e; }
     /// Set expression
     void e(VarDecl* vd) { _e = vd; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Assign item
@@ -1002,6 +1010,14 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Set expression
     void e(Expression* e0) { _e = e0; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Solve item
