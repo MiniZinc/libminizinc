@@ -138,13 +138,27 @@ body
   display: none;
 }
 
+.mzn-fundecl-equals {
+  display: none;
+}
+
+.mzn-fundecl-reveal-equals {
+  display: inline;
+}
+
 .mzn-fundecl-code .mzn-fundecl-reveal-code {
   font-size: 10pt;
 }
 
+.mzn-fundecl-body {
+  padding-left: 1em;
+  font-size: 110%;
+}
+
 .mzn-fundecl-reveal-code {
-  font-family: sans-serif;
-  font-size: 11pt;
+ /* font-family: sans-serif;
+     font-size: 11pt;
+    */
   display: block;
   margin-top: 5px;
 }

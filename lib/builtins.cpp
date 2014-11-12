@@ -1063,6 +1063,8 @@ namespace MiniZinc {
   std::string show(Expression* e) {
     std::ostringstream oss;
     GCLock lock;
+    e = follow_id(e);
+    e = eval_par(e);
     if (e->type().isvar()) {
       Printer p(oss,0,false);
       p.print(e);
@@ -1102,40 +1104,41 @@ namespace MiniZinc {
       } else {
         assert(args.size()==3);
         prec = eval_int(args[1]).toInt();
+        if (prec < 0)
+          throw EvalError(args[1]->loc(),"output precision cannot be negative");
         e = eval_par(args[2]);
       }
     } else {
-      assert(args.size()==1);
-      return show(args[0]);
+      e = eval_par(args[0]);
     }
     if (e->type() == Type::parint()) {
       long long int i = eval_int(e).toInt();
-      std::ostringstream format;
-      format << "%";
-      if (width != 0)
-        format << width;
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
       if (prec != -1)
-        format << "." << prec;
-      format << "i";
-      char* ret_buf;
-      (void) asprintf(&ret_buf, format.str().c_str(), i);
-      std::string ret(ret_buf);
-      free(ret_buf);
-      return ret;
+        formatted.precision(prec);
+      formatted << i;
+      return formatted.str();
     } else if (e->type() == Type::parfloat()) {
       FloatVal i = eval_float(e);
-      std::ostringstream format;
-      format << "%";
-      if (width != 0)
-        format << width;
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
+      formatted.setf(std::ios::fixed);
+      formatted.precision(std::numeric_limits<double>::digits10+2);
       if (prec != -1)
-        format << "." << prec;
-      format << "f";
-      char* ret_buf;
-      (void) asprintf(&ret_buf, format.str().c_str(), i);
-      std::string ret(ret_buf);
-      free(ret_buf);
-      return ret;
+        formatted.precision(prec);
+      formatted << i;
+      return formatted.str();
     } else {
       std::string s = show(e);
       if (prec >= 0 && prec < s.size())

@@ -298,20 +298,38 @@ function int: abs(int: x);
 
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var int: abs(var int: x) :: promise_total =
+  if has_bounds(x) /\ lb(x) >= 0 then x else
   let { var 0..max(-lb(x),ub(x)): m;
         constraint int_abs(x,m);
-  } in m;
-
+  } in m
+  endif;
 
 /** @group builtins.arithmetic Return absolute value of \a x */
 function float: abs(float: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
-function var float: abs(var float: x);
+function var float: abs(var float: x) :: promise_total =
+  if has_bounds(x) /\ lb(x)>=0.0 then x else
+  let { var 0.0..max(-lb(x),ub(x)): m;
+        constraint float_abs(x,m);
+  } in m
+  endif;
 
 /** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
 function float: sqrt(float: x);
 /** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
-function var float: sqrt(var float: x);
+function var float: sqrt(var float: x) =
+  let {
+    constraint x >= 0.0;
+  } in sqrt_t(x);
+
+function var float: sqrt_t(var float: x) ::promise_total =
+  let {
+    var float: r;
+    var float: xx;
+    constraint x < 0.0 -> xx = 1.0;
+    constraint x < 0.0 \/ xx = x;
+    constraint float_sqrt(xx,r);
+  } in r;
 
 /** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function int: pow(int: x, int: y);

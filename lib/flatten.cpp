@@ -2713,10 +2713,6 @@ namespace MiniZinc {
         Comprehension* c = e->cast<Comprehension>();
         KeepAlive c_ka(c);
         
-        if (c->set()) {
-          throw InternalError("not supported yet");
-        }
-        
         if (c->type().isopt()) {
           std::vector<Expression*> in(c->n_generators());
           std::vector<Expression*> where;
@@ -2841,13 +2837,25 @@ namespace MiniZinc {
         KeepAlive ka;
         {
           GCLock lock;
-          ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
-          Type alt = c->type();
-          if (allPar)
-            alt.ti(Type::TI_PAR);
-          alr->type(alt);
-          alr->flat(true);
-          ka = alr;
+          if (c->set()) {
+            if (c->type().ispar() && allPar) {
+              SetLit* sl = new SetLit(c->loc(), elems);
+              sl->type(c->type());
+              Expression* slr = eval_par(sl);
+              slr->type(c->type());
+              ka = slr;
+            } else {
+              throw InternalError("var set comprehensions not supported yet");
+            }
+          } else {
+            ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
+            Type alt = c->type();
+            if (allPar)
+              alt.ti(Type::TI_PAR);
+            alr->type(alt);
+            alr->flat(true);
+            ka = alr;
+          }
         }
         ret.b = conj(env,b,Ctx(),elems_ee);
         ret.r = bind(env,Ctx(),r,ka());
