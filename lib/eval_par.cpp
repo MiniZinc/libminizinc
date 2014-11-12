@@ -1485,6 +1485,7 @@ namespace MiniZinc {
           cbi.run(vd->e());
         } else {
           valid = false;
+          _bounds.push_back(FBounds(0,0));
         }
       }
     }

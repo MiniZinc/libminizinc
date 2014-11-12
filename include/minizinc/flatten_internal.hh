@@ -356,8 +356,8 @@ namespace MiniZinc {
       }
       return NULL;
     }
-    static Val floor_div(Val v0, Val v1) { return floor(v0 / v1); }
-    static Val ceil_div(Val v0, Val v1) { return ceil(v0 / v1); }
+    static Val floor_div(Val v0, Val v1) { return v0 / v1; }
+    static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
   };
 
   template<class Lit>

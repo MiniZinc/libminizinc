@@ -546,8 +546,12 @@ namespace MiniZinc {
 #ifndef NDEBUG
         memset(p->data,42,p->size);
 #endif
-        if (prev)
+        if (prev) {
           prev->next = p->next;
+        } else {
+          assert(p==_page);
+          _page = p->next;
+        }
         HeapPage* pf = p;
         p = p->next;
         _alloced_mem -= pf->size;
