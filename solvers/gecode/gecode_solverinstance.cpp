@@ -237,6 +237,16 @@ namespace MiniZinc {
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
+        // check if it has an output-annotation
+        VarDecl* vd = it->e();
+        if(!vd->ann().isEmpty()) {
+          if(vd->ann().containsCall(constants().ann.output_array.aststr()) || 
+            vd->ann().containsCall(constants().ann.output_var->str())
+          ) {            
+            _varsWithOutput.push_back(vd);
+          }
+        }
+        
         if (it->e()->type().dim() != 0) {
           // we ignore arrays - all their elements are defined
           continue;
@@ -823,6 +833,17 @@ namespace MiniZinc {
     Expression* solveExpr = _env.flat()->solveItem()->e();
     Expression* optSearch = NULL;
     
+    // collect all var decls, mapping: ozn element ---> (VarDecl*, Expression)
+    // initializing Expression with NULL or respective the assignment expression
+    /*Model* _ozn = _env.output();
+    for (unsigned int i=0; i<_ozn->size(); i++) {
+      if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
+        _declmap.insert(std::make_pair(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
+        std::cout << "DEBUG: Mapping \"" << vdi->e()->id()->v()  << "\" ---> (" << *vdi->e() << ", " << *vdi->e()->e() << ")" <<  std::endl;
+      }
+    } // TODO continue
+    */
+    
     switch(_current_space->_solveType) {
       case MiniZinc::SolveI::SolveType::ST_MIN:      
         assert(solveExpr != NULL);
@@ -864,7 +885,8 @@ namespace MiniZinc {
     }
     else {
       status = runEngine<BAB>();
-    }    
+      // TODO: reset the declmap in each iteration
+    }               
     return status;
   }
   
@@ -1228,6 +1250,88 @@ namespace MiniZinc {
       status = SolverInstance::UNKNOWN;            
     }
     return status;
+  }
+ 
+ 
+  void
+  GecodeSolverInstance::assignSolutionToOutput(void) {
+    
+    //TODO: iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
+    for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
+      VarDecl* vd = _varsWithOutput[i];
+      std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
+      if(vd->ann().containsCall(constants().ann.output_array.aststr())) {       
+        /*for(ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
+          if(Call* call = (*it)->dyn_cast<Call>()) {
+            std::cout << "DEBUG: Down to call " << *call << std::endl;
+            std::cout << "DEBUG: with rhs: " << *(vd->e()) << std::endl;
+          }
+        }*/        
+        assert(vd->e());
+        if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+          std::vector<Expression*> array_elems;
+          std::cout << "DEBUG: Down to array lit: " << *al << std::endl;
+          if(al->flat() || al->dims() == 1) {
+            ASTExprVec<Expression> array = al->v();
+            for(unsigned int j=0; j<array.size(); j++) {
+              if(Id* id = array[j]->dyn_cast<Id>()) {
+                array_elems.push_back(getSolutionValue(id));             
+                // TODO: continue: gecode variable is not assigned -> we're probably pointing to the variable of the root space....
+              } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {              
+                // TODO
+              } else if(BoolLit* intLit = array[j]->dyn_cast<BoolLit>()) { 
+                // TODO
+              } else {
+                std::cout << "DEBUG: array element " << *array[j] << " is not an id nor a literal" << std::endl;
+              }
+            }
+            for(unsigned int j=0; j<array_elems.size(); j++) {
+                std::cout << "DEBUG: solution " << j << ": " << array_elems[j] << std::endl;
+            }
+          } // TODO: else
+        }
+      } else if(vd->ann().containsCall(constants().ann.output_var->str())) {
+        
+      }        
+    }
+    
+    // TODO: Iterate over the solutions in the model and set their corresponding output value in the output model
+    
+    /*std::cout << "DEBUG: printing variable map:" << std::endl;
+    for(UNORDERED_NAMESPACE::unordered_map<Id*,GecodeSolver::Variable,ExpressionHash,IdEq>::iterator it = _variableMap.begin(); it!=_variableMap.end(); ++it) {
+      if(it->second.isint()) {
+        IntVar iv = it->second.intVar();
+        std::cout << "\tvariable " << *(it->first) << " --> "<< iv << std::endl;
+      } else if(it->second.isbool()) {
+        BoolVar bv = it->second.boolVar();
+        std::cout << "\tvariable " << *(it->first) << " --> " << bv << std::endl;
+      }
+    }
+    
+    unsigned int i = 0;
+    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+      std::cout << "DEBUG: checking declaration " << i++ << std::endl;
+      if (it->e()->e() == NULL) {
+        //if(_declmap.find(it->e())) { // TODO: we need to compare to an ASTString!!
+        //  std::cout << "DEBUG: _declmap contains vardecl" << std::endl;
+       // }
+        VarDecl* vd = it->e();
+        ASTStringMap<DE>::t::iterator itd = _declmap.find(vd->id()->v());
+        if (itd==_declmap.end()) {
+          std::cerr << "Error: unexpected identifier " << vd->id() << " in output\n";
+          exit(EXIT_FAILURE);
+        } else {
+          std::cout << "DEBUG: found the identifier in the declmap" << std::endl;
+          itd->second.first->e(vd->e()); // TODO: include arrayX calls
+        }
+        vd->e(getSolutionValue(vd->id()));
+      } else {
+        std::cout << "DEBUG: the assignment value is not NULL of " << *it;
+      }
+    }
+    // TODO: continue
+    std::cout << "DEBUG: doing something else too ...." << std::endl;
+    */
   }
  
 }

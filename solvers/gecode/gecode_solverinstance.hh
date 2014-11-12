@@ -191,6 +191,11 @@ namespace MiniZinc {
     FznSpace* _current_space; 
     /// the solution (or NULL if does not exist or not yet computed)
     FznSpace* _solution;
+    /// the variable declarations with output annotations
+    std::vector<VarDecl*> _varsWithOutput;
+    /// declaration map for processing and printing output
+    //typedef std::pair<VarDecl*,Expression*> DE;
+    //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
      
@@ -246,6 +251,8 @@ namespace MiniZinc {
     /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
     GecodeSolver::Variable resolveVar(Expression* e);       
     
+    /// TODO: Overwriting the method of the superclass?
+    void assignSolutionToOutput(void);
     
   protected:
     /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
