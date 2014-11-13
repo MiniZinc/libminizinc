@@ -1141,12 +1141,7 @@ namespace MiniZinc {
     if (!se.stopped()) {
       if(_solution) {
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-          status = SolverInstance::SAT;
-          for(int i=0; i<_solution->iv.size(); i++) {
-            IntVar iv = _solution->iv[i];
-            if(iv.assigned())
-              std::cout << iv << " = " << iv.val() << std::endl;
-          }
+          status = SolverInstance::SAT;          
           assignSolutionToOutput();
         } else 
           status = SolverInstance::OPT;
@@ -1186,7 +1181,7 @@ namespace MiniZinc {
               } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) { 
                 array_elems.push_back(boolLit);
               } else {
-                std::cerr << "DEBUG: array element " << *array[j] << " is not an id nor a literal" << std::endl;
+                std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
                 assert(false);
               }
             }            
