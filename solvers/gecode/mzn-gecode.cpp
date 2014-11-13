@@ -361,9 +361,9 @@ int main(int argc, char** argv) {
             
             {
               // DEBUG stuff
-              Printer p(std::cout, 80, false);
+              /*Printer p(std::cout, 80, false);
               std::cout << "DEBUG: printing flat model:" << std::endl;
-              p.print(env.flat());
+              p.print(env.flat()); */
              
               
               
