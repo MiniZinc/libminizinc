@@ -282,10 +282,12 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
+          solvers/gecode/fzn_space.cpp
 	  solvers/gecode/gecode_solverinstance.cpp
 		solvers/gecode/gecode_constraints.cpp
 	  solvers/gecode/gecode_solverinstance.hh
 		solvers/gecode/gecode_constraints.hh
+		solvers/gecode/fzn_space.hh
                 solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode

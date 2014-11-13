@@ -12,6 +12,7 @@
 #include <minizinc/eval_par.hh>
 #include "gecode_solverinstance.hh"
 #include "gecode_constraints.hh"
+#include "fzn_space.hh"
 
 using namespace Gecode;
 
@@ -696,8 +697,11 @@ namespace MiniZinc {
             IntVar x1 = gi.arg2intvar(call->args()[1]);
             //if (call->args()[0]->type().isvarbool() && call->args()[0]->type().isvarint()) { // TODO: bug? 
             if (call->args()[0]->type().isvarbool() && call->args()[1]->type().isvarint()) { 
-                gi._current_space->aliasBool2Int(gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
-                        gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());
+                //gi._current_space->aliasBool2Int(gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
+                //       gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());                
+                int index = gi._current_space->getBoolAliasIndex(gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());
+                assert(index > 0);
+                gi.resolveVar(call->args()[1]->cast<Id>()->decl()).setBoolAliasIndex(index);                
             }
             channel(*gi._current_space, x0, x1, gi.ann2icl(ann));
         }

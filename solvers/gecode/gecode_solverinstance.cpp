@@ -17,6 +17,7 @@
 #include "gecode_solverinstance.hh"
 #include "gecode_constraints.hh"
 #include "aux_brancher.hh"
+#include "fzn_space.hh"
 
 using namespace Gecode;
 
@@ -807,9 +808,7 @@ namespace MiniZinc {
   
   Expression* 
   GecodeSolverInstance::getSolutionValue(Id* id) {
-    Printer p(std::cout, 80, false);
-    std::cout << "DEBUG: getting solution value of id: ";
-    p.print(id);
+    std::cout << "DEBUG: getting solution value of id: " << *id;
     GecodeVariable var = resolveVar(id);
     switch (id->type().bt()) {
       case Type::BT_INT: 
@@ -1097,106 +1096,6 @@ namespace MiniZinc {
       std::cout << "DEBUG: No aux vars to branch on." << std::endl;
   }
   
-  
-  
-  FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {
-    // integer variables
-    iv.resize(f.iv.size());
-    for(int i=0; i<iv.size(); i++) 
-      iv[i].update(*this, share, f.iv[i]);
-    for(int i=0; i<f.iv_introduced.size(); i++) 
-      iv_introduced.push_back(f.iv_introduced[i]);
-    for(int i=0; i<f.iv_defined.size(); i++) 
-      iv_defined.push_back(f.iv_defined[i]);
-    if(f._copyAuxVars) {
-      IntVarArgs iva;
-      for (int i=0; i<f.iv_aux.size(); i++) {
-        if (!f.iv_aux[i].assigned()) {
-          iva << IntVar();
-          iva[iva.size()-1].update(*this, share, f.iv_aux[i]);
-        }
-      }
-      iv_aux = IntVarArray(*this, iva);
-    }    
-    
-    // boolean variables    
-    bv.resize(f.bv.size());
-    for(int i=0; i<bv.size(); i++) 
-    bv[i].update(*this, share, f.bv[i]);
-    if (f._copyAuxVars) {
-      BoolVarArgs bva;
-      for (int i=0; i<f.bv_aux.size(); i++) {
-        if (!f.bv_aux[i].assigned()) {
-          bva << BoolVar();
-          bva[bva.size()-1].update(*this, share, f.bv_aux[i]);
-        }
-      }
-      bv_aux = BoolVarArray(*this, bva);
-    }
-    for(int i=0; i<f.bv_introduced.size(); i++) 
-      bv_introduced.push_back(f.bv_introduced[i]);
-    
-    
-#ifdef GECODE_HAS_SET_VARS
-    sv.resize(f.sv.size());
-    for(int i=0; i<sv.size(); i++)
-      sv[i].update(*this, share, f.sv[i]);  
-    if (f._copyAuxVars) {
-      SetVarArgs sva;
-      for (int i=0; i<f.sv_aux.size(); i++) {
-        if (!f.sv_aux[i].assigned()) {
-          sva << SetVar();
-          sva[sva.size()-1].update(*this, share, f.sv_aux[i]);
-        }
-      }
-      sv_aux = SetVarArray(*this, sva);
-    }
-    for(int i=0; i<f.sv_introduced.size(); i++) 
-      sv_introduced.push_back(f.sv_introduced[i]);            
-#endif
-      
-#ifdef GECODE_HAS_FLOAT_VARS
-    fv.resize(f.fv.size());
-    for(int i=0; i<fv.size(); i++)
-      fv[i].update(*this, share, f.fv[i]);
-    if (f._copyAuxVars) {
-      FloatVarArgs fva;
-      for (int i=0; i<f.fv_aux.size(); i++) {
-        if (!f.fv_aux[i].assigned()) {
-          fva << FloatVar();
-          fva[fva.size()-1].update(*this, share, f.fv_aux[i]);
-        }
-      }
-      fv_aux = FloatVarArray(*this, fva);
-    }    
-#endif
-  }
-  
-  void 
-  FznSpace::constrain(const Space& s) {
-    if (_optVarIsInt) {
-            if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN)
-                rel(*this, iv[_optVarIdx], IRT_LE,
-                    static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
-            else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX)
-                rel(*this, iv[_optVarIdx], IRT_GR,
-                    static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
-        } else {
-#ifdef GECODE_HAS_FLOAT_VARS
-            if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN)
-                rel(*this, fv[_optVarIdx], FRT_LE,
-                    static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
-            else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX)
-                rel(*this, fv[_optVarIdx], FRT_GR,
-                    static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
-#endif
-        }   
-  }
-  
-  Gecode::Space* 
-  FznSpace::copy(bool share) {
-   return new FznSpace(share, *this);
-  }
     
   template<template<class> class Engine>
     SolverInstanceBase::Status GecodeSolverInstance::runEngine() {
@@ -1236,6 +1135,11 @@ namespace MiniZinc {
       if(_solution) {
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
           status = SolverInstance::SAT;
+          for(int i=0; i<_solution->iv.size(); i++) {
+            IntVar iv = _solution->iv[i];
+            if(iv.assigned())
+              std::cout << iv << " = " << iv.val() << std::endl;
+          }
           assignSolutionToOutput();
         } else 
           status = SolverInstance::OPT;
@@ -1275,6 +1179,7 @@ namespace MiniZinc {
             ASTExprVec<Expression> array = al->v();
             for(unsigned int j=0; j<array.size(); j++) {
               if(Id* id = array[j]->dyn_cast<Id>()) {
+                std::cout << "DEBUG: getting solution value from " << *id << std::endl;
                 array_elems.push_back(getSolutionValue(id));             
                 // TODO: continue: gecode variable is not assigned -> we're probably pointing to the variable of the root space....
               } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {              

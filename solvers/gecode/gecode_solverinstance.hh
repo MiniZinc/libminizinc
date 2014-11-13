@@ -27,7 +27,7 @@
 #endif
 
 #include <minizinc/solver_instance_base.hh>
-
+#include "fzn_space.hh"
 
 namespace MiniZinc {
   
@@ -105,85 +105,66 @@ namespace MiniZinc {
     }
   };
   
+  class GecodeVariableIndex {
+  public:
+    enum vartype {BOOL_TYPE,FLOAT_TYPE,INT_TYPE,SET_TYPE};
+  protected:
+    /// variable type
+    vartype _t;
+    /// the index in the iv/bv/fv/sv array in the space, depending the type _t
+    unsigned int _index;
+    /// the index in FznSpace::bv of the boolean variable that corresponds to the int var; if not exists then -1
+    int _boolAliasIndex;
+  public:
+    GecodeVariableIndex(vartype t, unsigned int index) : 
+        _t(t), _index(index), _boolAliasIndex(-1) {}
+        
+    bool isint(void) const {
+      return _t == INT_TYPE;
+    }
+    
+    bool isbool(void) const {
+      return _t == BOOL_TYPE;
+    }
+    
+    bool isfloat(void) const {
+      return _t == FLOAT_TYPE;
+    }
+    
+    bool isset(void) const {
+      return _t == SET_TYPE;
+    }        
+    
+    bool hasBoolAlias(void) {
+      return _boolAliasIndex >= 0;
+    }
+    
+    /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
+    void setBoolAliasIndex(int index) {
+      assert(_t == INT_TYPE);
+      assert(index >= 0);    
+      _boolAliasIndex = index;
+    }
+    
+    int boolAliasIndex(void) {
+      return  _boolAliasIndex;
+    }
+    
+    Gecode::IntVar intVar(MiniZinc::FznSpace* space) {
+      assert(_t == INT_TYPE);
+      assert(_index < space->iv.size());
+      return space->iv[_index];
+    }
+    
+  };
+  
   
   class GecodeSolver {
   public:
     typedef GecodeVariable Variable;
     typedef MiniZinc::Statistics Statistics;
   };
-  
-  class FznSpace : public Gecode::Space {
-  public:
-    /// The integer variables
-    std::vector<Gecode::IntVar> iv;
-    /// The introduced integer variables
-    Gecode::IntVarArray iv_aux;
-    /// Indicates whether an integer variable is introduced by mzn2fzn
-    std::vector<bool> iv_introduced;    
-    /// Indicates whether an integer variable is defined
-    std::vector<bool> iv_defined;    
-    /// The Boolean variables
-    std::vector<Gecode::BoolVar> bv;
-    /// The introduced Boolean variables
-    Gecode::BoolVarArray bv_aux;
-    /// Indicates whether a Boolean variable is introduced by mzn2fzn
-    std::vector<bool> bv_introduced;
-    /// Indicates whether a Boolean variable is defined
-    std::vector<bool> bv_defined;
-#ifdef GECODE_HAS_SET_VARS
-    /// The set variables
-    std::vector<Gecode::SetVar> sv;
-    /// The introduced set variables
-    Gecode::SetVarArray sv_aux;
-    /// Indicates whether a set variable is introduced by mzn2fzn
-    std::vector<bool> sv_introduced;
-        /// Indicates whether a set variable is introduced by mzn2fzn
-    std::vector<bool> sv_defined;
-#endif
-#ifdef GECODE_HAS_FLOAT_VARS
-    /// The float variables
-    std::vector<Gecode::FloatVar> fv;
-    /// The introduced float variables
-    Gecode::FloatVarArray fv_aux;
-    /// Indicates whether a float variable is introduced by mzn2fzn
-    std::vector<bool> fv_introduced;
-    /// Indicates whether a float variable is defined
-    std::vector<bool> fv_defined;
-#endif 
-    /// Indicates if the objective variable is integer (float otherwise)
-    bool _optVarIsInt;
-    /// Index of the variable to optimize 
-    int _optVarIdx;    
-    /// Whether the introduced variables still need to be copied
-    bool _copyAuxVars;  
-    /// solve type (SAT, MIN or MAX)
-    MiniZinc::SolveI::SolveType _solveType;
-    
-    /// copy constructor
-    FznSpace(bool share, FznSpace&);
-    /// standard constructor
-    FznSpace(void) : _copyAuxVars(true), _optVarIdx(-1), _optVarIsInt(true) {} ; 
-    ~FznSpace(void) {} 
-            
-    /// Link integer variable \a iv to Boolean variable \a bv 
-    void aliasBool2Int(GecodeVariable intvar, Gecode::BoolVar bvar) {
-      for(int i=0; i<bv.size(); i++) {        
-        if(bv[i].same(bvar)) { 
-          intvar.setBoolAliasIndex(i);
-          // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
-          return;
-        }            
-      }
-      assert(false); // we should have found the boolvar in bv
-    }
-  
-  protected:       
-    /// Implement optimization
-    virtual void constrain(const Space& s);
-    /// Copy function
-    virtual Gecode::Space* copy(bool share);
-  };
-  
+   
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   public:
@@ -250,8 +231,7 @@ namespace MiniZinc {
     
     /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
     GecodeSolver::Variable resolveVar(Expression* e);       
-    
-    /// TODO: Overwriting the method of the superclass?
+        
     void assignSolutionToOutput(void);
     
   protected:
