@@ -839,17 +839,6 @@ namespace MiniZinc {
     Expression* solveExpr = _env.flat()->solveItem()->e();
     Expression* optSearch = NULL;
     
-    // collect all var decls, mapping: ozn element ---> (VarDecl*, Expression)
-    // initializing Expression with NULL or respective the assignment expression
-    /*Model* _ozn = _env.output();
-    for (unsigned int i=0; i<_ozn->size(); i++) {
-      if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
-        _declmap.insert(std::make_pair(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
-        std::cout << "DEBUG: Mapping \"" << vdi->e()->id()->v()  << "\" ---> (" << *vdi->e() << ", " << *vdi->e()->e() << ")" <<  std::endl;
-      }
-    } // TODO continue
-    */
-    
     switch(_current_space->_solveType) {
       case MiniZinc::SolveI::SolveType::ST_MIN:      
         assert(solveExpr != NULL);
@@ -890,8 +879,7 @@ namespace MiniZinc {
       status = runEngine<DFS>();
     }
     else {
-      status = runEngine<BAB>();
-      // TODO: reset the declmap in each iteration
+      status = runEngine<BAB>();      
     }               
     return status;
   }
@@ -1152,7 +1140,6 @@ namespace MiniZinc {
     } else {         
       if(_solution) 
          assignSolutionToOutput();
-        // TODO: is that correct? what if(_solution)??
       status = SolverInstance::UNKNOWN;            
     }
     return status;
@@ -1200,10 +1187,7 @@ namespace MiniZinc {
       } else if(vd->ann().containsCall(constants().ann.output_var->str())) {
         // TODO
       }        
-    }
-    
-    // TODO: Iterate over the solutions in the model and set their corresponding output value in the output model
-    
+    }       
 
   }
  
