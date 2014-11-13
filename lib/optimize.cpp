@@ -126,6 +126,7 @@ namespace MiniZinc {
     return false;
   }
   
+  void substitueFixedVars(EnvI& env, Item* ii);
   void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                               std::vector<int>& vardeclQueue,
                               std::vector<Item*>& constraintQueue,
@@ -217,8 +218,15 @@ namespace MiniZinc {
     if (it != env.vo._m.end()) {
       for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
         if (ConstraintI* ci = (*item)->dyn_cast<ConstraintI>()) {
-          if (!ci->removed() && !ci->flag())
+          if (!ci->removed() && !ci->flag()) {
+            ci->flag(true);
             q.push_back(ci);
+          }
+        } else if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
+          if (!vdi->removed() && !vdi->flag() && vdi->e()->e() && vdi->e()->e()->isa<Call>()) {
+            vdi->flag(true);
+            q.push_back(vdi);
+          }
         }
       }
     }
@@ -365,6 +373,7 @@ namespace MiniZinc {
           } else {
             remove = true;
           }
+          pushDependentConstraints(envi, vd->id(), constraintQueue);
           std::vector<Item*> toRemove;
           IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id());
           if (it != envi.vo._m.end()) {
@@ -411,6 +420,7 @@ namespace MiniZinc {
         } else {
           item->cast<VarDeclI>()->flag(false);
         }
+        substitueFixedVars(envi, item);
         handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
       }
     }
@@ -434,6 +444,64 @@ namespace MiniZinc {
     }
   }
 
+  class SubstitutionVisitor : public EVisitor {
+  protected:
+    Expression* subst(Expression* e) {
+      if (VarDecl* vd = follow_id_to_decl(e)->dyn_cast<VarDecl>()) {
+        if (vd->type().isbool() && vd->ti()->domain())
+          return vd->ti()->domain();
+        if (vd->type().isint()) {
+          if (vd->e() && vd->e()->isa<IntLit>())
+            return vd->e();
+          if (vd->ti()->domain() && vd->ti()->domain()->isa<SetLit>() &&
+              vd->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
+              vd->ti()->domain()->cast<SetLit>()->isv()->min()==vd->ti()->domain()->cast<SetLit>()->isv()->max()) {
+            return new IntLit(Location().introduce(),vd->ti()->domain()->cast<SetLit>()->isv()->min());
+          }
+        }
+      }
+      return e;
+    }
+  public:
+    /// Visit array literal
+    void vArrayLit(const ArrayLit& al) {
+      for (unsigned int i=0; i<al.v().size(); i++) {
+        al.v()[i] = subst(al.v()[i]);
+      }
+    }
+    /// Visit call
+    void vCall(const Call& c) {
+      for (unsigned int i=0; i<c.args().size(); i++) {
+        c.args()[i] = subst(c.args()[i]);
+      }
+    }
+    /// Determine whether to enter node
+    bool enter(Expression* e) {
+      return !e->isa<Id>();
+    }
+  };
+  
+  void substitueFixedVars(EnvI& env, Item* ii) {
+    SubstitutionVisitor sv;
+    if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
+      topDown(sv, ci->e());
+      for (ExpressionSetIter it = ci->e()->ann().begin(); it != ci->e()->ann().end(); ++it) {
+        topDown(sv, *it);
+      }
+    } else if (VarDeclI* vdi = ii->dyn_cast<VarDeclI>()) {
+      topDown(sv, vdi->e());
+      for (ExpressionSetIter it = vdi->e()->ann().begin(); it != vdi->e()->ann().end(); ++it) {
+        topDown(sv, *it);
+      }
+    } else {
+      SolveI* si = ii->cast<SolveI>();
+      topDown(sv, si->e());
+      for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+        topDown(sv, *it);
+      }
+    }
+  }
+  
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
                           std::vector<Item*>& constraintQueue,
@@ -500,9 +568,9 @@ namespace MiniZinc {
         }
         
         pushDependentConstraints(env, ident, constraintQueue);
-//        CollectDecls cd(env.vo,deletedVarDecls,ii);
-//        topDown(cd,c);
-//        ii->remove();
+        CollectDecls cd(env.vo,deletedVarDecls,ii);
+        topDown(cd,c);
+        ii->remove();
       }
     }
     return false;
