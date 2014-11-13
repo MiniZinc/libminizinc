@@ -27,7 +27,6 @@
 #endif
 
 #include <minizinc/solver_instance_base.hh>
-//#include "gecode_solverinstance.hh"
 
 namespace MiniZinc { 
   
@@ -84,18 +83,7 @@ namespace MiniZinc {
     FznSpace(void) : _copyAuxVars(true), _optVarIdx(-1), _optVarIsInt(true) {} ; 
     ~FznSpace(void) {} 
             
-    /// Link integer variable \a iv to Boolean variable \a bv 
-   /*void aliasBool2Int(GecodeVariable intvar, Gecode::BoolVar bvar) {
-      for(int i=0; i<bv.size(); i++) {        
-        if(bv[i].same(bvar)) { 
-          intvar.setBoolAliasIndex(i);
-          // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
-          return;
-        }            
-      }
-      assert(false); // we should have found the boolvar in bv
-    }*/
-    
+    /// get the index of the Boolean variable in bv; return -1 if not exists
     int getBoolAliasIndex(Gecode::BoolVar bvar) {
       for(int i=0; i<bv.size(); i++) {        
         if(bv[i].same(bvar)) { 

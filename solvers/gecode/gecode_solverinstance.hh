@@ -31,7 +31,7 @@
 
 namespace MiniZinc {
   
-  class GecodeVariable {
+ /* class GecodeVariable {
   public:
     enum vartype {BOOL_TYPE,FLOAT_TYPE,INT_TYPE,SET_TYPE};
   protected:
@@ -103,9 +103,9 @@ namespace MiniZinc {
     vartype t(void) const {
       return _t;
     }
-  };
+  }; */
   
-  class GecodeVariableIndex {
+  class GecodeVariable {
   public:
     enum vartype {BOOL_TYPE,FLOAT_TYPE,INT_TYPE,SET_TYPE};
   protected:
@@ -116,7 +116,7 @@ namespace MiniZinc {
     /// the index in FznSpace::bv of the boolean variable that corresponds to the int var; if not exists then -1
     int _boolAliasIndex;
   public:
-    GecodeVariableIndex(vartype t, unsigned int index) : 
+    GecodeVariable(vartype t, unsigned int index) : 
         _t(t), _index(index), _boolAliasIndex(-1) {}
         
     bool isint(void) const {
@@ -155,6 +155,30 @@ namespace MiniZinc {
       assert(_index < space->iv.size());
       return space->iv[_index];
     }
+    
+    Gecode::BoolVar boolVar(MiniZinc::FznSpace* space) {
+      assert(_t == BOOL_TYPE);
+      assert(_index < space->bv.size());
+      return space->bv[_index];
+    }
+    
+#ifdef GECODE_HAS_FLOAT_VARS
+    Gecode::FloatVar floatVar(MiniZinc::FznSpace* space) {
+      assert(_t == FLOAT_TYPE);
+      assert(_index < space->fv.size());
+      return space->fv[_index];
+    }
+#endif
+
+#ifdef GECODE_HAS_SET_VARS
+    Gecode::SetVar setVar(MiniZinc::FznSpace* space) {
+      assert(_t == SET_TYPE);
+      assert(_index < space->sv.size());
+      return space->sv[_index];
+    }
+#endif
+
+
     
   };
   

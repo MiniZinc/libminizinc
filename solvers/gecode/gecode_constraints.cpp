@@ -275,7 +275,7 @@ namespace MiniZinc {
             IntArgs ia = s.arg2intargs(call->args()[0]);
             BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
             if (call->args()[2]->type().isvarint())
-                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(), s.ann2icl(ann));
+                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(s._current_space), s.ann2icl(ann));
             else
                 linear(*s._current_space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
         }
@@ -292,7 +292,7 @@ namespace MiniZinc {
             IntArgs ia = s.arg2intargs(call->args()[0]);
             BoolVarArgs iv = s.arg2boolvarargs(call->args()[1]);
             if (call->args()[2]->type().isvarint())
-                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(),
+                linear(*s._current_space, ia, iv, irt, s.resolveVar(call->args()[2]->cast<Id>()->decl()).intVar(s._current_space),
                         Reify(s.arg2boolvar(call->args()[3]), rm), 
                         s.ann2icl(ann));
             else
@@ -518,7 +518,7 @@ namespace MiniZinc {
         if (!call->args()[2]->type().isvar() && call->args()[2]->type().isbool()) { \
             rel(*gi._current_space, b0, op, b1, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann)); \
         } else { \
-            rel(*gi._current_space, b0, op, b1, gi.resolveVar(gi.getVarDecl(call->args()[2])).boolVar(), gi.ann2icl(ann)); \
+            rel(*gi._current_space, b0, op, b1, gi.resolveVar(gi.getVarDecl(call->args()[2])).boolVar(gi._current_space), gi.ann2icl(ann)); \
         }
 
 
@@ -529,7 +529,7 @@ namespace MiniZinc {
         } else if (!call->args()[1]->type().isvar() && call->args()[1]->type().isbool()) { \
             rel(*gi._current_space, op, bv, call->args()[1]->cast<BoolLit>()->v(), gi.ann2icl(ann)); \
         } else { \
-            rel(*gi._current_space, op, bv, gi.resolveVar(gi.getVarDecl(call->args()[1])).boolVar(), gi.ann2icl(ann)); \
+            rel(*gi._current_space, op, bv, gi.resolveVar(gi.getVarDecl(call->args()[1])).boolVar(gi._current_space), gi.ann2icl(ann)); \
         }
 
         void p_bool_or(SolverInstanceBase& s, const Call* call) {
@@ -645,7 +645,7 @@ namespace MiniZinc {
             if (call->args()[2]->type().isbool()) {
                 rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann));
             } else {
-                rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, gi.resolveVar(call->args()[2]->cast<Id>()->decl()).boolVar(), gi.ann2icl(ann));
+                rel(*gi._current_space, b1, BoolOpType::BOT_IMP, b0, gi.resolveVar(call->args()[2]->cast<Id>()->decl()).boolVar(gi._current_space), gi.ann2icl(ann));
             }
         }
         void p_bool_r_imp(SolverInstanceBase& s, const Call* call) {
@@ -699,7 +699,7 @@ namespace MiniZinc {
             if (call->args()[0]->type().isvarbool() && call->args()[1]->type().isvarint()) { 
                 //gi._current_space->aliasBool2Int(gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
                 //       gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());                
-                int index = gi._current_space->getBoolAliasIndex(gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());
+                int index = gi._current_space->getBoolAliasIndex(gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar(gi._current_space));
                 assert(index > 0);
                 gi.resolveVar(call->args()[1]->cast<Id>()->decl()).setBoolAliasIndex(index);                
             }
