@@ -126,7 +126,7 @@ namespace MiniZinc {
     return false;
   }
   
-  void substitueFixedVars(EnvI& env, Item* ii);
+  void substitueFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
   void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                               std::vector<int>& vardeclQueue,
                               std::vector<Item*>& constraintQueue,
@@ -223,7 +223,7 @@ namespace MiniZinc {
             q.push_back(ci);
           }
         } else if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
-          if (!vdi->removed() && !vdi->flag() && vdi->e()->e() && vdi->e()->e()->isa<Call>()) {
+          if (!vdi->removed() && !vdi->flag() && vdi->e()->e()) {
             vdi->flag(true);
             q.push_back(vdi);
           }
@@ -245,6 +245,17 @@ namespace MiniZinc {
     
     GCLock lock;
 
+    for (unsigned int i=0; i<m.size(); i++) {
+      if (!m[i]->removed()) {
+        if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+          ci->flag(false);
+        } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
+          vdi->flag(false);
+        }
+      }
+    }
+
+    
     for (unsigned int i=0; i<m.size(); i++) {
       if (m[i]->removed())
         continue;
@@ -300,6 +311,18 @@ namespace MiniZinc {
           pushVarDecl(envi, vdi, i, vardeclQueue);
           pushDependentConstraints(envi, vdi->e()->id(), constraintQueue);
         }
+
+        if (vdi->e()->type().isint()) {
+          if ((vdi->e()->e() && vdi->e()->e()->isa<IntLit>()) ||
+              (vdi->e()->ti()->domain() && vdi->e()->ti()->domain()->isa<SetLit>() &&
+               vdi->e()->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
+               vdi->e()->ti()->domain()->cast<SetLit>()->isv()->min()==vdi->e()->ti()->domain()->cast<SetLit>()->isv()->max())) {
+                pushVarDecl(envi, vdi, i, vardeclQueue);
+                pushDependentConstraints(envi, vdi->e()->id(), constraintQueue);
+          }
+        }
+
+        
       }
     }
     for (unsigned int i=toAssignBoolVars.size(); i--;) {
@@ -420,7 +443,7 @@ namespace MiniZinc {
         } else {
           item->cast<VarDeclI>()->flag(false);
         }
-        substitueFixedVars(envi, item);
+        substitueFixedVars(envi, item, deletedVarDecls);
         handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
       }
     }
@@ -446,16 +469,22 @@ namespace MiniZinc {
 
   class SubstitutionVisitor : public EVisitor {
   protected:
+    std::vector<VarDecl*> removed;
     Expression* subst(Expression* e) {
       if (VarDecl* vd = follow_id_to_decl(e)->dyn_cast<VarDecl>()) {
-        if (vd->type().isbool() && vd->ti()->domain())
+        if (vd->type().isbool() && vd->ti()->domain()) {
+          removed.push_back(vd);
           return vd->ti()->domain();
+        }
         if (vd->type().isint()) {
-          if (vd->e() && vd->e()->isa<IntLit>())
+          if (vd->e() && vd->e()->isa<IntLit>()) {
+            removed.push_back(vd);
             return vd->e();
+          }
           if (vd->ti()->domain() && vd->ti()->domain()->isa<SetLit>() &&
               vd->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
               vd->ti()->domain()->cast<SetLit>()->isv()->min()==vd->ti()->domain()->cast<SetLit>()->isv()->max()) {
+            removed.push_back(vd);
             return new IntLit(Location().introduce(),vd->ti()->domain()->cast<SetLit>()->isv()->min());
           }
         }
@@ -479,9 +508,18 @@ namespace MiniZinc {
     bool enter(Expression* e) {
       return !e->isa<Id>();
     }
+    void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
+      for (unsigned int i=0; i<removed.size(); i++) {
+        if (env.vo.remove(removed[i], item) == 0) {
+          if (removed[i]->e()==NULL || removed[i]->ti()->domain()==NULL || removed[i]->ti()->computedDomain()) {
+            deletedVarDecls.push_back(removed[i]);
+          }
+        }
+      }
+    }
   };
   
-  void substitueFixedVars(EnvI& env, Item* ii) {
+  void substitueFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls) {
     SubstitutionVisitor sv;
     if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
       topDown(sv, ci->e());
@@ -500,13 +538,24 @@ namespace MiniZinc {
         topDown(sv, *it);
       }
     }
+    sv.remove(env, ii, deletedVarDecls);
   }
   
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
                           std::vector<Item*>& constraintQueue,
                           std::vector<int>& vardeclQueue) {
-    Expression* con_e = ii->isa<ConstraintI>() ? ii->cast<ConstraintI>()->e() : ii->cast<VarDeclI>()->e()->e();
+    Expression* con_e;
+    if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
+      con_e = ci->e();
+    } else {
+      VarDeclI* vdi = ii->cast<VarDeclI>();
+      if (vdi->e()->type().isbool() && vdi->e()->ti()->domain()==constants().lit_true) {
+        con_e = vdi->e()->e();
+      } else {
+        return false;
+      }
+    }
     if (Call* c = Expression::dyn_cast<Call>(con_e)) {
       if (c->id()==constants().ids.int_.lin_le ||
           c->id()==constants().ids.int_.lin_eq ||
@@ -523,7 +572,15 @@ namespace MiniZinc {
         }
         IntVal d = 0;
         simplify_lin<IntLit>(coeffs, x, d);
-        if (coeffs.size() < al_c->v().size()) {
+        if (c->id()==constants().ids.int_.lin_eq && coeffs.size()==2  &&
+            ((coeffs[0]==1 && coeffs[1]==-1) || (coeffs[1]==1 && coeffs[0]==-1)) && eval_int(c->args()[2])-d==0) {
+          unify(env, x[0]()->cast<Id>(), x[1]()->cast<Id>());
+          pushDependentConstraints(env, x[0]()->cast<Id>(), constraintQueue);
+          CollectDecls cd(env.vo,deletedVarDecls,ii);
+          topDown(cd,c);
+          ii->remove();
+        } else
+          if (coeffs.size() < al_c->v().size()) {
           std::vector<Expression*> coeffs_e(coeffs.size());
           std::vector<Expression*> x_e(coeffs.size());
           for (unsigned int i=0; i<coeffs.size(); i++) {
