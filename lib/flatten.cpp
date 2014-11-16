@@ -747,7 +747,53 @@ namespace MiniZinc {
         case Expression::E_TI:
           throw InternalError("unevaluated expression");
         case Expression::E_ARRAYLIT:
-          return e;
+          {
+            GCLock lock;
+            ArrayLit* al = e->cast<ArrayLit>();
+            /// TODO: review if limit of 10 is a sensible choice
+            if (al->v().size() <= 10)
+              return e;
+
+            std::vector<TypeInst*> ranges(al->dims());
+            for (unsigned int i=0; i<ranges.size(); i++) {
+              ranges[i] = new TypeInst(e->loc(),
+                                       Type(),
+                                       new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
+            }
+            ASTExprVec<TypeInst> ranges_v(ranges);
+            assert(!al->type().isbot());
+            Expression* domain = NULL;
+            if (al->v().size() > 0 && al->v()[0]->type().isint()) {
+              IntVal min = IntVal::infinity;
+              IntVal max = -IntVal::infinity;
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                IntBounds ib = compute_int_bounds(al->v()[i]);
+                if (!ib.valid) {
+                  min = -IntVal::infinity;
+                  max = IntVal::infinity;
+                  break;
+                }
+                min = std::min(min, ib.l);
+                max = std::max(max, ib.u);
+              }
+              if (min != -IntVal::infinity && max != IntVal::infinity) {
+                domain = new SetLit(Location().introduce(), IntSetVal::a(min,max));
+              }
+            }
+            TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,domain);
+            if (domain)
+              ti->setComputedDomain(true);
+            VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),al);
+            vd->introduced(true);
+            vd->flat(vd);
+            VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+            env.flat_addItem(ni);
+            EE ee(vd,NULL);
+            env.map_insert(al,ee);
+            env.map_insert(vd->e(),ee);
+            env.map_insert(vd->id(),ee);
+            return vd->id();
+          }
         case Expression::E_CALL:
           {
             if (e->type().isann())
