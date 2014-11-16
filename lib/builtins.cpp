@@ -834,8 +834,9 @@ namespace MiniZinc {
   Expression* b_array1d_list(ASTExprVec<Expression> args) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
-    if (al->dims()==1 && al->min(0)==1)
-      return al;
+    if (al->dims()==1 && al->min(0)==1) {
+      return args[0]->isa<Id>() ? args[0] : al;
+    }
     ArrayLit* ret = new ArrayLit(al->loc(), al->v());
     Type t = al->type();
     t.dim(1);
@@ -875,7 +876,7 @@ namespace MiniZinc {
         }
       }
       if (sameDims)
-        return al1;
+        return args[1]->isa<Id>() ? args[1] : al1;
     }
     std::vector<std::pair<int,int> > dims(al0->dims());
     for (unsigned int i=al0->dims(); i--;) {
