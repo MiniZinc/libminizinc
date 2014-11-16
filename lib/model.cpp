@@ -271,4 +271,13 @@ namespace MiniZinc {
     _items.erase(remove_if(_items.begin(),_items.end(),isremoved),
                  _items.end());
   }
+  
+  void
+  Model::fail(void) {
+    if (!_failed) {
+      _failed = true;
+      ConstraintI* failedConstraint = new ConstraintI(Location().introduce(),constants().lit_false);
+      _items.push_back(failedConstraint);
+    }
+  }
 }
