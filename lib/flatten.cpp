@@ -230,8 +230,10 @@ namespace MiniZinc {
       {
         ConstraintI* ci = i->cast<ConstraintI>();
         toAnnotate = ci->e();
-        if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v())
+        if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v()) {
           addWarning("model inconsistency detected");
+          _flat->fail();
+        }
         CollectOccurrencesE ce(vo,ci);
         topDown(ce,ci->e());
       }
@@ -834,7 +836,7 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                    env.flat()->fail();
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),ibv));
                   }
@@ -3103,7 +3105,7 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                    env.flat()->fail();
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
