@@ -197,6 +197,7 @@ lib/prettyprinter.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/lexer.lxx
 lib/values.cpp
@@ -220,6 +221,7 @@ include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
+include/minizinc/optimize_constraints.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/type.hh
