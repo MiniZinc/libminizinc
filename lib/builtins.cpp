@@ -676,6 +676,58 @@ namespace MiniZinc {
     return b_dom_varint(args[0]);
   }
 
+  IntSetVal* b_dom_bounds_array(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    Expression* arg_e = args[0];
+    Expression* e = follow_id_to_decl(arg_e);
+    
+    bool foundBounds = false;
+    IntVal array_lb = -IntVal::infinity;
+    IntVal array_ub = IntVal::infinity;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
+        GCLock lock;
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
+        if (isv->size()!=0) {
+          array_lb = isv->min();
+          array_ub = isv->max();
+          foundBounds = true;
+        }
+      }
+      e = vd->e();
+    }
+
+    if (foundBounds) {
+      return IntSetVal::a(array_lb,array_ub);
+    }
+    
+    if (e != NULL) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(e);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      IntVal min = IntVal::infinity;
+      IntVal max = -IntVal::infinity;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        IntBounds ib = compute_int_bounds(al->v()[i]);
+        if (!ib.valid)
+          goto b_array_lb_int_done;
+        min = std::min(min, ib.l);
+        max = std::max(max, ib.u);
+      }
+      array_lb = std::max(array_lb, min);
+      array_ub = std::max(array_ub, max);
+      foundBounds = true;
+    }
+  b_array_lb_int_done:
+    if (foundBounds) {
+      return IntSetVal::a(array_lb,array_ub);
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
+    }
+  }
+  
   IntSetVal* b_dom_array(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     Expression* ae = args[0];
@@ -1590,6 +1642,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
       rb(m, ASTString("dom_array"), t, b_dom_array);
+      rb(m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
     }
     {
       std::vector<Type> t(1);
