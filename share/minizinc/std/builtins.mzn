@@ -1065,6 +1065,8 @@ function set of int: ub_array(array[$U] of var set of int: x);
 function set of int: dom(var int: x);
 /** @group builtins.reflect Return union of all domains of the elements in array \a x */
 function set of int: dom_array(array[$T] of var int: x);
+/** @group builtins.reflect Return approximation of union of all domains of the elements in array \a x */
+function set of int: dom_bounds_array(array[$T] of var int: x);
 /** @group builtins.reflect Return cardinality of the domain of \a x */
 function int: dom_size(var int: x) = card(dom(x));
 
@@ -1185,7 +1187,7 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 
 function var int: element_t(var int: idx, array[int] of var int: x) :: promise_total =
   let {
-    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    var dom_bounds_array(x): r ::is_defined_var;
     constraint array_var_int_element((idx-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
   } in r;
 
