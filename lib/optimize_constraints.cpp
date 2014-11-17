@@ -21,7 +21,7 @@ namespace MiniZinc {
   }
   
   OptimizeRegistry::ConstraintStatus
-  OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i, MiniZinc::Call* c, Call*& rewrite) {
+  OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i, MiniZinc::Call* c, Expression*& rewrite) {
     ASTStringMap<optimizer>::t::iterator it = _m.find(c->id());
     if (it != _m.end()) {
       return it->second(env,i,c,rewrite);
@@ -39,7 +39,7 @@ namespace MiniZinc {
     
     /// TODO: optimizer must be able to rewrite and delete constraint
     
-    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Call*& rewrite) {
+    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       ArrayLit* al_c = eval_array_lit(c->args()[0]);
       std::vector<IntVal> coeffs(al_c->v().size());
       for (unsigned int i=0; i<al_c->v().size(); i++) {
@@ -95,8 +95,45 @@ namespace MiniZinc {
         }
       return OptimizeRegistry::CS_OK;
     }
- 
-    OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Call*& rewrite) {
+
+    OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      if (c->type().isint()) {
+        ArrayLit* al_c = eval_array_lit(c->args()[0]);
+        std::vector<IntVal> coeffs(al_c->v().size());
+        for (unsigned int i=0; i<al_c->v().size(); i++) {
+          coeffs[i] = eval_int(al_c->v()[i]);
+        }
+        ArrayLit* al_x = eval_array_lit(c->args()[1]);
+        std::vector<KeepAlive> x(al_x->v().size());
+        for (unsigned int i=0; i<al_x->v().size(); i++) {
+          x[i] = al_x->v()[i];
+        }
+        IntVal d = eval_int(c->args()[2]);
+        simplify_lin<IntLit>(coeffs, x, d);
+        if (coeffs.size()==0) {
+          rewrite = new IntLit(Location().introduce(), d);
+          return OptimizeRegistry::CS_REWRITE;
+        } else if (coeffs.size() < al_c->v().size()) {
+          std::vector<Expression*> coeffs_e(coeffs.size());
+          std::vector<Expression*> x_e(coeffs.size());
+          for (unsigned int i=0; i<coeffs.size(); i++) {
+            coeffs_e[i] = new IntLit(Location().introduce(),coeffs[i]);
+            x_e[i] = x[i]();
+          }
+          ArrayLit* al_c_new = new ArrayLit(al_c->loc(),coeffs_e);
+          al_c_new->type(Type::parint(1));
+          ArrayLit* al_x_new = new ArrayLit(al_x->loc(),x_e);
+          al_x_new->type(al_x->type());
+          c->args()[0] = al_c_new;
+          c->args()[1] = al_x_new;
+          c->args()[2] = new IntLit(Location().introduce(), d);
+        }
+      }
+      return OptimizeRegistry::CS_OK;
+    }
+
+    
+    OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       if (c->args()[0]->isa<IntLit>()) {
         IntVal idx = eval_int(c->args()[0]);
         ArrayLit* al = eval_array_lit(c->args()[1]);
@@ -127,6 +164,7 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_le, o_linear);
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_ne, o_linear);
         OptimizeRegistry::registry().reg(id_element, o_element);
+        OptimizeRegistry::registry().reg(constants().ids.lin_exp, o_lin_exp);
         OptimizeRegistry::registry().reg(id_var_element, o_element);
       }
     } _r;

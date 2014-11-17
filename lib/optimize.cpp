@@ -660,7 +660,7 @@ namespace MiniZinc {
           
         }
       } else {
-        Call* rewrite = NULL;
+        Expression* rewrite = NULL;
         GCLock lock;
         switch (OptimizeRegistry::registry().process(env, ii, c, rewrite)) {
           case OptimizeRegistry::CS_NONE:
@@ -705,7 +705,9 @@ namespace MiniZinc {
             if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
               ci->e(rewrite);
             } else {
-              ii->cast<VarDeclI>()->e()->e(rewrite);
+              VarDeclI* vdi = ii->cast<VarDeclI>();
+              vdi->e()->e(rewrite);
+              pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
             }
             CollectOccurrencesE ce(env.vo,ii);
             topDown(ce,rewrite);
