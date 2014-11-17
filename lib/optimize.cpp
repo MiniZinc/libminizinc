@@ -552,20 +552,23 @@ namespace MiniZinc {
                           std::vector<Item*>& constraintQueue,
                           std::vector<int>& vardeclQueue) {
     Expression* con_e;
+    bool is_true;
+    bool is_false;
     if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
       con_e = ci->e();
+      is_true = true;
+      is_false = false;
     } else {
       VarDeclI* vdi = ii->cast<VarDeclI>();
-      if (vdi->e()->type().isbool() && vdi->e()->ti()->domain()==constants().lit_true) {
-        con_e = vdi->e()->e();
-      } else {
-        return false;
-      }
+      con_e = vdi->e()->e();
+      is_true = (vdi->e()->type().isbool() && vdi->e()->ti()->domain()==constants().lit_true);
+      is_false = (vdi->e()->type().isbool() && vdi->e()->ti()->domain()==constants().lit_false);
+      assert(is_true || is_false || !vdi->e()->type().isbool() || vdi->e()->ti()->domain()==NULL);
     }
     if (Call* c = Expression::dyn_cast<Call>(con_e)) {
       if (c->id()==constants().ids.int_.eq || c->id()==constants().ids.bool_eq ||
           c->id()==constants().ids.float_.eq) {
-        if (c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
+        if (is_true && c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
             (c->args()[0]->cast<Id>()->decl()->e()==NULL || c->args()[1]->cast<Id>()->decl()->e()==NULL) ) {
           unify(env, c->args()[0]->cast<Id>(), c->args()[1]->cast<Id>());
           pushDependentConstraints(env, c->args()[0]->cast<Id>(), constraintQueue);
@@ -575,16 +578,23 @@ namespace MiniZinc {
         } else if (c->args()[0]->type().ispar() && c->args()[1]->type().ispar()) {
           Expression* e0 = eval_par(c->args()[0]);
           Expression* e1 = eval_par(c->args()[1]);
-          if (Expression::equal(e0, e1)) {
-            CollectDecls cd(env.vo,deletedVarDecls,ii);
-            topDown(cd,c);
-            ii->remove();
-          } else {
+          bool is_equal = Expression::equal(e0, e1);
+          if ((is_true && is_equal) || (is_false && !is_equal)) {
+            // do nothing
+          } else if ((is_true && !is_equal) || (is_false && is_equal)) {
             env.addWarning("model inconsistency detected");
             env.flat()->fail();
+          } else {
+            VarDeclI* vdi = ii->cast<VarDeclI>();
+            vdi->e()->ti()->domain(constants().boollit(is_equal));
+            pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
           }
-        } else if ((c->args()[0]->isa<Id>() && c->args()[1]->type().ispar()) ||
-                   (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar()) ) {
+          CollectDecls cd(env.vo,deletedVarDecls,ii);
+          topDown(cd,c);
+          ii->remove();
+        } else if (is_true &&
+                   ((c->args()[0]->isa<Id>() && c->args()[1]->type().ispar()) ||
+                    (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) ) {
           Id* ident = c->args()[0]->isa<Id>() ? c->args()[0]->cast<Id>() : c->args()[1]->cast<Id>();
           Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
           bool canRemove = false;
@@ -658,16 +668,35 @@ namespace MiniZinc {
           case OptimizeRegistry::CS_OK:
             return true;
           case OptimizeRegistry::CS_FAILED:
-            env.addWarning("model inconsistency detected");
-            env.flat()->fail();
-            return true;
+            if (is_true) {
+              env.addWarning("model inconsistency detected");
+              env.flat()->fail();
+            } else if (is_false) {
+              CollectDecls cd(env.vo,deletedVarDecls,ii);
+              topDown(cd,c);
+              ii->remove();
+              return true;
+            } else {
+              VarDeclI* vdi = ii->cast<VarDeclI>();
+              vdi->e()->ti()->domain(constants().lit_false);
+              pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+              return true;
+            }
           case OptimizeRegistry::CS_ENTAILED:
-          {
-            CollectDecls cd(env.vo,deletedVarDecls,ii);
-            topDown(cd,c);
-            ii->remove();
-            return true;
-          }
+            if (is_true) {
+              CollectDecls cd(env.vo,deletedVarDecls,ii);
+              topDown(cd,c);
+              ii->remove();
+              return true;
+            } else if (is_false) {
+              env.addWarning("model inconsistency detected");
+              env.flat()->fail();
+            } else {
+              VarDeclI* vdi = ii->cast<VarDeclI>();
+              vdi->e()->ti()->domain(constants().lit_true);
+              pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+              return true;
+            }
           case OptimizeRegistry::CS_REWRITE:
           {
             CollectDecls cd(env.vo,deletedVarDecls,ii);

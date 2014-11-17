@@ -55,11 +55,11 @@ namespace MiniZinc {
       if (coeffs.size()==0) {
         bool failed;
         if (c->id()==constants().ids.int_.lin_le) {
-          failed = (d <= eval_int(c->args()[2]));
+          failed = (d > eval_int(c->args()[2]));
         } else if (c->id()==constants().ids.int_.lin_eq) {
-          failed = (d == eval_int(c->args()[2]));
-        } else {
           failed = (d != eval_int(c->args()[2]));
+        } else {
+          failed = (d == eval_int(c->args()[2]));
         }
         if (failed) {
           return OptimizeRegistry::CS_FAILED;
