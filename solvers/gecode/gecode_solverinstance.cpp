@@ -477,40 +477,25 @@ namespace MiniZinc {
     return ia;
   }
   
+  
+  class GecodeRangeIter {
+  public:
+    IntSetRanges& isr;
+    GecodeRangeIter(IntSetRanges& isr0) : isr(isr0) {}
+    int min(void) const { return isr.min().toInt(); }
+    int max(void) const { return isr.max().toInt(); }
+    int width(void) const { return isr.width().toInt(); }
+    bool operator() (void) { return isr(); }
+    void operator++ (void) { ++isr; }
+  };
+  
   Gecode::IntSet 
   GecodeSolverInstance::arg2intset(Expression* arg) {
-    SetLit* sl = NULL;
-    if(Id* id = arg->dyn_cast<Id>()) {
-        sl = id->decl()->e()->cast<SetLit>();
-    } else if(SetLit* s = arg->dyn_cast<SetLit>()) {
-        sl = s;
-    } else if(BinOp* b = arg->dyn_cast<BinOp>()) {
-        sl = new SetLit(arg->loc(), IntSetVal::a(getNumber<long long int>(b->lhs()),
-                                                  getNumber<long long int>(b->rhs())));
-    } else {
-        std::stringstream ssm; ssm << "Invalid argument in arg2intset: " << *arg;
-        ssm << ". Expected Id, SetLit or BinOp.";
-        throw new InternalError(ssm.str());
-    }
-    IntSet d;
-    ASTExprVec<Expression> v = sl->v();
-    Region re(*this->_current_space);
-    if(v.size() > 0) {
-        int* is = re.alloc<int>(static_cast<unsigned long int>(v.size()));
-        for(int i=0; i<v.size(); i++)
-            is[i] = v[i]->cast<IntLit>()->v().toInt();
-        d = IntSet(is, v.size());
-    } else {
-        int card = sl->isv()->card().toInt();
-        int* is = re.alloc<int>(static_cast<unsigned long int>(card));
-        int idx =0;
-        IntSetRanges isv = IntSetRanges(sl->isv());
-        for(; isv();++isv) {
-            for(int i=isv.min().toInt(); i<=isv.max().toInt();i++, idx++)
-                is[idx] = i;
-        }
-        d = IntSet(is, card);
-    }
+    GCLock lock;
+    IntSetVal* isv = eval_intset(arg);
+    IntSetRanges isr(isv);
+    GecodeRangeIter isr_g(isr);
+    IntSet d(isr_g);
     return d;
    }
   
