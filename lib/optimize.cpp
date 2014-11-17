@@ -650,7 +650,7 @@ namespace MiniZinc {
           
         }
       } else {
-        std::vector<Call*> rewrite;
+        Call* rewrite = NULL;
         GCLock lock;
         switch (OptimizeRegistry::registry().process(env, ii, c, rewrite)) {
           case OptimizeRegistry::CS_NONE:
@@ -672,17 +672,14 @@ namespace MiniZinc {
           {
             CollectDecls cd(env.vo,deletedVarDecls,ii);
             topDown(cd,c);
-            assert(rewrite.size() > 0);
+            assert(rewrite != NULL);
             if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
-              ci->e(rewrite[0]);
+              ci->e(rewrite);
             } else {
-              ii->cast<VarDeclI>()->e()->e(rewrite[0]);
+              ii->cast<VarDeclI>()->e()->e(rewrite);
             }
             CollectOccurrencesE ce(env.vo,ii);
-            topDown(ce,rewrite[0]);
-            for (unsigned int i=1; i<rewrite.size(); i++) {
-              env.flat_addItem(new ConstraintI(Location().introduce(), rewrite[i]));
-            }
+            topDown(ce,rewrite);
             return true;
           }
         }

@@ -21,7 +21,7 @@ namespace MiniZinc {
   }
   
   OptimizeRegistry::ConstraintStatus
-  OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i, MiniZinc::Call* c, std::vector<Call*>& rewrite) {
+  OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i, MiniZinc::Call* c, Call*& rewrite) {
     ASTStringMap<optimizer>::t::iterator it = _m.find(c->id());
     if (it != _m.end()) {
       return it->second(env,i,c,rewrite);
@@ -39,7 +39,7 @@ namespace MiniZinc {
     
     /// TODO: optimizer must be able to rewrite and delete constraint
     
-    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, std::vector<Call*>& rewrite) {
+    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Call*& rewrite) {
       ArrayLit* al_c = eval_array_lit(c->args()[0]);
       std::vector<IntVal> coeffs(al_c->v().size());
       for (unsigned int i=0; i<al_c->v().size(); i++) {
@@ -73,7 +73,7 @@ namespace MiniZinc {
         std::vector<Expression*> args(2);
         args[0] = x[0](); args[1] = x[1]();
         Call* c = new Call(Location(), constants().ids.int_.eq, args);
-        rewrite.push_back(c);
+        rewrite = c;
         return OptimizeRegistry::CS_REWRITE;
       } else
         if (coeffs.size() < al_c->v().size()) {
@@ -96,7 +96,7 @@ namespace MiniZinc {
       return OptimizeRegistry::CS_OK;
     }
  
-    OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, std::vector<Call*>& rewrite) {
+    OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Call*& rewrite) {
       if (c->args()[0]->isa<IntLit>()) {
         IntVal idx = eval_int(c->args()[0]);
         ArrayLit* al = eval_array_lit(c->args()[1]);
@@ -105,7 +105,7 @@ namespace MiniZinc {
         args[0] = result;
         args[1] = c->args()[2];
         Call* eq = new Call(Location(),constants().ids.int_.eq,args);
-        rewrite.push_back(eq);
+        rewrite = eq;
         return OptimizeRegistry::CS_REWRITE;
       }
       return OptimizeRegistry::CS_OK;

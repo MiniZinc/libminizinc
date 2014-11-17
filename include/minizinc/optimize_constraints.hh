@@ -20,13 +20,13 @@ namespace MiniZinc {
   class OptimizeRegistry {
   public:
     enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
-    typedef ConstraintStatus (*optimizer) (EnvI& env, Item* i, Call* c, std::vector<Call*>& rewrite);
+    typedef ConstraintStatus (*optimizer) (EnvI& env, Item* i, Call* c, Call*& rewrite);
   protected:
     ASTStringMap<optimizer>::t _m;
   public:
     
     void reg(const ASTString& call, optimizer);
-    ConstraintStatus process(EnvI& env, Item* i, Call* c, std::vector<Call*>& rewrite);
+    ConstraintStatus process(EnvI& env, Item* i, Call* c, Call*& rewrite);
     
     static OptimizeRegistry& registry(void);
   };
