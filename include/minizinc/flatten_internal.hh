@@ -167,6 +167,7 @@ namespace MiniZinc {
     static ASTString id_eq(void) { return constants().ids.int_.eq; }
     typedef IntBounds Bounds;
     static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
+    static bool finite(const IntVal& v) { return v.isFinite(); }
     static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
     typedef IntSetVal* Domain;
     static Domain eval_domain(Expression* e) { return eval_intset(e); }
@@ -267,6 +268,7 @@ namespace MiniZinc {
     static ASTString id_eq(void) { return constants().ids.float_.eq; }
     typedef FloatBounds Bounds;
     static bool finite(const FloatBounds& ib) { return true; }
+    static bool finite(const FloatVal&) { return true; }
     static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
     typedef BinOp* Domain;
     static Domain eval_domain(Expression* e) {

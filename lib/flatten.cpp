@@ -1386,8 +1386,12 @@ namespace MiniZinc {
       ka = vars[0];
     } else {
       std::vector<Expression*> coeffs_e(coeffs.size());
-      for (unsigned int i=coeffs.size(); i--;)
+      for (unsigned int i=coeffs.size(); i--;) {
+        if (!LinearTraits<Lit>::finite(coeffs[i])) {
+          throw FlatteningError(env,e0->loc(), "unbounded coefficient in linear expression");
+        }
         coeffs_e[i] = new Lit(e0->loc(),coeffs[i]);
+      }
       std::vector<Expression*> vars_e(vars.size());
       for (unsigned int i=vars.size(); i--;)
         vars_e[i] = vars[i]();
