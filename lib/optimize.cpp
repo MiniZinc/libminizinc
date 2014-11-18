@@ -104,6 +104,8 @@ namespace MiniZinc {
   void CollectOccurrencesI::vConstraintI(ConstraintI* ci) {
     CollectOccurrencesE ce(vo,ci);
     topDown(ce,ci->e());
+    for (ExpressionSetIter it = ci->e()->ann().begin(); it != ci->e()->ann().end(); ++it)
+      topDown(ce, *it);
   }
   void CollectOccurrencesI::vSolveI(SolveI* si) {
     CollectOccurrencesE ce(vo,si);

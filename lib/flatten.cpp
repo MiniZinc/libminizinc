@@ -216,16 +216,16 @@ namespace MiniZinc {
   void EnvI::flat_addItem(Item* i) {
     _flat->addItem(i);
     Expression* toAnnotate = NULL;
+    Expression* toAdd = NULL;
     switch (i->iid()) {
       case Item::II_VD:
       {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
-        CollectOccurrencesE ce(vo,vd);
-        topDown(ce,vd->e());
-      }
+        toAdd = vd->e();
         break;
+      }
       case Item::II_CON:
       {
         ConstraintI* ci = i->cast<ConstraintI>();
@@ -234,10 +234,9 @@ namespace MiniZinc {
           addWarning("model inconsistency detected");
           _flat->fail();
         }
-        CollectOccurrencesE ce(vo,ci);
-        topDown(ce,ci->e());
-      }
+        toAdd = ci->e();
         break;
+      }
       case Item::II_SOL:
       {
         SolveI* si = i->cast<SolveI>();
@@ -245,15 +244,14 @@ namespace MiniZinc {
         topDown(ce,si->e());
         for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it)
           topDown(ce,*it);
-      }
         break;
+      }
       case Item::II_OUT:
       {
         OutputI* si = i->cast<OutputI>();
-        CollectOccurrencesE ce(vo,si);
-        topDown(ce,si->e());
-      }
+        toAdd = si->e();
         break;
+      }
       default:
         break;
     }
@@ -266,6 +264,10 @@ namespace MiniZinc {
             toAnnotate->addAnnotation(ee_ann.r());
         }
       }
+    }
+    if (toAdd) {
+      CollectOccurrencesE ce(vo,i);
+      topDown(ce,toAdd);
     }
   }
   void EnvI::vo_add_exp(VarDecl* vd) {
