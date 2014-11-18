@@ -3803,7 +3803,8 @@ namespace MiniZinc {
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
                 VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
-                ee = flat_exp(env, nctx, c, NULL, b_b);
+                VarDecl* r_r = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
+                ee = flat_exp(env, nctx, c, r_r, b_b);
                 cs.push_back(ee);
                 ee.b = ee.r;
                 cs.push_back(ee);
