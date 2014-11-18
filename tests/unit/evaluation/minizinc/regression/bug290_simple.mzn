@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Simplified regression test for bug #290: this model caused a self-assignment
 % to be created for one of the introduced variables.

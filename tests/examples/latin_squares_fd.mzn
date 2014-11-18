@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % latin_squares_fd.mzn
 % vim: ft=zinc ts=4 sw=4 et tw=0
 % Author: Peter Stuckey

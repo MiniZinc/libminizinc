@@ -1,6 +1,7 @@
 % Test string comparison.
 %
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 array [1..6] of var 1..3: xs;
 

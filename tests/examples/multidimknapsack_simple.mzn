@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %------------------------------------------------------------------------------%
 % The classical 0/1 multidimensional knapsack problem.
 %

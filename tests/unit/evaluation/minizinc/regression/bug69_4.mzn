@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % DISABLED ON mzn_cd_fd
 % A regression test for G12 bug #69.
 %

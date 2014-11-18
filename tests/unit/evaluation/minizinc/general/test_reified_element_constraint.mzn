@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 array [1..3] of var 1..10: a;
 var bool: b;
 var 4..6: i;

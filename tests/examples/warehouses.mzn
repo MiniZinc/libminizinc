@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %-----------------------------------------------------------------------------
 % Warehouse allocation
 % (Problem 034 in CSPLib)

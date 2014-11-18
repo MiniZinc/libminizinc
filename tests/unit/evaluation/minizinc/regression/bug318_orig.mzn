@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Regression test for bug #318: this model as causing mzn2fzn to abort because
 % the second argument of the element constraint below wasn't flat by the

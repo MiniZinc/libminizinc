@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % This is a regression test for a series of problems that caused
 % stack overflows in mzn2fzn r13357 and before.
