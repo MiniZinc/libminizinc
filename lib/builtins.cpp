@@ -717,7 +717,7 @@ namespace MiniZinc {
         max = std::max(max, ib.u);
       }
       array_lb = std::max(array_lb, min);
-      array_ub = std::max(array_ub, max);
+      array_ub = std::min(array_ub, max);
       foundBounds = true;
     }
   b_array_lb_int_done:
