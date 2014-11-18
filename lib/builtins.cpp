@@ -1113,11 +1113,10 @@ namespace MiniZinc {
     return al;
   }
   
-  std::string show(Expression* e) {
+  std::string show(Expression* exp) {
     std::ostringstream oss;
     GCLock lock;
-    e = follow_id(e);
-    e = eval_par(e);
+    Expression* e = eval_par(exp);
     if (e->type().isvar()) {
       Printer p(oss,0,false);
       p.print(e);
