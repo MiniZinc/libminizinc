@@ -464,12 +464,34 @@ namespace MiniZinc {
     
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-      if (envi.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+      if (envi.vo.occurrences(cur) == 0) {
         IdMap<int>::iterator cur_idx = envi.vo.idx.find(cur->id());
         if (cur_idx != envi.vo.idx.end() && !m[cur_idx->second]->removed()) {
-          CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-          topDown(cd,cur->e());
-          m[cur_idx->second]->remove();
+          if (isOutput(cur)) {
+            Expression* val = NULL;
+            if (cur->type().isbool() && cur->ti()->domain()) {
+              val = cur->ti()->domain();
+            } else if (cur->type().isint()) {
+              if (cur->e() && cur->e()->isa<IntLit>()) {
+                val = cur->e();
+              } else if (cur->ti()->domain() && cur->ti()->domain()->isa<SetLit>() &&
+                         cur->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
+                         cur->ti()->domain()->cast<SetLit>()->isv()->min()==cur->ti()->domain()->cast<SetLit>()->isv()->max()) {
+                val = new IntLit(Location().introduce(),cur->ti()->domain()->cast<SetLit>()->isv()->min());
+              }
+            }
+            if (val) {
+              VarDecl* vd_out = (*envi.output)[envi.output_vo.find(cur)]->cast<VarDeclI>()->e();
+              vd_out->e(val);
+              CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+              topDown(cd,cur->e());
+              m[cur_idx->second]->remove();
+            }
+          } else {
+            CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+            topDown(cd,cur->e());
+            m[cur_idx->second]->remove();
+          }
         }
       }
     }
