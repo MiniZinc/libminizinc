@@ -4654,6 +4654,7 @@ namespace MiniZinc {
     }
     
     std::vector<VarDecl*> deletedVarDecls;
+    std::vector<VarDeclI*> removedItems;
     while (startItem <= endItem) {
       for (int i=startItem; i<=endItem; i++) {
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
@@ -4666,24 +4667,18 @@ namespace MiniZinc {
               GCLock lock;
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
-                CollectDecls cd(env.vo,deletedVarDecls,vdi);
-                topDown(cd,vdi->e()->e());
-                vdi->remove();
+                removedItems.push_back(vdi);
                 keptVariable = false;
               } else {
                 vdi->e()->e(NULL);
               }
               env.flat_addItem(ci);
             } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
-              CollectDecls cd(env.vo,deletedVarDecls,vdi);
-              topDown(cd,vdi->e()->e());
-              vdi->remove();
+              removedItems.push_back(vdi);
               keptVariable = false;
             }
           } else {
-            CollectDecls cd(env.vo,deletedVarDecls,vdi);
-            topDown(cd,vdi->e()->e());
-            vdi->remove();
+            removedItems.push_back(vdi);
             keptVariable = false;
           }
         }
@@ -4748,18 +4743,7 @@ namespace MiniZinc {
           }
         }
       }
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            m[cur_idx->second]->remove();
-          }
-        }
-      }
-      
+
       // rewrite some constraints if there are redefinitions
       for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -4900,20 +4884,28 @@ namespace MiniZinc {
         }
       }
 
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            m[cur_idx->second]->remove();
-          }
-        }
-      }
-
       startItem = endItem+1;
       endItem = m.size()-1;
+    }
+
+    for (unsigned int i=0; i<removedItems.size(); i++) {
+      if (env.vo.occurrences(removedItems[i]->e())==0) {
+        CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
+        topDown(cd,removedItems[i]->e()->e());
+        removedItems[i]->remove();
+      }
+    }
+    
+    while (!deletedVarDecls.empty()) {
+      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+        IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+          CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+          topDown(cd,cur->e());
+          m[cur_idx->second]->remove();
+        }
+      }
     }
 
     // Add redefinitions for output variables that may have been redefined since createOutput
