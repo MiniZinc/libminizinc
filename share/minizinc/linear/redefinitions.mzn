@@ -105,11 +105,11 @@ predicate bool_le_reif(var bool: p, var bool: q, var bool: r) =
 
 
 predicate bool_lt(var bool: p, var bool: q) =
-    p /\ not q;
+    not p /\ q;
 
 
 predicate bool_lt_reif(var bool: p, var bool: q, var bool: r) =
-    (p /\ not q) <-> r;
+    (not p /\ q) <-> r;
 
 %-----------------------------------------------------------------------------%
 
