@@ -224,6 +224,7 @@ include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
