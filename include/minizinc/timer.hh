@@ -51,7 +51,7 @@ namespace MiniZinc {
 #ifdef _WIN32
       LARGE_INTEGER now;
       QueryPerformanceCounter(&now);
-      return (static_cast<double>(now.QuadPart-time.QuadPart) / freq.QuadPart) / 1000.0;
+      return (static_cast<double>(now.QuadPart-time.QuadPart) / freq.QuadPart) * 1000.0;
 #else
       timeval now;
       gettimeofday(&now, NULL);
