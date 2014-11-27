@@ -1,5 +1,4 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
 
 % Regression test for a problem in mzn2fzn 1.2 where log/2
 % was not recognised as a built-in operation by the flattening
