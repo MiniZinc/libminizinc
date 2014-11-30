@@ -585,6 +585,7 @@ namespace MiniZinc {
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+          id->decl()->ti()->setComputedDomain(false);
         } else {
           id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb,IntVal::infinity)));
         }
@@ -602,6 +603,7 @@ namespace MiniZinc {
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+          id->decl()->ti()->setComputedDomain(false);
         } else {
           id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity, ub)));
         }
@@ -632,6 +634,7 @@ namespace MiniZinc {
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
             IntSetVal* newibv = IntSetVal::ai(i);
             id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+            id->decl()->ti()->setComputedDomain(false);
           } else {
             id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
           }
