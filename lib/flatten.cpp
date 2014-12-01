@@ -3336,6 +3336,12 @@ namespace MiniZinc {
         case UOT_MINUS:
           {
             GC::lock();
+            if (UnOp* uo_inner = uo->e()->dyn_cast<UnOp>()) {
+              if (uo_inner->op()==UOT_MINUS) {
+                ret = flat_exp(env,ctx,uo_inner->e(),r,b);
+                break;
+              }
+            }
             Expression* zero;
             if (uo->e()->type().bt()==Type::BT_INT)
               zero = new IntLit(Location().introduce(),0);
