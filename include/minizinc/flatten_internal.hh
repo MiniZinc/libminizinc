@@ -79,11 +79,17 @@ namespace MiniZinc {
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
     std::vector<std::string> warnings;
+    FlatteningOptions fopts;
+    unsigned int pathUse;
   protected:
     Map map;
     Model* _flat;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef> pathMap;
+    UNORDERED_NAMESPACE::unordered_map<std::string, int> filenameMap;
+    unsigned int maxPathDepth;
+
   public:
     EnvI(Model* orig0);
     ~EnvI(void);
@@ -99,7 +105,11 @@ namespace MiniZinc {
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+
+    UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>& getPathMap() { return pathMap; }
+    void setMaps(EnvI& env);
     std::ostream& evalOutput(std::ostream& os);
   };
 

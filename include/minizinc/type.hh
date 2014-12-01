@@ -153,6 +153,7 @@ namespace MiniZinc {
     bool isvar(void) const { return _ti!=TI_PAR; }
     bool isvarbool(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_BOOL && _ot==OT_PRESENT; }
     bool isvarint(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_INT && _ot==OT_PRESENT; }
+    bool isvarfloat(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_FLOAT && _ot==OT_PRESENT; }
     bool issvar(void) const { return _ti==TI_SVAR; }
     bool ispar(void) const { return _ti==TI_PAR; }
     bool isopt(void) const { return _ot==OT_OPTIONAL; }

@@ -129,11 +129,164 @@ namespace MiniZinc {
            && !eval_bool(e);
   }  
 
+  void addMznPath(VarDecl* vd, EnvI& envi, std::string extra_data = "") {
+    if(envi.fopts.topLevelPathsOnly && vd->introduced())
+      return;
+
+    if(vd->type().dim() == 0 && !vd->type().isann()) {
+      std::string path;
+
+      std::stringstream ss;
+      if (!envi.dumpPath(ss, false))
+        return;
+
+      ss << extra_data;
+      ss << vd->loc().toString();
+      assert(!ss.str().empty());
+
+      path = ss.str();
+
+
+      UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>& pathMap = envi.getPathMap();
+      UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>::iterator it = pathMap.find(path);
+      if(it != pathMap.end()) {
+        //std::cerr << "AFTER: " << path << std::endl;
+        VarDecl* ovd = Expression::dyn_cast<VarDecl>(it->second());
+        if(ovd) {
+          if(!envi.fopts.collectVarPaths && envi.fopts.useVarPaths) {
+            IntVal intval;
+            FloatVal doubleval;
+            bool boolval;
+            if(ovd->ti()->domain() || ovd->e()) {
+              bool tighter = false;
+              bool fixed = false;
+
+              if(vd->type().isint()) {
+                IntBounds bounds    = compute_int_bounds(vd->id());
+                IntBounds oldbounds = compute_int_bounds(ovd->id());
+
+                if(bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
+                  if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+                    fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+                    if(fixed) {
+                      tighter = true;
+                      intval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+                      ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
+                    } else {
+                      IntSetVal* olddom = ovd->ti()->domain() ? eval_intset(ovd->ti()->domain()) : NULL;
+                      IntSetVal* newdom =  vd->ti()->domain() ? eval_intset( vd->ti()->domain()) : NULL;
+
+                      if(olddom) {
+                        if(!newdom) {
+                          tighter = true;
+                        } else {
+                          IntSetRanges oisr(olddom);
+                          IntSetRanges nisr(newdom);
+                          IntSetRanges nisr_card(newdom);
+
+                          Ranges::Inter<IntSetRanges, IntSetRanges> inter(oisr, nisr);
+
+                          if(Ranges::size(inter) < Ranges::size(nisr_card)) {
+                            IntSetRanges oisr_inter(olddom);
+                            IntSetRanges nisr_inter(newdom);
+                            Ranges::Inter<IntSetRanges, IntSetRanges> inter_card(oisr_inter, nisr_inter);
+                            tighter = true;
+                            ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::ai(inter_card)));
+                          }
+                        }
+                      }
+                    }
+                  }
+                } else {
+                  if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+                    tighter = true;
+                    fixed = oldbounds.u == oldbounds.l;
+                    if(fixed) {
+                      intval = oldbounds.u;
+                      ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
+                    }
+                  }
+                }
+              } else if(vd->type().isfloat()) {
+                FloatBounds bounds    = compute_float_bounds(vd->id());
+                FloatBounds oldbounds = compute_float_bounds(ovd->id());
+                if(bounds.valid) {
+                  if(oldbounds.valid) {
+                    fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+                    if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+                    tighter = fixed || (oldbounds.u - oldbounds.l < bounds.u - bounds.l);
+                  }
+                } else {
+                  if(oldbounds.valid) {
+                    tighter = true;
+                    fixed = oldbounds.u == oldbounds.l;
+                    if(fixed) doubleval = oldbounds.u;
+                  }
+                }
+              } else if(vd->type().isbool()) {
+                if(ovd->ti()->domain()) {
+                  fixed = tighter = true;
+                  boolval = eval_bool(ovd->ti()->domain());
+                } else {
+                  fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
+                  if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
+                }
+              }
+
+              if(tighter) {
+                //std::cerr << "addMznPath():\n"
+                //  << "\tpath  :\t" << path << "\n"
+                //  << "\toldvar:\t" << *ovd << "\n"
+                //  << "\tcurvar:\t" << *vd  << "\n";
+                vd->ti()->domain(copy(ovd->ti()->domain()));
+                envi.pathUse++;
+                if(vd->e() == NULL && fixed) {
+                  if(vd->ti()->type().isvarint()) {
+                    vd->type(Type::parint());
+                    vd->ti(new TypeInst(vd->loc(), Type::parint()));
+                    vd->e(new IntLit(vd->loc(), intval));
+                  } else if(vd->ti()->type().isvarfloat()) {
+                    vd->type(Type::parfloat());
+                    vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
+                    vd->e(new FloatLit(vd->loc(), doubleval));
+                  } else if(vd->ti()->type().isvarbool()) {
+                    vd->type(Type::parbool());
+                    vd->ti(new TypeInst(vd->loc(), Type::parbool()));
+                    vd->e(new BoolLit(vd->loc(), boolval));
+                  }
+                }
+
+                //std::cerr << "\tnewvar:\t" << *vd << "\n";
+//                std::vector<Expression*> args(1);
+//                std::stringstream ss;
+                //ss << "original: " << *ovd;
+                //args[0] = new StringLit(vd->loc(), ss.str());
+                //args[0] = new StringLit(vd->loc(), "addMznPath");
+                //args[0] = new StringLit(vd->loc(), path);
+                //Call* call = new Call(vd->loc(), constants().ann.doc_comment, args);
+                //call->type(Type::ann());
+                //vd->ann().add(call);
+
+              }
+            }
+          } else {
+            std::stringstream ss;
+            ss << "Variable introduction path clash between: " << *vd << " and " << *ovd << " with path: " << path;
+            throw FlatteningError(envi, vd->loc(), ss.str());
+          }
+        }
+      } else {
+        //std::cerr << "BEFORE: " << path << std::endl;
+        pathMap[path] = vd;
+      }
+    }
+  }
+
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -222,6 +375,10 @@ namespace MiniZinc {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
+
+        if(fopts.collectVarPaths || fopts.useVarPaths)
+          addMznPath(vd->e(), *this);
+
         CollectOccurrencesE ce(vo,vd);
         topDown(ce,vd->e());
       }
@@ -299,6 +456,12 @@ namespace MiniZinc {
     warnings.push_back(msg+"\n"+oss.str());
   }
   
+  void EnvI::setMaps(EnvI& env) {
+    pathMap = env.pathMap;
+    filenameMap = env.filenameMap;
+    maxPathDepth = env.maxPathDepth;
+  }
+
   class CallStackItem {
   public:
     EnvI& env;
@@ -349,10 +512,111 @@ namespace MiniZinc {
   Env::dumpErrorStack(std::ostream& os) {
     return e->dumpStack(os, true);
   }
-  std::ostream&
-  Env::evalOutput(std::ostream& os) {
-    return e->evalOutput(os);
+  
+  bool
+  EnvI::dumpPath(std::ostream& os, bool errStack) {
+    std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
+    if (stack.size() > maxPathDepth) {
+      if (fopts.useVarPaths)
+        return false;
+      maxPathDepth = stack.size();
+    }
+    int lastError = stack.size();
+
+    int curloc_l = -1;
+    std::string sep = ";";
+    
+    for (int i=lastError-1; i>=0; i--) {
+      Location loc = stack[i]->loc();
+      
+      int filenameId;
+      UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
+      if (findFilename == filenameMap.end()) {
+        if (fopts.useVarPaths)
+          return false;
+        filenameId = filenameMap.size();
+        filenameMap.insert(std::make_pair(loc.filename.str(), filenameMap.size()));
+      } else {
+        filenameId = findFilename->second;
+      }
+      
+      os << filenameId << '.' << loc.first_line << '.' << loc.first_column << '.' << loc.last_line << '.' << loc.last_column;
+      switch (stack[i]->eid()) {
+        case Expression::E_INTLIT:
+          os << "il:" << *stack[i];
+          break;
+        case Expression::E_FLOATLIT:
+          os << "fl:" << *stack[i];
+          break;
+        case Expression::E_SETLIT:
+          os << "sl:" << *stack[i];
+          break;
+        case Expression::E_BOOLLIT:
+          os << "bl:" << *stack[i];
+          break;
+        case Expression::E_STRINGLIT:
+          os << "stl:" << *stack[i];
+          break;
+        case Expression::E_ID:
+          os << "id";
+          break;
+        case Expression::E_ANON:
+          os << "anon";
+          break;
+        case Expression::E_ARRAYLIT:
+          os << "al";
+          break;
+        case Expression::E_ARRAYACCESS:
+          os << "aa";
+          break;
+        case Expression::E_COMP:
+        {
+          const Comprehension* cmp = stack[i]->cast<Comprehension>();
+          if (cmp->set())
+            os << "sc:";
+          else
+            os << "ac:";
+          for (unsigned int i=0; i<cmp->n_generators(); i++) {
+            for (unsigned int j=0; j<cmp->n_decls(i); j++) {
+              os << " " << cmp->decl(i, j)->id()->str() << "=" << *cmp->decl(i, j)->e();
+            }
+          }
+        }
+          break;
+        case Expression::E_ITE:
+          os << "ite";
+          break;
+        case Expression::E_BINOP:
+          os << "bin:" << stack[i]->cast<BinOp>()->opToString();
+          break;
+        case Expression::E_UNOP:
+          os << "un:" << stack[i]->cast<UnOp>()->opToString();
+          break;
+        case Expression::E_CALL:
+          os << "ca:" << stack[i]->cast<Call>()->id();
+          break;
+        case Expression::E_VARDECL:
+          os << "vd";
+          break;
+        case Expression::E_LET:
+          os << "l";
+          break;
+        case Expression::E_TI:
+          os << "ti";
+          break;
+        case Expression::E_TIID:
+          os << "ty";
+          break;
+        default:
+          assert(false);
+          os << "unknown expression (internal error)";
+          break;
+      }
+      os << sep;
+    }
+    return true;
   }
+
   std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {
     int lastError = 0;
@@ -456,6 +720,11 @@ namespace MiniZinc {
       }
     }
     return os;
+  }
+
+  std::ostream&
+  Env::evalOutput(std::ostream &os) {
+    return e->evalOutput(os);
   }
 
   std::ostream&
@@ -1063,7 +1332,8 @@ namespace MiniZinc {
           ArrayLit* al = new ArrayLit(Location().introduce(),nontrue);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location().introduce(),constants().ids.forall,args);
+
+          Call* ret = new Call(nontrue[0]->loc().introduce(),constants().ids.forall,args);
           ret->decl(env.orig->matchFn(ret));
           ret->type(ret->decl()->rtype(args));
           KeepAlive ka(ret);
@@ -1109,7 +1379,8 @@ namespace MiniZinc {
           ArrayLit* al = new ArrayLit(Location().introduce(),nonfalse);
           al->type(Type::varbool(1));
           args.push_back(al);
-          Call* ret = new Call(Location().introduce().introduce(),constants().ids.exists,args);
+
+          Call* ret = new Call(Location().introduce(),constants().ids.exists,args);
           ret->decl(env.orig->matchFn(ret));
           ret->type(ret->decl()->rtype(args));
           assert(ret->decl());
@@ -1529,6 +1800,7 @@ namespace MiniZinc {
       }
       return NULL;
     }
+
     static Val floor_div(Val v0, Val v1) { return v0 / v1; }
     static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
   };
@@ -1770,6 +2042,13 @@ namespace MiniZinc {
     VarDecl* nr = r;
     
     for (int i=0; i<ite->size(); i++) {
+
+      //std::stringstream ss;
+      //ss << "ite:" << i;
+      //StringLit* ite_iter = new StringLit(Location(), ss.str());
+      //KeepAlive ka(ite_iter);
+      //CallStackItem _csi(env, ite_iter);
+
       if (ite->e_if(i)->type()==Type::parbool()) {
         bool cond = eval_bool(ite->e_if(i));
         if (cond) {
@@ -2507,9 +2786,17 @@ namespace MiniZinc {
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
               nvd->introduced(vd->introduced());
+
+              CallStackItem csi(env, new IntLit(nvd->loc().introduce(), i));
+
               EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
               Id* id = root_vd.r()->cast<Id>();
-              elems[i] = id;
+
+              VarDecl* decl = id->decl();
+              if(decl->e())
+                elems[i] = decl->e();
+              else
+                elems[i] = id;
             }
             // After introducing variables for each array element, the original domain can be
             // set to "computed" (since it is a consequence of the individual variable domains)
@@ -2577,7 +2864,7 @@ namespace MiniZinc {
           throw InternalError("type of anonymous variable could not be inferred");
         }
         GCLock lock;
-        VarDecl* vd = new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), av->type()),
+        VarDecl* vd = new VarDecl(e->loc().introduce(), new TypeInst(Location().introduce(), av->type()),
                                   env.genId());
         ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
       }
@@ -3790,7 +4077,7 @@ namespace MiniZinc {
           {
             GCLock lock;
             std::vector<Expression*> e_args = toExpVec(args);
-            Call* cr_c = new Call(Location().introduce(),cid,e_args);
+            Call* cr_c = new Call(e->loc().introduce(),cid,e_args);
             decl = env.orig->matchFn(cr_c);
             if (decl==NULL)
               throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
@@ -4346,7 +4633,6 @@ namespace MiniZinc {
     topDown(_o, e);
   }
 
-  
   void copyOutput(EnvI& e) {
     struct CopyOutput : public EVisitor {
       EnvI& env;
@@ -4983,10 +5269,15 @@ namespace MiniZinc {
               ++domr;
               for (; domr(); ++domr) {
                 for (IntVal i=firstHole; i<domr.min(); i++) {
+
                   std::vector<Expression*> args(2);
                   args[0] = vdi->e()->id();
                   args[1] = new IntLit(Location().introduce(),i);
-                  Call* call = new Call(Location().introduce(),constants().ids.int_.ne,args);
+
+                  // Give distinct location to each int_ne introduced
+                  Location loc = vdi->e()->loc();
+                  loc.first_column += i.toInt();
+                  Call* call = new Call(loc.introduce(),constants().ids.int_.ne,args);
                   call->type(Type::varbool());
                   call->decl(env.orig->matchFn(call));
                   env.flat_addItem(new ConstraintI(Location().introduce(), call));
