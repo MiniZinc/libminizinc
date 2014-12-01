@@ -448,7 +448,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 <string_quote>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
-<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return INVALID_CHAR; }
+<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return yytext[0]; }
 
 `[A-Za-z][A-Za-z0-9_]*` {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
