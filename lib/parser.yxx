@@ -56,7 +56,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->err << location->filename << ":"
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
-  for (unsigned int i=0; i<location->first_column-1; i++)
+  for (int i=0; i<static_cast<int>(location->first_column)-1; i++)
     pp->err << " ";
   for (unsigned int i=location->first_column; i<=location->last_column; i++)
     pp->err << "^";
