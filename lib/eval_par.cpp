@@ -1134,12 +1134,15 @@ namespace MiniZinc {
         if (e->type().isint()) {
           IntVal v = eval_int(e);
           _bounds.push_back(Bounds(v,v));
+        } else if (e->type().isbool()) {
+          bool b = eval_bool(e);
+          _bounds.push_back(Bounds(b,b));
         } else {
           valid = false;
         }
         return false;
       } else {
-        return e->type().isint();
+        return e->type().isint() || e->type().isbool();
       }
     }
     /// Visit integer literal
