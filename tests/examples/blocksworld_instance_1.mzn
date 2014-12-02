@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % blocksworld_instance_1.mzn
 % vim: ft=zinc ts=4 sw=4 et tw=0
 

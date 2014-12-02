@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % Regression test extracted from examples/zinc/sonet.zinc.
 % (as processed by zinc2mzn).
 % The change in r7995 broke this, it was fixed in r8005, r8014-5.

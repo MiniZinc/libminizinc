@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <ctime>
 #include <iomanip>
 
 #include <minizinc/model.hh>
@@ -28,15 +27,15 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/timer.hh>
 
 using namespace MiniZinc;
 using namespace std;
 
-std::string stoptime(clock_t& start) {
+std::string stoptime(Timer& start) {
   std::ostringstream oss;
-  clock_t now = clock();
-  oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
-  start = now;
+  oss << std::setprecision(0) << std::fixed << start.ms() << " ms";
+  start.reset();
   return oss.str();
 }
 
@@ -56,8 +55,8 @@ int main(int argc, char** argv) {
   bool flag_werror = false;
   unsigned int flag_npasses = 1;
   
-  clock_t starttime = std::clock();
-  clock_t lasttime = std::clock();
+  Timer starttime;
+  Timer lasttime;
   
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -351,6 +350,7 @@ int main(int argc, char** argv) {
             if (flag_werror && env.warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
+            env.clearWarnings();
             Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -359,6 +359,12 @@ int main(int argc, char** argv) {
               if (flag_verbose)
                 std::cerr << "Optimizing ...";
               optimize(env);
+              for (unsigned int i=0; i<env.warnings().size(); i++) {
+                std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+              }
+              if (flag_werror && env.warnings().size() > 0) {
+                exit(EXIT_FAILURE);
+              }
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }

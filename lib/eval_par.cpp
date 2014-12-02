@@ -988,10 +988,30 @@ namespace MiniZinc {
         Id* id = e->cast<Id>();
         if (id->decl()==NULL)
           throw EvalError(e->loc(),"undefined identifier", id->v());
-        if (id->decl()->e()==NULL)
+        if (id->decl()->ti()->domain()) {
+          if (BoolLit* bl = id->decl()->ti()->domain()->dyn_cast<BoolLit>())
+            return bl;
+          if (id->decl()->ti()->type().isint()) {
+            if (SetLit* sl = id->decl()->ti()->domain()->dyn_cast<SetLit>()) {
+              if (sl->isv() && sl->isv()->min()==sl->isv()->max()) {
+                return new IntLit(Location(), sl->isv()->min());
+              }
+            }
+          } else if (id->decl()->ti()->type().isfloat()) {
+            if (BinOp* bo = id->decl()->ti()->domain()->dyn_cast<BinOp>()) {
+              if (bo->op()==BOT_DOTDOT && bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>()) {
+                if (bo->lhs()->cast<FloatLit>()->v() == bo->rhs()->cast<FloatLit>()->v()) {
+                  return bo->lhs();
+                }
+              }
+            }
+          }
+        }
+        if (id->decl()->e()==NULL) {
           return id;
-        else
+        } else {
           return eval_par(id->decl()->e());
+        }
       }
     case Expression::E_STRINGLIT:
       return e;

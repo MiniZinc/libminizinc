@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % A factory has three kinds of machines:
 % - input machines, where products enter the factory;

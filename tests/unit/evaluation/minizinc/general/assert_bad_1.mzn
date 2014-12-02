@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % Test assertions that should succeed.
 
 array [1..10] of int: a =

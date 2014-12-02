@@ -7,7 +7,7 @@ set (libminizinc_VERSION_MINOR 0)
 set (libminizinc_VERSION_PATCH "b4")
 
 if (ADDITIONAL_DATE_STRING)
-	set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
+  set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -135,46 +135,46 @@ add_custom_target(MZNParser echo "Creating parser")
 include(${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake)
 
 macro(MD5 filename md5sum)
-	file(READ "${filename}" RAW_MD5_FILE)
-	string(REGEX REPLACE "\r" "" STRIPPED_MD5_FILE "${RAW_MD5_FILE}")
-	string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
+  file(READ "${filename}" RAW_MD5_FILE)
+  string(REGEX REPLACE "\r" "" STRIPPED_MD5_FILE "${RAW_MD5_FILE}")
+  string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
 endmacro(MD5)
 
 find_program(FLEX_EXEC flex)
 if(FLEX_EXEC)
-	add_custom_command(
-		OUTPUT "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
-		DEPENDS "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-		COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-		)
-	set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
-	set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
+  add_custom_command(
+    OUTPUT "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+    DEPENDS "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+    COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+    )
+  set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
+  set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
 else(FLEX_EXEC)
-	MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
-	if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-		message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
-	endif()
-	set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
+  MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
+  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
+  endif()
+  set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
 endif(FLEX_EXEC)
 
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
-	add_custom_command(
-		OUTPUT "${PROJECT_BINARY_DIR}/parser.tab.cpp"	"${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
-		DEPENDS "${lexer_cpp}" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-		COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-		)
-	set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
-	set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
-	set(parser_hh "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh")
+  add_custom_command(
+    OUTPUT "${PROJECT_BINARY_DIR}/parser.tab.cpp"  "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+    DEPENDS "${lexer_cpp}" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+    COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+    )
+  set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
+  set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
+  set(parser_hh "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh")
 else(BISON_EXEC)
-	MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
-	if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
-		message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
-	endif()
-	include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
-	set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
-	set(parser_hh "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh")
+  MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
+  if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
+    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
+  endif()
+  include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
+  set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
+  set(parser_hh "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh")
 endif(BISON_EXEC)
 
 
@@ -199,6 +199,7 @@ lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
 lib/options.cpp
+lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/statistics.cpp
 lib/lexer.lxx
@@ -223,6 +224,7 @@ include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
+include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
@@ -230,10 +232,11 @@ include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
 include/minizinc/statistics.hh
+include/minizinc/stl_map_set.hh
+include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
-include/minizinc/stl_map_set.hh
 "${parser_hh}"
 )
 
@@ -346,28 +349,28 @@ INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
 option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
 
 if (BUILD_HTML_DOCUMENTATION)
-	add_custom_target(doc ALL
-		DEPENDS "mzn2doc"
-		WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-		COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2
-		--include-stdlib
-		--html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
-		--html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
-			--output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
-	)
-	INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
-	INSTALL(FILES
-		${PROJECT_SOURCE_DIR}/doc/html/style.css
-		${PROJECT_SOURCE_DIR}/doc/html/header.html
-		${PROJECT_SOURCE_DIR}/doc/html/footer.html
-		${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
-		DESTINATION doc/html)
+  add_custom_target(doc ALL
+    DEPENDS "mzn2doc"
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2
+    --include-stdlib
+    --html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
+    --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
+      --output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
+  )
+  FILE(COPY
+       ${PROJECT_SOURCE_DIR}/doc/html/style.css
+       ${PROJECT_SOURCE_DIR}/doc/html/header.html
+       ${PROJECT_SOURCE_DIR}/doc/html/footer.html
+       ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
+       DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(DIRECTORY include/minizinc
-DESTINATION include
-PATTERN config.hh.in EXCLUDE
+        DESTINATION include
+        PATTERN config.hh.in EXCLUDE
 )
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)

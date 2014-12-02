@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Regression test for a bug in mzn2fzn 1.2.  The optimisation pass was leaving
 % dangling references to variables it had "eliminated".  The symptom was the

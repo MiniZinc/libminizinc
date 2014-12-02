@@ -910,6 +910,23 @@ namespace MiniZinc {
     template<class T> const T* dyn_cast(void) const {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
+
+    /// Cast item to type \a T*
+    template<class T> static T* cast(Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a const T*
+    template<class T> static const T* cast(const Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a T* or NULL if types do not match
+    template<class T> static T* dyn_cast(Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
+    /// Cast item to type \a const T* or NULL if types do not match
+    template<class T> static const T* dyn_cast(const Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
     
     /// Check if item should be removed
     bool removed(void) const { return _flag_1; }
@@ -960,6 +977,14 @@ namespace MiniZinc {
     VarDecl* e(void) const { return _e; }
     /// Set expression
     void e(VarDecl* vd) { _e = vd; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Assign item
@@ -1003,6 +1028,14 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Set expression
     void e(Expression* e0) { _e = e0; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Solve item

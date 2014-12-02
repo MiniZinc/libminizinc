@@ -537,7 +537,7 @@ namespace MiniZinc {
           for (unsigned int i = 0; i < l.let().size(); i++) {
             const Expression* li = l.let()[i];
             if (!li->isa<VarDecl>())
-              os << "constraint";
+              os << "constraint ";
             p(li);
             if (i<l.let().size()-1)
               os << ", ";

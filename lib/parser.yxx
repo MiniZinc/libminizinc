@@ -11,10 +11,9 @@
 
 %pure-parser
 %parse-param {void *parm}
-%lex-param {void* YYLEX_PARAM}
+%lex-param {void* SCANNER}
 %{
-#define YYPARSE_PARAM parm
-#define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
+#define SCANNER static_cast<ParserState*>(parm)->yyscanner
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -56,7 +55,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->err << location->filename << ":"
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
-  for (unsigned int i=0; i<location->first_column-1; i++)
+  for (int i=0; i<static_cast<int>(location->first_column)-1; i++)
     pp->err << " ";
   for (unsigned int i=location->first_column; i<=location->last_column; i++)
     pp->err << "^";
@@ -466,62 +465,81 @@ namespace MiniZinc {
   @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
 }
 
-%token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
-%token <dValue> MZN_FLOAT_LITERAL
-%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_STRING_QUOTE_START MZN_STRING_QUOTE_MID MZN_STRING_QUOTE_END MZN_TI_IDENTIFIER MZN_DOC_COMMENT MZN_DOC_FILE_COMMENT
+%token <iValue> MZN_INTEGER_LITERAL "integer literal" MZN_BOOL_LITERAL "bool literal"
+%token <dValue> MZN_FLOAT_LITERAL "float literal"
+%token <sValue> MZN_IDENTIFIER "identifier" MZN_QUOTED_IDENTIFIER "quoted identifier" MZN_STRING_LITERAL "string literal"
+%token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
+%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
 
-%token MZN_VAR MZN_PAR MZN_SVAR
+%token MZN_VAR "var" MZN_PAR "par" MZN_SVAR "svar"
 
-%token MZN_ABSENT
-%token MZN_ANN
-%token MZN_ANNOTATION
-%token MZN_ANY
-%token MZN_ARRAY
-%token MZN_BOOL
-%token MZN_CASE
-%token MZN_CONSTRAINT
-%token MZN_DEFAULT 
-%token MZN_ELSE
-%token MZN_ELSEIF
-%token MZN_ENDIF
-%token MZN_ENUM
-%token MZN_FLOAT
-%token MZN_FUNCTION
-%token MZN_IF
-%token MZN_INCLUDE
-%token MZN_INFINITY
-%token MZN_INT
-%token MZN_LET
-%token MZN_LIST
-%token <bValue> MZN_MAXIMIZE
-%token <bValue> MZN_MINIMIZE
-%token MZN_OF
-%token MZN_OPT
-%token MZN_SATISFY
-%token MZN_OUTPUT
-%token MZN_PREDICATE
-%token MZN_RECORD
-%token MZN_SET
-%token MZN_SOLVE
-%token MZN_STRING
-%token MZN_TEST
-%token MZN_THEN
-%token MZN_TUPLE
-%token MZN_TYPE
-%token MZN_UNDERSCORE
-%token MZN_VARIANT_RECORD
-%token MZN_WHERE
+%token MZN_ABSENT "<>"
+%token MZN_ANN "ann"
+%token MZN_ANNOTATION "annotation"
+%token MZN_ANY "any"
+%token MZN_ARRAY "array"
+%token MZN_BOOL "bool"
+%token MZN_CASE "case"
+%token MZN_CONSTRAINT "constraint"
+%token MZN_DEFAULT "default"
+%token MZN_ELSE "else"
+%token MZN_ELSEIF "elseif"
+%token MZN_ENDIF "endif"
+%token MZN_ENUM "enum"
+%token MZN_FLOAT "float"
+%token MZN_FUNCTION "function"
+%token MZN_IF "if"
+%token MZN_INCLUDE "include"
+%token MZN_INFINITY "infinity"
+%token MZN_INT "int"
+%token MZN_LET "let"
+%token MZN_LIST "list"
+%token <bValue> MZN_MAXIMIZE "maximize"
+%token <bValue> MZN_MINIMIZE "minimize"
+%token MZN_OF "of"
+%token MZN_OPT "opt"
+%token MZN_SATISFY "satisfy"
+%token MZN_OUTPUT "output"
+%token MZN_PREDICATE "predicate"
+%token MZN_RECORD "record"
+%token MZN_SET "set"
+%token MZN_SOLVE "solve"
+%token MZN_STRING "string"
+%token MZN_TEST "test"
+%token MZN_THEN "then"
+%token MZN_TUPLE "tuple"
+%token MZN_TYPE "type"
+%token MZN_UNDERSCORE "_"
+%token MZN_VARIANT_RECORD "variant_record"
+%token MZN_WHERE "where"
 
-%token MZN_LEFT_BRACKET
-%token MZN_LEFT_2D_BRACKET
-%token MZN_RIGHT_BRACKET
-%token MZN_RIGHT_2D_BRACKET
-
-%token INVALID_CHAR
+%token MZN_LEFT_BRACKET "["
+%token MZN_LEFT_2D_BRACKET "[|"
+%token MZN_RIGHT_BRACKET "]"
+%token MZN_RIGHT_2D_BRACKET "|]"
 
 // Used to signal an error when parsing a MiniZinc file
 // that contains identifiers starting with _
 %token FLATZINC_IDENTIFIER
+
+%token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
+%token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
+
+%token END 0 "end of file"
+
+%token MZN_EQUIV "<->"
+%token MZN_IMPL "->" MZN_RIMPL "<-"
+%token MZN_OR "\\/" MZN_XOR "xor"
+%token MZN_AND "/\\"
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
+%token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
+%token MZN_DOTDOT ".."
+%token MZN_PLUS "+" MZN_MINUS "-"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_NOT "not"
+%token MZN_PLUSPLUS "++"
+%token MZN_COLONCOLON "::"
 
 %right PREC_ANNO
 %left MZN_EQUIV
@@ -539,19 +557,19 @@ namespace MiniZinc {
 %left MZN_QUOTED_IDENTIFIER
 %left MZN_COLONCOLON
 
-%token MZN_EQUIV_QUOTED
-%token MZN_IMPL_QUOTED MZN_RIMPL_QUOTED
-%token MZN_OR_QUOTED MZN_XOR_QUOTED
-%token MZN_AND_QUOTED
-%token MZN_LE_QUOTED MZN_GR_QUOTED MZN_LQ_QUOTED MZN_GQ_QUOTED MZN_EQ_QUOTED MZN_NQ_QUOTED
-%token MZN_IN_QUOTED MZN_SUBSET_QUOTED MZN_SUPERSET_QUOTED
-%token MZN_UNION_QUOTED MZN_DIFF_QUOTED MZN_SYMDIFF_QUOTED
-%token MZN_DOTDOT_QUOTED
-%token MZN_PLUS_QUOTED MZN_MINUS_QUOTED
-%token MZN_MULT_QUOTED MZN_DIV_QUOTED MZN_IDIV_QUOTED MZN_MOD_QUOTED MZN_INTERSECT_QUOTED
-%token MZN_NOT_QUOTED
-%token MZN_COLONCOLON_QUOTED
-%token MZN_PLUSPLUS_QUOTED
+%token MZN_EQUIV_QUOTED "'<->'"
+%token MZN_IMPL_QUOTED "'->'" MZN_RIMPL_QUOTED "'<-'"
+%token MZN_OR_QUOTED "'\\/'" MZN_XOR_QUOTED "'xor'"
+%token MZN_AND_QUOTED "'/\\'"
+%token MZN_LE_QUOTED "'<'" MZN_GR_QUOTED "'>'" MZN_LQ_QUOTED "'<='" MZN_GQ_QUOTED "'>='" MZN_EQ_QUOTED "'='" MZN_NQ_QUOTED "'!='"
+%token MZN_IN_QUOTED "'in'" MZN_SUBSET_QUOTED "'subset'" MZN_SUPERSET_QUOTED "'superset'"
+%token MZN_UNION_QUOTED "'union'" MZN_DIFF_QUOTED "'diff'" MZN_SYMDIFF_QUOTED "'symdiff'"
+%token MZN_DOTDOT_QUOTED "'..'"
+%token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
+%token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
+%token MZN_NOT_QUOTED "'not'"
+%token MZN_COLONCOLON_QUOTED "'::'"
+%token MZN_PLUSPLUS_QUOTED "'++'"
 
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
@@ -615,6 +633,7 @@ item_list_head:
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($4);
       }
+    | error ';' item
 
 doc_file_comments:
       MZN_DOC_FILE_COMMENT
@@ -639,11 +658,11 @@ semi_or_none : | ';'
 item : MZN_DOC_COMMENT item_tail
       { $$ = $2;
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (FunctionI* fi = $$->dyn_cast<FunctionI>()) {
+        if (FunctionI* fi = Item::dyn_cast<FunctionI>($$)) {
           if (pp->parseDocComments) {
             fi->ann().add(createDocComment(@1,$1));
           }
-        } else if (VarDeclI* vdi = $$->dyn_cast<VarDeclI>()) {
+        } else if (VarDeclI* vdi = Item::dyn_cast<VarDeclI>($$)) {
           if (pp->parseDocComments) {
             vdi->e()->addAnnotation(createDocComment(@1,$1));
           }
@@ -699,13 +718,13 @@ include_item :
 
 vardecl_item :
       ti_expr_and_id annotations
-      { if ($2) $1->addAnnotations(*$2);
+      { if ($1 && $2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
         delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->e($4);
-        if ($2) $1->addAnnotations(*$2);
+      { if ($1) $1->e($4);
+        if ($1 && $2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
         delete $2;
       }
@@ -723,17 +742,17 @@ constraint_item :
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
       { $$ = SolveI::sat(@$);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MINIMIZE expr
       { $$ = SolveI::min(@$,$4);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MAXIMIZE expr
       { $$ = SolveI::max(@$,$4);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
 
@@ -745,7 +764,7 @@ predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
                            Type::varbool()),*$3,$5);
-        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
@@ -753,7 +772,7 @@ predicate_item :
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
                            Type::parbool()),*$3,$5);
-        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
@@ -762,14 +781,14 @@ predicate_item :
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
       { $$ = new FunctionI(@$,$4,$2,*$5,$7);
-        if ($6) $$->cast<FunctionI>()->ann().add(*$6);
+        if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
         delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
       { $$ = new FunctionI(@$,$3,$1,*$5,$8);
-        if ($7) $$->cast<FunctionI>()->ann().add(*$7);
+        if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
         delete $7;
@@ -779,7 +798,7 @@ annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
         TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3->empty()) {
+        if ($3==NULL || $3->empty()) {
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
@@ -814,12 +833,12 @@ params_list : params_list_head comma_or_none
 params_list_head :
       ti_expr_and_id_or_anon
       { $$=new vector<VarDecl*>();
-        $1->toplevel(false);
-        $$->push_back($1); }
+        if ($1) $1->toplevel(false);
+        if ($$) $$->push_back($1); }
     | params_list_head ',' ti_expr_and_id_or_anon
       { $$=$1;
-        $3->toplevel(false);
-        $1->push_back($3); }
+        if ($3) $3->toplevel(false);
+        if ($1) $1->push_back($3); }
 
 comma_or_none : | ','
 
@@ -842,14 +861,14 @@ ti_expr_list_head :
       ti_expr
       { $$=new vector<TypeInst*>(); $$->push_back($1); }
     | ti_expr_list_head ',' ti_expr
-      { $$=$1; $1->push_back($3); }
+      { $$=$1; if ($1) $1->push_back($3); }
 
 ti_expr :
       base_ti_expr
     | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
       {
         $$ = $6;
-        $$->setRanges(*$3);
+        if ($$ && $3) $$->setRanges(*$3);
         delete $3;
       }
     | MZN_LIST MZN_OF base_ti_expr
@@ -857,7 +876,7 @@ ti_expr :
         $$ = $3;
         std::vector<TypeInst*> ti(1);
         ti[0] = new TypeInst(@$,Type::parint());
-        $$->setRanges(ti);
+        if ($$) $$->setRanges(ti);
       }
 
 base_ti_expr :
@@ -866,13 +885,15 @@ base_ti_expr :
       }
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
-        Type tt = $$->type();
-        tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        if ($2) {
+        if ($$ && $2) {
           Type tt = $$->type();
           tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
@@ -880,32 +901,40 @@ base_ti_expr :
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        Type tt = $$->type();
-        tt.ti(Type::TI_VAR);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ti(Type::TI_VAR);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
-        Type tt = $$->type();
-        tt.st(Type::ST_SET);
-        if ($1) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          if ($1) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        Type tt = $$->type();
-        tt.st(Type::ST_SET);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        Type tt = $$->type();
-        tt.ti(Type::TI_VAR);
-        tt.st(Type::ST_SET);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ti(Type::TI_VAR);
+          tt.st(Type::ST_SET);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
 
 opt_opt:
@@ -939,14 +968,14 @@ expr_list_head :
       expr
       { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
     | expr_list_head ',' expr
-      { $$=$1; $$->push_back($3); }
+      { $$=$1; if ($$) $$->push_back($3); }
 
 ///
 
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
@@ -982,10 +1011,10 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { if ($2->isa<IntLit>()) {
+      { if ($2 && $2->isa<IntLit>()) {
           $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
           $$ = $2;
-        } else if ($2->isa<FloatLit>()) {
+        } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
         } else {
@@ -998,7 +1027,7 @@ set_expr :
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
@@ -1064,17 +1093,17 @@ expr :
     | MZN_NOT expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_NOT, $2); }
     | MZN_PLUS expr %prec MZN_NOT
-      { if ($2->isa<IntLit>() || $2->isa<FloatLit>()) {
+      { if (($2 && $2->isa<IntLit>()) || ($2 && $2->isa<FloatLit>())) {
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
     | MZN_MINUS expr %prec MZN_NOT
-      { if ($2->isa<IntLit>()) {
-        $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
+      { if ($2 && $2->isa<IntLit>()) {
+          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
           $$ = $2;
-        } else if ($2->isa<FloatLit>()) {
+        } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
         } else {
@@ -1209,18 +1238,22 @@ simple_array_literal :
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
-      { $$=new ArrayLit(@$, *$2);
-        for (unsigned int i=1; i<$2->size(); i++)
-          if ((*$2)[i].size() != (*$2)[i-1].size())
-            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-        delete $2;
+      { if ($2) {
+          $$=new ArrayLit(@$, *$2);
+          for (unsigned int i=1; i<$2->size(); i++)
+            if ((*$2)[i].size() != (*$2)[i-1].size())
+              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+          delete $2;
+        }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
-      { $$=new ArrayLit(@$, *$2);
-        for (unsigned int i=1; i<$2->size(); i++)
-          if ((*$2)[i].size() != (*$2)[i-1].size())
-            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-        delete $2;
+      { if ($2) {
+          $$=new ArrayLit(@$, *$2);
+          for (unsigned int i=1; i<$2->size(); i++)
+            if ((*$2)[i].size() != (*$2)[i-1].size())
+              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+          delete $2;
+        }
       }
 
 simple_array_literal_2d_list :
@@ -1230,7 +1263,7 @@ simple_array_literal_2d_list :
         delete $1;
       }
     | simple_array_literal_2d_list '|' expr_list
-      { $$=$1; $$->push_back(*$3); delete $3; }
+      { $$=$1; if ($$) $$->push_back(*$3); delete $3; }
 
 simple_array_comp :
       MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
@@ -1244,9 +1277,11 @@ if_then_else_expr :
         std::vector<Expression*> iexps;
         iexps.push_back($2);
         iexps.push_back($4);
-        for (unsigned int i=0; i<$5->size(); i+=2) {
-          iexps.push_back((*$5)[i]);
-          iexps.push_back((*$5)[i+1]);
+        if ($5) {
+          for (unsigned int i=0; i<$5->size(); i+=2) {
+            iexps.push_back((*$5)[i]);
+            iexps.push_back((*$5)[i+1]);
+          }
         }
         $$=new ITE(@$, iexps,$7);
         delete $5;
@@ -1255,7 +1290,7 @@ if_then_else_expr :
 elseif_list :
       { $$=new std::vector<MiniZinc::Expression*>; }
     | elseif_list MZN_ELSEIF expr MZN_THEN expr
-      { $$=$1; $$->push_back($3); $$->push_back($5); }
+      { $$=$1; if ($$) { $$->push_back($3); $$->push_back($5); } }
 
 quoted_op :
       MZN_EQUIV_QUOTED
@@ -1341,11 +1376,11 @@ quoted_op_call :
         if (uot==-1)
           $$=NULL;
         else {
-          if (uot==UOT_PLUS && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
+          if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
-          } else if (uot==UOT_MINUS && $3->isa<IntLit>()) {
+          } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
             $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
-          } else if (uot==UOT_MINUS && $3->isa<FloatLit>()) {
+          } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
@@ -1359,7 +1394,7 @@ call_expr :
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
-        if ($3->second) {
+        if ($3==NULL || $3->second) {
           yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
           $$=NULL;
         } else {
@@ -1372,21 +1407,23 @@ call_expr :
       { 
         vector<Generator> gens;
         vector<ASTString> ids;
-        for (unsigned int i=0; i<$3->first.size(); i++) {
-          if (Id* id = $3->first[i]->dyn_cast<Id>()) {
-            ids.push_back(id->v());
-          } else {
-            if (BinOp* boe = $3->first[i]->dyn_cast<BinOp>()) {
-              Id* id = boe->lhs()->dyn_cast<Id>();
-              if (id && boe->op() == BOT_IN) {
-                ids.push_back(id->v());
-                gens.push_back(Generator(ids,boe->rhs()));
-                ids = vector<ASTString>();
+        if ($3) {
+          for (unsigned int i=0; i<$3->first.size(); i++) {
+            if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
+              ids.push_back(id->v());
+            } else {
+              if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
+                Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                if (id && boe->op() == BOT_IN) {
+                  ids.push_back(id->v());
+                  gens.push_back(Generator(ids,boe->rhs()));
+                  ids = vector<ASTString>();
+                } else {
+                  yyerror(&@3, parm, "illegal expression in generator call");
+                }
               } else {
                 yyerror(&@3, parm, "illegal expression in generator call");
               }
-            } else {
-              yyerror(&@3, parm, "illegal expression in generator call");
             }
           }
         }
@@ -1451,17 +1488,21 @@ let_vardecl_item_list :
       { $$=new vector<Expression*>; $$->push_back($1); }
     | constraint_item
       { $$=new vector<Expression*>;
-        ConstraintI* ce = $1->cast<ConstraintI>();
-        $$->push_back(ce->e());
-        ce->e(NULL);
+        if ($1) {
+          ConstraintI* ce = $1->cast<ConstraintI>();
+          $$->push_back(ce->e());
+          ce->e(NULL);
+        }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
       { $$=$1; $$->push_back($3); }
     | let_vardecl_item_list comma_or_semi constraint_item
       { $$=$1;
-        ConstraintI* ce = $3->cast<ConstraintI>();
-        $$->push_back(ce->e());
-        ce->e(NULL);
+        if ($3) {
+          ConstraintI* ce = $3->cast<ConstraintI>();
+          $$->push_back(ce->e());
+          ce->e(NULL);
+        }
       }
 
 comma_or_semi : ',' | ';'
@@ -1469,16 +1510,16 @@ comma_or_semi : ',' | ';'
 let_vardecl_item :
       ti_expr_and_id annotations
       { $$ = $1;
-        $$->toplevel(false);
-        if ($2) $$->addAnnotations(*$2);
+        if ($$) $$->toplevel(false);
+        if ($$ && $2) $$->addAnnotations(*$2);
         delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->e($4);
+      { if ($1) $1->e($4);
         $$ = $1;
-        $$->loc(@$);
-        $$->toplevel(false);
-        if ($2) $$->addAnnotations(*$2);
+        if ($$) $$->loc(@$);
+        if ($$) $$->toplevel(false);
+        if ($$ && $2) $$->addAnnotations(*$2);
         delete $2;
       }
 
@@ -1493,7 +1534,7 @@ ne_annotations :
         (*$$)[0] = $2;
       }
     | ne_annotations MZN_COLONCOLON expr_atom_head
-      { $$=$1; $$->push_back($3); }
+      { $$=$1; if ($$) $$->push_back($3); }
 
 id_or_quoted_op :
       MZN_IDENTIFIER
