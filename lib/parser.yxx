@@ -11,10 +11,9 @@
 
 %pure-parser
 %parse-param {void *parm}
-%lex-param {void* YYLEX_PARAM}
+%lex-param {void* SCANNER}
 %{
-#define YYPARSE_PARAM parm
-#define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
+#define SCANNER static_cast<ParserState*>(parm)->yyscanner
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -523,6 +522,9 @@ namespace MiniZinc {
 // that contains identifiers starting with _
 %token FLATZINC_IDENTIFIER
 
+%token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
+%token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
+
 %token END 0 "end of file"
 
 %token MZN_EQUIV "<->"
@@ -537,7 +539,6 @@ namespace MiniZinc {
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
-%token MZN_QUOTED_IDENTIFIER "quoted identifier"
 %token MZN_COLONCOLON "::"
 
 %right PREC_ANNO
@@ -657,11 +658,11 @@ semi_or_none : | ';'
 item : MZN_DOC_COMMENT item_tail
       { $$ = $2;
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (FunctionI* fi = $$->dyn_cast<FunctionI>()) {
+        if (FunctionI* fi = Item::dyn_cast<FunctionI>($$)) {
           if (pp->parseDocComments) {
             fi->ann().add(createDocComment(@1,$1));
           }
-        } else if (VarDeclI* vdi = $$->dyn_cast<VarDeclI>()) {
+        } else if (VarDeclI* vdi = Item::dyn_cast<VarDeclI>($$)) {
           if (pp->parseDocComments) {
             vdi->e()->addAnnotation(createDocComment(@1,$1));
           }
@@ -717,13 +718,13 @@ include_item :
 
 vardecl_item :
       ti_expr_and_id annotations
-      { if ($2) $1->addAnnotations(*$2);
+      { if ($1 && $2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
         delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->e($4);
-        if ($2) $1->addAnnotations(*$2);
+      { if ($1) $1->e($4);
+        if ($1 && $2) $1->addAnnotations(*$2);
         $$ = new VarDeclI(@$,$1);
         delete $2;
       }
@@ -741,17 +742,17 @@ constraint_item :
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
       { $$ = SolveI::sat(@$);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MINIMIZE expr
       { $$ = SolveI::min(@$,$4);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MAXIMIZE expr
       { $$ = SolveI::max(@$,$4);
-        if ($2) $$->cast<SolveI>()->ann().add(*$2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
 
@@ -763,7 +764,7 @@ predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
                            Type::varbool()),*$3,$5);
-        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
@@ -771,7 +772,7 @@ predicate_item :
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
       { $$ = new FunctionI(@$,$2,new TypeInst(@$,
                            Type::parbool()),*$3,$5);
-        if ($4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
@@ -780,14 +781,14 @@ predicate_item :
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
       { $$ = new FunctionI(@$,$4,$2,*$5,$7);
-        if ($6) $$->cast<FunctionI>()->ann().add(*$6);
+        if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
         delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
       { $$ = new FunctionI(@$,$3,$1,*$5,$8);
-        if ($7) $$->cast<FunctionI>()->ann().add(*$7);
+        if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
         delete $7;
@@ -797,7 +798,7 @@ annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
         TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3->empty()) {
+        if ($3==NULL || $3->empty()) {
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
@@ -832,12 +833,12 @@ params_list : params_list_head comma_or_none
 params_list_head :
       ti_expr_and_id_or_anon
       { $$=new vector<VarDecl*>();
-        $1->toplevel(false);
-        $$->push_back($1); }
+        if ($1) $1->toplevel(false);
+        if ($$) $$->push_back($1); }
     | params_list_head ',' ti_expr_and_id_or_anon
       { $$=$1;
-        $3->toplevel(false);
-        $1->push_back($3); }
+        if ($3) $3->toplevel(false);
+        if ($1) $1->push_back($3); }
 
 comma_or_none : | ','
 
@@ -860,14 +861,14 @@ ti_expr_list_head :
       ti_expr
       { $$=new vector<TypeInst*>(); $$->push_back($1); }
     | ti_expr_list_head ',' ti_expr
-      { $$=$1; $1->push_back($3); }
+      { $$=$1; if ($1) $1->push_back($3); }
 
 ti_expr :
       base_ti_expr
     | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
       {
         $$ = $6;
-        $$->setRanges(*$3);
+        if ($$ && $3) $$->setRanges(*$3);
         delete $3;
       }
     | MZN_LIST MZN_OF base_ti_expr
@@ -875,7 +876,7 @@ ti_expr :
         $$ = $3;
         std::vector<TypeInst*> ti(1);
         ti[0] = new TypeInst(@$,Type::parint());
-        $$->setRanges(ti);
+        if ($$) $$->setRanges(ti);
       }
 
 base_ti_expr :
@@ -884,13 +885,15 @@ base_ti_expr :
       }
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
-        Type tt = $$->type();
-        tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        if ($2) {
+        if ($$ && $2) {
           Type tt = $$->type();
           tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
@@ -898,32 +901,40 @@ base_ti_expr :
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        Type tt = $$->type();
-        tt.ti(Type::TI_VAR);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ti(Type::TI_VAR);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
-        Type tt = $$->type();
-        tt.st(Type::ST_SET);
-        if ($1) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          if ($1) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        Type tt = $$->type();
-        tt.st(Type::ST_SET);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        Type tt = $$->type();
-        tt.ti(Type::TI_VAR);
-        tt.st(Type::ST_SET);
-        if ($2) tt.ot(Type::OT_OPTIONAL);
-        $$->type(tt);
+        if ($$) {
+          Type tt = $$->type();
+          tt.ti(Type::TI_VAR);
+          tt.st(Type::ST_SET);
+          if ($2) tt.ot(Type::OT_OPTIONAL);
+          $$->type(tt);
+        }
       }
 
 opt_opt:
@@ -957,14 +968,14 @@ expr_list_head :
       expr
       { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
     | expr_list_head ',' expr
-      { $$=$1; $$->push_back($3); }
+      { $$=$1; if ($$) $$->push_back($3); }
 
 ///
 
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
@@ -1000,10 +1011,10 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { if ($2->isa<IntLit>()) {
+      { if ($2 && $2->isa<IntLit>()) {
           $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
           $$ = $2;
-        } else if ($2->isa<FloatLit>()) {
+        } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
         } else {
@@ -1016,7 +1027,7 @@ set_expr :
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON expr_atom_head
-      { $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
@@ -1082,17 +1093,17 @@ expr :
     | MZN_NOT expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_NOT, $2); }
     | MZN_PLUS expr %prec MZN_NOT
-      { if ($2->isa<IntLit>() || $2->isa<FloatLit>()) {
+      { if (($2 && $2->isa<IntLit>()) || ($2 && $2->isa<FloatLit>())) {
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
     | MZN_MINUS expr %prec MZN_NOT
-      { if ($2->isa<IntLit>()) {
-        $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
+      { if ($2 && $2->isa<IntLit>()) {
+          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
           $$ = $2;
-        } else if ($2->isa<FloatLit>()) {
+        } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
         } else {
@@ -1227,18 +1238,22 @@ simple_array_literal :
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
-      { $$=new ArrayLit(@$, *$2);
-        for (unsigned int i=1; i<$2->size(); i++)
-          if ((*$2)[i].size() != (*$2)[i-1].size())
-            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-        delete $2;
+      { if ($2) {
+          $$=new ArrayLit(@$, *$2);
+          for (unsigned int i=1; i<$2->size(); i++)
+            if ((*$2)[i].size() != (*$2)[i-1].size())
+              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+          delete $2;
+        }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
-      { $$=new ArrayLit(@$, *$2);
-        for (unsigned int i=1; i<$2->size(); i++)
-          if ((*$2)[i].size() != (*$2)[i-1].size())
-            yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-        delete $2;
+      { if ($2) {
+          $$=new ArrayLit(@$, *$2);
+          for (unsigned int i=1; i<$2->size(); i++)
+            if ((*$2)[i].size() != (*$2)[i-1].size())
+              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+          delete $2;
+        }
       }
 
 simple_array_literal_2d_list :
@@ -1248,7 +1263,7 @@ simple_array_literal_2d_list :
         delete $1;
       }
     | simple_array_literal_2d_list '|' expr_list
-      { $$=$1; $$->push_back(*$3); delete $3; }
+      { $$=$1; if ($$) $$->push_back(*$3); delete $3; }
 
 simple_array_comp :
       MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
@@ -1262,9 +1277,11 @@ if_then_else_expr :
         std::vector<Expression*> iexps;
         iexps.push_back($2);
         iexps.push_back($4);
-        for (unsigned int i=0; i<$5->size(); i+=2) {
-          iexps.push_back((*$5)[i]);
-          iexps.push_back((*$5)[i+1]);
+        if ($5) {
+          for (unsigned int i=0; i<$5->size(); i+=2) {
+            iexps.push_back((*$5)[i]);
+            iexps.push_back((*$5)[i+1]);
+          }
         }
         $$=new ITE(@$, iexps,$7);
         delete $5;
@@ -1273,7 +1290,7 @@ if_then_else_expr :
 elseif_list :
       { $$=new std::vector<MiniZinc::Expression*>; }
     | elseif_list MZN_ELSEIF expr MZN_THEN expr
-      { $$=$1; $$->push_back($3); $$->push_back($5); }
+      { $$=$1; if ($$) { $$->push_back($3); $$->push_back($5); } }
 
 quoted_op :
       MZN_EQUIV_QUOTED
@@ -1359,11 +1376,11 @@ quoted_op_call :
         if (uot==-1)
           $$=NULL;
         else {
-          if (uot==UOT_PLUS && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
+          if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
-          } else if (uot==UOT_MINUS && $3->isa<IntLit>()) {
+          } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
             $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
-          } else if (uot==UOT_MINUS && $3->isa<FloatLit>()) {
+          } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
@@ -1377,7 +1394,7 @@ call_expr :
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
-        if ($3->second) {
+        if ($3==NULL || $3->second) {
           yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
           $$=NULL;
         } else {
@@ -1390,21 +1407,23 @@ call_expr :
       { 
         vector<Generator> gens;
         vector<ASTString> ids;
-        for (unsigned int i=0; i<$3->first.size(); i++) {
-          if (Id* id = $3->first[i]->dyn_cast<Id>()) {
-            ids.push_back(id->v());
-          } else {
-            if (BinOp* boe = $3->first[i]->dyn_cast<BinOp>()) {
-              Id* id = boe->lhs()->dyn_cast<Id>();
-              if (id && boe->op() == BOT_IN) {
-                ids.push_back(id->v());
-                gens.push_back(Generator(ids,boe->rhs()));
-                ids = vector<ASTString>();
+        if ($3) {
+          for (unsigned int i=0; i<$3->first.size(); i++) {
+            if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
+              ids.push_back(id->v());
+            } else {
+              if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
+                Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                if (id && boe->op() == BOT_IN) {
+                  ids.push_back(id->v());
+                  gens.push_back(Generator(ids,boe->rhs()));
+                  ids = vector<ASTString>();
+                } else {
+                  yyerror(&@3, parm, "illegal expression in generator call");
+                }
               } else {
                 yyerror(&@3, parm, "illegal expression in generator call");
               }
-            } else {
-              yyerror(&@3, parm, "illegal expression in generator call");
             }
           }
         }
@@ -1469,17 +1488,21 @@ let_vardecl_item_list :
       { $$=new vector<Expression*>; $$->push_back($1); }
     | constraint_item
       { $$=new vector<Expression*>;
-        ConstraintI* ce = $1->cast<ConstraintI>();
-        $$->push_back(ce->e());
-        ce->e(NULL);
+        if ($1) {
+          ConstraintI* ce = $1->cast<ConstraintI>();
+          $$->push_back(ce->e());
+          ce->e(NULL);
+        }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
       { $$=$1; $$->push_back($3); }
     | let_vardecl_item_list comma_or_semi constraint_item
       { $$=$1;
-        ConstraintI* ce = $3->cast<ConstraintI>();
-        $$->push_back(ce->e());
-        ce->e(NULL);
+        if ($3) {
+          ConstraintI* ce = $3->cast<ConstraintI>();
+          $$->push_back(ce->e());
+          ce->e(NULL);
+        }
       }
 
 comma_or_semi : ',' | ';'
@@ -1487,16 +1510,16 @@ comma_or_semi : ',' | ';'
 let_vardecl_item :
       ti_expr_and_id annotations
       { $$ = $1;
-        $$->toplevel(false);
-        if ($2) $$->addAnnotations(*$2);
+        if ($$) $$->toplevel(false);
+        if ($$ && $2) $$->addAnnotations(*$2);
         delete $2;
       }
     | ti_expr_and_id annotations MZN_EQ expr
-      { $1->e($4);
+      { if ($1) $1->e($4);
         $$ = $1;
-        $$->loc(@$);
-        $$->toplevel(false);
-        if ($2) $$->addAnnotations(*$2);
+        if ($$) $$->loc(@$);
+        if ($$) $$->toplevel(false);
+        if ($$ && $2) $$->addAnnotations(*$2);
         delete $2;
       }
 
@@ -1511,7 +1534,7 @@ ne_annotations :
         (*$$)[0] = $2;
       }
     | ne_annotations MZN_COLONCOLON expr_atom_head
-      { $$=$1; $$->push_back($3); }
+      { $$=$1; if ($$) $$->push_back($3); }
 
 id_or_quoted_op :
       MZN_IDENTIFIER

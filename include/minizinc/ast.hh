@@ -910,6 +910,23 @@ namespace MiniZinc {
     template<class T> const T* dyn_cast(void) const {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
+
+    /// Cast item to type \a T*
+    template<class T> static T* cast(Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a const T*
+    template<class T> static const T* cast(const Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a T* or NULL if types do not match
+    template<class T> static T* dyn_cast(Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
+    /// Cast item to type \a const T* or NULL if types do not match
+    template<class T> static const T* dyn_cast(const Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
     
     /// Check if item should be removed
     bool removed(void) const { return _flag_1; }

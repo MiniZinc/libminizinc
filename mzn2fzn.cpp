@@ -330,6 +330,7 @@ int main(int argc, char** argv) {
             if (flag_werror && env.warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
+            env.clearWarnings();
             Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -338,6 +339,12 @@ int main(int argc, char** argv) {
               if (flag_verbose)
                 std::cerr << "Optimizing ...";
               optimize(env);
+              for (unsigned int i=0; i<env.warnings().size(); i++) {
+                std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+              }
+              if (flag_werror && env.warnings().size() > 0) {
+                exit(EXIT_FAILURE);
+              }
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }

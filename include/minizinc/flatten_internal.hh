@@ -183,7 +183,7 @@ namespace MiniZinc {
       return Ranges::equal(d1,d2);
     }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
-      return dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1);
+      return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1));
     }
     static bool domain_empty(Domain dom) { return dom->size()==0; }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
