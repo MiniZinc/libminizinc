@@ -524,6 +524,7 @@ namespace MiniZinc {
 
 %token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
 %token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
+%token MZN_UNTERMINATED_STRING "unterminated string"
 
 %token END 0 "end of file"
 
