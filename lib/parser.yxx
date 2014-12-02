@@ -523,6 +523,9 @@ namespace MiniZinc {
 // that contains identifiers starting with _
 %token FLATZINC_IDENTIFIER
 
+%token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
+%token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
+
 %token END 0 "end of file"
 
 %token MZN_EQUIV "<->"

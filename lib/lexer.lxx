@@ -41,15 +41,16 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
     yylloc->first_line = yylloc->last_line = parm->lineno; \
   }
 
-long long int strtointval(const char* s) {
-#ifdef HAVE_ATOLL
-  return atoll(s);
-#else
+bool strtointval(const char* s, long long int& v) {
   std::istringstream iss(s);
-  long long int v;
   iss >> v;
-  return v;
-#endif
+  return !iss.fail();
+}
+
+bool strtofloatval(const char* s, double& v) {
+  std::istringstream iss(s);
+  iss >> v;
+  return !iss.fail();
 }
 
 void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
@@ -171,22 +172,43 @@ char* bufferData(void* parm) {
 "false"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 [0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = strtointval(yytext); return MZN_INTEGER_LITERAL; }
+                    if (strtointval(yytext, yylval->iValue))
+                      return MZN_INTEGER_LITERAL;
+                    else
+                      return MZN_INVALID_INTEGER_LITERAL;
+                }
 0x[0-9A-Fa-f]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = strtointval(yytext); return MZN_INTEGER_LITERAL; }
+                    if (strtointval(yytext, yylval->iValue))
+                      return MZN_INTEGER_LITERAL;
+                    else
+                      return MZN_INVALID_INTEGER_LITERAL;
+                }
 0o[0-7]+        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = strtointval(yytext); return MZN_INTEGER_LITERAL; }
+                  if (strtointval(yytext, yylval->iValue))
+                    return MZN_INTEGER_LITERAL;
+                  else
+                    return MZN_INVALID_INTEGER_LITERAL;
+                }
 [0-9]+\.[0-9]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->dValue = strtod(yytext,NULL);
-                    return MZN_FLOAT_LITERAL; }
+                  if (strtofloatval(yytext, yylval->dValue))
+                  return MZN_FLOAT_LITERAL;
+                  else
+                  return MZN_INVALID_FLOAT_LITERAL;
+                }
 [0-9]+\.[0-9]+[Ee][+-]?[0-9]+  {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->dValue = strtod(yytext,NULL);
-                    return MZN_FLOAT_LITERAL; }
+                    if (strtofloatval(yytext, yylval->dValue))
+                      return MZN_FLOAT_LITERAL;
+                    else
+                      return MZN_INVALID_FLOAT_LITERAL;
+                  }
 [0-9]+[Ee][+-]?[0-9]+  {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->dValue = strtod(yytext,NULL);
-                    return MZN_FLOAT_LITERAL; }
+                    if (strtofloatval(yytext, yylval->dValue))
+                      return MZN_FLOAT_LITERAL;
+                    else
+                      return MZN_INVALID_FLOAT_LITERAL;
+                  }
 [:;|{},\[\]\.]    {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return *yytext; }
