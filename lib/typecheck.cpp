@@ -107,8 +107,6 @@ namespace MiniZinc {
   TopoSorter::run(Expression* e) {
     if (e==NULL)
       return;
-    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
-      run(*it);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -241,6 +239,8 @@ namespace MiniZinc {
       }
       break;
     }
+    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
+      run(*it);
   }
   
   KeepAlive addCoercion(Model* m, Expression* e, const Type& funarg_t) {
