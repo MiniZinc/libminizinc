@@ -537,7 +537,6 @@ namespace MiniZinc {
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
-%token MZN_QUOTED_IDENTIFIER "quoted identifier"
 %token MZN_COLONCOLON "::"
 
 %right PREC_ANNO
