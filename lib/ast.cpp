@@ -52,7 +52,8 @@ namespace MiniZinc {
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
     for (unsigned int i=0; i<ann.size(); i++)
-      _ann.add(ann[i]);
+      if (ann[i])
+        _ann.add(ann[i]);
   }
 
 
