@@ -754,11 +754,11 @@ namespace MiniZinc {
         VarDecl* vd = ts.checkId(i->id(),i->loc());
         if (vd->e())
           throw TypeError(i->loc(),"multiple assignment to the same variable");
-        TopoSorter::DeclMap::iterator decl = ts.env.find(vd->id());
-        TopoSorter::PosMap::iterator pi = ts.pos.find(decl->second.back());
+        TopoSorter::PosMap::iterator pi = ts.pos.find(vd);
         int tmp = pi->second;
         pi->second = -1;
         ts.run(i->e());
+        pi = ts.pos.find(vd);
         pi->second = tmp;
         i->decl(vd);
       }
