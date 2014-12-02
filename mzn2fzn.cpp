@@ -324,7 +324,6 @@ int main(int argc, char** argv) {
               std::cerr << "Flattening ...";
             Env env(m);
             try {
-              unsigned int npass = 0;
               std::vector<Pass*> passes;
               for(unsigned int i=1; i<flag_npasses; i++) {
                 FlatteningOptions pass_opts = fopts;
