@@ -223,20 +223,20 @@ include/minizinc/hash.hh
 include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
-include/minizinc/options.hh
 include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
+include/minizinc/options.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
 include/minizinc/statistics.hh
+include/minizinc/stl_map_set.hh
 include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
-include/minizinc/stl_map_set.hh
 "${parser_hh}"
 )
 
