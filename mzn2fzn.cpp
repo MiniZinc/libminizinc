@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  unsigned int flag_npasses = 1;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -118,6 +119,14 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       flag_output_base = argv[i];
+    } else if (string(argv[i])=="--npass") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      int passes = atoi(argv[i]);
+      if(passes > 0)
+        flag_npasses = passes;
     } else if (beginswith(string(argv[i]),"-o")) {
         string filename(argv[i]);
         if (filename.length() > 2) {
@@ -316,7 +325,18 @@ int main(int argc, char** argv) {
               std::cerr << "Flattening ...";
             Env env(m);
             try {
-              flatten(env,fopts);
+              unsigned int npass = 0;
+              std::vector<Pass*> passes;
+              for(unsigned int i=1; i<flag_npasses; i++)
+                passes.push_back(new CompilePass(fopts, globals_dir));
+
+              // Multi-pass optimisations
+              //if(flag_npasses > 1)
+              //  multiPassFlatten(env, includePaths, passes);
+
+              // Final compilation
+              flatten(env, fopts);
+
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;

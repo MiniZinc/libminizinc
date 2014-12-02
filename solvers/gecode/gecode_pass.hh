@@ -1,5 +1,8 @@
 
-#include <minizinc/pass.hh>
+#ifndef __MINIZINC_GECODE_PASS_HH__
+#define __MINIZINC_GECODE_PASS_HH__
+
+#include <minizinc/flatten.hh>
 
 namespace MiniZinc {
 
@@ -18,3 +21,5 @@ namespace MiniZinc {
   };
 
 }
+
+#endif

@@ -16,6 +16,9 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/parser.hh>
+#include <minizinc/typecheck.hh>
+#include <minizinc/builtins.hh>
 
 #include <minizinc/stl_map_set.hh>
 
@@ -23,6 +26,8 @@
 
 // temporary
 #include <minizinc/prettyprinter.hh>
+
+#include <fstream>
 
 namespace MiniZinc {
 
@@ -5048,7 +5053,81 @@ namespace MiniZinc {
     }
     return true;
   }
-  
+
+  IncludeI* update_include(IncludeI* inc, std::vector<std::string>& includes) {
+    std::string filename = inc->f().str();
+    std::vector<std::string> datafiles;
+
+    std::string full_filename;
+    for(unsigned int i=0; i<includes.size(); i++) {
+      std::string path = includes[i];
+      full_filename = path + '/' + filename;
+      std::ifstream fi(full_filename);
+      if(fi.is_open()) {
+        Model* inc_mod = parse(full_filename, datafiles, includes, true, true, std::cerr);
+        IncludeI* new_inc = new IncludeI(inc->loc(), full_filename);
+        new_inc->m(inc_mod);
+        return new_inc;
+      }
+    }
+    return NULL;
+  }
+
+  Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir) {
+    GC::lock();
+    CopyMap cm;
+    Model* m = e.model();
+    Model* new_mod = new Model();
+    new_mod->setFilename(m->filename().str());
+    new_mod->setFilepath(m->filepath().str());
+
+    for(Item* item : *m) {
+      if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
+        IncludeI* ninc = update_include(inc, includePaths);
+        if(ninc) new_mod->addItem(ninc);
+      } else {
+        new_mod->addItem(copy(cm,item));
+      }
+    }
+
+    std::vector<TypeError> typeErrors;
+    MiniZinc::typecheck(new_mod, typeErrors);
+    if (typeErrors.size() > 0) {
+      for (unsigned int i=0; i<typeErrors.size(); i++) {
+        std::cerr << std::endl;
+        std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+        std::cerr << typeErrors[i].loc() << std::endl;
+      }
+      exit(EXIT_FAILURE);
+    }
+    registerBuiltins(new_mod);
+
+    Env* fenv = new Env(new_mod);
+    fenv->envi().setMaps(e.envi());
+
+    GC::unlock();
+
+    return fenv;
+  }
+
+  void multiPassFlatten(Env& e, std::vector<std::string>& includePaths, std::vector<Pass*>& passes) {
+    Env* pre_env = &e;
+    for(unsigned int i=0; i<passes.size(); i++) {
+      std::string library = passes[i]->getLibrary();
+      FlatteningOptions& fopts = passes[i]->getFlatteningOptions();
+
+      pre_env = changeLibrary(*pre_env, includePaths, library);
+
+      flatten(*pre_env, fopts);
+      optimize(*pre_env);
+      oldflatzinc(*pre_env);
+
+      passes[i]->run(*pre_env);
+    }
+
+    e.envi().setMaps(pre_env->envi());
+  }
+
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
 
