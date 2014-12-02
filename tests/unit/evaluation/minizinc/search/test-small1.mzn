@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %% Check that the smallest first search complies with spec
 %%
 

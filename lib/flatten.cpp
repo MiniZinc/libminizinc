@@ -216,26 +216,27 @@ namespace MiniZinc {
   void EnvI::flat_addItem(Item* i) {
     _flat->addItem(i);
     Expression* toAnnotate = NULL;
+    Expression* toAdd = NULL;
     switch (i->iid()) {
       case Item::II_VD:
       {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
-        CollectOccurrencesE ce(vo,vd);
-        topDown(ce,vd->e());
-      }
+        toAdd = vd->e();
         break;
+      }
       case Item::II_CON:
       {
         ConstraintI* ci = i->cast<ConstraintI>();
         toAnnotate = ci->e();
-        if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v())
+        if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v()) {
           addWarning("model inconsistency detected");
-        CollectOccurrencesE ce(vo,ci);
-        topDown(ce,ci->e());
-      }
+          _flat->fail();
+        }
+        toAdd = ci->e();
         break;
+      }
       case Item::II_SOL:
       {
         SolveI* si = i->cast<SolveI>();
@@ -243,15 +244,14 @@ namespace MiniZinc {
         topDown(ce,si->e());
         for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it)
           topDown(ce,*it);
-      }
         break;
+      }
       case Item::II_OUT:
       {
         OutputI* si = i->cast<OutputI>();
-        CollectOccurrencesE ce(vo,si);
-        topDown(ce,si->e());
-      }
+        toAdd = si->e();
         break;
+      }
       default:
         break;
     }
@@ -264,6 +264,10 @@ namespace MiniZinc {
             toAnnotate->addAnnotation(ee_ann.r());
         }
       }
+    }
+    if (toAdd) {
+      CollectOccurrencesE ce(vo,i);
+      topDown(ce,toAdd);
     }
   }
   void EnvI::vo_add_exp(VarDecl* vd) {
@@ -602,6 +606,7 @@ namespace MiniZinc {
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+          id->decl()->ti()->setComputedDomain(false);
         } else {
           id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb,IntVal::infinity)));
         }
@@ -619,6 +624,7 @@ namespace MiniZinc {
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+          id->decl()->ti()->setComputedDomain(false);
         } else {
           id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity, ub)));
         }
@@ -649,6 +655,7 @@ namespace MiniZinc {
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
             IntSetVal* newibv = IntSetVal::ai(i);
             id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
+            id->decl()->ti()->setComputedDomain(false);
           } else {
             id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
           }
@@ -768,7 +775,53 @@ namespace MiniZinc {
         case Expression::E_TI:
           throw InternalError("unevaluated expression");
         case Expression::E_ARRAYLIT:
-          return e;
+          {
+            GCLock lock;
+            ArrayLit* al = e->cast<ArrayLit>();
+            /// TODO: review if limit of 10 is a sensible choice
+            if (al->v().size() <= 10)
+              return e;
+
+            std::vector<TypeInst*> ranges(al->dims());
+            for (unsigned int i=0; i<ranges.size(); i++) {
+              ranges[i] = new TypeInst(e->loc(),
+                                       Type(),
+                                       new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
+            }
+            ASTExprVec<TypeInst> ranges_v(ranges);
+            assert(!al->type().isbot());
+            Expression* domain = NULL;
+            if (al->v().size() > 0 && al->v()[0]->type().isint()) {
+              IntVal min = IntVal::infinity;
+              IntVal max = -IntVal::infinity;
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                IntBounds ib = compute_int_bounds(al->v()[i]);
+                if (!ib.valid) {
+                  min = -IntVal::infinity;
+                  max = IntVal::infinity;
+                  break;
+                }
+                min = std::min(min, ib.l);
+                max = std::max(max, ib.u);
+              }
+              if (min != -IntVal::infinity && max != IntVal::infinity) {
+                domain = new SetLit(Location().introduce(), IntSetVal::a(min,max));
+              }
+            }
+            TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,domain);
+            if (domain)
+              ti->setComputedDomain(true);
+            VarDecl* vd = new VarDecl(e->loc(),ti,env.genId(),al);
+            vd->introduced(true);
+            vd->flat(vd);
+            VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+            env.flat_addItem(ni);
+            EE ee(vd,NULL);
+            env.map_insert(al,ee);
+            env.map_insert(vd->e(),ee);
+            env.map_insert(vd->id(),ee);
+            return vd->id();
+          }
         case Expression::E_CALL:
           {
             if (e->type().isann())
@@ -809,7 +862,7 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                    env.flat()->fail();
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),ibv));
                   }
@@ -1281,258 +1334,6 @@ namespace MiniZinc {
     return NULL;
   }
   
-  class CmpExpIdx {
-  public:
-    std::vector<KeepAlive>& x;
-    CmpExpIdx(std::vector<KeepAlive>& x0) : x(x0) {}
-    bool operator ()(int i, int j) const {
-      if (Expression::equal(x[i](),x[j]()))
-        return false;
-      if (x[i]()->isa<Id>() && x[j]()->isa<Id>() &&
-          x[i]()->cast<Id>()->idn() != -1 &&
-          x[j]()->cast<Id>()->idn() != -1)
-        return x[i]()->cast<Id>()->idn() < x[j]()->cast<Id>()->idn();
-      return x[i]()<x[j]();
-    }
-  };
-
-  template<class Lit>
-  class LinearTraits {
-  };
-  template<>
-  class LinearTraits<IntLit> {
-  public:
-    typedef IntVal Val;
-    static Val eval(Expression* e) { return eval_int(e); }
-    static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
-      switch (bot) {
-        case BOT_LE:
-          callid = constants().ids.int_.lin_le;
-          coeff_sign = 1;
-          d += 1;
-          break;
-        case BOT_LQ:
-          callid = constants().ids.int_.lin_le;
-          coeff_sign = 1;
-          break;
-        case BOT_GR:
-          callid = constants().ids.int_.lin_le;
-          coeff_sign = -1;
-          d = -d+1;
-          break;
-        case BOT_GQ:
-          callid = constants().ids.int_.lin_le;
-          coeff_sign = -1;
-          d = -d;
-          break;
-        case BOT_EQ:
-          callid = constants().ids.int_.lin_eq;
-          coeff_sign = 1;
-          break;
-        case BOT_NQ:
-          callid = constants().ids.int_.lin_ne;
-          coeff_sign = 1;
-          break;
-        default: assert(false); break;
-      }
-    }
-    static ASTString id_eq(void) { return constants().ids.int_.eq; }
-    typedef IntBounds Bounds;
-    static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
-    static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
-    typedef IntSetVal* Domain;
-    static Domain eval_domain(Expression* e) { return eval_intset(e); }
-    static Expression* new_domain(Val v) { return new SetLit(Location().introduce(),IntSetVal::a(v,v)); }
-    static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location().introduce(),IntSetVal::a(v0,v1)); }
-    static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(),d); }
-    static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
-    static bool domain_equals(Domain dom, Val v) { return dom->size()==1 && dom->min(0)==v && dom->max(0)==v; }
-    static bool domain_equals(Domain dom1, Domain dom2) {
-      IntSetRanges d1(dom1);
-      IntSetRanges d2(dom2);
-      return Ranges::equal(d1,d2);
-    }
-    static bool domain_intersects(Domain dom, Val v0, Val v1) {
-      return dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1);
-    }
-    static bool domain_empty(Domain dom) { return dom->size()==0; }
-    static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
-      IntSetRanges dr(dom);
-      IntSetVal* ndomain;
-      switch (bot) {
-        case BOT_LE:
-          v -= 1;
-          // fall through
-        case BOT_LQ:
-        {
-          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::maxiter(dr,v);
-          ndomain = IntSetVal::ai(b);
-        }
-          break;
-        case BOT_GR:
-          v += 1;
-          // fall through
-        case BOT_GQ:
-        {
-          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::miniter(dr,v);
-          ndomain = IntSetVal::ai(b);
-        }
-          break;
-        case BOT_NQ:
-        {
-          Ranges::Const c(v,v);
-          Ranges::Diff<IntSetRanges,Ranges::Const> d(dr,c);
-          ndomain = IntSetVal::ai(d);
-        }
-          break;
-        default: assert(false); return NULL;
-      }
-      return ndomain;
-    }
-    static Domain intersect_domain(Domain dom, Val v0, Val v1) {
-      IntSetRanges dr(dom);
-      Ranges::Const c(v0,v1);
-      Ranges::Inter<IntSetRanges,Ranges::Const> inter(dr,c);
-      return IntSetVal::ai(inter);
-    }
-    static Val floor_div(Val v0, Val v1) {
-      return static_cast<long long int>(floor(static_cast<FloatVal>(v0.toInt()) / static_cast<FloatVal>(v1.toInt())));
-    }
-    static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
-  };
-  template<>
-  class LinearTraits<FloatLit> {
-  public:
-    typedef FloatVal Val;
-    static Val eval(Expression* e) { return eval_float(e); }
-    static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
-      switch (bot) {
-        case BOT_LE:
-          callid = constants().ids.float_.lin_lt;
-          coeff_sign = 1;
-          break;
-        case BOT_LQ:
-          callid = constants().ids.float_.lin_le;
-          coeff_sign = 1;
-          break;
-        case BOT_GR:
-          callid = constants().ids.float_.lin_lt;
-          coeff_sign = -1;
-          d = -d;
-          break;
-        case BOT_GQ:
-          callid = constants().ids.float_.lin_le;
-          coeff_sign = -1;
-          d = -d;
-          break;
-        case BOT_EQ:
-          callid = constants().ids.float_.lin_eq;
-          coeff_sign = 1;
-          break;
-        case BOT_NQ:
-          callid = constants().ids.float_.lin_ne;
-          coeff_sign = 1;
-          break;
-        default: assert(false); break;
-      }
-    }
-    static ASTString id_eq(void) { return constants().ids.float_.eq; }
-    typedef FloatBounds Bounds;
-    static bool finite(const FloatBounds& ib) { return true; }
-    static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
-    typedef BinOp* Domain;
-    static Domain eval_domain(Expression* e) {
-      BinOp* bo = e->cast<BinOp>();
-      assert(bo->op() == BOT_DOTDOT);
-      if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
-        return bo;
-      BinOp* ret = new BinOp(bo->loc(),eval_par(bo->lhs()),BOT_DOTDOT,eval_par(bo->rhs()));
-      ret->type(bo->type());
-      return ret;
-    }
-    static Expression* new_domain(Val v) {
-      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
-      ret->type(Type::parsetfloat());
-      return ret;
-    }
-    static Expression* new_domain(Val v0, Val v1) {
-      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v0),BOT_DOTDOT,new FloatLit(Location().introduce(),v1));
-      ret->type(Type::parsetfloat());
-      return ret;
-    }
-    static Expression* new_domain(Domain d) { return d; }
-    static bool domain_contains(Domain dom, Val v) {
-      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
-    }
-    static bool domain_intersects(Domain dom, Val v0, Val v1) {
-      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v1 && dom->rhs()->cast<FloatLit>()->v() >= v0);
-    }
-    static bool domain_equals(Domain dom, Val v) {
-      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
-    }
-    static bool domain_equals(Domain dom1, Domain dom2) {
-      if (dom1==dom2) return true;
-      if (dom1==NULL || dom2==NULL) return false;
-      return
-        dom1->lhs()->cast<FloatLit>()->v() == dom2->lhs()->cast<FloatLit>()->v() &&
-        dom1->rhs()->cast<FloatLit>()->v() == dom2->rhs()->cast<FloatLit>()->v();
-    }
-    static bool domain_empty(Domain dom) {
-      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
-    }
-    static Domain intersect_domain(Domain dom, Val v0, Val v1) {
-      if (dom) {
-        Val lb = dom->lhs()->cast<FloatLit>()->v();
-        Val ub = dom->rhs()->cast<FloatLit>()->v();
-        lb = std::max(lb,v0);
-        ub = std::min(ub,v1);
-        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),lb), BOT_DOTDOT, new FloatLit(Location().introduce(),ub));
-        d->type(Type::parsetfloat());
-        return d;
-      } else {
-        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),v0), BOT_DOTDOT, new FloatLit(Location().introduce(),v1));
-        d->type(Type::parsetfloat());
-        return d;
-      }
-    }
-    static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
-      if (dom) {
-        Val lb = dom->lhs()->cast<FloatLit>()->v();
-        Val ub = dom->rhs()->cast<FloatLit>()->v();
-        Domain ndomain;
-        switch (bot) {
-          case BOT_LE:
-            return NULL;
-          case BOT_LQ:
-            if (v < ub) {
-              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
-              d->type(Type::parsetfloat());
-              return d;
-            } else {
-              return dom;
-            }
-          case BOT_GR:
-            return NULL;
-          case BOT_GQ:
-            if (v > lb) {
-              Domain d = new BinOp(dom->loc(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,dom->rhs());
-              d->type(Type::parsetfloat());
-              return d;
-            } else {
-              return dom;
-            }
-          case BOT_NQ:
-            return NULL;
-          default: assert(false); return NULL;
-        }
-        return ndomain;
-      }
-      return NULL;
-    }
-    static Val floor_div(Val v0, Val v1) { return v0 / v1; }
-    static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
-  };
-
   template<class Lit>
   void collectLinExps(typename LinearTraits<Lit>::Val c, Expression* exp,
                       std::vector<typename LinearTraits<Lit>::Val>& coeffs,
@@ -1591,47 +1392,6 @@ namespace MiniZinc {
   }
 
   template<class Lit>
-  void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c,
-                    std::vector<KeepAlive>& x,
-                    typename LinearTraits<Lit>::Val& d) {
-    std::vector<int> idx(c.size());
-    for (unsigned int i=idx.size(); i--;) {
-      idx[i]=i;
-    }
-    std::sort(idx.begin(),idx.end(),CmpExpIdx(x));
-    unsigned int ci = 0;
-    for (; ci<x.size(); ci++) {
-      if (Lit* il = x[idx[ci]]()->dyn_cast<Lit>()) {
-        d += c[idx[ci]]*il->v();
-        c[idx[ci]] = 0;
-      } else {
-        break;
-      }
-    }
-    for (unsigned int i=ci+1; i<x.size(); i++) {
-      if (Expression::equal(x[idx[i]](),x[idx[ci]]())) {
-        c[idx[ci]] += c[idx[i]];
-        c[idx[i]] = 0;
-      } else if (Lit* il = x[idx[i]]()->dyn_cast<Lit>()) {
-        d += c[idx[i]]*il->v();
-        c[idx[i]] = 0;
-      } else {
-        ci=i;
-      }
-    }
-    ci = 0;
-    for (unsigned int i=0; i<c.size(); i++) {
-      if (c[i] != 0) {
-        c[ci] = c[i];
-        x[ci] = x[i];
-        ci++;
-      }
-    }
-    c.resize(ci);
-    x.resize(ci);
-  }
-
-  template<class Lit>
   KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0, typename LinearTraits<Lit>::Val c1,
                      Expression* e0, Expression* e1) {
     typedef typename LinearTraits<Lit>::Val Val;
@@ -1650,8 +1410,12 @@ namespace MiniZinc {
       ka = vars[0];
     } else {
       std::vector<Expression*> coeffs_e(coeffs.size());
-      for (unsigned int i=coeffs.size(); i--;)
+      for (unsigned int i=coeffs.size(); i--;) {
+        if (!LinearTraits<Lit>::finite(coeffs[i])) {
+          throw FlatteningError(env,e0->loc(), "unbounded coefficient in linear expression");
+        }
         coeffs_e[i] = new Lit(e0->loc(),coeffs[i]);
+      }
       std::vector<Expression*> vars_e(vars.size());
       for (unsigned int i=vars.size(); i--;)
         vars_e[i] = vars[i]();
@@ -3371,7 +3135,7 @@ namespace MiniZinc {
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
                     env.addWarning("model inconsistency detected");
-                    env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                    env.flat()->fail();
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
@@ -3593,6 +3357,12 @@ namespace MiniZinc {
         case UOT_MINUS:
           {
             GC::lock();
+            if (UnOp* uo_inner = uo->e()->dyn_cast<UnOp>()) {
+              if (uo_inner->op()==UOT_MINUS) {
+                ret = flat_exp(env,ctx,uo_inner->e(),r,b);
+                break;
+              }
+            }
             Expression* zero;
             if (uo->e()->type().bt()==Type::BT_INT)
               zero = new IntLit(Location().introduce(),0);
@@ -4067,7 +3837,8 @@ namespace MiniZinc {
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
                 VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
-                ee = flat_exp(env, nctx, c, NULL, b_b);
+                VarDecl* r_r = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
+                ee = flat_exp(env, nctx, c, r_r, b_b);
                 cs.push_back(ee);
                 ee.b = ee.r;
                 cs.push_back(ee);
@@ -4903,6 +4674,7 @@ namespace MiniZinc {
     }
     
     std::vector<VarDecl*> deletedVarDecls;
+    std::vector<VarDeclI*> removedItems;
     while (startItem <= endItem) {
       for (int i=startItem; i<=endItem; i++) {
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
@@ -4915,24 +4687,18 @@ namespace MiniZinc {
               GCLock lock;
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
-                CollectDecls cd(env.vo,deletedVarDecls,vdi);
-                topDown(cd,vdi->e()->e());
-                vdi->remove();
+                removedItems.push_back(vdi);
                 keptVariable = false;
               } else {
                 vdi->e()->e(NULL);
               }
               env.flat_addItem(ci);
             } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
-              CollectDecls cd(env.vo,deletedVarDecls,vdi);
-              topDown(cd,vdi->e()->e());
-              vdi->remove();
+              removedItems.push_back(vdi);
               keptVariable = false;
             }
           } else {
-            CollectDecls cd(env.vo,deletedVarDecls,vdi);
-            topDown(cd,vdi->e()->e());
-            vdi->remove();
+            removedItems.push_back(vdi);
             keptVariable = false;
           }
         }
@@ -4997,18 +4763,7 @@ namespace MiniZinc {
           }
         }
       }
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            m[cur_idx->second]->remove();
-          }
-        }
-      }
-      
+
       // rewrite some constraints if there are redefinitions
       for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -5149,22 +4904,18 @@ namespace MiniZinc {
         }
       }
 
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            m[cur_idx->second]->remove();
-          }
-        }
-      }
-
       startItem = endItem+1;
       endItem = m.size()-1;
     }
 
+    for (unsigned int i=0; i<removedItems.size(); i++) {
+      if (env.vo.occurrences(removedItems[i]->e())==0) {
+        CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
+        topDown(cd,removedItems[i]->e()->e());
+        removedItems[i]->remove();
+      }
+    }
+    
     // Add redefinitions for output variables that may have been redefined since createOutput
     for (unsigned int i=0; i<env.output->size(); i++) {
       if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
@@ -5221,6 +4972,18 @@ namespace MiniZinc {
       }
     }
     
+    while (!deletedVarDecls.empty()) {
+      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+        IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+          CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+          topDown(cd,cur->e());
+          m[cur_idx->second]->remove();
+        }
+      }
+    }
+
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }

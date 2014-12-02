@@ -84,6 +84,16 @@ namespace MiniZinc {
       if (id.decl() && vo.remove(id.decl(),item) == 0) {
         if (id.decl()->e()==NULL || id.decl()->ti()->domain()==NULL || id.decl()->ti()->computedDomain()) {
           vd.push_back(id.decl());
+        } else {
+          /// TODO: test if id's domain is a superset of the right hand side
+          /// this currently only tests for equality, and for Boolean domains
+          if (Id* ident = id.decl()->e()->dyn_cast<Id>()) {
+            if (Expression::equal(ident->decl()->ti()->domain(), id.decl()->ti()->domain())) {
+              vd.push_back(id.decl());
+            }
+          } else if (id.decl()->e()==id.decl()->ti()->domain()) {
+            vd.push_back(id.decl());
+          }
         }
       }
     }

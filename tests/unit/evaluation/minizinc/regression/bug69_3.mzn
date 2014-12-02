@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % A regression test for G12 bug #69.
 %
 var set of 1..10: y;

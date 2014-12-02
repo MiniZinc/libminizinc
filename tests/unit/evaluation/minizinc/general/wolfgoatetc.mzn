@@ -2,6 +2,7 @@
 % ft=zinc ts=4 sw=4 et
 %
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %
 % XXX why is lazyfd so slow with this?
 %

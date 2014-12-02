@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % WHO OWNS THE ZEBRA?
 % 
 % This is a puzzle which has been circulating the net. There are a couple

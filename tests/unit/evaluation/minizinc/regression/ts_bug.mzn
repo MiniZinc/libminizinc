@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % mzn2fzn and minizinc aborted on this model with an error message about
 % being unable to compute set bounds.  This was fixed in r8782.

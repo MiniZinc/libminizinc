@@ -15,6 +15,7 @@
  
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -25,17 +26,26 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/timer.hh>
 
 using namespace MiniZinc;
 using namespace std;
 
+std::string stoptime(Timer& timer) {
+  std::ostringstream oss;
+  oss << std::setprecision(0) << std::fixed << timer.ms() << " ms";
+  return oss.str();
+}
+
 int main(int argc, char** argv) {
+  Timer starttime;
   string filename;
   
   string flag_output_file;
 
   bool flag_output_comments = true;
   bool flag_output_flush = true;
+  bool flag_output_time = false;
   string solfile;
   int flag_ignore_lines = 0;
   istream& solstream = cin;
@@ -115,6 +125,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       search_complete_msg = string(argv[i]);
+    } else if (string(argv[i])=="--output-time") {
+      flag_output_time = true;
     } else {
       filename = argv[i++];
       if (filename.length()<=4 ||
@@ -183,6 +195,8 @@ int main(int argc, char** argv) {
               continue;
             }
             if (line=="----------") {
+              if (flag_output_time)
+                fout << "% time elapsed: " << stoptime(starttime) << "\n";
               if (outputExpr != NULL) {
                 for (unsigned int i=0; i<outputm->size(); i++) {
                   if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
@@ -238,18 +252,26 @@ int main(int argc, char** argv) {
               solution = "";
               comments = "";
             } else if (line=="==========") {
+              if (flag_output_time)
+                fout << "% time elapsed: " << stoptime(starttime) << "\n";
               fout << search_complete_msg << std::endl;
               if (flag_output_flush)
                 fout.flush();
             } else if(line=="=====UNSATISFIABLE=====") {
+              if (flag_output_time)
+                fout << "% time elapsed: " << stoptime(starttime) << "\n";
               fout << unsatisfiable_msg << std::endl;
               if (flag_output_flush)
                 fout.flush();
             } else if(line=="=====UNBOUNDED=====") {
+              if (flag_output_time)
+                fout << "% time elapsed: " << stoptime(starttime) << "\n";
               fout << unbounded_msg << std::endl;
               if (flag_output_flush)
                 fout.flush();
             } else if(line=="=====UNKNOWN=====") {
+              if (flag_output_time)
+                fout << "% time elapsed: " << stoptime(starttime) << "\n";
               fout << unknown_msg << std::endl;
               if (flag_output_flush)
                 fout.flush();
@@ -292,6 +314,7 @@ error:
             << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory." << std::endl
             << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+            << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
             << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
             << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string used to separate solutions.\n    The default is to use the FlatZinc solution separator,\n    \"----------\"." << std::endl

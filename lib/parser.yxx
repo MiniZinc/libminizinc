@@ -56,7 +56,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->err << location->filename << ":"
           << location->first_line << ":" << endl;
   pp->printCurrentLine();
-  for (unsigned int i=0; i<location->first_column-1; i++)
+  for (int i=0; i<static_cast<int>(location->first_column)-1; i++)
     pp->err << " ";
   for (unsigned int i=location->first_column; i<=location->last_column; i++)
     pp->err << "^";
@@ -466,62 +466,79 @@ namespace MiniZinc {
   @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
 }
 
-%token <iValue> MZN_INTEGER_LITERAL MZN_BOOL_LITERAL
-%token <dValue> MZN_FLOAT_LITERAL
-%token <sValue> MZN_IDENTIFIER MZN_QUOTED_IDENTIFIER MZN_STRING_LITERAL MZN_STRING_QUOTE_START MZN_STRING_QUOTE_MID MZN_STRING_QUOTE_END MZN_TI_IDENTIFIER MZN_DOC_COMMENT MZN_DOC_FILE_COMMENT
+%token <iValue> MZN_INTEGER_LITERAL "integer literal" MZN_BOOL_LITERAL "bool literal"
+%token <dValue> MZN_FLOAT_LITERAL "float literal"
+%token <sValue> MZN_IDENTIFIER "identifier" MZN_QUOTED_IDENTIFIER "quoted identifier" MZN_STRING_LITERAL "string literal"
+%token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
+%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
 
-%token MZN_VAR MZN_PAR MZN_SVAR
+%token MZN_VAR "var" MZN_PAR "par" MZN_SVAR "svar"
 
-%token MZN_ABSENT
-%token MZN_ANN
-%token MZN_ANNOTATION
-%token MZN_ANY
-%token MZN_ARRAY
-%token MZN_BOOL
-%token MZN_CASE
-%token MZN_CONSTRAINT
-%token MZN_DEFAULT 
-%token MZN_ELSE
-%token MZN_ELSEIF
-%token MZN_ENDIF
-%token MZN_ENUM
-%token MZN_FLOAT
-%token MZN_FUNCTION
-%token MZN_IF
-%token MZN_INCLUDE
-%token MZN_INFINITY
-%token MZN_INT
-%token MZN_LET
-%token MZN_LIST
-%token <bValue> MZN_MAXIMIZE
-%token <bValue> MZN_MINIMIZE
-%token MZN_OF
-%token MZN_OPT
-%token MZN_SATISFY
-%token MZN_OUTPUT
-%token MZN_PREDICATE
-%token MZN_RECORD
-%token MZN_SET
-%token MZN_SOLVE
-%token MZN_STRING
-%token MZN_TEST
-%token MZN_THEN
-%token MZN_TUPLE
-%token MZN_TYPE
-%token MZN_UNDERSCORE
-%token MZN_VARIANT_RECORD
-%token MZN_WHERE
+%token MZN_ABSENT "<>"
+%token MZN_ANN "ann"
+%token MZN_ANNOTATION "annotation"
+%token MZN_ANY "any"
+%token MZN_ARRAY "array"
+%token MZN_BOOL "bool"
+%token MZN_CASE "case"
+%token MZN_CONSTRAINT "constraint"
+%token MZN_DEFAULT "default"
+%token MZN_ELSE "else"
+%token MZN_ELSEIF "elseif"
+%token MZN_ENDIF "endif"
+%token MZN_ENUM "enum"
+%token MZN_FLOAT "float"
+%token MZN_FUNCTION "function"
+%token MZN_IF "if"
+%token MZN_INCLUDE "include"
+%token MZN_INFINITY "infinity"
+%token MZN_INT "int"
+%token MZN_LET "let"
+%token MZN_LIST "list"
+%token <bValue> MZN_MAXIMIZE "maximize"
+%token <bValue> MZN_MINIMIZE "minimize"
+%token MZN_OF "of"
+%token MZN_OPT "opt"
+%token MZN_SATISFY "satisfy"
+%token MZN_OUTPUT "output"
+%token MZN_PREDICATE "predicate"
+%token MZN_RECORD "record"
+%token MZN_SET "set"
+%token MZN_SOLVE "solve"
+%token MZN_STRING "string"
+%token MZN_TEST "test"
+%token MZN_THEN "then"
+%token MZN_TUPLE "tuple"
+%token MZN_TYPE "type"
+%token MZN_UNDERSCORE "_"
+%token MZN_VARIANT_RECORD "variant_record"
+%token MZN_WHERE "where"
 
-%token MZN_LEFT_BRACKET
-%token MZN_LEFT_2D_BRACKET
-%token MZN_RIGHT_BRACKET
-%token MZN_RIGHT_2D_BRACKET
-
-%token INVALID_CHAR
+%token MZN_LEFT_BRACKET "["
+%token MZN_LEFT_2D_BRACKET "[|"
+%token MZN_RIGHT_BRACKET "]"
+%token MZN_RIGHT_2D_BRACKET "|]"
 
 // Used to signal an error when parsing a MiniZinc file
 // that contains identifiers starting with _
 %token FLATZINC_IDENTIFIER
+
+%token END 0 "end of file"
+
+%token MZN_EQUIV "<->"
+%token MZN_IMPL "->" MZN_RIMPL "<-"
+%token MZN_OR "\\/" MZN_XOR "xor"
+%token MZN_AND "/\\"
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
+%token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
+%token MZN_DOTDOT ".."
+%token MZN_PLUS "+" MZN_MINUS "-"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_NOT "not"
+%token MZN_PLUSPLUS "++"
+%token MZN_QUOTED_IDENTIFIER "quoted identifier"
+%token MZN_COLONCOLON "::"
 
 %right PREC_ANNO
 %left MZN_EQUIV
@@ -539,19 +556,19 @@ namespace MiniZinc {
 %left MZN_QUOTED_IDENTIFIER
 %left MZN_COLONCOLON
 
-%token MZN_EQUIV_QUOTED
-%token MZN_IMPL_QUOTED MZN_RIMPL_QUOTED
-%token MZN_OR_QUOTED MZN_XOR_QUOTED
-%token MZN_AND_QUOTED
-%token MZN_LE_QUOTED MZN_GR_QUOTED MZN_LQ_QUOTED MZN_GQ_QUOTED MZN_EQ_QUOTED MZN_NQ_QUOTED
-%token MZN_IN_QUOTED MZN_SUBSET_QUOTED MZN_SUPERSET_QUOTED
-%token MZN_UNION_QUOTED MZN_DIFF_QUOTED MZN_SYMDIFF_QUOTED
-%token MZN_DOTDOT_QUOTED
-%token MZN_PLUS_QUOTED MZN_MINUS_QUOTED
-%token MZN_MULT_QUOTED MZN_DIV_QUOTED MZN_IDIV_QUOTED MZN_MOD_QUOTED MZN_INTERSECT_QUOTED
-%token MZN_NOT_QUOTED
-%token MZN_COLONCOLON_QUOTED
-%token MZN_PLUSPLUS_QUOTED
+%token MZN_EQUIV_QUOTED "'<->'"
+%token MZN_IMPL_QUOTED "'->'" MZN_RIMPL_QUOTED "'<-'"
+%token MZN_OR_QUOTED "'\\/'" MZN_XOR_QUOTED "'xor'"
+%token MZN_AND_QUOTED "'/\\'"
+%token MZN_LE_QUOTED "'<'" MZN_GR_QUOTED "'>'" MZN_LQ_QUOTED "'<='" MZN_GQ_QUOTED "'>='" MZN_EQ_QUOTED "'='" MZN_NQ_QUOTED "'!='"
+%token MZN_IN_QUOTED "'in'" MZN_SUBSET_QUOTED "'subset'" MZN_SUPERSET_QUOTED "'superset'"
+%token MZN_UNION_QUOTED "'union'" MZN_DIFF_QUOTED "'diff'" MZN_SYMDIFF_QUOTED "'symdiff'"
+%token MZN_DOTDOT_QUOTED "'..'"
+%token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
+%token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
+%token MZN_NOT_QUOTED "'not'"
+%token MZN_COLONCOLON_QUOTED "'::'"
+%token MZN_PLUSPLUS_QUOTED "'++'"
 
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
@@ -615,6 +632,7 @@ item_list_head:
         ParserState* pp = static_cast<ParserState*>(parm);
         pp->model->addItem($4);
       }
+    | error ';' item
 
 doc_file_comments:
       MZN_DOC_FILE_COMMENT
