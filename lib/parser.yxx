@@ -11,10 +11,8 @@
 
 %pure-parser
 %parse-param {void *parm}
-%lex-param {void* YYLEX_PARAM}
+%lex-param {void* parm}
 %{
-#define YYPARSE_PARAM parm
-#define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
 #include <iostream>
 #include <fstream>
 #include <map>
