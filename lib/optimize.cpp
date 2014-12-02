@@ -639,6 +639,7 @@ namespace MiniZinc {
                 } else {
                   env.addWarning("model inconsistency detected");
                   env.flat()->fail();
+                  canRemove = true;
                 }
               }
               break;
@@ -658,6 +659,7 @@ namespace MiniZinc {
                 } else {
                   env.addWarning("model inconsistency detected");
                   env.flat()->fail();
+                  canRemove = true;
                 }
               }
             }
@@ -677,6 +679,7 @@ namespace MiniZinc {
                 } else {
                   env.addWarning("model inconsistency detected");
                   env.flat()->fail();
+                  canRemove = true;
                 }
               }
             }

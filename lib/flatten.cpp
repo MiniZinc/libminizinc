@@ -462,6 +462,10 @@ namespace MiniZinc {
     return envi().warnings;
   }
   
+  void Env::clearWarnings(void) {
+    envi().warnings.clear();
+  }
+  
   bool isTotal(FunctionI* fi) {
     return fi->ann().contains(constants().ann.promise_total);
   }
