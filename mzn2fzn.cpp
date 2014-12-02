@@ -326,14 +326,20 @@ int main(int argc, char** argv) {
             try {
               unsigned int npass = 0;
               std::vector<Pass*> passes;
-              for(unsigned int i=1; i<flag_npasses; i++)
-                passes.push_back(new CompilePass(fopts, globals_dir));
+              for(unsigned int i=1; i<flag_npasses; i++) {
+                FlatteningOptions pass_opts = fopts;
+                pass_opts.collectVarPaths = true;
+                pass_opts.useVarPaths = false;
+                passes.push_back(new CompilePass(pass_opts, globals_dir));
+              }
 
               // Multi-pass optimisations
-              //if(flag_npasses > 1)
-              //  multiPassFlatten(env, includePaths, passes);
+              if(flag_npasses > 1)
+                multiPassFlatten(env, includePaths, passes);
 
               // Final compilation
+              fopts.collectVarPaths = false;
+              fopts.useVarPaths = true;
               flatten(env, fopts);
 
             } catch (LocationException& e) {

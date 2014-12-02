@@ -381,6 +381,7 @@ namespace MiniZinc {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
+
         if(fopts.collectVarPaths || fopts.useVarPaths)
           addMznPath(vd->e(), *this);
 
@@ -4902,6 +4903,7 @@ namespace MiniZinc {
 
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
+    env.fopts = opt;
 
     class ExpandArrayDecls : public ItemVisitor {
     public:
