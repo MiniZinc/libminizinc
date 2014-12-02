@@ -1390,10 +1390,10 @@ call_expr :
         vector<Generator> gens;
         vector<ASTString> ids;
         for (unsigned int i=0; i<$3->first.size(); i++) {
-          if (Id* id = $3->first[i]->dyn_cast<Id>()) {
+          if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
             ids.push_back(id->v());
           } else {
-            if (BinOp* boe = $3->first[i]->dyn_cast<BinOp>()) {
+            if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
               Id* id = boe->lhs()->dyn_cast<Id>();
               if (id && boe->op() == BOT_IN) {
                 ids.push_back(id->v());
