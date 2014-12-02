@@ -631,7 +631,7 @@ namespace MiniZinc {
             case Type::BT_BOOL:
               if (ti->domain() == NULL) {
                 ti->domain(constants().boollit(eval_bool(arg)));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
               } else {
                 if (eval_bool(ti->domain())==eval_bool(arg)) {
@@ -647,13 +647,13 @@ namespace MiniZinc {
               IntVal d = eval_int(arg);
               if (ti->domain() == NULL) {
                 ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
               } else {
                 IntSetVal* isv = eval_intset(ti->domain());
                 if (isv->contains(d)) {
                   ident->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                  ident->decl()->ti()->setComputedDomain(true);
+                  ident->decl()->ti()->setComputedDomain(false);
                   canRemove = true;
                 } else {
                   env.addWarning("model inconsistency detected");
@@ -666,8 +666,18 @@ namespace MiniZinc {
             {
               if (ti->domain() == NULL) {
                 ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
+              } else {
+                FloatVal value = eval_float(arg);
+                if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
+                  ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
+                  ti->setComputedDomain(false);
+                  canRemove = true;
+                } else {
+                  env.addWarning("model inconsistency detected");
+                  env.flat()->fail();
+                }
               }
             }
               break;
