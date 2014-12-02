@@ -234,6 +234,7 @@ include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
+include/minizinc/pass.hh
 "${parser_hh}"
 )
 
@@ -246,7 +247,7 @@ target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
-set(HAS_CPLEX FALSE)
+set(HAS_CPLEX TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN FALSE)
 
@@ -289,13 +290,15 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
-          solvers/gecode/fzn_space.cpp
-	  solvers/gecode/gecode_solverinstance.cpp
-		solvers/gecode/gecode_constraints.cpp
-	  solvers/gecode/gecode_solverinstance.hh
-		solvers/gecode/gecode_constraints.hh
-		solvers/gecode/fzn_space.hh
-                solvers/gecode/aux_brancher.hh)
+    solvers/gecode/fzn_space.cpp
+    solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_constraints.cpp
+    solvers/gecode/gecode_pass.cpp
+    solvers/gecode/gecode_solverinstance.hh
+    solvers/gecode/gecode_constraints.hh
+    solvers/gecode/gecode_pass.hh
+    solvers/gecode/fzn_space.hh
+    solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode
     minizinc
@@ -305,7 +308,7 @@ if(HAS_GECODE)
 
   add_executable(mzn-gecode
     solvers/gecode/mzn-gecode.cpp
-  )
+    )
   target_link_libraries(mzn-gecode minizinc_gecode minizinc 
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
