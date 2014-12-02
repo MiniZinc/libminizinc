@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % Copied from the queens.mzn benchmark.
 %
 % In some very rare cases some literals in MiniSAT are labeled during 

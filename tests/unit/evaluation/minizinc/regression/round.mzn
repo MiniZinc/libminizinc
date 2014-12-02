@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Check that the MiniZinc round builtin operation.
 % (mzn2fzn 1.1.3 didn't implement it.)

@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %-----------------------------------------------------------------------------%
 % Example from the MiniZinc paper:
 % (square) job shop scheduling in MiniZinc

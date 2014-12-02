@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % Example battleships problem for bs.mzn.
 %
 include "battleships.mzn.model";

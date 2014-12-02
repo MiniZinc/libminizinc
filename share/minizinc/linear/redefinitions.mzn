@@ -105,11 +105,11 @@ predicate bool_le_reif(var bool: p, var bool: q, var bool: r) =
 
 
 predicate bool_lt(var bool: p, var bool: q) =
-    p /\ not q;
+    not p /\ q;
 
 
 predicate bool_lt_reif(var bool: p, var bool: q, var bool: r) =
-    (p /\ not q) <-> r;
+    (not p /\ q) <-> r;
 
 %-----------------------------------------------------------------------------%
 
@@ -375,7 +375,7 @@ predicate aux_int_division_modulo(var int: x, var int: y, var int: q,
 predicate int_times(var int: x, var int: y, var int: z) =
     if card(dom(x)) > card(dom(y)) then int_times(y,x,z)
     else
-    let { set of int: s = dom(x),
+    let { set of int: s = lb(x)..ub(x),
           set of int: r = {lb(x)*lb(y), lb(x)*ub(y), ub(x)*lb(y), ub(x)*ub(y)},
           array[s] of var min(r)..max(r): ady = array1d(s, [ d*y | d in s ]) }
     in

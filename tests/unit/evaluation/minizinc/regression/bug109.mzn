@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Regression test for MiniZinc bug #109.
 % mzn2fzn 1.1 was incorrectly flattening predicate arguments in a reifying

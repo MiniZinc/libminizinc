@@ -398,7 +398,6 @@ namespace MiniZinc {
 
   inline void
   VarDecl::e(Expression* rhs) {
-    assert(!Expression::equal(rhs,_id));
     _e = rhs;
   }
   

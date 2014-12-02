@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Regression test for bug #141.
 % In mzn2fzn 1.1.5 'x' was not being marked as an output variable in the

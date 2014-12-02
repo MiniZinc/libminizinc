@@ -200,6 +200,7 @@ lib/solver_instance_base.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+lib/optimize_constraints.cpp
 lib/options.cpp
 lib/parser.yxx
 lib/statistics.cpp
@@ -226,8 +227,10 @@ include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/options.hh
+include/minizinc/optimize_constraints.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/timer.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
@@ -346,13 +349,13 @@ if (BUILD_HTML_DOCUMENTATION)
 		--html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
 			--output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
 	)
-	INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
-	INSTALL(FILES
+  FILE(COPY
 		${PROJECT_SOURCE_DIR}/doc/html/style.css
 		${PROJECT_SOURCE_DIR}/doc/html/header.html
 		${PROJECT_SOURCE_DIR}/doc/html/footer.html
 		${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
-		DESTINATION doc/html)
+       DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)

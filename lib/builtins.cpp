@@ -676,6 +676,58 @@ namespace MiniZinc {
     return b_dom_varint(args[0]);
   }
 
+  IntSetVal* b_dom_bounds_array(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    Expression* arg_e = args[0];
+    Expression* e = follow_id_to_decl(arg_e);
+    
+    bool foundBounds = false;
+    IntVal array_lb = -IntVal::infinity;
+    IntVal array_ub = IntVal::infinity;
+    
+    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+      if (vd->ti()->domain()) {
+        GCLock lock;
+        IntSetVal* isv = eval_intset(vd->ti()->domain());
+        if (isv->size()!=0) {
+          array_lb = isv->min();
+          array_ub = isv->max();
+          foundBounds = true;
+        }
+      }
+      e = vd->e();
+    }
+
+    if (foundBounds) {
+      return IntSetVal::a(array_lb,array_ub);
+    }
+    
+    if (e != NULL) {
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(e);
+      if (al->v().size()==0)
+        throw EvalError(Location(), "lower bound of empty array undefined");
+      IntVal min = IntVal::infinity;
+      IntVal max = -IntVal::infinity;
+      for (unsigned int i=0; i<al->v().size(); i++) {
+        IntBounds ib = compute_int_bounds(al->v()[i]);
+        if (!ib.valid)
+          goto b_array_lb_int_done;
+        min = std::min(min, ib.l);
+        max = std::max(max, ib.u);
+      }
+      array_lb = std::max(array_lb, min);
+      array_ub = std::min(array_ub, max);
+      foundBounds = true;
+    }
+  b_array_lb_int_done:
+    if (foundBounds) {
+      return IntSetVal::a(array_lb,array_ub);
+    } else {
+      throw EvalError(e->loc(),"cannot determine lower bound");
+    }
+  }
+  
   IntSetVal* b_dom_array(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
     Expression* ae = args[0];
@@ -782,8 +834,9 @@ namespace MiniZinc {
   Expression* b_array1d_list(ASTExprVec<Expression> args) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
-    if (al->dims()==1 && al->min(0)==1)
-      return al;
+    if (al->dims()==1 && al->min(0)==1) {
+      return args[0]->isa<Id>() ? args[0] : al;
+    }
     ArrayLit* ret = new ArrayLit(al->loc(), al->v());
     Type t = al->type();
     t.dim(1);
@@ -823,7 +876,7 @@ namespace MiniZinc {
         }
       }
       if (sameDims)
-        return al1;
+        return args[1]->isa<Id>() ? args[1] : al1;
     }
     std::vector<std::pair<int,int> > dims(al0->dims());
     for (unsigned int i=al0->dims(); i--;) {
@@ -1060,11 +1113,10 @@ namespace MiniZinc {
     return al;
   }
   
-  std::string show(Expression* e) {
+  std::string show(Expression* exp) {
     std::ostringstream oss;
     GCLock lock;
-    e = follow_id(e);
-    e = eval_par(e);
+    Expression* e = eval_par(exp);
     if (e->type().isvar()) {
       Printer p(oss,0,false);
       p.print(e);
@@ -1590,6 +1642,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
       rb(m, ASTString("dom_array"), t, b_dom_array);
+      rb(m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
     }
     {
       std::vector<Type> t(1);
