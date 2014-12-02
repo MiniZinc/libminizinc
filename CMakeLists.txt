@@ -31,8 +31,6 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
 
-find_package ( Threads REQUIRED )
-
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -246,18 +244,27 @@ target_link_libraries(mzn2fzn minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
+find_package ( Threads REQUIRED )
 
-set(HAS_CPLEX TRUE)
+set(HAS_CPLEX FALSE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN FALSE)
 
 if(HAS_CPLEX)
+  if(APPLE)
+     set(CPLEX_ARCH "osx")
+  endif(APPLE)
+
+  if(UNIX)
+    set(CPLEX_ARCH "linux")
+  endif(UNIX)
+
 	add_definitions(-DIL_STD)
 	
   include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
   include_directories("${CPLEX_STUDIO_DIR}/concert/include")
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_linux/static_pic")
-  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_linux/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
 		solvers/cplex/cplex_solverinstance.cpp
