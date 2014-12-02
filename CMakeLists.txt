@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.7)
-project (libminizinc CXX)
+project (libminizinc CXX C)
 
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
@@ -30,8 +30,6 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
-
-
 
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
@@ -249,18 +247,27 @@ target_link_libraries(mzn2fzn minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
+find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX FALSE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN FALSE)
 
 if(HAS_CPLEX)
+  if(APPLE)
+     set(CPLEX_ARCH "osx")
+  endif(APPLE)
+
+  if(UNIX)
+    set(CPLEX_ARCH "linux")
+  endif(UNIX)
+
 	add_definitions(-DIL_STD)
 	
   include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
   include_directories("${CPLEX_STUDIO_DIR}/concert/include")
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_osx/static_pic")
-  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_osx/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
 		solvers/cplex/cplex_solverinstance.cpp
@@ -272,7 +279,7 @@ if(HAS_CPLEX)
 	add_executable(mzn-cplex
 	  solvers/cplex/mzn-cplex.cpp
 	)
-	target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert)
+	target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -305,7 +312,7 @@ if(HAS_GECODE)
   target_link_libraries(mzn-gecode minizinc_gecode minizinc 
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport)
+    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
     RUNTIME DESTINATION bin

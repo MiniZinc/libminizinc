@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
-  string globals_dir;
+  string globals_dir = "linear";
   
   bool flag_no_output_ozn = false;
   string flag_output_base;
@@ -239,6 +239,8 @@ int main(int argc, char** argv) {
       }
     }
   }
+
+  fopts.onlyRangeDomains = fopts.onlyRangeDomains || globals_dir == "linear";
 
   if (filename=="") {
     std::cerr << "Error: no model file given." << std::endl;
