@@ -1862,7 +1862,8 @@ function var set of int: array_intersect_rec(array[int] of var set of int: x) =
 
 % Include solver-specific redefinitions for any FlatZinc built-ins.
 %
-include "redefinitions.mzn"
+include "redefinitions.mzn";
+include "redefinitions-2.0.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
