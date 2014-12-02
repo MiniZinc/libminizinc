@@ -751,10 +751,16 @@ namespace MiniZinc {
       TSV1(TopoSorter& ts0) : ts(ts0) {}
       void vVarDeclI(VarDeclI* i) { ts.run(i->e()); }
       void vAssignI(AssignI* i) {
-        ts.run(i->e());
-        i->decl(ts.checkId(i->id(),i->loc()));
-        if (i->decl()->e())
+        VarDecl* vd = ts.checkId(i->id(),i->loc());
+        if (vd->e())
           throw TypeError(i->loc(),"multiple assignment to the same variable");
+        TopoSorter::DeclMap::iterator decl = ts.env.find(vd->id());
+        TopoSorter::PosMap::iterator pi = ts.pos.find(decl->second.back());
+        int tmp = pi->second;
+        pi->second = -1;
+        ts.run(i->e());
+        pi->second = tmp;
+        i->decl(vd);
       }
       void vConstraintI(ConstraintI* i) { ts.run(i->e()); }
       void vSolveI(SolveI* i) {
@@ -881,10 +887,12 @@ namespace MiniZinc {
     
     class TSV3 : public ItemVisitor {
     public:
+      Model* m;
+      TSV3(Model* m0) : m(m0) {}
       void vAssignI(AssignI* i) {
-        i->decl()->e(i->e());
+        i->decl()->e(addCoercion(m, i->e(), i->decl()->type())());
       }
-    } _tsv3;
+    } _tsv3(m);
     iterItems(_tsv3,m);
 
     for (unsigned int i=0; i<ts.decls.size(); i++) {
