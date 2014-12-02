@@ -249,7 +249,7 @@ namespace MiniZinc {
         return _ot==OT_PRESENT || _ot==t._ot;
       if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
         return true;
-      if ( _bt==BT_BOT && _st==t._st)
+      if ((_ti==t._ti || _ti==TI_PAR || _ti==TI_SVAR) && _bt==BT_BOT && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       if (t._bt==BT_TOP && (_ot==OT_PRESENT || _ot==t._ot) &&
           (t._st==ST_PLAIN || _st==t._st) &&
