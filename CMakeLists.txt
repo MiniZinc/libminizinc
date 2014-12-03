@@ -266,6 +266,12 @@ if (BUILD_HTML_DOCUMENTATION)
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
+
+if (BUILD_STATIC_EXECUTABLE)
+  set(CMAKE_EXE_LINKER_FLAGS -static)
+endif()
+
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(DIRECTORY include/minizinc
         DESTINATION include
