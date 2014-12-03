@@ -25,6 +25,7 @@ namespace MiniZinc{ class Location; }
 #define YYLTYPE_IS_TRIVIAL 0
 
 #include <minizinc/parser.hh>
+#include <minizinc/file_utils.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -171,11 +172,15 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
+        if (!FileUtils::file_exists(fullname))
+          break;
         file.open(fullname.c_str(), std::ios::binary);
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
+          if (!FileUtils::file_exists(fullname))
+            break;
           file.open(fullname.c_str(), std::ios::binary);
           if (file.is_open())
             break;
@@ -265,11 +270,15 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
+        if (!FileUtils::file_exists(fullname))
+          break;
         file.open(fullname.c_str(), std::ios::binary);
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
+          if (!FileUtils::file_exists(fullname))
+            break;
           file.open(fullname.c_str(), std::ios::binary);
           if (file.is_open())
             break;
@@ -305,7 +314,7 @@ namespace MiniZinc {
       } else {
         std::ifstream file;
         file.open(f.c_str(), std::ios::binary);
-        if (!file.is_open()) {
+        if (!FileUtils::file_exists(f) || !file.is_open()) {
           err << "Error: cannot open data file '" << f << "'." << endl;
           goto error;
         }
@@ -376,6 +385,8 @@ namespace MiniZinc {
     } else {
       for (unsigned int i=0; i<includePaths.size(); i++) {
         fullname = includePaths[i]+f;
+        if (!FileUtils::file_exists(fullname))
+          break;
         file.open(fullname.c_str(), std::ios::binary);
         if (file.is_open())
           break;
@@ -410,7 +421,7 @@ namespace MiniZinc {
     } else {
       std::ifstream file;
       file.open(f.c_str(), std::ios::binary);
-      if (!file.is_open()) {
+      if (!FileUtils::file_exists(f) || !file.is_open()) {
         err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
