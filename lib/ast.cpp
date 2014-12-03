@@ -52,7 +52,8 @@ namespace MiniZinc {
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
     for (unsigned int i=0; i<ann.size(); i++)
-      _ann.add(ann[i]);
+      if (ann[i])
+        _ann.add(ann[i]);
   }
 
 
@@ -600,9 +601,9 @@ namespace MiniZinc {
   TypeInst::hasTiVariable(void) const {
     if (domain() && domain()->isa<TIId>())
       return true;
-    if (_ranges.size()==1 &&
-        _ranges[0]->isa<TIId>())
-      return true;
+    for (unsigned int i=_ranges.size(); i--;)
+      if (_ranges[i]->isa<TIId>())
+        return true;
     return false;
   }
 

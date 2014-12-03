@@ -638,6 +638,10 @@ namespace MiniZinc {
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(vdi->loc(),
               "let variable `"+vdi->id()->v().str()+"' must be initialised");
+          if (vdi->ti()->hasTiVariable()) {
+            _typeErrors.push_back(TypeError(vdi->loc(),
+                                            "type-inst variables not allowed in type-inst for let variable `"+vdi->id()->str().str()+"'"));
+          }
         }
       }
       Type ty = let.in()->type();
@@ -835,7 +839,13 @@ namespace MiniZinc {
         BottomUpIterator<Typer<true> >& bu_ty;
         std::vector<TypeError>& _typeErrors;
         TSV2(BottomUpIterator<Typer<true> >& b, std::vector<TypeError>& typeErrors) : bu_ty(b), _typeErrors(typeErrors) {}
-        void vVarDeclI(VarDeclI* i) { bu_ty.run(i->e()); }
+        void vVarDeclI(VarDeclI* i) {
+          bu_ty.run(i->e());
+          if (i->e()->ti()->hasTiVariable()) {
+            _typeErrors.push_back(TypeError(i->e()->loc(),
+                                            "type-inst variables not allowed in type-inst for `"+i->e()->id()->str().str()+"'"));
+          }
+        }
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
