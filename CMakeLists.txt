@@ -251,7 +251,7 @@ if (BUILD_HTML_DOCUMENTATION)
   add_custom_target(doc ALL
     DEPENDS "mzn2doc"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-    COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2
+    COMMAND mzn2doc --toplevel-groups 2
     --include-stdlib
     --html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
     --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
