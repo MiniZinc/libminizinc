@@ -179,11 +179,11 @@ namespace MiniZinc {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
-          if (!FileUtils::file_exists(fullname))
-            break;
-          file.open(fullname.c_str(), std::ios::binary);
-          if (file.is_open())
-            break;
+          if (FileUtils::file_exists(fullname)) {
+            file.open(fullname.c_str(), std::ios::binary);
+            if (file.is_open())
+              break;
+          }
         }
         includePaths.pop_back();
       }
@@ -277,11 +277,11 @@ namespace MiniZinc {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
           fullname = includePaths[i]+f;
-          if (!FileUtils::file_exists(fullname))
-            break;
-          file.open(fullname.c_str(), std::ios::binary);
-          if (file.is_open())
-            break;
+          if (FileUtils::file_exists(fullname)) {
+            file.open(fullname.c_str(), std::ios::binary);
+            if (file.is_open())
+              break;
+          }
         }
         includePaths.pop_back();
       }
@@ -385,11 +385,11 @@ namespace MiniZinc {
     } else {
       for (unsigned int i=0; i<includePaths.size(); i++) {
         fullname = includePaths[i]+f;
-        if (!FileUtils::file_exists(fullname))
-          break;
-        file.open(fullname.c_str(), std::ios::binary);
-        if (file.is_open())
-          break;
+        if (FileUtils::file_exists(fullname)) {
+          file.open(fullname.c_str(), std::ios::binary);
+          if (file.is_open())
+            break;
+        }
       }
     }
     if (!file.is_open()) {
