@@ -158,126 +158,120 @@ namespace MiniZinc {
         //std::cerr << "AFTER: " << path << std::endl;
         VarDecl* ovd = Expression::dyn_cast<VarDecl>(it->second());
         if(ovd) {
-          if(!envi.fopts.collectVarPaths && envi.fopts.useVarPaths) {
-            IntVal intval;
-            FloatVal doubleval;
-            bool boolval;
-            if(ovd->ti()->domain() || ovd->e()) {
-              bool tighter = false;
-              bool fixed = false;
+          IntVal intval;
+          FloatVal doubleval;
+          bool boolval;
+          if(ovd->ti()->domain() || ovd->e()) {
+            bool tighter = false;
+            bool fixed = false;
 
-              if(vd->type().isint()) {
-                IntBounds bounds    = compute_int_bounds(vd->id());
-                IntBounds oldbounds = compute_int_bounds(ovd->id());
+            if(vd->type().isint()) {
+              IntBounds bounds    = compute_int_bounds(vd->id());
+              IntBounds oldbounds = compute_int_bounds(ovd->id());
 
-                if(bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
-                  if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
-                    fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
-                    if(fixed) {
-                      tighter = true;
-                      intval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
-                      ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
-                    } else {
-                      IntSetVal* olddom = ovd->ti()->domain() ? eval_intset(ovd->ti()->domain()) : NULL;
-                      IntSetVal* newdom =  vd->ti()->domain() ? eval_intset( vd->ti()->domain()) : NULL;
+              if(bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
+                if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+                  fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+                  if(fixed) {
+                    tighter = true;
+                    intval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+                    ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
+                  } else {
+                    IntSetVal* olddom = ovd->ti()->domain() ? eval_intset(ovd->ti()->domain()) : NULL;
+                    IntSetVal* newdom =  vd->ti()->domain() ? eval_intset( vd->ti()->domain()) : NULL;
 
-                      if(olddom) {
-                        if(!newdom) {
+                    if(olddom) {
+                      if(!newdom) {
+                        tighter = true;
+                      } else {
+                        IntSetRanges oisr(olddom);
+                        IntSetRanges nisr(newdom);
+                        IntSetRanges nisr_card(newdom);
+
+                        Ranges::Inter<IntSetRanges, IntSetRanges> inter(oisr, nisr);
+
+                        if(Ranges::size(inter) < Ranges::size(nisr_card)) {
+                          IntSetRanges oisr_inter(olddom);
+                          IntSetRanges nisr_inter(newdom);
+                          Ranges::Inter<IntSetRanges, IntSetRanges> inter_card(oisr_inter, nisr_inter);
                           tighter = true;
-                        } else {
-                          IntSetRanges oisr(olddom);
-                          IntSetRanges nisr(newdom);
-                          IntSetRanges nisr_card(newdom);
-
-                          Ranges::Inter<IntSetRanges, IntSetRanges> inter(oisr, nisr);
-
-                          if(Ranges::size(inter) < Ranges::size(nisr_card)) {
-                            IntSetRanges oisr_inter(olddom);
-                            IntSetRanges nisr_inter(newdom);
-                            Ranges::Inter<IntSetRanges, IntSetRanges> inter_card(oisr_inter, nisr_inter);
-                            tighter = true;
-                            ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::ai(inter_card)));
-                          }
+                          ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::ai(inter_card)));
                         }
                       }
                     }
                   }
-                } else {
-                  if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
-                    tighter = true;
-                    fixed = oldbounds.u == oldbounds.l;
-                    if(fixed) {
-                      intval = oldbounds.u;
-                      ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
-                    }
-                  }
                 }
-              } else if(vd->type().isfloat()) {
-                FloatBounds bounds    = compute_float_bounds(vd->id());
-                FloatBounds oldbounds = compute_float_bounds(ovd->id());
-                if(bounds.valid) {
-                  if(oldbounds.valid) {
-                    fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
-                    if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
-                    tighter = fixed || (oldbounds.u - oldbounds.l < bounds.u - bounds.l);
+              } else {
+                if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+                  tighter = true;
+                  fixed = oldbounds.u == oldbounds.l;
+                  if(fixed) {
+                    intval = oldbounds.u;
+                    ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
                   }
-                } else {
-                  if(oldbounds.valid) {
-                    tighter = true;
-                    fixed = oldbounds.u == oldbounds.l;
-                    if(fixed) doubleval = oldbounds.u;
-                  }
-                }
-              } else if(vd->type().isbool()) {
-                if(ovd->ti()->domain()) {
-                  fixed = tighter = true;
-                  boolval = eval_bool(ovd->ti()->domain());
-                } else {
-                  fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
-                  if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
                 }
               }
-
-              if(tighter) {
-                //std::cerr << "addMznPath():\n"
-                //  << "\tpath  :\t" << path << "\n"
-                //  << "\toldvar:\t" << *ovd << "\n"
-                //  << "\tcurvar:\t" << *vd  << "\n";
-                vd->ti()->domain(copy(ovd->ti()->domain()));
-                envi.pathUse++;
-                if(vd->e() == NULL && fixed) {
-                  if(vd->ti()->type().isvarint()) {
-                    vd->type(Type::parint());
-                    vd->ti(new TypeInst(vd->loc(), Type::parint()));
-                    vd->e(new IntLit(vd->loc(), intval));
-                  } else if(vd->ti()->type().isvarfloat()) {
-                    vd->type(Type::parfloat());
-                    vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
-                    vd->e(new FloatLit(vd->loc(), doubleval));
-                  } else if(vd->ti()->type().isvarbool()) {
-                    vd->type(Type::parbool());
-                    vd->ti(new TypeInst(vd->loc(), Type::parbool()));
-                    vd->e(new BoolLit(vd->loc(), boolval));
-                  }
+            } else if(vd->type().isfloat()) {
+              FloatBounds bounds    = compute_float_bounds(vd->id());
+              FloatBounds oldbounds = compute_float_bounds(ovd->id());
+              if(bounds.valid) {
+                if(oldbounds.valid) {
+                  fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+                  if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+                  tighter = fixed || (oldbounds.u - oldbounds.l < bounds.u - bounds.l);
                 }
-
-                //std::cerr << "\tnewvar:\t" << *vd << "\n";
-//                std::vector<Expression*> args(1);
-//                std::stringstream ss;
-                //ss << "original: " << *ovd;
-                //args[0] = new StringLit(vd->loc(), ss.str());
-                //args[0] = new StringLit(vd->loc(), "addMznPath");
-                //args[0] = new StringLit(vd->loc(), path);
-                //Call* call = new Call(vd->loc(), constants().ann.doc_comment, args);
-                //call->type(Type::ann());
-                //vd->ann().add(call);
-
+              } else {
+                if(oldbounds.valid) {
+                  tighter = true;
+                  fixed = oldbounds.u == oldbounds.l;
+                  if(fixed) doubleval = oldbounds.u;
+                }
+              }
+            } else if(vd->type().isbool()) {
+              if(ovd->ti()->domain()) {
+                fixed = tighter = true;
+                boolval = eval_bool(ovd->ti()->domain());
+              } else {
+                fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
+                if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
               }
             }
-          } else {
-            std::stringstream ss;
-            ss << "Variable introduction path clash between: " << *vd << " and " << *ovd << " with path: " << path;
-            throw FlatteningError(envi, vd->loc(), ss.str());
+
+            if(tighter) {
+              //std::cerr << "addMznPath():\n"
+              //  << "\tpath  :\t" << path << "\n"
+              //  << "\toldvar:\t" << *ovd << "\n"
+              //  << "\tcurvar:\t" << *vd  << "\n";
+              vd->ti()->domain(copy(ovd->ti()->domain()));
+              envi.pathUse++;
+              if(vd->e() == NULL && fixed) {
+                if(vd->ti()->type().isvarint()) {
+                  vd->type(Type::parint());
+                  vd->ti(new TypeInst(vd->loc(), Type::parint()));
+                  vd->e(new IntLit(vd->loc(), intval));
+                } else if(vd->ti()->type().isvarfloat()) {
+                  vd->type(Type::parfloat());
+                  vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
+                  vd->e(new FloatLit(vd->loc(), doubleval));
+                } else if(vd->ti()->type().isvarbool()) {
+                  vd->type(Type::parbool());
+                  vd->ti(new TypeInst(vd->loc(), Type::parbool()));
+                  vd->e(new BoolLit(vd->loc(), boolval));
+                }
+              }
+
+              //std::cerr << "\tnewvar:\t" << *vd << "\n";
+//                std::vector<Expression*> args(1);
+//                std::stringstream ss;
+              //ss << "original: " << *ovd;
+              //args[0] = new StringLit(vd->loc(), ss.str());
+              //args[0] = new StringLit(vd->loc(), "addMznPath");
+              //args[0] = new StringLit(vd->loc(), path);
+              //Call* call = new Call(vd->loc(), constants().ann.doc_comment, args);
+              //call->type(Type::ann());
+              //vd->ann().add(call);
+
+            }
           }
         }
       } else {
