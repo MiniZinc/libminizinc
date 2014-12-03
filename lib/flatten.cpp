@@ -4827,7 +4827,7 @@ namespace MiniZinc {
     return true;
   }
   
-  IncludeI* update_include(IncludeI* inc, std::vector<std::string>& includes) {
+  IncludeI* update_include(Model* parent, IncludeI* inc, std::vector<std::string>& includes) {
     std::string filename = inc->f().str();
     std::vector<std::string> datafiles;
 
@@ -4838,8 +4838,9 @@ namespace MiniZinc {
       std::ifstream fi(full_filename);
       if(fi.is_open()) {
         Model* inc_mod = parse(full_filename, datafiles, includes, true, true, std::cerr);
-        IncludeI* new_inc = new IncludeI(inc->loc(), full_filename);
+        IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
+        inc_mod->setParent(parent);
         return new_inc;
       }
     }
@@ -4856,7 +4857,7 @@ namespace MiniZinc {
 
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        IncludeI* ninc = update_include(inc, includePaths);
+        IncludeI* ninc = update_include(new_mod, inc, includePaths);
         if(ninc) new_mod->addItem(ninc);
       } else {
         new_mod->addItem(copy(cm,item));
