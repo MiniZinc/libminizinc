@@ -172,9 +172,9 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
-        if (!FileUtils::file_exists(fullname))
-          break;
-        file.open(fullname.c_str(), std::ios::binary);
+        if (FileUtils::file_exists(fullname)) {
+          file.open(fullname.c_str(), std::ios::binary);
+        }
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
@@ -270,9 +270,9 @@ namespace MiniZinc {
       string fullname;
       if (parentPath=="") {
         fullname = filename;
-        if (!FileUtils::file_exists(fullname))
-          break;
-        file.open(fullname.c_str(), std::ios::binary);
+        if (FileUtils::file_exists(fullname)) {
+          file.open(fullname.c_str(), std::ios::binary);
+        }
       } else {
         includePaths.push_back(parentPath);
         for (unsigned int i=0; i<includePaths.size(); i++) {
