@@ -470,15 +470,18 @@ $[A-Za-z][A-Za-z0-9_]* {
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 <string_quote>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
-<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return yytext[0]; }
+<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return (unsigned char)yytext[0]; }
+<string,string_quote><<EOF>> { yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_UNTERMINATED_STRING; }
 
 `[A-Za-z][A-Za-z0-9_]*` {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0; 
                     return MZN_QUOTED_IDENTIFIER; }
+
 .                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return yytext[0]; }
+                    return (unsigned char)yytext[0]; }
+
 %%
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
   MiniZinc::ParserState* parm = 
