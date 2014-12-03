@@ -835,11 +835,11 @@ params_list_head :
       ti_expr_and_id_or_anon
       { $$=new vector<VarDecl*>();
         if ($1) $1->toplevel(false);
-        if ($$) $$->push_back($1); }
+        if ($1) $$->push_back($1); }
     | params_list_head ',' ti_expr_and_id_or_anon
       { $$=$1;
         if ($3) $3->toplevel(false);
-        if ($1) $1->push_back($3); }
+        if ($1 && $3) $1->push_back($3); }
 
 comma_or_none : | ','
 
@@ -862,7 +862,7 @@ ti_expr_list_head :
       ti_expr
       { $$=new vector<TypeInst*>(); $$->push_back($1); }
     | ti_expr_list_head ',' ti_expr
-      { $$=$1; if ($1) $1->push_back($3); }
+      { $$=$1; if ($1 && $3) $1->push_back($3); }
 
 ti_expr :
       base_ti_expr
@@ -969,7 +969,7 @@ expr_list_head :
       expr
       { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
     | expr_list_head ',' expr
-      { $$=$1; if ($$) $$->push_back($3); }
+      { $$=$1; if ($$ && $3) $$->push_back($3); }
 
 ///
 
@@ -1221,7 +1221,7 @@ generator_list_head :
 
 generator : 
       id_list MZN_IN expr
-      { if ($3) $$=new Generator(*$1,$3); delete $1; }
+      { if ($3) $$=new Generator(*$1,$3); else $$=NULL; delete $1; }
 
 id_list : id_list_head comma_or_none
 
@@ -1245,6 +1245,8 @@ simple_array_literal_2d :
             if ((*$2)[i].size() != (*$2)[i-1].size())
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
+        } else {
+          $$ = NULL;
         }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
@@ -1254,6 +1256,8 @@ simple_array_literal_2d :
             if ((*$2)[i].size() != (*$2)[i-1].size())
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
+        } else {
+          $$ = NULL;
         }
       }
 
