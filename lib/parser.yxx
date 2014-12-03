@@ -1221,7 +1221,7 @@ generator_list_head :
 
 generator : 
       id_list MZN_IN expr
-      { $$=new Generator(*$1,$3); delete $1; }
+      { if ($3) $$=new Generator(*$1,$3); delete $1; }
 
 id_list : id_list_head comma_or_none
 
