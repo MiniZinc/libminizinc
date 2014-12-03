@@ -1215,9 +1215,9 @@ generator_list : generator_list_head comma_or_none
 
 generator_list_head :
       generator
-      { $$=new std::vector<Generator>; $$->push_back(*$1); delete $1; }
+      { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
     | generator_list_head ',' generator
-      { $$=$1; $$->push_back(*$3); delete $3; }
+      { $$=$1; if ($3) $$->push_back(*$3); delete $3; }
 
 generator : 
       id_list MZN_IN expr
