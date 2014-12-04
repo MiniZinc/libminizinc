@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % Test product/1 for integers with multi-dimensional arrays.
 
 int: a = product([|2, 2 | 2, 2|]);

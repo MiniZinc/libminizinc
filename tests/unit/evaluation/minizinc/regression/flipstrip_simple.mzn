@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 % flipstrip
 % miniimize the number of moves to turn all bools to true
 
