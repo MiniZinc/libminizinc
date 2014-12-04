@@ -934,7 +934,27 @@ namespace MiniZinc {
         return true;
     return false;
   }
-
+  bool b_xorall_par(ASTExprVec<Expression> args) {
+    if (args.size()!=1)
+      throw EvalError(Location(), "xorall needs exactly one argument");
+    GCLock lock;
+    int count = 0;
+    ArrayLit* al = eval_array_lit(args[0]);
+    for (unsigned int i=al->v().size(); i--;)
+      count += eval_bool(al->v()[i]);
+    return count % 2 == 1;
+  }
+  bool b_iffall_par(ASTExprVec<Expression> args) {
+    if (args.size()!=1)
+      throw EvalError(Location(), "xorall needs exactly one argument");
+    GCLock lock;
+    int count = 0;
+    ArrayLit* al = eval_array_lit(args[0]);
+    for (unsigned int i=al->v().size(); i--;)
+      count += eval_bool(al->v()[i]);
+    return count % 2 == 0;
+  }
+  
   IntVal b_card(ASTExprVec<Expression> args) {
     if (args.size()!=1)
       throw EvalError(Location(), "card needs exactly one argument");
@@ -1611,11 +1631,9 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
       rb(m, constants().ids.forall, t, b_forall_par);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::parbool(-1);
       rb(m, constants().ids.exists, t, b_exists_par);
+      rb(m, ASTString("xorall"), t, b_xorall_par);
+      rb(m, ASTString("iffall"), t, b_iffall_par);
     }
     {
       std::vector<Type> t(2);
