@@ -1,3 +1,4 @@
+% RUSN ON mzn20_fd
 % RUSN ON minizinc_cpx
 % RUNS ON mzn20_fd_linear
 %-----------------------------------------------------------------------------%
