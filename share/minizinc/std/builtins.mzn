@@ -542,11 +542,13 @@ function var bool: exists(array[$T] of var bool: x);
 /** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
 function     bool: xorall(array[$T] of     bool: x);
 /** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
-function var bool: xorall(array[int] of var bool: x) = array_bool_xor(x);
+function var bool: xorall(array[$T] of var bool: x) =
+  array_bool_xor(array1d(x));
 /** @group builtins.logic TODO */
 function     bool: iffall(array[$T] of     bool: x);
 /** @group builtins.logic TODO */
-function var bool: iffall(array[$T] of var bool: x);
+function var bool: iffall(array[$T] of var bool: x) =
+  array_bool_xor(array1d(x)++[true]);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
 function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
