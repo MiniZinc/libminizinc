@@ -703,8 +703,14 @@ namespace MiniZinc {
             case BOT_PLUS: return v0+v1;
             case BOT_MINUS: return v0-v1;
             case BOT_MULT: return v0*v1;
-            case BOT_IDIV: return v0 / v1;
-            case BOT_MOD: return v0 % v1;
+            case BOT_IDIV:
+              if (v1==0)
+                throw EvalError(e->loc(),"division by zero");
+              return v0 / v1;
+            case BOT_MOD:
+              if (v1==0)
+                throw EvalError(e->loc(),"division by zero");
+              return v0 % v1;
             default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
           }
         }
@@ -804,7 +810,10 @@ namespace MiniZinc {
           case BOT_PLUS: return v0+v1;
           case BOT_MINUS: return v0-v1;
           case BOT_MULT: return v0*v1;
-          case BOT_DIV: return v0 / v1;
+          case BOT_DIV:
+            if (v1==0.0)
+              throw EvalError(e->loc(),"division by zero");
+            return v0 / v1;
           default: throw EvalError(e->loc(),"not a float expression", bo->opToString());
         }
       }
