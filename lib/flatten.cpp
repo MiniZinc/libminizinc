@@ -3601,6 +3601,38 @@ namespace MiniZinc {
                         args_ee.push_back(ee);
                       }
                     }
+                  } else if (args[i]()->type().bt() == Type::BT_FLOAT) {
+                    GCLock lock;
+                    BinOp* bo = dom->cast<BinOp>();
+                    FloatVal dom_min = eval_float(bo->lhs());
+                    FloatVal dom_max = eval_float(bo->rhs());
+                    bool needToConstrain;
+                    if (args[i]()->type().dim() > 0) {
+                      needToConstrain = true;
+                    } else {
+                      FloatBounds fb = compute_float_bounds(args[i]());
+                      needToConstrain = !fb.valid || dom_min > dom_max || fb.l < dom_min || fb.u > dom_max;
+                    }
+                    if (needToConstrain) {
+                      GCLock lock;
+                      Expression* domconstraint;
+                      std::vector<Expression*> domargs(3);
+                      domargs[0] = args[i]();
+                      domargs[1] = bo->lhs();
+                      domargs[2] = bo->rhs();
+                      Call* c = new Call(Location().introduce(),"var_dom",domargs);
+                      c->type(Type::varbool());
+                      c->decl(env.orig->matchFn(c));
+                      domconstraint = c;
+                      domconstraint->type(args[i]()->type().ispar() ? Type::parbool() : Type::varbool());
+                      if (ctx.b == C_ROOT) {
+                        (void) flat_exp(env, Ctx(), domconstraint, constants().var_true, constants().var_true);
+                      } else {
+                        EE ee = flat_exp(env, Ctx(), domconstraint, NULL, constants().var_true);
+                        ee.b = ee.r;
+                        args_ee.push_back(ee);
+                      }
+                    }
                   } else if (args[i]()->type().bt() == Type::BT_BOT) {
                     // Nothing to be done for empty arrays/sets
                   } else {

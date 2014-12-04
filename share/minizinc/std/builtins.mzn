@@ -1131,6 +1131,12 @@ predicate var_dom(var set of int: x, set of int: s) =
   if has_ub_set(x) /\ ub(x) subset s then true
   else set_subset(x,s)
   endif;
+predicate var_dom(var float:x, float: l, float: u) =
+  if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
+  else x >= l /\ x <= u
+  endif;
+test var_dom(float:x, float: l, float: u) =
+  x >= l /\ x <= u;
 
 predicate var_dom(array[$T] of var set of int: x, set of int: d) =
     let { array[int] of var set of int: xx = array1d(x) }
@@ -1138,6 +1144,9 @@ predicate var_dom(array[$T] of var set of int: x, set of int: d) =
 predicate var_dom(array[$T] of var int: x, set of int: d) =
     let { array[int] of var int: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
+predicate var_dom(array[$T] of var float: x, float: l, float: u) =
+    let { array[int] of var float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
 
 test var_dom(array[$T] of set of int: x, set of int: d) =
     let { array[int] of set of int: xx = array1d(x) }
@@ -1145,6 +1154,9 @@ test var_dom(array[$T] of set of int: x, set of int: d) =
 test var_dom(array[$T] of int: x, set of int: d) =
     let { array[int] of int: xx = array1d(x) }
     in forall (i in index_set(xx)) (xx[i] in d);
+test var_dom(array[$T] of float: x, float: l, float: u) =
+    let { array[int] of float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
 
 function var set of int: array2set(array[int] of var int: x) ::promise_total =
     let {
