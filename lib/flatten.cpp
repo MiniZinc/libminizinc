@@ -298,9 +298,15 @@ namespace MiniZinc {
 #undef MZN_FILL_REIFY_MAP
   
   void EnvI::addWarning(const std::string& msg) {
-    std::ostringstream oss;
-    dumpStack(oss, false);
-    warnings.push_back(msg+"\n"+oss.str());
+    if (warnings.size()>20)
+      return;
+    if (warnings.size()==20) {
+      warnings.push_back("Further warnings have been suppressed.\n");
+    } else {
+      std::ostringstream oss;
+      dumpStack(oss, false);
+      warnings.push_back(msg+"\n"+oss.str());
+    }
   }
   
   class CallStackItem {
