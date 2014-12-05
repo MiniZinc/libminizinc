@@ -232,7 +232,7 @@ namespace MiniZinc {
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
       if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
-          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==t._ti || _ti==TI_PAR || _ti==TI_SVAR) &&
+          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==TI_PAR || _ti==TI_SVAR) &&
           (_ot==OT_PRESENT || _ot==t._ot) )
         return true;
       // either same dimension or t has variable dimension
