@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % A test for the set version of value_precede/3.
 
 include "value_precede.mzn";

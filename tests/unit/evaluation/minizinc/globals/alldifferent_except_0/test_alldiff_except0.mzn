@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "alldifferent_except_0.mzn";
 
 constraint alldifferent_except_0([]);

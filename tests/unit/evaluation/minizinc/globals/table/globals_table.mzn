@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "table.mzn";
 
 array[1..10,1..3] of int: t;

@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "minimum.mzn";
 include "maximum.mzn";
 

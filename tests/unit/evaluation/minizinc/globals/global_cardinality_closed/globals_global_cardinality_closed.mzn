@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "global_cardinality_closed.mzn";
 
 constraint global_cardinality_closed([3, 3, 5, 6], [3, 5, 6], [2, 1, 1]);
