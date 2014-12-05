@@ -903,7 +903,9 @@ namespace MiniZinc {
         i->decl()->e(addCoercion(m, i->e(), i->decl()->type())());
       }
     } _tsv3(m);
-    iterItems(_tsv3,m);
+    if (typeErrors.empty()) {
+      iterItems(_tsv3,m);
+    }
 
     for (unsigned int i=0; i<ts.decls.size(); i++) {
       if (ts.decls[i]->toplevel() &&

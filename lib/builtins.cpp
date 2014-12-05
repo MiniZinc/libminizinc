@@ -29,7 +29,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.e = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
@@ -38,7 +38,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.f = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
@@ -47,7 +47,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.i = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
@@ -56,7 +56,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.b = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
@@ -65,7 +65,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.s = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -74,7 +74,7 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.str = b;
     } else {
-      assert(false); // TODO: is this an error?
+      throw InternalError("no definition found for builtin "+id.str());
     }
   }
 

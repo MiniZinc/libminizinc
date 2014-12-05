@@ -727,7 +727,7 @@ namespace MiniZinc {
               if (id->decl()->ti()->domain() && isfalse(id->decl()->ti()->domain())) {
                 GCLock lock;
                 env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
-              } else {
+              } else if (id->decl()->ti()->domain()==NULL) {
                 id->decl()->ti()->domain(constants().lit_true);
                 GCLock lock;
                 std::vector<Expression*> args(2);

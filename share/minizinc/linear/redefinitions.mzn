@@ -148,13 +148,6 @@ predicate bool_clause(array[int] of var bool: p, array[int] of var bool: n) =
     + length(n)
     >= 1;
 
-predicate bool_clause_reif(array[int] of var bool: p, array[int] of var bool: n, var bool: c) =
-    c = ( sum(i in index_set(p))( bool2int(p[i]) )
-        - sum(i in index_set(n))( bool2int(n[i]) )
-        + length(n)
-        >= 1
-    );
-
 % predicate array_bool_xor(array[int] of var bool: a) = .. sum(a) is odd ..
 
 %-----------------------------------------------------------------------------%

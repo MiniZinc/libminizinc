@@ -350,7 +350,7 @@ if (BUILD_HTML_DOCUMENTATION)
   add_custom_target(doc ALL
     DEPENDS "mzn2doc"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-    COMMAND ${PROJECT_BINARY_DIR}/mzn2doc --toplevel-groups 2
+    COMMAND mzn2doc --toplevel-groups 2
     --include-stdlib
     --html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
     --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
@@ -363,6 +363,12 @@ if (BUILD_HTML_DOCUMENTATION)
        ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
        DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
+
+if (BUILD_STATIC_EXECUTABLE)
+  set(CMAKE_EXE_LINKER_FLAGS -static)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)

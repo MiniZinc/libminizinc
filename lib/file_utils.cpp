@@ -83,12 +83,15 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   
   bool file_exists(const std::string& filename) {
-    if (FILE *file = fopen(filename.c_str(), "r")) {
-      fclose(file);
-      return true;
-    } else {
-      return false;
-    }
+#if defined(HAS_GETFILEATTRIBUTES)
+    DWORD dwAttrib = GetFileAttributes(filename.c_str());
+    
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat info;
+    return stat(filename.c_str(), &info)==0 && (info.st_mode & S_IFREG);
+#endif
   }
   
   bool directory_exists(const std::string& dirname) {
