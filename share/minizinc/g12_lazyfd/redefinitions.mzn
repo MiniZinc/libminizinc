@@ -49,10 +49,3 @@ predicate int_mod(var int: a, var int: b, var int: c) =
   ( b >= 0 -> c >= 0 /\ c < b) /\
   ( b <= 0 ->  c <= 0 /\ c > b) /\
     b * z + c = a;
-
-predicate bool_clause_reif(array[int] of var bool: as,
-                           array[int] of var bool: bs,
-                           var bool: b) =
-  clause(as,bs++[b]) /\
-  forall (i in index_set(as)) (as[i] -> b) /\
-  forall (i in index_set(bs)) (bs[i] \/ b);

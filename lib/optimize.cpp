@@ -824,6 +824,12 @@ namespace MiniZinc {
       assert(ident->decl() == vd);
       return;
     }
+    if (e->isa<BoolLit>()) {
+      if (e == constants().lit_true && ci) {
+        toRemove.push_back(ci);
+      }
+      return;
+    }
     Call* c = e->cast<Call>();
     if (c->id()==constants().ids.bool_eq) {
       Expression* b0 = c->args()[0];

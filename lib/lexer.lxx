@@ -98,6 +98,8 @@ char* bufferData(void* parm) {
 
 %%
 
+<*>\x0               { beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_INVALID_NULL; }
+
 \xa               { MiniZinc::ParserState* parm =
                       static_cast<MiniZinc::ParserState*>(
                         yyget_extra(yyscanner));
@@ -457,7 +459,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                   beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
 
 \"                { yy_push_state(string,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
-<string,string_quote>[^\\"\xa\xd]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+<string,string_quote>[^\\"\xa\xd\x0]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
 <string,string_quote>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
 <string,string_quote>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
 <string,string_quote>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
