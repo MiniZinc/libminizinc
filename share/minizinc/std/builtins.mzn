@@ -878,6 +878,12 @@ function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
 
+function set of int: bool2int(set of bool: b) =
+  if b={false,true} then {0,1}
+  elseif b={false} then {0}
+  elseif b={true} then {1}
+  else {} endif;
+
 /** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
 function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
   let {
