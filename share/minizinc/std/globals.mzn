@@ -49,6 +49,7 @@ include "disjoint.mzn";
 include "distribute.mzn";
 include "element.mzn";
 include "exactly.mzn";
+include "geost.mzn";
 include "global_cardinality.mzn";
 include "global_cardinality_closed.mzn";
 include "global_cardinality_low_up.mzn";
