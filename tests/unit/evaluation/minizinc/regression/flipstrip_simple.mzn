@@ -10,4 +10,4 @@ constraint false \/ not pos[f1];
  
 solve satisfy;
 
-output [ show(f1) ];
+output [ "f1 = ",show(f1),";\n" ];
