@@ -564,7 +564,7 @@ namespace MiniZinc {
           }
         }
         
-        os << "</div>\n<div class='mzn-fundecl-more-code'><div class='mzn-fundecl-doc'>\n";
+        os << "</div>\n<div class='mzn-fundecl-doc'>\n";
         std::string dshtml = addHTML(ds);
 
         os << dshtml;
@@ -576,7 +576,7 @@ namespace MiniZinc {
           }
           os << "</ul>\n";
         }
-        os << "</div></div>";
+        os << "</div>";
         os << "</div>";
 
         HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), os.str());
