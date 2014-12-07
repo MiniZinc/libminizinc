@@ -293,6 +293,16 @@ function var float: min(array[$U] of var float: x) =
     constraint length(x) >= 1;
   } in min_t(xx);
 
+
+/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+function int: arg_min(array[int] of int: x);
+/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+function int: arg_min(array[int] of float: x);
+/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+function int: arg_max(array[int] of int: x);
+/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+function int: arg_max(array[int] of float: x);
+
 /** @group builtins.arithmetic Return absolute value of \a x */
 function int: abs(int: x);
 

@@ -126,6 +126,72 @@ namespace MiniZinc {
     }
   }
   
+  IntVal b_arg_min_int(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      throw EvalError(al->loc(), "Array is empty");
+    IntVal m = eval_int(al->v()[0]);
+    int m_idx = 0;
+    for (unsigned int i=1; i<al->v().size(); i++) {
+      IntVal mi = eval_int(al->v()[i]);
+      if (mi < m) {
+        m = mi;
+        m_idx = i;
+      }
+    }
+    return m_idx+1;
+  }
+  IntVal b_arg_max_int(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      throw EvalError(al->loc(), "Array is empty");
+    IntVal m = eval_int(al->v()[0]);
+    int m_idx = 0;
+    for (unsigned int i=1; i<al->v().size(); i++) {
+      IntVal mi = eval_int(al->v()[i]);
+      if (mi > m) {
+        m = mi;
+        m_idx = i;
+      }
+    }
+    return m_idx+1;
+  }
+  IntVal b_arg_min_float(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      throw EvalError(al->loc(), "Array is empty");
+    FloatVal m = eval_float(al->v()[0]);
+    int m_idx = 0;
+    for (unsigned int i=1; i<al->v().size(); i++) {
+      FloatVal mi = eval_float(al->v()[i]);
+      if (mi < m) {
+        m = mi;
+        m_idx = i;
+      }
+    }
+    return m_idx+1;
+  }
+  IntVal b_arg_max_float(ASTExprVec<Expression> args) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(args[0]);
+    if (al->v().size()==0)
+      throw EvalError(al->loc(), "Array is empty");
+    FloatVal m = eval_float(al->v()[0]);
+    int m_idx = 0;
+    for (unsigned int i=1; i<al->v().size(); i++) {
+      FloatVal mi = eval_float(al->v()[i]);
+      if (mi > m) {
+        m = mi;
+        m_idx = i;
+      }
+    }
+    return m_idx+1;
+  }
+  
+  
   IntVal b_abs_int(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     return std::abs(eval_int(args[0]));
@@ -1424,6 +1490,7 @@ namespace MiniZinc {
 
   Expression* b_arg_sort(ASTExprVec<Expression> args) {
     assert(args.size()==1);
+    GCLock lock;
     ArrayLit* al = eval_array_lit(args[0]);
     std::vector<int> idx(al->v().size());
     for (unsigned int i=idx.size(); i--;)
@@ -1939,11 +2006,15 @@ namespace MiniZinc {
       t[0] = Type::parint(1);
       rb(m, ASTString("sort"), t, b_sort);
       rb(m, ASTString("arg_sort"), t, b_arg_sort);
+      rb(m, ASTString("arg_min"), t, b_arg_min_int);
+      rb(m, ASTString("arg_max"), t, b_arg_max_int);
       t[0] = Type::parbool(1);
       rb(m, ASTString("sort"), t, b_sort);
       t[0] = Type::parfloat(1);
       rb(m, ASTString("sort"), t, b_sort);
       rb(m, ASTString("arg_sort"), t, b_arg_sort);
+      rb(m, ASTString("arg_min"), t, b_arg_min_float);
+      rb(m, ASTString("arg_max"), t, b_arg_max_float);
     }
   }
   
