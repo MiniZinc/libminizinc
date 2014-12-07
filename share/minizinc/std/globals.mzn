@@ -61,6 +61,7 @@ include "increasing.mzn";
 include "int_set_channel.mzn";
 include "inverse.mzn";
 include "inverse_set.mzn";
+include "knapsack.mzn";
 include "lex_greater.mzn";
 include "lex_greatereq.mzn";
 include "lex_lesseq.mzn";
