@@ -71,6 +71,7 @@ include "link_set_to_booleans.mzn";
 include "maximum.mzn";
 include "member.mzn";
 include "minimum.mzn";
+include "network_flow.mzn";
 include "nvalue.mzn";
 include "partition_set.mzn";
 include "range.mzn";
