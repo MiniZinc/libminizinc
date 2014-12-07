@@ -838,15 +838,34 @@ test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=
 /** @group builtins.array Test if \a e is an element of array \a x */
 predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
-/** @group builtins.array Return array \a x sorted by the values in \a y */
+/***
+  @groupdef builtins.sort Array sorting operations
+*/
+
+/** @group builtins.sort Return array \a x sorted by the values in \a y */
 function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of int: sort(array[int] of int: x);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of float: sort(array[int] of float: x);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of bool: sort(array[int] of bool: x);
 
+/** @group builtins.sort
+Returns the permutation \a p which causes \a x to be in sorted order hence
+\a x[\a p[\p i]] <= \a x[\a p[\p i+1]].
+
+The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
+*/
+function array[int] of int: arg_sort(array[int] of int:x);
+
+/** @group builtins.sort
+Returns the permutation \a p which causes \a x to be in sorted order hence
+\a x[\a p[\p i]] <= \a x[\a p[\p i+1]].
+
+The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
+*/
+function array[int] of int: arg_sort(array[int] of float:x);
 
 /***
   @groupdef builtins.coercion Coercions

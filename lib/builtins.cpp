@@ -1422,6 +1422,35 @@ namespace MiniZinc {
     return al_sorted;
   }
 
+  Expression* b_arg_sort(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    ArrayLit* al = eval_array_lit(args[0]);
+    std::vector<int> idx(al->v().size());
+    for (unsigned int i=idx.size(); i--;)
+      idx[i] = i;
+    struct Ord {
+      ArrayLit* al;
+      Ord(ArrayLit* al0) : al(al0) {}
+      bool operator()(int i0, int i1) {
+        Expression* e0 = al->v()[i0];
+        Expression* e1 = al->v()[i1];
+        switch (e0->type().bt()) {
+          case Type::BT_INT: return eval_int(e0) < eval_int(e1);
+          case Type::BT_BOOL: return eval_bool(e0) < eval_bool(e1);
+          case Type::BT_FLOAT: return eval_float(e0) < eval_float(e1);
+          default: throw EvalError(e0->loc(), "unsupported type for sorting");
+        }
+      }
+    } _ord(al);
+    std::stable_sort(idx.begin(),idx.end(),_ord);
+    std::vector<Expression*> perm(idx.size());
+    for (unsigned int i=0; i<idx.size(); i++)
+      perm[idx[i]] = new IntLit(Location(),i+1);
+    ArrayLit* perm_al = new ArrayLit(al->loc(), perm);
+    perm_al->type(Type::parint(1));
+    return perm_al;
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -1909,10 +1938,12 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parint(1);
       rb(m, ASTString("sort"), t, b_sort);
+      rb(m, ASTString("arg_sort"), t, b_arg_sort);
       t[0] = Type::parbool(1);
       rb(m, ASTString("sort"), t, b_sort);
       t[0] = Type::parfloat(1);
       rb(m, ASTString("sort"), t, b_sort);
+      rb(m, ASTString("arg_sort"), t, b_arg_sort);
     }
   }
   
