@@ -1146,6 +1146,8 @@ function $T: trace(string: msg, $T: x);
 function var $T: trace(string: msg, var $T: x);
 /** @group builtins.debug Return \a x, and print message \a msg. */
 function var opt $T: trace(string: msg, var opt $T: x);
+/** @group builtins.debug Return true, and print message \a msg. */
+function bool: trace(string: msg);
 
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);

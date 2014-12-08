@@ -1179,11 +1179,10 @@ namespace MiniZinc {
   }
   
   Expression* b_trace(ASTExprVec<Expression> args) {
-    assert(args.size()==2);
     GCLock lock;
     StringLit* msg = eval_par(args[0])->cast<StringLit>();
     std::cerr << msg->v();
-    return args[1];
+    return args.size()==1 ? constants().lit_true : args[1];
   }
   
   Expression* b_set2array(ASTExprVec<Expression> args) {
@@ -1702,6 +1701,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parstring();
       rb(m, ASTString("abort"), t, b_abort);
+      rb(m, constants().ids.trace, t, b_trace);
     }
     {
       std::vector<Type> t(2);
