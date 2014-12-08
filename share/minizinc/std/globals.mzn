@@ -50,6 +50,8 @@ include "decreasing.mzn";
 include "diffn.mzn";
 include "diffn_k.mzn";
 include "disjoint.mzn";
+include "disjunctive.mzn";
+include "disjunctive_strict.mzn";
 include "distribute.mzn";
 include "element.mzn";
 include "exactly.mzn";
