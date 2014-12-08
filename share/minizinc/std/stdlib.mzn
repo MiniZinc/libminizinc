@@ -368,6 +368,29 @@ function var opt int: max(array[int] of var opt int: x) ::promise_total =
             deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
     } in m;
 
+/** @group optiontypes.int Weak addition. Return sum of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
+    if absent(x) \/ absent(y) then <>
+    else deopt(x)+deopt(y) endif;
+
+/** @group optiontypes.int Weak subtraction. Return difference of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
+    if absent(x) \/ absent(y) then <>
+    else deopt(x)-deopt(y) endif;
+
+/** @group optiontypes.int Weak multiplication. Return product of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total =
+    if absent(x) \/ absent(y) then <>
+    else deopt(x)*deopt(y) endif;
+
+/** @group optiontypes.int Weak equality. True if either \a x or \a y are absent, or
+present and equal.*/
+function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
+
 /** @group optiontypes.int Return optional 0/1 integer that is absent iff \a x
   is absent, and 1 iff \a x occurs and is true. */
 function var opt int: bool2int(var opt bool: x) ::promise_total =
