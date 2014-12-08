@@ -346,6 +346,28 @@ function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) 
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
+/** @group optiontypes.int Return minimum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+function var opt int: min(array[int] of var opt int: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        int: xmax = ub_array(x);
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
+    } in m;
+
+/** @group optiontypes.int Return maximum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+function var opt int: max(array[int] of var opt int: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        int: xmin = lb_array(x);
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
+    } in m;
+
 /** @group optiontypes.int Return optional 0/1 integer that is absent iff \a x
   is absent, and 1 iff \a x occurs and is true. */
 function var opt int: bool2int(var opt bool: x) ::promise_total =
