@@ -554,9 +554,9 @@ function     bool: xorall(array[$T] of     bool: x);
 /** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
 function var bool: xorall(array[$T] of var bool: x) =
   array_bool_xor(array1d(x));
-/** @group builtins.logic TODO */
+/** @group builtins.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
 function     bool: iffall(array[$T] of     bool: x);
-/** @group builtins.logic TODO */
+/** @group builtins.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
 function var bool: iffall(array[$T] of var bool: x) =
   array_bool_xor(array1d(x)++[true]);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
