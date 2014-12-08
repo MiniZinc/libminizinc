@@ -824,7 +824,7 @@ namespace MiniZinc {
 
             if (vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
-              if (vd->e()->type().isset()) {
+              if (vd->e()->type().is_set()) {
                 ibv = compute_intset_bounds(vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(vd->e());
@@ -907,7 +907,7 @@ namespace MiniZinc {
                   cid = constants().ids.int_.eq;
                 } else if (e->type().isbool()) {
                   cid = constants().ids.bool_eq;
-                } else if (e->type().isset()) {
+                } else if (e->type().is_set()) {
                   cid = constants().ids.set_eq;
                 } else if (e->type().isfloat()) {
                   cid = constants().ids.float_.eq;
@@ -938,7 +938,7 @@ namespace MiniZinc {
             if (vd->e() && vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
-              if (vd->e()->type().isset()) {
+              if (vd->e()->type().is_set()) {
                 ibv = compute_intset_bounds(vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(vd->e());
@@ -1011,7 +1011,7 @@ namespace MiniZinc {
                 cid = constants().ids.int_.eq;
               } else if (e->type().isbool()) {
                 cid = constants().ids.bool_eq;
-              } else if (e->type().isset()) {
+              } else if (e->type().is_set()) {
                 cid = constants().ids.set_eq;
               } else if (e->type().isfloat()) {
                 cid = constants().ids.float_.eq;
@@ -1221,7 +1221,7 @@ namespace MiniZinc {
       if (bot==BOT_EQ || bot==BOT_EQUIV)
         return constants().ids.bool_eq;
       builtin = "bool_";
-    } else if (op->rhs()->type().isset()) {
+    } else if (op->rhs()->type().is_set()) {
       builtin = "set_";
     } else if (op->rhs()->type().isfloat()) {
       switch (bot) {
@@ -3780,7 +3780,7 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
             if (v->e()->type().bt()==Type::BT_INT && v->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
-              if (v->e()->type().isset()) {
+              if (v->e()->type().is_set()) {
                 ibv = compute_intset_bounds(v->e());
               } else {
                 IntBounds ib = compute_int_bounds(v->e());

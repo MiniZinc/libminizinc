@@ -588,7 +588,7 @@ namespace MiniZinc {
             assert(false);
             throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isset() && bo->rhs()->type().isset()) {
+        } else if (bo->lhs()->type().is_set() && bo->rhs()->type().is_set()) {
           GCLock lock;
           IntSetVal* v0 = eval_intset(bo->lhs());
           IntSetVal* v1 = eval_intset(bo->rhs());

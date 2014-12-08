@@ -81,7 +81,7 @@ namespace MiniZinc {
   IntVal b_int_min(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
-      if (args[0]->type().isset()) {
+      if (args[0]->type().is_set()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -105,7 +105,7 @@ namespace MiniZinc {
   IntVal b_int_max(ASTExprVec<Expression> args) {
     switch (args.size()) {
     case 1:
-      if (args[0]->type().isset()) {
+      if (args[0]->type().is_set()) {
         throw EvalError(args[0]->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -517,7 +517,7 @@ namespace MiniZinc {
   FloatVal b_float_min(ASTExprVec<Expression> args) {
     switch (args.size()) {
       case 1:
-        if (args[0]->type().isset()) {
+        if (args[0]->type().is_set()) {
           throw EvalError(args[0]->loc(), "sets not supported");
         } else {
           GCLock lock;
@@ -541,7 +541,7 @@ namespace MiniZinc {
   FloatVal b_float_max(ASTExprVec<Expression> args) {
     switch (args.size()) {
       case 1:
-        if (args[0]->type().isset()) {
+        if (args[0]->type().is_set()) {
           throw EvalError(args[0]->loc(), "sets not supported");
         } else {
           GCLock lock;

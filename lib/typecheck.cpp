@@ -449,7 +449,7 @@ namespace MiniZinc {
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().isset() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
+        if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be `int', but is `"+aai->type().toString()+"'");
         }
         aa.idx()[i] = addCoercion(_model, aai, Type::varint())();
