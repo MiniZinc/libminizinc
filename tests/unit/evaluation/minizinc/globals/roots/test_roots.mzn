@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 var 1..1: x;	% Just so we have something to print out.
 
 include "roots.mzn";

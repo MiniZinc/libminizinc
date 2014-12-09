@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 array [1..3] of var set of 1..5: a;
 var 2..10: x;
 var set of 1..10: s = a[x];

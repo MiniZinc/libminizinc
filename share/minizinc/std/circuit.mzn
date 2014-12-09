@@ -1,10 +1,9 @@
-%-----------------------------------------------------------------------------%
-% Constrains the elements of 'x' to define a circuit where 'x[i] = j' means
-% that 'j' is the successor of 'i'.
-%-----------------------------------------------------------------------------%
-
 include "alldifferent.mzn";
 
+/** @group globals
+  Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
+  that \p j is the successor of \p i.
+*/
 predicate circuit(array[int] of var int: x) = 
     let { set of int: S = index_set(x),
           int: l = min(S),

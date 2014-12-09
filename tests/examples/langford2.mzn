@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % vim: ft=zinc ts=4 sw=4 et
 % Ralph Becket <rafe@csse.unimelb.edu.au>

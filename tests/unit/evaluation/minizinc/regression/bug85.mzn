@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 % A regression test for G12 bug #85.
 %
 include "all_different.mzn";

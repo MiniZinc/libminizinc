@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 var 1..3: a;
 
 predicate test_pred(array[int] of 1.0..10.0: x, var int: y) = y = 3;

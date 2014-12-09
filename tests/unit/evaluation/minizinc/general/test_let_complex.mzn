@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 array[1..5] of var int: x = [1,3,5,7,9];
 array[4..8] of var int: y = array1d(4..8, [1,3,5,8,9]);
 

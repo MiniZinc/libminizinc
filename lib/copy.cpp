@@ -62,6 +62,7 @@ namespace MiniZinc {
     loc.first_column = _loc.first_column;
     loc.last_line = _loc.last_line;
     loc.last_column = _loc.last_column;
+    loc.is_introduced = _loc.is_introduced;
     if (_loc.filename != "") {
       if (ASTStringO* f = m.find(ASTString(_loc.filename))) {
         loc.filename = ASTString(f);
@@ -199,20 +200,24 @@ namespace MiniZinc {
           }
         } else {
           Id* c;
-          if (id->idn()!=-1) {
-            c = new Id(copy_location(m,e),id->idn(),NULL);
+          if (id->decl()) {
+            VarDecl* vd = static_cast<VarDecl*>(copy(m,id->decl(),followIds));
+            c = vd->id();
           } else {
-            ASTString id_v;
-            if (ASTStringO* cs = m.find(id->v())) {
-              id_v = ASTString(cs);
+            if (id->idn()!=-1) {
+              c = new Id(copy_location(m,e),id->idn(),NULL);
             } else {
-              id_v = ASTString(id->v().str());
-              m.insert(id->v(),id_v);
+              ASTString id_v;
+              if (ASTStringO* cs = m.find(id->v())) {
+                id_v = ASTString(cs);
+              } else {
+                id_v = ASTString(id->v().str());
+                m.insert(id->v(),id_v);
+              }
+              c = new Id(copy_location(m,e),id_v,NULL);
             }
-            c = new Id(copy_location(m,e),id_v,NULL);
           }
           m.insert(e,c);
-          c->decl(static_cast<VarDecl*>(copy(m,id->decl(),followIds)));
           ret = c;
         }
       }

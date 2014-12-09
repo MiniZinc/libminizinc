@@ -17,7 +17,7 @@
 
 namespace MiniZinc {
   
-  Model::Model(void) : _parent(NULL) {
+  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {
     GC::add(this);
   }
 
@@ -34,6 +34,33 @@ namespace MiniZinc {
     GC::remove(this);
   }
 
+  VarDeclIterator
+  Model::begin_vardecls(void) {
+    return VarDeclIterator(this, begin());
+  }
+  VarDeclIterator
+  Model::end_vardecls(void) {
+    return VarDeclIterator(this, end());
+  }
+  ConstraintIterator
+  Model::begin_constraints(void) {
+    return ConstraintIterator(this, begin());
+  }
+  ConstraintIterator
+  Model::end_constraints(void) {
+    return ConstraintIterator(this, end());
+  }
+  
+  SolveI*
+  Model::solveItem() {
+    return _solveItem;
+  }
+  
+  OutputI*
+  Model::outputItem() {
+    return _outputItem;
+  }
+  
   void
   Model::registerFn(FunctionI* fi) {
     Model* m = this;
@@ -243,5 +270,14 @@ namespace MiniZinc {
     }} isremoved;
     _items.erase(remove_if(_items.begin(),_items.end(),isremoved),
                  _items.end());
+  }
+  
+  void
+  Model::fail(void) {
+    if (!_failed) {
+      _failed = true;
+      ConstraintI* failedConstraint = new ConstraintI(Location().introduce(),constants().lit_false);
+      _items.push_back(failedConstraint);
+    }
   }
 }

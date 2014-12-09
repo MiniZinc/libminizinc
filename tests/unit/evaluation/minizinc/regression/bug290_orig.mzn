@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % Regression test for bug #290: this model caused self-assignments to
 % be created for introduced variables.

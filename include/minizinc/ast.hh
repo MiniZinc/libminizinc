@@ -63,7 +63,9 @@ namespace MiniZinc {
     /// Line where expression ends
     unsigned int last_line;
     /// Column where expression ends
-    unsigned int last_column;
+    unsigned int last_column : 30;
+    /// Whether the location was introduced during compilation
+    unsigned int is_introduced : 1;
     
     /// Construct empty location
     Location(void);
@@ -73,6 +75,9 @@ namespace MiniZinc {
     
     /// Mark as alive for garbage collection
     void mark(void) const;
+    
+    /// Return location with introduced flag set
+    Location introduce(void) const;
   };
 
   /// Output operator for locations
@@ -114,6 +119,12 @@ namespace MiniZinc {
     void clear(void);
     void merge(const Annotation& ann);
   };
+  
+  /// returns the Annotation specified by the string; returns NULL if not exists
+  Expression* getAnnotation(const Annotation& ann, std::string str);
+
+  /// returns the Annotation specified by the string; returns NULL if not exists
+  Expression* getAnnotation(const Annotation& ann, const ASTString& str);
 
   /**
    * \brief Base class for expressions
@@ -168,6 +179,9 @@ namespace MiniZinc {
 
     /// Compute base hash value
     void init_hash(void) { _hash = cmb_hash(0,_id); }
+
+    /// Check if \a e0 and \a e1 are equal
+    static bool equal_internal(const Expression* e0, const Expression* e1);
 
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
@@ -427,6 +441,9 @@ namespace MiniZinc {
     ArrayLit(const Location& loc,
              ASTExprVec<Expression> v,
              const std::vector<std::pair<int,int> >& dims);
+    /// Constructor (one-dimensional, existing content)
+    ArrayLit(const Location& loc,
+             ASTExprVec<Expression> v);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
@@ -451,6 +468,10 @@ namespace MiniZinc {
     int length(void) const;
     /// Set dimension vector
     void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Check if this array was produced by flattening
+    bool flat(void) const { return _flag_1; }
+    /// Set whether this array was produced by flattening
+    void flat(bool b) { _flag_1 = b; }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -584,6 +605,8 @@ namespace MiniZinc {
     const Expression* e_if(int i) const { return _e_if_then[2*i]; }
     const Expression* e_then(int i) const { return _e_if_then[2*i+1]; }
     const Expression* e_else(void) const { return _e_else; }
+    void e_then(int i, Expression* e) { _e_if_then[2*i+1] = e; }
+    void e_else(Expression* e) { _e_else = e; }
     /// Recompute hash value
     void rehash(void);
     /// Re-construct (used for copying)
@@ -886,6 +909,23 @@ namespace MiniZinc {
     template<class T> const T* dyn_cast(void) const {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
+
+    /// Cast item to type \a T*
+    template<class T> static T* cast(Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a const T*
+    template<class T> static const T* cast(const Item* i) {
+      return i==NULL ? NULL : i->cast<T>();
+    }
+    /// Cast item to type \a T* or NULL if types do not match
+    template<class T> static T* dyn_cast(Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
+    /// Cast item to type \a const T* or NULL if types do not match
+    template<class T> static const T* dyn_cast(const Item* i) {
+      return i==NULL ? NULL : i->dyn_cast<T>();
+    }
     
     /// Check if item should be removed
     bool removed(void) const { return _flag_1; }
@@ -936,6 +976,14 @@ namespace MiniZinc {
     VarDecl* e(void) const { return _e; }
     /// Set expression
     void e(VarDecl* vd) { _e = vd; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Assign item
@@ -979,6 +1027,14 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Set expression
     void e(Expression* e0) { _e = e0; }
+    /// Flag used during compilation
+    bool flag(void) const {
+      return _flag_2;
+    }
+    /// Set flag used during compilation
+    void flag(bool b) {
+      _flag_2 = b;
+    }
   };
 
   /// \brief Solve item
@@ -1087,6 +1143,8 @@ namespace MiniZinc {
     Annotation& ann(void) { return _ann; }
     /// Access body
     Expression* e(void) const { return _e; }
+    /// Set body
+    void e(Expression* b) { _e = b; }
     
     /** \brief Compute return type given argument types \a ta
      */
@@ -1094,6 +1152,9 @@ namespace MiniZinc {
     /** \brief Compute return type given argument types \a ta
      */
     Type rtype(const std::vector<Type>& ta);
+    /** \brief Compute expected type of argument \a n given argument types \a ta
+     */
+    Type argtype(const std::vector<Expression*>& ta, int n);
   };
 
   /**
@@ -1175,6 +1236,8 @@ namespace MiniZinc {
         ASTString exists;
         ASTString clause;
         ASTString bool2int;
+        ASTString int2float;
+        ASTString bool2float;
         ASTString assert;
         ASTString trace;
 
@@ -1286,6 +1349,7 @@ namespace MiniZinc {
         Id* is_reverse_map;
         Id* promise_total;
         ASTString doc_comment;
+        ASTString is_introduced;
       } ann;
       /// Constructor
       Constants(void);

@@ -1,11 +1,12 @@
-%-----------------------------------------------------------------------------%
-% Requires that each item i with weight w[i], be put into bin[i] such that the
-% sum of the weights of the items in each bin does not exceed the capacity c.
-% Assumptions:
-% - forall i, w[i] >=0
-% - c >=0
-%-----------------------------------------------------------------------------%
+/**  @group globals.packing
+  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such 
+  that the sum of the weights of the items in each bin does not exceed the 
+  capacity \a c.
 
+  Assumptions:
+  - forall \p i, \a w[\p i] >=0
+  - \a c >=0
+*/
 predicate bin_packing(int: c,
                       array[int] of var int: bin,
                       array[int] of int: w) =

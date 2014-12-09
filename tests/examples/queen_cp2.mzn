@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 
 % n-queens example in Zinc using CP techniques
 % By Reza Rafeh July 2005

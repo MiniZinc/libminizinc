@@ -23,7 +23,8 @@ namespace MiniZinc {
   : first_line(0),
     first_column(0),
     last_line(0),
-    last_column(0) {}
+    last_column(0),
+    is_introduced(0) {}
 
   std::string
   Location::toString(void) const {
@@ -36,6 +37,13 @@ namespace MiniZinc {
   Location::mark(void) const {
     filename.mark();
   }
+  
+  Location
+  Location::introduce() const {
+    Location l = *this;
+    l.is_introduced = 1;
+    return l;
+  }
 
   void
   Expression::addAnnotation(Expression* ann) {
@@ -44,8 +52,10 @@ namespace MiniZinc {
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
     for (unsigned int i=0; i<ann.size(); i++)
-      _ann.add(ann[i]);
+      if (ann[i])
+        _ann.add(ann[i]);
   }
+
 
 #define pushstack(e) do { if (e!=NULL) { stack.push_back(e); }} while(0)
 #define pushall(v) do { v.mark(); for (unsigned int i=0; i<v.size(); i++) if (v[i]!=NULL) { stack.push_back(v[i]); }} while(0)
@@ -220,8 +230,10 @@ namespace MiniZinc {
       cmb_hash(h(_dims[i]));
       cmb_hash(h(_dims[i+1]));
     }
-    for (unsigned int i=_v.size(); i--;)
+    for (unsigned int i=_v.size(); i--;) {
+      cmb_hash(h(i));
       cmb_hash(Expression::hash(_v[i]));
+    }
   }
   int
   ArrayLit::dims(void) const {
@@ -589,9 +601,9 @@ namespace MiniZinc {
   TypeInst::hasTiVariable(void) const {
     if (domain() && domain()->isa<TIId>())
       return true;
-    if (_ranges.size()==1 &&
-        _ranges[0]->isa<TIId>())
-      return true;
+    for (unsigned int i=_ranges.size(); i--;)
+      if (_ranges[i]->isa<TIId>())
+        return true;
     return false;
   }
 
@@ -707,18 +719,39 @@ namespace MiniZinc {
     return return_type(this, ta);
   }
 
+  Type
+  FunctionI::argtype(const std::vector<Expression *>& ta, int n) {
+    TypeInst* tii = params()[n]->ti();
+    if (tii->domain() && tii->domain()->isa<TIId>()) {
+      Type ty = ta[n]->type();
+      ty.st(tii->type().st());
+      ty.dim(tii->type().dim());
+      ASTString tv = tii->domain()->cast<TIId>()->v();
+      for (unsigned int i=0; i<params().size(); i++) {
+        if (params()[i]->ti()->domain() && params()[i]->ti()->domain()->isa<TIId>() &&
+            params()[i]->ti()->domain()->cast<TIId>()->v() == tv) {
+          Type toCheck = ta[i]->type();
+          toCheck.st(tii->type().st());
+          toCheck.dim(tii->type().dim());
+          if (toCheck != ty && ty.isSubtypeOf(toCheck)) {
+            ty = toCheck;
+          }
+        }
+      }
+      return ty;
+    } else {
+      return tii->type();
+    }
+  }
+  
   bool
-  Expression::equal(const Expression* e0, const Expression* e1) {
-    if (e0==e1) return true;
-    if (e0 == NULL || e1 == NULL) return false;
-    if (e0->_id != e1->_id) return false;
-    if (e0->type() != e1->type()) return false;
+  Expression::equal_internal(const Expression* e0, const Expression* e1) {
     switch (e0->eid()) {
-    case Expression::E_INTLIT:
-      return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
-    case Expression::E_FLOATLIT:
-      return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
-    case Expression::E_SETLIT:
+      case Expression::E_INTLIT:
+        return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
+      case Expression::E_FLOATLIT:
+        return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
+      case Expression::E_SETLIT:
       {
         const SetLit* s0 = e0->cast<SetLit>();
         const SetLit* s1 = e1->cast<SetLit>();
@@ -739,11 +772,11 @@ namespace MiniZinc {
           return true;
         }
       }
-    case Expression::E_BOOLLIT:
-      return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
-    case Expression::E_STRINGLIT:
-      return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
-    case Expression::E_ID:
+      case Expression::E_BOOLLIT:
+        return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
+      case Expression::E_STRINGLIT:
+        return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
+      case Expression::E_ID:
       {
         const Id* id0 = e0->cast<Id>();
         const Id* id1 = e1->cast<Id>();
@@ -751,24 +784,29 @@ namespace MiniZinc {
           return id0->v()==id1->v() && id0->idn()==id1->idn();
         }
         return id0->decl()==id1->decl() ||
-          ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
+        ( id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat() );
       }
-    case Expression::E_ANON:
-      return false;
-    case Expression::E_ARRAYLIT:
+      case Expression::E_ANON:
+        return false;
+      case Expression::E_ARRAYLIT:
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
         if (a0->v().size() != a1->v().size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
-        for (unsigned int i=0; i<a0->_dims.size(); i++)
-          if ( a0->_dims[i] != a1->_dims[i] ) return false;
-        for (unsigned int i=0; i<a0->v().size(); i++)
-          if (!Expression::equal( a0->v()[i], a1->v()[i] ))
+        for (unsigned int i=0; i<a0->_dims.size(); i++) {
+          if ( a0->_dims[i] != a1->_dims[i] ) {
             return false;
+          }
+        }
+        for (unsigned int i=0; i<a0->v().size(); i++) {
+          if (!Expression::equal( a0->v()[i], a1->v()[i] )) {
+            return false;
+          }
+        }
         return true;
       }
-    case Expression::E_ARRAYACCESS:
+      case Expression::E_ARRAYACCESS:
       {
         const ArrayAccess* a0 = e0->cast<ArrayAccess>();
         const ArrayAccess* a1 = e1->cast<ArrayAccess>();
@@ -779,7 +817,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_COMP:
+      case Expression::E_COMP:
       {
         const Comprehension* c0 = e0->cast<Comprehension>();
         const Comprehension* c1 = e1->cast<Comprehension>();
@@ -797,20 +835,20 @@ namespace MiniZinc {
         }
         return true;
       }
-    case Expression::E_ITE:
+      case Expression::E_ITE:
       {
         const ITE* i0 = e0->cast<ITE>();
         const ITE* i1 = e1->cast<ITE>();
         if (i0->_e_if_then.size() != i1->_e_if_then.size()) return false;
         for (unsigned int i=i0->_e_if_then.size(); i--; ) {
           if (!Expression::equal ( i0->_e_if_then[i],
-                                   i1->_e_if_then[i]))
+                                  i1->_e_if_then[i]))
             return false;
         }
         if (!Expression::equal (i0->e_else(), i1->e_else())) return false;
         return true;
       }
-    case Expression::E_BINOP:
+      case Expression::E_BINOP:
       {
         const BinOp* b0 = e0->cast<BinOp>();
         const BinOp* b1 = e1->cast<BinOp>();
@@ -819,7 +857,7 @@ namespace MiniZinc {
         if (!Expression::equal (b0->rhs(), b1->rhs())) return false;
         return true;
       }
-    case Expression::E_UNOP:
+      case Expression::E_UNOP:
       {
         const UnOp* b0 = e0->cast<UnOp>();
         const UnOp* b1 = e1->cast<UnOp>();
@@ -827,7 +865,7 @@ namespace MiniZinc {
         if (!Expression::equal (b0->e(), b1->e())) return false;
         return true;
       }
-    case Expression::E_CALL:
+      case Expression::E_CALL:
       {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
@@ -839,7 +877,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_VARDECL:
+      case Expression::E_VARDECL:
       {
         const VarDecl* v0 = e0->cast<VarDecl>();
         const VarDecl* v1 = e1->cast<VarDecl>();
@@ -848,7 +886,7 @@ namespace MiniZinc {
         if (!Expression::equal ( v0->e(), v1->e() )) return false;
         return true;
       }
-    case Expression::E_LET:
+      case Expression::E_LET:
       {
         const Let* l0 = e0->cast<Let>();
         const Let* l1 = e1->cast<Let>();
@@ -859,7 +897,7 @@ namespace MiniZinc {
             return false;
         return true;
       }
-    case Expression::E_TI:
+      case Expression::E_TI:
       {
         const TypeInst* t0 = e0->cast<TypeInst>();
         const TypeInst* t1 = e1->cast<TypeInst>();
@@ -870,14 +908,14 @@ namespace MiniZinc {
         if (!Expression::equal (t0->domain(), t1->domain())) return false;
         return true;
       }
-    case Expression::E_TIID:
-      return false;
-    default:
-      assert(false);
-      return false;
+      case Expression::E_TIID:
+        return false;
+      default:
+        assert(false);
+        return false;
     }
-  }    
-
+  }
+  
   Constants::Constants(void) {
     GC::init();
     GCLock lock;
@@ -901,6 +939,8 @@ namespace MiniZinc {
     ids.exists = ASTString("exists");
     ids.clause = ASTString("clause");
     ids.bool2int = ASTString("bool2int");
+    ids.int2float = ASTString("int2float");
+    ids.bool2float = ASTString("bool2float");
     ids.assert = ASTString("assert");
     ids.trace = ASTString("trace");
 
@@ -1007,6 +1047,7 @@ namespace MiniZinc {
     ann.promise_total = new Id(Location(), ASTString("promise_total"), NULL);
     ann.promise_total->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
+    ann.is_introduced = ASTString("is_introduced");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1023,6 +1064,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.exists));
     v.push_back(new StringLit(Location(),ids.clause));
     v.push_back(new StringLit(Location(),ids.bool2int));
+    v.push_back(new StringLit(Location(),ids.int2float));
+    v.push_back(new StringLit(Location(),ids.bool2float));
     v.push_back(new StringLit(Location(),ids.sum));
     v.push_back(new StringLit(Location(),ids.lin_exp));
     v.push_back(new StringLit(Location(),ids.element));
@@ -1117,6 +1160,7 @@ namespace MiniZinc {
     v.push_back(ann.is_reverse_map);
     v.push_back(ann.promise_total);
     v.push_back(new StringLit(Location(),ann.doc_comment));
+    v.push_back(new StringLit(Location(), ann.is_introduced));
     
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
@@ -1209,4 +1253,22 @@ namespace MiniZinc {
     }
   }
   
+  Expression* getAnnotation(const Annotation& ann, std::string str) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+        Expression* e = *i;
+        if((e->isa<Id>() && e->cast<Id>()->str().str() == str) || 
+                (e->isa<Call>() && e->cast<Call>()->id().str() == str))
+            return e;
+    }
+    return NULL;
+  }
+  Expression* getAnnotation(const Annotation& ann, const ASTString& str) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+      Expression* e = *i;
+      if((e->isa<Id>() && e->cast<Id>()->str() == str) ||
+         (e->isa<Call>() && e->cast<Call>()->id() == str))
+        return e;
+    }
+    return NULL;
+  }
 }

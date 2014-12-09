@@ -1,16 +1,16 @@
-%-----------------------------------------------------------------------------%
-% Constrains 'm' to be the minimum of the values in 'x'.
-% Assumptions: |x| > 0.
-%-----------------------------------------------------------------------------%
+/** @group globals Constrains \a m to be the minimum of the values in \a x.
 
-include "minimum_float.mzn";
-include "minimum_int.mzn";
-
+  Assumptions: |\a x| > 0.
+*/
 predicate minimum(var float: m, array[int] of var float: x) =
-    minimum_float(m, x);
+    array_float_minimum(m, x);
 
+/** @group globals Constrains \a m to be the minimum of the values in \a x.
+
+  Assumptions: |\a x| > 0.
+*/
 predicate minimum(var int: m, array[int] of var int: x) =
-    minimum_int(m, x);
+    array_int_minimum(m, x);
 
     % XXX: currently doesn't work:  'uy' is used as a type but that isn't
     %      allowed because it's not a global variable.

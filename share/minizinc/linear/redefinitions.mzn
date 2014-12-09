@@ -105,11 +105,11 @@ predicate bool_le_reif(var bool: p, var bool: q, var bool: r) =
 
 
 predicate bool_lt(var bool: p, var bool: q) =
-    p /\ not q;
+    not p /\ q;
 
 
 predicate bool_lt_reif(var bool: p, var bool: q, var bool: r) =
-    (p /\ not q) <-> r;
+    (not p /\ q) <-> r;
 
 %-----------------------------------------------------------------------------%
 
@@ -368,7 +368,7 @@ predicate aux_int_division_modulo(var int: x, var int: y, var int: q,
 predicate int_times(var int: x, var int: y, var int: z) =
     if card(dom(x)) > card(dom(y)) then int_times(y,x,z)
     else
-    let { set of int: s = dom(x),
+    let { set of int: s = lb(x)..ub(x),
           set of int: r = {lb(x)*lb(y), lb(x)*ub(y), ub(x)*lb(y), ub(x)*ub(y)},
           array[s] of var min(r)..max(r): ady = array1d(s, [ d*y | d in s ]) }
     in
@@ -570,3 +570,43 @@ predicate aux_float_lt_if_1(var float: x, var float: y, var float: p) =
 
 annotation bool_search(array[int] of var bool: x, ann:a1, ann:a2, ann:a3) =
   int_search([bool2int(x[i]) | i in index_set(x)],a1,a2,a3);
+
+predicate array_int_maximum(var int: m, array[int] of var int: x) =
+    let { int: l = min(index_set(x)),
+          int: u = max(index_set(x)),
+          int: ly = lb_array(x),
+          int: uy = ub_array(x),
+          array[l..u] of var ly..uy: y } in
+    y[l] = x[l] /\
+    m = y[u] /\
+    forall (i in l+1 .. u) ( y[i] == max(x[i],y[i-1]) );
+
+predicate array_float_maximum(var float: m, array[int] of var float: x) =
+    let { int: l = min(index_set(x)),
+          int: u = max(index_set(x)),
+          float: ly = lb_array(x),
+          float: uy = ub_array(x),
+          array[l..u] of var ly..uy: y } in
+    y[l] = x[l] /\
+    m = y[u] /\
+    forall (i in l+1 .. u) ( y[i] == max(x[i],y[i-1]) );
+
+predicate array_int_minimum(var int: m, array[int] of var int: x) =
+    let { int: l = min(index_set(x)),
+          int: u = max(index_set(x)),
+          int: ly = lb_array(x),
+          int: uy = ub_array(x),
+          array[l..u] of var ly..uy: y } in
+    y[l] = x[l] /\
+    m = y[u] /\
+    forall (i in l+1 .. u) ( y[i] == min(x[i],y[i-1]) );
+
+predicate array_float_minimum(var float: m, array[int] of var float: x) =
+    let { int: l = min(index_set(x)),
+          int: u = max(index_set(x)),
+          float: ly = lb_array(x),
+          float: uy = ub_array(x),
+          array[l..u] of var ly..uy: y } in
+    y[l] = x[l] /\
+    m = y[u] /\
+    forall (i in l+1 .. u) ( y[i] == min(x[i],y[i-1]) );

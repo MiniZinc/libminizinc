@@ -10,6 +10,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 namespace MiniZinc {
+  
+  inline bool
+  Expression::equal(const Expression* e0, const Expression* e1) {
+    if (e0==e1) return true;
+    if (e0 == NULL || e1 == NULL) return false;
+    if (e0->_id != e1->_id) return false;
+    if (e0->type() != e1->type()) return false;
+    if (e0->hash() != e1->hash()) return false;
+    return equal_internal(e0, e1);
+  }
 
   inline void
   Expression::type(const Type& t) {
@@ -146,6 +156,7 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
       d[i*2] = dims[i].first;
@@ -161,6 +172,7 @@ namespace MiniZinc {
                      ASTExprVec<Expression> v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> d(dims.size()*2);
     for (unsigned int i=dims.size(); i--;) {
       d[i*2] = dims[i].first;
@@ -173,8 +185,22 @@ namespace MiniZinc {
 
   inline
   ArrayLit::ArrayLit(const Location& loc,
+                     ASTExprVec<Expression> v)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    std::vector<int> dims(2);
+    dims[0]=1;
+    dims[1]=v.size();
+    _v = v;
+    _dims = ASTIntVec(dims);
+    rehash();
+  }
+
+  inline
+  ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> dims(2);
     dims[0]=1;
     dims[1]=v.size();
@@ -187,6 +213,7 @@ namespace MiniZinc {
   ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<std::vector<Expression*> >& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
     std::vector<int> dims(4);
     dims[0]=1;
     dims[1]=v.size();
@@ -371,7 +398,6 @@ namespace MiniZinc {
 
   inline void
   VarDecl::e(Expression* rhs) {
-    assert(!Expression::equal(rhs,_id));
     _e = rhs;
   }
   

@@ -255,6 +255,11 @@ namespace MiniZinc {
       if (e==NULL) {
         continue;
       }
+      if (!_t.enter(e))
+        continue;
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        stack.push_back(*it);
+      }
       switch (e->eid()) {
         case Expression::E_INTLIT:
         _t.vIntLit(*e->template cast<IntLit>());

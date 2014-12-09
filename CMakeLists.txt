@@ -4,7 +4,11 @@ project (libminizinc CXX)
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH "b4")
+set (libminizinc_VERSION_PATCH 0)
+
+if (ADDITIONAL_DATE_STRING)
+  set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
+endif()
 
 include(CheckCXXCompilerFlag)
 
@@ -69,9 +73,6 @@ if (NOT HAS_ATTR_THREAD)
   CHECK_CXX_SOURCE_COMPILES("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
 endif()
 
-CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
-int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
-
 CHECK_CXX_SOURCE_COMPILES("
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,6 +115,7 @@ int main (int argc, char* argv[]) {
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/html)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -132,50 +134,46 @@ add_custom_target(MZNParser echo "Creating parser")
 include(${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake)
 
 macro(MD5 filename md5sum)
-	file(READ "${filename}" RAW_MD5_FILE)
-	string(REGEX REPLACE "\r" "" STRIPPED_MD5_FILE "${RAW_MD5_FILE}")
-	string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
+  file(READ "${filename}" RAW_MD5_FILE)
+  string(REGEX REPLACE "\r" "" STRIPPED_MD5_FILE "${RAW_MD5_FILE}")
+  string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
 endmacro(MD5)
 
 find_program(FLEX_EXEC flex)
 if(FLEX_EXEC)
-	add_custom_command(
-		SOURCE "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-		COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
-		TARGET MZNParser
-		OUTPUTS "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
-		)
-	set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
-	set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
+  add_custom_command(
+    OUTPUT "${PROJECT_BINARY_DIR}/lexer.yy.cpp"
+    DEPENDS "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+    COMMAND "${FLEX_EXEC}" -L -o"${PROJECT_BINARY_DIR}/lexer.yy.cpp" "${PROJECT_SOURCE_DIR}/lib/lexer.lxx"
+    )
+  set_source_files_properties("${PROJECT_BINARY_DIR}/lexer.yy.cpp" GENERATED)
+  set(lexer_cpp "${PROJECT_BINARY_DIR}/lexer.yy.cpp")
 else(FLEX_EXEC)
-	MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
-	if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-		message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
-	endif()
-	set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
+  MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
+  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
+  endif()
+  set(lexer_cpp "${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp")
 endif(FLEX_EXEC)
 
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
-	add_custom_command(
-		SOURCE "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-		COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
-		TARGET MZNParser
-		DEPENDS "${lexer_cpp}"
-		OUTPUTS "${PROJECT_BINARY_DIR}/parser.tab.cpp"
-		"${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
-		)
-	set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
-	set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
-	set(parser_hh "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh")
+  add_custom_command(
+    OUTPUT "${PROJECT_BINARY_DIR}/parser.tab.cpp"  "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh"
+    DEPENDS "${lexer_cpp}" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+    COMMAND "${BISON_EXEC}" -l -o "${PROJECT_BINARY_DIR}/parser.tab.cpp" --defines="${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" "${PROJECT_SOURCE_DIR}/lib/parser.yxx"
+    )
+  set_source_files_properties("${PROJECT_BINARY_DIR}/parser.tab.cpp" GENERATED)
+  set(parser_cpp "${PROJECT_BINARY_DIR}/parser.tab.cpp")
+  set(parser_hh "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh")
 else(BISON_EXEC)
-	MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
-	if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
-		message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
-	endif()
-	include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
-	set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
-	set(parser_hh "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh")
+  MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
+  if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
+    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
+  endif()
+  include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
+  set(parser_cpp "${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp")
+  set(parser_hh "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh")
 endif(BISON_EXEC)
 
 
@@ -188,6 +186,7 @@ lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
 lib/gc.cpp
+lib/htmlprinter.cpp
 "${lexer_cpp}"
 lib/model.cpp
 "${parser_cpp}"
@@ -195,6 +194,7 @@ lib/prettyprinter.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/optimize.cpp
+lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/lexer.lxx
 lib/values.cpp
@@ -214,11 +214,14 @@ include/minizinc/flatten.hh
 include/minizinc/flatten_internal.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
+include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
+include/minizinc/optimize_constraints.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
@@ -233,16 +236,46 @@ target_link_libraries(mzn2fzn minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
-INSTALL(TARGETS mzn2fzn solns2out minizinc
+add_executable(mzn2doc mzn2doc.cpp)
+target_link_libraries(mzn2doc minizinc)
+
+INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
 
+option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
+
+if (BUILD_HTML_DOCUMENTATION)
+  add_custom_target(doc ALL
+    DEPENDS "mzn2doc"
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    COMMAND mzn2doc --toplevel-groups 2
+    --include-stdlib
+    --html-header ${PROJECT_SOURCE_DIR}/doc/html/header.html
+    --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer.html
+      --output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
+  )
+  FILE(COPY
+       ${PROJECT_SOURCE_DIR}/doc/html/style.css
+       ${PROJECT_SOURCE_DIR}/doc/html/header.html
+       ${PROJECT_SOURCE_DIR}/doc/html/footer.html
+       ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
+       DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
+
+if (BUILD_STATIC_EXECUTABLE)
+  set(CMAKE_EXE_LINKER_FLAGS -static)
+endif()
+
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(DIRECTORY include/minizinc
-DESTINATION include
-PATTERN config.hh.in EXCLUDE
+        DESTINATION include
+        PATTERN config.hh.in EXCLUDE
 )
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)

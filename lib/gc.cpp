@@ -61,6 +61,7 @@ namespace MiniZinc {
       , size(s) {
       _gc_mark = 1;
     }
+    FreeListNode(size_t s) : ASTNode(ASTNode::NID_FL), next(NULL), size(s) {}
   };
 
   class HeapPage {
@@ -380,11 +381,14 @@ namespace MiniZinc {
   void*
   GC::alloc(size_t size) {
     assert(locked());
+    void* ret;
     if (size < _heap->_fl_size[0] || size > _heap->_fl_size[_heap->_max_fl]) {
-      return _heap->alloc(size,true);
+      ret = _heap->alloc(size,true);
     } else {
-      return _heap->fl(size);
+      ret = _heap->fl(size);
     }
+    new (ret) FreeListNode(size);
+    return ret;
   }
 
   void
@@ -546,8 +550,12 @@ namespace MiniZinc {
 #ifndef NDEBUG
         memset(p->data,42,p->size);
 #endif
-        if (prev)
+        if (prev) {
           prev->next = p->next;
+        } else {
+          assert(p==_page);
+          _page = p->next;
+        }
         HeapPage* pf = p;
         p = p->next;
         _alloced_mem -= pf->size;

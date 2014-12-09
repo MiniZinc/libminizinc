@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn20_fd_linear
 %% has solution y = 0 in relational and Kleene 
 %% no solution in strict 
 

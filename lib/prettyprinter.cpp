@@ -208,7 +208,7 @@ namespace MiniZinc {
       case Expression::E_FLOATLIT:
         {
           std::ostringstream oss;
-          oss << std::setprecision(std::numeric_limits<double>::digits10);
+          oss << std::setprecision(std::numeric_limits<double>::digits10+2);
           oss << e->cast<FloatLit>()->v();
           if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
             oss << ".0";
@@ -537,7 +537,7 @@ namespace MiniZinc {
           for (unsigned int i = 0; i < l.let().size(); i++) {
             const Expression* li = l.let()[i];
             if (!li->isa<VarDecl>())
-              os << "constraint";
+              os << "constraint ";
             p(li);
             if (i<l.let().size()-1)
               os << ", ";
@@ -1047,7 +1047,7 @@ namespace MiniZinc {
     }
     ret mapFloatLit(const FloatLit& fl) {
       std::ostringstream oss;
-      oss << std::setprecision(std::numeric_limits<double>::digits10);
+      oss << std::setprecision(std::numeric_limits<double>::digits10+2);
       oss << fl.v();
       if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
         oss << ".0";
@@ -1650,7 +1650,7 @@ namespace MiniZinc {
     void printDocument(Document* d, bool alignment, int startColAlignment,
                        const std::string& before = "",
                        const std::string& after = "");
-    void printDocList(DocumentList* d, bool alignment, int startColAlignment,
+    void printDocList(DocumentList* d, int startColAlignment,
                       const std::string& before = "",
                       const std::string& after = "");
     void printStringDoc(StringDocument* d, bool alignment,
@@ -1724,9 +1724,8 @@ namespace MiniZinc {
                                     int alignmentCol,
                                     const std::string& before,
                                     const std::string& after) {
-    std::string s;
     if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
-      printDocList(dl, alignment, alignmentCol, before, after);
+      printDocList(dl, alignmentCol, before, after);
     } else if (StringDocument* sd = dynamic_cast<StringDocument*>(d)) {
       printStringDoc(sd, alignment, alignmentCol, before, after);
     } else if (BreakPoint* bp = dynamic_cast<BreakPoint*>(d)) {
@@ -1765,11 +1764,8 @@ namespace MiniZinc {
     }
   }
 
-  void PrettyPrinter::printDocList(DocumentList* d, bool alignment,
-      int alignmentCol, const std::string& super_before,
+  void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::string& super_before,
       const std::string& super_after) {
-    // Apparently "alignment" is not used.
-    (void) alignment;
 
     std::vector<Document*> ld = d->getDocs();
     std::string beginToken = d->getBeginToken();
@@ -1822,15 +1818,6 @@ namespace MiniZinc {
     }
 
   }
-  void showVector(std::vector<int>* vec) {
-    if (vec != NULL) {
-      std::vector<int>::iterator it;
-      for (it = vec->begin(); it != vec->end(); it++) {
-        std::cout << *it << " ";
-      }
-      std::cout << std::endl;
-    }
-  }
   void PrettyPrinter::simplifyItem(int item) {
     linesToSimplify[item].remove(linesNotToSimplify[item]);
     std::vector<int>* vec = (linesToSimplify[item].getLinesToSimplify());
@@ -1869,7 +1856,7 @@ namespace MiniZinc {
   Printer::init(void) {
     if (ism==NULL) {
       ism = new ItemDocumentMapper();
-      printer =  new PrettyPrinter(80, 4, true, true);
+      printer =  new PrettyPrinter(_width, 4, true, true);
     }
   }
   Printer::~Printer(void) {
@@ -1952,7 +1939,7 @@ namespace MiniZinc {
 }
 
 void debugprint(MiniZinc::Expression* e) {
-  std::cerr << *e;
+  std::cerr << *e << "\n";
 }
 void debugprint(MiniZinc::Item* i) {
   std::cerr << *i;
