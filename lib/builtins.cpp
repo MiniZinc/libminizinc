@@ -1531,6 +1531,13 @@ namespace MiniZinc {
     return std::cos(f); 
   }
   
+  FloatVal b_sin(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::sin(f); 
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2039,6 +2046,11 @@ namespace MiniZinc {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
      rb(m, ASTString("cos"), t, b_cos);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("sin"), t, b_sin);
     }
   }
   
