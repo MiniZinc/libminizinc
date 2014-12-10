@@ -1517,6 +1517,20 @@ namespace MiniZinc {
     return perm_al;
   }
   
+  FloatVal b_atan(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::atan(f);   
+  }
+  
+  FloatVal b_cos(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::cos(f); 
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2015,6 +2029,16 @@ namespace MiniZinc {
       rb(m, ASTString("arg_sort"), t, b_arg_sort);
       rb(m, ASTString("arg_min"), t, b_arg_min_float);
       rb(m, ASTString("arg_max"), t, b_arg_max_float);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("atan"), t, b_atan);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("cos"), t, b_cos);
     }
   }
   
