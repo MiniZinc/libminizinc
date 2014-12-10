@@ -1538,6 +1538,27 @@ namespace MiniZinc {
     return std::sin(f); 
   }
   
+  FloatVal b_asin(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::asin(f); 
+  }
+  
+  FloatVal b_acos(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::acos(f); 
+  }
+  
+  FloatVal b_tan(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::tan(f); 
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2051,6 +2072,21 @@ namespace MiniZinc {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
      rb(m, ASTString("sin"), t, b_sin);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("asin"), t, b_asin);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("acos"), t, b_acos);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("tan"), t, b_tan);
     }
   }
   
