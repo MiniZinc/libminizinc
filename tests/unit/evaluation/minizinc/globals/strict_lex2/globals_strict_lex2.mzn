@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "strict_lex2.mzn";
 
 array[1..2, 1..2] of var 1..2: y;

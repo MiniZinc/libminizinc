@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "lex_less.mzn";
 
 array[1..2] of var bool: x;

@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 % flipstrip
 % miniimize the number of moves to turn all bools to true
 
@@ -9,4 +10,4 @@ constraint false \/ not pos[f1];
  
 solve satisfy;
 
-output [ show(f1) ];
+output [ "f1 = ",show(f1),";\n" ];

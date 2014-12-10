@@ -1,3 +1,4 @@
+% RUNS ON mzn20_fd
 
 constraint iffall([]) = true;
 constraint iffall([false]) = true;

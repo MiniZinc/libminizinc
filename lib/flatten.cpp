@@ -298,9 +298,15 @@ namespace MiniZinc {
 #undef MZN_FILL_REIFY_MAP
   
   void EnvI::addWarning(const std::string& msg) {
-    std::ostringstream oss;
-    dumpStack(oss, false);
-    warnings.push_back(msg+"\n"+oss.str());
+    if (warnings.size()>20)
+      return;
+    if (warnings.size()==20) {
+      warnings.push_back("Further warnings have been suppressed.\n");
+    } else {
+      std::ostringstream oss;
+      dumpStack(oss, false);
+      warnings.push_back(msg+"\n"+oss.str());
+    }
   }
   
   class CallStackItem {
@@ -839,7 +845,7 @@ namespace MiniZinc {
 
             if (vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
-              if (vd->e()->type().isset()) {
+              if (vd->e()->type().is_set()) {
                 ibv = compute_intset_bounds(vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(vd->e());
@@ -922,7 +928,7 @@ namespace MiniZinc {
                   cid = constants().ids.int_.eq;
                 } else if (e->type().isbool()) {
                   cid = constants().ids.bool_eq;
-                } else if (e->type().isset()) {
+                } else if (e->type().is_set()) {
                   cid = constants().ids.set_eq;
                 } else if (e->type().isfloat()) {
                   cid = constants().ids.float_.eq;
@@ -953,7 +959,7 @@ namespace MiniZinc {
             if (vd->e() && vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
-              if (vd->e()->type().isset()) {
+              if (vd->e()->type().is_set()) {
                 ibv = compute_intset_bounds(vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(vd->e());
@@ -1026,7 +1032,7 @@ namespace MiniZinc {
                 cid = constants().ids.int_.eq;
               } else if (e->type().isbool()) {
                 cid = constants().ids.bool_eq;
-              } else if (e->type().isset()) {
+              } else if (e->type().is_set()) {
                 cid = constants().ids.set_eq;
               } else if (e->type().isfloat()) {
                 cid = constants().ids.float_.eq;
@@ -1236,7 +1242,7 @@ namespace MiniZinc {
       if (bot==BOT_EQ || bot==BOT_EQUIV)
         return constants().ids.bool_eq;
       builtin = "bool_";
-    } else if (op->rhs()->type().isset()) {
+    } else if (op->rhs()->type().is_set()) {
       builtin = "set_";
     } else if (op->rhs()->type().isfloat()) {
       switch (bot) {
@@ -3622,6 +3628,38 @@ namespace MiniZinc {
                         args_ee.push_back(ee);
                       }
                     }
+                  } else if (args[i]()->type().bt() == Type::BT_FLOAT) {
+                    GCLock lock;
+                    BinOp* bo = dom->cast<BinOp>();
+                    FloatVal dom_min = eval_float(bo->lhs());
+                    FloatVal dom_max = eval_float(bo->rhs());
+                    bool needToConstrain;
+                    if (args[i]()->type().dim() > 0) {
+                      needToConstrain = true;
+                    } else {
+                      FloatBounds fb = compute_float_bounds(args[i]());
+                      needToConstrain = !fb.valid || dom_min > dom_max || fb.l < dom_min || fb.u > dom_max;
+                    }
+                    if (needToConstrain) {
+                      GCLock lock;
+                      Expression* domconstraint;
+                      std::vector<Expression*> domargs(3);
+                      domargs[0] = args[i]();
+                      domargs[1] = bo->lhs();
+                      domargs[2] = bo->rhs();
+                      Call* c = new Call(Location().introduce(),"var_dom",domargs);
+                      c->type(Type::varbool());
+                      c->decl(env.orig->matchFn(c));
+                      domconstraint = c;
+                      domconstraint->type(args[i]()->type().ispar() ? Type::parbool() : Type::varbool());
+                      if (ctx.b == C_ROOT) {
+                        (void) flat_exp(env, Ctx(), domconstraint, constants().var_true, constants().var_true);
+                      } else {
+                        EE ee = flat_exp(env, Ctx(), domconstraint, NULL, constants().var_true);
+                        ee.b = ee.r;
+                        args_ee.push_back(ee);
+                      }
+                    }
                   } else if (args[i]()->type().bt() == Type::BT_BOT) {
                     // Nothing to be done for empty arrays/sets
                   } else {
@@ -3763,7 +3801,7 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
             if (v->e()->type().bt()==Type::BT_INT && v->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
-              if (v->e()->type().isset()) {
+              if (v->e()->type().is_set()) {
                 ibv = compute_intset_bounds(v->e());
               } else {
                 IntBounds ib = compute_int_bounds(v->e());

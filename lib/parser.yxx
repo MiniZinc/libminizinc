@@ -1430,13 +1430,15 @@ call_expr :
               ids.push_back(id->v());
             } else {
               if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
-                Id* id = Expression::dyn_cast<Id>(boe->lhs());
-                if (id && boe->op() == BOT_IN) {
-                  ids.push_back(id->v());
-                  gens.push_back(Generator(ids,boe->rhs()));
-                  ids = vector<ASTString>();
-                } else {
-                  yyerror(&@3, parm, "illegal expression in generator call");
+                if (boe->lhs() && boe->rhs()) {
+                  Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                  if (id && boe->op() == BOT_IN) {
+                    ids.push_back(id->v());
+                    gens.push_back(Generator(ids,boe->rhs()));
+                    ids = vector<ASTString>();
+                  } else {
+                    yyerror(&@3, parm, "illegal expression in generator call");
+                  }
                 }
               } else {
                 yyerror(&@3, parm, "illegal expression in generator call");

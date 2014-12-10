@@ -1,6 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
-% RUSN ON mzn_mer_lp
+% RUNS ON mzn_mer_lp
 % bug #1:  the overloading was being handled wrongly, giving the wrong output
 % "b = true".
 predicate foo(set of int: x) = true;

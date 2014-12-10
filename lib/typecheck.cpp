@@ -316,17 +316,23 @@ namespace MiniZinc {
           ty.ti(Type::TI_VAR);
         if (sl.v()[i]->type().cv())
           ty.cv(true);
-        /// TODO: add coercion if types don't match
         if (!Type::bt_subtype(sl.v()[i]->type().bt(), ty.bt())) {
-          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt()))
+          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt())) {
             ty.bt(sl.v()[i]->type().bt());
-          else
+          } else {
             throw TypeError(sl.loc(),"non-uniform set literal");
+          }
         }
       }
       if (ty.bt() == Type::BT_UNKNOWN) {
         ty.bt(Type::BT_BOT);
       } else {
+        if (ty.isvar() && ty.bt()!=Type::BT_INT) {
+          if (ty.bt()==Type::BT_BOOL)
+            ty.bt(Type::BT_INT);
+          else
+            throw TypeError(sl.loc(),"cannot coerce set literal element to var int");
+        }
         for (unsigned int i=0; i<sl.v().size(); i++) {
           sl.v()[i] = addCoercion(_model, sl.v()[i], ty)();
         }
@@ -351,6 +357,9 @@ namespace MiniZinc {
       bool haveInferredType = false;
       for (unsigned int i=0; i<al.v().size(); i++) {
         Expression* vi = al.v()[i];
+        if (vi->type().dim() > 0)
+          throw TypeError(vi->loc(),"arrays cannot be elements of arrays");
+        
         AnonVar* av = vi->dyn_cast<AnonVar>();
         if (av) {
           ty.ti(Type::TI_VAR);
@@ -402,6 +411,14 @@ namespace MiniZinc {
       } else {
         Type at = ty;
         at.dim(0);
+        if (at.ti()==Type::TI_VAR && at.st()==Type::ST_SET && at.bt()!=Type::BT_INT) {
+          if (at.bt()==Type::BT_BOOL) {
+            ty.bt(Type::BT_INT);
+            at.bt(Type::BT_INT);
+          } else {
+            throw TypeError(al.loc(),"cannot coerce array element to var set of int");
+          }
+        }
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
         }
@@ -432,7 +449,7 @@ namespace MiniZinc {
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().isset() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
+        if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
           throw TypeError(aai->loc(),"array index must be `int', but is `"+aai->type().toString()+"'");
         }
         aa.idx()[i] = addCoercion(_model, aai, Type::varint())();

@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % Test all_different for var int.
 
 include "all_different.mzn";

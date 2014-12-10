@@ -157,9 +157,12 @@ namespace MiniZinc {
     bool ispar(void) const { return _ti==TI_PAR; }
     bool isopt(void) const { return _ot==OT_OPTIONAL; }
     bool ispresent(void) const { return _ot==OT_PRESENT; }
-    bool isset(void) const { return _dim==0 && _st==ST_SET; }
+    bool is_set(void) const { return _dim==0 && _st==ST_SET; }
     bool isintset(void) const {
-      return isset() && (_bt==BT_INT || _bt==BT_BOT);
+      return is_set() && (_bt==BT_INT || _bt==BT_BOT);
+    }
+    bool isboolset(void) const {
+      return is_set() && (_bt==BT_BOOL || _bt==BT_BOT);
     }
     bool isann(void) const { return isplain() && _bt==BT_ANN; }
     bool isintarray(void) const {
@@ -232,7 +235,7 @@ namespace MiniZinc {
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
       if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
-          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==t._ti || _ti==TI_PAR || _ti==TI_SVAR) &&
+          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==TI_PAR || _ti==TI_SVAR) &&
           (_ot==OT_PRESENT || _ot==t._ot) )
         return true;
       // either same dimension or t has variable dimension

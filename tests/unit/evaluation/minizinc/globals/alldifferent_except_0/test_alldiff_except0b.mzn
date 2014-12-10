@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "alldifferent_except_0.mzn";
 
 array[1..4] of var -1..2: vs;

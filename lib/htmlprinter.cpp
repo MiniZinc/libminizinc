@@ -269,24 +269,6 @@ namespace MiniZinc {
     HtmlDocOutput::FunMap& _funmap;
     bool _includeStdLib;
     
-    std::pair<std::string,std::string> extractArgLine(std::string& s, size_t n) {
-      size_t start = n;
-      while (start < s.size() && s[start]!=' ' && s[start]!='\t')
-        start++;
-      while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
-        start++;
-      int end = start+1;
-      while (end < s.size() && s[end]!=':')
-        end++;
-      std::string arg = s.substr(start,end-start);
-      size_t doc_start = end+1;
-      while (end < s.size() && s[end]!='\n')
-        end++;
-      std::string ret = s.substr(doc_start,end-doc_start);
-      s = s.substr(0,n)+s.substr(end,std::string::npos);
-      return make_pair(arg,ret);
-    }
-    
     std::vector<std::string> replaceArgs(std::string& s) {
       std::vector<std::string> replacements;
       std::ostringstream oss;
@@ -327,6 +309,26 @@ namespace MiniZinc {
       s = oss.str();
       return replacements;
     }
+
+    std::pair<std::string,std::string> extractArgLine(std::string& s, size_t n) {
+      size_t start = n;
+      while (start < s.size() && s[start]!=' ' && s[start]!='\t')
+        start++;
+      while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
+        start++;
+      int end = start+1;
+      while (end < s.size() && s[end]!=':')
+        end++;
+      std::string arg = s.substr(start,end-start);
+      size_t doc_start = end+1;
+      while (end < s.size() && s[end]!='\n')
+        end++;
+      std::string ret = s.substr(doc_start,end-doc_start);
+      replaceArgs(ret);
+      s = s.substr(0,n)+s.substr(end,std::string::npos);
+      return make_pair(arg,ret);
+    }
+    
     
     std::string addHTML(const std::string& s) {
       std::ostringstream oss;
@@ -562,7 +564,7 @@ namespace MiniZinc {
           }
         }
         
-        os << "</div>\n<div class='mzn-fundecl-more-code'><div class='mzn-fundecl-doc'>\n";
+        os << "</div>\n<div class='mzn-fundecl-doc'>\n";
         std::string dshtml = addHTML(ds);
 
         os << dshtml;
@@ -570,11 +572,11 @@ namespace MiniZinc {
           os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
           os << "<ul class='mzn-fundecl-params'>\n";
           for (unsigned int i=0; i<params.size(); i++) {
-            os << "<li>" << params[i].first << ": " << params[i].second << "</li>\n";
+            os << "<li><span class='mzn-arg'>" << params[i].first << "</span>: " << params[i].second << "</li>\n";
           }
           os << "</ul>\n";
         }
-        os << "</div></div>";
+        os << "</div>";
         os << "</div>";
 
         HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), os.str());
