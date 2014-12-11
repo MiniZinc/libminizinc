@@ -1366,6 +1366,22 @@ namespace MiniZinc {
               vars.push_back(e);
             }
             break;
+          case BOT_DIV:
+            if (bo->rhs()->isa<FloatLit>() && bo->rhs()->cast<FloatLit>()->v()==1.0) {
+              stack.push_back(StackItem(bo->lhs(),c));
+            } else {
+              coeffs.push_back(c);
+              vars.push_back(e);
+            }
+            break;
+          case BOT_IDIV:
+            if (bo->rhs()->isa<IntLit>() && bo->rhs()->cast<IntLit>()->v()==1) {
+              stack.push_back(StackItem(bo->lhs(),c));
+            } else {
+              coeffs.push_back(c);
+              vars.push_back(e);
+            }
+            break;
           default:
             coeffs.push_back(c);
             vars.push_back(e);
@@ -2776,7 +2792,28 @@ namespace MiniZinc {
                 ret = flat_exp(env,ctx,ka(),r,b);
                 break;
               }
+            } else if (bot==BOT_DIV) {
+              Expression* e0r = e0.r();
+              Expression* e1r = e1.r();
+              if (e1r->type().ispar() && e1r->type().isint()) {
+                IntVal coeff = eval_int(e1r);
+                if (coeff==1) {
+                  ret = flat_exp(env,ctx,e0r,r,b);
+                  break;
+                }
+              } else if (e1r->type().ispar() && e1r->type().isfloat()) {
+                FloatVal coeff = eval_float(e1r);
+                if (coeff==1.0) {
+                  ret = flat_exp(env,ctx,e0r,r,b);
+                  break;
+                } else {
+                  KeepAlive ka = mklinexp<FloatLit>(env,1.0/coeff,0.0,e0r,NULL);
+                  ret = flat_exp(env,ctx,ka(),r,b);
+                  break;
+                }
+              }
             }
+
             
             GC::lock();
             std::vector<Expression*> args(2);
