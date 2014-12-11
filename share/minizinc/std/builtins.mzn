@@ -402,7 +402,7 @@ function float: sin(float: x);
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_sin(x,r);
   } in r;
 
@@ -411,7 +411,7 @@ function float: cos(float: x);
 /** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_cos(x,r);
   } in r;
 
