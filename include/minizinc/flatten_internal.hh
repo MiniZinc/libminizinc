@@ -314,9 +314,12 @@ namespace MiniZinc {
       if (dom) {
         Val lb = dom->lhs()->cast<FloatLit>()->v();
         Val ub = dom->rhs()->cast<FloatLit>()->v();
-        lb = std::max(lb,v0);
-        ub = std::min(ub,v1);
-        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),lb), BOT_DOTDOT, new FloatLit(Location().introduce(),ub));
+        Val nlb = std::max(lb,v0);
+        Val nub = std::min(ub,v1);
+        if (nlb==lb && nub==ub)
+          return dom;
+        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),nlb),
+                             BOT_DOTDOT, new FloatLit(Location().introduce(),nub));
         d->type(Type::parsetfloat());
         return d;
       } else {
