@@ -860,6 +860,32 @@ namespace MiniZinc {
               }
             } else if (vd->e()->type().isbool()) {
               addCtxAnn(vd, ctx.b);
+            } else if (vd->e()->type().bt()==Type::BT_FLOAT && vd->e()->type().dim()==0) {
+              FloatBounds fb = compute_float_bounds(vd->e());
+              BinOp* ibv = LinearTraits<FloatLit>::intersect_domain(NULL, fb.l, fb.u);
+              if (fb.valid) {
+                Id* id = vd->id();
+                while (id != NULL) {
+                  if (id->decl()->ti()->domain()) {
+                    BinOp* domain = Expression::cast<BinOp>(id->decl()->ti()->domain());
+                    BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(domain, fb.l, fb.u);
+                    if (ibv && ndomain==domain) {
+                      id->decl()->ti()->setComputedDomain(true);
+                    } else {
+                      ibv = ndomain;
+                    }
+                  } else {
+                    id->decl()->ti()->setComputedDomain(true);
+                  }
+                  if (LinearTraits<FloatLit>::domain_empty(ibv)) {
+                    env.addWarning("model inconsistency detected");
+                    env.flat()->fail();
+                  } else {
+                    id->decl()->ti()->domain(ibv);
+                  }
+                  id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
+                }
+              }
             }
 
             VarDeclI* nv = new VarDeclI(Location().introduce(),vd);
