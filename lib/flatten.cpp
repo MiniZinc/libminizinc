@@ -5354,6 +5354,12 @@ namespace MiniZinc {
         if (i->iid()==Item::II_VD) {
           if (j->iid() != i->iid())
             return true;
+          if (i->cast<VarDeclI>()->e()->type().ispar() &&
+              j->cast<VarDeclI>()->e()->type().isvar())
+            return true;
+          if (j->cast<VarDeclI>()->e()->type().ispar() &&
+              i->cast<VarDeclI>()->e()->type().isvar())
+            return false;
           if (i->cast<VarDeclI>()->e()->type().dim() == 0 &&
               j->cast<VarDeclI>()->e()->type().dim() != 0)
             return true;
