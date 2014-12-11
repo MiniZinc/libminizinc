@@ -4061,6 +4061,66 @@ namespace MiniZinc {
     vd->ann().removeCall(constants().ann.output_array);
   }
   
+  void makePar(Expression* e) {
+    class Par : public EVisitor {
+    public:
+      /// Visit array literal
+      void vArrayLit(ArrayLit& al) {
+        Type t = al.type();
+        t.ti(Type::TI_PAR);
+        al.type(t);
+      }
+      /// Visit array access
+      void vArrayAccess(ArrayAccess& aa) {
+        Type t = aa.type();
+        t.ti(Type::TI_PAR);
+        aa.type(t);
+      }
+      /// Visit array comprehension
+      void vComprehension(Comprehension& c) {
+        Type t = c.type();
+        t.ti(Type::TI_PAR);
+        c.type(t);
+      }
+      /// Visit array comprehension (only generator \a gen_i)
+      void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
+      /// Visit if-then-else
+      void vITE(ITE& ite) {
+        Type t = ite.type();
+        t.ti(Type::TI_PAR);
+        ite.type(t);
+      }
+      /// Visit binary operator
+      void vBinOp(BinOp& bo) {
+        Type t = bo.type();
+        t.ti(Type::TI_PAR);
+        bo.type(t);
+      }
+      /// Visit unary operator
+      void vUnOp(const UnOp&) {}
+      /// Visit call
+      void vCall(const Call&) {}
+      /// Visit let
+      void vLet(const Let&) {}
+      /// Visit variable declaration
+      void vVarDecl(VarDecl& vd) {
+        Type t = vd.type();
+        t.ti(Type::TI_PAR);
+        vd.type(t);
+        vd.ti()->type(t);
+      }
+      /// Visit type inst
+      void vTypeInst(const TypeInst&) {}
+      /// Visit TIId
+      void vTIId(const TIId&) {}
+      /// Determine whether to enter node
+      bool enter(Expression* e) { return true; }
+      /// Exit node after processing has finished
+      void exit(Expression* e) {}
+    } _par;
+    topDown(_par, e);
+  }
+  
   void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
     public:
@@ -4084,8 +4144,7 @@ namespace MiniZinc {
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
           }
-          nvi->e()->type(t);
-          nvi->e()->ti()->type(t);
+          makePar(nvi->e());
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
           nvi->e()->ann().clear();
@@ -4421,8 +4480,7 @@ namespace MiniZinc {
             VarDeclI* vdi_copy = copy(env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
-            vdi_copy->e()->type(t);
-            vdi_copy->e()->ti()->type(t);
+            makePar(vdi_copy->e());
             vdi_copy->e()->ti()->domain(NULL);
             vdi_copy->e()->flat(vdi->e()->flat());
             vdi_copy->e()->ann().clear();
