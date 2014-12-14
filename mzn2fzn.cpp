@@ -286,13 +286,13 @@ int main(int argc, char** argv) {
   {
     std::stringstream errstream;
     if (flag_verbose)
-      std::cerr << "Parsing '" << filename << "' ...";
+      std::cerr << "Parsing '" << filename << "'" << std::endl;
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false,
-                         errstream)) {
+                         flag_verbose, errstream)) {
       try {
         if (flag_typecheck) {
           if (flag_verbose)
-            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
           vector<TypeError> typeErrors;

@@ -107,19 +107,19 @@ namespace MiniZinc {
   Model* parse(const std::string& filename,
                const std::vector<std::string>& datafiles,
                const std::vector<std::string>& includePaths,
-               bool ignoreStdlib, bool parseDocComments,
+               bool ignoreStdlib, bool parseDocComments, bool verbose,
                std::ostream& err);
 
   Model* parseFromString(const std::string& model,
                          const std::string& filename,
                          const std::vector<std::string>& includePaths,
-                         bool ignoreStdlib, bool parseDocComments,
+                         bool ignoreStdlib, bool parseDocComments, bool verbose,
                          std::ostream& err);
 
   Model* parseData(Model* m,
                    const std::vector<std::string>& datafiles,
                    const std::vector<std::string>& includePaths,
-                   bool ignoreStdlib, bool parseDocComments,
+                   bool ignoreStdlib, bool parseDocComments, bool verbose,
                    std::ostream& err);
 
 }
