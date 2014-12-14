@@ -1565,8 +1565,9 @@ namespace MiniZinc {
     VarDecl* nr = r;
     
     for (int i=0; i<ite->size(); i++) {
+      bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        bool cond = eval_bool(ite->e_if(i));
+        cond = eval_bool(ite->e_if(i));
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -1602,7 +1603,7 @@ namespace MiniZinc {
         elseconds.push_back(ite->e_if(i));
       }
 
-      if (r_bounds.valid && ite->e_then(i)->type().isint()) {
+      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(ite->e_then(i));
         if (ib_then.valid) {
           IntVal lb = std::min(r_bounds.l, ib_then.l);
