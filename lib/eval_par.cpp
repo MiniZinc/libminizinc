@@ -622,6 +622,18 @@ namespace MiniZinc {
           }
         } else if (bo->op()==BOT_EQ && bo->lhs()->type().isann()) {
           return Expression::equal(eval_par(bo->lhs()), eval_par(bo->rhs()));
+        } else if (bo->op()==BOT_EQ && bo->lhs()->type().dim() > 0 &&
+                   bo->rhs()->type().dim() > 0) {
+          ArrayLit* al0 = eval_array_lit(bo->lhs());
+          ArrayLit* al1 = eval_array_lit(bo->rhs());
+          if (al0->v().size() != al1->v().size())
+            return false;
+          for (unsigned int i=0; i<al0->v().size(); i++) {
+            if (!Expression::equal(eval_par(al0->v()[i]), eval_par(al1->v()[i]))) {
+              return false;
+            }
+          }
+          return true;
         } else {
           throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }

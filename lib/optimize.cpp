@@ -352,7 +352,7 @@ namespace MiniZinc {
         m[var_idx]->cast<VarDeclI>()->flag(false);
         VarDecl* vd = m[var_idx]->cast<VarDeclI>()->e();
         
-        if (vd->type().isbool()) {
+        if (vd->type().isbool() && vd->ti()->domain()) {
           bool isTrue = vd->ti()->domain() == constants().lit_true;
           bool remove = false;
           if (vd->e()) {
