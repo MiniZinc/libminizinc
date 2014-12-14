@@ -3916,7 +3916,13 @@ namespace MiniZinc {
                 GCLock lock;
                 std::vector<Expression*> domargs(2);
                 domargs[0] = ee.r();
-                domargs[1] = vd->ti()->domain();
+                if (vd->ti()->type().isfloat()) {
+                  BinOp* bo_dom = vd->ti()->domain()->cast<BinOp>();
+                  domargs[1] = bo_dom->lhs();
+                  domargs.push_back(bo_dom->rhs());
+                } else {
+                  domargs[1] = vd->ti()->domain();
+                }
                 Call* c = new Call(vd->ti()->loc().introduce(),"var_dom",domargs);
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
