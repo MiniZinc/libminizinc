@@ -280,7 +280,10 @@ namespace MiniZinc {
           goto b_array_lb_int_done;
         min = std::min(min, ib.l);
       }
-      array_lb = std::max(array_lb, min);
+      if (foundMin)
+        array_lb = std::max(array_lb, min);
+      else
+        array_lb = min;
       foundMin = true;
     }
   b_array_lb_int_done:
@@ -327,7 +330,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(Location(), "upper bound of empty array undefined");
       IntVal max = -IntVal::infinity;
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(al->v()[i]);
@@ -335,14 +338,17 @@ namespace MiniZinc {
           goto b_array_ub_int_done;
         max = std::max(max, ib.u);
       }
-      array_ub = std::min(array_ub, max);
+      if (foundMax)
+        array_ub = std::min(array_ub, max);
+      else
+        array_ub = max;
       foundMax = true;
     }
   b_array_ub_int_done:
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(e->loc(),"cannot determine upper bound");
     }
   }
 
@@ -444,7 +450,10 @@ namespace MiniZinc {
         }
       }
       assert(min_valid);
-      array_lb = std::max(array_lb, min);
+      if (foundMin)
+        array_lb = std::max(array_lb, min);
+      else
+        array_lb = min;
       foundMin = true;
     }
   b_array_lb_float_done:
@@ -476,7 +485,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(Location(), "upper bound of empty array undefined");
       bool max_valid = false;
       FloatVal max = 0.0;
       for (unsigned int i=0; i<al->v().size(); i++) {
@@ -491,14 +500,17 @@ namespace MiniZinc {
         }
       }
       assert(max_valid);
-      array_ub = std::min(array_ub, max);
+      if (foundMax)
+        array_ub = std::min(array_ub, max);
+      else
+        array_ub = max;
       foundMax = true;
     }
   b_array_ub_float_done:
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(e->loc(),"cannot determine upper bound");
     }
   }
   
