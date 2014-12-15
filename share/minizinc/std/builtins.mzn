@@ -343,8 +343,36 @@ function var float: sqrt_t(var float: x) ::promise_total =
 
 /** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function int: pow(int: x, int: y);
+
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function var int: pow(var int: x, var int: y) =
+  let {
+    int: yy = if is_fixed(y) then fix(y) else -1 endif;
+  } in
+  if yy = 0 then 1
+  elseif yy = 1 then x
+  elseif yy = 2 then x*x else
+  let { var int: r;
+        constraint int_pow(x,y,r);
+  } in r
+  endif;
+
+
 /** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function float: pow(float: x, float: y);
+
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function var float: pow(var float: x, var float: y) =
+  let {
+    float: yy = if is_fixed(y) then fix(y) else -1.0 endif
+  } in
+  if yy = 0.0 then 1.0
+  elseif yy = 1.0 then x
+  elseif yy = 2.0 then x*x else
+  let { var float: r;
+        constraint float_pow(x,y,r);
+  } in r
+  endif;
 
 /***
   @groupdef builtins.explog Exponential and logarithmic builtins
@@ -402,7 +430,7 @@ function float: sin(float: x);
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_sin(x,r);
   } in r;
 
@@ -411,7 +439,7 @@ function float: cos(float: x);
 /** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_cos(x,r);
   } in r;
 

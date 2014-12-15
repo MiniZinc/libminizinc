@@ -860,6 +860,32 @@ namespace MiniZinc {
               }
             } else if (vd->e()->type().isbool()) {
               addCtxAnn(vd, ctx.b);
+            } else if (vd->e()->type().bt()==Type::BT_FLOAT && vd->e()->type().dim()==0) {
+              FloatBounds fb = compute_float_bounds(vd->e());
+              BinOp* ibv = LinearTraits<FloatLit>::intersect_domain(NULL, fb.l, fb.u);
+              if (fb.valid) {
+                Id* id = vd->id();
+                while (id != NULL) {
+                  if (id->decl()->ti()->domain()) {
+                    BinOp* domain = Expression::cast<BinOp>(id->decl()->ti()->domain());
+                    BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(domain, fb.l, fb.u);
+                    if (ibv && ndomain==domain) {
+                      id->decl()->ti()->setComputedDomain(true);
+                    } else {
+                      ibv = ndomain;
+                    }
+                  } else {
+                    id->decl()->ti()->setComputedDomain(true);
+                  }
+                  if (LinearTraits<FloatLit>::domain_empty(ibv)) {
+                    env.addWarning("model inconsistency detected");
+                    env.flat()->fail();
+                  } else {
+                    id->decl()->ti()->domain(ibv);
+                  }
+                  id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
+                }
+              }
             }
 
             VarDeclI* nv = new VarDeclI(Location().introduce(),vd);
@@ -1366,6 +1392,22 @@ namespace MiniZinc {
               vars.push_back(e);
             }
             break;
+          case BOT_DIV:
+            if (bo->rhs()->isa<FloatLit>() && bo->rhs()->cast<FloatLit>()->v()==1.0) {
+              stack.push_back(StackItem(bo->lhs(),c));
+            } else {
+              coeffs.push_back(c);
+              vars.push_back(e);
+            }
+            break;
+          case BOT_IDIV:
+            if (bo->rhs()->isa<IntLit>() && bo->rhs()->cast<IntLit>()->v()==1) {
+              stack.push_back(StackItem(bo->lhs(),c));
+            } else {
+              coeffs.push_back(c);
+              vars.push_back(e);
+            }
+            break;
           default:
             coeffs.push_back(c);
             vars.push_back(e);
@@ -1523,8 +1565,9 @@ namespace MiniZinc {
     VarDecl* nr = r;
     
     for (int i=0; i<ite->size(); i++) {
+      bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        bool cond = eval_bool(ite->e_if(i));
+        cond = eval_bool(ite->e_if(i));
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -1560,7 +1603,7 @@ namespace MiniZinc {
         elseconds.push_back(ite->e_if(i));
       }
 
-      if (r_bounds.valid && ite->e_then(i)->type().isint()) {
+      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(ite->e_then(i));
         if (ib_then.valid) {
           IntVal lb = std::min(r_bounds.l, ib_then.l);
@@ -2776,7 +2819,28 @@ namespace MiniZinc {
                 ret = flat_exp(env,ctx,ka(),r,b);
                 break;
               }
+            } else if (bot==BOT_DIV) {
+              Expression* e0r = e0.r();
+              Expression* e1r = e1.r();
+              if (e1r->type().ispar() && e1r->type().isint()) {
+                IntVal coeff = eval_int(e1r);
+                if (coeff==1) {
+                  ret = flat_exp(env,ctx,e0r,r,b);
+                  break;
+                }
+              } else if (e1r->type().ispar() && e1r->type().isfloat()) {
+                FloatVal coeff = eval_float(e1r);
+                if (coeff==1.0) {
+                  ret = flat_exp(env,ctx,e0r,r,b);
+                  break;
+                } else {
+                  KeepAlive ka = mklinexp<FloatLit>(env,1.0/coeff,0.0,e0r,NULL);
+                  ret = flat_exp(env,ctx,ka(),r,b);
+                  break;
+                }
+              }
             }
+
             
             GC::lock();
             std::vector<Expression*> args(2);
@@ -3853,7 +3917,13 @@ namespace MiniZinc {
                 GCLock lock;
                 std::vector<Expression*> domargs(2);
                 domargs[0] = ee.r();
-                domargs[1] = vd->ti()->domain();
+                if (vd->ti()->type().isfloat()) {
+                  BinOp* bo_dom = vd->ti()->domain()->cast<BinOp>();
+                  domargs[1] = bo_dom->lhs();
+                  domargs.push_back(bo_dom->rhs());
+                } else {
+                  domargs[1] = vd->ti()->domain();
+                }
                 Call* c = new Call(vd->ti()->loc().introduce(),"var_dom",domargs);
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(c));
@@ -4040,6 +4110,66 @@ namespace MiniZinc {
     vd->ann().removeCall(constants().ann.output_array);
   }
   
+  void makePar(Expression* e) {
+    class Par : public EVisitor {
+    public:
+      /// Visit array literal
+      void vArrayLit(ArrayLit& al) {
+        Type t = al.type();
+        t.ti(Type::TI_PAR);
+        al.type(t);
+      }
+      /// Visit array access
+      void vArrayAccess(ArrayAccess& aa) {
+        Type t = aa.type();
+        t.ti(Type::TI_PAR);
+        aa.type(t);
+      }
+      /// Visit array comprehension
+      void vComprehension(Comprehension& c) {
+        Type t = c.type();
+        t.ti(Type::TI_PAR);
+        c.type(t);
+      }
+      /// Visit array comprehension (only generator \a gen_i)
+      void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
+      /// Visit if-then-else
+      void vITE(ITE& ite) {
+        Type t = ite.type();
+        t.ti(Type::TI_PAR);
+        ite.type(t);
+      }
+      /// Visit binary operator
+      void vBinOp(BinOp& bo) {
+        Type t = bo.type();
+        t.ti(Type::TI_PAR);
+        bo.type(t);
+      }
+      /// Visit unary operator
+      void vUnOp(const UnOp&) {}
+      /// Visit call
+      void vCall(const Call&) {}
+      /// Visit let
+      void vLet(const Let&) {}
+      /// Visit variable declaration
+      void vVarDecl(VarDecl& vd) {
+        Type t = vd.type();
+        t.ti(Type::TI_PAR);
+        vd.type(t);
+        vd.ti()->type(t);
+      }
+      /// Visit type inst
+      void vTypeInst(const TypeInst&) {}
+      /// Visit TIId
+      void vTIId(const TIId&) {}
+      /// Determine whether to enter node
+      bool enter(Expression* e) { return true; }
+      /// Exit node after processing has finished
+      void exit(Expression* e) {}
+    } _par;
+    topDown(_par, e);
+  }
+  
   void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
     public:
@@ -4063,8 +4193,7 @@ namespace MiniZinc {
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
           }
-          nvi->e()->type(t);
-          nvi->e()->ti()->type(t);
+          makePar(nvi->e());
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
           nvi->e()->ann().clear();
@@ -4410,8 +4539,7 @@ namespace MiniZinc {
             VarDeclI* vdi_copy = copy(env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
-            vdi_copy->e()->type(t);
-            vdi_copy->e()->ti()->type(t);
+            makePar(vdi_copy->e());
             vdi_copy->e()->ti()->domain(NULL);
             vdi_copy->e()->flat(vdi->e()->flat());
             vdi_copy->e()->ann().clear();
@@ -5354,6 +5482,12 @@ namespace MiniZinc {
         if (i->iid()==Item::II_VD) {
           if (j->iid() != i->iid())
             return true;
+          if (i->cast<VarDeclI>()->e()->type().ispar() &&
+              j->cast<VarDeclI>()->e()->type().isvar())
+            return true;
+          if (j->cast<VarDeclI>()->e()->type().ispar() &&
+              i->cast<VarDeclI>()->e()->type().isvar())
+            return false;
           if (i->cast<VarDeclI>()->e()->type().dim() == 0 &&
               j->cast<VarDeclI>()->e()->type().dim() != 0)
             return true;

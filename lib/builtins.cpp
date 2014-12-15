@@ -280,7 +280,10 @@ namespace MiniZinc {
           goto b_array_lb_int_done;
         min = std::min(min, ib.l);
       }
-      array_lb = std::max(array_lb, min);
+      if (foundMin)
+        array_lb = std::max(array_lb, min);
+      else
+        array_lb = min;
       foundMin = true;
     }
   b_array_lb_int_done:
@@ -327,7 +330,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(Location(), "upper bound of empty array undefined");
       IntVal max = -IntVal::infinity;
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(al->v()[i]);
@@ -335,14 +338,17 @@ namespace MiniZinc {
           goto b_array_ub_int_done;
         max = std::max(max, ib.u);
       }
-      array_ub = std::min(array_ub, max);
+      if (foundMax)
+        array_ub = std::min(array_ub, max);
+      else
+        array_ub = max;
       foundMax = true;
     }
   b_array_ub_int_done:
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(e->loc(),"cannot determine upper bound");
     }
   }
 
@@ -444,7 +450,10 @@ namespace MiniZinc {
         }
       }
       assert(min_valid);
-      array_lb = std::max(array_lb, min);
+      if (foundMin)
+        array_lb = std::max(array_lb, min);
+      else
+        array_lb = min;
       foundMin = true;
     }
   b_array_lb_float_done:
@@ -476,7 +485,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(Location(), "upper bound of empty array undefined");
       bool max_valid = false;
       FloatVal max = 0.0;
       for (unsigned int i=0; i<al->v().size(); i++) {
@@ -491,14 +500,17 @@ namespace MiniZinc {
         }
       }
       assert(max_valid);
-      array_ub = std::min(array_ub, max);
+      if (foundMax)
+        array_ub = std::min(array_ub, max);
+      else
+        array_ub = max;
       foundMax = true;
     }
   b_array_ub_float_done:
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(e->loc(),"cannot determine upper bound");
     }
   }
   
@@ -1517,6 +1529,48 @@ namespace MiniZinc {
     return perm_al;
   }
   
+  FloatVal b_atan(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::atan(f);   
+  }
+  
+  FloatVal b_cos(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::cos(f); 
+  }
+  
+  FloatVal b_sin(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::sin(f); 
+  }
+  
+  FloatVal b_asin(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::asin(f); 
+  }
+  
+  FloatVal b_acos(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::acos(f); 
+  }
+  
+  FloatVal b_tan(ASTExprVec<Expression> args) {
+    assert(args.size()==1);
+    GCLock lock;
+    FloatVal f = eval_float(args[0]);
+    return std::tan(f); 
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2015,6 +2069,36 @@ namespace MiniZinc {
       rb(m, ASTString("arg_sort"), t, b_arg_sort);
       rb(m, ASTString("arg_min"), t, b_arg_min_float);
       rb(m, ASTString("arg_max"), t, b_arg_max_float);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("atan"), t, b_atan);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("cos"), t, b_cos);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("sin"), t, b_sin);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("asin"), t, b_asin);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("acos"), t, b_acos);
+    }
+    {
+     std::vector<Type> t(1);
+     t[0] = Type::parfloat();
+     rb(m, ASTString("tan"), t, b_tan);
     }
   }
   

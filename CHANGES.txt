@@ -1,16 +1,36 @@
-MiniZinc 2
-==========
+======================
+# MiniZinc Changelog #
+======================
 
-This package contains the MiniZinc 2 constraint modelling
-language and tool chain. Compared to the previous version 1.6,
-it is a complete re-write of the MiniZinc-to-FlatZinc
-compiler, based on the new libminizinc C++ library.
+Version 2.0.1
+=============
 
-For installation and compilation instructions please refer to the file
-INSTALL.txt.
+Major bugs and changes:
+ - Fix optimisation phase, which was previously incorrectly removing variables
+ - Add support for trigonometric functions (built-ins were missing in 2.0.0)
+   and pow (var versions were missing)
+ - Fix equality operator on par arrays
+ - All expressions in output model are now made par
+ - Improve bounds computation for float variables
+ - Fix translation of functions that need automatic coercion of their return
+   value
+ - Fix the array_lb and array_ub builtins, which would return incorrect bounds
+   in some cases
 
-Changes from version 1.6
-------------------------
+Minor bugs and changes:
+ - Add space between "array" and "[" in the pretty printer, to be compatible
+   with 1.6 output
+ - Output all par declarations before the var declarations in FlatZinc
+ - Fix parser, which could sometimes crash on invalid input
+ - Improve efficiency of bounds computation on some float expressions
+ - Add special case handling for division by 1
+ - Add missing float_times definition to the flatzinc builtins
+ - Use correct version of var_dom for float variables
+ - Output information about which files are included in verbose mode
+ - Only compute bounds for "then" expressions if the "if" is not fixed to false
+
+Version 2.0.0
+=============
 
 MiniZinc 2.0 contains many new features and is based on a complete rewrite of
 the MiniZinc-to-FlatZinc compiler. If you are currently using the previous
@@ -71,8 +91,3 @@ sort, arg_sort, arg_min, arg_max
  - A new tool, mzn2doc, can produce html output from the documentation
    comments. The MiniZinc distribution contains the documentation for global
    constraints and builtins generated directly from the library source code.
-
-** Bugs **
-
-If you encounter any problems with MiniZinc, please use the MiniZinc bug tracker
-at http://www.minizinc.org/trac to report any issues or feature requests.

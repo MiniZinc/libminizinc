@@ -115,6 +115,7 @@ namespace MiniZinc {
                          const vector<string>& ip,
                          bool ignoreStdlib,
                          bool parseDocComments,
+                         bool verbose,
                          ostream& err) {
     GCLock lock;
 
@@ -191,6 +192,8 @@ namespace MiniZinc {
         err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
 
       m->setFilepath(fullname);
@@ -220,6 +223,7 @@ namespace MiniZinc {
                const vector<string>& ip,
                bool ignoreStdlib,
                bool parseDocComments,
+               bool verbose,
                ostream& err) {
     GCLock lock;
     string fileDirname; string fileBasename;
@@ -289,6 +293,8 @@ namespace MiniZinc {
         err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
 
       m->setFilepath(fullname);
@@ -318,6 +324,8 @@ namespace MiniZinc {
           err << "Error: cannot open data file '" << f << "'." << endl;
           goto error;
         }
+        if (verbose)
+          std::cerr << "processing data file '" << f << "'" << endl;
         s = get_file_contents(file);
       }
 
@@ -344,6 +352,7 @@ namespace MiniZinc {
                    const vector<string>& includePaths,
                    bool ignoreStdlib,
                    bool parseDocComments,
+                   bool verbose,
                    ostream& err) {
   GCLock lock;
 
@@ -396,6 +405,8 @@ namespace MiniZinc {
       err << "Error: cannot open file '" << f << "'." << endl;
       goto error;
     }
+    if (verbose)
+      std::cerr << "processing file '" << fullname << "'" << endl;
     std::string s = get_file_contents(file);
     
     m->setFilepath(fullname);
@@ -425,6 +436,8 @@ namespace MiniZinc {
         err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing data file '" << f << "'" << endl;
       s = get_file_contents(file);
     }
     
@@ -629,22 +642,22 @@ item_list_head:
       item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        pp->model->addItem($1);
+        if ($1) pp->model->addItem($1);
       }
     | doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        pp->model->addItem($2);
+        if ($2) pp->model->addItem($2);
       }
     | item_list_head ';' item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        pp->model->addItem($3);
+        if ($3) pp->model->addItem($3);
       }
     | item_list_head ';' doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        pp->model->addItem($4);
+        if ($4) pp->model->addItem($4);
       }
     | error ';' item
 
@@ -652,7 +665,7 @@ doc_file_comments:
       MZN_DOC_FILE_COMMENT
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (pp->parseDocComments) {
+        if (pp->parseDocComments && $1) {
           pp->model->addDocComment($1);
         }
         free($1);
@@ -660,7 +673,7 @@ doc_file_comments:
     | doc_file_comments MZN_DOC_FILE_COMMENT
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (pp->parseDocComments) {
+        if (pp->parseDocComments && $2) {
           pp->model->addDocComment($2);
         }
         free($2);

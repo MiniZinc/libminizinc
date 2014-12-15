@@ -853,9 +853,12 @@ namespace MiniZinc {
       
       class TSV2 : public ItemVisitor {
       public:
+        Model* m;
         BottomUpIterator<Typer<true> >& bu_ty;
         std::vector<TypeError>& _typeErrors;
-        TSV2(BottomUpIterator<Typer<true> >& b, std::vector<TypeError>& typeErrors) : bu_ty(b), _typeErrors(typeErrors) {}
+        TSV2(Model* m0,
+             BottomUpIterator<Typer<true> >& b,
+             std::vector<TypeError>& typeErrors) : m(m0), bu_ty(b), _typeErrors(typeErrors) {}
         void vVarDeclI(VarDeclI* i) {
           bu_ty.run(i->e());
           if (i->e()->ti()->hasTiVariable()) {
@@ -907,8 +910,10 @@ namespace MiniZinc {
           if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))
             throw TypeError(i->e()->loc(), "return type of function does not match body, declared type is `"+i->ti()->type().toString()+
                             "', body type is `"+i->e()->type().toString()+"'");
+          if (i->e())
+            i->e(addCoercion(m, i->e(), i->ti()->type())());
         }
-      } _tsv2(bu_ty, typeErrors);
+      } _tsv2(m, bu_ty, typeErrors);
       iterItems(_tsv2,m);
     }
     

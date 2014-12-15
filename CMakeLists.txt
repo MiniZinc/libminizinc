@@ -4,7 +4,7 @@ project (libminizinc CXX)
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 0)
+set (libminizinc_VERSION_PATCH 1)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
