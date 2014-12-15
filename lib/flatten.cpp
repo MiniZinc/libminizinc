@@ -4449,10 +4449,22 @@ namespace MiniZinc {
       // Create new output model
       OutputI* outputItem = NULL;
 
-      GC::lock();
-      if (e.orig->outputItem()) {
-        outputItem = copy(e.cmap, e.orig->outputItem())->cast<OutputI>();
-      } else {
+      class OV1 : public ItemVisitor {
+      public:
+        EnvI& env;
+        VarOccurrences& vo;
+        OutputI*& outputItem;
+        OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
+        : env(env0), vo(vo0), outputItem(outputItem0) {}
+        void vOutputI(OutputI* oi) {
+          GCLock lock;
+          outputItem = copy(env.cmap, oi)->cast<OutputI>();
+          env.output->addItem(outputItem);
+        }
+      } _ov1(e,e.output_vo,outputItem);
+      iterItems(_ov1,e.orig);
+      
+      if (outputItem==NULL) {
         // Create output item for all variables defined at toplevel in the MiniZinc source
         GCLock lock;
         std::vector<Expression*> outputVars;
@@ -4490,9 +4502,8 @@ namespace MiniZinc {
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e.cmap, newOutputItem)->cast<OutputI>();
+        e.output->addItem(outputItem);
       }
-      e.output->addItem(outputItem);
-      GC::unlock();
       
       class CollectFunctions : public EVisitor {
       public:
