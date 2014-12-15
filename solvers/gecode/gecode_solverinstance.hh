@@ -262,6 +262,8 @@ namespace MiniZinc {
     /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
     // FlatZincOptions* opts;
     void registerConstraints(void);
+    void registerConstraint(std::string name, poster p);
+
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
             bool ignoreUnknown, std::ostream& err);    
