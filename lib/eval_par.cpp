@@ -124,12 +124,29 @@ namespace MiniZinc {
     }
     static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
   };
+  class EvalBoolSet {
+  public:
+    typedef IntSetVal* Val;
+    static IntSetVal* e(Expression* e) {
+      return eval_boolset(e);
+    }
+    static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
+  };
   class EvalSetLit {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(Expression* e) {
       return new SetLit(e->loc(),eval_intset(e));
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
+  class EvalBoolSetLit {
+  public:
+    typedef SetLit* Val;
+    typedef Expression* ArrayVal;
+    static SetLit* e(Expression* e) {
+      return new SetLit(e->loc(),eval_boolset(e));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -332,7 +349,7 @@ namespace MiniZinc {
     else
       throw EvalError(e->loc(), "array access out of bounds");
   }
-
+  
   IntSetVal* eval_intset(Expression* e) {
     switch (e->eid()) {
     case Expression::E_SETLIT:
@@ -571,7 +588,7 @@ namespace MiniZinc {
             assert(false);
             throw EvalError(e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isset() && bo->rhs()->type().isset()) {
+        } else if (bo->lhs()->type().is_set() && bo->rhs()->type().is_set()) {
           GCLock lock;
           IntSetVal* v0 = eval_intset(bo->lhs());
           IntSetVal* v1 = eval_intset(bo->rhs());
@@ -605,6 +622,18 @@ namespace MiniZinc {
           }
         } else if (bo->op()==BOT_EQ && bo->lhs()->type().isann()) {
           return Expression::equal(eval_par(bo->lhs()), eval_par(bo->rhs()));
+        } else if (bo->op()==BOT_EQ && bo->lhs()->type().dim() > 0 &&
+                   bo->rhs()->type().dim() > 0) {
+          ArrayLit* al0 = eval_array_lit(bo->lhs());
+          ArrayLit* al1 = eval_array_lit(bo->rhs());
+          if (al0->v().size() != al1->v().size())
+            return false;
+          for (unsigned int i=0; i<al0->v().size(); i++) {
+            if (!Expression::equal(eval_par(al0->v()[i]), eval_par(al1->v()[i]))) {
+              return false;
+            }
+          }
+          return true;
         } else {
           throw EvalError(e->loc(), "not a bool expression", bo->opToString());
         }
@@ -653,6 +682,141 @@ namespace MiniZinc {
     }
   }
 
+  IntSetVal* eval_boolset(Expression* e) {
+    switch (e->eid()) {
+      case Expression::E_SETLIT:
+      {
+        SetLit* sl = e->cast<SetLit>();
+        if (sl->isv())
+          return sl->isv();
+        std::vector<IntVal> vals(sl->v().size());
+        for (unsigned int i=0; i<sl->v().size(); i++)
+          vals[i] = eval_bool(sl->v()[i]);
+        return IntSetVal::a(vals);
+      }
+      case Expression::E_BOOLLIT:
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_TIID:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+      case Expression::E_UNOP:
+        throw EvalError(e->loc(),"not a set of bool expression");
+        break;
+      case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        std::vector<IntVal> vals(al->v().size());
+        for (unsigned int i=0; i<al->v().size(); i++)
+          vals[i] = eval_bool(al->v()[i]);
+        return IntSetVal::a(vals);
+      }
+        break;
+      case Expression::E_COMP:
+      {
+        Comprehension* c = e->cast<Comprehension>();
+        std::vector<IntVal> a = eval_comp<EvalIntVal>(c);
+        return IntSetVal::a(a);
+      }
+      case Expression::E_ID:
+      {
+        GCLock lock;
+        return eval_id<EvalBoolSetLit>(e)->isv();
+      }
+        break;
+      case Expression::E_ARRAYACCESS:
+      {
+        GCLock lock;
+        return eval_boolset(eval_arrayaccess(e->cast<ArrayAccess>()));
+      }
+        break;
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (int i=0; i<ite->size(); i++) {
+          if (eval_bool(ite->e_if(i)))
+            return eval_boolset(ite->e_then(i));
+        }
+        return eval_boolset(ite->e_else());
+      }
+        break;
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        if (bo->lhs()->type().isintset() && bo->rhs()->type().isintset()) {
+          IntSetVal* v0 = eval_boolset(bo->lhs());
+          IntSetVal* v1 = eval_boolset(bo->rhs());
+          IntSetRanges ir0(v0);
+          IntSetRanges ir1(v1);
+          switch (bo->op()) {
+            case BOT_UNION:
+            {
+              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              return IntSetVal::ai(u);
+            }
+            case BOT_DIFF:
+            {
+              Ranges::Diff<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              return IntSetVal::ai(u);
+            }
+            case BOT_SYMDIFF:
+            {
+              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntSetRanges,IntSetRanges> i(ir0,ir1);
+              Ranges::Diff<Ranges::Union<IntSetRanges,IntSetRanges>,
+              Ranges::Inter<IntSetRanges,IntSetRanges>> sd(u,i);
+              return IntSetVal::ai(sd);
+            }
+            case BOT_INTERSECT:
+            {
+              Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              return IntSetVal::ai(u);
+            }
+            default: throw EvalError(e->loc(),"not a set of bool expression", bo->opToString());
+          }
+        } else if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
+          if (bo->op() != BOT_DOTDOT)
+            throw EvalError(e->loc(), "not a set of bool expression", bo->opToString());
+          return IntSetVal::a(eval_bool(bo->lhs()),
+                              eval_bool(bo->rhs()));
+        } else {
+          throw EvalError(e->loc(), "not a set of bool expression", bo->opToString());
+        }
+      }
+        break;
+      case Expression::E_CALL:
+      {
+        Call* ce = e->cast<Call>();
+        if (ce->decl()==NULL)
+          throw EvalError(e->loc(), "undeclared function", ce->id());
+        
+        if (ce->decl()->_builtins.s)
+          return ce->decl()->_builtins.s(ce->args());
+        
+        if (ce->decl()->_builtins.e)
+          return eval_boolset(ce->decl()->_builtins.e(ce->args()));
+        
+        if (ce->decl()->e()==NULL)
+          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
+        return eval_call<EvalBoolSet>(ce);
+      }
+        break;
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        IntSetVal* ret = eval_boolset(l->in());
+        l->popbindings();
+        return ret;
+      }
+        break;
+      default: assert(false); return NULL;
+    }
+  }
+  
   IntVal eval_int(Expression* e) {
     if (e->type().isbool()) {
       return eval_bool(e);
@@ -1046,6 +1210,9 @@ namespace MiniZinc {
         }
         if (e->type().isintset()) {
           return EvalSetLit::e(e);
+        }
+        if (e->type().isboolset()) {
+          return EvalBoolSetLit::e(e);
         }
         if (e->type()==Type::parint()) {
           return EvalIntLit::e(e);

@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "roots.mzn";
 
 var set of 1..5: s;

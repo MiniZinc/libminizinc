@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % Test for MiniZinc/FlatZinc 1.1 semantics for division.
 
 constraint  7  div  4 =  1;

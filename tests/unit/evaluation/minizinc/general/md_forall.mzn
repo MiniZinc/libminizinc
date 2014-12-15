@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % Test forall/1 with multi-dimensional arrays.
 
 bool: b = forall([|true, true | true \/ false, not false|]);

@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 % This should abort since {6} is not a subset of index_set(x).
 
 include "roots.mzn";

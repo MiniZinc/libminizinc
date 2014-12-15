@@ -376,6 +376,7 @@ namespace MiniZinc {
     /// Set identifier number
     void idn(long long int n) {
       _v_or_idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
+      rehash();
     }
     /// Return identifier or X_INTRODUCED plus identifier number
     ASTString str(void) const;

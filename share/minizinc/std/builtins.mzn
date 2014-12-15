@@ -293,6 +293,16 @@ function var float: min(array[$U] of var float: x) =
     constraint length(x) >= 1;
   } in min_t(xx);
 
+
+/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+function int: arg_min(array[int] of int: x);
+/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+function int: arg_min(array[int] of float: x);
+/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+function int: arg_max(array[int] of int: x);
+/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+function int: arg_max(array[int] of float: x);
+
 /** @group builtins.arithmetic Return absolute value of \a x */
 function int: abs(int: x);
 
@@ -392,7 +402,7 @@ function float: sin(float: x);
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_sin(x,r);
   } in r;
 
@@ -401,7 +411,7 @@ function float: cos(float: x);
 /** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
-    var float: r;
+    var -1.0..1.0: r;
     constraint float_cos(x,r);
   } in r;
 
@@ -542,11 +552,13 @@ function var bool: exists(array[$T] of var bool: x);
 /** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
 function     bool: xorall(array[$T] of     bool: x);
 /** @group builtins.logic Return truth value of \(\oplus_i \a x[i]\) */
-function var bool: xorall(array[int] of var bool: x) = array_bool_xor(x);
-/** @group builtins.logic TODO */
+function var bool: xorall(array[$T] of var bool: x) =
+  array_bool_xor(array1d(x));
+/** @group builtins.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
 function     bool: iffall(array[$T] of     bool: x);
-/** @group builtins.logic TODO */
-function var bool: iffall(array[$T] of var bool: x);
+/** @group builtins.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
+function var bool: iffall(array[$T] of var bool: x) =
+  array_bool_xor(array1d(x)++[true]);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
 function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
@@ -836,15 +848,34 @@ test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=
 /** @group builtins.array Test if \a e is an element of array \a x */
 predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
-/** @group builtins.array Return array \a x sorted by the values in \a y */
+/***
+  @groupdef builtins.sort Array sorting operations
+*/
+
+/** @group builtins.sort Return array \a x sorted by the values in \a y */
 function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of int: sort(array[int] of int: x);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of float: sort(array[int] of float: x);
-/** @group builtins.array Return values from array \a x sorted in non-decreasing order */
+/** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of bool: sort(array[int] of bool: x);
 
+/** @group builtins.sort
+Returns the permutation \a p which causes \a x to be in sorted order hence
+\a x[\a p[\p i]] <= \a x[\a p[\p i+1]].
+
+The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
+*/
+function array[int] of int: arg_sort(array[int] of int:x);
+
+/** @group builtins.sort
+Returns the permutation \a p which causes \a x to be in sorted order hence
+\a x[\a p[\p i]] <= \a x[\a p[\p i+1]].
+
+The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
+*/
+function array[int] of int: arg_sort(array[int] of float:x);
 
 /***
   @groupdef builtins.coercion Coercions
@@ -875,6 +906,12 @@ function float: int2float(int: x);
 function var float: int2float(var int: x) ::promise_total =
   let { var int2float(lb(x))..int2float(ub(x)): y;
         constraint int2float(x,y); } in y;
+
+function set of int: bool2int(set of bool: b) =
+  if b={false,true} then {0,1}
+  elseif b={false} then {0}
+  elseif b={true} then {1}
+  else {} endif;
 
 /** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
 function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
@@ -1109,6 +1146,8 @@ function $T: trace(string: msg, $T: x);
 function var $T: trace(string: msg, var $T: x);
 /** @group builtins.debug Return \a x, and print message \a msg. */
 function var opt $T: trace(string: msg, var opt $T: x);
+/** @group builtins.debug Return true, and print message \a msg. */
+function bool: trace(string: msg);
 
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
@@ -1129,6 +1168,12 @@ predicate var_dom(var set of int: x, set of int: s) =
   if has_ub_set(x) /\ ub(x) subset s then true
   else set_subset(x,s)
   endif;
+predicate var_dom(var float:x, float: l, float: u) =
+  if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
+  else x >= l /\ x <= u
+  endif;
+test var_dom(float:x, float: l, float: u) =
+  x >= l /\ x <= u;
 
 predicate var_dom(array[$T] of var set of int: x, set of int: d) =
     let { array[int] of var set of int: xx = array1d(x) }
@@ -1136,6 +1181,9 @@ predicate var_dom(array[$T] of var set of int: x, set of int: d) =
 predicate var_dom(array[$T] of var int: x, set of int: d) =
     let { array[int] of var int: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
+predicate var_dom(array[$T] of var float: x, float: l, float: u) =
+    let { array[int] of var float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
 
 test var_dom(array[$T] of set of int: x, set of int: d) =
     let { array[int] of set of int: xx = array1d(x) }
@@ -1143,6 +1191,9 @@ test var_dom(array[$T] of set of int: x, set of int: d) =
 test var_dom(array[$T] of int: x, set of int: d) =
     let { array[int] of int: xx = array1d(x) }
     in forall (i in index_set(xx)) (xx[i] in d);
+test var_dom(array[$T] of float: x, float: l, float: u) =
+    let { array[int] of float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
 
 function var set of int: array2set(array[int] of var int: x) ::promise_total =
     let {

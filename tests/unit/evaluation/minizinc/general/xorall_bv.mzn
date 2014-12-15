@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 constraint xorall([]) = false;
 constraint xorall([false]) = false;
 constraint xorall([true]) = true;

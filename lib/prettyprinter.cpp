@@ -551,7 +551,7 @@ namespace MiniZinc {
         {
           const TypeInst& ti = *e->cast<TypeInst>();
           if (ti.isarray()) {
-            os << "array[";
+            os << "array [";
             for (unsigned int i = 0; i < ti.ranges().size(); i++) {
               p(Type::parint(), ti.ranges()[i]);
               if (i < ti.ranges().size()-1)
@@ -1493,7 +1493,7 @@ namespace MiniZinc {
     ret mapTypeInst(const TypeInst& ti) {
       DocumentList* dl = new DocumentList("", "", "");
       if (ti.isarray()) {
-        dl->addStringToList("array[");
+        dl->addStringToList("array [");
         DocumentList* ran = new DocumentList("", ", ", "");
         for (unsigned int i = 0; i < ti.ranges().size(); i++) {
           ran->addDocumentToList(tiexpressionToDocument(Type::parint(), ti.ranges()[i]));

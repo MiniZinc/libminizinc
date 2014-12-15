@@ -1,4 +1,4 @@
-
+% RUNS ON mzn20_fd
 include "roots.mzn";
 
 array[0..2] of var 0..1000: x;
