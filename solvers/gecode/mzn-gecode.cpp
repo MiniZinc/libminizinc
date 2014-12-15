@@ -358,6 +358,18 @@ int main(int argc, char** argv) {
             } else {
               env.flat()->compact();
             }
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc ...";
+              if (flag_output_fzn_stdout) {
+                Printer p(std::cout,0);
+                p.print(env.flat());
+              } else {
+                std::ofstream os;
+                os.open(flag_output_fzn.c_str(), ios::out);
+                Printer p(os,0);
+                p.print(env.flat());
+                os.close();
+              }
             
             {
               // DEBUG stuff
@@ -371,24 +383,24 @@ int main(int argc, char** argv) {
               Options options;
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
-              std::cout << "DEBUG: finished processing flatzinc" << std::endl;
+              //std::cout << "DEBUG: finished processing flatzinc" << std::endl;
               SolverInstance::Status status = gecode.solve();
-              std::cout << "DEBUG: Solved with status: ";
+              //std::cout << "DEBUG: Solved with status: ";
               switch(status) {
                 case SolverInstance::SAT:
-                  std::cout << "SAT";
+                  std::cout << "=====SAT=====";
                   break;
                 case SolverInstance::OPT:
-                  std::cout << "OPT";
+                  std::cout << "=====OPT=====";
                   break;
                 case SolverInstance::UNKNOWN:
-                  std::cout << "UNKNOWN";
+                  std::cout << "=====UNKNOWN=====";
                   break;  
                 case SolverInstance::ERROR:
-                  std::cout << "ERROR";
+                  std::cout << "=====ERROR=====";
                   break;  
                 case SolverInstance::UNSAT:
-                  std::cout << "UNSAT";
+                  std::cout << "=====UNSAT=====";
                   break;                    
               }
               std::cout << std::endl;
@@ -399,7 +411,7 @@ int main(int argc, char** argv) {
                   std::cout << "==========\n";
               }
               else if(status == SolverInstance::ERROR) {
-                std::cout << "DEBUG: solving finished with error." << std::endl;
+                //std::cout << "DEBUG: solving finished with error." << std::endl;
               }
             }
             

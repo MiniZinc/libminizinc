@@ -444,11 +444,11 @@ namespace MiniZinc {
     }
    
     
-    std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
-              << "iv has " << _current_space->iv.size() << " variables " << std::endl
-              << "bv has " << _current_space->bv.size() << " variables " << std::endl
-              << "fv has " << _current_space->fv.size() << " variables " << std::endl
-              << "sv has " << _current_space->sv.size() << " variables " << std::endl;              
+    //std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
+    //          << "iv has " << _current_space->iv.size() << " variables " << std::endl
+    //          << "bv has " << _current_space->bv.size() << " variables " << std::endl
+    //          << "fv has " << _current_space->fv.size() << " variables " << std::endl
+    //          << "sv has " << _current_space->sv.size() << " variables " << std::endl;              
   }
   
   Gecode::IntArgs 
@@ -922,7 +922,7 @@ namespace MiniZinc {
     }    
     if (flatAnn.size() > 0) {
       // TODO: implement
-      std::cout << "Ignoring solving annotations for now..." << std::endl;
+      //std::cerr << "Ignoring solving annotations for now..." << std::endl;
     }
     
     int introduced = 0;
@@ -988,8 +988,8 @@ namespace MiniZinc {
     if (bv_sol.size() > 0)
       branch(*this->_current_space, bv_sol, def_bool_varsel, def_bool_valsel);
     
-    std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
-    std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
+    //std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
+    //std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
 #ifdef GECODE_HAS_FLOAT_VARS
     introduced = 0;
     funcdep = 0;
@@ -1077,10 +1077,10 @@ namespace MiniZinc {
                         , def_float_varsel, def_float_valsel
 #endif
                     ); // end post                    
-      std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" << std::endl;
+      //std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" << std::endl;
     } // end if n_aux > 0 
-    else 
-      std::cout << "DEBUG: No aux vars to branch on." << std::endl;
+    //else 
+      //std::cout << "DEBUG: No aux vars to branch on." << std::endl;
   }
   
     
@@ -1140,47 +1140,52 @@ namespace MiniZinc {
  
   void
   GecodeSolverInstance::assignSolutionToOutput(void) {
-    
     //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];
       //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-      if(vd->ann().containsCall(constants().ann.output_array.aststr())) {                    
+      if(Call* output_array_ann = getAnnotation(vd->ann(), constants().ann.output_array.aststr())->dyn_cast<Call>()) {
         assert(vd->e());
+
         if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
           std::vector<Expression*> array_elems;
-          if(al->dims() == 1) {
-            ASTExprVec<Expression> array = al->v();
-            for(unsigned int j=0; j<array.size(); j++) {
-              if(Id* id = array[j]->dyn_cast<Id>()) {
-                //std::cout << "DEBUG: getting solution value from " << *id << std::endl;
-                array_elems.push_back(getSolutionValue(id));                             
-              } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {              
-                array_elems.push_back(intLit);
-              } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) { 
-                array_elems.push_back(boolLit);
-              } else {
-                std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
-                assert(false);
-              }
-            }            
-            GCLock lock;
-            ArrayLit* array_solution = new ArrayLit(Location(),array_elems);
-            KeepAlive ka(array_solution);
-            // add solution to the output
-            for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
-              if(it->e()->id()->str() == vd->id()->str()) {
-                //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-                it->e()->e(array_solution); // set the solution
-              }
+          ASTExprVec<Expression> array = al->v();
+          for(unsigned int j=0; j<array.size(); j++) {
+            if(Id* id = array[j]->dyn_cast<Id>()) {
+              //std::cout << "DEBUG: getting solution value from " << *id << std::endl;
+              array_elems.push_back(getSolutionValue(id));
+            } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
+              array_elems.push_back(intLit);
+            } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
+              array_elems.push_back(boolLit);
+            } else {
+              std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
+              assert(false);
             }
-          } // TODO: else this is a multi-dim array
+          }
+          GCLock lock;
+          ArrayLit* dims = output_array_ann->args()[0]->cast<ArrayLit>();
+          std::vector<std::pair<int,int> > dims_v;
+          for(unsigned int i=0;i<dims->length();i++) {
+            IntSetVal* isv = eval_intset(dims->v()[i]);
+            dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
+          }
+          ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
+          KeepAlive ka(array_solution);
+          // add solution to the output
+          for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+            if(it->e()->id()->str() == vd->id()->str()) {
+              //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+              it->e()->e(array_solution); // set the solution
+            }
+          }
         }
       } else if(vd->ann().containsCall(constants().ann.output_var->str())) {
-        // TODO
-      }        
-    }       
+        Expression* sol = getSolutionValue(vd->id());
+        vd->e(sol);
+      }
+    }
 
   }
- 
-}
+
+    }
