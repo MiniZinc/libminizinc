@@ -59,6 +59,8 @@ predicate int_min(var int: a, var int: b, var int: c);
 predicate int_mod(var int: a, var int: b, var int: c);
 /** @group flatzinc Constrains \a a * \a b = \a c */
 predicate int_times(var int: a, var int: b, var int: c);
+/** @group flatzinc Constrains \a z = \(\a x ^ {\a y}\) */
+predicate int_pow(var int: x, var int: y, var int: z);
 
 % Set constraints
 
@@ -125,6 +127,8 @@ predicate float_log10(var float: a, var float: b);
 predicate float_log2(var float: a, var float: b);
 /** @group flatzinc Constrains \(\a b = \sqrt{\a a}\) */
 predicate float_sqrt(var float: a, var float: b);
+/** @group flatzinc Constrains \a z = \(\a x ^ {\a y}\) */
+predicate float_pow(var float: x, var float: y, var float: z);
 /** @group flatzinc Constrains \a b = sin(\a a) */
 predicate float_sin(var float: a, var float: b);
 /** @group flatzinc Constrains \a b = sinh(\a a) */
