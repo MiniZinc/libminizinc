@@ -389,7 +389,7 @@ namespace MiniZinc {
         if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v()) {
           addWarning("model inconsistency detected");
           _flat->fail();
-      }
+        }
         toAdd = ci->e();
         break;
       }
@@ -1058,7 +1058,7 @@ namespace MiniZinc {
             ArrayLit* al = e->cast<ArrayLit>();
             /// TODO: review if limit of 10 is a sensible choice
             if (al->v().size() <= 10)
-          return e;
+              return e;
 
             std::vector<TypeInst*> ranges(al->dims());
             for (unsigned int i=0; i<ranges.size(); i++) {
@@ -1637,7 +1637,7 @@ namespace MiniZinc {
       return ce->cast<Call>();
     return NULL;
   }
-
+  
   template<class Lit>
   void collectLinExps(typename LinearTraits<Lit>::Val c, Expression* exp,
                       std::vector<typename LinearTraits<Lit>::Val>& coeffs,
@@ -1861,8 +1861,9 @@ namespace MiniZinc {
       //KeepAlive ka(ite_iter);
       //CallStackItem _csi(env, ite_iter);
 
+      bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        bool cond = eval_bool(ite->e_if(i));
+        cond = eval_bool(ite->e_if(i));
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -1898,7 +1899,7 @@ namespace MiniZinc {
         elseconds.push_back(ite->e_if(i));
       }
 
-      if (r_bounds.valid && ite->e_then(i)->type().isint()) {
+      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(ite->e_then(i));
         if (ib_then.valid) {
           IntVal lb = std::min(r_bounds.l, ib_then.l);
@@ -5007,7 +5008,7 @@ namespace MiniZinc {
       full_filename = path + '/' + filename;
       std::ifstream fi(full_filename);
       if(fi.is_open()) {
-        Model* inc_mod = parse(full_filename, datafiles, includes, true, true, std::cerr);
+        Model* inc_mod = parse(full_filename, datafiles, includes, true, true, false, std::cerr);
         IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
         inc_mod->setParent(parent);
@@ -5071,7 +5072,7 @@ namespace MiniZinc {
 
     e.envi().setMaps(pre_env->envi());
   }
-
+  
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
     env.fopts = opt;
@@ -5306,7 +5307,7 @@ namespace MiniZinc {
           }
         }
       }
-      
+
       // rewrite some constraints if there are redefinitions
       for (int i=startItem; i<=endItem; i++) {
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -5449,7 +5450,7 @@ namespace MiniZinc {
 
       startItem = endItem+1;
       endItem = m.size()-1;
-          }
+    }
 
     for (unsigned int i=0; i<removedItems.size(); i++) {
       if (env.vo.occurrences(removedItems[i]->e())==0) {
@@ -5458,7 +5459,7 @@ namespace MiniZinc {
         removedItems[i]->remove();
       }
     }
-
+    
     // Add redefinitions for output variables that may have been redefined since createOutput
     for (unsigned int i=0; i<env.output->size(); i++) {
       if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
@@ -5526,7 +5527,7 @@ namespace MiniZinc {
         }
       }
     }
-    
+
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
