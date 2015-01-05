@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
   istream& solstream = cin;
 
   string solution_separator = "----------";
+  string solution_comma     = "";
   string unsatisfiable_msg  = "=====UNSATISFIABLE=====";
   string unbounded_msg      = "=====UNBOUNDED=====";
   string unknown_msg        = "=====UNKNOWN=====";
@@ -104,6 +105,12 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       solution_separator = string(argv[i]);
+    } else if (string(argv[i])=="--soln-comma" ||
+               string(argv[i])=="--solution-comma") {
+      ++i;
+      if (i==argc)
+        goto error;
+      solution_comma = string(argv[i]);
     } else if (string(argv[i])=="--unsat-msg" ||
                string(argv[i])=="--unsatisfiable-msg") {
       ++i;
@@ -184,6 +191,8 @@ int main(int argc, char** argv) {
             file_ostream.open(flag_output_file.c_str(), std::fstream::out);
         ostream& fout = flag_output_file.empty() ? std::cout : file_ostream;
 
+        int solutions_found = 0;
+
         string solution;
         string comments;
         for (;;) {
@@ -195,8 +204,13 @@ int main(int argc, char** argv) {
               continue;
             }
             if (line=="----------") {
+              ++solutions_found;
               if (flag_output_time)
                 fout << "% time elapsed: " << stoptime(starttime) << "\n";
+              // Put the "solution comma" before the solution itself,
+              // but only for solutions after the first one.
+              if (solutions_found > 1 && !solution_comma.empty())
+                fout << solution_comma << std::endl;
               if (outputExpr != NULL) {
                 for (unsigned int i=0; i<outputm->size(); i++) {
                   if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
@@ -317,7 +331,8 @@ error:
             << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
             << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
-            << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string used to separate solutions.\n    The default is to use the FlatZinc solution separator,\n    \"----------\"." << std::endl
+            << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc,\n    \"----------\"." << std::endl
+            << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate solutions.\n    The default is the empty string." << std::endl
             << "  --unsat-msg <msg>, --unsatisfiable-msg <msg>\n    Specify the message to print if the model instance is\n    unsatisfiable.\n    The default is to print \"=====UNSATISFIABLE=====\"." << std::endl
             << "  --unbounded-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unbounded.\n    The default is to print \"=====UNBOUNDED=====\"." << std::endl
             << "  --unknown-msg <msg>\n    Specify the message to print if search terminates without\n    the entire search space having been explored and no\n    solution has been found.\n    The default is to print \"=====UNKNOWN=====\"." << std::endl
