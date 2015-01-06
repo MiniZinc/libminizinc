@@ -872,6 +872,9 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(i->e()->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'"));
+            // Assign to "true" constant to avoid generating further errors that the parameter
+            // is undefined
+            i->decl()->e(constants().lit_true);
           }
         }
         void vConstraintI(ConstraintI* i) {
