@@ -9,7 +9,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
-#include <solvers/gecode/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode/gecode_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -18,7 +18,7 @@ static PyObject*
 mzn_solve(PyObject *self, PyObject *args)
 {
   PyObject* obj;
-  Py_ssize_t pos;
+  Py_ssize_t pos = 0;
   PyObject* key;
   PyObject* value;
   const char* py_filename;
@@ -50,9 +50,17 @@ mzn_solve(PyObject *self, PyObject *args)
     }
   }
   vector<string> data;
-  data.push_back("cmd:/"+assignments.str());
+  string asn = assignments.str();
+  if (asn.size() > 0)
+    data.push_back("cmd:/"+assignments.str());
 
   string std_lib_dir;
+  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+    std_lib_dir = string(MZNSTDLIBDIR);
+  } else {
+    std::cerr << "No MiniZinc library directory MZN_STDLIB_DIR defined.\n";
+    return NULL;
+  }
 
   vector<string> includePaths;
   includePaths.push_back(std_lib_dir+"/gecode/");

@@ -2,16 +2,16 @@ from distutils.core import setup, Extension
 
 module1 = Extension('minizinc',
                     sources = ['pyinterface.cpp'],
-                    # libraries = ['gecode_interface', 'solver_interface', 'minizinc',
-                    #              'gecodedriver',
-                    #              'gecodeminimodel',
-                    #              'gecodesearch',
-                    #              'gecodeset',
-                    #              'gecodefloat',
-                    #              'gecodeint',
-                    #              'gecodekernel',
-                    #              'gecodesupport'
-                    #              ]
+                    libraries = ['minizinc_gecode', 'minizinc',
+                                 'gecodedriver',
+                                 'gecodeminimodel',
+                                 'gecodesearch',
+                                 'gecodeset',
+                                 'gecodefloat',
+                                 'gecodeint',
+                                 'gecodekernel',
+                                 'gecodesupport'
+                                 ]
                     )
 
 setup (name = 'MiniZinc',
