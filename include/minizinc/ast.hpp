@@ -147,7 +147,7 @@ namespace MiniZinc {
 
   inline
   AnonVar::AnonVar(const Location& loc)
-  : Expression(loc,E_ANON,Type::varbot()) {
+  : Expression(loc,E_ANON,Type()) {
     rehash();
   }
   
