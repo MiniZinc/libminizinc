@@ -318,6 +318,11 @@ if(HAS_GECODE)
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
+
+  INSTALL(DIRECTORY solvers/gecode
+          DESTINATION include/minizinc/solvers
+  )
+
 endif()
 
 
