@@ -667,7 +667,7 @@ namespace MiniZinc {
 #ifdef GECODE_HAS_FLOAT_VARS
   Gecode::FloatValArgs
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
-    assert(!arg->isa<Id>() && !arg->isa<ArrayLit>());
+    assert(arg->isa<Id>() || arg->isa<ArrayLit>());
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
     FloatValArgs fa(a->v().size()+offset);
     for (int i=offset; i--;)

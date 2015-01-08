@@ -404,7 +404,7 @@ int main(int argc, char** argv) {
                   break;                    
               }
               std::cout << std::endl;
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT || status==SolverInstance::UNKNOWN) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
                 if (status==SolverInstance::OPT)
