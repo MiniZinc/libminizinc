@@ -3828,8 +3828,14 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = new VarDecl(v->loc(), eval_typeinst(env,v), v->id());
-          vd->introduced(v->introduced());
+          VarDecl* vd;
+          if (v->id()->idn()==-1 && !v->toplevel()) {
+            vd = new VarDecl(v->loc(), eval_typeinst(env,v), env.genId());
+            vd->introduced(true);
+          } else {
+            vd = new VarDecl(v->loc(), eval_typeinst(env,v), v->id());
+            vd->introduced(v->introduced());
+          }
           vd->flat(vd);
           v->flat(vd);
           for (ExpressionSetIter it = v->ann().begin(); it != v->ann().end(); ++it) {
