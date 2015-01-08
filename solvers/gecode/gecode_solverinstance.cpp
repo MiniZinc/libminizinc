@@ -249,7 +249,7 @@ namespace MiniZinc {
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
           if(vd->ann().containsCall(constants().ann.output_array.aststr()) || 
-            vd->ann().containsCall(constants().ann.output_var->str())
+            vd->ann().contains(constants().ann.output_var)
           ) {            
             _varsWithOutput.push_back(vd);
           }
@@ -1144,7 +1144,7 @@ namespace MiniZinc {
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];
       //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-      if(Call* output_array_ann = getAnnotation(vd->ann(), constants().ann.output_array.aststr())->dyn_cast<Call>()) {
+      if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
         assert(vd->e());
 
         if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
@@ -1180,9 +1180,15 @@ namespace MiniZinc {
             }
           }
         }
-      } else if(vd->ann().containsCall(constants().ann.output_var->str())) {
+      } else if(vd->ann().contains(constants().ann.output_var)) {
         Expression* sol = getSolutionValue(vd->id());
         vd->e(sol);
+        for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+          if(it->e()->id()->str() == vd->id()->str()) {
+            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+            it->e()->e(sol); // set the solution
+          }
+        }
       }
     }
 
