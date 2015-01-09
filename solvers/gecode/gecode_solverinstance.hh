@@ -149,6 +149,10 @@ namespace MiniZinc {
     int boolAliasIndex(void) {
       return  _boolAliasIndex;
     }
+
+    int index(void) {
+      return _index;
+    }
     
     Gecode::IntVar intVar(MiniZinc::FznSpace* space) {
       assert(_t == INT_TYPE);

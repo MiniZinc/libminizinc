@@ -695,13 +695,9 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       BoolVar x0 = gi.arg2boolvar(call->args()[0]);
       IntVar x1 = gi.arg2intvar(call->args()[1]);
-      //if (call->args()[0]->type().isvarbool() && call->args()[0]->type().isvarint()) { // TODO: bug? 
       if (call->args()[0]->type().isvarbool() && call->args()[1]->type().isvarint()) { 
-        //gi._current_space->aliasBool2Int(gi.resolveVar(call->args()[1]->cast<Id>()->decl()),
-        //       gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar());                
-        int index = gi._current_space->getBoolAliasIndex(gi.resolveVar(call->args()[0]->cast<Id>()->decl()).boolVar(gi._current_space));
-        assert(index > 0);
-        gi.resolveVar(call->args()[1]->cast<Id>()->decl()).setBoolAliasIndex(index);                
+        int index = gi.resolveVar(call->args()[0]->cast<Id>()->decl()).index();
+        gi.resolveVar(call->args()[1]->cast<Id>()->decl()).setBoolAliasIndex(index);
       }
       channel(*gi._current_space, x0, x1, gi.ann2icl(ann));
     }
