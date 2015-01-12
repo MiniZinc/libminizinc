@@ -240,7 +240,7 @@ namespace MiniZinc {
 
   void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
     //std::cerr << *id << ": " << id->decl() << std::endl;
-    _variableMap.insert(id, gv);
+    _variableMap.insert(id->decl()->id(), gv);
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
@@ -812,7 +812,7 @@ namespace MiniZinc {
 
   Expression*
   GecodeSolverInstance::getSolutionValue(Id* id) {
-    GecodeVariable var = resolveVar(id);
+    GecodeVariable var = resolveVar(id->decl()->id());
     switch (id->type().bt()) {
       case Type::BT_INT:
         assert(var.intVar(_solution).assigned());
