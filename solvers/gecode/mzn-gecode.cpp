@@ -370,15 +370,15 @@ int main(int argc, char** argv) {
                 p.print(env.flat());
                 os.close();
               }
-            
+
             {
               // DEBUG stuff
               /*Printer p(std::cout, 80, false);
               std::cout << "DEBUG: printing flat model:" << std::endl;
               p.print(env.flat()); */
-             
-              
-              
+
+
+
               GCLock lock;
               Options options;
               GecodeSolverInstance gecode(env,options);
@@ -395,13 +395,13 @@ int main(int argc, char** argv) {
                   break;
                 case SolverInstance::UNKNOWN:
                   std::cout << "=====UNKNOWN=====";
-                  break;  
+                  break;
                 case SolverInstance::ERROR:
                   std::cout << "=====ERROR=====";
-                  break;  
+                  break;
                 case SolverInstance::UNSAT:
                   std::cout << "=====UNSAT=====";
-                  break;                    
+                  break;
               }
               std::cout << std::endl;
               if (status==SolverInstance::SAT || status==SolverInstance::OPT || status==SolverInstance::UNKNOWN) {
@@ -414,7 +414,7 @@ int main(int argc, char** argv) {
                 //std::cout << "DEBUG: solving finished with error." << std::endl;
               }
             }
-            
+
           }
         } else { // !flag_typecheck
           Printer p(std::cout);

@@ -248,20 +248,23 @@ namespace MiniZinc {
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
-    Gecode::IntConLevel ann2icl(const Annotation& ann);  
-    
+    Gecode::IntConLevel ann2icl(const Annotation& ann);
+
     /// Returns the VarDecl of \a expr and throws an InternalError if not possible
     VarDecl* getVarDecl(Expression* expr);
     /// Returns the VarDecl of \a aa 
     VarDecl* resolveArrayAccess(ArrayAccess* aa);
     /// Returns the VarDecl of \a array at index \a index
     VarDecl* resolveArrayAccess(VarDecl* array, int index);
-    
+
     /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
-    GecodeSolver::Variable resolveVar(Expression* e);       
-        
+    GecodeSolver::Variable resolveVar(Expression* e);
+
+    /// Inserts variable gv into _variableMap with key id
+    void insertVar(Id* id, GecodeVariable gv);
+
     void assignSolutionToOutput(void);
-    
+
   protected:
     /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
     // FlatZincOptions* opts;
@@ -270,10 +273,10 @@ namespace MiniZinc {
 
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
-            bool ignoreUnknown, std::ostream& err);    
+            bool ignoreUnknown, std::ostream& err);
     /// Run the search engine
     template<template<class> class Engine>
-        SolverInstanceBase::Status runEngine();        
+        SolverInstanceBase::Status runEngine();
     /// Run the meta search engine
     template<template<class> class Engine,
         template<template<class> class,class> class Meta>
