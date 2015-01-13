@@ -187,7 +187,15 @@ namespace MiniZinc {
     _ilomodel = new IloModel(_iloenv);
   
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
-      if (it->e()->type().dim() == 0 && it->e()->type().isvar()) {
+      VarDecl* vd = it->e();
+      if(!vd->ann().isEmpty()) {
+        if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+            vd->ann().contains(constants().ann.output_var)
+          ) {
+          _varsWithOutput.push_back(vd);
+        }
+      }
+      if (vd->type().dim() == 0 && it->e()->type().isvar()) {
         MiniZinc::TypeInst* ti = it->e()->ti();
         IloNumVar::Type type;
         switch (ti->type().bt()) {
@@ -229,6 +237,8 @@ namespace MiniZinc {
         if (it->e()->e()) {
           _ilomodel->add(IloConstraint(res == exprToIloExpr(it->e()->e())));
         }
+        Id* id = it->e()->id();
+        id = id->decl()->id();
         _variableMap.insert(it->e()->id(), res);
       }
       
@@ -245,6 +255,7 @@ namespace MiniZinc {
   void CPLEXSolverInstance::resetSolver(void) {}
 
   Expression* CPLEXSolverInstance::getSolutionValue(Id* id) {
+    id = id->decl()->id();
     IloNum val = _ilocplex->getValue(exprToIloNumVar(id));
     switch (id->type().bt()) {
       case Type::BT_INT: return new IntLit(Location(), val);
@@ -276,6 +287,7 @@ namespace MiniZinc {
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
       return IloExpr(_iloenv, bl->v());
     } else if (Id* ident = e->dyn_cast<Id>()) {
+      ident = ident->decl()->id();
       return _variableMap.get(ident);
     }
     assert(false);
@@ -307,6 +319,7 @@ namespace MiniZinc {
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
       return IloNumVar(_iloenv, bl->v(), bl->v());
     } else if (Id* ident = e->dyn_cast<Id>()) {
+      ident = ident->decl()->id();
       return _variableMap.get(ident);
     }
     assert(false);
@@ -324,6 +337,7 @@ namespace MiniZinc {
       } else if (BoolLit* bl = al->v()[i]->dyn_cast<BoolLit>()) {
         a.add(IloNumVar(_iloenv, bl->v(), bl->v()));
       } else if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+        ident = ident->decl()->id();
         a.add(_variableMap.get(ident));
       } else {
         std::cerr << "unknown expression type\n";
@@ -333,4 +347,58 @@ namespace MiniZinc {
     return a;
   }
   
+  void CPLEXSolverInstance::assignSolutionToOutput(void) {
+    //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
+    for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
+      VarDecl* vd = _varsWithOutput[i];
+      //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
+      if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
+        assert(vd->e());
+
+        if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+          std::vector<Expression*> array_elems;
+          ASTExprVec<Expression> array = al->v();
+          for(unsigned int j=0; j<array.size(); j++) {
+            if(Id* id = array[j]->dyn_cast<Id>()) {
+              //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
+              array_elems.push_back(getSolutionValue(id));
+            } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
+              array_elems.push_back(intLit);
+            } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
+              array_elems.push_back(boolLit);
+            } else {
+              std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
+              assert(false);
+            }
+          }
+          GCLock lock;
+          ArrayLit* dims = output_array_ann->args()[0]->cast<ArrayLit>();
+          std::vector<std::pair<int,int> > dims_v;
+          for(unsigned int i=0;i<dims->length();i++) {
+            IntSetVal* isv = eval_intset(dims->v()[i]);
+            dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
+          }
+          ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
+          KeepAlive ka(array_solution);
+          // add solution to the output
+          for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+            if(it->e()->id()->str() == vd->id()->str()) {
+              //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+              it->e()->e(array_solution); // set the solution
+            }
+          }
+        }
+      } else if(vd->ann().contains(constants().ann.output_var)) {
+        Expression* sol = getSolutionValue(vd->id());
+        vd->e(sol);
+        for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+          if(it->e()->id()->str() == vd->id()->str()) {
+            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+            it->e()->e(sol); // set the solution
+          }
+        }
+      }
+    }
+
+  }
 }
