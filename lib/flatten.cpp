@@ -4259,8 +4259,8 @@ namespace MiniZinc {
                 } else {
                   decl = origdecl;
                 }
-                rhs->decl(decl);
               }
+              rhs->decl(decl);
             }
             outputVarDecls(env,nvi,it->second());
             nvi->e()->e(rhs);
@@ -4376,8 +4376,8 @@ namespace MiniZinc {
                   } else {
                     decl = origdecl;
                   }
-                  rhs->decl(decl);
                 }
+                rhs->decl(decl);
                 removeIsOutput(reallyFlat);
                 
                 outputVarDecls(e,item,rhs);
@@ -4550,8 +4550,8 @@ namespace MiniZinc {
             } else {
               decl = origdecl;
             }
-            c.decl(decl);
           }
+          c.decl(decl);
         }
       } _cf(e);
       topDown(_cf, outputItem->e());
@@ -4607,8 +4607,8 @@ namespace MiniZinc {
                     } else {
                       decl = origdecl;
                     }
-                    rhs->decl(decl);
                   }
+                  rhs->decl(decl);
                 }
                 outputVarDecls(env,vdi_copy,rhs);
                 vd->e(rhs);
@@ -4697,6 +4697,14 @@ namespace MiniZinc {
     e.output->compact();
   }
   
+  void cleanupOutput(EnvI& env) {
+    for (unsigned int i=0; i<env.output->size(); i++) {
+      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+        vdi->e()->flat(NULL);
+      }
+    }
+  }
+
   bool checkParDomain(Expression* e, Expression* domain) {
     if (e->type()==Type::parint()) {
       IntSetVal* isv = eval_intset(domain);
@@ -5137,8 +5145,8 @@ namespace MiniZinc {
             } else {
               decl = origdecl;
             }
-            rhs->decl(decl);
           }
+          rhs->decl(decl);
           outputVarDecls(env,vdi,rhs);
           
           removeIsOutput(vdi->e()->flat());
@@ -5174,7 +5182,7 @@ namespace MiniZinc {
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
-
+    cleanupOutput(env);
   }
   
   void oldflatzinc(Env& e) {
