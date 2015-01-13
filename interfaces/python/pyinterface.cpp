@@ -1,4 +1,5 @@
 #include <Python.h>
+#include "structmember.h"
 
 #include <iostream>
 #include <cstdio>
@@ -22,9 +23,8 @@ using namespace std;
 static PyObject* mzn_solve_error;
 static PyObject* mzn_solve_warning;
 
-
-
-string minizinc_set(int start, int end) {
+string minizinc_set(int start, int end)
+{
   stringstream ret;
   ret << start << ".." << end;
   return ret.str();
@@ -34,11 +34,12 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
   for (Py_ssize_t i=0; i<PyList_Size(value); i++) {
     if (dimensions.size() <= layer) {
       dimensions.push_back(PyList_Size(value));
-    } else if (dimensions[layer]!=PyList_Size(value))
+    } else if (dimensions[layer]!=PyList_Size(value)) {
       return -1; // Inconsistent size of array (should be the same)
+    }
     PyObject* li = PyList_GetItem(value, i);
     if (PyList_Check(li)) {
-        if (getList(li,dimensions,simpleArray,layer+1)==-1) {
+      if (getList(li,dimensions,simpleArray,layer+1)==-1) {
         return -1;
       }
     } else {
@@ -55,14 +56,13 @@ mzn_solve(PyObject *self, PyObject *args)
   Py_ssize_t pos = 0;
   PyObject* key;
   PyObject* value;
+  PyObject* options = Py_None;
   const char* py_filename;
 
-  if (!PyArg_ParseTuple(args, "sO", &py_filename, &obj)) {
+  if (!PyArg_ParseTuple(args, "sO|O", &py_filename, &obj, &options)) {
     PyErr_SetString(mzn_solve_error, "Parsing error");
     return NULL;
   }
-
-  //Py_INCREF(obj);
 
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -107,12 +107,13 @@ mzn_solve(PyObject *self, PyObject *args)
 
 
         bool is_set = false; // find out if it is a set or an array.
-
         std::list<string>::iterator findIter = std::find(nameOfSets.begin(),nameOfSets.end(),PyString_AsString(key));
         if (findIter!=nameOfSets.end()) {
           is_set = true;
+          nameOfSets.erase(findIter);
         }
         if (getList(value, dimensions, simpleArray,0) == -1) {
+          // No need to deAlloc here: getList automatically free memory when error occurred.
           PyErr_SetString(mzn_solve_error, "Inconsistency in size of multidimensional array");
           return NULL;
         }
@@ -132,7 +133,7 @@ mzn_solve(PyObject *self, PyObject *args)
         if (PyBool_Check(simpleArray[0]))
           for (vector<PyObject*>::size_type i=0; i!=simpleArray.size(); i++) {
             if (i!=0)
-              assignments << ", ";
+               assignments << ", ";
             if (PyBool_Check(simpleArray[i])) {
               if (PyInt_AS_LONG(simpleArray[i]))
                 assignments << "true";
@@ -172,6 +173,7 @@ mzn_solve(PyObject *self, PyObject *args)
               assignments << "\"" << PyString_AS_STRING(simpleArray[i]) << "\"";
             else {
               PyErr_SetString(mzn_solve_error, "Inconsistency in values type");
+              return NULL;
             }
           }
         else {
@@ -196,6 +198,7 @@ mzn_solve(PyObject *self, PyObject *args)
           assignments << PyString_AS_STRING(value);
         else {
           PyErr_SetString(mzn_solve_error, "Object is neither a list or value");
+          return NULL;
         }
       }
       assignments << ";\n";
@@ -281,13 +284,6 @@ mzn_solve(PyObject *self, PyObject *args)
       for (unsigned int i=0; i<_m->size(); i++) {
         if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
           if (vdi->e()->type().st() == Type::ST_SET) {
-            /*PyObject* temp;
-            if (vdi->e()->type().bt() == Type::BT_BOOL) 
-              temp = PyString_FromString("boolean type");
-            else if (vdi->e()->type().bt() == Type::BT_INT) 
-              temp = PyString_FromString("int type");
-            else if (vdi->e()->type().bt() == Type::BT_STRING) 
-              temp = PyString_FromString("string type");*/
             IntSetVal* isv = eval_intset(vdi->e()->e());
             long long int numberOfElement = 0;
             for (IntSetRanges isr(isv); isr(); ++isr) {
@@ -301,6 +297,7 @@ mzn_solve(PyObject *self, PyObject *args)
                 PyList_SetItem(p,count++,PyInt_FromLong(j.toInt()));
             }
             PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), p);
+            Py_DECREF(p);
           } else {
             if (vdi->e()->type().bt() == Type::BT_BOOL) {
               if (vdi->e()->type().dim() == 0) {
@@ -331,6 +328,7 @@ mzn_solve(PyObject *self, PyObject *args)
                   d[i]++;
                   while (d[i]>=dmax[i] && i>0) {
                     PyList_SetItem(p[i-1],d[i-1],p[i]);
+                    Py_DECREF(p[i]);
                     d[i]=0;
                     p[i]=PyList_New(dmax[i]);
                     i--;
@@ -339,6 +337,8 @@ mzn_solve(PyObject *self, PyObject *args)
                   i = dim - 1;
                 } while (d[0]<dmax[0]);
                 PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
+                for (int i=0; i<dim; i++)
+                  Py_DECREF(p[i]);
               }
             } else if (vdi->e()->type().bt() == Type::BT_INT) {
               if (vdi->e()->type().dim() == 0) {
@@ -364,11 +364,14 @@ mzn_solve(PyObject *self, PyObject *args)
                 // next item to be put onto the final array.
                 int currentPos = 0;
                 do {
+                  //cout << d[0] << " " << dmax[0] << endl;
                   PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(al->v()[currentPos]).toInt()));
+                  //cout << "REACHED HERE" << endl;
                   currentPos++;
                   d[i]++;
                   while (d[i]>=dmax[i] && i>0) {
                     PyList_SetItem(p[i-1],d[i-1],p[i]);
+                    //Py_DECREF(p[i]);
                     d[i]=0;
                     p[i]=PyList_New(dmax[i]);
                     i--;
@@ -376,7 +379,10 @@ mzn_solve(PyObject *self, PyObject *args)
                   }
                   i = dim - 1;
                 } while (d[0]<dmax[0]);
+                //cout << "REACHED HERE" << endl;
                 PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
+                for (int i=0; i<dim; i++)
+                  Py_DECREF(p[i]);
               }
             } else if (vdi->e()->type().bt() == Type::BT_STRING) {
               if (vdi->e()->type().dim() == 0) {
@@ -409,6 +415,7 @@ mzn_solve(PyObject *self, PyObject *args)
                   d[i]++;
                   while (d[i]>=dmax[i] && i>0) {
                     PyList_SetItem(p[i-1],d[i-1],p[i]);
+                    //Py_DECREF(p[i]);
                     d[i]=0;
                     p[i]=PyList_New(dmax[i]);
                     i--;
@@ -417,6 +424,8 @@ mzn_solve(PyObject *self, PyObject *args)
                   i = dim - 1;
                 } while (d[0]<dmax[0]);
                 PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
+                for (int i=0; i<dim; i++)
+                  Py_DECREF(p[i]);
               }
             } else if (vdi->e()->type().bt() == Type::BT_FLOAT) {
               if (vdi->e()->type().dim() == 0) {
@@ -447,6 +456,7 @@ mzn_solve(PyObject *self, PyObject *args)
                   d[i]++;
                   while (d[i]>=dmax[i] && i>0) {
                     PyList_SetItem(p[i-1],d[i-1],p[i]);
+                    //Py_DECREF(p[i]);
                     d[i]=0;
                     p[i]=PyList_New(dmax[i]);
                     i--;
@@ -455,13 +465,18 @@ mzn_solve(PyObject *self, PyObject *args)
                   i = dim - 1;
                 } while (d[0]<dmax[0]);
                 PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
+                for (int i=0; i<dim; i++) 
+                  Py_DECREF(p[i]);
               }
             }
           }
         }
       }
       PyList_Append(solutions, sol);
-      return Py_BuildValue("iO", status, solutions);  
+      PyObject* ret = Py_BuildValue("iO", status, solutions);
+      Py_DECREF(sol);
+      Py_DECREF(solutions);
+      return ret;  
     } else {
       PyErr_SetString(mzn_solve_error,"Unknown status code");
       return NULL;
@@ -473,14 +488,6 @@ mzn_solve(PyObject *self, PyObject *args)
   PyErr_SetString(mzn_solve_error, cstr);
   return NULL;
 }
-/*
-static PyModuleDef MiniZincModule = {
-  PyModuleDef_HEAD_INIT,
-  "MiniZinc",
-  "A Python interface for MiniZinc constraint modeling",
-  -1,
-  NULL, NULL, NULL, NULL, NULL
-};*/
 
 static PyMethodDef MiniZincMethods[] = {
     {"solve",  mzn_solve, METH_VARARGS, "Solve a MiniZinc model"},
@@ -488,9 +495,12 @@ static PyMethodDef MiniZincMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+
+
+
 PyMODINIT_FUNC
 initminizinc(void) {
-    PyObject* model = Py_InitModule("minizinc", MiniZincMethods);
+    PyObject* model = Py_InitModule3("minizinc", MiniZincMethods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
       return;
@@ -499,12 +509,14 @@ initminizinc(void) {
     mzn_solve_error = PyErr_NewException("mzn_solve.error", NULL, NULL);
     if (mzn_solve_error == NULL)
       return;
-    Py_XINCREF(mzn_solve_error);
+    Py_INCREF(mzn_solve_error);
     PyModule_AddObject(model,"error",mzn_solve_error);
 
     mzn_solve_warning = PyErr_NewException("mzn_solve.warning", NULL, NULL);
     if (mzn_solve_error == NULL)
       return;
-    Py_XINCREF(mzn_solve_error);
+    Py_INCREF(mzn_solve_error);
     PyModule_AddObject(model,"warning",mzn_solve_warning);
+
+
 }
