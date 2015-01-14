@@ -115,6 +115,7 @@ namespace MiniZinc {
                          const vector<string>& ip,
                          bool ignoreStdlib,
                          bool parseDocComments,
+                         bool verbose,
                          ostream& err) {
     GCLock lock;
 
@@ -191,6 +192,8 @@ namespace MiniZinc {
         err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
 
       m->setFilepath(fullname);
@@ -220,6 +223,7 @@ namespace MiniZinc {
                const vector<string>& ip,
                bool ignoreStdlib,
                bool parseDocComments,
+               bool verbose,
                ostream& err) {
     GCLock lock;
     string fileDirname; string fileBasename;
@@ -289,6 +293,8 @@ namespace MiniZinc {
         err << "Error: cannot open file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
 
       m->setFilepath(fullname);
@@ -318,6 +324,8 @@ namespace MiniZinc {
           err << "Error: cannot open data file '" << f << "'." << endl;
           goto error;
         }
+        if (verbose)
+          std::cerr << "processing data file '" << f << "'" << endl;
         s = get_file_contents(file);
       }
 
@@ -344,6 +352,7 @@ namespace MiniZinc {
                    const vector<string>& includePaths,
                    bool ignoreStdlib,
                    bool parseDocComments,
+                   bool verbose,
                    ostream& err) {
   GCLock lock;
 
@@ -396,6 +405,8 @@ namespace MiniZinc {
       err << "Error: cannot open file '" << f << "'." << endl;
       goto error;
     }
+    if (verbose)
+      std::cerr << "processing file '" << fullname << "'" << endl;
     std::string s = get_file_contents(file);
     
     m->setFilepath(fullname);
@@ -425,6 +436,8 @@ namespace MiniZinc {
         err << "Error: cannot open data file '" << f << "'." << endl;
         goto error;
       }
+      if (verbose)
+        std::cerr << "processing data file '" << f << "'" << endl;
       s = get_file_contents(file);
     }
     

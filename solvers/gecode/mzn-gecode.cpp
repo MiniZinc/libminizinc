@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
-  string globals_dir;
+  string globals_dir = "gecode_lib";
   
   bool flag_no_output_ozn = false;
   string flag_output_base;
@@ -294,8 +294,8 @@ int main(int argc, char** argv) {
     bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
-                        parseDocComments, errstream)) {
+    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib,
+                        parseDocComments, flag_verbose, errstream)) {
       try {
         if (flag_typecheck) {
           if (flag_verbose)
@@ -358,51 +358,63 @@ int main(int argc, char** argv) {
             } else {
               env.flat()->compact();
             }
-            
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc ...";
+              if (flag_output_fzn_stdout) {
+                Printer p(std::cout,0);
+                p.print(env.flat());
+              } else {
+                std::ofstream os;
+                os.open(flag_output_fzn.c_str(), ios::out);
+                Printer p(os,0);
+                p.print(env.flat());
+                os.close();
+              }
+
             {
               // DEBUG stuff
               /*Printer p(std::cout, 80, false);
               std::cout << "DEBUG: printing flat model:" << std::endl;
               p.print(env.flat()); */
-             
-              
-              
+
+
+
               GCLock lock;
               Options options;
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
-              std::cout << "DEBUG: finished processing flatzinc" << std::endl;
+              //std::cout << "DEBUG: finished processing flatzinc" << std::endl;
               SolverInstance::Status status = gecode.solve();
-              std::cout << "DEBUG: Solved with status: ";
+              //std::cout << "DEBUG: Solved with status: ";
               switch(status) {
                 case SolverInstance::SAT:
-                  std::cout << "SAT";
+                  std::cout << "=====SAT=====";
                   break;
                 case SolverInstance::OPT:
-                  std::cout << "OPT";
+                  std::cout << "=====OPT=====";
                   break;
                 case SolverInstance::UNKNOWN:
-                  std::cout << "UNKNOWN";
-                  break;  
+                  std::cout << "=====UNKNOWN=====";
+                  break;
                 case SolverInstance::ERROR:
-                  std::cout << "ERROR";
-                  break;  
+                  std::cout << "=====ERROR=====";
+                  break;
                 case SolverInstance::UNSAT:
-                  std::cout << "UNSAT";
-                  break;                    
+                  std::cout << "=====UNSAT=====";
+                  break;
               }
               std::cout << std::endl;
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT || status==SolverInstance::UNKNOWN) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
                 if (status==SolverInstance::OPT)
                   std::cout << "==========\n";
               }
               else if(status == SolverInstance::ERROR) {
-                std::cout << "DEBUG: solving finished with error." << std::endl;
+                //std::cout << "DEBUG: solving finished with error." << std::endl;
               }
             }
-            
+
           }
         } else { // !flag_typecheck
           Printer p(std::cout);

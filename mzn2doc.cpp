@@ -224,12 +224,12 @@ int main(int argc, char** argv) {
 
     std::stringstream errstream;
     if (flag_verbose)
-      std::cerr << "Parsing '" << filename << "' ...";
+      std::cerr << "Parsing '" << filename << "'" << std::endl;
     if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
-                         errstream)) {
+                         flag_verbose, errstream)) {
       try {
         if (flag_verbose)
-          std::cerr << " done" << std::endl;
+          std::cerr << "Done parsing." << std::endl;
         if (flag_verbose)
           std::cerr << "Typechecking ...";
         vector<TypeError> typeErrors;

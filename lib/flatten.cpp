@@ -1586,8 +1586,9 @@ namespace MiniZinc {
     VarDecl* nr = r;
     
     for (int i=0; i<ite->size(); i++) {
+      bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        bool cond = eval_bool(ite->e_if(i));
+        cond = eval_bool(ite->e_if(i));
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -1623,7 +1624,7 @@ namespace MiniZinc {
         elseconds.push_back(ite->e_if(i));
       }
 
-      if (r_bounds.valid && ite->e_then(i)->type().isint()) {
+      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(ite->e_then(i));
         if (ib_then.valid) {
           IntVal lb = std::min(r_bounds.l, ib_then.l);
@@ -3848,8 +3849,14 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = new VarDecl(v->loc(), eval_typeinst(env,v), v->id());
-          vd->introduced(v->introduced());
+          VarDecl* vd;
+          if (v->id()->idn()==-1 && !v->toplevel()) {
+            vd = new VarDecl(v->loc(), eval_typeinst(env,v), env.genId());
+            vd->introduced(true);
+          } else {
+            vd = new VarDecl(v->loc(), eval_typeinst(env,v), v->id());
+            vd->introduced(v->introduced());
+          }
           vd->flat(vd);
           v->flat(vd);
           for (ExpressionSetIter it = v->ann().begin(); it != v->ann().end(); ++it) {
@@ -4252,8 +4259,8 @@ namespace MiniZinc {
                 } else {
                   decl = origdecl;
                 }
-                rhs->decl(decl);
               }
+              rhs->decl(decl);
             }
             outputVarDecls(env,nvi,it->second());
             nvi->e()->e(rhs);
@@ -4369,8 +4376,8 @@ namespace MiniZinc {
                   } else {
                     decl = origdecl;
                   }
-                  rhs->decl(decl);
                 }
+                rhs->decl(decl);
                 removeIsOutput(reallyFlat);
                 
                 outputVarDecls(e,item,rhs);
@@ -4449,10 +4456,22 @@ namespace MiniZinc {
       // Create new output model
       OutputI* outputItem = NULL;
 
-      GC::lock();
-      if (e.orig->outputItem()) {
-        outputItem = copy(e.cmap, e.orig->outputItem())->cast<OutputI>();
-      } else {
+      class OV1 : public ItemVisitor {
+      public:
+        EnvI& env;
+        VarOccurrences& vo;
+        OutputI*& outputItem;
+        OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
+        : env(env0), vo(vo0), outputItem(outputItem0) {}
+        void vOutputI(OutputI* oi) {
+          GCLock lock;
+          outputItem = copy(env.cmap, oi)->cast<OutputI>();
+          env.output->addItem(outputItem);
+        }
+      } _ov1(e,e.output_vo,outputItem);
+      iterItems(_ov1,e.orig);
+      
+      if (outputItem==NULL) {
         // Create output item for all variables defined at toplevel in the MiniZinc source
         GCLock lock;
         std::vector<Expression*> outputVars;
@@ -4490,9 +4509,8 @@ namespace MiniZinc {
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e.cmap, newOutputItem)->cast<OutputI>();
+        e.output->addItem(outputItem);
       }
-      e.output->addItem(outputItem);
-      GC::unlock();
       
       class CollectFunctions : public EVisitor {
       public:
@@ -4532,8 +4550,8 @@ namespace MiniZinc {
             } else {
               decl = origdecl;
             }
-            c.decl(decl);
           }
+          c.decl(decl);
         }
       } _cf(e);
       topDown(_cf, outputItem->e());
@@ -4589,8 +4607,8 @@ namespace MiniZinc {
                     } else {
                       decl = origdecl;
                     }
-                    rhs->decl(decl);
                   }
+                  rhs->decl(decl);
                 }
                 outputVarDecls(env,vdi_copy,rhs);
                 vd->e(rhs);
@@ -4679,6 +4697,14 @@ namespace MiniZinc {
     e.output->compact();
   }
   
+  void cleanupOutput(EnvI& env) {
+    for (unsigned int i=0; i<env.output->size(); i++) {
+      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+        vdi->e()->flat(NULL);
+      }
+    }
+  }
+
   bool checkParDomain(Expression* e, Expression* domain) {
     if (e->type()==Type::parint()) {
       IntSetVal* isv = eval_intset(domain);
@@ -5119,8 +5145,8 @@ namespace MiniZinc {
             } else {
               decl = origdecl;
             }
-            rhs->decl(decl);
           }
+          rhs->decl(decl);
           outputVarDecls(env,vdi,rhs);
           
           removeIsOutput(vdi->e()->flat());
@@ -5156,7 +5182,7 @@ namespace MiniZinc {
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
-
+    cleanupOutput(env);
   }
   
   void oldflatzinc(Env& e) {

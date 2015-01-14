@@ -1,0 +1,93 @@
+======================
+# MiniZinc Changelog #
+======================
+
+Version 2.0.1
+=============
+
+Major bugs and changes:
+ - Fix optimisation phase, which was previously incorrectly removing variables
+ - Add support for trigonometric functions (built-ins were missing in 2.0.0)
+   and pow (var versions were missing)
+ - Fix equality operator on par arrays
+ - All expressions in output model are now made par
+ - Improve bounds computation for float variables
+ - Fix translation of functions that need automatic coercion of their return
+   value
+ - Fix the array_lb and array_ub builtins, which would return incorrect bounds
+   in some cases
+
+Minor bugs and changes:
+ - Add space between "array" and "[" in the pretty printer, to be compatible
+   with 1.6 output
+ - Output all par declarations before the var declarations in FlatZinc
+ - Fix parser, which could sometimes crash on invalid input
+ - Improve efficiency of bounds computation on some float expressions
+ - Add special case handling for division by 1
+ - Add missing float_times definition to the flatzinc builtins
+ - Use correct version of var_dom for float variables
+ - Output information about which files are included in verbose mode
+ - Only compute bounds for "then" expressions if the "if" is not fixed to false
+
+Version 2.0.0
+=============
+
+MiniZinc 2.0 contains many new features and is based on a complete rewrite of
+the MiniZinc-to-FlatZinc compiler. If you are currently using the previous
+version 1.6, the new tools can be used as drop-in replacements. The generated
+FlatZinc is compatible with version 1.6, so all FlatZinc solvers should work
+without changes.
+
+** MiniZinc language changes **
+
+ - MiniZinc now supports user-defined functions. Details have been published
+   in the paper "MiniZinc with Functions". Both functions and predicates can
+   be recursive.
+ - MiniZinc now supports option types. Details have been published in the
+   paper "Modelling with Option Types in MiniZinc".
+ - Let expressions have been generalised. They can now contain constraint
+   items in addition to variable declarations.
+ - Array index sets can be declared using arbitrary set expressions as long as
+   they evaluate to contiguous ranges.
+ - The if-then-else expression has been generalised to allow the condition to
+   be a var bool expression (instead of only par bool).
+ - Array and set comprehensions as well as generator calls can now iterate
+   over variables and use var bool where conditions.
+ - Any bool expression can now automatically coerce to an int expression,
+   likewise for int and float. This means that you don't have to write
+   bool2int or int2float in you models any more.
+ - Equality constraints can now be posted between array expressions.
+ - Arbitrary expressions can now be included ("interpolated") into strings,
+   using the syntax "some text \(e) some more text", where e is any
+   expression. It is the same as writing "some text "++show(e)++" some more
+   text".
+
+** New built-in functions **
+
+Array functions: array1d, arrayXd, row, col, has_index, has_element, sort_by,
+sort, arg_sort, arg_min, arg_max
+
+** New global constraints **
+
+ - arg_max, arg_min
+ - arg_sort
+ - k-dimensional diffn
+ - disjunctive
+ - geost
+ - knapsack
+ - network_flow
+ - regular with NFAs
+ - symmetric all different
+ - optional scheduling constraints: alternative, span, disjunctive, cumulative
+ - functional versions of many global constraints
+
+** New tool chain **
+
+ - There are a few new builtins that solvers can reimplement, these are listed
+   in the redefinitions-2.0 file.
+ - Include items use a different method for finding included files. Paths are
+   now interpreted as relative to the file that has the include item. That
+   way, the mzn2fzn compiler can be called from a different working directory.
+ - A new tool, mzn2doc, can produce html output from the documentation
+   comments. The MiniZinc distribution contains the documentation for global
+   constraints and builtins generated directly from the library source code.
