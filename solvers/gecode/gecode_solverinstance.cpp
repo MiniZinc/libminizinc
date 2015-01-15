@@ -155,7 +155,7 @@ namespace MiniZinc {
       registerConstraint("global_cardinality_low_up_closed", GecodeConstraints::p_global_cardinality_low_up_closed);
       registerConstraint("minimum_int", GecodeConstraints::p_minimum);
       registerConstraint("maximum_int", GecodeConstraints::p_maximum);
-      //addConstraintMappinASTString(g("regular", GecodeConstraints::p_regular);
+      registerConstraint("regular", GecodeConstraints::p_regular);
       registerConstraint("sort", GecodeConstraints::p_sort);
       registerConstraint("inverse_offsets", GecodeConstraints::p_inverse_offsets);
       registerConstraint("increasing_int", GecodeConstraints::p_increasing_int);

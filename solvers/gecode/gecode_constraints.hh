@@ -192,7 +192,7 @@ namespace MiniZinc {
       PosterImpl(p_global_cardinality_low_up_closed);
       PosterImpl(p_minimum);
       PosterImpl(p_maximum);
-      //PosterImpl(p_regular);
+      PosterImpl(p_regular);
       PosterImpl(p_sort);
       PosterImpl(p_inverse_offsets);
       PosterImpl(p_increasing_int);
