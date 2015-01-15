@@ -4990,6 +4990,7 @@ namespace MiniZinc {
     return NULL;
   }
 
+
   Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir) {
     GC::lock();
     CopyMap cm;
@@ -5006,6 +5007,16 @@ namespace MiniZinc {
         new_mod->addItem(copy(cm,item));
       }
     }
+    class RemoveAssigns : public ItemVisitor {
+      public:
+      void vAssignI(AssignI* ai) {
+        ai->remove();
+      }
+    };
+
+    RemoveAssigns ra;
+    iterItems(ra, new_mod);
+    new_mod->compact();
 
     std::vector<TypeError> typeErrors;
     MiniZinc::typecheck(new_mod, typeErrors);
