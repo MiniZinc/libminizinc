@@ -282,12 +282,6 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  if (flag_output_fzn == "") {
-    flag_output_fzn = flag_output_base+".fzn";
-  }
-  if (flag_output_ozn == "") {
-    flag_output_ozn = flag_output_base+".ozn";
-  }
 
   {
     std::stringstream errstream;
@@ -358,34 +352,41 @@ int main(int argc, char** argv) {
             } else {
               env.flat()->compact();
             }
+
+            if (flag_output_fzn_stdout) {
               if (flag_verbose)
-                std::cerr << "Printing FlatZinc ...";
-              if (flag_output_fzn_stdout) {
-                Printer p(std::cout,0);
-                p.print(env.flat());
-              } else {
-                std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
-                Printer p(os,0);
-                p.print(env.flat());
-                os.close();
-              }
+                std::cerr << "Printing FlatZinc to stdout\n";
+              Printer p(std::cout,0);
+              p.print(env.flat());
+            } else if(flag_output_fzn != "") {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to " << flag_output_fzn << "...";
+              std::ofstream os;
+              os.open(flag_output_fzn.c_str(), ios::out);
+              Printer p(os,0);
+              p.print(env.flat());
+              os.close();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
 
             {
-              // DEBUG stuff
-              /*Printer p(std::cout, 80, false);
-              std::cout << "DEBUG: printing flat model:" << std::endl;
-              p.print(env.flat()); */
-
-
+              if (flag_verbose)
+                std::cerr << "Processing FlatZinc...";
 
               GCLock lock;
               Options options;
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
-              //std::cout << "DEBUG: finished processing flatzinc" << std::endl;
+
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+
+              if (flag_verbose)
+                std::cerr << "Starting solve() ...";
               SolverInstance::Status status = gecode.solve();
-              //std::cout << "DEBUG: Solved with status: ";
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               switch(status) {
                 case SolverInstance::SAT:
                   std::cout << "=====SAT=====";
