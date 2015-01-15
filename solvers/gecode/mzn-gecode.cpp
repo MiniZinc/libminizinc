@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
-  string globals_dir = "gecode_lib";
+  string globals_dir = "gecode";
   
   bool flag_no_output_ozn = false;
   string flag_output_base;
