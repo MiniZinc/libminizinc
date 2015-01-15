@@ -4140,59 +4140,17 @@ namespace MiniZinc {
   void makePar(Expression* e) {
     class Par : public EVisitor {
     public:
-      /// Visit array literal
-      void vArrayLit(ArrayLit& al) {
-        Type t = al.type();
-        t.ti(Type::TI_PAR);
-        al.type(t);
-      }
-      /// Visit array access
-      void vArrayAccess(ArrayAccess& aa) {
-        Type t = aa.type();
-        t.ti(Type::TI_PAR);
-        aa.type(t);
-      }
-      /// Visit array comprehension
-      void vComprehension(Comprehension& c) {
-        Type t = c.type();
-        t.ti(Type::TI_PAR);
-        c.type(t);
-      }
-      /// Visit array comprehension (only generator \a gen_i)
-      void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
-      /// Visit if-then-else
-      void vITE(ITE& ite) {
-        Type t = ite.type();
-        t.ti(Type::TI_PAR);
-        ite.type(t);
-      }
-      /// Visit binary operator
-      void vBinOp(BinOp& bo) {
-        Type t = bo.type();
-        t.ti(Type::TI_PAR);
-        bo.type(t);
-      }
-      /// Visit unary operator
-      void vUnOp(const UnOp&) {}
-      /// Visit call
-      void vCall(const Call&) {}
-      /// Visit let
-      void vLet(const Let&) {}
       /// Visit variable declaration
       void vVarDecl(VarDecl& vd) {
-        Type t = vd.type();
-        t.ti(Type::TI_PAR);
-        vd.type(t);
-        vd.ti()->type(t);
+        vd.ti()->type(vd.type());
       }
-      /// Visit type inst
-      void vTypeInst(const TypeInst&) {}
-      /// Visit TIId
-      void vTIId(const TIId&) {}
       /// Determine whether to enter node
-      bool enter(Expression* e) { return true; }
-      /// Exit node after processing has finished
-      void exit(Expression* e) {}
+      bool enter(Expression* e) {
+        Type t = e->type();
+        t.ti(Type::TI_PAR);
+        e->type(t);
+        return true;
+      }
     } _par;
     topDown(_par, e);
   }
