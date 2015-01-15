@@ -532,7 +532,16 @@ namespace MiniZinc {
     /// Visit if-then-else
     void vITE(ITE& ite) {
       Type tret = ite.e_else()->type();
+      std::vector<AnonVar*> anons;
       bool allpar = !(tret.isvar());
+      if (tret.isunknown()) {
+        if (AnonVar* av = ite.e_else()->dyn_cast<AnonVar>()) {
+          allpar = false;
+          anons.push_back(av);
+        } else {
+          throw TypeError(ite.e_else()->loc(), "cannot infer type of expression in else branch of conditional");
+        }
+      }
       bool allpresent = !(tret.isopt());
       bool varcond = false;
       for (int i=0; i<ite.size(); i++) {
@@ -543,26 +552,39 @@ namespace MiniZinc {
           throw TypeError(eif->loc(),
             "expected bool conditional expression, got `"+
             eif->type().toString()+"'");
-        if (tret.isbot()) {
-          tret.bt(ethen->type().bt());
-        }
         if (eif->type().cv())
           tret.cv(true);
-        if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
-            ethen->type().st() != tret.st() ||
-            ethen->type().dim() != tret.dim()) {
-          throw TypeError(ethen->loc(),
-            "type mismatch in branches of conditional. Then-branch has type `"+
-            ethen->type().toString()+"', but else branch has type `"+
-            tret.toString()+"'");
+        if (ethen->type().isunknown()) {
+          if (AnonVar* av = ethen->dyn_cast<AnonVar>()) {
+            allpar = false;
+            anons.push_back(av);
+          } else {
+            throw TypeError(ethen->loc(), "cannot infer type of expression in then branch of conditional");
+          }
+        } else {
+          if (tret.isbot() || tret.isunknown())
+            tret.bt(ethen->type().bt());
+          if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
+              ethen->type().st() != tret.st() ||
+              ethen->type().dim() != tret.dim()) {
+            throw TypeError(ethen->loc(),
+                            "type mismatch in branches of conditional. Then-branch has type `"+
+                            ethen->type().toString()+"', but else branch has type `"+
+                            tret.toString()+"'");
+          }
+          if (Type::bt_subtype(tret.bt(), ethen->type().bt())) {
+            tret.bt(ethen->type().bt());
+          }
+          if (ethen->type().isvar()) allpar=false;
+          if (ethen->type().isopt()) allpresent=false;
+          if (ethen->type().cv())
+            tret.cv(true);
         }
-        if (Type::bt_subtype(tret.bt(), ethen->type().bt())) {
-          tret.bt(ethen->type().bt());
-        }
-        if (ethen->type().isvar()) allpar=false;
-        if (ethen->type().isopt()) allpresent=false;
-        if (ethen->type().cv())
-          tret.cv(true);
+      }
+      Type tret_var(tret);
+      tret_var.ti(Type::TI_VAR);
+      for (unsigned int i=0; i<anons.size(); i++) {
+        anons[i]->type(tret_var);
       }
       for (int i=0; i<ite.size(); i++) {
         ite.e_then(i, addCoercion(_model,ite.e_then(i), tret)());
@@ -872,6 +894,9 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(i->e()->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'"));
+            // Assign to "true" constant to avoid generating further errors that the parameter
+            // is undefined
+            i->decl()->e(constants().lit_true);
           }
         }
         void vConstraintI(ConstraintI* i) {

@@ -28,6 +28,7 @@ namespace MiniZinc {
     IloEnv _iloenv;
     IloModel* _ilomodel;
     IloCplex* _ilocplex;
+    std::vector<VarDecl*> _varsWithOutput;
   public:
     CPLEXSolverInstance(Env& env, const Options& options);
 
@@ -40,6 +41,8 @@ namespace MiniZinc {
     virtual void processFlatZinc(void);
     
     virtual void resetSolver(void);
+    
+    void assignSolutionToOutput(void);
 
     IloModel* getIloModel(void);
     IloNum exprToIloNum(Expression* e);

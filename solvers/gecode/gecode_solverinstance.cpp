@@ -22,13 +22,13 @@
 using namespace Gecode;
 
 namespace MiniZinc {
-  
-     GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options) 
+
+     GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
      : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL), _solution(NULL) {
-       registerConstraints(); 
+       registerConstraints();
        // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
      }
-  
+
     GecodeSolverInstance::~GecodeSolverInstance(void) {
       //delete _current_space;
       // delete _solution; // TODO: is this necessary?
@@ -40,7 +40,7 @@ namespace MiniZinc {
       _constraintRegistry.add(ASTString(ss.str()), p);
       _constraintRegistry.add(ASTString(name), p);
     }
-    
+
     void GecodeSolverInstance::registerConstraints(void) {
       registerConstraint("all_different_int", GecodeConstraints::p_distinct);
       registerConstraint("all_different_offset", GecodeConstraints::p_distinctOffset);
@@ -134,11 +134,11 @@ namespace MiniZinc {
       registerConstraint("int_in", GecodeConstraints::p_int_in);
       registerConstraint("int_in_reif", GecodeConstraints::p_int_in_reif);
       registerConstraint("int_in_imp", GecodeConstraints::p_int_in_imp);
-      //#ifndef GECODE_HAS_SET_VARS
+//#ifndef GECODE_HAS_SET_VARS
       registerConstraint("set_in", GecodeConstraints::p_int_in);
       registerConstraint("set_in_reif", GecodeConstraints::p_int_in_reif);
       registerConstraint("set_in_imp", GecodeConstraints::p_int_in_imp);
-      //#endif
+//#endif
       registerConstraint("array_int_lt", GecodeConstraints::p_array_int_lt);
       registerConstraint("array_int_lq", GecodeConstraints::p_array_int_lq);
       registerConstraint("array_bool_lt", GecodeConstraints::p_array_bool_lt);
@@ -155,7 +155,7 @@ namespace MiniZinc {
       registerConstraint("global_cardinality_low_up_closed", GecodeConstraints::p_global_cardinality_low_up_closed);
       registerConstraint("minimum_int", GecodeConstraints::p_minimum);
       registerConstraint("maximum_int", GecodeConstraints::p_maximum);
-      //addConstraintMappinASTString(g("regular", GecodeConstraints::p_regular);
+      registerConstraint("regular", GecodeConstraints::p_regular);
       registerConstraint("sort", GecodeConstraints::p_sort);
       registerConstraint("inverse_offsets", GecodeConstraints::p_inverse_offsets);
       registerConstraint("increasing_int", GecodeConstraints::p_increasing_int);
@@ -228,58 +228,62 @@ namespace MiniZinc {
       registerConstraint("float_acos",GecodeConstraints::p_float_acos);
       registerConstraint("float_asin",GecodeConstraints::p_float_asin);
       registerConstraint("float_atan",GecodeConstraints::p_float_atan);
-      registerConstraint("float_cos",GecodeConstraints::p_float_cos);       
+      registerConstraint("float_cos",GecodeConstraints::p_float_cos);
       registerConstraint("float_exp",GecodeConstraints::p_float_exp);
       registerConstraint("float_ln",GecodeConstraints::p_float_ln);
       registerConstraint("float_log10",GecodeConstraints::p_float_log10);
       registerConstraint("float_log2",GecodeConstraints::p_float_log2);
-      registerConstraint("float_sin",GecodeConstraints::p_float_sin);       
-      registerConstraint("float_tan",GecodeConstraints::p_float_tan);       
-#endif		      
+      registerConstraint("float_sin",GecodeConstraints::p_float_sin);
+      registerConstraint("float_tan",GecodeConstraints::p_float_tan);
+#endif		
     }
-    
-    
-  void GecodeSolverInstance::processFlatZinc(void) {    
-    _current_space = new FznSpace(); 
-    
+
+  void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
+    //std::cerr << *id << ": " << id->decl() << std::endl;
+    _variableMap.insert(id->decl()->id(), gv);
+  }
+
+  void GecodeSolverInstance::processFlatZinc(void) {
+    _current_space = new FznSpace();
+
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
         // check if it has an output-annotation
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
-          if(vd->ann().containsCall(constants().ann.output_array.aststr()) || 
-            vd->ann().containsCall(constants().ann.output_var->str())
-          ) {            
+          if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+            vd->ann().contains(constants().ann.output_var)
+          ) {
             _varsWithOutput.push_back(vd);
           }
         }
-        
+
         if (it->e()->type().dim() != 0) {
           // we ignore arrays - all their elements are defined
           continue;
         }
-        MiniZinc::TypeInst* ti = it->e()->ti();  
+        MiniZinc::TypeInst* ti = it->e()->ti();
         bool isDefined, isIntroduced = false;
         switch(ti->type().bt()) {
-          
-          case Type::BT_INT:            
+
+          case Type::BT_INT:
             if(!it->e()->e()) { // if there is no initialisation expression
-                Expression* domain = ti->domain();                
+                Expression* domain = ti->domain();
                 if(domain) {
                     if(domain->isa<SetLit>()) {
                         IntVar intVar(*this->_current_space, arg2intset(domain));
                         _current_space->iv.push_back(intVar);
-                        _variableMap.insert(it->e()->id(), 
-                                            GecodeVariable(GecodeVariable::INT_TYPE, 
+                        insertVar(it->e()->id(),
+                                            GecodeVariable(GecodeVariable::INT_TYPE,
                                                            _current_space->iv.size()-1));
-                    } else {                                      
-                        std::pair<double,double> bounds = getIntBounds(domain); 
+                    } else {
+                        std::pair<double,double> bounds = getIntBounds(domain);
                         int lb = bounds.first;
-                        int ub = bounds.second;  
+                        int ub = bounds.second;
                         IntVar intVar(*this->_current_space, lb, ub);
-                        _current_space->iv.push_back(intVar);    
-                        _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, 
+                        _current_space->iv.push_back(intVar);
+                        insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                                                            _current_space->iv.size()-1));
                     }
                 } else {
@@ -287,38 +291,38 @@ namespace MiniZinc {
                     int ub = Gecode::Int::Limits::max;
                     IntVar intVar(*this->_current_space, lb, ub);
                     _current_space->iv.push_back(intVar);
-                    _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, 
+                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                                                            _current_space->iv.size()-1));
                 }
             } else { // there is an initialisation expression
-                Expression* init = it->e()->e();                
+                Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                   // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];                                      
+                   // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
                    GecodeVariable var = resolveVar(init);
                    assert(var.isint());
                   _current_space->iv.push_back(var.intVar(_current_space));
-                  _variableMap.insert(it->e()->id(), var);                                  
+                  insertVar(it->e()->id(), var);
                 } else {
                     double il = init->cast<IntLit>()->v().toInt();
                     IntVar intVar(*this->_current_space, il, il);
                     _current_space->iv.push_back(intVar);
-                    _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, 
+                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                                                            _current_space->iv.size()-1));
                 }
             }
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->iv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->iv_defined.push_back(isDefined);                    
+            _current_space->iv_defined.push_back(isDefined);
             break;
-            
-          case Type::BT_BOOL: 
+
+          case Type::BT_BOOL:
           {
             double lb=0, ub=1;
             if(!it->e()->e()) { // there is NO initialisation expression
                 Expression* domain = ti->domain();
-                if(domain) {                  
-                    std::pair<double,double> bounds = getIntBounds(domain); 
+                if(domain) {
+                    std::pair<double,double> bounds = getIntBounds(domain);
                     lb = bounds.first;
                     ub = bounds.second;
                 } else {
@@ -327,94 +331,94 @@ namespace MiniZinc {
                 }
                 BoolVar boolVar(*this->_current_space, lb, ub);
                 _current_space->bv.push_back(boolVar);
-                _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::BOOL_TYPE, 
+                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::BOOL_TYPE,
                                                            _current_space->bv.size()-1));
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                    // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];                  
+                    // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];
                     //int index = *(int*) resolveVar(init);
                     GecodeVariable var = resolveVar(init);
-                    assert(var.isbool());                    
+                    assert(var.isbool());
                     _current_space->bv.push_back(var.boolVar(_current_space));
-                    _variableMap.insert(it->e()->id(), var);                                    
+                    insertVar(it->e()->id(), var);
                 } else {
                     double b = (double) init->cast<BoolLit>()->v();
                     BoolVar boolVar(*this->_current_space, b, b);
                     _current_space->bv.push_back(boolVar);
-                    _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::BOOL_TYPE, 
+                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::BOOL_TYPE,
                                                            _current_space->bv.size()-1));
                 }
             }
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->bv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->bv_defined.push_back(isDefined);                      
+            _current_space->bv_defined.push_back(isDefined);
             break;
           }
-          
-          case Type::BT_FLOAT:  
+
+          case Type::BT_FLOAT:
           {
             if(it->e()->e() == NULL) { // there is NO initialisation expression
                 Expression* domain = ti->domain();
                 double lb, ub;
-                if (domain) {                                      
-                    std::pair<double,double> bounds = getFloatBounds(domain); 
+                if (domain) {
+                    std::pair<double,double> bounds = getFloatBounds(domain);
                     lb = bounds.first;
-                    ub = bounds.second;                   
+                    ub = bounds.second;
                 } else {
                     lb = Gecode::Int::Limits::min;
                     ub = Gecode::Int::Limits::max;
                 }
                 FloatVar floatVar(*this->_current_space, lb, ub);
                 _current_space->fv.push_back(floatVar);
-                _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE, 
+                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE,
                                                            _current_space->fv.size()-1));
             } else {
                 Expression* init = it->e()->e();
                 if (init->isa<Id>() || init->isa<ArrayAccess>()) {
-                    // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];                                      
+                    // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];
                     GecodeVariable var = resolveVar(init);
-                    assert(var.isfloat());                   
+                    assert(var.isfloat());
                     _current_space->fv.push_back(var.floatVar(_current_space));
-                    _variableMap.insert(it->e()->id(), var);                          
+                    insertVar(it->e()->id(), var);
                 } else {
                     double il = init->cast<FloatLit>()->v();
                     FloatVar floatVar(*this->_current_space, il, il);
                     _current_space->fv.push_back(floatVar);
-                    _variableMap.insert(it->e()->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE, 
+                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE,
                                                            _current_space->fv.size()-1));
                 }
             }
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
             _current_space->fv_introduced.push_back(isIntroduced);
             isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-            _current_space->fv_defined.push_back(isDefined);            
+            _current_space->fv_defined.push_back(isDefined);
           }
-          break;                     
+          break;
           // TODO: SetVars
           default:
-            std::stringstream ssm; 
-            ssm << "Type " << ti->type().bt() << " is currently not supported by Gecode." 
+            std::stringstream ssm;
+            ssm << "Type " << ti->type().bt() << " is currently not supported by Gecode."
                 << std::endl;
-            throw InternalError(ssm.str());        
-          
-        }                   
+            throw InternalError(ssm.str());
+
+        }
       } // end if it is a variable
     } // end for all var decls
-    
+
     // post the constraints
     for (ConstraintIterator it = _env.flat()->begin_constraints(); it != _env.flat()->end_constraints(); ++it) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
         _constraintRegistry.post(c);
       }
-    }    
-    
+    }
+
     // objective
     SolveI* si = _env.flat()->solveItem();
     _current_space->_solveType = si->st();
     if(si->e()) {
-      _current_space->_optVarIsInt = (si->e()->type().isvarint());      
+      _current_space->_optVarIsInt = (si->e()->type().isvarint());
       if(Id* id = si->e()->dyn_cast<Id>()) {
         GecodeVariable var = resolveVar(id->decl());
         if(_current_space->_optVarIsInt) {
@@ -435,23 +439,23 @@ namespace MiniZinc {
             }
           }
           assert(_current_space->_optVarIdx >= 0);
-        }        
+        }
       }
       else { // the solve expression has to be a variable/id
         assert(false);
       }
-      
+
     }
-   
-    
-    //std::cout << "DEBUG: at end of processFlatZinc: " << std::endl 
+
+
+    //std::cout << "DEBUG: at end of processFlatZinc: " << std::endl
     //          << "iv has " << _current_space->iv.size() << " variables " << std::endl
     //          << "bv has " << _current_space->bv.size() << " variables " << std::endl
     //          << "fv has " << _current_space->fv.size() << " variables " << std::endl
-    //          << "sv has " << _current_space->sv.size() << " variables " << std::endl;              
+    //          << "sv has " << _current_space->sv.size() << " variables " << std::endl;
   }
-  
-  Gecode::IntArgs 
+
+  Gecode::IntArgs
   GecodeSolverInstance::arg2intargs(Expression* arg, int offset) {
     if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
       std::stringstream ssm; ssm << "Invalid argument in arg2intargs: " << *arg;
@@ -467,8 +471,8 @@ namespace MiniZinc {
     }
     return ia;
   }
-  
-  Gecode::IntArgs 
+
+  Gecode::IntArgs
   GecodeSolverInstance::arg2boolargs(Expression* arg, int offset) {
     if(!arg->isa<Id>() && !arg->isa<ArrayLit>()) {
       std::stringstream ssm; ssm << "Invalid argument in arg2boolargs: " << *arg;
@@ -483,8 +487,8 @@ namespace MiniZinc {
         ia[i+offset] = a->v()[i]->cast<BoolLit>()->v();
     return ia;
   }
-  
-  
+
+
   class GecodeRangeIter {
   public:
     IntSetRanges& isr;
@@ -495,8 +499,8 @@ namespace MiniZinc {
     bool operator() (void) { return isr(); }
     void operator++ (void) { ++isr; }
   };
-  
-  Gecode::IntSet 
+
+  Gecode::IntSet
   GecodeSolverInstance::arg2intset(Expression* arg) {
     GCLock lock;
     IntSetVal* isv = eval_intset(arg);
@@ -505,8 +509,8 @@ namespace MiniZinc {
     IntSet d(isr_g);
     return d;
    }
-  
-  Gecode::IntVarArgs 
+
+  Gecode::IntVarArgs
   GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->v().size() == 0) {
@@ -520,11 +524,11 @@ namespace MiniZinc {
         Expression* e = a->v()[i];
         int idx;
         if (e->type().isvar()) {
-            //ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];            
+            //ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
             GecodeSolver::Variable var = resolveVar(getVarDecl(e));
             assert(var.isint());
             Gecode::IntVar v = var.intVar(_current_space);
-            ia[i+offset] = v;            
+            ia[i+offset] = v;
         } else {
             int value = e->cast<IntLit>()->v().toInt();
             IntVar iv(*this->_current_space, value, value);
@@ -533,8 +537,8 @@ namespace MiniZinc {
     }
     return ia;
   }
-  
-  Gecode::BoolVarArgs 
+
+  Gecode::BoolVarArgs
   GecodeSolverInstance::arg2boolvarargs(Expression* arg, int offset, int siv) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->length() == 0) {
@@ -555,12 +559,12 @@ namespace MiniZinc {
               ia[offset++] = var.boolVar(_current_space);
             } else if(e->type().isvarint() && var.hasBoolAlias()) {
               ia[offset++] = _current_space->bv[var.boolAliasIndex()];
-            }            
+            }
             else {
-              std::stringstream ssm; 
-              ssm << "expected bool-var or alias int var instead of " << *e 
+              std::stringstream ssm;
+              ssm << "expected bool-var or alias int var instead of " << *e
                   << " with type " << e->type().toString() ;
-              throw InternalError(ssm.str());             
+              throw InternalError(ssm.str());
             }
         } else {
           if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
@@ -568,15 +572,15 @@ namespace MiniZinc {
             BoolVar iv(*this->_current_space, value, value);
             ia[offset++] = iv;
           } else {
-            std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;            
+            std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
             throw new InternalError(ssm.str());
           }
         }
     }
     return ia;
   }
-  
-  Gecode::BoolVar 
+
+  Gecode::BoolVar
   GecodeSolverInstance::arg2boolvar(Expression* e) {
     BoolVar x0;
     if (e->type().isvar()) {
@@ -588,14 +592,14 @@ namespace MiniZinc {
       if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
         x0 = BoolVar(*this->_current_space, bl->v(), bl->v());
       } else {
-        std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;            
+        std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
         throw new InternalError(ssm.str());
       }
     }
     return x0;
   }
-  
-  Gecode::IntVar 
+
+  Gecode::IntVar
   GecodeSolverInstance::arg2intvar(Expression* e) {
     IntVar x0;
     if (e->type().isvar()) {
@@ -607,7 +611,7 @@ namespace MiniZinc {
         IntVal i;
         if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
         else if(BoolLit* bl = e->dyn_cast<BoolLit>()) i = bl->v();
-        else { 
+        else {
           std::stringstream ssm; ssm << "Expected bool or int literal instead of: " << *e;
           throw InternalError(ssm.str());
         }
@@ -615,8 +619,8 @@ namespace MiniZinc {
     }
     return x0;
   }
-  
-  ArrayLit* 
+
+  ArrayLit*
   GecodeSolverInstance::arg2arraylit(Expression* arg) {
     ArrayLit* a;
       if(Id* id = arg->dyn_cast<Id>()) {
@@ -634,14 +638,14 @@ namespace MiniZinc {
           a = al;
       } else {
           std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
-          ssm << ". Expected Id or ArrayLit."; 
+          ssm << ". Expected Id or ArrayLit.";
           throw new InternalError(ssm.str());
       }
-      return a; 
+      return a;
   }
-  
-  bool 
-  GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {    
+
+  bool
+  GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {
     singleInt = -1;
     if (a->length() == 0)
         return true;
@@ -650,7 +654,7 @@ namespace MiniZinc {
           continue;
         } else if ((a->v()[i])->type().isvarint()) {
           GecodeVariable var = resolveVar(getVarDecl(a->v()[i]));
-          if (var.hasBoolAlias()) {            
+          if (var.hasBoolAlias()) {
             if (singleInt != -1) {
               return false;
             }
@@ -661,13 +665,13 @@ namespace MiniZinc {
           return false;
         }
     }
-    return singleInt==-1 || a->length() > 1;    
+    return singleInt==-1 || a->length() > 1;
   }
-  
+
 #ifdef GECODE_HAS_FLOAT_VARS
-  Gecode::FloatValArgs 
+  Gecode::FloatValArgs
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
-    assert(!arg->isa<Id>() && !arg->isa<ArrayLit>());
+    assert(arg->isa<Id>() || arg->isa<ArrayLit>());
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
     FloatValArgs fa(a->v().size()+offset);
     for (int i=offset; i--;)
@@ -676,14 +680,14 @@ namespace MiniZinc {
         fa[i+offset] = a->v()[i]->cast<FloatLit>()->v();
     return fa;
   }
-  
-  Gecode::FloatVar 
+
+  Gecode::FloatVar
   GecodeSolverInstance::arg2floatvar(Expression* e) {
     FloatVar x0;
-    if (e->type().isvar()) {      
+    if (e->type().isvar()) {
       GecodeVariable var = resolveVar(getVarDecl(e));
       assert(var.isfloat());
-      x0 = var.floatVar(_current_space);        
+      x0 = var.floatVar(_current_space);
     } else {
         FloatVal i;
         if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
@@ -697,8 +701,8 @@ namespace MiniZinc {
     }
     return x0;
   }
-  
-  Gecode::FloatVarArgs 
+
+  Gecode::FloatVarArgs
   GecodeSolverInstance::arg2floatvarargs(Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->v().size() == 0) {
@@ -710,7 +714,7 @@ namespace MiniZinc {
         fa[i] = FloatVar(*this->_current_space, 0.0, 0.0);
     for (int i=a->v().size(); i--;) {
         Expression* e = a->v()[i];
-        if (e->type().isvar()) {            
+        if (e->type().isvar()) {
             GecodeVariable var = resolveVar(getVarDecl(e));
             assert(var.isfloat());
             fa[i+offset] = var.floatVar(_current_space);
@@ -722,14 +726,14 @@ namespace MiniZinc {
           } else {
             std::stringstream ssm; ssm << "Expected float literal instead of: " << *e;
             throw InternalError(ssm.str());
-          }           
+          }
         }
     }
     return fa;
   }
 #endif
 
-  Gecode::IntConLevel 
+  Gecode::IntConLevel
   GecodeSolverInstance::ann2icl(const Annotation& ann) {
     if (!ann.isEmpty()) {
       if (getAnnotation(ann, "val"))
@@ -744,8 +748,8 @@ namespace MiniZinc {
     }
     return Gecode::ICL_DEF;
   }
-  
-  VarDecl* 
+
+  VarDecl*
   GecodeSolverInstance::getVarDecl(Expression* expr) {
     VarDecl* vd=NULL;
     if( (vd = expr->dyn_cast<VarDecl>()) ) {
@@ -755,20 +759,20 @@ namespace MiniZinc {
     } else if(ArrayAccess* aa = expr->dyn_cast<ArrayAccess>()) {
         vd = resolveArrayAccess(aa);
     } else {
-        std::stringstream ssm; ssm << "Can not extract vardecl from " << *expr; 
+        std::stringstream ssm; ssm << "Can not extract vardecl from " << *expr;
         throw new InternalError(ssm.str());
     }
     return vd;
   }
-  
-  VarDecl* 
+
+  VarDecl*
   GecodeSolverInstance::resolveArrayAccess(ArrayAccess* aa) {
     VarDecl* vd = aa->v()->cast<Id>()->decl();
     int idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
     return resolveArrayAccess(vd, idx);
   }
-  
-  VarDecl* 
+
+  VarDecl*
   GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, int index) {
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* >::iterator it = arrayMap.find(vd);
     if(it != arrayMap.end()) {
@@ -780,8 +784,8 @@ namespace MiniZinc {
         throw new InternalError(ssm.str());
     }
   }
-  
-  GecodeSolver::Variable 
+
+  GecodeSolver::Variable
   GecodeSolverInstance::resolveVar(Expression* e) {
     if (Id* id = e->dyn_cast<Id>()) {
         return _variableMap.get(id); //lookupVar(id->decl());
@@ -790,49 +794,49 @@ namespace MiniZinc {
     } else if (ArrayAccess* aa = e->dyn_cast<ArrayAccess>()) {
         return _variableMap.get(resolveArrayAccess(aa)->id());
     } else {
-        std::stringstream ssm; 
+        std::stringstream ssm;
         ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
         throw InternalError(ssm.str());
     }
   }
-  
-  SolverInstance::Status 
+
+  SolverInstance::Status
   GecodeSolverInstance::next(void) {
     assert(false); // TODO: implement
   }
-  
-  void 
+
+  void
   GecodeSolverInstance::resetSolver(void) {
     assert(false); // TODO: implement
   }
-  
-  Expression* 
+
+  Expression*
   GecodeSolverInstance::getSolutionValue(Id* id) {
-    GecodeVariable var = resolveVar(id);
+    GecodeVariable var = resolveVar(id->decl()->id());
     switch (id->type().bt()) {
-      case Type::BT_INT: 
+      case Type::BT_INT:
         assert(var.intVar(_solution).assigned());
         return new IntLit(Location(), var.intVar(_solution).val());
-      case Type::BT_BOOL: 
+      case Type::BT_BOOL:
         assert(var.boolVar(_solution).assigned());
         return new BoolLit(Location(), var.boolVar(_solution).val());
-      case Type::BT_FLOAT: 
+      case Type::BT_FLOAT:
         assert(var.floatVar(_solution).assigned());
         return new FloatLit(Location(), (var.floatVar(_solution).val()).med());
-      default: return NULL;          
-    }    
+      default: return NULL;
+    }
   }
-  
-  SolverInstanceBase::Status 
+
+  SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
     // TODO: check what we need to do options-wise
     std::vector<Expression*> branch_vars;
     std::vector<Expression*> solve_args;
     Expression* solveExpr = _env.flat()->solveItem()->e();
     Expression* optSearch = NULL;
-    
+
     switch(_current_space->_solveType) {
-      case MiniZinc::SolveI::SolveType::ST_MIN:      
+      case MiniZinc::SolveI::SolveType::ST_MIN:
         assert(solveExpr != NULL);
         branch_vars.push_back(solveExpr);
         solve_args.push_back(new ArrayLit(Location(), branch_vars));
@@ -842,7 +846,7 @@ namespace MiniZinc {
         solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
         solve_args.push_back(new Id(Location(), "complete", NULL));
         optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
-        break;      
+        break;
       case MiniZinc::SolveI::SolveType::ST_MAX:
         branch_vars.push_back(solveExpr);
         solve_args.push_back(new ArrayLit(Location(), branch_vars));
@@ -853,32 +857,32 @@ namespace MiniZinc {
         solve_args.push_back(new Id(Location(), "complete", NULL));
         optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
         break;
-      case MiniZinc::SolveI::SolveType::ST_SAT:        
+      case MiniZinc::SolveI::SolveType::ST_SAT:
         break;
       default:
         assert(false);
-    }    
-    createBranchers(_env.flat()->solveItem()->ann(), optSearch, 
+    }
+    createBranchers(_env.flat()->solveItem()->ann(), optSearch,
                     111 /* _options.getFloatParam("seed")  */, // TODO: implement
                     0.5 /* _options.getFloatParam("decay") */, // TODO: implement
                     false, /* ignoreUnknown */
-                    std::cerr); 
-    
+                    std::cerr);
+
     // TODO: add presolving part
-            
+
     SolverInstanceBase::Status status;
     if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
       status = runEngine<DFS>();
     }
     else {
-      status = runEngine<BAB>();      
-    }               
+      status = runEngine<BAB>();
+    }
     return status;
   }
-  
-  void 
-  GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn, 
-                                        int seed, double decay, bool ignoreUnknown, 
+
+  void
+  GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn,
+                                        int seed, double decay, bool ignoreUnknown,
                                         std::ostream& err) {
     // default search heuristics
     Rnd rnd(static_cast<unsigned int>(seed));
@@ -894,7 +898,7 @@ namespace MiniZinc {
     TieBreak<FloatVarBranch> def_float_varsel = FLOAT_VAR_SIZE_MIN();
     FloatValBranch def_float_valsel = FLOAT_VAL_SPLIT_MIN();
 #endif
-    
+
     std::vector<bool> iv_searched(_current_space->iv.size());
     for (unsigned int i=_current_space->iv.size(); i--;)
       iv_searched[i] = false;
@@ -911,45 +915,45 @@ namespace MiniZinc {
     for (unsigned int i=_current_space->fv.size(); i--;)
       fv_searched[i] = false;
 #endif
-    
-    // solving annotations 
+
+    // solving annotations
     std::vector<Expression*> flatAnn;
     if (!ann.isEmpty()) {
       // flattenAnnotations(ann, flatAnn); // TODO: implement
     }
     if (additionalAnn != NULL) {
       flatAnn.push_back(additionalAnn);
-    }    
+    }
     if (flatAnn.size() > 0) {
       // TODO: implement
       //std::cerr << "Ignoring solving annotations for now..." << std::endl;
     }
-    
+
     int introduced = 0;
     int funcdep = 0;
     int searched = 0;
     for (int i=_current_space->iv.size(); i--;) {
-      if (iv_searched[i]) {        
-        searched++;         
-      } else if (_current_space->iv_introduced[i]) {                  
+      if (iv_searched[i]) {
+        searched++;
+      } else if (_current_space->iv_introduced[i]) {
           if (_current_space->iv_defined[i]) {
             funcdep++;
           } else {
             introduced++;
-          }             
+          }
       }
-    }       
+    }
     IntVarArgs iv_sol(_current_space->iv.size()-(introduced+funcdep+searched));
     IntVarArgs iv_tmp(introduced);
-    for (int i=_current_space->iv.size(), j=0, k=0; i--;) {      
+    for (int i=_current_space->iv.size(), j=0, k=0; i--;) {
       if (iv_searched[i])
-        continue;           
-      if(_current_space->iv_introduced[i]) {                
+        continue;
+      if(_current_space->iv_introduced[i]) {
         if(_current_space->iv_introduced.size() >= i) {
-          if (!_current_space->iv_defined[i]) {                 
+          if (!_current_space->iv_defined[i]) {
             iv_tmp[j++] = _current_space->iv[i];
-          }                     
-        }               
+          }
+        }
       } else {
           iv_sol[k++] = _current_space->iv[i];
       }
@@ -966,9 +970,9 @@ namespace MiniZinc {
           funcdep++;
         } else {
             introduced++;
-        }               
+        }
       }
-    }        
+    }
     BoolVarArgs bv_sol(_current_space->bv.size()-(introduced+funcdep+searched));
     BoolVarArgs bv_tmp(introduced);
     for (int i=_current_space->bv.size(), j=0, k=0; i--;) {
@@ -981,13 +985,13 @@ namespace MiniZinc {
       } else {
           bv_sol[k++] = _current_space->bv[i];
       }
-    }      
-    
+    }
+
     if (iv_sol.size() > 0)
       branch(*this->_current_space, iv_sol, def_int_varsel, def_int_valsel);
     if (bv_sol.size() > 0)
       branch(*this->_current_space, bv_sol, def_bool_varsel, def_bool_valsel);
-    
+
     //std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
     //std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
 #ifdef GECODE_HAS_FLOAT_VARS
@@ -1054,7 +1058,7 @@ namespace MiniZinc {
     if (sv_sol.size() > 0)
       branch(*this->_current_space, sv_sol, def_set_varsel, def_set_valsel);
 #endif
-      
+
     // branching on auxiliary variables
     _current_space->iv_aux = IntVarArray(*this->_current_space, iv_tmp);
     _current_space->bv_aux = BoolVarArray(*this->_current_space, bv_tmp);
@@ -1067,7 +1071,7 @@ namespace MiniZinc {
     _current_space->fv_aux = FloatVarArray(*this->_current_space, fv_tmp);
     n_aux += _current_space->fv_aux.size();
 #endif
-    if (n_aux > 0) {      
+    if (n_aux > 0) {
       AuxVarBrancher::post(*this->_current_space, def_int_varsel, def_int_valsel,
                           def_bool_varsel, def_bool_valsel
 #ifdef GECODE_HAS_SET_VARS
@@ -1076,30 +1080,30 @@ namespace MiniZinc {
 #ifdef GECODE_HAS_FLOAT_VARS
                         , def_float_varsel, def_float_valsel
 #endif
-                    ); // end post                    
+                    ); // end post
       //std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" << std::endl;
-    } // end if n_aux > 0 
-    //else 
+    } // end if n_aux > 0
+    //else
       //std::cout << "DEBUG: No aux vars to branch on." << std::endl;
   }
-  
-    
+
+
   template<template<class> class Engine>
     SolverInstanceBase::Status GecodeSolverInstance::runEngine() {
     if (true) {//_options.getBoolParam(ASTString("restarts"))) { // TODO: implement option
       return runMeta<Engine,Driver::EngineToMeta>();
     } else {
       return runMeta<Engine,RBS>();
-    }     
+    }
    }
-      
+
   template<template<class> class Engine,
     template<template<class> class,class> class Meta>
         SolverInstanceBase::Status GecodeSolverInstance::runMeta() {
     Search::Options o;
     o.stop = Driver::CombinedStop::create(100000, //_options.getIntParam(ASTString("nodes")), // TODO: implement option
                                           100000, //_options.getIntParam(ASTString("fails")), // TODO: implement option
-                                          (unsigned int) (1000 //_options.getFloatParam(ASTString("time")) 
+                                          (unsigned int) (1000 //_options.getFloatParam(ASTString("time"))
                                           * 1000), // TODO: implement option
                                           true);
     // TODO: other options (see below)
@@ -1111,40 +1115,40 @@ namespace MiniZinc {
     //if (opts->interrupt())
     //    Driver::CombinedStop::installCtrlHandler(true);
     Meta<Engine,FznSpace> se(this->_current_space,o);
-        
+
     while (FznSpace* next_sol = se.next()) {
       if(_solution) delete _solution;
-      _solution = next_sol;      
+      _solution = next_sol;
     }
-    
+
     SolverInstance::Status status = SolverInstance::ERROR;
     if (!se.stopped()) {
       if(_solution) {
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-          status = SolverInstance::SAT;          
+          status = SolverInstance::SAT;
           assignSolutionToOutput();
-        } else 
+        } else
           status = SolverInstance::OPT;
           assignSolutionToOutput();
       } else {
         status = SolverInstance::UNSAT;
       }
-    } else {         
-      if(_solution) 
+    } else {
+      if(_solution)
          assignSolutionToOutput();
-      status = SolverInstance::UNKNOWN;            
+      status = SolverInstance::UNKNOWN;
     }
     return status;
   }
- 
- 
+
+
   void
   GecodeSolverInstance::assignSolutionToOutput(void) {
     //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];
       //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-      if(Call* output_array_ann = getAnnotation(vd->ann(), constants().ann.output_array.aststr())->dyn_cast<Call>()) {
+      if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
         assert(vd->e());
 
         if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
@@ -1152,7 +1156,7 @@ namespace MiniZinc {
           ASTExprVec<Expression> array = al->v();
           for(unsigned int j=0; j<array.size(); j++) {
             if(Id* id = array[j]->dyn_cast<Id>()) {
-              //std::cout << "DEBUG: getting solution value from " << *id << std::endl;
+              //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
               array_elems.push_back(getSolutionValue(id));
             } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
               array_elems.push_back(intLit);
@@ -1180,9 +1184,15 @@ namespace MiniZinc {
             }
           }
         }
-      } else if(vd->ann().containsCall(constants().ann.output_var->str())) {
+      } else if(vd->ann().contains(constants().ann.output_var)) {
         Expression* sol = getSolutionValue(vd->id());
         vd->e(sol);
+        for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+          if(it->e()->id()->str() == vd->id()->str()) {
+            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+            it->e()->e(sol); // set the solution
+          }
+        }
       }
     }
 
