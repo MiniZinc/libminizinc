@@ -1121,23 +1121,20 @@ namespace MiniZinc {
       _solution = next_sol;
     }
 
-    SolverInstance::Status status = SolverInstance::ERROR;
-    if (!se.stopped()) {
+    SolverInstance::Status status = SolverInstance::SAT;
+    if(se.stopped()) {
       if(_solution) {
-        if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-          status = SolverInstance::SAT;
-          assignSolutionToOutput();
-        } else
-          status = SolverInstance::OPT;
-          assignSolutionToOutput();
+        status = SolverInstance::OPT;
+        assignSolutionToOutput();
       } else {
         status = SolverInstance::UNSAT;
       }
-    } else {
-      if(_solution)
-         assignSolutionToOutput();
+    } else if(!_solution) {
       status = SolverInstance::UNKNOWN;
+    } else {
+      assignSolutionToOutput();
     }
+
     return status;
   }
 
