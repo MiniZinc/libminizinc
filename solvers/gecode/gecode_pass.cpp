@@ -4,21 +4,26 @@
 
 namespace MiniZinc {
 
-  GecodePropagationPass::GecodePropagationPass(FlatteningOptions& opts, std::string library, bool sac, bool shave, bool bounds, unsigned int npass)
-    : Pass(opts), _sac(sac), _shave(shave), _bounds(bounds), _npass(npass) {
+  GecodePass::GecodePass(
+      FlatteningOptions& opts,
+      Options& g_opts,
+      std::string library = "gecode",
+      bool mod = false,
+      bool sac = false,
+      bool shave = false,
+      bool bounds = true,
+      unsigned int npass = 1)
+    : Pass(opts), _sac(sac), _shave(shave), _bounds(bounds), _npass(npass), gopts(gopts), presolve_model(mod) {
 
     }
 
-  std::string GecodePropagationPass::getLibrary() { return library; }
+  std::string GecodePass::getLibrary() { return library; }
 
-  void GecodePropagationPass::run(Env& e) {
-    // Build options object
-    // options.sac = _sac
-    // options.shave = _shave
-    // options.bounds = _bounds
-    // options.npass = _npass
-    Options opt;
-    GecodeSolverInstance gsi(e, opt);
-    //gsi.presolve();
+  void GecodePass::run(Env& env) {
+    GecodeSolverInstance gecode(env,gopts);
+    gecode.processFlatZinc();
+    Model* m = presolve_model ? env.model() : env.flat();
+    gecode.presolve(m);
   }
 }
+
