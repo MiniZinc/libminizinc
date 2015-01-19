@@ -10,9 +10,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include "gecode_solverinstance.hh"
-#include "gecode_constraints.hh"
-#include "fzn_space.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode/gecode_constraints.hh>
+#include <minizinc/solvers/gecode/fzn_space.hh>
 
 using namespace Gecode;
 

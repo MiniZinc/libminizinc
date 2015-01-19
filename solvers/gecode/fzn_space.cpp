@@ -9,8 +9,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "fzn_space.hh"
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode/fzn_space.hh>
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 using namespace Gecode;
 

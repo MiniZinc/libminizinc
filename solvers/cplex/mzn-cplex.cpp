@@ -30,7 +30,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include "cplex_solverinstance.hh"
+#include <minizinc/solvers/cplex_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;

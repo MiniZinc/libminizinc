@@ -14,10 +14,10 @@
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
 
-#include "gecode_solverinstance.hh"
-#include "gecode_constraints.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include "aux_brancher.hh"
-#include "fzn_space.hh"
+#include <minizinc/solvers/gecode/fzn_space.hh>
 
 using namespace Gecode;
 
