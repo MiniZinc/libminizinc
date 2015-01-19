@@ -254,13 +254,13 @@ set(HAS_GECODE TRUE)
 set(HAS_FZN FALSE)
 
 if(HAS_CPLEX)
-  if(APPLE)
-     set(CPLEX_ARCH "osx")
-  endif(APPLE)
-
   if(UNIX)
     set(CPLEX_ARCH "linux")
   endif(UNIX)
+
+  if(APPLE)
+     set(CPLEX_ARCH "osx")
+  endif(APPLE)
 
 	add_definitions(-DIL_STD)
 	
@@ -271,7 +271,6 @@ if(HAS_CPLEX)
 
 	add_library(minizinc_cplex
 		solvers/cplex/cplex_solverinstance.cpp
-		solvers/cplex/cplex_solverinstance.hh
 	)
 
 	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
@@ -292,15 +291,10 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
-    solvers/gecode/fzn_space.cpp
-    solvers/gecode/gecode_solverinstance.cpp
-    solvers/gecode/gecode_constraints.cpp
-    solvers/gecode/gecode_pass.cpp
-    solvers/gecode/gecode_solverinstance.hh
-    solvers/gecode/gecode_constraints.hh
-    solvers/gecode/gecode_pass.hh
-    solvers/gecode/fzn_space.hh
-    solvers/gecode/aux_brancher.hh)
+          solvers/gecode/fzn_space.cpp
+	  solvers/gecode/gecode_solverinstance.cpp
+	  solvers/gecode/gecode_constraints.cpp
+          solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode
     minizinc
@@ -310,7 +304,7 @@ if(HAS_GECODE)
 
   add_executable(mzn-gecode
     solvers/gecode/mzn-gecode.cpp
-    )
+  )
   target_link_libraries(mzn-gecode minizinc_gecode minizinc 
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
