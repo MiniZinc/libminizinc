@@ -32,7 +32,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;

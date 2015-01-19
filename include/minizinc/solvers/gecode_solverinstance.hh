@@ -27,7 +27,7 @@
 #endif
 
 #include <minizinc/solver_instance_base.hh>
-#include "fzn_space.hh"
+#include <minizinc/solvers/gecode/fzn_space.hh>
 
 namespace MiniZinc {
   

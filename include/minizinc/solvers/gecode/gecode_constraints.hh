@@ -16,7 +16,7 @@
 #include <gecode/int.hh>
 
 #include <minizinc/solver_instance_base.hh>
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 namespace MiniZinc {
 
