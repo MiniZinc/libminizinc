@@ -26,7 +26,7 @@ namespace MiniZinc {
       IloNumArray ilocoeffs = si.exprToIloNumArray(args[0]);
       IloNumVarArray ilovars = si.exprToIloNumVarArray(args[1]);
       IloNum res = si.exprToIloNum(args[2]);
-      
+
       IloNum lb, ub;
       lb = -IloInfinity;
       ub = IloInfinity;
@@ -258,9 +258,9 @@ namespace MiniZinc {
     id = id->decl()->id();
     IloNum val = _ilocplex->getValue(exprToIloNumVar(id));
     switch (id->type().bt()) {
-      case Type::BT_INT: return new IntLit(Location(), val);
+      case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
       case Type::BT_FLOAT: return new FloatLit(Location(), val);
-      case Type::BT_BOOL: return new BoolLit(Location(), val);
+      case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
       default: return NULL;
     }
   }

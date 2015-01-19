@@ -387,29 +387,25 @@ int main(int argc, char** argv) {
               SolverInstance::Status status = gecode.solve();
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              switch(status) {
-                case SolverInstance::SAT:
-                  std::cout << "=====SAT=====";
-                  break;
-                case SolverInstance::OPT:
-                  std::cout << "=====OPT=====";
-                  break;
-                case SolverInstance::UNKNOWN:
-                  std::cout << "=====UNKNOWN=====";
-                  break;
-                case SolverInstance::ERROR:
-                  std::cout << "=====ERROR=====";
-                  break;
-                case SolverInstance::UNSAT:
-                  std::cout << "=====UNSAT=====";
-                  break;
-              }
-              std::cout << std::endl;
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT || status==SolverInstance::UNKNOWN) {
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
-                if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                switch(status) {
+                  case SolverInstance::SAT:
+                    break;
+                  case SolverInstance::OPT:
+                    std::cout << "==========\n";
+                    break;
+                  case SolverInstance::UNKNOWN:
+                    std::cout << "=====UNKNOWN=====";
+                    break;
+                  case SolverInstance::ERROR:
+                    std::cout << "=====ERROR=====";
+                    break;
+                  case SolverInstance::UNSAT:
+                    std::cout << "=====UNSAT=====";
+                    break;
+                }
               }
               else if(status == SolverInstance::ERROR) {
                 //std::cout << "DEBUG: solving finished with error." << std::endl;
@@ -448,29 +444,29 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
-            << std::endl
-            << "Options:" << std::endl
-            << "  --help, -h\n    Print this help message" << std::endl
-            << "  --version\n    Print version information" << std::endl
-            << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-            << "  -v, --verbose\n    Print progress statements" << std::endl
-            << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
-            << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
-            << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
-            << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
-            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-            << std::endl
-            << "Output options:" << std::endl << std::endl
-            << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
-            << "  --output-base <name>\n    Base name for output files" << std::endl
-            << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
-            << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
-            << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
-            << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
-            << "  -Werror\n    Turn warnings into errors" << std::endl
-  ;
+    << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+    << std::endl
+    << "Options:" << std::endl
+    << "  --help, -h\n    Print this help message" << std::endl
+    << "  --version\n    Print version information" << std::endl
+    << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+    << "  -v, --verbose\n    Print progress statements" << std::endl
+    << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+    << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+    << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
+    << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
+    << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+    << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+    << std::endl
+    << "Output options:" << std::endl << std::endl
+    << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+    << "  --output-base <name>\n    Base name for output files" << std::endl
+    << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+    << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
+    << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
+    << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+    << "  -Werror\n    Turn warnings into errors" << std::endl
+    ;
 
   exit(EXIT_FAILURE);
 }
