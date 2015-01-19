@@ -880,6 +880,115 @@ namespace MiniZinc {
     return status;
   }
 
+  void GecodeSolverInstance::presolve(Model* orig_model) {
+    GCLock lock;
+    /* // run SAC?
+    if(opts->sac()) {
+      bool shave = opts->shave();
+      unsigned int iters = opts->npass();
+      if(iters) {
+        for(unsigned int i=0; i<iters; i++)
+          sac(false, shave);
+      } else {
+        sac(true, shave);
+      }
+    } else { */
+    _current_space->status();
+    /* } */
+    //const char* presolve_log = opts->presolve_log();
+    //std::ofstream ofs;
+    //if(presolve_log)
+    //  ofs.open(presolve_log);
+
+    UNORDERED_NAMESPACE::unordered_map<std::string, VarDecl*> vds;
+    for(VarDeclIterator it = orig_model->begin_vardecls();
+        it != orig_model->end_vardecls();
+        ++it) {
+      VarDecl* vd = it->e();
+      vds[vd->id()->str().str()] = vd;
+    }
+
+    IdMap<GecodeVariable>::iterator it;
+    for(it = _variableMap.begin(); it != _variableMap.end(); it++) {
+      VarDecl* vd = it->first->decl();
+      int old_domsize = 0;
+      bool holes = false;
+
+      if(vd->ti()->domain()) {
+        if(vd->type().isint()) {
+          IntBounds old_bounds = compute_int_bounds(vd->id());
+          long long int old_rangesize = abs(old_bounds.u.toInt() - old_bounds.l.toInt());
+          if(vd->ti()->domain()->isa<SetLit>())
+            old_domsize = arg2intset(vd->ti()->domain()).size();
+          else
+            old_domsize = old_rangesize + 1;
+          holes = old_domsize < old_rangesize + 1;
+        }
+      }
+      
+      std::string name = it->first->str().str();
+
+      bool onlyTightenBounds = true;
+
+      if(vds.find(name) != vds.end()) {
+        VarDecl* nvd = vds[name];
+        Type::BaseType bt = vd->type().bt();
+        if(bt == Type::BaseType::BT_INT) {
+          IntVar intvar = it->second.intVar(_current_space);
+          const long long int new_domsize = intvar.size();
+          const long long int l = intvar.min(), u = intvar.max();
+
+          if(l==u) {
+            if(nvd->e()) {
+              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
+            } else {
+              nvd->type(Type::parint());
+              nvd->ti(new TypeInst(nvd->loc(), Type::parint()));
+              nvd->e(new IntLit(nvd->loc(), l));
+            }
+          } else if(!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)){
+            if(onlyTightenBounds && !holes) {
+              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
+            } else {
+              IntVarRanges ivr(intvar);
+              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::ai(ivr)));
+            }
+          }
+          //if(presolve_log && (old_domsize == 0 || old_domsize > new_domsize))
+          //  ofs << *(nvd->ti()->domain() ? nvd->ti()->domain() : nvd->e()) << std::endl;
+        } else if(bt == Type::BaseType::BT_BOOL) {
+          BoolVar boolvar = it->second.boolVar(_current_space);
+          int l = boolvar.min(),
+              u = boolvar.max();
+          if(l == u) {
+            if(nvd->e()) {
+              nvd->ti()->domain(constants().boollit(l));
+            } else {
+              nvd->type(Type::parbool());
+              nvd->ti(new TypeInst(nvd->loc(), Type::parbool()));
+              nvd->e(new BoolLit(nvd->loc(), l));
+            }
+          }
+        } else if(bt == Type::BaseType::BT_FLOAT) {
+          Gecode::FloatVal floatval = it->second.floatVar(_current_space).val();
+          FloatNum l = floatval.min(),
+                   u = floatval.max();
+
+          if(floatval.singleton() && !nvd->e()) {
+            nvd->type(Type::parfloat());
+            nvd->ti(new TypeInst(nvd->loc(), Type::parfloat()));
+            nvd->e(new FloatLit(nvd->loc(), l));
+          } else {
+            nvd->ti()->domain(new BinOp(nvd->loc(),
+                  new FloatLit(nvd->loc(), l),
+                  BOT_DOTDOT,
+                  new FloatLit(nvd->loc(), u)));
+          }
+        }
+      }
+    }
+  }
+
   void
   GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn,
                                         int seed, double decay, bool ignoreUnknown,

@@ -165,7 +165,7 @@ namespace MiniZinc {
       assert(_index < space->bv.size());
       return space->bv[_index];
     }
-    
+
 #ifdef GECODE_HAS_FLOAT_VARS
     Gecode::FloatVar floatVar(MiniZinc::FznSpace* space) {
       assert(_t == FLOAT_TYPE);
@@ -207,19 +207,23 @@ namespace MiniZinc {
     //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
-     
+
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
-    
+
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
     virtual void resetSolver(void);
-    
+
+    // Presolve the currently loaded model, updating variables with the same
+    // names in the given Model* m.
+    void presolve(Model* m);
+
     virtual Expression* getSolutionValue(Id* id);
-    
+
     Gecode::Space* getGecodeModel(void);
-    
+
     // helper functions for processing flatzinc constraints
     /// Convert \a arg (array of integers) to IntArgs
     Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
