@@ -42,6 +42,7 @@ namespace MiniZinc {
     }
 
     void GecodeSolverInstance::registerConstraints(void) {
+      GCLock lock;
       registerConstraint("all_different_int", GecodeConstraints::p_distinct);
       registerConstraint("all_different_offset", GecodeConstraints::p_distinctOffset);
       registerConstraint("all_equal_int", GecodeConstraints::p_all_equal);

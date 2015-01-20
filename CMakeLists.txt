@@ -240,14 +240,18 @@ include/minizinc/values.hh
 "${parser_hh}"
 )
 
+find_package ( Threads REQUIRED )
+
 # add the executable
 add_executable(mzn2fzn mzn2fzn.cpp)
-target_link_libraries(mzn2fzn minizinc)
+target_link_libraries(mzn2fzn minizinc_gecode minizinc
+    gecodedriver gecodesearch gecodeminimodel
+    gecodefloat gecodeint gecodeset
+    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
-find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX TRUE)
 set(HAS_GECODE TRUE)
@@ -292,8 +296,9 @@ if(HAS_GECODE)
 
   add_library(minizinc_gecode
           solvers/gecode/fzn_space.cpp
-	  solvers/gecode/gecode_solverinstance.cpp
-	  solvers/gecode/gecode_constraints.cpp
+          solvers/gecode/gecode_solverinstance.cpp
+          solvers/gecode/gecode_constraints.cpp
+          solvers/gecode/gecode_pass.cpp
           solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode

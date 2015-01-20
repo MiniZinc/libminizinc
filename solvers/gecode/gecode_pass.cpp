@@ -1,19 +1,19 @@
 
-#include "gecode_pass.hh"
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode/gecode_pass.hh>
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 namespace MiniZinc {
 
   GecodePass::GecodePass(
       FlatteningOptions& opts,
       Options& g_opts,
-      std::string library = "gecode",
-      bool mod = false,
-      bool sac = false,
-      bool shave = false,
-      bool bounds = true,
-      unsigned int npass = 1)
-    : Pass(opts), _sac(sac), _shave(shave), _bounds(bounds), _npass(npass), gopts(gopts), presolve_model(mod) {
+      std::string lib,
+      bool mod,
+      bool sac,
+      bool shave,
+      bool bounds,
+      unsigned int npass)
+    : Pass(opts), gopts(g_opts), library(lib), presolve_model(mod), _sac(sac), _shave(shave), _bounds(bounds), _npass(npass) {
 
     }
 

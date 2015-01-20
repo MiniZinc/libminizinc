@@ -29,6 +29,8 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/timer.hh>
 
+#include <minizinc/solvers/gecode/gecode_pass.hh>
+
 using namespace MiniZinc;
 using namespace std;
 
@@ -53,6 +55,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_gecode = false;
   unsigned int flag_npasses = 1;
   
   Timer starttime;
@@ -106,6 +109,7 @@ int main(int argc, char** argv) {
       flag_instance_check_only = true;
     } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
+      fopts.verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
       flag_newfzn = true;
     } else if (string(argv[i])==string("--no-optimize") || string(argv[i])==string("--no-optimise")) {
@@ -118,6 +122,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       flag_output_base = argv[i];
+    } else if (string(argv[i])=="--use-gecode") {
+      flag_gecode = true;
     } else if (string(argv[i])=="--npass") {
       i++;
       if (i==argc) {
@@ -320,16 +326,18 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
-            if (flag_verbose)
-              std::cerr << "Flattening ...";
             Env env(m);
             try {
               std::vector<Pass*> passes;
+              Options gopts;
+              FlatteningOptions pass_opts = fopts;
+              pass_opts.collectVarPaths = true;
+              pass_opts.useVarPaths = false;
               for(unsigned int i=1; i<flag_npasses; i++) {
-                FlatteningOptions pass_opts = fopts;
-                pass_opts.collectVarPaths = true;
-                pass_opts.useVarPaths = false;
-                passes.push_back(new CompilePass(pass_opts, globals_dir));
+                if(flag_gecode)
+                  passes.push_back(new GecodePass(pass_opts, gopts));
+                else
+                  passes.push_back(new CompilePass(pass_opts, "g12_fd"));
               }
 
               // Multi-pass optimisations
@@ -337,6 +345,8 @@ int main(int argc, char** argv) {
                 multiPassFlatten(env, includePaths, passes);
 
               // Final compilation
+              if (flag_verbose)
+                std::cerr << "Final Flattening ...";
               fopts.collectVarPaths = false;
               fopts.useVarPaths = true;
               flatten(env, fopts);

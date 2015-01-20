@@ -13,18 +13,18 @@ namespace MiniZinc {
     bool _shave;
     bool _bounds;
     unsigned int _npass;
-    Options& gopts;
+    Options gopts;
     bool presolve_model;
 
     public:
     GecodePass(FlatteningOptions& opts,
                Options& gopts,
-               std::string library,
-               bool mod,
-               bool sac,
-               bool shave,
-               bool bounds,
-               unsigned int npass);
+               std::string lib = "gecode",
+               bool mod = false,
+               bool sac = false,
+               bool shave = false,
+               bool bounds = true,
+               unsigned int npass = 1);
 
     std::string getLibrary();
     void run(Env& e);

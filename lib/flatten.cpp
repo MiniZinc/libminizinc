@@ -24,6 +24,9 @@
 
 #include <minizinc/flatten_internal.hh>
 
+#include <iomanip>
+#include <minizinc/timer.hh>
+
 // temporary
 #include <minizinc/prettyprinter.hh>
 
@@ -156,7 +159,7 @@ namespace MiniZinc {
       UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>::iterator it = pathMap.find(path);
       if(it != pathMap.end()) {
         //std::cerr << "AFTER: " << path << std::endl;
-        VarDecl* ovd = Expression::dyn_cast<VarDecl>(it->second());
+        VarDecl* ovd = Expression::cast<VarDecl>(it->second());
         if(ovd) {
           IntVal intval;
           FloatVal doubleval;
@@ -166,10 +169,12 @@ namespace MiniZinc {
             bool fixed = false;
 
             if(vd->type().isint()) {
-              IntBounds bounds    = compute_int_bounds(vd->id());
               IntBounds oldbounds = compute_int_bounds(ovd->id());
+              IntBounds bounds(0,0,false);
+              if(vd->ti()->domain() || vd->e())
+                bounds = compute_int_bounds(vd->id());
 
-              if(bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
+              if((vd->ti()->domain() || vd->e()) && bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
                 if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
                   fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
                   if(fixed) {
@@ -212,9 +217,11 @@ namespace MiniZinc {
                 }
               }
             } else if(vd->type().isfloat()) {
-              FloatBounds bounds    = compute_float_bounds(vd->id());
               FloatBounds oldbounds = compute_float_bounds(ovd->id());
-              if(bounds.valid) {
+              FloatBounds bounds(0.0, 0.0, false);
+              if(vd->ti()->domain() || vd->e())
+                bounds = compute_float_bounds(vd->id());
+              if((vd->ti()->domain() || vd->e()) && bounds.valid) {
                 if(oldbounds.valid) {
                   fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
                   if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
@@ -261,8 +268,8 @@ namespace MiniZinc {
               }
 
               //std::cerr << "\tnewvar:\t" << *vd << "\n";
-//                std::vector<Expression*> args(1);
-//                std::stringstream ss;
+              //std::vector<Expression*> args(1);
+              //std::stringstream ss;
               //ss << "original: " << *ovd;
               //args[0] = new StringLit(vd->loc(), ss.str());
               //args[0] = new StringLit(vd->loc(), "addMznPath");
@@ -270,7 +277,6 @@ namespace MiniZinc {
               //Call* call = new Call(vd->loc(), constants().ann.doc_comment, args);
               //call->type(Type::ann());
               //vd->ann().add(call);
-
             }
           }
         }
@@ -5038,19 +5044,37 @@ namespace MiniZinc {
     return fenv;
   }
 
+  std::string stoptime(Timer& start) {
+    std::ostringstream oss;
+    oss << std::setprecision(0) << std::fixed << start.ms() << " ms";
+    start.reset();
+    return oss.str();
+  }
   void multiPassFlatten(Env& e, std::vector<std::string>& includePaths, std::vector<Pass*>& passes) {
     Env* pre_env = &e;
+    Timer lasttime;
     for(unsigned int i=0; i<passes.size(); i++) {
       std::string library = passes[i]->getLibrary();
       FlatteningOptions& fopts = passes[i]->getFlatteningOptions();
 
+      if(fopts.verbose) {
+        std::cerr << "Pass " << i << ":\n";
+        std::cerr << "\tFlatten with \'" << library << "\' library ...";
+      }
       pre_env = changeLibrary(*pre_env, includePaths, library);
 
       flatten(*pre_env, fopts);
       optimize(*pre_env);
       oldflatzinc(*pre_env);
+      if(fopts.verbose) {
+        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+        std::cerr << "\tRunning pass ...";
+      }
 
       passes[i]->run(*pre_env);
+
+      if(fopts.verbose)
+        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
 
     e.envi().setMaps(pre_env->envi());
