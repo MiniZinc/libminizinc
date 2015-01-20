@@ -22,19 +22,11 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/solvers/gecode/gecode_solverinstance.hh>
 
+#include "pyinterface.h";
+
 using namespace MiniZinc;
 using namespace std;
 
-// Error Objects
-static PyObject* MznModel_solve_error;
-static PyObject* MznModel_load_error;
-static PyObject* MznModel_loadString_error;
-static PyObject* MznModel_solve_warning;
-static PyObject* MznSet_error;
-
-
-// Time alarm
-sigjmp_buf jmpbuf;
 
 void sig_alrm (int signo)
 {
@@ -43,7 +35,7 @@ void sig_alrm (int signo)
 
 //
 
-#include "MznSet.h"
+
 
 void MznModelDestructor(PyObject* o) {
   const char* name = PyCapsule_GetName(o);
@@ -51,27 +43,11 @@ void MznModelDestructor(PyObject* o) {
   Py_DECREF(o);
 }
 
-string minizinc_set(long start, long end);
-
-int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
-
-struct MznModel {
-  PyObject_HEAD
-  Model* m;
-  vector<string>* includePaths;
-  bool loaded;
-
-  //vector<string>* data;
-
-  int load(PyObject *args, PyObject *keywds, bool fromFile);
-  PyObject* solve();
-};
-
 static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
   MznModel* self = (MznModel*)type->tp_alloc(type,0);
-  self->m = new Model;
+  //self->_m = new Model;
   self->includePaths = new vector<string>;
   //self->data = new vector<string>;
   return (PyObject* )self;
@@ -89,6 +65,7 @@ MznModel_init(MznModel* self, PyObject* args)
     PyErr_SetString(MznModel_load_error, "No MiniZinc library directory MZN_STDLIB_DIR defined.");
     return -1;
   }
+  self->timeLimit = 0;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
   return 0;
@@ -97,170 +74,294 @@ MznModel_init(MznModel* self, PyObject* args)
 static void
 MznModel_dealloc(MznModel* self)
 {
-  delete self->m;
+  delete self->_m;
   delete self->includePaths;
   //delete self->data;
   self->ob_type->tp_free((PyObject*)self);
 }
 
-
 int 
 MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
 {
+  stringstream errorStream;
+  vector<string> data;
+
   PyObject* obj = Py_None;
   Py_ssize_t pos = 0;
   PyObject* key;
   PyObject* value;
-  PyObject* options = Py_None;
-  const char* py_filename;
+  char* options = NULL;
+  const char* py_string;
+  char* errorFile = "./error.txt";
 
-  static char *kwlist[] = {"name","data","options"};
+  bool isDict = false;
+
   if (fromFile) {
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|OO", kwlist, &py_filename, &obj, &options)) {
+    char *kwlist[] = {"file","data","options"};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &obj, &options)) {
       PyErr_SetString(MznModel_load_error, "Parsing error");
       return -1;
     }
-  } else {
-
-  }
-  stringstream errorStream;
-  vector<string> data;
-  if (m = parse(string(py_filename), data, *includePaths, false, false, false, errorStream))
-  {
-    loaded = true;
-    if (obj != Py_None) {
-      // Records the list of Set for special parsing
-      list<string> nameOfSets;
-      for (unsigned int i=0; i<m->size(); i++) {
-        if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>())
-          if (vdi->e()->type().is_set() && vdi->e()->type().ispar()) {
-            nameOfSets.push_back(vdi->e()->id()->str().str());
+    if (options != NULL) {
+      char* pch;
+      bool t_flag = false;
+      pch = strtok(options, " ");
+      while (pch != NULL) {
+        if (strcmp(pch,"-t")==0)
+          t_flag = true;
+        else {
+          if (t_flag) {
+            char* ptr;
+            int t = strtol(pch,&ptr,10);
+            if (t == 0) {
+              PyErr_SetString(MznModel_solve_error, "Time value must be a valid positive number");
+              return NULL;
+            }
+            timeLimit = t;
+            t_flag = false;
+          } else {
+            PyErr_SetString(MznModel_solve_error, "Unknown option");
+            return NULL;
           }
+        }
+        pch = strtok(NULL, " ");
       }
+    }
+    if (obj != Py_None) {
+      if (PyString_Check(obj)) {
+        data.push_back(string(PyString_AS_STRING(obj)));
+      } else if (PyList_Check(obj)) {
+        Py_ssize_t n = PyList_GET_SIZE(obj);
+        for (Py_ssize_t i = 0; i!=n; ++i) {
+          char* name = PyString_AsString(PyList_GET_ITEM(obj, i));
+          if (name == NULL) {
+            PyErr_SetString(MznModel_load_error, "Element in the list must be a filename");
+            return -1;
+          }
+          data.push_back(string(name));
+        }
+      } else if (!PyDict_Check(obj)) {
+        PyErr_SetString(MznModel_load_error, "The second argument must be either a filename, a list of filenames or a dictionary of data");
+        return -1;
+      }
+      isDict = true;
+    }
+    _m = parse(string(py_string), data, *includePaths, false, false, false, errorStream);
+  } else {
+    char *kwlist[] = {"string","error","options"};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &errorFile, &options))
+      return -1;
+    _m = parseFromString(string(py_string), errorFile, *includePaths, false, false, false, errorStream);
+  }
+  if (_m) {
+    if (isDict) {
       stringstream assignments;
       Py_ssize_t pos = 0;
       PyObject* key;
       PyObject* value;
+      GCLock lock;
       while (PyDict_Next(obj, &pos, &key, &value)) {
-        assignments << PyString_AsString(key) << " = ";
-        if (PyList_Check(value)) {
-          vector<Py_ssize_t> dimensions;
-          vector<PyObject*> simpleArray;
-          if (PyList_Size(value)==0) {
-            PyErr_SetString(MznModel_load_error,"Objects must contain at least 1 value");
-            return -1;
-          }
-          bool is_set = false; // find out if it is a set or an array.
-          std::list<string>::iterator findIter = std::find(nameOfSets.begin(),nameOfSets.end(),PyString_AsString(key));
-          if (findIter!=nameOfSets.end()) {
-            is_set = true;
-            nameOfSets.erase(findIter);
-          }
-          if (getList(value, dimensions, simpleArray,0) == -1) {
-            PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
-            return -1;
-          }
+        char* name = PyString_AS_STRING(key);
+        for (unsigned int i=0; i<_m->size(); i++) 
+          if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
+            if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
+              if (vdi->e()->type().st() == Type::ST_SET) {
+                if (PyObject_TypeCheck(value, &MznSetType)) {
+                  vector<IntSetVal::Range> ranges;
+                  MznSet* Set = (MznSet*)value;
+                  for (list<MznSet::Range>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
+                    ranges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
+                  }
+                  Expression* rhs = new SetLit(Location(), IntSetVal::a(ranges));
+                  vdi->e()->e(rhs);
+                } else {
+                  string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a set";
+                  PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                  return -1;
+                }
+              } else if (vdi->e()->type().bt() == Type::BT_INT) {
+                if (vdi->e()->type().dim() == 0) {
+                  if (PyInt_Check(value)) {
+                    Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(value)));
+                    vdi->e()->e(rhs);
+                  } else {
+                    string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an integer";
+                    PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                    return -1;
+                  }
+                } else {
+                  if (PyList_Check(value)) {
+                    ArrayLit* al = vdi->e()->cast<ArrayLit>();
+                    vector<Py_ssize_t> dimensions;
+                    vector<PyObject*> simpleArray;
+                    if (getList(value, dimensions, simpleArray, 0) == -1) {
+                      PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+                      return -1;
+                    }
+                    if (vdi->e()->type().dim() != dimensions.size()) {
+                      string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
+                      PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                      return -1;
+                    }
+                    /*
+                    for (int i=0; i!=dimensions.size(); i++) {
+                      cout << i << endl;
+                      if (dimensions[i] != al->max(i) - al->min(i) + 1) {
+                        string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: size of each dimension not conforms";
+                        PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                        return -1;
+                      }
+                    }
+                    */
+                    vector<Expression*> v;
+                    vector<pair<int,int> > dims;
+                    for (int i=0; i!=simpleArray.size(); ++i) {
+                      PyObject* temp= simpleArray[i];
+                      if (!PyInt_Check(temp)) {
+                        string errorLog = "Expected integer value";
+                        PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                        return -1;
+                      }
+                      Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(temp)));
+                      v.push_back(rhs);
+                    }
 
-          if (dimensions.size()>6) {
-            PyErr_SetString(MznModel_load_error, "Maximum dimension of a multidimensional array is 6");
-            return -1;
-          }
-          if (is_set)
-            assignments << "{";
-          else {
-            assignments << "array" << dimensions.size() << "d(";
-            for (vector<Py_ssize_t>::size_type i=0; i!=dimensions.size(); i++) {
-              assignments << minizinc_set(1,dimensions[i]) << ", ";
-            }
-            assignments << '[';
-          }
-          if (PyBool_Check(simpleArray[0]))
-            for (vector<PyObject*>::size_type i=0; i!=simpleArray.size(); i++) {
-              if (i!=0)
-                 assignments << ", ";
-              if (PyBool_Check(simpleArray[i])) {
-                if (PyInt_AS_LONG(simpleArray[i]))
-                  assignments << "true";
-                else assignments << "false";
+                    for (int i=0; i!=dimensions.size(); i++)
+                      dims.push_back(pair<int,int>(1,dimensions[i]));
+                    Expression* rhs = new ArrayLit(Location(), v, dims);
+                    vdi->e()->e(rhs);
+                  } else {
+                    string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an array of integer";
+                    PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                    return -1;
+                  }
+                }
+              } else if (vdi->e()->type().bt() == Type::BT_BOOL) {
+                if (PyBool_Check(value)) {
+                  Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(value));
+                  vdi->e()->e(rhs);
+                } else if (PyList_Check(value)) {
+                  ArrayLit* al = vdi->e()->cast<ArrayLit>();
+                  vector<Py_ssize_t> dimensions;
+                  vector<PyObject*> simpleArray;
+                  if (getList(value, dimensions, simpleArray, 0) == -1) {
+                    PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+                    return -1;
+                  }
+                  if (vdi->e()->type().dim() != dimensions.size()) {
+                    string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
+                    PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                    return -1;
+                  }
+                  vector<Expression*> v;
+                  vector<pair<int,int> > dims;
+                  for (int i=0; i!=simpleArray.size(); ++i) {
+                    PyObject* temp= simpleArray[i];
+                    if (!PyInt_Check(temp)) {
+                      string errorLog = "Expected boolean value";
+                      PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                      return -1;
+                    }
+                    Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(temp));
+                    v.push_back(rhs);
+                  }
+
+                  for (int i=0; i!=dimensions.size(); i++)
+                    dims.push_back(pair<int,int>(1,dimensions[i]));
+                  Expression* rhs = new ArrayLit(Location(), v, dims);
+                  vdi->e()->e(rhs);
+                } else {
+                string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a boolean";
+                PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                return -1;
+                }
+              } else if (vdi->e()->type().bt() == Type::BT_STRING) {
+                if (PyString_Check(value)) {
+                  Expression* rhs = new StringLit(Location(), PyString_AS_STRING(value));
+                  vdi->e()->e(rhs);
+                } else if (PyList_Check(value)) {
+                  ArrayLit* al = vdi->e()->cast<ArrayLit>();
+                  vector<Py_ssize_t> dimensions;
+                  vector<PyObject*> simpleArray;
+                  if (getList(value, dimensions, simpleArray, 0) == -1) {
+                    PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+                    return -1;
+                  }
+                  if (vdi->e()->type().dim() != dimensions.size()) {
+                    string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
+                    PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                    return -1;
+                  }
+                  vector<Expression*> v;
+                  vector<pair<int,int> > dims;
+                  for (int i=0; i!=simpleArray.size(); ++i) {
+                    PyObject* temp= simpleArray[i];
+                    if (!PyString_Check(temp)) {
+                      string errorLog = "Expected string value";
+                      PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                      return -1;
+                    }
+                    Expression* rhs = new StringLit(Location(), PyString_AS_STRING(temp));
+                    v.push_back(rhs);
+                  }
+
+                  for (int i=0; i!=dimensions.size(); i++)
+                    dims.push_back(pair<int,int>(1,dimensions[i]));
+                  Expression* rhs = new ArrayLit(Location(), v, dims);
+                  vdi->e()->e(rhs);
+                } else {
+                  string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a string";
+                  PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                  return -1;
+                }
+              } else if (vdi->e()->type().bt() == Type::BT_FLOAT) {
+                if (PyFloat_Check(value)) {
+                  Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(value));
+                  vdi->e()->e(rhs);
+                } else if (PyList_Check(value)) {
+                  ArrayLit* al = vdi->e()->cast<ArrayLit>();
+                  vector<Py_ssize_t> dimensions;
+                  vector<PyObject*> simpleArray;
+                  if (getList(value, dimensions, simpleArray, 0) == -1) {
+                    PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+                    return -1;
+                  }
+                  if (vdi->e()->type().dim() != dimensions.size()) {
+                    string errorLog = "type-inst error: output expression '" + string(name) + "'' has invalid type-inst: number of dimension not conforms";
+                    PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                    return -1;
+                  }
+                  vector<Expression*> v;
+                  vector<pair<int,int> > dims;
+                  for (int i=0; i!=simpleArray.size(); ++i) {
+                    PyObject* temp= simpleArray[i];
+                    if (!PyFloat_Check(temp)) {
+                      string errorLog = "Expected float value";
+                      PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                      return -1;
+                    }
+                    Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(temp));
+                    v.push_back(rhs);
+                  }
+
+                  for (int i=0; i!=dimensions.size(); i++)
+                    dims.push_back(pair<int,int>(1,dimensions[i]));
+                  Expression* rhs = new ArrayLit(Location(), v, dims);
+                  vdi->e()->e(rhs);
+                } else {
+                  string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a float";
+                  PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+                  return -1;
+                }
               } else {
-                PyErr_SetString(MznModel_load_error, "Inconsistency in values type");
+                PyErr_SetString(MznModel_load_error, "Unhandled type");
                 return -1;
               }
             }
-          else if (PyInt_Check(simpleArray[0]))
-            for (vector<PyObject*>::size_type i=0; i!=simpleArray.size(); i++) {
-              if (i!=0)
-                assignments << ", ";
-              if (PyInt_Check(simpleArray[i]))
-                assignments << PyInt_AS_LONG(simpleArray[i]);
-              else {
-                PyErr_SetString(MznModel_load_error, "Inconsistency in values type");
-                return -1;
-              }
-            }
-          else if (PyFloat_Check(simpleArray[0]))
-            for (vector<PyObject*>::size_type i=0; i!=simpleArray.size(); i++) {
-              if (i!=0)
-                assignments << ", ";
-              if (PyFloat_Check(simpleArray[i]))
-                assignments << PyFloat_AS_DOUBLE(simpleArray[i]);
-              else {
-                PyErr_SetString(MznModel_load_error, "Inconsistency in values type");
-                return -1;
-              }
-            }
-          else if (PyString_Check(simpleArray[0]))
-            for (vector<PyObject*>::size_type i=0; i!=simpleArray.size(); i++) {
-              if (i!=0)
-                assignments << ", ";
-              if (PyString_Check(simpleArray[i]))
-                assignments << "\"" << PyString_AS_STRING(simpleArray[i]) << "\"";
-              else {
-                PyErr_SetString(MznModel_load_error, "Inconsistency in values type");
-                return -1;
-              }
-            }
-          else {
-            PyErr_SetString(MznModel_load_error, "Object must be an integer, float, boolean or string");
-            return -1;
           }
-          if (is_set)
-            assignments << "}";
-          else assignments << "])";
-        } else {
-          // no error checking currently
-          if (PyBool_Check(value)) {
-            if (PyInt_AS_LONG(value))
-              assignments << "true";
-            else assignments << "false";
-          } else if (PyInt_Check(value))
-            assignments << PyInt_AS_LONG(value);
-          else if (PyFloat_Check(value)) {
-            assignments << PyFloat_AS_DOUBLE(value);
-          }
-          else if (PyString_Check(value))
-            assignments << PyString_AS_STRING(value);
-          else {
-            PyErr_SetString(MznModel_load_error, "Object must be a list or value");
-            return -1;
-          }
-        }
-        assignments << ";\n";
-      }
-      string asn = assignments.str();
-      cout << asn << endl;
-      if (asn.size() > 0)
-        data.push_back("cmd:/"+assignments.str());
-      stringstream errorStream;
-      if (!parseData(m, data, *includePaths, true,
-                         false, false, errorStream))
-      {
-        const std::string& tmp = errorStream.str();
-        const char* cstr = tmp.c_str();
-        PyErr_SetString(MznModel_load_error, cstr);
-        return -1;
       }
     }
+    loaded = true;
     return 0;
   } else {
     const std::string& tmp = errorStream.str();
@@ -286,6 +387,13 @@ MznModel_loadString(MznModel *self, PyObject *args, PyObject *keywds) {
   Py_RETURN_NONE;
 }
 
+/*static PyObject*
+MznModel_loadData(MznModel* self, PyObject *args) {
+  if (self->loadData(args) < 0)
+    return NULL;
+  Py_RETURN_NONE;
+}*/
+
 PyObject* MznModel::solve()
 {
   if (!loaded) {
@@ -295,7 +403,7 @@ PyObject* MznModel::solve()
   loaded = false;
   vector<TypeError> typeErrors;
   try {
-    MiniZinc::typecheck(m, typeErrors);
+    MiniZinc::typecheck(_m, typeErrors);
   } catch (LocationException& e) {
     stringstream errorLog;
     errorLog << e.what() << ": " << std::endl;
@@ -316,8 +424,8 @@ PyObject* MznModel::solve()
     PyErr_SetString(MznModel_solve_error, cstr);
     return NULL;
   }
-  MiniZinc::registerBuiltins(m);
-  Env env(m);
+  MiniZinc::registerBuiltins(_m);
+  Env env(_m);
   try {
     FlatteningOptions fopts;
     flatten(env,fopts);
@@ -347,7 +455,9 @@ PyObject* MznModel::solve()
   Options options;
   GecodeSolverInstance gecode(env,options);
   gecode.processFlatZinc();
+  //cout << "1" << endl;
   SolverInstance::Status status = gecode.solve();
+  //cout << "2" << endl;
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
     PyObject* solutions = PyList_New(0);
     PyObject* sol = PyDict_New();
@@ -357,6 +467,13 @@ PyObject* MznModel::solve()
       if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
         if (vdi->e()->type().st() == Type::ST_SET) {
           IntSetVal* isv = eval_intset(vdi->e()->e());
+          long numberOfElement = 0;
+          MznSet* newSet = (MznSet*) MznSet_new(&MznSetType,NULL,NULL);
+          for (IntSetRanges isr(isv); isr(); ++isr) {
+            newSet->push(isr.min().toInt(),isr.max().toInt());
+          }
+          PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),(PyObject*)newSet);
+          /*IntSetVal* isv = eval_intset(vdi->e()->e());
           long long int numberOfElement = 0;
           for (IntSetRanges isr(isv); isr(); ++isr) {
             numberOfElement += (isr.max() - isr.min()).toInt() + 1;
@@ -369,7 +486,7 @@ PyObject* MznModel::solve()
               PyList_SetItem(p,count++,PyInt_FromLong(j.toInt()));
           }
           PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), p);
-          Py_DECREF(p);
+          Py_DECREF(p);*/
         } else {
           if (vdi->e()->type().bt() == Type::BT_BOOL) {
             if (vdi->e()->type().dim() == 0) {
@@ -552,46 +669,9 @@ PyObject* MznModel::solve()
 static PyObject*
 MznModel_solve(MznModel *self)
 {
-  return self->solve();
-}
-
-static PyObject*
-MznModel_solvewArgs(MznModel *self, PyObject *args)
-{
-  char* options;
-  long t = 0;
-
-  string s = "";
-  if (!PyArg_ParseTuple(args, "s", &options)) {
-    PyErr_SetString(MznModel_solve_error, "Parsing error");
-    return NULL;
-  } else {
-    char* pch;
-    bool t_flag = false;
-    pch = strtok(options, " ");
-    while (pch != NULL) {
-      if (strcmp(pch,"-t")==0)
-        t_flag = true;
-      else {
-        if (t_flag) {
-          char* ptr;
-          t = strtol(pch,&ptr,10);
-          if (t == 0) {
-            PyErr_SetString(MznModel_solve_error, "Time value must be a valid positive number");
-            return NULL;
-          }
-          t_flag = false;
-        } else {
-          PyErr_SetString(MznModel_solve_error, "Unknown option");
-          return NULL;
-        }
-      }
-      pch = strtok(NULL, " ");
-    }
-  }
-  if (t != 0) {
+  if (self->timeLimit != 0) {
     signal(SIGALRM, sig_alrm);
-    alarm(t);
+    alarm(self->timeLimit);
     if (sigsetjmp(jmpbuf, 1)) {
       PyErr_SetString(MznModel_solve_error, "Time out");
       return NULL;
@@ -604,64 +684,33 @@ MznModel_solvewArgs(MznModel *self, PyObject *args)
     return self->solve();
 }
 
-static PyMemberDef MznModel_members[] = {
-  {NULL} /* Sentinel */
-};
+static PyObject*
+MznModel_setTimeLimit(MznModel *self, PyObject *args)
+{
+  if (PyInt_Check(args)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
+    return NULL;
+  }
+  self->timeLimit = PyInt_AS_LONG(args);
+  return Py_None;
+}
 
-static PyMethodDef MznModel_methods[] = {
-  {"load", (PyCFunction)MznModel_load, METH_VARARGS, "Load MiniZinc model from MiniZinc file"},
-  {"loadFromString", (PyCFunction)MznModel_loadString, METH_VARARGS, "Load MiniZinc model from standard input"},
-  {"solve", (PyCFunction)MznModel_solve, METH_NOARGS, "Solve a loaded MiniZinc model"},
-  {"solveO", (PyCFunction)MznModel_solvewArgs, METH_VARARGS, "Solve a loaded MiniZinc model with options"},
-  {NULL} /* Sentinel */
-};
-
-static PyTypeObject MznModelType = {
-  PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.model",       /* tp_name */
-  sizeof(MznModel),          /* tp_basicsize */
-  0,                         /* tp_itemsize */
-  (destructor)MznModel_dealloc, /* tp_dealloc */
-  0,                         /* tp_print */
-  0,                         /* tp_getattr */
-  0,                         /* tp_setattr */
-  0,                         /* tp_reserved */
-  0,                         /* tp_repr */
-  0,                         /* tp_as_number */
-  0,                         /* tp_as_sequence */
-  0,                         /* tp_as_mapping */
-  0,                         /* tp_hash  */
-  0,                         /* tp_call */
-  0,                         /* tp_str */
-  0,                         /* tp_getattro */
-  0,                         /* tp_setattro */
-  0,                         /* tp_as_buffer */
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /* tp_flags */
-  "Minizinc Model",  /* tp_doc */
-  0,                         /* tp_traverse */
-  0,                         /* tp_clear */
-  0,                         /* tp_richcompare */
-  0,                         /* tp_weaklistoffset */
-  0,                         /* tp_iter */
-  0,                         /* tp_iternext */
-  MznModel_methods,            /* tp_methods */
-  MznModel_members,            /* tp_members */
-  0,/*MznModel_getseters,        /* tp_getset */
-  0,                         /* tp_base */
-  0,                         /* tp_dict */
-  0,                         /* tp_descr_get */
-  0,                         /* tp_descr_set */
-  0,                         /* tp_dictoffset */
-  (initproc)MznModel_init,     /* tp_init */
-  0,                         /* tp_alloc */
-  MznModel_new,                /* tp_new */
-};
+static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
+  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
+  if (model == NULL)
+    return NULL;
+  if (MznModel_init((MznModel*)model, NULL) < 0)
+    return NULL;
+  if (MznModel_load((MznModel*)model, args, keywds)==NULL)
+    return NULL;
+  return model;
+}
 
 
 PyMODINIT_FUNC
 initminizinc(void) {
     GC::init();
-    PyObject* model = Py_InitModule3("minizinc", NULL, "A python interface for minizinc constraint modeling");
+    PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
       return;
@@ -672,6 +721,12 @@ initminizinc(void) {
       return;
     Py_INCREF(MznModel_load_error);
     PyModule_AddObject(model,"error",MznModel_load_error);
+
+    /*MznModel_loadData_error = PyErr_NewException("MznModel_loadData.error", NULL, NULL);
+    if (MznModel_loadData_error == NULL)
+      return;
+    Py_INCREF(MznModel_loadData_error);
+    PyModule_AddObject(model, "error", MznModel_loadData_error);*/
 
     MznModel_loadString_error = PyErr_NewException("MznModel_loadString.error", NULL, NULL);
     if (MznModel_loadString_error == NULL)

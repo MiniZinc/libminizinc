@@ -1,10 +1,5 @@
 #ifndef __MznSet
 #define __MznSet
-struct Range {
-  long min;
-  long max;
-  Range(long min, long max):min(min),max(max){}
-};
 
 /*typedef struct {
   PyObject_HEAD
@@ -13,6 +8,13 @@ struct Range {
 
 struct MznSet {
   PyObject_HEAD
+
+  struct Range {
+    long min;
+    long max;
+    Range(long min, long max):min(min),max(max){}
+  };
+
   list<Range>* ranges;
 
   void clear() {ranges->clear();}
@@ -37,7 +39,7 @@ static PyObject*
 MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
 {
   MznSet* self = (MznSet*)type->tp_alloc(type,0);
-  self->ranges = new list<Range>;
+  self->ranges = new list<MznSet::Range>;
   return (PyObject* )self;
 }
 
@@ -78,7 +80,6 @@ void MznSet::push(long min, long max) {
     return;
   }
   ranges->push_back(Range(min,max));
-  cout << ranges << endl;
 }
 
 void MznSet::push(long v) {
@@ -191,7 +192,7 @@ MznSet_output(MznSet* self)
 {
   stringstream s;
   //cout << (self->ranges.begin()) << endl << (self->ranges.end()) << endl;
-  for (list<Range>::iterator it = self->ranges->begin(); it!=self->ranges->end(); ++it) {
+  for (list<MznSet::Range>::iterator it = self->ranges->begin(); it!=self->ranges->end(); ++it) {
     s << it->min << ".." << it->max << " ";
   }
   const std::string& tmp = s.str();
@@ -203,6 +204,23 @@ MznSet_output(MznSet* self)
 static PyMemberDef MznSet_members[] = {
   {NULL} /* Sentinel */
 };
+
+static PyObject* MznSet_repr(PyObject* self) {
+  stringstream output;
+  list<MznSet::Range>* r = ((MznSet*)self)->ranges;
+  if (r->begin() == r->end())
+    output << "Empty Set";
+  else for (list<MznSet::Range>::iterator it = r->begin();;) {
+    if (it->min == it->max)
+      output << it->min;
+    else output << it->min << ".." << it->max;
+    if (++it == r->end())
+      break;
+    else output << ", ";
+  }
+  const std::string& tmp = output.str();
+  return PyString_FromString(tmp.c_str());
+}
 
 static PyMethodDef MznSet_methods[] = {
   {"output", (PyCFunction)MznSet_output, METH_NOARGS, "Return all values in the set"},
@@ -221,7 +239,7 @@ static PyTypeObject MznSetType = {
   0,                         /* tp_getattr */
   0,                         /* tp_setattr */
   0,                         /* tp_reserved */
-  0,                         /* tp_repr */
+  MznSet_repr,               /* tp_repr */
   0,                         /* tp_as_number */
   0,                         /* tp_as_sequence */
   0,                         /* tp_as_mapping */
