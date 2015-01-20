@@ -1072,6 +1072,12 @@ justified if \a w is negative.
 */
 function string: format(int: w, array[$U] of var opt $T: x);
 
+/** @group builtins.string Return path of file defining \a x */
+function string: file_path(var opt $T: x);
+/** @group builtins.string Return path of file defining \a x */
+function string: file_path(var opt set of $T: x);
+/** @group builtins.string Return path of file defining \a x */
+function string: file_path(array[$U] of var opt $T: x);
 
 /***
   @groupdef builtins.reflect Reflection operations
