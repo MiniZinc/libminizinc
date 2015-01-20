@@ -166,6 +166,7 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.forall,constants().ids.forall_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
+    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
   }
   EnvI::~EnvI(void) {
     delete _flat;
@@ -1089,6 +1090,10 @@ namespace MiniZinc {
               std::copy(c->args().begin(),c->args().end(),args.begin());
               c->args(ASTExprVec<Expression>(args));
               c->decl(env.orig->matchFn(c));
+              if (c->decl() == NULL) {
+                throw InternalError("undeclared function or predicate "
+                                    +c->id().str());
+              }
               c->type(c->decl()->rtype(args));
               c->addAnnotation(definesVarAnn(vd->id()));
               flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
