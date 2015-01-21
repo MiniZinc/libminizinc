@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <climits>
 #include <cmath>
+#include <random>
 
 namespace MiniZinc {
   
