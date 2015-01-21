@@ -1535,6 +1535,395 @@ namespace MiniZinc {
     return perm_al;
   }
   
+  std::default_random_engine& rnd_generator(void) {
+    // TODO: initiate with seed if given as annotation
+    static std::default_random_engine g;
+    return g;
+  }
+
+  FloatVal b_normal_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double mean = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double stdv = fl2->v();        
+        std::normal_distribution<double> distribution(mean,stdv);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_normal_int_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double mean = double(il1->v().toInt());
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double stdv = fl2->v();        
+        std::normal_distribution<double> distribution(mean,stdv);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_uniform_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double lb = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double ub = fl2->v();
+        if(lb > ub) {
+          std::stringstream ssm; ssm << "lowerbound of uniform distribution \"" 
+          << lb << "\" is higher than its upperbound: " << ub;
+          throw EvalError(args[0]->loc(),ssm.str());
+        }
+        std::uniform_real_distribution<double> distribution(lb,ub);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  IntVal b_uniform_int(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const long long int lb = il1->v().toInt();
+      if(IntLit* il2 = args[1]->dyn_cast<IntLit>()) {
+        const long long int ub = il2->v().toInt();
+        if(lb > ub) {
+          std::stringstream ssm; ssm << "lowerbound of uniform distribution \"" 
+          << lb << "\" is higher than its upperbound: " << ub;
+          throw EvalError(args[0]->loc(),ssm.str());
+        }
+        std::uniform_int_distribution<long long int> distribution(lb,ub);
+        // return a sample from the distribution
+        IntVal iv = IntVal(distribution(rnd_generator()));
+        return iv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  IntVal b_poisson_int(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
+      const long long int mean = il->v().toInt();    
+      std::poisson_distribution<int> distribution(mean);
+      // return a sample from the distribution
+      IntVal iv = IntVal(distribution(rnd_generator()));
+      return iv;      
+    } else assert(false);  
+  }
+  
+  IntVal b_poisson_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      const double mean = fl->v();    
+      std::poisson_distribution<int> distribution(mean);
+      // return a sample from the distribution
+      IntVal iv = IntVal(distribution(rnd_generator()));
+      return iv;      
+    } else assert(false);  
+  }
+
+  FloatVal b_gamma_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double alpha = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double beta = fl2->v();        
+        std::gamma_distribution<double> distribution(alpha,beta);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  FloatVal b_gamma_int_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double alpha = double(il1->v().toInt());
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double beta = fl2->v();        
+        std::gamma_distribution<double> distribution(alpha,beta);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  FloatVal b_weibull_int_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double shape = double(il1->v().toInt());
+      if(shape < 0) {
+        std::stringstream ssm; 
+        ssm << "The shape factor for the weibull distribution \"" 
+            << shape << "\" has to be greater than zero.";
+        throw EvalError(args[0]->loc(),ssm.str());
+      }
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double scale = fl2->v();  
+        if(shape < 0) {
+          std::stringstream ssm; 
+          ssm << "The scale factor for the weibull distribution \"" 
+              << scale << "\" has to be greater than zero.";
+          throw EvalError(args[0]->loc(),ssm.str());
+        }
+        std::weibull_distribution<double> distribution(shape, scale);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  FloatVal b_weibull_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double shape = fl1->v();
+      if(shape < 0) {
+        std::stringstream ssm; 
+        ssm << "The shape factor for the weibull distribution \"" 
+            << shape << "\" has to be greater than zero.";
+        throw EvalError(args[0]->loc(),ssm.str());
+      }
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double scale = fl2->v();  
+        if(shape < 0) {
+          std::stringstream ssm; 
+          ssm << "The scale factor for the weibull distribution \"" 
+              << scale << "\" has to be greater than zero.";
+          throw EvalError(args[0]->loc(),ssm.str());
+        }
+        std::weibull_distribution<double> distribution(shape, scale);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);  
+  }
+  
+  FloatVal b_exponential_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      const double lambda = fl->v();    
+      if(lambda < 0) {
+        std::stringstream ssm; 
+        ssm << "The lambda-parameter for the exponential distribution function \"" 
+            << lambda << "\" has to be greater than zero.";
+        throw EvalError(args[0]->loc(),ssm.str());
+      }
+      std::exponential_distribution<double> distribution(lambda);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  FloatVal b_exponential_int(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(IntLit* fl = args[0]->dyn_cast<IntLit>()) {
+      const double lambda = double(fl->v().toInt());    
+      if(lambda < 0) {
+        std::stringstream ssm; 
+        ssm << "The lambda-parameter for the exponential distribution function \"" 
+            << lambda << "\" has to be greater than zero.";
+        throw EvalError(args[0]->loc(),ssm.str());
+      }      
+      std::exponential_distribution<double> distribution(lambda);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  FloatVal b_lognormal_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double mean = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double stdv = fl2->v();        
+        std::lognormal_distribution<double> distribution(mean,stdv);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_lognormal_int_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double mean = double(il1->v().toInt());
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double stdv = fl2->v();        
+        std::lognormal_distribution<double> distribution(mean,stdv);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_chisquared_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      const double lambda = fl->v();              
+      std::exponential_distribution<double> distribution(lambda);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  FloatVal b_chisquared_int(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
+      const double lambda = double(il->v().toInt());              
+      std::exponential_distribution<double> distribution(lambda);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  FloatVal b_cauchy_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double mean = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double scale = fl2->v();        
+        std::cauchy_distribution<double> distribution(mean,scale);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_cauchy_int_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double mean = double(il1->v().toInt());
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double scale = fl2->v();        
+        std::cauchy_distribution<double> distribution(mean,scale);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }
+  
+  FloatVal b_fdistribution_float_float(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(FloatLit* fl1 = args[0]->dyn_cast<FloatLit>()) {
+      const double d1 = fl1->v();
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double d2 = fl2->v();        
+        std::fisher_f_distribution<double> distribution(d1,d2);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }  
+  
+  FloatVal b_fdistribution_int_int(ASTExprVec<Expression> args) {
+    assert(args.size() ==2); 
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double d1 = double(il1->v().toInt());
+      if(IntLit* il2 = args[1]->dyn_cast<IntLit>()) {
+        const double d2 = double(il2->v().toInt());        
+        std::fisher_f_distribution<double> distribution(d1,d2);
+        // return a sample from the distribution
+        FloatVal fv = distribution(rnd_generator());
+        return fv;
+      } else assert(false);
+    } else assert(false);   
+  }  
+  
+  FloatVal b_tdistribution_float(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      const double sampleSize = fl->v();              
+      std::student_t_distribution<double> distribution(sampleSize);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  FloatVal b_tdistribution_int(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
+      const double sampleSize = double(il->v().toInt());              
+      std::student_t_distribution<double> distribution(sampleSize);
+      // return a sample from the distribution
+      FloatVal fv = distribution(rnd_generator());
+      return fv;      
+    } else assert(false);  
+  }
+  
+  IntVal b_discrete_distribution(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    GCLock lock;    
+    ArrayLit* al = eval_array_lit(args[0]);
+    if(al->dims() != 1) {
+      std::stringstream ssm; 
+      ssm << "expecting 1-dimensional array of weights for discrete distribution instead of: " 
+          << *al << std::endl;
+      throw EvalError(al->loc(), ssm.str());
+    }
+    ASTExprVec<Expression> array = al->v();
+    std::vector<int> weights(array.size());      
+    for(unsigned int i = 0; i < array.size(); i++) {
+      if(IntLit* il = array[i]->dyn_cast<IntLit>()) {
+        weights[i] = il->v().toInt();
+      }
+      else {
+        std::stringstream ssm; 
+        ssm << "expecting integer weight in discrete distribution instead of: " 
+          << *array[i] << std::endl;
+        throw EvalError(array[i]->loc(), ssm.str());
+      }
+    }       
+    std::discrete_distribution<int> distribution(weights.begin(), weights.end());    
+    // return a sample from the distribution
+    IntVal iv = IntVal(distribution(rnd_generator()));
+    return iv;         
+  }
+
+  bool b_bernoulli(ASTExprVec<Expression> args) {
+    assert(args.size() == 1);
+    if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      const double p = fl->v();
+      std::bernoulli_distribution distribution(p);
+      // return a sample from the distribution
+      return distribution(rnd_generator());     
+    } else assert(false);  
+  }
+  
+  IntVal b_binomial(ASTExprVec<Expression> args) {
+    assert(args.size() == 2);
+    if(IntLit* il1 = args[0]->dyn_cast<IntLit>()) {
+      const double t = double(il1->v().toInt());
+      if(FloatLit* fl2 = args[1]->dyn_cast<FloatLit>()) {
+        const double p = fl2->v();        
+        std::binomial_distribution<int> distribution(t,p);
+        // return a sample from the distribution
+        IntVal iv = IntVal(distribution(rnd_generator()));
+        return iv;
+      } else assert(false);
+    } else assert(false);
+  }  
+  
   FloatVal b_atan(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     GCLock lock;
@@ -2109,6 +2498,108 @@ namespace MiniZinc {
      t[0] = Type::parfloat();
      rb(m, ASTString("tan"), t, b_tan);
     }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat();
+      t[1] = Type::parfloat();     
+      rb(m, ASTString("normal"),t,b_normal_float_float); 
+      t[0] = Type::parint();     
+      rb(m, ASTString("normal"),t,b_normal_int_float); 
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat();
+      t[1] = Type::parfloat();     
+      rb(m, ASTString("uniform"),t,b_uniform_float); 
+      t[0] = Type::parint();
+      t[1] = Type::parint();     
+      rb(m, ASTString("uniform"),t,b_uniform_int);  
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();     
+      rb(m, ASTString("poisson"),t,b_poisson_float); 
+      t[0] = Type::parint();    
+      rb(m, ASTString("poisson"),t,b_poisson_int);  
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat();
+      t[1] = Type::parfloat();     
+      rb(m, ASTString("gamma"),t,b_gamma_float_float);
+      t[0] = Type::parint();
+      rb(m, ASTString("gamma"),t,b_gamma_int_float);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat();
+      t[1] = Type::parfloat();     
+      rb(m, ASTString("weibull"),t,b_weibull_float_float);
+      t[0] = Type::parint();
+      rb(m, ASTString("weibull"),t,b_weibull_int_float);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();     
+      rb(m, ASTString("exponential"),t,b_exponential_float); 
+      t[0] = Type::parint();    
+      rb(m, ASTString("exponential"),t,b_exponential_int);  
+    }  
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat();
+      t[1] = Type::parfloat();     
+      rb(m, ASTString("lognormal"),t,b_lognormal_float_float);
+      t[0] = Type::parint();
+      rb(m, ASTString("lognormal"),t,b_lognormal_int_float);
+    } 
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();     
+      rb(m, ASTString("chisquared"),t,b_chisquared_float); 
+      t[0] = Type::parint();    
+      rb(m, ASTString("chisquared"),t,b_chisquared_int);  
+    }  
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat(); 
+      t[1] = Type::parfloat(); 
+      rb(m, ASTString("cauchy"),t,b_cauchy_float_float); 
+      t[0] = Type::parint();    
+      rb(m, ASTString("cauchy"),t,b_cauchy_int_float);  
+    }   
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parfloat(); 
+      t[1] = Type::parfloat(); 
+      rb(m, ASTString("fdistribution"),t,b_fdistribution_float_float);  
+      t[0] = Type::parint(); 
+      t[1] = Type::parint(); 
+      rb(m, ASTString("fdistribution"),t,b_fdistribution_int_int);  
+    } 
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();     
+      rb(m, ASTString("tdistribution"),t,b_tdistribution_float); 
+      t[0] = Type::parint();    
+      rb(m, ASTString("tdistribution"),t,b_tdistribution_int);  
+    }  
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint(1); 
+      rb(m, ASTString("discrete_distribution"),t,b_discrete_distribution); 
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint(); 
+      rb(m, ASTString("bernoulli"),t,b_bernoulli); 
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parint(); 
+      t[1] = Type::parfloat(); 
+      rb(m, ASTString("binomial"),t,b_binomial);  
+    }    
   }
   
 }
