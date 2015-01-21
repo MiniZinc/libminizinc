@@ -10,9 +10,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include "gecode_solverinstance.hh"
-#include "gecode_constraints.hh"
-#include "fzn_space.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode/gecode_constraints.hh>
+#include <minizinc/solvers/gecode/fzn_space.hh>
 
 using namespace Gecode;
 
@@ -995,57 +995,55 @@ namespace MiniZinc {
       max(*gi._current_space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
     }
 
-    //void p_regular(SolverInstanceBase& s, const Call* call) {
-    //    const Annotation& ann =call->ann();
-    //    GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-    //    IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
-    //    int q = call->args()[1]->cast<IntLit>()->v().toInt();
-    //    int symbols = call->args()[2]->cast<IntLit>()->v().toInt();
-    //    IntArgs d = gi.arg2intargs(call->args()[3]);
-    //    int q0 = call->args()[4]->cast<IntLit>()->v().toInt();
+    void p_regular(SolverInstanceBase& s, const Call* call) {
+      const Annotation& ann =call->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
+      int q = call->args()[1]->cast<IntLit>()->v().toInt();
+      int symbols = call->args()[2]->cast<IntLit>()->v().toInt();
+      IntArgs d = gi.arg2intargs(call->args()[3]);
+      int q0 = call->args()[4]->cast<IntLit>()->v().toInt();
 
-    //    int noOfTrans = 0;
-    //    for (int i=1; i<=q; i++) {
-    //        for (int j=1; j<=symbols; j++) {
-    //            if (d[(i-1)*symbols+(j-1)] > 0)
-    //                noOfTrans++;
-    //        }
-    //    }
+      int noOfTrans = 0;
+      for (int i=1; i<=q; i++) {
+        for (int j=1; j<=symbols; j++) {
+          if (d[(i-1)*symbols+(j-1)] > 0)
+            noOfTrans++;
+        }
+      }
 
-    //    Region re(*gi._current_space);
-    //    DFA::Transition* t = re.alloc<DFA::Transition>(noOfTrans+1);
-    //    noOfTrans = 0;
-    //    for (int i=1; i<=q; i++) {
-    //        for (int j=1; j<=symbols; j++) {
-    //            if (d[(i-1)*symbols+(j-1)] > 0) {
-    //                t[noOfTrans].i_state = i;
-    //                t[noOfTrans].symbol  = j;
-    //                t[noOfTrans].o_state = d[(i-1)*symbols+(j-1)];
-    //                noOfTrans++;
-    //            }
-    //        }
-    //    }
-    //    t[noOfTrans].i_state = -1;
+      Region re(*gi._current_space);
+      DFA::Transition* t = re.alloc<DFA::Transition>(noOfTrans+1);
+      noOfTrans = 0;
+      for (int i=1; i<=q; i++) {
+        for (int j=1; j<=symbols; j++) {
+          if (d[(i-1)*symbols+(j-1)] > 0) {
+            t[noOfTrans].i_state = i;
+            t[noOfTrans].symbol  = j;
+            t[noOfTrans].o_state = d[(i-1)*symbols+(j-1)];
+            noOfTrans++;
+          }
+        }
+      }
+      t[noOfTrans].i_state = -1;
 
-    //    //Final states
-    //    SetLit* sl = call->args()[5]->isa<Id>() ? call->args()[5]->cast<Id>()->decl()->e()->cast<SetLit>() : call->args()[5]->cast<SetLit>();
-    //    int* f;
-    //    if (sl->interval) {
-    //        f = static_cast<int*>(malloc(sizeof(int)*(sl->max-sl->min+2)));
-    //        for (int i=sl->min; i<=sl->max; i++)
-    //            f[i-sl->min] = i;
-    //        f[sl->max-sl->min+1] = -1;
-    //    } else {
-    //        f = static_cast<int*>(malloc(sizeof(int)*(sl->s.size()+1)));
-    //        for (int j=sl->s.size(); j--; )
-    //            f[j] = sl->s[j];
-    //        f[sl->s.size()] = -1;
-    //    }
+      //Final states
+      SetLit* sl = call->args()[5]->isa<Id>() ? call->args()[5]->cast<Id>()->decl()->e()->cast<SetLit>() : call->args()[5]->cast<SetLit>();
+      IntSetVal* isv = sl->isv();
+      IntSetRanges isr(isv);
 
-    //    DFA dfa(q0,t,f);
-    //    free(f);
-    //    extensional(*gi._current_space, iv, dfa, gi.ann2icl(ann));
-    //}
+      int size = isv->card().toInt();
+      int *f = static_cast<int*>(malloc(sizeof(int)*(isv->card().toInt())+1));
+      int i=0;
+      for(Ranges::ToValues<IntSetRanges> val_iter(isr); val_iter(); ++val_iter, ++i) {
+        f[i] = val_iter.val().toInt();
+      }
+      f[i] = -1;
+
+      DFA dfa(q0,t,f);
+      free(f);
+      extensional(*gi._current_space, iv, dfa, gi.ann2icl(ann));
+    }
 
     void p_sort(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();

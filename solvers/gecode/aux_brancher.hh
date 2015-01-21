@@ -27,7 +27,7 @@
 #endif
 
 #include <gecode/driver.hh>
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 /**
   * \brief Branching on the introduced variables

@@ -32,7 +32,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include "gecode_solverinstance.hh"
+#include <minizinc/solvers/gecode_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
-  string globals_dir = "gecode_lib";
+  string globals_dir = "gecode";
   
   bool flag_no_output_ozn = false;
   string flag_output_base;
@@ -282,12 +282,6 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  if (flag_output_fzn == "") {
-    flag_output_fzn = flag_output_base+".fzn";
-  }
-  if (flag_output_ozn == "") {
-    flag_output_ozn = flag_output_base+".ozn";
-  }
 
   {
     std::stringstream errstream;
@@ -358,57 +352,60 @@ int main(int argc, char** argv) {
             } else {
               env.flat()->compact();
             }
+
+            if (flag_output_fzn_stdout) {
               if (flag_verbose)
-                std::cerr << "Printing FlatZinc ...";
-              if (flag_output_fzn_stdout) {
-                Printer p(std::cout,0);
-                p.print(env.flat());
-              } else {
-                std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
-                Printer p(os,0);
-                p.print(env.flat());
-                os.close();
-              }
+                std::cerr << "Printing FlatZinc to stdout\n";
+              Printer p(std::cout,0);
+              p.print(env.flat());
+            } else if(flag_output_fzn != "") {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to " << flag_output_fzn << "...";
+              std::ofstream os;
+              os.open(flag_output_fzn.c_str(), ios::out);
+              Printer p(os,0);
+              p.print(env.flat());
+              os.close();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
 
             {
-              // DEBUG stuff
-              /*Printer p(std::cout, 80, false);
-              std::cout << "DEBUG: printing flat model:" << std::endl;
-              p.print(env.flat()); */
-
-
+              if (flag_verbose)
+                std::cerr << "Processing FlatZinc...";
 
               GCLock lock;
               Options options;
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
-              //std::cout << "DEBUG: finished processing flatzinc" << std::endl;
+
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+
+              if (flag_verbose)
+                std::cerr << "Starting solve() ...";
               SolverInstance::Status status = gecode.solve();
-              //std::cout << "DEBUG: Solved with status: ";
-              switch(status) {
-                case SolverInstance::SAT:
-                  std::cout << "=====SAT=====";
-                  break;
-                case SolverInstance::OPT:
-                  std::cout << "=====OPT=====";
-                  break;
-                case SolverInstance::UNKNOWN:
-                  std::cout << "=====UNKNOWN=====";
-                  break;
-                case SolverInstance::ERROR:
-                  std::cout << "=====ERROR=====";
-                  break;
-                case SolverInstance::UNSAT:
-                  std::cout << "=====UNSAT=====";
-                  break;
-              }
-              std::cout << std::endl;
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT || status==SolverInstance::UNKNOWN) {
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
-                if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                switch(status) {
+                  case SolverInstance::SAT:
+                    break;
+                  case SolverInstance::OPT:
+                    std::cout << "==========\n";
+                    break;
+                  case SolverInstance::UNKNOWN:
+                    std::cout << "=====UNKNOWN=====";
+                    break;
+                  case SolverInstance::ERROR:
+                    std::cout << "=====ERROR=====";
+                    break;
+                  case SolverInstance::UNSAT:
+                    std::cout << "=====UNSAT=====";
+                    break;
+                }
               }
               else if(status == SolverInstance::ERROR) {
                 //std::cout << "DEBUG: solving finished with error." << std::endl;
@@ -447,29 +444,29 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
-            << std::endl
-            << "Options:" << std::endl
-            << "  --help, -h\n    Print this help message" << std::endl
-            << "  --version\n    Print version information" << std::endl
-            << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-            << "  -v, --verbose\n    Print progress statements" << std::endl
-            << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
-            << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
-            << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
-            << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
-            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-            << std::endl
-            << "Output options:" << std::endl << std::endl
-            << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
-            << "  --output-base <name>\n    Base name for output files" << std::endl
-            << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
-            << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
-            << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
-            << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
-            << "  -Werror\n    Turn warnings into errors" << std::endl
-  ;
+    << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+    << std::endl
+    << "Options:" << std::endl
+    << "  --help, -h\n    Print this help message" << std::endl
+    << "  --version\n    Print version information" << std::endl
+    << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+    << "  -v, --verbose\n    Print progress statements" << std::endl
+    << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+    << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+    << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
+    << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
+    << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+    << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+    << std::endl
+    << "Output options:" << std::endl << std::endl
+    << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+    << "  --output-base <name>\n    Base name for output files" << std::endl
+    << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+    << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
+    << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
+    << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+    << "  -Werror\n    Turn warnings into errors" << std::endl
+    ;
 
   exit(EXIT_FAILURE);
 }
