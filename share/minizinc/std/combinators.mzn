@@ -10,7 +10,7 @@ annotation next;
 % post constraint expression expr in current scope
 annotation post(var bool: expr); 
 % define an new scope 
-annotation scope(bool: b);
+annotation scope(ann);
 % repeat annotations for a limited number of times
 annotation repeat(array[int] of ann);
 % repeat annotations an unlimited number of times until the annotation
@@ -47,7 +47,7 @@ function ann: bab_min(var int: obj, ann: s) =
            ])
        )
    );               
-function ann: bab_min(var int: obj) = bab_min(obj, print);
+function ann: bab_min(var int: obj) = bab_min(obj, print());
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj, ann: s) =   
@@ -60,7 +60,7 @@ function ann: bab_max(var int: obj, ann: s) =
            ])
        )
    );               
-function ann: bab_max(var int: obj) = bab_max(obj, print);
+function ann: bab_max(var int: obj) = bab_max(obj, print());
 
 
 % ------------------- Large Neighbourhood Search -------------------- %
@@ -89,7 +89,7 @@ function ann: lns (var int: obj, array[int] of var int: x,
 % to the value in the last solution)
 predicate neighbourhoodCts(array[int] of var int: x, 
                             float: destructionRate) = 
-   if(hasSol) then 
+   if(hasSol()) then 
      let {
        int: n = ceil((1.0 - destructionRate)*length(x));
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
