@@ -1882,20 +1882,17 @@ namespace MiniZinc {
           << *al << std::endl;
       throw EvalError(al->loc(), ssm.str());
     }
-    ASTExprVec<Expression> array = al->v();
-    std::vector<int> weights(array.size());      
-    for(unsigned int i = 0; i < array.size(); i++) {
-      if(IntLit* il = array[i]->dyn_cast<IntLit>()) {
-        weights[i] = il->v().toInt();
-      }
-      else {
-        std::stringstream ssm; 
-        ssm << "expecting integer weight in discrete distribution instead of: " 
-          << *array[i] << std::endl;
-        throw EvalError(array[i]->loc(), ssm.str());
-      }
-    }       
-    std::discrete_distribution<int> distribution(weights.begin(), weights.end());    
+    std::vector<int> weights(al->v().size());
+    for(unsigned int i = 0; i < al->v().size(); i++) {
+      weights[i] = eval_int(al->v()[i]).toInt();
+    }
+#ifdef _MSC_VER
+    std::size_t i(0);
+    std::discrete_distribution<int> distribution(weights.size(), 0.0,1.0,
+                                                 [&weights,&i](double){ return weights[i++]; });
+#else
+    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+#endif
     // return a sample from the distribution
     IntVal iv = IntVal(distribution(rnd_generator()));
     return iv;         
