@@ -15,7 +15,7 @@
 %------------------------------------------------------------------------%
 
 include "globals.mzn";
-include "bab.mzn"; % include the search combinator lite
+include "combinators.mzn"; % include the search combinators lite
 
 int: m = 4;
 int: n = m*m;
@@ -35,6 +35,6 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
-solve :: bab_min(mark[m]);
+solve :: bab_min(mark[m]) satisfy;
 
 output ["golomb ", show(mark), "\n"];
