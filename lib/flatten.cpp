@@ -4699,10 +4699,10 @@ namespace MiniZinc {
     public:
       EnvI& env;
       ExpandArrayDecls(EnvI& env0) : env(env0) {}
-      void vVarDeclI(VarDeclI* v) {
-        if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
-          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
-        }
+      void vVarDeclI(VarDeclI* v) {       
+        if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {         
+          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);          
+        }       
       }
     } _ead(env);
     iterItems<ExpandArrayDecls>(_ead,e.model());;
@@ -4752,9 +4752,9 @@ namespace MiniZinc {
         }
       }
       void vConstraintI(ConstraintI* ci) {
-        (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
+        (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);        
       }
-      void vSolveI(SolveI* si) {
+      void vSolveI(SolveI* si) {        
         if (hadSolveItem)
           throw FlatteningError(env,si->loc(), "Only one solve item allowed");
         hadSolveItem = true;
@@ -4772,12 +4772,18 @@ namespace MiniZinc {
           break;
         }
         for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+          if(Call* c = (*it)->dyn_cast<Call>()) {
+            if(c->id() == constants().ann.combinator) { 
+              nsi->ann().add(c);                 
+              continue; // don't flatten the search combinator
+            }
+          }          
           nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
         }
-        env.flat_addItem(nsi);
+        env.flat_addItem(nsi);        
       }
     } _fv(env,hadSolveItem);
-    iterItems<FV>(_fv,e.model());
+    iterItems<FV>(_fv,e.model());    
 
     if (!hadSolveItem) {
       e.envi().errorStack.clear();

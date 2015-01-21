@@ -4,6 +4,8 @@
 %                   combinator lite built-ins                         %
 % =================================================================== %
 
+% dummy annotation to wrap combinator in to avoid flattening of combinator
+annotation combinator (ann);
 % direct the solver to find next solution, returns true if found and
 % false otherwise
 annotation next;
@@ -72,13 +74,13 @@ function ann: lns (var int: obj, array[int] of var int: x,
                    int: iterations, float: d) = 
   scope(
     repeat (i in 1..iterations) (
-     and([
-      scope(
-       and([
-        post(neighbourhoodCts(x,d)),
-        next % or bab
-       ])
-      ),
+      and([
+        scope(
+          and([
+            post(neighbourhoodCts(x,d)),
+            next % or bab
+          ])
+        ),
       post(obj < sol(obj))
       ])
     )
@@ -93,9 +95,8 @@ predicate neighbourhoodCts(array[int] of var int: x,
      let {
        int: n = ceil((1.0 - destructionRate)*length(x));
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
-     } in {
+     } in 
        forall (i in idx) (
          x[i] = sol(x[i])
-       )
-     }
+       )     
    else true endif;

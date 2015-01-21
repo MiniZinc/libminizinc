@@ -35,6 +35,6 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
-solve :: bab_min(mark[m]) satisfy;
+solve :: combinator(bab_min(mark[m])) satisfy;
 
 output ["golomb ", show(mark), "\n"];

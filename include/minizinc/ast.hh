@@ -1352,6 +1352,7 @@ namespace MiniZinc {
         Id* promise_total;
         ASTString doc_comment;
         ASTString is_introduced;
+        ASTString combinator;
       } ann;
       /// Constructor
       Constants(void);

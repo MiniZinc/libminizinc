@@ -1048,6 +1048,7 @@ namespace MiniZinc {
     ann.promise_total->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
     ann.is_introduced = ASTString("is_introduced");
+    ann.combinator = ASTString("combinator");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1161,6 +1162,7 @@ namespace MiniZinc {
     v.push_back(ann.promise_total);
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
+    v.push_back(new StringLit(Location(), ann.combinator));
     
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
