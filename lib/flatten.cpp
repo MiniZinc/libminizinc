@@ -699,15 +699,14 @@ namespace MiniZinc {
       if (stack[lastError]->loc().is_introduced)
         continue;
       if (stack[lastError]->isa<Id>()) {
-        lastError--;
         break;
       }
     }
 
     ASTString curloc_f;
     int curloc_l = -1;
-    
-    for (int i=lastError; i>=0; i--) {
+
+    for (int i=lastError-1; i>=0; i--) {
       ASTString newloc_f = stack[i]->loc().filename;
       if (stack[i]->loc().is_introduced)
         continue;
@@ -4059,31 +4058,28 @@ namespace MiniZinc {
               }
             }
             if (cr()->type().isbool() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
+              std::vector<Type> argtypes(args.size());
+              for (unsigned int i=0; i<args.size(); i++)
+                argtypes[i] = args[i]()->type();
+              argtypes.push_back(Type::varbool());
               GCLock lock;
-              VarDecl* reif_b = r;
-              if (reif_b == NULL) {
-                VarDecl* nvd = new VarDecl(Location().introduce(), new TypeInst(Location().introduce(),Type::varbool()), env.genId());
-                nvd->type(Type::varbool());
-                nvd->introduced(true);
-                reif_b = nvd;
-              }
-              args.push_back(reif_b->id());
-              Call* cr_real = new Call(Location().introduce(),env.reifyId(cid),toExpVec(args));
-              cr_real->type(Type::varbool());
-              FunctionI* decl_real = env.orig->matchFn(cr_real);
-              if (decl_real && decl_real->e()) {
-                cr_real->decl(decl_real);
-                bool ignorePartial = env.ignorePartial;
-                env.ignorePartial = true;
-                reif_b->addAnnotation(constants().ann.is_defined_var);
-                cr_real->addAnnotation(definesVarAnn(reif_b->id()));
-                flat_exp(env,Ctx(),cr_real,constants().var_true,constants().var_true);
-                env.ignorePartial = ignorePartial;
+              FunctionI* reif_decl = env.orig->matchFn(env.reifyId(cid), argtypes);
+              if (reif_decl && reif_decl->e()) {
+                VarDecl* reif_b;
+                if (r==NULL || (r != NULL && r->e() != NULL)) {
+                  reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+                  if (r != NULL) {
+                    bind(env,Ctx(),r,reif_b->id());
+                  }
+                } else {
+                  reif_b = r;
+                }
+                reif_b->e(cr());
+                env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
                 ret.r = conj(env,NULL,ctx,args_ee);
               } else {
-                args.pop_back();
                 goto call_nonreif;
               }
             } else {
@@ -5404,14 +5400,22 @@ namespace MiniZinc {
                       nc->decl(decl);
                     }
                   }
+                } else {
+                  FunctionI* decl = env.orig->matchFn(c);
+                  if (decl->e()) {
+                    c->decl(decl);
+                    nc = c;
+                  }
                 }
               }
               if (nc != NULL) {
                 CollectDecls cd(env.vo,deletedVarDecls,vdi);
                 topDown(cd,c);
                 vd->e(NULL);
-                vd->addAnnotation(constants().ann.is_defined_var);
-                nc->addAnnotation(definesVarAnn(vd->id()));
+                if (nc != c) {
+                  vd->addAnnotation(constants().ann.is_defined_var);
+                  nc->addAnnotation(definesVarAnn(vd->id()));
+                }
                 (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               }
             }
