@@ -168,6 +168,42 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
   }
+  EnvI::EnvI(Model* orig0, Model* output0, Model* flat0) : orig(orig0), output(output0), _flat(flat0) {
+    MZN_FILL_REIFY_MAP(int_,lin_eq);
+    MZN_FILL_REIFY_MAP(int_,lin_le);
+    MZN_FILL_REIFY_MAP(int_,lin_ne);
+    MZN_FILL_REIFY_MAP(int_,plus);
+    MZN_FILL_REIFY_MAP(int_,minus);
+    MZN_FILL_REIFY_MAP(int_,times);
+    MZN_FILL_REIFY_MAP(int_,div);
+    MZN_FILL_REIFY_MAP(int_,mod);
+    MZN_FILL_REIFY_MAP(int_,lt);
+    MZN_FILL_REIFY_MAP(int_,le);
+    MZN_FILL_REIFY_MAP(int_,gt);
+    MZN_FILL_REIFY_MAP(int_,ge);
+    MZN_FILL_REIFY_MAP(int_,eq);
+    MZN_FILL_REIFY_MAP(int_,ne);
+    MZN_FILL_REIFY_MAP(float_,lin_eq);
+    MZN_FILL_REIFY_MAP(float_,lin_le);
+    MZN_FILL_REIFY_MAP(float_,lin_lt);
+    MZN_FILL_REIFY_MAP(float_,lin_ne);
+    MZN_FILL_REIFY_MAP(float_,plus);
+    MZN_FILL_REIFY_MAP(float_,minus);
+    MZN_FILL_REIFY_MAP(float_,times);
+    MZN_FILL_REIFY_MAP(float_,div);
+    MZN_FILL_REIFY_MAP(float_,mod);
+    MZN_FILL_REIFY_MAP(float_,lt);
+    MZN_FILL_REIFY_MAP(float_,le);
+    MZN_FILL_REIFY_MAP(float_,gt);
+    MZN_FILL_REIFY_MAP(float_,ge);
+    MZN_FILL_REIFY_MAP(float_,eq);
+    MZN_FILL_REIFY_MAP(float_,ne);
+    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.forall,constants().ids.forall_reif));
+    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
+    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
+    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
+  }
+     
   EnvI::~EnvI(void) {
     delete _flat;
     delete output;
@@ -344,6 +380,7 @@ namespace MiniZinc {
 
   
   Env::Env(Model* m) : e(new EnvI(m)) {}
+  Env::Env(Model* orig, Model* output, Model* flat) : e(new EnvI(orig,output,flat)) {}
   Env::~Env(void) {
     delete e;
   }
@@ -363,6 +400,24 @@ namespace MiniZinc {
   std::ostream&
   Env::evalOutput(std::ostream& os) {
     return e->evalOutput(os);
+  }
+  Env*
+  Env::copyEnv(void) {   
+    CopyMap cmap; 
+    Model* c_orig = copy(cmap, e->orig);
+    Model* c_output = copy(cmap, e->output);
+    Model* c_flat = copy(cmap, e->flat());
+    // TODO: copy and set the rest and adapt the constructors
+    // TODO: VarOccurrences vo and output_vo;
+    //IdMap<KeepAlive> c_reverseMappers;
+    //for(IdMap<KeepAlive>::iterator it = e->reverseMappers.begin(); it!=e->reverseMappers.end(); it++) {
+    //  c_reverseMappers.insert(it);
+   ///}
+    // TODO: update VarDecl pointers
+    
+    Env* c = new Env(c_orig, c_output, c_flat);        
+    
+    return c;
   }
   std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {

@@ -25,6 +25,7 @@ namespace MiniZinc {
     EnvI* e;
   public:
     Env(Model* m);
+    Env(Model* orig, Model* output, Model* flat);
     ~Env(void);
     
     Model* model(void);
@@ -35,6 +36,7 @@ namespace MiniZinc {
     const std::vector<std::string>& warnings(void);
     void clearWarnings(void);
     std::ostream& evalOutput(std::ostream& os);
+    Env* copyEnv(void);
   };
 
   /// Exception thrown for errors during flattening

@@ -87,6 +87,7 @@ namespace MiniZinc {
     ASTStringMap<ASTString>::t reifyMap;
   public:
     EnvI(Model* orig0);
+    EnvI(Model* orig, Model* output, Model* flat); // TODO: extend constructor as we go
     ~EnvI(void);
     long long int genId(void);
     void map_insert(Expression* e, const EE& ee);
