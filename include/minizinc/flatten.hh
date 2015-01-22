@@ -53,16 +53,10 @@ namespace MiniZinc {
     bool onlyRangeDomains;
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
-    /// Record reason for variable introductions
-    bool collectVarPaths;
-    /// Check path table for tighter domains for introduced variables.
-    bool useVarPaths;
-    /// Don't record paths including let expressions
-    bool topLevelPathsOnly;
     /// Verbose output during flattening
     bool verbose;
     /// Default constructor
-    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false), collectVarPaths(false), useVarPaths(false), topLevelPathsOnly(false), verbose(false) {}
+    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false), verbose(false) {}
   };
 
   class Pass {

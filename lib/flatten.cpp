@@ -137,167 +137,190 @@ namespace MiniZinc {
            && !eval_bool(e);
   }  
 
-  void addMznPath(VarDecl* vd, EnvI& envi, std::string extra_data = "") {
-    if(envi.fopts.topLevelPathsOnly && vd->introduced())
-      return;
-
-    if(vd->type().dim() == 0 && !vd->type().isann()) {
-      std::string path;
-
-      std::stringstream ss;
-      if (!envi.dumpPath(ss, false))
-        return;
-
-      ss << extra_data;
-      ss << vd->loc().toString();
-      assert(!ss.str().empty());
-
-      path = ss.str();
-
-
-      UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>& pathMap = envi.getPathMap();
-      UNORDERED_NAMESPACE::unordered_map<std::string, WeakRef>::iterator it = pathMap.find(path);
-      if(it != pathMap.end()) {
-        //std::cerr << "AFTER: " << path << std::endl;
-        VarDecl* ovd = Expression::cast<VarDecl>(it->second());
-        if(ovd) {
-          IntVal intval;
-          FloatVal doubleval;
-          bool boolval;
-          if(ovd->ti()->domain() || ovd->e()) {
-            bool tighter = false;
-            bool fixed = false;
-
-            if(vd->type().isint()) {
-              IntBounds oldbounds = compute_int_bounds(ovd->id());
-              IntBounds bounds(0,0,false);
-              if(vd->ti()->domain() || vd->e())
-                bounds = compute_int_bounds(vd->id());
-
-              if((vd->ti()->domain() || vd->e()) && bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
-                if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
-                  fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
-                  if(fixed) {
-                    tighter = true;
-                    intval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
-                    ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
-                  } else {
-                    IntSetVal* olddom = ovd->ti()->domain() ? eval_intset(ovd->ti()->domain()) : NULL;
-                    IntSetVal* newdom =  vd->ti()->domain() ? eval_intset( vd->ti()->domain()) : NULL;
-
-                    if(olddom) {
-                      if(!newdom) {
-                        tighter = true;
-                      } else {
-                        IntSetRanges oisr(olddom);
-                        IntSetRanges nisr(newdom);
-                        IntSetRanges nisr_card(newdom);
-
-                        Ranges::Inter<IntSetRanges, IntSetRanges> inter(oisr, nisr);
-
-                        if(Ranges::size(inter) < Ranges::size(nisr_card)) {
-                          IntSetRanges oisr_inter(olddom);
-                          IntSetRanges nisr_inter(newdom);
-                          Ranges::Inter<IntSetRanges, IntSetRanges> inter_card(oisr_inter, nisr_inter);
-                          tighter = true;
-                          ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::ai(inter_card)));
-                        }
-                      }
-                    }
-                  }
-                }
-              } else {
-                if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
-                  tighter = true;
-                  fixed = oldbounds.u == oldbounds.l;
-                  if(fixed) {
-                    intval = oldbounds.u;
-                    ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
-                  }
-                }
-              }
-            } else if(vd->type().isfloat()) {
-              FloatBounds oldbounds = compute_float_bounds(ovd->id());
-              FloatBounds bounds(0.0, 0.0, false);
-              if(vd->ti()->domain() || vd->e())
-                bounds = compute_float_bounds(vd->id());
-              if((vd->ti()->domain() || vd->e()) && bounds.valid) {
-                if(oldbounds.valid) {
-                  fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
-                  if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
-                  tighter = fixed || (oldbounds.u - oldbounds.l < bounds.u - bounds.l);
-                }
-              } else {
-                if(oldbounds.valid) {
-                  tighter = true;
-                  fixed = oldbounds.u == oldbounds.l;
-                  if(fixed) doubleval = oldbounds.u;
-                }
-              }
-            } else if(vd->type().isbool()) {
-              if(ovd->ti()->domain()) {
-                fixed = tighter = true;
-                boolval = eval_bool(ovd->ti()->domain());
-              } else {
-                fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
-                if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
-              }
-            }
-
-            if(tighter) {
-              //std::cerr << "addMznPath():\n"
-              //  << "\tpath  :\t" << path << "\n"
-              //  << "\toldvar:\t" << *ovd << "\n"
-              //  << "\tcurvar:\t" << *vd  << "\n";
-              vd->ti()->domain(copy(ovd->ti()->domain()));
-              envi.pathUse++;
-              if(vd->e() == NULL && fixed) {
-                if(vd->ti()->type().isvarint()) {
-                  vd->type(Type::parint());
-                  vd->ti(new TypeInst(vd->loc(), Type::parint()));
-                  vd->e(new IntLit(vd->loc(), intval));
-                } else if(vd->ti()->type().isvarfloat()) {
-                  vd->type(Type::parfloat());
-                  vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
-                  vd->e(new FloatLit(vd->loc(), doubleval));
-                } else if(vd->ti()->type().isvarbool()) {
-                  vd->type(Type::parbool());
-                  vd->ti(new TypeInst(vd->loc(), Type::parbool()));
-                  vd->e(new BoolLit(vd->loc(), boolval));
-                }
-              }
-
-              //std::cerr << "\tnewvar:\t" << *vd << "\n";
-              //std::vector<Expression*> args(1);
-              //std::stringstream ss;
-              //ss << "original: " << *ovd;
-              //args[0] = new StringLit(vd->loc(), ss.str());
-              //args[0] = new StringLit(vd->loc(), "addMznPath");
-              //args[0] = new StringLit(vd->loc(), path);
-              //Call* call = new Call(vd->loc(), constants().ann.doc_comment, args);
-              //call->type(Type::ann());
-              //vd->ann().add(call);
-            }
-          }
-        }
-      } else {
-        //std::cerr << "BEFORE: " << path << std::endl;
-        pathMap[path] = vd;
-      }
-    }
-  }
-
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
 
-  VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* id, VarDecl* origVd, Expression* rhs) {
+
+  /// Use bounds from ovd for vd if they are better.
+  /// Returns true if ovd's bounds are better.
+  bool updateBounds(VarDecl* ovd, VarDecl* vd) {
+    bool tighter = false;
+    bool fixed = false;
+    if(ovd->ti()->domain() || ovd->e()) {
+      IntVal intval;
+      FloatVal doubleval;
+      bool boolval;
+
+      if(vd->type().isint()) {
+        IntBounds oldbounds = compute_int_bounds(ovd->id());
+        IntBounds bounds(0,0,false);
+        if(vd->ti()->domain() || vd->e())
+          bounds = compute_int_bounds(vd->id());
+
+        if((vd->ti()->domain() || vd->e()) && bounds.valid && bounds.l.isFinite() && bounds.u.isFinite()) {
+          if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+            fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+            if(fixed) {
+              tighter = true;
+              intval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+              ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
+            } else {
+              IntSetVal* olddom = ovd->ti()->domain() ? eval_intset(ovd->ti()->domain()) : NULL;
+              IntSetVal* newdom =  vd->ti()->domain() ? eval_intset( vd->ti()->domain()) : NULL;
+
+              if(olddom) {
+                if(!newdom) {
+                  tighter = true;
+                } else {
+                  IntSetRanges oisr(olddom);
+                  IntSetRanges nisr(newdom);
+                  IntSetRanges nisr_card(newdom);
+
+                  Ranges::Inter<IntSetRanges, IntSetRanges> inter(oisr, nisr);
+
+                  if(Ranges::size(inter) < Ranges::size(nisr_card)) {
+                    IntSetRanges oisr_inter(olddom);
+                    IntSetRanges nisr_inter(newdom);
+                    Ranges::Inter<IntSetRanges, IntSetRanges> inter_card(oisr_inter, nisr_inter);
+                    tighter = true;
+                    ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::ai(inter_card)));
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          if(oldbounds.valid && oldbounds.l.isFinite() && oldbounds.u.isFinite()) {
+            tighter = true;
+            fixed = oldbounds.u == oldbounds.l;
+            if(fixed) {
+              intval = oldbounds.u;
+              ovd->ti()->domain(new SetLit(ovd->loc(), IntSetVal::a(intval, intval)));
+            }
+          }
+        }
+      } else if(vd->type().isfloat()) {
+        FloatBounds oldbounds = compute_float_bounds(ovd->id());
+        FloatBounds bounds(0.0, 0.0, false);
+        if(vd->ti()->domain() || vd->e())
+          bounds = compute_float_bounds(vd->id());
+        if((vd->ti()->domain() || vd->e()) && bounds.valid) {
+          if(oldbounds.valid) {
+            fixed = oldbounds.u == oldbounds.l || bounds.u == bounds.l;
+            if(fixed) doubleval = oldbounds.u == oldbounds.l ? oldbounds.u : bounds.l;
+            tighter = fixed || (oldbounds.u - oldbounds.l < bounds.u - bounds.l);
+          }
+        } else {
+          if(oldbounds.valid) {
+            tighter = true;
+            fixed = oldbounds.u == oldbounds.l;
+            if(fixed) doubleval = oldbounds.u;
+          }
+        }
+      } else if(vd->type().isbool()) {
+        if(ovd->ti()->domain()) {
+          fixed = tighter = true;
+          boolval = eval_bool(ovd->ti()->domain());
+        } else {
+          fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
+          if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
+        }
+      }
+
+      if(tighter) {
+        vd->ti()->domain(copy(ovd->ti()->domain()));
+        if(vd->e() == NULL && fixed) {
+          if(vd->ti()->type().isvarint()) {
+            vd->type(Type::parint());
+            vd->ti(new TypeInst(vd->loc(), Type::parint()));
+            vd->e(new IntLit(vd->loc(), intval));
+          } else if(vd->ti()->type().isvarfloat()) {
+            vd->type(Type::parfloat());
+            vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
+            vd->e(new FloatLit(vd->loc(), doubleval));
+          } else if(vd->ti()->type().isvarbool()) {
+            vd->type(Type::parbool());
+            vd->ti(new TypeInst(vd->loc(), Type::parbool()));
+            vd->e(new BoolLit(vd->loc(), boolval));
+          }
+        }
+      }
+    }
+    return tighter;
+  }
+
+  std::string getPath(EnvI& env) {
+    std::string path;
+    std::stringstream ss;
+    if(env.dumpPath(ss, false))
+      path = ss.str();
+    return path;
+  }
+
+  inline Location getLoc(EnvI& env, Expression* e) {
+    return e ? e->loc().introduce() : Location().introduce();
+  }
+  inline Id* getId(EnvI& env, Id* origId) {
+    return origId ? origId : new Id(Location().introduce(),env.genId(), NULL);
+  }
+
+  VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs) {
     VarDecl* vd;
-    if (id == NULL)
-      vd = new VarDecl(rhs ? rhs->loc().introduce() : Location().introduce(), ti, env.genId());
-    else
-      vd = new VarDecl(rhs ? rhs->loc().introduce() : Location().introduce(), ti, id);
+    bool hasBeenAdded = false;
+    bool usePaths = true;
+
+    if(usePaths && ti->type().dim() == 0 && !ti->type().isann()) {
+      std::string path = getPath(env);
+      if(!path.empty()) {
+        EnvI::PathMap& pathMap = env.getPathMap();
+        EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+        EnvI::PathMap::iterator it = pathMap.find(path);
+        if(it != pathMap.end()) {
+          VarDecl* ovd = Expression::cast<VarDecl>(it->second.first());
+          unsigned int ovd_pass = it->second.second;
+
+          if(ovd) {
+            if(env.pass == ovd_pass) {
+              vd = ovd;
+              if(origId)
+                origId->decl(vd);
+              hasBeenAdded = true;
+            } else {
+              vd = new VarDecl(getLoc(env, rhs), ti, getId(env, origId));
+              updateBounds(ovd, vd);
+              hasBeenAdded = false;
+            }
+
+            // Check whether ovd has been unified with another variable
+            if(ovd->id() != ovd->id()->decl()->id()) {
+              std::string path2 = reversePathMap[ovd->id()->decl()];
+              std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
+
+              pathMap[path] = vd_tup;
+              pathMap[path2] = vd_tup;
+              reversePathMap[vd] = path;
+            }
+          }
+        } else {
+          vd = new VarDecl(getLoc(env,rhs), ti, getId(env, origId));
+          std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
+          pathMap       [path] = vd_tup;
+          reversePathMap[  vd] = path;
+          hasBeenAdded = false;
+        }
+      } else {
+        vd = new VarDecl(getLoc(env,rhs), ti, getId(env, origId));
+        hasBeenAdded = false;
+      }
+    } else  {
+      vd = new VarDecl(getLoc(env,rhs), ti, getId(env, origId));
+      hasBeenAdded = false;
+    }
+
     if (vd->e()) {
-      bind(env, ctx, vd, rhs);
+      if(rhs) {
+        bind(env, ctx, vd, rhs);
+      }
     } else {
       vd->e(rhs);
     }
@@ -317,17 +340,20 @@ namespace MiniZinc {
       }
     }
     
-    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-    env.flat_addItem(ni);
-    EE ee(vd,NULL);
-    env.map_insert(vd->id(),ee);
-    
+    if (!hasBeenAdded) {
+      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+      env.flat_addItem(ni);
+      //TODO: What should we do with the map?
+      EE ee(vd,NULL);
+      env.map_insert(vd->id(),ee);
+    }
+
     return vd;
   }
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -418,10 +444,6 @@ namespace MiniZinc {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
-
-        if(fopts.collectVarPaths || fopts.useVarPaths)
-          addMznPath(vd->e(), *this);
-
         toAdd = vd->e();
         break;
       }
@@ -510,6 +532,7 @@ namespace MiniZinc {
   
   void EnvI::setMaps(EnvI& env) {
     pathMap = env.pathMap;
+    reversePathMap = env.reversePathMap;
     filenameMap = env.filenameMap;
     maxPathDepth = env.maxPathDepth;
   }
@@ -568,11 +591,8 @@ namespace MiniZinc {
   bool
   EnvI::dumpPath(std::ostream& os, bool errStack) {
     std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
-    if (stack.size() > maxPathDepth) {
-      if (fopts.useVarPaths)
-        return false;
+    if (stack.size() > maxPathDepth)
       maxPathDepth = stack.size();
-  }
     int lastError = stack.size();
 
     int curloc_l = -1;
@@ -584,8 +604,8 @@ namespace MiniZinc {
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
       if (findFilename == filenameMap.end()) {
-        if (fopts.useVarPaths)
-          return false;
+        // TODO:We should fail here for performance reasons
+        //  return false;
         filenameId = filenameMap.size();
         filenameMap.insert(std::make_pair(loc.filename.str(), filenameMap.size()));
       } else {
@@ -5066,6 +5086,7 @@ namespace MiniZinc {
 
       if(fopts.verbose)
         std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+      e.envi().pass++;
     }
 
     e.envi().setMaps(pre_env->envi());

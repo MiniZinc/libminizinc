@@ -331,13 +331,11 @@ int main(int argc, char** argv) {
               std::vector<Pass*> passes;
               Options gopts;
               FlatteningOptions pass_opts = fopts;
-              pass_opts.collectVarPaths = true;
-              pass_opts.useVarPaths = false;
               for(unsigned int i=1; i<flag_npasses; i++) {
                 if(flag_gecode)
                   passes.push_back(new GecodePass(pass_opts, gopts));
                 else
-                  passes.push_back(new CompilePass(pass_opts, "g12_fd"));
+                  passes.push_back(new CompilePass(pass_opts, "std"));
               }
 
               // Multi-pass optimisations
@@ -347,8 +345,6 @@ int main(int argc, char** argv) {
               // Final compilation
               if (flag_verbose)
                 std::cerr << "Final Flattening ...";
-              fopts.collectVarPaths = false;
-              fopts.useVarPaths = true;
               flatten(env, fopts);
 
             } catch (LocationException& e) {
