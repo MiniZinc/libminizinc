@@ -100,3 +100,40 @@ predicate neighbourhoodCts(array[int] of var int: x,
          x[i] = sol(x[i])
        )     
    else true endif;
+
+
+% ------------------- Two Stage Policy Based Search ------------------ %
+function ann: policy_based_two_stage(array[int] of var int: stage1,
+                                     array[int] of var int: stage2,
+                                     int: nbScenarios) = 
+
+  scope(
+     and([
+       % TODO: create overall objective variable
+       repeat (
+         and([
+           next, % find an initial solution       
+           repeat (s in 1..nbScenarios) (
+             and([
+               post(secondStageConstraints(s)),
+               let {
+                 var int: obj = getObjective(s);          
+               } in
+                 bab_min(obj)
+               % TODO: remember the objective value of the scenario and 
+               % add them up for each iteration and post overall BAB ct
+              ])
+           )
+        ])
+      )
+      % TODO: post BAB constraint on overall objective variable
+    ])
+  )
+;
+
+% returns the objective variable for the given scenario 
+function var int: getObjective (int: scenario);
+
+% define this predicate in your model, defining the second stage 
+% constraints for the given scenario
+predicate secondStageConstraints(int: scenario); 
