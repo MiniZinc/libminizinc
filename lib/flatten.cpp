@@ -406,15 +406,14 @@ namespace MiniZinc {
       if (stack[lastError]->loc().is_introduced)
         continue;
       if (stack[lastError]->isa<Id>()) {
-        lastError--;
         break;
       }
     }
 
     ASTString curloc_f;
     int curloc_l = -1;
-    
-    for (int i=lastError; i>=0; i--) {
+
+    for (int i=lastError-1; i>=0; i--) {
       ASTString newloc_f = stack[i]->loc().filename;
       if (stack[i]->loc().is_introduced)
         continue;
