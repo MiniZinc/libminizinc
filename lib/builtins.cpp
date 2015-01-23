@@ -1211,6 +1211,12 @@ namespace MiniZinc {
     al->type(Type::parint(1));
     return al;
   }
+
+  IntVal b_string_length(ASTExprVec<Expression> args) {
+    GCLock lock;
+    std::string s = eval_string(args[0]);
+    return s.size();
+  }
   
   std::string show(Expression* exp) {
     std::ostringstream oss;
@@ -2260,6 +2266,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("set2array"), t, b_set2array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring();
+      rb(m, ASTString("string_length"), t, b_string_length);
     }
     {
       std::vector<Type> t(1);

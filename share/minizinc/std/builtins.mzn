@@ -1017,6 +1017,9 @@ by the number of characters given by \a w, or left justified if
 point is given by \a p. It is a run-time error for \a p to be negative.
 */
 function string: show_float(int: w, int: p, var float: x);
+/** @group builtins.string Return length of \a s */
+function int: string_length(string: s);
+
 /** @group builtins.string Return concatenation of \a s1 and \a s2 */
 function string: '++'(string: s1, string: s2);
 /** @group builtins.string Return concatenation of strings in array \a s */
