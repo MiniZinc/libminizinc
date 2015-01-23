@@ -1,21 +1,24 @@
-#ifndef __MznSet
-#define __MznSet
+/*
+ *  Python Interface for MiniZinc constraint modelling
+ *  Author:
+ *     Tai Tran <tai.tran@student.adelaide.edu.au>
+ *          under the supervision of Guido Tack <guido.tack@monash.edu>
+ */
 
-/*typedef struct {
-  PyObject_HEAD
-  list<Range>* ranges;
-} MznSet;*/
+#ifndef __MZNSET_H
+#define __MZNSET_H
+
+
+struct MznRange {
+  long min;
+  long max;
+  MznRange(long min, long max):min(min),max(max){}
+};
+
 
 struct MznSet {
   PyObject_HEAD
-
-  struct Range {
-    long min;
-    long max;
-    Range(long min, long max):min(min),max(max){}
-  };
-
-  list<Range>* ranges;
+  list<MznRange>* ranges;
 
   void clear() {ranges->clear();}
 
@@ -39,23 +42,23 @@ static PyObject*
 MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
 {
   MznSet* self = (MznSet*)type->tp_alloc(type,0);
-  self->ranges = new list<MznSet::Range>;
+  self->ranges = new list<MznRange>;
   return (PyObject* )self;
 }
 
 void MznSet::push(long min, long max) {
   if (ranges->empty()) {
-    Range toAdd(min, max);
+    MznRange toAdd(min, max);
     ranges->push_front(toAdd);
     return;
   }
-  list<Range>::iterator it,last;
+  list<MznRange>::iterator it,last;
   for (it = ranges->begin(); it!= ranges->end(); ++it) {
     if (min <= it->max + 1) {
       if (it->min < min)
         min = it->min;
       if (max <= it->max) {
-        ranges->insert(it,Range(min,max));
+        ranges->insert(it,MznRange(min,max));
         return;
       }
       goto FOUNDMIN;
@@ -79,15 +82,15 @@ void MznSet::push(long min, long max) {
     last->max = max;
     return;
   }
-  ranges->push_back(Range(min,max));
+  ranges->push_back(MznRange(min,max));
 }
 
 void MznSet::push(long v) {
   
-  list<Range>::iterator it,last;
+  list<MznRange>::iterator it,last;
   last = ranges->begin();
   if (ranges->empty()) {
-    Range toAdd(v,v);
+    MznRange toAdd(v,v);
     ranges->push_front(toAdd);
     return;
   }
@@ -101,7 +104,7 @@ void MznSet::push(long v) {
           return;
         }
       } else {
-        Range toAdd(v,v);
+        MznRange toAdd(v,v);
         ranges->insert(it,toAdd);
         return;
       }
@@ -118,7 +121,7 @@ void MznSet::push(long v) {
     }
   }
   if (last->max<v) {
-    Range toAdd(v,v);
+    MznRange toAdd(v,v);
     ranges->insert(it, toAdd);
   }
   return;
@@ -191,8 +194,7 @@ static PyObject*
 MznSet_output(MznSet* self)
 {
   stringstream s;
-  //cout << (self->ranges.begin()) << endl << (self->ranges.end()) << endl;
-  for (list<MznSet::Range>::iterator it = self->ranges->begin(); it!=self->ranges->end(); ++it) {
+  for (list<MznRange>::iterator it = self->ranges->begin(); it!=self->ranges->end(); ++it) {
     s << it->min << ".." << it->max << " ";
   }
   const std::string& tmp = s.str();
@@ -207,10 +209,10 @@ static PyMemberDef MznSet_members[] = {
 
 static PyObject* MznSet_repr(PyObject* self) {
   stringstream output;
-  list<MznSet::Range>* r = ((MznSet*)self)->ranges;
+  list<MznRange>* r = ((MznSet*)self)->ranges;
   if (r->begin() == r->end())
     output << "Empty Set";
-  else for (list<MznSet::Range>::iterator it = r->begin();;) {
+  else for (list<MznRange>::iterator it = r->begin();;) {
     if (it->min == it->max)
       output << it->min;
     else output << it->min << ".." << it->max;
