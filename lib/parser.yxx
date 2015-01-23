@@ -782,6 +782,11 @@ solve_item :
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
+    | MZN_SOLVE expr_atom_head
+      {
+        $$ = SolveI::sat(@$);
+        if ($$) $$->cast<SolveI>()->ann().add($2);
+      }
 
 output_item :
       MZN_OUTPUT expr
