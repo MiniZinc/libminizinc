@@ -865,8 +865,21 @@ function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] 
 /** @group builtins.array Return row \a r of array \a x */
 function array[int] of $T: row(array[int, int] of $T: x, int: r) =
   array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+/** @group builtins.array Return row \a r of array \a x */
+function array[int] of var $T: row(array[int, int] of var $T: x, int: r) =
+  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+/** @group builtins.array Return row \a r of array \a x */
+function array[int] of var opt $T: row(array[int, int] of var opt $T: x, int: r) =
+  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+
 /** @group builtins.array Return column \a c of array \a x */
 function array[int] of $T: col(array[int,int] of $T: x, int: c) =
+  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+/** @group builtins.array Return column \a c of array \a x */
+function array[int] of var $T: col(array[int,int] of var $T: x, int: c) =
+  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+/** @group builtins.array Return column \a c of array \a x */
+function array[int] of var opt $T: col(array[int,int] of var opt $T: x, int: c) =
   array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
 
 /** @group builtins.array Test if \a i is in the index set of \a x */
