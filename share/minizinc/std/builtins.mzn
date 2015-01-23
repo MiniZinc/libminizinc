@@ -1017,6 +1017,20 @@ by the number of characters given by \a w, or left justified if
 point is given by \a p. It is a run-time error for \a p to be negative.
 */
 function string: show_float(int: w, int: p, var float: x);
+
+/** @group builtins.string Convert two-dimensional array \a x into a string */
+function string: show2d(array[int,int] of var opt $T: x) =
+  let { int: max_rows=max(index_set_1of2(x));
+        int: max_cols=max(index_set_2of2(x));
+        int: max_length = max([string_length(show(x[i,j])) | i in index_set_1of2(x), j in index_set_2of2(x)])
+  } in
+  "[| "++
+  concat([format(max_length,show(x[i,j]))++
+   if j<max_cols then ", "
+   elseif i<max_rows then " |\n   " else " |]\n"
+   endif | i in index_set_1of2(x), j in index_set_2of2(x)
+  ]);
+
 /** @group builtins.string Return length of \a s */
 function int: string_length(string: s);
 
