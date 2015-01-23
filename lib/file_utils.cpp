@@ -113,7 +113,7 @@ namespace MiniZinc { namespace FileUtils {
     if (!(lpBuffer = (LPTSTR)LocalAlloc(LMEM_FIXED, sizeof(TCHAR) * nBufferLength)))
       return 0;
     std::string ret;
-    if (!GetFullPathName(lpFileName, nBufferLength, lpBuffer, &lpFilePart)) {
+    if (!GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart)) {
       ret = "";
     } else {
       ret = std::string(lpBuffer);
