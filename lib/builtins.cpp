@@ -16,6 +16,7 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/file_utils.hh>
 
 #include <iomanip>
 #include <climits>
@@ -1369,7 +1370,7 @@ namespace MiniZinc {
   std::string b_file_path(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     Expression* e = follow_id_to_decl(args[0]);
-    return e->loc().filename.str();
+    return FileUtils::file_path(e->loc().filename.str());
   }
   
   std::string b_concat(ASTExprVec<Expression> args) {
