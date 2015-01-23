@@ -168,7 +168,9 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
   }
-  EnvI::EnvI(Model* orig0, Model* output0, Model* flat0) : orig(orig0), output(output0), _flat(flat0) {
+  EnvI::EnvI(Model* orig0, Model* output0, Model* flat0,  CopyMap& cmap0,
+             IdMap<KeepAlive> reverseMappers0) : orig(orig0), output(output0), _flat(flat0),  cmap(cmap0),
+                                                 reverseMappers(reverseMappers0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -380,7 +382,8 @@ namespace MiniZinc {
 
   
   Env::Env(Model* m) : e(new EnvI(m)) {}
-  Env::Env(Model* orig, Model* output, Model* flat) : e(new EnvI(orig,output,flat)) {}
+  Env::Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers) : 
+     e(new EnvI(orig,output,flat,cmap,reverseMappers)) {}
   Env::~Env(void) {
     delete e;
   }
@@ -406,17 +409,54 @@ namespace MiniZinc {
     CopyMap cmap; 
     Model* c_orig = copy(cmap, e->orig);
     Model* c_output = copy(cmap, e->output);
-    Model* c_flat = copy(cmap, e->flat());
-    // TODO: copy and set the rest and adapt the constructors
-    // TODO: VarOccurrences vo and output_vo;
-    //IdMap<KeepAlive> c_reverseMappers;
-    //for(IdMap<KeepAlive>::iterator it = e->reverseMappers.begin(); it!=e->reverseMappers.end(); it++) {
-    //  c_reverseMappers.insert(it);
-   ///}
+    Model* c_flat = copy(cmap, e->flat());    
+    VarOccurrences c_vo;    
+    for(IdMap<UNORDERED_NAMESPACE::unordered_set<Item*> >::iterator it = e->vo._m.begin(); it!=e->vo._m.end(); it++) {
+      UNORDERED_NAMESPACE::unordered_set<Item*> items = it->second;
+      UNORDERED_NAMESPACE::unordered_set<Item*> c_items;
+      for(UNORDERED_NAMESPACE::unordered_set<Item*>::iterator iit = items.begin(); iit!=items.end(); iit++) {
+         c_items.insert(copy(cmap,*iit));
+      }
+      c_vo._m.insert(copy(cmap,it->first)->dyn_cast<Id>(),
+                     c_items);
+    }
+    for(IdMap<int>::iterator it = e->vo.idx.begin(); it!=e->vo.idx.end(); it++) {
+      c_vo.idx.insert(copy(cmap, it->first)->dyn_cast<Id>(), it->second);
+    }
+    VarOccurrences c_output_vo;    
+    for(IdMap<UNORDERED_NAMESPACE::unordered_set<Item*> >::iterator it = e->output_vo._m.begin(); it!=e->output_vo._m.end(); it++) {
+      UNORDERED_NAMESPACE::unordered_set<Item*> items = it->second;
+      UNORDERED_NAMESPACE::unordered_set<Item*> c_items;
+      for(UNORDERED_NAMESPACE::unordered_set<Item*>::iterator iit = items.begin(); iit!=items.end(); iit++) {
+         c_items.insert(copy(cmap,*iit));
+      }
+      c_output_vo._m.insert(copy(cmap,it->first)->dyn_cast<Id>(),
+                     c_items);
+    }
+    for(IdMap<int>::iterator it = e->output_vo.idx.begin(); it!=e->output_vo.idx.end(); it++) {
+      c_output_vo.idx.insert(copy(cmap, it->first)->dyn_cast<Id>(), it->second);
+    }       
+    IdMap<KeepAlive> c_reverseMappers;    
+    for(IdMap<KeepAlive>::iterator it = e->reverseMappers.begin(); it!=e->reverseMappers.end(); it++) {
+      c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
+                              KeepAlive(copy(cmap,(it->second)())));
+    } 
+    // TODO: Map map;
+    // TODO: unsigned int ids;
+    // TODO: ASTStringMap<ASTString>::t reifyMap;
     // TODO: update VarDecl pointers
     
-    Env* c = new Env(c_orig, c_output, c_flat);        
-    
+    Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers);
+    c->e->vo = c_vo;
+    c->e->output_vo = c_output_vo;
+    c->e->ignorePartial = e->ignorePartial;
+    //for(unsigned int i=0; i<e->callStack.size(); i++)
+    //  c->e->callStack.push_back(copy(cmap, e->callStack[i])); //TODO: how to copy a const Expression?
+    // TODO: std::vector<const Expression*> errorStack;
+    for(unsigned int i=0; i<e->idStack.size(); i++)
+      c->e->idStack.push_back(e->idStack[i]);
+    for(unsigned int i=0; i<e->warnings.size(); i++)
+      c->e->warnings[i] = std::string(e->warnings[i]);
     return c;
   }
   std::ostream&

@@ -14,6 +14,9 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/astexception.hh>
+#include <minizinc/copy.hh> // for the extended Env constructor
+#include <minizinc/hash.hh> // for the extended Env constructor
+//#include <minizinc/optimize.hh> // for VarOccurrences in extended Env constructor
 
 namespace MiniZinc {
 
@@ -23,9 +26,9 @@ namespace MiniZinc {
   class Env {
   private:
     EnvI* e;
+    Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers);
   public:
-    Env(Model* m);
-    Env(Model* orig, Model* output, Model* flat);
+    Env(Model* m);    
     ~Env(void);
     
     Model* model(void);
