@@ -472,6 +472,7 @@ namespace MiniZinc {
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expression_v;
          std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
+         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expression_vvv;
          MiniZinc::Generator* generator;
          std::vector<MiniZinc::Generator>* generator_v;
          std::vector<std::string>* string_v;
@@ -610,6 +611,7 @@ namespace MiniZinc {
 
 %type <expression_v> expr_list expr_list_head array_access_tail elseif_list let_vardecl_item_list
 %type <expression_vv> simple_array_literal_2d_list
+%type <expression_vvv> simple_array_literal_3d_list
 
 %type <generators> comp_tail
 %type <generator> generator
@@ -1284,6 +1286,52 @@ simple_array_literal_2d :
         } else {
           $$ = NULL;
         }
+      }
+| MZN_LEFT_2D_BRACKET simple_array_literal_3d_list MZN_RIGHT_2D_BRACKET
+{
+  if ($2) {
+    std::vector<std::pair<int,int> > dims(3);
+    dims[0] = std::pair<int,int>(1,$2->size());
+    if ($2->size()==0) {
+      dims[1] = std::pair<int,int>(1,0);
+      dims[2] = std::pair<int,int>(1,0);
+    } else {
+      dims[1] = std::pair<int,int>(1,(*$2)[0].size());
+      if ((*$2)[0].size()==0) {
+        dims[2] = std::pair<int,int>(1,0);
+      } else {
+        dims[2] = std::pair<int,int>(1,(*$2)[0][0].size());
+      }
+    }
+    std::vector<Expression*> a;
+    for (unsigned int i=0; i<dims[0].second; i++) {
+      if ((*$2)[i].size() != dims[1].second)
+        yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
+      for (unsigned int j=0; j<dims[1].second; j++) {
+        if ((*$2)[i][j].size() != dims[2].second)
+          yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
+        for (unsigned int k=0; k<dims[2].second; k++) {
+          a.push_back((*$2)[i][j][k]);
+        }
+      }
+    }
+    $$ = new ArrayLit(@$,a,dims);
+    delete $2;
+  } else {
+    $$ = NULL;
+  }
+}
+
+simple_array_literal_3d_list :
+      '|' simple_array_literal_2d_list '|'
+      { $$=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+        $$->push_back(*$2);
+        delete $2;
+      }
+    | simple_array_literal_3d_list ',' '|' simple_array_literal_2d_list '|'
+      { $$=$1;
+        if ($$) $$->push_back(*$4);
+        delete $4;
       }
 
 simple_array_literal_2d_list :
