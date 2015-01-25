@@ -12,7 +12,7 @@ using namespace std;
 
 struct MznVariable {
   PyObject_HEAD
-  Id* id;
+  Expression* e;
 };
 
 static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -70,7 +70,7 @@ static PyTypeObject MznVariableType = {
 
 static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
   MznVariable* self = (MznVariable*)type->tp_alloc(type,0);
-  self->id = NULL;
+  self->e = NULL;
   return (PyObject*)self;
 }
 static int MznVariable_init(MznVariable* self, PyObject* args) {
@@ -78,8 +78,6 @@ static int MznVariable_init(MznVariable* self, PyObject* args) {
   return -1;
 }
 static void MznVariable_dealloc(MznVariable* self) {
-  if (self->id)
-    delete self->id;
   self->ob_type->tp_free((PyObject*)self);
 }
 

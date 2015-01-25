@@ -46,6 +46,7 @@ static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
 #include "MznSet.h"
+#include "MznSet.cpp"
 #include "MznVariable.h"
 //#include "MznConstraint.h"
 //#include "MznSolveItem.h"
@@ -85,11 +86,10 @@ static PyObject* MznModel_load(MznModel *self, PyObject *args, PyObject *keywds)
 static PyObject* MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds);
 static PyObject* MznModel_solve(MznModel *self);
 static PyObject* MznModel_setTimeLimit(MznModel* self, PyObject* args);
-static PyObject* MznModel_addItem(MznModel* self, PyObject* args);
-static PyObject* MznModel_addConstraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
+static PyObject* MznModel_Expression(MznModel* self, PyObject* args);
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
@@ -104,9 +104,9 @@ static PyMethodDef MznModel_methods[] = {
   {"loadFromString", (PyCFunction)MznModel_loadFromString, METH_KEYWORDS, "Load MiniZinc model from standard input"},
   {"solve", (PyCFunction)MznModel_solve, METH_NOARGS, "Solve a loaded MiniZinc model"},
   {"setTimeLimit", (PyCFunction)MznModel_setTimeLimit, METH_VARARGS, "Limit the execution time of the model"},
-  {"addItem", (PyCFunction)MznModel_addItem, METH_VARARGS, "Add items into the model"},
   {"Variable", (PyCFunction)MznModel_Variable, METH_VARARGS, "Add a variable into the model"},
   {"Constraint", (PyCFunction)MznModel_Constraint, METH_VARARGS, "Add a constraint into the model"},
+  {"Expression", (PyCFunction)MznModel_Expression, METH_VARARGS, "Add an expression into the model"},
   {"SolveItem", (PyCFunction)MznModel_SolveItem, METH_VARARGS, "Add a solve item into the model"},
   {NULL} /* Sentinel */
 };
@@ -236,7 +236,7 @@ initminizinc(void) {
     if (model == NULL)
       return;
 
-    //Error Handling
+/*    //Error Handling
     MznModel_load_error = PyErr_NewException("MznModel_load.error", NULL, NULL);
     if (MznModel_load_error == NULL)
       return;
@@ -272,7 +272,7 @@ initminizinc(void) {
     if (MznVariable_init_error == NULL)
       return;
     Py_INCREF(MznVariable_init_error);
-    PyModule_AddObject(model,"error",MznVariable_init_error);
+    PyModule_AddObject(model,"error",MznVariable_init_error);*/
 
 
     // Minizinc Set Initialization
