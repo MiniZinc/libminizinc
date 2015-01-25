@@ -16,6 +16,7 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/file_utils.hh>
 
 #include <iomanip>
 #include <climits>
@@ -1210,6 +1211,12 @@ namespace MiniZinc {
     al->type(Type::parint(1));
     return al;
   }
+
+  IntVal b_string_length(ASTExprVec<Expression> args) {
+    GCLock lock;
+    std::string s = eval_string(args[0]);
+    return s.size();
+  }
   
   std::string show(Expression* exp) {
     std::ostringstream oss;
@@ -1369,7 +1376,7 @@ namespace MiniZinc {
   std::string b_file_path(ASTExprVec<Expression> args) {
     assert(args.size()==1);
     Expression* e = follow_id_to_decl(args[0]);
-    return e->loc().filename.str();
+    return FileUtils::file_path(e->loc().filename.str());
   }
   
   std::string b_concat(ASTExprVec<Expression> args) {
@@ -2259,6 +2266,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(m, ASTString("set2array"), t, b_set2array);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring();
+      rb(m, ASTString("string_length"), t, b_string_length);
     }
     {
       std::vector<Type> t(1);

@@ -1104,46 +1104,49 @@ namespace MiniZinc {
           case Expression::E_CALL:
             {
               Call* c = e->cast<Call>();
-              std::vector<Expression*> args(c->args().size());
               GCLock lock;
+              Call* nc;
+              std::vector<Expression*> args;
               if (c->id() == constants().ids.lin_exp) {
-                c->id(constants().ids.int_.lin_eq);
                 ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
-                std::vector<Expression*> nc(le_c->v().size());
-                std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
-                nc.push_back(new IntLit(Location().introduce(),-1));
-                c->args()[0] = new ArrayLit(Location().introduce(),nc);
+                std::vector<Expression*> ncoeff(le_c->v().size());
+                std::copy(le_c->v().begin(),le_c->v().end(),ncoeff.begin());
+                ncoeff.push_back(new IntLit(Location().introduce(),-1));
+                args.push_back(new ArrayLit(Location().introduce(),ncoeff));
+                args[0]->type(le_c->type());
                 ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
                 std::vector<Expression*> nx(le_x->v().size());
                 std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                 nx.push_back(vd->id());
-                c->args()[1] = new ArrayLit(Location().introduce(),nx);
+                args.push_back(new ArrayLit(Location().introduce(),nx));
+                args[1]->type(le_x->type());
                 IntVal d = c->args()[2]->cast<IntLit>()->v();
-                c->args()[2] = new IntLit(Location().introduce(),-d);
+                args.push_back(new IntLit(Location().introduce(),-d));
+                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
               } else {
-                vd->addAnnotation(constants().ann.is_defined_var);
-                
+                args.resize(c->args().size());
+                std::copy(c->args().begin(),c->args().end(),args.begin());
                 args.push_back(vd->id());
+                ASTString nid = c->id();
 
                 if (c->id() == constants().ids.exists) {
-                  c->id(constants().ids.array_bool_or);
+                  nid = constants().ids.array_bool_or;
                 } else if (c->id() == constants().ids.forall) {
-                  c->id(constants().ids.array_bool_and);
+                  nid = constants().ids.array_bool_and;
                 } else if (vd->type().isbool()) {
-                  c->id(env.reifyId(c->id()));
+                  nid = env.reifyId(c->id());
                 }
-
+                nc = new Call(c->loc().introduce(), nid, args);
               }
-              std::copy(c->args().begin(),c->args().end(),args.begin());
-              c->args(ASTExprVec<Expression>(args));
-              c->decl(env.orig->matchFn(c));
-              if (c->decl() == NULL) {
+              nc->decl(env.orig->matchFn(nc));
+              if (nc->decl() == NULL) {
                 throw InternalError("undeclared function or predicate "
-                                    +c->id().str());
+                                    +nc->id().str());
               }
-              c->type(c->decl()->rtype(args));
-              c->addAnnotation(definesVarAnn(vd->id()));
-              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+              nc->type(nc->decl()->rtype(args));
+              nc->addAnnotation(definesVarAnn(vd->id()));
+              vd->addAnnotation(constants().ann.is_defined_var);
+              flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               return vd->id();
             }
             break;
