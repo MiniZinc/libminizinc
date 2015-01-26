@@ -5,69 +5,10 @@
  *          under the supervision of Guido Tack <guido.tack@monash.edu>
  */
 
-
-
-#include <Python.h>
-#include "structmember.h"
-
-#include <iostream>
-#include <cstdio>
-#include <algorithm>
-#include <list>
-#include <string.h>
-#include <typeinfo>
-#include <cstdlib>
-#include <setjmp.h>
-#include <signal.h>
-#include <unistd.h>
-
-#include <minizinc/parser.hh>
-#include <minizinc/model.hh>
-#include <minizinc/eval_par.hh>
-#include <minizinc/typecheck.hh>
-#include <minizinc/flatten.hh>
-#include <minizinc/optimize.hh>
-#include <minizinc/builtins.hh>
-#include <minizinc/file_utils.hh>
-#include <minizinc/solvers/gecode/gecode_solverinstance.hh>
-
 #include "pyinterface.h";
 
 using namespace MiniZinc;
 using namespace std;
-
-
-
-static PyObject* 
-MznModel_addItem(MznModel* self, PyObject* args)
-{
-  self->loaded = true;
-  /*PyObject* obj;
-  if (!PyArg_ParseTuple(args,"O",&obj)) {
-    PyErr_SetString(PyExc_TypeError, "Need a MiniZinc object as argument");
-    return NULL;
-  }
-  Item* i;
-  if (PyObject_TypeCheck(obj, &MznConstraintType)) {
-    self->_m->addItem( ((MznConstraint*)obj)->i );
-  } else if (PyObject_TypeCheck(obj, &MznVariableType)) {
-    self->_m->addItem( ((MznVariable*)obj)->i ); 
-  } else if (PyObject_TypeCheck(obj, &MznOutputItemType)){
-    self->_m->addItem( ((MznOutputItem*)obj)->i );
-  } else if (PyObject_TypeCheck(obj, &MznSolveItemType)) {
-    self->_m->addItem( ((MznSolveItem*)obj)->i );
-  } else {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a Minizinc Variable");
-    return NULL;
-  }
-  //self->_m->addItem(i);*/
-  Py_RETURN_NONE;
-}
-
-
-
-
-
 
 static PyObject*
 MznModel_Variable(MznModel* self, PyObject* args)
@@ -94,12 +35,17 @@ MznModel_Variable(MznModel* self, PyObject* args)
         OPTVARTOP       //17
   };
 
+
   char* name;
   unsigned int tid=999;
   unsigned int dim=0;
+  PyObject* lb = NULL;
+  PyObject* ub = NULL;
   Type t;
+  GCLock Lock;
+  Expression* domain = NULL;
 
-  if (!PyArg_ParseTuple(args, "s|II", &name, &tid, &dim)) {
+  if (!PyArg_ParseTuple(args, "s|IIOO", &name, &tid, &dim, &lb, &ub)) {
     PyErr_SetString(PyExc_TypeError, "Requires a name for the variable");
     return NULL;
   }
@@ -119,9 +65,39 @@ MznModel_Variable(MznModel* self, PyObject* args)
       case PARSETBOOL: t = Type::parsetbool(dim); break;
       case PARSETFLOAT: t = Type::parsetfloat(dim); break;
       case PARSETSTRING: t = Type::parsetstring(dim); break;
-      case VARINT: t = Type::varint(dim); break;
+      case VARINT:
+        {
+          t = Type::varint(dim);
+          if (!(PyInt_Check(lb) && PyInt_Check(ub))) {
+            PyErr_SetString(PyExc_TypeError, "Domain of integer values needed");
+            return NULL;
+          }
+          long lbvalue = PyInt_AS_LONG(lb);
+          long ubvalue = PyInt_AS_LONG(ub);
+          if (lbvalue > ubvalue)
+            swap(lbvalue, ubvalue);
+          Expression* e0 = new IntLit(Location(), IntVal(lbvalue));
+          Expression* e1 = new IntLit(Location(), IntVal(ubvalue));
+          domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+          break;
+        }
       case VARBOOL: t = Type::varbool(dim); break;
-      case VARFLOAT: t = Type::varfloat(dim); break;
+      case VARFLOAT:
+        {
+          t = Type::varfloat(dim);
+          if (!(PyFloat_Check(lb) && PyFloat_Check(ub))) {
+            PyErr_SetString(PyExc_TypeError, "Domain of float values needed");
+            return NULL;
+          }
+          double lbvalue = PyFloat_AS_DOUBLE(lb);
+          double ubvalue = PyFloat_AS_DOUBLE(ub);
+          if (lbvalue > ubvalue)
+            swap(lbvalue, ubvalue);
+          Expression* e0 = new FloatLit(Location(), FloatVal(lbvalue));
+          Expression* e1 = new FloatLit(Location(), FloatVal(ubvalue));
+          domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+          break;
+        }
       case VARSETINT: t = Type::varsetint(dim); break;
       case VARBOT: t = Type::varbot(dim); break;
       case BOT: t = Type::bot(dim); break;
@@ -130,19 +106,18 @@ MznModel_Variable(MznModel* self, PyObject* args)
       case OPTVARTOP: t = Type::optvartop(dim); break;
     }
   }
-  GCLock Lock;
-  VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), t) , string(name), NULL);
+  VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), t, domain) , string(name), NULL);
   VarDeclI* i = new VarDeclI(Location(), e);
   self->_m->addItem(i);
 
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
-  ((MznVariable*)var)->id = e->id();
+  ((MznVariable*)var)->e = e->id();
 
   return var;
 }
 
 static PyObject* 
-MznModel_Constraint(MznModel* self, PyObject* args)
+MznModel_Expression(MznModel* self, PyObject* args)
 {
   /*
   enum BinOpType {
@@ -183,7 +158,7 @@ MznModel_Constraint(MznModel* self, PyObject* args)
   }
   Expression *lhs, *rhs;
   if (PyObject_TypeCheck(l, &MznVariableType))
-    lhs = ((MznVariable*)l)->id;
+    lhs = ((MznVariable*)l)->e;
   //else if (PyObject_TypeCheck(l, &MznConstraintType))
   //  lhs = ((MznConstraint*)l)->i->e();
   else {
@@ -192,7 +167,7 @@ MznModel_Constraint(MznModel* self, PyObject* args)
   }
 
   if (PyObject_TypeCheck(r, &MznVariableType))
-    rhs = ((MznVariable*)r)->id;
+    rhs = ((MznVariable*)r)->e;
   //else if (PyObject_TypeCheck(r, &MznConstraintType))
   //  rhs = ((MznConstraint*)r)->i->e();
   else {
@@ -200,12 +175,31 @@ MznModel_Constraint(MznModel* self, PyObject* args)
     return NULL;
   }
 
+
   GCLock Lock;
   BinOp* binop = new BinOp(Location(), lhs, static_cast<BinOpType>(op), rhs); 
-  ConstraintI* i = new ConstraintI(Location(), binop);
 
+  PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
+  ((MznVariable*)var)->e = binop;
+
+  return var;
+}
+
+static PyObject* 
+MznModel_Constraint(MznModel* self, PyObject* args)
+{
+  PyObject* obj;
+  if (!PyArg_ParseTuple(args, "O", &obj)) {
+    PyErr_SetString(PyExc_TypeError, "Requires an object of Minizinc Variable");
+    return NULL;
+  }
+  if (!PyObject_TypeCheck(obj, &MznVariableType)) {
+    PyErr_SetString(PyExc_TypeError, "Object must be a Minizinc Variable");
+    return NULL;
+  }
+  GCLock Lock;
+  ConstraintI* i = new ConstraintI(Location(), ((MznVariable*)obj)->e);
   self->_m->addItem(i);
-
   Py_RETURN_NONE;
 }
 
@@ -238,16 +232,14 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
   SolveI* i;
   switch (solveType) {
     case 0: i = SolveI::sat(Location()); break;
-    case 1: i = SolveI::min(Location(),((MznVariable*)obj)->id->decl() ); break;
-    case 2: i = SolveI::max(Location(),((MznVariable*)obj)->id->decl() ); break;
+    case 1: i = SolveI::min(Location(),((MznVariable*)obj)->e ); break;
+    case 2: i = SolveI::max(Location(),((MznVariable*)obj)->e ); break;
   }
   self->_m->addItem(i);
   Py_RETURN_NONE;
 }
 
 
-
-// Implementation
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer)
 {
   for (Py_ssize_t i=0; i<PyList_Size(value); i++) {
@@ -343,7 +335,7 @@ MznModel::addData(const char* const name, PyObject* value)
             vdi->e()->e(rhs);
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a set";
-            PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
             return -1;
           }
         } else if (vdi->e()->type().bt() == Type::BT_INT) {
@@ -353,7 +345,7 @@ MznModel::addData(const char* const name, PyObject* value)
               vdi->e()->e(rhs);
             } else {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an integer";
-              PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
               return -1;
             }
           } else {
@@ -362,12 +354,12 @@ MznModel::addData(const char* const name, PyObject* value)
               vector<Py_ssize_t> dimensions;
               vector<PyObject*> simpleArray;
               if (getList(value, dimensions, simpleArray, 0) == -1) {
-                PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+                PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
                 return -1;
               }
               if (vdi->e()->type().dim() != dimensions.size()) {
                 string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-                PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
                 return -1;
               }
               vector<Expression*> v;
@@ -376,7 +368,7 @@ MznModel::addData(const char* const name, PyObject* value)
                 PyObject* temp= simpleArray[i];
                 if (!PyInt_Check(temp)) {
                   string errorLog = "Expected integer value";
-                  PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                  PyErr_SetString(PyExc_TypeError, errorLog.c_str());
                   return -1;
                 }
                 Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(temp)));
@@ -389,7 +381,7 @@ MznModel::addData(const char* const name, PyObject* value)
               vdi->e()->e(rhs);
             } else {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an array of integer";
-              PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
               return -1;
             }
           }
@@ -402,12 +394,12 @@ MznModel::addData(const char* const name, PyObject* value)
             vector<Py_ssize_t> dimensions;
             vector<PyObject*> simpleArray;
             if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
               return -1;
             }
             if (vdi->e()->type().dim() != dimensions.size()) {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(MznModel_load_error, errorLog.c_str());
+              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
               return -1;
             }
             vector<Expression*> v;
@@ -416,7 +408,7 @@ MznModel::addData(const char* const name, PyObject* value)
               PyObject* temp= simpleArray[i];
               if (!PyInt_Check(temp)) {
                 string errorLog = "Expected boolean value";
-                PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
                 return -1;
               }
               Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(temp));
@@ -429,7 +421,7 @@ MznModel::addData(const char* const name, PyObject* value)
             vdi->e()->e(rhs);
           } else {
           string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a boolean";
-          PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+          PyErr_SetString(PyExc_TypeError, errorLog.c_str());
           return -1;
           }
         } else if (vdi->e()->type().bt() == Type::BT_STRING) {
@@ -441,12 +433,12 @@ MznModel::addData(const char* const name, PyObject* value)
             vector<Py_ssize_t> dimensions;
             vector<PyObject*> simpleArray;
             if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
               return -1;
             }
             if (vdi->e()->type().dim() != dimensions.size()) {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(MznModel_load_error, errorLog.c_str());
+              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
               return -1;
             }
             vector<Expression*> v;
@@ -455,7 +447,7 @@ MznModel::addData(const char* const name, PyObject* value)
               PyObject* temp= simpleArray[i];
               if (!PyString_Check(temp)) {
                 string errorLog = "Expected string value";
-                PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
                 return -1;
               }
               Expression* rhs = new StringLit(Location(), PyString_AS_STRING(temp));
@@ -468,7 +460,7 @@ MznModel::addData(const char* const name, PyObject* value)
             vdi->e()->e(rhs);
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a string";
-            PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
             return -1;
           }
         } else if (vdi->e()->type().bt() == Type::BT_FLOAT) {
@@ -480,12 +472,12 @@ MznModel::addData(const char* const name, PyObject* value)
             vector<Py_ssize_t> dimensions;
             vector<PyObject*> simpleArray;
             if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(MznModel_load_error, "Inconsistency in size of multidimensional array");
+              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
               return -1;
             }
             if (vdi->e()->type().dim() != dimensions.size()) {
               string errorLog = "type-inst error: output expression '" + string(name) + "'' has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(MznModel_load_error, errorLog.c_str());
+              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
               return -1;
             }
             vector<Expression*> v;
@@ -494,7 +486,7 @@ MznModel::addData(const char* const name, PyObject* value)
               PyObject* temp= simpleArray[i];
               if (!PyFloat_Check(temp)) {
                 string errorLog = "Expected float value";
-                PyErr_SetString(MznModel_load_error, errorLog.c_str());
+                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
                 return -1;
               }
               Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(temp));
@@ -507,11 +499,11 @@ MznModel::addData(const char* const name, PyObject* value)
             vdi->e()->e(rhs);
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a float";
-            PyErr_SetString(MznModel_solve_error, errorLog.c_str());
+            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
             return -1;
           }
         } else {
-          PyErr_SetString(MznModel_load_error, "Unhandled type");
+          PyErr_SetString(PyExc_TypeError, "Unhandled type");
           return -1;
         }
       }
@@ -539,7 +531,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
   if (fromFile) {
     char *kwlist[] = {"file","data","options"};
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &obj, &options)) {
-      PyErr_SetString(MznModel_load_error, "Parsing error");
+      PyErr_SetString(PyExc_TypeError, "Parsing error");
       return -1;
     }
     if (options != NULL) {
@@ -554,13 +546,13 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
             char* ptr;
             int t = strtol(pch,&ptr,10);
             if (t == 0) {
-              PyErr_SetString(MznModel_solve_error, "Time value must be a valid positive number");
+              PyErr_SetString(PyExc_ValueError, "Time value must be a valid positive number");
               return -1;
             }
             timeLimit = t;
             t_flag = false;
           } else {
-            PyErr_SetString(MznModel_solve_error, "Unknown option");
+            PyErr_SetString(PyExc_ValueError, "Unknown option");
             return -1;
           }
         }
@@ -575,13 +567,13 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
         for (Py_ssize_t i = 0; i!=n; ++i) {
           char* name = PyString_AsString(PyList_GET_ITEM(obj, i));
           if (name == NULL) {
-            PyErr_SetString(MznModel_load_error, "Element in the list must be a filename");
+            PyErr_SetString(PyExc_TypeError, "Element in the list must be a filename");
             return -1;
           }
           data.push_back(string(name));
         }
       } else if (!PyDict_Check(obj)) {
-        PyErr_SetString(MznModel_load_error, "The second argument must be either a filename, a list of filenames or a dictionary of data");
+        PyErr_SetString(PyExc_TypeError, "The second argument must be either a filename, a list of filenames or a dictionary of data");
         return -1;
       }
       isDict = true;
@@ -615,8 +607,6 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
     PyErr_SetString(MznModel_load_error, cstr);
     return -1;
   }
-  PyErr_SetString(MznModel_load_error, "Unknown Error");
-  return -1;
 }
 
 static PyObject*
@@ -640,7 +630,7 @@ MznModel_solve(MznModel *self)
     signal(SIGALRM, sig_alrm);
     alarm(self->timeLimit);
     if (sigsetjmp(jmpbuf, 1)) {
-      PyErr_SetString(MznModel_solve_error, "Time out");
+      PyErr_SetString(PyExc_RuntimeError, "Time out");
       return NULL;
     }
     PyObject* result = self->solve();
@@ -692,7 +682,7 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 PyObject* MznModel::solve()
 {
   if (!loaded) {
-    PyErr_SetString(MznModel_solve_error, "No data has been loaded into the model");
+    PyErr_SetString(PyExc_RuntimeError, "No data has been loaded into the model");
     return NULL;
   }
   loaded = false;
@@ -706,7 +696,7 @@ PyObject* MznModel::solve()
     errorLog << "  " << e.msg() << std::endl;
     const std::string& tmp = errorLog.str();
     const char* cstr = tmp.c_str();
-    PyErr_SetString(MznModel_solve_error, cstr);
+    PyErr_SetString(PyExc_TypeError, cstr);
     return NULL;
   }
   if (typeErrors.size() > 0) {
@@ -717,7 +707,7 @@ PyObject* MznModel::solve()
     }
     const std::string& tmp = errorLog.str();
     const char* cstr = tmp.c_str();
-    PyErr_SetString(MznModel_solve_error, cstr);
+    PyErr_SetString(PyExc_TypeError, cstr);
     return NULL;
   }
   MiniZinc::registerBuiltins(_m);
@@ -732,7 +722,7 @@ PyObject* MznModel::solve()
     errorLog << "  " << e.msg() << std::endl;
     const std::string& tmp = errorLog.str();
     const char* cstr = tmp.c_str();
-    PyErr_SetString(MznModel_solve_error, cstr);
+    PyErr_SetString(PyExc_RuntimeError, cstr);
     return NULL;
   }
   if (env->warnings().size()!=0)
@@ -743,7 +733,7 @@ PyObject* MznModel::solve()
     }
     const std::string& tmp = warningLog.str();
     const char* cstr = tmp.c_str();
-    PyErr_WarnEx(MznModel_solve_warning, cstr, 1);
+    PyErr_WarnEx(PyExc_RuntimeWarning, cstr, 1);
   }
   optimize(*env);
   oldflatzinc(*env);
