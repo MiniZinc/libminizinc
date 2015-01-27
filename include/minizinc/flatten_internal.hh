@@ -96,6 +96,7 @@ namespace MiniZinc {
     Map::iterator map_find(Expression* e);
     void map_remove(Expression* e);
     Map::iterator map_end(void);
+    Map::iterator map_begin(void); // ANDREA: needed for creating copy of Env(I)
     void dump(void);
     
     void flat_addItem(Item* i);

@@ -241,6 +241,9 @@ namespace MiniZinc {
   EnvI::Map::iterator EnvI::map_end(void) {
     return map.end();
   }
+  EnvI::Map::iterator EnvI::map_begin(void) {
+    return map.begin();
+  }
   void EnvI::dump(void) {
     struct EED {
       static std::string d(const WW& ee) {
@@ -441,7 +444,14 @@ namespace MiniZinc {
       c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
                               KeepAlive(copy(cmap,(it->second)())));
     } 
-    // TODO: Map map;
+    KeepAliveMap<EnvI::WW> c_map;
+    for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
+      const EnvI::WW c_ww((it->second).b, (it->second).r);   // TODO: copy WeakRef properly!
+      KeepAlive c_ka = KeepAlive(copy(cmap, (it->first)()));
+      c_map.insert(c_ka,  // KeepAlive
+                   c_ww);   // WW
+    }
+    // TODO: add Map to private Env constructor
     // TODO: unsigned int ids;
     // TODO: ASTStringMap<ASTString>::t reifyMap;
     // TODO: update VarDecl pointers
@@ -450,9 +460,10 @@ namespace MiniZinc {
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
     c->e->ignorePartial = e->ignorePartial;
-    //for(unsigned int i=0; i<e->callStack.size(); i++)
-    //  c->e->callStack.push_back(copy(cmap, e->callStack[i])); //TODO: how to copy a const Expression?
-    // TODO: std::vector<const Expression*> errorStack;
+    for(unsigned int i=0; i<e->callStack.size(); i++)
+      c->e->callStack.push_back(copy(cmap, const_cast<Expression*>(e->callStack[i])));
+    for(unsigned int i=0; i<e->errorStack.size(); i++)
+      c->e->errorStack.push_back(copy(cmap, const_cast<Expression*>(e->errorStack[i])));    
     for(unsigned int i=0; i<e->idStack.size(); i++)
       c->e->idStack.push_back(e->idStack[i]);
     for(unsigned int i=0; i<e->warnings.size(); i++)
