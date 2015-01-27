@@ -26,7 +26,8 @@ namespace MiniZinc {
   class Env {
   private:
     EnvI* e;
-    Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers);
+    Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers, unsigned int ids
+    );
   public:
     Env(Model* m);    
     ~Env(void);

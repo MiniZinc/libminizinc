@@ -89,7 +89,9 @@ namespace MiniZinc {
     EnvI(Model* orig0);
     EnvI(Model* orig, Model* output, Model* flat, 
          CopyMap& cmap,
-         IdMap<KeepAlive> reverseMappers); // TODO: extend constructor as we go
+         IdMap<KeepAlive> reverseMappers,
+         unsigned int ids
+        ); 
     ~EnvI(void);
     long long int genId(void);
     void map_insert(Expression* e, const EE& ee);
@@ -106,6 +108,7 @@ namespace MiniZinc {
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
     std::ostream& evalOutput(std::ostream& os);
+    unsigned int get_ids(void) { return ids; }
   };
 
   Expression* follow_id(Expression* e);

@@ -205,8 +205,8 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
   }
   EnvI::EnvI(Model* orig0, Model* output0, Model* flat0,  CopyMap& cmap0,
-             IdMap<KeepAlive> reverseMappers0) : orig(orig0), output(output0), _flat(flat0),  cmap(cmap0),
-                                                 reverseMappers(reverseMappers0) {
+             IdMap<KeepAlive> reverseMappers0, unsigned int ids0) : orig(orig0), output(output0), _flat(flat0),  cmap(cmap0),
+                                                 reverseMappers(reverseMappers0), ids(ids0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -421,8 +421,10 @@ namespace MiniZinc {
 
   
   Env::Env(Model* m) : e(new EnvI(m)) {}
-  Env::Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers) : 
-     e(new EnvI(orig,output,flat,cmap,reverseMappers)) {}
+  Env::Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers,
+    unsigned int ids 
+  ) : 
+     e(new EnvI(orig,output,flat,cmap,reverseMappers,ids)) {}
   Env::~Env(void) {
     delete e;
   }
@@ -480,19 +482,10 @@ namespace MiniZinc {
       c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
                               KeepAlive(copy(cmap,(it->second)())));
     } 
-    KeepAliveMap<EnvI::WW> c_map;
-    for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
-      const EnvI::WW c_ww((it->second).b, (it->second).r);   // TODO: copy WeakRef properly!
-      KeepAlive c_ka = KeepAlive(copy(cmap, (it->first)()));
-      c_map.insert(c_ka,  // KeepAlive
-                   c_ww);   // WW
-    }
-    // TODO: add Map to private Env constructor
-    // TODO: unsigned int ids;
-    // TODO: ASTStringMap<ASTString>::t reifyMap;
-    // TODO: update VarDecl pointers
+   
+    // TODO: update VarDecl pointers in the flat model
     
-    Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers);
+    Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, c->e->get_ids());
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
     c->e->ignorePartial = e->ignorePartial;
@@ -504,7 +497,15 @@ namespace MiniZinc {
       c->e->idStack.push_back(e->idStack[i]);
     for(unsigned int i=0; i<e->warnings.size(); i++)
       c->e->warnings[i] = std::string(e->warnings[i]);
-    return c;
+    return c;  
+    for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
+      //const EnvI::WW c_ww((it->second).b, (it->second).r);   // TODO: copy WeakRef properly! Or do we need an EE?
+      const EE c_ee; // TODO: create the right EE for the WW
+      Expression* e = copy(cmap, (it->first)());
+      c->e->map_insert(e,
+                   c_ee);   // TODO: WW --> EE: what is the difference?
+    }
+    // the ASTStringMap<ASTString>::t reifyMap is set in the EnvI constructor and is not changed afterwards so we need not copy it
   }
   std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {
