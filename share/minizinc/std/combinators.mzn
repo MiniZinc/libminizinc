@@ -108,29 +108,38 @@ predicate neighbourhoodCts(array[int] of var int: x,
 % ------------------- Two Stage Policy Based Search ------------------ %
 function ann: policy_based_two_stage(array[int] of var int: stage1,
                                      array[int] of var int: stage2,
+                                     var int: obj,
                                      int: nbScenarios) = 
 
   scope(
+   let { int: overall_obj = 0, % overall objective value
+         array[1..nbScenarios] of int: scenario_obj = 
+                                        [ 0 | i in 1..nbScenarios ]  } 
+   in  
      and([
-       % TODO: create overall objective variable
-       repeat (
-         and([
-           next, % find an initial solution       
-           repeat (s in 1..nbScenarios) (
-             and([
-               post(secondStageConstraints(s)),
-               let {
-                 var int: obj = getObjective(s);          
-               } in
-                 bab_min(obj)
-               % TODO: remember the objective value of the scenario and 
-               % add them up for each iteration and post overall BAB ct
-              ])
-           )
-        ])
-      )
-      % TODO: post BAB constraint on overall objective variable
-    ])
+         repeat (
+           and([
+             next, % find an initial solution       
+               scope(
+                 repeat (s in 1..nbScenarios) (
+                   and([
+                     post(secondStageConstraints(s)),
+                     let {
+                       var int: obj_s = getObjective(s);          
+                     } in
+                       bab_min(obj_s) :: % TODO: I want concatenation
+                       % scenario_obj[s] := val(obj) % does not work
+                       comb_assign(scenario_obj[s], sol(obj_s))
+                   ]) 
+                 )
+              )
+           ])
+         ), 
+       % overall_obj := sum (i in 1..nbScenarios) scenario_obj[i])
+         comb_assign(overall_obj,
+                   sum (i in 1..nbScenarios) (scenario_obj[i])),
+         post(obj < overall_obj) % BAB constraint on overall obj var
+     ])
   )
 ;
 
