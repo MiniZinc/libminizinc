@@ -557,7 +557,7 @@ namespace MiniZinc {
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_ASSIGN ":="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
@@ -572,6 +572,7 @@ namespace MiniZinc {
 %left MZN_IMPL MZN_RIMPL
 %left MZN_OR MZN_XOR
 %left MZN_AND
+%nonassoc MZN_ASSIGN
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF
@@ -780,6 +781,11 @@ solve_item :
       { $$ = SolveI::max(@$,$4);
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
+      }
+    | MZN_SOLVE expr_atom_head
+      {
+        $$ = SolveI::sat(@$);
+        if ($$) $$->cast<SolveI>()->ann().add($2);
       }
 
 output_item :
@@ -1135,6 +1141,12 @@ expr :
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
+      }
+    | MZN_IDENTIFIER MZN_ASSIGN expr
+      { std::vector<Expression*> args(2);
+        args[0] = new Id(@1, $1, NULL);
+        args[1] = $3;
+        $$=new Call(@$, ASTString("comb_assign"), args);
       }
 
 expr_atom_head :

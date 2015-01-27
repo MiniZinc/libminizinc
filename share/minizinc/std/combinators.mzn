@@ -33,6 +33,9 @@ function bool: hasSol;
 % print the output
 function ann: print; 
 
+% assign search variable x to y
+annotation comb_assign(int: x,int: y);
+
 % =================================================================== %
 %                    the actual combinators                           %
 % =================================================================== %
