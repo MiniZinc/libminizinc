@@ -2139,6 +2139,14 @@ namespace MiniZinc {
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
             id->decl()->flat(vd);
+            ArrayLit* al = id->decl()->e()->cast<ArrayLit>();
+            if (al->v().size()==0) {
+              if (r==NULL)
+                ret.r = al;
+              else
+                ret.r = bind(env,ctx,r,al);
+              return ret;
+            }
           }
           ret.r = bind(env,ctx,r,e->cast<Id>()->decl()->flat()->id());
           return ret;
@@ -2149,7 +2157,10 @@ namespace MiniZinc {
           GCLock lock;
           ArrayLit* al = follow_id(eval_par(e))->cast<ArrayLit>();
           if (al->v().size()==0 || (r && r->e()==NULL)) {
-            ret.r = bind(env,ctx,r,al);
+            if (r==NULL)
+              ret.r = al;
+            else
+              ret.r = bind(env,ctx,r,al);
             return ret;
           }
           if ( (it = env.map_find(al)) != env.map_end()) {
@@ -2377,7 +2388,13 @@ namespace MiniZinc {
               if (id->type().bt() == Type::BT_ANN && vd->e()) {
                 rete = vd->e();
               } else {
-                rete = vd->id();
+                ArrayLit* vda = vd->dyn_cast<ArrayLit>();
+                if (vda && vda->v().size()==0) {
+                  // Do not create names for empty arrays but return array literal directly
+                  rete = vda;
+                } else {
+                  rete = vd->id();
+                }
               }
             }
           }
