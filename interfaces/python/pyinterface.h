@@ -86,6 +86,7 @@ static PyObject* MznModel_load(MznModel *self, PyObject *args, PyObject *keywds)
 static PyObject* MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds);
 static PyObject* MznModel_solve(MznModel *self);
 static PyObject* MznModel_setTimeLimit(MznModel* self, PyObject* args);
+static PyObject* MznModel_addData(MznModel* self, PyObject* args);
 static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
@@ -93,6 +94,8 @@ static PyObject* MznModel_Expression(MznModel* self, PyObject* args);
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
+static PyObject* Mzn_lock(MznModel* self) {GC::lock(); Py_RETURN_NONE;}
+static PyObject* Mzn_unlock(MznModel* self) {GC::unlock(); Py_RETURN_NONE;}
 
 
 static PyMemberDef MznModel_members[] = {
@@ -106,7 +109,6 @@ static PyMethodDef MznModel_methods[] = {
   {"setTimeLimit", (PyCFunction)MznModel_setTimeLimit, METH_VARARGS, "Limit the execution time of the model"},
   {"Variable", (PyCFunction)MznModel_Variable, METH_VARARGS, "Add a variable into the model"},
   {"Constraint", (PyCFunction)MznModel_Constraint, METH_VARARGS, "Add a constraint into the model"},
-  {"Expression", (PyCFunction)MznModel_Expression, METH_VARARGS, "Add an expression into the model"},
   {"SolveItem", (PyCFunction)MznModel_SolveItem, METH_VARARGS, "Add a solve item into the model"},
   {NULL} /* Sentinel */
 };
@@ -114,6 +116,9 @@ static PyMethodDef MznModel_methods[] = {
 static PyMethodDef Mzn_methods[] = {
   {"load", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
   {"loadFromString", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from stdin"},
+  {"Expression", (PyCFunction)MznModel_Expression, METH_VARARGS, "Add an expression into the model"},
+  {"lock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Create a lock for garbage collection"},
+  {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},
   {NULL}
 };
 
@@ -231,6 +236,7 @@ static PyTypeObject MznSolutionType = {
 PyMODINIT_FUNC
 initminizinc(void) {
     GC::init();
+    //GC::lock();
     PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
