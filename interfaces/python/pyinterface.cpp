@@ -13,7 +13,6 @@ using namespace std;
 static PyObject*
 MznModel_Variable(MznModel* self, PyObject* args)
 {
-  self->loaded = true;
   enum TypeId { 
         PARINT,         // 0
         PARBOOL,        // 1
@@ -107,12 +106,12 @@ MznModel_Variable(MznModel* self, PyObject* args)
     }
   }
   VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), t, domain) , string(name), NULL);
-  VarDeclI* i = new VarDeclI(Location(), e);
-  self->_m->addItem(i);
-
+  self->_m->addItem(new VarDeclI(Location(), e));
+  self->loaded = true;
+  
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
   ((MznVariable*)var)->e = e->id();
-
+  ((MznVariable*)var)->isExp = false;
   return var;
 }
 
@@ -157,19 +156,23 @@ MznModel_Expression(MznModel* self, PyObject* args)
     return NULL;
   }
   Expression *lhs, *rhs;
-  if (PyObject_TypeCheck(l, &MznVariableType))
-    lhs = ((MznVariable*)l)->e;
-  //else if (PyObject_TypeCheck(l, &MznConstraintType))
-  //  lhs = ((MznConstraint*)l)->i->e();
+  if (PyObject_TypeCheck(l, &MznVariableType)) {
+//    if (((MznVariable*)l)->isExp)
+      lhs = (VarDecl*)(((MznVariable*)l)->e);
+/*    else
+      lhs = ((VarDecl*)(((MznVariable*)l)->e))->id();*/
+  }
   else {
     PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
     return NULL;
   }
 
-  if (PyObject_TypeCheck(r, &MznVariableType))
-    rhs = ((MznVariable*)r)->e;
-  //else if (PyObject_TypeCheck(r, &MznConstraintType))
-  //  rhs = ((MznConstraint*)r)->i->e();
+  if (PyObject_TypeCheck(r, &MznVariableType)) {
+//    if (((MznVariable*)r)->isExp)
+      rhs = (VarDecl*)(((MznVariable*)r)->e);
+/*    else
+      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();*/
+  }
   else {
     PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
     return NULL;
@@ -177,10 +180,10 @@ MznModel_Expression(MznModel* self, PyObject* args)
 
 
   GCLock Lock;
-  BinOp* binop = new BinOp(Location(), lhs, static_cast<BinOpType>(op), rhs); 
 
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
-  ((MznVariable*)var)->e = binop;
+  ((MznVariable*)var)->e = new BinOp(Location(), lhs, static_cast<BinOpType>(op), rhs);
+  ((MznVariable*)var)->isExp = true;
 
   return var;
 }
@@ -333,6 +336,7 @@ MznModel::addData(const char* const name, PyObject* value)
             }
             Expression* rhs = new SetLit(Location(), IntSetVal::a(ranges));
             vdi->e()->e(rhs);
+            return 0;
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a set";
             PyErr_SetString(PyExc_TypeError, errorLog.c_str());
@@ -343,6 +347,7 @@ MznModel::addData(const char* const name, PyObject* value)
             if (PyInt_Check(value)) {
               Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(value)));
               vdi->e()->e(rhs);
+              return 0;
             } else {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an integer";
               PyErr_SetString(PyExc_TypeError, errorLog.c_str());
@@ -379,6 +384,7 @@ MznModel::addData(const char* const name, PyObject* value)
                 dims.push_back(pair<Py_ssize_t,Py_ssize_t>(1,dimensions[i]));
               Expression* rhs = new ArrayLit(Location(), v, dims);
               vdi->e()->e(rhs);
+              return 0;
             } else {
               string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an array of integer";
               PyErr_SetString(PyExc_TypeError, errorLog.c_str());
@@ -389,6 +395,7 @@ MznModel::addData(const char* const name, PyObject* value)
           if (PyBool_Check(value)) {
             Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(value));
             vdi->e()->e(rhs);
+            return 0;
           } else if (PyList_Check(value)) {
             ArrayLit* al = vdi->e()->cast<ArrayLit>();
             vector<Py_ssize_t> dimensions;
@@ -419,15 +426,17 @@ MznModel::addData(const char* const name, PyObject* value)
               dims.push_back(pair<int,int>(1,dimensions[i]));
             Expression* rhs = new ArrayLit(Location(), v, dims);
             vdi->e()->e(rhs);
+            return 0;
           } else {
-          string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a boolean";
-          PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-          return -1;
+            string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a boolean";
+            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
+            return -1;
           }
         } else if (vdi->e()->type().bt() == Type::BT_STRING) {
           if (PyString_Check(value)) {
             Expression* rhs = new StringLit(Location(), PyString_AS_STRING(value));
             vdi->e()->e(rhs);
+            return 0;
           } else if (PyList_Check(value)) {
             ArrayLit* al = vdi->e()->cast<ArrayLit>();
             vector<Py_ssize_t> dimensions;
@@ -458,6 +467,7 @@ MznModel::addData(const char* const name, PyObject* value)
               dims.push_back(pair<int,int>(1,dimensions[i]));
             Expression* rhs = new ArrayLit(Location(), v, dims);
             vdi->e()->e(rhs);
+            return 0;
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a string";
             PyErr_SetString(PyExc_TypeError, errorLog.c_str());
@@ -467,6 +477,7 @@ MznModel::addData(const char* const name, PyObject* value)
           if (PyFloat_Check(value)) {
             Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(value));
             vdi->e()->e(rhs);
+            return 0;
           } else if (PyList_Check(value)) {
             ArrayLit* al = vdi->e()->cast<ArrayLit>();
             vector<Py_ssize_t> dimensions;
@@ -497,6 +508,7 @@ MznModel::addData(const char* const name, PyObject* value)
               dims.push_back(pair<int,int>(1,dimensions[i]));
             Expression* rhs = new ArrayLit(Location(), v, dims);
             vdi->e()->e(rhs);
+            return 0;
           } else {
             string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a float";
             PyErr_SetString(PyExc_TypeError, errorLog.c_str());
@@ -508,7 +520,22 @@ MznModel::addData(const char* const name, PyObject* value)
         }
       }
     }
-  return 0;
+  string ret = "Undefined identifier '" + string(name) + "'";
+  PyErr_SetString(PyExc_TypeError, ret.c_str());
+  return -1;
+}
+
+static PyObject* MznModel_addData(MznModel* self, PyObject* args)
+{
+  PyObject* obj;
+  const char* name;
+  if (!PyArg_ParseTuple(args, "sO", &name, &obj)) {
+    PyErr_SetString(PyExc_RuntimeError, "Parsing error");
+    return NULL;
+  }
+  if (self->addData(name,obj)==-1)
+    return NULL;
+  Py_RETURN_NONE;
 }
 
 int 

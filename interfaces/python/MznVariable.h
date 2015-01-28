@@ -13,6 +13,7 @@ using namespace std;
 struct MznVariable {
   PyObject_HEAD
   Expression* e;
+  bool isExp;     // expression or variable
 };
 
 static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -74,13 +75,16 @@ static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* k
   return (PyObject*)self;
 }
 static int MznVariable_init(MznVariable* self, PyObject* args) {
-  PyErr_SetString(PyExc_TypeError, "This object does not support user declaration");
+  PyErr_SetString(PyExc_TypeError, "This object doesn't support user declaration");
   return -1;
 }
 static void MznVariable_dealloc(MznVariable* self) {
   self->ob_type->tp_free((PyObject*)self);
 }
 
+PyObject* MznVariable_getValue(MznVariable* self) {
+
+}
 
 
 
