@@ -1120,9 +1120,15 @@ namespace MiniZinc {
                 nx.push_back(vd->id());
                 args.push_back(new ArrayLit(Location().introduce(),nx));
                 args[1]->type(le_x->type());
-                IntVal d = c->args()[2]->cast<IntLit>()->v();
-                args.push_back(new IntLit(Location().introduce(),-d));
-                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+                if (c->type().bt()==Type::BT_INT) {
+                  IntVal d = c->args()[2]->cast<IntLit>()->v();
+                  args.push_back(new IntLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
+                } else {
+                  FloatVal d = c->args()[2]->cast<FloatLit>()->v();
+                  args.push_back(new FloatLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
+                }
               } else {
                 args.resize(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
@@ -1834,46 +1840,31 @@ namespace MiniZinc {
           vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
           ret.r = bind(env,ctx,r,constants().lit_true);
         }
-      } else if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
-        GCLock lock;
-        VarDecl* vd = alv[0]()->cast<Id>()->decl();
-        typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
-        typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(bot,domain,d);
-        if (domain && ndomain) {
-          if (LinearTraits<Lit>::domain_empty(ndomain)) {
-            ret.r = bind(env,ctx,r,constants().lit_false);
-          } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
-            ret.r = bind(env,ctx,r,constants().lit_true);
-            vd->ti()->setComputedDomain(false);
-            vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
-          }
-        } else {
-          goto non_domain_binop;
-        }
       } else {
-      non_domain_binop:
+        
         GCLock lock;
         Expression* e0;
         Expression* e1;
+        BinOpType old_bot = bot;
+        Val old_d = d;
         switch (bot) {
           case BOT_LE:
             e0 = alv[0]();
             if (e0->type().isint()) {
-              e1 = new Lit(Location().introduce(),d-1);
+              d--;
               bot = BOT_LQ;
-            } else {
-              e1 = new Lit(Location().introduce(),d);
             }
+            e1 = new Lit(Location().introduce(),d);
             break;
           case BOT_GR:
             e1 = alv[0]();
             if (e1->type().isint()) {
-              e0 = new Lit(Location().introduce(),d+1);
+              d++;
               bot = BOT_LQ;
             } else {
-              e0 = new Lit(Location().introduce(),d);
               bot = BOT_LE;
             }
+            e0 = new Lit(Location().introduce(),d);
             break;
           case BOT_GQ:
             e0 = new Lit(Location().introduce(),d);
@@ -1883,6 +1874,46 @@ namespace MiniZinc {
           default:
             e0 = alv[0]();
             e1 = new Lit(Location().introduce(),d);
+        }
+        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+          VarDecl* vd = alv[0]()->cast<Id>()->decl();
+          typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
+          typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(old_bot,domain,old_d);
+          if (domain && ndomain) {
+            if (LinearTraits<Lit>::domain_empty(ndomain)) {
+              ret.r = bind(env,ctx,r,constants().lit_false);
+              return;
+            } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              vd->ti()->setComputedDomain(false);
+              vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
+
+              if (r==constants().var_true) {
+                BinOp* bo = new BinOp(Location().introduce(), e0, bot, e1);
+                bo->type(Type::varbool());
+                std::vector<Expression*> boargs(2);
+                boargs[0] = e0;
+                boargs[1] = e1;
+                Call* c = new Call(Location(), opToBuiltin(bo, bot), boargs);
+                c->type(Type::varbool());
+                c->decl(env.orig->matchFn(c));
+                EnvI::Map::iterator it = env.map_find(c);
+                if (it != env.map_end()) {
+                  if (Id* ident = it->second.r()->dyn_cast<Id>()) {
+                    bind(env, Ctx(), ident->decl(), constants().lit_true);
+                    it->second.r = constants().lit_true;
+                  }
+                  if (Id* ident = it->second.b()->dyn_cast<Id>()) {
+                    bind(env, Ctx(), ident->decl(), constants().lit_true);
+                    it->second.b = constants().lit_true;
+                  }
+                } else {
+                  env.map_insert(c, EE(constants().lit_true,constants().lit_true));
+                }
+              }
+            }
+            return;
+          }
         }
         args.push_back(e0);
         args.push_back(e1);
@@ -2160,6 +2191,14 @@ namespace MiniZinc {
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
             id->decl()->flat(vd);
+            ArrayLit* al = id->decl()->e()->cast<ArrayLit>();
+            if (al->v().size()==0) {
+              if (r==NULL)
+                ret.r = al;
+              else
+                ret.r = bind(env,ctx,r,al);
+              return ret;
+            }
           }
           ret.r = bind(env,ctx,r,e->cast<Id>()->decl()->flat()->id());
           return ret;
@@ -2170,7 +2209,10 @@ namespace MiniZinc {
           GCLock lock;
           ArrayLit* al = follow_id(eval_par(e))->cast<ArrayLit>();
           if (al->v().size()==0 || (r && r->e()==NULL)) {
-            ret.r = bind(env,ctx,r,al);
+            if (r==NULL)
+              ret.r = al;
+            else
+              ret.r = bind(env,ctx,r,al);
             return ret;
           }
           if ( (it = env.map_find(al)) != env.map_end()) {
@@ -2347,15 +2389,12 @@ namespace MiniZinc {
             }
             Type tt = vd->ti()->type();
             tt.dim(0);
-            TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
             
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
-              VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
-              nvd->introduced(vd->introduced());
-              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
-              Id* id = root_vd.r()->cast<Id>();
-              elems[i] = id;
+              TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
+              VarDecl* nvd = newVarDecl(env, Ctx(), vti, NULL, vd, NULL);
+              elems[i] = nvd->id();
             }
             // After introducing variables for each array element, the original domain can be
             // set to "computed" (since it is a consequence of the individual variable domains)
@@ -2398,7 +2437,13 @@ namespace MiniZinc {
               if (id->type().bt() == Type::BT_ANN && vd->e()) {
                 rete = vd->e();
               } else {
-                rete = vd->id();
+                ArrayLit* vda = vd->dyn_cast<ArrayLit>();
+                if (vda && vda->v().size()==0) {
+                  // Do not create names for empty arrays but return array literal directly
+                  rete = vda;
+                } else {
+                  rete = vd->id();
+                }
               }
             }
           }
@@ -3762,13 +3807,13 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-                  if (r != NULL) {
-                    bind(env,Ctx(),r,reif_b->id());
-                  }
                 } else {
                   reif_b = r;
                 }
                 reif_b->e(cr());
+                if (r != NULL && r->e() != NULL) {
+                  bind(env,Ctx(),r,reif_b->id());
+                }
                 env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
