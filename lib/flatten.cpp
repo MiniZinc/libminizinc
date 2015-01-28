@@ -1099,9 +1099,15 @@ namespace MiniZinc {
                 nx.push_back(vd->id());
                 args.push_back(new ArrayLit(Location().introduce(),nx));
                 args[1]->type(le_x->type());
-                IntVal d = c->args()[2]->cast<IntLit>()->v();
-                args.push_back(new IntLit(Location().introduce(),-d));
-                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+                if (c->type().bt()==Type::BT_INT) {
+                  IntVal d = c->args()[2]->cast<IntLit>()->v();
+                  args.push_back(new IntLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
+                } else {
+                  FloatVal d = c->args()[2]->cast<FloatLit>()->v();
+                  args.push_back(new FloatLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
+                }
               } else {
                 args.resize(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
