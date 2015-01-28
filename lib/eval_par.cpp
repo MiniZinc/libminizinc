@@ -1304,7 +1304,7 @@ namespace MiniZinc {
     bool valid;
     ComputeIntBounds(void) : valid(true) {}
     bool enter(Expression* e) {
-      if (e->type().dim() > 0)
+      if (e->type().dim() > 0 || e->type().isann())
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {

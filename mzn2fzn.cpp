@@ -339,9 +339,14 @@ int main(int argc, char** argv) {
                   passes.push_back(new CompilePass(pass_opts, "std"));
               }
 
+              std::vector<std::string> cleanIncludePaths(includePaths.size()-1);
+              for(unsigned int i=0; i<includePaths.size(); i++)
+                if(i != includePaths.size()-2)
+                  cleanIncludePaths.push_back(includePaths[i]);
+
               // Multi-pass optimisations
               if(flag_npasses > 1)
-                multiPassFlatten(env, includePaths, passes);
+                multiPassFlatten(env, cleanIncludePaths, passes);
 
               // Final compilation
               if (flag_verbose)

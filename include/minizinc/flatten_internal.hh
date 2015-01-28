@@ -68,6 +68,8 @@ namespace MiniZinc {
     VarOccurrences vo;
     VarOccurrences output_vo;
     unsigned int pass;
+    int passes;
+    unsigned int maxPathDepth;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {
@@ -96,7 +98,6 @@ namespace MiniZinc {
     PathMap pathMap;
     ReversePathMap reversePathMap;
     UNORDERED_NAMESPACE::unordered_map<std::string, int> filenameMap;
-    unsigned int maxPathDepth;
 
   public:
     EnvI(Model* orig0);
