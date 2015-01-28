@@ -1899,11 +1899,11 @@ namespace MiniZinc {
                 c->decl(env.orig->matchFn(c));
                 EnvI::Map::iterator it = env.map_find(c);
                 if (it != env.map_end()) {
-                  if (Id* ident = it->second.r()->dyn_cast<Id>()) {
+                  if (Id* ident = it->second.r()->template dyn_cast<Id>()) {
                     bind(env, Ctx(), ident->decl(), constants().lit_true);
                     it->second.r = constants().lit_true;
                   }
-                  if (Id* ident = it->second.b()->dyn_cast<Id>()) {
+                  if (Id* ident = it->second.b()->template dyn_cast<Id>()) {
                     bind(env, Ctx(), ident->decl(), constants().lit_true);
                     it->second.b = constants().lit_true;
                   }
