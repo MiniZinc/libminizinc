@@ -2343,15 +2343,12 @@ namespace MiniZinc {
             }
             Type tt = vd->ti()->type();
             tt.dim(0);
-            TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
             
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
-              VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
-              nvd->introduced(vd->introduced());
-              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
-              Id* id = root_vd.r()->cast<Id>();
-              elems[i] = id;
+              TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
+              VarDecl* nvd = newVarDecl(env, Ctx(), vti, NULL, vd, NULL);
+              elems[i] = nvd->id();
             }
             // After introducing variables for each array element, the original domain can be
             // set to "computed" (since it is a consequence of the individual variable domains)
