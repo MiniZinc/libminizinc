@@ -16,6 +16,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <cerrno>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -398,6 +399,12 @@ int main(int argc, char** argv) {
             } else {
               std::ofstream os;
               os.open(flag_output_fzn.c_str(), ios::out);
+              if (!os.good()) {
+                if (flag_verbose)
+                  std::cerr << std::endl;
+                std::cerr << "I/O error: cannot open fzn output file. " << strerror(errno) << "." << std::endl;
+                exit(EXIT_FAILURE);
+              }
               Printer p(os,0);
               p.print(flat);
               os.close();
@@ -413,6 +420,12 @@ int main(int argc, char** argv) {
               } else {
                 std::ofstream os;
                 os.open(flag_output_ozn.c_str(), ios::out);
+                if (!os.good()) {
+                  if (flag_verbose)
+                    std::cerr << std::endl;
+                  std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
+                  exit(EXIT_FAILURE);
+                }
                 Printer p(os,0);
                 p.print(env.output());
                 os.close();
