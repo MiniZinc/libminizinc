@@ -486,8 +486,22 @@ namespace MiniZinc {
       c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
                               KeepAlive(copy(cmap,(it->second)())));
     }    
-    // TODO: update VarDecl pointers in the flat model
-    
+    // updating the VarDecl pointers in the original model
+    for(std::vector<Item*>::iterator it = c_orig->begin(); it!=c_orig->end(); it++) {
+      if(VarDeclI* vdi = (*it)->dyn_cast<VarDeclI>()) {
+        if(vdi->e()->flat()) {
+          vdi->e()->flat(copy(cmap,vdi->e()->flat())->cast<VarDecl>()); // copy the flat pointer
+        }
+      }
+    }
+    // updating VarDecl pointers in the flat model
+    for(std::vector<Item*>::iterator it = c_flat->begin(); it!=c_flat->end(); it++) {
+      if(VarDeclI* vdi = (*it)->dyn_cast<VarDeclI>()) {
+        if(vdi->e()->flat() != vdi->e()) {
+          vdi->e()->flat(vdi->e()); // set the flat pointer to yourself
+        }
+      }
+    }
     
     Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, c->e->get_ids());
     c->e->vo = c_vo;
