@@ -143,7 +143,7 @@ namespace MiniZinc {
     } else {
       vd->e(rhs);
     }
-
+    assert(!vd->type().isbot());
     if (origVd && (origVd->id()->idn()!=-1 || origVd->toplevel())) {
       vd->introduced(origVd->introduced());
     } else {
@@ -1254,7 +1254,7 @@ namespace MiniZinc {
           dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), NULL);
         }
       }
-      Type t = vd->e() ? vd->e()->type() : vd->ti()->type();
+      Type t = (vd->e() && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
       return new TypeInst(vd->ti()->loc(), t, dims, eval_par(vd->ti()->domain()));
     }
   }
@@ -3841,7 +3841,8 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = newVarDecl(env, ctx, eval_typeinst(env,v), v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
+          TypeInst* ti = eval_typeinst(env,v);
+          VarDecl* vd = newVarDecl(env, ctx, ti, v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
           v->flat(vd);
           Ctx nctx;
           if (v->e() && v->e()->type().bt() == Type::BT_BOOL)
