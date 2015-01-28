@@ -2148,7 +2148,7 @@ namespace MiniZinc {
         } else {
           GCLock lock;
           ArrayLit* al = follow_id(eval_par(e))->cast<ArrayLit>();
-          if (al->v().size()==0) {
+          if (al->v().size()==0 || (r && r->e()==NULL)) {
             ret.r = bind(env,ctx,r,al);
             return ret;
           }
