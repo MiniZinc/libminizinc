@@ -119,10 +119,10 @@ function ann: policy_based_two_stage(array[int] of var int: stage1,
      and([
          repeat (
            and([
-             next, % find an initial solution       
+             next, % TODO: do we want the variable assignments to be fixed according to this solution in all subscopes?
                scope(
                  repeat (s in 1..nbScenarios) (
-                   and([
+                   and([                     
                      post(secondStageConstraints(s)),
                      let {
                        var int: obj_s = getObjective(s);          
