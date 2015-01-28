@@ -3786,13 +3786,13 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-                  if (r != NULL) {
-                    bind(env,Ctx(),r,reif_b->id());
-                  }
                 } else {
                   reif_b = r;
                 }
                 reif_b->e(cr());
+                if (r != NULL && r->e() != NULL) {
+                  bind(env,Ctx(),r,reif_b->id());
+                }
                 env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
