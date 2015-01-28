@@ -127,9 +127,9 @@ function ann: policy_based_two_stage(array[int] of var int: stage1,
                      let {
                        var int: obj_s = getObjective(s);          
                      } in
-                       bab_min(obj_s) :: % TODO: I want concatenation
-                       % scenario_obj[s] := val(obj) % does not work
-                       comb_assign(scenario_obj[s], sol(obj_s))
+                       and([bab_min(obj_s),
+                           % scenario_obj[s] := val(obj) % does not work
+                           comb_assign(scenario_obj[s], sol(obj_s))])
                    ]) 
                  )
               )

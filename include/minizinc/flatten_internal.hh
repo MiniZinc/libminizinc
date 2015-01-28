@@ -95,6 +95,7 @@ namespace MiniZinc {
     ~EnvI(void);
     long long int genId(void);
     void map_insert(Expression* e, const EE& ee);
+    void map_insert(Expression* e, const WW& ww);
     Map::iterator map_find(Expression* e);
     void map_remove(Expression* e);
     Map::iterator map_end(void);

@@ -254,6 +254,10 @@ namespace MiniZinc {
       KeepAlive ka(e);
       map.insert(ka,WW(ee.r(),ee.b()));
     }
+  void EnvI::map_insert(Expression* e, const WW& ww) {
+      KeepAlive ka(e);
+      map.insert(ka,ww);
+    }    
   EnvI::Map::iterator EnvI::map_find(Expression* e) {
     KeepAlive ka(e);
     Map::iterator it = map.find(ka);
@@ -481,9 +485,9 @@ namespace MiniZinc {
     for(IdMap<KeepAlive>::iterator it = e->reverseMappers.begin(); it!=e->reverseMappers.end(); it++) {
       c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
                               KeepAlive(copy(cmap,(it->second)())));
-    } 
-   
+    }    
     // TODO: update VarDecl pointers in the flat model
+    
     
     Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, c->e->get_ids());
     c->e->vo = c_vo;
@@ -499,11 +503,13 @@ namespace MiniZinc {
       c->e->warnings[i] = std::string(e->warnings[i]);
     return c;  
     for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
-      //const EnvI::WW c_ww((it->second).b, (it->second).r);   // TODO: copy WeakRef properly! Or do we need an EE?
-      const EE c_ee; // TODO: create the right EE for the WW
-      Expression* e = copy(cmap, (it->first)());
-      c->e->map_insert(e,
-                   c_ee);   // TODO: WW --> EE: what is the difference?
+      if((it->second).b() && (it->second).r()) {
+        Expression* e = copy(cmap, (it->first)());     
+        WeakRef c_b(copy(cmap, (it->second).b()));
+        WeakRef c_r(copy(cmap, (it->second).r()));
+        EnvI::WW c_ww(c_b, c_r); 
+        c->e->map_insert(e,c_ww);
+      }          
     }
     // the ASTStringMap<ASTString>::t reifyMap is set in the EnvI constructor and is not changed afterwards so we need not copy it
   }
