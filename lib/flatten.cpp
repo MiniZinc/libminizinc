@@ -223,7 +223,8 @@ namespace MiniZinc {
           boolval = eval_bool(ovd->ti()->domain());
         } else {
           fixed = tighter = (ovd->e() && ovd->e()->isa<BoolLit>());
-          if(fixed) boolval = ovd->e()->cast<BoolLit>()->v();
+          if(fixed)
+            boolval = ovd->e()->cast<BoolLit>()->v();
         }
       }
 
@@ -241,6 +242,7 @@ namespace MiniZinc {
           } else if(vd->ti()->type().isvarbool()) {
             vd->type(Type::parbool());
             vd->ti(new TypeInst(vd->loc(), Type::parbool()));
+            vd->ti()->domain(boolval ? constants().lit_true : constants().lit_false);
             vd->e(new BoolLit(vd->loc(), boolval));
           }
         }
@@ -285,11 +287,13 @@ namespace MiniZinc {
   }
 
   VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs) {
-    VarDecl* vd;
-    bool hasBeenAdded = false;
-    bool usePaths = true;
+    VarDecl* vd = NULL;
 
-    if(usePaths && ti->type().dim() == 0 && !ti->type().isann()) {
+    // Is this vardecl already in the FlatZinc (for unification)
+    bool hasBeenAdded = false;
+
+    // Don't use paths for arrays or annotations
+    if(ti->type().dim() == 0 && !ti->type().isann()) {
       std::string path = getPath(env);
       if(!path.empty()) {
         EnvI::PathMap& pathMap = env.getPathMap();
@@ -300,6 +304,7 @@ namespace MiniZinc {
           unsigned int ovd_pass = it->second.second;
 
           if(ovd) {
+            // If ovd was introduced during the same pass, we can unify
             if(env.pass == ovd_pass) {
               vd = ovd;
               if(origId)
@@ -307,11 +312,11 @@ namespace MiniZinc {
               hasBeenAdded = true;
             } else {
               vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
-              updateBounds(ovd, vd);
               hasBeenAdded = false;
+              updateBounds(ovd, vd);
             }
 
-            // Check whether ovd has been unified with another variable
+            // Check whether ovd was unified in a previous pass
             if(ovd->id() != ovd->id()->decl()->id()) {
               std::string path2 = reversePathMap[ovd->id()->decl()];
               std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
@@ -322,21 +327,21 @@ namespace MiniZinc {
             }
           }
         } else {
+          // Create new VarDecl and add it to the maps
           vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
+          hasBeenAdded = false;
           std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
           pathMap       [path] = vd_tup;
           reversePathMap[  vd] = path;
-          hasBeenAdded = false;
         }
-      } else {
-        vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
-        hasBeenAdded = false;
       }
-    } else  {
+    }
+    if(vd == NULL) {
       vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
       hasBeenAdded = false;
     }
 
+    // If vd has an e() use bind to turn rhs into a constraint
     if (vd->e()) {
       if(rhs) {
         bind(env, ctx, vd, rhs);
@@ -344,6 +349,7 @@ namespace MiniZinc {
     } else {
       vd->e(rhs);
     }
+
     assert(!vd->type().isbot());
     if (origVd && (origVd->id()->idn()!=-1 || origVd->toplevel())) {
       vd->introduced(origVd->introduced());
@@ -353,6 +359,7 @@ namespace MiniZinc {
     
     vd->flat(vd);
 
+    // Copy annotations from origVd
     if (origVd) {
       for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
         EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
