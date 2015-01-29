@@ -80,6 +80,8 @@ namespace MiniZinc {
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
     std::vector<std::string> warnings;
+    bool collect_vardecls;
+    std::vector<int> modifiedVarDecls;
   protected:
     Map map;
     Model* _flat;
@@ -101,6 +103,7 @@ namespace MiniZinc {
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+    void collectVarDecls(bool b);
   };
 
   Expression* follow_id(Expression* e);
