@@ -4136,6 +4136,17 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+                  if (reif_b->ti()->domain()) {
+                    if (reif_b->ti()->domain() == constants().lit_true) {
+                      bind(env,ctx,r,constants().lit_true);
+                      goto call_nonreif;
+                    } else {
+                      bind(env,ctx,r,constants().lit_false);
+                      args.push_back(constants().lit_false);
+                      decl = reif_decl;
+                      goto call_nonreif;
+                    }
+                  }
                 } else {
                   reif_b = r;
                 }
@@ -4151,85 +4162,79 @@ namespace MiniZinc {
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
                 ret.r = conj(env,NULL,ctx,args_ee);
+                return ret;
+              }
+            }
+          call_nonreif:
+            if (decl->e()==NULL) {
+              Call* cr_c = cr()->cast<Call>();
+              /// All builtins are total
+              std::vector<Type> argt(cr_c->args().size());
+              for (unsigned int i=argt.size(); i--;)
+                argt[i] = cr_c->args()[i]->type();
+              Type callt = decl->rtype(argt);
+              if (callt.ispar() && callt.bt()!=Type::BT_ANN) {
+                GCLock lock;
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,eval_par(cr_c));
+                // Do not insert into map, since par results will quickly become
+                // garbage anyway and then disappear from the map
+              } else if (decl->_builtins.e) {
+                KeepAlive callres = decl->_builtins.e(cr_c->args());
+                EE res = flat_exp(env,ctx,callres(),r,b);
+                args_ee.push_back(res);
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,res.r());
+                if (!ctx.neg)
+                  env.map_insert(cr_c,ret);
               } else {
-                goto call_nonreif;
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,cr_c);
+                if (!ctx.neg)
+                  env.map_insert(cr_c,ret);
               }
             } else {
-            call_nonreif:
-              if (decl->e()==NULL) {
-                Call* cr_c = cr()->cast<Call>();
-                /// All builtins are total
-                std::vector<Type> argt(cr_c->args().size());
-                for (unsigned int i=argt.size(); i--;)
-                  argt[i] = cr_c->args()[i]->type();
-                Type callt = decl->rtype(argt);
-                if (callt.ispar() && callt.bt()!=Type::BT_ANN) {
-                  GCLock lock;
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,eval_par(cr_c));
-                  // Do not insert into map, since par results will quickly become
-                  // garbage anyway and then disappear from the map
-                } else if (decl->_builtins.e) {
-                  KeepAlive callres = decl->_builtins.e(cr_c->args());
-                  EE res = flat_exp(env,ctx,callres(),r,b);
-                  args_ee.push_back(res);
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,res.r());
-                  if (!ctx.neg)
-                    env.map_insert(cr_c,ret);
+              std::vector<KeepAlive> previousParameters(decl->params().size());
+              for (unsigned int i=decl->params().size(); i--;) {
+                VarDecl* vd = decl->params()[i];
+                previousParameters[i] = vd->e();
+                vd->flat(vd);
+                vd->e(args[i]());
+              }
+              
+              if (decl->e()->type().isbool() && !decl->e()->type().isopt()) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                if (ctx.b==C_ROOT && r==constants().var_true) {
+                  (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
                 } else {
-                  GCLock lock;
-
-                  addPathAnnotation(env, cr_c);
-
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,cr_c);
-                  if (!ctx.neg)
-                    env.map_insert(cr_c,ret);
+                  Ctx nctx;
+                  if (!isTotal(decl)) {
+                    nctx = ctx;
+                    nctx.neg = false;
+                  }
+                  EE ee = flat_exp(env,nctx,decl->e(),NULL,constants().var_true);
+                  ee.b = ee.r;
+                  args_ee.push_back(ee);
                 }
+                ret.r = conj(env,r,ctx,args_ee);
               } else {
-                std::vector<KeepAlive> previousParameters(decl->params().size());
-                for (unsigned int i=decl->params().size(); i--;) {
-                  VarDecl* vd = decl->params()[i];
-                  previousParameters[i] = vd->e();
-                  vd->flat(vd);
-                  vd->e(args[i]());
-                }
-                
-                if (decl->e()->type().isbool() && !decl->e()->type().isopt()) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  if (ctx.b==C_ROOT && r==constants().var_true) {
-                    (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                  } else {
-                    Ctx nctx;
-                    if (!isTotal(decl)) {
-                      nctx = ctx;
-                      nctx.neg = false;
-                    }
-                    EE ee = flat_exp(env,nctx,decl->e(),NULL,constants().var_true);
-                    ee.b = ee.r;
-                    args_ee.push_back(ee);
-                  }
-                  ret.r = conj(env,r,ctx,args_ee);
+                if (isTotal(decl)) {
+                  EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
+                  ret.r = bind(env,ctx,r,ee.r());
                 } else {
-                  if (isTotal(decl)) {
-                    EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                    ret.r = bind(env,ctx,r,ee.r());
-                  } else {
-                    ret = flat_exp(env,ctx,decl->e(),r,NULL);
-                    args_ee.push_back(ret);
-                  }
-                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret = flat_exp(env,ctx,decl->e(),r,NULL);
+                  args_ee.push_back(ret);
                 }
-                if (!ctx.neg)
-                  env.map_insert(cr(),ret);
+                ret.b = conj(env,b,Ctx(),args_ee);
+              }
+              if (!ctx.neg)
+                env.map_insert(cr(),ret);
 
-                // Restore previous mapping
-                for (unsigned int i=decl->params().size(); i--;) {
-                  VarDecl* vd = decl->params()[i];
-                  vd->e(previousParameters[i]());
-                  vd->flat(vd->e() ? vd : NULL);
-                }
+              // Restore previous mapping
+              for (unsigned int i=decl->params().size(); i--;) {
+                VarDecl* vd = decl->params()[i];
+                vd->e(previousParameters[i]());
+                vd->flat(vd->e() ? vd : NULL);
               }
             }
           }
