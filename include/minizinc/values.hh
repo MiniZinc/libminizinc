@@ -15,18 +15,63 @@
 #include <minizinc/gc.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/stl_map_set.hh>
+#include <minizinc/thirdparty/SafeInt3.hpp>
 #include <algorithm>
 #include <functional>
 #include <vector>
 #include <string>
 
-namespace MiniZinc {
 
+namespace MiniZinc {
+  class IntVal;
+}
+namespace std {
+  MiniZinc::IntVal abs(const MiniZinc::IntVal& x);
+}
+
+#ifdef _MSC_VER
+#define MZN_NORETURN __declspec(noreturn)
+#define MZN_NORETURN_ATTR
+#else
+#define MZN_NORETURN
+#define MZN_NORETURN_ATTR __attribute__((__noreturn__))
+#endif
+
+namespace MiniZinc {
+  
+  class MiniZincSafeIntExceptionHandler
+  {
+  public:
+    static MZN_NORETURN void SafeIntOnOverflow() MZN_NORETURN_ATTR
+    {
+      throw ArithmeticError( "integer overflow" );
+    }
+    
+    static MZN_NORETURN void SafeIntOnDivZero() MZN_NORETURN_ATTR
+    {
+      throw ArithmeticError( "integer division by zero" );
+    }
+  };
+}
+
+#undef MZN_NORETURN
+
+namespace MiniZinc {
+  
   class IntVal {
+    friend IntVal operator +(const IntVal& x, const IntVal& y);
+    friend IntVal operator -(const IntVal& x, const IntVal& y);
+    friend IntVal operator *(const IntVal& x, const IntVal& y);
+    friend IntVal operator /(const IntVal& x, const IntVal& y);
+    friend IntVal operator %(const IntVal& x, const IntVal& y);
+    friend IntVal std::abs(const MiniZinc::IntVal& x);
   private:
     long long int _v;
     bool _infinity;
     IntVal(long long int v, bool infinity) : _v(v), _infinity(infinity) {}
+    typedef SafeInt<long long int, MiniZincSafeIntExceptionHandler> SI;
+    SI toSafeInt(void) const { return _v; }
+    IntVal(SI v) : _v(v), _infinity(false) {}
   public:
     IntVal(void) : _v(0), _infinity(false) {}
     IntVal(long long int v) : _v(v), _infinity(false) {}
@@ -93,14 +138,14 @@ namespace MiniZinc {
     /// Infinity-safe addition
     IntVal plus(int x) {
       if (isFinite())
-        return toInt()+x;
+        return toSafeInt()+x;
       else
         return *this;
     }
     /// Infinity-safe subtraction
     IntVal minus(int x) {
       if (isFinite())
-        return toInt()-x;
+        return toSafeInt()-x;
       else
         return *this;
     }
@@ -137,19 +182,19 @@ namespace MiniZinc {
   IntVal operator +(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toInt()+y.toInt();
+    return x.toSafeInt()+y.toSafeInt();
   }
   inline
   IntVal operator -(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toInt()-y.toInt();
+    return x.toSafeInt()-y.toSafeInt();
   }
   inline
   IntVal operator *(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toInt()*y.toInt();
+    return x.toSafeInt()*y.toSafeInt();
   }
   inline
   IntVal operator /(const IntVal& x, const IntVal& y) {
@@ -179,7 +224,9 @@ namespace MiniZinc {
 namespace std {
   inline
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-    return x.isFinite() ? MiniZinc::IntVal(abs(x.toInt())) : MiniZinc::IntVal::infinity;
+    if (!x.isFinite()) return MiniZinc::IntVal::infinity;
+    MiniZinc::IntVal::SI y(x.toInt());
+    return y < 0 ? MiniZinc::IntVal(static_cast<long long int>(-y)) : x;
   }
   
   inline
