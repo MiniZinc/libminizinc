@@ -1126,7 +1126,8 @@ namespace MiniZinc {
   }
 
   FloatVal b_int2float(ASTExprVec<Expression> args) {
-    return static_cast<FloatVal>(eval_int(args[0]).toInt());
+    long long int i = eval_int(args[0]).toInt();
+    return static_cast<FloatVal>(i);
   }
   IntVal b_ceil(ASTExprVec<Expression> args) {
     return static_cast<long long int>(std::ceil(eval_float(args[0])));
@@ -1597,16 +1598,16 @@ namespace MiniZinc {
   
   IntVal b_poisson_int(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
-    const long long int mean = eval_int(args[0]).toInt();
-    std::poisson_distribution<int> distribution(mean);
+    long long int mean = eval_int(args[0]).toInt();
+    std::poisson_distribution<long long int> distribution(mean);
     // return a sample from the distribution
     return IntVal(distribution(rnd_generator()));  
   }
   
   IntVal b_poisson_float(ASTExprVec<Expression> args) {
     assert(args.size() == 1);
-    const double mean = eval_float(args[0]);
-    std::poisson_distribution<int> distribution(mean);
+    double mean = eval_float(args[0]);
+    std::poisson_distribution<long long int> distribution(mean);
     // return a sample from the distribution
     return IntVal(distribution(rnd_generator())); 
   }
@@ -1795,16 +1796,16 @@ namespace MiniZinc {
           << *al << std::endl;
       throw EvalError(al->loc(), ssm.str());
     }
-    std::vector<int> weights(al->v().size());
+    std::vector<long long int> weights(al->v().size());
     for(unsigned int i = 0; i < al->v().size(); i++) {
       weights[i] = eval_int(al->v()[i]).toInt();
     }
 #ifdef _MSC_VER
     std::size_t i(0);
-    std::discrete_distribution<int> distribution(weights.size(), 0.0,1.0,
+    std::discrete_distribution<long long int> distribution(weights.size(), 0.0,1.0,
                                                  [&weights,&i](double){ return weights[i++]; });
 #else
-    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+    std::discrete_distribution<long long int> distribution(weights.begin(), weights.end());
 #endif
     // return a sample from the distribution
     IntVal iv = IntVal(distribution(rnd_generator()));
@@ -1821,9 +1822,9 @@ namespace MiniZinc {
   
   IntVal b_binomial(ASTExprVec<Expression> args) {
     assert(args.size() == 2);
-    const double t = double(eval_int(args[0]).toInt());
-    const double p = eval_float(args[1]);
-    std::binomial_distribution<int> distribution(t,p);
+    double t = double(eval_int(args[0]).toInt());
+    double p = eval_float(args[1]);
+    std::binomial_distribution<long long int> distribution(t,p);
     // return a sample from the distribution
     return IntVal(distribution(rnd_generator()));    
   }  
