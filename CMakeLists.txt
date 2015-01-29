@@ -237,6 +237,8 @@ include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
+include/minizinc/stl_map_set.hh
+include/minizinc/thirdparty/SafeInt3.hpp
 "${parser_hh}"
 )
 

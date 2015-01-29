@@ -344,7 +344,7 @@ namespace MiniZinc {
     // If vd has an e() use bind to turn rhs into a constraint
     if (vd->e()) {
       if(rhs) {
-        bind(env, ctx, vd, rhs);
+      bind(env, ctx, vd, rhs);
       }
     } else {
       vd->e(rhs);
@@ -368,19 +368,19 @@ namespace MiniZinc {
     }
     
     if (!hasBeenAdded) {
-      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-      env.flat_addItem(ni);
+    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+    env.flat_addItem(ni);
       //TODO: What should we do with the map?
-      EE ee(vd,NULL);
-      env.map_insert(vd->id(),ee);
+    EE ee(vd,NULL);
+    env.map_insert(vd->id(),ee);
     }
-
+    
     return vd;
   }
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0), passes(1) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), collect_vardecls(false),_flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0), passes(1) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -518,6 +518,9 @@ namespace MiniZinc {
       topDown(ce,toAdd);
     }
   }
+  void EnvI::collectVarDecls(bool b) {
+    collect_vardecls = b;
+  }
   void EnvI::vo_add_exp(VarDecl* vd) {
     if (vd->e() && vd->e()->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
@@ -531,6 +534,8 @@ namespace MiniZinc {
     int idx = vo.find(vd);
     CollectOccurrencesE ce(vo,(*_flat)[idx]);
     topDown(ce, vd->e());
+    if (collect_vardecls)
+      modifiedVarDecls.push_back(idx);
   }
   Model* EnvI::flat(void) {
     return _flat;
@@ -563,7 +568,7 @@ namespace MiniZinc {
     filenameMap = env.filenameMap;
     maxPathDepth = env.maxPathDepth;
   }
-
+  
   class CallStackItem {
   public:
     EnvI& env;
@@ -622,7 +627,7 @@ namespace MiniZinc {
     if (stack.size() > maxPathDepth) {
       if(pass >= passes-1) {
         return false;
-      }
+  }
       maxPathDepth = stack.size();
     }
 
@@ -2723,6 +2728,7 @@ namespace MiniZinc {
             }
             Type tt = vd->ti()->type();
             tt.dim(0);
+            
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               CallStackItem csi(env, new IntLit(vd->loc().introduce(), i));
@@ -5325,8 +5331,20 @@ namespace MiniZinc {
     
     std::vector<VarDecl*> deletedVarDecls;
     std::vector<VarDeclI*> removedItems;
-    while (startItem <= endItem) {
+    env.collectVarDecls(true);
+
+    while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
+      std::vector<int> agenda;
       for (int i=startItem; i<=endItem; i++) {
+        agenda.push_back(i);
+      }
+      for (unsigned int i=0; i<env.modifiedVarDecls.size(); i++) {
+        agenda.push_back(env.modifiedVarDecls[i]);
+      }
+      env.modifiedVarDecls.clear();
+      
+      for (int ai=0; ai<agenda.size(); ai++) {
+        int i=agenda[ai];
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
         bool keptVariable = true;
         if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
@@ -5419,7 +5437,8 @@ namespace MiniZinc {
       }
 
       // rewrite some constraints if there are redefinitions
-      for (int i=startItem; i<=endItem; i++) {
+      for (int ai=0; ai<agenda.size(); ai++) {
+        int i=agenda[ai];
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
           if (!vdi->removed() && vd->e()) {
@@ -5700,7 +5719,7 @@ namespace MiniZinc {
           vdi->e()->e()->ann().removeCall(constants().ann.mzn_path);
         if(item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
             item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
-          item->remove();
+            item->remove();
         }
       } else if(ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
         ci->e()->ann().removeCall(constants().ann.mzn_path);
@@ -5708,7 +5727,7 @@ namespace MiniZinc {
         si->ann().removeCall(constants().ann.mzn_path);
         if(si->e())
           si->e()->ann().removeCall(constants().ann.mzn_path);
-      }
+          }
     }
 
     m->compact();

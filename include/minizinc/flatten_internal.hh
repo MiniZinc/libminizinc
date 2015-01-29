@@ -83,6 +83,8 @@ namespace MiniZinc {
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
     std::vector<std::string> warnings;
+    bool collect_vardecls;
+    std::vector<int> modifiedVarDecls;
     FlatteningOptions fopts;
     unsigned int pathUse;
 
@@ -116,6 +118,7 @@ namespace MiniZinc {
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     bool dumpPath(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+    void collectVarDecls(bool b);
 
     PathMap& getPathMap() { return pathMap; }
     ReversePathMap& getReversePathMap() { return reversePathMap; }
