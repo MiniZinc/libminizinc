@@ -368,13 +368,13 @@ namespace MiniZinc {
     }
     
     if (!hasBeenAdded) {
-    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-    env.flat_addItem(ni);
+      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+      env.flat_addItem(ni);
       //TODO: What should we do with the map?
-    EE ee(vd,NULL);
-    env.map_insert(vd->id(),ee);
+      EE ee(vd,NULL);
+      env.map_insert(vd->id(),ee);
     }
-    
+
     return vd;
   }
 
@@ -4368,6 +4368,7 @@ namespace MiniZinc {
                 throw FlatteningError(env,vd->loc(),
                                       "free variable in non-positive context");
               }
+              CallStackItem csi_vd(env, vd);
               GCLock lock;
               TypeInst* ti = eval_typeinst(env,vd);
               VarDecl* nvd = newVarDecl(env, ctx, ti, NULL, vd, NULL);
