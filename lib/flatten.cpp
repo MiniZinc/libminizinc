@@ -143,7 +143,7 @@ namespace MiniZinc {
     } else {
       vd->e(rhs);
     }
-
+    assert(!vd->type().isbot());
     if (origVd && (origVd->id()->idn()!=-1 || origVd->toplevel())) {
       vd->introduced(origVd->introduced());
     } else {
@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), collect_vardecls(false), _flat(new Model), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -352,6 +352,9 @@ namespace MiniZinc {
       topDown(ce,toAdd);
     }
   }
+  void EnvI::collectVarDecls(bool b) {
+    collect_vardecls = b;
+  }
   void EnvI::vo_add_exp(VarDecl* vd) {
     if (vd->e() && vd->e()->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
@@ -365,6 +368,8 @@ namespace MiniZinc {
     int idx = vo.find(vd);
     CollectOccurrencesE ce(vo,(*_flat)[idx]);
     topDown(ce, vd->e());
+    if (collect_vardecls)
+      modifiedVarDecls.push_back(idx);
   }
   Model* EnvI::flat(void) {
     return _flat;
@@ -1247,9 +1252,15 @@ namespace MiniZinc {
                 nx.push_back(vd->id());
                 args.push_back(new ArrayLit(Location().introduce(),nx));
                 args[1]->type(le_x->type());
-                IntVal d = c->args()[2]->cast<IntLit>()->v();
-                args.push_back(new IntLit(Location().introduce(),-d));
-                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+                if (c->type().bt()==Type::BT_INT) {
+                  IntVal d = c->args()[2]->cast<IntLit>()->v();
+                  args.push_back(new IntLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
+                } else {
+                  FloatVal d = c->args()[2]->cast<FloatLit>()->v();
+                  args.push_back(new FloatLit(Location().introduce(),-d));
+                  nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
+                }
               } else {
                 args.resize(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
@@ -1402,7 +1413,7 @@ namespace MiniZinc {
           dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), NULL);
         }
       }
-      Type t = vd->e() ? vd->e()->type() : vd->ti()->type();
+      Type t = (vd->e() && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
       return new TypeInst(vd->ti()->loc(), t, dims, eval_par(vd->ti()->domain()));
     }
   }
@@ -1961,46 +1972,31 @@ namespace MiniZinc {
           vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
           ret.r = bind(env,ctx,r,constants().lit_true);
         }
-      } else if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
-        GCLock lock;
-        VarDecl* vd = alv[0]()->cast<Id>()->decl();
-        typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
-        typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(bot,domain,d);
-        if (domain && ndomain) {
-          if (LinearTraits<Lit>::domain_empty(ndomain)) {
-            ret.r = bind(env,ctx,r,constants().lit_false);
-          } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
-            ret.r = bind(env,ctx,r,constants().lit_true);
-            vd->ti()->setComputedDomain(false);
-            vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
-          }
-        } else {
-          goto non_domain_binop;
-        }
       } else {
-      non_domain_binop:
+        
         GCLock lock;
         Expression* e0;
         Expression* e1;
+        BinOpType old_bot = bot;
+        Val old_d = d;
         switch (bot) {
           case BOT_LE:
             e0 = alv[0]();
             if (e0->type().isint()) {
-              e1 = new Lit(Location().introduce(),d-1);
+              d--;
               bot = BOT_LQ;
-            } else {
-              e1 = new Lit(Location().introduce(),d);
             }
+            e1 = new Lit(Location().introduce(),d);
             break;
           case BOT_GR:
             e1 = alv[0]();
             if (e1->type().isint()) {
-              e0 = new Lit(Location().introduce(),d+1);
+              d++;
               bot = BOT_LQ;
             } else {
-              e0 = new Lit(Location().introduce(),d);
               bot = BOT_LE;
             }
+            e0 = new Lit(Location().introduce(),d);
             break;
           case BOT_GQ:
             e0 = new Lit(Location().introduce(),d);
@@ -2010,6 +2006,46 @@ namespace MiniZinc {
           default:
             e0 = alv[0]();
             e1 = new Lit(Location().introduce(),d);
+        }
+        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+          VarDecl* vd = alv[0]()->cast<Id>()->decl();
+          typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(vd->ti()->domain());
+          typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(old_bot,domain,old_d);
+          if (domain && ndomain) {
+            if (LinearTraits<Lit>::domain_empty(ndomain)) {
+              ret.r = bind(env,ctx,r,constants().lit_false);
+              return;
+            } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              vd->ti()->setComputedDomain(false);
+              vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
+
+              if (r==constants().var_true) {
+                BinOp* bo = new BinOp(Location().introduce(), e0, bot, e1);
+                bo->type(Type::varbool());
+                std::vector<Expression*> boargs(2);
+                boargs[0] = e0;
+                boargs[1] = e1;
+                Call* c = new Call(Location(), opToBuiltin(bo, bot), boargs);
+                c->type(Type::varbool());
+                c->decl(env.orig->matchFn(c));
+                EnvI::Map::iterator it = env.map_find(c);
+                if (it != env.map_end()) {
+                  if (Id* ident = it->second.r()->template dyn_cast<Id>()) {
+                    bind(env, Ctx(), ident->decl(), constants().lit_true);
+                    it->second.r = constants().lit_true;
+                  }
+                  if (Id* ident = it->second.b()->template dyn_cast<Id>()) {
+                    bind(env, Ctx(), ident->decl(), constants().lit_true);
+                    it->second.b = constants().lit_true;
+                  }
+                } else {
+                  env.map_insert(c, EE(constants().lit_true,constants().lit_true));
+                }
+              }
+            }
+            return;
+          }
         }
         args.push_back(e0);
         args.push_back(e1);
@@ -2287,6 +2323,14 @@ namespace MiniZinc {
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
             id->decl()->flat(vd);
+            ArrayLit* al = id->decl()->e()->cast<ArrayLit>();
+            if (al->v().size()==0) {
+              if (r==NULL)
+                ret.r = al;
+              else
+                ret.r = bind(env,ctx,r,al);
+              return ret;
+            }
           }
           ret.r = bind(env,ctx,r,e->cast<Id>()->decl()->flat()->id());
           return ret;
@@ -2296,8 +2340,11 @@ namespace MiniZinc {
         } else {
           GCLock lock;
           ArrayLit* al = follow_id(eval_par(e))->cast<ArrayLit>();
-          if (al->v().size()==0) {
-            ret.r = bind(env,ctx,r,al);
+          if (al->v().size()==0 || (r && r->e()==NULL)) {
+            if (r==NULL)
+              ret.r = al;
+            else
+              ret.r = bind(env,ctx,r,al);
             return ret;
           }
           if ( (it = env.map_find(al)) != env.map_end()) {
@@ -2474,15 +2521,12 @@ namespace MiniZinc {
             }
             Type tt = vd->ti()->type();
             tt.dim(0);
-            TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
             
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
-              VarDecl* nvd = new VarDecl(vd->loc(),vti,env.genId());
-              nvd->introduced(vd->introduced());
-              EE root_vd = flat_exp(env,Ctx(),nvd,NULL,constants().var_true);
-              Id* id = root_vd.r()->cast<Id>();
-              elems[i] = id;
+              TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
+              VarDecl* nvd = newVarDecl(env, Ctx(), vti, NULL, vd, NULL);
+              elems[i] = nvd->id();
             }
             // After introducing variables for each array element, the original domain can be
             // set to "computed" (since it is a consequence of the individual variable domains)
@@ -2525,7 +2569,13 @@ namespace MiniZinc {
               if (id->type().bt() == Type::BT_ANN && vd->e()) {
                 rete = vd->e();
               } else {
-                rete = vd->id();
+                ArrayLit* vda = vd->dyn_cast<ArrayLit>();
+                if (vda && vda->v().size()==0) {
+                  // Do not create names for empty arrays but return array literal directly
+                  rete = vda;
+                } else {
+                  rete = vd->id();
+                }
               }
             }
           }
@@ -3889,92 +3939,101 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-                  if (r != NULL) {
-                    bind(env,Ctx(),r,reif_b->id());
+                  if (reif_b->ti()->domain()) {
+                    if (reif_b->ti()->domain() == constants().lit_true) {
+                      bind(env,ctx,r,constants().lit_true);
+                      goto call_nonreif;
+                    } else {
+                      bind(env,ctx,r,constants().lit_false);
+                      args.push_back(constants().lit_false);
+                      decl = reif_decl;
+                      goto call_nonreif;
+                    }
                   }
                 } else {
                   reif_b = r;
                 }
                 reif_b->e(cr());
+                if (r != NULL && r->e() != NULL) {
+                  bind(env,Ctx(),r,reif_b->id());
+                }
                 env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
                 ret.r = conj(env,NULL,ctx,args_ee);
+                return ret;
+              }
+            }
+          call_nonreif:
+            if (decl->e()==NULL) {
+              Call* cr_c = cr()->cast<Call>();
+              /// All builtins are total
+              std::vector<Type> argt(cr_c->args().size());
+              for (unsigned int i=argt.size(); i--;)
+                argt[i] = cr_c->args()[i]->type();
+              Type callt = decl->rtype(argt);
+              if (callt.ispar() && callt.bt()!=Type::BT_ANN) {
+                GCLock lock;
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,eval_par(cr_c));
+                // Do not insert into map, since par results will quickly become
+                // garbage anyway and then disappear from the map
+              } else if (decl->_builtins.e) {
+                KeepAlive callres = decl->_builtins.e(cr_c->args());
+                EE res = flat_exp(env,ctx,callres(),r,b);
+                args_ee.push_back(res);
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,res.r());
+                if (!ctx.neg)
+                  env.map_insert(cr_c,ret);
               } else {
-                goto call_nonreif;
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,cr_c);
+                if (!ctx.neg)
+                  env.map_insert(cr_c,ret);
               }
             } else {
-            call_nonreif:
-              if (decl->e()==NULL) {
-                Call* cr_c = cr()->cast<Call>();
-                /// All builtins are total
-                std::vector<Type> argt(cr_c->args().size());
-                for (unsigned int i=argt.size(); i--;)
-                  argt[i] = cr_c->args()[i]->type();
-                Type callt = decl->rtype(argt);
-                if (callt.ispar() && callt.bt()!=Type::BT_ANN) {
-                  GCLock lock;
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,eval_par(cr_c));
-                  // Do not insert into map, since par results will quickly become
-                  // garbage anyway and then disappear from the map
-                } else if (decl->_builtins.e) {
-                  KeepAlive callres = decl->_builtins.e(cr_c->args());
-                  EE res = flat_exp(env,ctx,callres(),r,b);
-                  args_ee.push_back(res);
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,res.r());
-                  if (!ctx.neg)
-                    env.map_insert(cr_c,ret);
+              std::vector<KeepAlive> previousParameters(decl->params().size());
+              for (unsigned int i=decl->params().size(); i--;) {
+                VarDecl* vd = decl->params()[i];
+                previousParameters[i] = vd->e();
+                vd->flat(vd);
+                vd->e(args[i]());
+              }
+              
+              if (decl->e()->type().isbool() && !decl->e()->type().isopt()) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                if (ctx.b==C_ROOT && r==constants().var_true) {
+                  (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
                 } else {
-                  ret.b = conj(env,b,Ctx(),args_ee);
-                  ret.r = bind(env,ctx,r,cr_c);
-                  if (!ctx.neg)
-                    env.map_insert(cr_c,ret);
+                  Ctx nctx;
+                  if (!isTotal(decl)) {
+                    nctx = ctx;
+                    nctx.neg = false;
+                  }
+                  EE ee = flat_exp(env,nctx,decl->e(),NULL,constants().var_true);
+                  ee.b = ee.r;
+                  args_ee.push_back(ee);
                 }
+                ret.r = conj(env,r,ctx,args_ee);
               } else {
-                std::vector<KeepAlive> previousParameters(decl->params().size());
-                for (unsigned int i=decl->params().size(); i--;) {
-                  VarDecl* vd = decl->params()[i];
-                  previousParameters[i] = vd->e();
-                  vd->flat(vd);
-                  vd->e(args[i]());
-                }
-                
-                if (decl->e()->type().isbool() && !decl->e()->type().isopt()) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  if (ctx.b==C_ROOT && r==constants().var_true) {
-                    (void) flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                  } else {
-                    Ctx nctx;
-                    if (!isTotal(decl)) {
-                      nctx = ctx;
-                      nctx.neg = false;
-                    }
-                    EE ee = flat_exp(env,nctx,decl->e(),NULL,constants().var_true);
-                    ee.b = ee.r;
-                    args_ee.push_back(ee);
-                  }
-                  ret.r = conj(env,r,ctx,args_ee);
+                if (isTotal(decl)) {
+                  EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
+                  ret.r = bind(env,ctx,r,ee.r());
                 } else {
-                  if (isTotal(decl)) {
-                    EE ee = flat_exp(env,Ctx(),decl->e(),r,constants().var_true);
-                    ret.r = bind(env,ctx,r,ee.r());
-                  } else {
-                    ret = flat_exp(env,ctx,decl->e(),r,NULL);
-                    args_ee.push_back(ret);
-                  }
-                  ret.b = conj(env,b,Ctx(),args_ee);
+                  ret = flat_exp(env,ctx,decl->e(),r,NULL);
+                  args_ee.push_back(ret);
                 }
-                if (!ctx.neg)
-                  env.map_insert(cr(),ret);
+                ret.b = conj(env,b,Ctx(),args_ee);
+              }
+              if (!ctx.neg)
+                env.map_insert(cr(),ret);
 
-                // Restore previous mapping
-                for (unsigned int i=decl->params().size(); i--;) {
-                  VarDecl* vd = decl->params()[i];
-                  vd->e(previousParameters[i]());
-                  vd->flat(vd->e() ? vd : NULL);
-                }
+              // Restore previous mapping
+              for (unsigned int i=decl->params().size(); i--;) {
+                VarDecl* vd = decl->params()[i];
+                vd->e(previousParameters[i]());
+                vd->flat(vd->e() ? vd : NULL);
               }
             }
           }
@@ -3989,7 +4048,8 @@ namespace MiniZinc {
         VarDecl* v = e->cast<VarDecl>();
         VarDecl* it = v->flat();
         if (it==NULL) {
-          VarDecl* vd = newVarDecl(env, ctx, eval_typeinst(env,v), v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
+          TypeInst* ti = eval_typeinst(env,v);
+          VarDecl* vd = newVarDecl(env, ctx, ti, v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
           v->flat(vd);
           Ctx nctx;
           if (v->e() && v->e()->type().bt() == Type::BT_BOOL)
@@ -4951,8 +5011,20 @@ namespace MiniZinc {
     
     std::vector<VarDecl*> deletedVarDecls;
     std::vector<VarDeclI*> removedItems;
-    while (startItem <= endItem) {
+    env.collectVarDecls(true);
+
+    while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
+      std::vector<int> agenda;
       for (int i=startItem; i<=endItem; i++) {
+        agenda.push_back(i);
+      }
+      for (unsigned int i=0; i<env.modifiedVarDecls.size(); i++) {
+        agenda.push_back(env.modifiedVarDecls[i]);
+      }
+      env.modifiedVarDecls.clear();
+      
+      for (int ai=0; ai<agenda.size(); ai++) {
+        int i=agenda[ai];
         VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
         bool keptVariable = true;
         if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
@@ -5039,9 +5111,10 @@ namespace MiniZinc {
           }
         }
       }
-
+      
       // rewrite some constraints if there are redefinitions
-      for (int i=startItem; i<=endItem; i++) {
+      for (int ai=0; ai<agenda.size(); ai++) {
+        int i=agenda[ai];
         if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
           if (!vdi->removed() && vd->e()) {

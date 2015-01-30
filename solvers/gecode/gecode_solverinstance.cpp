@@ -42,6 +42,7 @@ namespace MiniZinc {
     }
 
     void GecodeSolverInstance::registerConstraints(void) {
+      GCLock lock;
       registerConstraint("all_different_int", GecodeConstraints::p_distinct);
       registerConstraint("all_different_offset", GecodeConstraints::p_distinctOffset);
       registerConstraint("all_equal_int", GecodeConstraints::p_all_equal);
@@ -238,9 +239,14 @@ namespace MiniZinc {
 #endif		
     }
 
-  void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
+  inline void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
     //std::cerr << *id << ": " << id->decl() << std::endl;
     _variableMap.insert(id->decl()->id(), gv);
+  }
+
+  inline bool GecodeSolverInstance::valueWithinBounds(double b) {
+    long long int bo = round_to_longlong(b);
+    return bo >= Gecode::Int::Limits::min && bo <= Gecode::Int::Limits::max;
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
@@ -265,8 +271,8 @@ namespace MiniZinc {
         }
         MiniZinc::TypeInst* ti = it->e()->ti();
         bool isDefined, isIntroduced = false;
-        switch(ti->type().bt()) {
 
+        switch(ti->type().bt()) {
           case Type::BT_INT:
             if(!it->e()->e()) { // if there is no initialisation expression
                 Expression* domain = ti->domain();
@@ -279,20 +285,29 @@ namespace MiniZinc {
                                                            _current_space->iv.size()-1));
                     } else {
                         std::pair<double,double> bounds = getIntBounds(domain);
-                        int lb = bounds.first;
-                        int ub = bounds.second;
+                        int lb, ub;
+                        if(valueWithinBounds(bounds.first)) {
+                          lb = round_to_longlong(bounds.first);
+                        } else {
+                          std::cerr << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.first << " outside 32-bit int.\n";
+                          exit(1);
+                        }
+
+                        if(valueWithinBounds(bounds.second)) {
+                          ub = round_to_longlong(bounds.second);
+                        } else {
+                          std::cerr << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.second << " outside 32-bit int.\n";
+                          exit(1);
+                        }
+
                         IntVar intVar(*this->_current_space, lb, ub);
                         _current_space->iv.push_back(intVar);
                         insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                                                            _current_space->iv.size()-1));
                     }
                 } else {
-                    int lb = Gecode::Int::Limits::min;
-                    int ub = Gecode::Int::Limits::max;
-                    IntVar intVar(*this->_current_space, lb, ub);
-                    _current_space->iv.push_back(intVar);
-                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                                                           _current_space->iv.size()-1));
+                  std::cerr << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
+                  exit(1);
                 }
             } else { // there is an initialisation expression
                 Expression* init = it->e()->e();
@@ -304,10 +319,15 @@ namespace MiniZinc {
                   insertVar(it->e()->id(), var);
                 } else {
                     double il = init->cast<IntLit>()->v().toInt();
-                    IntVar intVar(*this->_current_space, il, il);
-                    _current_space->iv.push_back(intVar);
-                    insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                                                           _current_space->iv.size()-1));
+                    if(valueWithinBounds(il)) {
+                      IntVar intVar(*this->_current_space, il, il);
+                      _current_space->iv.push_back(intVar);
+                      insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                            _current_space->iv.size()-1));
+                    } else {
+                      std::cerr << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
+                      exit(1);
+                    }
                 }
             }
             isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
@@ -491,10 +511,27 @@ namespace MiniZinc {
 
   class GecodeRangeIter {
   public:
+    GecodeSolverInstance& si;
     IntSetRanges& isr;
-    GecodeRangeIter(IntSetRanges& isr0) : isr(isr0) {}
-    int min(void) const { return isr.min().toInt(); }
-    int max(void) const { return isr.max().toInt(); }
+    GecodeRangeIter(GecodeSolverInstance& gsi, IntSetRanges& isr0) : si(gsi), isr(isr0) {}
+    int min(void) const {
+      long long int val = isr.min().toInt();
+      if(si.valueWithinBounds(val)) {
+        return (int)val;
+      } else {
+        std::cerr << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int.\n";
+        exit(1);
+      }
+    }
+    int max(void) const {
+      long long int val = isr.max().toInt();
+      if(si.valueWithinBounds(val)) {
+        return (int)val;
+      } else {
+        std::cerr << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int.\n";
+        exit(1);
+      }
+    }
     int width(void) const { return isr.width().toInt(); }
     bool operator() (void) { return isr(); }
     void operator++ (void) { ++isr; }
@@ -505,7 +542,7 @@ namespace MiniZinc {
     GCLock lock;
     IntSetVal* isv = eval_intset(arg);
     IntSetRanges isr(isv);
-    GecodeRangeIter isr_g(isr);
+    GecodeRangeIter isr_g(*this, isr);
     IntSet d(isr_g);
     return d;
    }
@@ -530,9 +567,14 @@ namespace MiniZinc {
             Gecode::IntVar v = var.intVar(_current_space);
             ia[i+offset] = v;
         } else {
-            int value = e->cast<IntLit>()->v().toInt();
-            IntVar iv(*this->_current_space, value, value);
-            ia[i+offset] = iv;
+            long long int value = e->cast<IntLit>()->v().toInt();
+            if(valueWithinBounds(value)) {
+              IntVar iv(*this->_current_space, value, value);
+              ia[i+offset] = iv;
+            } else {
+              std::cerr << "GecodeSolverInstance::arg2intvarargs Error: " << value << " outside 32-bit int.\n";
+              exit(1);
+            }
         }
     }
     return ia;
@@ -906,7 +948,7 @@ namespace MiniZinc {
     IdMap<GecodeVariable>::iterator it;
     for(it = _variableMap.begin(); it != _variableMap.end(); it++) {
       VarDecl* vd = it->first->decl();
-      int old_domsize = 0;
+      long long int old_domsize = 0;
       bool holes = false;
 
       if(vd->ti()->domain()) {
@@ -923,14 +965,13 @@ namespace MiniZinc {
       
       std::string name = it->first->str().str();
 
-      bool onlyTightenBounds = true;
+      bool onlyTightenBounds = false;
 
       if(vds.find(name) != vds.end()) {
         VarDecl* nvd = vds[name];
         Type::BaseType bt = vd->type().bt();
         if(bt == Type::BaseType::BT_INT) {
           IntVar intvar = it->second.intVar(_current_space);
-          const long long int new_domsize = intvar.size();
           const long long int l = intvar.min(), u = intvar.max();
 
           if(l==u) {
@@ -949,8 +990,6 @@ namespace MiniZinc {
               nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::ai(ivr)));
             }
           }
-          //if(presolve_log && (old_domsize == 0 || old_domsize > new_domsize))
-          //  ofs << *(nvd->ti()->domain() ? nvd->ti()->domain() : nvd->e()) << std::endl;
         } else if(bt == Type::BaseType::BT_BOOL) {
           BoolVar boolvar = it->second.boolVar(_current_space);
           int l = boolvar.min(),
@@ -965,15 +1004,15 @@ namespace MiniZinc {
             }
           }
         } else if(bt == Type::BaseType::BT_FLOAT) {
-          Gecode::FloatVal floatval = it->second.floatVar(_current_space).val();
-          FloatNum l = floatval.min(),
-                   u = floatval.max();
-
-          if(floatval.singleton() && !nvd->e()) {
+          Gecode::FloatVar floatvar = it->second.floatVar(_current_space);
+          if(floatvar.assigned() && !nvd->e()) {
+            FloatNum l = floatvar.min();
             nvd->type(Type::parfloat());
             nvd->ti(new TypeInst(nvd->loc(), Type::parfloat()));
             nvd->e(new FloatLit(nvd->loc(), l));
           } else {
+            FloatNum l = floatvar.min(),
+                     u = floatvar.max();
             nvd->ti()->domain(new BinOp(nvd->loc(),
                   new FloatLit(nvd->loc(), l),
                   BOT_DOTDOT,

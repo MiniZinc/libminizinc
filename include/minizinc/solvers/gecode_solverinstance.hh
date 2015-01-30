@@ -223,6 +223,9 @@ namespace MiniZinc {
 
     Gecode::Space* getGecodeModel(void);
 
+    // helpers for getting correct int bounds
+    bool valueWithinBounds(double b);
+
     // helper functions for processing flatzinc constraints
     /// Convert \a arg (array of integers) to IntArgs
     Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
