@@ -214,7 +214,6 @@ namespace MiniZinc {
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
-    virtual void resetSolver(void);
 
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.

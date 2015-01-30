@@ -14,20 +14,7 @@
 namespace MiniZinc {
 
   SolverInstanceBase::Status
-  SolverInstanceBase::solve(void) { return SolverInstance::ERROR; }
-  
-  void
-  SolverInstanceBase::reset(void) { assert(false); }
-  
-  void
-  SolverInstanceBase::resetWithConstraints(Model::iterator begin, Model::iterator end) {
-    assert(false);
-  }
-
-  void
-  SolverInstanceBase::processPermanentConstraints(Model::iterator begin, Model::iterator end) {
-    assert(false);
-  }
+  SolverInstanceBase::solve(void) { return SolverInstance::ERROR; } 
   
   void
   SolverInstanceBase::Registry::add(const ASTString& name, poster p) {

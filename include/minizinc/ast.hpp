@@ -507,6 +507,13 @@ namespace MiniZinc {
   SolveI::st(SolveI::SolveType s) {
     _sec_id = s;
   }
+  inline bool
+  SolveI::combinator_lite(void) {
+    if(_sec_id == ST_SAT) {
+      return (!_ann.isEmpty() && _ann.containsCall(constants().ann.combinator));       
+    }
+    else return false;
+  }
 
   inline
   OutputI::OutputI(const Location& loc, Expression* e)

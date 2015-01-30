@@ -1071,6 +1071,8 @@ namespace MiniZinc {
     SolveType st(void) const;
     /// Set type of solving
     void st(SolveType s);
+    /// returns true if the solve item is annotated with a combinator lite
+    bool combinator_lite(void);
   };
 
   /// \brief Output item

@@ -251,8 +251,6 @@ namespace MiniZinc {
     }
 
   }
-  
-  void CPLEXSolverInstance::resetSolver(void) {}
 
   Expression* CPLEXSolverInstance::getSolutionValue(Id* id) {
     id = id->decl()->id();

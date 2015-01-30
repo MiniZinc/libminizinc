@@ -249,10 +249,7 @@ namespace MiniZinc {
   }
   
   void
-  FZNSolverInstance::processFlatZinc(void) {}
-  
-  void
-  FZNSolverInstance::resetSolver(void) {}
+  FZNSolverInstance::processFlatZinc(void) {}  
   
   Expression*
   FZNSolverInstance::getSolutionValue(Id* id) {

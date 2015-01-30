@@ -40,8 +40,6 @@ namespace MiniZinc {
 
     virtual void processFlatZinc(void);
     
-    virtual void resetSolver(void);
-    
     void assignSolutionToOutput(void);
 
     IloModel* getIloModel(void);

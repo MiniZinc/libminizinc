@@ -805,11 +805,6 @@ namespace MiniZinc {
     assert(false); // TODO: implement
   }
 
-  void
-  GecodeSolverInstance::resetSolver(void) {
-    assert(false); // TODO: implement
-  }
-
   Expression*
   GecodeSolverInstance::getSolutionValue(Id* id) {
     GecodeVariable var = resolveVar(id->decl()->id());

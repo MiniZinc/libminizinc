@@ -21,6 +21,9 @@ namespace MiniZinc {
   template<class SolverInstanceBase>
   void search(Env& e, MiniZinc::Options& opt);
   
+  /// interpret and execute the combinator given in the annotation  
+  SolverInstance::Status 
+  interpretCombinator(Annotation& ann, Env& env, SolverInstanceBase* solver);
 }
 
 #endif

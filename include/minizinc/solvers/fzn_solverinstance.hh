@@ -35,9 +35,7 @@ namespace MiniZinc {
     
     virtual Status solve(void);
     
-    virtual void processFlatZinc(void);
-    
-    virtual void resetSolver(void);
+    virtual void processFlatZinc(void);    
     
   protected:
     virtual Expression* getSolutionValue(Id* id);
