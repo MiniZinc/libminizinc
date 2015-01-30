@@ -314,7 +314,15 @@ if(HAS_GECODE)
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
-  INSTALL(TARGETS minizinc_gecode mzn-gecode
+  add_executable(mzn-gecode-lite
+    solvers/gecode/mzn-gecode-lite.cpp
+  )
+  target_link_libraries(mzn-gecode-lite minizinc_gecode minizinc 
+    gecodedriver gecodesearch gecodeminimodel
+    gecodefloat gecodeint gecodeset
+    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_gecode mzn-gecode mzn-gecode-lite
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)

@@ -54,16 +54,7 @@ namespace MiniZinc {
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
-    virtual Status solve(void);
-    /*/// reset the model to its core (removing temporary cts) and the solver to the root node of the search 
-    void reset(void);
-    /// reset the solver to the root node of the search TODO: difference between reset() and resetSolver()?
-    virtual void resetSolver(void) = 0;
-    /// reset the solver and add temporary constraints given by the iterator
-    virtual void resetWithConstraints(Model::iterator begin, Model::iterator end);
-    /// add permanent constraints given by the iterator to the solver instance
-    virtual void processPermanentConstraints(Model::iterator begin, Model::iterator end);
-    */
+    virtual Status solve(void);   
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
     
