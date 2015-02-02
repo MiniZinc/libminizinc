@@ -970,7 +970,7 @@ namespace MiniZinc {
       
       std::string name = it->first->str().str();
 
-      bool onlyTightenBounds = false;
+      bool onlyTightenBounds = true;
 
       if(vds.find(name) != vds.end()) {
         VarDecl* nvd = vds[name];
