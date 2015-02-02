@@ -24,8 +24,11 @@ using namespace Gecode;
 namespace MiniZinc {
 
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL), _solution(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL), _solution(NULL), _only_range_domains(false) {
        registerConstraints();
+       if(options.hasParam(std::string("only-range-domains"))) {
+         _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
+       }
        // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
      }
 
@@ -970,7 +973,6 @@ namespace MiniZinc {
       
       std::string name = it->first->str().str();
 
-      bool onlyTightenBounds = false;
 
       if(vds.find(name) != vds.end()) {
         VarDecl* nvd = vds[name];
@@ -988,7 +990,7 @@ namespace MiniZinc {
               nvd->e(new IntLit(nvd->loc(), l));
             }
           } else if(!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)){
-            if(onlyTightenBounds && !holes) {
+            if(_only_range_domains && !holes) {
               nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
             } else {
               IntVarRanges ivr(intvar);

@@ -376,6 +376,7 @@ int main(int argc, char** argv) {
 
               GCLock lock;
               Options options;
+              options.setBoolParam(std::string("only-range-domains"), fopts.onlyRangeDomains);
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
 
