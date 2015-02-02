@@ -195,6 +195,8 @@ namespace MiniZinc {
    
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
+  private:
+    bool _only_range_domains;
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 

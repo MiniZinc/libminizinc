@@ -19,19 +19,19 @@ namespace MiniZinc {
     protected:
       ASTStringMap<Expression*>::t _options;
 
-      inline Expression* getParam(ASTString name);
+      inline Expression* getParam(const ASTString& name) const;
 
     public:
-      void setIntParam(ASTString name,   Expression* e);
-      void setFloatParam(ASTString name, Expression* e);
-      void setBoolParam(ASTString name,  Expression* e);
-      void setIntParam(ASTString name,   long long int e);
-      void setFloatParam(ASTString name, double e);
-      void setBoolParam(ASTString name,  bool e);
-      long long int getIntParam(ASTString name);
-      double getFloatParam(ASTString name);
-      bool getBoolParam(ASTString name);
-      bool hasParam(ASTString name);
+      void setIntParam(const ASTString& name,   Expression* e);
+      void setFloatParam(const ASTString& name, Expression* e);
+      void setBoolParam(const ASTString& name,  Expression* e);
+      void setIntParam(const ASTString& name,   long long int e);
+      void setFloatParam(const ASTString& name, double e);
+      void setBoolParam(const ASTString& name,  bool e);
+      long long int getIntParam(const ASTString& name) const;
+      double getFloatParam(const ASTString& name) const;
+      bool getBoolParam(const ASTString& name) const;
+      bool hasParam(const ASTString& name) const;
   };
 }
 
