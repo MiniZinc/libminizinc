@@ -2070,8 +2070,8 @@ namespace MiniZinc {
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
       } else if (c.id() == "set_diff") {
-        _bounds.pop_back(); // don't need bounds of right hand side
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+        _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);
       } else {
         valid = false;
