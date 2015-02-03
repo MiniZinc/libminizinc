@@ -15,17 +15,18 @@
 namespace MiniZinc {
   
   Expression* Options::getParam(const std::string& name) const {
-    UNORDERED_NAMESPACE::unordered_map<std::string, Expression* >::const_iterator it = _options.find(name);
+    UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive >::const_iterator it = _options.find(name);
     if(it == _options.end()) {
       std::stringstream ss;
       ss << "Could not find option: \"" << name << "\"." << std::endl;
       throw InternalError(ss.str());
     }
-    return it->second;
+    return (it->second)();
   }
   
-  void Options::setIntParam(const std::string& name,   Expression* e) {
-    if(e->type().ispar() && e->type().isint()) {
+  void Options::setIntParam(const std::string& name,   KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isint()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -33,8 +34,9 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  void Options::setFloatParam(const std::string& name, Expression* e) {
-    if(e->type().ispar() && e->type().isfloat()) {
+  void Options::setFloatParam(const std::string& name, KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isfloat()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -42,8 +44,9 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  void Options::setBoolParam(const std::string& name,  Expression* e) {
-    if(e->type().ispar() && e->type().isbool()) {
+  void Options::setBoolParam(const std::string& name,  KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isbool()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -57,21 +60,21 @@ namespace MiniZinc {
     IntLit* il = new IntLit(Location(), e);
     KeepAlive ka(il);
     
-    setIntParam(name, il);
+    setIntParam(name, ka);
   };
   void Options::setFloatParam(const std::string& name, double e) {
     GCLock lock;
     FloatLit* fl = new FloatLit(Location(), e);
     KeepAlive ka(fl);
     
-    setFloatParam(name, fl);
+    setFloatParam(name, ka);
   }
   void Options::setBoolParam(const std::string& name,  bool e) {
     GCLock lock;
     BoolLit* bl = new BoolLit(Location(), e);
     KeepAlive ka(bl);
     
-    setBoolParam(name, bl);
+    setBoolParam(name, ka);
   }
   
   long long int Options::getIntParam(const std::string& name) const {
