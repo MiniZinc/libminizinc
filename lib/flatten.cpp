@@ -3794,7 +3794,8 @@ namespace MiniZinc {
                 argtypes[i] = args[i]()->type();
               argtypes.push_back(Type::varbool());
               GCLock lock;
-              FunctionI* reif_decl = env.orig->matchFn(env.reifyId(cid), argtypes);
+              ASTString r_cid = env.reifyId(cid);
+              FunctionI* reif_decl = env.orig->matchFn(r_cid, argtypes);
               if (reif_decl && reif_decl->e()) {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
@@ -3802,12 +3803,22 @@ namespace MiniZinc {
                   if (reif_b->ti()->domain()) {
                     if (reif_b->ti()->domain() == constants().lit_true) {
                       bind(env,ctx,r,constants().lit_true);
+                      r = constants().var_true;
+                      ctx.b = C_ROOT;
                       goto call_nonreif;
                     } else {
-                      bind(env,ctx,r,constants().lit_false);
-                      args.push_back(constants().lit_false);
-                      decl = reif_decl;
-                      goto call_nonreif;
+                      std::vector<Expression*> args_e(args.size()+1);
+                      for (unsigned int i=0; i<args.size(); i++)
+                        args_e[i] = args[i]();
+                      args_e[args.size()] = constants().lit_false;
+                      Call* reif_call = new Call(Location().introduce(), r_cid, args_e);
+                      reif_call->type(Type::varbool());
+                      reif_call->decl(reif_decl);
+                      flat_exp(env, Ctx(), reif_call, constants().var_true, constants().var_true);
+                      args_ee.push_back(EE(NULL,constants().lit_false));
+                      ret.r = conj(env,r,ctx,args_ee);
+                      ret.b = bind(env,ctx,b,constants().lit_true);
+                      return ret;
                     }
                   }
                 } else {
