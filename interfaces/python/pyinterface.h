@@ -20,6 +20,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdexcept>
 
 #include <minizinc/parser.hh>
 #include <minizinc/model.hh>
@@ -45,6 +46,11 @@ static PyObject* MznModel_solve_warning;
 static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
+PyObject* minizinc_to_python(VarDecl* vd);
+inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
+Expression* python_to_minizinc(PyObject* pv, const Type& type);
+
+
 #include "MznSet.h"
 #include "MznSet.cpp"
 #include "MznVariable.h"
@@ -59,6 +65,8 @@ void sig_alrm (int signo)
 {
   siglongjmp(jmpbuf, 1);
 }
+
+//Expression* convertValue(const Type& t, const char* name, PyObject* value);
 
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
@@ -90,10 +98,13 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args);
 static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
-static PyObject* MznModel_Expression(MznModel* self, PyObject* args);
+static PyObject* MznModel_Call(MznModel* self, PyObject* args);
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
+static PyObject* Mzn_BinOp(MznModel* self, PyObject* args);
+static PyObject* Mzn_UnOp(MznModel* self, PyObject* args);
+static PyObject* Mzn_Call(MznModel* self, PyObject* args);
 static PyObject* Mzn_lock(MznModel* self) {GC::lock(); Py_RETURN_NONE;}
 static PyObject* Mzn_unlock(MznModel* self) {GC::unlock(); Py_RETURN_NONE;}
 
@@ -116,7 +127,9 @@ static PyMethodDef MznModel_methods[] = {
 static PyMethodDef Mzn_methods[] = {
   {"load", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
   {"loadFromString", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from stdin"},
-  {"Expression", (PyCFunction)MznModel_Expression, METH_VARARGS, "Add an expression into the model"},
+  {"BinOp", (PyCFunction)Mzn_BinOp, METH_VARARGS, "Add a binary expression into the model"},
+  {"UnOp", (PyCFunction)Mzn_UnOp, METH_VARARGS, "Add a unary expression into the model"},
+  {"Call", (PyCFunction)Mzn_Call, METH_VARARGS, ""},
   {"lock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Create a lock for garbage collection"},
   {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},
   {NULL}
@@ -164,11 +177,10 @@ static PyTypeObject MznModelType = {
 };
 
 
-
-
 struct MznSolution {
   PyObject_HEAD
   Env* env;
+  Model* _m;
   SolverInstance::Status status;
 
   PyObject* next();
@@ -179,6 +191,7 @@ static int MznSolution_init(MznSolution* self, PyObject* args);
 static void MznSolution_dealloc(MznSolution* self);
 
 static PyObject* MznSolution_next(MznSolution *self);
+static PyObject* MznSolution_getValue(MznSolution* self, PyObject* args);
 
 
 
@@ -187,7 +200,8 @@ static PyMemberDef MznSolution_members[] = {
 };
 
 static PyMethodDef MznSolution_methods[] = {
-  {"next", (PyCFunction)MznSolution_next, METH_KEYWORDS, "Next solution"},
+  {"next", (PyCFunction)MznSolution_next, METH_NOARGS, "Next solution"},
+  {"getValue",(PyCFunction)MznSolution_getValue, METH_VARARGS, "Get value of a variable"},
   {NULL} /* Sentinel */
 };
 
