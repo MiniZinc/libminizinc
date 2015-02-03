@@ -1,4 +1,19 @@
+##@mainpage MiniZinc Python Interface
+# @author	Tai Tran, under the supervision of Guido Tack
+#
+# \section acknowlegment_sec Acknowledgement
+#
+# This Interface is based on Numberjack Python Interface
+
+
 import minizinc
+import inspect
+
+def get_name(var):
+	print                inspect.currentframe().f_back.f_back.f_back.f_globals.items()
+	callers_local_vars = inspect.currentframe().f_back.f_back.f_back.f_globals.items()
+	#print [var_name for var_name, var_val in callers_local_vars if var_val is var]
+	return [var_name for var_name, var_val in callers_local_vars if var_val is var][0]
 
 class Domain(list):
 	def __init__(self, arg1, arg2=None):
@@ -83,7 +98,8 @@ class Domain(list):
 #
 class Expression(object):
 	def __init__(self, name):
-		self.name = name
+		#self.name = self.get_name(self)
+		#print self.name
 		self.obj = None
 		self.model = None
 
@@ -129,7 +145,10 @@ class Expression(object):
 		return hasattr(self, 'parameters')
 
 	def is_var(self):
-		return issubclass(type(self), Variable)
+		return issubclass(type(self), VarDecl)
+
+	def is_pre(self):
+		return issubclass(type(self), Predicate)
 
 	def get_domain(self):
 		if self.domain_ is not None:
@@ -137,8 +156,8 @@ class Expression(object):
 		else:
 			return Domain(self.lb, self.ub)
 
-	def get_name(self):
-		return self.operator
+	#def get_name(self):
+	#	return self.operator
 
 	def get_children(self):
 		if self.has_children():
@@ -150,11 +169,6 @@ class Expression(object):
 		return self.operator
 
 	def get_value(self):
-		#
-		#
-		#
-		#
-		#
 		return None
 
 	def __str__(self):
@@ -208,12 +222,6 @@ class Expression(object):
 		return Mod([pred, self])
 
 	def __eq__(self, pred):
-		if issubclass(self, Expression)
-			if (isinstance(pred, (int, long, float, str, bool)))
-
-		elif t1 == BinPredicate
-			if (t0 in [int, long, float, str, bool])
-
 		#if CHECK_VAR_EQUALITY[0]
 		#	raise InvalidConstraintSpecification("use == outside the model definition")
 		return Eq([self, pred])
@@ -235,17 +243,48 @@ class Expression(object):
 	def __ge__(self, pred):
 		return Ge([self, pred])
 
+	def __pow__(self, pred):
+		return Pow([self, pred])
+
 	def __neg__(self):
 		return Neg([self])
 
+	def __pos__(self):
+		return Pos([self])
 
+	def __invert__(self):
+		return Invert([self])
+
+
+class Set:
+	def __init__(self, vars):
+		#Predicate.__init__(self,"Minizinc Set")
+		self.obj = minizinc.Set(vars)
+
+	def __str__(self):
+		return str(self.obj)
 
 
 class Predicate(Expression):
 
-	def __init__(self, op):
-		Expression.__init__(self, op)
-		#self.set_children(vars);
+	def __init__(self, vars, op):
+		self.__exp = []
+		'''
+		for i in range(len(vars)):
+			if isinstance(vars[i], Expression):
+				if model == None:
+					model = vars[i].model
+				elif model != vars[i].model:
+					raise TypeError("Objects must be free or belong to the same model")
+				self.__exp.append(vars[i].obj)
+			else:
+				self.__exp.append(vars[i])
+		'''
+		self.vars = vars
+		self.model = None
+
+		#self.obj = minizinc.UnOp(op, self.exp[0])
+		self.UnOp = op
 
 	def set_children(self, children):
 		self.children = flatten(children)
@@ -274,28 +313,15 @@ class Predicate(Expression):
 		Expression.__str__ = save_str
 		return output
 
-class Set:
-	def __init__(self, vars):
-		#Predicate.__init__(self,"Minizinc Set")
-		self.obj = minizinc.Set(vars)
-
-	def __str__(self):
-		return str(self.obj)
-
-
 
 class BinPredicate(Predicate):
 
 	def __init__(self, vars, op):
-		#Predicate.__init__(self, op)
-		if !all(issubclass(i,Expression) for i in vars)
-			raise TypeError('Objects must be expressions')
-		self.obj = minizinc.Expression(vars[0].obj, op, vars[1].obj)
+		#Predicate.__init__(self, vars, op)
+		self.BinOp = op
+		self.model = None
 		self.vars = vars
-		if vars[0].model != vars[1].model:
-			raise TypeError('Variables must be of the same model')
-		else:
-			self.model = vars[0].model
+		#self.obj = minizinc.BinOp(self.exp[0], op, self.exp[1])
 
 	def get_symbol(self):
 		return 'x'
@@ -316,6 +342,14 @@ class BinPredicate(Predicate):
 	def initial(self):
 		output = '(' + str(self.vars[0].initial()) + ' ' + self.get_symbol() + ' ' + str(self.vars[1].initial()) + ')'
 		return output
+
+class Call(Predicate):
+
+	def __init__(self, vars, callId):
+		self.model = None
+		self.callId = callId
+		self.vars = vars
+
 
 
 
@@ -442,19 +476,35 @@ class Xor(BinPredicate):
 	def get_symbol(self):
 		return 'xor'
 
+class Pow(Call):
+	def __init__(self, vars):
+		Call.__init__(self, vars, "pow")
 
-class Neg(BinPredicate):
+
+class Neg(Predicate):
 
 	def __init__(self, vars):
-		vars[1] = vars[0]
-		vars[0] = Variable(vars[1].model, )
-		BinPredicate.__init__(self, vars, "neg")
-
+		Predicate.__init__(self, vars, 2)
 	def __str__(self):
 		return '-' + str(self.children[0])
 
-	def decompose(self):
-		return [self.children[0] * -1]		
+	#def decompose(self):
+	#	return [self.children[0] * -1]		
+
+
+class Pos(Predicate):
+
+	def __init__(self, vars):
+		Predicate.__init__(self, vars, 1)
+	def __str__(self):
+		return '-' + str(self.children[0])
+
+class Invert(Predicate):
+
+	def __init__(self, vars):
+		Predicate.__init__(self, vars, 0)
+	def __str__(self):
+		return '-' + str(self.children[0])
 
 """
 class Sum(Predicate):
@@ -474,26 +524,80 @@ class Sum(Predicate):
         self.ub = sum(c*self.get_ub(i) if (c >= 0) else c*self.get_lb(i) for i,c in enumerate(coefs))	
 """
 
-
-class Variable(Expression):
-
-	def __init__(self, argopt0, argopt1=None, argopt2=None, argopt3=None):
-		'''
-	0	 Variable() :- Binary variable
-	1	 Variable(N) :- Variable in the domain of {0, N-1}
-	1	 Variable('x') :- Binary variable called 'x'
-	2	 Variable(N, 'x') :- Variable in the domain of {0, N-1} called 'x'
-	2	 Variable(l,u) :- Variable in the domain of {l, u}
-	3	 Variable(l,u, 'x') :- Variable in the domain of {l, u} called 'x'
-	1	 Variable(list) :- Variable with domain specified as a list
-	2	 Variable(list, 'x') :- Variable with domain specified as a list called 'x'
-		'''
-		if (isinstance(argopt0, Model) == False):
+class VarDecl(Expression):
+	def __init__(self, model):
+		if isinstance(model, Model) == False:
 			raise TypeError("Warning: First argument must be a Model Object")
+		self.model = model
+		#self.name = '"' + str(id(self)) + '"'
+
+	def get_value(self):
+		if self.model.is_solved():
+			return self.model.mznsolution.getValue(self.name)
+		else:
+			return self.obj.getValue()
+
+
+class Set(VarDecl):
+	def __init__(self, model, argopt1=None, argopt2=None, argopt3=None):
+		if isinstance(model, Model) == False:
+			argopt3 = argopt2
+			argopt2 = argopt1
+			argopt1 = model
+			self.model = None
+		else:
+			self.model = model
+		self.name = '"' + str(id(self)) + '"'
+
+		name = None
+		lb, ub = None
+		set_list = None
+
+
+		if argopt3 is not None:
+			lb,ub = argopt1, argopt2
+			name = argopt3
+		elif argopt2 is not None:
+			if type(argopt2) is str:
+				name = argopt2
+				ub = argopt1
+			else:
+				lb,ub = argopt1, argopt2
+		elif argopt1 is not None:
+			if type(argopt1) is list:
+				set_list = argopt1
+			else:
+				ub = argopt2 - 1
+				lb = 0
+		else:
+			raise AttributeError('Set must be initialised with arguments')
+
+		if name is not None:
+			if type(name) is not str:
+				raise TypeError('Name must be a string');
+			else:
+				self.name = name
+		if set_list is None:
+			if not (type(lb) is int and type(ub) is int):
+				raise TypeError('Lower bound and upper bound must be integers')
+			set_list = [[lb,ub]]
+		self.obj = minizinc.Set(set_list)
+
+	def get_value(self):
+		return self.obj
+
+	def __str__(self):
+		return self.obj
+
+class Variable(VarDecl):
+
+	def __init__(self, model, argopt1=None, argopt2=None, argopt3=None):
+		VarDecl.__init__(self, model)
 		domain = None
 		lb = False
 		ub = True
-		name = '"' + str(id(self)) + '"'
+		self.name = get_name(self)
+		name = None
 
 		if argopt3 is not None:
 			lb = argopt1
@@ -501,9 +605,10 @@ class Variable(Expression):
 			name = argopt3
 		elif argopt2 is not None:
 			if type(argopt2) is str:
-				if numeric(argopt1):
-					ub = argopt1 - 1
-					lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
+				if type(argopt1) is (list, tuple):
+					lb = argopt1[0];
+					ub = argopt1[1];
+					#lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
 				else:
 					domain = sorted(argopt1)
 					lb = domain[0]
@@ -515,7 +620,7 @@ class Variable(Expression):
 		elif argopt1 is not None:
 			if type(argopt1) is str:
 				name = argopt1
-			elif numeric(argopt1):
+			elif type(argopt1) in [int, long, float]:
 				ub = argopt1 - 1
 				lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
 			else:
@@ -525,22 +630,36 @@ class Variable(Expression):
 
 		tlb = type(lb)
 		tub = type(ub)
-		if tlb not in [int, long, float, str]:
-			raise TypeError("Warning lower bound of %s is not an int or a float or a string" % name)
-		elif tub not in [int, long, float, str]:
-			raise TypeError("Warning upper bound of %s is not an int or a float or a string" % name)
-		elif type(name) is not str:
+		if tlb not in [bool, int, long, float, str]:
+			raise TypeError("Warning lower bound of %s is not a boolean, an int, a float or a string" % name)
+		elif tub not in [bool, int, long, float, str]:
+			raise TypeError("Warning upper bound of %s is not a boolean, an int, a float or a string" % name)
+		elif tlb != tub:
+			raise TypeError("Warning lower bound and upper bound value are not of the same type")
+		elif name is not None and type(name) is not str:
 			raise TypeError("Warning name variable is not a string")
 		elif lb > ub:
 			raise ValueError("Warning lower bound (%r) of %s greater than upper bound (%r)" % (lb, name, ub))
-
-		Expression.__init__(self, name)
 		self.domain = domain
 		self.lb = lb
 		self.ub = ub
-		self.TypeId = 1
-		self.obj = argopt0.mznmodel.Variable(name,9,0,lb,ub);
-		self.model = argopt0
+		#if name is not None:
+		#	self.name = name
+		if tlb is bool:
+			self.obj = model.mznmodel.Variable(self.name,10,[],lb,ub)
+		elif tlb is int:
+			self.obj = model.mznmodel.Variable(self.name, 9,[],lb,ub)
+		elif tlb is float:  
+			self.obj = model.mznmodel.Variable(self.name,11,[],lb,ub)
+		elif isinstance(lb, Variable) or isinstance(ub, Variable):
+			self.obj = model.mznmodel.Variable(self.name,12,[],lb,ub)
+
+		
+
+		#if (argopt5 is None):
+		#	self.obj = model.mznmodel.Variable(name,9,[],argopt4)
+		#else:
+		#	self.obj = model.mznmodel.Variable(name,9,[],argopt4,argopt5)
 
 	def name(self):
 		return id(self)
@@ -549,20 +668,108 @@ class Variable(Expression):
 		return self.name
 
 
+class VarConstruct(Variable):
+
+	def __init__(self, model, argopt1):
+		VarDecl.__init__(self, model)
+		self.obj = model.mznmodel.Variable(self.name, argopt1)
+
+class Array(Variable):
+
+	def __init__(self, model, argopt1, argopt2, *args):
+		VarDecl.__init__(self, model)
+		if type(args[-1]) is str:
+			self.name = args[-1]
+			del args[-1]
+		dim_list = []
+		for i in args:
+			if type(i) is int:
+				if i > 0:
+					dim_list.append([0,i-1])
+				else:
+					raise TypeError('Single value must be a positive integer')
+			elif type(i) is list:
+				if type(i[0]) is int and type(i[-1]) is int:
+					dim_list.append([ i[0],i[-1]] )
+				else:
+					raise TypeError('Range boundaries must be integers')
+			elif isinstance(i, Set):
+				if i.is_continuous():
+					dim_list.append(i.min(), i.max())
+				raise TypeError('Array ranges must be continuous')
+			else:
+				raise RuntimeError('Unknown error')
+		lb = argopt1
+		ub = argopt2
+		tlb = type(argopt1)
+		if tlb is bool:
+			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
+		elif tlb is int:
+			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
+		elif tlb is float:  #isinstance(lb, float):
+			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
+
+	def __getitem__(self, *args):
+		return ArrayAccess(self.model, self.obj, args[0])
+
+class ArrayAccess(Array):
+	def __init__(self, model, obj, arg):
+		VarDecl.__init__(self, model)
+		self.obj = obj
+		self.arg = arg
+
+
+
+
+
 
 class Model(object):
 	def __init__(self, *expr):
 		self.loaded = False
 		self.mznsolution = None
 		self.mznmodel = minizinc.Model()
-		minizinc.lock()
-		if len(expr) > 0:
-			self.loaded = True
-			self.add_prime(expr)
+		self.add(expr)
 
 	def add(self, *expr):
-		self.loaded = True
-		self.add_prime(expr)
+		minizinc.lock()
+		if self.mznmodel == None:
+			raise RuntimeError('Model has been solved, need to be reset first')
+		if len(expr)>0:
+			self.loaded = True
+			self.add_prime(expr)
+		minizinc.unlock()
+
+	def evaluate(self, expr):
+		if not isinstance(expr, Expression):
+			return (expr,None)
+		if isinstance(expr, Call):
+			variables = []
+			model = None
+			for i in expr.vars:
+				var, m = self.evaluate(i)
+				if model is None:
+					model = m
+				elif m is not None and model != m:
+					raise TypeError("Objects must be free or belong to the same model")
+				variables.append(var)
+			return (minizinc.Call(expr.callId, variables), model)
+		elif isinstance(expr, ArrayAccess):
+			return (expr.obj.at(expr.arg), expr.model)
+		elif isinstance(expr, Variable):
+			return (expr.obj, expr.model)
+		elif isinstance(expr, BinPredicate):
+			lhs, model = self.evaluate(expr.vars[0])
+			rhs, model2 = self.evaluate(expr.vars[1])
+			if model is None:
+				model = model2
+			if model2 is not None and model2 != model:
+				raise TypeError("Objects must be free or belong to the same model")
+			return (minizinc.BinOp(lhs, expr.BinOp, rhs), model)
+		elif isinstance(expr, Predicate):
+			ret, model = self.evaluate(expr.vars[0])
+			return (minizinc.UnOp(expr.UnOp, self.evaluate(expr.vars[0])), model)
+		else:
+			raise TypeError('Variable Type unspecified')
 
 	def add_prime(self, expr):
 		if issubclass(type(expr), list):
@@ -575,22 +782,44 @@ class Model(object):
 			for key in expr:
 				self.add_prime(exp[key])
 		else:
-			if (not expr.is_var):
-				if expr.model != self:
-					raise TypeError('Expressions must belong to this model')
-				self.mznmodel.Constraint(expr.obj)
+			if issubclass(type(expr), Expression):
+				if (expr.is_pre()):
+					obj, model = self.evaluate(expr)
+					if model != None and model != self:
+						raise TypeError('Expressions must belong to this model')
+					self.mznmodel.Constraint(obj)
+				else:
+					raise(TypeError, "Unexpected expression")
 			else:
-				raise(RuntimeError, "Unexpected type")
+				if isinstance(expr, bool):
+					self.mznmodel.Constraint(expr)
+				else:
+					raise(TypeError, "Argument must be a minizinc expression or python boolean")
 
 	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
 		return Variable(self, argopt1, argopt2, argopt3)
 
+	def Array(self, argopt1, argopt2, *args):
+		list_ = []
+		for i in args:
+			list_.append(i)
+		return Array(self, argopt1, argopt2, *list_)
+
+	def VarConstruct(self, argopt1):
+		return VarConstruct(self, argopt1)
+
+
 	def solve(self):
-		if not isLoaded:
+		if not self.is_loaded():
 			raise ValueError('Model is not loaded yet')
-		minizinc.unlock()
+		#minizinc.unlock()
+		self.is_loaded = False
 		self.mznmodel.SolveItem(0)
 		self.mznsolution = self.mznmodel.solve()
+		self.mznmodel = None
+
+	def reset(self):
+		self.__init__()
 
 	def next(self):
 		if self.mznsolution == None:

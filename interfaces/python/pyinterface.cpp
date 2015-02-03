@@ -10,9 +10,292 @@
 using namespace MiniZinc;
 using namespace std;
 
+
+PyObject*
+minizinc_to_python(VarDecl* vd)
+{
+  GCLock Lock;
+  if (vd==NULL) {
+    PyErr_SetString(PyExc_ValueError, "Value is not set");
+    return NULL;
+  }
+  if (vd->type().st() == Type::ST_SET) {
+    IntSetVal* isv = eval_intset(vd->e());
+    long numberOfElement = 0;
+    MznSet* newSet = (MznSet*) MznSet_new(&MznSetType,NULL,NULL);
+    
+    for (IntSetRanges isr(isv); isr(); ++isr) {
+      newSet->push(isr.min().toInt(),isr.max().toInt());
+    }
+    return (PyObject*)newSet;
+  } else {
+    if (vd->type().bt() == Type::BT_BOOL) {
+      if (vd->type().dim() == 0) {
+        return PyBool_FromLong(eval_bool(vd->e()));
+      } else {
+        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        int dim = vd->type().dim();
+
+        // Maximum size of each dimension
+        vector<long long int> dmax;
+        // Current size of each dimension
+        vector<long long int> d;
+        // p[0] holds the final array, p[1+] builds up p[0]
+        vector<PyObject*> p(dim);
+        for (int i=0; i<dim; i++) {
+          d.push_back(0);
+          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
+          dmax.push_back(dtemp);
+          p[i] = PyList_New(dtemp);
+        }
+        int i = dim - 1;
+        // next item to be put onto the final array.
+        unsigned int currentPos = 0;
+        do {
+          PyList_SetItem(p[i], d[i], PyBool_FromLong(eval_bool(al->v()[currentPos])));
+          currentPos++;
+          d[i]++;
+          while (d[i]>=dmax[i] && i>0) {
+            PyList_SetItem(p[i-1],d[i-1],p[i]);
+            Py_DECREF(p[i]);
+            d[i]=0;
+            p[i]=PyList_New(dmax[i]);
+            i--;
+            d[i]++;
+          }
+          i = dim - 1;
+        } while (d[0]<dmax[0]);
+        for (int i=1; i<dim; i++)
+          Py_DECREF(p[i]);
+        return p[0];
+      }
+    } else if (vd->type().bt() == Type::BT_INT) {
+      if (vd->type().dim() == 0) {
+        IntVal iv = eval_int(vd->e());
+        return PyInt_FromLong(iv.toInt());
+      } else {
+        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        int dim = vd->type().dim();
+
+        // Maximum size of each dimension
+        vector<long long int> dmax;
+        // Current size of each dimension
+        vector<long long int> d;
+        // p[0] holds the final array, p[1+] builds up p[0]
+        vector<PyObject*> p(dim);
+        for (int i=0; i<dim; i++) {
+          d.push_back(0);
+          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
+          dmax.push_back(dtemp);
+          p[i] = PyList_New(dtemp);
+        }
+        int i = dim - 1;
+        // next item to be put onto the final array.
+        unsigned int currentPos = 0;
+        do {
+          PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(al->v()[currentPos]).toInt()));
+          currentPos++;
+          d[i]++;
+          while (d[i]>=dmax[i] && i>0) {
+            PyList_SetItem(p[i-1],d[i-1],p[i]);
+            d[i]=0;
+            p[i]=PyList_New(dmax[i]);
+            i--;
+            d[i]++;
+          }
+          i = dim - 1;
+        } while (d[0]<dmax[0]);
+        for (int i=1; i<dim; i++)
+          Py_DECREF(p[i]);
+        return p[0];
+      }
+    } else if (vd->type().bt() == Type::BT_STRING) {
+      if (vd->type().dim() == 0) {
+        string temp(eval_string(vd->e()));
+        return PyString_FromString(temp.c_str());
+      } else {
+        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        int dim = vd->type().dim();
+
+        // Maximum size of each dimension
+        vector<long long int> dmax;
+        // Current size of each dimension
+        vector<long long int> d;
+        // p[0] holds the final array, p[1+] builds up p[0]
+        vector<PyObject*> p(dim);
+        for (int i=0; i<dim; i++) {
+          d.push_back(0);
+          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
+          dmax.push_back(dtemp);
+          p[i] = PyList_New(dtemp);
+        }
+        int i = dim - 1;
+        // next item to be put onto the final array.
+        unsigned int currentPos = 0;
+        do {
+          string temp(eval_string(al->v()[currentPos]));
+          PyList_SetItem(p[i], d[i], PyString_FromString(temp.c_str()));
+          currentPos++;
+          d[i]++;
+          while (d[i]>=dmax[i] && i>0) {
+            PyList_SetItem(p[i-1],d[i-1],p[i]);
+            d[i]=0;
+            p[i]=PyList_New(dmax[i]);
+            i--;
+            d[i]++;
+          }
+          i = dim - 1;
+        } while (d[0]<dmax[0]);
+        for (int i=1; i<dim; i++)
+          Py_DECREF(p[i]);
+        return p[0];
+      }
+    } else if (vd->type().bt() == Type::BT_FLOAT) {
+      if (vd->type().dim() == 0) {
+        FloatVal fv = eval_float(vd->e());
+        return PyFloat_FromDouble(fv);
+      } else {
+        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        int dim = vd->type().dim();
+
+        // Maximum size of each dimension
+        vector<long long int> dmax;
+        // Current size of each dimension
+        vector<long long int> d;
+        // p[0] holds the final array, p[1+] builds up p[0]
+        vector<PyObject*> p(dim);
+        for (int i=0; i<dim; i++) {
+          d.push_back(0);
+          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
+          dmax.push_back(dtemp);
+          p[i] = PyList_New(dtemp);
+        }
+        int i = dim - 1;
+        // next item to be put onto the final array.
+        unsigned int currentPos = 0;
+        do {
+          PyList_SetItem(p[i], d[i], PyFloat_FromDouble(eval_float(al->v()[currentPos])));
+          currentPos++;
+          d[i]++;
+          while (d[i]>=dmax[i] && i>0) {
+            PyList_SetItem(p[i-1],d[i-1],p[i]);
+            //Py_DECREF(p[i]);
+            d[i]=0;
+            p[i]=PyList_New(dmax[i]);
+            i--;
+            d[i]++;
+          }
+          i = dim - 1;
+        } while (d[0]<dmax[0]);
+        for (int i=1; i<dim; i++) 
+          Py_DECREF(p[i]);
+        return p[0];
+      }
+    }
+  }
+}
+
+inline Expression*
+one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
+{
+  /*enum BaseType { BT_TOP, BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
+                    BT_BOT, BT_UNKNOWN };*/
+  switch (code) {
+    case Type::BT_UNKNOWN:
+      if (PyBool_Check(pvalue)) {
+        BT_BOOLEAN_PROCESS:
+        Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(pvalue));
+        code = Type::BT_BOOL;
+        return rhs;
+      } else if (PyInt_Check(pvalue)) {
+        BT_INTEGER_PROCESS:
+        Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(pvalue)));
+        code = Type::BT_INT;
+        return rhs;
+      } else if (PyFloat_Check(pvalue)) {
+        BT_FLOAT_PROCESS:
+        Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(pvalue));
+        code = Type::BT_FLOAT;
+        return rhs;
+      } else if (PyString_Check(pvalue)) {
+        BT_STRING_PROCESS:
+        Expression* rhs = new StringLit(Location(), PyString_AS_STRING(pvalue));
+        code = Type::BT_STRING;
+        return rhs;
+      } else {
+        return NULL;
+      }
+      break;
+    case Type::BT_INT: 
+      if (!PyInt_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected an integer");
+      goto BT_INTEGER_PROCESS;
+    case Type::BT_FLOAT:
+      if (!PyFloat_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a float");
+      goto BT_FLOAT_PROCESS;
+    case Type::BT_STRING:
+      if (!PyString_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a string");
+      goto BT_STRING_PROCESS;
+    case Type::BT_BOOL:
+      if (!PyBool_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a boolean");
+      goto BT_BOOLEAN_PROCESS;
+    default:
+      throw std::invalid_argument("Internal Error: Received unexpected base type code");
+  }
+}
+
+Expression*
+python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& dimList)
+{
+  Type::BaseType code = Type::BT_UNKNOWN;
+  if (PyObject_TypeCheck(pvalue, &MznSetType)) {
+    vector<IntSetVal::Range> ranges;
+    MznSet* Set = (MznSet*)pvalue;
+    for (list<MznRange>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
+      ranges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
+    }
+    Expression* rhs = new SetLit(Location(), IntSetVal::a(ranges));
+    returnType = Type::parsetint();
+    return rhs;
+  } else if (PyList_Check(pvalue)) {
+    vector<Py_ssize_t> dimensions;
+    vector<PyObject*> simpleArray;
+    if (getList(pvalue, dimensions, simpleArray, 0) == -1)
+      throw invalid_argument("Inconsistency in size of multidimensional array");
+    if (dimList.empty())
+      for (int i=0; i!=dimensions.size(); i++)
+        dimList.push_back(pair<Py_ssize_t,Py_ssize_t>(0,dimensions[i]-1));
+    else {
+      if (dimList.size()!=dimensions.size())
+        throw invalid_argument("Size of declared array and data array not conform");
+      for (int i=0; i!=dimensions.size(); i++) {
+        //cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
+        if ( (dimList[i].second - (dimList[i].first) + 1) != dimensions[i] )
+          throw invalid_argument("Size of each dimension not conform");
+      }
+    }
+    vector<Expression*> v;
+    for (int i=0; i!=simpleArray.size(); ++i) {
+      PyObject* temp= simpleArray[i];
+      Expression* rhs = one_dim_python_to_minizinc(temp, code);
+      v.push_back(rhs);
+    }
+    returnType = Type();
+    returnType.bt(code);
+    returnType.dim(dimList.size());
+    Expression* rhs = new ArrayLit(Location(), v, dimList);
+    return rhs;
+  } else {
+    Expression* rhs = one_dim_python_to_minizinc(pvalue, code); 
+    returnType = Type();
+    returnType.bt(code);
+    return rhs;
+  }
+}
+
 static PyObject*
 MznModel_Variable(MznModel* self, PyObject* args)
 {
+  GCLock Lock;
   enum TypeId { 
         PARINT,         // 0
         PARBOOL,        // 1
@@ -36,87 +319,231 @@ MznModel_Variable(MznModel* self, PyObject* args)
 
 
   char* name;
-  unsigned int tid=999;
-  unsigned int dim=0;
-  PyObject* lb = NULL;
-  PyObject* ub = NULL;
-  Type t;
-  GCLock Lock;
+  unsigned int tid;
+  PyObject* pydim = NULL;
+  PyObject* pylb = NULL;
+  PyObject* pyub = NULL;
+  PyObject* pyval = NULL;
+  Type type;
   Expression* domain = NULL;
+  Expression* initValue = NULL;
+  Py_ssize_t dim;
 
-  if (!PyArg_ParseTuple(args, "s|IIOO", &name, &tid, &dim, &lb, &ub)) {
-    PyErr_SetString(PyExc_TypeError, "Requires a name for the variable");
+  vector<pair<int, int> >* dimList = NULL;
+  vector<TypeInst*> ranges;
+  Type::BaseType code;
+
+  if (!PyArg_ParseTuple(args, "sO|OOO", &name, &pyval, &pydim, &pylb, &pyub)) {
+    PyErr_Print();
+    PyErr_SetString(PyExc_TypeError, "Variable parsing error");
     return NULL;
   }
-  if (tid == 999)
-    t = Type();
-  else if (tid>17) {
-    PyErr_SetString(PyExc_ValueError, "Type Id is not valid");
-    return NULL;
+
+  if (PyInt_Check(pyval)) {
+    tid = PyInt_AS_LONG(pyval);
+    pyval = NULL;
+  }
+
+
+  if (pyval != NULL) {
+    dimList = new vector<pair<int,int> >();
+    initValue = python_to_minizinc(pyval, type, *dimList);
+    dim = dimList->size();
+    domain = NULL;
   } else {
+    if (tid>17) {
+      PyErr_SetString(PyExc_ValueError, "Type Id is not valid");
+      return NULL;
+    }
+
+
+
+    if (!PyList_Check(pydim)) {
+      PyErr_SetString(PyExc_TypeError, "3rd argument must be a list of size of each dimension");
+      return NULL;
+    }
+    dim = PyList_GET_SIZE(pydim);
+    dimList = new vector<pair<int,int> >(dim);
+    for (Py_ssize_t i=0; i!=dim; ++i) {
+      PyObject* temp = PyList_GET_ITEM(pydim, i);
+      if (!PyList_Check(temp)) {
+        PyErr_SetString(PyExc_TypeError, "Objects in the dimension list must be of integer value");
+        return NULL;
+      }
+      PyObject *tempLb = PyList_GetItem(temp, 0);
+      PyObject *tempUb = PyList_GetItem(temp, 1);
+      if (PyErr_Occurred()) {
+
+        PyErr_SetString(PyExc_TypeError, "Range list must consist of two integer values");
+        return NULL;
+      }
+
+      long c_lb = PyInt_AsLong(tempLb);
+      long c_ub = PyInt_AsLong(tempUb);
+      if (PyErr_Occurred()) {
+        PyErr_SetString(PyExc_TypeError, "Range values must be integers");
+        return NULL;
+      }
+      if (c_lb > c_ub)
+        swap(c_lb, c_ub);
+      (*dimList)[i] = make_pair(c_lb, c_ub);
+    }
+
+    // Create an array if dimList is not empty
+    for (Py_ssize_t i=0; i!=dim; ++i) {
+      Expression* e0 = new IntLit(Location(), IntVal((*dimList)[i].first));
+      Expression* e1 = new IntLit(Location(), IntVal((*dimList)[i].second));
+      domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+      ranges.push_back(new TypeInst(Location(), Type::Type(), domain));
+    }
+
+    // Process different types
     switch (static_cast<TypeId>(tid)) {
-      case PARINT: t = Type::parint(dim); break;
-      case PARBOOL: t = Type::parbool(dim); break;
-      case PARFLOAT: t = Type::parbool(dim); break;
-      case PARSTRING: t = Type::parstring(dim); break;
-      case ANN: t = Type::ann(dim); break;
-      case PARSETINT: t = Type::parsetint(dim); break;
-      case PARSETBOOL: t = Type::parsetbool(dim); break;
-      case PARSETFLOAT: t = Type::parsetfloat(dim); break;
-      case PARSETSTRING: t = Type::parsetstring(dim); break;
-      case VARINT:
-        {
-          t = Type::varint(dim);
-          if (!(PyInt_Check(lb) && PyInt_Check(ub))) {
-            PyErr_SetString(PyExc_TypeError, "Domain of integer values needed");
-            return NULL;
-          }
-          long lbvalue = PyInt_AS_LONG(lb);
-          long ubvalue = PyInt_AS_LONG(ub);
-          if (lbvalue > ubvalue)
-            swap(lbvalue, ubvalue);
-          Expression* e0 = new IntLit(Location(), IntVal(lbvalue));
-          Expression* e1 = new IntLit(Location(), IntVal(ubvalue));
-          domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+      case PARINT:
+          type = Type::parint(dim);
+          goto INTEGER_VARIABLE;
+      case VARINT:  
+          type = Type::varint(dim);
+          INTEGER_VARIABLE:
+          code = Type::BT_INT;
+          domain = new BinOp(Location(),
+                          one_dim_python_to_minizinc(pylb,code),
+                          BOT_DOTDOT,
+                          one_dim_python_to_minizinc(pyub,code) );
           break;
-        }
-      case VARBOOL: t = Type::varbool(dim); break;
+      case PARBOOL:
+          type = Type::parbool(dim);
+          goto BOOLEAN_PROCESS;
+      case VARBOOL:
+          type = Type::varbool(dim); 
+          BOOLEAN_PROCESS:
+          break;
+      case PARFLOAT:
+          type = Type::parfloat(dim);
+          goto FLOAT_PROCESS;
       case VARFLOAT:
-        {
-          t = Type::varfloat(dim);
-          if (!(PyFloat_Check(lb) && PyFloat_Check(ub))) {
-            PyErr_SetString(PyExc_TypeError, "Domain of float values needed");
-            return NULL;
-          }
-          double lbvalue = PyFloat_AS_DOUBLE(lb);
-          double ubvalue = PyFloat_AS_DOUBLE(ub);
-          if (lbvalue > ubvalue)
-            swap(lbvalue, ubvalue);
-          Expression* e0 = new FloatLit(Location(), FloatVal(lbvalue));
-          Expression* e1 = new FloatLit(Location(), FloatVal(ubvalue));
-          domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+          type = Type::varfloat(dim);
+          FLOAT_PROCESS:
+          code = Type::BT_FLOAT;
+          domain = new BinOp(Location(),
+                          one_dim_python_to_minizinc(pylb,code),
+                          BOT_DOTDOT,
+                          one_dim_python_to_minizinc(pyub,code) );
           break;
-        }
-      case VARSETINT: t = Type::varsetint(dim); break;
-      case VARBOT: t = Type::varbot(dim); break;
-      case BOT: t = Type::bot(dim); break;
-      case TOP: t = Type::top(dim); break;
-      case VARTOP: t = Type::vartop(dim); break;
-      case OPTVARTOP: t = Type::optvartop(dim); break;
+      case PARSTRING: type = Type::parstring(dim); break;
+      case ANN: type = Type::ann(dim); break;
+      case PARSETINT: type = Type::parsetint(dim); break;
+      case PARSETBOOL: type = Type::parsetbool(dim); break;
+      case PARSETFLOAT: type = Type::parsetfloat(dim); break;
+      case PARSETSTRING: type = Type::parsetstring(dim); break;
+      case VARSETINT: type = Type::varsetint(dim); break;
+      case VARBOT: type = Type::varbot(dim); break;
+      case BOT: type = Type::bot(dim); break;
+      case TOP: type = Type::top(dim); break;
+      case VARTOP: type = Type::vartop(dim); break;
+      case OPTVARTOP: type = Type::optvartop(dim); break;
     }
   }
-  VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), t, domain) , string(name), NULL);
+
+  VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), type, ranges, domain) , string(name), initValue);
   self->_m->addItem(new VarDeclI(Location(), e));
   self->loaded = true;
-  
+
+  MznVariable* var = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
+  var->e = e;
+  var->isExp = false;
+  var->dimList = dimList;
+
+  return (PyObject*)var;
+}
+
+static PyObject*
+Mzn_Call(MznModel* self, PyObject* args)
+{
+  const char* name;
+  PyObject* variableTuple;
+  if (!PyArg_ParseTuple(args, "sO", &name, &variableTuple)) {
+    PyErr_SetString(PyExc_TypeError, "Accepts two values: a string and a tuple of minizinc variable");
+    PyErr_Print();
+    return NULL;
+  }
+
+  if (!PyList_Check(variableTuple)) {
+    PyErr_SetString(PyExc_TypeError, "Second argument must be a tuple");
+    return NULL;
+  }
+
+  long len = PyList_GET_SIZE(variableTuple);
+  vector<Expression*> expressionList(len);
+  for (long i = 0; i!=len; ++i) {
+    PyObject* pyval = PyList_GET_ITEM(variableTuple, i);
+    if (PyObject_TypeCheck(pyval, &MznVariableType)) {
+      expressionList[i] = ((MznVariable*)pyval) -> e;
+    } else {
+      Type::BaseType code = Type::BT_UNKNOWN;
+      expressionList[i] = one_dim_python_to_minizinc(pyval, code);
+      if (code == Type::BT_UNKNOWN) {
+        PyErr_SetString(PyExc_TypeError, "List items must be of Minizinc Variable Type");
+        return NULL;
+      }
+    }
+  }
+  expressionList.erase(expressionList.begin()+1);
+  MznVariable* var = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
+  var->e = new Call(Location(), string(name), expressionList);
+  var->isExp = false;
+  var->dimList = NULL;
+
+  return (PyObject*)var;
+}
+
+static PyObject*
+Mzn_UnOp(MznModel* self, PyObject* args)
+{
+  /*
+  enum UnOpType {
+    UOT_NOT,          // 0
+    UOT_PLUS,         // 1
+    UOT_MINUS         // 2
+  };*/
+  PyObject* r;
+  unsigned int op;
+  if (!PyArg_ParseTuple(args, "IO", &op, &r)) {
+    PyErr_SetString(PyExc_TypeError, "Requires a MznVariable/MznConstraint object and an integer");
+    return NULL;
+  }
+  Expression *rhs;
+
+  if (PyObject_TypeCheck(r, &MznVariableType)) {
+    if (((MznVariable*)r)->isExp)
+      rhs = (VarDecl*)(((MznVariable*)r)->e);
+    else
+      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();
+  } else if (PyBool_Check(r)) {
+    rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
+  } else if (PyInt_Check(r)) {
+    rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
+  } else if (PyFloat_Check(r)) {
+    rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
+  } else if (PyString_Check(r)) {
+    rhs = new StringLit(Location(), string(PyString_AS_STRING(r)));
+  } else {
+    PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
+    return NULL;
+  }
+
+
+  GCLock Lock;
+
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
-  ((MznVariable*)var)->e = e->id();
-  ((MznVariable*)var)->isExp = false;
+  ((MznVariable*)var)->e = new UnOp(Location(), static_cast<UnOpType>(op), rhs);
+  ((MznVariable*)var)->isExp = true;
+
   return var;
 }
 
 static PyObject* 
-MznModel_Expression(MznModel* self, PyObject* args)
+Mzn_BinOp(MznModel* self, PyObject* args)
 {
   /*
   enum BinOpType {
@@ -157,23 +584,37 @@ MznModel_Expression(MznModel* self, PyObject* args)
   }
   Expression *lhs, *rhs;
   if (PyObject_TypeCheck(l, &MznVariableType)) {
-//    if (((MznVariable*)l)->isExp)
+    if (((MznVariable*)l)->isExp)
       lhs = (VarDecl*)(((MznVariable*)l)->e);
-/*    else
-      lhs = ((VarDecl*)(((MznVariable*)l)->e))->id();*/
-  }
-  else {
+    else
+      lhs = ((VarDecl*)(((MznVariable*)l)->e))->id();
+  } else if (PyBool_Check(l)) {
+    lhs = new BoolLit(Location(), PyInt_AS_LONG(l));
+  } else if (PyInt_Check(l)) {
+    lhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(l)));
+  } else if (PyFloat_Check(l)) {
+    lhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(l));
+  } else if (PyString_Check(l)) {
+    lhs = new StringLit(Location(), string(PyString_AS_STRING(l)));
+  } else {
     PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
     return NULL;
   }
 
   if (PyObject_TypeCheck(r, &MznVariableType)) {
-//    if (((MznVariable*)r)->isExp)
+    if (((MznVariable*)r)->isExp)
       rhs = (VarDecl*)(((MznVariable*)r)->e);
-/*    else
-      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();*/
-  }
-  else {
+    else
+      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();
+  } else if (PyBool_Check(r)) {
+    rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
+  } else if (PyInt_Check(r)) {
+    rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
+  } else if (PyFloat_Check(r)) {
+    rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
+  } else if (PyString_Check(r)) {
+    rhs = new StringLit(Location(), string(PyString_AS_STRING(r)));
+  } else {
     PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
     return NULL;
   }
@@ -196,12 +637,20 @@ MznModel_Constraint(MznModel* self, PyObject* args)
     PyErr_SetString(PyExc_TypeError, "Requires an object of Minizinc Variable");
     return NULL;
   }
-  if (!PyObject_TypeCheck(obj, &MznVariableType)) {
-    PyErr_SetString(PyExc_TypeError, "Object must be a Minizinc Variable");
-    return NULL;
-  }
+
   GCLock Lock;
-  ConstraintI* i = new ConstraintI(Location(), ((MznVariable*)obj)->e);
+  ConstraintI* i;
+
+  if (!PyObject_TypeCheck(obj, &MznVariableType)) {
+    if (PyBool_Check(obj)) {
+      bool val = PyObject_IsTrue(obj);
+      i = new ConstraintI(Location(), new BoolLit(Location(), val));
+    } else {
+      PyErr_SetString(PyExc_TypeError, "Object must be a Minizinc Variable");
+      return NULL;
+    }
+  } else
+    i = new ConstraintI(Location(), ((MznVariable*)obj)->e);
   self->_m->addItem(i);
   Py_RETURN_NONE;
 }
@@ -280,7 +729,6 @@ static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
   MznModel* self = (MznModel*)type->tp_alloc(type,0);
-  //self->_m = new Model;
   self->includePaths = new vector<string>;
   //self->data = new vector<string>;
   return (PyObject* )self;
@@ -317,210 +765,41 @@ MznModel_dealloc(MznModel* self)
 {
   delete self->_m;
   delete self->includePaths;
-  //delete self->data;
   self->ob_type->tp_free((PyObject*)self);
 }
 
 int
 MznModel::addData(const char* const name, PyObject* value)
 {
+  GCLock Lock;
+  if (value == NULL) {
+    PyErr_SetString(PyExc_ValueError, "Cannot add NULL");
+    return -1;
+  }
   for (unsigned int i=0; i<_m->size(); i++) 
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
       if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
-        if (vdi->e()->type().st() == Type::ST_SET) {
-          if (PyObject_TypeCheck(value, &MznSetType)) {
-            vector<IntSetVal::Range> ranges;
-            MznSet* Set = (MznSet*)value;
-            for (list<MznRange>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
-              ranges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
-            }
-            Expression* rhs = new SetLit(Location(), IntSetVal::a(ranges));
-            vdi->e()->e(rhs);
-            return 0;
-          } else {
-            string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a set";
-            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-            return -1;
+        vector<pair<int, int> > dimList;
+        int dimSize = vdi->e()->type().dim();
+        if (dimSize > 0) {
+          ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
+          for (int i=0; i!= dimSize; ++i) {
+            BinOp* domain = (BinOp*)ranges[i]->domain();
+            IntLit* lhs = (IntLit*)(domain->lhs());
+            IntLit* rhs = (IntLit*)(domain->rhs());
+            dimList.push_back(make_pair(lhs->v().toInt(),rhs->v().toInt()));
           }
-        } else if (vdi->e()->type().bt() == Type::BT_INT) {
-          if (vdi->e()->type().dim() == 0) {
-            if (PyInt_Check(value)) {
-              Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(value)));
-              vdi->e()->e(rhs);
-              return 0;
-            } else {
-              string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an integer";
-              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-              return -1;
-            }
-          } else {
-            if (PyList_Check(value)) {
-              ArrayLit* al = vdi->e()->cast<ArrayLit>();
-              vector<Py_ssize_t> dimensions;
-              vector<PyObject*> simpleArray;
-              if (getList(value, dimensions, simpleArray, 0) == -1) {
-                PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
-                return -1;
-              }
-              if (vdi->e()->type().dim() != dimensions.size()) {
-                string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-                return -1;
-              }
-              vector<Expression*> v;
-              vector<pair<int,int> > dims;
-              for (int i=0; i!=simpleArray.size(); ++i) {
-                PyObject* temp= simpleArray[i];
-                if (!PyInt_Check(temp)) {
-                  string errorLog = "Expected integer value";
-                  PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-                  return -1;
-                }
-                Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(temp)));
-                v.push_back(rhs);
-              }
-
-              for (int i=0; i!=dimensions.size(); i++)
-                dims.push_back(pair<Py_ssize_t,Py_ssize_t>(1,dimensions[i]));
-              Expression* rhs = new ArrayLit(Location(), v, dims);
-              vdi->e()->e(rhs);
-              return 0;
-            } else {
-              string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected an array of integer";
-              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-              return -1;
-            }
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_BOOL) {
-          if (PyBool_Check(value)) {
-            Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(value));
-            vdi->e()->e(rhs);
-            return 0;
-          } else if (PyList_Check(value)) {
-            ArrayLit* al = vdi->e()->cast<ArrayLit>();
-            vector<Py_ssize_t> dimensions;
-            vector<PyObject*> simpleArray;
-            if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
-              return -1;
-            }
-            if (vdi->e()->type().dim() != dimensions.size()) {
-              string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-              return -1;
-            }
-            vector<Expression*> v;
-            vector<pair<int,int> > dims;
-            for (int i=0; i!=simpleArray.size(); ++i) {
-              PyObject* temp= simpleArray[i];
-              if (!PyInt_Check(temp)) {
-                string errorLog = "Expected boolean value";
-                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-                return -1;
-              }
-              Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(temp));
-              v.push_back(rhs);
-            }
-
-            for (int i=0; i!=dimensions.size(); i++)
-              dims.push_back(pair<int,int>(1,dimensions[i]));
-            Expression* rhs = new ArrayLit(Location(), v, dims);
-            vdi->e()->e(rhs);
-            return 0;
-          } else {
-            string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a boolean";
-            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-            return -1;
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_STRING) {
-          if (PyString_Check(value)) {
-            Expression* rhs = new StringLit(Location(), PyString_AS_STRING(value));
-            vdi->e()->e(rhs);
-            return 0;
-          } else if (PyList_Check(value)) {
-            ArrayLit* al = vdi->e()->cast<ArrayLit>();
-            vector<Py_ssize_t> dimensions;
-            vector<PyObject*> simpleArray;
-            if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
-              return -1;
-            }
-            if (vdi->e()->type().dim() != dimensions.size()) {
-              string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-              return -1;
-            }
-            vector<Expression*> v;
-            vector<pair<int,int> > dims;
-            for (int i=0; i!=simpleArray.size(); ++i) {
-              PyObject* temp= simpleArray[i];
-              if (!PyString_Check(temp)) {
-                string errorLog = "Expected string value";
-                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-                return -1;
-              }
-              Expression* rhs = new StringLit(Location(), PyString_AS_STRING(temp));
-              v.push_back(rhs);
-            }
-
-            for (int i=0; i!=dimensions.size(); i++)
-              dims.push_back(pair<int,int>(1,dimensions[i]));
-            Expression* rhs = new ArrayLit(Location(), v, dims);
-            vdi->e()->e(rhs);
-            return 0;
-          } else {
-            string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a string";
-            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-            return -1;
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_FLOAT) {
-          if (PyFloat_Check(value)) {
-            Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(value));
-            vdi->e()->e(rhs);
-            return 0;
-          } else if (PyList_Check(value)) {
-            ArrayLit* al = vdi->e()->cast<ArrayLit>();
-            vector<Py_ssize_t> dimensions;
-            vector<PyObject*> simpleArray;
-            if (getList(value, dimensions, simpleArray, 0) == -1) {
-              PyErr_SetString(PyExc_TypeError, "Inconsistency in size of multidimensional array");
-              return -1;
-            }
-            if (vdi->e()->type().dim() != dimensions.size()) {
-              string errorLog = "type-inst error: output expression '" + string(name) + "'' has invalid type-inst: number of dimension not conforms";
-              PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-              return -1;
-            }
-            vector<Expression*> v;
-            vector<pair<int,int> > dims;
-            for (int i=0; i!=simpleArray.size(); ++i) {
-              PyObject* temp= simpleArray[i];
-              if (!PyFloat_Check(temp)) {
-                string errorLog = "Expected float value";
-                PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-                return -1;
-              }
-              Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(temp));
-              v.push_back(rhs);
-            }
-
-            for (int i=0; i!=dimensions.size(); i++)
-              dims.push_back(pair<int,int>(1,dimensions[i]));
-            Expression* rhs = new ArrayLit(Location(), v, dims);
-            vdi->e()->e(rhs);
-            return 0;
-          } else {
-            string errorLog = "type-inst error: output expression " + string(name) + " has invalid type-inst: expected a float";
-            PyErr_SetString(PyExc_TypeError, errorLog.c_str());
-            return -1;
-          }
-        } else {
-          PyErr_SetString(PyExc_TypeError, "Unhandled type");
-          return -1;
         }
+
+        Type type;
+        Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);
+        if (rhs == NULL)
+          return -1;
+        vdi->e()->e(rhs);
+        return 0;
       }
     }
-  string ret = "Undefined identifier '" + string(name) + "'";
+  string ret = "Undefined name '" + string(name) + "'";
   PyErr_SetString(PyExc_TypeError, ret.c_str());
   return -1;
 }
@@ -541,6 +820,7 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args)
 int 
 MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
 {
+  GCLock Lock;
   Model* saveModel = _m;
   stringstream errorStream;
   vector<string> data;
@@ -685,6 +965,7 @@ MznModel_setTimeLimit(MznModel *self, PyObject *args)
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
   PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
+  GC::lock();
   if (model == NULL)
     return NULL;
   if (MznModel_init((MznModel*)model, NULL) < 0)
@@ -772,12 +1053,39 @@ PyObject* MznModel::solve()
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
     PyObject* result = MznSolution_new(&MznSolutionType, NULL, NULL);
     ((MznSolution*)result)->env = env;
+    ((MznSolution*)result)->_m = env->output();
     ((MznSolution*)result)->status = status;
     return result; 
   } else {
-    PyErr_SetString(PyExc_RuntimeError,"Unknown status code");
+    PyErr_SetString(PyExc_RuntimeError,"Unsatisfied");
     return NULL;
   }  
+}
+
+PyObject* 
+MznSolution_getValue(MznSolution* self, PyObject* args) {
+  const char* name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
+    return NULL;
+  }
+  //Model* _m = self->env->output();
+  if (self->_m) {
+    for (unsigned int i=0; i<self->_m->size(); i++) {
+      if (VarDeclI* vdi = (*(self->_m))[i]->dyn_cast<VarDeclI>()) {
+        if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
+          GCLock Lock;
+          if (PyObject* PyValue = minizinc_to_python(vdi->e()))
+            return PyValue;
+          else 
+            return NULL;
+        }
+      }
+    }
+    PyErr_SetString(PyExc_RuntimeError, "Name not found");
+  } else
+    PyErr_SetString(PyExc_RuntimeError, "No model");
+  return NULL;
 }
 
 
@@ -787,183 +1095,13 @@ MznSolution::next()
   PyObject* solutions = PyList_New(0);
   PyObject* sol = PyDict_New();
   GCLock lock;
-  Model* _m = env->output();
-  for (unsigned int i=0; i<_m->size(); i++) {
+  _m = env->output();
+  for (unsigned int i=0; i < _m->size(); i++) {
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
-      if (vdi->e()->type().st() == Type::ST_SET) {
-        IntSetVal* isv = eval_intset(vdi->e()->e());
-        long numberOfElement = 0;
-        MznSet* newSet = (MznSet*) MznSet_new(&MznSetType,NULL,NULL);
-        
-        for (IntSetRanges isr(isv); isr(); ++isr) {
-          newSet->push(isr.min().toInt(),isr.max().toInt());
-        }
-        PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),(PyObject*)newSet);
-      } else {
-        if (vdi->e()->type().bt() == Type::BT_BOOL) {
-          if (vdi->e()->type().dim() == 0) {
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyBool_FromLong(eval_bool(vdi->e()->e())));
-          } else {
-            ArrayLit* al = eval_par(vdi->e()->e())->cast<ArrayLit>();
-            int dim = vdi->e()->type().dim();
-
-            // Maximum size of each dimension
-            vector<long long int> dmax;
-            // Current size of each dimension
-            vector<long long int> d;
-            // p[0] holds the final array, p[1+] builds up p[0]
-            vector<PyObject*> p(dim);
-            for (int i=0; i<dim; i++) {
-              d.push_back(0);
-              Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-              dmax.push_back(dtemp);
-              p[i] = PyList_New(dtemp);
-            }
-            int i = dim - 1;
-            // next item to be put onto the final array.
-            unsigned int currentPos = 0;
-            do {
-              PyList_SetItem(p[i], d[i], PyBool_FromLong(eval_bool(al->v()[currentPos])));
-              currentPos++;
-              d[i]++;
-              while (d[i]>=dmax[i] && i>0) {
-                PyList_SetItem(p[i-1],d[i-1],p[i]);
-                Py_DECREF(p[i]);
-                d[i]=0;
-                p[i]=PyList_New(dmax[i]);
-                i--;
-                d[i]++;
-              }
-              i = dim - 1;
-            } while (d[0]<dmax[0]);
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
-            for (int i=0; i<dim; i++)
-              Py_DECREF(p[i]);
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_INT) {
-          if (vdi->e()->type().dim() == 0) {
-            IntVal iv = eval_int(vdi->e()->e());
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyInt_FromLong(iv.toInt()));
-          } else {
-            ArrayLit* al = eval_par(vdi->e()->e())->cast<ArrayLit>();
-            int dim = vdi->e()->type().dim();
-
-            // Maximum size of each dimension
-            vector<long long int> dmax;
-            // Current size of each dimension
-            vector<long long int> d;
-            // p[0] holds the final array, p[1+] builds up p[0]
-            vector<PyObject*> p(dim);
-            for (int i=0; i<dim; i++) {
-              d.push_back(0);
-              Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-              dmax.push_back(dtemp);
-              p[i] = PyList_New(dtemp);
-            }
-            int i = dim - 1;
-            // next item to be put onto the final array.
-            unsigned int currentPos = 0;
-            do {
-              PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(al->v()[currentPos]).toInt()));
-              currentPos++;
-              d[i]++;
-              while (d[i]>=dmax[i] && i>0) {
-                PyList_SetItem(p[i-1],d[i-1],p[i]);
-                d[i]=0;
-                p[i]=PyList_New(dmax[i]);
-                i--;
-                d[i]++;
-              }
-              i = dim - 1;
-            } while (d[0]<dmax[0]);
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
-            for (int i=0; i<dim; i++)
-              Py_DECREF(p[i]);
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_STRING) {
-          if (vdi->e()->type().dim() == 0) {
-            string temp(eval_string(vdi->e()->e()));
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyString_FromString(temp.c_str()));
-          } else {
-            ArrayLit* al = eval_par(vdi->e()->e())->cast<ArrayLit>();
-            int dim = vdi->e()->type().dim();
-
-            // Maximum size of each dimension
-            vector<long long int> dmax;
-            // Current size of each dimension
-            vector<long long int> d;
-            // p[0] holds the final array, p[1+] builds up p[0]
-            vector<PyObject*> p(dim);
-            for (int i=0; i<dim; i++) {
-              d.push_back(0);
-              Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-              dmax.push_back(dtemp);
-              p[i] = PyList_New(dtemp);
-            }
-            int i = dim - 1;
-            // next item to be put onto the final array.
-            unsigned int currentPos = 0;
-            do {
-              string temp(eval_string(al->v()[currentPos]));
-              PyList_SetItem(p[i], d[i], PyString_FromString(temp.c_str()));
-              currentPos++;
-              d[i]++;
-              while (d[i]>=dmax[i] && i>0) {
-                PyList_SetItem(p[i-1],d[i-1],p[i]);
-                d[i]=0;
-                p[i]=PyList_New(dmax[i]);
-                i--;
-                d[i]++;
-              }
-              i = dim - 1;
-            } while (d[0]<dmax[0]);
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
-            for (int i=0; i<dim; i++)
-              Py_DECREF(p[i]);
-          }
-        } else if (vdi->e()->type().bt() == Type::BT_FLOAT) {
-          if (vdi->e()->type().dim() == 0) {
-            FloatVal fv = eval_float(vdi->e()->e());
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyFloat_FromDouble(fv));
-          } else {
-            ArrayLit* al = eval_par(vdi->e()->e())->cast<ArrayLit>();
-            int dim = vdi->e()->type().dim();
-
-            // Maximum size of each dimension
-            vector<long long int> dmax;
-            // Current size of each dimension
-            vector<long long int> d;
-            // p[0] holds the final array, p[1+] builds up p[0]
-            vector<PyObject*> p(dim);
-            for (int i=0; i<dim; i++) {
-              d.push_back(0);
-              Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-              dmax.push_back(dtemp);
-              p[i] = PyList_New(dtemp);
-            }
-            int i = dim - 1;
-            // next item to be put onto the final array.
-            unsigned int currentPos = 0;
-            do {
-              PyList_SetItem(p[i], d[i], PyFloat_FromDouble(eval_float(al->v()[currentPos])));
-              currentPos++;
-              d[i]++;
-              while (d[i]>=dmax[i] && i>0) {
-                PyList_SetItem(p[i-1],d[i-1],p[i]);
-                //Py_DECREF(p[i]);
-                d[i]=0;
-                p[i]=PyList_New(dmax[i]);
-                i--;
-                d[i]++;
-              }
-              i = dim - 1;
-            } while (d[0]<dmax[0]);
-            PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(),p[0]);
-            for (int i=0; i<dim; i++) 
-              Py_DECREF(p[i]);
-          }
-        }
-      }
+      PyObject* PyValue = minizinc_to_python(vdi->e());
+      if (PyValue == NULL)
+        return NULL;
+      PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyValue);
     }
   }
   PyList_Append(solutions, sol);
