@@ -368,13 +368,13 @@ namespace MiniZinc {
     }
     
     if (!hasBeenAdded) {
-      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-      env.flat_addItem(ni);
+    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+    env.flat_addItem(ni);
       //TODO: What should we do with the map?
-      EE ee(vd,NULL);
-      env.map_insert(vd->id(),ee);
+    EE ee(vd,NULL);
+    env.map_insert(vd->id(),ee);
     }
-
+    
     return vd;
   }
 
@@ -434,7 +434,7 @@ namespace MiniZinc {
       if (it->second.r()) {
         if (it->second.r()->isa<VarDecl>()) {
           int idx = vo.find(it->second.r()->cast<VarDecl>());
-          if (idx >= 0 && (*_flat)[idx]->removed())
+          if (idx == -1 || (*_flat)[idx]->removed())
             return map.end();
         }
       } else {
@@ -518,6 +518,14 @@ namespace MiniZinc {
       topDown(ce,toAdd);
     }
   }
+  
+  void EnvI::flat_removeItem(MiniZinc::Item* i) {
+    i->remove();
+  }
+  void EnvI::flat_removeItem(int i) {
+    (*_flat)[i]->remove();
+  }
+  
   void EnvI::collectVarDecls(bool b) {
     collect_vardecls = b;
   }
@@ -4143,7 +4151,8 @@ namespace MiniZinc {
                 argtypes[i] = args[i]()->type();
               argtypes.push_back(Type::varbool());
               GCLock lock;
-              FunctionI* reif_decl = env.orig->matchFn(env.reifyId(cid), argtypes);
+              ASTString r_cid = env.reifyId(cid);
+              FunctionI* reif_decl = env.orig->matchFn(r_cid, argtypes);
               if (reif_decl && reif_decl->e()) {
                 addPathAnnotation(env, reif_decl->e());
                 VarDecl* reif_b;
@@ -4152,12 +4161,22 @@ namespace MiniZinc {
                   if (reif_b->ti()->domain()) {
                     if (reif_b->ti()->domain() == constants().lit_true) {
                       bind(env,ctx,r,constants().lit_true);
+                      r = constants().var_true;
+                      ctx.b = C_ROOT;
                       goto call_nonreif;
                     } else {
-                      bind(env,ctx,r,constants().lit_false);
-                      args.push_back(constants().lit_false);
-                      decl = reif_decl;
-                      goto call_nonreif;
+                      std::vector<Expression*> args_e(args.size()+1);
+                      for (unsigned int i=0; i<args.size(); i++)
+                        args_e[i] = args[i]();
+                      args_e[args.size()] = constants().lit_false;
+                      Call* reif_call = new Call(Location().introduce(), r_cid, args_e);
+                      reif_call->type(Type::varbool());
+                      reif_call->decl(reif_decl);
+                      flat_exp(env, Ctx(), reif_call, constants().var_true, constants().var_true);
+                      args_ee.push_back(EE(NULL,constants().lit_false));
+                      ret.r = conj(env,r,ctx,args_ee);
+                      ret.b = bind(env,ctx,b,constants().lit_true);
+                      return ret;
                     }
                   }
                 } else {
@@ -5436,7 +5455,7 @@ namespace MiniZinc {
           }
         }
       }
-
+      
       // rewrite some constraints if there are redefinitions
       for (int ai=0; ai<agenda.size(); ai++) {
         int i=agenda[ai];
@@ -5598,8 +5617,7 @@ namespace MiniZinc {
               CollectDecls cd(env.vo,deletedVarDecls,ci);
               topDown(cd,c);
               ci->e(constants().lit_true);
-              ci->remove();
-
+              env.flat_removeItem(i);
               StringLit* sl = NULL;
               for(ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
                 if(Call* ca = (*it)->dyn_cast<Call>()) {
@@ -5633,7 +5651,7 @@ namespace MiniZinc {
       if (env.vo.occurrences(removedItems[i]->e())==0) {
         CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
         topDown(cd,removedItems[i]->e()->e());
-        removedItems[i]->remove();
+        env.flat_removeItem(removedItems[i]);
       }
     }
     
@@ -5687,7 +5705,7 @@ namespace MiniZinc {
           if (c->decl()==constants().var_redef) {
             CollectDecls cd(env.vo,deletedVarDecls,ci);
             topDown(cd,c);
-            ci->remove();
+            env.flat_removeItem(i);
           }
         }
       }
@@ -5700,7 +5718,7 @@ namespace MiniZinc {
         if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
           CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
           topDown(cd,cur->e());
-          m[cur_idx->second]->remove();
+          env.flat_removeItem(cur_idx->second);
         }
       }
     }
@@ -5720,7 +5738,7 @@ namespace MiniZinc {
           vdi->e()->e()->ann().removeCall(constants().ann.mzn_path);
         if(item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
             item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
-            item->remove();
+            e.envi().flat_removeItem(i);
         }
       } else if(ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
         ci->e()->ann().removeCall(constants().ann.mzn_path);

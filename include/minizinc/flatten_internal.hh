@@ -112,6 +112,8 @@ namespace MiniZinc {
     void dump(void);
     
     void flat_addItem(Item* i);
+    void flat_removeItem(int i);
+    void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
