@@ -43,7 +43,7 @@ namespace MiniZinc {
     int occurrences(VarDecl* v);
     
     /// Unify \a v0 and \a v1 (removing \a v0)
-    void unify(Model* m, Id* id0, Id* id1);
+    void unify(EnvI& env, Model* m, Id* id0, Id* id1);
     
     /// Clear all entries
     void clear(void);

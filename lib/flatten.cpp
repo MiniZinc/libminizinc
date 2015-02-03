@@ -223,7 +223,7 @@ namespace MiniZinc {
       if (it->second.r()) {
         if (it->second.r()->isa<VarDecl>()) {
           int idx = vo.find(it->second.r()->cast<VarDecl>());
-          if (idx >= 0 && (*_flat)[idx]->removed())
+          if (idx == -1 || (*_flat)[idx]->removed())
             return map.end();
         }
       } else {
@@ -307,6 +307,14 @@ namespace MiniZinc {
       topDown(ce,toAdd);
     }
   }
+  
+  void EnvI::flat_removeItem(MiniZinc::Item* i) {
+    i->remove();
+  }
+  void EnvI::flat_removeItem(int i) {
+    (*_flat)[i]->remove();
+  }
+  
   void EnvI::collectVarDecls(bool b) {
     collect_vardecls = b;
   }
@@ -5098,7 +5106,7 @@ namespace MiniZinc {
               CollectDecls cd(env.vo,deletedVarDecls,ci);
               topDown(cd,c);
               ci->e(constants().lit_true);
-              ci->remove();
+              env.flat_removeItem(i);
               (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
             }
           }
@@ -5114,7 +5122,7 @@ namespace MiniZinc {
       if (env.vo.occurrences(removedItems[i]->e())==0) {
         CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
         topDown(cd,removedItems[i]->e()->e());
-        removedItems[i]->remove();
+        env.flat_removeItem(removedItems[i]);
       }
     }
     
@@ -5168,7 +5176,7 @@ namespace MiniZinc {
           if (c->decl()==constants().var_redef) {
             CollectDecls cd(env.vo,deletedVarDecls,ci);
             topDown(cd,c);
-            ci->remove();
+            env.flat_removeItem(i);
           }
         }
       }
@@ -5181,7 +5189,7 @@ namespace MiniZinc {
         if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
           CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
           topDown(cd,cur->e());
-          m[cur_idx->second]->remove();
+          env.flat_removeItem(cur_idx->second);
         }
       }
     }
@@ -5199,7 +5207,7 @@ namespace MiniZinc {
       if (item->isa<VarDeclI>() &&
           (item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
            item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) ) {
-            item->remove();
+            e.envi().flat_removeItem(i);
           }
     }
 
