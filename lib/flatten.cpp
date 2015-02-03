@@ -251,10 +251,10 @@ namespace MiniZinc {
     return tighter;
   }
 
-  std::string getPath(EnvI& env) {
+  std::string getPath(EnvI& env, bool force = false) {
     std::string path;
     std::stringstream ss;
-    if(env.dumpPath(ss, false))
+    if(env.dumpPath(ss, force, false))
       path = ss.str();
     return path;
   }
@@ -368,13 +368,13 @@ namespace MiniZinc {
     }
     
     if (!hasBeenAdded) {
-    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-    env.flat_addItem(ni);
+      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+      env.flat_addItem(ni);
       //TODO: What should we do with the map?
-    EE ee(vd,NULL);
-    env.map_insert(vd->id(),ee);
+      EE ee(vd,NULL);
+      env.map_insert(vd->id(),ee);
     }
-    
+
     return vd;
   }
 
@@ -629,11 +629,11 @@ namespace MiniZinc {
   }
  
   bool
-  EnvI::dumpPath(std::ostream& os, bool errStack) {
+  EnvI::dumpPath(std::ostream& os, bool force = false, bool errStack = false) {
     std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
 
     if (stack.size() > maxPathDepth) {
-      if(pass >= passes-1) {
+      if(!force && pass >= passes-1) {
         return false;
   }
       maxPathDepth = stack.size();
@@ -650,7 +650,7 @@ namespace MiniZinc {
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
       if (findFilename == filenameMap.end()) {
-        if(pass >= passes-1)
+        if(!force && pass >= passes-1)
           return false;
         filenameId = filenameMap.size();
         filenameMap.insert(std::make_pair(loc.filename.str(), filenameMap.size()));
@@ -5127,9 +5127,15 @@ namespace MiniZinc {
     new_mod->setFilename(m->filename().str());
     new_mod->setFilepath(m->filepath().str());
 
+    std::vector<std::string> new_includePaths;
+
+    if(std::find(includePaths.begin(), includePaths.end(), globals_dir) == includePaths.end())
+      new_includePaths.push_back(globals_dir);
+    new_includePaths.insert(new_includePaths.end(), includePaths.begin(), includePaths.end());
+
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        IncludeI* ninc = update_include(new_mod, inc, includePaths);
+        IncludeI* ninc = update_include(new_mod, inc, new_includePaths);
         if(ninc) new_mod->addItem(ninc);
       } else {
         new_mod->addItem(copy(cm,item));
@@ -5455,7 +5461,7 @@ namespace MiniZinc {
           }
         }
       }
-      
+
       // rewrite some constraints if there are redefinitions
       for (int ai=0; ai<agenda.size(); ai++) {
         int i=agenda[ai];

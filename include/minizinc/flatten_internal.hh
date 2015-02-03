@@ -118,7 +118,7 @@ namespace MiniZinc {
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
-    bool dumpPath(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool force, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
 
