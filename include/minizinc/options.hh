@@ -17,14 +17,14 @@
 namespace MiniZinc {
   class Options {
     protected:
-      UNORDERED_NAMESPACE::unordered_map<std::string, Expression*> _options;
+      UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive> _options;
 
       inline Expression* getParam(const std::string& name) const;
 
     public:
-      void setIntParam(const std::string& name,   Expression* e);
-      void setFloatParam(const std::string& name, Expression* e);
-      void setBoolParam(const std::string& name,  Expression* e);
+      void setIntParam(const std::string& name,   KeepAlive e);
+      void setFloatParam(const std::string& name, KeepAlive e);
+      void setBoolParam(const std::string& name,  KeepAlive e);
       void setIntParam(const std::string& name,   long long int e);
       void setFloatParam(const std::string& name, double e);
       void setBoolParam(const std::string& name,  bool e);
