@@ -329,20 +329,23 @@ int main(int argc, char** argv) {
           if (!flag_instance_check_only) {
             Env env(m);
             try {
+              GCLock lock;
               std::vector<Pass*> passes;
               Options gopts;
+              gopts.setBoolParam(std::string("only-range-domains"), fopts.onlyRangeDomains);
               FlatteningOptions pass_opts = fopts;
               for(unsigned int i=1; i<flag_npasses; i++) {
-                if(flag_gecode)
-                  passes.push_back(new GecodePass(pass_opts, gopts));
-                else
-                  passes.push_back(new CompilePass(pass_opts, "std"));
+                if(flag_gecode) {
+                  pass_opts.onlyRangeDomains = false;
+                  passes.push_back(new GecodePass(pass_opts, gopts, std_lib_dir+"/gecode/"));
+                } else {
+                  pass_opts.onlyRangeDomains = false;
+                  passes.push_back(new CompilePass(pass_opts, std_lib_dir+"/std/"));
+                }
               }
 
-              std::vector<std::string> cleanIncludePaths(includePaths.size()-1);
-              for(unsigned int i=0; i<includePaths.size(); i++)
-                if(i != includePaths.size()-2)
-                  cleanIncludePaths.push_back(includePaths[i]);
+              std::vector<std::string> cleanIncludePaths;
+              cleanIncludePaths.push_back(std_lib_dir+"/std/");
 
               // Multi-pass optimisations
               if(flag_npasses > 1)
