@@ -90,6 +90,7 @@ namespace MiniZinc {
 #endif
 
     _optVarIsInt = f._optVarIsInt;
+    _solveType = f._solveType;
   }
 
 
