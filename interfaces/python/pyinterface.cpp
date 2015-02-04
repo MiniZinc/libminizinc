@@ -479,6 +479,8 @@ Mzn_Call(MznModel* self, PyObject* args)
     PyObject* pyval = PyList_GET_ITEM(variableTuple, i);
     if (PyObject_TypeCheck(pyval, &MznVariableType)) {
       expressionList[i] = ((MznVariable*)pyval) -> e;
+      if ( !(((MznVariable*)pyval)->isExp) )
+        expressionList[i] = ((VarDecl*)expressionList[i])->id();
     } else {
       Type::BaseType code = Type::BT_UNKNOWN;
       expressionList[i] = one_dim_python_to_minizinc(pyval, code);
@@ -488,9 +490,9 @@ Mzn_Call(MznModel* self, PyObject* args)
       }
     }
   }
-  expressionList.erase(expressionList.begin()+1);
   MznVariable* var = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
   var->e = new Call(Location(), string(name), expressionList);
+  std::cerr << "new call: " << *var->e << "\n";
   var->isExp = false;
   var->dimList = NULL;
 
@@ -720,24 +722,18 @@ string minizinc_set(long start, long end) {
   return asn;
 }
 
-
-
-
-
-
 static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
+  GC::lock();
   MznModel* self = (MznModel*)type->tp_alloc(type,0);
   self->includePaths = new vector<string>;
-  //self->data = new vector<string>;
   return (PyObject* )self;
 }
 
 static int
 MznModel_init(MznModel* self, PyObject* args)
 {
-  // add later
   self->loaded = false;
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -916,79 +912,10 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
   }
 }
 
-static PyObject*
-MznModel_load(MznModel *self, PyObject *args, PyObject *keywds) {
-  if (self->load(args, keywds, true) < 0)
-    return NULL;
-  Py_RETURN_NONE;
-}
-
-static PyObject*
-MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds) {
-  if (self->load(args, keywds, false) < 0)
-    return NULL;
-  Py_RETURN_NONE;
-}
-
-static PyObject*
-MznModel_solve(MznModel *self)
-{
-  if (self->timeLimit != 0) {
-    signal(SIGALRM, sig_alrm);
-    alarm(self->timeLimit);
-    if (sigsetjmp(jmpbuf, 1)) {
-      PyErr_SetString(PyExc_RuntimeError, "Time out");
-      return NULL;
-    }
-    PyObject* result = self->solve();
-
-    alarm(0);
-    return result;
-  } else 
-    return self->solve();
-}
-
-static PyObject*
-MznModel_setTimeLimit(MznModel *self, PyObject *args)
-{
-  if (PyInt_Check(args)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
-    return NULL;
-  }
-  self->timeLimit = PyInt_AS_LONG(args);
-  return Py_None;
-}
-
-
-
-
-
-static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
-  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
-  GC::lock();
-  if (model == NULL)
-    return NULL;
-  if (MznModel_init((MznModel*)model, NULL) < 0)
-    return NULL;
-  if (MznModel_load((MznModel*)model, args, keywds)==NULL)
-    return NULL;
-  return model;
-}
-
-static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds) {
-  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
-  if (model == NULL)
-    return NULL;
-  if (MznModel_init((MznModel*)model, NULL) < 0)
-    return NULL;
-  if (MznModel_loadFromString((MznModel*)model, args, keywds)==NULL)
-    return NULL;
-  return model;
-}
-
 
 PyObject* MznModel::solve()
 {
+
   if (!loaded) {
     PyErr_SetString(PyExc_RuntimeError, "No data has been loaded into the model");
     return NULL;
@@ -1110,6 +1037,78 @@ MznSolution::next()
   Py_DECREF(solutions);
   return ret; 
 }
+
+
+static PyObject*
+MznModel_load(MznModel *self, PyObject *args, PyObject *keywds) {
+  if (self->load(args, keywds, true) < 0)
+    return NULL;
+  Py_RETURN_NONE;
+}
+
+static PyObject*
+MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds) {
+  if (self->load(args, keywds, false) < 0)
+    return NULL;
+  Py_RETURN_NONE;
+}
+
+static PyObject*
+MznModel_solve(MznModel *self)
+{
+  if (self->timeLimit != 0) {
+    signal(SIGALRM, sig_alrm);
+    alarm(self->timeLimit);
+    if (sigsetjmp(jmpbuf, 1)) {
+      PyErr_SetString(PyExc_RuntimeError, "Time out");
+      return NULL;
+    }
+    PyObject* result = self->solve();
+
+    alarm(0);
+    return result;
+  } else 
+    return self->solve();
+}
+
+static PyObject*
+MznModel_setTimeLimit(MznModel *self, PyObject *args)
+{
+  if (PyInt_Check(args)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
+    return NULL;
+  }
+  self->timeLimit = PyInt_AS_LONG(args);
+  return Py_None;
+}
+
+
+
+
+
+static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
+  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
+  GC::lock();
+  if (model == NULL)
+    return NULL;
+  if (MznModel_init((MznModel*)model, NULL) < 0)
+    return NULL;
+  if (MznModel_load((MznModel*)model, args, keywds)==NULL)
+    return NULL;
+  return model;
+}
+
+static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds) {
+  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
+  if (model == NULL)
+    return NULL;
+  if (MznModel_init((MznModel*)model, NULL) < 0)
+    return NULL;
+  if (MznModel_loadFromString((MznModel*)model, args, keywds)==NULL)
+    return NULL;
+  return model;
+}
+
 
 static void
 MznSolution_dealloc(MznSolution* self)

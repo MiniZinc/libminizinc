@@ -9,11 +9,6 @@
 import minizinc
 import inspect
 
-def get_name(var):
-	print                inspect.currentframe().f_back.f_back.f_back.f_globals.items()
-	callers_local_vars = inspect.currentframe().f_back.f_back.f_back.f_globals.items()
-	#print [var_name for var_name, var_val in callers_local_vars if var_val is var]
-	return [var_name for var_name, var_val in callers_local_vars if var_val is var][0]
 
 class Domain(list):
 	def __init__(self, arg1, arg2=None):
@@ -529,7 +524,7 @@ class VarDecl(Expression):
 		if isinstance(model, Model) == False:
 			raise TypeError("Warning: First argument must be a Model Object")
 		self.model = model
-		#self.name = '"' + str(id(self)) + '"'
+		self.name = '"' + str(id(self)) + '"'
 
 	def get_value(self):
 		if self.model.is_solved():
@@ -596,7 +591,8 @@ class Variable(VarDecl):
 		domain = None
 		lb = False
 		ub = True
-		self.name = get_name(self)
+		#self.name = get_name(self)
+		#get_name(self)
 		name = None
 
 		if argopt3 is not None:
@@ -643,23 +639,22 @@ class Variable(VarDecl):
 		self.domain = domain
 		self.lb = lb
 		self.ub = ub
+		self.dim_list = []
 		#if name is not None:
 		#	self.name = name
 		if tlb is bool:
-			self.obj = model.mznmodel.Variable(self.name,10,[],lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name,10,[],lb,ub)
+			self.VarCode = 10
 		elif tlb is int:
-			self.obj = model.mznmodel.Variable(self.name, 9,[],lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name, 9,[],lb,ub)
+			self.VarCode = 9
 		elif tlb is float:  
-			self.obj = model.mznmodel.Variable(self.name,11,[],lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name,11,[],lb,ub)
+			self.VarCode = 11
 		elif isinstance(lb, Variable) or isinstance(ub, Variable):
-			self.obj = model.mznmodel.Variable(self.name,12,[],lb,ub)
-
-		
-
-		#if (argopt5 is None):
-		#	self.obj = model.mznmodel.Variable(name,9,[],argopt4)
-		#else:
-		#	self.obj = model.mznmodel.Variable(name,9,[],argopt4,argopt5)
+			#self.obj = model.mznmodel.Variable(self.name,12,[],lb,ub)
+			self.VarCode = 12
+		self.is_added = False
 
 	def name(self):
 		return id(self)
@@ -699,15 +694,20 @@ class Array(Variable):
 				raise TypeError('Array ranges must be continuous')
 			else:
 				raise RuntimeError('Unknown error')
-		lb = argopt1
-		ub = argopt2
+		self.lb = argopt1
+		self.ub = argopt2
+		self.dim_list = dim_list
+		self.is_added = False
 		tlb = type(argopt1)
 		if tlb is bool:
-			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
+			self.VarCode = 10
 		elif tlb is int:
-			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
+			self.VarCode = 9
 		elif tlb is float:  #isinstance(lb, float):
-			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
+			#self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
+			self.VarCode = 11
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self.obj, args[0])
@@ -724,11 +724,19 @@ class ArrayAccess(Array):
 
 
 class Model(object):
-	def __init__(self, *expr):
+	def __init__(self):
 		self.loaded = False
 		self.mznsolution = None
 		self.mznmodel = minizinc.Model()
-		self.add(expr)
+
+	def get_name(self,var):
+		itemList = [var_name for var_name, var_val in self.frame if var_val is var]
+		if len(itemList) == 1:
+			return itemList[0]
+		elif len(itemList) == 0:
+			raise LookupError('Internal Error: variable name not found')
+		else:
+			raise LookupError('The object pointed to was assigned to different names')
 
 	def add(self, *expr):
 		minizinc.lock()
@@ -736,7 +744,9 @@ class Model(object):
 			raise RuntimeError('Model has been solved, need to be reset first')
 		if len(expr)>0:
 			self.loaded = True
+			self.frame = inspect.currentframe().f_back.f_locals.items()
 			self.add_prime(expr)
+			del self.frame
 		minizinc.unlock()
 
 	def evaluate(self, expr):
@@ -756,6 +766,11 @@ class Model(object):
 		elif isinstance(expr, ArrayAccess):
 			return (expr.obj.at(expr.arg), expr.model)
 		elif isinstance(expr, Variable):
+			if not expr.is_added:
+				expr.is_added = True
+				expr.name = self.get_name(expr)
+				expr.obj = self.mznmodel.Variable(expr.name, expr.VarCode,
+									expr.dim_list, expr.lb, expr.ub)
 			return (expr.obj, expr.model)
 		elif isinstance(expr, BinPredicate):
 			lhs, model = self.evaluate(expr.vars[0])
@@ -798,6 +813,9 @@ class Model(object):
 
 	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
 		return Variable(self, argopt1, argopt2, argopt3)
+		#var.name = get_name(var)
+		#var.obj = m.mznmodel.Variable(var.name, var.code,
+		#						var.dim_list, var.lb, var.ub)
 
 	def Array(self, argopt1, argopt2, *args):
 		list_ = []
