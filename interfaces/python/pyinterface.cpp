@@ -725,6 +725,7 @@ string minizinc_set(long start, long end) {
 static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
+  GC::init();
   GC::lock();
   MznModel* self = (MznModel*)type->tp_alloc(type,0);
   self->includePaths = new vector<string>;
@@ -775,17 +776,17 @@ MznModel::addData(const char* const name, PyObject* value)
   for (unsigned int i=0; i<_m->size(); i++) 
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
       if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
+        std::cerr << "check " << *vdi;
         vector<pair<int, int> > dimList;
         int dimSize = vdi->e()->type().dim();
-        if (dimSize > 0) {
-          ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
-          for (int i=0; i!= dimSize; ++i) {
-            BinOp* domain = (BinOp*)ranges[i]->domain();
-            IntLit* lhs = (IntLit*)(domain->lhs());
-            IntLit* rhs = (IntLit*)(domain->rhs());
-            dimList.push_back(make_pair(lhs->v().toInt(),rhs->v().toInt()));
-          }
-        }
+        // if (dimSize > 0) {
+        //   ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
+        //   for (int i=0; i!= dimSize; ++i) {
+        //     std::cerr << "ranges " << i << " = " << *ranges[i]->domain() << "\n";
+        //     IntSetVal* isv = eval_intset(ranges[i]->domain());
+        //     dimList.push_back(make_pair(isv->min().toInt(),isv->max().toInt()));
+        //   }
+        // }
 
         Type type;
         Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);

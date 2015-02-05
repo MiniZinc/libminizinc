@@ -30,7 +30,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
-#include <minizinc/solvers/gecode/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/prettyprinter.hh>
 
 using namespace MiniZinc;
