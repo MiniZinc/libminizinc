@@ -98,6 +98,30 @@ void MznSet::push(long v) {
   return;
 }
 
+long MznSet::min() 
+{
+  assert (ranges->begin() != ranges->end());
+  return ranges->front().min;
+}
+
+long MznSet::max() 
+{
+  assert (ranges->begin() != ranges->end());
+  return ranges->back().max;
+}
+
+static PyObject*
+MznSet_min(MznSet* self)
+{
+  return PyInt_FromLong(self->min());
+}
+
+static PyObject*
+MznSet_max(MznSet* self)
+{
+  return PyInt_FromLong(self->max());
+}
+
 
 static PyObject*
 MznSet_push(MznSet* self, PyObject* args) {
@@ -192,3 +216,4 @@ static PyObject* MznSet_repr(PyObject* self) {
   const std::string& tmp = output.str();
   return PyString_FromString(tmp.c_str());
 }
+

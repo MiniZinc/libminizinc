@@ -25,6 +25,9 @@ struct MznSet {
   void push(long min, long max);
   void push(long v);
 
+  long min();
+  long max();
+
   long size() {return ranges->size();}
 };
 
@@ -35,11 +38,14 @@ static PyObject* MznSet_push(MznSet* self, PyObject* args);
 static int MznSet_init(MznSet* self, PyObject* args);
 static PyObject* MznSet_output(MznSet* self);
 static PyObject* MznSet_repr(PyObject* self);
+static PyObject* MznSet_min(MznSet* self);
+static PyObject* MznSet_max(MznSet* self);
 
 static PyMethodDef MznSet_methods[] = {
   {"output", (PyCFunction)MznSet_output, METH_NOARGS, "Return all values in the set"},
-  {"output", (PyCFunction)MznSet_output, METH_VARARGS, "Return all values in the set"},
   {"push", (PyCFunction)MznSet_push, METH_VARARGS, "Expand the set"},
+  {"min", (PyCFunction)MznSet_min, METH_NOARGS, "Lower bound of the set"},
+  {"max", (PyCFunction)MznSet_max, METH_NOARGS, "Upper bound of the set"},
   {NULL}    /* Sentinel */
 };
 

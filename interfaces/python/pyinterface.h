@@ -46,9 +46,11 @@ static PyObject* MznModel_solve_warning;
 static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
+string typePresentation(const Type& type);
+bool compareType(const Type& type1, const Type& type2);
 PyObject* minizinc_to_python(VarDecl* vd);
 inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
-Expression* python_to_minizinc(PyObject* pv, const Type& type);
+Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
 
 
 #include "MznSet.h"
@@ -65,6 +67,7 @@ void sig_alrm (int signo)
 
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
+
 
 
 struct MznModel {
@@ -245,7 +248,6 @@ static PyTypeObject MznSolutionType = {
 PyMODINIT_FUNC
 initminizinc(void) {
     GC::init();
-    //GC::lock();
     PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)

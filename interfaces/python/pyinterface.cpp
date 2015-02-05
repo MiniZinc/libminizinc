@@ -10,6 +10,42 @@
 using namespace MiniZinc;
 using namespace std;
 
+bool compareType(const Type& type1, const Type& type2)
+// For internal use, only take TypeInst, BaseType, SetType, dim to consideration
+{
+  return (type1.bt() == type2.bt() &&
+          type1.st() == type2.st() && type1.dim() == type2.dim());
+}
+
+string typePresentation(const Type& type)
+// Nicely presenting the type, for example: set of int or array of [int, int]
+{
+  string baseTypeString;
+  switch (type.bt()) {
+    case Type::BT_BOOL: baseTypeString = "bool"; break;
+    case Type::BT_INT: baseTypeString = "int"; break;
+    case Type::BT_FLOAT: baseTypeString = "float"; break;
+    case Type::BT_STRING: baseTypeString = "string"; break;
+    default: baseTypeString = "UNSET";
+  }
+  if (type.st() == Type::ST_SET)
+    return "a set of " + baseTypeString;
+  else if (type.dim() == 0) {
+    if (type.bt() == Type::BT_INT)
+      return "an " + baseTypeString;
+    else 
+      return "a " + baseTypeString;
+  } else {
+    string ret = "an array of [";
+    for (int i=type.dim(); i--;) {
+      ret += baseTypeString;
+      if (i-1>0)
+        ret += ", ";
+    }
+    ret += ']';
+    return ret;
+  }
+}
 
 PyObject*
 minizinc_to_python(VarDecl* vd)
@@ -450,8 +486,8 @@ MznModel_Variable(MznModel* self, PyObject* args)
   self->loaded = true;
 
   MznVariable* var = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
-  var->e = e;
-  var->isExp = false;
+  var->e = e->id();
+  var->vd = e;
   var->dimList = dimList;
 
   return (PyObject*)var;
@@ -478,9 +514,11 @@ Mzn_Call(MznModel* self, PyObject* args)
   for (long i = 0; i!=len; ++i) {
     PyObject* pyval = PyList_GET_ITEM(variableTuple, i);
     if (PyObject_TypeCheck(pyval, &MznVariableType)) {
+      /*if ( ((MznVariable*)pyval)->isVar)
+        expressionList[i] = ((MznVariable*)pyval) -> e -> cast<VarDecl>()->id();
+      else
+        expressionList[i] = ((MznVariable*)pyval) -> e;*/
       expressionList[i] = ((MznVariable*)pyval) -> e;
-      if ( !(((MznVariable*)pyval)->isExp) )
-        expressionList[i] = ((VarDecl*)expressionList[i])->id();
     } else {
       Type::BaseType code = Type::BT_UNKNOWN;
       expressionList[i] = one_dim_python_to_minizinc(pyval, code);
@@ -492,8 +530,8 @@ Mzn_Call(MznModel* self, PyObject* args)
   }
   MznVariable* var = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
   var->e = new Call(Location(), string(name), expressionList);
-  std::cerr << "new call: " << *var->e << "\n";
-  var->isExp = false;
+  //std::cerr << "new call: " << *var->e << "\n";
+  //var->isVar = false;
   var->dimList = NULL;
 
   return (PyObject*)var;
@@ -517,10 +555,11 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   Expression *rhs;
 
   if (PyObject_TypeCheck(r, &MznVariableType)) {
-    if (((MznVariable*)r)->isExp)
-      rhs = (VarDecl*)(((MznVariable*)r)->e);
+    /*if (((MznVariable*)r)->isVar)
+      rhs = ((MznVariable*)r)->e->cast<VarDecl>()->id();
     else
-      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();
+      rhs = ((MznVariable*)r)->e;*/
+    rhs = ((MznVariable*)r)->e;
   } else if (PyBool_Check(r)) {
     rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
   } else if (PyInt_Check(r)) {
@@ -539,7 +578,7 @@ Mzn_UnOp(MznModel* self, PyObject* args)
 
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
   ((MznVariable*)var)->e = new UnOp(Location(), static_cast<UnOpType>(op), rhs);
-  ((MznVariable*)var)->isExp = true;
+  //((MznVariable*)var)->isVar = false;
 
   return var;
 }
@@ -586,10 +625,11 @@ Mzn_BinOp(MznModel* self, PyObject* args)
   }
   Expression *lhs, *rhs;
   if (PyObject_TypeCheck(l, &MznVariableType)) {
-    if (((MznVariable*)l)->isExp)
-      lhs = (VarDecl*)(((MznVariable*)l)->e);
+    /*if (((MznVariable*)l)->isVar)
+      lhs = ((MznVariable*)l)->e->cast<VarDecl>()->id();
     else
-      lhs = ((VarDecl*)(((MznVariable*)l)->e))->id();
+      lhs = ((MznVariable*)l)->e;*/
+    lhs = ((MznVariable*)l)->e;
   } else if (PyBool_Check(l)) {
     lhs = new BoolLit(Location(), PyInt_AS_LONG(l));
   } else if (PyInt_Check(l)) {
@@ -604,10 +644,10 @@ Mzn_BinOp(MznModel* self, PyObject* args)
   }
 
   if (PyObject_TypeCheck(r, &MznVariableType)) {
-    if (((MznVariable*)r)->isExp)
-      rhs = (VarDecl*)(((MznVariable*)r)->e);
-    else
-      rhs = ((VarDecl*)(((MznVariable*)r)->e))->id();
+    /*if (((MznVariable*)r)->isVar)
+      rhs = ((MznVariable*)r)->e->cast<VarDecl>()->id();
+    else*/
+      rhs = ((MznVariable*)r)->e;
   } else if (PyBool_Check(r)) {
     rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
   } else if (PyInt_Check(r)) {
@@ -626,7 +666,7 @@ Mzn_BinOp(MznModel* self, PyObject* args)
 
   PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
   ((MznVariable*)var)->e = new BinOp(Location(), lhs, static_cast<BinOpType>(op), rhs);
-  ((MznVariable*)var)->isExp = true;
+  //((MznVariable*)var)->isVar = false;
 
   return var;
 }
@@ -663,6 +703,7 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
 {
   unsigned int solveType;
   PyObject* obj = NULL;
+  Expression* e = NULL;
 
   if (!PyArg_ParseTuple(args, "I|O", &solveType, &obj)) {
     PyErr_SetString(PyExc_TypeError, "Requires a solver code and an optional expression");
@@ -677,17 +718,24 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     if (obj == NULL) {
       PyErr_SetString(PyExc_TypeError, "Optimisation solver requires an addition constraint object");
       return NULL;
-    } else if (!PyObject_TypeCheck(obj, &MznVariableType)) {
+    } else if (PyObject_TypeCheck(obj, &MznVariableType))  {
+      /*if ( ((MznVariable*)obj)->isVar )
+        e = ((MznVariable*)obj)->e->cast<VarDecl>()->id();
+      else */
+        e = ((MznVariable*)obj)->e;
+    }
+    else {
       PyErr_SetString(PyExc_TypeError, "Requires a Minizinc Constraint Object");
       return NULL;
     }
   }
+
   GCLock Lock;
   SolveI* i;
   switch (solveType) {
     case 0: i = SolveI::sat(Location()); break;
-    case 1: i = SolveI::min(Location(),((MznVariable*)obj)->e ); break;
-    case 2: i = SolveI::max(Location(),((MznVariable*)obj)->e ); break;
+    case 1: i = SolveI::min(Location(),(e)); break;
+    case 2: i = SolveI::max(Location(),(e)); break;
   }
   self->_m->addItem(i);
   Py_RETURN_NONE;
@@ -725,8 +773,6 @@ string minizinc_set(long start, long end) {
 static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
-  GC::init();
-  GC::lock();
   MznModel* self = (MznModel*)type->tp_alloc(type,0);
   self->includePaths = new vector<string>;
   return (PyObject* )self;
@@ -760,7 +806,8 @@ MznModel_init(MznModel* self, PyObject* args)
 static void
 MznModel_dealloc(MznModel* self)
 {
-  delete self->_m;
+  if (self->_m)
+    delete self->_m;
   delete self->includePaths;
   self->ob_type->tp_free((PyObject*)self);
 }
@@ -779,6 +826,7 @@ MznModel::addData(const char* const name, PyObject* value)
         std::cerr << "check " << *vdi;
         vector<pair<int, int> > dimList;
         int dimSize = vdi->e()->type().dim();
+/*<<<<<<< Updated upstream
         // if (dimSize > 0) {
         //   ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
         //   for (int i=0; i!= dimSize; ++i) {
@@ -787,6 +835,17 @@ MznModel::addData(const char* const name, PyObject* value)
         //     dimList.push_back(make_pair(isv->min().toInt(),isv->max().toInt()));
         //   }
         // }
+/*=======
+        if (dimSize > 0) {
+          ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
+          for (int i=0; i!= dimSize; ++i) {
+            BinOp* domain = (BinOp*)ranges[i]->domain();
+            IntLit* lhs = domain->lhs()->cast<IntLit>();
+            IntLit* rhs = domain->rhs()->cast<IntLit>();
+            dimList.push_back(make_pair(lhs->v().toInt(),rhs->v().toInt()));
+          }
+        }
+>>>>>>> Stashed changes*/
 
         Type type;
         Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);
@@ -973,6 +1032,7 @@ PyObject* MznModel::solve()
   }
   optimize(*env);
   oldflatzinc(*env);
+  //debugprint(env->flat());
   GCLock lock;
   Options options;
   GecodeSolverInstance gecode(*env,options);
@@ -1065,7 +1125,6 @@ MznModel_solve(MznModel *self)
       return NULL;
     }
     PyObject* result = self->solve();
-
     alarm(0);
     return result;
   } else 
@@ -1089,7 +1148,6 @@ MznModel_setTimeLimit(MznModel *self, PyObject *args)
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
   PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
-  GC::lock();
   if (model == NULL)
     return NULL;
   if (MznModel_init((MznModel*)model, NULL) < 0)
@@ -1114,7 +1172,7 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 static void
 MznSolution_dealloc(MznSolution* self)
 {
-  if (self->env!=NULL)
+  if ((self->env)!=NULL)
     delete self->env;
   self->ob_type->tp_free((PyObject*)self);
 }

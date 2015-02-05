@@ -7,8 +7,16 @@
 
 
 import minizinc
-import inspect
+#import inspect
 
+def flatten(x):
+    result = []
+    for el in x:
+        if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
 
 class Domain(list):
 	def __init__(self, arg1, arg2=None):
@@ -120,7 +128,7 @@ class Expression(object):
 		return output
 
 	def __str__(self):
-		return self.domain()
+		return str(self.get_value())
 
 	def is_str(self):
 		if hasattr(self, 'lb'):
@@ -163,11 +171,20 @@ class Expression(object):
 	def get_operator(self):
 		return self.operator
 
-	def get_value(self):
-		return None
+	#def get_value(self):
+	#	return None
 
-	def __str__(self):
-		return 'Expression base string'
+	def evaluate(self, var):
+		if isinstance(var, Expression):
+			ret = var.get_value()
+			if ret == None:
+				raise ValueError('Variable value it not set')
+			return ret
+		else:
+			return var
+
+#	def __str__(self):
+#		return 'Expression base string'
 
 	def __and__(self, pred):
 		return And([self, pred])
@@ -191,9 +208,7 @@ class Expression(object):
 		return Add([pred, self])
 
 	def __sub__(self, pred):
-		var = Sub([self, pred])
-		var.name = '(' + str(self) + '-' + str(pred) + ')'
-		return var
+		return Sub([self, pred])
 
 	def __rsub__(self, pred):
 		return Sub([pred, self])
@@ -250,8 +265,11 @@ class Expression(object):
 	def __invert__(self):
 		return Invert([self])
 
+	def __abs__(self):
+		return Abs([self])
 
-class Set:
+
+class Set(Expression):
 	def __init__(self, vars):
 		#Predicate.__init__(self,"Minizinc Set")
 		self.obj = minizinc.Set(vars)
@@ -263,7 +281,6 @@ class Set:
 class Predicate(Expression):
 
 	def __init__(self, vars, op):
-		self.__exp = []
 		'''
 		for i in range(len(vars)):
 			if isinstance(vars[i], Expression):
@@ -294,20 +311,6 @@ class Predicate(Expression):
 	def name(self):
 		return self.__str__()
 
-	def __str__(self):
-		save_str = Expression.__str__
-		Expression.__str__ = Expression.name
-		output = self.operator + "(" + ", ".join(map(str, self.children)) + ")"
-		Expression.__str__ = save_str
-		return output
-
-	def domain(self, solver=None):
-		save_str = Expression.__str__
-		Expression.__str__ = lambda x: x.domain(solver)
-		output = self.__str__()
-		Expression.__str__ = save_str
-		return output
-
 
 class BinPredicate(Predicate):
 
@@ -321,12 +324,6 @@ class BinPredicate(Predicate):
 	def get_symbol(self):
 		return 'x'
 
-	def __str__(self):
-		save_str = Expression.__str__
-		Expression.__str__ = Expression.name
-		output = '(' + str(self.vars[0]) + ' ' + self.get_symbol() + ' ' + str(self.vars[1]) + ')'
-		Expression.__str__ = save_str
-		return output
 
 	def eval(self, x, y):
 		try:
@@ -355,12 +352,24 @@ class Add(BinPredicate):
 	def get_symbol(self):
 		return '+'
 
+	def get_value(self):
+		lhs = self.evaluate(self.vars[0])
+		rhs = self.evaluate(self.vars[1])
+		if isinstance(rhs, str):
+			lhs = str(lhs)
+		elif isinstance(lhs, str):
+			rhs = str(rhs)
+		return lhs + rhs
+
 class Sub(BinPredicate):
 	def __init__(self, vars):
 		BinPredicate.__init__(self, vars, 1)
 
 	def get_symbol(self):
 		return '-'
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) - self.evaluate(self.vars[1])
 
 class Mul(BinPredicate):
 
@@ -370,6 +379,9 @@ class Mul(BinPredicate):
 	def get_symbol(self):
 		return '*'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) * self.evaluate(self.vars[1])
+
 class Div(BinPredicate):
 
 	def __init__(self, vars) :
@@ -378,6 +390,9 @@ class Div(BinPredicate):
 	def get_symbol(self):
 		return '/'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) / self.evaluate(self.vars[1])
+
 class FloorDiv(BinPredicate):
 
 	def __init__(self, vars) :
@@ -385,6 +400,9 @@ class FloorDiv(BinPredicate):
 
 	def get_symbol(self):
 		return '//'
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) // self.evaluate(self.vars[1])
 
 
 class Mod(BinPredicate):
@@ -395,6 +413,9 @@ class Mod(BinPredicate):
 	def get_symbol(self):
 		return '%'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) % self.evaluate(self.vars[1])
+
 
 class Lt(BinPredicate):
 
@@ -404,6 +425,9 @@ class Lt(BinPredicate):
 	def get_symbol(self):
 		return '<'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) < self.evaluate(self.vars[1])
+
 class Le(BinPredicate):
 
 	def __init__(self, vars):
@@ -411,6 +435,9 @@ class Le(BinPredicate):
 
 	def get_symbol(self):
 		return '<='
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) <= self.evaluate(self.vars[1])
 
 class Gt(BinPredicate):
 
@@ -420,6 +447,9 @@ class Gt(BinPredicate):
 	def get_symbol(self):
 		return '>'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) > self.evaluate(self.vars[1])
+
 class Ge(BinPredicate):
 
 	def __init__(self, vars):
@@ -427,6 +457,9 @@ class Ge(BinPredicate):
 
 	def get_symbol(self):
 		return '>='
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) >= self.evaluate(self.vars[1])
 
 
 class Eq(BinPredicate):
@@ -437,6 +470,8 @@ class Eq(BinPredicate):
 	def get_symbol(self):
 		return '=='
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) == self.evaluate(self.vars[1])
 
 class Ne(BinPredicate):
 
@@ -445,6 +480,9 @@ class Ne(BinPredicate):
 
 	def get_symbol(self):
 		return '!='
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) != self.evaluate(self.vars[1])
 
 
 class Or(BinPredicate):
@@ -455,6 +493,9 @@ class Or(BinPredicate):
 	def get_symbol(self):
 		return 'or'
 
+	def get_value(self):
+		return self.evaluate(self.vars[0]) or self.evaluate(self.vars[1])
+
 class And(BinPredicate):
 
 	def __init__(self, vars):
@@ -462,6 +503,9 @@ class And(BinPredicate):
 
 	def get_symbol(self):
 		return '&'
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) & self.evaluate(self.vars[1])
 
 class Xor(BinPredicate):
 
@@ -471,17 +515,210 @@ class Xor(BinPredicate):
 	def get_symbol(self):
 		return 'xor'
 
+	def get_value(self):
+		return bool(self.evaluate(self.vars[0])) != bool(self.evaluate(self.vars[1]))
+
 class Pow(Call):
 	def __init__(self, vars):
 		Call.__init__(self, vars, "pow")
+
+	def get_symbol(self):
+		return '**'
+
+	def get_value(self):
+		return self.evaluate(self.vars[0]) ** self.evaluate(self.vars[1])
+
+class abort(Call):
+	def __init__(self):
+		Call.__init__(self, [], "abort")
+
+class abs(Call):
+	def __init__(self, var):
+		Call.__init__(self, var, "abs")
+
+class acosh(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"acosh")
+
+class asin(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"asin")
+
+class atan(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"atan")
+
+class assert_(Call):
+	def __init__(self, constraint, message):
+		Call.__init__(self,[constraint, message],"assert")
+
+class bool2int(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"bool2int")
+
+class card(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"card")
+
+class ceil(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"ceil")
+
+class concat(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"concat")
+
+class cos(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"cos")
+
+class Cosh(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"cosh")
+
+class dom(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"Dom")
+
+class dom_array(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"dom_array")
+
+class dom_size(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"dom_size")
+
+class fix(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"fix")
+
+class exp(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"exp")
+
+class floor(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"floor")
+
+class exp(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"exp")
+
+class int2float(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"int2float")
+
+class is_fixed(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"is_fixed")
+
+class join(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"join")
+
+class lb(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"lb")
+
+class lb_array(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"lb_array")
+
+class length(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"length")
+
+class ln(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"ln")
+
+class log(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"log")
+
+class log2(Call):
+	def __init__(self, var1, var2):
+		Call.__init__(self,[var1, var2],"log2")
+
+class log10(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"log10")
+
+class min(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"min")
+
+class max(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"max")
+
+class product(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"product")
+
+class round(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"round")
+
+class set2array(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"set2array")
+
+#class show(Call):
+#	def __init__(self, var):
+#		Call.__init__(self,[var],"show")
+
+class sin(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"sin")
+
+class sinh(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"sinh")
+
+class sqrt(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"sqrt")
+
+class sum(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"sum")
+
+class tan(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"tan")
+
+class tanh(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"tanh")
+
+class trace(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"trace")
+
+class ub(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"ub")
+
+class ub_array(Call):
+	def __init__(self, var):
+		Call.__init__(self,[var],"ub_array")
+
+def AllDiff(*args):
+	vars = flatten(args)
+	if len(vars) < 2:
+		raise BaseException("AllDiff requires a list of at least 2 expressions.")
+	return [vars[i] != vars[j] for i in range(len(vars)-1) for j in range(i+1,len(vars))]
+
 
 
 class Neg(Predicate):
 
 	def __init__(self, vars):
 		Predicate.__init__(self, vars, 2)
-	def __str__(self):
-		return '-' + str(self.children[0])
+	#def __str__(self):
+	#	return '-' + str(self.children[0])
+
 
 	#def decompose(self):
 	#	return [self.children[0] * -1]		
@@ -491,15 +728,15 @@ class Pos(Predicate):
 
 	def __init__(self, vars):
 		Predicate.__init__(self, vars, 1)
-	def __str__(self):
-		return '-' + str(self.children[0])
+	#def __str__(self):
+	#	return '-' + str(self.children[0])
 
 class Invert(Predicate):
 
 	def __init__(self, vars):
 		Predicate.__init__(self, vars, 0)
-	def __str__(self):
-		return '-' + str(self.children[0])
+	#def __str__(self):
+	#	return '-' + str(self.children[0])
 
 """
 class Sum(Predicate):
@@ -527,10 +764,24 @@ class VarDecl(Expression):
 		self.name = '"' + str(id(self)) + '"'
 
 	def get_value(self):
-		if self.model.is_solved():
-			return self.model.mznsolution.getValue(self.name)
+		if hasattr(self,'value'):
+			return self.value
 		else:
-			return self.obj.getValue()
+			if self.model.is_solved():
+				self.value = self.model.mznsolution.getValue(self.name)
+				return self.value
+			else:
+				return None
+
+	def __str__(self):
+		temp = self.get_value()
+		if temp == None:
+			return "VALUE NOT SET"
+		else:
+			return str(temp)
+
+	def __repr__(self):
+		return 'A Minizinc Object with the value of ' + self.__str__()
 
 
 class Set(VarDecl):
@@ -545,7 +796,7 @@ class Set(VarDecl):
 		self.name = '"' + str(id(self)) + '"'
 
 		name = None
-		lb, ub = None
+		lb, ub = None, None
 		set_list = None
 
 
@@ -602,13 +853,14 @@ class Variable(VarDecl):
 		elif argopt2 is not None:
 			if type(argopt2) is str:
 				if type(argopt1) is (list, tuple):
-					lb = argopt1[0];
-					ub = argopt1[1];
-					#lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
-				else:
 					domain = sorted(argopt1)
 					lb = domain[0]
 					ub = domain[-1]
+				elif isinstance(argopt1, Set):
+					lb = argopt1.min()
+					ub = argopt1.max()
+				else:
+					raise TypeError('Undefined syntax')
 				name = argopt2
 			else:
 				lb = argopt1
@@ -619,6 +871,9 @@ class Variable(VarDecl):
 			elif type(argopt1) in [int, long, float]:
 				ub = argopt1 - 1
 				lb = type(ub)(lb)  # Ensure lb has the same datatype as ub
+			elif isinstance(argopt1,Set):
+				ub = argopt1.max()
+				lb = argopt1.min()
 			else:
 				domain = sorted(argopt1)
 				lb = domain[0]
@@ -640,21 +895,21 @@ class Variable(VarDecl):
 		self.lb = lb
 		self.ub = ub
 		self.dim_list = []
-		#if name is not None:
-		#	self.name = name
+		if name is not None:
+			self.name = name
 		if tlb is bool:
-			#self.obj = model.mznmodel.Variable(self.name,10,[],lb,ub)
-			self.VarCode = 10
+			self.obj = model.mznmodel.Variable(self.name,10,[],lb,ub)
+			#self.VarCode = 10
 		elif tlb is int:
-			#self.obj = model.mznmodel.Variable(self.name, 9,[],lb,ub)
-			self.VarCode = 9
+			self.obj = model.mznmodel.Variable(self.name, 9,[],lb,ub)
+			#self.VarCode = 9
 		elif tlb is float:  
-			#self.obj = model.mznmodel.Variable(self.name,11,[],lb,ub)
-			self.VarCode = 11
+			self.obj = model.mznmodel.Variable(self.name,11,[],lb,ub)
+			#self.VarCode = 11
 		elif isinstance(lb, Variable) or isinstance(ub, Variable):
-			#self.obj = model.mznmodel.Variable(self.name,12,[],lb,ub)
-			self.VarCode = 12
-		self.is_added = False
+			self.obj = model.mznmodel.Variable(self.name,12,[],lb,ub)
+			#self.VarCode = 12
+		#self.is_added = False
 
 	def name(self):
 		return id(self)
@@ -662,20 +917,21 @@ class Variable(VarDecl):
 	def initial(self):
 		return self.name
 
+	def set_value(self, arg):
+		self.obj.setValue(arg)
+
 
 class VarConstruct(Variable):
 
 	def __init__(self, model, argopt1):
 		VarDecl.__init__(self, model)
 		self.obj = model.mznmodel.Variable(self.name, argopt1)
+		self.value = argopt1
 
 class Array(Variable):
 
-	def __init__(self, model, argopt1, argopt2, *args):
+	def __init__(self, model, argopt1, argopt2=None, *args):
 		VarDecl.__init__(self, model)
-		if type(args[-1]) is str:
-			self.name = args[-1]
-			del args[-1]
 		dim_list = []
 		for i in args:
 			if type(i) is int:
@@ -692,31 +948,49 @@ class Array(Variable):
 				if i.is_continuous():
 					dim_list.append(i.min(), i.max())
 				raise TypeError('Array ranges must be continuous')
+			elif isinstance(i, str):
+				self.name = i
 			else:
 				raise RuntimeError('Unknown error')
-		self.lb = argopt1
-		self.ub = argopt2
+		lb = argopt1
+		ub = argopt2
+		self.lb = lb
+		self.ub = ub
 		self.dim_list = dim_list
-		self.is_added = False
+		#self.is_added = False
 		tlb = type(argopt1)
 		if tlb is bool:
-			#self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
-			self.VarCode = 10
+			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
+			#self.VarCode = 10
 		elif tlb is int:
-			#self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
-			self.VarCode = 9
+			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
+			#self.VarCode = 9
 		elif tlb is float:  #isinstance(lb, float):
-			#self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
-			self.VarCode = 11
+			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
+			#self.VarCode = 11
 
 	def __getitem__(self, *args):
-		return ArrayAccess(self.model, self.obj, args[0])
+		return ArrayAccess(self.model, self, args[0])
 
 class ArrayAccess(Array):
-	def __init__(self, model, obj, arg):
+	def __init__(self, model, array, idx):
 		VarDecl.__init__(self, model)
-		self.obj = obj
-		self.arg = arg
+		self.array = array
+		self.idx = idx
+
+	def get_value(self):
+		if hasattr(self,'value'):
+			return self.value
+		else:
+			arrayvalue = self.array.get_value()
+			if arrayvalue is None:
+				return None
+			else:
+				for i in self.idx:
+					arrayvalue = arrayvalue[i]
+				self.value = arrayvalue
+				return arrayvalue
+
 
 
 
@@ -729,6 +1003,8 @@ class Model(object):
 		self.mznsolution = None
 		self.mznmodel = minizinc.Model()
 
+
+	# not used anymore
 	def get_name(self,var):
 		itemList = [var_name for var_name, var_val in self.frame if var_val is var]
 		if len(itemList) == 1:
@@ -744,9 +1020,9 @@ class Model(object):
 			raise RuntimeError('Model has been solved, need to be reset first')
 		if len(expr)>0:
 			self.loaded = True
-			self.frame = inspect.currentframe().f_back.f_locals.items()
+			#self.frame = inspect.currentframe().f_back.f_locals.items()
 			self.add_prime(expr)
-			del self.frame
+			#del self.frame
 		minizinc.unlock()
 
 	def evaluate(self, expr):
@@ -764,13 +1040,13 @@ class Model(object):
 				variables.append(var)
 			return (minizinc.Call(expr.callId, variables), model)
 		elif isinstance(expr, ArrayAccess):
-			return (expr.obj.at(expr.arg), expr.model)
+			return (expr.array.obj.at(expr.idx), expr.model)
 		elif isinstance(expr, Variable):
-			if not expr.is_added:
-				expr.is_added = True
-				expr.name = self.get_name(expr)
-				expr.obj = self.mznmodel.Variable(expr.name, expr.VarCode,
-									expr.dim_list, expr.lb, expr.ub)
+			#if not expr.is_added:
+			#	expr.is_added = True
+			#	expr.name = self.get_name(expr)
+			#	expr.obj = self.mznmodel.Variable(expr.name, expr.VarCode,
+			#						expr.dim_list, expr.lb, expr.ub)
 			return (expr.obj, expr.model)
 		elif isinstance(expr, BinPredicate):
 			lhs, model = self.evaluate(expr.vars[0])
@@ -836,6 +1112,21 @@ class Model(object):
 		self.mznsolution = self.mznmodel.solve()
 		self.mznmodel = None
 
+	def optimize(self, arg, code):
+		minizinc.lock()
+		obj, model = self.evaluate(arg)
+		if model is not None and model != self:
+			raise TypeError('Expression must be free or belong to the same model')
+		self.id_loaded = False
+		self.mznmodel.SolveItem(code, obj)
+		self.mznsolution = self.mznmodel.solve()
+		self.mznmodel = None
+		minizinc.unlock()
+
+	def maximize(self, arg):
+		self.optimize(arg, 2)
+	def minimize(self, arg):
+		self.optimize(arg, 1)
 	def reset(self):
 		self.__init__()
 
