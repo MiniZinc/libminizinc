@@ -23,8 +23,25 @@ using namespace Gecode;
 
 namespace MiniZinc {
 
+  class GecodeEngine {
+  public:
+    virtual FznSpace* next(void) = 0;
+    virtual bool stopped(void) = 0;
+    virtual ~GecodeEngine(void) {}
+  };
+  
+  template<template<class> class Engine,
+           template<template<class> class,class> class Meta>
+  class MetaEngine : public GecodeEngine {
+    Meta<Engine,FznSpace> e;
+  public:
+    MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
+    virtual FznSpace* next(void) { std::cerr << "next called\n"; return e.next(); }
+    virtual bool stopped(void) { return e.stopped(); }
+  };
+  
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-     : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL), _solution(NULL), _only_range_domains(false) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL) {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
@@ -33,6 +50,7 @@ namespace MiniZinc {
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
+      delete engine;
       //delete _current_space;
       // delete _solution; // TODO: is this necessary?
     }
@@ -847,7 +865,18 @@ namespace MiniZinc {
 
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
-    assert(false); // TODO: implement
+    prepareEngine();
+    
+    _solution = engine->next();
+    
+    if (_solution) {
+      assignSolutionToOutput();
+      return SolverInstance::SAT;
+    } else if (engine->stopped()) {
+      return SolverInstance::UNKNOWN;
+    } else {
+      return SolverInstance::UNSAT;
+    }
   }
 
   void
@@ -872,56 +901,90 @@ namespace MiniZinc {
     }
   }
 
+  void
+  GecodeSolverInstance::prepareEngine(void) {
+    if (engine==NULL) {
+      // TODO: check what we need to do options-wise
+      std::vector<Expression*> branch_vars;
+      std::vector<Expression*> solve_args;
+      Expression* solveExpr = _env.flat()->solveItem()->e();
+      Expression* optSearch = NULL;
+      
+      switch(_current_space->_solveType) {
+        case MiniZinc::SolveI::SolveType::ST_MIN:
+          assert(solveExpr != NULL);
+          branch_vars.push_back(solveExpr);
+          solve_args.push_back(new ArrayLit(Location(), branch_vars));
+          if (!_current_space->_optVarIsInt) // TODO: why??
+            solve_args.push_back(new FloatLit(Location(), 0.0));
+          solve_args.push_back(new Id(Location(), "input_order", NULL));
+          solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
+          solve_args.push_back(new Id(Location(), "complete", NULL));
+          optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
+          break;
+        case MiniZinc::SolveI::SolveType::ST_MAX:
+          branch_vars.push_back(solveExpr);
+          solve_args.push_back(new ArrayLit(Location(), branch_vars));
+          if (!_current_space->_optVarIsInt)
+            solve_args.push_back(new FloatLit(Location(), 0.0));
+          solve_args.push_back(new Id(Location(), "input_order", NULL));
+          solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse", NULL));
+          solve_args.push_back(new Id(Location(), "complete", NULL));
+          optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
+          break;
+        case MiniZinc::SolveI::SolveType::ST_SAT:
+          break;
+        default:
+          assert(false);
+      }
+      createBranchers(_env.flat()->solveItem()->ann(), optSearch,
+                      111 /* _options.getFloatParam("seed")  */, // TODO: implement
+                      0.5 /* _options.getFloatParam("decay") */, // TODO: implement
+                      false, /* ignoreUnknown */
+                      std::cerr);
+      
+      Search::Options o;
+      o.stop = Driver::CombinedStop::create(100000, //_options.getIntParam(ASTString("nodes")), // TODO: implement option
+                                            100000, //_options.getIntParam(ASTString("fails")), // TODO: implement option
+                                            (unsigned int) (1000 //_options.getFloatParam(ASTString("time"))
+                                                            * 1000), // TODO: implement option
+                                            true);
+      // TODO: add presolving part
+      if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+        engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
+      } else {
+        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);
+      }
+    }
+  }
+  
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
-    // TODO: check what we need to do options-wise
-    std::vector<Expression*> branch_vars;
-    std::vector<Expression*> solve_args;
-    Expression* solveExpr = _env.flat()->solveItem()->e();
-    Expression* optSearch = NULL;
 
-    switch(_current_space->_solveType) {
-      case MiniZinc::SolveI::SolveType::ST_MIN:
-        assert(solveExpr != NULL);
-        branch_vars.push_back(solveExpr);
-        solve_args.push_back(new ArrayLit(Location(), branch_vars));
-        if (!_current_space->_optVarIsInt) // TODO: why??
-          solve_args.push_back(new FloatLit(Location(), 0.0));
-        solve_args.push_back(new Id(Location(), "input_order", NULL));
-        solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
-        solve_args.push_back(new Id(Location(), "complete", NULL));
-        optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
-        break;
-      case MiniZinc::SolveI::SolveType::ST_MAX:
-        branch_vars.push_back(solveExpr);
-        solve_args.push_back(new ArrayLit(Location(), branch_vars));
-        if (!_current_space->_optVarIsInt)
-          solve_args.push_back(new FloatLit(Location(), 0.0));
-        solve_args.push_back(new Id(Location(), "input_order", NULL));
-        solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse", NULL));
-        solve_args.push_back(new Id(Location(), "complete", NULL));
-        optSearch = new Call(Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
-        break;
-      case MiniZinc::SolveI::SolveType::ST_SAT:
-        break;
-      default:
-        assert(false);
+    prepareEngine();
+    if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+      _solution = engine->next();
+    } else {
+      while (FznSpace* next_sol = engine->next()) {
+        if(_solution) delete _solution;
+        _solution = next_sol;
+      }
     }
-    createBranchers(_env.flat()->solveItem()->ann(), optSearch,
-                    111 /* _options.getFloatParam("seed")  */, // TODO: implement
-                    0.5 /* _options.getFloatParam("decay") */, // TODO: implement
-                    false, /* ignoreUnknown */
-                    std::cerr);
-
-    // TODO: add presolving part
-
-    SolverInstanceBase::Status status;
-    if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-      status = runEngine<DFS>();
+    
+    SolverInstance::Status status = SolverInstance::SAT;
+    if(engine->stopped()) {
+      if(_solution) {
+        status = SolverInstance::OPT;
+        assignSolutionToOutput();
+      } else {
+        status = SolverInstance::UNSAT;
+      }
+    } else if(!_solution) {
+      status = SolverInstance::UNKNOWN;
+    } else {
+      assignSolutionToOutput();
     }
-    else {
-      status = runEngine<BAB>();
-    }
+    
     return status;
   }
 
@@ -1235,57 +1298,6 @@ namespace MiniZinc {
     } // end if n_aux > 0
     //else
       //std::cout << "DEBUG: No aux vars to branch on." << std::endl;
-  }
-
-
-  template<template<class> class Engine>
-    SolverInstanceBase::Status GecodeSolverInstance::runEngine() {
-    if (true) {//_options.getBoolParam(ASTString("restarts"))) { // TODO: implement option
-      return runMeta<Engine,Driver::EngineToMeta>();
-    } else {
-      return runMeta<Engine,RBS>();
-    }
-   }
-
-  template<template<class> class Engine,
-    template<template<class> class,class> class Meta>
-        SolverInstanceBase::Status GecodeSolverInstance::runMeta() {
-    Search::Options o;
-    o.stop = Driver::CombinedStop::create(100000, //_options.getIntParam(ASTString("nodes")), // TODO: implement option
-                                          100000, //_options.getIntParam(ASTString("fails")), // TODO: implement option
-                                          (unsigned int) (1000 //_options.getFloatParam(ASTString("time"))
-                                          * 1000), // TODO: implement option
-                                          true);
-    // TODO: other options (see below)
-    //o.c_d = opts->c_d();
-    //o.a_d = opts->a_d();
-    //o.threads = opts->threads();
-    //o.nogoods_limit = opts->nogoods() ? opts->nogoods_limit() : 0;
-    //o.cutoff  = Driver::createCutoff(*opts);
-    //if (opts->interrupt())
-    //    Driver::CombinedStop::installCtrlHandler(true);
-    Meta<Engine,FznSpace> se(this->_current_space,o);
-
-    while (FznSpace* next_sol = se.next()) {
-      if(_solution) delete _solution;
-      _solution = next_sol;
-    }
-
-    SolverInstance::Status status = SolverInstance::SAT;
-    if(se.stopped()) {
-      if(_solution) {
-        status = SolverInstance::OPT;
-        assignSolutionToOutput();
-      } else {
-        status = SolverInstance::UNSAT;
-      }
-    } else if(!_solution) {
-      status = SolverInstance::UNKNOWN;
-    } else {
-      assignSolutionToOutput();
-    }
-
-    return status;
   }
 
 
