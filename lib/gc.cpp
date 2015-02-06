@@ -365,16 +365,14 @@ namespace MiniZinc {
 
   void
   GC::remove(Model* m) {
-    if (m->_roots_next || m->_roots_prev) {
-      GC* gc = GC::gc();
-      if (m->_roots_next == m->_roots_prev) {
-        gc->_heap->_rootset = NULL;
-      } else {
-        m->_roots_next->_roots_prev = m->_roots_prev;
-        m->_roots_prev->_roots_next = m->_roots_next;
-        if (m==gc->_heap->_rootset)
-          gc->_heap->_rootset = m->_roots_prev;
-      }
+    GC* gc = GC::gc();
+    if (m->_roots_next == m) {
+      gc->_heap->_rootset = NULL;
+    } else {
+      m->_roots_next->_roots_prev = m->_roots_prev;
+      m->_roots_prev->_roots_next = m->_roots_next;
+      if (m==gc->_heap->_rootset)
+        gc->_heap->_rootset = m->_roots_prev;
     }
   }
 
@@ -414,6 +412,8 @@ namespace MiniZinc {
     if (m==NULL)
       return;
     do {
+      m->_filepath.mark();
+      m->_filename.mark();
       for (unsigned int j=0; j<m->_items.size(); j++) {
         Item* i = m->_items[j];
         if (i->_gc_mark==0) {
