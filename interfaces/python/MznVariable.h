@@ -86,11 +86,11 @@ static PyTypeObject MznVariableType = {
 };
 
 static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
-  MznVariable* self = (MznVariable*)type->tp_alloc(type,0);
+  MznVariable* self = reinterpret_cast<MznVariable*>(type->tp_alloc(type,0));
   self->e = NULL;
   self->vd = NULL;
   self->dimList = NULL;
-  return (PyObject*)self;
+  return reinterpret_cast<PyObject*>(self);
 }
 static int MznVariable_init(MznVariable* self, PyObject* args) {
   PyErr_SetString(PyExc_TypeError, "This object doesn't support user declaration");
@@ -99,7 +99,7 @@ static int MznVariable_init(MznVariable* self, PyObject* args) {
 static void MznVariable_dealloc(MznVariable* self) {
   if (self->dimList)
     delete self->dimList;
-  self->ob_type->tp_free((PyObject*)self);
+  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 
@@ -188,10 +188,10 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* args)
     idx[i] = e;
   }
 
-  MznVariable* ret = (MznVariable*) MznVariable_new(&MznVariableType, NULL, NULL);
+  MznVariable* ret = reinterpret_cast<MznVariable*> (MznVariable_new(&MznVariableType, NULL, NULL));
   ret->e = new ArrayAccess(Location(), self->e, idx);
   ret->vd = NULL;
-  return (PyObject*) ret;
+  return reinterpret_cast<PyObject*>(ret);
 }
 
 
