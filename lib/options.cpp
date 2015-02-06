@@ -86,6 +86,14 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
+  long long int Options::getIntParam(const std::string& name, long long int def) const {
+    if (hasParam(name)) {
+      if(IntLit* il = getParam(name)->dyn_cast<IntLit>()) {
+        return il->v().toInt();
+      }
+    }
+    return def;
+  }
   double Options::getFloatParam(const std::string& name) const {
     if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
       return fl->v();
@@ -95,6 +103,14 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
+  double Options::getFloatParam(const std::string& name, double def) const {
+    if (hasParam(name)) {
+      if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
+        return fl->v();
+      }
+    }
+    return def;
+  }
   bool Options::getBoolParam(const std::string& name) const {
     if(BoolLit* bl = getParam(name)->dyn_cast<BoolLit>()) {
       return bl->v();
@@ -103,6 +119,14 @@ namespace MiniZinc {
       ss << "Option: \"" << name << "\" is not Par Bool" << std::endl;
       throw InternalError(ss.str());
     }
+  }
+  bool Options::getBoolParam(const std::string& name, bool def) const {
+    if (hasParam(name)) {
+      if(BoolLit* bl = getParam(name)->dyn_cast<BoolLit>()) {
+        return bl->v();
+      }
+    }
+    return def;
   }
   bool Options::hasParam(const std::string& name) const {
     return _options.find(name) != _options.end();
