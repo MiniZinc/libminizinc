@@ -937,18 +937,24 @@ namespace MiniZinc {
         default:
           assert(false);
       }
+
+      int seed = _options.getIntParam("seed", 1);
+      double decay = _options.getFloatParam("decay", 0.5);
+      
       createBranchers(_env.flat()->solveItem()->ann(), optSearch,
-                      111 /* _options.getFloatParam("seed")  */, // TODO: implement
-                      0.5 /* _options.getFloatParam("decay") */, // TODO: implement
+                      seed, decay,
                       false, /* ignoreUnknown */
                       std::cerr);
       
+      int nodeStop = _options.getIntParam("nodes", 0);
+      int failStop = _options.getIntParam("fails", 0);
+      int timeStop = _options.getIntParam("time", 0);
+      
       Search::Options o;
-      o.stop = Driver::CombinedStop::create(100000, //_options.getIntParam(ASTString("nodes")), // TODO: implement option
-                                            100000, //_options.getIntParam(ASTString("fails")), // TODO: implement option
-                                            (unsigned int) (1000 //_options.getFloatParam(ASTString("time"))
-                                                            * 1000), // TODO: implement option
-                                            true);
+      o.stop = Driver::CombinedStop::create(nodeStop,
+                                            failStop,
+                                            timeStop,
+                                            false);
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
