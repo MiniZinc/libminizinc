@@ -87,12 +87,14 @@ namespace MiniZinc {
           IntVal rd = eval_int(c->args()[2])-d;
           IntVal ad = std::abs(rd);
           IntVal nd;
-          if (ad % ac == 0)
-            nd = ad / ac;
-          else {
+          if (ad % ac == 0) {
+            nd = rd / coeffs[0];
+          } else {
             double nd_d = static_cast<double>(ad.toInt()) / static_cast<double>(ac.toInt());
             if (coeffs[0] >= 0 && rd >= 0) {
               nd = std::floor(nd_d);
+            } else if (rd >= 0) {
+              nd = -std::floor(nd_d);
             } else if (coeffs[0] >= 0) {
               nd = -std::ceil(nd_d);
             } else {
