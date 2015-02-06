@@ -257,22 +257,22 @@ initminizinc(void) {
     if (PyType_Ready(&MznSetType) < 0)
       return;
     Py_INCREF(&MznSetType);
-    PyModule_AddObject(model, "Set", (PyObject *)&MznSetType);
+    PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSetType));
 
     if (PyType_Ready(&MznVariableType) < 0)
       return;
     Py_INCREF(&MznVariableType);
-    PyModule_AddObject(model, "Variable", (PyObject *)&MznVariableType);
+    PyModule_AddObject(model, "Variable", reinterpret_cast<PyObject*>(&MznVariableType));
 
     if (PyType_Ready(&MznModelType) < 0)
       return;
     Py_INCREF(&MznModelType);
-    PyModule_AddObject(model, "Model", (PyObject *)&MznModelType);
+    PyModule_AddObject(model, "Model", reinterpret_cast<PyObject*>(&MznModelType));
 
     if (PyType_Ready(&MznSolutionType) < 0)
       return;
     Py_INCREF(&MznSolutionType);
-    PyModule_AddObject(model, "Solution", (PyObject *)&MznSolutionType);
+    PyModule_AddObject(model, "Solution", reinterpret_cast<PyObject*>(&MznSolutionType));
 }
 
 #endif

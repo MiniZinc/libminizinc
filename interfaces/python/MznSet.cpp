@@ -4,15 +4,15 @@ static void
 MznSet_dealloc(MznSet* self)
 {
   delete self->ranges;
-  self->ob_type->tp_free((PyObject*)self);
+  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 static PyObject*
 MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
 {
-  MznSet* self = (MznSet*)type->tp_alloc(type,0);
+  MznSet* self = reinterpret_cast<MznSet*>(type->tp_alloc(type,0));
   self->ranges = new list<MznRange>;
-  return (PyObject* )self;
+  return reinterpret_cast<PyObject*>(self);
 }
 
 
@@ -202,7 +202,7 @@ MznSet_output(MznSet* self)
 
 static PyObject* MznSet_repr(PyObject* self) {
   stringstream output;
-  list<MznRange>* r = ((MznSet*)self)->ranges;
+  list<MznRange>* r = (reinterpret_cast<MznSet*>(self))->ranges;
   if (r->begin() == r->end())
     output << "Empty Set";
   else for (list<MznRange>::iterator it = r->begin();;) {
