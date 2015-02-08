@@ -15,6 +15,48 @@ MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
   return reinterpret_cast<PyObject*>(self);
 }
 
+static PyObject*
+MznSet_iter(PyObject* self)
+{
+  MznSetIter* iter = reinterpret_cast<MznSetIter*>(MznSetIter_new(&MznSetIterType, NULL, NULL));
+  iter->listBegin = reinterpret_cast<MznSet*>(self)->ranges->begin();
+  iter->listEnd = reinterpret_cast<MznSet*>(self)->ranges->end();
+  iter->listIndex = iter->listBegin;
+  iter->currentValue = iter->listBegin->min;
+  return reinterpret_cast<PyObject*>(iter);
+}
+/*
+static PyObject*
+MznSet_iternext(PyObject* self)
+{
+  MznSetIter* iter = reinterpret_cast<MznSetIter*>(self);
+  if (iter->listIndex==iter->listEnd) {
+    iter->listIndex = iter->listBegin;
+    iter->currentValue = iter->listBegin->min;
+    PyErr_SetNone(PyExc_StopIteration);
+    return NULL;
+  } else {
+    PyObject *result = PyInt_FromLong(iter->currentValue);
+    iter->currentValue++;
+    if (iter->currentValue > iter->listIndex->max) {
+      iter->listIndex++;
+      if (iter->listIndex!=iter->listEnd)
+        iter->currentValue = iter->listIndex->min;
+    }
+    return result;
+  }
+}*/
+
+bool MznSet::continuous() {
+  if (ranges->empty())
+    throw length_error("Ranges cannot be empty");
+  else {
+    // returning ranges.size() == 1, with O(1) time complexity
+    list<MznRange>::iterator it = ranges->begin();
+    return ++it == ranges->end();
+  }
+}
+
 
 void MznSet::push(long min, long max) {
   if (ranges->empty()) {
@@ -57,7 +99,6 @@ void MznSet::push(long min, long max) {
 
 
 void MznSet::push(long v) {
-  
   list<MznRange>::iterator it,last;
   last = ranges->begin();
   if (ranges->empty()) {
@@ -75,8 +116,11 @@ void MznSet::push(long v) {
           return;
         }
       } else {
-        MznRange toAdd(v,v);
-        ranges->insert(it,toAdd);
+        //
+        if (last->max < v) {
+          MznRange toAdd(v,v);
+          ranges->insert(it,toAdd);
+        }
         return;
       }
     }
@@ -90,8 +134,8 @@ void MznSet::push(long v) {
     else {
       return;
     }
-  }
-  if (last->max<v) {
+  } 
+  if (last->max < v) {
     MznRange toAdd(v,v);
     ranges->insert(it, toAdd);
   }
@@ -120,6 +164,12 @@ static PyObject*
 MznSet_max(MznSet* self)
 {
   return PyInt_FromLong(self->max());
+}
+
+static PyObject*
+MznSet_continuous(MznSet* self)
+{
+  return PyBool_FromLong(self->continuous());
 }
 
 
@@ -217,3 +267,41 @@ static PyObject* MznSet_repr(PyObject* self) {
   return PyString_FromString(tmp.c_str());
 }
 
+
+
+
+
+static void
+MznSetIter_dealloc(MznSetIter* self)
+{
+  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+}
+
+static PyObject*
+MznSetIter_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
+{
+  return type->tp_alloc(type,0);
+}
+
+
+
+static PyObject*
+MznSetIter_iternext(PyObject* self)
+{
+  MznSetIter* iter = reinterpret_cast<MznSetIter*>(self);
+  if (iter->listIndex==iter->listEnd) {
+    iter->listIndex = iter->listBegin;
+    iter->currentValue = iter->listBegin->min;
+    PyErr_SetNone(PyExc_StopIteration);
+    return NULL;
+  } else {
+    PyObject *result = PyInt_FromLong(iter->currentValue);
+    iter->currentValue++;
+    if (iter->currentValue > iter->listIndex->max) {
+      iter->listIndex++;
+      if (iter->listIndex!=iter->listEnd)
+        iter->currentValue = iter->listIndex->min;
+    }
+    return result;
+  }
+}

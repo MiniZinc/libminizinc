@@ -5,6 +5,15 @@
 
 import minizinc
 
+def flatten(x):
+	result = []
+	for el in x:
+		if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+			result.extend(flatten(el))
+		else:
+			result.append(el)
+	return result
+
 
 # All Variable and Expression declaration derived from here
 class Expression(object):
@@ -607,8 +616,20 @@ class Set(VarDecl):
 			set_list = [[lb,ub]]
 		self.obj = minizinc.Set(set_list)
 
+	def continuous(self):
+		return self.obj.continuous()
+
+	def min(self):
+		return self.obj.min()
+
+	def max(self):
+		return self.obj.max()
+
 	def get_value(self):
 		return self.obj
+
+	def __iter__(self):
+		return self.obj.__iter__()
 
 	def __str__(self):
 		return self.ob
@@ -619,15 +640,14 @@ class Variable(VarDecl):
 		name = None
 		lb, ub = False, True
 		code = None
-		if arg1 is None:
-			code = 10
-		else:
+		if arg1 is not None:
 			typearg1 = type(arg1)
 			if arg2 is None:
 				if typearg1 is str:
 					name = arg1
 				elif typearg1 is Set:
-					lb,ub = arg1.min(),arg1.max()
+					lb = arg1
+					ub = None
 				elif typearg1 in (list,tuple):
 					if len(arg1) != 2:
 						raise ValueError('Requires a list or tuple of exactly 2 numbers')
@@ -640,7 +660,8 @@ class Variable(VarDecl):
 				if typearg2 is str:
 					name = arg2
 					if typearg1 is Set:
-						lb,ub = arg1.min(), arg1.max()
+						lb = arg1
+						ub = None
 					elif typearg1 in (list, tuple):
 						if len(arg1) != 2:
 							raise ValueError('Requires a list or tuple of exactly 2 numbers')
@@ -658,14 +679,15 @@ class Variable(VarDecl):
 				lb,ub = arg1, arg2
 
 		typelb, typeub = type(lb), type(ub)
-		if typelb not in [bool, int, float] and not isinstance(typelb, VarDecl):
-			raise TypeError('Lower bound must be a boolean, an int or a float')
-		if typeub not in [bool, int, float] and not isinstance(typelb, VarDecl):
-			raise TypeError('Upper bound must be a boolean, an int or a float')
-		if typelb != typeub:
-			raise TypeError('Upper bound an dlower bound is of different type')
-		if lb > ub:
-			raise ValueError('Lower bound cannot be greater than upper bound')
+		if not typelb is Set:
+			if typelb not in [bool, int, float] and not isinstance(typelb, VarDecl):
+				raise TypeError('Lower bound must be a boolean, an int, a float or a set')
+			if typeub not in [bool, int, float] and not isinstance(typelb, VarDecl):
+				raise TypeError('Upper bound must be a boolean, an int or a float')
+			if typelb != typeub:
+				raise TypeError('Upper bound an dlower bound is of different type')
+			if lb > ub:
+				raise ValueError('Lower bound cannot be greater than upper bound')
 
 		self.dim_list = []
 		if name is not None:
@@ -677,18 +699,23 @@ class Variable(VarDecl):
 			self.obj = model.mznmodel.Variable(self.name, 9, [], lb, ub)
 		elif typelb is float:
 			self.obj = model.mznmodel.Variable(self.name, 11, [], lb, ub)
-		elif isinstance(lb, VarDecl) or isinstance(ub, VarDecl):
-			self.obj = model.mznmodel.Variable(self.name, 12, [], lb, ub)
+		elif typelb is Set:
+			self.obj = model.mznmodel.Variable(self.name, 9, [], lb.obj)
+		#elif isinstance(lb, VarDecl) or isinstance(ub, VarDecl):
+		#	self.obj = model.mznmodel.Variable(self.name, 12, [], lb, ub)
 
 class VariableConstruct(Variable, Construct):
 	def __init__(self, model, arg1, arg2 = None):
 		Construct.__init__(self, model, arg1, arg2)
 
 class Array(Variable):
-	def __init__(self, model, argopt1, argopt2=None, *args):
+	def __init__(self, model, argopt1, argopt2, *args):
 		VarDecl.__init__(self, model)
 		dim_list = []
-		for i in args:
+		lb = None
+		ub = None
+
+		def add_to_dim_list(i):
 			if type(i) is int:
 				if i > 0:
 					dim_list.append([0,i-1])
@@ -700,29 +727,38 @@ class Array(Variable):
 				else:
 					raise TypeError('Range boundaries must be integers')
 			elif isinstance(i, Set):
-				if i.is_continuous():
+				if i.continuous():
 					dim_list.append(i.min(), i.max())
 				raise TypeError('Array ranges must be continuous')
 			elif isinstance(i, str):
 				self.name = i
 			else:
 				raise RuntimeError('Unknown error')
-		lb = argopt1
-		ub = argopt2
+
+		if type(argopt1) is Set:
+			lb = argopt1
+			ub = None
+			add_to_dim_list(argopt2)
+
+		for i in args:
+			add_to_dim_list(argopt2)
+			lb = argopt1
+			ub = argopt2
+
 		self.lb = lb
 		self.ub = ub
+		if dim_list == []:
+			raise AttributeError('Initialising an Array without dimension list')
 		self.dim_list = dim_list
-		#self.is_added = False
 		tlb = type(argopt1)
 		if tlb is bool:
 			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
-			#self.VarCode = 10
 		elif tlb is int:
 			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
-			#self.VarCode = 9
 		elif tlb is float:  #isinstance(lb, float):
 			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
-			#self.VarCode = 11
+		elif tlb is Set:
+			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb.obj)
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
@@ -816,6 +852,7 @@ class Model(object):
 		else:
 			raise TypeError('Variable Type unspecified')
 
+
 	def add_prime(self, expr):
 		if issubclass(type(expr), list):
 			for exp in expr:
@@ -852,6 +889,9 @@ class Model(object):
 		for i in args:
 			list_.append(i)
 		return Array(self, argopt1, argopt2, *list_)
+
+	def Set(self, argopt1, argopt2=None, argopt3=None):
+		return Set(self, argopt1, argopt2, argopt3)
 
 	def Construct(self, argopt1, argopt2 = None):
 		if isinstance(argopt1, list):

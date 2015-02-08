@@ -50,7 +50,7 @@ string typePresentation(const Type& type);
 bool compareType(const Type& type1, const Type& type2);
 PyObject* minizinc_to_python(VarDecl* vd);
 inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
-Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
+Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<long, long> >& dimList);
 
 
 #include "MznSet.h"
@@ -177,9 +177,9 @@ static PyTypeObject MznModelType = {
 
 struct MznSolution {
   PyObject_HEAD
+  GecodeSolverInstance* solver;
   Env* env;
   Model* _m;
-  SolverInstance::Status status;
 
   PyObject* next();
 };
@@ -253,11 +253,16 @@ initminizinc(void) {
     if (model == NULL)
       return;
 
-    // Minizinc Set Initialization
+
     if (PyType_Ready(&MznSetType) < 0)
       return;
     Py_INCREF(&MznSetType);
     PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSetType));
+
+    if (PyType_Ready(&MznSetIterType) < 0)
+      return;
+    Py_INCREF(&MznSetIterType);
+    PyModule_AddObject(model, "SetIterator", reinterpret_cast<PyObject*>(&MznSetIterType));
 
     if (PyType_Ready(&MznVariableType) < 0)
       return;

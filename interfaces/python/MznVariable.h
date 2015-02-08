@@ -106,6 +106,7 @@ static void MznVariable_dealloc(MznVariable* self) {
 // WARNING: Segmentation fault 11 if used when model is destroyed.
 PyObject* MznVariable_getValue(MznVariable* self)
 {
+
   if (self->isVar() == false) {
     PyErr_SetString(PyExc_ValueError, "Cannot evaluate an expression");
     return NULL;
