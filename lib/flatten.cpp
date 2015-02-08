@@ -705,12 +705,12 @@ namespace MiniZinc {
           if (r<0) --ub;
         } else {
           lb = y / coeff;
-          if (r>0) --lb;
+          if (r<0) ++lb;
         }
         if (Id* id = al_x->v()[0]->dyn_cast<Id>()) {
           if (id->decl()->ti()->domain()) {
             IntSetVal* domain = eval_intset(id->decl()->ti()->domain());
-            if (domain->max() <= ub)
+            if (domain->max() <= ub && domain->min() >= lb)
               return false;
             IntSetRanges dr(domain);
             Ranges::Const cr(lb, ub);

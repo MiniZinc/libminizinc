@@ -661,7 +661,11 @@ namespace utilities
     #define SAFEINT_NORETURN __attribute__((noreturn))
     #define SAFEINT_STDCALL
     #define SAFEINT_VISIBLE __attribute__ ((__visibility__("default")))
+#if SAFEINT_COMPILER == CLANG_COMPILER
     #define SAFEINT_WEAK __attribute__ ((weak))
+#else
+    #define SAFEINT_WEAK
+#endif
 #else
     #define SAFEINT_NORETURN __declspec(noreturn)
     #define SAFEINT_STDCALL __stdcall
