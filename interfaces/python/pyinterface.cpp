@@ -309,7 +309,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
  * Note: Need an outer GCLock for this to work
  */
 Expression*
-python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<long, long> >& dimList)
+python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& dimList)
 {
   Type::BaseType code = Type::BT_UNKNOWN;
   if (PyObject_TypeCheck(pvalue, &MznSetType)) {
@@ -366,7 +366,7 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<long, long> >
  *        TypeId: see enum TypeId below
  *        dimension vector: empty if Variable is not an array
  *                          holds value if it is an array
- *            Syntax: vector<pair<long, long> >, called dimList
+ *            Syntax: vector<pair<int, int> >, called dimList
  *            - dimList[i] is the lower bound and upper bound of dimension i
  *            - for example:
  *                  dimList[0] = 1,5
@@ -417,7 +417,7 @@ MznModel_Variable(MznModel* self, PyObject* args)
   Expression* initValue = NULL;
   Py_ssize_t dim;
 
-  vector<pair<long, long> >* dimList = NULL;
+  vector<pair<int, int> >* dimList = NULL;
   vector<TypeInst*> ranges;
   Type::BaseType code;
 
@@ -434,7 +434,7 @@ MznModel_Variable(MznModel* self, PyObject* args)
 
 
   if (pyval != NULL) {
-    dimList = new vector<pair<long, long> >();
+    dimList = new vector<pair<int, int> >();
     initValue = python_to_minizinc(pyval, type, *dimList);
     dim = dimList->size();
     domain = NULL;
@@ -451,7 +451,7 @@ MznModel_Variable(MznModel* self, PyObject* args)
       return NULL;
     }
     dim = PyList_GET_SIZE(pydim);
-    dimList = new vector<pair<long, long> >(dim);
+    dimList = new vector<pair<int, int> >(dim);
     for (Py_ssize_t i=0; i!=dim; ++i) {
       PyObject* temp = PyList_GET_ITEM(pydim, i);
       if (!PyList_Check(temp)) {
@@ -496,7 +496,7 @@ MznModel_Variable(MznModel* self, PyObject* args)
           code = Type::BT_INT;
           if (pyub == NULL) {
             Type tempType;
-            vector<pair<long, long> > tempDimList;
+            vector<pair<int, int> > tempDimList;
             domain = python_to_minizinc(pylb, tempType, tempDimList);
             if (tempType.st() != Type::ST_SET)
               throw invalid_argument("If 5th argument does not exist, 4th argument must be a Minizinc Set");
@@ -580,9 +580,10 @@ Mzn_Call(MznModel* self, PyObject* args)
     if (PyObject_TypeCheck(pyval, &MznVariableType)) {
       expressionList[i] = (reinterpret_cast<MznVariable*>(pyval)) -> e;
     } else {
-      Type::BaseType code = Type::BT_UNKNOWN;
-      expressionList[i] = one_dim_python_to_minizinc(pyval, code);
-      if (code == Type::BT_UNKNOWN) {
+      Type type;
+      vector<pair<int, int> > dimList;
+      expressionList[i] = python_to_minizinc(pyval, type, dimList);
+      if (type.bt() == Type::BT_UNKNOWN) {
         PyErr_SetString(PyExc_TypeError, "List items must be of Minizinc Variable Type");
         return NULL;
       }
@@ -884,7 +885,7 @@ MznModel::addData(const char* const name, PyObject* value)
   for (unsigned int i=0; i<_m->size(); i++) 
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
       if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
-        vector<pair<long, long> > dimList;
+        vector<pair<int, int> > dimList;
         Type type;
         Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);
         if (rhs == NULL)

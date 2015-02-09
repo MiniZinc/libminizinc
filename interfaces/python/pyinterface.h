@@ -50,7 +50,7 @@ string typePresentation(const Type& type);
 bool compareType(const Type& type1, const Type& type2);
 PyObject* minizinc_to_python(VarDecl* vd);
 inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
-Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<long, long> >& dimList);
+Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
 
 
 #include "MznSet.h"

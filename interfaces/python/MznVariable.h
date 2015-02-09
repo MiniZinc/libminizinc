@@ -17,7 +17,7 @@ struct MznVariable {
   Expression* e;
   VarDecl* vd;
   bool isVar() {return vd != NULL;}     // expression or variable
-  vector<pair<int,int> >* dimList;
+  vector<pair<int, int> >* dimList;
   MznVariable(Expression* e): e(e), vd(vd), dimList(NULL) {}
 };
 

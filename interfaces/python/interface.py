@@ -354,6 +354,30 @@ class Acosh(Call):
 	def __init__(self, var):
 		Call.__init__(self,[var],"acosh")
 
+class Array1d(Call):
+	def __init__(self, dim1, array):
+		Call.__init__(self,[dim1, array],"array1d")
+
+class Array2d(Call):
+	def __init__(self, dim1, dim2, array):
+		Call.__init__(self,[dim1, dim2, array],"array2d")
+
+class Array3d(Call):
+	def __init__(self, dim1, dim2, dim3, array):
+		Call.__init__(self,[dim1, dim2, dim3, array],"array3d")
+
+class Array4d(Call):
+	def __init__(self, dim1, dim2, dim3, dim4, array):
+		Call.__init__(self,[dim1, dim2, dim3, dim4, array],"array4d")
+
+class Array5d(Call):
+	def __init__(self, dim1, dim2, dim3, dim4, dim5, array):
+		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, array],"array5d")
+
+class Array6d(Call):
+	def __init__(self, dim1, dim2, dim3, dim4, dim5, dim6, array):
+		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, dim6, array],"array6d")
+
 class Asin(Call):
 	def __init__(self, var):
 		Call.__init__(self,[var],"asin")
@@ -600,7 +624,7 @@ class Set(VarDecl):
 			if type(argopt1) is list:
 				set_list = argopt1
 			else:
-				ub = argopt2 - 1
+				ub = argopt1 - 1
 				lb = 0
 		else:
 			raise AttributeError('Set must be initialised with arguments')
@@ -631,8 +655,8 @@ class Set(VarDecl):
 	def __iter__(self):
 		return self.obj.__iter__()
 
-	def __str__(self):
-		return self.ob
+	#def __str__(self):
+	#	return self.obj
 
 class Variable(VarDecl):
 	def __init__(self, model, arg1=None, arg2=None, arg3=None):
@@ -728,8 +752,9 @@ class Array(Variable):
 					raise TypeError('Range boundaries must be integers')
 			elif isinstance(i, Set):
 				if i.continuous():
-					dim_list.append(i.min(), i.max())
-				raise TypeError('Array ranges must be continuous')
+					dim_list.append([i.min(), i.max()])
+				else:
+					raise TypeError('Array ranges must be continuous')
 			elif isinstance(i, str):
 				self.name = i
 			else:
@@ -739,11 +764,12 @@ class Array(Variable):
 			lb = argopt1
 			ub = None
 			add_to_dim_list(argopt2)
-
-		for i in args:
-			add_to_dim_list(argopt2)
+		else:
 			lb = argopt1
 			ub = argopt2
+
+		for i in args:
+			add_to_dim_list(i)
 
 		self.lb = lb
 		self.ub = ub
@@ -831,7 +857,7 @@ class Model(object):
 			return (minizinc.Call(expr.CallCode, variables), model)
 		elif isinstance(expr, ArrayAccess):
 			return (expr.array.obj.at(expr.idx), expr.model)
-		elif isinstance(expr, Variable):
+		elif isinstance(expr, VarDecl):
 			#if not expr.is_added:
 			#	expr.is_added = True
 			#	expr.name = self.get_name(expr)
