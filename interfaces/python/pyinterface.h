@@ -247,7 +247,6 @@ static PyTypeObject MznSolutionType = {
 
 PyMODINIT_FUNC
 initminizinc(void) {
-    GC::init();
     PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
