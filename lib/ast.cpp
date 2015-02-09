@@ -917,7 +917,6 @@ namespace MiniZinc {
   }
   
   Constants::Constants(void) {
-    GC::init();
     GCLock lock;
     TypeInst* ti = new TypeInst(Location(), Type::parbool());
     lit_true = new BoolLit(Location(), true);

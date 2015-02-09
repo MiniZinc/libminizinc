@@ -325,7 +325,9 @@ namespace MiniZinc {
   
   void
   GC::lock(void) {
-    assert(gc());
+    if (gc()==NULL) {
+      gc() = new GC();
+    }
     if (gc()->_lock_count==0)
       gc()->_heap->rungc();
     gc()->_lock_count++;
@@ -726,13 +728,6 @@ namespace MiniZinc {
     _e = e();
     _valid = true;
     return *this;
-  }
-
-  void
-  GC::init(void) {
-    if (gc()==NULL) {
-      gc() = new GC();
-    }
   }
 
 }
