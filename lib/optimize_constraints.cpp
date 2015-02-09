@@ -209,7 +209,6 @@ namespace MiniZinc {
     class Register {
     public:
       Register(void) {
-        GC::init();
         GCLock lock;
         Model* m = new Model;
         ASTString id_element("array_int_element");
