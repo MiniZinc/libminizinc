@@ -482,7 +482,7 @@ MznModel_Variable(MznModel* self, PyObject* args)
       Expression* e0 = new IntLit(Location(), IntVal((*dimList)[i].first));
       Expression* e1 = new IntLit(Location(), IntVal((*dimList)[i].second));
       domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
-      ranges.push_back(new TypeInst(Location(), Type::Type(), domain));
+      ranges.push_back(new TypeInst(Location(), Type(), domain));
     }
 
     // Process different types
