@@ -3951,7 +3951,12 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                if (!v->e()->type().is_set() && ibv->card()==0) {
+                  env.addWarning("model inconsistency detected");
+                  env.flat()->fail();
+                } else {
+                  vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                }
               }
             } else if (v->e()->type().dim() > 0) {
               Expression* ee = follow_id_to_decl(vd->e());

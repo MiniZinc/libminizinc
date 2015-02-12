@@ -1478,12 +1478,12 @@ namespace MiniZinc {
       case UOT_PLUS:
         break;
       case UOT_MINUS:
-        _bounds.back().first = -_bounds.back().first;
-        _bounds.back().second = -_bounds.back().second;
+          _bounds.back().first = -_bounds.back().first;
+          _bounds.back().second = -_bounds.back().second;
+          std::swap(_bounds.back().first, _bounds.back().second);
         break;
       case UOT_NOT:
         valid = false;
-        _bounds.push_back(Bounds(0,0));
       }
     }
     /// Visit call
