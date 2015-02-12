@@ -36,7 +36,7 @@ namespace MiniZinc {
     Meta<Engine,FznSpace> e;
   public:
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
-    virtual FznSpace* next(void) { std::cerr << "next called\n"; return e.next(); }
+    virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
   };
   
