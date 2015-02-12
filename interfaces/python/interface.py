@@ -5,6 +5,7 @@
 
 import minizinc
 
+##Numberjack 
 def flatten(x):
 	result = []
 	for el in x:
@@ -353,14 +354,25 @@ class Abs(Call):
 class Acosh(Call):
 	def __init__(self, var):
 		Call.__init__(self,[var],"acosh")
+'''
+class Arrayxd():
+	def __init__(self, dimsize, *args):
+		if dimsize + 1 != len(args):
+			raise BaseException('Array',dimsize,'d requires exactly', dimsize+1, 'arguments');
+		for i in range(dimsize):
+			for p[i] in args[i]:
+'''
 
 class Array1d(Call):
 	def __init__(self, dim1, array):
 		Call.__init__(self,[dim1, array],"array1d")
 
-class Array2d(Call):
-	def __init__(self, dim1, dim2, array):
-		Call.__init__(self,[dim1, dim2, array],"array2d")
+def Array2d(dim1, dim2, array):
+	p = [[0 for x in range(dim1)] for y in range(dim2)]
+	for i in range(dim1):
+		for j in range(dim2):
+			p[i][j] = array[i*dim2 + j]
+	return p
 
 class Array3d(Call):
 	def __init__(self, dim1, dim2, dim3, array):
@@ -567,16 +579,27 @@ class VarDecl(Expression):
 			raise TypeError('Warning: First argumetn must be a Model Object')
 		Expression.__init__(self, model)
 		self.name = '"' + str(id(self)) + '"'
+		self.solution_counter = -1
 
 	def get_value(self):
+		if not hasattr(self, 'solution_counter'):
+			# must be a Constructed Variable
+			return self.value
+		if self.solution_counter < self.model.solution_counter:
+			# Model has been solved at least once
+			self.value = self.model.mznsolution.getValue(self.name)
+			return self.value
 		if hasattr(self, 'value'):
 			return self.value
 		else:
+			return None
+			'''
 			if self.model.is_solved():
 				self.value = self.model.mznsolution.getValue(self.name)
 				return self.value
 			else:
 				return None
+			'''
 
 	def __str__(self):
 		return str(self.get_value())
@@ -587,6 +610,7 @@ class VarDecl(Expression):
 class Construct(VarDecl):
 	def __init__(self, model, arg1, arg2 = None):
 		VarDecl.__init__(self, model)
+		del self.solution_counter
 		if arg2 != None:
 			if type(arg2) is str:
 				self.name = arg2
@@ -764,7 +788,18 @@ class Array(Variable):
 			lb = argopt1
 			ub = None
 			add_to_dim_list(argopt2)
+		elif type(argopt1) is bool and type(argopt2) is bool:
+			lb = argopt1
+			ub = argopt2
+		elif type(argopt2) is not int:
+			if type(argopt1) is not int:
+				raise TypeError('Range values must be integers')
+			lb = 0
+			ub = argopt1 - 1
+			add_to_dim_list(argopt2)
 		else:
+			if type(argopt1) is not int or type(argopt2) is not int:
+				raise TypeError('Lower bound and upper bound must be integers')
 			lb = argopt1
 			ub = argopt2
 
@@ -793,24 +828,36 @@ class ArrayAccess(Array):
 	def __init__(self, model, array, idx):
 		VarDecl.__init__(self, model)
 		self.array = array
-		self.idx = idx
+		if type(idx) is not tuple:
+			self.idx = tuple([idx])
+		else:
+			self.idx = idx
 
 	def get_value(self):
-		if hasattr(self,'value'):
+		if not hasattr(self, 'solution_counter'):
+			# must be a Constructed Variable
 			return self.value
-		else:
+		if self.solution_counter < self.model.solution_counter:
+			# Model has been solved at least once
 			arrayvalue = self.array.get_value()
 			if arrayvalue is None:
 				return None
 			else:
-				for i in self.idx:
-					arrayvalue = arrayvalue[i]
+				for i in range(len(self.idx)):
+					arrayvalue = arrayvalue[self.idx[i] - self.array.dim_list[i][0]]
 				self.value = arrayvalue
 				return arrayvalue
+			return self.value
+		if hasattr(self, 'value'):
+			return self.value
+		else:
+			return None
 
 class ArrayConstruct(Array, Construct):
 	def __init__(self, model, arg1, arg2 = None):
 		Construct.__init__(self, model, arg1, arg2)
+
+
 
 
 class Model(object):
@@ -818,6 +865,7 @@ class Model(object):
 		self.loaded = False
 		self.mznsolution = None
 		self.mznmodel = minizinc.Model()
+		self.solution_counter = -1
 
 
 	# not used anymore
@@ -830,7 +878,7 @@ class Model(object):
 		else:
 			raise LookupError('The object pointed to was assigned to different names')
 
-	def add(self, *expr):
+	def Constraint(self, *expr):
 		minizinc.lock()
 		if self.mznmodel == None:
 			raise RuntimeError('Model has been solved, need to be reset first')
@@ -879,6 +927,7 @@ class Model(object):
 			raise TypeError('Variable Type unspecified')
 
 
+#Numberjack
 	def add_prime(self, expr):
 		if issubclass(type(expr), list):
 			for exp in expr:
@@ -925,15 +974,16 @@ class Model(object):
 		else:
 			return VariableConstruct(self, argopt1, argopt2)
 
-
-	def solve(self):
-		if not self.is_loaded():
-			raise ValueError('Model is not loaded yet')
-		#minizinc.unlock()
-		self.is_loaded = False
-		self.mznmodel.SolveItem(0)
+	def __solve(self):
 		self.mznsolution = self.mznmodel.solve()
 		self.mznmodel = None
+
+	def satisfy(self):
+		if not self.is_loaded():
+			raise ValueError('Model is not loaded yet')
+		self.is_loaded = False
+		self.mznmodel.SolveItem(0)
+		self.__solve()
 
 	def optimize(self, arg, code):
 		minizinc.lock()
@@ -942,8 +992,7 @@ class Model(object):
 			raise TypeError('Expression must be free or belong to the same model')
 		self.id_loaded = False
 		self.mznmodel.SolveItem(code, obj)
-		self.mznsolution = self.mznmodel.solve()
-		self.mznmodel = None
+		self.__solve()
 		minizinc.unlock()
 
 	def maximize(self, arg):
@@ -956,7 +1005,16 @@ class Model(object):
 	def next(self):
 		if self.mznsolution == None:
 			raise ValueError('Model is not solved yet')
-		return self.mznsolution.next()
+		try: 
+			self.mznsolution.next()
+		except Exception as rt:
+			template = "{0}: {1!r}"
+			message = template.format(type(rt).__name__, rt.args[0])
+			print message
+			return False
+		else:
+			self.solution_counter = self.solution_counter + 1
+			return True
 
 	def is_loaded(self):
 		return self.loaded

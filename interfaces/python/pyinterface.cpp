@@ -333,7 +333,7 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
       if (dimList.size()!=dimensions.size())
         throw invalid_argument("Size of declared array and data array not conform");
       for (int i=0; i!=dimensions.size(); i++) {
-        //cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
+        cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
         if ( (dimList[i].second - (dimList[i].first) + 1) != dimensions[i] )
           throw invalid_argument("Size of each dimension not conform");
       }
@@ -357,6 +357,43 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
   }
 }
 
+
+vector<pair<int, int> >*
+pydim_to_dimList(PyObject* pydim)
+{
+  vector<pair<int, int> >* dimList;
+  if (!PyList_Check(pydim)) {
+    PyErr_SetString(PyExc_TypeError, "3rd argument must be a list of size of each dimension");
+    return NULL;
+  }
+  Py_ssize_t dim = PyList_GET_SIZE(pydim);
+  dimList = new vector<pair<int, int> >(dim);
+  for (Py_ssize_t i=0; i!=dim; ++i) {
+    PyObject* temp = PyList_GET_ITEM(pydim, i);
+    if (!PyList_Check(temp)) {
+      PyErr_SetString(PyExc_TypeError, "Objects in the dimension list must be of integer value");
+      return NULL;
+    }
+    PyObject *tempLb = PyList_GetItem(temp, 0);
+    PyObject *tempUb = PyList_GetItem(temp, 1);
+    if (PyErr_Occurred()) {
+
+      PyErr_SetString(PyExc_TypeError, "Range list must consist of two integer values");
+      return NULL;
+    }
+
+    long c_lb = PyInt_AsLong(tempLb);
+    long c_ub = PyInt_AsLong(tempUb);
+    if (PyErr_Occurred()) {
+      PyErr_SetString(PyExc_TypeError, "Range values must be integers");
+      return NULL;
+    }
+    if (c_lb > c_ub)
+      swap(c_lb, c_ub);
+    (*dimList)[i] = make_pair(c_lb, c_ub);
+  }
+  return dimList;
+}
 
 /*  
  * Description: Take in a tuple of arguments, create a Variable in the Minizinc Model self
@@ -427,55 +464,27 @@ MznModel_Variable(MznModel* self, PyObject* args)
     return NULL;
   }
 
-  if (PyInt_Check(pyval)) {
-    tid = PyInt_AS_LONG(pyval);
-    pyval = NULL;
-  }
-
-
-  if (pyval != NULL) {
+  if (pydim == NULL) {
     dimList = new vector<pair<int, int> >();
     initValue = python_to_minizinc(pyval, type, *dimList);
     dim = dimList->size();
     domain = NULL;
   } else {
+    if (PyInt_Check(pyval)) {
+      tid = PyInt_AS_LONG(pyval);
+      pyval = NULL;
+    } else {
+      PyErr_SetString(PyExc_TypeError, "Type Id must be an integer");
+      return NULL;
+    }
     if (tid>17) {
-      PyErr_SetString(PyExc_ValueError, "Type Id is not valid");
+      PyErr_SetString(PyExc_ValueError, "Type Id is from 0 to 17");
       return NULL;
     }
-
-
-
-    if (!PyList_Check(pydim)) {
-      PyErr_SetString(PyExc_TypeError, "3rd argument must be a list of size of each dimension");
+    dimList = pydim_to_dimList(pydim);
+    if (dimList == NULL)
       return NULL;
-    }
-    dim = PyList_GET_SIZE(pydim);
-    dimList = new vector<pair<int, int> >(dim);
-    for (Py_ssize_t i=0; i!=dim; ++i) {
-      PyObject* temp = PyList_GET_ITEM(pydim, i);
-      if (!PyList_Check(temp)) {
-        PyErr_SetString(PyExc_TypeError, "Objects in the dimension list must be of integer value");
-        return NULL;
-      }
-      PyObject *tempLb = PyList_GetItem(temp, 0);
-      PyObject *tempUb = PyList_GetItem(temp, 1);
-      if (PyErr_Occurred()) {
-
-        PyErr_SetString(PyExc_TypeError, "Range list must consist of two integer values");
-        return NULL;
-      }
-
-      long c_lb = PyInt_AsLong(tempLb);
-      long c_ub = PyInt_AsLong(tempUb);
-      if (PyErr_Occurred()) {
-        PyErr_SetString(PyExc_TypeError, "Range values must be integers");
-        return NULL;
-      }
-      if (c_lb > c_ub)
-        swap(c_lb, c_ub);
-      (*dimList)[i] = make_pair(c_lb, c_ub);
-    }
+    dim = dimList->size();
 
     // Create an array if dimList is not empty
     for (Py_ssize_t i=0; i!=dim; ++i) {
@@ -886,6 +895,21 @@ MznModel::addData(const char* const name, PyObject* value)
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
       if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
         vector<pair<int, int> > dimList;
+
+        // Python array always start at 0, but MiniZinc array doesn't
+        // This part is to ensure that data is also accepted when the start indices dont match
+        /* Currently not working properly
+        int dimSize = vdi->e()->type().dim();
+        if (dimSize > 0) {
+          ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
+          for (int i=0; i!= dimSize; ++i) {
+            BinOp* domain = (BinOp*)ranges[i]->domain();
+            IntLit* lhs = domain->lhs()->cast<IntLit>();
+            IntLit* rhs = domain->rhs()->cast<IntLit>();
+            dimList.push_back(make_pair(lhs->v().toInt(),rhs->v().toInt()));
+          }
+        }
+        */
         Type type;
         Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);
         if (rhs == NULL)
@@ -1014,7 +1038,6 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
 
 PyObject* MznModel::solve()
 {
-
   if (!loaded) {
     PyErr_SetString(PyExc_RuntimeError, "No data has been loaded into the model");
     return NULL;
@@ -1073,6 +1096,7 @@ PyObject* MznModel::solve()
   oldflatzinc(*env);
   GCLock lock;
   Options options;
+  //options.setIntValue("time",)
   MznSolution* ret = reinterpret_cast<MznSolution*>(MznSolution_new(&MznSolutionType, NULL, NULL));
   ret->solver = new GecodeSolverInstance(*env, options);
   ret->solver->processFlatZinc();
@@ -1115,11 +1139,20 @@ MznSolution::next()
   if (solver==NULL)
     throw runtime_error("Solver Object not found");
   GCLock lock;
-  SolverInstance::Status status = solver->solve();
-  if (!(status==SolverInstance::SAT || status==SolverInstance::OPT)) {
-    PyErr_SetString(PyExc_RuntimeError,"Unsatisfied");
-    return NULL;
-  }  
+  SolverInstance::Status status;
+  if (_m == NULL) {
+    status = solver->solve();
+    if (!(status==SolverInstance::SAT || status==SolverInstance::OPT)) {
+      PyErr_SetString(PyExc_RuntimeError,"Unsatisfied");
+      return NULL;
+    }  
+  } else {
+    status = solver->solve();
+    if (!(status==SolverInstance::SAT || status==SolverInstance::OPT)) {
+      PyErr_SetString(PyExc_RuntimeError,"Reached last solution");
+      return NULL;
+    }  
+  }
   PyObject* solutions = PyList_New(0);
   PyObject* sol = PyDict_New();
   _m = env->output();
@@ -1211,14 +1244,10 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 static void
 MznSolution_dealloc(MznSolution* self)
 {
-  /*if (self->_m)
-    delete self->_m;
   if (self->env)
-    delete self->env;*/
+    delete self->env;
   if (self->solver)
     delete self->solver;
-  self->_m = NULL;
-  self->env = NULL;
   self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
