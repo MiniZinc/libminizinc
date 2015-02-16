@@ -12,14 +12,46 @@
 #ifndef __MINIZINC_SEARCH_HH__
 #define __MINIZINC_SEARCH_HH__
 
-#include "minizinc/flatten.hh"
-#include "minizinc/solver_instance_base.hh"
+#include <minizinc/flatten.hh>
+#include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
   
-  /// perform the search on the model environment using the specified solver 
   template<class SolverInstanceBase>
-  void search(Env& e, MiniZinc::Options& opt);
+  void search(Env& env, MiniZinc::Options& opt) {   
+    SolverInstanceBase* solver = new SolverInstanceBase(env,opt);
+    solver->processFlatZinc();
+    
+    SolverInstance::Status status;    
+    if(env.model()->solveItem()->combinator_lite()) {
+      Annotation& combinator = env.model()->solveItem()->ann(); // TODO: get the actual combinator, and not the full annotation
+      status = interpretCombinator(combinator, env, solver);
+    }
+    else { // solve using normal solve call
+      status = solver->solve();
+    }    
+    // process status and solution
+    if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+      env.evalOutput(std::cout);
+    }
+    std::cout << "----------\n";
+    switch(status) {
+      case SolverInstance::SAT:
+        break;
+      case SolverInstance::OPT:
+        std::cout << "==========\n";
+        break;
+      case SolverInstance::UNKNOWN:
+        std::cout << "=====UNKNOWN=====";
+        break;
+      case SolverInstance::ERROR:
+        std::cout << "=====ERROR=====";
+        break;
+      case SolverInstance::UNSAT:
+        std::cout << "=====UNSAT=====";
+        break;        
+    }
+  }
   
   /// interpret and execute the combinator given in the annotation  
   SolverInstance::Status 

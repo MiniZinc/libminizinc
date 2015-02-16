@@ -377,7 +377,7 @@ int main(int argc, char** argv) {
 
               GCLock lock;
               Options options;
-             // MiniZinc::search<GecodeSolverInstance>(env,options);
+              MiniZinc::search<GecodeSolverInstance>(env,options);
             }
           }
               
