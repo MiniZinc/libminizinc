@@ -367,7 +367,10 @@ namespace MiniZinc {
         }
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
-        c->flat(vd->flat());
+        if (vd->flat()==vd)
+          c->flat(c);
+        else
+          c->flat(vd->flat());
         c->payload(vd->payload());
         m.insert(e,c);
         c->ti(static_cast<TypeInst*>(copy(m,vd->ti(),followIds)));
