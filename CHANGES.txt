@@ -29,6 +29,7 @@ Version 2.0.2
  - Postpone flattening of some reified constraints
  - Fix crash when using assert/2
  - Add reverse library function
+ - Fix bug when function used in output referred to par variable
  
 
 Version 2.0.1

@@ -4228,7 +4228,7 @@ namespace MiniZinc {
         VarDecl* reallyFlat = vd->flat();
         while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
           reallyFlat = reallyFlat->flat();
-        IdMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat->id());
+        IdMap<int>::iterator idx = reallyFlat ? env.output_vo.idx.find(reallyFlat->id()) : env.output_vo.idx.end();
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
           VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env.cmap,vd)->cast<VarDecl>());
