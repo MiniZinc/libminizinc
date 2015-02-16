@@ -28,6 +28,7 @@ Version 2.0.2
  - Fix subtype check to allow empty arrays as subtype of arrays of sets
  - Postpone flattening of some reified constraints
  - Fix crash when using assert/2
+ - Add reverse library function
  
 
 Version 2.0.1
