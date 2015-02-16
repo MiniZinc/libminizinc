@@ -3566,9 +3566,14 @@ namespace MiniZinc {
               nctx.b = ctx.i;
             }
           } else if (cid == constants().ids.assert || cid == constants().ids.trace) {
-            KeepAlive callres = decl->_builtins.e(c->args());
-            ret = flat_exp(env,ctx,callres(),r,b);
-            // This is all we need to do for assert, so break out of the E_CALL
+            if (cid == constants().ids.assert && c->args().size()==2) {
+              (void) decl->_builtins.b(c->args());
+              ret = flat_exp(env,ctx,constants().lit_true,r,b);
+            } else {
+              KeepAlive callres = decl->_builtins.e(c->args());
+              ret = flat_exp(env,ctx,callres(),r,b);
+              // This is all we need to do for assert, so break out of the E_CALL
+            }
             break;
           }
         }
@@ -3972,7 +3977,12 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                if (!v->e()->type().is_set() && ibv->card()==0) {
+                  env.addWarning("model inconsistency detected");
+                  env.flat()->fail();
+                } else {
+                  vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                }
               }
             } else if (v->e()->type().dim() > 0) {
               Expression* ee = follow_id_to_decl(vd->e());
@@ -4239,7 +4249,7 @@ namespace MiniZinc {
         VarDecl* reallyFlat = vd->flat();
         while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
           reallyFlat = reallyFlat->flat();
-        IdMap<int>::iterator idx = env.output_vo.idx.find(reallyFlat->id());
+        IdMap<int>::iterator idx = reallyFlat ? env.output_vo.idx.find(reallyFlat->id()) : env.output_vo.idx.end();
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
           VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env.cmap,vd)->cast<VarDecl>());
