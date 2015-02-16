@@ -20,6 +20,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdexcept>
 
 #include <minizinc/parser.hh>
 #include <minizinc/model.hh>
@@ -29,7 +30,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
-#include <minizinc/solvers/gecode/gecode_solverinstance.hh>
+#include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/prettyprinter.hh>
 
 using namespace MiniZinc;
@@ -45,12 +46,16 @@ static PyObject* MznModel_solve_warning;
 static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
+string typePresentation(const Type& type);
+bool compareType(const Type& type1, const Type& type2);
+PyObject* minizinc_to_python(VarDecl* vd);
+inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
+Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
+
+
 #include "MznSet.h"
 #include "MznSet.cpp"
 #include "MznVariable.h"
-//#include "MznConstraint.h"
-//#include "MznSolveItem.h"
-//#include "MznOutputItem.h"
 
 // Time alarm
 sigjmp_buf jmpbuf;
@@ -62,6 +67,7 @@ void sig_alrm (int signo)
 
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
+
 
 
 struct MznModel {
@@ -90,10 +96,13 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args);
 static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
-static PyObject* MznModel_Expression(MznModel* self, PyObject* args);
+static PyObject* MznModel_Call(MznModel* self, PyObject* args);
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
+static PyObject* Mzn_BinOp(MznModel* self, PyObject* args);
+static PyObject* Mzn_UnOp(MznModel* self, PyObject* args);
+static PyObject* Mzn_Call(MznModel* self, PyObject* args);
 static PyObject* Mzn_lock(MznModel* self) {GC::lock(); Py_RETURN_NONE;}
 static PyObject* Mzn_unlock(MznModel* self) {GC::unlock(); Py_RETURN_NONE;}
 
@@ -116,7 +125,9 @@ static PyMethodDef MznModel_methods[] = {
 static PyMethodDef Mzn_methods[] = {
   {"load", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
   {"loadFromString", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from stdin"},
-  {"Expression", (PyCFunction)MznModel_Expression, METH_VARARGS, "Add an expression into the model"},
+  {"BinOp", (PyCFunction)Mzn_BinOp, METH_VARARGS, "Add a binary expression into the model"},
+  {"UnOp", (PyCFunction)Mzn_UnOp, METH_VARARGS, "Add a unary expression into the model"},
+  {"Call", (PyCFunction)Mzn_Call, METH_VARARGS, ""},
   {"lock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Create a lock for garbage collection"},
   {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},
   {NULL}
@@ -164,12 +175,11 @@ static PyTypeObject MznModelType = {
 };
 
 
-
-
 struct MznSolution {
   PyObject_HEAD
+  GecodeSolverInstance* solver;
   Env* env;
-  SolverInstance::Status status;
+  Model* _m;
 
   PyObject* next();
 };
@@ -179,6 +189,7 @@ static int MznSolution_init(MznSolution* self, PyObject* args);
 static void MznSolution_dealloc(MznSolution* self);
 
 static PyObject* MznSolution_next(MznSolution *self);
+static PyObject* MznSolution_getValue(MznSolution* self, PyObject* args);
 
 
 
@@ -187,7 +198,8 @@ static PyMemberDef MznSolution_members[] = {
 };
 
 static PyMethodDef MznSolution_methods[] = {
-  {"next", (PyCFunction)MznSolution_next, METH_KEYWORDS, "Next solution"},
+  {"next", (PyCFunction)MznSolution_next, METH_NOARGS, "Next solution"},
+  {"getValue",(PyCFunction)MznSolution_getValue, METH_VARARGS, "Get value of a variable"},
   {NULL} /* Sentinel */
 };
 
@@ -235,87 +247,36 @@ static PyTypeObject MznSolutionType = {
 
 PyMODINIT_FUNC
 initminizinc(void) {
-    GC::init();
-    //GC::lock();
     PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
       return;
 
-/*    //Error Handling
-    MznModel_load_error = PyErr_NewException("MznModel_load.error", NULL, NULL);
-    if (MznModel_load_error == NULL)
-      return;
-    Py_INCREF(MznModel_load_error);
-    PyModule_AddObject(model,"error",MznModel_load_error);
 
-    MznModel_loadFromString_error = PyErr_NewException("MznModel_loadFromString.error", NULL, NULL);
-    if (MznModel_loadFromString_error == NULL)
-      return;
-    Py_INCREF(MznModel_loadFromString_error);
-    PyModule_AddObject(model,"error",MznModel_loadFromString_error);
-
-
-    MznModel_solve_error = PyErr_NewException("MznModel_solve.error", NULL, NULL);
-    if (MznModel_solve_error == NULL)
-      return;
-    Py_INCREF(MznModel_solve_error);
-    PyModule_AddObject(model,"error",MznModel_solve_error);
-
-    MznModel_solve_warning = PyErr_NewException("MznModel_solve.warning", NULL, NULL);
-    if (MznModel_solve_error == NULL)
-      return;
-    Py_INCREF(MznModel_solve_warning);
-    PyModule_AddObject(model,"warning",MznModel_solve_warning);
-
-    MznSet_error = PyErr_NewException("MznSet.error", NULL, NULL);
-    if (MznSet_error == NULL)
-      return;
-    Py_INCREF(MznSet_error);
-    PyModule_AddObject(model,"error",MznSet_error);
-
-    MznVariable_init_error = PyErr_NewException("MznVariable_init.error", NULL, NULL);
-    if (MznVariable_init_error == NULL)
-      return;
-    Py_INCREF(MznVariable_init_error);
-    PyModule_AddObject(model,"error",MznVariable_init_error);*/
-
-
-    // Minizinc Set Initialization
     if (PyType_Ready(&MznSetType) < 0)
       return;
     Py_INCREF(&MznSetType);
-    PyModule_AddObject(model, "Set", (PyObject *)&MznSetType);
+    PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSetType));
+
+    if (PyType_Ready(&MznSetIterType) < 0)
+      return;
+    Py_INCREF(&MznSetIterType);
+    PyModule_AddObject(model, "SetIterator", reinterpret_cast<PyObject*>(&MznSetIterType));
 
     if (PyType_Ready(&MznVariableType) < 0)
       return;
     Py_INCREF(&MznVariableType);
-    PyModule_AddObject(model, "Variable", (PyObject *)&MznVariableType);
-
-    /*if (PyType_Ready(&MznConstraintType) < 0)
-      return;
-    Py_INCREF(&MznConstraintType);
-    PyModule_AddObject(model, "Constraint", (PyObject *)&MznConstraintType);*/
+    PyModule_AddObject(model, "Variable", reinterpret_cast<PyObject*>(&MznVariableType));
 
     if (PyType_Ready(&MznModelType) < 0)
       return;
     Py_INCREF(&MznModelType);
-    PyModule_AddObject(model, "Model", (PyObject *)&MznModelType);
+    PyModule_AddObject(model, "Model", reinterpret_cast<PyObject*>(&MznModelType));
 
     if (PyType_Ready(&MznSolutionType) < 0)
       return;
     Py_INCREF(&MznSolutionType);
-    PyModule_AddObject(model, "Solution", (PyObject *)&MznSolutionType);
-
-    /*if (PyType_Ready(&MznSolveItemType) < 0)
-      return;
-    Py_INCREF(&MznSolveItemType);
-    PyModule_AddObject(model, "Solve", (PyObject *)&MznSolveItemType);*/
-
-    /*if (PyType_Ready(&MznOutputItemType) < 0)
-      return;
-    Py_INCREF(&MznOutputItemType);
-    PyModule_AddObject(model, "Output", (PyObject *)&MznOutputItemType);*/
+    PyModule_AddObject(model, "Solution", reinterpret_cast<PyObject*>(&MznSolutionType));
 }
 
 #endif

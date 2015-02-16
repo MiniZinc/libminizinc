@@ -135,12 +135,6 @@ namespace MiniZinc {
     static void addWeakRef(WeakRef* e);
     static void removeWeakRef(WeakRef* e);
   public:
-    /**
-     * \brief Initialize thread-local GC object
-     *
-     * Must be called at least once per thread
-     */
-    static void init(void);
     /// Acquire garbage collector lock for this thread
     static void lock(void);
     /// Release garbage collector lock for this thread

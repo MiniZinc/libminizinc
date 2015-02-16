@@ -81,8 +81,6 @@ int main(int argc, char** argv) {
   if (argc < 2)
     goto error;
 
-  GC::init();
-  
   for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
@@ -376,6 +374,7 @@ int main(int argc, char** argv) {
 
               GCLock lock;
               Options options;
+              options.setBoolParam(std::string("only-range-domains"), fopts.onlyRangeDomains);
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();
 

@@ -192,9 +192,12 @@ namespace MiniZinc {
     typedef GecodeVariable Variable;
     typedef MiniZinc::Statistics Statistics;
   };
-   
+  
+  class GecodeEngine;
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
+  private:
+    bool _only_range_domains;
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
@@ -207,6 +210,8 @@ namespace MiniZinc {
     //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
+    /// The solver engine
+    GecodeEngine* engine;
 
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
@@ -280,13 +285,7 @@ namespace MiniZinc {
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
             bool ignoreUnknown, std::ostream& err);
-    /// Run the search engine
-    template<template<class> class Engine>
-        SolverInstanceBase::Status runEngine();
-    /// Run the meta search engine
-    template<template<class> class Engine,
-        template<template<class> class,class> class Meta>
-            SolverInstanceBase::Status runMeta();
+    void prepareEngine(void);
   };
 }
 

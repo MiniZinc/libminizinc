@@ -90,6 +90,9 @@ namespace MiniZinc {
 #endif
 
     _optVarIsInt = f._optVarIsInt;
+    _optVarIdx = f._optVarIdx;
+    _copyAuxVars = f._copyAuxVars;
+    _solveType = f._solveType;
   }
 
 

@@ -17,21 +17,24 @@
 namespace MiniZinc {
   class Options {
     protected:
-      ASTStringMap<Expression*>::t _options;
+      UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive> _options;
 
-      inline Expression* getParam(ASTString name);
+      inline Expression* getParam(const std::string& name) const;
 
     public:
-      void setIntParam(ASTString name,   Expression* e);
-      void setFloatParam(ASTString name, Expression* e);
-      void setBoolParam(ASTString name,  Expression* e);
-      void setIntParam(ASTString name,   long long int e);
-      void setFloatParam(ASTString name, double e);
-      void setBoolParam(ASTString name,  bool e);
-      long long int getIntParam(ASTString name);
-      double getFloatParam(ASTString name);
-      bool getBoolParam(ASTString name);
-      bool hasParam(ASTString name);
+      void setIntParam(const std::string& name,   KeepAlive e);
+      void setFloatParam(const std::string& name, KeepAlive e);
+      void setBoolParam(const std::string& name,  KeepAlive e);
+      void setIntParam(const std::string& name,   long long int e);
+      void setFloatParam(const std::string& name, double e);
+      void setBoolParam(const std::string& name,  bool e);
+      long long int getIntParam(const std::string& name) const;
+      long long int getIntParam(const std::string& name, long long int def) const;
+      double getFloatParam(const std::string& name) const;
+      double getFloatParam(const std::string& name, double def) const;
+      bool getBoolParam(const std::string& name) const;
+      bool getBoolParam(const std::string& name, bool def) const;
+      bool hasParam(const std::string& name) const;
   };
 }
 

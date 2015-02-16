@@ -10,21 +10,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/options.hh>
+#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
   
-  Expression* Options::getParam(ASTString name) {
-    ASTStringMap<Expression*>::t::iterator it = _options.find(name);
+  Expression* Options::getParam(const std::string& name) const {
+    UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive >::const_iterator it = _options.find(name);
     if(it == _options.end()) {
       std::stringstream ss;
       ss << "Could not find option: \"" << name << "\"." << std::endl;
       throw InternalError(ss.str());
     }
-    return it->second;
+    return (it->second)();
   }
   
-  void Options::setIntParam(ASTString name,   Expression* e) {
-    if(e->type().ispar() && e->type().isint()) {
+  void Options::setIntParam(const std::string& name,   KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isint()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -32,8 +34,9 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  void Options::setFloatParam(ASTString name, Expression* e) {
-    if(e->type().ispar() && e->type().isfloat()) {
+  void Options::setFloatParam(const std::string& name, KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isfloat()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -41,8 +44,9 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  void Options::setBoolParam(ASTString name,  Expression* e) {
-    if(e->type().ispar() && e->type().isbool()) {
+  void Options::setBoolParam(const std::string& name,  KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isbool()) {
       _options[name] = e;
     } else {
       std::stringstream ss;
@@ -51,29 +55,29 @@ namespace MiniZinc {
     }
   }
   
-  void Options::setIntParam(ASTString name,   long long int e) {
+  void Options::setIntParam(const std::string& name,   long long int e) {
     GCLock lock;
     IntLit* il = new IntLit(Location(), e);
     KeepAlive ka(il);
     
-    setIntParam(name, il);
+    setIntParam(name, ka);
   };
-  void Options::setFloatParam(ASTString name, double e) {
+  void Options::setFloatParam(const std::string& name, double e) {
     GCLock lock;
     FloatLit* fl = new FloatLit(Location(), e);
     KeepAlive ka(fl);
     
-    setFloatParam(name, fl);
+    setFloatParam(name, ka);
   }
-  void Options::setBoolParam(ASTString name,  bool e) {
+  void Options::setBoolParam(const std::string& name,  bool e) {
     GCLock lock;
     BoolLit* bl = new BoolLit(Location(), e);
     KeepAlive ka(bl);
     
-    setBoolParam(name, bl);
+    setBoolParam(name, ka);
   }
   
-  long long int Options::getIntParam(ASTString name) {
+  long long int Options::getIntParam(const std::string& name) const {
     if(IntLit* il = getParam(name)->dyn_cast<IntLit>()) {
       return il->v().toInt();
     } else {
@@ -82,7 +86,15 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  double Options::getFloatParam(ASTString name) {
+  long long int Options::getIntParam(const std::string& name, long long int def) const {
+    if (hasParam(name)) {
+      if(IntLit* il = getParam(name)->dyn_cast<IntLit>()) {
+        return il->v().toInt();
+      }
+    }
+    return def;
+  }
+  double Options::getFloatParam(const std::string& name) const {
     if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
       return fl->v();
     } else {
@@ -91,7 +103,15 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  bool Options::getBoolParam(ASTString name) {
+  double Options::getFloatParam(const std::string& name, double def) const {
+    if (hasParam(name)) {
+      if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
+        return fl->v();
+      }
+    }
+    return def;
+  }
+  bool Options::getBoolParam(const std::string& name) const {
     if(BoolLit* bl = getParam(name)->dyn_cast<BoolLit>()) {
       return bl->v();
     } else {
@@ -100,7 +120,15 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
   }
-  bool Options::hasParam(MiniZinc::ASTString name) {
+  bool Options::getBoolParam(const std::string& name, bool def) const {
+    if (hasParam(name)) {
+      if(BoolLit* bl = getParam(name)->dyn_cast<BoolLit>()) {
+        return bl->v();
+      }
+    }
+    return def;
+  }
+  bool Options::hasParam(const std::string& name) const {
     return _options.find(name) != _options.end();
   }
 }

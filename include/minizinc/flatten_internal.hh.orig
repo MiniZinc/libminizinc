@@ -67,6 +67,9 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+    unsigned int pass;
+    int passes;
+    unsigned int maxPathDepth;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {
@@ -80,41 +83,53 @@ namespace MiniZinc {
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
     std::vector<std::string> warnings;
+<<<<<<< HEAD
+    FlatteningOptions fopts;
+    unsigned int pathUse;
+
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, std::pair<WeakRef, unsigned int> > PathMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
+
+=======
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
+>>>>>>> 8dca42a2735e34392cc0b843033d266eefa40855
   protected:
     Map map;
     Model* _flat;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+
+    PathMap pathMap;
+    ReversePathMap reversePathMap;
+    UNORDERED_NAMESPACE::unordered_map<std::string, int> filenameMap;
+
   public:
     EnvI(Model* orig0);
-    EnvI(Model* orig, Model* output, Model* flat, 
-         CopyMap& cmap,
-         IdMap<KeepAlive> reverseMappers,
-         unsigned int ids
-        ); 
     ~EnvI(void);
     long long int genId(void);
     void map_insert(Expression* e, const EE& ee);
-    void map_insert(Expression* e, const WW& ww);
     Map::iterator map_find(Expression* e);
     void map_remove(Expression* e);
     Map::iterator map_end(void);
-    Map::iterator map_begin(void); // ANDREA: needed for creating copy of Env(I)
     void dump(void);
     
     void flat_addItem(Item* i);
-    void flat_removeItem(int i);
-    void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+<<<<<<< HEAD
+
+    PathMap& getPathMap() { return pathMap; }
+    ReversePathMap& getReversePathMap() { return reversePathMap; }
+    void setMaps(EnvI& env);
+=======
     void collectVarDecls(bool b);
+>>>>>>> 8dca42a2735e34392cc0b843033d266eefa40855
     std::ostream& evalOutput(std::ostream& os);
-    unsigned int get_ids(void) { return ids; }
   };
 
   Expression* follow_id(Expression* e);
