@@ -325,7 +325,9 @@ namespace MiniZinc {
   
   void
   GC::lock(void) {
-    assert(gc());
+    if (gc()==NULL) {
+      gc() = new GC();
+    }
     if (gc()->_lock_count==0)
       gc()->_heap->rungc();
     gc()->_lock_count++;
@@ -365,16 +367,14 @@ namespace MiniZinc {
 
   void
   GC::remove(Model* m) {
-    if (m->_roots_next || m->_roots_prev) {
-      GC* gc = GC::gc();
-      if (m->_roots_next == m->_roots_prev) {
-        gc->_heap->_rootset = NULL;
-      } else {
-        m->_roots_next->_roots_prev = m->_roots_prev;
-        m->_roots_prev->_roots_next = m->_roots_next;
-        if (m==gc->_heap->_rootset)
-          gc->_heap->_rootset = m->_roots_prev;
-      }
+    GC* gc = GC::gc();
+    if (m->_roots_next == m) {
+      gc->_heap->_rootset = NULL;
+    } else {
+      m->_roots_next->_roots_prev = m->_roots_prev;
+      m->_roots_prev->_roots_next = m->_roots_next;
+      if (m==gc->_heap->_rootset)
+        gc->_heap->_rootset = m->_roots_prev;
     }
   }
 
@@ -414,6 +414,8 @@ namespace MiniZinc {
     if (m==NULL)
       return;
     do {
+      m->_filepath.mark();
+      m->_filename.mark();
       for (unsigned int j=0; j<m->_items.size(); j++) {
         Item* i = m->_items[j];
         if (i->_gc_mark==0) {
@@ -726,13 +728,6 @@ namespace MiniZinc {
     _e = e();
     _valid = true;
     return *this;
-  }
-
-  void
-  GC::init(void) {
-    if (gc()==NULL) {
-      gc() = new GC();
-    }
   }
 
 }

@@ -173,7 +173,7 @@ namespace MiniZinc {
     if (id == e->n_decls(gen)-1) {
       if (gen == e->n_generators()-1) {
         bool where = true;
-        if (e->where() != NULL) {
+        if (e->where() != NULL && !e->where()->type().isvar()) {
           GCLock lock;
           where = eval_bool(e->where());
         }
@@ -294,7 +294,11 @@ namespace MiniZinc {
     {
       GCLock lock;
       if (e->in(0)->type().dim()==0) {
-        in = new SetLit(Location(),eval_intset(e->in(0)));
+        if (e->in(0)->type().isvar()) {
+          in = new SetLit(Location(),compute_intset_bounds(e->in(0)));
+        } else {
+          in = new SetLit(Location(),eval_intset(e->in(0)));
+        }
       } else {
         in = eval_array_lit(e->in(0));
       }

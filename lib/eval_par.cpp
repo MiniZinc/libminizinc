@@ -595,10 +595,10 @@ namespace MiniZinc {
           IntSetRanges ir0(v0);
           IntSetRanges ir1(v1);
           switch (bo->op()) {
-          case BOT_LE: assert(false); /// TODO
-          case BOT_LQ: assert(false); /// TODO
-          case BOT_GR: assert(false); /// TODO
-          case BOT_GQ: assert(false); /// TODO
+          case BOT_LE: return Ranges::less(ir0,ir1);
+          case BOT_LQ: return Ranges::lessEq(ir0,ir1);
+          case BOT_GR: return Ranges::less(ir1,ir0);
+          case BOT_GQ: return Ranges::lessEq(ir1,ir0);
           case BOT_EQ: return Ranges::equal(ir0,ir1);
           case BOT_NQ: return !Ranges::equal(ir0,ir1);
           case BOT_SUBSET: return Ranges::subset(ir0,ir1);
@@ -1478,12 +1478,12 @@ namespace MiniZinc {
       case UOT_PLUS:
         break;
       case UOT_MINUS:
-        _bounds.back().first = -_bounds.back().first;
-        _bounds.back().second = -_bounds.back().second;
+          _bounds.back().first = -_bounds.back().first;
+          _bounds.back().second = -_bounds.back().second;
+          std::swap(_bounds.back().first, _bounds.back().second);
         break;
       case UOT_NOT:
         valid = false;
-        _bounds.push_back(Bounds(0,0));
       }
     }
     /// Visit call
