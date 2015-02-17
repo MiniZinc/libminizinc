@@ -772,39 +772,45 @@ namespace MiniZinc {
     TopoSorter ts;
     
     std::vector<FunctionI*> functionItems;
+    std::vector<AssignI*> assignItems;
     
     class TSV0 : public ItemVisitor {
     public:
       TopoSorter& ts;
       Model* model;
       std::vector<FunctionI*>& fis;
-      TSV0(TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0)
-        : ts(ts0), model(model0), fis(fis0) {}
+      std::vector<AssignI*>& ais;
+      TSV0(TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0)
+        : ts(ts0), model(model0), fis(fis0), ais(ais0) {}
+      void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(i->e(), true); }
       void vFunctionI(FunctionI* i) {
         model->registerFn(i);
         fis.push_back(i);
       }
-    } _tsv0(ts,m,functionItems);
+    } _tsv0(ts,m,functionItems,assignItems);
     iterItems(_tsv0,m);
 
+    for (unsigned int i=0; i<assignItems.size(); i++) {
+      AssignI* ai = assignItems[i];
+      VarDecl* vd = ts.checkId(ai->id(),ai->loc());
+      if (vd->e())
+        throw TypeError(ai->loc(),"multiple assignment to the same variable");
+      TopoSorter::PosMap::iterator pi = ts.pos.find(vd);
+      int tmp = pi->second;
+      pi->second = -1;
+      ts.run(ai->e());
+      pi = ts.pos.find(vd);
+      pi->second = tmp;
+      ai->decl(vd);
+    }
+    
     class TSV1 : public ItemVisitor {
     public:
       TopoSorter& ts;
       TSV1(TopoSorter& ts0) : ts(ts0) {}
       void vVarDeclI(VarDeclI* i) { ts.run(i->e()); }
-      void vAssignI(AssignI* i) {
-        VarDecl* vd = ts.checkId(i->id(),i->loc());
-        if (vd->e())
-          throw TypeError(i->loc(),"multiple assignment to the same variable");
-        TopoSorter::PosMap::iterator pi = ts.pos.find(vd);
-        int tmp = pi->second;
-        pi->second = -1;
-        ts.run(i->e());
-        pi = ts.pos.find(vd);
-        pi->second = tmp;
-        i->decl(vd);
-      }
+      void vAssignI(AssignI* i) {}
       void vConstraintI(ConstraintI* i) { ts.run(i->e()); }
       void vSolveI(SolveI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it)
