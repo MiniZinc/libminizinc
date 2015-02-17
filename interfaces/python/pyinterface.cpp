@@ -302,6 +302,61 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
 }
 
 
+
+
+
+Expression*
+python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
+{
+  if (PyObject_TypeCheck(pvalue, &MznSetType)) {
+    vector<IntSetVal::Range> setRanges;
+    MznSet* Set = reinterpret_cast<MznSet*>(pvalue);
+    for (list<MznRange>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
+      setRanges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
+    }
+    Expression* rhs = new SetLit(Location(), IntSetVal::a(setRanges));
+    return rhs;
+  } else if (PyList_Check(pvalue)) {
+    vector<Py_ssize_t> dimensions;
+    vector<PyObject*> simpleArray;
+    if (getList(pvalue, dimensions, simpleArray, 0) == -1)
+      // need to be changed later
+      throw invalid_argument("Inconsistency in size of multidimensional array");
+    if (ranges.size()!=dimensions.size())
+      throw invalid_argument("Size of declared array and data array not conform");
+    vector<Expression*> callArgument(dimensions.size()+1);
+    vector<Expression*> onedArray(simpleArray.size());
+
+    char buffer[10];
+    sprintf(buffer,"array%dd",dimensions.size());
+    string callName = string(buffer);
+    for (int i=0; i!=dimensions.size(); ++i) {
+      Expression* domain = ranges[i]->domain();
+      if (domain == NULL) {
+        Expression* e0 = new IntLit(Location(), IntVal(1));
+        Expression* e1 = new IntLit(Location(), IntVal(dimensions[i]));
+        callArgument[i] = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+      } else {
+        callArgument[i] = domain;
+      }
+    }
+    Type::BaseType code = Type::BT_UNKNOWN;
+    for (int i=0; i!=simpleArray.size(); ++i) {
+      PyObject* temp= simpleArray[i];
+      Expression* rhs = one_dim_python_to_minizinc(temp, code);
+      onedArray[i] = rhs;
+    }
+    callArgument[dimensions.size()] = new ArrayLit(Location(), onedArray);
+    Expression* rhs = new Call(Location(), callName, callArgument);
+    return rhs;
+  } else {
+    Type::BaseType code = Type::BT_UNKNOWN;
+    Expression* rhs = one_dim_python_to_minizinc(pvalue, code); 
+    return rhs;
+  }
+}
+
+
 /* 
  * Description: Converts a python value to minizinc expression
  *              also returns the type of python value
@@ -464,12 +519,16 @@ MznModel_Variable(MznModel* self, PyObject* args)
     return NULL;
   }
 
+  // if only 2 arguments, second value is the initial value
   if (pydim == NULL) {
     dimList = new vector<pair<int, int> >();
     initValue = python_to_minizinc(pyval, type, *dimList);
     dim = dimList->size();
     domain = NULL;
-  } else {
+  } 
+  else 
+  // else if > 2 arguments, create a MiniZinc Variable
+  {
     if (PyInt_Check(pyval)) {
       tid = PyInt_AS_LONG(pyval);
       pyval = NULL;
@@ -819,11 +878,14 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
     if (dimensions.size() <= layer) {
       dimensions.push_back(PyList_Size(value));
     } else if (dimensions[layer]!=PyList_Size(value)) {
+      //throw invalid_value("Inconsistency in size of multidimensional array");
+      PyErr_SetString(PyExc_RuntimeError,"Inconsistency in size of multidimensional array");
       return -1; // Inconsistent size of array (should be the same)
     }
     PyObject* li = PyList_GetItem(value, i);
     if (PyList_Check(li)) {
       if (getList(li,dimensions,simpleArray,layer+1)==-1) {
+        //throw invalid_value("Inconsistency in size of multidimensional array");
         return -1;
       }
     } else {
@@ -861,6 +923,7 @@ MznModel_init(MznModel* self, PyObject* args)
     return -1;
   }
   self->timeLimit = 0;
+  self->loaded_from_minizinc = false;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
   stringstream errorStream;
@@ -911,7 +974,7 @@ MznModel::addData(const char* const name, PyObject* value)
         }
         */
         Type type;
-        Expression* rhs = python_to_minizinc(value, type, dimList);//, vdi->e()->type(), name);
+        Expression* rhs = python_to_minizinc(value, vdi->e()->ti()->ranges());//, vdi->e()->type(), name);
         if (rhs == NULL)
           return -1;
         vdi->e()->e(rhs);
@@ -931,8 +994,10 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args)
     PyErr_SetString(PyExc_RuntimeError, "Parsing error");
     return NULL;
   }
-  if (self->addData(name,obj)==-1)
+  if (self->addData(name,obj)==-1) {
+    PyErr_SetString(PyExc_RuntimeError, "Error when adding Python data to MiniZinc file");
     return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -1007,8 +1072,10 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
     _m = parse(string(py_string), data, *includePaths, false, false, false, errorStream);
   } else {
     char *kwlist[] = {"string","error","options"};
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &errorFile, &options))
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &errorFile, &options)) {
+      PyErr_SetString(PyExc_TypeError, "Keyword parsing error");
       return -1;
+    }
     _m = parseFromString(string(py_string), errorFile, *includePaths, false, false, false, errorStream);
   }
   if (_m) {
@@ -1026,6 +1093,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       }
     }
     loaded = true;
+    loaded_from_minizinc = true;
     return 0;
   } else {
     const std::string& tmp = errorStream.str();
@@ -1096,7 +1164,8 @@ PyObject* MznModel::solve()
   oldflatzinc(*env);
   GCLock lock;
   Options options;
-  //options.setIntValue("time",)
+  if (timeLimit != 0)
+    options.setIntParam("time", timeLimit);
   MznSolution* ret = reinterpret_cast<MznSolution*>(MznSolution_new(&MznSolutionType, NULL, NULL));
   ret->solver = new GecodeSolverInstance(*env, options);
   ret->solver->processFlatZinc();
@@ -1121,8 +1190,9 @@ MznSolution_getValue(MznSolution* self, PyObject* args) {
           GCLock Lock;
           if (PyObject* PyValue = minizinc_to_python(vdi->e()))
             return PyValue;
-          else 
+          else {
             return NULL;
+          }
         }
       }
     }
@@ -1139,36 +1209,37 @@ MznSolution::next()
   if (solver==NULL)
     throw runtime_error("Solver Object not found");
   GCLock lock;
-  SolverInstance::Status status;
+  SolverInstance::Status status = solver->solve();
+  if (status == SolverInstance::SAT || status == SolverInstance::OPT) {
+    _m = env->output();
+
+    /* DEPRECATED - use Solution.getValue(name) instead
+    if (loaded_from_minizinc) {
+      PyObject* solutions = PyList_New(0);
+      PyObject* sol = PyDict_New();
+      for (unsigned int i=0; i < _m->size(); i++) {
+        if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
+          PyObject* PyValue = minizinc_to_python(vdi->e());
+          if (PyValue == NULL)
+            return NULL;
+          PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyValue);
+        }
+      }
+      PyList_Append(solutions, sol);
+      PyObject* ret = Py_BuildValue("iO", status, solutions);
+      Py_DECREF(sol);
+      Py_DECREF(solutions);
+      return ret;
+    }*/
+    Py_RETURN_NONE; 
+  }
   if (_m == NULL) {
-    status = solver->solve();
-    if (!(status==SolverInstance::SAT || status==SolverInstance::OPT)) {
-      PyErr_SetString(PyExc_RuntimeError,"Unsatisfied");
-      return NULL;
-    }  
+    PyErr_SetString(PyExc_RuntimeError, "Unsatisfied");
+    return NULL;
   } else {
-    status = solver->solve();
-    if (!(status==SolverInstance::SAT || status==SolverInstance::OPT)) {
-      PyErr_SetString(PyExc_RuntimeError,"Reached last solution");
-      return NULL;
-    }  
+    PyErr_SetString(PyExc_RuntimeError, "Reached last solution");
+    return NULL;
   }
-  PyObject* solutions = PyList_New(0);
-  PyObject* sol = PyDict_New();
-  _m = env->output();
-  for (unsigned int i=0; i < _m->size(); i++) {
-    if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
-      PyObject* PyValue = minizinc_to_python(vdi->e());
-      if (PyValue == NULL)
-        return NULL;
-      PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyValue);
-    }
-  }
-  PyList_Append(solutions, sol);
-  PyObject* ret = Py_BuildValue("iO", status, solutions);
-  Py_DECREF(sol);
-  Py_DECREF(solutions);
-  return ret; 
 }
 
 
@@ -1189,18 +1260,7 @@ MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds) {
 static PyObject*
 MznModel_solve(MznModel *self)
 {
-  if (self->timeLimit != 0) {
-    signal(SIGALRM, sig_alrm);
-    alarm(self->timeLimit);
-    if (sigsetjmp(jmpbuf, 1)) {
-      PyErr_SetString(PyExc_RuntimeError, "Time out");
-      return NULL;
-    }
-    PyObject* result = self->solve();
-    alarm(0);
-    return result;
-  } else 
-    return self->solve();
+  return self->solve();
 }
 
 static PyObject*

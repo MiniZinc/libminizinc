@@ -154,11 +154,11 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* args)
 {
   PyObject* indexList;
   if (!PyArg_ParseTuple(args, "O", &indexList)) {
-    PyErr_SetString(PyExc_AttributeError, "Accept 1 tuple object");
+    PyErr_SetString(PyExc_AttributeError, "Accept 1 Python list object");
     return NULL;
   }
-  if (!PyTuple_Check(indexList)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a tuple");
+  if (!PyList_Check(indexList)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be a list");
     return NULL;
   }
   if (self->dimList == NULL) {
@@ -166,7 +166,7 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* args)
     return NULL;
   }
   vector<long>::size_type n = self->dimList->size();
-  if (n != PyTuple_GET_SIZE(indexList)) {
+  if (n != PyList_GET_SIZE(indexList)) {
     PyErr_SetString(PyExc_IndexError, "Mismatched number of dimension");
     return NULL;
   }
@@ -174,19 +174,20 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* args)
 
   vector<Expression*> idx(n);
   for (vector<long>::size_type i = 0; i!=n; ++i) {
-    PyObject* obj = PyTuple_GetItem(indexList, i);
-    if (!PyInt_Check(obj)) {
-      PyErr_SetString(PyExc_TypeError, "Indices must be integers");
+    PyObject* obj = PyList_GetItem(indexList, i);
+    if (PyInt_Check(obj)) {
+      long index = PyInt_AS_LONG(obj);
+      if (index<((*(self->dimList))[i]).first || index > ((*(self->dimList))[i]).second) {
+        PyErr_SetString(PyExc_IndexError, "Index is out of range");
+        return NULL;
+      }
+      idx[i] = new IntLit(Location(), IntVal(index));
+    } else if (PyObject_TypeCheck(obj,&MznVariableType)) {
+      idx[i] = reinterpret_cast<MznVariable*>(obj)->e;
+    } else {
+      PyErr_SetString(PyExc_TypeError, "Indices must be integers, MiniZinc Expression or MiniZinc Variable");
       return NULL;
     }
-
-    long index = PyInt_AS_LONG(obj);
-    if (index<((*(self->dimList))[i]).first || index > ((*(self->dimList))[i]).second) {
-      PyErr_SetString(PyExc_IndexError, "Index is out of range");
-      return NULL;
-    }
-    Expression* e = new IntLit(Location(), IntVal(index));
-    idx[i] = e;
   }
 
   MznVariable* ret = reinterpret_cast<MznVariable*> (MznVariable_new(&MznVariableType, NULL, NULL));

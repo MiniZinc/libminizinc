@@ -17,6 +17,7 @@
 #include <string.h>
 #include <typeinfo>
 #include <cstdlib>
+#include <stdlib.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
@@ -37,6 +38,7 @@ using namespace MiniZinc;
 using namespace std;
 
 // Error Objects
+
 static PyObject* MznModel_new_error;
 static PyObject* MznModel_init_error;
 static PyObject* MznModel_solve_error;
@@ -50,20 +52,14 @@ string typePresentation(const Type& type);
 bool compareType(const Type& type1, const Type& type2);
 PyObject* minizinc_to_python(VarDecl* vd);
 inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code);
+Expression* python_to_minizinc(PyObject* pvalue, Type& returnType, const ASTExprVec<TypeInst>& ranges);
 Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
+
 
 
 #include "MznSet.h"
 #include "MznSet.cpp"
 #include "MznVariable.h"
-
-// Time alarm
-sigjmp_buf jmpbuf;
-
-void sig_alrm (int signo)
-{
-  siglongjmp(jmpbuf, 1);
-}
 
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
@@ -77,6 +73,7 @@ struct MznModel {
 
   unsigned int timeLimit;
   bool loaded;
+  bool loaded_from_minizinc;
 
   int load(PyObject *args, PyObject *keywds, bool fromFile);
   int addData(const char* const name, PyObject* value);
@@ -135,7 +132,7 @@ static PyMethodDef Mzn_methods[] = {
 
 static PyTypeObject MznModelType = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.Model",       /* tp_name */
+  "minizinc_internal.Model",       /* tp_name */
   sizeof(MznModel),          /* tp_basicsize */
   0,                         /* tp_itemsize */
   (destructor)MznModel_dealloc, /* tp_dealloc */
@@ -206,7 +203,7 @@ static PyMethodDef MznSolution_methods[] = {
 
 static PyTypeObject MznSolutionType = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.model",       /* tp_name */
+  "minizinc_internal.model",       /* tp_name */
   sizeof(MznSolution),          /* tp_basicsize */
   0,                         /* tp_itemsize */
   (destructor)MznSolution_dealloc, /* tp_dealloc */
@@ -246,8 +243,8 @@ static PyTypeObject MznSolutionType = {
 };
 
 PyMODINIT_FUNC
-initminizinc(void) {
-    PyObject* model = Py_InitModule3("minizinc", Mzn_methods, "A python interface for minizinc constraint modeling");
+initminizinc_internal(void) {
+    PyObject* model = Py_InitModule3("minizinc_internal", Mzn_methods, "A python interface for minizinc constraint modeling");
 
     if (model == NULL)
       return;
