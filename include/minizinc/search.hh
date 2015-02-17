@@ -23,8 +23,17 @@ namespace MiniZinc {
     solver->processFlatZinc();
     
     SolverInstance::Status status;    
+    Expression* combinator = NULL;
     if(env.model()->solveItem()->combinator_lite()) {
-      Annotation& combinator = env.model()->solveItem()->ann(); // TODO: get the actual combinator, and not the full annotation
+      Annotation& ann = env.model()->solveItem()->ann(); 
+      for(ExpressionSetIter it = ann.begin(); it!=ann.end(); it++) {
+        if(Call* c = (*it)->dyn_cast<Call>()) {
+          if(c->id() == constants().ann.combinator) {
+            combinator = c->args()[0];
+            break;
+          }
+        }  
+      }
       status = interpretCombinator(combinator, env, solver);
     }
     else { // solve using normal solve call
@@ -51,11 +60,12 @@ namespace MiniZinc {
         std::cout << "=====UNSAT=====";
         break;        
     }
+    std::cout << std::endl;
   }
   
-  /// interpret and execute the combinator given in the annotation  
+  /// interpret and execute the given combinator  
   SolverInstance::Status 
-  interpretCombinator(Annotation& ann, Env& env, SolverInstanceBase* solver);
+  interpretCombinator(Expression* comb, Env& env, SolverInstanceBase* solver);
 }
 
 #endif

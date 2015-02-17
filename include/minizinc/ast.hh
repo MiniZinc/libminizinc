@@ -1356,6 +1356,15 @@ namespace MiniZinc {
         ASTString is_introduced;
         ASTString combinator;
       } ann;
+      /// combinators lite
+      struct {
+        ASTString and_;
+        ASTString next;
+        ASTString or_;
+        ASTString post;
+        ASTString repeat;
+        ASTString scope;
+      } combinators;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit
