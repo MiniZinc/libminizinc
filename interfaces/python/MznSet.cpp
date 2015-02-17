@@ -47,6 +47,18 @@ MznSet_iternext(PyObject* self)
   }
 }*/
 
+bool MznSet::contains(long val) {
+  list<MznRange>::iterator it = ranges->begin();
+  list<MznRange>::iterator end = ranges->end();
+  assert (it != end);
+  for (;it++ != end;)
+    if (val < it->min)
+      return false;
+    else if (val <= it->max)
+      return true;
+  return false; 
+}
+
 bool MznSet::continuous() {
   if (ranges->empty())
     throw length_error("Ranges cannot be empty");
@@ -154,6 +166,10 @@ long MznSet::max()
   return ranges->back().max;
 }
 
+/*SetLit* MznSet::e() {
+
+}*/
+
 static PyObject*
 MznSet_min(MznSet* self)
 {
@@ -172,12 +188,27 @@ MznSet_continuous(MznSet* self)
   return PyBool_FromLong(self->continuous());
 }
 
+static PyObject*
+MznSet_contains(MznSet* self, PyObject* args)
+{
+  PyObject* val;
+  if (!PyArg_ParseTuple(args,"O",&val)) {
+    PyErr_SetString(PyExc_TypeError, "Parsing error");
+    return NULL;
+  }
+  if (!PyInt_Check(val)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
+    return NULL;
+  }
+  return PyBool_FromLong(self->contains(PyInt_AS_LONG(val)));
+}
+
 
 static PyObject*
 MznSet_push(MznSet* self, PyObject* args) {
   PyObject* isv;
   if (!PyArg_ParseTuple(args,"O",&isv)) {
-    PyErr_SetString(PyExc_RuntimeError, "Parsing error");
+    PyErr_SetString(PyExc_TypeError, "Parsing error");
     return NULL;
   }
   if (isv == NULL)

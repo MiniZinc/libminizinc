@@ -511,14 +511,13 @@ MznModel_Variable(MznModel* self, PyObject* args)
 
   vector<pair<int, int> >* dimList = NULL;
   vector<TypeInst*> ranges;
-  Type::BaseType code;
+  Type::BaseType code = Type::BT_UNKNOWN;
 
   if (!PyArg_ParseTuple(args, "sO|OOO", &name, &pyval, &pydim, &pylb, &pyub)) {
     PyErr_Print();
     PyErr_SetString(PyExc_TypeError, "Variable parsing error");
     return NULL;
   }
-
   // if only 2 arguments, second value is the initial value
   if (pydim == NULL) {
     dimList = new vector<pair<int, int> >();
@@ -599,7 +598,20 @@ MznModel_Variable(MznModel* self, PyObject* args)
       case PARSETBOOL: type = Type::parsetbool(dim); break;
       case PARSETFLOAT: type = Type::parsetfloat(dim); break;
       case PARSETSTRING: type = Type::parsetstring(dim); break;
-      case VARSETINT: type = Type::varsetint(dim); break;
+      case VARSETINT:
+          type = Type::varsetint(dim);
+          if (pyub == NULL) {
+            Type tempType;
+            vector<pair<int, int> > tempDimList;
+            domain = python_to_minizinc(pylb, tempType, tempDimList);
+            if (tempType.st() != Type::ST_SET)
+              throw invalid_argument("If 5th argument does not exist, 4th argument must be a Minizinc Set");
+          } else 
+            domain = new BinOp(Location(),
+                            one_dim_python_to_minizinc(pylb,code),
+                            BOT_DOTDOT,
+                            one_dim_python_to_minizinc(pyub,code) );
+          break;
       case VARBOT: type = Type::varbot(dim); break;
       case BOT: type = Type::bot(dim); break;
       case TOP: type = Type::top(dim); break;

@@ -19,6 +19,8 @@ struct MznVariable {
   bool isVar() {return vd != NULL;}     // expression or variable
   vector<pair<int, int> >* dimList;
   MznVariable(Expression* e): e(e), vd(vd), dimList(NULL) {}
+
+  bool isSet;
 };
 
 static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -27,6 +29,7 @@ static void MznVariable_dealloc(MznVariable* self);
 PyObject* MznVariable_getValue(MznVariable* self);
 PyObject* MznVariable_setValue(MznVariable* self, PyObject* args);
 PyObject* MznVariable_at(MznVariable* self, PyObject* indexList);
+PyObject* MznVariable_contains(MznVariable* self, PyObject* indexList);
 
 
 
@@ -41,6 +44,7 @@ static PyMethodDef MznVariable_methods[] = {
   {"getValue", (PyCFunction)MznVariable_getValue, METH_NOARGS, "Return value of the variable"},
   {"setValue", (PyCFunction)MznVariable_setValue, METH_VARARGS, "Set value of the variable"},
   {"at", (PyCFunction)MznVariable_at, METH_VARARGS, "Return an array access"},
+  {"contains", (PyCFunction)MznVariable_contains, METH_VARARGS, "MiniZinc 'in' method"},
   {NULL}
 };
 
@@ -90,6 +94,7 @@ static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* k
   self->e = NULL;
   self->vd = NULL;
   self->dimList = NULL;
+  self->isSet = NULL;
   return reinterpret_cast<PyObject*>(self);
 }
 static int MznVariable_init(MznVariable* self, PyObject* args) {
@@ -194,6 +199,11 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* args)
   ret->e = new ArrayAccess(Location(), self->e, idx);
   ret->vd = NULL;
   return reinterpret_cast<PyObject*>(ret);
+}
+
+PyObject* MznVariable_contains(MznVariable* self, PyObject* indexList)
+{
+  
 }
 
 
