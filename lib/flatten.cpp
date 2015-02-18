@@ -475,7 +475,11 @@ namespace MiniZinc {
           os << "comprehension expression with" << std::endl;
           for (unsigned int i=0; i<cmp->n_generators(); i++) {
             for (unsigned int j=0; j<cmp->n_decls(i); j++) {
-              os << "    " << cmp->decl(i, j)->id()->str() << " = " << eval_int(cmp->decl(i, j)->e()) << std::endl;
+              if (cmp->decl(i, j)->e()) {
+                os << "    " << cmp->decl(i, j)->id()->str() << " = " << eval_int(cmp->decl(i, j)->e()) << std::endl;
+              } else {
+                os << "    " << cmp->decl(i, j)->id()->str() << " = unknown" << std::endl;
+              }
             }
           }
         }
