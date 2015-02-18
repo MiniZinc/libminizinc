@@ -57,6 +57,9 @@ namespace MiniZinc {
     virtual Status solve(void);   
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
+    /// overwrite in your solver, if your solver allows to post constraints during search
+    bool postConstraints(std::vector<Call*> cts) { return false; }
+    
     
   private:
     SolverInstanceBase(const SolverInstanceBase&);

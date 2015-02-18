@@ -109,10 +109,18 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretPostCombinator(Call* call, Env& env, SolverInstanceBase* solver) {
-    std::cout << "DEBUG: POST combinator, returning SAT: " << *call << std::endl;
-    // TODO: post constraint in solver        
-    return SolverInstance::SAT;
-    //return SolverInstance::UNKNOWN;
+    std::cout << "DEBUG: POST combinator: " << *call << std::endl;
+    if(call->args().size() != 1) {
+      std::stringstream ssm;
+      ssm << "POST combinator takes only 1 argument instead of " << call->args().size() << " in " << *call ;
+      throw TypeError(call->loc(), ssm.str());
+    }
+    if(!postConstraints(call->args()[0], env, solver)) {
+      std::stringstream ssm;
+      ssm << "could not post constraints: " << *(call->args()[0]) ;
+      throw TypeError(call->args()[0]->loc(), ssm.str());
+    }
+    return SolverInstance::SAT; // well, it means that posting went well, not that there is a solution..
   }
   
   SolverInstance::Status
@@ -187,6 +195,13 @@ namespace MiniZinc {
     SolverInstance::Status status = solver->next();
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
     return status; //solver->next();   
+  }
+  
+  bool 
+  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {
+    // TODO: implement
+    // TODO: flatten constraints
+    return false;
   }
   
 }

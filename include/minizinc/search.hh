@@ -82,6 +82,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretScopeCombinator(Call* scopeComb, Env& env, SolverInstanceBase* solver);
    /// interpret and execute a NEXT combinator
   SolverInstance::Status interpretNextCombinator(Env& env, SolverInstanceBase* solver);
+  /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
+  bool postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver);
   };
  
   
