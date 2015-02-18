@@ -1,14 +1,17 @@
-/*
- *  Python Interface for MiniZinc constraint modelling
+/*  Python Interface for MiniZinc constraint modelling
  *  Author:
  *     Tai Tran <tai.tran@student.adelaide.edu.au>
- *          under the supervision of Guido Tack <guido.tack@monash.edu>
+ *  Supervisor:
+ *     Guido Tack <guido.tack@monash.edu>
  */
+
 
 #ifndef __MZNSET_H
 #define __MZNSET_H
 
 #include <exception>
+
+using namespace std;
 
 struct MznRange {
   long min;
@@ -35,7 +38,7 @@ struct MznSet {
   bool continuous();
   bool contains(long val);
 
-  SetLit* e() {};
+  //SetLit* e() {};
 };
 
 static PyObject* MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds);

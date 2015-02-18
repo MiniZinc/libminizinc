@@ -1,4 +1,12 @@
-#include "MznSet.h"
+/*  Python Interface for MiniZinc constraint modelling
+ *  Author:
+ *     Tai Tran <tai.tran@student.adelaide.edu.au>
+ *  Supervisor:
+ *     Guido Tack <guido.tack@monash.edu>
+ */
+
+
+#include "Set.h"
 
 static void
 MznSet_dealloc(MznSet* self)
