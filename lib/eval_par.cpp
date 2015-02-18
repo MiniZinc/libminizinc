@@ -312,19 +312,6 @@ namespace MiniZinc {
       IntVal ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
-        Type t = al->type();
-        t.dim(0);
-        if (t.isint())
-          return new IntLit(Location(),0);
-        if (t.isbool())
-          return constants().lit_false;
-        if (t.isfloat())
-          return new FloatLit(Location(),0.0);
-        if (t.isintset())
-          return new SetLit(Location(),IntSetVal::a());
-        if (t.isstring())
-          return new StringLit(Location(),"");
-        assert(false);
         return NULL;
       }
       realdim /= al->max(i)-al->min(i)+1;
