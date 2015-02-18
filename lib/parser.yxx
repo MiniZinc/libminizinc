@@ -1325,13 +1325,17 @@ simple_array_literal_2d :
     }
     std::vector<Expression*> a;
     for (unsigned int i=0; i<dims[0].second; i++) {
-      if ((*$2)[i].size() != dims[1].second)
+      if ((*$2)[i].size() != dims[1].second) {
         yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
-      for (unsigned int j=0; j<dims[1].second; j++) {
-        if ((*$2)[i][j].size() != dims[2].second)
-          yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
-        for (unsigned int k=0; k<dims[2].second; k++) {
-          a.push_back((*$2)[i][j][k]);
+      } else {
+        for (unsigned int j=0; j<dims[1].second; j++) {
+          if ((*$2)[i][j].size() != dims[2].second) {
+            yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
+          } else {
+            for (unsigned int k=0; k<dims[2].second; k++) {
+              a.push_back((*$2)[i][j][k]);
+            }
+          }
         }
       }
     }
