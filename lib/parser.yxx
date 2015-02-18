@@ -108,6 +108,14 @@ Expression* createDocComment(const Location& loc, const std::string& s) {
   return c;
 }
 
+Expression* createArrayAccess(const Location& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
+  Expression* ret = e;
+  for (unsigned int i=0; i<idx.size(); i++) {
+    ret = new ArrayAccess(loc, ret, idx[i]);
+  }
+  return ret;
+}
+
 namespace MiniZinc {
 
   Model* parseFromString(const string& text,
@@ -609,8 +617,8 @@ namespace MiniZinc {
 %type <expression> set_expr string_expr string_quote_rest
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head array_access_tail elseif_list let_vardecl_item_list
-%type <expression_vv> simple_array_literal_2d_list
+%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list
+%type <expression_vv> simple_array_literal_2d_list array_access_tail
 %type <expression_vvv> simple_array_literal_3d_list
 
 %type <generators> comp_tail
@@ -1143,16 +1151,16 @@ expr_atom_head :
       '(' expr ')'
       { $$=$2; }
     | '(' expr ')' array_access_tail
-      { $$=new ArrayAccess(@$, $2, *$4); delete $4; }
+      { $$=createArrayAccess(@$, $2, *$4); delete $4; }
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, NULL); free($1); }
     | MZN_IDENTIFIER array_access_tail
-      { $$=new ArrayAccess(@$, new Id(@1,$1,NULL), *$2);
+      { $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
     | MZN_UNDERSCORE array_access_tail
-      { $$=new ArrayAccess(@$, new AnonVar(@$), *$2);
+      { $$=createArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
       { $$=new BoolLit(@$, ($1!=0)); }
@@ -1167,32 +1175,32 @@ expr_atom_head :
       { $$=constants().absent; }
     | set_literal
     | set_literal array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | set_comp
     | set_comp array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal
     | simple_array_literal array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal_2d
     | simple_array_literal_2d array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_comp
     | simple_array_comp array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | if_then_else_expr
     | if_then_else_expr array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | let_expr
     | call_expr
     | call_expr array_access_tail
-      { $$=new ArrayAccess(@$, $1, *$2);
+      { $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
 
 string_expr:
@@ -1218,7 +1226,19 @@ string_quote_rest:
 
 array_access_tail :
       MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
-      { $$=$2; }
+      { $$=new std::vector<std::vector<Expression*> >();
+        if ($2) {
+          $$->push_back(*$2);
+          delete $2;
+        }
+      }
+    | array_access_tail MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+      { $$=$1;
+        if ($$ && $3) {
+          $$->push_back(*$3);
+          delete $3;
+        }
+      }
 
 set_literal :
       '{' '}'
