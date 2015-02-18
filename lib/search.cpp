@@ -13,6 +13,7 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/prettyprinter.hh> // for DEBUG only
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
   
@@ -194,13 +195,15 @@ namespace MiniZinc {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
-    return status; //solver->next();   
+    // TODO: set the solution in the EnvI, if a solution exists
+    return status; 
   }
   
   bool 
-  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {
-    // TODO: implement
-    // TODO: flatten constraints
+  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {   
+    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);
+    Expression* flat = ee.r(); // it's not really the flat expression    
+    // TODO: post flat constraint in solver (incremental or non-incremental)    
     return false;
   }
   
