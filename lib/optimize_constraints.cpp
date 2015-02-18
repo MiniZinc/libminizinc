@@ -38,12 +38,12 @@ namespace MiniZinc {
   namespace Optimizers {
     
     OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
-      ArrayLit* al_c = eval_array_lit(c->args()[0]);
+      ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
       std::vector<IntVal> coeffs(al_c->v().size());
       for (unsigned int i=0; i<al_c->v().size(); i++) {
-        coeffs[i] = eval_int(al_c->v()[i]);
+        coeffs[i] = eval_int(env,al_c->v()[i]);
       }
-      ArrayLit* al_x = eval_array_lit(c->args()[1]);
+      ArrayLit* al_x = eval_array_lit(env,c->args()[1]);
       std::vector<KeepAlive> x(al_x->v().size());
       for (unsigned int i=0; i<al_x->v().size(); i++) {
         x[i] = al_x->v()[i];
@@ -53,11 +53,11 @@ namespace MiniZinc {
       if (coeffs.size()==0) {
         bool failed;
         if (c->id()==constants().ids.int_.lin_le) {
-          failed = (d > eval_int(c->args()[2]));
+          failed = (d > eval_int(env,c->args()[2]));
         } else if (c->id()==constants().ids.int_.lin_eq) {
-          failed = (d != eval_int(c->args()[2]));
+          failed = (d != eval_int(env,c->args()[2]));
         } else {
-          failed = (d == eval_int(c->args()[2]));
+          failed = (d == eval_int(env,c->args()[2]));
         }
         if (failed) {
           return OptimizeRegistry::CS_FAILED;
@@ -66,9 +66,9 @@ namespace MiniZinc {
         }
       } else if (coeffs.size()==1 && (i->isa<ConstraintI>() || i->cast<VarDeclI>()->e()->ti()->domain()==constants().lit_true)) {
         VarDecl* vd = x[0]()->cast<Id>()->decl();
-        IntSetVal* domain = vd->ti()->domain() ? eval_intset(vd->ti()->domain()) : NULL;
+        IntSetVal* domain = vd->ti()->domain() ? eval_intset(env,vd->ti()->domain()) : NULL;
         if (c->id()==constants().ids.int_.lin_eq) {
-          IntVal rd = eval_int(c->args()[2])-d;
+          IntVal rd = eval_int(env,c->args()[2])-d;
           if (rd % coeffs[0] == 0) {
             IntVal nd = rd / coeffs[0];
             if (domain && !domain->contains(nd))
@@ -84,7 +84,7 @@ namespace MiniZinc {
           }
         } else if (c->id()==constants().ids.int_.lin_le) {
           IntVal ac = std::abs(coeffs[0]);
-          IntVal rd = eval_int(c->args()[2])-d;
+          IntVal rd = eval_int(env,c->args()[2])-d;
           IntVal ad = std::abs(rd);
           IntVal nd;
           if (ad % ac == 0) {
@@ -127,7 +127,7 @@ namespace MiniZinc {
           }
         }
       } else if (c->id()==constants().ids.int_.lin_eq && coeffs.size()==2  &&
-                 ((coeffs[0]==1 && coeffs[1]==-1) || (coeffs[1]==1 && coeffs[0]==-1)) && eval_int(c->args()[2])-d==0) {
+                 ((coeffs[0]==1 && coeffs[1]==-1) || (coeffs[1]==1 && coeffs[0]==-1)) && eval_int(env,c->args()[2])-d==0) {
         std::vector<Expression*> args(2);
         args[0] = x[0](); args[1] = x[1]();
         Call* c = new Call(Location(), constants().ids.int_.eq, args);
@@ -148,7 +148,7 @@ namespace MiniZinc {
         c->args()[0] = al_c_new;
         c->args()[1] = al_x_new;
         if (d != 0) {
-          c->args()[2] = new IntLit(Location().introduce(), eval_int(c->args()[2])-d);
+          c->args()[2] = new IntLit(Location().introduce(), eval_int(env,c->args()[2])-d);
         }
       }
       return OptimizeRegistry::CS_OK;
@@ -156,17 +156,17 @@ namespace MiniZinc {
 
     OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       if (c->type().isint()) {
-        ArrayLit* al_c = eval_array_lit(c->args()[0]);
+        ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
         std::vector<IntVal> coeffs(al_c->v().size());
         for (unsigned int i=0; i<al_c->v().size(); i++) {
-          coeffs[i] = eval_int(al_c->v()[i]);
+          coeffs[i] = eval_int(env,al_c->v()[i]);
         }
-        ArrayLit* al_x = eval_array_lit(c->args()[1]);
+        ArrayLit* al_x = eval_array_lit(env,c->args()[1]);
         std::vector<KeepAlive> x(al_x->v().size());
         for (unsigned int i=0; i<al_x->v().size(); i++) {
           x[i] = al_x->v()[i];
         }
-        IntVal d = eval_int(c->args()[2]);
+        IntVal d = eval_int(env,c->args()[2]);
         simplify_lin<IntLit>(coeffs, x, d);
         if (coeffs.size()==0) {
           rewrite = new IntLit(Location().introduce(), d);
@@ -193,8 +193,8 @@ namespace MiniZinc {
     
     OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       if (c->args()[0]->isa<IntLit>()) {
-        IntVal idx = eval_int(c->args()[0]);
-        ArrayLit* al = eval_array_lit(c->args()[1]);
+        IntVal idx = eval_int(env,c->args()[0]);
+        ArrayLit* al = eval_array_lit(env,c->args()[1]);
         Expression* result = al->v()[idx.toInt()-1];
         std::vector<Expression*> args(2);
         args[0] = result;

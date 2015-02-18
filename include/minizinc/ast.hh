@@ -1086,6 +1086,8 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
   };
 
+  class EnvI;
+  
   /// \brief Function declaration item
   class FunctionI : public Item {
   protected:
@@ -1104,17 +1106,17 @@ namespace MiniZinc {
     static const ItemId iid = II_FUN;
     
     /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (ASTExprVec<Expression>);
+    typedef Expression* (*builtin_e) (EnvI&, Call*);
     /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (ASTExprVec<Expression>);
+    typedef IntVal (*builtin_i) (EnvI&, Call*);
     /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (ASTExprVec<Expression>);
+    typedef bool (*builtin_b) (EnvI&, Call*);
     /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>);
+    typedef FloatVal (*builtin_f) (EnvI&, Call*);
     /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>);
+    typedef IntSetVal* (*builtin_s) (EnvI&, Call*);
     /// Type of builtin string-valued functions
-    typedef std::string (*builtin_str) (ASTExprVec<Expression>);
+    typedef std::string (*builtin_str) (EnvI&, Call*);
 
     /// Builtin functions (or NULL)
     struct {
