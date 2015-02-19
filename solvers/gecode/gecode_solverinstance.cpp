@@ -299,7 +299,7 @@ namespace MiniZinc {
                 Expression* domain = ti->domain();
                 if(domain) {
                     if(domain->isa<SetLit>()) {
-                        IntVar intVar(*this->_current_space, arg2intset(domain));
+                        IntVar intVar(*this->_current_space, arg2intset(_env.envi(), domain));
                         _current_space->iv.push_back(intVar);
                         insertVar(it->e()->id(),
                                             GecodeVariable(GecodeVariable::INT_TYPE,
@@ -559,9 +559,9 @@ namespace MiniZinc {
   };
 
   Gecode::IntSet
-  GecodeSolverInstance::arg2intset(Expression* arg) {
+  GecodeSolverInstance::arg2intset(EnvI& envi, Expression* arg) {
     GCLock lock;
-    IntSetVal* isv = eval_intset(arg);
+    IntSetVal* isv = eval_intset(envi, arg);
     IntSetRanges isr(isv);
     GecodeRangeIter isr_g(*this, isr);
     IntSet d(isr_g);
@@ -1030,10 +1030,10 @@ namespace MiniZinc {
 
       if(vd->ti()->domain()) {
         if(vd->type().isint()) {
-          IntBounds old_bounds = compute_int_bounds(vd->id());
+          IntBounds old_bounds = compute_int_bounds(_env.envi(), vd->id());
           long long int old_rangesize = abs(old_bounds.u.toInt() - old_bounds.l.toInt());
           if(vd->ti()->domain()->isa<SetLit>())
-            old_domsize = arg2intset(vd->ti()->domain()).size();
+            old_domsize = arg2intset(_env.envi(), vd->ti()->domain()).size();
           else
             old_domsize = old_rangesize + 1;
           holes = old_domsize < old_rangesize + 1;
@@ -1336,7 +1336,7 @@ namespace MiniZinc {
           ArrayLit* dims = output_array_ann->args()[0]->cast<ArrayLit>();
           std::vector<std::pair<int,int> > dims_v;
           for(unsigned int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(dims->v()[i]);
+            IntSetVal* isv = eval_intset(_env.envi(), dims->v()[i]);
             dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);

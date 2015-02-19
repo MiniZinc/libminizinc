@@ -250,7 +250,8 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(m,basename,toplevel_groups,flag_include_stdlib);
+        Env env(m);
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
           std::string header = html_header;

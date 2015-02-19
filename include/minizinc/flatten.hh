@@ -17,26 +17,6 @@
 
 namespace MiniZinc {
 
-  class EnvI;
-  
-  /// Environment for flattening
-  class Env {
-  private:
-    EnvI* e;
-  public:
-    Env(Model* m);
-    ~Env(void);
-    
-    Model* model(void);
-    Model* flat(void);
-    Model* output(void);
-    EnvI& envi(void);
-    std::ostream& dumpErrorStack(std::ostream& os);
-    const std::vector<std::string>& warnings(void);
-    void clearWarnings(void);
-    std::ostream& evalOutput(std::ostream& os);
-  };
-
   /// Exception thrown for errors during flattening
   class FlatteningError : public LocationException {
   public:
