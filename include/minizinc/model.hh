@@ -17,6 +17,7 @@
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
   
@@ -218,6 +219,31 @@ namespace MiniZinc {
     
     reference operator*() const { return *(*_it)->cast<ConstraintI>(); }
     pointer operator->() const { return (*_it)->cast<ConstraintI>(); }
+  };
+
+  
+  class EnvI;
+  class CopyMap;
+  
+  /// Environment
+  class Env {
+  private:
+    EnvI* e;
+    Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers,
+    unsigned int ids);
+  public:
+    Env(Model* m);    
+    ~Env(void);
+    
+    Model* model(void);
+    Model* flat(void);
+    Model* output(void);
+    EnvI& envi(void);
+    std::ostream& dumpErrorStack(std::ostream& os);
+    const std::vector<std::string>& warnings(void);
+    void clearWarnings(void);
+    std::ostream& evalOutput(std::ostream& os);
+    Env* copyEnv(void);
   };
 
   /// Visitor for model items

@@ -145,8 +145,8 @@ namespace MiniZinc {
         if (id1->decl()->ti()->domain() != NULL) {
           
           if (id0->type().isint() || id0->type().isintset()) {
-            IntSetVal* isv0 = eval_intset(id0->decl()->ti()->domain());
-            IntSetVal* isv1 = eval_intset(id1->decl()->ti()->domain());
+            IntSetVal* isv0 = eval_intset(env,id0->decl()->ti()->domain());
+            IntSetVal* isv1 = eval_intset(env,id1->decl()->ti()->domain());
             IntSetRanges isv0r(isv0);
             IntSetRanges isv1r(isv1);
             Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
@@ -158,7 +158,7 @@ namespace MiniZinc {
               id1->decl()->ti()->domain(new SetLit(Location(), nd));
             }
           } else if (id0->type().isbool()) {
-            if (eval_bool(id0->decl()->ti()->domain()) != eval_bool(id1->decl()->ti()->domain())) {
+            if (eval_bool(env,id0->decl()->ti()->domain()) != eval_bool(env,id1->decl()->ti()->domain())) {
               env.addWarning("model inconsistency detected");
               env.flat()->fail();
             }
@@ -600,8 +600,8 @@ namespace MiniZinc {
           topDown(cd,c);
           env.flat_removeItem(ii);
         } else if (c->args()[0]->type().ispar() && c->args()[1]->type().ispar()) {
-          Expression* e0 = eval_par(c->args()[0]);
-          Expression* e1 = eval_par(c->args()[1]);
+          Expression* e0 = eval_par(env,c->args()[0]);
+          Expression* e1 = eval_par(env,c->args()[1]);
           bool is_equal = Expression::equal(e0, e1);
           if ((is_true && is_equal) || (is_false && !is_equal)) {
             // do nothing
@@ -630,11 +630,11 @@ namespace MiniZinc {
           switch (ident->type().bt()) {
             case Type::BT_BOOL:
               if (ti->domain() == NULL) {
-                ti->domain(constants().boollit(eval_bool(arg)));
+                ti->domain(constants().boollit(eval_bool(env,arg)));
                 ti->setComputedDomain(false);
                 canRemove = true;
               } else {
-                if (eval_bool(ti->domain())==eval_bool(arg)) {
+                if (eval_bool(env,ti->domain())==eval_bool(env,arg)) {
                   canRemove = true;
                 } else {
                   env.addWarning("model inconsistency detected");
@@ -645,13 +645,13 @@ namespace MiniZinc {
               break;
             case Type::BT_INT:
             {
-              IntVal d = eval_int(arg);
+              IntVal d = eval_int(env,arg);
               if (ti->domain() == NULL) {
                 ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
                 ti->setComputedDomain(false);
                 canRemove = true;
               } else {
-                IntSetVal* isv = eval_intset(ti->domain());
+                IntSetVal* isv = eval_intset(env,ti->domain());
                 if (isv->contains(d)) {
                   ident->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
                   ident->decl()->ti()->setComputedDomain(false);
@@ -671,7 +671,7 @@ namespace MiniZinc {
                 ti->setComputedDomain(false);
                 canRemove = true;
               } else {
-                FloatVal value = eval_float(arg);
+                FloatVal value = eval_float(env,arg);
                 if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
                   ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
                   ti->setComputedDomain(false);
@@ -700,10 +700,10 @@ namespace MiniZinc {
                                                                  (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) ) {
         Id* ident = c->args()[0]->isa<Id>() ? c->args()[0]->cast<Id>() : c->args()[1]->cast<Id>();
         Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
-        IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(ident->decl()->ti()->domain()) : NULL;
+        IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(env,ident->decl()->ti()->domain()) : NULL;
         if (domain) {
           BinOpType bot = c->args()[0]->isa<Id>() ? BOT_LQ : BOT_GQ;
-          IntSetVal* newDomain = LinearTraits<IntLit>::limit_domain(bot, domain, eval_int(arg));
+          IntSetVal* newDomain = LinearTraits<IntLit>::limit_domain(bot, domain, eval_int(env,arg));
           ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
           ident->decl()->ti()->setComputedDomain(false);
           
@@ -775,9 +775,9 @@ namespace MiniZinc {
     return false;
   }
   
-  int boolState(Expression* e) {
+  int boolState(EnvI& env, Expression* e) {
     if (e->type().ispar()) {
-      return eval_bool(e);
+      return eval_bool(env,e);
     } else {
       Id* id = e->cast<Id>();
       if (id->decl()->ti()->domain()==NULL)
@@ -853,8 +853,8 @@ namespace MiniZinc {
     if (c->id()==constants().ids.bool_eq) {
       Expression* b0 = c->args()[0];
       Expression* b1 = c->args()[1];
-      int b0s = boolState(b0);
-      int b1s = boolState(b1);
+      int b0s = boolState(env,b0);
+      int b1s = boolState(env,b1);
       if (b0s==2) {
         std::swap(b0,b1);
         std::swap(b0s,b1s);
@@ -935,7 +935,7 @@ namespace MiniZinc {
             for (unsigned int j=al->v().size(); j--;) {
               if (al->v()[j]->type().ispar() || al->v()[j]->cast<Id>()->decl()->ti()->domain())
                 realNonFixed--;
-              if (al->v()[j]->type().ispar() && eval_bool(al->v()[j]) != unit) {
+              if (al->v()[j]->type().ispar() && eval_bool(env,al->v()[j]) != unit) {
                 subsumed = true;
                 i=2; // break out of outer loop
                 break;
@@ -1026,7 +1026,7 @@ namespace MiniZinc {
             assert(al_other->v()[0]==vd->id());
             if (ci) {
               if (al->v()[0]->type().ispar()) {
-                if (eval_bool(al->v()[0])==isTrue) {
+                if (eval_bool(env,al->v()[0])==isTrue) {
                   toRemove.push_back(ci);
                 } else {
                   env.addWarning("model inconsistency detected");

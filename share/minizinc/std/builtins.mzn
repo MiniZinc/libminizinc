@@ -670,6 +670,30 @@ function array[int] of var opt $T: '++'(array[int] of var opt $T: x, array[int] 
 */
 function int: length(array[$T] of var opt $U: x);
 
+/** @group builtins.array Return the array \a x in reverse order
+
+  The resulting array has the same index set as \a x.
+*/
+function array[int] of $T: reverse(array[int] of $T: x) =
+  let { int: l = max(index_set(x))+min(index_set(x)) } in
+  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+
+/** @group builtins.array Return the array \a x in reverse order
+
+  The resulting array has the same index set as \a x.
+*/
+function array[int] of var $T: reverse(array[int] of var $T: x) =
+  let { int: l = max(index_set(x))+min(index_set(x)) } in
+  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+
+/** @group builtins.array Return the array \a x in reverse order
+
+  The resulting array has the same index set as \a x.
+*/
+function array[int] of var opt $T: reverse(array[int] of var opt $T: x) =
+  let { int: l = max(index_set(x))+min(index_set(x)) } in
+  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+
 /** @group builtins.array Test if \a x and \a y have the same index sets */
 test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
 
@@ -958,6 +982,12 @@ function set of int: bool2int(set of bool: b) =
 function array[$T] of int: bool2int(array[$T] of bool: x) ::promise_total =
   let {
     array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
+
+/** @group builtins.coercion Return array of sets of Booleans \a x coerced to an array of sets of integers  */
+function array[$T] of set of int: bool2int(array[$T] of set of bool: x) ::promise_total =
+  let {
+    array[int] of set of bool: xx = array1d(x)
   } in arrayXd(x,[bool2int(xx[i]) | i in index_set(xx)]);
 
 /** @group builtins.coercion Return array of Booleans \a x coerced to an array of integers  */

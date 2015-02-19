@@ -144,8 +144,8 @@ namespace MiniZinc {
             throw TypeError(in->loc(), ssm.str());
           }              
           if(BinOp* bo = in->dyn_cast<BinOp>()) {                
-            int lb = eval_int(bo->lhs()).toInt();
-            int ub = eval_int(bo->rhs()).toInt();
+            int lb = eval_int(env.envi(), bo->lhs()).toInt();
+            int ub = eval_int(env.envi(), bo->rhs()).toInt();
             nbIterations = ub - lb + 1;
           } 
           else {

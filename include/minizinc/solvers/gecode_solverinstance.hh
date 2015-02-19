@@ -237,7 +237,7 @@ namespace MiniZinc {
     /// Convert \a arg (array of Booleans) to IntArgs
     Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
     /// Convert \a n to IntSet
-    Gecode::IntSet arg2intset(Expression* sl);
+    Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
     /// Convert \a arg to IntVarArgs
     Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
     /// Convert \a arg to BoolVarArgs

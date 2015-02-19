@@ -1215,7 +1215,8 @@ namespace MiniZinc {
   Annotation::add(Expression* e) {
     if (_s == NULL)
       _s = new ExpressionSet;
-    _s->insert(e);
+    if (e)
+      _s->insert(e);
   }
   
   void
@@ -1223,12 +1224,13 @@ namespace MiniZinc {
     if (_s == NULL)
       _s = new ExpressionSet;
     for (unsigned int i=e.size(); i--;)
-      _s->insert(e[i]);
+      if (e[i])
+        _s->insert(e[i]);
   }
   
   void
   Annotation::remove(Expression* e) {
-    if (_s) {
+    if (_s && e) {
       _s->remove(e);
     }
   }

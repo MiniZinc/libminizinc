@@ -35,7 +35,7 @@ namespace MiniZinc {
     public:
       Registry(SolverInstanceBase& base) : _base(base) {}
       void add(const ASTString& name, poster p);
-      void post(Call* c);
+      void post(Call* c);      
     };
     
     Registry _constraintRegistry;
@@ -55,11 +55,12 @@ namespace MiniZinc {
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);   
-    void setOptions(Options& o) { _options = o; }
-    Options& getOptions() { return _options; }
     /// overwrite in your solver, if your solver allows to post constraints during search
     bool postConstraints(std::vector<Call*> cts) { return false; }
-    
+
+    void setOptions(Options& o) { _options = o; }
+    Options& getOptions() { return _options; }
+    Env& env(void) { return _env; }
     
   private:
     SolverInstanceBase(const SolverInstanceBase&);
