@@ -27,7 +27,7 @@ Mzn_Call(MznModel* self, PyObject* args)
   }
 
   if (!PyList_Check(variableTuple)) {
-    PyErr_SetString(PyExc_TypeError, "Second argument must be a tuple");
+    PyErr_SetString(PyExc_TypeError, "Second argument must be a list");
     return NULL;
   }
 
@@ -41,8 +41,10 @@ Mzn_Call(MznModel* self, PyObject* args)
       Type type;
       vector<pair<int, int> > dimList;
       expressionList[i] = python_to_minizinc(pyval, type, dimList);
-      if (type.bt() == Type::BT_UNKNOWN) {
-        PyErr_SetString(PyExc_TypeError, "List items must be of Minizinc Variable Type");
+      if (expressionList[i] == NULL) {
+        char buffer[100];
+        sprintf(buffer, "Item at position %ld must be a MiniZinc Variable or Python int/float/string/list/tuple", i);
+        PyErr_SetString(PyExc_RuntimeError, buffer);
         return NULL;
       }
     }
@@ -98,6 +100,20 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   (reinterpret_cast<MznVariable*>(var))->e = new UnOp(Location(), static_cast<UnOpType>(op), rhs);
 
   return var;
+}
+
+// Need an outer GCLock
+static PyObject*
+Mzn_Id(MznModel* self, PyObject* args)
+{
+  const char* name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
+    return NULL;
+  }
+  MznVariable* var = reinterpret_cast<MznVariable*>(MznVariable_new(&MznVariableType, NULL, NULL));
+  var->e = new Id(Location(), name, NULL);
+  return reinterpret_cast<PyObject*>(var);
 }
 
 
@@ -210,6 +226,54 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
   return model;
 }
 
+static PyObject* 
+Mzn_retrieveFunctions(MznModel* self, PyObject* args) {
+  std::vector<std::string> names;
+  CollectBoolFunctionNames fv(names);
+
+  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
+  MznModel_init(tempModel,NULL);
+  iterItems(fv, tempModel->_m);
+  MznModel_dealloc(tempModel);
+
+  Py_ssize_t n = names.size();
+  PyObject* ret = PyList_New(n);
+  for (Py_ssize_t i=0; i!=n; ++i) {
+    PyObject* tempItem = PyString_FromString(names[i].c_str());
+    PyList_SET_ITEM(ret, i, tempItem);
+  }
+  return ret;
+}
+
+static PyObject* 
+Mzn_retrieveAnnotations(MznModel* self, PyObject* args) {
+  std::vector<std::string> names[2];
+  // names[0]: variable names
+  // names[1]: function names
+  //std::vector<std::string> functions;
+  CollectAnnotationNames av(names[0], names[1]);
+
+
+  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
+  MznModel_init(tempModel,NULL);
+  iterItems(av, tempModel->_m);
+  MznModel_dealloc(tempModel);
+
+  PyObject* ret = PyList_New(2);
+  for (int i=0; i!=2; ++i) {
+    Py_ssize_t n = names[i].size();
+    PyObject* ret_item = PyList_New(n);
+    for (Py_ssize_t j=0; j!=n; ++j) {
+      PyObject* tempItem = PyString_FromString(names[i][j].c_str());
+      PyList_SET_ITEM(ret_item, j, tempItem);
+    }
+
+    PyList_SET_ITEM(ret, i, ret_item);
+  }
+  return ret;
+}
+
+
 
 PyMODINIT_FUNC
 initminizinc_internal(void) {
@@ -217,7 +281,6 @@ initminizinc_internal(void) {
 
   if (model == NULL)
     return;
-
 
   if (PyType_Ready(&MznSetType) < 0)
     return;
@@ -238,6 +301,24 @@ initminizinc_internal(void) {
     return;
   Py_INCREF(&MznModelType);
   PyModule_AddObject(model, "Model", reinterpret_cast<PyObject*>(&MznModelType));
+
+  /*PyMethodDef temp;
+
+  temp.ml_name = "next";
+  temp.ml_meth = (PyCFunction)MznSolver_next;
+  temp.ml_flags = METH_NOARGS;
+  temp.ml_doc = "Next Solution";
+  MznSolver_methods[0] = temp;
+  temp.ml_name = "getValue";
+  temp.ml_meth = (PyCFunction)MznSolver_getValue;
+  temp.ml_flags = METH_VARARGS;
+  temp.ml_doc = "Get value";
+  MznSolver_methods[1] = temp;
+  temp.ml_name = NULL;
+  temp.ml_meth = NULL;
+  temp.ml_flags = NULL;
+  temp.ml_doc = NULL;
+  MznSolver_methods[2] = temp;*/
 
   if (PyType_Ready(&MznSolverType) < 0)
     return;

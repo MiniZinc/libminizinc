@@ -7,31 +7,89 @@
 
 #include "solver.h"
 
-PyObject* 
-MznSolver_getValue(MznSolver* self, PyObject* args) {
-  const char* name;
-  if (!PyArg_ParseTuple(args, "s", &name)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
-    return NULL;
-  }
-  //Model* _m = self->env->output();
-  if (self->_m) {
-    for (unsigned int i=0; i<self->_m->size(); i++) {
-      if (VarDeclI* vdi = (*(self->_m))[i]->dyn_cast<VarDeclI>()) {
-        if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
-          GCLock Lock;
-          if (PyObject* PyValue = minizinc_to_python(vdi->e()))
-            return PyValue;
-          else {
-            return NULL;
-          }
+static PyObject*
+MznSolver_getValueHelper(MznSolver* self, const char* const name)
+{
+  for (unsigned int i=0; i<self->_m->size(); ++i) {
+    if (VarDeclI* vdi = (*(self->_m))[i]->dyn_cast<VarDeclI>()) {
+      if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
+        GCLock Lock;
+        if (PyObject* PyValue = minizinc_to_python(vdi->e()))
+          return PyValue;
+        else {
+          char buffer[50];
+          sprintf(buffer, "Cannot retrieve the value of '%s'", name);
+          PyErr_SetString(PyExc_RuntimeError, buffer);
+          return NULL;
         }
       }
     }
-    PyErr_SetString(PyExc_RuntimeError, "Name not found");
-  } else
-    PyErr_SetString(PyExc_RuntimeError, "No model (maybe you need to call Model.next() first");
+  }
+  char buffer[50];
+  sprintf(buffer, "'%s' not found", name);
+  PyErr_SetString(PyExc_RuntimeError, buffer);
   return NULL;
+}
+
+static PyObject* 
+MznSolver_getValue(MznSolver* self, PyObject* args) {
+  const char* name;
+  PyObject* obj;
+  if (!(self->_m)) {
+    PyErr_SetString(PyExc_RuntimeError, "No model (maybe you need to call Model.next() first");
+    return NULL;
+  }
+  if (!PyArg_ParseTuple(args, "O", &obj)) {
+    PyErr_SetString(PyExc_TypeError,"Accept 1 argument of strings or list/tuple of strings");
+    return NULL;
+  }
+  if (PyString_Check(obj)) {
+    name = PyString_AS_STRING(obj);
+    return MznSolver_getValueHelper(self, name);;
+  } else 
+  // INEFFICIENT function to retrieve values, consider optimize it later
+    if (PyList_Check(obj)) {
+      Py_ssize_t n = PyList_GET_SIZE(obj);
+      PyObject* ret = PyList_New(n);
+      for (Py_ssize_t i=0; i!=n; ++i) {
+        PyObject* item = PyList_GET_ITEM(obj, i);
+        if (!PyString_Check(item)) {
+          Py_DECREF(ret);
+          PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
+          return NULL;
+        }
+        name = PyString_AS_STRING(item);
+        PyObject* value = MznSolver_getValueHelper(self, name);
+        if (value == NULL) {
+          Py_DECREF(ret);
+          return NULL;
+        }
+        PyList_SET_ITEM(ret,i,value);
+      }
+      return ret;
+    } else if (PyTuple_Check(obj)) {
+      Py_ssize_t n = PyTuple_GET_SIZE(obj);
+      PyObject* ret = PyTuple_New(n);
+      for (Py_ssize_t i=0; i!=n; ++i) {
+        PyObject* item = PyTuple_GET_ITEM(obj, i);
+        if (!PyString_Check(item)) {
+          Py_DECREF(ret);
+          PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
+          return NULL;
+        }
+        name = PyString_AS_STRING(item);
+        PyObject* value = MznSolver_getValueHelper(self, name);
+        if (value == NULL) {
+          Py_DECREF(ret);
+          return NULL;
+        }
+        PyTuple_SET_ITEM(ret,i,value);
+      }
+      return ret;
+    } else {
+      PyErr_SetString(PyExc_TypeError, "Object must be a string or a list/tuple of strings");
+      return NULL;
+    }
 }
 
 

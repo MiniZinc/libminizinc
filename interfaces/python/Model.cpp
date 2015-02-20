@@ -3,6 +3,7 @@
 using namespace MiniZinc;
 using namespace std;
 
+
 int
 MznModel::addData(const char* const name, PyObject* value)
 {
@@ -15,21 +16,6 @@ MznModel::addData(const char* const name, PyObject* value)
     if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
       if (strcmp(vdi->e()->id()->str().c_str(), name) == 0) {
         vector<pair<int, int> > dimList;
-
-        // Python array always start at 0, but MiniZinc array doesn't
-        // This part is to ensure that data is also accepted when the start indices dont match
-        /* Currently not working properly
-        int dimSize = vdi->e()->type().dim();
-        if (dimSize > 0) {
-          ASTExprVec<TypeInst> ranges = vdi->e()->ti()->ranges();
-          for (int i=0; i!= dimSize; ++i) {
-            BinOp* domain = (BinOp*)ranges[i]->domain();
-            IntLit* lhs = domain->lhs()->cast<IntLit>();
-            IntLit* rhs = domain->rhs()->cast<IntLit>();
-            dimList.push_back(make_pair(lhs->v().toInt(),rhs->v().toInt()));
-          }
-        }
-        */
         Type type;
         Expression* rhs = python_to_minizinc(value, vdi->e()->ti()->ranges());//, vdi->e()->type(), name);
         if (rhs == NULL)
@@ -148,14 +134,38 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
 }
 
 
-PyObject* MznModel::solve()
+PyObject* MznModel::solve(PyObject* args)
 {
   if (!loaded) {
     PyErr_SetString(PyExc_RuntimeError, "No data has been loaded into the model");
     return NULL;
   }
-  loaded = false;
+
+  PyObject* dict = NULL;
+  if (!PyArg_ParseTuple(args, "|O", &dict)) {
+    PyErr_SetString(PyExc_RuntimeError, "Parsing error");
+    return NULL;
+  }
   debugprint(_m);
+  Model* saveModel;
+  {
+    GCLock lock;
+    saveModel = copy(_m);
+    Py_ssize_t pos = 0;
+    PyObject* key;
+    PyObject* value;
+    if (dict) {
+      while (PyDict_Next(dict, &pos, &key, &value)) {
+        char* name = PyString_AS_STRING(key);
+        if (addData(name,value) == -1) {
+          delete _m;
+          _m = saveModel;
+          PyErr_SetString(PyExc_RuntimeError, "Error when adding python data");
+          return NULL;
+        }
+      }
+    }
+  }
   vector<TypeError> typeErrors;
   try {
     MiniZinc::typecheck(_m, typeErrors);
@@ -210,8 +220,12 @@ PyObject* MznModel::solve()
   Options options;
   if (timeLimit != 0)
     options.setIntParam("time", timeLimit);
+  delete _m;
+  _m = saveModel;
   MznSolver* ret = reinterpret_cast<MznSolver*>(MznSolver_new(&MznSolverType, NULL, NULL));
-  ret->solver = new GecodeSolverInstance(*env, options);
+  switch (sc) {
+    case SC_GECODE: ret->solver = new GecodeSolverInstance(*env, options); break;
+  }
   ret->solver->processFlatZinc();
   ret->env = env;
   return reinterpret_cast<PyObject*>(ret);
@@ -256,11 +270,13 @@ static PyObject*
 MznModel_SolveItem(MznModel* self, PyObject* args)
 {
   unsigned int solveType;
-  PyObject* obj = NULL;
+  PyObject* PyExp = NULL;
+  PyObject* PyAnn = NULL;
   Expression* e = NULL;
+  Expression* ann = NULL;
 
-  if (!PyArg_ParseTuple(args, "I|O", &solveType, &obj)) {
-    PyErr_SetString(PyExc_TypeError, "Requires a solver code and an optional expression");
+  if (!PyArg_ParseTuple(args, "I|OO", &solveType, &PyAnn, &PyExp)) {
+    PyErr_SetString(PyExc_TypeError, "Requires a solver code, an annotation (can be NULL) and an optional expression (for optimisation)");
     return NULL;
   }
 
@@ -269,14 +285,14 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     return NULL;
   }
   if (solveType) {
-    if (obj == NULL) {
+    if (PyExp == NULL) {
       PyErr_SetString(PyExc_TypeError, "Optimisation solver requires an addition constraint object");
       return NULL;
-    } else if (PyObject_TypeCheck(obj, &MznVariableType))  {
-      e = (reinterpret_cast<MznVariable*>(obj))->e;
+    } else if (PyObject_TypeCheck(PyExp, &MznVariableType))  {
+      e = (reinterpret_cast<MznVariable*>(PyExp))->e;
     }
     else {
-      PyErr_SetString(PyExc_TypeError, "Requires a Minizinc Constraint Object");
+      PyErr_SetString(PyExc_TypeError, "Expression must be a Minizinc Variable Object");
       return NULL;
     }
   }
@@ -287,6 +303,47 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     case 0: i = SolveI::sat(Location()); break;
     case 1: i = SolveI::min(Location(),(e)); break;
     case 2: i = SolveI::max(Location(),(e)); break;
+  }
+  if (PyObject_IsTrue(PyAnn)) {
+    if (PyObject_TypeCheck(PyAnn, &MznVariableType)) {
+      ann = reinterpret_cast<MznVariable*>(PyAnn)->e;
+      i->ann().add(ann);
+    } else if (PyList_Check(PyAnn)) {
+      long n = PyList_GET_SIZE(PyAnn);
+      for (long idx = 0; idx != n; ++idx) {
+        PyObject* PyItem = PyList_GET_ITEM(PyAnn, idx);
+        if (!PyObject_TypeCheck(PyItem, &MznVariableType)) {
+          // CONSIDER REVIEW - should I delete i or it will be automatically deleted
+          delete i;
+          char buffer[100];
+          sprintf(buffer, "Item at position %ld must be a MiniZinc Variable", idx);
+          PyErr_SetString(PyExc_TypeError, buffer);
+        }
+        ann = reinterpret_cast<MznVariable*>(PyItem)->e;
+        i->ann().add(ann);
+      }
+    } else if (PyTuple_Check(PyAnn)) {
+      long n = PyTuple_GET_SIZE(PyAnn);
+      for (long idx = 0; idx != n; ++idx) {
+        PyObject* PyItem = PyTuple_GET_ITEM(PyAnn, idx);
+        if (!PyObject_TypeCheck(PyItem, &MznVariableType)) {
+          // CONSIDER REVIEW
+          delete i;
+          char buffer[100];
+          sprintf(buffer, "Item at position %ld must be a MiniZinc Variable", idx);
+          PyErr_SetString(PyExc_TypeError, buffer);
+          return NULL;
+        }
+        ann = reinterpret_cast<MznVariable*>(PyItem)->e;
+        i->ann().add(ann);
+      }
+    } else {
+      // CONSIDER REVIEW
+      delete i;
+      PyErr_SetString(PyExc_TypeError, "Annotation must be a single value of or a list/tuple of MiniZinc Variable Object");
+      return NULL;
+    }
+    ann = reinterpret_cast<MznVariable*>(PyAnn)->e;
   }
   self->_m->addItem(i);
   Py_RETURN_NONE;
@@ -318,8 +375,9 @@ MznModel_init(MznModel* self, PyObject* args)
   self->loaded_from_minizinc = false;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
+  self->sc = self->SC_GECODE;
   stringstream errorStream;
-  self->_m = parseFromString("","error.txt",*(self->includePaths),false,false,false, errorStream);
+  self->_m = parseFromString("include \"globals.mzn\"","error.txt",*(self->includePaths),false,false,false, errorStream);
   if (!(self->_m)) {
     const std::string& tmp = errorStream.str();
     const char* cstr = tmp.c_str();
@@ -356,6 +414,19 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args)
 }
 
 
+static PyObject*
+MznModel_copy(MznModel* self)
+{
+  MznModel* ret = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
+  GCLock lock;
+  ret->_m = copy(self->_m);
+  ret->includePaths = new vector<string>(*(self->includePaths));
+
+  ret->timeLimit = self->timeLimit;
+  ret->loaded = self->loaded;
+  ret->loaded_from_minizinc = self->loaded_from_minizinc;
+  return reinterpret_cast<PyObject*>(ret);
+}
 
 
 static PyObject*
@@ -373,19 +444,45 @@ MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds) {
 }
 
 static PyObject*
-MznModel_solve(MznModel *self)
+MznModel_solve(MznModel *self, PyObject* args)
 {
-  return self->solve();
+  return self->solve(args);
 }
 
 static PyObject*
 MznModel_setTimeLimit(MznModel *self, PyObject *args)
 {
-  if (PyInt_Check(args)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
+  unsigned long long t;
+  if (!PyArg_ParseTuple(args, "K", &t)) {
+    PyErr_SetString(PyExc_TypeError, "Time limit must be an integer");
     return NULL;
   }
-  self->timeLimit = PyInt_AS_LONG(args);
+  self->timeLimit = t;
+  return Py_None;
+}
+
+static PyObject*
+MznModel_setSolver(MznModel *self, PyObject *args)
+{
+  const char* s;
+  if (!PyArg_ParseTuple(args, "s", &s)) {
+    PyErr_SetString(PyExc_TypeError, "Solver name must be a string");
+    return NULL;
+  }
+  std::string name(s);
+  // lower characters in name
+  for (std::string::iterator i = name.begin(); i!=name.end(); ++i)
+    if (*i<='Z' && *i>='A')
+      *i = *i - ('Z'-'z');
+  if (name == "gecode")
+    self->sc = self->SC_GECODE;
+  else {
+    char buffer[100];
+    cout << name << endl;
+    sprintf(buffer, "Unexpected solver name: %s", name.c_str());
+    PyErr_SetString(PyExc_ValueError, buffer);
+    return NULL;
+  }
   return Py_None;
 }
 
