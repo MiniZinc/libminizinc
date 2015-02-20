@@ -3582,6 +3582,7 @@ namespace MiniZinc {
           bool mixContext = decl->e()!=NULL ||
             (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
              cid != constants().ids.sum && cid != constants().ids.lin_exp && cid != "assert");
+          bool isPartial = false;
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
             if (mixContext) {
@@ -3596,6 +3597,14 @@ namespace MiniZinc {
               tmp = vd->id();
             CallArgItem cai(env);
             args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
+            isPartial |= isfalse(env, args_ee[i].b());
+          }
+          if (isPartial && c->type().isbool() && !c->type().isopt()) {
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
+            args_ee.resize(1);
+            args_ee[0] = EE(NULL, constants().lit_false);
+            ret.r = conj(env, r, ctx, args_ee);
+            break;
           }
 
           std::vector<KeepAlive> args;
