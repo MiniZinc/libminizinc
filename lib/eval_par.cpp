@@ -312,7 +312,22 @@ namespace MiniZinc {
       IntVal ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
-        return NULL;
+        Type t = al->type();
+        t.dim(0);
+        if (t.isint())
+          return new IntLit(Location(),0);
+        if (t.isbool())
+          return constants().lit_false;
+        if (t.isfloat())
+          return new FloatLit(Location(),0.0);
+        if (t.st() == Type::ST_SET || t.isbot()) {
+          SetLit* ret = new SetLit(Location(),std::vector<Expression*>());
+          ret->type(t);
+          return ret;
+        }
+        if (t.isstring())
+          return new StringLit(Location(),"");
+        throw EvalError(al->loc(), "Internal error: unexpected type in array access expression");
       }
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
