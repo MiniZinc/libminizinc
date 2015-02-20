@@ -3230,6 +3230,12 @@ namespace MiniZinc {
             
             std::vector<EE> ees(3);
             ees[0].b = e0.b; ees[1].b = e1.b;
+
+            if (isfalse(env, e0.b()) || isfalse(env, e1.b())) {
+              ees.resize(2);
+              ret.r = conj(env,r,ctx,ees);
+              break;
+            }
             
             if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
               GCLock lock;
