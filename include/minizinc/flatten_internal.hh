@@ -156,7 +156,7 @@ namespace MiniZinc {
   class LinearTraits<IntLit> {
   public:
     typedef IntVal Val;
-    static Val eval(Expression* e) { return eval_int(e); }
+    static Val eval(EnvI& env, Expression* e) { return eval_int(env,e); }
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
@@ -193,9 +193,9 @@ namespace MiniZinc {
     typedef IntBounds Bounds;
     static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
     static bool finite(const IntVal& v) { return v.isFinite(); }
-    static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
+    static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_int_bounds(env,e); }
     typedef IntSetVal* Domain;
-    static Domain eval_domain(Expression* e) { return eval_intset(e); }
+    static Domain eval_domain(EnvI& env, Expression* e) { return eval_intset(env, e); }
     static Expression* new_domain(Val v) { return new SetLit(Location().introduce(),IntSetVal::a(v,v)); }
     static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location().introduce(),IntSetVal::a(v0,v1)); }
     static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(),d); }
@@ -258,7 +258,7 @@ namespace MiniZinc {
   class LinearTraits<FloatLit> {
   public:
     typedef FloatVal Val;
-    static Val eval(Expression* e) { return eval_float(e); }
+    static Val eval(EnvI& env, Expression* e) { return eval_float(env,e); }
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
@@ -294,14 +294,14 @@ namespace MiniZinc {
     typedef FloatBounds Bounds;
     static bool finite(const FloatBounds& ib) { return true; }
     static bool finite(const FloatVal&) { return true; }
-    static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
+    static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef BinOp* Domain;
-    static Domain eval_domain(Expression* e) {
+    static Domain eval_domain(EnvI& env, Expression* e) {
       BinOp* bo = e->cast<BinOp>();
       assert(bo->op() == BOT_DOTDOT);
       if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
         return bo;
-      BinOp* ret = new BinOp(bo->loc(),eval_par(bo->lhs()),BOT_DOTDOT,eval_par(bo->rhs()));
+      BinOp* ret = new BinOp(bo->loc(),eval_par(env,bo->lhs()),BOT_DOTDOT,eval_par(env,bo->rhs()));
       ret->type(bo->type());
       return ret;
     }

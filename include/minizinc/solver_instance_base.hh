@@ -35,7 +35,7 @@ namespace MiniZinc {
     public:
       Registry(SolverInstanceBase& base) : _base(base) {}
       void add(const ASTString& name, poster p);
-      void post(Call* c);
+      void post(Call* c);      
     };
     
     Registry _constraintRegistry;
@@ -65,6 +65,7 @@ namespace MiniZinc {
     virtual void processPermanentConstraints(Model::iterator begin, Model::iterator end);
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
+    Env& env(void) { return _env; }
     
   private:
     SolverInstanceBase(const SolverInstanceBase&);

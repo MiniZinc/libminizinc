@@ -20,26 +20,26 @@
 namespace MiniZinc {
   
   /// Evaluate par int expression \a e
-  IntVal eval_int(Expression* e);
+  IntVal eval_int(EnvI& env, Expression* e);
   /// Evaluate par bool expression \a e
-  bool eval_bool(Expression* e);
+  bool eval_bool(EnvI& env, Expression* e);
   /// Evaluate par float expression \a e
-  FloatVal eval_float(Expression* e);
+  FloatVal eval_float(EnvI& env, Expression* e);
   /// Evaluate an array expression \a e into an array literal
-  ArrayLit* eval_array_lit(Expression* e);
+  ArrayLit* eval_array_lit(EnvI& env, Expression* e);
   /// Evaluate an access to array \a with indices \a idx and return whether
   /// access succeeded in \a success
-  Expression* eval_arrayaccess(ArrayLit* a, const std::vector<IntVal>& idx, bool& success);
+  Expression* eval_arrayaccess(EnvI& env, ArrayLit* a, const std::vector<IntVal>& idx, bool& success);
   /// Evaluate an array access \a e and return whether access succeeded in \a success
-  Expression* eval_arrayaccess(ArrayAccess* e, bool& success);
+  Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success);
   /// Evaluate a par integer set \a e
-  IntSetVal* eval_intset(Expression* e);
+  IntSetVal* eval_intset(EnvI& env, Expression* e);
   /// Evaluate a par bool set \a e
-  IntSetVal* eval_boolset(Expression* e);
+  IntSetVal* eval_boolset(EnvI& env, Expression* e);
   /// Evaluate a par string \a e
-  std::string eval_string(Expression* e);
+  std::string eval_string(EnvI& env, Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
-  Expression* eval_par(Expression* e);
+  Expression* eval_par(EnvI& env, Expression* e);
   
   
   
@@ -129,7 +129,7 @@ namespace MiniZinc {
   };
   
   /// Compute bounds of an integer expression
-  IntBounds compute_int_bounds(Expression* e);
+  IntBounds compute_int_bounds(EnvI& env, Expression* e);
 
   /// Representation for bounds of a float expression
   struct FloatBounds {
@@ -145,7 +145,7 @@ namespace MiniZinc {
   };
   
   /// Compute bounds of an integer expression
-  FloatBounds compute_float_bounds(Expression* e);
+  FloatBounds compute_float_bounds(EnvI& env, Expression* e);
   
   
   /**
@@ -153,21 +153,21 @@ namespace MiniZinc {
    *
    * Returns NULL if bounds cannot be determined
    */
-  IntSetVal* compute_intset_bounds(Expression* e);
+  IntSetVal* compute_intset_bounds(EnvI& env, Expression* e);
 
   template<class Eval>
   void
-  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
 
   template<class Eval>
   void
-  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 KeepAlive in, std::vector<typename Eval::ArrayVal>& a);
 
   template<class Eval>
   void
-  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     e->decl(gen,id)->e()->cast<IntLit>()->v(i);
     if (id == e->n_decls(gen)-1) {
@@ -175,36 +175,36 @@ namespace MiniZinc {
         bool where = true;
         if (e->where() != NULL && !e->where()->type().isvar()) {
           GCLock lock;
-          where = eval_bool(e->where());
+          where = eval_bool(env, e->where());
         }
         if (where) {
-          a.push_back(eval.e(e->e()));
+          a.push_back(eval.e(env,e->e()));
         }
       } else {
         KeepAlive nextin;
         {
           if (e->in(gen+1)->type().dim()==0) {
             GCLock lock;
-            nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
+            nextin = new SetLit(Location(),eval_intset(env, e->in(gen+1)));
           } else {
             GCLock lock;
-            nextin = eval_array_lit(e->in(gen+1));
+            nextin = eval_array_lit(env, e->in(gen+1));
           }
         }
         if (e->in(gen+1)->type().dim()==0) {
-          eval_comp_set<Eval>(eval,e,gen+1,0,nextin,a);
+          eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
         } else {
-          eval_comp_array<Eval>(eval,e,gen+1,0,nextin,a);
+          eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
         }
       }
     } else {
-      eval_comp_set<Eval>(eval,e,gen,id+1,in,a);
+      eval_comp_set<Eval>(env, eval,e,gen,id+1,in,a);
     }
   }
 
   template<class Eval>
   void
-  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     ArrayLit* al = in()->cast<ArrayLit>();
     e->decl(gen,id)->e(al->v()[i.toInt()]);
@@ -214,30 +214,30 @@ namespace MiniZinc {
         bool where = true;
         if (e->where() != NULL) {
           GCLock lock;
-          where = eval_bool(e->where());
+          where = eval_bool(env, e->where());
         }
         if (where) {
-          a.push_back(eval.e(e->e()));
+          a.push_back(eval.e(env,e->e()));
         }
       } else {
         KeepAlive nextin;
         {
           if (e->in(gen+1)->type().dim()==0) {
             GCLock lock;
-            nextin = new SetLit(Location(),eval_intset(e->in(gen+1)));
+            nextin = new SetLit(Location(),eval_intset(env,e->in(gen+1)));
           } else {
             GCLock lock;
-            nextin = eval_array_lit(e->in(gen+1));
+            nextin = eval_array_lit(env, e->in(gen+1));
           }
         }
         if (e->in(gen+1)->type().dim()==0) {
-          eval_comp_set<Eval>(eval,e,gen+1,0,nextin,a);
+          eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
         } else {
-          eval_comp_array<Eval>(eval,e,gen+1,0,nextin,a);
+          eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
         }
       }
     } else {
-      eval_comp_array<Eval>(eval,e,gen,id+1,in,a);
+      eval_comp_array<Eval>(env, eval,e,gen,id+1,in,a);
     }
     e->decl(gen,id)->e(NULL);
     e->decl(gen,id)->flat(NULL);
@@ -253,12 +253,12 @@ namespace MiniZinc {
    */
   template<class Eval>
   void
-  eval_comp_set(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     IntSetRanges rsi(in()->cast<SetLit>()->isv());
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
-      eval_comp_set<Eval>(eval,e,gen,id,rsv.val(),in,a);
+      eval_comp_set<Eval>(env, eval,e,gen,id,rsv.val(),in,a);
     }
   }
 
@@ -272,11 +272,11 @@ namespace MiniZinc {
    */
   template<class Eval>
   void
-  eval_comp_array(Eval& eval, Comprehension* e, int gen, int id,
+  eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     ArrayLit* al = in()->cast<ArrayLit>();
     for (unsigned int i=0; i<al->v().size(); i++) {
-      eval_comp_array<Eval>(eval,e,gen,id,i,in,a);
+      eval_comp_array<Eval>(env, eval,e,gen,id,i,in,a);
     }
   }
 
@@ -288,25 +288,25 @@ namespace MiniZinc {
    */
   template<class Eval>
   std::vector<typename Eval::ArrayVal>
-  eval_comp(Eval& eval, Comprehension* e) {
+  eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
     std::vector<typename Eval::ArrayVal> a;
     KeepAlive in;
     {
       GCLock lock;
       if (e->in(0)->type().dim()==0) {
         if (e->in(0)->type().isvar()) {
-          in = new SetLit(Location(),compute_intset_bounds(e->in(0)));
+          in = new SetLit(Location(),compute_intset_bounds(env, e->in(0)));
         } else {
-          in = new SetLit(Location(),eval_intset(e->in(0)));
+          in = new SetLit(Location(),eval_intset(env, e->in(0)));
         }
       } else {
-        in = eval_array_lit(e->in(0));
+        in = eval_array_lit(env, e->in(0));
       }
     }
     if (e->in(0)->type().dim()==0) {
-      eval_comp_set<Eval>(eval,e,0,0,in,a);
+      eval_comp_set<Eval>(env, eval,e,0,0,in,a);
     } else {
-      eval_comp_array<Eval>(eval,e,0,0,in,a);
+      eval_comp_array<Eval>(env, eval,e,0,0,in,a);
     }
     return a;
   }  
@@ -319,9 +319,9 @@ namespace MiniZinc {
    */
   template<class Eval>
   std::vector<typename Eval::ArrayVal>
-  eval_comp(Comprehension* e) {
+  eval_comp(EnvI& env, Comprehension* e) {
     Eval eval;
-    return eval_comp(eval,e);
+    return eval_comp(env, eval,e);
   }  
   
 }

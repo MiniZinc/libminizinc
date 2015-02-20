@@ -243,16 +243,18 @@ namespace MiniZinc {
 
   class CollectFunctionsVisitor : public ItemVisitor {
   protected:
+    EnvI& env;
     HtmlDocOutput::FunMap& _funmap;
     bool _includeStdLib;
   public:
-    CollectFunctionsVisitor(HtmlDocOutput::FunMap& funmap, bool includeStdLib) : _funmap(funmap), _includeStdLib(includeStdLib) {}
+    CollectFunctionsVisitor(EnvI& env0, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
+    : env(env0), _funmap(funmap), _includeStdLib(includeStdLib) {}
     bool enterModel(Model* m) {
       return _includeStdLib || m->filename()!="stdlib.mzn";
     }
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->args()[0]);
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -265,6 +267,7 @@ namespace MiniZinc {
   
   class PrintHtmlVisitor : public ItemVisitor {
   protected:
+    EnvI& env;
     HtmlDocOutput::Group& _maingroup;
     HtmlDocOutput::FunMap& _funmap;
     bool _includeStdLib;
@@ -387,7 +390,7 @@ namespace MiniZinc {
     }
     
   public:
-    PrintHtmlVisitor(HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm, bool includeStdLib) : _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+    PrintHtmlVisitor(EnvI& env0, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm, bool includeStdLib) : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
     bool enterModel(Model* m) {
       if (!_includeStdLib && m->filename()=="stdlib.mzn")
         return false;
@@ -420,7 +423,7 @@ namespace MiniZinc {
     /// Visit variable declaration
     void vVarDeclI(VarDeclI* vdi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->args()[0]);
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -448,7 +451,7 @@ namespace MiniZinc {
     /// Visit function item
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->args()[0]);
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -586,13 +589,13 @@ namespace MiniZinc {
   };
   
   std::vector<HtmlDocument>
-  HtmlPrinter::printHtml(MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib) {
+  HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib) {
     using namespace HtmlDocOutput;
     Group g(basename,basename);
     FunMap funMap;
-    CollectFunctionsVisitor fv(funMap,includeStdLib);
+    CollectFunctionsVisitor fv(env,funMap,includeStdLib);
     iterItems(fv, m);
-    PrintHtmlVisitor phv(g,funMap,includeStdLib);
+    PrintHtmlVisitor phv(env,g,funMap,includeStdLib);
     iterItems(phv, m);
     
     std::vector<HtmlDocument> ret;

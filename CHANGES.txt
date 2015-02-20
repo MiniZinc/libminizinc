@@ -5,8 +5,18 @@
 Version 2.0.2
 =============
 
+Changes:
  - The optimiser now removes simple domain constraints from the FlatZinc
  - The compiler now checks for integer overflows in all built-in operations
+ - Report an error when the FlatZinc or ozn file cannot be opened for writing
+ - Add support for 3d array literals (e.g.  [| |1,2|3,4|,|5,6|7,8| |] )
+ - Add show2d and show3d functions for formatting array output
+ - Add row/col functions for variable arrays (github issue #2)
+ - Introduce builtins for creating random distributions
+ - Add reverse library function
+ - Postpone flattening of some reified constraints
+
+Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
    sometimes result in incorrect bounds
  - Fix bounds computation for unary minus operator
@@ -15,21 +25,20 @@ Version 2.0.2
  - Fix a bug in the garbage collector that could sometimes lead to premature
    deletion of expressions
  - Fix bounds computation for set difference
- - Fix duplication of some arrays in the FlatZinc (github bug #3)
+ - Fix duplication of some arrays in the FlatZinc (github issue #3)
  - Fix bounds inference for variables bound to empty sets (github bug #3)
- - Report an error when the FlatZinc or ozn file cannot be opened for writing
- - Add support for 3d array literals (e.g.  [| |1,2|3,4|,|5,6|7,8| |] )
- - Add show2d and show3d functions for formatting array output
- - Add row/col functions for variable arrays (github bug #2)
  - Fix bug in error reporting function, which would sometimes not report the
    entire call stack
- - Introduce builtins for creating random distributions
  - Fix the generation of fresh variable names for generator expressions
  - Fix subtype check to allow empty arrays as subtype of arrays of sets
- - Postpone flattening of some reified constraints
  - Fix crash when using assert/2
- - Add reverse library function
  - Fix bug when function used in output referred to par variable
+ - Fix bug in type checker, the detection of cyclic definitions was not
+   correct and could lead to stack overflows
+ - Fix parser to accept expressions with two consecutive array accesses
+   (like x[3][4], which are valid MiniZinc if x is an array of sets)
+ - Fix error reporting when an evaluation error occurs within a comprehension
+   generator
  
 
 Version 2.0.1

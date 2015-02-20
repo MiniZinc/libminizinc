@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-module1 = Extension('minizinc',
+module1 = Extension('minizinc_internal',
                     sources = ['pyinterface.cpp'],
                     libraries = ['minizinc_gecode', 'minizinc',
                                  'gecodedriver',
@@ -11,7 +11,9 @@ module1 = Extension('minizinc',
                                  'gecodeint',
                                  'gecodekernel',
                                  'gecodesupport'
-                                 ]
+                                 ],
+                    #depends = ['global.h',  'Model.h',  'Solution.h',  'Set.h',  'Variable.h', 
+                    #           'global.cpp','Model.cpp','Solution.cpp','Set.cpp','Variable.cpp']
                     )
 
 setup (name = 'MiniZinc',

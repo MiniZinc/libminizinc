@@ -172,6 +172,8 @@ int main(int argc, char** argv) {
         MiniZinc::typecheck(outputm,typeErrors);
         MiniZinc::registerBuiltins(outputm);
 
+        Env env(outputm);
+        
         typedef pair<VarDecl*,Expression*> DE;
         ASTStringMap<DE>::t declmap;
         Expression* outputExpr = NULL;
@@ -241,10 +243,10 @@ int main(int argc, char** argv) {
                 }
 
                 GCLock lock;
-                ArrayLit* al = eval_array_lit(outputExpr);
+                ArrayLit* al = eval_array_lit(env.envi(),outputExpr);
                 std::string os;
                 for (unsigned int i=0; i<al->v().size(); i++) {
-                  std::string s = eval_string(al->v()[i]);
+                  std::string s = eval_string(env.envi(),al->v()[i]);
                   if (!s.empty()) {
                     os = s;
                     fout << os;

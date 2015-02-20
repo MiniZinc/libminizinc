@@ -1,14 +1,17 @@
-/*
- *  Python Interface for MiniZinc constraint modelling
+/*  Python Interface for MiniZinc constraint modelling
  *  Author:
  *     Tai Tran <tai.tran@student.adelaide.edu.au>
- *          under the supervision of Guido Tack <guido.tack@monash.edu>
+ *  Supervisor:
+ *     Guido Tack <guido.tack@monash.edu>
  */
+
 
 #ifndef __MZNSET_H
 #define __MZNSET_H
 
 #include <exception>
+
+using namespace std;
 
 struct MznRange {
   long min;
@@ -33,6 +36,9 @@ struct MznSet {
   // 
   long size() {return ranges->size();}
   bool continuous();
+  bool contains(long val);
+
+  //SetLit* e() {};
 };
 
 static PyObject* MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds);
@@ -42,10 +48,10 @@ static int MznSet_init(MznSet* self, PyObject* args);
 static PyObject* MznSet_output(MznSet* self);
 static PyObject* MznSet_repr(PyObject* self);
 static PyObject* MznSet_iter(PyObject* self);
-//static PyObject* MznSet_iternext(PyObject* self);
 static PyObject* MznSet_min(MznSet* self);
 static PyObject* MznSet_max(MznSet* self);
 static PyObject* MznSet_continuous(MznSet* self);
+static PyObject* MznSet_contains(MznSet* self, PyObject* args);
 
 static PyMethodDef MznSet_methods[] = {
   {"output", (PyCFunction)MznSet_output, METH_NOARGS, "Return all values in the set"},
@@ -53,6 +59,7 @@ static PyMethodDef MznSet_methods[] = {
   {"min", (PyCFunction)MznSet_min, METH_NOARGS, "Lower bound of the set"},
   {"max", (PyCFunction)MznSet_max, METH_NOARGS, "Upper bound of the set"},
   {"continuous", (PyCFunction)MznSet_continuous, METH_NOARGS, "Check whether the set is continous"},
+  {"contains", (PyCFunction)MznSet_contains, METH_VARARGS, "Check whether a python value is in the Set"},
   {NULL}    /* Sentinel */
 };
 

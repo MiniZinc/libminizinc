@@ -705,7 +705,7 @@ namespace MiniZinc {
     void p_int_in(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-      IntSet d = gi.arg2intset(call->args()[1]);
+      IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
         Gecode::IntSetRanges dr(d);
         Iter::Ranges::Singleton sr(0,1);
@@ -724,7 +724,7 @@ namespace MiniZinc {
     void p_int_in_reif(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-      IntSet d = gi.arg2intset(call->args()[1]);
+      IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
         Gecode::IntSetRanges dr(d);
         Iter::Ranges::Singleton sr(0,1);
@@ -746,7 +746,7 @@ namespace MiniZinc {
     void p_int_in_imp(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-      IntSet d = gi.arg2intset(call->args()[1]);
+      IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
         Gecode::IntSetRanges dr(d);
         Iter::Ranges::Singleton sr(0,1);
@@ -1219,7 +1219,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       Gecode::IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
-      IntSet S = gi.arg2intset(call->args()[1]);
+      IntSet S = gi.arg2intset(s.env().envi(), call->args()[1]);
       int q = call->args()[2]->cast<IntLit>()->v().toInt();
       int l = call->args()[3]->cast<IntLit>()->v().toInt();
       int u = call->args()[4]->cast<IntLit>()->v().toInt();
@@ -1330,7 +1330,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[1]);
-      IntSet v = gi.arg2intset(call->args()[2]);
+      IntSet v = gi.arg2intset(s.env().envi(), call->args()[2]);
       if (call->args()[0]->type().isvarint()) {
         IntVar n = gi.arg2intvar(call->args()[0]);
         count(*gi._current_space,x,v,IRT_EQ,n,gi.ann2icl(ann));
