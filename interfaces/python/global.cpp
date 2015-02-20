@@ -235,6 +235,7 @@ minizinc_to_python(VarDecl* vd)
  *        also returns the type of that value
  * Parameters: A python value - pvalue
  *             A minizinc BaseType code
+ * Returns: appropriate expression or NULL if cannot convert
  * Note:  If code == Type::BT_UNKNOWN, it will be changed to the corresponding type of pvalue
  *        If code is initialized to specific type, an error will be thrown if type mismatched 
  * Accepted code type:
@@ -252,7 +253,9 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
                     BT_BOT, BT_UNKNOWN };*/
   switch (code) {
     case Type::BT_UNKNOWN:
-      if (PyBool_Check(pvalue)) {
+      if (PyObject_TypeCheck(pvalue, &MznVariableType)) {
+        return reinterpret_cast<MznVariable*>(pvalue)->e;
+      } else if (PyBool_Check(pvalue)) {
         BT_BOOLEAN_PROCESS:
         Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(pvalue));
         code = Type::BT_BOOL;
