@@ -151,9 +151,9 @@ namespace MiniZinc {
     try{
       _ilocplex->solve();
     } catch(IloCplex::Exception& e){
-      std::cerr << "Caught IloCplex::Exception while solving : " << std::endl
-      << e << std::endl;
-      std::exit(0);
+      std::stringstream ssm;
+      ssm << "Caught IloCplex::Exception while solving : " << e << std::endl;
+      throw InternalError(ssm.str());
     }
     IloCplex::Status ss = _ilocplex->getCplexStatus();
     Status s;
@@ -198,19 +198,16 @@ namespace MiniZinc {
       if (vd->type().dim() == 0 && it->e()->type().isvar()) {
         MiniZinc::TypeInst* ti = it->e()->ti();
         IloNumVar::Type type;
-        switch (ti->type().bt()) {
-          case Type::BT_INT:
-            type = ILOINT;
-            break;
-          case Type::BT_BOOL:
-            type = ILOBOOL;
-            break;
-          case Type::BT_FLOAT:
-            type = ILOFLOAT;
-            break;
-          default:
-            std::cerr << "This type of var is not handled by CPLEX: " << *it << std::endl;
-            std::exit(-1);
+        if (ti->type().isvarint()) {
+          type = ILOINT;
+        } else if (ti->type().isvarbool()) {
+          type = ILOBOOL;
+        } else if (ti->type().isvarfloat()) {
+          type = ILOFLOAT;
+        } else {
+          std::stringstream ssm;
+          ssm << "This type of var is not handled by CPLEX: " << *it << std::endl;
+          throw InternalError(ssm.str());
         }
         IloNum lb, ub;
         if (ti->domain()) {

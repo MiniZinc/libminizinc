@@ -309,15 +309,17 @@ namespace MiniZinc {
                 if(valueWithinBounds(bounds.first)) {
                   lb = round_to_longlong(bounds.first);
                 } else {
-                  std::cerr << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.first << " outside 32-bit int.\n";
-                  exit(1);
+                  std::stringstream ssm;
+                  ssm << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.first << " outside 32-bit int." << std::endl;
+                  throw InternalError(ssm.str());
                 }
 
                 if(valueWithinBounds(bounds.second)) {
                   ub = round_to_longlong(bounds.second);
                 } else {
-                  std::cerr << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.second << " outside 32-bit int.\n";
-                  exit(1);
+                  std::stringstream ssm;
+                  ssm << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.second << " outside 32-bit int." << std::endl;
+                  throw InternalError(ssm.str());
                 }
 
                 IntVar intVar(*this->_current_space, lb, ub);
@@ -326,8 +328,9 @@ namespace MiniZinc {
                       _current_space->iv.size()-1));
               }
             } else {
-              std::cerr << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
-              exit(1);
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
+              throw InternalError(ssm.str());
             }
           } else { // there is an initialisation expression
             Expression* init = it->e()->e();
@@ -345,8 +348,9 @@ namespace MiniZinc {
                 insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                       _current_space->iv.size()-1));
               } else {
-                std::cerr << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
-                exit(1);
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
+                throw InternalError(ssm.str());
               }
             }
           }
@@ -528,8 +532,9 @@ namespace MiniZinc {
       if(si.valueWithinBounds(val)) {
         return (int)val;
       } else {
-        std::cerr << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int.\n";
-        exit(1);
+        std::stringstream ssm;
+        ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
+        throw InternalError(ssm.str());
       }
     }
     int max(void) const {
@@ -537,8 +542,9 @@ namespace MiniZinc {
       if(si.valueWithinBounds(val)) {
         return (int)val;
       } else {
-        std::cerr << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int.\n";
-        exit(1);
+        std::stringstream ssm;
+        ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
+        throw InternalError(ssm.str());
       }
     }
     int width(void) const { return isr.width().toInt(); }
@@ -581,8 +587,9 @@ namespace MiniZinc {
               IntVar iv(*this->_current_space, value, value);
               ia[i+offset] = iv;
             } else {
-              std::cerr << "GecodeSolverInstance::arg2intvarargs Error: " << value << " outside 32-bit int.\n";
-              exit(1);
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::arg2intvarargs Error: " << value << " outside 32-bit int." << std::endl;
+              throw InternalError(ssm.str());
             }
         }
     }
