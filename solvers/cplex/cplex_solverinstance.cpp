@@ -215,12 +215,12 @@ namespace MiniZinc {
         IloNum lb, ub;
         if (ti->domain()) {
           if (type == ILOFLOAT) {
-            FloatBounds fb = compute_float_bounds(it->e()->id());
+            FloatBounds fb = compute_float_bounds(_env.envi(), it->e()->id());
             assert(fb.valid);
             lb = fb.l;
             ub = fb.u;
           } else if (type == ILOINT) {
-            IntBounds ib = compute_int_bounds(it->e()->id());
+            IntBounds ib = compute_int_bounds(_env.envi(), it->e()->id());
             assert(ib.valid);
             lb = ib.l.toInt();
             ub = ib.u.toInt();
@@ -295,7 +295,7 @@ namespace MiniZinc {
   }
 
   IloNumArray CPLEXSolverInstance::exprToIloNumArray(Expression* e) {
-    ArrayLit* al = eval_array_lit(e);
+    ArrayLit* al = eval_array_lit(_env.envi(), e);
     IloNumArray a(_iloenv, al->v().size());
     for (unsigned int i=0; i<al->v().size(); i++) {
       if (IntLit* il = al->v()[i]->dyn_cast<IntLit>()) {
@@ -327,7 +327,7 @@ namespace MiniZinc {
   }
 
   IloNumVarArray CPLEXSolverInstance::exprToIloNumVarArray(Expression* e) {
-    ArrayLit* al = eval_array_lit(e);
+    ArrayLit* al = eval_array_lit(_env.envi(), e);
     IloNumVarArray a(_iloenv);
     for (unsigned int i=0; i<al->v().size(); i++) {
       if (IntLit* il = al->v()[i]->dyn_cast<IntLit>()) {
@@ -375,7 +375,7 @@ namespace MiniZinc {
           ArrayLit* dims = output_array_ann->args()[0]->cast<ArrayLit>();
           std::vector<std::pair<int,int> > dims_v;
           for(unsigned int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(dims->v()[i]);
+            IntSetVal* isv = eval_intset(_env.envi(), dims->v()[i]);
             dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
