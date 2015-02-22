@@ -15,6 +15,8 @@ Changes:
  - Introduce builtins for creating random distributions
  - Add reverse library function
  - Postpone flattening of some reified constraints
+ - Slightly improved compilation of partial function calls when it can be 
+   inferred at compile time that their result is undefined
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
@@ -39,6 +41,7 @@ Bug fixes:
    (like x[3][4], which are valid MiniZinc if x is an array of sets)
  - Fix error reporting when an evaluation error occurs within a comprehension
    generator
+ - Report type error on some ambiguous function calls
  
 
 Version 2.0.1
