@@ -427,7 +427,16 @@ int main(int argc, char** argv) {
   }
 
   if (flag_verbose) {
-    std::cerr << "Done (overall time " << stoptime(starttime) << ")." << std::endl;
+    std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
+    size_t mem = GC::maxMem();
+    if (mem < 1024)
+      std::cerr << "maximum memory " << mem << " bytes";
+    else if (mem < 1024*1024)
+      std::cerr << "maximum memory " << mem/1024 << " Kbytes";
+    else
+      std::cerr << "maximum memory " << mem/(1024*1024) << " Mbytes";
+    std::cerr << ")." << std::endl;
+    
   }
   return 0;
 
