@@ -1459,11 +1459,8 @@ namespace MiniZinc {
     return oss.str();
   }
 
-  std::string b_file_path(EnvI& env, Call* call) {
-    ASTExprVec<Expression> args = call->args();
-    assert(args.size()==1);
-    Expression* e = follow_id_to_decl(args[0]);
-    return FileUtils::file_path(e->loc().filename.str());
+  std::string b_file_path(EnvI&, Call* call) {
+    return FileUtils::file_path(call->loc().filename.str());
   }
   
   std::string b_concat(EnvI& env, Call* call) {
@@ -2401,18 +2398,18 @@ namespace MiniZinc {
       rb(m, ASTString("string_length"), t, b_string_length);
     }
     {
+      rb(m, ASTString("file_path"), std::vector<Type>(), b_file_path);
+    }
+    {
       std::vector<Type> t(1);
       t[0] = Type::vartop();
       rb(m, ASTString("show"), t, b_show);
-      rb(m, ASTString("file_path"), t, b_file_path);
       t[0] = Type::vartop();
       t[0].st(Type::ST_SET);
       t[0].ot(Type::OT_OPTIONAL);
       rb(m, ASTString("show"), t, b_show);
-      rb(m, ASTString("file_path"), t, b_file_path);
       t[0] = Type::vartop(-1);
       rb(m, ASTString("show"), t, b_show);
-      rb(m, ASTString("file_path"), t, b_file_path);
     }
     {
       std::vector<Type> t(3);
