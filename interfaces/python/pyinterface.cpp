@@ -232,7 +232,9 @@ Mzn_retrieveFunctions(MznModel* self, PyObject* args) {
   CollectBoolFunctionNames fv(names);
 
   MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  MznModel_init(tempModel,NULL);
+  if (MznModel_init(tempModel,NULL) != 0) {
+    return NULL;
+  }
   iterItems(fv, tempModel->_m);
   MznModel_dealloc(tempModel);
 
@@ -255,7 +257,8 @@ Mzn_retrieveAnnotations(MznModel* self, PyObject* args) {
 
 
   MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  MznModel_init(tempModel,NULL);
+  if (MznModel_init(tempModel,NULL) != 0)
+    return NULL;
   iterItems(av, tempModel->_m);
   MznModel_dealloc(tempModel);
 

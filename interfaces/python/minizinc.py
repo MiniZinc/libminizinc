@@ -8,11 +8,10 @@ import predicate
 import annotation
 #import inspect
 
-##Numberjack 
 def flatten(x):
 	result = []
 	for el in x:
-		if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+		if isinstance(el, (list, tuple)):
 			result.extend(flatten(el))
 		else:
 			result.append(el)
@@ -139,6 +138,12 @@ class Expression(object):
 	def __rdiv__(self, pred):
 		return Div([pred, self])
 
+	def __floordiv__(self, pred):
+		return FloorDiv([self, pred])
+
+	def __rfloordiv__(self, pred):
+		return FloorDiv([pred, self])
+
 	def __mul__(self, pred):
 		return Mul([self, pred])
 
@@ -150,6 +155,12 @@ class Expression(object):
 
 	def __rmod__(self, pred):
 		return Mod([pred, self])
+
+	def __pow__(self, pred):
+		return Pow([self, pred])
+
+	def __rpow__(self, pred):
+		return Pow([pred, self])
 
 	def __eq__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
@@ -172,9 +183,6 @@ class Expression(object):
 
 	def __ge__(self, pred):
 		return Ge([self, pred])
-
-	def __pow__(self, pred):
-		return Pow([self, pred])
 
 	def __neg__(self):
 		return Neg([self])
@@ -953,7 +961,6 @@ class VarSet(Variable):
 		name = None
 		lb, ub = None, None
 		set_list = None
-
 		if argopt3 is not None:
 			lb,ub = argopt1, argopt2
 			name = argopt3
@@ -966,6 +973,9 @@ class VarSet(Variable):
 		else:
 			if type(argopt1) is list:
 				set_list = argopt1
+			elif type(argopt1) is Set:
+				lb = argopt1.min()
+				ub = argopt1.max()
 			else:
 				ub = argopt1 - 1
 				lb = 0
@@ -986,11 +996,13 @@ class VarSet(Variable):
 
 
 class Model(object):
-	def __init__(self):
+	def __init__(self, args = None):
 		self.loaded = False
 		self.mznsolver = None
-		self.mznmodel = minizinc_internal.Model()
+		self.mznmodel = minizinc_internal.Model(args)
 		self.solution_counter = -1
+		init()
+		
 
 
 	# not used anymore
@@ -1134,7 +1146,6 @@ class Model(object):
 
 
 def init():
-
 	#predicate = new.module('predicate', 'MiniZinc Predicate Library')
 	for name in minizinc_internal.retrieveFunctions():
 		def handlerFunctionClosure(name):
@@ -1142,7 +1153,6 @@ def init():
 				return Call(args, name)
 			return handlerFunction
 		setattr(predicate, name, handlerFunctionClosure(name))
-
 	#annotation = new.module('annotation', 'MiniZinc Annotation Library')
 	variables, functions = minizinc_internal.retrieveAnnotations();
 	for name in variables:
@@ -1155,5 +1165,3 @@ def init():
 				return Call(args, name)
 			return handlerFunction
 		setattr(annotation, name, handlerFunctionClosure(name))
-
-init()
