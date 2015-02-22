@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <stdexcept>
 
+#include <minizinc/model.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/model.hh>
 #include <minizinc/eval_par.hh>
@@ -33,6 +34,7 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/copy.hh>
 
 using namespace std;
 using namespace MiniZinc;

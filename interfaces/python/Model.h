@@ -14,13 +14,21 @@ struct MznModel {
   Model* _m;
   vector<string>* includePaths;
 
-  unsigned int timeLimit;
+
+  enum SolverCode {
+    SC_GECODE
+  };
+  SolverCode sc;
+
+  unsigned long long timeLimit;
   bool loaded;
   bool loaded_from_minizinc;
 
+  MznModel();
+
   int load(PyObject *args, PyObject *keywds, bool fromFile);
   int addData(const char* const name, PyObject* value);
-  PyObject* solve();
+  PyObject* solve(PyObject* args);
 };
 
 void MznModelDestructor(PyObject* o);
@@ -30,22 +38,28 @@ static void MznModel_dealloc(MznModel* self);
 
 static PyObject* MznModel_load(MznModel *self, PyObject *args, PyObject *keywds);
 static PyObject* MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds);
-static PyObject* MznModel_solve(MznModel *self);
+static PyObject* MznModel_solve(MznModel *self, PyObject* args);
 static PyObject* MznModel_setTimeLimit(MznModel* self, PyObject* args);
+static PyObject* MznModel_setSolver(MznModel* self, PyObject* args);
 static PyObject* MznModel_addData(MznModel* self, PyObject* args);
 static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
 static PyObject* MznModel_Call(MznModel* self, PyObject* args);
 
+static PyObject* MznModel_copy(MznModel* self);
+
 static PyMethodDef MznModel_methods[] = {
   {"load", (PyCFunction)MznModel_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
   {"loadFromString", (PyCFunction)MznModel_loadFromString, METH_KEYWORDS, "Load MiniZinc model from standard input"},
-  {"solve", (PyCFunction)MznModel_solve, METH_NOARGS, "Solve a loaded MiniZinc model"},
+  {"solve", (PyCFunction)MznModel_solve, METH_VARARGS, "Solve a loaded MiniZinc model"},
   {"setTimeLimit", (PyCFunction)MznModel_setTimeLimit, METH_VARARGS, "Limit the execution time of the model"},
+  {"setSolver", (PyCFunction)MznModel_setSolver, METH_VARARGS, "Choose which model will be used to solve the model"},
   {"Variable", (PyCFunction)MznModel_Variable, METH_VARARGS, "Add a variable into the model"},
   {"Constraint", (PyCFunction)MznModel_Constraint, METH_VARARGS, "Add a constraint into the model"},
   {"SolveItem", (PyCFunction)MznModel_SolveItem, METH_VARARGS, "Add a solve item into the model"},
+
+  {"copy", (PyCFunction)MznModel_copy, METH_NOARGS, "Returns a copy of current model"},
   {NULL} /* Sentinel */
 };
 

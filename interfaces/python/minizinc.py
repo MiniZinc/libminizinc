@@ -4,16 +4,76 @@
 
 
 import minizinc_internal
+import predicate
+import annotation
+#import inspect
 
-##Numberjack 
 def flatten(x):
 	result = []
 	for el in x:
-		if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+		if isinstance(el, (list, tuple)):
 			result.extend(flatten(el))
 		else:
 			result.append(el)
 	return result
+
+def evaluate(expr):
+	if not isinstance(expr, Expression):
+		if isinstance(expr, (list, tuple)):
+			model = None
+			for i,item in enumerate(expr):
+				expr[i], m = evaluate(item)
+				if model is None:
+					model = m
+				elif m is not None and m != model:
+					raise TypeError("Objects must be free or belong to the same model")
+			return (expr,model)
+		else:
+			return (expr,None)
+	if isinstance(expr, Id):
+		return (minizinc_internal.Id(expr.name), None)
+	if isinstance(expr, Call):
+		variables = []
+		model = None
+		for i in expr.vars:
+			var, m = evaluate(i)
+			if model is None:
+				model = m
+			elif m is not None and model != m:
+				raise TypeError("Objects must be free or belong to the same model")
+			variables.append(var)
+		return (minizinc_internal.Call(expr.CallCode, variables), model)
+	elif isinstance(expr, ArrayAccess):
+		return (expr.array.obj.at(expr.idx), expr.model)
+	elif isinstance(expr, Declaration):
+		#if not expr.is_added:
+		#	expr.is_added = True
+		#	expr.name = get_name(expr)
+		#	expr.obj = mznmodel.Variable(expr.name, expr.VarCode,
+		#						expr.dim_list, expr.lb, expr.ub)
+		return (expr.obj, expr.model)
+	elif isinstance(expr, BinOp):
+		lhs, model = evaluate(expr.vars[0])
+		rhs, model2 = evaluate(expr.vars[1])
+		if model is None:
+			model = model2
+		if model2 is not None and model2 != model:
+			raise TypeError("Objects must be free or belong to the same model")
+		return (minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs), model)
+	elif isinstance(expr, UnOp):
+		ret, model = evaluate(expr.vars[0])
+		return (minizinc_internal.UnOp(expr.UnOpCode, evaluate(expr.vars[0])), model)
+	else:
+		raise TypeError('Variable Type unspecified')
+
+'''
+def int_search(arg1, arg2, arg3, arg4):
+	ev_arg1 = evaluate(arg1)[0]
+	ev_arg2 = evaluate(arg2)[0]
+	ev_arg3 = evaluate(arg3)[0]
+	ev_arg4 = evaluate(arg4)[0]
+	return minizinc_internal.Call('int_search',[ev_arg1,ev_arg2,ev_arg3,ev_arg4])
+'''
 
 
 # All Variable and Expression declaration derived from here
@@ -78,6 +138,12 @@ class Expression(object):
 	def __rdiv__(self, pred):
 		return Div([pred, self])
 
+	def __floordiv__(self, pred):
+		return FloorDiv([self, pred])
+
+	def __rfloordiv__(self, pred):
+		return FloorDiv([pred, self])
+
 	def __mul__(self, pred):
 		return Mul([self, pred])
 
@@ -89,6 +155,12 @@ class Expression(object):
 
 	def __rmod__(self, pred):
 		return Mod([pred, self])
+
+	def __pow__(self, pred):
+		return Pow([self, pred])
+
+	def __rpow__(self, pred):
+		return Pow([pred, self])
 
 	def __eq__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
@@ -111,9 +183,6 @@ class Expression(object):
 
 	def __ge__(self, pred):
 		return Ge([self, pred])
-
-	def __pow__(self, pred):
-		return Pow([self, pred])
 
 	def __neg__(self):
 		return Neg([self])
@@ -585,6 +654,9 @@ class Invert(Predicate):
 	def __init__(self, vars):
 		UnOp.__init__(self, vars, 0)
 
+class Id(Expression):
+	def __init__(self, name):
+		self.name = name
 
 
 # Temporary container for Variable Declaration
@@ -889,7 +961,6 @@ class VarSet(Variable):
 		name = None
 		lb, ub = None, None
 		set_list = None
-
 		if argopt3 is not None:
 			lb,ub = argopt1, argopt2
 			name = argopt3
@@ -902,6 +973,9 @@ class VarSet(Variable):
 		else:
 			if type(argopt1) is list:
 				set_list = argopt1
+			elif type(argopt1) is Set:
+				lb = argopt1.min()
+				ub = argopt1.max()
 			else:
 				ub = argopt1 - 1
 				lb = 0
@@ -922,11 +996,13 @@ class VarSet(Variable):
 
 
 class Model(object):
-	def __init__(self):
+	def __init__(self, args = None):
 		self.loaded = False
 		self.mznsolver = None
-		self.mznmodel = minizinc_internal.Model()
+		self.mznmodel = minizinc_internal.Model(args)
 		self.solution_counter = -1
+		init()
+		
 
 
 	# not used anymore
@@ -941,8 +1017,6 @@ class Model(object):
 
 	def Constraint(self, *expr):
 		minizinc_internal.lock()
-		if self.mznmodel == None:
-			raise RuntimeError('Model has been solved, need to be reset first')
 		if len(expr)>0:
 			self.loaded = True
 			#self.frame = inspect.currentframe().f_back.f_locals.items()
@@ -950,42 +1024,7 @@ class Model(object):
 			#del self.frame
 		minizinc_internal.unlock()
 
-	def evaluate(self, expr):
-		if not isinstance(expr, Expression):
-			return (expr,None)
-		if isinstance(expr, Call):
-			variables = []
-			model = None
-			for i in expr.vars:
-				var, m = self.evaluate(i)
-				if model is None:
-					model = m
-				elif m is not None and model != m:
-					raise TypeError("Objects must be free or belong to the same model")
-				variables.append(var)
-			return (minizinc_internal.Call(expr.CallCode, variables), model)
-		elif isinstance(expr, ArrayAccess):
-			return (expr.array.obj.at(expr.idx), expr.model)
-		elif isinstance(expr, Declaration):
-			#if not expr.is_added:
-			#	expr.is_added = True
-			#	expr.name = self.get_name(expr)
-			#	expr.obj = self.mznmodel.Variable(expr.name, expr.VarCode,
-			#						expr.dim_list, expr.lb, expr.ub)
-			return (expr.obj, expr.model)
-		elif isinstance(expr, BinOp):
-			lhs, model = self.evaluate(expr.vars[0])
-			rhs, model2 = self.evaluate(expr.vars[1])
-			if model is None:
-				model = model2
-			if model2 is not None and model2 != model:
-				raise TypeError("Objects must be free or belong to the same model")
-			return (minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs), model)
-		elif isinstance(expr, UnOp):
-			ret, model = self.evaluate(expr.vars[0])
-			return (minizinc_internal.UnOp(expr.UnOpCode, self.evaluate(expr.vars[0])), model)
-		else:
-			raise TypeError('Variable Type unspecified')
+	
 
 
 #Numberjack
@@ -1002,7 +1041,7 @@ class Model(object):
 		else:
 			if issubclass(type(expr), Expression):
 				if (expr.is_pre()):
-					obj, model = self.evaluate(expr)
+					obj, model = evaluate(expr)
 					if model != None and model != self:
 						raise TypeError('Expressions must belong to this model')
 					self.mznmodel.Constraint(obj)
@@ -1043,29 +1082,38 @@ class Model(object):
 
 	def __solve(self):
 		self.mznsolver = self.mznmodel.solve()
-		self.mznmodel = None
 
-	def satisfy(self):
+	def satisfy(self, ann = None):
 		if not self.is_loaded():
 			raise ValueError('Model is not loaded yet')
-		self.is_loaded = False
-		self.mznmodel.SolveItem(0)
+		#self.loaded = False
+		'''
+		if ann is None:
+			self.mznmodel.SolveItem(0)
+		else:
+		'''
+		minizinc_internal.lock()
+		eval_ann, model = evaluate(ann)
+		if model is not None and model != self:
+			raise TypeError('Expression must be free or belong to the same model') 
+		self.mznmodel.SolveItem(0, eval_ann)
+		minizinc_internal.unlock()
 		self.__solve()
 
-	def optimize(self, arg, code):
+	def optimize(self, arg, code, ann = None):
 		minizinc_internal.lock()
-		obj, model = self.evaluate(arg)
+		obj, model = evaluate(arg)
 		if model is not None and model != self:
 			raise TypeError('Expression must be free or belong to the same model')
-		self.id_loaded = False
-		self.mznmodel.SolveItem(code, obj)
-		self.__solve()
+		#self.loaded = False
+		self.mznmodel.SolveItem(code, ann, obj)
 		minizinc_internal.unlock()
+		self.__solve()
 
-	def maximize(self, arg):
-		self.optimize(arg, 2)
-	def minimize(self, arg):
-		self.optimize(arg, 1)
+	def maximize(self, arg, ann = None):
+		self.optimize(arg, 2, ann)
+	def minimize(self, arg, ann = None):
+		self.optimize(arg, 1, ann)
 	def reset(self):
 		self.__init__()
 
@@ -1088,3 +1136,32 @@ class Model(object):
 
 	def is_solved(self):
 		return self.mznsolver != None
+
+	def set_time_limit(self, time):
+		self.mznmodel.setTimeLimit(time)
+
+	def set_solver(self, solver):
+		self.mznmodel.setSolver(solver)
+
+
+
+def init():
+	#predicate = new.module('predicate', 'MiniZinc Predicate Library')
+	for name in minizinc_internal.retrieveFunctions():
+		def handlerFunctionClosure(name):
+			def handlerFunction(*args):
+				return Call(args, name)
+			return handlerFunction
+		setattr(predicate, name, handlerFunctionClosure(name))
+	#annotation = new.module('annotation', 'MiniZinc Annotation Library')
+	variables, functions = minizinc_internal.retrieveAnnotations();
+	for name in variables:
+		def handlerFunction(name):
+			return Id(name)
+		setattr(annotation, name, handlerFunction(name))
+	for name in functions:
+		def handlerFunctionClosure(name):
+			def handlerFunction(*args):
+				return Call(args, name)
+			return handlerFunction
+		setattr(annotation, name, handlerFunctionClosure(name))
