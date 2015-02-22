@@ -3569,7 +3569,6 @@ namespace MiniZinc {
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
             cid == constants().ids.forall && r==constants().var_true) {
-          /// TODO: need generic array evaluation function
           ret.b = bind(env,ctx,b,constants().lit_true);
           EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().var_true);
           ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
