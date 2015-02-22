@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), collect_vardecls(false), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -367,6 +367,7 @@ namespace MiniZinc {
       if (e->isa<VarDecl>())
         env.idStack.push_back(env.callStack.size());
       env.callStack.push_back(e);
+      env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
     }
     ~CallStackItem(void) {
       env.errorStack.push_back(env.callStack.back());
@@ -405,6 +406,8 @@ namespace MiniZinc {
   Env::output(void) { return e->output; }
   EnvI&
   Env::envi(void) { return *e; }
+  const EnvI&
+  Env::envi(void) const { return *e; }
   std::ostream&
   Env::dumpErrorStack(std::ostream& os) {
     return e->dumpStack(os, true);
@@ -526,6 +529,10 @@ namespace MiniZinc {
   
   void Env::clearWarnings(void) {
     envi().warnings.clear();
+  }
+  
+  unsigned int Env::maxCallStack(void) const {
+    return envi().maxCallStack;
   }
   
   bool isTotal(FunctionI* fi) {
