@@ -42,7 +42,7 @@ namespace MiniZinc {
     typedef IntLit* Val;
     typedef Expression* ArrayVal;
     static IntLit* e(EnvI& env, Expression* e) {
-      return new IntLit(Location(),eval_int(env, e));
+      return IntLit::a(eval_int(env, e));
     }
     static Expression* exp(IntLit* e) { return e; }
   };
@@ -53,7 +53,7 @@ namespace MiniZinc {
     static IntVal e(EnvI& env, Expression* e) {
       return eval_int(env, e);
     }
-    static Expression* exp(IntVal e) { return new IntLit(Location(),e); }
+    static Expression* exp(IntVal e) { return IntLit::a(e); }
   };
   class EvalFloatVal {
   public:
@@ -315,7 +315,7 @@ namespace MiniZinc {
         Type t = al->type();
         t.dim(0);
         if (t.isint())
-          return new IntLit(Location(),0);
+          return IntLit::a(0);
         if (t.isbool())
           return constants().lit_false;
         if (t.isfloat())
@@ -1169,7 +1169,7 @@ namespace MiniZinc {
           if (id->decl()->ti()->type().isint()) {
             if (SetLit* sl = id->decl()->ti()->domain()->dyn_cast<SetLit>()) {
               if (sl->isv() && sl->isv()->min()==sl->isv()->max()) {
-                return new IntLit(Location(), sl->isv()->min());
+                return IntLit::a(sl->isv()->min());
               }
             }
           } else if (id->decl()->ti()->type().isfloat()) {

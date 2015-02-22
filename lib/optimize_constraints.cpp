@@ -74,7 +74,7 @@ namespace MiniZinc {
             if (domain && !domain->contains(nd))
               return OptimizeRegistry::CS_FAILED;
             std::vector<Expression*> args(2);
-            args[0] = x[0](); args[1] = new IntLit(Location(), nd);
+            args[0] = x[0](); args[1] = IntLit::a(nd);
             Call* c = new Call(Location(), constants().ids.int_.eq, args);
             c->type(Type::varbool());
             rewrite = c;
@@ -117,7 +117,7 @@ namespace MiniZinc {
                 return OptimizeRegistry::CS_ENTAILED;
             }
             std::vector<Expression*> args(2);
-            args[0] = x[0](); args[1] = new IntLit(Location(), nd);
+            args[0] = x[0](); args[1] = IntLit::a(nd);
             if (swapSign)
               std::swap(args[0], args[1]);
             Call* nc = new Call(Location(), constants().ids.int_.le, args);
@@ -138,7 +138,7 @@ namespace MiniZinc {
         std::vector<Expression*> coeffs_e(coeffs.size());
         std::vector<Expression*> x_e(coeffs.size());
         for (unsigned int i=0; i<coeffs.size(); i++) {
-          coeffs_e[i] = new IntLit(Location().introduce(),coeffs[i]);
+          coeffs_e[i] = IntLit::a(coeffs[i]);
           x_e[i] = x[i]();
         }
         ArrayLit* al_c_new = new ArrayLit(al_c->loc(),coeffs_e);
@@ -148,7 +148,7 @@ namespace MiniZinc {
         c->args()[0] = al_c_new;
         c->args()[1] = al_x_new;
         if (d != 0) {
-          c->args()[2] = new IntLit(Location().introduce(), eval_int(env,c->args()[2])-d);
+          c->args()[2] = IntLit::a(eval_int(env,c->args()[2])-d);
         }
       }
       return OptimizeRegistry::CS_OK;
@@ -169,13 +169,13 @@ namespace MiniZinc {
         IntVal d = eval_int(env,c->args()[2]);
         simplify_lin<IntLit>(coeffs, x, d);
         if (coeffs.size()==0) {
-          rewrite = new IntLit(Location().introduce(), d);
+          rewrite = IntLit::a(d);
           return OptimizeRegistry::CS_REWRITE;
         } else if (coeffs.size() < al_c->v().size()) {
           std::vector<Expression*> coeffs_e(coeffs.size());
           std::vector<Expression*> x_e(coeffs.size());
           for (unsigned int i=0; i<coeffs.size(); i++) {
-            coeffs_e[i] = new IntLit(Location().introduce(),coeffs[i]);
+            coeffs_e[i] = IntLit::a(coeffs[i]);
             x_e[i] = x[i]();
           }
           ArrayLit* al_c_new = new ArrayLit(al_c->loc(),coeffs_e);
@@ -184,7 +184,7 @@ namespace MiniZinc {
           al_x_new->type(al_x->type());
           c->args()[0] = al_c_new;
           c->args()[1] = al_x_new;
-          c->args()[2] = new IntLit(Location().introduce(), d);
+          c->args()[2] = IntLit::a(d);
         }
       }
       return OptimizeRegistry::CS_OK;

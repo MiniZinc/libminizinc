@@ -1114,7 +1114,7 @@ namespace MiniZinc {
                 ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                 std::vector<Expression*> ncoeff(le_c->v().size());
                 std::copy(le_c->v().begin(),le_c->v().end(),ncoeff.begin());
-                ncoeff.push_back(new IntLit(Location().introduce(),-1));
+                ncoeff.push_back(IntLit::a(-1));
                 args.push_back(new ArrayLit(Location().introduce(),ncoeff));
                 args[0]->type(le_c->type());
                 ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
@@ -1125,7 +1125,7 @@ namespace MiniZinc {
                 args[1]->type(le_x->type());
                 if (c->type().bt()==Type::BT_INT) {
                   IntVal d = c->args()[2]->cast<IntLit>()->v();
-                  args.push_back(new IntLit(Location().introduce(),-d));
+                  args.push_back(IntLit::a(-d));
                   nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
                 } else {
                   FloatVal d = c->args()[2]->cast<FloatLit>()->v();
@@ -1501,7 +1501,7 @@ namespace MiniZinc {
     simplify_lin<Lit>(coeffs, vars, constval);
     KeepAlive ka;
     if (coeffs.size()==0) {
-      ka = new Lit(e0->loc(),constval);
+      ka = LinearTraits<Lit>::newLit(constval);
     } else if (coeffs.size()==1 && coeffs[0]==1 && constval==0) {
       ka = vars[0];
     } else {
@@ -1510,7 +1510,7 @@ namespace MiniZinc {
         if (!LinearTraits<Lit>::finite(coeffs[i])) {
           throw FlatteningError(env,e0->loc(), "unbounded coefficient in linear expression");
         }
-        coeffs_e[i] = new Lit(e0->loc(),coeffs[i]);
+        coeffs_e[i] = LinearTraits<Lit>::newLit(coeffs[i]);
       }
       std::vector<Expression*> vars_e(vars.size());
       for (unsigned int i=vars.size(); i--;)
@@ -1525,7 +1525,7 @@ namespace MiniZinc {
       Type tt = vars_e[0]->type();
       tt.dim(1);
       args[1]->type(tt);
-      args[2] = new Lit(e0->loc(),constval);
+      args[2] = LinearTraits<Lit>::newLit(constval);
       Call* c = new Call(e0->loc().introduce(),constants().ids.lin_exp,args);
       tt = args[1]->type();
       tt.dim(0);
@@ -1858,7 +1858,7 @@ namespace MiniZinc {
               d--;
               bot = BOT_LQ;
             }
-            e1 = new Lit(Location().introduce(),d);
+            e1 = LinearTraits<Lit>::newLit(d);
             break;
           case BOT_GR:
             e1 = alv[0]();
@@ -1868,16 +1868,16 @@ namespace MiniZinc {
             } else {
               bot = BOT_LE;
             }
-            e0 = new Lit(Location().introduce(),d);
+            e0 = LinearTraits<Lit>::newLit(d);
             break;
           case BOT_GQ:
-            e0 = new Lit(Location().introduce(),d);
+            e0 = LinearTraits<Lit>::newLit(d);
             e1 = alv[0]();
             bot = BOT_LQ;
             break;
           default:
             e0 = alv[0]();
-            e1 = new Lit(Location().introduce(),d);
+            e1 = LinearTraits<Lit>::newLit(d);
         }
         if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
           VarDecl* vd = alv[0]()->cast<Id>()->decl();
@@ -1993,7 +1993,7 @@ namespace MiniZinc {
       LinearTraits<Lit>::constructLinBuiltin(bot,callid,coeff_sign,d);
       std::vector<Expression*> coeff_ev(coeffv.size());
       for (unsigned int i=coeff_ev.size(); i--;)
-        coeff_ev[i] = new Lit(Location().introduce(),coeff_sign*coeffv[i]);
+        coeff_ev[i] = LinearTraits<Lit>::newLit(coeff_sign*coeffv[i]);
       ArrayLit* ncoeff = new ArrayLit(Location().introduce(),coeff_ev);
       Type t = coeff_ev[0]->type();
       t.dim(1);
@@ -2010,7 +2010,7 @@ namespace MiniZinc {
       ArrayLit* nal = new ArrayLit(Location().introduce(),alv_e);
       nal->type(tt);
       args.push_back(nal);
-      Lit* il = new Lit(Location().introduce(),-d);
+      Lit* il = LinearTraits<Lit>::newLit(-d);
       args.push_back(il);
     }
   }
@@ -2066,7 +2066,7 @@ namespace MiniZinc {
     if (coeffv.size()==0) {
       GCLock lock;
       ret.b = conj(env,b,Ctx(),args_ee);
-      ret.r = bind(env,ctx,r,new Lit(Location().introduce(),d));
+      ret.r = bind(env,ctx,r,LinearTraits<Lit>::newLit(d));
       return;
     } else if (coeffv.size()==1 && coeffv[0]==1 && d==0) {
       ret.b = conj(env,b,Ctx(),args_ee);
@@ -2076,7 +2076,7 @@ namespace MiniZinc {
     GCLock lock;
     std::vector<Expression*> coeff_ev(coeffv.size());
     for (unsigned int i=coeff_ev.size(); i--;)
-      coeff_ev[i] = new Lit(Location().introduce(),coeffv[i]);
+      coeff_ev[i] = LinearTraits<Lit>::newLit(coeffv[i]);
     ArrayLit* ncoeff = new ArrayLit(Location().introduce(),coeff_ev);
     Type t = coeff_ev[0]->type();
     t.dim(1);
@@ -2108,7 +2108,7 @@ namespace MiniZinc {
       nal->type(al->type());
       args.push_back(nal);
     }
-    Lit* il = new Lit(Location().introduce(),d);
+    Lit* il = LinearTraits<Lit>::newLit(d);
     args.push_back(il);
   }
 
@@ -3512,7 +3512,7 @@ namespace MiniZinc {
             }
             Expression* zero;
             if (uo->e()->type().bt()==Type::BT_INT)
-              zero = new IntLit(Location().introduce(),0);
+              zero = IntLit::a(0);
             else
               zero = new FloatLit(Location().introduce(),0.0);
             BinOp* bo = new BinOp(Location().introduce(),zero,BOT_MINUS,uo->e());
@@ -4969,7 +4969,7 @@ namespace MiniZinc {
               vdi->e()->ti(nti);
               if (dom->min(0).isFinite()) {
                 std::vector<Expression*> args(2);
-                args[0] = new IntLit(Location().introduce(),dom->min(0));
+                args[0] = IntLit::a(dom->min(0));
                 args[1] = vdi->e()->id();
                 Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
@@ -4978,7 +4978,7 @@ namespace MiniZinc {
               } else if (dom->max(dom->size()-1).isFinite()) {
                 std::vector<Expression*> args(2);
                 args[0] = vdi->e()->id();
-                args[1] = new IntLit(Location().introduce(),dom->max(dom->size()-1));
+                args[1] = IntLit::a(dom->max(dom->size()-1));
                 Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.orig->matchFn(call));
@@ -4998,7 +4998,7 @@ namespace MiniZinc {
                 for (IntVal i=firstHole; i<domr.min(); i++) {
                   std::vector<Expression*> args(2);
                   args[0] = vdi->e()->id();
-                  args[1] = new IntLit(Location().introduce(),i);
+                  args[1] = IntLit::a(i);
                   Call* call = new Call(Location().introduce(),constants().ids.int_.ne,args);
                   call->type(Type::varbool());
                   call->decl(env.orig->matchFn(call));
@@ -5026,7 +5026,7 @@ namespace MiniZinc {
                   ArrayLit* le_c = follow_id(c->args()[0])->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->v().size());
                   std::copy(le_c->v().begin(),le_c->v().end(),nc_c.begin());
-                  nc_c.push_back(new IntLit(Location().introduce(),-1));
+                  nc_c.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(),nc_c);
                   args[0]->type(Type::parint(1));
                   ArrayLit* le_x = follow_id(c->args()[1])->cast<ArrayLit>();
@@ -5036,7 +5036,7 @@ namespace MiniZinc {
                   args[1] = new ArrayLit(Location().introduce(),nx);
                   args[1]->type(Type::varint(1));
                   IntVal d = c->args()[2]->cast<IntLit>()->v();
-                  args[2] = new IntLit(Location().introduce(),-d);
+                  args[2] = IntLit::a(-d);
                   args[2]->type(Type::parint(0));
                   nc = new Call(c->loc().introduce(),ASTString("int_lin_eq"),args);
                   nc->type(Type::varbool());
@@ -5379,7 +5379,7 @@ namespace MiniZinc {
                 std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
                 if (le_c->type().bt()==Type::BT_INT) {
                   cid = constants().ids.int_.lin_eq;
-                  nc.push_back(new IntLit(Location().introduce(),-1));
+                  nc.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(),nc);
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
@@ -5387,7 +5387,7 @@ namespace MiniZinc {
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
                   IntVal d = cc->args()[2]->cast<IntLit>()->v();
-                  args[2] = new IntLit(Location().introduce(),-d);
+                  args[2] = IntLit::a(-d);
                 } else {
                   // float
                   cid = constants().ids.float_.lin_eq;

@@ -477,7 +477,7 @@ namespace MiniZinc {
               } else if (cur->ti()->domain() && cur->ti()->domain()->isa<SetLit>() &&
                          cur->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
                          cur->ti()->domain()->cast<SetLit>()->isv()->min()==cur->ti()->domain()->cast<SetLit>()->isv()->max()) {
-                val = new IntLit(Location().introduce(),cur->ti()->domain()->cast<SetLit>()->isv()->min());
+                val = IntLit::a(cur->ti()->domain()->cast<SetLit>()->isv()->min());
               }
             }
             if (val) {
@@ -515,7 +515,7 @@ namespace MiniZinc {
               vd->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
               vd->ti()->domain()->cast<SetLit>()->isv()->min()==vd->ti()->domain()->cast<SetLit>()->isv()->max()) {
             removed.push_back(vd);
-            return new IntLit(Location().introduce(),vd->ti()->domain()->cast<SetLit>()->isv()->min());
+            return IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
           }
         }
       }

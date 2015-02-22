@@ -1287,7 +1287,7 @@ namespace MiniZinc {
     std::vector<Expression*> elems;
     IntSetRanges isr(isv);
     for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v)
-      elems.push_back(new IntLit(Location(),isr_v.val()));
+      elems.push_back(IntLit::a(isr_v.val()));
     ArrayLit* al = new ArrayLit(args[0]->loc(),elems);
     al->type(Type::parint(1));
     return al;
@@ -1631,7 +1631,7 @@ namespace MiniZinc {
     std::stable_sort(idx.begin(),idx.end(),_ord);
     std::vector<Expression*> perm(idx.size());
     for (unsigned int i=0; i<idx.size(); i++)
-      perm[idx[i]] = new IntLit(Location(),i+1);
+      perm[idx[i]] = IntLit::a(i+1);
     ArrayLit* perm_al = new ArrayLit(al->loc(), perm);
     perm_al->type(Type::parint(1));
     return perm_al;

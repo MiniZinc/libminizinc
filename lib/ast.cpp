@@ -1161,8 +1161,15 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     
+    
+    std::vector<Expression*> v_ints(maxConstInt*2+1);
+    for (int i=-maxConstInt; i<=maxConstInt; i++)
+      v_ints[i+maxConstInt] = new IntLit(Location().introduce(), i);
+    integers = new ArrayLit(Location().introduce(), v_ints);
+    
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
+    m->addItem(new ConstraintI(Location(),integers));
     m->addItem(var_redef);
   }
   
