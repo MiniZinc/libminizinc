@@ -25,7 +25,11 @@ array[1..m] of var 0..n: mark;
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
 
+var 0..n: obj;
+
 constraint mark[1] = 0;
+
+constraint obj = mark[m];
 
 constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
 
@@ -40,7 +44,7 @@ solve :: combinator(
        repeat (i in 1..10) (
            and([
                next, % get next solution
-               post(mark[m] < sol(mark[m])) % post constraint
+               post(obj < sol(obj)) % post constraint
            ])
        )
    )

@@ -68,7 +68,7 @@ namespace MiniZinc {
     VarOccurrences vo;
     VarOccurrences output_vo;
     CopyMap cmap;
-    IdMap<KeepAlive> reverseMappers;
+    IdMap<KeepAlive> reverseMappers;    
     struct WW {
       WeakRef r;
       WeakRef b;

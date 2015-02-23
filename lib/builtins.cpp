@@ -1998,6 +1998,36 @@ namespace MiniZinc {
     return std::tan(f); 
   }
   
+  IntVal b_sol_int(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size() == 1);
+    if(Id* id = args[0]->dyn_cast<Id>()) {
+      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
+        if(it->e()->id()->str() == id->str()) {
+          if(!it->e()->e()) {
+            std::stringstream ssm; 
+            ssm << "no solution found for: " << *id;
+            throw EvalError(call->loc(), ssm.str());
+          }
+          else {
+            assert(it->e()->e()->type().ispar());
+            assert(it->e()->e()->type().isint());
+            return IntVal(eval_int(env, it->e()->e()));
+          }
+        }
+      }
+      std::stringstream ssm; 
+      ssm << "could not find solution for unknown identifier: " << *id;
+      throw EvalError(call->loc(), ssm.str());
+    }
+    else {
+      std::stringstream ssm; 
+      ssm << "expecting identifier as argument of \"sol\" instead of: " 
+          << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2636,7 +2666,12 @@ namespace MiniZinc {
       t[0] = Type::parint(); 
       t[1] = Type::parfloat(); 
       rb(m, ASTString("binomial"),t,b_binomial);  
-    }    
+    }  
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      rb(m, ASTString("sol"),t,b_sol_int);
+    }
   }
   
 }

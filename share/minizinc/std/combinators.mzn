@@ -24,9 +24,9 @@ annotation and(array[int] of ann);
 annotation or(array[int] of ann);
 
 % return the solution value of the last solution
-function int: sol(var int: x); 
-function bool: sol(var bool: x);
-function float: sol(var float: x);
+%function int: sol(var int: x); 
+%function bool: sol(var bool: x);
+%function float: sol(var float: x);
 % returns true if there already exists a (last) solution, and returns
 % false otherwise
 function bool: hasSol; 

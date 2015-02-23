@@ -193,9 +193,11 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
-    SolverInstance::Status status = solver->next();
+    SolverInstance::Status status = solver->nextSolution();
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
-    // TODO: set the solution in the EnvI, if a solution exists
+    for(VarDeclIterator it = env.output()->begin_vardecls(); it != env.output()->end_vardecls(); ++it) {
+      std::cout << "DEBUG: solution:\n" << *it << std::endl;
+    }
     return status; 
   }
   

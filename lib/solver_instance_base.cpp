@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/solver_instance_base.hh>
+#include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
 
@@ -30,14 +31,23 @@ namespace MiniZinc {
     it->second(_base, c);
   }
 
+  SolverInstanceBase::Status 
+  SolverInstanceBase::nextSolution(void) {
+    Status s = next();
+    if(s == SolverInstance::SAT || s == SolverInstance::OPT)
+      assignSolutionToOutput();
+    return s;
+  }
+  
   void
   SolverInstanceBase::assignSolutionToOutput(void) {
     for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
-      if (it->e()->e() == NULL) {
+      std::cout << "DEBUG: type of var decl in output: \"" << (it->e()->id()->type().toString()) << "\" of variable: " << *(it->e()) << std::endl;
+      if(!it->e()->id()->type().ispar()) { // don't assign solutions to parameters
         it->e()->e(getSolutionValue(it->e()->id()));
+        std::cout << "DEBUG: set solution value: " << *(it->e()) << std::endl;
       }
     }
   }
-  
   
 }

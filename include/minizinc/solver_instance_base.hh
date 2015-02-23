@@ -42,7 +42,7 @@ namespace MiniZinc {
     
     virtual Expression* getSolutionValue(Id* id) = 0;
 
-    void assignSolutionToOutput(void);
+    void assignSolutionToOutput(void); 
     
   public:
     typedef SolverInstance::Status Status;
@@ -57,7 +57,8 @@ namespace MiniZinc {
     virtual Status solve(void);   
     /// overwrite in your solver, if your solver allows to post constraints during search
     bool postConstraints(std::vector<Call*> cts) { return false; }
-
+    /// finds the next solution and stores it in the output model
+    Status nextSolution(void);
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
     Env& env(void) { return _env; }
@@ -78,6 +79,11 @@ namespace MiniZinc {
     Statistics& getStatistics() { return _statistics; }
   };
   
+  /// class to inherit from, if the solver is not incremental (i.e. constraints cannot be added on the fly after calling next-solution)
+  class SolverInstanceBaseNonIncremental : public SolverInstanceBase {
+  public:
+    bool postConstraints(std::vector<Call*> cts) { return false; }
+  };
 }
 
 #endif

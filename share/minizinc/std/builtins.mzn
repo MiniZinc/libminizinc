@@ -2105,6 +2105,16 @@ function bool: bernoulli(float: p);
 /** @group builtins.random Return a sample from the binomial distribution defined by sample number \a t and probability \a p */
 function int: binomial(int: t, float: p);  
   
+
+/***
+  @groupdef builtins.combinators Combinator Lite builtins
+  
+  These functions implement functionality that can be used within combinators lite (in advanced search specifications)
+*/  
+
+/** @group builtins.combinators Returns the last solution value for identifier \a x */
+function int: sol(var int: x);
+  
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
