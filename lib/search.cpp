@@ -194,31 +194,107 @@ namespace MiniZinc {
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
-    std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
-    for(VarDeclIterator it = env.output()->begin_vardecls(); it != env.output()->end_vardecls(); ++it) {
-      std::cout << "DEBUG: solution:\n" << *it << std::endl;
-    }
+    std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;    
     return status; 
   }
   
   bool 
   SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) { 
-    std::cout << "DEBUG: posting constraint " << *cts << std::endl;
-    Expression* cts_eval = eval_par(env.envi(),cts);
-    std::cout << "DEBUG: posting evaluated (par) constraint " << *cts_eval << std::endl;
-    std::cout << "\n\nDEBUG: Original model before flattening:" << std::endl;
-    debugprint(env.model());    
-    std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
-    debugprint(env.flat());    
+    //std::cout << "DEBUG: BEGIN posting constraint " << *cts << std::endl;
+    Expression* cts_eval = eval_par(env.envi(),cts);      
+    //std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
+    //debugprint(env.flat());
+    int nbCtsBefore = 0;
+    for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
+      nbCtsBefore++;
+    int nbVarsBefore = 0;
+    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
+      nbVarsBefore++;        
+    
+    // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
+    IdMap<Expression*> domains;
+    for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
+      Id* id = it->e()->id();
+      Expression* domain = copy(it->e()->ti()->domain());
+      domains.insert(id,domain);         
+    }
+    
+    
+    // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts_eval, constants().var_true, constants().var_true);
-    Expression* flat = ee.r(); // it's not really the flat expression
-    std::cout << "\n\nDEBUG: Original model AFTER flattening:" << std::endl;
-    debugprint(env.model());
-    std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << *cts_eval << std::endl;   
-    debugprint(env.flat());   
-    std::cout << std::endl;
-    // TODO: post flat constraint in solver (incremental or non-incremental)    
-    return false;
+    //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
+    //debugprint(env.flat());    
+    //std::cout<< "\n" << std::endl;
+    
+    int nbVarsAfter = 0;
+    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
+      nbVarsAfter++;
+    if(nbVarsBefore < nbVarsAfter) {
+      std::vector<VarDecl*> vars;
+      unsigned int i=0;
+      for(VarDeclIterator it= env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {        
+        if(i<nbVarsBefore) i++;
+        else {
+          vars.push_back(it->e());
+        }
+      }
+      for(unsigned int i=0; i<vars.size(); i++)
+        std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+      solver->addVariables(vars);
+    }      
+    
+    oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
+    //std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
+    //debugprint(env.flat());  
+    
+    int nbCtsAfter = 0;
+    for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
+      nbCtsAfter++;
+    
+        
+    if(nbCtsBefore < nbCtsAfter) {       
+      std::vector<Call*> flat_cts;
+      int i = 0;
+      for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it) {
+        if(i<nbCtsBefore) i++;
+        else {
+          flat_cts.push_back(it->e()->cast<Call>());
+        }
+      }
+      for(unsigned int i=0; i<flat_cts.size(); i++)
+        std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+      solver->postConstraints(flat_cts);      
+    }
+    
+    // check for variable domain updates
+    for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
+      Id* id = it->e()->id();
+      Expression* domain = it->e()->ti()->domain();          
+      IdMap<Expression*>::iterator iter = domains.find(id);      
+      if(iter != domains.end()) {
+        Expression* oldDomain = iter->second; 
+        if(oldDomain) {          
+          if(SetLit* sl_old = oldDomain->dyn_cast<SetLit>()) {            
+            if(SetLit* sl_new = domain->dyn_cast<SetLit>()) {                         
+              int lb_old = sl_old->isv()->min().toInt();
+              int lb_new = sl_new->isv()->min().toInt();
+              int ub_old = sl_old->isv()->max().toInt();
+              int ub_new = sl_new->isv()->max().toInt();
+              bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
+              if(updateBounds) {                
+                solver->updateIntBounds(id->decl(),lb_new,ub_new);
+                std::cout << "DEBUG: updated int bounds of " << *id << " in solver" << std::endl;
+              }             
+            }
+          }
+          else {
+          // TODO: check for boolean and floating point bounds
+          }
+        }
+      }
+    }
+      
+    return false; // TODO: change as soon as it works in the solvers
   }
   
 }

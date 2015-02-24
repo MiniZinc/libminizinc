@@ -2002,17 +2002,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
     std::cout << "DEBUG: sol(x) call: " << *call << std::endl;
-    if(args[0]->type().ispar()) { // if it has already been evaluated
-      IntVal solution = eval_int(env,args[0]);
-      std::cout << "DEBUG: returning solution value: " << solution << std::endl;
-      return solution;
-    }
-    else if(Id* id = args[0]->dyn_cast<Id>()) {
+    if(Id* id = args[0]->dyn_cast<Id>()) {
       for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
         // TODO: find flat representation: maybe other way round? iterate over flat variables and find their original declaration?
-        if(it->e()->flat())
-          std::cout << "DEBUG: flat var for variable " << *(it->e()) << " is: " << *(it->e()->flat()->e()) << std::endl;
-        else std::cout << "DEBUG: variable " << *(it->e()) << " has no flat representation"  << std::endl;
+        //if(it->e()->flat())
+        //  std::cout << "DEBUG: flat var for variable " << *(it->e()) << " is: " << *(it->e()->flat()->e()) << std::endl;
+        //else std::cout << "DEBUG: variable " << *(it->e()) << " has no flat representation"  << std::endl;
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm; 
