@@ -101,65 +101,67 @@
      FLATZINC_IDENTIFIER = 316,
      MZN_INVALID_INTEGER_LITERAL = 317,
      MZN_INVALID_FLOAT_LITERAL = 318,
-     MZN_EQUIV = 319,
-     MZN_IMPL = 320,
-     MZN_RIMPL = 321,
-     MZN_OR = 322,
-     MZN_XOR = 323,
-     MZN_AND = 324,
-     MZN_LE = 325,
-     MZN_GR = 326,
-     MZN_LQ = 327,
-     MZN_GQ = 328,
-     MZN_EQ = 329,
-     MZN_NQ = 330,
-     MZN_IN = 331,
-     MZN_SUBSET = 332,
-     MZN_SUPERSET = 333,
-     MZN_UNION = 334,
-     MZN_DIFF = 335,
-     MZN_SYMDIFF = 336,
-     MZN_DOTDOT = 337,
-     MZN_PLUS = 338,
-     MZN_MINUS = 339,
-     MZN_MULT = 340,
-     MZN_DIV = 341,
-     MZN_IDIV = 342,
-     MZN_MOD = 343,
-     MZN_INTERSECT = 344,
-     MZN_NOT = 345,
-     MZN_PLUSPLUS = 346,
-     MZN_COLONCOLON = 347,
-     PREC_ANNO = 348,
-     MZN_EQUIV_QUOTED = 349,
-     MZN_IMPL_QUOTED = 350,
-     MZN_RIMPL_QUOTED = 351,
-     MZN_OR_QUOTED = 352,
-     MZN_XOR_QUOTED = 353,
-     MZN_AND_QUOTED = 354,
-     MZN_LE_QUOTED = 355,
-     MZN_GR_QUOTED = 356,
-     MZN_LQ_QUOTED = 357,
-     MZN_GQ_QUOTED = 358,
-     MZN_EQ_QUOTED = 359,
-     MZN_NQ_QUOTED = 360,
-     MZN_IN_QUOTED = 361,
-     MZN_SUBSET_QUOTED = 362,
-     MZN_SUPERSET_QUOTED = 363,
-     MZN_UNION_QUOTED = 364,
-     MZN_DIFF_QUOTED = 365,
-     MZN_SYMDIFF_QUOTED = 366,
-     MZN_DOTDOT_QUOTED = 367,
-     MZN_PLUS_QUOTED = 368,
-     MZN_MINUS_QUOTED = 369,
-     MZN_MULT_QUOTED = 370,
-     MZN_DIV_QUOTED = 371,
-     MZN_IDIV_QUOTED = 372,
-     MZN_MOD_QUOTED = 373,
-     MZN_INTERSECT_QUOTED = 374,
-     MZN_NOT_QUOTED = 375,
-     MZN_COLONCOLON_QUOTED = 376,
-     MZN_PLUSPLUS_QUOTED = 377
+     MZN_UNTERMINATED_STRING = 319,
+     MZN_INVALID_NULL = 320,
+     MZN_EQUIV = 321,
+     MZN_IMPL = 322,
+     MZN_RIMPL = 323,
+     MZN_OR = 324,
+     MZN_XOR = 325,
+     MZN_AND = 326,
+     MZN_LE = 327,
+     MZN_GR = 328,
+     MZN_LQ = 329,
+     MZN_GQ = 330,
+     MZN_EQ = 331,
+     MZN_NQ = 332,
+     MZN_IN = 333,
+     MZN_SUBSET = 334,
+     MZN_SUPERSET = 335,
+     MZN_UNION = 336,
+     MZN_DIFF = 337,
+     MZN_SYMDIFF = 338,
+     MZN_DOTDOT = 339,
+     MZN_PLUS = 340,
+     MZN_MINUS = 341,
+     MZN_MULT = 342,
+     MZN_DIV = 343,
+     MZN_IDIV = 344,
+     MZN_MOD = 345,
+     MZN_INTERSECT = 346,
+     MZN_NOT = 347,
+     MZN_PLUSPLUS = 348,
+     MZN_COLONCOLON = 349,
+     PREC_ANNO = 350,
+     MZN_EQUIV_QUOTED = 351,
+     MZN_IMPL_QUOTED = 352,
+     MZN_RIMPL_QUOTED = 353,
+     MZN_OR_QUOTED = 354,
+     MZN_XOR_QUOTED = 355,
+     MZN_AND_QUOTED = 356,
+     MZN_LE_QUOTED = 357,
+     MZN_GR_QUOTED = 358,
+     MZN_LQ_QUOTED = 359,
+     MZN_GQ_QUOTED = 360,
+     MZN_EQ_QUOTED = 361,
+     MZN_NQ_QUOTED = 362,
+     MZN_IN_QUOTED = 363,
+     MZN_SUBSET_QUOTED = 364,
+     MZN_SUPERSET_QUOTED = 365,
+     MZN_UNION_QUOTED = 366,
+     MZN_DIFF_QUOTED = 367,
+     MZN_SYMDIFF_QUOTED = 368,
+     MZN_DOTDOT_QUOTED = 369,
+     MZN_PLUS_QUOTED = 370,
+     MZN_MINUS_QUOTED = 371,
+     MZN_MULT_QUOTED = 372,
+     MZN_DIV_QUOTED = 373,
+     MZN_IDIV_QUOTED = 374,
+     MZN_MOD_QUOTED = 375,
+     MZN_INTERSECT_QUOTED = 376,
+     MZN_NOT_QUOTED = 377,
+     MZN_COLONCOLON_QUOTED = 378,
+     MZN_PLUSPLUS_QUOTED = 379
    };
 #endif
 /* Tokens.  */
@@ -225,65 +227,67 @@
 #define FLATZINC_IDENTIFIER 316
 #define MZN_INVALID_INTEGER_LITERAL 317
 #define MZN_INVALID_FLOAT_LITERAL 318
-#define MZN_EQUIV 319
-#define MZN_IMPL 320
-#define MZN_RIMPL 321
-#define MZN_OR 322
-#define MZN_XOR 323
-#define MZN_AND 324
-#define MZN_LE 325
-#define MZN_GR 326
-#define MZN_LQ 327
-#define MZN_GQ 328
-#define MZN_EQ 329
-#define MZN_NQ 330
-#define MZN_IN 331
-#define MZN_SUBSET 332
-#define MZN_SUPERSET 333
-#define MZN_UNION 334
-#define MZN_DIFF 335
-#define MZN_SYMDIFF 336
-#define MZN_DOTDOT 337
-#define MZN_PLUS 338
-#define MZN_MINUS 339
-#define MZN_MULT 340
-#define MZN_DIV 341
-#define MZN_IDIV 342
-#define MZN_MOD 343
-#define MZN_INTERSECT 344
-#define MZN_NOT 345
-#define MZN_PLUSPLUS 346
-#define MZN_COLONCOLON 347
-#define PREC_ANNO 348
-#define MZN_EQUIV_QUOTED 349
-#define MZN_IMPL_QUOTED 350
-#define MZN_RIMPL_QUOTED 351
-#define MZN_OR_QUOTED 352
-#define MZN_XOR_QUOTED 353
-#define MZN_AND_QUOTED 354
-#define MZN_LE_QUOTED 355
-#define MZN_GR_QUOTED 356
-#define MZN_LQ_QUOTED 357
-#define MZN_GQ_QUOTED 358
-#define MZN_EQ_QUOTED 359
-#define MZN_NQ_QUOTED 360
-#define MZN_IN_QUOTED 361
-#define MZN_SUBSET_QUOTED 362
-#define MZN_SUPERSET_QUOTED 363
-#define MZN_UNION_QUOTED 364
-#define MZN_DIFF_QUOTED 365
-#define MZN_SYMDIFF_QUOTED 366
-#define MZN_DOTDOT_QUOTED 367
-#define MZN_PLUS_QUOTED 368
-#define MZN_MINUS_QUOTED 369
-#define MZN_MULT_QUOTED 370
-#define MZN_DIV_QUOTED 371
-#define MZN_IDIV_QUOTED 372
-#define MZN_MOD_QUOTED 373
-#define MZN_INTERSECT_QUOTED 374
-#define MZN_NOT_QUOTED 375
-#define MZN_COLONCOLON_QUOTED 376
-#define MZN_PLUSPLUS_QUOTED 377
+#define MZN_UNTERMINATED_STRING 319
+#define MZN_INVALID_NULL 320
+#define MZN_EQUIV 321
+#define MZN_IMPL 322
+#define MZN_RIMPL 323
+#define MZN_OR 324
+#define MZN_XOR 325
+#define MZN_AND 326
+#define MZN_LE 327
+#define MZN_GR 328
+#define MZN_LQ 329
+#define MZN_GQ 330
+#define MZN_EQ 331
+#define MZN_NQ 332
+#define MZN_IN 333
+#define MZN_SUBSET 334
+#define MZN_SUPERSET 335
+#define MZN_UNION 336
+#define MZN_DIFF 337
+#define MZN_SYMDIFF 338
+#define MZN_DOTDOT 339
+#define MZN_PLUS 340
+#define MZN_MINUS 341
+#define MZN_MULT 342
+#define MZN_DIV 343
+#define MZN_IDIV 344
+#define MZN_MOD 345
+#define MZN_INTERSECT 346
+#define MZN_NOT 347
+#define MZN_PLUSPLUS 348
+#define MZN_COLONCOLON 349
+#define PREC_ANNO 350
+#define MZN_EQUIV_QUOTED 351
+#define MZN_IMPL_QUOTED 352
+#define MZN_RIMPL_QUOTED 353
+#define MZN_OR_QUOTED 354
+#define MZN_XOR_QUOTED 355
+#define MZN_AND_QUOTED 356
+#define MZN_LE_QUOTED 357
+#define MZN_GR_QUOTED 358
+#define MZN_LQ_QUOTED 359
+#define MZN_GQ_QUOTED 360
+#define MZN_EQ_QUOTED 361
+#define MZN_NQ_QUOTED 362
+#define MZN_IN_QUOTED 363
+#define MZN_SUBSET_QUOTED 364
+#define MZN_SUPERSET_QUOTED 365
+#define MZN_UNION_QUOTED 366
+#define MZN_DIFF_QUOTED 367
+#define MZN_SYMDIFF_QUOTED 368
+#define MZN_DOTDOT_QUOTED 369
+#define MZN_PLUS_QUOTED 370
+#define MZN_MINUS_QUOTED 371
+#define MZN_MULT_QUOTED 372
+#define MZN_DIV_QUOTED 373
+#define MZN_IDIV_QUOTED 374
+#define MZN_MOD_QUOTED 375
+#define MZN_INTERSECT_QUOTED 376
+#define MZN_NOT_QUOTED 377
+#define MZN_COLONCOLON_QUOTED 378
+#define MZN_PLUSPLUS_QUOTED 379
 
 
 
@@ -300,6 +304,7 @@ typedef union YYSTYPE
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expression_v;
          std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
+         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expression_vvv;
          MiniZinc::Generator* generator;
          std::vector<MiniZinc::Generator>* generator_v;
          std::vector<std::string>* string_v;
