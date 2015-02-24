@@ -199,7 +199,8 @@ namespace MiniZinc {
   }
   
   bool 
-  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) { 
+  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {
+    bool success = true;
     //std::cout << "DEBUG: BEGIN posting constraint " << *cts << std::endl;
     Expression* cts_eval = eval_par(env.envi(),cts);      
     //std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
@@ -240,7 +241,7 @@ namespace MiniZinc {
       }
       for(unsigned int i=0; i<vars.size(); i++)
         std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
-      solver->addVariables(vars);
+      success = success && solver->addVariables(vars);
     }      
     
     oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
@@ -263,7 +264,7 @@ namespace MiniZinc {
       }
       for(unsigned int i=0; i<flat_cts.size(); i++)
         std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
-      solver->postConstraints(flat_cts);      
+      success = success && solver->postConstraints(flat_cts);      
     }
     
     // check for variable domain updates
@@ -282,7 +283,7 @@ namespace MiniZinc {
               int ub_new = sl_new->isv()->max().toInt();
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
               if(updateBounds) {                
-                solver->updateIntBounds(id->decl(),lb_new,ub_new);
+                success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
                 std::cout << "DEBUG: updated int bounds of " << *id << " in solver" << std::endl;
               }             
             }
@@ -294,7 +295,7 @@ namespace MiniZinc {
       }
     }
       
-    return false; // TODO: change as soon as it works in the solvers
+    return success; // TODO: change as soon as it works in the solvers
   }
   
 }

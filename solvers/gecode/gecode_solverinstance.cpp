@@ -1352,8 +1352,11 @@ namespace MiniZinc {
 
   }
   
-  bool GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    return false; // TODO
+  bool 
+  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    Gecode::rel(*_current_space, this->resolveVar(vd).intVar(_current_space), IntRelType::IRT_LQ, ub);
+    Gecode::rel(*_current_space, this->resolveVar(vd).intVar(_current_space), IntRelType::IRT_GQ, lb);
+    return true;
   }
 
   }
