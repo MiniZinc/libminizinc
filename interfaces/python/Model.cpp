@@ -356,12 +356,13 @@ static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
   MznModel* self = reinterpret_cast<MznModel*>(type->tp_alloc(type,0));
-  self->includePaths = new vector<string>;
+  self->includePaths = NULL;
+  self->_m = NULL;
   return reinterpret_cast<PyObject*>(self);
 }
 
 static int
-MznModel_init(MznModel* self, PyObject* args)
+MznModel_init(MznModel* self, PyObject* args = NULL)
 {
   self->loaded = false;
   string std_lib_dir;
@@ -411,6 +412,7 @@ MznModel_init(MznModel* self, PyObject* args)
   const std::string& libNamesStr = libNames.str();
   self->timeLimit = 0;
   self->loaded_from_minizinc = false;
+  self->includePaths = new vector<string>;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
   self->sc = self->SC_GECODE;
@@ -430,7 +432,8 @@ MznModel_dealloc(MznModel* self)
 {
   if (self->_m)
     delete self->_m;
-  delete self->includePaths;
+  if (self->_m)
+    delete self->includePaths;
   self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
