@@ -193,7 +193,7 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
-    SolverInstance::Status status = solver->nextSolution();
+    SolverInstance::Status status = solver->next();
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
     for(VarDeclIterator it = env.output()->begin_vardecls(); it != env.output()->end_vardecls(); ++it) {
       std::cout << "DEBUG: solution:\n" << *it << std::endl;
@@ -202,9 +202,21 @@ namespace MiniZinc {
   }
   
   bool 
-  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {   
-    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);
-    Expression* flat = ee.r(); // it's not really the flat expression    
+  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) { 
+    std::cout << "DEBUG: posting constraint " << *cts << std::endl;
+    Expression* cts_eval = eval_par(env.envi(),cts);
+    std::cout << "DEBUG: posting evaluated (par) constraint " << *cts_eval << std::endl;
+    std::cout << "\n\nDEBUG: Original model before flattening:" << std::endl;
+    debugprint(env.model());    
+    std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
+    debugprint(env.flat());    
+    EE ee = flat_exp(env.envi(), Ctx(), cts_eval, constants().var_true, constants().var_true);
+    Expression* flat = ee.r(); // it's not really the flat expression
+    std::cout << "\n\nDEBUG: Original model AFTER flattening:" << std::endl;
+    debugprint(env.model());
+    std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << *cts_eval << std::endl;   
+    debugprint(env.flat());   
+    std::cout << std::endl;
     // TODO: post flat constraint in solver (incremental or non-incremental)    
     return false;
   }

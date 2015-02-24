@@ -30,23 +30,25 @@ namespace MiniZinc {
     }
     it->second(_base, c);
   }
-
-  SolverInstanceBase::Status 
-  SolverInstanceBase::nextSolution(void) {
-    Status s = next();
-    if(s == SolverInstance::SAT || s == SolverInstance::OPT)
-      assignSolutionToOutput();
-    return s;
-  }
   
   void
   SolverInstanceBase::assignSolutionToOutput(void) {
-    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+    for(unsigned int i=0; i<_env.output()->size(); i++) {
+      if(VarDeclI* vdi = (*(_env.output()))[i]->dyn_cast<VarDeclI>()) {
+        std::cout << "DEBUG: type of var decl in output: \"" << (vdi->e()->id()->type().toString()) << "\" of variable: " << *(vdi->e()) << std::endl;
+      //if(it->e()->id()->str().str() != "m") { // don't assign solutions to parameters // TODO
+      if (vdi->e()->e() == NULL) {
+        vdi->e()->e(getSolutionValue(vdi->e()->id()));
+        std::cout << "DEBUG: set solution value: " << *(vdi->e()) << std::endl;
+      }
+    }
+    /*for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
       std::cout << "DEBUG: type of var decl in output: \"" << (it->e()->id()->type().toString()) << "\" of variable: " << *(it->e()) << std::endl;
-      if(!it->e()->id()->type().ispar()) { // don't assign solutions to parameters
+      //if(it->e()->id()->str().str() != "m") { // don't assign solutions to parameters // TODO
+      if (it->e()->e() == NULL) {
         it->e()->e(getSolutionValue(it->e()->id()));
         std::cout << "DEBUG: set solution value: " << *(it->e()) << std::endl;
-      }
+      } */
     }
   }
   

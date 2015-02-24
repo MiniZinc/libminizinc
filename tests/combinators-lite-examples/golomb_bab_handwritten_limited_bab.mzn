@@ -20,12 +20,12 @@ include "combinators.mzn"; % include the search combinators lite
 int: m = 4;
 int: n = m*m;
 
-array[1..m] of var 0..n: mark;
+var 0..n: obj;
 
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
 
-var 0..n: obj;
+array[1..m] of var 0..n: mark;
 
 constraint mark[1] = 0;
 
@@ -51,4 +51,4 @@ solve :: combinator(
 ) 
 satisfy;
 
-output ["golomb ", show(mark), "\n"];
+output ["golomb ", show(obj), "\n", show(mark)];

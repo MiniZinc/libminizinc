@@ -28,8 +28,8 @@ namespace MiniZinc {
       
       SolverInstance::Status status;    
       Expression* combinator = NULL;
-      if(env.model()->solveItem()->combinator_lite()) {
-        Annotation& ann = env.model()->solveItem()->ann(); 
+      if(env.flat()->solveItem()->combinator_lite()) {
+        Annotation& ann = env.flat()->solveItem()->ann(); 
         for(ExpressionSetIter it = ann.begin(); it!=ann.end(); it++) {
           if(Call* c = (*it)->dyn_cast<Call>()) {
             if(c->id() == constants().ann.combinator) {

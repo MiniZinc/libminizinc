@@ -49,16 +49,14 @@ namespace MiniZinc {
     SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
     
     virtual ~SolverInstanceBase(void) {}
-    /// find the next solution
+    /// find the next solution (when overwriting this method, make sure that assignSolutionToOutput is called after a new solution is found)
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);   
     /// overwrite in your solver, if your solver allows to post constraints during search
-    bool postConstraints(std::vector<Call*> cts) { return false; }
-    /// finds the next solution and stores it in the output model
-    Status nextSolution(void);
+    bool postConstraints(std::vector<Call*> cts) { return false; }   
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
     Env& env(void) { return _env; }
