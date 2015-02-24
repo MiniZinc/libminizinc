@@ -194,7 +194,9 @@ namespace MiniZinc {
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
-    std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;    
+    std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
+    std::cout << "DEBUG: printing new solution:" << std::endl;
+    debugprint(env.output());
     return status; 
   }
   
