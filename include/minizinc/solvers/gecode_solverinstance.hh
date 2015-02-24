@@ -219,6 +219,7 @@ namespace MiniZinc {
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
 
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.

@@ -37,7 +37,9 @@ namespace MiniZinc {
     virtual Status next(void);
 
     virtual Status solve(void);
-
+    
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
+  
     virtual void processFlatZinc(void);
     
     void assignSolutionToOutput(void);

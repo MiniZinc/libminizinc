@@ -256,6 +256,9 @@ namespace MiniZinc {
     assert(false);
   }
   
-  
+  bool 
+  FZNSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    return false; // TODO: FZN should inherit from non-incremental interface, as soon as it is done
+  }
   
 }

@@ -396,4 +396,9 @@ namespace MiniZinc {
     }
 
   }
+  
+   bool 
+   CPLEXSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    return false; // TODO: CPLEX should inherit from non-incremental interface, as soon as it is done
+  }
 }

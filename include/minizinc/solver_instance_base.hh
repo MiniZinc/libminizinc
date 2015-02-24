@@ -54,13 +54,14 @@ namespace MiniZinc {
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
-    virtual Status solve(void);   
+    virtual Status solve(void);
+    /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub) = 0;
+    
     /// post constraints during search (after next() has been called)
     bool postConstraints(std::vector<Call*> cts) { return false; }
     /// add variables during search (after next() has been called)
-    bool addVariables(std::vector<VarDecl*> vars) { return false; }
-    /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
-    bool updateIntBounds(VarDecl* vd, int lb, int ub) { return false; }
+    bool addVariables(std::vector<VarDecl*> vars) { return false; }    
     /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
     bool updateFloatBounds(VarDecl* vd, float lb, float ub) { return false; }
     void setOptions(Options& o) { _options = o; }

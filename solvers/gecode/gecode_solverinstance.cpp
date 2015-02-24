@@ -1351,5 +1351,9 @@ namespace MiniZinc {
     }
 
   }
+  
+  bool GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    return false; // TODO
+  }
 
   }
