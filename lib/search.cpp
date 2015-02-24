@@ -195,8 +195,11 @@ namespace MiniZinc {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
-    std::cout << "DEBUG: printing new solution:" << std::endl;
+    //std::cout << "DEBUG: printing current flat model:" << std::endl;
+    //debugprint(env.flat());
+    std::cout << "\nDEBUG: printing new solution:" << std::endl;
     debugprint(env.output());
+    std::cout << "\n" << std::endl;
     return status; 
   }
   
@@ -286,7 +289,7 @@ namespace MiniZinc {
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
               if(updateBounds) {                
                 success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
-                std::cout << "DEBUG: updated int bounds of " << *id << " in solver" << std::endl;
+                std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
               }             
             }
           }

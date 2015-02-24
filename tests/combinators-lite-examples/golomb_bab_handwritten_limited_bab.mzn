@@ -41,7 +41,7 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 % solve using minimizing branch & bound
 solve :: combinator(
    scope( 
-       repeat (i in 1..10) (
+       repeat (i in 1..15) (
            and([
                next, % get next solution
                post(obj < sol(obj)) % post constraint
