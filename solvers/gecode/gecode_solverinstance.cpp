@@ -1346,7 +1346,6 @@ namespace MiniZinc {
         }
       } else if(vd->ann().contains(constants().ann.output_var)) {
         Expression* sol = getSolutionValue(vd->id());
-        vd->e(sol);
         for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
           if(it->e()->id()->str() == vd->id()->str()) {
             //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
