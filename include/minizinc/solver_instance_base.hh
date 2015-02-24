@@ -63,7 +63,7 @@ namespace MiniZinc {
     /// add variables during search (after next() has been called)
     bool addVariables(std::vector<VarDecl*> vars) { return false; }    
     /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
-    bool updateFloatBounds(VarDecl* vd, float lb, float ub) { return false; }
+    //bool updateFloatBounds(VarDecl* vd, float lb, float ub) { return false; }
     void setOptions(Options& o) { _options = o; }
     Options& getOptions() { return _options; }
     Env& env(void) { return _env; }

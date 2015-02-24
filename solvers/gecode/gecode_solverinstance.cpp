@@ -18,6 +18,7 @@
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include "aux_brancher.hh"
 #include <minizinc/solvers/gecode/fzn_space.hh>
+#include <minizinc/solvers/gecode/gecode_engine.hh>
 
 using namespace Gecode;
 
@@ -30,10 +31,10 @@ namespace MiniZinc {
     virtual ~GecodeEngine(void) {}
   };
   
-  template<template<class> class Engine,
+  template<template<class> class DFSEngine,
            template<template<class> class,class> class Meta>
   class MetaEngine : public GecodeEngine {
-    Meta<Engine,FznSpace> e;
+    Meta<DFSEngine,FznSpace> e;
   public:
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
@@ -50,9 +51,7 @@ namespace MiniZinc {
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
-      delete engine;
-      //delete _current_space;
-      // delete _solution; // TODO: is this necessary?
+      delete engine;      
     }
 
     void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
@@ -1353,10 +1352,16 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    Gecode::rel(*_current_space, this->resolveVar(vd).intVar(_current_space), IntRelType::IRT_LQ, ub);
-    Gecode::rel(*_current_space, this->resolveVar(vd).intVar(_current_space), IntRelType::IRT_GQ, lb);
+  GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
+    Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
+    Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
     return true;
+  }
+  
+  bool 
+  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    // TODO: call update bounds in the engine
+    return false; // TODO: change once done
   }
 
   }

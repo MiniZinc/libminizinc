@@ -296,6 +296,7 @@ if(HAS_GECODE)
 
   add_library(minizinc_gecode
           solvers/gecode/fzn_space.cpp
+          solvers/gecode/gecode_engine.cpp
 	  solvers/gecode/gecode_solverinstance.cpp
 		solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
