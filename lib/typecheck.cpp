@@ -74,7 +74,19 @@ namespace MiniZinc {
     if (vdi->second.empty())
       env.remove(vd->id());
   }
-  
+
+  VarDecl*
+  TopoSorter::get(const ASTString& id_v, const Location& loc) {
+    GCLock lock;
+    Id* id = new Id(Location(), id_v, NULL);
+    DeclMap::iterator decl = env.find(id);
+    if (decl==env.end()) {
+      GCLock lock;
+      throw TypeError(loc,"undefined identifier `"+id->str().str()+"'");
+    }
+    return decl->second.back();
+  }
+
   VarDecl*
   TopoSorter::checkId(Id* id, const Location& loc) {
     DeclMap::iterator decl = env.find(id);
@@ -795,16 +807,11 @@ namespace MiniZinc {
 
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
-      VarDecl* vd = ts.checkId(ai->id(),ai->loc());
+      VarDecl* vd = ts.get(ai->id(),ai->loc());
       if (vd->e())
         throw TypeError(ai->loc(),"multiple assignment to the same variable");
-      TopoSorter::PosMap::iterator pi = ts.pos.find(vd);
-      int tmp = pi->second;
-      pi->second = -1;
-      ts.run(ai->e());
-      pi = ts.pos.find(vd);
-      pi->second = tmp;
-      ai->decl(vd);
+      ai->remove();
+      vd->e(ai->e());
     }
     
     class TSV1 : public ItemVisitor {
