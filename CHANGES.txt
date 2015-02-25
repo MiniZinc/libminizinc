@@ -42,6 +42,7 @@ Bug fixes:
  - Fix error reporting when an evaluation error occurs within a comprehension
    generator
  - Report type error on some ambiguous function calls
+ - Report type error on var sets with element type other than int
  
 
 Version 2.0.1

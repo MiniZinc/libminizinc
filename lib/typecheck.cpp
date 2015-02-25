@@ -763,6 +763,8 @@ namespace MiniZinc {
       } else {
 //        assert(ti.domain()==NULL || ti.domain()->isa<TIId>());
       }
+      if (tt.st()==Type::ST_SET && tt.ti()==Type::TI_VAR && tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP)
+        throw TypeError(ti.loc(), "var set element types other than `int' not allowed");
       ti.type(tt);
     }
     void vTIId(TIId& id) {}
