@@ -504,7 +504,7 @@ namespace MiniZinc {
 %token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
 %token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
 
-%token MZN_VAR "var" MZN_PAR "par" MZN_SVAR "svar"
+%token MZN_VAR "var" MZN_PAR "par"
 
 %token MZN_ABSENT "<>"
 %token MZN_ANN "ann"
@@ -1564,28 +1564,6 @@ let_expr :
       { $$=new Let(@$, *$3, $6); delete $3; }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
       { $$=new Let(@$, *$3, $7); delete $3; }
-//    | MZN_LET '(' let_vardecl_item_list ')' MZN_IN expr %prec PREC_ANNO
-//      { $$=new Let(@$, *$3, $6); delete $3; }
-//    | MZN_LET '(' let_vardecl_item_list comma_or_semi ')' MZN_IN expr %prec PREC_ANNO
-//      { $$=new Let(@$, *$3, $7); delete $3; }
-//        MZN_LET let_vardecl_item_list ';' MZN_IN expr %prec PREC_ANNO
-//        { $$=new Let(@$, *$2, $5); delete $2; }
-//    | MZN_LET '{' slet_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
-//      { $$=new SLetExpr(@$, *$3, $6); delete $3; }
-//    | MZN_LET '{' slet_vardecl_item_list ',' '}' MZN_IN expr %prec PREC_ANNO
-//      { $$=new SLetExpr(@$, *$3, $7); delete $3; }
-
-//slet_vardecl_item_list :
-//      slet_vardecl_item
-//      { $$=new vector<VardeclExpr*>; $$->push_back($1); }
-//    | slet_vardecl_item_list ',' slet_vardecl_item
-//      { $$=$1; $$->push_back($3); }
-
-//slet_vardecl_item :
-//      MZN_SVAR MZN_INT ':' MZN_IDENTIFIER MZN_EQ expr
-//      { $$=new VardeclExpr(@$,TypeInst::svar(@$),$4,$6);
-//        free($4);
-//      }
 
 let_vardecl_item_list :
       let_vardecl_item
