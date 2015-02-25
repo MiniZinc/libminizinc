@@ -24,21 +24,45 @@ using namespace Gecode;
 
 namespace MiniZinc {
 
+  /// search engine for standard Gecode search, wrapper class for engine
   class GecodeEngine {
   public:
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) = 0;
+    //virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
     virtual ~GecodeEngine(void) {}
   };
   
-  template<template<class> class DFSEngine,
+  /// custom search engine for search combinators, wrapper class for engine
+  class CustomEngine : public GecodeEngine {
+  public:
+    virtual FznSpace* next(void) = 0;
+    virtual bool stopped(void) = 0;
+    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
+    virtual ~CustomEngine(void) {}
+  };
+  
+  /// meta-engine that inherits from GecodeEngine
+  template<template<class> class E,
            template<template<class> class,class> class Meta>
   class MetaEngine : public GecodeEngine {
-    Meta<DFSEngine,FznSpace> e;
+    Meta<E,FznSpace> e;
   public:
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
+    virtual bool stopped(void) { return e.stopped(); }    
+  };
+  
+  /// meta-engine that inherits from CustomEngine
+    template<template<class> class DFSEngine,
+           template<template<class> class,class> class GecodeMeta>
+  class CustomMetaEngine : public CustomEngine {
+    GecodeMeta<DFSEngine,FznSpace> e;
+  public:
+    CustomMetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
+    virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
+    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); };
   };
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
@@ -46,8 +70,7 @@ namespace MiniZinc {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
-       }
-       // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
+       }       
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
@@ -859,7 +882,7 @@ namespace MiniZinc {
 
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
-    prepareEngine();
+    prepareEngine(true);
     
     _solution = engine->next();
     
@@ -891,7 +914,7 @@ namespace MiniZinc {
   }
 
   void
-  GecodeSolverInstance::prepareEngine(void) {
+  GecodeSolverInstance::prepareEngine(bool combinators) {
     if (engine==NULL) {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -946,9 +969,14 @@ namespace MiniZinc {
                                             false);
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
+        //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
+        if(combinators) {          
+          engine = new CustomMetaEngine<DFS, GecodeMeta>(this->_current_space,o);
+        }
+        else 
+          engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
       } else {
-        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);
+        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);        
       }
     }
   }
@@ -956,7 +984,7 @@ namespace MiniZinc {
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
 
-    prepareEngine();
+    prepareEngine(false);
     if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
       _solution = engine->next();
     } else {
@@ -1360,8 +1388,8 @@ namespace MiniZinc {
   
   bool 
   GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    // TODO: call update bounds in the engine
-    return false; // TODO: change once done
+    customeEngine->updateIntBounds(vd,lb,ub,*this);   
+    return true;
   }
 
   }

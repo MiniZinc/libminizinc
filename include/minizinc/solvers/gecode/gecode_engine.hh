@@ -18,6 +18,8 @@
 #include <gecode/search/support.hh>
 #include <gecode/search/worker.hh>
 #include <gecode/support.hh>
+//#include <gecode/driver.hh>
+//#include <gecode/driver/script.hpp>
 
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/ast.hh>
@@ -73,6 +75,18 @@ namespace MiniZinc {
     ~DFSEngine(void);
   };
 
+  
+  /// special meta (wrapper) class to allow additional functionality
+  template<template<class> class E, class T>
+  class GecodeMeta : E<T> {
+    E<T> e;
+  public:
+    GecodeMeta(T* s, const Gecode::Search::Options& o) : e(s,o) {} //E<T>(s,o) {}
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  /* TODO e.updateIntBounds(vd,lb,ub,si); */  }
+    FznSpace* next(void) { return e.next(); }
+    bool stopped(void) { return e.stopped(); }
+  };
+  
   forceinline 
   DFSEngine::DFSEngine(Gecode::Space* s, const Gecode::Search::Options& o)
     : opt(o), path(static_cast<int>(opt.nogoods_limit)), d(0) {
@@ -164,7 +178,6 @@ namespace MiniZinc {
     delete cur;
     path.reset();
   }
-
 
 }
 

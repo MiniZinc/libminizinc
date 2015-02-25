@@ -120,6 +120,7 @@ namespace MiniZinc {
   };
   
   class GecodeEngine;
+  class CustomEngine;
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
@@ -136,8 +137,10 @@ namespace MiniZinc {
     //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
-    /// The solver engine
+    /// The solver engine for regular search
     GecodeEngine* engine;
+    /// the solver engine for combinators
+    CustomEngine* customeEngine;
 
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
@@ -214,7 +217,8 @@ namespace MiniZinc {
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
             bool ignoreUnknown, std::ostream& err);
-    void prepareEngine(void);
+    /// prepare the engine, where combinators states if search combinators will be used
+    void prepareEngine(bool combinators);
   };
 }
 
