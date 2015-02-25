@@ -726,6 +726,7 @@ namespace MiniZinc {
             if (is_true) {
               env.addWarning("model inconsistency detected");
               env.flat()->fail();
+              return true;
             } else if (is_false) {
               CollectDecls cd(env.vo,deletedVarDecls,ii);
               topDown(cd,c);
@@ -746,6 +747,7 @@ namespace MiniZinc {
             } else if (is_false) {
               env.addWarning("model inconsistency detected");
               env.flat()->fail();
+              return true;
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
               vdi->e()->ti()->domain(constants().lit_true);
