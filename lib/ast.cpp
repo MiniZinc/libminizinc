@@ -1173,6 +1173,8 @@ namespace MiniZinc {
     m->addItem(var_redef);
   }
   
+  const int Constants::maxConstInt;
+  
   Constants& constants(void) {
     static Constants _c;
     return _c;
