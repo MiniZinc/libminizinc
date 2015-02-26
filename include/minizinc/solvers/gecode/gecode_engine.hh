@@ -36,7 +36,8 @@ namespace MiniZinc {
     /// get the space at edge \a i in the edge stack
     Gecode::Space* getSpace(int i) { assert(i >=0 && i < ds.entries()); return ds[i].space(); }
     /// get the number of entries in the edge stack
-    int getNbEntries(void) { return ds.entries(); }
+    int getNbEntries(void) { return ds.entries(); }    
+    void virtual post(Gecode::Space& home);
   };
   
   

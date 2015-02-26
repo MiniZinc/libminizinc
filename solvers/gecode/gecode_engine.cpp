@@ -12,7 +12,12 @@
 #include <minizinc/solvers/gecode/gecode_engine.hh>
 
 namespace MiniZinc {
-
+  
+  void
+  MiniZinc::Path::post(Gecode::Space& home) {
+    GECODE_ES_FAIL(Gecode::Search::Meta::NoGoodsProp::post(home,*this));
+  }
+  
   template<class T>
   void 
   DFSEngine<T>::postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) {
