@@ -79,12 +79,11 @@ namespace MiniZinc {
   /// special meta (wrapper) class to allow additional functionality
   template<template<class> class E, class T>
   class GecodeMeta : E<T> {
-    E<T> e;
   public:
-    GecodeMeta(T* s, const Gecode::Search::Options& o) : e(s,o) {} //E<T>(s,o) {}
+    GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} //E<T>(s,o) {}
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  /* TODO e.updateIntBounds(vd,lb,ub,si); */  }
-    FznSpace* next(void) { return e.next(); }
-    bool stopped(void) { return e.stopped(); }
+    FznSpace* next(void) { return E<T>::next(); }
+    bool stopped(void) { return E<T>::stopped(); }
   };
   
   forceinline 
