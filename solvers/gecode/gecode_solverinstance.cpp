@@ -971,7 +971,7 @@ namespace MiniZinc {
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
         if(combinators) {          
-          engine = new CustomMetaEngine<DFS, GecodeMeta>(this->_current_space,o);
+          engine = new CustomMetaEngine<DFSEngine, GecodeMeta>(this->_current_space,o);
         }
         else 
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);

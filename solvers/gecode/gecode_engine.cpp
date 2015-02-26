@@ -13,25 +13,27 @@
 
 namespace MiniZinc {
 
+  template<class T>
   void 
-  DFSEngine::postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) {
+  DFSEngine<T>::postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) {
     // iterate over stack and post constraint
     if(path.empty()) 
       return;    
     for(int edge=0; edge<path.getNbEntries(); edge++) {
-      Gecode::Space* s = path.getSpace(edge);
+      T* s = path.getSpace(edge);
       if(s)
         si.postConstraints(cts); // TODO: make sure the constraints are posted on s!!
     }
   }
   
+  template<class T>
   void
-  DFSEngine::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
+  DFSEngine<T>::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
     // iterate over stack and post constraint
     if(path.empty()) 
       return;    
     for(int edge=0; edge<path.getNbEntries(); edge++) {
-      Gecode::Space* s = path.getSpace(edge);
+      T* s = path.getSpace(edge);
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);
         si.updateIntBounds(space, vd,lb,ub);

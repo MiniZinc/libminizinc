@@ -18,8 +18,6 @@
 #include <gecode/search/support.hh>
 #include <gecode/search/worker.hh>
 #include <gecode/support.hh>
-//#include <gecode/driver.hh>
-//#include <gecode/driver/script.hpp>
 
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/ast.hh>
@@ -42,8 +40,9 @@ namespace MiniZinc {
   };
   
   
-  /// iterative DFS class that allows to add constraints along the path      
-  class DFSEngine  : public Gecode::Search::Worker {
+  /// iterative DFS class that allows to add constraints along the path
+  template<class T>
+  class DFSEngine  : public Gecode::Search::Worker, public Gecode::EngineBase {
   private:
     /// Search options
     Gecode::Search::Options opt;    
@@ -56,13 +55,13 @@ namespace MiniZinc {
     MiniZinc::Path path;
   public:
     /// Initialize for space \a s with options \a o
-    DFSEngine(Gecode::Space* s, const Gecode::Search::Options& o);
+    DFSEngine(T* s, const Gecode::Search::Options& o);
     /// %Search for next solution
-    Gecode::Space* next(void);
+    T* next(void);
     /// Return statistics
     Statistics statistics(void) const;
     /// Reset engine to restart at space \a s
-    void reset(Gecode::Space* s);
+    void reset(T* s);
     /// Return no-goods
     Gecode::NoGoods& nogoods(void);
     /// post constraints to the search engine
@@ -75,19 +74,28 @@ namespace MiniZinc {
     ~DFSEngine(void);
   };
 
+  /*
+  template<class T>
+  class CustomDFS : public DFSEngine, public Gecode::DFS<T> {
+  public:
+    /// Initialize search engine for space \a s with options \a o
+    CustomDFS(T* s, const Gecode::Search::Options& o=Gecode::Search::Options::def);    
+  };*/
+  
   
   /// special meta (wrapper) class to allow additional functionality
   template<template<class> class E, class T>
   class GecodeMeta : E<T> {
   public:
-    GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} //E<T>(s,o) {}
-    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  /* TODO e.updateIntBounds(vd,lb,ub,si); */  }
+    GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  /*E<T>::updateIntBounds(vd,lb,ub,si); *//* TODO e.updateIntBounds(vd,lb,ub,si); */  }
     FznSpace* next(void) { return E<T>::next(); }
     bool stopped(void) { return E<T>::stopped(); }
   };
   
+  template<class T>
   forceinline 
-  DFSEngine::DFSEngine(Gecode::Space* s, const Gecode::Search::Options& o)
+  DFSEngine<T>::DFSEngine(T* s, const Gecode::Search::Options& o)
     : opt(o), path(static_cast<int>(opt.nogoods_limit)), d(0) {
     if ((s == NULL) || (s->status(*this) == Gecode::SS_FAILED)) {
       fail++;
@@ -99,8 +107,9 @@ namespace MiniZinc {
     }
   }
 
-  forceinline void
-  DFSEngine::reset(Gecode::Space* s) {
+  template<class T>
+  forceinline void  
+  DFSEngine<T>::reset(T* s) {
     delete cur;
     this->path.reset();
     d = 0;
@@ -112,13 +121,15 @@ namespace MiniZinc {
     Worker::reset();
   }
 
+  template<class T>
   forceinline Gecode::NoGoods&
-  DFSEngine::nogoods(void) {
+  DFSEngine<T>::nogoods(void) {
     return path;
   }
 
-  forceinline Gecode::Space*
-  DFSEngine::next(void) {
+  template<class T>
+  forceinline T*
+  DFSEngine<T>::next(void) {
     start();
     while (true) {
       while (cur) {
@@ -135,15 +146,15 @@ namespace MiniZinc {
           {
             // Deletes all pending branchers
             (void) cur->choice();
-            Gecode::Space* s = cur;
+            T* s = static_cast<T*>(cur);
             cur = NULL;
             return s;
           }
           case Gecode::SS_BRANCH:
           {
-            Gecode::Space* c;
+            T* c;
             if ((d == 0) || (d >= opt.c_d)) {
-              c = cur->clone();
+              c = static_cast<T*>(cur->clone());
               d = 1;
             } else {
               c = NULL;
@@ -167,13 +178,15 @@ namespace MiniZinc {
     return NULL;
   }
 
+  template<class T>
   forceinline Gecode::Search::Statistics
-  DFSEngine::statistics(void) const {
+  DFSEngine<T>::statistics(void) const {
     return *this;
   }
 
+  template<class T>
   forceinline 
-  DFSEngine::~DFSEngine(void) {
+  DFSEngine<T>::~DFSEngine(void) {
     delete cur;
     path.reset();
   }
