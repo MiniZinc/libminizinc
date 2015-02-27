@@ -2020,7 +2020,7 @@ namespace MiniZinc {
                            EE& ret, VarDecl* b, VarDecl* r,
                            std::vector<EE>& args_ee, std::vector<KeepAlive>& args) {
     typedef typename LinearTraits<Lit>::Val Val;
-    Expression* al_arg = (cid==constants().ids.sum ? c->args()[0] : c->args()[1]);
+    Expression* al_arg = (cid==constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
     EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
     ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
     if (al->dims()>1) {
@@ -2029,14 +2029,14 @@ namespace MiniZinc {
       al = new ArrayLit(al->loc(),al->v());
       al->type(alt);
     }
-    Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(env,c->args()[2]));
+    Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(env,args_ee[2].r()));
     
     std::vector<Val> c_coeff(al->v().size());
     if (cid==constants().ids.sum) {
       for (unsigned int i=al->v().size(); i--;)
         c_coeff[i] = 1;
     } else {
-      EE flat_coeff = flat_exp(env,nctx,c->args()[0],NULL,NULL);
+      EE flat_coeff = flat_exp(env,nctx,args_ee[0].r(),NULL,NULL);
       ArrayLit* coeff = follow_id(flat_coeff.r())->template cast<ArrayLit>();
       for (unsigned int i=coeff->v().size(); i--;)
         c_coeff[i] = LinearTraits<Lit>::eval(env,coeff->v()[i]);
