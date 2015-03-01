@@ -300,32 +300,36 @@ namespace MiniZinc {
               if(domain->isa<SetLit>()) {
                 IntVar intVar(*this->_current_space, arg2intset(_env.envi(), domain));
                 _current_space->iv.push_back(intVar);
-                insertVar(it->e()->id(),
-                    GecodeVariable(GecodeVariable::INT_TYPE,
-                      _current_space->iv.size()-1));
+                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
               } else {
-                std::pair<double,double> bounds = getIntBounds(domain);
-                int lb, ub;
-                if(valueWithinBounds(bounds.first)) {
-                  lb = round_to_longlong(bounds.first);
-                } else {
-                  std::stringstream ssm;
-                  ssm << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.first << " outside 32-bit int." << std::endl;
-                  throw InternalError(ssm.str());
-                }
+                IntBounds ib = compute_int_bounds(_env.envi(), domain);
+                if(ib.valid) {
+                  int lb=-1, ub=-2;
+                  if(valueWithinBounds(ib.l.toInt())) {
+                    lb = ib.l.toInt();
+                  } else {
+                    std::stringstream ssm;
+                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+                    throw InternalError(ssm.str());
+                  }
 
-                if(valueWithinBounds(bounds.second)) {
-                  ub = round_to_longlong(bounds.second);
-                } else {
-                  std::stringstream ssm;
-                  ssm << "GecodeSolverInstance::processFlatZinc: Error: " << bounds.second << " outside 32-bit int." << std::endl;
-                  throw InternalError(ssm.str());
-                }
+                  if(valueWithinBounds(ib.u.toInt())) {
+                    ub = ib.u.toInt();
+                  } else {
+                    std::stringstream ssm;
+                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+                    throw InternalError(ssm.str());
+                  }
 
-                IntVar intVar(*this->_current_space, lb, ub);
-                _current_space->iv.push_back(intVar);
-                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                      _current_space->iv.size()-1));
+                  IntVar intVar(*this->_current_space, lb, ub);
+                  _current_space->iv.push_back(intVar);
+                  insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                        _current_space->iv.size()-1));
+                } else {
+                    std::stringstream ssm;
+                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+                    throw InternalError(ssm.str());
+                }
               }
             } else {
               std::stringstream ssm;
@@ -364,9 +368,9 @@ namespace MiniZinc {
           if(!it->e()->e()) { // there is NO initialisation expression
             Expression* domain = ti->domain();
             if(domain) {
-              std::pair<double,double> bounds = getIntBounds(domain);
-              lb = bounds.first;
-              ub = bounds.second;
+              IntBounds ib = compute_int_bounds(_env.envi(), domain);
+              lb = ib.l.toInt();
+              ub = ib.u.toInt();
             } else {
               lb = 0;
               ub = 1;
@@ -401,12 +405,13 @@ namespace MiniZinc {
             Expression* domain = ti->domain();
             double lb, ub;
             if (domain) {
-              std::pair<double,double> bounds = getFloatBounds(domain);
-              lb = bounds.first;
-              ub = bounds.second;
+              FloatBounds fb = compute_float_bounds(_env.envi(), domain);
+              lb = fb.l;
+              ub = fb.u;
             } else {
-              lb = Gecode::Int::Limits::min;
-              ub = Gecode::Int::Limits::max;
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
+              throw InternalError(ssm.str());
             }
             FloatVar floatVar(*this->_current_space, lb, ub);
             _current_space->fv.push_back(floatVar);
