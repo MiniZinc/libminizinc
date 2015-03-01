@@ -42,7 +42,7 @@ namespace MiniZinc {
     typedef IntLit* Val;
     typedef Expression* ArrayVal;
     static IntLit* e(EnvI& env, Expression* e) {
-      return new IntLit(Location(),eval_int(env, e));
+      return IntLit::a(eval_int(env, e));
     }
     static Expression* exp(IntLit* e) { return e; }
   };
@@ -53,7 +53,7 @@ namespace MiniZinc {
     static IntVal e(EnvI& env, Expression* e) {
       return eval_int(env, e);
     }
-    static Expression* exp(IntVal e) { return new IntLit(Location(),e); }
+    static Expression* exp(IntVal e) { return IntLit::a(e); }
   };
   class EvalFloatVal {
   public:
@@ -312,7 +312,22 @@ namespace MiniZinc {
       IntVal ix = dims[i];
       if (ix < al->min(i) || ix > al->max(i)) {
         success = false;
-        return NULL;
+        Type t = al->type();
+        t.dim(0);
+        if (t.isint())
+          return IntLit::a(0);
+        if (t.isbool())
+          return constants().lit_false;
+        if (t.isfloat())
+          return new FloatLit(Location(),0.0);
+        if (t.st() == Type::ST_SET || t.isbot()) {
+          SetLit* ret = new SetLit(Location(),std::vector<Expression*>());
+          ret->type(t);
+          return ret;
+        }
+        if (t.isstring())
+          return new StringLit(Location(),"");
+        throw EvalError(al->loc(), "Internal error: unexpected type in array access expression");
       }
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
@@ -1154,7 +1169,7 @@ namespace MiniZinc {
           if (id->decl()->ti()->type().isint()) {
             if (SetLit* sl = id->decl()->ti()->domain()->dyn_cast<SetLit>()) {
               if (sl->isv() && sl->isv()->min()==sl->isv()->max()) {
-                return new IntLit(Location(), sl->isv()->min());
+                return IntLit::a(sl->isv()->min());
               }
             }
           } else if (id->decl()->ti()->type().isfloat()) {

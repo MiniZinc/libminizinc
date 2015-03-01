@@ -114,6 +114,8 @@ namespace MiniZinc {
     size_t _free_mem;
     /// Memory threshold for next garbage collection
     size_t _gc_threshold;
+    /// High water mark of all allocated memory
+    size_t _max_alloced_mem;
 
     /// A trail item
     struct TItem {
@@ -133,7 +135,8 @@ namespace MiniZinc {
       , _weakRefs(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
-      , _gc_threshold(10) {
+      , _gc_threshold(10)
+      , _max_alloced_mem(0) {
       for (int i=_max_fl+1; i--;)
         _fl[i] = NULL;
     }
@@ -150,6 +153,7 @@ namespace MiniZinc {
         memset(newPage,255,sizeof(HeapPage)+s-1);
 #endif
       _alloced_mem += s;
+      _max_alloced_mem = std::max(_max_alloced_mem, _alloced_mem);
       _free_mem += s;
       if (exact && _page) {
         new (newPage) HeapPage(_page->next,s);
@@ -624,7 +628,13 @@ namespace MiniZinc {
     }
     if (!gc->_heap->trail.empty())
       gc->_heap->trail.back().mark = false;
-  }  
+  }
+  size_t
+  GC::maxMem(void) {
+    GC* gc = GC::gc();
+    return gc->_heap->_max_alloced_mem;
+  }
+  
 
   void*
   ASTNode::operator new(size_t size) {

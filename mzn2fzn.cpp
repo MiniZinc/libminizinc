@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
   bool flag_output_ozn_stdout = false;
   bool flag_instance_check_only = false;
   FlatteningOptions fopts;
-  
+
   if (argc < 2)
     goto error;
   
@@ -332,7 +332,7 @@ int main(int argc, char** argv) {
             env.clearWarnings();
             Model* flat = env.flat();
             if (flag_verbose)
-              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              std::cerr << " done (" << stoptime(lasttime) << ", max stack depth " << env.maxCallStack() << ")" << std::endl;
             
             if (flag_optimize) {
               if (flag_verbose)
@@ -426,8 +426,18 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (flag_verbose)
-    std::cerr << "Done (overall time " << stoptime(starttime) << ")." << std::endl;
+  if (flag_verbose) {
+    std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
+    size_t mem = GC::maxMem();
+    if (mem < 1024)
+      std::cerr << "maximum memory " << mem << " bytes";
+    else if (mem < 1024*1024)
+      std::cerr << "maximum memory " << mem/1024 << " Kbytes";
+    else
+      std::cerr << "maximum memory " << mem/(1024*1024) << " Mbytes";
+    std::cerr << ")." << std::endl;
+    
+  }
   return 0;
 
 error:

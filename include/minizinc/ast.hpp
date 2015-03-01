@@ -38,6 +38,13 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline IntLit*
+  IntLit::a(MiniZinc::IntVal v) {
+    if (v >= -constants().maxConstInt && v <= constants().maxConstInt)
+      return constants().integers->v()[v.toInt()+constants().maxConstInt]->cast<IntLit>();
+    return new IntLit(Location().introduce(), v);
+  }
+  
   inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {
