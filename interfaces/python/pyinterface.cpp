@@ -227,52 +227,31 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 }
 
 static PyObject* 
-Mzn_retrieveFunctions(MznModel* self, PyObject* args) {
-  std::vector<std::string> names;
-  CollectBoolFunctionNames fv(names);
+Mzn_retrieveNames(MznModel* self, PyObject* args) {
+  PyObject* boolfuncs = PyDict_New();
+  PyObject* annfuncs = PyDict_New();
+  PyObject* annvars = PyList_New(0);
+  CollectBoolFuncNames bool_fv(boolfuncs);
+  CollectAnnNames ann_fv(annfuncs, annvars);
 
   MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  MznModel_init(tempModel,NULL);
-  iterItems(fv, tempModel->_m);
+  if (MznModel_init(tempModel,NULL) != 0) {
+    return NULL;
+  }
+  iterItems(bool_fv, tempModel->_m);
+  iterItems(ann_fv, tempModel->_m);
   MznModel_dealloc(tempModel);
 
-  Py_ssize_t n = names.size();
-  PyObject* ret = PyList_New(n);
-  for (Py_ssize_t i=0; i!=n; ++i) {
-    PyObject* tempItem = PyString_FromString(names[i].c_str());
-    PyList_SET_ITEM(ret, i, tempItem);
-  }
-  return ret;
+  PyObject* dict = PyDict_New();
+  PyDict_SetItemString(dict, "boolfuncs", boolfuncs);
+  PyDict_SetItemString(dict, "annfuncs", annfuncs);
+  PyDict_SetItemString(dict, "annvars", annvars);
+
+  Py_DECREF(boolfuncs);
+  Py_DECREF(annfuncs);
+  Py_DECREF(annvars);
+  return dict;
 }
-
-static PyObject* 
-Mzn_retrieveAnnotations(MznModel* self, PyObject* args) {
-  std::vector<std::string> names[2];
-  // names[0]: variable names
-  // names[1]: function names
-  //std::vector<std::string> functions;
-  CollectAnnotationNames av(names[0], names[1]);
-
-
-  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  MznModel_init(tempModel,NULL);
-  iterItems(av, tempModel->_m);
-  MznModel_dealloc(tempModel);
-
-  PyObject* ret = PyList_New(2);
-  for (int i=0; i!=2; ++i) {
-    Py_ssize_t n = names[i].size();
-    PyObject* ret_item = PyList_New(n);
-    for (Py_ssize_t j=0; j!=n; ++j) {
-      PyObject* tempItem = PyString_FromString(names[i][j].c_str());
-      PyList_SET_ITEM(ret_item, j, tempItem);
-    }
-
-    PyList_SET_ITEM(ret, i, ret_item);
-  }
-  return ret;
-}
-
 
 
 PyMODINIT_FUNC

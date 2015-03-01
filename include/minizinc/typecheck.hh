@@ -36,6 +36,8 @@ namespace MiniZinc {
     void add(VarDecl* vd, bool unique);
     /// Remove a variable declaration
     void remove(VarDecl* vd);
+    /// Get variable declaration from identifier \a id
+    VarDecl* get(const ASTString& id, const Location& loc);
     
     VarDecl* checkId(const ASTString& id, const Location& loc);
     VarDecl* checkId(Id* id, const Location& loc);

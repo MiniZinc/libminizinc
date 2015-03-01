@@ -26,73 +26,117 @@ static PyObject* Mzn_UnOp(MznModel* self, PyObject* args);
 static PyObject* Mzn_Call(MznModel* self, PyObject* args);
 static PyObject* Mzn_lock(MznModel* self) {GC::lock(); Py_RETURN_NONE;}
 static PyObject* Mzn_unlock(MznModel* self) {GC::unlock(); Py_RETURN_NONE;}
+static PyObject* Mzn_typeVariable(MznModel* self) {
+  PyObject* v = reinterpret_cast<PyObject*>(&MznVariableType);
+  Py_INCREF(v);
+  return v;
+}
 
 // Need an outer GC Lock
 static PyObject* Mzn_Id(MznModel* self, PyObject* args);
-static PyObject* Mzn_retrieveFunctions(MznModel* self, PyObject* args);
-static PyObject* Mzn_retrieveAnnotations(MznModel* self, PyObject* args);
+static PyObject* Mzn_retrieveNames(MznModel* self, PyObject* args);
 
-class CollectBoolFunctionNames: public ItemVisitor {
+// This struct take over pointers to passing arguments. Be aware!
+struct MznFunction {
+  std::string name;
+  std::vector<PyObject*> args;
+  MznFunction(const std::string &name0): name(name0) {}
+  MznFunction(const std::string &name0, int size): name(name0) { args = vector<PyObject*>(size);}
+  MznFunction(const std::string &name0, const std::vector<PyObject*>& args0): name(name0), args(args0) {}
+};
+
+PyObject* eval_arguments(TypeInst* ti) {
+  ASTExprVec<TypeInst> ranges = ti->ranges();
+  if (ranges.size() == 0) {
+    PyObject* v;
+    switch (ti->type().bt()) {
+      case Type::BT_BOOL:   v = (PyObject*)(&PyBool_Type); break;
+      case Type::BT_INT:    v = (PyObject*)(&PyInt_Type); break;
+      case Type::BT_FLOAT:  v = (PyObject*)(&PyFloat_Type); break;
+      case Type::BT_STRING: v = (PyObject*)(&PyString_Type); break;
+      case Type::BT_ANN:    v = (PyObject*)(&MznVariableType); break;
+      default: v = (PyObject*)(&MznVariableType);
+        //throw runtime_error("CollectBoolFunctionNames: unexpected type");
+    }
+    Py_INCREF(v);
+    return v;
+  } else {
+    PyObject* args_tuple = PyList_New(ranges.size());
+    for (int i=0; i!=ranges.size(); ++i)
+      PyList_SET_ITEM(args_tuple, i, eval_arguments(ranges[i]));
+    return args_tuple;
+  }
+}
+
+class CollectBoolFuncNames: public ItemVisitor {
 protected:
-	std::vector<std::string>& _names;
+	PyObject* _boolfuncs;
 public:
-	CollectBoolFunctionNames(std::vector<std::string>& names): _names(names) {}
+	CollectBoolFuncNames(PyObject* boolfuncs): _boolfuncs(boolfuncs){}
 	bool enterModel(Model* m) {
 		return m->filename()!="stdlib.mzn";
 	}
 	void vFunctionI(FunctionI* fi) {
-		if (fi->ti()->type().isvarbool()) {
-			string toAdd = fi->id().str();
-			std::vector<std::string>::size_type i, n = _names.size();
-			for (i=0; i!=n; ++i) {
-				if (_names[i] == toAdd)
-					return;
-				else if (_names[i] > toAdd)
-					break;
-			}
-			_names.insert(_names.begin()+i, toAdd);
-		}
+    PyObject* toAdd = _boolfuncs;
+    ASTExprVec<VarDecl> params = fi->params();
+    const char* str = fi->id().str().c_str();
+    PyObject* key = PyString_FromString(str);
+    PyObject* args_tuple = PyTuple_New(params.size());
+    for (unsigned int i=0; i<params.size(); ++i) {
+      PyTuple_SET_ITEM(args_tuple, i, eval_arguments(params[i]->ti()));
+    }
+    PyObject* toAdd_item = PyDict_GetItem(toAdd, key);
+    if (toAdd_item == NULL) {
+      toAdd_item = PyList_New(1);
+      PyList_SET_ITEM(toAdd_item, 0, args_tuple);
+      if (PyDict_SetItem(toAdd, key, toAdd_item) != 0)
+        throw runtime_error("CollectBoolFunctionNames: cannot set new key to the dictionary");
+      Py_DECREF(toAdd_item);
+    } else {
+      if (PyList_Append(toAdd_item, args_tuple) != 0)
+        throw runtime_error("CollectBoolFunctionNames: cannot append item to the list");
+    }
 	}
 };
 
-class CollectAnnotationNames: public ItemVisitor {
+class CollectAnnNames: public ItemVisitor {
 protected:
-	std::vector<std::string>& _variables;
-	std::vector<std::string>& _functions;
+  PyObject* _annfuncs;
+  PyObject* _annvars;
 public:
-	CollectAnnotationNames(std::vector<std::string>& variables, std::vector<std::string>& functions): _variables(variables), _functions(functions) {}
-	bool enterModel(Model* m) {
-		return true; //m->filename()!="stdlib.mzn";
-	}
-	void vFunctionI(FunctionI* fi) {
-		if (fi->ti()->type().isann()) {
-			string toAdd = fi->id().str();
-			std::vector<std::string>::size_type i, n = _functions.size();
-			for (i=0; i!=n; ++i) {
-				if (_functions[i] == toAdd)
-					return;
-				else if (_functions[i] > toAdd)
-					break;
-			}
-			_functions.insert(_functions.begin()+i, toAdd);
-		}
-	}
-
-	void vVarDeclI(VarDeclI* vdi) {
-		if (vdi->e()->ti()->type().isann()) {
-			string toAdd = vdi->e()->id()->str().str();
-			std::vector<std::string>::size_type i, n = _variables.size();
-			for (i=0; i!=n; ++i) {
-				if (_variables[i] == toAdd)
-					return;
-				else if (_variables[i] > toAdd)
-					break;
-			}
-			_variables.insert(_variables.begin()+i, toAdd);
-		}
-	}
-
+  CollectAnnNames(PyObject* annfuncs, PyObject* annvars): _annfuncs(annfuncs), _annvars(annvars) {}
+  bool enterModel(Model* m) {
+    return true;
+  }
+  void vFunctionI(FunctionI* fi) {
+    PyObject* toAdd = _annfuncs;
+    ASTExprVec<VarDecl> params = fi->params();
+    const char* str = fi->id().str().c_str();
+    PyObject* key = PyString_FromString(str);
+    PyObject* args_tuple = PyTuple_New(params.size());
+    for (unsigned int i=0; i<params.size(); ++i) {
+      PyTuple_SET_ITEM(args_tuple, i, eval_arguments(params[i]->ti()));
+    }
+    PyObject* toAdd_item = PyDict_GetItem(toAdd, key);
+    if (toAdd_item == NULL) {
+      toAdd_item = PyList_New(1);
+      PyList_SET_ITEM(toAdd_item, 0, args_tuple);
+      if (PyDict_SetItem(toAdd, key, toAdd_item) != 0)
+        throw runtime_error("CollectBoolFunctionNames: cannot set new key to the dictionary");
+      Py_DECREF(toAdd_item);
+    } else {
+      if (PyList_Append(toAdd_item, args_tuple) != 0)
+        throw runtime_error("CollectBoolFunctionNames: cannot append item to the list");
+    }
+  }
+  void vVarDeclI(VarDeclI* vdi) {
+    if (vdi->e()->ti()->type().isann()) {
+      PyList_Append(_annvars, PyString_FromString(vdi->e()->id()->str().c_str()));
+    }
+  }
 };
+
+
 
 
 static PyMethodDef Mzn_methods[] = {
@@ -102,9 +146,9 @@ static PyMethodDef Mzn_methods[] = {
   {"UnOp", (PyCFunction)Mzn_UnOp, METH_VARARGS, "Add a unary expression into the model"},
   {"Id", (PyCFunction)Mzn_Id, METH_VARARGS, "Return a MiniZinc Variable containing the given name"},
   {"Call", (PyCFunction)Mzn_Call, METH_VARARGS, "MiniZinc Call"},
+  {"TypeVariable", (PyCFunction)Mzn_typeVariable, METH_NOARGS, "Type of MiniZinc Variable"},
 
-  {"retrieveFunctions", (PyCFunction)Mzn_retrieveFunctions, METH_NOARGS, "Returns list of MiniZinc functions that returns Bool"},
-  {"retrieveAnnotations", (PyCFunction)Mzn_retrieveAnnotations, METH_NOARGS, "Returns list of MiniZinc annotations"},
+  {"retrieveNames", (PyCFunction)Mzn_retrieveNames, METH_NOARGS, "Returns names of MiniZinc functions and variables"},
   {"lock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Create a lock for garbage collection"},
   {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},
   {NULL}

@@ -38,6 +38,7 @@ PyObject* MznVariable_at(MznVariable* self, PyObject* indexList);
 
 
 
+
 static PyMemberDef MznVariable_members[] = {
   {NULL}
 };
@@ -89,6 +90,7 @@ static PyTypeObject MznVariableType = {
   0,                         /* tp_alloc */
   MznVariable_new,                /* tp_new */
 };
+
 
 
 #endif

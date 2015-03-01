@@ -235,9 +235,11 @@ namespace MiniZinc {
     Model* flat(void);
     Model* output(void);
     EnvI& envi(void);
+    const EnvI& envi(void) const;
     std::ostream& dumpErrorStack(std::ostream& os);
     const std::vector<std::string>& warnings(void);
     void clearWarnings(void);
+    unsigned int maxCallStack(void) const;
     std::ostream& evalOutput(std::ostream& os);
   };
 

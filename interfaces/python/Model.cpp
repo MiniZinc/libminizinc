@@ -356,28 +356,68 @@ static PyObject*
 MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
   MznModel* self = reinterpret_cast<MznModel*>(type->tp_alloc(type,0));
-  self->includePaths = new vector<string>;
+  self->includePaths = NULL;
+  self->_m = NULL;
   return reinterpret_cast<PyObject*>(self);
 }
 
 static int
-MznModel_init(MznModel* self, PyObject* args)
+MznModel_init(MznModel* self, PyObject* args = NULL)
 {
   self->loaded = false;
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   } else {
-    PyErr_SetString(PyExc_EnvironmentError, "No MiniZinc library directory MZN_STDLIB_DIR defined.");
+    PyErr_SetString(PyExc_EnvironmentError, "Model.init: No MiniZinc library directory MZN_STDLIB_DIR defined.");
     return -1;
   }
+  stringstream libNames;
+  libNames << "include \"globals.mzn\";";
+  if (args != NULL) {
+    PyObject* PyLibNames = NULL;
+    if (!PyArg_ParseTuple(args, "|O", &PyLibNames)) {
+      PyErr_SetString(PyExc_TypeError, "Model.init: Accept at most 1 argument");
+      return -1;
+    }
+    if (PyObject_IsTrue(PyLibNames)) {
+      if (PyString_Check(PyLibNames)) {
+        libNames << "\ninclude \"" << PyString_AS_STRING(PyLibNames) << "\";";
+      } else if (PyList_Check(PyLibNames)) {
+        Py_ssize_t n = PyList_GET_SIZE(PyLibNames);
+        for (Py_ssize_t i = 0; i!=n; ++i) {
+          PyObject* temp = PyList_GET_ITEM(PyLibNames, i);
+          if (!PyString_Check(temp)) {
+            PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing list must be strings");
+            return -1;
+          }
+          libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
+        }
+      } else if (PyTuple_Check(PyLibNames)) {
+        Py_ssize_t n = PyTuple_GET_SIZE(PyLibNames);
+        for (Py_ssize_t i = 0; i!=n; ++i) {
+          PyObject* temp = PyTuple_GET_ITEM(PyLibNames, i);
+          if (!PyString_Check(temp)) {
+            PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing tuples must be strings");
+            return -1;
+          }
+          libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
+        }
+      } else {
+        PyErr_SetString(PyExc_TypeError, "Model.init: Parsing argument must be a string or list/tuple of strings");
+        return -1;
+      }
+    }
+  }
+  const std::string& libNamesStr = libNames.str();
   self->timeLimit = 0;
   self->loaded_from_minizinc = false;
+  self->includePaths = new vector<string>;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
   self->sc = self->SC_GECODE;
   stringstream errorStream;
-  self->_m = parseFromString("include \"globals.mzn\"","error.txt",*(self->includePaths),false,false,false, errorStream);
+  self->_m = parseFromString(libNamesStr,"error.txt",*(self->includePaths),false,false,false, errorStream);
   if (!(self->_m)) {
     const std::string& tmp = errorStream.str();
     const char* cstr = tmp.c_str();
@@ -392,7 +432,8 @@ MznModel_dealloc(MznModel* self)
 {
   if (self->_m)
     delete self->_m;
-  delete self->includePaths;
+  if (self->_m)
+    delete self->includePaths;
   self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 

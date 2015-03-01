@@ -268,6 +268,8 @@ namespace MiniZinc {
     void v(IntVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
+    /// Allocate new temporary literal (tries to avoid allocation)
+    static IntLit* a(IntVal v);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -1356,6 +1358,9 @@ namespace MiniZinc {
         ASTString mzn_path;
         ASTString is_introduced;
       } ann;
+      static const int maxConstInt = 1000;
+      /// Constant integers in the range -maxConstInt..maxConstInt
+      ArrayLit* integers;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit

@@ -477,7 +477,7 @@ namespace MiniZinc {
               } else if (cur->ti()->domain() && cur->ti()->domain()->isa<SetLit>() &&
                          cur->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
                          cur->ti()->domain()->cast<SetLit>()->isv()->min()==cur->ti()->domain()->cast<SetLit>()->isv()->max()) {
-                val = new IntLit(Location().introduce(),cur->ti()->domain()->cast<SetLit>()->isv()->min());
+                val = IntLit::a(cur->ti()->domain()->cast<SetLit>()->isv()->min());
               }
             }
             if (val) {
@@ -515,7 +515,7 @@ namespace MiniZinc {
               vd->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
               vd->ti()->domain()->cast<SetLit>()->isv()->min()==vd->ti()->domain()->cast<SetLit>()->isv()->max()) {
             removed.push_back(vd);
-            return new IntLit(Location().introduce(),vd->ti()->domain()->cast<SetLit>()->isv()->min());
+            return IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
           }
         }
       }
@@ -726,6 +726,7 @@ namespace MiniZinc {
             if (is_true) {
               env.addWarning("model inconsistency detected");
               env.flat()->fail();
+              return true;
             } else if (is_false) {
               CollectDecls cd(env.vo,deletedVarDecls,ii);
               topDown(cd,c);
@@ -746,6 +747,7 @@ namespace MiniZinc {
             } else if (is_false) {
               env.addWarning("model inconsistency detected");
               env.flat()->fail();
+              return true;
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
               vdi->e()->ti()->domain(constants().lit_true);

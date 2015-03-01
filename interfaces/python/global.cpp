@@ -53,7 +53,8 @@ minizinc_to_python(VarDecl* vd)
     return NULL;
   }
   if (vd->type().st() == Type::ST_SET) {
-    IntSetVal* isv = eval_intset(vd->e());
+    Env env(NULL);
+    IntSetVal* isv = eval_intset(env.envi(),vd->e());
     long numberOfElement = 0;
     MznSet* newSet = reinterpret_cast<MznSet*>(MznSet_new(&MznSetType,NULL,NULL));
     
@@ -64,9 +65,11 @@ minizinc_to_python(VarDecl* vd)
   } else {
     if (vd->type().bt() == Type::BT_BOOL) {
       if (vd->type().dim() == 0) {
-        return PyBool_FromLong(eval_bool(vd->e()));
+        Env env(NULL);
+        return PyBool_FromLong(eval_bool(env.envi(),vd->e()));
       } else {
-        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        Env env(NULL);
+        ArrayLit* al = eval_par(env.envi(), vd->e())->cast<ArrayLit>();
         int dim = vd->type().dim();
 
         // Maximum size of each dimension
@@ -85,7 +88,8 @@ minizinc_to_python(VarDecl* vd)
         // next item to be put onto the final array.
         unsigned int currentPos = 0;
         do {
-          PyList_SetItem(p[i], d[i], PyBool_FromLong(eval_bool(al->v()[currentPos])));
+          Env env(NULL);
+          PyList_SetItem(p[i], d[i], PyBool_FromLong(eval_bool(env.envi(),al->v()[currentPos])));
           currentPos++;
           d[i]++;
           while (d[i]>=dmax[i] && i>0) {
@@ -104,10 +108,12 @@ minizinc_to_python(VarDecl* vd)
       }
     } else if (vd->type().bt() == Type::BT_INT) {
       if (vd->type().dim() == 0) {
-        IntVal iv = eval_int(vd->e());
+        Env env(NULL);
+        IntVal iv = eval_int(env.envi(), vd->e());
         return PyInt_FromLong(iv.toInt());
       } else {
-        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        Env env(NULL);
+        ArrayLit* al = eval_par(env.envi(),vd->e())->cast<ArrayLit>();
         int dim = vd->type().dim();
 
         // Maximum size of each dimension
@@ -126,7 +132,8 @@ minizinc_to_python(VarDecl* vd)
         // next item to be put onto the final array.
         unsigned int currentPos = 0;
         do {
-          PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(al->v()[currentPos]).toInt()));
+          Env env(NULL);
+          PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(env.envi(),al->v()[currentPos]).toInt()));
           currentPos++;
           d[i]++;
           while (d[i]>=dmax[i] && i>0) {
@@ -144,10 +151,12 @@ minizinc_to_python(VarDecl* vd)
       }
     } else if (vd->type().bt() == Type::BT_STRING) {
       if (vd->type().dim() == 0) {
-        string temp(eval_string(vd->e()));
+        Env env(NULL);
+        string temp(eval_string(env.envi(), vd->e()));
         return PyString_FromString(temp.c_str());
       } else {
-        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        Env env(NULL);
+        ArrayLit* al = eval_par(env.envi(), vd->e())->cast<ArrayLit>();
         int dim = vd->type().dim();
 
         // Maximum size of each dimension
@@ -166,7 +175,8 @@ minizinc_to_python(VarDecl* vd)
         // next item to be put onto the final array.
         unsigned int currentPos = 0;
         do {
-          string temp(eval_string(al->v()[currentPos]));
+          Env env(NULL);
+          string temp(eval_string(env.envi(),al->v()[currentPos]));
           PyList_SetItem(p[i], d[i], PyString_FromString(temp.c_str()));
           currentPos++;
           d[i]++;
@@ -185,10 +195,12 @@ minizinc_to_python(VarDecl* vd)
       }
     } else if (vd->type().bt() == Type::BT_FLOAT) {
       if (vd->type().dim() == 0) {
-        FloatVal fv = eval_float(vd->e());
+        Env env(NULL);
+        FloatVal fv = eval_float(env.envi(),vd->e());
         return PyFloat_FromDouble(fv);
       } else {
-        ArrayLit* al = eval_par(vd->e())->cast<ArrayLit>();
+        Env env(NULL);
+        ArrayLit* al = eval_par(env.envi(),vd->e())->cast<ArrayLit>();
         int dim = vd->type().dim();
 
         // Maximum size of each dimension
@@ -207,7 +219,8 @@ minizinc_to_python(VarDecl* vd)
         // next item to be put onto the final array.
         unsigned int currentPos = 0;
         do {
-          PyList_SetItem(p[i], d[i], PyFloat_FromDouble(eval_float(al->v()[currentPos])));
+          Env env(NULL);
+          PyList_SetItem(p[i], d[i], PyFloat_FromDouble(eval_float(env.envi(),al->v()[currentPos])));
           currentPos++;
           d[i]++;
           while (d[i]>=dmax[i] && i>0) {

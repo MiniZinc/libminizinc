@@ -8,11 +8,10 @@ import predicate
 import annotation
 #import inspect
 
-##Numberjack 
 def flatten(x):
 	result = []
 	for el in x:
-		if hasattr(el, "__iter__") and not isinstance(el, basestring) and not issubclass(type(el), Expression):
+		if isinstance(el, (list, tuple)):
 			result.extend(flatten(el))
 		else:
 			result.append(el)
@@ -107,92 +106,123 @@ class Expression(object):
 			return var
 
 	def __and__(self, pred):
-		return And([self, pred])
+		return And( (self, pred,) )
 
 	def __rand__(self, pred):
-		return And([self, pred])
+		return And( (self, pred,) )
 
 	def __or__(self, pred):
-		return Or([self, pred])
+		return Or( (self, pred,) )
 
 	def __xor__(self, pred):
-		return Xor([self, pred])
+		return Xor( (self, pred,) )
 
 	def __ror__(self, pred):
-		return Or([self, pred])
+		return Or( (self, pred,) )
 
 	def __add__(self, pred):
-		return Add([self, pred])
+		return Add( (self, pred,) )
 
 	def __radd__(self, pred):
-		return Add([pred, self])
+		return Add( (pred, self,) )
 
 	def __sub__(self, pred):
-		return Sub([self, pred])
+		return Sub( (self, pred,) )
 
 	def __rsub__(self, pred):
-		return Sub([pred, self])
+		return Sub( (pred, self,) )
 
 	def __div__(self, pred):
-		return Div([self, pred])
+		return Div( (self, pred,) )
 
 	def __rdiv__(self, pred):
-		return Div([pred, self])
+		return Div( (pred, self,) )
+
+	def __floordiv__(self, pred):
+		return FloorDiv( (self, pred,) )
+
+	def __rfloordiv__(self, pred):
+		return FloorDiv( (pred, self,) )
 
 	def __mul__(self, pred):
-		return Mul([self, pred])
+		return Mul( (self, pred,) )
 
 	def __rmul__(self, pred):
-		return Mul([self, pred])
+		return Mul( (self, pred,) )
 
 	def __mod__(self, pred):
-		return Mod([self, pred])
+		return Mod( (self, pred,) )
 
 	def __rmod__(self, pred):
-		return Mod([pred, self])
+		return Mod( (pred, self,) )
+
+	def __pow__(self, pred):
+		return Pow( (self, pred,) )
+
+	def __rpow__(self, pred):
+		return Pow( (pred, self,) )
 
 	def __eq__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
 		#	raise InvalidConstraintSpecification("use == outside the model definition")
-		return Eq([self, pred])
+		return Eq( (self, pred,) )
 
 	def __ne__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
 		#	raise InvalidConstraintSpecification("use != outside the model definition")
-		return Ne([self, pred])	
+		return Ne( (self, pred,) )	
 
 	def __lt__(self, pred):
-		return Lt([self, pred])
+		return Lt( (self, pred,) )
 
 	def __gt__(self, pred):
-		return Gt([self, pred])
+		return Gt( (self, pred,) )
 
 	def __le__(self, pred):
-		return Le([self, pred])
+		return Le( (self, pred,) )
 
 	def __ge__(self, pred):
-		return Ge([self, pred])
-
-	def __pow__(self, pred):
-		return Pow([self, pred])
+		return Ge( (self, pred,) )
 
 	def __neg__(self):
-		return Neg([self])
+		return Neg( (self,) )
 
 	def __pos__(self):
-		return Pos([self])
+		return Pos( (self,))
 
 	def __invert__(self):
-		return Invert([self])
+		return Invert( (self,) )
 
 	def __abs__(self):
-		return Abs([self])
+		return Abs( (self,) )
 
 
 # Temporary container for expression before evaluating to minizinc_internal object
 class Predicate(Expression):
 	def __init__(self, vars):
 		self.vars = vars
+		def eval_type(args):
+			if isinstance(args, Expression):
+				return args.type
+			elif type(args) in (int, float, bool, str):
+				return type(args)
+			elif type(args) is list:
+				t = None
+				for i in args:
+					if t is None:
+						t = eval_type(i)
+					else:
+						if t != eval_type(i):
+							raise TypeError("Predicate: Type of arguments in the list must be the same")
+				return [t]
+			elif type(args) is tuple:
+				t = []
+				for i in args:
+					t.append(eval_type(i))
+				return tuple(t)
+			else:
+				raise TypeError("Predicate: Unexpected Type (" + str(type(args)) + ")")
+		self.type = eval_type(vars)
 		Expression.__init__(self)
 		'''
 		model = None
@@ -209,6 +239,10 @@ class Predicate(Expression):
 class BinOp(Predicate):
 	def __init__(self, vars, code):
 		Predicate.__init__(self,vars)
+		if self.type[0] != self.type[1]:
+			raise TypeError("BinOp: Type of arguments in the list must be the same")
+		else:
+			self.type = self.type[0]
 		self.BinOpCode = code
 
 class UnOp(Predicate):
@@ -217,8 +251,17 @@ class UnOp(Predicate):
 		self.UnOpCode = code
 
 class Call(Predicate):
-	def __init__(self, vars, code):
+	def __init__(self, vars, code, args_list = None):
 		Predicate.__init__(self,vars)
+		if args_list is not None:
+			for i in args_list:
+				if self.type == i:
+					break
+			else:
+				s = "Argument type does not match, received " + str(self.type) + ", expected: "
+				for i in args_list:
+					s = s + str(i) + " or "
+				raise TypeError(s)
 		self.CallCode = code
 
 class Add(BinOp):
@@ -625,13 +668,13 @@ class Ub_Array(Call):
 	def __init__(self, var):
 		Call.__init__(self,[var],"ub_array")
 
-
+'''
 def AllDiff(*args):
 	vars = flatten(args)
 	if len(vars) < 2:
 		raise BaseException("AllDiff requires a list of at least 2 expressions.")
 	return [vars[i] != vars[j] for i in range(len(vars)-1) for j in range(i+1,len(vars))]
-
+'''
 
 
 class Neg(UnOp):
@@ -649,6 +692,7 @@ class Invert(Predicate):
 class Id(Expression):
 	def __init__(self, name):
 		self.name = name
+		self.type = minizinc_internal.TypeVariable()
 
 
 # Temporary container for Variable Declaration
@@ -696,6 +740,7 @@ class Construct(Declaration):
 		else:
 			self.obj = model.mznmodel.Variable(self.name, arg1)
 		self.value = arg1
+		self.type = self.obj.type
 
 
 class Variable(Declaration):
@@ -754,6 +799,7 @@ class Variable(Declaration):
 				raise ValueError('Lower bound cannot be greater than upper bound')
 
 		self.dim_list = []
+		self.type = typelb
 		if name is not None:
 			self.name = name
 
@@ -765,6 +811,7 @@ class Variable(Declaration):
 			self.obj = model.mznmodel.Variable(self.name, 11, [], lb, ub)
 		elif typelb is Set:
 			self.obj = model.mznmodel.Variable(self.name, 9, [], lb.obj)
+			self.type = int
 		#elif isinstance(lb, Declaration) or isinstance(ub, Declaration):
 		#	self.obj = model.mznmodel.Variable(self.name, 12, [], lb, ub)
 
@@ -829,12 +876,16 @@ class Array(Variable):
 		self.dim_list = dim_list
 		tlb = type(argopt1)
 		if tlb is bool:
+			self.type = [bool] * len(dim_list)
 			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
 		elif tlb is int:
+			self.type = [int] * len(dim_list)
 			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
 		elif tlb is float:  #isinstance(lb, float):
+			self.type = [float] * len(dim_list)
 			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
 		elif tlb is Set:
+			self.type = [int] * len(dim_list)
 			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb.obj)
 
 	def __getitem__(self, *args):
@@ -851,6 +902,7 @@ class ArrayAccess(Array):
 		for i in range(len(self.idx)):
 			if hasattr(self.idx[i],'obj'):
 				self.idx[i] = self.idx[i].obj
+		self.type = array.type[0]
 
 	def get_value(self):
 		if not hasattr(self, 'solution_counter'):
@@ -953,7 +1005,6 @@ class VarSet(Variable):
 		name = None
 		lb, ub = None, None
 		set_list = None
-
 		if argopt3 is not None:
 			lb,ub = argopt1, argopt2
 			name = argopt3
@@ -966,6 +1017,9 @@ class VarSet(Variable):
 		else:
 			if type(argopt1) is list:
 				set_list = argopt1
+			elif type(argopt1) is Set:
+				lb = argopt1.min()
+				ub = argopt1.max()
 			else:
 				ub = argopt1 - 1
 				lb = 0
@@ -986,11 +1040,12 @@ class VarSet(Variable):
 
 
 class Model(object):
-	def __init__(self):
+	def __init__(self, args = None):
 		self.loaded = False
 		self.mznsolver = None
-		self.mznmodel = minizinc_internal.Model()
+		self.mznmodel = minizinc_internal.Model(args)
 		self.solution_counter = -1
+		
 
 
 	# not used anymore
@@ -1134,26 +1189,25 @@ class Model(object):
 
 
 def init():
-
-	#predicate = new.module('predicate', 'MiniZinc Predicate Library')
-	for name in minizinc_internal.retrieveFunctions():
-		def handlerFunctionClosure(name):
+	names = minizinc_internal.retrieveNames()
+	for name, args_list in names["boolfuncs"].items():
+		def handlerFunctionClosure(name, args_list):
 			def handlerFunction(*args):
-				return Call(args, name)
+				return Call(args, name, args_list)
 			return handlerFunction
-		setattr(predicate, name, handlerFunctionClosure(name))
+		setattr(predicate, name, handlerFunctionClosure(name, args_list))
 
-	#annotation = new.module('annotation', 'MiniZinc Annotation Library')
-	variables, functions = minizinc_internal.retrieveAnnotations();
-	for name in variables:
+	for name, args_list in names["annfuncs"].items():
+		def handlerFunctionClosure(name, args_list):
+			def handlerFunction(*args):
+				return Call(args, name, args_list)
+			return handlerFunction
+		setattr(predicate, name, handlerFunctionClosure(name, args_list))
+
+	for name in names["annvars"]:
 		def handlerFunction(name):
 			return Id(name)
 		setattr(annotation, name, handlerFunction(name))
-	for name in functions:
-		def handlerFunctionClosure(name):
-			def handlerFunction(*args):
-				return Call(args, name)
-			return handlerFunction
-		setattr(annotation, name, handlerFunctionClosure(name))
 
 init()
+del init
