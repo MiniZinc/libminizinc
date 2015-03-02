@@ -38,9 +38,6 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
   vector<string> data;
 
   PyObject* obj = Py_None;
-  Py_ssize_t pos = 0;
-  PyObject* key;
-  PyObject* value;
   char* options = NULL;
   const char* py_string;
   char* errorFile = "./error.txt";
@@ -123,7 +120,6 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       }
     }
     loaded = true;
-    loaded_from_minizinc = true;
     return 0;
   } else {
     const std::string& tmp = errorStream.str();
@@ -248,17 +244,16 @@ MznModel_Constraint(MznModel* self, PyObject* args)
 
   GCLock Lock;
   ConstraintI* i;
-
-  if (!PyObject_TypeCheck(obj, &MznVariableType)) {
-    if (PyBool_Check(obj)) {
-      bool val = PyObject_IsTrue(obj);
-      i = new ConstraintI(Location(), new BoolLit(Location(), val));
-    } else {
-      PyErr_SetString(PyExc_TypeError, "Object must be a Minizinc Variable");
-      return NULL;
-    }
-  } else
-    i = new ConstraintI(Location(), (reinterpret_cast<MznVariable*>(obj))->e);
+  if (PyObject_ExactTypeCheck(obj, &MznExpression_Type)) {
+    // XXX: Need to support Boolean Variable here
+    i = new ConstraintI(Location(), (reinterpret_cast<MznExpression*>(obj)->e));
+  } else if (PyBool_Check(obj)) {
+    bool val = PyObject_IsTrue(obj);
+    i = new ConstraintI(Location(), new BoolLit(Location(), val));
+  } else {
+    PyErr_SetString(PyExc_TypeError, "Object must be a MiniZinc Variable or Python Boolean value");
+    return NULL;
+  }
   self->_m->addItem(i);
   Py_RETURN_NONE;
 }
@@ -288,8 +283,8 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     if (PyExp == NULL) {
       PyErr_SetString(PyExc_TypeError, "Optimisation solver requires an addition constraint object");
       return NULL;
-    } else if (PyObject_TypeCheck(PyExp, &MznVariableType))  {
-      e = (reinterpret_cast<MznVariable*>(PyExp))->e;
+    } else if (PyObject_ExactTypeCheck(PyExp, &MznExpression_Type))  {
+      e = reinterpret_cast<MznExpression*>(PyExp)->e;
     }
     else {
       PyErr_SetString(PyExc_TypeError, "Expression must be a Minizinc Variable Object");
@@ -305,28 +300,28 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     case 2: i = SolveI::max(Location(),(e)); break;
   }
   if (PyObject_IsTrue(PyAnn)) {
-    if (PyObject_TypeCheck(PyAnn, &MznVariableType)) {
-      ann = reinterpret_cast<MznVariable*>(PyAnn)->e;
+    if (PyObject_TypeCheck(PyAnn, &MznAnnotation_Type)) {
+      ann = reinterpret_cast<MznAnnotation*>(PyAnn)->e;
       i->ann().add(ann);
     } else if (PyList_Check(PyAnn)) {
       long n = PyList_GET_SIZE(PyAnn);
       for (long idx = 0; idx != n; ++idx) {
         PyObject* PyItem = PyList_GET_ITEM(PyAnn, idx);
-        if (!PyObject_TypeCheck(PyItem, &MznVariableType)) {
-          // CONSIDER REVIEW - should I delete i or it will be automatically deleted
+        if (!PyObject_TypeCheck(PyItem, &MznAnnotation_Type)) {
+          // XXX: CONSIDER REVIEW - should I delete i or it will be automatically deleted
           delete i;
           char buffer[100];
           sprintf(buffer, "Item at position %ld must be a MiniZinc Variable", idx);
           PyErr_SetString(PyExc_TypeError, buffer);
         }
-        ann = reinterpret_cast<MznVariable*>(PyItem)->e;
+        ann = reinterpret_cast<MznAnnotation*>(PyItem)->e;
         i->ann().add(ann);
       }
     } else if (PyTuple_Check(PyAnn)) {
       long n = PyTuple_GET_SIZE(PyAnn);
       for (long idx = 0; idx != n; ++idx) {
         PyObject* PyItem = PyTuple_GET_ITEM(PyAnn, idx);
-        if (!PyObject_TypeCheck(PyItem, &MznVariableType)) {
+        if (!PyObject_TypeCheck(PyItem, &MznAnnotation_Type)) {
           // CONSIDER REVIEW
           delete i;
           char buffer[100];
@@ -334,7 +329,7 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
           PyErr_SetString(PyExc_TypeError, buffer);
           return NULL;
         }
-        ann = reinterpret_cast<MznVariable*>(PyItem)->e;
+        ann = reinterpret_cast<MznAnnotation*>(PyItem)->e;
         i->ann().add(ann);
       }
     } else {
@@ -343,7 +338,6 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
       PyErr_SetString(PyExc_TypeError, "Annotation must be a single value of or a list/tuple of MiniZinc Variable Object");
       return NULL;
     }
-    ann = reinterpret_cast<MznVariable*>(PyAnn)->e;
   }
   self->_m->addItem(i);
   Py_RETURN_NONE;
@@ -376,42 +370,48 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
   libNames << "include \"globals.mzn\";";
   if (args != NULL) {
     PyObject* PyLibNames = NULL;
-    if (!PyArg_ParseTuple(args, "|O", &PyLibNames)) {
-      PyErr_SetString(PyExc_TypeError, "Model.init: Accept at most 1 argument");
-      return -1;
-    }
-    if (PyObject_IsTrue(PyLibNames)) {
-      if (PyString_Check(PyLibNames)) {
-        libNames << "\ninclude \"" << PyString_AS_STRING(PyLibNames) << "\";";
-      } else if (PyList_Check(PyLibNames)) {
-        Py_ssize_t n = PyList_GET_SIZE(PyLibNames);
-        for (Py_ssize_t i = 0; i!=n; ++i) {
-          PyObject* temp = PyList_GET_ITEM(PyLibNames, i);
-          if (!PyString_Check(temp)) {
-            PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing list must be strings");
-            return -1;
-          }
-          libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
-        }
-      } else if (PyTuple_Check(PyLibNames)) {
-        Py_ssize_t n = PyTuple_GET_SIZE(PyLibNames);
-        for (Py_ssize_t i = 0; i!=n; ++i) {
-          PyObject* temp = PyTuple_GET_ITEM(PyLibNames, i);
-          if (!PyString_Check(temp)) {
-            PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing tuples must be strings");
-            return -1;
-          }
-          libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
-        }
-      } else {
-        PyErr_SetString(PyExc_TypeError, "Model.init: Parsing argument must be a string or list/tuple of strings");
+    if (PyString_Check(args)) {
+      libNames << "\ninclude \"" << PyString_AS_STRING(args) << "\";";
+    } else if (PyTuple_Check(args)) {
+      Py_ssize_t n = PyTuple_GET_SIZE(args);
+      if (n > 1) {
+        PyErr_SetString(PyExc_TypeError, "Model.init: Accept at most 1 argument");
         return -1;
+      } else if (n == 1) {
+        PyLibNames = PyTuple_GET_ITEM(args,0);
+        if (PyObject_IsTrue(PyLibNames)) {
+          if (PyString_Check(PyLibNames)) {
+            libNames << "\ninclude \"" << PyString_AS_STRING(PyLibNames) << "\";";
+          } else if (PyList_Check(PyLibNames)) {
+            Py_ssize_t n = PyList_GET_SIZE(PyLibNames);
+            for (Py_ssize_t i = 0; i!=n; ++i) {
+              PyObject* temp = PyList_GET_ITEM(PyLibNames, i);
+              if (!PyString_Check(temp)) {
+                PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing list must be strings");
+                return -1;
+              }
+              libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
+            }
+          } else if (PyTuple_Check(PyLibNames)) {
+            Py_ssize_t n = PyTuple_GET_SIZE(PyLibNames);
+            for (Py_ssize_t i = 0; i!=n; ++i) {
+              PyObject* temp = PyTuple_GET_ITEM(PyLibNames, i);
+              if (!PyString_Check(temp)) {
+                PyErr_SetString(PyExc_TypeError, "Model.init: Items in parsing tuples must be strings");
+                return -1;
+              }
+              libNames << "\ninclude \"" << PyString_AS_STRING(temp) << "\";";
+            }
+          } else {
+            PyErr_SetString(PyExc_TypeError, "Model.init: Parsing argument must be a string or list/tuple of strings");
+            return -1;
+          }
+        }
       }
     }
   }
   const std::string& libNamesStr = libNames.str();
   self->timeLimit = 0;
-  self->loaded_from_minizinc = false;
   self->includePaths = new vector<string>;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
@@ -434,7 +434,7 @@ MznModel_dealloc(MznModel* self)
     delete self->_m;
   if (self->_m)
     delete self->includePaths;
-  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+  Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 
@@ -465,7 +465,6 @@ MznModel_copy(MznModel* self)
 
   ret->timeLimit = self->timeLimit;
   ret->loaded = self->loaded;
-  ret->loaded_from_minizinc = self->loaded_from_minizinc;
   return reinterpret_cast<PyObject*>(ret);
 }
 
@@ -550,7 +549,7 @@ MznModel_setSolver(MznModel *self, PyObject *args)
  *
  */
 static PyObject*
-MznModel_Variable(MznModel* self, PyObject* args)
+MznModel_Declaration(MznModel* self, PyObject* args)
 {
   GCLock Lock;
   enum TypeId { 
@@ -631,12 +630,8 @@ MznModel_Variable(MznModel* self, PyObject* args)
 
     // Process different types
     switch (static_cast<TypeId>(tid)) {
-      case PARINT:
-          type = Type::parint(dim);
-          goto INTEGER_VARIABLE;
       case VARINT:  
           type = Type::varint(dim);
-          INTEGER_VARIABLE:
           code = Type::BT_INT;
           if (pyub == NULL) {
             Type tempType;
@@ -650,31 +645,17 @@ MznModel_Variable(MznModel* self, PyObject* args)
                             BOT_DOTDOT,
                             one_dim_python_to_minizinc(pyub,code) );
           break;
-      case PARBOOL:
-          type = Type::parbool(dim);
-          goto BOOLEAN_PROCESS;
       case VARBOOL:
           type = Type::varbool(dim); 
-          BOOLEAN_PROCESS:
           break;
-      case PARFLOAT:
-          type = Type::parfloat(dim);
-          goto FLOAT_PROCESS;
       case VARFLOAT:
           type = Type::varfloat(dim);
-          FLOAT_PROCESS:
           code = Type::BT_FLOAT;
           domain = new BinOp(Location(),
                           one_dim_python_to_minizinc(pylb,code),
                           BOT_DOTDOT,
                           one_dim_python_to_minizinc(pyub,code) );
           break;
-      case PARSTRING: type = Type::parstring(dim); break;
-      case ANN: type = Type::ann(dim); break;
-      case PARSETINT: type = Type::parsetint(dim); break;
-      case PARSETBOOL: type = Type::parsetbool(dim); break;
-      case PARSETFLOAT: type = Type::parsetfloat(dim); break;
-      case PARSETSTRING: type = Type::parsetstring(dim); break;
       case VARSETINT:
           type = Type::varsetint(dim);
           if (pyub == NULL) {
@@ -689,23 +670,33 @@ MznModel_Variable(MznModel* self, PyObject* args)
                             BOT_DOTDOT,
                             one_dim_python_to_minizinc(pyub,code) );
           break;
-      case VARBOT: type = Type::varbot(dim); break;
-      case BOT: type = Type::bot(dim); break;
-      case TOP: type = Type::top(dim); break;
-      case VARTOP: type = Type::vartop(dim); break;
-      case OPTVARTOP: type = Type::optvartop(dim); break;
+      default:
+          PyErr_SetString(PyExc_ValueError, "MznDeclaration: Value code not supported");
+          return NULL;
     }
   }
 
-  VarDecl* e = new VarDecl(Location(), new TypeInst(Location(), type, ranges, domain) , string(name), initValue);
-  self->_m->addItem(new VarDeclI(Location(), e));
+  VarDecl* vd = new VarDecl(Location(), new TypeInst(Location(), type, ranges, domain) , string(name), initValue);
+  self->_m->addItem(new VarDeclI(Location(), vd));
   self->loaded = true;
 
-  MznVariable* var = reinterpret_cast<MznVariable*>(MznVariable_new(&MznVariableType, NULL, NULL));
-  var->e = e->id();
-  var->vd = e;
-  var->dimList = dimList;
+  PyObject* ret;
 
-  return reinterpret_cast<PyObject*>(var);
+  if (static_cast<TypeId>(tid) == VARSETINT) {
+    ret = MznVarSet_new(&MznVarSet_Type, NULL, NULL);
+    reinterpret_cast<MznVarSet*>(ret)-> e = vd->id();
+    reinterpret_cast<MznVarSet*>(ret)->vd = vd;
+  } else {
+    if (dimList->size() == 0) {
+      ret = MznVariable_new(&MznVariable_Type, NULL, NULL);
+      reinterpret_cast<MznVariable*>(ret)->e = vd->id();
+      reinterpret_cast<MznVariable*>(ret)->vd= vd;
+    } else {
+      ret = MznArray_new(&MznArray_Type, NULL, NULL);
+      reinterpret_cast<MznArray*>(ret)->e = vd->id();
+      reinterpret_cast<MznArray*>(ret)->vd= vd;
+      reinterpret_cast<MznArray*>(ret)->dimList = dimList;
+    }
+  }
+  return ret;
 }
-

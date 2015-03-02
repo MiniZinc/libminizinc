@@ -9,6 +9,9 @@
 #ifndef __MZNSET_H
 #define __MZNSET_H
 
+#include "Object.h"
+#include <vector>
+#include <list>
 #include <exception>
 
 using namespace std;
@@ -20,8 +23,7 @@ struct MznRange {
 };
 
 
-struct MznSet {
-  PyObject_HEAD
+struct MznSet: MznObject {
   list<MznRange>* ranges;
 
   void clear() {ranges->clear();}
@@ -38,8 +40,35 @@ struct MznSet {
   bool continuous();
   bool contains(long val);
 
-  //SetLit* e() {};
+  Expression* e() {
+    vector<IntSetVal::Range> setRanges;
+    for (list<MznRange>::const_iterator it = ranges->begin(); it != ranges->end(); ++it) {
+      setRanges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
+    }
+    Expression* rhs = new SetLit(Location(), IntSetVal::a(setRanges));
+    return rhs;
+  }
 };
+
+static PyObject*
+MznSet_alloc(PyTypeObject *type, Py_ssize_t nitems)
+{
+  PyObject* obj = reinterpret_cast<PyObject*>(new MznSet);
+
+  if (obj == NULL)
+    return PyErr_NoMemory();
+
+  // tp_itemsize == 0, so we don't use PyObject_INIT_VAR
+  PyObject_INIT(obj, type);
+
+  return obj;
+}
+
+static void
+MznSet_free(void* self)
+{
+  delete reinterpret_cast<MznSet*>(self);
+}
 
 static PyObject* MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds);
 static void MznSet_dealloc(MznSet* self);
@@ -67,9 +96,9 @@ static PyMemberDef MznSet_members[] = {
   {NULL} /* Sentinel */
 };
 
-static PyTypeObject MznSetType = {
+static PyTypeObject MznSet_Type = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.set",       /* tp_name */
+  "minizinc.Set",       /* tp_name */
   sizeof(MznSet),          /* tp_basicsize */
   0,                         /* tp_itemsize */
   (destructor)MznSet_dealloc, /* tp_dealloc */
@@ -87,8 +116,8 @@ static PyTypeObject MznSetType = {
   0,                         /* tp_getattro */
   0,                         /* tp_setattro */
   0,                         /* tp_as_buffer */
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_ITER,        /* tp_flags */
-  "Minizinc Set",  /* tp_doc */
+  Py_TPFLAGS_DEFAULT  | Py_TPFLAGS_HAVE_ITER,        /* tp_flags */
+  "Minizinc Set Object",  /* tp_doc */
   0,                         /* tp_traverse */
   0,                         /* tp_clear */
   0,                         /* tp_richcompare */
@@ -99,14 +128,15 @@ static PyTypeObject MznSetType = {
   MznSet_methods,            /* tp_methods */
   MznSet_members,            /* tp_members */
   0,/*MznModel_getseters,        /* tp_getset */
-  0,                         /* tp_base */
+  &MznObject_Type,                         /* tp_base */
   0,                         /* tp_dict */
   0,                         /* tp_descr_get */
   0,                         /* tp_descr_set */
   0,                         /* tp_dictoffset */
   (initproc)MznSet_init,     /* tp_init */
-  0,                         /* tp_alloc */
+  MznSet_alloc,                         /* tp_alloc */
   MznSet_new,                /* tp_new */
+  (freefunc)MznSet_free               /* tp_free */
 };
 
 
@@ -123,9 +153,9 @@ static PyObject* MznSetIter_new(PyTypeObject *type, PyObject* args, PyObject* kw
 static void MznSetIter_dealloc(MznSetIter* self);
 static PyObject* MznSetIter_iternext(PyObject* self);
 
-static PyTypeObject MznSetIterType = {
+static PyTypeObject MznSetIter_Type = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.setiterator",       /* tp_name */
+  "minizinc.SetIterator",       /* tp_name */
   sizeof(MznSetIter),          /* tp_basicsize */
   0,                         /* tp_itemsize */
   (destructor)MznSetIter_dealloc, /* tp_dealloc */
@@ -161,7 +191,7 @@ static PyTypeObject MznSetIterType = {
   0,                         /* tp_dictoffset */
   0,     /* tp_init */
   0,                         /* tp_alloc */
-  MznSet_new,                /* tp_new */
+  0,                /* tp_new */
 };
 
 #endif
