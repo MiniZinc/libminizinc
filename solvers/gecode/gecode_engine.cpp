@@ -14,7 +14,7 @@
 namespace MiniZinc {
   
   void
-  MiniZinc::Path::post(Gecode::Space& home) {
+  MiniZinc::Path::post(Gecode::Space& home) const {
     GECODE_ES_FAIL(Gecode::Search::Meta::NoGoodsProp::post(home,*this));
   }
   

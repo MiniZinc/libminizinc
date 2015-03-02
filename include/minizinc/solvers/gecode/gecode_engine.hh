@@ -37,7 +37,7 @@ namespace MiniZinc {
     Gecode::Space* getSpace(int i) { assert(i >=0 && i < ds.entries()); return ds[i].space(); }
     /// get the number of entries in the edge stack
     int getNbEntries(void) { return ds.entries(); }    
-    void virtual post(Gecode::Space& home);
+    virtual void post(Gecode::Space& home) const;
   };
   
   
@@ -133,47 +133,50 @@ namespace MiniZinc {
   DFSEngine<T>::next(void) {
     start();
     while (true) {
-      while (cur) {
-        if (stop(opt))
+      if (stop(opt))
+        return NULL;
+      while (cur == NULL) {
+        if (path.empty())
           return NULL;
-        node++;
-        switch (cur->status(*this)) {
-          case Gecode::SS_FAILED:
+        cur = path.recompute(d,opt.a_d,*this);
+        if (cur != NULL)
+          break;
+        path.next();
+      }
+      node++;
+      switch (cur->status(*this)) {
+        case Gecode::SS_FAILED:
           fail++;
           delete cur;
           cur = NULL;
+          path.next();
           break;
-          case Gecode::SS_SOLVED:
-          {
-            // Deletes all pending branchers
-            (void) cur->choice();
-            T* s = static_cast<T*>(cur);
-            cur = NULL;
-            return s;
+        case Gecode::SS_SOLVED:
+        {
+          // Deletes all pending branchers
+          (void) cur->choice();
+          Gecode::Space* s = cur;
+          cur = NULL;
+          path.next();
+          return static_cast<T*>(s);
+        }
+        case Gecode::SS_BRANCH:
+        {
+          Gecode::Space* c;
+          if ((d == 0) || (d >= opt.c_d)) {
+            c = cur->clone();
+            d = 1;
+          } else {
+            c = NULL;
+            d++;
           }
-          case Gecode::SS_BRANCH:
-          {
-            T* c;
-            if ((d == 0) || (d >= opt.c_d)) {
-              c = static_cast<T*>(cur->clone());
-              d = 1;
-            } else {
-              c = NULL;
-              d++;
-            }
-            const Gecode::Choice* ch = path.push(*this,cur,c);
-            cur->commit(*ch,0);
-            break;
-          }
+          const Gecode::Choice* ch = path.push(*this,cur,c);
+          cur->commit(*ch,0);
+          break;
+        }
         default:
           GECODE_NEVER;
-        }
       }
-      do {
-        if (!path.next())
-          return NULL;
-        cur = path.recompute(d,opt.a_d,*this);
-      } while (cur == NULL);
     }
     GECODE_NEVER;
     return NULL;
