@@ -287,7 +287,8 @@ namespace MiniZinc {
               int ub_old = sl_old->isv()->max().toInt();
               int ub_new = sl_new->isv()->max().toInt();
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
-              if(updateBounds) {                
+              if(updateBounds) {
+                std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
                 success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
                 std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
               }             

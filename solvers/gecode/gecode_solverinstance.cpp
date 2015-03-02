@@ -66,7 +66,7 @@ namespace MiniZinc {
   };
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL), customEngine(NULL) {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
@@ -74,7 +74,8 @@ namespace MiniZinc {
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
-      delete engine;      
+      delete engine; 
+      delete customEngine;
     }
 
     void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
@@ -884,12 +885,12 @@ namespace MiniZinc {
   GecodeSolverInstance::next(void) {
     prepareEngine(true);
     
-    _solution = engine->next();
+   _solution = customEngine->next();
     
     if (_solution) {
       assignSolutionToOutput();
       return SolverInstance::SAT;
-    } else if (engine->stopped()) {
+    } else if (customEngine->stopped()) {
       return SolverInstance::UNKNOWN;
     } else {
       return SolverInstance::UNSAT;
@@ -915,7 +916,7 @@ namespace MiniZinc {
 
   void
   GecodeSolverInstance::prepareEngine(bool combinators) {
-    if (engine==NULL) {
+    if (engine==NULL && customEngine == NULL) {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
       std::vector<Expression*> solve_args;
@@ -971,7 +972,7 @@ namespace MiniZinc {
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
         if(combinators) {          
-          engine = new CustomMetaEngine<DFSEngine, GecodeMeta>(this->_current_space,o);
+          customEngine = new CustomMetaEngine<DFSEngine, GecodeMeta>(this->_current_space,o);
         }
         else 
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
@@ -1388,7 +1389,10 @@ namespace MiniZinc {
   
   bool 
   GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    customeEngine->updateIntBounds(vd,lb,ub,*this);   
+    if(!customEngine) {
+      std::cout << "Custome engine is NULL!!" << std::endl;
+    }
+    customEngine->updateIntBounds(vd,lb,ub,*this);   
     return true;
   }
 

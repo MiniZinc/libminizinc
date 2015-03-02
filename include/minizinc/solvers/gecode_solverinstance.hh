@@ -140,7 +140,7 @@ namespace MiniZinc {
     /// The solver engine for regular search
     GecodeEngine* engine;
     /// the solver engine for combinators
-    CustomEngine* customeEngine;
+    CustomEngine* customEngine;
 
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
