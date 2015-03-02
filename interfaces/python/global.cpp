@@ -49,15 +49,14 @@ minizinc_to_python(VarDecl* vd)
 {
   GCLock Lock;
   if (vd==NULL) {
-    PyErr_SetString(PyExc_ValueError, "Value is not set");
+    PyErr_SetString(PyExc_ValueError, "MiniZinc_to_Python: Value is not set");
     return NULL;
   }
   if (vd->type().st() == Type::ST_SET) {
     Env env(NULL);
     IntSetVal* isv = eval_intset(env.envi(),vd->e());
     long numberOfElement = 0;
-    MznSet* newSet = reinterpret_cast<MznSet*>(MznSet_new(&MznSetType,NULL,NULL));
-    
+    MznSet* newSet = reinterpret_cast<MznSet*>(MznSet_new(&MznSet_Type,NULL,NULL));
     for (IntSetRanges isr(isv); isr(); ++isr) {
       newSet->push(isr.min().toInt(),isr.max().toInt());
     }
@@ -252,7 +251,7 @@ minizinc_to_python(VarDecl* vd)
  * Note:  If code == Type::BT_UNKNOWN, it will be changed to the corresponding type of pvalue
  *        If code is initialized to specific type, an error will be thrown if type mismatched 
  * Accepted code type:
- *      - Type::BT_UNKNOWN: Unknown type, will be changed later
+ *      - Type::BT_UNKNOWN: Unknown type, will be changed later to corresponding type
  *      - Type::BT_INT
  *      - Type::BT_FLOAT
  *      - Type::BT_STRING
@@ -266,8 +265,9 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
                     BT_BOT, BT_UNKNOWN };*/
   switch (code) {
     case Type::BT_UNKNOWN:
-      if (PyObject_TypeCheck(pvalue, &MznVariableType)) {
-        return reinterpret_cast<MznVariable*>(pvalue)->e;
+      if (PyObject_TypeCheck(pvalue, &MznObject_Type)) {
+        return MznObject_get_e(reinterpret_cast<MznObject*>(pvalue));
+        //return reinterpret_cast<MznObject*>(pvalue)->e();
       } else if (PyBool_Check(pvalue)) {
         BT_BOOLEAN_PROCESS:
         Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(pvalue));
@@ -289,21 +289,39 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         code = Type::BT_STRING;
         return rhs;
       } else {
+        PyErr_SetString(PyExc_TypeError, "Unexpected python type");
         return NULL;
       }
       break;
+
     case Type::BT_INT: 
-      if (!PyInt_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected an integer");
+      if (!PyInt_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an integer");
+        return NULL;
+      }
       goto BT_INTEGER_PROCESS;
+
     case Type::BT_FLOAT:
-      if (!PyFloat_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a float");
+      if (!PyFloat_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an float");
+        return NULL;
+      }
       goto BT_FLOAT_PROCESS;
+
     case Type::BT_STRING:
-      if (!PyString_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a string");
+      if (!PyString_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an string");
+        return NULL;
+      }
       goto BT_STRING_PROCESS;
+
     case Type::BT_BOOL:
-      if (!PyBool_Check(pvalue)) throw std::invalid_argument("Object in an array must be of the same type: Expected a boolean");
+      if (!PyBool_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an boolean");
+        return NULL;
+      }
       goto BT_BOOLEAN_PROCESS;
+
     default:
       throw std::invalid_argument("Internal Error: Received unexpected base type code");
   }
@@ -318,14 +336,9 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
 Expression*
 python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
 {
-  if (PyObject_TypeCheck(pvalue, &MznSetType)) {
-    vector<IntSetVal::Range> setRanges;
-    MznSet* Set = reinterpret_cast<MznSet*>(pvalue);
-    for (list<MznRange>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
-      setRanges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
-    }
-    Expression* rhs = new SetLit(Location(), IntSetVal::a(setRanges));
-    return rhs;
+  if (PyObject_TypeCheck(pvalue, &MznObject_Type)) {
+    return MznObject_get_e(reinterpret_cast<MznObject*>(pvalue));
+    //return reinterpret_cast<MznObject*>(pvalue)->e();
   } else if (PyList_Check(pvalue)) {
     vector<Py_ssize_t> dimensions;
     vector<PyObject*> simpleArray;
@@ -337,9 +350,9 @@ python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
     vector<Expression*> callArgument(dimensions.size()+1);
     vector<Expression*> onedArray(simpleArray.size());
 
-    char buffer[10];
-    sprintf(buffer,"array%dd",dimensions.size());
-    string callName = string(buffer);
+    stringstream buffer;
+    buffer << "array" << dimensions.size() << "d";
+    string callName(buffer.str());
     for (int i=0; i!=dimensions.size(); ++i) {
       Expression* domain = ranges[i]->domain();
       if (domain == NULL) {
@@ -377,15 +390,9 @@ Expression*
 python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& dimList)
 {
   Type::BaseType code = Type::BT_UNKNOWN;
-  if (PyObject_TypeCheck(pvalue, &MznSetType)) {
-    vector<IntSetVal::Range> ranges;
-    MznSet* Set = reinterpret_cast<MznSet*>(pvalue);
-    for (list<MznRange>::const_iterator it = Set->ranges->begin(); it != Set->ranges->end(); ++it) {
-      ranges.push_back(IntSetVal::Range(IntVal(it->min),IntVal(it->max)));
-    }
-    Expression* rhs = new SetLit(Location(), IntSetVal::a(ranges));
+  if (PyObject_TypeCheck(pvalue, &MznObject_Type)) {
     returnType = Type::parsetint();
-    return rhs;
+    return MznObject_get_e(reinterpret_cast<MznObject*>(pvalue));
   } else if (PyList_Check(pvalue)) {
     vector<Py_ssize_t> dimensions;
     vector<PyObject*> simpleArray;
@@ -398,7 +405,7 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
       if (dimList.size()!=dimensions.size())
         throw invalid_argument("Size of declared array and data array not conform");
       for (int i=0; i!=dimensions.size(); i++) {
-        cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
+        //cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
         if ( (dimList[i].second - (dimList[i].first) + 1) != dimensions[i] )
           throw invalid_argument("Size of each dimension not conform");
       }
@@ -468,14 +475,12 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
     if (dimensions.size() <= layer) {
       dimensions.push_back(PyList_Size(value));
     } else if (dimensions[layer]!=PyList_Size(value)) {
-      //throw invalid_value("Inconsistency in size of multidimensional array");
       PyErr_SetString(PyExc_RuntimeError,"Inconsistency in size of multidimensional array");
       return -1; // Inconsistent size of array (should be the same)
     }
     PyObject* li = PyList_GetItem(value, i);
     if (PyList_Check(li)) {
       if (getList(li,dimensions,simpleArray,layer+1)==-1) {
-        //throw invalid_value("Inconsistency in size of multidimensional array");
         return -1;
       }
     } else {

@@ -20,14 +20,20 @@ Mzn_Call(MznModel* self, PyObject* args)
 {
   const char* name;
   PyObject* variableTuple;
-  if (!PyArg_ParseTuple(args, "sO", &name, &variableTuple)) {
-    PyErr_SetString(PyExc_TypeError, "Accepts two values: a string and a tuple of minizinc variable");
+  PyTypeObject* returnType;
+  if (!PyArg_ParseTuple(args, "sOO", &name, &variableTuple, &returnType)) {
+    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Accepts two values: a string and a tuple of minizinc variable");
     PyErr_Print();
     return NULL;
   }
 
   if (!PyList_Check(variableTuple)) {
-    PyErr_SetString(PyExc_TypeError, "Second argument must be a list");
+    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Second argument must be a list");
+    return NULL;
+  }
+
+  if (!PyType_Check(returnType)) {
+    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Third argument must be a type");
     return NULL;
   }
 
@@ -35,27 +41,60 @@ Mzn_Call(MznModel* self, PyObject* args)
   vector<Expression*> expressionList(len);
   for (long i = 0; i!=len; ++i) {
     PyObject* pyval = PyList_GET_ITEM(variableTuple, i);
-    if (PyObject_TypeCheck(pyval, &MznVariableType)) {
-      expressionList[i] = (reinterpret_cast<MznVariable*>(pyval)) -> e;
+    if (PyObject_TypeCheck(pyval, &MznObject_Type)) {
+      expressionList[i] = MznObject_get_e(reinterpret_cast<MznObject*>(pyval));
     } else {
       Type type;
       vector<pair<int, int> > dimList;
       expressionList[i] = python_to_minizinc(pyval, type, dimList);
       if (expressionList[i] == NULL) {
-        char buffer[100];
-        sprintf(buffer, "Item at position %ld must be a MiniZinc Variable or Python int/float/string/list/tuple", i);
-        PyErr_SetString(PyExc_RuntimeError, buffer);
+        stringstream ss;
+        ss << "MznCall: Item at position " << i << "must be a MiniZinc Object or Python int/float/string/list/tuple";
+        string errorLog(ss.str());
+        PyErr_SetString(PyExc_RuntimeError, errorLog.c_str());
         return NULL;
       }
     }
   }
-  MznVariable* var = reinterpret_cast<MznVariable*>(MznVariable_new(&MznVariableType, NULL, NULL));
-  var->e = new Call(Location(), string(name), expressionList);
-  var->dimList = NULL;
 
-  return reinterpret_cast<PyObject*>(var);
+  PyObject* ret;
+  //ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  
+  // WARNING: Don't use returnType as Mzn*_new first argument
+  if (returnType == &MznAnnotation_Type)
+    ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
+  else
+    ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  /*if (returnType == &MznExpression_Type)
+    ret = MznExpression_new(returnType, NULL, NULL);
+  else if (returnType == &MznAnnotation_Type)
+    ret = MznAnnotation_new(returnType, NULL, NULL);
+  else if (returnType == &MznVarSet_Type)
+    ret = MznVarSet_new(returnType, NULL, NULL);
+  else if (returnType == &MznSet_Type)
+    throw logic_error("Mzn_Call: unhandled set type");
+  else if (returnType == &PyBool_Type || returnType == &PyInt_Type || returnType == &PyFloat_Type || returnType == &PyString_Type)
+    ret = MznVariable_new(returnType, NULL, NULL);
+  else
+    throw runtime_error("Mzn_Call: unexpected type");*/
+  reinterpret_cast<MznExpression*>(ret)->e = new Call(Location(), string(name), expressionList);
+
+  return ret;
 }
 
+// Need an outer GCLock
+static PyObject*
+Mzn_Id(MznModel* self, PyObject* args)
+{
+  const char* name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
+    return NULL;
+  }
+  PyObject* ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
+  reinterpret_cast<MznAnnotation*>(ret)->e = new Id(Location(), name, NULL);
+  return ret;
+}
 
 /* 
  * Description: Creates a minizinc UnOp expression
@@ -73,13 +112,15 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   PyObject* r;
   unsigned int op;
   if (!PyArg_ParseTuple(args, "IO", &op, &r)) {
-    PyErr_SetString(PyExc_TypeError, "Requires a MznVariable/MznConstraint object and an integer");
+    PyErr_SetString(PyExc_TypeError, "Mzn_UnOp: Requires a MiniZinc object and an integer");
     return NULL;
   }
   Expression *rhs;
 
-  if (PyObject_TypeCheck(r, &MznVariableType)) {
-    rhs = (reinterpret_cast<MznVariable*>(r))->e;
+  if (PyObject_TypeCheck(r, &MznObject_Type)) {
+    //XXX: Maybe ignore MznSet_Type here
+    rhs = MznObject_get_e(reinterpret_cast<MznObject*>(r));
+    //rhs = (reinterpret_cast<MznObject*>(r))->e();
   } else if (PyBool_Check(r)) {
     rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
   } else if (PyInt_Check(r)) {
@@ -89,31 +130,16 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   } else if (PyString_Check(r)) {
     rhs = new StringLit(Location(), string(PyString_AS_STRING(r)));
   } else {
-    PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
+    PyErr_SetString(PyExc_TypeError, "Object must be a Python value or a MiniZinc object");
     return NULL;
   }
 
 
   GCLock Lock;
 
-  PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
-  (reinterpret_cast<MznVariable*>(var))->e = new UnOp(Location(), static_cast<UnOpType>(op), rhs);
-
-  return var;
-}
-
-// Need an outer GCLock
-static PyObject*
-Mzn_Id(MznModel* self, PyObject* args)
-{
-  const char* name;
-  if (!PyArg_ParseTuple(args, "s", &name)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
-    return NULL;
-  }
-  MznVariable* var = reinterpret_cast<MznVariable*>(MznVariable_new(&MznVariableType, NULL, NULL));
-  var->e = new Id(Location(), name, NULL);
-  return reinterpret_cast<PyObject*>(var);
+  PyObject* ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  reinterpret_cast<MznExpression*>(ret)->e = new UnOp(Location(), static_cast<UnOpType>(op), rhs);
+  return ret;
 }
 
 
@@ -154,51 +180,39 @@ Mzn_BinOp(MznModel* self, PyObject* args)
     BOT_XOR,          //25
     BOT_DOTDOT        //26
   };*/
-  PyObject* l;
-  PyObject* r;
+  PyObject* PyPre[2];
   unsigned int op;
-  if (!PyArg_ParseTuple(args, "OIO", &l, &op, &r)) {
-    PyErr_SetString(PyExc_TypeError, "Requires two MznVariable/MznConstraint objects and an integer");
+  if (!PyArg_ParseTuple(args, "OIO", &PyPre[0], &op, &PyPre[1])) {
+    PyErr_SetString(PyExc_TypeError, "Mzn_BinOp: Requires two MiniZinc objects and an integer");
     return NULL;
   }
-  Expression *lhs, *rhs;
-  if (PyObject_TypeCheck(l, &MznVariableType)) {
-    lhs = (reinterpret_cast<MznVariable*>(l))->e;
-  } else if (PyBool_Check(l)) {
-    lhs = new BoolLit(Location(), PyInt_AS_LONG(l));
-  } else if (PyInt_Check(l)) {
-    lhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(l)));
-  } else if (PyFloat_Check(l)) {
-    lhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(l));
-  } else if (PyString_Check(l)) {
-    lhs = new StringLit(Location(), string(PyString_AS_STRING(l)));
-  } else {
-    PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
-    return NULL;
-  }
-
-  if (PyObject_TypeCheck(r, &MznVariableType)) {
-      rhs = (reinterpret_cast<MznVariable*>(r))->e;
-  } else if (PyBool_Check(r)) {
-    rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
-  } else if (PyInt_Check(r)) {
-    rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
-  } else if (PyFloat_Check(r)) {
-    rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
-  } else if (PyString_Check(r)) {
-    rhs = new StringLit(Location(), string(PyString_AS_STRING(r)));
-  } else {
-    PyErr_SetString(PyExc_TypeError, "Object must be of type MznVariable or MznConstraint");
-    return NULL;
+  Expression *pre[2];
+  // pre[0]: lhs;
+  // pre[1]: rhs;
+  for (int i=0; i!=2; ++i) {
+    if (PyObject_TypeCheck(PyPre[i], &MznObject_Type)) {
+      // XXX: Maybe ignore Set Type here
+      pre[i] = MznObject_get_e(reinterpret_cast<MznObject*>(PyPre[i]));
+    } else if (PyBool_Check(PyPre[i])) {
+      pre[i] = new BoolLit(Location(), PyInt_AS_LONG(PyPre[i]));
+    } else if (PyInt_Check(PyPre[i])) {
+      pre[i] = new IntLit(Location(), IntVal(PyInt_AS_LONG(PyPre[i])));
+    } else if (PyFloat_Check(PyPre[i])) {
+      pre[i] = new FloatLit(Location(), PyFloat_AS_DOUBLE(PyPre[i]));
+    } else if (PyString_Check(PyPre[i])) {
+      pre[i] = new StringLit(Location(), string(PyString_AS_STRING(PyPre[i])));
+    } else {
+      PyErr_SetString(PyExc_TypeError, "Object must be a Python value or MiniZinc object");
+      return NULL;
+    }
   }
 
 
   GCLock Lock;
 
-  PyObject* var = MznVariable_new(&MznVariableType, NULL, NULL);
-  (reinterpret_cast<MznVariable*>(var))->e = new BinOp(Location(), lhs, static_cast<BinOpType>(op), rhs);
-
-  return var;
+  PyObject* ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  reinterpret_cast<MznExpression*>(ret)->e = (new BinOp(Location(), pre[0], static_cast<BinOpType>(op), pre[1]));
+  return ret;
 }
 
 
@@ -227,55 +241,54 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 }
 
 static PyObject* 
-Mzn_retrieveFunctions(MznModel* self, PyObject* args) {
-  std::vector<std::string> names;
-  CollectBoolFunctionNames fv(names);
+Mzn_retrieveNames(MznModel* self, PyObject* args) {
+  PyObject* boolfuncs = PyDict_New();
+  PyObject* annfuncs = PyDict_New();
+  PyObject* annvars = PyList_New(0);
+  PyObject* libName = NULL;
 
-  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  if (MznModel_init(tempModel,NULL) != 0) {
-    return NULL;
-  }
-  iterItems(fv, tempModel->_m);
-  MznModel_dealloc(tempModel);
-
-  Py_ssize_t n = names.size();
-  PyObject* ret = PyList_New(n);
-  for (Py_ssize_t i=0; i!=n; ++i) {
-    PyObject* tempItem = PyString_FromString(names[i].c_str());
-    PyList_SET_ITEM(ret, i, tempItem);
-  }
-  return ret;
-}
-
-static PyObject* 
-Mzn_retrieveAnnotations(MznModel* self, PyObject* args) {
-  std::vector<std::string> names[2];
-  // names[0]: variable names
-  // names[1]: function names
-  //std::vector<std::string> functions;
-  CollectAnnotationNames av(names[0], names[1]);
-
-
-  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
-  if (MznModel_init(tempModel,NULL) != 0)
-    return NULL;
-  iterItems(av, tempModel->_m);
-  MznModel_dealloc(tempModel);
-
-  PyObject* ret = PyList_New(2);
-  for (int i=0; i!=2; ++i) {
-    Py_ssize_t n = names[i].size();
-    PyObject* ret_item = PyList_New(n);
-    for (Py_ssize_t j=0; j!=n; ++j) {
-      PyObject* tempItem = PyString_FromString(names[i][j].c_str());
-      PyList_SET_ITEM(ret_item, j, tempItem);
+  {
+    Py_ssize_t n = PyTuple_GET_SIZE(args);
+    if (n > 1) {
+      PyErr_SetString(PyExc_TypeError, "Mzn_retrieveNames: accepts at most 1 argument");
+      return NULL;
+    } else if (n == 1) {
+      libName = PyTuple_GET_ITEM(args, 0);
+      if (PyObject_IsTrue(libName)) {
+        if (!PyString_Check(libName)) {
+          PyErr_SetString(PyExc_TypeError, "Mzn_retrieveNames: first argument must be a string");
+          return NULL;
+        }
+      } else
+        libName = NULL;
     }
-
-    PyList_SET_ITEM(ret, i, ret_item);
   }
-  return ret;
-}
 
+  // If a library name is specified here, it means that this function is called at least once already.
+  // If this function is called, functions in globals.mzn and stdlib.mzn is already defined, so we dont want to reinclude it
+  bool include_global_mzn = (libName == NULL);
+
+  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
+
+  if (MznModel_init(tempModel,libName) != 0) {
+    return NULL;
+  }
+  CollectBoolFuncNames bool_fv(boolfuncs, include_global_mzn);
+  CollectAnnNames ann_fv(annfuncs, annvars, include_global_mzn);
+  iterItems(bool_fv, tempModel->_m);
+  iterItems(ann_fv, tempModel->_m);
+  MznModel_dealloc(tempModel);
+
+  PyObject* dict = PyDict_New();
+  PyDict_SetItemString(dict, "boolfuncs", boolfuncs);
+  PyDict_SetItemString(dict, "annfuncs", annfuncs);
+  PyDict_SetItemString(dict, "annvars", annvars);
+
+  Py_DECREF(boolfuncs);
+  Py_DECREF(annfuncs);
+  Py_DECREF(annvars);
+  return dict;
+}
 
 
 PyMODINIT_FUNC
@@ -285,20 +298,50 @@ initminizinc_internal(void) {
   if (model == NULL)
     return;
 
-  if (PyType_Ready(&MznSetType) < 0)
+  if (PyType_Ready(&MznObject_Type) < 0)
     return;
-  Py_INCREF(&MznSetType);
-  PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSetType));
+  Py_INCREF(&MznObject_Type);
+  PyModule_AddObject(model, "Object", reinterpret_cast<PyObject*>(&MznObject_Type));
 
-  if (PyType_Ready(&MznSetIterType) < 0)
+  if (PyType_Ready(&MznSetIter_Type) < 0)
     return;
-  Py_INCREF(&MznSetIterType);
-  PyModule_AddObject(model, "SetIterator", reinterpret_cast<PyObject*>(&MznSetIterType));
+  Py_INCREF(&MznSetIter_Type);
+  PyModule_AddObject(model, "Set_Iter", reinterpret_cast<PyObject*>(&MznSetIter_Type));
 
-  if (PyType_Ready(&MznVariableType) < 0)
+  if (PyType_Ready(&MznExpression_Type) < 0)
     return;
-  Py_INCREF(&MznVariableType);
-  PyModule_AddObject(model, "Variable", reinterpret_cast<PyObject*>(&MznVariableType));
+  Py_INCREF(&MznExpression_Type);
+  PyModule_AddObject(model, "Expression", reinterpret_cast<PyObject*>(&MznExpression_Type));
+
+  if (PyType_Ready(&MznAnnotation_Type) < 0)
+    return;
+  Py_INCREF(&MznAnnotation_Type);
+  PyModule_AddObject(model, "Annotation", reinterpret_cast<PyObject*>(&MznAnnotation_Type));
+
+  if (PyType_Ready(&MznDeclaration_Type) < 0)
+    return;
+  Py_INCREF(&MznDeclaration_Type);
+  PyModule_AddObject(model, "Declaration", reinterpret_cast<PyObject*>(&MznDeclaration_Type));
+
+  if (PyType_Ready(&MznVariable_Type) < 0)
+    return;
+  Py_INCREF(&MznVariable_Type);
+  PyModule_AddObject(model, "Variable", reinterpret_cast<PyObject*>(&MznVariable_Type));
+
+  if (PyType_Ready(&MznArray_Type) < 0)
+    return;
+  Py_INCREF(&MznArray_Type);
+  PyModule_AddObject(model, "Array", reinterpret_cast<PyObject*>(&MznArray_Type));
+
+  if (PyType_Ready(&MznSet_Type) < 0)
+    return;
+  Py_INCREF(&MznSet_Type);
+  PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSet_Type));
+
+  if (PyType_Ready(&MznVarSet_Type) < 0)
+    return;
+  Py_INCREF(&MznVarSet_Type);
+  PyModule_AddObject(model, "VarSet", reinterpret_cast<PyObject*>(&MznVarSet_Type));
 
   if (PyType_Ready(&MznModelType) < 0)
     return;

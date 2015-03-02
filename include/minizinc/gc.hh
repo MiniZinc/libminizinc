@@ -153,6 +153,8 @@ namespace MiniZinc {
     /// Untrail to previous mark
     static void untrail(void);
     
+    /// Return maximum allocated memory (high water mark)
+    static size_t maxMem(void);
   };
 
   /// Automatic garbage collection lock

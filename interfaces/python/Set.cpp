@@ -12,7 +12,7 @@ static void
 MznSet_dealloc(MznSet* self)
 {
   delete self->ranges;
-  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+  Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 static PyObject*
@@ -20,13 +20,14 @@ MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
 {
   MznSet* self = reinterpret_cast<MznSet*>(type->tp_alloc(type,0));
   self->ranges = new list<MznRange>;
+  self->tid = MOC_SET;
   return reinterpret_cast<PyObject*>(self);
 }
 
 static PyObject*
 MznSet_iter(PyObject* self)
 {
-  MznSetIter* iter = reinterpret_cast<MznSetIter*>(MznSetIter_new(&MznSetIterType, NULL, NULL));
+  MznSetIter* iter = reinterpret_cast<MznSetIter*>(MznSetIter_new(&MznSetIter_Type, NULL, NULL));
   iter->listBegin = reinterpret_cast<MznSet*>(self)->ranges->begin();
   iter->listEnd = reinterpret_cast<MznSet*>(self)->ranges->end();
   iter->listIndex = iter->listBegin;

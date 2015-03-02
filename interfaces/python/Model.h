@@ -22,7 +22,6 @@ struct MznModel {
 
   unsigned long long timeLimit;
   bool loaded;
-  bool loaded_from_minizinc;
 
   MznModel();
 
@@ -42,7 +41,7 @@ static PyObject* MznModel_solve(MznModel *self, PyObject* args);
 static PyObject* MznModel_setTimeLimit(MznModel* self, PyObject* args);
 static PyObject* MznModel_setSolver(MznModel* self, PyObject* args);
 static PyObject* MznModel_addData(MznModel* self, PyObject* args);
-static PyObject* MznModel_Variable(MznModel* self, PyObject* args);
+static PyObject* MznModel_Declaration(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
 static PyObject* MznModel_Call(MznModel* self, PyObject* args);
@@ -55,7 +54,7 @@ static PyMethodDef MznModel_methods[] = {
   {"solve", (PyCFunction)MznModel_solve, METH_VARARGS, "Solve a loaded MiniZinc model"},
   {"setTimeLimit", (PyCFunction)MznModel_setTimeLimit, METH_VARARGS, "Limit the execution time of the model"},
   {"setSolver", (PyCFunction)MznModel_setSolver, METH_VARARGS, "Choose which model will be used to solve the model"},
-  {"Variable", (PyCFunction)MznModel_Variable, METH_VARARGS, "Add a variable into the model"},
+  {"Declaration", (PyCFunction)MznModel_Declaration, METH_VARARGS, "Add a variable into the model"},
   {"Constraint", (PyCFunction)MznModel_Constraint, METH_VARARGS, "Add a constraint into the model"},
   {"SolveItem", (PyCFunction)MznModel_SolveItem, METH_VARARGS, "Add a solve item into the model"},
 

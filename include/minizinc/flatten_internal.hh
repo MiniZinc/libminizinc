@@ -79,6 +79,7 @@ namespace MiniZinc {
     std::vector<const Expression*> callStack;
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
+    unsigned int maxCallStack;
     std::vector<std::string> warnings;
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
@@ -242,6 +243,7 @@ namespace MiniZinc {
       return static_cast<long long int>(floor(static_cast<FloatVal>(v0.toInt()) / static_cast<FloatVal>(v1.toInt())));
     }
     static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
+    static IntLit* newLit(Val v) { return IntLit::a(v); }
   };
   template<>
   class LinearTraits<FloatLit> {
@@ -378,6 +380,7 @@ namespace MiniZinc {
     }
     static Val floor_div(Val v0, Val v1) { return v0 / v1; }
     static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
+    static FloatLit* newLit(Val v) { return new FloatLit(Location().introduce(),v); }
   };
 
   template<class Lit>

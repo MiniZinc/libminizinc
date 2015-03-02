@@ -181,6 +181,8 @@ namespace MiniZinc {
       return NULL;
     }
     const std::vector<FunctionI*>& v = it->second;
+    std::vector<FunctionI*> matched;
+    Expression* botarg = NULL;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -197,13 +199,29 @@ namespace MiniZinc {
             match=false;
             break;
           }
+          if (args[j]->type().isbot() && fi->params()[j]->type().bt()!=Type::BT_TOP) {
+            botarg = args[j];
+          }
         }
         if (match) {
-          return fi;
+          if (botarg)
+            matched.push_back(fi);
+          else
+            return fi;
         }
       }
     }
-    return NULL;
+    if (matched.empty())
+      return NULL;
+    if (matched.size()==1)
+      return matched[0];
+    Type t = matched[0]->ti()->type();
+    t.ti(Type::TI_PAR);
+    for (unsigned int i=1; i<matched.size(); i++) {
+      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+        throw TypeError(botarg->loc(), "ambiguous overloading on return type of function");
+    }
+    return matched[0];
   }
   
   FunctionI*
@@ -218,6 +236,8 @@ namespace MiniZinc {
       return NULL;
     }
     const std::vector<FunctionI*>& v = it->second;
+    std::vector<FunctionI*> matched;
+    Expression* botarg = NULL;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -235,13 +255,29 @@ namespace MiniZinc {
             match=false;
             break;
           }
+          if (c->args()[j]->type().isbot() && fi->params()[j]->type().bt()!=Type::BT_TOP) {
+            botarg = c->args()[j];
+          }
         }
         if (match) {
-          return fi;
+          if (botarg)
+            matched.push_back(fi);
+          else
+            return fi;
         }
       }
     }
-    return NULL;
+    if (matched.empty())
+      return NULL;
+    if (matched.size()==1)
+      return matched[0];
+    Type t = matched[0]->ti()->type();
+    t.ti(Type::TI_PAR);
+    for (unsigned int i=1; i<matched.size(); i++) {
+      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+        throw TypeError(botarg->loc(), "ambiguous overloading on return type of function");
+    }
+    return matched[0];
   }
 
   Item*&

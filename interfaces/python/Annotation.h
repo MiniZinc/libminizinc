@@ -1,37 +1,33 @@
-#ifndef __Mzn_VARIABLEOBJECT_H
-#define __Mzn_VARIABLEOBJECT_H
+#ifndef __Mzn_ANNOTATIONOBJECT_H
+#define __Mzn_ANNOTATIONOBJECT_H
 
-#include "Declaration.h"
+#include "Expression.h"
 
-struct MznVariable: MznDeclaration{
+struct MznAnnotation: MznExpression {
+
 };
 
-/*
-inline Expression* MznObject_get_e(MznVariable* self) { return MznObject_get_e(reinterpret_cast<MznDeclaration*>(self)); }
-inline void MznObject_set_e(MznVariable* self, Expression* e0) { MznObject_set_e(reinterpret_cast<MznDeclaration*>(self), e0); }
-inline VarDecl* MznObject_get_vd(MznVariable* self) { return MznObject_get_vd(reinterpret_cast<MznDeclaration*>(self)); }
-inline void MznObject_set_vd(MznDeclaration* self, VarDecl* vd0) { MznObject_set_vd(reinterpret_cast<MznDeclaration*>(self), vd0); }*/
+/*inline Expression* MznObject_get_e(MznAnnotation* self) { return MznObject_get_e(reinterpret_cast<MznExpression*>(self)); }
+inline void MznObject_set_e(MznAnnotation* self, Expression* e0) { MznObject_set_e(reinterpret_cast<MznExpression*>(self), e0); }*/
 
 
-static PyObject* MznVariable_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
-  MznVariable* self = reinterpret_cast<MznVariable*>(type->tp_alloc(type,0));
-  reinterpret_cast<MznObject*>(self)->tid = MOC_VAR;
+static PyObject* MznAnnotation_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+  MznAnnotation* self = reinterpret_cast<MznAnnotation*>(type->tp_alloc(type,0));
+  reinterpret_cast<MznObject*>(self)->tid = MOC_ANN;
   self->e = NULL;
-  self->vd = NULL;
   return reinterpret_cast<PyObject*>(self);
 }
 
-static void MznVariable_dealloc(MznVariable* self) {
+static void MznAnnotation_dealloc(MznAnnotation* self) {
   Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
-
-static PyTypeObject MznVariable_Type = {
+static PyTypeObject MznAnnotation_Type = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "minizinc.Variable",       /* tp_name */
-  sizeof(MznVariable),          /* tp_basicsize */
+  "minizinc.Annotation",       /* tp_name */
+  sizeof(MznAnnotation),          /* tp_basicsize */
   0,                         /* tp_itemsize */
-  (destructor)MznVariable_dealloc, /* tp_dealloc */
+  (destructor)MznAnnotation_dealloc, /* tp_dealloc */
   0,                         /* tp_print */
   0,                         /* tp_getattr */
   0,                         /* tp_setattr */
@@ -47,7 +43,7 @@ static PyTypeObject MznVariable_Type = {
   0,                         /* tp_setattro */
   0,                         /* tp_as_buffer */
   Py_TPFLAGS_DEFAULT,        /* tp_flags */
-  "Minizinc Variable (derived from MznDeclaration)",  /* tp_doc */
+  "Minizinc Variable (derived from MznExpression)",  /* tp_doc */
   0,                         /* tp_traverse */
   0,                         /* tp_clear */
   0,                         /* tp_richcompare */
@@ -56,15 +52,15 @@ static PyTypeObject MznVariable_Type = {
   0,                         /* tp_iternext */
   0,            /* tp_methods */
   0,            /* tp_members */
-  0,/*MznVariable_getseters,        /* tp_getset */
-  &MznDeclaration_Type,                         /* tp_base */
+  0,/*MznAnnotation_getseters,        /* tp_getset */
+  &MznExpression_Type,                         /* tp_base */
   0,                         /* tp_dict */
   0,                         /* tp_descr_get */
   0,                         /* tp_descr_set */
   0,                         /* tp_dictoffset */
   0,    /* tp_init */
   0,                         /* tp_alloc */
-  MznVariable_new,                /* tp_new */
+  MznAnnotation_new,                /* tp_new */
   0,                         /* tp_free */
 };
 

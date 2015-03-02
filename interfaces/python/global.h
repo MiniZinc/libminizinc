@@ -94,5 +94,9 @@ Expression* python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ran
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
 
+bool PyObject_ExactTypeCheck(PyObject* ob, PyTypeObject* type) {
+	return Py_TYPE(ob) == type;
+}
+
 
 #endif

@@ -17,64 +17,6 @@ def flatten(x):
 			result.append(el)
 	return result
 
-def evaluate(expr):
-	if not isinstance(expr, Expression):
-		if isinstance(expr, (list, tuple)):
-			model = None
-			for i,item in enumerate(expr):
-				expr[i], m = evaluate(item)
-				if model is None:
-					model = m
-				elif m is not None and m != model:
-					raise TypeError("Objects must be free or belong to the same model")
-			return (expr,model)
-		else:
-			return (expr,None)
-	if isinstance(expr, Id):
-		return (minizinc_internal.Id(expr.name), None)
-	if isinstance(expr, Call):
-		variables = []
-		model = None
-		for i in expr.vars:
-			var, m = evaluate(i)
-			if model is None:
-				model = m
-			elif m is not None and model != m:
-				raise TypeError("Objects must be free or belong to the same model")
-			variables.append(var)
-		return (minizinc_internal.Call(expr.CallCode, variables), model)
-	elif isinstance(expr, ArrayAccess):
-		return (expr.array.obj.at(expr.idx), expr.model)
-	elif isinstance(expr, Declaration):
-		#if not expr.is_added:
-		#	expr.is_added = True
-		#	expr.name = get_name(expr)
-		#	expr.obj = mznmodel.Variable(expr.name, expr.VarCode,
-		#						expr.dim_list, expr.lb, expr.ub)
-		return (expr.obj, expr.model)
-	elif isinstance(expr, BinOp):
-		lhs, model = evaluate(expr.vars[0])
-		rhs, model2 = evaluate(expr.vars[1])
-		if model is None:
-			model = model2
-		if model2 is not None and model2 != model:
-			raise TypeError("Objects must be free or belong to the same model")
-		return (minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs), model)
-	elif isinstance(expr, UnOp):
-		ret, model = evaluate(expr.vars[0])
-		return (minizinc_internal.UnOp(expr.UnOpCode, evaluate(expr.vars[0])), model)
-	else:
-		raise TypeError('Variable Type unspecified')
-
-'''
-def int_search(arg1, arg2, arg3, arg4):
-	ev_arg1 = evaluate(arg1)[0]
-	ev_arg2 = evaluate(arg2)[0]
-	ev_arg3 = evaluate(arg3)[0]
-	ev_arg4 = evaluate(arg4)[0]
-	return minizinc_internal.Call('int_search',[ev_arg1,ev_arg2,ev_arg3,ev_arg4])
-'''
-
 
 # All Variable and Expression declaration derived from here
 class Expression(object):
@@ -106,101 +48,135 @@ class Expression(object):
 			return var
 
 	def __and__(self, pred):
-		return And([self, pred])
+		return And( (self, pred,) )
 
 	def __rand__(self, pred):
-		return And([self, pred])
+		return And( (self, pred,) )
 
 	def __or__(self, pred):
-		return Or([self, pred])
+		return Or( (self, pred,) )
 
 	def __xor__(self, pred):
-		return Xor([self, pred])
+		return Xor( (self, pred,) )
 
 	def __ror__(self, pred):
-		return Or([self, pred])
+		return Or( (self, pred,) )
 
 	def __add__(self, pred):
-		return Add([self, pred])
+		return Add( (self, pred,) )
 
 	def __radd__(self, pred):
-		return Add([pred, self])
+		return Add( (pred, self,) )
 
 	def __sub__(self, pred):
-		return Sub([self, pred])
+		return Sub( (self, pred,) )
 
 	def __rsub__(self, pred):
-		return Sub([pred, self])
+		return Sub( (pred, self,) )
 
 	def __div__(self, pred):
-		return Div([self, pred])
+		return Div( (self, pred,) )
 
 	def __rdiv__(self, pred):
-		return Div([pred, self])
+		return Div( (pred, self,) )
 
 	def __floordiv__(self, pred):
-		return FloorDiv([self, pred])
+		return FloorDiv( (self, pred,) )
 
 	def __rfloordiv__(self, pred):
-		return FloorDiv([pred, self])
+		return FloorDiv( (pred, self,) )
 
 	def __mul__(self, pred):
-		return Mul([self, pred])
+		return Mul( (self, pred,) )
 
 	def __rmul__(self, pred):
-		return Mul([self, pred])
+		return Mul( (self, pred,) )
 
 	def __mod__(self, pred):
-		return Mod([self, pred])
+		return Mod( (self, pred,) )
 
 	def __rmod__(self, pred):
-		return Mod([pred, self])
+		return Mod( (pred, self,) )
 
 	def __pow__(self, pred):
-		return Pow([self, pred])
+		return Pow( (self, pred,) )
 
 	def __rpow__(self, pred):
-		return Pow([pred, self])
+		return Pow( (pred, self,) )
 
 	def __eq__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
 		#	raise InvalidConstraintSpecification("use == outside the model definition")
-		return Eq([self, pred])
+		return Eq( (self, pred,) )
 
 	def __ne__(self, pred):
 		#if CHECK_VAR_EQUALITY[0]
 		#	raise InvalidConstraintSpecification("use != outside the model definition")
-		return Ne([self, pred])	
+		return Ne( (self, pred,) )	
 
 	def __lt__(self, pred):
-		return Lt([self, pred])
+		return Lt( (self, pred,) )
 
 	def __gt__(self, pred):
-		return Gt([self, pred])
+		return Gt( (self, pred,) )
 
 	def __le__(self, pred):
-		return Le([self, pred])
+		return Le( (self, pred,) )
 
 	def __ge__(self, pred):
-		return Ge([self, pred])
+		return Ge( (self, pred,) )
 
 	def __neg__(self):
-		return Neg([self])
+		return Neg( (self,) )
 
 	def __pos__(self):
-		return Pos([self])
+		return Pos( (self,))
 
 	def __invert__(self):
-		return Invert([self])
+		return Invert( (self,) )
 
 	def __abs__(self):
-		return Abs([self])
+		return Abs( (self,) )
 
 
 # Temporary container for expression before evaluating to minizinc_internal object
 class Predicate(Expression):
-	def __init__(self, vars):
+	def __init__(self, vars, args_and_return_type_tuple = None, model = None):
 		self.vars = vars
+		def eval_type(args):
+			if isinstance(args, Expression):
+				return args.type
+			elif type(args) in (int, float, bool, str):
+				return type(args)
+			elif type(args) is list:
+				t = None
+				for i in args:
+					if t is None:
+						t = eval_type(i)
+					else:
+						if t != eval_type(i):
+							raise TypeError("Predicate: Type of arguments in the list must be the same")
+				return [t]
+			elif type(args) is tuple:
+				t = []
+				for i in args:
+					t.append(eval_type(i))
+				return tuple(t)
+			else:
+				raise TypeError("Predicate: Unexpected Type (" + str(type(args)) + ")")
+		self.vars_type = eval_type(vars)
+		if args_and_return_type_tuple is not None:
+			for i in args_and_return_type_tuple:
+				if self.vars_type == i[0]:
+					self.type = i[1]
+					break
+			else:
+				s = "Argument type does not match, received " + str(self.vars_type) + ", expected: "
+				for i in args_and_return_type_tuple:
+					s = s + str(i[0]) + " or "
+				raise TypeError(s)
+		else:
+			self.type = None
 		Expression.__init__(self)
 		'''
 		model = None
@@ -215,23 +191,57 @@ class Predicate(Expression):
 
 
 class BinOp(Predicate):
-	def __init__(self, vars, code):
-		Predicate.__init__(self,vars)
+	def __init__(self, vars, code, args_and_return_type_tuple):
+		Predicate.__init__(self,vars,args_and_return_type_tuple)
 		self.BinOpCode = code
 
 class UnOp(Predicate):
-	def __init__(self, vars, code):
-		Predicate.__init__(self,vars)
+	def __init__(self, vars, code, args_and_return_type_tuple):
+		Predicate.__init__(self,vars, args_and_return_type_tuple)
 		self.UnOpCode = code
 
 class Call(Predicate):
-	def __init__(self, vars, code):
-		Predicate.__init__(self,vars)
+	def __init__(self, vars, code, args_and_return_type_tuple = None, model_list = None):
+		Predicate.__init__(self,vars, args_and_return_type_tuple)
 		self.CallCode = code
+		self.model_list = model_list
+
+'''
+base_dict = {}
+base_dict['int']   = (type(int), type(int))
+base_dict['float'] = ((type(float), type(float)), type(float))
+base_dict['bool']  = ((type(bool), type(bool)), type(bool))
+'''
+
+args_ret_dict = {}
+args_ret_dict['add'] =[ ((int,int), int ),
+						((float, float), float ) ]
+args_ret_dict['sub'] = args_ret_dict['add']
+args_ret_dict['mul'] = args_ret_dict['add']
+args_ret_dict['div'] = args_ret_dict['add']
+args_ret_dict['floordiv'] = args_ret_dict['add']
+args_ret_dict['pow'] = args_ret_dict['add']
+args_ret_dict['mod'] =[ ((int, int), int )]
+
+args_ret_dict['lt'] = [ ((int, int), bool ), 
+						((float, float), bool ),
+						((bool, bool), bool ),
+						((str, str), bool ),
+						((minizinc_internal.VarSet, minizinc_internal.VarSet), bool)]
+args_ret_dict['le'] = args_ret_dict['lt']
+args_ret_dict['gt'] = args_ret_dict['lt']
+args_ret_dict['ge'] = args_ret_dict['lt']
+args_ret_dict['eq'] = args_ret_dict['lt']
+args_ret_dict['ne'] = args_ret_dict['lt']
+args_ret_dict['in'] = [ ((int, minizinc_internal.VarSet), bool) ]
+args_ret_dict['or'] = [ ((bool, bool), bool) ]
+args_ret_dict['and'] = args_ret_dict['or']
+args_ret_dict['xor'] = args_ret_dict['or']
+
 
 class Add(BinOp):
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 0)
+		BinOp.__init__(self, vars, 0, args_ret_dict['add'])
 
 	def get_symbol(self):
 		return '+'
@@ -247,7 +257,7 @@ class Add(BinOp):
 
 class Sub(BinOp):
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 1)
+		BinOp.__init__(self, vars, 1, args_ret_dict['sub'])
 
 	def get_symbol(self):
 		return '-'
@@ -258,7 +268,7 @@ class Sub(BinOp):
 class Mul(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 2)
+		BinOp.__init__(self, vars, 2, args_ret_dict['mul'])
 
 	def get_symbol(self):
 		return '*'
@@ -269,7 +279,7 @@ class Mul(BinOp):
 class Div(BinOp):
 
 	def __init__(self, vars) :
-		BinOp.__init__(self, vars, 3)
+		BinOp.__init__(self, vars, 3, args_ret_dict['div'])
 
 	def get_symbol(self):
 		return '/'
@@ -280,7 +290,7 @@ class Div(BinOp):
 class FloorDiv(BinOp):
 
 	def __init__(self, vars) :
-		BinOp.__init__(self, vars, 4)
+		BinOp.__init__(self, vars, 4, args_ret_dict['floordiv'])
 
 	def get_symbol(self):
 		return '//'
@@ -292,7 +302,7 @@ class FloorDiv(BinOp):
 class Mod(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 5)
+		BinOp.__init__(self, vars, 5, args_ret_dict['mod'])
 
 	def get_symbol(self):
 		return '%'
@@ -304,7 +314,7 @@ class Mod(BinOp):
 class Lt(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 6)
+		BinOp.__init__(self, vars, 6, args_ret_dict['lt'])
 
 	def get_symbol(self):
 		return '<'
@@ -315,7 +325,7 @@ class Lt(BinOp):
 class Le(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 7)
+		BinOp.__init__(self, vars, 7, args_ret_dict['le'])
 
 	def get_symbol(self):
 		return '<='
@@ -326,7 +336,7 @@ class Le(BinOp):
 class Gt(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 8)
+		BinOp.__init__(self, vars, 8, args_ret_dict['gt'])
 
 	def get_symbol(self):
 		return '>'
@@ -337,7 +347,7 @@ class Gt(BinOp):
 class Ge(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 9)
+		BinOp.__init__(self, vars, 9, args_ret_dict['ge'])
 
 	def get_symbol(self):
 		return '>='
@@ -349,7 +359,7 @@ class Ge(BinOp):
 class Eq(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 10)
+		BinOp.__init__(self, vars, 10, args_ret_dict['eq'])
 
 	def get_symbol(self):
 		return '=='
@@ -360,7 +370,7 @@ class Eq(BinOp):
 class Ne(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 11)
+		BinOp.__init__(self, vars, 11, args_ret_dict['ne'])
 
 	def get_symbol(self):
 		return '!='
@@ -371,7 +381,7 @@ class Ne(BinOp):
 class In(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 12)
+		BinOp.__init__(self, vars, 12, args_ret_dict['in'])
 
 	def get_symbol(self):
 		return 'in'
@@ -386,7 +396,7 @@ class In(BinOp):
 class Or(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 23)
+		BinOp.__init__(self, vars, 23, args_ret_dict['or'])
 
 	def get_symbol(self):
 		return 'or'
@@ -397,7 +407,7 @@ class Or(BinOp):
 class And(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 24)
+		BinOp.__init__(self, vars, 24, args_ret_dict['and'])
 
 	def get_symbol(self):
 		return '&'
@@ -408,7 +418,7 @@ class And(BinOp):
 class Xor(BinOp):
 
 	def __init__(self, vars):
-		BinOp.__init__(self, vars, 25)
+		BinOp.__init__(self, vars, 25, args_ret_dict['xor'])
 
 	def get_symbol(self):
 		return 'xor'
@@ -418,7 +428,7 @@ class Xor(BinOp):
 
 class Pow(Call):
 	def __init__(self, vars):
-		Call.__init__(self, vars, "pow")
+		Call.__init__(self, vars, "pow", args_ret_dict['pow'])
 
 	def get_symbol(self):
 		return '**'
@@ -634,14 +644,6 @@ class Ub_Array(Call):
 		Call.__init__(self,[var],"ub_array")
 
 
-def AllDiff(*args):
-	vars = flatten(args)
-	if len(vars) < 2:
-		raise BaseException("AllDiff requires a list of at least 2 expressions.")
-	return [vars[i] != vars[j] for i in range(len(vars)-1) for j in range(i+1,len(vars))]
-
-
-
 class Neg(UnOp):
 	def __init__(self, vars):
 		UnOp.__init__(self, vars, 2)
@@ -655,8 +657,10 @@ class Invert(Predicate):
 		UnOp.__init__(self, vars, 0)
 
 class Id(Expression):
-	def __init__(self, name):
+	def __init__(self, name, model_list = None):
 		self.name = name
+		self.model_list = model_list
+		self.type = minizinc_internal.Annotation
 
 
 # Temporary container for Variable Declaration
@@ -700,10 +704,11 @@ class Construct(Declaration):
 			else: 
 				raise TypeError('Name of variable must be a string')
 		if hasattr(arg1, 'obj'):
-			self.obj = model.mznmodel.Variable(self.name, arg1.obj)
+			self.obj = model.mznmodel.Declaration(self.name, arg1.obj)
 		else:
-			self.obj = model.mznmodel.Variable(self.name, arg1)
+			self.obj = model.mznmodel.Declaration(self.name, arg1)
 		self.value = arg1
+		self.type = self.obj.type
 
 
 class Variable(Declaration):
@@ -762,19 +767,21 @@ class Variable(Declaration):
 				raise ValueError('Lower bound cannot be greater than upper bound')
 
 		self.dim_list = []
+		self.type = typelb
 		if name is not None:
 			self.name = name
 
 		if typelb is bool:
-			self.obj = model.mznmodel.Variable(self.name, 10, [])
+			self.obj = model.mznmodel.Declaration(self.name, 10, [])
 		elif typelb is int:
-			self.obj = model.mznmodel.Variable(self.name, 9, [], lb, ub)
+			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb, ub)
 		elif typelb is float:
-			self.obj = model.mznmodel.Variable(self.name, 11, [], lb, ub)
+			self.obj = model.mznmodel.Declaration(self.name, 11, [], lb, ub)
 		elif typelb is Set:
-			self.obj = model.mznmodel.Variable(self.name, 9, [], lb.obj)
+			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb.obj)
+			self.type = int
 		#elif isinstance(lb, Declaration) or isinstance(ub, Declaration):
-		#	self.obj = model.mznmodel.Variable(self.name, 12, [], lb, ub)
+		#	self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
 
 class VariableConstruct(Variable, Construct):
 	def __init__(self, model, arg1, arg2 = None):
@@ -837,13 +844,17 @@ class Array(Variable):
 		self.dim_list = dim_list
 		tlb = type(argopt1)
 		if tlb is bool:
-			self.obj = model.mznmodel.Variable(self.name,10,dim_list,lb,ub)
+			self.type = [bool] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
 		elif tlb is int:
-			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb,ub)
+			self.type = [int] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name, 9,dim_list,lb,ub)
 		elif tlb is float:  #isinstance(lb, float):
-			self.obj = model.mznmodel.Variable(self.name,11,dim_list,lb,ub)
+			self.type = [float] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
 		elif tlb is Set:
-			self.obj = model.mznmodel.Variable(self.name, 9,dim_list,lb.obj)
+			self.type = [int] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name, 9,dim_list,lb.obj)
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
@@ -859,6 +870,7 @@ class ArrayAccess(Array):
 		for i in range(len(self.idx)):
 			if hasattr(self.idx[i],'obj'):
 				self.idx[i] = self.idx[i].obj
+		self.type = array.type[0]
 
 	def get_value(self):
 		if not hasattr(self, 'solution_counter'):
@@ -926,6 +938,7 @@ class Set(Declaration):
 				raise TypeError('Lower bound and upper bound must be integers')
 			set_list = [[lb,ub]]
 		self.obj = minizinc_internal.Set(set_list)
+		self.type = minizinc_internal.Set
 
 	def continuous(self):
 		return self.obj.continuous()
@@ -989,19 +1002,71 @@ class VarSet(Variable):
 			if not (type(lb) is int and type(ub) is int):
 				raise TypeError('Lower bound and upper bound must be integers')
 			set_list = [[lb,ub]]
-		self.obj = model.mznmodel.Variable(self.name, 12, [], lb, ub)
+		self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
+		self.type = minizinc_internal.VarSet
 
 	def __contains__(self, argopt):
 		return In([argopt, self])
 
+variable_model_dict = {}
+function_model_dict = {}
+name_model_dict = {}
+def handlerFunctionClosure(name, args_list, model_list):
+	def handlerFunction(*args):
+		return Call(args, name, args_list, model_list)
+	return handlerFunction
+
+def handlerFunction(name, model_list):
+	return Id(name, model_list)
+
+def init(args = None, model = None):
+	def assign_usable_names_to_model(name, model):
+		if name in name_model_dict:
+			if model is None:
+				name_model_dict[name] = None
+			else:
+				name_model_dict[name].append(model)
+			return False
+		else:
+			if model is None:
+				name_model_dict[name] = None
+			else:
+				name_model_dict[name] = [model]
+			return True
+			'''
+		if model is None:
+			name_model_dict[name] = None
+		else:
+			if name in name_model_dict:
+				if name_model_dict[name] is not None:
+					name_model_dict[name].append(model)
+			else:
+				name_model_dict[name] = [model]
+			'''
+
+	names = minizinc_internal.retrieveNames(args)
+	for name, args_and_return_type_tuple in names["boolfuncs"].items():
+		if assign_usable_names_to_model(name, model):
+			setattr(predicate, name, handlerFunctionClosure(name, args_and_return_type_tuple, name_model_dict[name]))
+
+	for name, args_and_return_type_tuple in names["annfuncs"].items():
+		if assign_usable_names_to_model(name, model):
+			setattr(predicate, name, handlerFunctionClosure(name, args_and_return_type_tuple, name_model_dict[name]))
+
+	for name in names["annvars"]:
+		if assign_usable_names_to_model(name, model):
+			setattr(annotation, name, handlerFunction(name, name_model_dict[name]))
+
+init()
 
 class Model(object):
 	def __init__(self, args = None):
 		self.loaded = False
 		self.mznsolver = None
 		self.mznmodel = minizinc_internal.Model(args)
+		if args:
+			init(args, self)
 		self.solution_counter = -1
-		init()
 		
 
 
@@ -1024,8 +1089,60 @@ class Model(object):
 			#del self.frame
 		minizinc_internal.unlock()
 
-	
-
+	def evaluate(self, expr):
+		if not isinstance(expr, Expression):
+			if isinstance(expr, (list, tuple)):
+				model = None
+				for i,item in enumerate(expr):
+					expr[i], m = self.evaluate(item)
+					if model is None:
+						model = m
+					elif m is not None and m != model:
+						raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
+				return (expr,model)
+			else:
+				return (expr,None)
+		if isinstance(expr, Id):
+			if expr.model_list is not None:
+				if not self in expr.model_list:
+					raise TypeError("The annotation '" + expr.name + "'' does not belong to the model")
+			return (minizinc_internal.Id(expr.name), None)
+		if isinstance(expr, Call):
+			variables = []
+			model = None
+			for i in expr.vars:
+				var, m = self.evaluate(i)
+				if model is None:
+					model = m
+				elif m is not None and model != m:
+					raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
+				variables.append(var)
+			if expr.model_list is not None:
+				if not self in expr.model_list:
+					raise TypeError("The function '" + expr.name + "'' does not belong to the model")
+			return (minizinc_internal.Call(expr.CallCode, variables, expr.type), model)
+		elif isinstance(expr, ArrayAccess):
+			return (expr.array.obj.at(expr.idx), expr.model)
+		elif isinstance(expr, Declaration):
+			#if not expr.is_added:
+			#	expr.is_added = True
+			#	expr.name = get_name(expr)
+			#	expr.obj = mznmodel.Declaration(expr.name, expr.VarCode,
+			#						expr.dim_list, expr.lb, expr.ub)
+			return (expr.obj, expr.model)
+		elif isinstance(expr, BinOp):
+			lhs, model = self.evaluate(expr.vars[0])
+			rhs, model2 = self.evaluate(expr.vars[1])
+			if model is None:
+				model = model2
+			if model2 is not None and model2 != model:
+				raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
+			return (minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs), model)
+		elif isinstance(expr, UnOp):
+			ret, model = self.evaluate(expr.vars[0])
+			return (minizinc_internal.UnOp(expr.UnOpCode, self.evaluate(expr.vars[0])), model)
+		else:
+			raise TypeError('Variable Type unspecified')
 
 #Numberjack
 	def add_prime(self, expr):
@@ -1041,7 +1158,7 @@ class Model(object):
 		else:
 			if issubclass(type(expr), Expression):
 				if (expr.is_pre()):
-					obj, model = evaluate(expr)
+					obj, model = self.evaluate(expr)
 					if model != None and model != self:
 						raise TypeError('Expressions must belong to this model')
 					self.mznmodel.Constraint(obj)
@@ -1059,7 +1176,7 @@ class Model(object):
 	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
 		return Variable(self, argopt1, argopt2, argopt3)
 		#var.name = get_name(var)
-		#var.obj = m.mznmodel.Variable(var.name, var.code,
+		#var.obj = m.mznmodel.Declaration(var.name, var.code,
 		#						var.dim_list, var.lb, var.ub)
 
 	def Array(self, argopt1, argopt2, *args):
@@ -1093,7 +1210,7 @@ class Model(object):
 		else:
 		'''
 		minizinc_internal.lock()
-		eval_ann, model = evaluate(ann)
+		eval_ann, model = self.evaluate(ann)
 		if model is not None and model != self:
 			raise TypeError('Expression must be free or belong to the same model') 
 		self.mznmodel.SolveItem(0, eval_ann)
@@ -1102,7 +1219,7 @@ class Model(object):
 
 	def optimize(self, arg, code, ann = None):
 		minizinc_internal.lock()
-		obj, model = evaluate(arg)
+		obj, model = self.evaluate(arg)
 		if model is not None and model != self:
 			raise TypeError('Expression must be free or belong to the same model')
 		#self.loaded = False
@@ -1144,24 +1261,3 @@ class Model(object):
 		self.mznmodel.setSolver(solver)
 
 
-
-def init():
-	#predicate = new.module('predicate', 'MiniZinc Predicate Library')
-	for name in minizinc_internal.retrieveFunctions():
-		def handlerFunctionClosure(name):
-			def handlerFunction(*args):
-				return Call(args, name)
-			return handlerFunction
-		setattr(predicate, name, handlerFunctionClosure(name))
-	#annotation = new.module('annotation', 'MiniZinc Annotation Library')
-	variables, functions = minizinc_internal.retrieveAnnotations();
-	for name in variables:
-		def handlerFunction(name):
-			return Id(name)
-		setattr(annotation, name, handlerFunction(name))
-	for name in functions:
-		def handlerFunctionClosure(name):
-			def handlerFunction(*args):
-				return Call(args, name)
-			return handlerFunction
-		setattr(annotation, name, handlerFunctionClosure(name))
