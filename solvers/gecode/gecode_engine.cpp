@@ -31,9 +31,10 @@ namespace MiniZinc {
     }
   }
   
-  template<class T>
+ /* template<class T>
   void
   DFSEngine<T>::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
+    std::cout << "DEBUG: updating int bounds in DFSEngine" << std::endl;
     // iterate over stack and post constraint
     if(path.empty()) 
       return;    
@@ -44,7 +45,7 @@ namespace MiniZinc {
         si.updateIntBounds(space, vd,lb,ub);
       }
     }
-  }
+  }*/
   
   /*void DFSEngine::addVariable(VarDecl* vd, GecodeSolverInstance& si) {
     if(path.empty())

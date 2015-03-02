@@ -1382,16 +1382,15 @@ namespace MiniZinc {
   
   bool 
   GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
+    //std::cout << "DEBUG: Applying bound (" << lb << "," << ub  << ") to var: " << *vd << std::endl;
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
+    space->status(); // to make the space stable
     return true;
   }
   
   bool 
-  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    if(!customEngine) {
-      std::cout << "Custome engine is NULL!!" << std::endl;
-    }
+  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {    
     customEngine->updateIntBounds(vd,lb,ub,*this);   
     return true;
   }

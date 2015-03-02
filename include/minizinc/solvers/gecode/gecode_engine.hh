@@ -74,22 +74,13 @@ namespace MiniZinc {
     /// Destructor
     ~DFSEngine(void);
   };
-
-  /*
-  template<class T>
-  class CustomDFS : public DFSEngine, public Gecode::DFS<T> {
-  public:
-    /// Initialize search engine for space \a s with options \a o
-    CustomDFS(T* s, const Gecode::Search::Options& o=Gecode::Search::Options::def);    
-  };*/
-  
   
   /// special meta (wrapper) class to allow additional functionality
   template<template<class> class E, class T>
   class GecodeMeta : E<T> {
   public:
     GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
-    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  /*E<T>::updateIntBounds(vd,lb,ub,si); *//* TODO e.updateIntBounds(vd,lb,ub,si); */  }
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
     FznSpace* next(void) { return E<T>::next(); }
     bool stopped(void) { return E<T>::stopped(); }
   };
@@ -193,6 +184,21 @@ namespace MiniZinc {
   DFSEngine<T>::~DFSEngine(void) {
     delete cur;
     path.reset();
+  }
+  
+  template<class T>
+  void
+  DFSEngine<T>::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {   
+    // iterate over stack and post constraint
+    if(path.empty()) 
+      return;    
+    for(int edge=0; edge<path.getNbEntries(); edge++) {
+      T* s = static_cast<T*>(path.getSpace(edge));
+      if(s) {
+        FznSpace* space = static_cast<FznSpace*>(s);
+        si.updateIntBounds(space, vd,lb,ub);
+      }
+    }
   }
 
 }
