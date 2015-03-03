@@ -43,6 +43,7 @@ Bug fixes:
    generator
  - Report type error on some ambiguous function calls
  - Report type error on var sets with element type other than int
+ - Report type error when trying to coerce a var set into an array
  
 
 Version 2.0.1
