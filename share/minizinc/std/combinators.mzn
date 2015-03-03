@@ -29,7 +29,7 @@ annotation or(array[int] of ann);
 %function float: sol(var float: x);
 % returns true if there already exists a (last) solution, and returns
 % false otherwise
-function bool: hasSol; 
+%function bool: hasSol; 
 % print the output
 function ann: print; 
 

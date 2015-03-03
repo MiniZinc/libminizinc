@@ -2744,8 +2744,7 @@ namespace MiniZinc {
       rb(m, ASTString("sol"),t,b_sol_bool);
     }
     {
-      std::vector<Type> t(1);
-      t[0] = Type::parint();
+      std::vector<Type> t(0); // no arguments     
       rb(m, ASTString("hasSol"),t,b_hasSol);
     }
   }

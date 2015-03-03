@@ -148,8 +148,9 @@ namespace MiniZinc {
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
+    /// this is the version that the combinator interpreter calls which will evoke the engine
     virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
-    /// this is the version that needs to be applied by the Gecode engine
+    /// this is the version that needs to be applied by the Gecode engine to each space
     bool updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub);
 
     // Presolve the currently loaded model, updating variables with the same
