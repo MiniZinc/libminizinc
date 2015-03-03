@@ -64,13 +64,15 @@ namespace MiniZinc {
     /// Reset engine to restart at space \a s
     void reset(T* s);
     /// Return no-goods
-    Gecode::NoGoods& nogoods(void);
-    /// post constraints to the search engine
-    void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si);
+    Gecode::NoGoods& nogoods(void);    
     /// adds variable to the engine
     // void addVariable(VarDecl* vd, GecodeSolverInstance& si);
     /// update the integer bounds of the given variable to the tighter bounds (lb..ub)
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si);
+    /// add variables to the search engine
+    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si);
+    /// post constraints to the search engine
+    void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si);
     /// Destructor
     ~DFSEngine(void);
   };
@@ -81,6 +83,8 @@ namespace MiniZinc {
   public:
     GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
+    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }
+    void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { E<T>::postConstraints(cts, si); }
     FznSpace* next(void) { return E<T>::next(); }
     bool stopped(void) { return E<T>::stopped(); }
   };
@@ -200,6 +204,36 @@ namespace MiniZinc {
       }
     }
   }
+  
+  template<class T>
+  void
+  DFSEngine<T>::addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) {   
+    // iterate over stack and post constraint
+    if(path.empty()) 
+      return;    
+    for(int edge=0; edge<path.getNbEntries(); edge++) {
+      T* s = static_cast<T*>(path.getSpace(edge));
+      if(s) {
+        FznSpace* space = static_cast<FznSpace*>(s);
+        si.addVariables(space, vars);
+      }
+    }
+  }
+  
+  template<class T>
+  void
+  DFSEngine<T>::postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) {   
+    // iterate over stack and post constraint
+    if(path.empty()) 
+      return;    
+    for(int edge=0; edge<path.getNbEntries(); edge++) {
+      T* s = static_cast<T*>(path.getSpace(edge));
+      if(s) {
+        FznSpace* space = static_cast<FznSpace*>(s);
+        si.postConstraints(space,cts);
+      }
+    }
+  }  
 
 }
 

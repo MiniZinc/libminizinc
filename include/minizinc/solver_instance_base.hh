@@ -57,11 +57,10 @@ namespace MiniZinc {
     virtual Status solve(void);
     /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
     virtual bool updateIntBounds(VarDecl* vd, int lb, int ub) = 0;
-    
     /// post constraints during search (after next() has been called)
-    bool postConstraints(std::vector<Call*> cts) { return false; }
+    virtual bool postConstraints(std::vector<Call*> cts) { return false; }    
     /// add variables during search (after next() has been called)
-    bool addVariables(std::vector<VarDecl*> vars) { return false; }    
+    virtual bool addVariables(std::vector<VarDecl*> vars) { return false; }    
     /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
     //bool updateFloatBounds(VarDecl* vd, float lb, float ub) { return false; }
     void setOptions(Options& o) { _options = o; }

@@ -148,11 +148,19 @@ namespace MiniZinc {
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
-    /// this is the version that the combinator interpreter calls which will evoke the engine
+    /// this is the version that the combinator interpreter calls which will evoke the search engine
     virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
-    /// this is the version that needs to be applied by the Gecode engine to each space
-    bool updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub);
-
+    /// this is the version that is called by the Gecode engine and applied to each space
+    bool updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub); 
+    /// post constraints incrementally (after next() has been called); this function is called by the combinators interpreter
+    virtual bool postConstraints(std::vector<Call*> cts);   
+    /// post the constraints incrementally to the given space (called by the search engine)
+    bool postConstraints(FznSpace* space, std::vector<Call*> cts);
+    /// add variables incrementally (after next() has been called); this function is called by the combinators interpreter
+    virtual bool addVariables(std::vector<VarDecl*> vars);
+    /// add variables incrementally to the given space (called by the engine)
+    bool addVariables(FznSpace* space, std::vector<VarDecl*> vars);
+    
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.
     void presolve(Model* m);

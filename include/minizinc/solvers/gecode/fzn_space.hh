@@ -98,7 +98,7 @@ namespace MiniZinc {
     /// Implement optimization
     virtual void constrain(const Space& s);
     /// Copy function
-    virtual Gecode::Space* copy(bool share);
+    virtual Gecode::Space* copy(bool share);     
   };
   
 }

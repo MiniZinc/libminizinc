@@ -28,8 +28,7 @@ namespace MiniZinc {
   class GecodeEngine {
   public:
     virtual FznSpace* next(void) = 0;
-    virtual bool stopped(void) = 0;
-    //virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
+    virtual bool stopped(void) = 0;    
     virtual ~GecodeEngine(void) {}
   };
   
@@ -39,6 +38,8 @@ namespace MiniZinc {
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) = 0;
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0;
+    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) = 0;
     virtual ~CustomEngine(void) {}
   };
   
@@ -63,6 +64,8 @@ namespace MiniZinc {
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); };
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); };
+    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { e.postConstraints(cts, si); };
   };
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
@@ -1386,8 +1389,7 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
-    //std::cout << "DEBUG: Applying bound (" << lb << "," << ub  << ") to var: " << *vd << std::endl;
+  GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {    
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
     space->status(); // to make the space stable
@@ -1398,6 +1400,90 @@ namespace MiniZinc {
   GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {    
     customEngine->updateIntBounds(vd,lb,ub,*this);   
     return true;
+  }
+  
+  bool 
+  GecodeSolverInstance::addVariables(std::vector<VarDecl*> vars) {
+    std::cout << "DEBUG: adding variables to GecodeSolverInstance" << std::endl;
+    customEngine->addVariables(vars, *this);
+    return true; 
+  }
+  
+  bool 
+  GecodeSolverInstance::addVariables(FznSpace* space, std::vector<VarDecl*> vars) {
+    for(unsigned int i=0; i<vars.size(); i++) {
+      std::cout << "DEBUG: about to add variable " << *vars[i] << " to space." << std::endl;
+      // integer variable
+      if(vars[i]->type().ispar()) {
+        // TODO: what if the variable is par? like array [1,1]?
+      }
+      else if(vars[i]->type().isint()) {       
+        Expression* domain = vars[i]->ti()->domain();       
+        if(domain->isa<SetLit>()) {
+          IntVar intVar(*space, arg2intset(_env.envi(), domain));
+          space->iv.push_back(intVar);
+          insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                            space->iv.size()-1));
+        }
+        else {
+          IntBounds ib = compute_int_bounds(_env.envi(), domain);
+          if(ib.valid) {
+            int lb=-1, ub=-2;
+            if(valueWithinBounds(ib.l.toInt())) {
+              lb = ib.l.toInt();
+            } else {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+              throw InternalError(ssm.str());
+            }
+
+            if(valueWithinBounds(ib.u.toInt())) {
+              ub = ib.u.toInt();
+            } else {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+              throw InternalError(ssm.str());
+            }
+
+            IntVar intVar(*space, lb, ub);
+            space->iv.push_back(intVar);
+            insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                  space->iv.size()-1));
+          } else {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
+              throw InternalError(ssm.str());
+          }
+        }        
+      }
+      else if(vars[i]->type().isbool()) {
+        // TODO
+      }
+      else if(vars[i]->type().isfloat()) {
+        // TODO
+      }
+      else {
+        // TODO:        
+      }
+    }    
+    // TODO: add variables to space
+    return false;
+  }  
+  
+  bool
+  GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {
+    std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;
+    customEngine->postConstraints(cts, *this);
+    return true; 
+  }
+  
+  bool 
+  GecodeSolverInstance::postConstraints(FznSpace* space, std::vector<Call*> cts) {
+    for(unsigned int i=0; i<cts.size(); i++) {
+      std::cout << "DEBUG: about to add constraint " << *cts[i] << " to space." << std::endl;
+    }    
+    // TODO: add constraints to space    
+    return false;
   }
 
   }
