@@ -124,11 +124,9 @@ MznSolver::next()
     Py_RETURN_NONE; 
   }
   if (_m == NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "Unsatisfied");
-    return NULL;
+    return PyString_FromString("Unsatisfied");
   } else {
-    PyErr_SetString(PyExc_RuntimeError, "Reached last solution");
-    return NULL;
+    return PyString_FromString("Reached last solution");
   }
 }
 

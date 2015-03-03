@@ -54,31 +54,34 @@ struct MznFunction {
 
 PyObject* eval_type(TypeInst* ti) {
   ASTExprVec<TypeInst> ranges = ti->ranges();
+  PyObject* v;
+  switch (ti->type().bt()) {
+    case Type::BT_BOOL:   v = (PyObject*)(&PyBool_Type); break;
+    case Type::BT_INT:   
+      if (ti->type().st() == Type::ST_SET)
+        v = (PyObject*)(&MznVarSet_Type);
+      else
+        v = (PyObject*)(&PyInt_Type);
+      break;
+    case Type::BT_FLOAT:  v = (PyObject*)(&PyFloat_Type); break;
+    case Type::BT_STRING: v = (PyObject*)(&PyString_Type); break;
+    case Type::BT_ANN:    v = (PyObject*)(&MznAnnotation_Type); break;
+    //case Type::BT_BOT:    v = (PyObject*)(&MznSet_Type); break;
+    default: //v = (PyObject*)(&MznVariable_Type);
+      //cout << ti->type().bt() << endl;
+      v = (PyObject*)(&MznObject_Type); break;
+      throw runtime_error("CollectBoolFunctionNames: unexpected type");
+  }
+
   if (ranges.size() == 0) {
-    PyObject* v;
-    switch (ti->type().bt()) {
-      case Type::BT_BOOL:   v = (PyObject*)(&PyBool_Type); break;
-      case Type::BT_INT:   
-        if (ti->type().st() == Type::ST_SET)
-          v = (PyObject*)(&MznVarSet_Type);
-        else
-          v = (PyObject*)(&PyInt_Type);
-        break;
-      case Type::BT_FLOAT:  v = (PyObject*)(&PyFloat_Type); break;
-      case Type::BT_STRING: v = (PyObject*)(&PyString_Type); break;
-      case Type::BT_ANN:    v = (PyObject*)(&MznAnnotation_Type); break;
-      //case Type::BT_BOT:    v = (PyObject*)(&MznSet_Type); break;
-      default: //v = (PyObject*)(&MznVariable_Type);
-        //cout << ti->type().bt() << endl;
-        v = (PyObject*)(&MznObject_Type); break;
-        throw runtime_error("CollectBoolFunctionNames: unexpected type");
-    }
     Py_INCREF(v);
     return v;
   } else {
     PyObject* args_tuple = PyList_New(ranges.size());
-    for (int i=0; i!=ranges.size(); ++i)
-      PyList_SET_ITEM(args_tuple, i, eval_type(ranges[i]));
+    for (int i=0; i!=ranges.size(); ++i) {
+      Py_INCREF(v);
+      PyList_SET_ITEM(args_tuple, i, v);
+    }
     return args_tuple;
   }
 }
