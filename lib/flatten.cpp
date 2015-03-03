@@ -3813,7 +3813,7 @@ namespace MiniZinc {
                   } else if (args[i]()->type().bt() == Type::BT_BOT) {
                     // Nothing to be done for empty arrays/sets
                   } else {
-                    throw EvalError(decl->params()[i]->loc(),"domain restrictions other than int not supported yet");
+                    throw EvalError(decl->params()[i]->loc(),"domain restrictions other than int and float not supported yet");
                   }
                 }
               }

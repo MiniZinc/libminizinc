@@ -46,6 +46,8 @@ Bug fixes:
  - Report type error on some ambiguous function calls
  - Report type error on var sets with element type other than int
  - Report type error when trying to coerce a var set into an array
+ - Report error when calling function with a value that is outside the
+   declared parameter bounds
  
 
 Version 2.0.1

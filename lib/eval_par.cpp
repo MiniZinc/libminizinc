@@ -178,6 +178,32 @@ namespace MiniZinc {
     static Expression* exp(Expression* e) { return e; }
   };
 
+  void checkDom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
+    bool oob = false;
+    if (e->type().isintset()) {
+      IntSetVal* ev = eval_intset(env, e);
+      IntSetRanges ev_r(ev);
+      IntSetRanges dom_r(dom);
+      oob = !Ranges::subset(ev_r, dom_r);
+    } else {
+      oob = !dom->contains(eval_int(env,e));
+    }
+    if (oob) {
+      std::ostringstream oss;
+      oss << "value for argument `" << *arg << "' out of bounds";
+      throw EvalError(e->loc(), oss.str());
+    }
+  }
+
+  void checkDom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expression* e) {
+    FloatVal ev = eval_float(env, e);
+    if (ev < dom_min || ev > dom_max) {
+      std::ostringstream oss;
+      oss << "value for argument `" << *arg << "' out of bounds";
+      throw EvalError(e->loc(), oss.str());
+    }
+  }
+  
   template<class Eval>
   typename Eval::Val eval_call(EnvI& env, Call* ce) {
     std::vector<Expression*> previousParameters(ce->decl()->params().size());
@@ -186,6 +212,29 @@ namespace MiniZinc {
       previousParameters[i] = vd->e();
       vd->flat(vd);
       vd->e(eval_par(env, ce->args()[i]));
+      if (vd->e()->type().ispar()) {
+        if (Expression* dom = vd->ti()->domain()) {
+          if (!dom->isa<TIId>()) {
+            if (vd->e()->type().bt()==Type::BT_INT) {
+              IntSetVal* isv = eval_intset(env, dom);
+              if (vd->e()->type().dim() > 0) {
+                ArrayLit* al = eval_array_lit(env, vd->e());
+                for (unsigned int i=0; i<al->v().size(); i++) {
+                  checkDom(env, vd->id(), isv, al->v()[i]);
+                }
+              } else {
+                checkDom(env, vd->id(),isv, vd->e());
+              }
+            } else if (vd->e()->type().bt()==Type::BT_FLOAT) {
+              GCLock lock;
+              BinOp* bo = dom->cast<BinOp>();
+              FloatVal dom_min = eval_float(env,bo->lhs());
+              FloatVal dom_max = eval_float(env,bo->rhs());
+              checkDom(env, vd->id(), dom_min, dom_max, vd->e());
+            }
+          }
+        }
+      }
     }
     typename Eval::Val ret = Eval::e(env,ce->decl()->e());
     for (unsigned int i=ce->decl()->params().size(); i--;) {
