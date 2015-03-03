@@ -1153,7 +1153,7 @@ justified if \a w is negative.
 function string: format(int: w, array[$U] of var opt $T: x);
 
 /** @group builtins.string Return path of file where this function is called */
-function string: file_path;
+function string: file_path();
 
 /***
   @groupdef builtins.reflect Reflection operations

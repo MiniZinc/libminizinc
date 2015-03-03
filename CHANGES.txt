@@ -17,6 +17,8 @@ Changes:
  - Postpone flattening of some reified constraints
  - Slightly improved compilation of partial function calls when it can be 
    inferred at compile time that their result is undefined
+ - Allow functions with empty argument lists to be declared as
+   function int: foo(); instead of just function int: foo;
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
