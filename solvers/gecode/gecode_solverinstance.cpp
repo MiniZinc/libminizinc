@@ -298,10 +298,10 @@ namespace MiniZinc {
 
   void GecodeSolverInstance::processFlatZinc(void) {
     _current_space = new FznSpace();
-
+    debugprint(env().flat());
     // iterate over VarDecls of the flat model and create variables
-    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
-      if (it->e()->type().isvar()) {
+    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {      
+      if (it->e()->type().isvar()) { // par variables are retrieved from the model        
         // check if it has an output-annotation
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
@@ -363,7 +363,7 @@ namespace MiniZinc {
               throw InternalError(ssm.str());
             }
           } else { // there is an initialisation expression
-            Expression* init = it->e()->e();
+            Expression* init = it->e()->e();           
             if (init->isa<Id>() || init->isa<ArrayAccess>()) {
               // root->iv[root->intVarCount++] = root->iv[*(int*)resolveVar(init)];
               GecodeVariable var = resolveVar(init);
@@ -426,6 +426,7 @@ namespace MiniZinc {
           _current_space->bv_introduced.push_back(isIntroduced);
           isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
           _current_space->bv_defined.push_back(isDefined);
+          
         } else if(vd->type().isfloat()) {
           if(it->e()->e() == NULL) { // there is NO initialisation expression
             Expression* domain = ti->domain();
@@ -468,13 +469,13 @@ namespace MiniZinc {
           ssm << "Type " << *ti << " is currently not supported by Gecode." << std::endl;
           throw InternalError(ssm.str());
         }
-      } // end if it is a variable
+      } // end if it is a variable     
     } // end for all var decls
 
     // post the constraints
     for (ConstraintIterator it = _env.flat()->begin_constraints(); it != _env.flat()->end_constraints(); ++it) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
-        _constraintRegistry.post(c);
+        _constraintRegistry.post(c);        
       }
     }
 
@@ -1412,49 +1413,81 @@ namespace MiniZinc {
   bool 
   GecodeSolverInstance::addVariables(FznSpace* space, std::vector<VarDecl*> vars) {
     for(unsigned int i=0; i<vars.size(); i++) {
-      std::cout << "DEBUG: about to add variable " << *vars[i] << " to space." << std::endl;
-      // integer variable
+      std::cout << "DEBUG: about to add variable " << *vars[i] << " to space." << std::endl;      
+      // constants/constant arrays
       if(vars[i]->type().ispar()) {
-        // TODO: what if the variable is par? like array [1,1]?
+        continue; // par identifiers (such as arrays of ints) are read from the model in the cts
       }
-      else if(vars[i]->type().isint()) {       
-        Expression* domain = vars[i]->ti()->domain();       
-        if(domain->isa<SetLit>()) {
-          IntVar intVar(*space, arg2intset(_env.envi(), domain));
-          space->iv.push_back(intVar);
-          insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                            space->iv.size()-1));
-        }
-        else {
-          IntBounds ib = compute_int_bounds(_env.envi(), domain);
-          if(ib.valid) {
-            int lb=-1, ub=-2;
-            if(valueWithinBounds(ib.l.toInt())) {
-              lb = ib.l.toInt();
-            } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-              throw InternalError(ssm.str());
-            }
-
-            if(valueWithinBounds(ib.u.toInt())) {
-              ub = ib.u.toInt();
-            } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-              throw InternalError(ssm.str());
-            }
-
-            IntVar intVar(*space, lb, ub);
+      // integer variable
+      else if(vars[i]->type().isint()) {  
+         // no initialisation expression
+        if(!vars[i]->e()) {
+          Expression* domain = vars[i]->ti()->domain();       
+          if(domain->isa<SetLit>()) {
+            IntVar intVar(*space, arg2intset(_env.envi(), domain));
             space->iv.push_back(intVar);
             insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                  space->iv.size()-1));
-          } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-              throw InternalError(ssm.str());
+                              space->iv.size()-1));
           }
-        }        
+          else {
+            IntBounds ib = compute_int_bounds(_env.envi(), domain);
+            if(ib.valid) {
+              int lb=-1, ub=-2;
+              if(valueWithinBounds(ib.l.toInt())) {
+                lb = ib.l.toInt();
+              } else {
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::addVariables: Error: " << *domain << " outside 32-bit int." << std::endl;
+                throw InternalError(ssm.str());
+              }
+
+              if(valueWithinBounds(ib.u.toInt())) {
+                ub = ib.u.toInt();
+              } else {
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::addVariables: Error: " << *domain << " outside 32-bit int." << std::endl;
+                throw InternalError(ssm.str());
+              }
+
+              IntVar intVar(*space, lb, ub);
+              space->iv.push_back(intVar);
+              insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                    space->iv.size()-1));
+            } else {
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::addVariables: Error: " << *domain << " outside 32-bit int." << std::endl;
+                throw InternalError(ssm.str());
+            }           
+          }
+        }
+        // there is an initialisation expression
+        else { 
+          Expression* init = vars[i]->e();
+          std::cout << "DEBUG: var to add \"" << *(vars[i]->id()) <<"\" has init expression: " << *(vars[i]->e()) << std::endl;
+          if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
+            GecodeVariable var = resolveVar(init);
+            assert(var.isint());
+            space->iv.push_back(var.intVar(space));
+            insertVar(vars[i]->id(), var);
+          } else if(init->type().ispar()) {
+            double il = init->cast<IntLit>()->v().toInt();
+            if(valueWithinBounds(il)) {
+              IntVar intVar(*space, il, il);
+              space->iv.push_back(intVar);
+              insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                   space->iv.size()-1));
+            } else {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
+              throw InternalError(ssm.str());
+            }
+          } // otherwise, if it is a constraint, ignore, since it will be posted
+        }
+               
+        bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
+        space->iv_introduced.push_back(isIntroduced);
+        bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+        space->iv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isbool()) {
         // TODO
@@ -1465,8 +1498,7 @@ namespace MiniZinc {
       else {
         // TODO:        
       }
-    }    
-    // TODO: add variables to space
+    }        
     return false;
   }  
   
@@ -1482,7 +1514,7 @@ namespace MiniZinc {
     for(unsigned int i=0; i<cts.size(); i++) {
       std::cout << "DEBUG: about to add constraint " << *cts[i] << " to space." << std::endl;
     }    
-    // TODO: add constraints to space    
+    // TODO: add constraints to space: extend _registry.post(c) with space!  
     return false;
   }
 
