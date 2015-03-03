@@ -88,6 +88,8 @@ namespace MiniZinc {
     Model* _flat;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    /// used for combinators lite: set to true, if a solution has been found
+    bool _hasSolution;
   public:
     EnvI(Model* orig0);
     EnvI(Model* orig, Model* output, Model* flat, 
@@ -116,6 +118,8 @@ namespace MiniZinc {
     void collectVarDecls(bool b);
     std::ostream& evalOutput(std::ostream& os);
     unsigned int get_ids(void) { return ids; }
+    bool hasSolution(void) { return _hasSolution; }
+    void hasSolution(bool b) { _hasSolution = b; }
   };
 
   Expression* follow_id(Expression* e);

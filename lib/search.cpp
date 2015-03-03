@@ -194,6 +194,8 @@ namespace MiniZinc {
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
+    if(status == SolverInstance::SAT) env.envi().hasSolution(true);
+    // else env.envi().hasSolution(false);  TODO: we'd still have the old solution stored -> or should we remove the solution after an unsuccessful call of next? NO?
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
     //std::cout << "DEBUG: printing current flat model:" << std::endl;
     //debugprint(env.flat());

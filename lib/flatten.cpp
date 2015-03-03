@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), _hasSolution(false) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -206,7 +206,7 @@ namespace MiniZinc {
   }
   EnvI::EnvI(Model* orig0, Model* output0, Model* flat0,  CopyMap& cmap0,
              IdMap<KeepAlive> reverseMappers0, unsigned int ids0) : orig(orig0), output(output0), _flat(flat0),  cmap(cmap0),
-                                                 reverseMappers(reverseMappers0), ids(ids0) {
+                                                 reverseMappers(reverseMappers0), ids(ids0), _hasSolution(false) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);

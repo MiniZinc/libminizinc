@@ -2110,6 +2110,9 @@ function int: binomial(int: t, float: p);
 
 /** @group builtins.combinators Returns the last solution value for identifier \a x */
 function int: sol(var int: x);
+
+/** @group builtins.combinators Returns true if there exists a solution to the problem */
+function bool: hasSol();
   
   
 %-----------------------------------------------------------------------------%

@@ -2030,6 +2030,10 @@ namespace MiniZinc {
     }    
   }
   
+  bool b_hasSol(EnvI& env, Call* call) {   
+    return env.hasSolution();
+  }
+  
   void registerBuiltins(Model* m) {
     
     std::vector<Type> t_intint(2);
@@ -2673,6 +2677,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parint();
       rb(m, ASTString("sol"),t,b_sol_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      rb(m, ASTString("hasSol"),t,b_hasSol);
     }
   }
   
