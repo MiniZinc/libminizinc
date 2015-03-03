@@ -869,7 +869,10 @@ params :
     | '(' error ')'
       { $$=new vector<VarDecl*>(); }
 
-params_list : params_list_head comma_or_none
+params_list :
+        /* empty */
+      { $$=new vector<VarDecl*>(); }
+    | params_list_head comma_or_none
       { $$=$1; }
 
 params_list_head :

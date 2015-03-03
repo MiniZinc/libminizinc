@@ -1446,9 +1446,37 @@ namespace MiniZinc {
             _bounds.push_back(Bounds(m,n));
           }
             break;
-          case BOT_DIV:
           case BOT_IDIV:
+          {
+            IntVal b0f = b0.first==0 ? 1 : b0.first;
+            IntVal b0s = b0.second==0 ? -1 : b0.second;
+            IntVal b1f = b1.first==0 ? 1 : b1.first;
+            IntVal b1s = b1.second==0 ? -1 : b1.second;
+            IntVal x0 = b0f / b1f;
+            IntVal x1 = b0f / b1s;
+            IntVal x2 = b0s / b1f;
+            IntVal x3 = b0s / b1s;
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
           case BOT_MOD:
+          {
+            IntVal b0f = b0.first==0 ? 1 : b0.first;
+            IntVal b0s = b0.second==0 ? -1 : b0.second;
+            IntVal b1f = b1.first==0 ? 1 : b1.first;
+            IntVal b1s = b1.second==0 ? -1 : b1.second;
+            IntVal x0 = b0f % b1f;
+            IntVal x1 = b0f % b1s;
+            IntVal x2 = b0s % b1f;
+            IntVal x3 = b0s % b1s;
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
+          case BOT_DIV:
           case BOT_LE:
           case BOT_LQ:
           case BOT_GR:

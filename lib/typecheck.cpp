@@ -263,6 +263,9 @@ namespace MiniZinc {
     GCLock lock;
     Call* c = NULL;
     if (e->type().dim()==0 && funarg_t.dim()!=0) {
+      if (e->type().isvar()) {
+        throw TypeError(e->loc(),"cannot coerce var set into array");
+      }
       std::vector<Expression*> set2a_args(1);
       set2a_args[0] = e;
       Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
