@@ -1997,14 +1997,9 @@ namespace MiniZinc {
   
   IntVal b_sol_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 1);
-    std::cout << "DEBUG: sol(x) call: " << *call << std::endl;
+    assert(args.size() == 1);    
     if(Id* id = args[0]->dyn_cast<Id>()) {
-      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
-        // TODO: find flat representation: maybe other way round? iterate over flat variables and find their original declaration?
-        //if(it->e()->flat())
-        //  std::cout << "DEBUG: flat var for variable " << *(it->e()) << " is: " << *(it->e()->flat()->e()) << std::endl;
-        //else std::cout << "DEBUG: variable " << *(it->e()) << " has no flat representation"  << std::endl;
+      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm; 
@@ -2029,6 +2024,66 @@ namespace MiniZinc {
       throw EvalError(args[0]->loc(), ssm.str());
     }    
   }
+  
+  FloatVal b_sol_float(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size() == 1);    
+    if(Id* id = args[0]->dyn_cast<Id>()) {
+      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
+        if(it->e()->id()->str() == id->str()) {
+          if(!it->e()->e()) {
+            std::stringstream ssm; 
+            ssm << "no solution found for: " << *id;
+            throw EvalError(call->loc(), ssm.str());
+          }
+          else {
+            assert(it->e()->e()->type().ispar());
+            assert(it->e()->e()->type().isfloat());
+            return eval_float(env, it->e()->e());
+          }
+        }
+      }
+      std::stringstream ssm; 
+      ssm << "could not find solution for unknown identifier: " << *id;
+      throw EvalError(call->loc(), ssm.str());
+    }
+    else {
+      std::stringstream ssm; 
+      ssm << "expecting identifier as argument of \"sol\" instead of: " 
+          << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
+  }  
+  
+  bool b_sol_bool(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size() == 1);    
+    if(Id* id = args[0]->dyn_cast<Id>()) {
+      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
+        if(it->e()->id()->str() == id->str()) {
+          if(!it->e()->e()) {
+            std::stringstream ssm; 
+            ssm << "no solution found for: " << *id;
+            throw EvalError(call->loc(), ssm.str());
+          }
+          else {
+            assert(it->e()->e()->type().ispar());
+            assert(it->e()->e()->type().isbool());
+            return eval_bool(env, it->e()->e());
+          }
+        }
+      }
+      std::stringstream ssm; 
+      ssm << "could not find solution for unknown identifier: " << *id;
+      throw EvalError(call->loc(), ssm.str());
+    }
+    else {
+      std::stringstream ssm; 
+      ssm << "expecting identifier as argument of \"sol\" instead of: " 
+          << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
+  }    
   
   bool b_hasSol(EnvI& env, Call* call) {   
     return env.hasSolution();
@@ -2677,6 +2732,16 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parint();
       rb(m, ASTString("sol"),t,b_sol_int);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parfloat();
+      rb(m, ASTString("sol"),t,b_sol_float);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parbool();
+      rb(m, ASTString("sol"),t,b_sol_bool);
     }
     {
       std::vector<Type> t(1);
