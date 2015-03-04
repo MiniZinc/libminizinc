@@ -13,6 +13,7 @@
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
+#include <minizinc/solvers/gecode/gecode_engine.hh>
 
 using namespace Gecode;
 
@@ -21,14 +22,37 @@ namespace MiniZinc {
   namespace GecodeConstraints {        
 
     void p_distinct(SolverInstanceBase& s, const Call* call) {
-      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);     
-      IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
-      IntConLevel icl = gi.ann2icl(call->ann());
-      distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if(gi.customEngine) {
+        for(unsigned int i=0; i<gi.customEngine->pathEntries(); i++) {
+          FznSpace* space = gi.customEngine->getSpace(i);
+          if(space) {
+            IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
+            IntConLevel icl = gi.ann2icl(call->ann());
+            distinct(*space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
+          }
+        }
+      }
+      else {
+        IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
+        IntConLevel icl = gi.ann2icl(call->ann());
+        distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
+      }
     }
 
     void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if(gi.customEngine) {
+        for(unsigned int i=0; i<gi.customEngine->pathEntries(); i++) {
+          FznSpace* space = gi.customEngine->getSpace(i);
+          if(space) {
+            IntVarArgs va = gi.arg2intvarargs(call->args()[1]);
+            IntArgs oa = gi.arg2intargs(call->args()[0]);
+            IntConLevel icl = gi.ann2icl(call->ann());
+            distinct(*space, oa, va, icl == ICL_DEF ? ICL_DOM : icl);
+          }
+        }
+      }
       IntVarArgs va = gi.arg2intvarargs(call->args()[1]);
       IntArgs oa = gi.arg2intargs(call->args()[0]);
       IntConLevel icl = gi.ann2icl(call->ann());

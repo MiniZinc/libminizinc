@@ -27,6 +27,30 @@ namespace MiniZinc {
    
   // forward declaration to tackle circular declaration through gecode_interface.hh
   class GecodeInterface;
+  //class GecodeEngine;
+  
+    /// search engine for standard Gecode search, wrapper class for engine
+  class GecodeEngine {
+  public:
+    virtual FznSpace* next(void) = 0;
+    virtual bool stopped(void) = 0;    
+    virtual ~GecodeEngine(void) {}
+  };
+  
+   /// custom search engine for search combinators, wrapper class for engine
+  class CustomEngine : public GecodeEngine {
+  public:
+    virtual FznSpace* next(void) = 0;
+    virtual bool stopped(void) = 0;
+    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0;
+    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) = 0;    
+    /// returns the space (or NULL) at position \a i in the engine dynamic stack
+    virtual FznSpace* getSpace(unsigned int i) = 0;
+    /// returns the number of entries in the path (that do not all need to be spaces!)
+    virtual unsigned int pathEntries(void) = 0;
+    virtual ~CustomEngine(void) {}
+  };
   
  /* class FznSpaceIterator {
   protected:

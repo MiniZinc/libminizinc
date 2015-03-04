@@ -180,7 +180,7 @@ namespace MiniZinc {
     /// Convert \a n to IntSet
     Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
     /// Convert \a arg to IntVarArgs
-    Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
+    Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0); 
     /// Convert \a arg to BoolVarArgs
     Gecode::BoolVarArgs arg2boolvarargs(Expression* a, int offset = 0, int siv=-1);
     /// Convert \a n to BoolVar
