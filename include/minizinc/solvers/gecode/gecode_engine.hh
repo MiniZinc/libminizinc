@@ -28,13 +28,39 @@ namespace MiniZinc {
   // forward declaration to tackle circular declaration through gecode_interface.hh
   class GecodeInterface;
   
+ /* class FznSpaceIterator {
+  protected:
+    typedef FznSpace& reference;
+    typedef FznSpace* pointer;
+    typedef std::vector<FznSpace*>::iterator iterator;
+    //Gecode::Support::DynamicStack<Gecode::Search::Sequential::Path::Edge,Gecode::Heap> _ds;
+    MiniZinc::Path _path;
+    std::vector<FznSpace*>::iterator _it;
+    unsigned int _i;
+  public:
+    FznSpaceIterator() : _i(0) {}
+    FznSpaceIterator(const FznSpaceIterator& fi) : _it(fi._it), _i(0) {}
+    //FznSpaceIterator(Gecode::Support::DynamicStack<Gecode::Search::Sequential::Path::Edge,Gecode::Heap> ds, 
+    FznSpaceIterator(MiniZinc::Path path, iterator& it) : _path(path), _it(it) {      
+      while (_i!= path.entries() && !path.getSpace()) {
+        ++_it; _i++;
+      }
+    }
+    ~FznSpaceIterator() {}
+    
+    //iterator begin(void) { return _ds.top(); }
+    //iterator end(void) { return _ds.; }
+    reference operator*() const { return *static_cast<FznSpace>(*_it); }
+    pointer operator->() const { return static_cast<FznSpace>(*_it); }
+  }; */
+  
   /// subclass of actual path to access the iterative stack
   class Path : public Gecode::Search::Sequential::Path {
   public:
     /// path constructor
     Path(int l) : Gecode::Search::Sequential::Path(l) {} 
-    /// get the space at edge \a i in the edge stack
-    Gecode::Space* getSpace(int i) { assert(i >=0 && i < ds.entries()); return ds[i].space(); }
+    /// get the space at edge \a i in the edge stack; can be NULL
+    Gecode::Space* getSpace(unsigned int i) { assert(i < ds.entries()); return ds[i].space(); }
     /// get the number of entries in the edge stack
     int getNbEntries(void) { return ds.entries(); }    
     virtual void post(Gecode::Space& home) const;
@@ -73,6 +99,10 @@ namespace MiniZinc {
     void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si);
     /// post constraints to the search engine
     void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si);
+    /// returns the space (or NULL) at position \a i in the engine dynamic stack
+    FznSpace* getSpace(unsigned int i) { return static_cast<FznSpace*>(path.getSpace(i)); }
+    /// returns the number of entries in the path (that do not all need to be spaces!)
+    unsigned int pathEntries(void) { return path.getNbEntries(); }
     /// Destructor
     ~DFSEngine(void);
   };
@@ -85,6 +115,8 @@ namespace MiniZinc {
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
     void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }
     void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { E<T>::postConstraints(cts, si); }
+    FznSpace* getSpace(unsigned int i) { return E<T>::getSpace(i); }
+    unsigned int pathEntries(void) { return E<T>::pathEntries(); }
     FznSpace* next(void) { return E<T>::next(); }
     bool stopped(void) { return E<T>::stopped(); }
   };
@@ -233,7 +265,7 @@ namespace MiniZinc {
         si.postConstraints(space,cts);
       }
     }
-  }  
+  }    
 
 }
 

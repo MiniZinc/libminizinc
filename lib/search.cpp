@@ -18,7 +18,8 @@
 namespace MiniZinc {
   
   SolverInstance::Status 
-  SearchHandler::interpretCombinator(Expression* comb, Env& env, SolverInstanceBase* solver) {
+  SearchHandler::interpretCombinator(Expression* comb0, Env& env, SolverInstanceBase* solver) {
+    Expression* comb = eval_par(env.envi(), comb0);
     std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
     
     if(Call* call = comb->dyn_cast<Call>()) {      
@@ -54,7 +55,7 @@ namespace MiniZinc {
     }
     else {
       std::stringstream ssm; 
-      ssm << "unknown combinator expression: " << *comb;
+      ssm << "unknown combinator: " << *comb;
       throw TypeError(comb->loc(), ssm.str());
     }    
   }

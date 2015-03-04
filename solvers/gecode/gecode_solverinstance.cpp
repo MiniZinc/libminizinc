@@ -39,7 +39,11 @@ namespace MiniZinc {
     virtual bool stopped(void) = 0;
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
     virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0;
-    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) = 0;
+    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) = 0;    
+    /// returns the space (or NULL) at position \a i in the engine dynamic stack
+    virtual FznSpace* getSpace(unsigned int i) = 0;
+    /// returns the number of entries in the path (that do not all need to be spaces!)
+    virtual unsigned int pathEntries(void) = 0;
     virtual ~CustomEngine(void) {}
   };
   
@@ -55,17 +59,19 @@ namespace MiniZinc {
   };
   
   /// meta-engine that inherits from CustomEngine
-    template<template<class> class DFSEngine,
-           template<template<class> class,class> class GecodeMeta>
+    template<template<class> class E,
+           template<template<class> class,class> class Meta>
   class CustomMetaEngine : public CustomEngine {
-    GecodeMeta<DFSEngine,FznSpace> e;
+    Meta<E,FznSpace> e;
   public:
     CustomMetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
-    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); };
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); };
-    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { e.postConstraints(cts, si); };
+    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); }
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }
+    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { e.postConstraints(cts, si); }
+    virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
+    virtual unsigned int pathEntries(void) { return e.pathEntries(); }
   };
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)

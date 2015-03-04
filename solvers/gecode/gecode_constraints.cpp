@@ -21,7 +21,7 @@ namespace MiniZinc {
   namespace GecodeConstraints {        
 
     void p_distinct(SolverInstanceBase& s, const Call* call) {
-      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);     
       IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
       IntConLevel icl = gi.ann2icl(call->ann());
       distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
