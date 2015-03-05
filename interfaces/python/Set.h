@@ -15,11 +15,12 @@
 #include <exception>
 
 using namespace std;
+using namespace MiniZinc;
 
 struct MznRange {
-  long min;
-  long max;
-  MznRange(long min, long max):min(min),max(max){}
+  long long min;
+  long long max;
+  MznRange(long long min, long long max):min(min),max(max){}
 };
 
 
@@ -28,17 +29,17 @@ struct MznSet: MznObject {
 
   void clear() {ranges->clear();}
 
-  void push(long min, long max);
-  void push(long v);
+  void push(long long min, long long max);
+  void push(long long v);
 
-  long min();
-  long max();
+  long long min();
+  long long max();
 
 
   // 
-  long size() {return ranges->size();}
+  long long size() {return ranges->size();}
   bool continuous();
-  bool contains(long val);
+  bool contains(long long val);
 
   Expression* e() {
     vector<IntSetVal::Range> setRanges;
@@ -146,7 +147,7 @@ struct MznSetIter {
   list<MznRange>::const_iterator listIndex;
   list<MznRange>::const_iterator listBegin;
   list<MznRange>::const_iterator listEnd;
-  long currentValue;
+  long long currentValue;
 };
 
 static PyObject* MznSetIter_new(PyTypeObject *type, PyObject* args, PyObject* kwds);

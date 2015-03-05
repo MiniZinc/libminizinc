@@ -43,7 +43,7 @@ static PyMethodDef MznSolver_methods[] = {
 };
 
 
-static PyTypeObject MznSolverType = {
+static PyTypeObject MznSolver_Type = {
   PyVarObject_HEAD_INIT(NULL,0)
   "minizinc_internal.solver",       /* tp_name */
   sizeof(MznSolver),          /* tp_basicsize */

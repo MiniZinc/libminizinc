@@ -67,7 +67,7 @@ static PyMemberDef MznModel_members[] = {
   {NULL} /* Sentinel */
 };
 
-static PyTypeObject MznModelType = {
+static PyTypeObject MznModel_Type = {
   PyVarObject_HEAD_INIT(NULL,0)
   "minizinc_internal.Model",       /* tp_name */
   sizeof(MznModel),          /* tp_basicsize */

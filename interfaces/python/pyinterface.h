@@ -26,6 +26,8 @@
 #include "Model.cpp"
 #include "Solver.cpp"
 
+
+
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_BinOp(MznModel* self, PyObject* args);
@@ -56,20 +58,20 @@ PyObject* eval_type(TypeInst* ti) {
   ASTExprVec<TypeInst> ranges = ti->ranges();
   PyObject* v;
   switch (ti->type().bt()) {
-    case Type::BT_BOOL:   v = (PyObject*)(&PyBool_Type); break;
+    case Type::BT_BOOL:   v = reinterpret_cast<PyObject*>(&PyBool_Type); break;
     case Type::BT_INT:   
       if (ti->type().st() == Type::ST_SET)
-        v = (PyObject*)(&MznVarSet_Type);
+        v = reinterpret_cast<PyObject*>(&MznVarSet_Type);
       else
-        v = (PyObject*)(&PyInt_Type);
+        v = reinterpret_cast<PyObject*>(&PyLong_Type);
       break;
-    case Type::BT_FLOAT:  v = (PyObject*)(&PyFloat_Type); break;
-    case Type::BT_STRING: v = (PyObject*)(&PyString_Type); break;
-    case Type::BT_ANN:    v = (PyObject*)(&MznAnnotation_Type); break;
-    //case Type::BT_BOT:    v = (PyObject*)(&MznSet_Type); break;
-    default: //v = (PyObject*)(&MznVariable_Type);
+    case Type::BT_FLOAT:  v = reinterpret_cast<PyObject*>(&PyFloat_Type); break;
+    case Type::BT_STRING: v = reinterpret_cast<PyObject*>(&PyBytes_Type); break;
+    case Type::BT_ANN:    v = reinterpret_cast<PyObject*>(&MznAnnotation_Type); break;
+    //case Type::BT_BOT:    v = reinterpret_cast<PyObject*>(&MznSet_Type); break;
+    default: //v = reinterpret_cast<PyObject*>(&MznVariable_Type);
       //cout << ti->type().bt() << endl;
-      v = (PyObject*)(&MznObject_Type); break;
+      v = reinterpret_cast<PyObject*>(&MznObject_Type); break;
       throw runtime_error("CollectBoolFunctionNames: unexpected type");
   }
 
@@ -90,7 +92,7 @@ void add_to_dictionary (FunctionI* fi, PyObject* toAdd)
 {
   ASTExprVec<VarDecl> params = fi->params();
   const char* str = fi->id().str().c_str();
-  PyObject* key = PyString_FromString(str);
+  PyObject* key = PyBytes_FromString(str);
 
   PyObject* args_and_return_type_tuple = PyTuple_New(2);
   PyObject* args_tuple = PyTuple_New(params.size());
@@ -152,7 +154,7 @@ public:
   }
   void vVarDeclI(VarDeclI* vdi) {
     if (vdi->e()->ti()->type().isann()) {
-      PyList_Append(_annvars, PyString_FromString(vdi->e()->id()->str().c_str()));
+      PyList_Append(_annvars, PyBytes_FromString(vdi->e()->id()->str().c_str()));
     }
   }
 };
@@ -174,5 +176,22 @@ static PyMethodDef Mzn_methods[] = {
   {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},
   {NULL}
 };
+
+#if PY_MAJOR_VERSION >= 3
+
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "minizinc",
+  "A python interface for MiniZinc constraint modeling",
+  -1,
+  Mzn_methods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
+#endif
+
 
 #endif

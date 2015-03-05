@@ -2,11 +2,22 @@
 # @author		Tai Tran
 # @supervisor	Guido Tack
 
-
+import sys
 import minizinc_internal
 import predicate
 import annotation
 #import inspect
+
+if sys.version < '3':
+	integer_types = (int, long, )
+	int_t = long
+	def longify(x):
+		return long(x)
+else:
+	integer_types = (int, )
+	int_t = int
+	def longify(x):
+		return x
 
 def flatten(x):
 	result = []
@@ -64,7 +75,7 @@ class Expression(object):
 		if isinstance(var, Expression):
 			ret = var.get_value()
 			if ret == None:
-				raise ValueError("'" + var.name + "'Variable value it not set")
+				raise ValueError("'" + var.name + "'Variable value is not set")
 			return ret
 		else:
 			return var
@@ -159,12 +170,15 @@ class Expression(object):
 
 # Temporary container for expression before evaluating to minizinc_internal object
 class Predicate(Expression):
-	def __init__(self, vars, args_and_return_type_tuple = None, model = None):
+	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
+		self.name = str(name)
 		def eval_type(args):
 			if isinstance(args, Expression):
 				return args.type
-			elif type(args) in (int, float, bool, str):
+			elif type(args) in integer_types:
+				return int_t
+			elif type(args) in (float, bool, str):
 				return type(args)
 			elif type(args) is list:
 				t = None
@@ -174,7 +188,7 @@ class Predicate(Expression):
 					else:
 						type_i = eval_type(i)
 						if t != type_i:
-							raise TypeError("Predicate: Type of arguments in an array must be the same: expected: " +
+							raise TypeError("MiniZinc: function '" + self.name + "': Type of arguments in an array must be the same: expected: " +
 								type_presentation((t,)) + ", received: " + type_presentation((type_i,)) )
 				return [t]
 			elif type(args) is tuple:
@@ -183,7 +197,7 @@ class Predicate(Expression):
 					t.append(eval_type(i))
 				return tuple(t)
 			else:
-				raise TypeError("Predicate: Unexpected Type: " + type_presentation(type(args)) )
+				raise TypeError("MiniZinc: function '" + self.name + "': Unexpected Type: " + type_presentation(type(args)) )
 
 		self.vars_type = eval_type(vars)
 		if args_and_return_type_tuple is not None:
@@ -192,7 +206,7 @@ class Predicate(Expression):
 					self.type = t[1]
 					break
 			else:
-				s = "Argument type does not match, expected: " 
+				s = "MiniZinc: function '" + self.name + "': Argument type does not match, expected: " 
 				for i, t in enumerate(args_and_return_type_tuple):
 					if i != 0:
 						s += ' or '
@@ -202,31 +216,21 @@ class Predicate(Expression):
 		else:
 			self.type = None
 		Expression.__init__(self)
-		'''
-		model = None
-		for i in vars:
-			if hasattr(i,'model'):
-				if model==None:
-					model = i.model
-				elif model != i.model:
-					raise TypeError('Evaluating expression of different types')
-		self.model = model
-		'''
 
 
 class BinOp(Predicate):
-	def __init__(self, vars, code, args_and_return_type_tuple):
-		Predicate.__init__(self,vars,args_and_return_type_tuple)
+	def __init__(self, vars, code, args_and_return_type_tuple, name):
+		Predicate.__init__(self,vars,args_and_return_type_tuple, name)
 		self.BinOpCode = code
 
 class UnOp(Predicate):
-	def __init__(self, vars, code, args_and_return_type_tuple):
-		Predicate.__init__(self,vars, args_and_return_type_tuple)
+	def __init__(self, vars, code, args_and_return_type_tuple, name):
+		Predicate.__init__(self,vars, args_and_return_type_tuple, name)
 		self.UnOpCode = code
 
 class Call(Predicate):
-	def __init__(self, vars, code, args_and_return_type_tuple = None, model_list = None):
-		Predicate.__init__(self,vars, args_and_return_type_tuple)
+	def __init__(self, vars, code, args_and_return_type_tuple = None, name = None, model_list = None):
+		Predicate.__init__(self,vars, args_and_return_type_tuple, name)
 		self.CallCode = code
 		self.model_list = model_list
 
@@ -234,7 +238,7 @@ class Call(Predicate):
 
 args_ret_dict = {}
 
-to_assign = [ ((int,int), int ),
+to_assign = [ ((int_t, int_t), int_t ),
 			  ((float, float), float ) ]
 args_ret_dict['add'] = to_assign
 args_ret_dict['sub'] = to_assign
@@ -244,9 +248,9 @@ args_ret_dict['floordiv'] = to_assign
 args_ret_dict['pow'] = to_assign
 
 
-args_ret_dict['mod'] =[ ((int, int), int )]
+args_ret_dict['mod'] =[ ((int_t, int_t), int_t )]
 
-to_assign = [ ((int, int), bool ), 
+to_assign = [ ((int_t, int_t), bool ), 
 			  ((float, float), bool ),
 			  ((bool, bool), bool ),
 			  ((str, str), bool ),
@@ -260,7 +264,7 @@ args_ret_dict['ne'] = to_assign
 
 
 
-args_ret_dict['in'] = [ ((int, minizinc_internal.VarSet), bool) ]
+args_ret_dict['in'] = [ ((int_t, minizinc_internal.VarSet), bool) ]
 
 
 to_assign = [ ((bool, bool), bool) ]
@@ -269,19 +273,19 @@ args_ret_dict['and'] = to_assign
 args_ret_dict['xor'] = to_assign
 
 args_ret_dict['abort'] = [ ((), bool)]
-to_assign = [ ((int,), int),
+to_assign = [ ((int_t,), int_t),
 			  ((float,), float) ]
 args_ret_dict['abs'] = to_assign
 args_ret_dict['neg'] = to_assign
 args_ret_dict['pos'] = to_assign
 args_ret_dict['invert'] = to_assign
 
-args_ret_dict['array1d'] = [ (None, [int]) ] #the function has checked its argument already
-args_ret_dict['array2d'] = [ (None, [int, int]) ]
-args_ret_dict['array3d'] = [ (None, [int, int, int]) ]
-args_ret_dict['array4d'] = [ (None, [int, int, int, int])]
-args_ret_dict['array5d'] = [ (None, [int, int, int, int, int])]
-args_ret_dict['array6d'] = [ (None, [int, int, int, int, int, int])]
+args_ret_dict['array1d'] = [ (None, [int_t]) ] #the function has checked its argument already
+args_ret_dict['array2d'] = [ (None, [int_t, int_t]) ]
+args_ret_dict['array3d'] = [ (None, [int_t, int_t, int_t]) ]
+args_ret_dict['array4d'] = [ (None, [int_t, int_t, int_t, int_t])]
+args_ret_dict['array5d'] = [ (None, [int_t, int_t, int_t, int_t, int_t])]
+args_ret_dict['array6d'] = [ (None, [int_t, int_t, int_t, int_t, int_t, int_t])]
 
 to_assign = [ ((float,), float) ]
 args_ret_dict['sin']	= to_assign
@@ -306,29 +310,29 @@ args_ret_dict['log'] = [ ((float, float), float) ]
 
 
 args_ret_dict['assert'] = [ ((bool, str), bool) ]
-args_ret_dict['bool2int'] = [ ((bool,), int) ]
+args_ret_dict['bool2int'] = [ ((bool,), int_t) ]
 # XXX what to do with cardinality?
 args_ret_dict['card'] = None
 
-to_assign = [ ((float,), int) ]
+to_assign = [ ((float,), int_t) ]
 args_ret_dict['ceil'] = to_assign
 args_ret_dict['floor'] = to_assign
 args_ret_dict['round'] = to_assign
 
-to_assign = [ ((int,), float) ]
+to_assign = [ ((int_t,), float) ]
 args_ret_dict['int2float'] = to_assign
 # XXX consider remove
 args_ret_dict['concat'] = None
 
 
-to_assign = [ ((int, int), int),
+to_assign = [ ((int_t, int_t), int_t),
 			  ((float, float), float),
-			  (([int],), int),
+			  (([int_t],), int_t),
 			  (([float],), float) ]
 args_ret_dict['min'] = to_assign
 args_ret_dict['max'] = to_assign
 
-to_assign = [ (([int], ), int),
+to_assign = [ (([int_t], ), int_t),
 			  (([float], ), float) ]
 args_ret_dict['product'] = to_assign
 args_ret_dict['sum'] = to_assign
@@ -340,7 +344,7 @@ del to_assign
 
 class Add(BinOp):
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 0, args_ret_dict['add'])
+		BinOp.__init__(self, vars, 0, args_ret_dict['add'], '+')
 
 	def get_symbol(self):
 		return '+'
@@ -356,7 +360,7 @@ class Add(BinOp):
 
 class Sub(BinOp):
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 1, args_ret_dict['sub'])
+		BinOp.__init__(self, vars, 1, args_ret_dict['sub'], '-')
 
 	def get_symbol(self):
 		return '-'
@@ -367,7 +371,7 @@ class Sub(BinOp):
 class Mul(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 2, args_ret_dict['mul'])
+		BinOp.__init__(self, vars, 2, args_ret_dict['mul'], '*')
 
 	def get_symbol(self):
 		return '*'
@@ -378,7 +382,7 @@ class Mul(BinOp):
 class Div(BinOp):
 
 	def __init__(self, *vars) :
-		BinOp.__init__(self, vars, 3, args_ret_dict['div'])
+		BinOp.__init__(self, vars, 3, args_ret_dict['div'], '/')
 
 	def get_symbol(self):
 		return '/'
@@ -389,7 +393,7 @@ class Div(BinOp):
 class FloorDiv(BinOp):
 
 	def __init__(self, *vars) :
-		BinOp.__init__(self, vars, 4, args_ret_dict['floordiv'])
+		BinOp.__init__(self, vars, 4, args_ret_dict['floordiv'], '//')
 
 	def get_symbol(self):
 		return '//'
@@ -401,7 +405,7 @@ class FloorDiv(BinOp):
 class Mod(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 5, args_ret_dict['mod'])
+		BinOp.__init__(self, vars, 5, args_ret_dict['mod'], '%')
 
 	def get_symbol(self):
 		return '%'
@@ -413,7 +417,7 @@ class Mod(BinOp):
 class Lt(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 6, args_ret_dict['lt'])
+		BinOp.__init__(self, vars, 6, args_ret_dict['lt'], '<')
 
 	def get_symbol(self):
 		return '<'
@@ -424,7 +428,7 @@ class Lt(BinOp):
 class Le(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 7, args_ret_dict['le'])
+		BinOp.__init__(self, vars, 7, args_ret_dict['le'], '<=')
 
 	def get_symbol(self):
 		return '<='
@@ -435,7 +439,7 @@ class Le(BinOp):
 class Gt(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 8, args_ret_dict['gt'])
+		BinOp.__init__(self, vars, 8, args_ret_dict['gt'], '>')
 
 	def get_symbol(self):
 		return '>'
@@ -446,7 +450,7 @@ class Gt(BinOp):
 class Ge(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 9, args_ret_dict['ge'])
+		BinOp.__init__(self, vars, 9, args_ret_dict['ge'], '>=')
 
 	def get_symbol(self):
 		return '>='
@@ -458,7 +462,7 @@ class Ge(BinOp):
 class Eq(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 10, args_ret_dict['eq'])
+		BinOp.__init__(self, vars, 10, args_ret_dict['eq'], '==')
 
 	def get_symbol(self):
 		return '=='
@@ -469,7 +473,7 @@ class Eq(BinOp):
 class Ne(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 11, args_ret_dict['ne'])
+		BinOp.__init__(self, vars, 11, args_ret_dict['ne'], '!=')
 
 	def get_symbol(self):
 		return '!='
@@ -480,7 +484,7 @@ class Ne(BinOp):
 class In(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 12, args_ret_dict['in'])
+		BinOp.__init__(self, vars, 12, args_ret_dict['in'], 'in')
 
 	def get_symbol(self):
 		return 'in'
@@ -495,7 +499,7 @@ class In(BinOp):
 class Or(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 23, args_ret_dict['or'])
+		BinOp.__init__(self, vars, 23, args_ret_dict['or'], 'or')
 
 	def get_symbol(self):
 		return 'or'
@@ -506,7 +510,7 @@ class Or(BinOp):
 class And(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 24, args_ret_dict['and'])
+		BinOp.__init__(self, vars, 24, args_ret_dict['and'], 'and')
 
 	def get_symbol(self):
 		return '&'
@@ -517,7 +521,7 @@ class And(BinOp):
 class Xor(BinOp):
 
 	def __init__(self, *vars):
-		BinOp.__init__(self, vars, 25, args_ret_dict['xor'])
+		BinOp.__init__(self, vars, 25, args_ret_dict['xor'], 'xor')
 
 	def get_symbol(self):
 		return 'xor'
@@ -527,7 +531,7 @@ class Xor(BinOp):
 
 class Pow(Call):
 	def __init__(self, *vars):
-		Call.__init__(self, vars, "pow", args_ret_dict['pow'])
+		Call.__init__(self, vars, "pow", args_ret_dict['pow'], '^')
 
 	def get_symbol(self):
 		return '**'
@@ -537,105 +541,88 @@ class Pow(Call):
 
 class Abort(Call):
 	def __init__(self, *vars):
-		Call.__init__(self, vars, "abort", args_ret_dict['abort'])
+		Call.__init__(self, vars, "abort", args_ret_dict['abort'], 'abort')
 
 class Abs(Call):
 	def __init__(self, *vars):
-		Call.__init__(self, vars, "abs", args_ret_dict['abs'])
+		Call.__init__(self, vars, "abs", args_ret_dict['abs'], 'abs')
 
-'''
-class Arrayxd():
-	def __init__(self, dimsize, *args):
-		if dimsize + 1 != len(args):
-			raise BaseException('Array',dimsize,'d requires exactly', dimsize+1, 'arguments');
-		for i in range(dimsize):
-			for p[i] in args[i]:
-'''
 
 class Array1d(Call):
 	def __init__(self, dim1, array):
-		Call.__init__(self,(dim1, array),"array1d", args_ret_dict['array1d'])
-
-''' why did i write this?
-def Array2d(dim1, dim2, array):
-	p = [[0 for x in range(dim1)] for y in range(dim2)]
-	for i in range(dim1):
-		for j in range(dim2):
-			p[i][j] = array[i*dim2 + j]
-	return p
-'''
+		Call.__init__(self,(dim1, array),"array1d", args_ret_dict['array1d'], 'array1d')
 
 class Array2d(Call):
 	def __init__(self, dim1, dim2, array):
-		Call.__init__(self, (dim1, dim2, array), "array2d", args_ret_dict['array2d'])
+		Call.__init__(self, (dim1, dim2, array), "array2d", args_ret_dict['array2d'], 'array2d')
 
 class Array3d(Call):
 	def __init__(self, dim1, dim2, dim3, array):
-		Call.__init__(self,[dim1, dim2, dim3, array],"array3d", args_ret_dict['array3d'])
+		Call.__init__(self,[dim1, dim2, dim3, array],"array3d", args_ret_dict['array3d'], 'array3d')
 
 class Array4d(Call):
 	def __init__(self, dim1, dim2, dim3, dim4, array):
-		Call.__init__(self,[dim1, dim2, dim3, dim4, array],"array4d", args_ret_dict['array4d'])
+		Call.__init__(self,[dim1, dim2, dim3, dim4, array],"array4d", args_ret_dict['array4d'], 'array4d')
 
 class Array5d(Call):
 	def __init__(self, dim1, dim2, dim3, dim4, dim5, array):
-		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, array],"array5d", args_ret_dict['array5d'])
+		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, array],"array5d", args_ret_dict['array5d'], 'array5d')
 
 class Array6d(Call):
 	def __init__(self, dim1, dim2, dim3, dim4, dim5, dim6, array):
-		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, dim6, array],"array6d", args_ret_dict['array6d'])
+		Call.__init__(self,[dim1, dim2, dim3, dim4, dim5, dim6, array],"array6d", args_ret_dict['array6d'], 'array6d')
 
 class Acos(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "acos", args_ret_dict['acos'])
+		Call.__init__(self, (var,), "acos", args_ret_dict['acos'], 'acos')
 
 class Acosh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "acosh", args_ret_dict['acosh'])
+		Call.__init__(self, (var,), "acosh", args_ret_dict['acosh'], 'acosh')
 
 class Asin(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "asin", args_ret_dict['asin'])
+		Call.__init__(self, (var,), "asin", args_ret_dict['asin'], 'asin')
 
 class Asinh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "asinh", args_ret_dict['asinh'])
+		Call.__init__(self, (var,), "asinh", args_ret_dict['asinh'], 'asinh')
 
 class Atan(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "atan", args_ret_dict['atan'])
+		Call.__init__(self, (var,), "atan", args_ret_dict['atan'], 'atan')
 
 class Atanh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "atanh", args_ret_dict['atanh'])
+		Call.__init__(self, (var,), "atanh", args_ret_dict['atanh'], 'atanh')
 
 class Assert(Call):
 	def __init__(self, constraint, message):
-		Call.__init__(self, (constraint, message), "assert", args_ret_dict['assert'])
+		Call.__init__(self, (constraint, message), "assert", args_ret_dict['assert'], 'assert')
 
 class Bool2Int(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "bool2int", args_ret_dict['bool2int'])
+		Call.__init__(self, (var,), "bool2int", args_ret_dict['bool2int'], 'bool2int')
 
 class Card(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "card", args_ret_dict['card'])
+		Call.__init__(self, (var,), "card", args_ret_dict['card'], 'card')
 
 class Ceil(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "ceil", args_ret_dict['ceil'])
+		Call.__init__(self, (var,), "ceil", args_ret_dict['ceil'], 'ceil')
 
 class Concat(Call):
 	def __init__(self, var):
-		Call.__init__(self,[var],"concat")
+		Call.__init__(self, (var,), "concat",)
 
 class Cos(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "cos", args_ret_dict['cos'])
+		Call.__init__(self, (var,), "cos", args_ret_dict['cos'], 'cos')
 
 class Cosh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "cosh", args_ret_dict['cosh'])
+		Call.__init__(self, (var,), "cosh", args_ret_dict['cosh'], 'cosh')
 
 class Dom(Call):
 	def __init__(self, var):
@@ -653,21 +640,17 @@ class Fix(Call):
 	def __init__(self, var):
 		Call.__init__(self,[var],"fix")
 
-class Exp(Call):
-	def __init__(self, var):
-		Call.__init__(self, (var,), "exp", args_ret_dict['exp'])
-
 class Floor(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,),"floor", args_ret_dict['floor'])
+		Call.__init__(self, (var,),"floor", args_ret_dict['floor'], 'floor')
 
 class Exp(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,),"exp", args_ret_dict['exp'])
+		Call.__init__(self, (var,),"exp", args_ret_dict['exp'], 'exp')
 
 class Int2Float(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,),"int2float", args_ret_dict['int2float'])
+		Call.__init__(self, (var,),"int2float", args_ret_dict['int2float'], 'int2float')
 
 class Is_Fixed(Call):
 	def __init__(self, var):
@@ -691,35 +674,35 @@ class Length(Call):
 
 class Ln(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,),"ln", args_ret_dict['ln'])
+		Call.__init__(self, (var,),"ln", args_ret_dict['ln'], 'ln')
 
 class Log(Call):
 	def __init__(self, var1, var2):
-		Call.__init__(self, (var1, var2),"log", args_ret_dict['log'])
+		Call.__init__(self, (var1, var2),"log", args_ret_dict['log'], 'log')
 
 class Log2(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "log2", args_ret_dict['log2'])
+		Call.__init__(self, (var,), "log2", args_ret_dict['log2'], 'log2')
 
 class Log10(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "log10", args_ret_dict['log10'])
+		Call.__init__(self, (var,), "log10", args_ret_dict['log10'], 'log10')
 
 class Min(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "min", args_ret_dict(['min']))
+		Call.__init__(self, (var,), "min", args_ret_dict(['min']), 'min')
 
 class Max(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var,), "max", args_ret_dict(['max']))
+		Call.__init__(self, (var,), "max", args_ret_dict(['max']), 'max')
 
 class Product(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"product", args_ret_dict['product'])
+		Call.__init__(self, (var, ),"product", args_ret_dict['product'], 'product')
 
 class Round(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"round", args_ret_dict['round'])
+		Call.__init__(self, (var, ),"round", args_ret_dict['round'], 'round')
 
 class Set2array(Call):
 	def __init__(self, var):
@@ -727,27 +710,27 @@ class Set2array(Call):
 
 class Sin(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"sin", args_ret_dict['sin'])
+		Call.__init__(self, (var, ),"sin", args_ret_dict['sin'], 'sin')
 
 class Sinh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"sinh", args_ret_dict['sinh'])
+		Call.__init__(self, (var, ),"sinh", args_ret_dict['sinh'], 'sinh')
 
 class Sqrt(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"sqrt", args_ret_dict['sqrt'])
+		Call.__init__(self, (var, ),"sqrt", args_ret_dict['sqrt'], 'sqrt')
 
 class Sum(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"sum", args_ret_dict['sum'])
+		Call.__init__(self, (var, ),"sum", args_ret_dict['sum'], 'sum')
 
 class Tan(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"tan", args_ret_dict['tan'])
+		Call.__init__(self, (var, ),"tan", args_ret_dict['tan'], 'tan')
 
 class Tanh(Call):
 	def __init__(self, var):
-		Call.__init__(self, (var, ),"tanh", args_ret_dict['tanh'])
+		Call.__init__(self, (var, ),"tanh", args_ret_dict['tanh'], 'tanh')
 
 class Trace(Call):
 	def __init__(self, var):
@@ -763,16 +746,16 @@ class Ub_Array(Call):
 
 
 class Neg(UnOp):
-	def __init__(self, vars):
-		UnOp.__init__(self, vars, 2)
+	def __init__(self, var):
+		UnOp.__init__(self, (var, ), 2, args_ret_dict['neg'], 'neg')
 
 class Pos(UnOp):
-	def __init__(self, vars):
-		UnOp.__init__(self, vars, 1)
+	def __init__(self, var):
+		UnOp.__init__(self, (var, ), 1, args_ret_dict['pos'], 'pos')
 
 class Invert(Predicate):
 	def __init__(self, vars):
-		UnOp.__init__(self, vars, 0)
+		UnOp.__init__(self, (var, ), 0, args_ret_dict['invert'], 'invert')
 
 class Id(Expression):
 	def __init__(self, name, model_list = None):
@@ -861,7 +844,7 @@ class Variable(Declaration):
 						if len(arg1) != 2:
 							raise ValueError('Requires a list or tuple of exactly 2 numbers')
 						lb,ub = sorted(arg1)[0,1]
-					elif typearg1 in (int, long):
+					elif typearg1 in integer_types:
 						ub = arg1 - 1
 						lb = typearg1(ub)
 					else:
@@ -875,9 +858,9 @@ class Variable(Declaration):
 
 		typelb, typeub = type(lb), type(ub)
 		if not typelb is Set:
-			if typelb not in [bool, int, float] and not isinstance(typelb, Declaration):
+			if typelb not in (bool, float, ) and typelb not in integer_types and not isinstance(typelb, Declaration):
 				raise TypeError('Lower bound must be a boolean, an int, a float or a set')
-			if typeub not in [bool, int, float] and not isinstance(typelb, Declaration):
+			if typeub not in (bool, float, ) and typeub not in integer_types and not isinstance(typelb, Declaration):
 				raise TypeError('Upper bound must be a boolean, an int or a float')
 			if typelb != typeub:
 				raise TypeError('Upper bound an dlower bound is of different type')
@@ -885,19 +868,23 @@ class Variable(Declaration):
 				raise ValueError('Lower bound cannot be greater than upper bound')
 
 		self.dim_list = []
-		self.type = typelb
 		if name is not None:
 			self.name = name
 
 		if typelb is bool:
 			self.obj = model.mznmodel.Declaration(self.name, 10, [])
-		elif typelb is int:
+			self.type = bool
+		elif typelb in integer_types:
 			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb, ub)
+			self.type = int_t
 		elif typelb is float:
 			self.obj = model.mznmodel.Declaration(self.name, 11, [], lb, ub)
+			self.type = float
 		elif typelb is Set:
 			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb.obj)
-			self.type = int
+			self.type = int_t
+		else:
+			raise TypeError('Internal: Unexpected type')
 		#elif isinstance(lb, Declaration) or isinstance(ub, Declaration):
 		#	self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
 
@@ -919,7 +906,7 @@ class Array(Variable):
 				else:
 					raise TypeError('Single value must be a positive integer')
 			elif type(i) is list:
-				if type(i[0]) is int and type(i[-1]) is int:
+				if type(i[0]) in integer_types and type(i[-1]) in integer_types:
 					dim_list.append([ i[0],i[-1]] )
 				else:
 					raise TypeError('Range boundaries must be integers')
@@ -940,14 +927,14 @@ class Array(Variable):
 		elif type(argopt1) is bool and type(argopt2) is bool:
 			lb = argopt1
 			ub = argopt2
-		elif type(argopt2) is not int:
-			if type(argopt1) is not int:
+		elif type(argopt2) not in integer_types:
+			if type(argopt1) not in integer_types:
 				raise TypeError('Range values must be integers')
 			lb = 0
 			ub = argopt1 - 1
 			add_to_dim_list(argopt2)
 		else:
-			if type(argopt1) is not int or type(argopt2) is not int:
+			if type(argopt1) not in integer_types or type(argopt2) not in integer_types:
 				raise TypeError('Lower bound and upper bound must be integers')
 			lb = argopt1
 			ub = argopt2
@@ -964,15 +951,17 @@ class Array(Variable):
 		if tlb is bool:
 			self.type = [bool] * len(dim_list)
 			self.obj = model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
-		elif tlb is int:
-			self.type = [int] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name, 9,dim_list,lb,ub)
+		elif tlb in integer_types:
+			self.type = [int_t] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name,9,dim_list, lb, ub)
 		elif tlb is float:  #isinstance(lb, float):
 			self.type = [float] * len(dim_list)
 			self.obj = model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
 		elif tlb is Set:
-			self.type = [int] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name, 9,dim_list,lb.obj)
+			self.type = [int_t] * len(dim_list)
+			self.obj = model.mznmodel.Declaration(self.name,9,dim_list,lb.obj)
+		else:
+			raise TypeError('Unexpected type')
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
@@ -1052,9 +1041,9 @@ class Set(Declaration):
 			else:
 				self.name = name
 		if set_list is None:
-			if not (type(lb) is int and type(ub) is int):
+			if not (type(lb) in integer_types and type(ub) in integer_types):
 				raise TypeError('Lower bound and upper bound must be integers')
-			set_list = [[lb,ub]]
+			set_list = [[lb, ub]]
 		self.obj = minizinc_internal.Set(set_list)
 		self.type = minizinc_internal.Set
 
@@ -1117,9 +1106,9 @@ class VarSet(Variable):
 			else:
 				self.name = name
 		if set_list is None:
-			if not (type(lb) is int and type(ub) is int):
+			if not (type(lb) in integer_types and type(ub) in integer_types):
 				raise TypeError('Lower bound and upper bound must be integers')
-			set_list = [[lb,ub]]
+
 		self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
 		self.type = minizinc_internal.VarSet
 
@@ -1133,7 +1122,7 @@ function_model_dict = {}
 name_model_dict = {}
 def handlerFunctionClosure(name, args_list, model_list):
 	def handlerFunction(*args):
-		return Call(args, name, args_list, model_list)
+		return Call(args, name, args_list, name, model_list)
 	return handlerFunction
 
 def handlerFunction(name, model_list):
@@ -1153,16 +1142,6 @@ def init(args = None, model = None):
 			else:
 				name_model_dict[name] = [model]
 			return True
-			'''
-		if model is None:
-			name_model_dict[name] = None
-		else:
-			if name in name_model_dict:
-				if name_model_dict[name] is not None:
-					name_model_dict[name].append(model)
-			else:
-				name_model_dict[name] = [model]
-			'''
 
 	names = minizinc_internal.retrieveNames(args)
 	for name, args_and_return_type_tuple in names["boolfuncs"].items():
@@ -1348,8 +1327,8 @@ class Model(object):
 		if self.mznsolver is None:
 			raise ValueError('Model is not solved yet')
 		self.status = self.mznsolver.next()
-		return (self.status is None)
 		self.solution_counter = self.solution_counter + 1
+		return (self.status is None)
 
 	def is_loaded(self):
 		return self.loaded

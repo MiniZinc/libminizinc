@@ -2,6 +2,7 @@
 #define __Mzn_DECLARATIONOBJECT_H
 
 #include "Object.h"
+#include "global.h"
 
 struct MznDeclaration: MznObject {
   Expression* e;

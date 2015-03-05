@@ -79,20 +79,20 @@ PyObject* MznArray_at(MznArray* self, PyObject* args)
 {
   PyObject* indexList;
   if (!PyArg_ParseTuple(args, "O", &indexList)) {
-    PyErr_SetString(PyExc_AttributeError, "Accept 1 Python list object");
+    PyErr_SetString(PyExc_AttributeError, "MiniZinc: ArrayAccess:  Accept 1 Python list object");
     return NULL;
   }
   if (!PyList_Check(indexList)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a list");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: ArrayAccess:  Argument must be a list");
     return NULL;
   }
   if (self->dimList == NULL) {
-    PyErr_SetString(PyExc_TypeError, "Array dim list not initialized");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: ArrayAccess:  Array dim list not initialized");
     return NULL;
   }
   vector<long>::size_type n = self->dimList->size();
   if (n != PyList_GET_SIZE(indexList)) {
-    PyErr_SetString(PyExc_IndexError, "Mismatched number of dimension");
+    MZN_PYERR_SET_STRING(PyExc_IndexError, "MiniZinc: ArrayAccess:  Mismatched number of dimension, expected %li, received %li", n, PyList_GET_SIZE(indexList));
     return NULL;
   }
 
@@ -100,17 +100,22 @@ PyObject* MznArray_at(MznArray* self, PyObject* args)
   vector<Expression*> idx(n);
   for (vector<long>::size_type i = 0; i!=n; ++i) {
     PyObject* obj = PyList_GetItem(indexList, i);
-    if (PyInt_Check(obj)) {
-      long index = PyInt_AS_LONG(obj);
+    if (PyLong_Check(obj)) {
+      int overflow;
+      long long index = PyLong_AsLongLongAndOverflow(obj, &overflow);
+      if (overflow) {
+        MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: ArrayAccess:  Index at pos %li overflowed", i);
+        return NULL;
+      }
       if (index<((*(self->dimList))[i]).first || index > ((*(self->dimList))[i]).second) {
-        PyErr_SetString(PyExc_IndexError, "Index is out of range");
+        MZN_PYERR_SET_STRING(PyExc_IndexError, "MiniZinc: ArrayAccess:  Index at pos %li out of range", i);
         return NULL;
       }
       idx[i] = new IntLit(Location(), IntVal(index));
     } else if (PyObject_TypeCheck(obj,&MznArray_Type)) {
       idx[i] = reinterpret_cast<MznArray*>(obj)->e;
     } else {
-      PyErr_SetString(PyExc_TypeError, "Indices must be integers, MiniZinc Expression or MiniZinc Array");
+      PyErr_SetString(PyExc_TypeError, "MiniZinc: ArrayAccess:  Indices must be integers, MiniZinc Expression or MiniZinc Array");
       return NULL;
     }
   }

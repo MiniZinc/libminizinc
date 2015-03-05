@@ -5,7 +5,7 @@
  *     Guido Tack <guido.tack@monash.edu>
  */
 
-#include "pyinterface.h";
+#include "pyinterface.h"
 
 using namespace MiniZinc;
 using namespace std;
@@ -22,18 +22,18 @@ Mzn_Call(MznModel* self, PyObject* args)
   PyObject* variableTuple;
   PyTypeObject* returnType;
   if (!PyArg_ParseTuple(args, "sOO", &name, &variableTuple, &returnType)) {
-    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Accepts two values: a string and a tuple of minizinc variable");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Accepts two values: a string and a tuple of minizinc variable");
     PyErr_Print();
     return NULL;
   }
 
   if (!PyList_Check(variableTuple)) {
-    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Second argument must be a list");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Second argument must be a list");
     return NULL;
   }
 
   if (!PyType_Check(returnType)) {
-    PyErr_SetString(PyExc_TypeError, "Mzn_Call: Third argument must be a type");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Third argument must be a type");
     return NULL;
   }
 
@@ -48,35 +48,20 @@ Mzn_Call(MznModel* self, PyObject* args)
       vector<pair<int, int> > dimList;
       expressionList[i] = python_to_minizinc(pyval, type, dimList);
       if (expressionList[i] == NULL) {
-        stringstream ss;
-        ss << "MznCall: Item at position " << i << "must be a MiniZinc Object or Python int/float/string/list/tuple";
-        string errorLog(ss.str());
-        PyErr_SetString(PyExc_RuntimeError, errorLog.c_str());
+        MZN_PYERR_SET_STRING(PyExc_RuntimeError, "MiniZinc: MznCall: Item at position %li must be a MiniZinc Object or Python int/float/string/list/tuple", i);
         return NULL;
       }
     }
   }
 
   PyObject* ret;
-  //ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
   
   // WARNING: Don't use returnType as Mzn*_new first argument
   if (returnType == &MznAnnotation_Type)
     ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
   else
     ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
-  /*if (returnType == &MznExpression_Type)
-    ret = MznExpression_new(returnType, NULL, NULL);
-  else if (returnType == &MznAnnotation_Type)
-    ret = MznAnnotation_new(returnType, NULL, NULL);
-  else if (returnType == &MznVarSet_Type)
-    ret = MznVarSet_new(returnType, NULL, NULL);
-  else if (returnType == &MznSet_Type)
-    throw logic_error("Mzn_Call: unhandled set type");
-  else if (returnType == &PyBool_Type || returnType == &PyInt_Type || returnType == &PyFloat_Type || returnType == &PyString_Type)
-    ret = MznVariable_new(returnType, NULL, NULL);
-  else
-    throw runtime_error("Mzn_Call: unexpected type");*/
+
   reinterpret_cast<MznExpression*>(ret)->e = new Call(Location(), string(name), expressionList);
 
   return ret;
@@ -88,7 +73,7 @@ Mzn_Id(MznModel* self, PyObject* args)
 {
   const char* name;
   if (!PyArg_ParseTuple(args, "s", &name)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a string");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Id: Argument must be a string");
     return NULL;
   }
   PyObject* ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
@@ -112,7 +97,7 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   PyObject* r;
   unsigned int op;
   if (!PyArg_ParseTuple(args, "IO", &op, &r)) {
-    PyErr_SetString(PyExc_TypeError, "Mzn_UnOp: Requires a MiniZinc object and an integer");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_UnOp: Requires a MiniZinc object and an integer");
     return NULL;
   }
   Expression *rhs;
@@ -122,15 +107,27 @@ Mzn_UnOp(MznModel* self, PyObject* args)
     rhs = MznObject_get_e(reinterpret_cast<MznObject*>(r));
     //rhs = (reinterpret_cast<MznObject*>(r))->e();
   } else if (PyBool_Check(r)) {
-    rhs = new BoolLit(Location(), PyInt_AS_LONG(r));
-  } else if (PyInt_Check(r)) {
+    rhs = new BoolLit(Location(), PyObject_IsTrue(r));
+  } else
+#if Py_MAJOR_VERSION < 3
+  if (PyInt_Check(r)) {
     rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
+  } else
+#endif
+  if (PyLong_Check(r)) {
+    int overflow;
+    long long c_val = PyLong_AsLongLongAndOverflow(r, &overflow);
+    if (overflow) {
+      PyErr_SetString(PyExc_OverflowError, "MiniZinc: Mzn_UnOp:  Object is overflowed");
+      return NULL;
+    }
+    rhs = new IntLit(Location(), IntVal(c_val));
   } else if (PyFloat_Check(r)) {
     rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
-  } else if (PyString_Check(r)) {
-    rhs = new StringLit(Location(), string(PyString_AS_STRING(r)));
+  } else if (PyBytes_Check(r)) {
+    rhs = new StringLit(Location(), string(PyBytes_AS_STRING(r)));
   } else {
-    PyErr_SetString(PyExc_TypeError, "Object must be a Python value or a MiniZinc object");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_UnOp: Object must be a Python value or a MiniZinc object");
     return NULL;
   }
 
@@ -183,7 +180,7 @@ Mzn_BinOp(MznModel* self, PyObject* args)
   PyObject* PyPre[2];
   unsigned int op;
   if (!PyArg_ParseTuple(args, "OIO", &PyPre[0], &op, &PyPre[1])) {
-    PyErr_SetString(PyExc_TypeError, "Mzn_BinOp: Requires two MiniZinc objects and an integer");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_BinOp: Requires two MiniZinc objects and an integer");
     return NULL;
   }
   Expression *pre[2];
@@ -194,15 +191,32 @@ Mzn_BinOp(MznModel* self, PyObject* args)
       // XXX: Maybe ignore Set Type here
       pre[i] = MznObject_get_e(reinterpret_cast<MznObject*>(PyPre[i]));
     } else if (PyBool_Check(PyPre[i])) {
-      pre[i] = new BoolLit(Location(), PyInt_AS_LONG(PyPre[i]));
-    } else if (PyInt_Check(PyPre[i])) {
+      pre[i] = new BoolLit(Location(), PyObject_IsTrue(PyPre[i]));
+    } else 
+
+#if Py_MAJOR_VERSION < 3
+    if (PyInt_Check(PyPre[i])) {
       pre[i] = new IntLit(Location(), IntVal(PyInt_AS_LONG(PyPre[i])));
+    } else
+#endif
+
+    if (PyLong_Check(PyPre[i])) {
+      int overflow;
+      long long c_val = PyLong_AsLongLongAndOverflow(PyPre[i], &overflow);
+      if (overflow) {
+        PyErr_SetString(PyExc_OverflowError, "MiniZinc: Mzn_UnOp:  Object is overflowed");
+        return NULL;
+      }
+      pre[i] = new IntLit(Location(), IntVal(c_val));
     } else if (PyFloat_Check(PyPre[i])) {
       pre[i] = new FloatLit(Location(), PyFloat_AS_DOUBLE(PyPre[i]));
-    } else if (PyString_Check(PyPre[i])) {
-      pre[i] = new StringLit(Location(), string(PyString_AS_STRING(PyPre[i])));
+    } else if (PyBytes_Check(PyPre[i])) {
+      pre[i] = new StringLit(Location(), string(PyBytes_AS_STRING(PyPre[i])));
     } else {
-      PyErr_SetString(PyExc_TypeError, "Object must be a Python value or MiniZinc object");
+      if (i == 0)
+        PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_BinOp: Left hand side object must be a Python value or MiniZinc object");
+      else
+        PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_BinOp: Right hand side object must be a Python value or MiniZinc object");
       return NULL;
     }
   }
@@ -217,11 +231,7 @@ Mzn_BinOp(MznModel* self, PyObject* args)
 
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
-  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
-  if (model == NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "Model cannot be created");
-    return NULL;
-  }
+  PyObject* model = MznModel_new(&MznModel_Type, NULL, NULL);
   if (MznModel_init(reinterpret_cast<MznModel*>(model), NULL) < 0) 
     return NULL;
   if (MznModel_load(reinterpret_cast<MznModel*>(model), args, keywds)==NULL)
@@ -230,7 +240,7 @@ static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
 }
 
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds) {
-  PyObject* model = MznModel_new(&MznModelType, NULL, NULL);
+  PyObject* model = MznModel_new(&MznModel_Type, NULL, NULL);
   if (model == NULL)
     return NULL;
   if (MznModel_init(reinterpret_cast<MznModel*>(model), NULL) < 0)
@@ -250,13 +260,13 @@ Mzn_retrieveNames(MznModel* self, PyObject* args) {
   {
     Py_ssize_t n = PyTuple_GET_SIZE(args);
     if (n > 1) {
-      PyErr_SetString(PyExc_TypeError, "Mzn_retrieveNames: accepts at most 1 argument");
+      PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_retrieveNames: accepts at most 1 argument");
       return NULL;
     } else if (n == 1) {
       libName = PyTuple_GET_ITEM(args, 0);
       if (PyObject_IsTrue(libName)) {
-        if (!PyString_Check(libName)) {
-          PyErr_SetString(PyExc_TypeError, "Mzn_retrieveNames: first argument must be a string");
+        if (!PyBytes_Check(libName)) {
+          PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_retrieveNames: first argument must be a string");
           return NULL;
         }
       } else
@@ -265,10 +275,10 @@ Mzn_retrieveNames(MznModel* self, PyObject* args) {
   }
 
   // If a library name is specified here, it means that this function is called at least once already.
-  // If this function is called, functions in globals.mzn and stdlib.mzn is already defined, so we dont want to reinclude it
+  // If that's the case, functions in globals.mzn and stdlib.mzn will be already defined, so we dont want to reinclude it
   bool include_global_mzn = (libName == NULL);
 
-  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModelType, NULL, NULL));
+  MznModel* tempModel = reinterpret_cast<MznModel*>(MznModel_new(&MznModel_Type, NULL, NULL));
 
   if (MznModel_init(tempModel,libName) != 0) {
     return NULL;
@@ -290,84 +300,88 @@ Mzn_retrieveNames(MznModel* self, PyObject* args) {
   return dict;
 }
 
+#if PY_MAJOR_VERSION >= 3
+
+#define INITERROR return NULL
+
+//PyObject*
+PyMODINIT_FUNC
+PyInit_minizinc_internal(void)
+
+#else
+#define INITERROR return
 
 PyMODINIT_FUNC
-initminizinc_internal(void) {
-  PyObject* model = Py_InitModule3("minizinc_internal", Mzn_methods, "A python interface for minizinc constraint modeling");
+initminizinc_internal(void)
 
-  if (model == NULL)
-    return;
+#endif
+
+{
+#if PY_MAJOR_VERSION >= 3
+  PyObject* module = PyModule_Create(&moduledef);
+#else
+  PyObject* module = Py_InitModule3("minizinc_internal", Mzn_methods, "A python interface for MiniZinc constraint modeling");
+#endif
+
+  if (module == NULL)
+    INITERROR;
 
   if (PyType_Ready(&MznObject_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznObject_Type);
-  PyModule_AddObject(model, "Object", reinterpret_cast<PyObject*>(&MznObject_Type));
+  PyModule_AddObject(module, "Object", reinterpret_cast<PyObject*>(&MznObject_Type));
 
   if (PyType_Ready(&MznSetIter_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznSetIter_Type);
-  PyModule_AddObject(model, "Set_Iter", reinterpret_cast<PyObject*>(&MznSetIter_Type));
+  PyModule_AddObject(module, "Set_Iter", reinterpret_cast<PyObject*>(&MznSetIter_Type));
 
   if (PyType_Ready(&MznExpression_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznExpression_Type);
-  PyModule_AddObject(model, "Expression", reinterpret_cast<PyObject*>(&MznExpression_Type));
+  PyModule_AddObject(module, "Expression", reinterpret_cast<PyObject*>(&MznExpression_Type));
 
   if (PyType_Ready(&MznAnnotation_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznAnnotation_Type);
-  PyModule_AddObject(model, "Annotation", reinterpret_cast<PyObject*>(&MznAnnotation_Type));
+  PyModule_AddObject(module, "Annotation", reinterpret_cast<PyObject*>(&MznAnnotation_Type));
 
   if (PyType_Ready(&MznDeclaration_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznDeclaration_Type);
-  PyModule_AddObject(model, "Declaration", reinterpret_cast<PyObject*>(&MznDeclaration_Type));
+  PyModule_AddObject(module, "Declaration", reinterpret_cast<PyObject*>(&MznDeclaration_Type));
 
   if (PyType_Ready(&MznVariable_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznVariable_Type);
-  PyModule_AddObject(model, "Variable", reinterpret_cast<PyObject*>(&MznVariable_Type));
+  PyModule_AddObject(module, "Variable", reinterpret_cast<PyObject*>(&MznVariable_Type));
 
   if (PyType_Ready(&MznArray_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznArray_Type);
-  PyModule_AddObject(model, "Array", reinterpret_cast<PyObject*>(&MznArray_Type));
+  PyModule_AddObject(module, "Array", reinterpret_cast<PyObject*>(&MznArray_Type));
 
   if (PyType_Ready(&MznSet_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznSet_Type);
-  PyModule_AddObject(model, "Set", reinterpret_cast<PyObject*>(&MznSet_Type));
+  PyModule_AddObject(module, "Set", reinterpret_cast<PyObject*>(&MznSet_Type));
 
   if (PyType_Ready(&MznVarSet_Type) < 0)
-    return;
+    INITERROR;
   Py_INCREF(&MznVarSet_Type);
-  PyModule_AddObject(model, "VarSet", reinterpret_cast<PyObject*>(&MznVarSet_Type));
+  PyModule_AddObject(module, "VarSet", reinterpret_cast<PyObject*>(&MznVarSet_Type));
 
-  if (PyType_Ready(&MznModelType) < 0)
-    return;
-  Py_INCREF(&MznModelType);
-  PyModule_AddObject(model, "Model", reinterpret_cast<PyObject*>(&MznModelType));
+  if (PyType_Ready(&MznModel_Type) < 0)
+    INITERROR;
+  Py_INCREF(&MznModel_Type);
+  PyModule_AddObject(module, "Model", reinterpret_cast<PyObject*>(&MznModel_Type));
 
-  /*PyMethodDef temp;
+  if (PyType_Ready(&MznSolver_Type) < 0)
+    INITERROR;
+  Py_INCREF(&MznSolver_Type);
+  PyModule_AddObject(module, "Solver", reinterpret_cast<PyObject*>(&MznSolver_Type));
 
-  temp.ml_name = "next";
-  temp.ml_meth = (PyCFunction)MznSolver_next;
-  temp.ml_flags = METH_NOARGS;
-  temp.ml_doc = "Next Solution";
-  MznSolver_methods[0] = temp;
-  temp.ml_name = "getValue";
-  temp.ml_meth = (PyCFunction)MznSolver_getValue;
-  temp.ml_flags = METH_VARARGS;
-  temp.ml_doc = "Get value";
-  MznSolver_methods[1] = temp;
-  temp.ml_name = NULL;
-  temp.ml_meth = NULL;
-  temp.ml_flags = NULL;
-  temp.ml_doc = NULL;
-  MznSolver_methods[2] = temp;*/
-
-  if (PyType_Ready(&MznSolverType) < 0)
-    return;
-  Py_INCREF(&MznSolverType);
-  PyModule_AddObject(model, "Solver", reinterpret_cast<PyObject*>(&MznSolverType));
+#if PY_MAJOR_VERSION >= 3
+  return module;
+#endif
 }

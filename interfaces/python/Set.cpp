@@ -34,29 +34,8 @@ MznSet_iter(PyObject* self)
   iter->currentValue = iter->listBegin->min;
   return reinterpret_cast<PyObject*>(iter);
 }
-/*
-static PyObject*
-MznSet_iternext(PyObject* self)
-{
-  MznSetIter* iter = reinterpret_cast<MznSetIter*>(self);
-  if (iter->listIndex==iter->listEnd) {
-    iter->listIndex = iter->listBegin;
-    iter->currentValue = iter->listBegin->min;
-    PyErr_SetNone(PyExc_StopIteration);
-    return NULL;
-  } else {
-    PyObject *result = PyInt_FromLong(iter->currentValue);
-    iter->currentValue++;
-    if (iter->currentValue > iter->listIndex->max) {
-      iter->listIndex++;
-      if (iter->listIndex!=iter->listEnd)
-        iter->currentValue = iter->listIndex->min;
-    }
-    return result;
-  }
-}*/
 
-bool MznSet::contains(long val) {
+bool MznSet::contains(long long val) {
   list<MznRange>::iterator it = ranges->begin();
   list<MznRange>::iterator end = ranges->end();
   assert (it != end);
@@ -79,7 +58,7 @@ bool MznSet::continuous() {
 }
 
 
-void MznSet::push(long min, long max) {
+void MznSet::push(long long min, long long max) {
   if (ranges->empty()) {
     MznRange toAdd(min, max);
     ranges->push_front(toAdd);
@@ -119,7 +98,7 @@ void MznSet::push(long min, long max) {
 }
 
 
-void MznSet::push(long v) {
+void MznSet::push(long long v) {
   list<MznRange>::iterator it,last;
   last = ranges->begin();
   if (ranges->empty()) {
@@ -163,32 +142,28 @@ void MznSet::push(long v) {
   return;
 }
 
-long MznSet::min() 
+long long MznSet::min() 
 {
   assert (ranges->begin() != ranges->end());
   return ranges->front().min;
 }
 
-long MznSet::max() 
+long long MznSet::max() 
 {
   assert (ranges->begin() != ranges->end());
   return ranges->back().max;
 }
 
-/*SetLit* MznSet::e() {
-
-}*/
-
 static PyObject*
 MznSet_min(MznSet* self)
 {
-  return PyInt_FromLong(self->min());
+  return c_to_py_number(self->min());
 }
 
 static PyObject*
 MznSet_max(MznSet* self)
 {
-  return PyInt_FromLong(self->max());
+  return c_to_py_number(self->max());
 }
 
 static PyObject*
@@ -200,16 +175,22 @@ MznSet_continuous(MznSet* self)
 static PyObject*
 MznSet_contains(MznSet* self, PyObject* args)
 {
-  PyObject* val;
-  if (!PyArg_ParseTuple(args,"O",&val)) {
-    PyErr_SetString(PyExc_TypeError, "Parsing error");
+  PyObject* py_val;
+  if (!PyArg_ParseTuple(args, "O", &py_val)) {
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.contains:  Parsing error");
     return NULL;
   }
-  if (!PyInt_Check(val)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be an integer");
+  long long c_val = py_to_c_number(py_val);
+  if (PyErr_Occurred()) {
+    PyObject *ptype, *pmessage, *ptraceback;
+    PyErr_Fetch(&ptype, &pmessage, &ptraceback);
+    char* pStrErrorMessage = PyBytes_AsString(pmessage);
+    string error = "MiniZinc: Set.contains:  " + string(pStrErrorMessage);
+    PyErr_SetString(ptype, error.c_str());
     return NULL;
   }
-  return PyBool_FromLong(self->contains(PyInt_AS_LONG(val)));
+  
+  return PyBool_FromLong(self->contains(c_val));
 }
 
 
@@ -217,13 +198,13 @@ static PyObject*
 MznSet_push(MznSet* self, PyObject* args) {
   PyObject* isv;
   if (!PyArg_ParseTuple(args,"O",&isv)) {
-    PyErr_SetString(PyExc_TypeError, "Parsing error");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  Parsing error");
     return NULL;
   }
   if (isv == NULL)
     Py_RETURN_NONE;
   if (!PyList_Check(isv)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a list of integer values");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  Argument must be a list");
     return NULL;
   }
 
@@ -232,37 +213,63 @@ MznSet_push(MznSet* self, PyObject* args) {
     PyObject* elem = PyList_GetItem(isv,i);
     if (PyList_Check(elem)) {
       if (PyList_Size(elem) == 1) {
-        PyObject* value = PyList_GetItem(elem, 0);
-        if (PyInt_Check(value))
-          self->push(PyInt_AS_LONG(value));
-        else {
-          PyErr_SetString(PyExc_TypeError, "Value must be an integer");
+        PyObject* py_val = PyList_GetItem(elem, 0);
+        long long c_val = py_to_c_number(py_val);
+        if (PyErr_Occurred()) {
+          PyObject *ptype, *pmessage, *ptraceback;
+          PyErr_Fetch(&ptype, &pmessage, &ptraceback);
+          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          string error = "MiniZinc: Set.push: tuple item %li: " + string(pStrErrorMessage);
+          MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
         }
+        self->push(c_val);
       } else if (PyList_Size(elem) == 2) {
-        PyObject* Pmin = PyList_GetItem(elem,0);
-        PyObject* Pmax = PyList_GetItem(elem,1);
-        if (PyInt_Check(Pmin) && PyInt_Check(Pmax)) {
-          int min = PyInt_AS_LONG(Pmin);
-          int max = PyInt_AS_LONG(Pmax);
-          if (min < max)
-            self->push(min, max);
-          else if (min > max) 
-            self->push(max, min);
-          else self->push(min);
-        } else {
-          PyErr_SetString(PyExc_TypeError, "Both values must be integers");
+        PyObject* p_min = PyList_GetItem(elem,0);
+        PyObject* p_max = PyList_GetItem(elem,1);
+        long long c_min = py_to_c_number(p_min);
+        if (PyErr_Occurred()) {
+          PyObject *ptype, *pmessage, *ptraceback;
+          PyErr_Fetch(&ptype, &pmessage, &ptraceback);
+          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          string error = "MiniZinc: Set.push: tuple item %li, first argument:  " + string(pStrErrorMessage);
+          MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
         }
+
+        long long c_max = py_to_c_number(p_max);
+        if (PyErr_Occurred()) {
+          PyObject *ptype, *pmessage, *ptraceback;
+          PyErr_Fetch(&ptype, &pmessage, &ptraceback);
+          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          string error = "MiniZinc: Set.push: tuple item %li, second argument:  " + string(pStrErrorMessage);
+          MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
+          return NULL;
+        }
+
+        if (c_min < c_max)
+          self->push(c_min, c_max);
+        else if (c_min > c_max)
+          self->push(c_max, c_min);
+        else
+          self->push(c_min);
       } else {
-        PyErr_SetString(PyExc_TypeError, "The sublist size can only be 1 or 2");
+        PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  The sublist size can only be 1 or 2");
         return NULL;
       }
-    } else if (PyInt_Check(elem)) {
-      self->push(PyInt_AS_LONG(elem));
     } else {
-      PyErr_SetString(PyExc_TypeError, "List values must be an integer or a list of integers");
-      return NULL;
+      int overflow;
+      long long c_val = py_to_c_number(elem, &overflow);
+      if (PyErr_Occurred()) {
+        if (overflow) {
+          MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: Set.push:  Overflow at tuple element at pos %li", i);
+          return NULL;
+        } else {
+          MZN_PYERR_SET_STRING(PyExc_TypeError, "MiniZinc: Set.push:  Type mismatched at tuple element pos %li: expected an integer or list of integers", i);
+          return NULL;
+        }
+      }
+      self->push(c_val);
     }
   }
   Py_RETURN_NONE;
@@ -286,7 +293,7 @@ MznSet_output(MznSet* self)
   }
   const std::string& tmp = s.str();
   const char* cstr = tmp.c_str();
-  PyObject* result = PyString_FromString(cstr);
+  PyObject* result = PyBytes_FromString(cstr);
   return result;
 }
 
@@ -304,7 +311,7 @@ static PyObject* MznSet_repr(PyObject* self) {
     else output << ", ";
   }
   const std::string& tmp = output.str();
-  return PyString_FromString(tmp.c_str());
+  return PyBytes_FromString(tmp.c_str());
 }
 
 
@@ -335,7 +342,7 @@ MznSetIter_iternext(PyObject* self)
     PyErr_SetNone(PyExc_StopIteration);
     return NULL;
   } else {
-    PyObject *result = PyInt_FromLong(iter->currentValue);
+    PyObject *result = PyLong_FromLongLong(iter->currentValue);
     iter->currentValue++;
     if (iter->currentValue > iter->listIndex->max) {
       iter->listIndex++;

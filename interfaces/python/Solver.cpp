@@ -43,22 +43,22 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
     PyErr_SetString(PyExc_TypeError,"Accept 1 argument of strings or list/tuple of strings");
     return NULL;
   }
-  if (PyString_Check(obj)) {
-    name = PyString_AS_STRING(obj);
+  if (PyBytes_Check(obj)) {
+    name = PyBytes_AS_STRING(obj);
     return MznSolver_getValueHelper(self, name);;
   } else 
-  // INEFFICIENT function to retrieve values, consider optimize it later
+  // XXX: INEFFICIENT function to retrieve values, consider optimize it later
     if (PyList_Check(obj)) {
       Py_ssize_t n = PyList_GET_SIZE(obj);
       PyObject* ret = PyList_New(n);
       for (Py_ssize_t i=0; i!=n; ++i) {
         PyObject* item = PyList_GET_ITEM(obj, i);
-        if (!PyString_Check(item)) {
+        if (!PyBytes_Check(item)) {
           Py_DECREF(ret);
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyString_AS_STRING(item);
+        name = PyBytes_AS_STRING(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
@@ -72,12 +72,12 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
       PyObject* ret = PyTuple_New(n);
       for (Py_ssize_t i=0; i!=n; ++i) {
         PyObject* item = PyTuple_GET_ITEM(obj, i);
-        if (!PyString_Check(item)) {
+        if (!PyBytes_Check(item)) {
           Py_DECREF(ret);
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyString_AS_STRING(item);
+        name = PyBytes_AS_STRING(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
@@ -124,9 +124,9 @@ MznSolver::next()
     Py_RETURN_NONE; 
   }
   if (_m == NULL) {
-    return PyString_FromString("Unsatisfied");
+    return PyBytes_FromString("Unsatisfied");
   } else {
-    return PyString_FromString("Reached last solution");
+    return PyBytes_FromString("Reached last solution");
   }
 }
 

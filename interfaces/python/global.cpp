@@ -3,6 +3,60 @@
 using namespace MiniZinc;
 using namespace std;
 
+inline PyObject* c_to_py_number(long long c_val)
+{
+#if Py_MAJOR_VERSION < 3
+  if (c_val > LONG_MAX || c_val < LONG_MIN)
+    return PyInt_FromLong( static_cast<long>(c_val) );
+  else
+#endif
+    return PyLong_FromLongLong(c_val);
+}
+
+inline long long py_to_c_number(PyObject* py_val)
+{
+#if Py_MAJOR_VERSION < 3
+  if (PyInt_Check(py_val)) {
+    return PyInt_AS_LONG(py_val);
+  } else
+#endif
+  if (PyLong_Check(py_val)) {
+    int overflow;
+    long long c_val = PyLong_AsLongLongAndOverflow(py_val, &overflow);
+    if (overflow) {
+      PyErr_SetString(PyExc_OverflowError, "Python value is overflown");
+      return -1;
+    }
+    return c_val;
+  } else {
+    PyErr_SetString(PyExc_TypeError, "Python value must be an integer");
+    return -1;
+  }
+}
+
+inline long long py_to_c_number(PyObject* py_val, int* overflow)
+{
+#if Py_MAJOR_VERSION < 3
+  if (PyInt_Check(py_val)) {
+    *overflow = 0;
+    return PyInt_AS_LONG(py_val);
+  } else
+#endif
+  if (PyLong_Check(py_val)) {
+    long long c_val = PyLong_AsLongLongAndOverflow(py_val, overflow);
+    if (*overflow) {
+      PyErr_SetString(PyExc_OverflowError, "Python value is overflown");
+      return -1;
+    }
+    *overflow = 0;
+    return c_val;
+  } else {
+    *overflow = 0;
+    PyErr_SetString(PyExc_TypeError, "Python value must be an integer");
+    return -1;
+  }
+}
+
 // For internal use, only compare TypeInst, BaseType, SetType
 bool compareType(const Type& type1, const Type& type2)
 {
@@ -40,6 +94,39 @@ string typePresentation(const Type& type)
   }
 }
 
+inline PyObject*
+one_dim_minizinc_to_python(Expression* e, const Type& type)
+{
+  Env env(NULL);
+  /*if (vd==NULL) {
+    PyErr_SetString(PyExc_ValueError, "MiniZinc_to_Python: Value is not set");
+    return NULL;
+  } else */
+  // Here we assume that vd is not NULL
+
+  if (type.st() == Type::ST_SET) {
+    IntSetVal* isv = eval_intset(env.envi(),e);
+    MznSet* newSet = reinterpret_cast<MznSet*>(MznSet_new(&MznSet_Type,NULL,NULL));
+    for (IntSetRanges isr(isv); isr(); ++isr) {
+      newSet->push(isr.min().toInt(),isr.max().toInt());
+    }
+    return reinterpret_cast<PyObject*>(newSet);
+  } else switch (type.bt()) {
+    case Type::BT_BOOL:
+      return PyBool_FromLong(eval_bool(env.envi(),e));
+    case Type::BT_INT:
+      return c_to_py_number(eval_int(env.envi(), e).toInt());
+    case Type::BT_FLOAT:
+      return PyFloat_FromDouble(eval_float(env.envi(),e));
+    case Type::BT_STRING:
+    {
+      string temp(eval_string(env.envi(), e));
+      return PyBytes_FromString(temp.c_str());
+    }
+    default:
+      throw logic_error("MiniZinc: one_dim_minizinc_to_python: Unexpected type code");
+  }
+}
 
 /* 
  * Convert minizinc expression to python value
@@ -52,192 +139,51 @@ minizinc_to_python(VarDecl* vd)
     PyErr_SetString(PyExc_ValueError, "MiniZinc_to_Python: Value is not set");
     return NULL;
   }
-  if (vd->type().st() == Type::ST_SET) {
-    Env env(NULL);
-    IntSetVal* isv = eval_intset(env.envi(),vd->e());
-    long numberOfElement = 0;
-    MznSet* newSet = reinterpret_cast<MznSet*>(MznSet_new(&MznSet_Type,NULL,NULL));
-    for (IntSetRanges isr(isv); isr(); ++isr) {
-      newSet->push(isr.min().toInt(),isr.max().toInt());
-    }
-    return reinterpret_cast<PyObject*>(newSet);
+  Type type = vd->type();
+  if (type.dim() == 0) {
+    return one_dim_minizinc_to_python(vd->e(), type);
   } else {
-    if (vd->type().bt() == Type::BT_BOOL) {
-      if (vd->type().dim() == 0) {
-        Env env(NULL);
-        return PyBool_FromLong(eval_bool(env.envi(),vd->e()));
-      } else {
-        Env env(NULL);
-        ArrayLit* al = eval_par(env.envi(), vd->e())->cast<ArrayLit>();
-        int dim = vd->type().dim();
+    Env env(NULL);
+    ArrayLit *al = eval_par(env.envi(), vd->e())->cast<ArrayLit>();
+    int dim = vd->type().dim();
 
-        // Maximum size of each dimension
-        vector<long long int> dmax;
-        // Current size of each dimension
-        vector<long long int> d;
-        // p[0] holds the final array, p[1+] builds up p[0]
-        vector<PyObject*> p(dim);
-        for (int i=0; i<dim; i++) {
-          d.push_back(0);
-          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-          dmax.push_back(dtemp);
-          p[i] = PyList_New(dtemp);
-        }
-        int i = dim - 1;
-        // next item to be put onto the final array.
-        unsigned int currentPos = 0;
-        do {
-          Env env(NULL);
-          PyList_SetItem(p[i], d[i], PyBool_FromLong(eval_bool(env.envi(),al->v()[currentPos])));
-          currentPos++;
-          d[i]++;
-          while (d[i]>=dmax[i] && i>0) {
-            PyList_SetItem(p[i-1],d[i-1],p[i]);
-            Py_DECREF(p[i]);
-            d[i]=0;
-            p[i]=PyList_New(dmax[i]);
-            i--;
-            d[i]++;
-          }
-          i = dim - 1;
-        } while (d[0]<dmax[0]);
-        for (int i=1; i<dim; i++)
-          Py_DECREF(p[i]);
-        return p[0];
-      }
-    } else if (vd->type().bt() == Type::BT_INT) {
-      if (vd->type().dim() == 0) {
-        Env env(NULL);
-        IntVal iv = eval_int(env.envi(), vd->e());
-        return PyInt_FromLong(iv.toInt());
-      } else {
-        Env env(NULL);
-        ArrayLit* al = eval_par(env.envi(),vd->e())->cast<ArrayLit>();
-        int dim = vd->type().dim();
+    // Maximum size of each dimension
+    vector<long long> dmax;
+    // Current size of each dimension
+    vector<long long> d;
+    // p[0] holds the final array, p[1+] builds up p[0]
+    vector<PyObject*> p(dim);
 
-        // Maximum size of each dimension
-        vector<long long int> dmax;
-        // Current size of each dimension
-        vector<long long int> d;
-        // p[0] holds the final array, p[1+] builds up p[0]
-        vector<PyObject*> p(dim);
-        for (int i=0; i<dim; i++) {
-          d.push_back(0);
-          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-          dmax.push_back(dtemp);
-          p[i] = PyList_New(dtemp);
-        }
-        int i = dim - 1;
-        // next item to be put onto the final array.
-        unsigned int currentPos = 0;
-        do {
-          Env env(NULL);
-          PyList_SetItem(p[i], d[i], PyInt_FromLong(eval_int(env.envi(),al->v()[currentPos]).toInt()));
-          currentPos++;
-          d[i]++;
-          while (d[i]>=dmax[i] && i>0) {
-            PyList_SetItem(p[i-1],d[i-1],p[i]);
-            d[i]=0;
-            p[i]=PyList_New(dmax[i]);
-            i--;
-            d[i]++;
-          }
-          i = dim - 1;
-        } while (d[0]<dmax[0]);
-        for (int i=1; i<dim; i++)
-          Py_DECREF(p[i]);
-        return p[0];
-      }
-    } else if (vd->type().bt() == Type::BT_STRING) {
-      if (vd->type().dim() == 0) {
-        Env env(NULL);
-        string temp(eval_string(env.envi(), vd->e()));
-        return PyString_FromString(temp.c_str());
-      } else {
-        Env env(NULL);
-        ArrayLit* al = eval_par(env.envi(), vd->e())->cast<ArrayLit>();
-        int dim = vd->type().dim();
-
-        // Maximum size of each dimension
-        vector<long long int> dmax;
-        // Current size of each dimension
-        vector<long long int> d;
-        // p[0] holds the final array, p[1+] builds up p[0]
-        vector<PyObject*> p(dim);
-        for (int i=0; i<dim; i++) {
-          d.push_back(0);
-          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-          dmax.push_back(dtemp);
-          p[i] = PyList_New(dtemp);
-        }
-        int i = dim - 1;
-        // next item to be put onto the final array.
-        unsigned int currentPos = 0;
-        do {
-          Env env(NULL);
-          string temp(eval_string(env.envi(),al->v()[currentPos]));
-          PyList_SetItem(p[i], d[i], PyString_FromString(temp.c_str()));
-          currentPos++;
-          d[i]++;
-          while (d[i]>=dmax[i] && i>0) {
-            PyList_SetItem(p[i-1],d[i-1],p[i]);
-            d[i]=0;
-            p[i]=PyList_New(dmax[i]);
-            i--;
-            d[i]++;
-          }
-          i = dim - 1;
-        } while (d[0]<dmax[0]);
-        for (int i=1; i<dim; i++)
-          Py_DECREF(p[i]);
-        return p[0];
-      }
-    } else if (vd->type().bt() == Type::BT_FLOAT) {
-      if (vd->type().dim() == 0) {
-        Env env(NULL);
-        FloatVal fv = eval_float(env.envi(),vd->e());
-        return PyFloat_FromDouble(fv);
-      } else {
-        Env env(NULL);
-        ArrayLit* al = eval_par(env.envi(),vd->e())->cast<ArrayLit>();
-        int dim = vd->type().dim();
-
-        // Maximum size of each dimension
-        vector<long long int> dmax;
-        // Current size of each dimension
-        vector<long long int> d;
-        // p[0] holds the final array, p[1+] builds up p[0]
-        vector<PyObject*> p(dim);
-        for (int i=0; i<dim; i++) {
-          d.push_back(0);
-          Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
-          dmax.push_back(dtemp);
-          p[i] = PyList_New(dtemp);
-        }
-        int i = dim - 1;
-        // next item to be put onto the final array.
-        unsigned int currentPos = 0;
-        do {
-          Env env(NULL);
-          PyList_SetItem(p[i], d[i], PyFloat_FromDouble(eval_float(env.envi(),al->v()[currentPos])));
-          currentPos++;
-          d[i]++;
-          while (d[i]>=dmax[i] && i>0) {
-            PyList_SetItem(p[i-1],d[i-1],p[i]);
-            //Py_DECREF(p[i]);
-            d[i]=0;
-            p[i]=PyList_New(dmax[i]);
-            i--;
-            d[i]++;
-          }
-          i = dim - 1;
-        } while (d[0]<dmax[0]);
-        for (int i=1; i<dim; i++) 
-          Py_DECREF(p[i]);
-        return p[0];
-      }
+    for (int i=0; i<dim; ++i) {
+      d.push_back(0);
+      Py_ssize_t dtemp = al->max(i) - al->min(i) + 1;
+      dmax.push_back(dtemp);
+      p[i] = PyList_New(dtemp);
     }
+
+    int i = dim - 1;
+
+    // next item to be put onto the final array
+    unsigned int currentPos = 0;
+    do {
+      PyList_SetItem(p[i], d[i], one_dim_minizinc_to_python(al->v()[currentPos], type));
+      currentPos++;
+      d[i]++;
+      while (d[i]>=dmax[i] && i>0) {
+        PyList_SetItem(p[i-1],d[i-1],p[i]);
+        Py_DECREF(p[i]);
+        d[i]=0;
+        p[i]=PyList_New(dmax[i]);
+        i--;
+        d[i]++;
+      }
+      i = dim - 1;
+    } while (d[0]<dmax[0]);
+    for (int i=1; i<dim; i++)
+      Py_DECREF(p[i]);
+    return p[0];
   }
+  
 }
 
 
@@ -270,12 +216,29 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         //return reinterpret_cast<MznObject*>(pvalue)->e();
       } else if (PyBool_Check(pvalue)) {
         BT_BOOLEAN_PROCESS:
-        Expression* rhs = new BoolLit(Location(), PyInt_AS_LONG(pvalue));
+        Expression* rhs = new BoolLit(Location(), PyObject_IsTrue(pvalue));
         code = Type::BT_BOOL;
         return rhs;
-      } else if (PyInt_Check(pvalue)) {
-        BT_INTEGER_PROCESS:
+      } else 
+#if Py_MAJOR_VERSION < 3
+      if (PyInt_Check(pvalue)) {
+        BT_INTEGER_PROCESS_2X_VERSION:
         Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(pvalue)));
+        code = Type::BT_INT;
+        return rhs;
+      } else
+#endif
+      if (PyLong_Check(pvalue)) {
+        BT_INTEGER_PROCESS:
+        int overflow;
+        Expression* rhs = new IntLit(Location(), IntVal(PyLong_AsLongLongAndOverflow(pvalue, &overflow)));
+        if (overflow) {
+          if (overflow > 0)
+            PyErr_SetString(PyExc_OverflowError, "MiniZinc: Python integer value is larger than 2^63-1");
+          else
+            PyErr_SetString(PyExc_OverflowError, "MiniZinc: Python integer value is smaller than -2^63");
+          return NULL;
+        }
         code = Type::BT_INT;
         return rhs;
       } else if (PyFloat_Check(pvalue)) {
@@ -283,47 +246,52 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(pvalue));
         code = Type::BT_FLOAT;
         return rhs;
-      } else if (PyString_Check(pvalue)) {
+      } else if (PyBytes_Check(pvalue)) {
         BT_STRING_PROCESS:
-        Expression* rhs = new StringLit(Location(), PyString_AS_STRING(pvalue));
+        Expression* rhs = new StringLit(Location(), PyBytes_AS_STRING(pvalue));
         code = Type::BT_STRING;
         return rhs;
       } else {
-        PyErr_SetString(PyExc_TypeError, "Unexpected python type");
+        PyErr_SetString(PyExc_TypeError, "MiniZinc: Unexpected python type");
         return NULL;
       }
       break;
 
     case Type::BT_INT: 
-      if (!PyInt_Check(pvalue)) {
-        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an integer");
+#if Py_MAJOR_VERSION < 3
+      if (PyInt_Check(pvalue))
+        goto BT_INTEGER_PROCESS_2X_VERSION;
+      else
+#endif
+      if (!PyLong_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"MiniZinc: Object in an array must be of the same type: Expected an integer");
         return NULL;
       }
       goto BT_INTEGER_PROCESS;
 
     case Type::BT_FLOAT:
       if (!PyFloat_Check(pvalue)) {
-        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an float");
+        PyErr_SetString(PyExc_TypeError,"MiniZinc: Object in an array must be of the same type: Expected an float");
         return NULL;
       }
       goto BT_FLOAT_PROCESS;
 
     case Type::BT_STRING:
-      if (!PyString_Check(pvalue)) {
-        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an string");
+      if (!PyBytes_Check(pvalue)) {
+        PyErr_SetString(PyExc_TypeError,"MiniZinc: Object in an array must be of the same type: Expected an string");
         return NULL;
       }
       goto BT_STRING_PROCESS;
 
     case Type::BT_BOOL:
       if (!PyBool_Check(pvalue)) {
-        PyErr_SetString(PyExc_TypeError,"Object in an array must be of the same type: Expected an boolean");
+        PyErr_SetString(PyExc_TypeError,"MiniZinc: Object in an array must be of the same type: Expected an boolean");
         return NULL;
       }
       goto BT_BOOLEAN_PROCESS;
 
     default:
-      throw std::invalid_argument("Internal Error: Received unexpected base type code");
+      throw std::invalid_argument("MiniZinc: Internal Error: Received unexpected base type code");
   }
 }
 
@@ -338,15 +306,16 @@ python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
 {
   if (PyObject_TypeCheck(pvalue, &MznObject_Type)) {
     return MznObject_get_e(reinterpret_cast<MznObject*>(pvalue));
-    //return reinterpret_cast<MznObject*>(pvalue)->e();
   } else if (PyList_Check(pvalue)) {
     vector<Py_ssize_t> dimensions;
     vector<PyObject*> simpleArray;
     if (getList(pvalue, dimensions, simpleArray, 0) == -1)
-      // need to be changed later
-      throw invalid_argument("Inconsistency in size of multidimensional array");
-    if (ranges.size()!=dimensions.size())
-      throw invalid_argument("Size of declared array and data array not conform");
+      // getList should already set the error string
+      return NULL;
+    if (ranges.size()!=dimensions.size()) {
+      PyErr_SetString(PyExc_ValueError, "MiniZinc: python_to_minizinc: size of declared array and actual array not matched");
+      return NULL;
+    }
     vector<Expression*> callArgument(dimensions.size()+1);
     vector<Expression*> onedArray(simpleArray.size());
 
@@ -367,6 +336,8 @@ python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
     for (int i=0; i!=simpleArray.size(); ++i) {
       PyObject* temp= simpleArray[i];
       Expression* rhs = one_dim_python_to_minizinc(temp, code);
+      if (rhs == NULL)
+        return NULL;
       onedArray[i] = rhs;
     }
     callArgument[dimensions.size()] = new ArrayLit(Location(), onedArray);
@@ -396,24 +367,32 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
   } else if (PyList_Check(pvalue)) {
     vector<Py_ssize_t> dimensions;
     vector<PyObject*> simpleArray;
-    if (getList(pvalue, dimensions, simpleArray, 0) == -1)
-      throw invalid_argument("Inconsistency in size of multidimensional array");
+    if (getList(pvalue, dimensions, simpleArray, 0) == -1) {
+      // getList should set error string already
+      return NULL;
+      //throw invalid_argument("Inconsistency in size of multidimensional array");
+    }
     if (dimList.empty())
       for (int i=0; i!=dimensions.size(); i++)
         dimList.push_back(pair<Py_ssize_t,Py_ssize_t>(0,dimensions[i]-1));
     else {
-      if (dimList.size()!=dimensions.size())
-        throw invalid_argument("Size of declared array and data array not conform");
+      if (dimList.size()!=dimensions.size()) {
+        PyErr_SetString(PyExc_ValueError, "MiniZinc: python_to_minizinc: size of declared and actual array not matched");
+        return NULL;
+      }
       for (int i=0; i!=dimensions.size(); i++) {
-        //cout << dimList[i].first << " - " << dimList[i].second << " ---- " << dimensions[i] << endl; 
-        if ( (dimList[i].second - (dimList[i].first) + 1) != dimensions[i] )
-          throw invalid_argument("Size of each dimension not conform");
+        if ( (dimList[i].second - (dimList[i].first) + 1) != dimensions[i] ) {
+          PyErr_SetString(PyExc_ValueError, "MiniZinc: python_to_minizinc: size of each dimension of python array not matched");
+          return NULL;
+        }
       }
     }
     vector<Expression*> v;
     for (int i=0; i!=simpleArray.size(); ++i) {
       PyObject* temp= simpleArray[i];
       Expression* rhs = one_dim_python_to_minizinc(temp, code);
+      if (rhs == NULL)
+        return NULL;
       v.push_back(rhs);
     }
     returnType = Type();
@@ -435,7 +414,7 @@ pydim_to_dimList(PyObject* pydim)
 {
   vector<pair<int, int> >* dimList;
   if (!PyList_Check(pydim)) {
-    PyErr_SetString(PyExc_TypeError, "3rd argument must be a list of size of each dimension");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: argument must be a python list");
     return NULL;
   }
   Py_ssize_t dim = PyList_GET_SIZE(pydim);
@@ -443,26 +422,48 @@ pydim_to_dimList(PyObject* pydim)
   for (Py_ssize_t i=0; i!=dim; ++i) {
     PyObject* temp = PyList_GET_ITEM(pydim, i);
     if (!PyList_Check(temp)) {
-      PyErr_SetString(PyExc_TypeError, "Objects in the dimension list must be of integer value");
+      PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: objects in the list must be range lists");
       return NULL;
     }
-    PyObject *tempLb = PyList_GetItem(temp, 0);
-    PyObject *tempUb = PyList_GetItem(temp, 1);
+    PyObject* Py_bound[2];
+    Py_bound[0] = PyList_GetItem(temp, 0);
+    Py_bound[1] = PyList_GetItem(temp, 1);
     if (PyErr_Occurred()) {
-
-      PyErr_SetString(PyExc_TypeError, "Range list must consist of two integer values");
+      PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: a range must consist of 2 values");
       return NULL;
     }
 
-    long c_lb = PyInt_AsLong(tempLb);
-    long c_ub = PyInt_AsLong(tempUb);
-    if (PyErr_Occurred()) {
-      PyErr_SetString(PyExc_TypeError, "Range values must be integers");
-      return NULL;
+    long long c_bound[2];
+    for (int i=0; i!=2; ++i) {
+#if Py_MAJOR_VERSION < 3
+      if (PyInt_Check(Py_bound[i]))
+        c_bound[i] = PyInt_AS_LONG(Py_bound[i]);
+      else 
+#endif
+      if (PyLong_Check(Py_bound[i])) {
+        int overflow;
+        c_bound[i] = PyLong_AsLongLongAndOverflow(Py_bound[i], &overflow);
+        if (overflow) {
+          switch (i) {
+            case 0: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList:  Range at pos %i: First argument is overflown", i); break;
+            case 1: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList:  Range at pos %i: Second argument is overflown", i); break;
+            default:
+              throw logic_error("pydim_to_dimList: Unexpected iterator value");
+          }
+          return NULL;
+        }
+      } else {
+        switch (i) {
+          case 0: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList: Range at pos %i: First argument type is mismatched: expected a number", i); break;
+          case 1: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList: Range at pos %i: Second argument type is mismatched: expected a number", i); break;
+          default:
+            throw logic_error("pydim_to_dimList: Unexpected iterator value");
+        }
+      }
     }
-    if (c_lb > c_ub)
-      swap(c_lb, c_ub);
-    (*dimList)[i] = make_pair(c_lb, c_ub);
+    if (c_bound[0] > c_bound[1])
+      swap(c_bound[0], c_bound[1]);
+    (*dimList)[i] = make_pair(c_bound[0], c_bound[1]);
   }
   return dimList;
 }
@@ -475,7 +476,7 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
     if (dimensions.size() <= layer) {
       dimensions.push_back(PyList_Size(value));
     } else if (dimensions[layer]!=PyList_Size(value)) {
-      PyErr_SetString(PyExc_RuntimeError,"Inconsistency in size of multidimensional array");
+      PyErr_SetString(PyExc_ValueError,"MiniZinc: Inconsistency in size of multidimensional array");
       return -1; // Inconsistent size of array (should be the same)
     }
     PyObject* li = PyList_GetItem(value, i);

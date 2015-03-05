@@ -8,6 +8,11 @@
 #define __GLOBAL_H
 
 #include <Python.h>
+
+#if Py_MAJOR_VERSION < 3
+#include <bytesobject.h>
+#endif
+ 
 #include "structmember.h"
 
 #include <iostream>
@@ -18,10 +23,9 @@
 #include <typeinfo>
 #include <cstdlib>
 #include <stdlib.h>
-#include <setjmp.h>
-#include <signal.h>
 #include <unistd.h>
 #include <stdexcept>
+#include <limits.h>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -36,6 +40,9 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/copy.hh>
 
+// some files are included at the end of the header
+// XXX: to be changed later
+
 using namespace std;
 using namespace MiniZinc;
 
@@ -48,6 +55,18 @@ static PyObject* MznModel_solve_warning;
 static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
+#define MZN_PYERR_SET_STRING(py_type_error, ...)	\
+do {											\
+	char buffer[150];						\
+	snprintf(buffer, 150, __VA_ARGS__);		\
+	PyErr_SetString(py_type_error, buffer);	\
+} while (0)
+
+inline PyObject* c_to_py_number(long long);
+inline long long py_to_c_number(PyObject*);
+inline long long py_to_c_number(PyObject*, int*);
+
+
 
 // Nicely presenting the type, for example: set of int or array of [int, int]
 string typePresentation(const Type& type);
@@ -55,6 +74,7 @@ string typePresentation(const Type& type);
 // For internal use, only compare TypeInst, BaseType, SetType
 bool compareType(const Type& type1, const Type& type2);
 
+inline PyObject* one_dim_minizinc_to_python(Expression* e);
 
 //Convert minizinc expression to python value
 PyObject* minizinc_to_python(VarDecl* vd);
@@ -97,6 +117,9 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
 bool PyObject_ExactTypeCheck(PyObject* ob, PyTypeObject* type) {
 	return Py_TYPE(ob) == type;
 }
+
+#include "Object.h"
+#include "Set.h"
 
 
 #endif
