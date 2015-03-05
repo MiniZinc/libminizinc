@@ -247,8 +247,9 @@ namespace MiniZinc {
           vars.push_back(it->e());
         }
       }
-      for(unsigned int i=0; i<vars.size(); i++)
+      for(unsigned int i=0; i<vars.size(); i++) {
         std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+      }        
       success = success && solver->addVariables(vars);
     }      
     

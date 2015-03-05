@@ -1387,30 +1387,55 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::addVariables(std::vector<VarDecl*> vars) {
-    std::cout << "DEBUG: adding variables to GecodeSolverInstance" << std::endl;
+  GecodeSolverInstance::addVariables(std::vector<VarDecl*> vars) {   
     customEngine->addVariables(vars, *this);
     return true; 
   }
   
   bool 
   GecodeSolverInstance::addVariables(FznSpace* space, std::vector<VarDecl*> vars) {
-    for(unsigned int i=0; i<vars.size(); i++) {
-      std::cout << "DEBUG: about to add variable " << *vars[i] << " to space." << std::endl;      
+    for(unsigned int i=0; i<vars.size(); i++) {  
+      //std::cout << "DEBUG: about to add variable \"" << *(vars[i]->id())  << std::endl;      
       // constants/constant arrays
       if(vars[i]->type().ispar()) {
         continue; // par identifiers (such as arrays of ints) are read from the model in the cts
+        std::cout << "DEBUG: DO NOT need to add PAR variable \"" << *(vars[i]->id())  << std::endl;
       }
       // integer variable
-      else if(vars[i]->type().isint()) {  
-         // no initialisation expression
-        if(!vars[i]->e()) {
+      else if(vars[i]->type().isint()) {          
+      // there is an initialisation expression        
+       if(vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>()) || vars[i]->e()->type().ispar() ) { 
+          Expression* init = vars[i]->e();          
+          if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
+            GecodeVariable var = resolveVar(init);
+            assert(var.isint());
+            space->iv.push_back(space->iv[var.index()]);
+            insertVar(vars[i]->id(), var);
+            std::cout << "DEBUG: added variable: \"" << *(vars[i]->id())  << std::endl;
+          } else {
+            double il = init->cast<IntLit>()->v().toInt();
+            if(valueWithinBounds(il)) {
+              IntVar intVar(*space, il, il);
+              space->iv.push_back(intVar);
+              insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
+                   space->iv.size()-1));
+              std::cout << "DEBUG: added variable: \"" << *(vars[i]->id())  << std::endl;
+            } else {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
+              throw InternalError(ssm.str());
+            }  
+          }
+        }
+         // no initialisation expression, or the initialisation expression is a constraint
+        else {
           Expression* domain = vars[i]->ti()->domain();       
           if(domain->isa<SetLit>()) {
             IntVar intVar(*space, arg2intset(_env.envi(), domain));
             space->iv.push_back(intVar);
             insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                               space->iv.size()-1));
+            std::cout << "DEBUG: added variable \"" << *(vars[i]->id())  << std::endl;
           }
           else {
             IntBounds ib = compute_int_bounds(_env.envi(), domain);
@@ -1436,35 +1461,13 @@ namespace MiniZinc {
               space->iv.push_back(intVar);
               insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                     space->iv.size()-1));
+              std::cout << "DEBUG: added variable \"" << *(vars[i]->id())  << std::endl;
             } else {
                 std::stringstream ssm;
                 ssm << "GecodeSolverInstance::addVariables: Error: " << *domain << " outside 32-bit int." << std::endl;
                 throw InternalError(ssm.str());
             }           
           }
-        }
-        // there is an initialisation expression
-        else { 
-          Expression* init = vars[i]->e();
-          std::cout << "DEBUG: var to add \"" << *(vars[i]->id()) <<"\" has init expression: " << *(vars[i]->e()) << std::endl;
-          if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
-            GecodeVariable var = resolveVar(init);
-            assert(var.isint());
-            space->iv.push_back(var.intVar(space));
-            insertVar(vars[i]->id(), var);
-          } else if(init->type().ispar()) {
-            double il = init->cast<IntLit>()->v().toInt();
-            if(valueWithinBounds(il)) {
-              IntVar intVar(*space, il, il);
-              space->iv.push_back(intVar);
-              insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                   space->iv.size()-1));
-            } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
-              throw InternalError(ssm.str());
-            }
-          } // otherwise, if it is a constraint, ignore, since it will be posted
         }
                
         bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
@@ -1473,15 +1476,18 @@ namespace MiniZinc {
         space->iv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isbool()) {
+        std::cout << "DEBUG: DID NOT add variable \"" << *(vars[i]->id())  << std::endl;
         // TODO
       }
       else if(vars[i]->type().isfloat()) {
+        std::cout << "DEBUG: DID NOT add variable \"" << *(vars[i]->id())  << std::endl;
         // TODO
       }
       else {
         // TODO:        
+        std::cout << "DEBUG: This variable is neither int/bool/float nor par: \"" << *(vars[i]->id())  << std::endl; 
       }
-    }        
+    }    
     return false;
   }  
   

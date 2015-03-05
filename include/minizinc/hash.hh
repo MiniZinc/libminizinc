@@ -105,7 +105,7 @@ namespace MiniZinc {
       _m.clear();
     }
     T& get(Id* ident) {
-      iterator it = find(ident);
+      iterator it = find(ident);      
       assert(it != _m.end());
       return it->second;
     }
