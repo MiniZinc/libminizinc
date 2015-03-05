@@ -182,7 +182,7 @@ namespace MiniZinc {
     /// Convert \a arg to IntVarArgs   
     Gecode::IntVarArgs arg2intvarargs(FznSpace* space, Expression* arg, int offset = 0); 
     /// Convert \a arg to BoolVarArgs
-    Gecode::BoolVarArgs arg2boolvarargs(Expression* a, int offset = 0, int siv=-1);
+    Gecode::BoolVarArgs arg2boolvarargs(FznSpace* space, Expression* a, int offset = 0, int siv=-1);
     /// Convert \a n to BoolVar
     Gecode::BoolVar arg2boolvar(Expression* e);
     /// Convert \a n to IntVar

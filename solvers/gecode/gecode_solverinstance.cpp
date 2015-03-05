@@ -612,7 +612,7 @@ namespace MiniZinc {
   }
 
   Gecode::BoolVarArgs
-  GecodeSolverInstance::arg2boolvarargs(Expression* arg, int offset, int siv) {
+  GecodeSolverInstance::arg2boolvarargs(FznSpace* space, Expression* arg, int offset, int siv) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->length() == 0) {
         BoolVarArgs emptyIa(0);
@@ -620,7 +620,7 @@ namespace MiniZinc {
     }
     BoolVarArgs ia(a->length()+offset-(siv==-1?0:1));
     for (int i=offset; i--;)
-        ia[i] = BoolVar(*this->_current_space, 0, 0);
+        ia[i] = BoolVar(*space, 0, 0);
     for (int i=0; i<static_cast<int>(a->length()); i++) {
         if (i==siv)
             continue;
@@ -629,9 +629,9 @@ namespace MiniZinc {
             GecodeVariable var = resolveVar(getVarDecl(e));
             if (e->type().isvarbool()) {
               assert(var.isbool());
-              ia[offset++] = var.boolVar(_current_space);
+              ia[offset++] = space->bv[var.index()];
             } else if(e->type().isvarint() && var.hasBoolAlias()) {
-              ia[offset++] = _current_space->bv[var.boolAliasIndex()];
+              ia[offset++] = space->bv[var.boolAliasIndex()];
             }
             else {
               std::stringstream ssm;
@@ -642,7 +642,7 @@ namespace MiniZinc {
         } else {
           if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
             bool value = bl->v();
-            BoolVar iv(*this->_current_space, value, value);
+            BoolVar iv(*space, value, value);
             ia[offset++] = iv;
           } else {
             std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
