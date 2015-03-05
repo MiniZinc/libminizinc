@@ -342,7 +342,7 @@ MznSetIter_iternext(PyObject* self)
     PyErr_SetNone(PyExc_StopIteration);
     return NULL;
   } else {
-    PyObject *result = PyLong_FromLongLong(iter->currentValue);
+    PyObject *result = c_to_py_number(iter->currentValue);
     iter->currentValue++;
     if (iter->currentValue > iter->listIndex->max) {
       iter->listIndex++;
