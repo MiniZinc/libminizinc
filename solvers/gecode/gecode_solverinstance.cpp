@@ -755,12 +755,12 @@ namespace MiniZinc {
   }
 
   Gecode::FloatVar
-  GecodeSolverInstance::arg2floatvar(Expression* e) {
+  GecodeSolverInstance::arg2floatvar(FznSpace* space, Expression* e) {
     FloatVar x0;
     if (e->type().isvar()) {
       GecodeVariable var = resolveVar(getVarDecl(e));
       assert(var.isfloat());
-      x0 = var.floatVar(_current_space);
+      x0 = space->fv[var.index()];
     } else {
         FloatVal i;
         if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
@@ -770,13 +770,13 @@ namespace MiniZinc {
           std::stringstream ssm; ssm << "Expected bool, int or float literal instead of: " << *e;
           throw InternalError(ssm.str());
         }
-        x0 = FloatVar(*this->_current_space, i, i);
+        x0 = FloatVar(*space, i, i);
     }
     return x0;
   }
 
   Gecode::FloatVarArgs
-  GecodeSolverInstance::arg2floatvarargs(Expression* arg, int offset) {
+  GecodeSolverInstance::arg2floatvarargs(FznSpace* space, Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->v().size() == 0) {
         FloatVarArgs emptyFa(0);
@@ -784,17 +784,17 @@ namespace MiniZinc {
     }
     FloatVarArgs fa(a->v().size()+offset);
     for (int i=offset; i--;)
-        fa[i] = FloatVar(*this->_current_space, 0.0, 0.0);
+        fa[i] = FloatVar(*space, 0.0, 0.0);
     for (int i=a->v().size(); i--;) {
         Expression* e = a->v()[i];
         if (e->type().isvar()) {
             GecodeVariable var = resolveVar(getVarDecl(e));
             assert(var.isfloat());
-            fa[i+offset] = var.floatVar(_current_space);
+            fa[i+offset] = space->fv[var.index()];
         } else {
           if(FloatLit* fl = e->dyn_cast<FloatLit>()) {
             double value = fl->v();
-            FloatVar fv(*this->_current_space, value, value);
+            FloatVar fv(*space, value, value);
             fa[i+offset] = fv;
           } else {
             std::stringstream ssm; ssm << "Expected float literal instead of: " << *e;

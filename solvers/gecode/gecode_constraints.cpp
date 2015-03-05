@@ -2277,7 +2277,7 @@ namespace MiniZinc {
 
     void p_int2float_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
       IntVar x0 = gi.arg2intvar(space,ce->args()[0]);
-      FloatVar x1 = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x1 = gi.arg2floatvar(space,ce->args()[1]);
       channel(*space, x0, x1);
     }
     void p_int2float(SolverInstanceBase& s, const Call* call) {
@@ -2294,13 +2294,13 @@ namespace MiniZinc {
 
     void p_float_lin_cmp_base(FznSpace* space, GecodeSolverInstance& s, FloatRelType frt, const Call* ce) {
       FloatValArgs fa = s.arg2floatargs(ce->args()[0]);
-      FloatVarArgs fv = s.arg2floatvarargs(ce->args()[1]);
+      FloatVarArgs fv = s.arg2floatvarargs(space,ce->args()[1]);
       linear(*space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v());
     }
  
     void p_float_lin_cmp_reif_base(FznSpace* space, GecodeSolverInstance& s, FloatRelType frt, const Call* ce) {
       FloatValArgs fa = s.arg2floatargs(ce->args()[0]);
-      FloatVarArgs fv = s.arg2floatvarargs(ce->args()[1]);
+      FloatVarArgs fv = s.arg2floatvarargs(space,ce->args()[1]);
       linear(*space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v(), s.arg2boolvar(space, ce->args()[3]));
     }
     void p_float_lin_eq(SolverInstanceBase& s, const Call* ce) {
@@ -2349,9 +2349,9 @@ namespace MiniZinc {
     }
 
     void p_float_times_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      FloatVar z = gi.arg2floatvar(ce->args()[2]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
+      FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
       mult(*space,x,y,z);
     }
     void p_float_times(SolverInstanceBase& s, const Call* ce) {
@@ -2367,9 +2367,9 @@ namespace MiniZinc {
     }    
 
     void p_float_div_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      FloatVar z = gi.arg2floatvar(ce->args()[2]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
+      FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
       div(*space,x,y,z);
     }
     void p_float_div(SolverInstanceBase& s, const Call* ce) {
@@ -2385,9 +2385,9 @@ namespace MiniZinc {
     }    
 
     void p_float_plus_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {  
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      FloatVar z = gi.arg2floatvar(ce->args()[2]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
+      FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
       rel(*space,x+y==z);
     }
     void p_float_plus(SolverInstanceBase& s, const Call* ce) {
@@ -2403,8 +2403,8 @@ namespace MiniZinc {
     }    
 
     void p_float_sqrt_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       sqrt(*space,x,y);
     }
     void p_float_sqrt(SolverInstanceBase& s, const Call* ce) {
@@ -2420,8 +2420,8 @@ namespace MiniZinc {
     }    
 
     void p_float_abs_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       abs(*space,x,y);
     }
     void p_float_abs(SolverInstanceBase& s, const Call* ce) {
@@ -2437,8 +2437,8 @@ namespace MiniZinc {
     }    
 
     void p_float_eq_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       rel(*space,x,FRT_EQ,y);
     }
     void p_float_eq(SolverInstanceBase& s, const Call* ce) {
@@ -2453,8 +2453,8 @@ namespace MiniZinc {
         p_float_eq_base(gi._current_space, gi,ce);
     }    
     void p_float_eq_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       BoolVar  b = gi.arg2boolvar(space, ce->args()[2]);
       rel(*space,x,FRT_EQ,y,b);
     }
@@ -2470,8 +2470,8 @@ namespace MiniZinc {
         p_float_eq_reif_base(gi._current_space, gi,ce);
     }    
     void p_float_le_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       rel(*space,x,FRT_LQ,y);
     }
     void p_float_le(SolverInstanceBase& s, const Call* ce) {
@@ -2486,8 +2486,8 @@ namespace MiniZinc {
         p_float_le_base(gi._current_space, gi,ce);
     }
     void p_float_le_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       BoolVar  b = gi.arg2boolvar(space, ce->args()[2]);
       rel(*space,x,FRT_LQ,y,b);
     }
@@ -2503,9 +2503,9 @@ namespace MiniZinc {
         p_float_le_reif_base(gi._current_space, gi,ce);
     }    
     void p_float_max_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      FloatVar z = gi.arg2floatvar(ce->args()[2]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
+      FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
       max(*space,x,y,z);
     }
     void p_float_max(SolverInstanceBase& s, const Call* ce) {
@@ -2520,9 +2520,9 @@ namespace MiniZinc {
         p_float_max_base(gi._current_space, gi,ce);
     }    
     void p_float_min_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      FloatVar z = gi.arg2floatvar(ce->args()[2]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
+      FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
       min(*gi._current_space,x,y,z);
     }
     void p_float_min(SolverInstanceBase& s, const Call* ce) {
@@ -2537,8 +2537,8 @@ namespace MiniZinc {
         p_float_min_base(gi._current_space, gi,ce);
     }    
     void p_float_lt_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       rel(*space, x, FRT_LQ, y);
       rel(*space, x, FRT_EQ, y, BoolVar(*space,0,0));
     }
@@ -2555,8 +2555,8 @@ namespace MiniZinc {
     }    
 
     void p_float_lt_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       BoolVar b = gi.arg2boolvar(space, ce->args()[2]);
       BoolVar b0(*space,0,1);
       BoolVar b1(*space,0,1);
@@ -2577,8 +2577,8 @@ namespace MiniZinc {
     }    
 
     void p_float_ne_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       rel(*space, x, FRT_EQ, y, BoolVar(*space,0,0));
     }
     void p_float_ne(SolverInstanceBase& s, const Call* ce) {
@@ -2597,8 +2597,8 @@ namespace MiniZinc {
 #define P_FLOAT_OP(Op) \
     void p_float_ ## Op (SolverInstanceBase& s, const Call* ce) {\
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s); \
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);\
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);\
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);\
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);\
       Op(gi ,x,y);\
     }
     P_FLOAT_OP(acos)
@@ -2614,8 +2614,8 @@ namespace MiniZinc {
 #undef P_FLOAT_OP
 
       void p_float_ln_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {       
-        FloatVar x = gi.arg2floatvar(ce->args()[0]);
-        FloatVar y = gi.arg2floatvar(ce->args()[1]);
+        FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+        FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
         log(*space,x,y);
       }
      void p_float_ln(SolverInstanceBase& s, const Call* ce) {
@@ -2630,8 +2630,8 @@ namespace MiniZinc {
           p_float_ln_base(gi._current_space, gi,ce);
       }      
     void p_float_log10_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       log(*space,10.0,x,y);
     }
     void p_float_log10(SolverInstanceBase& s, const Call* ce) {
@@ -2646,8 +2646,8 @@ namespace MiniZinc {
         p_float_log10_base(gi._current_space, gi,ce);
     }    
     void p_float_log2_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
-      FloatVar x = gi.arg2floatvar(ce->args()[0]);
-      FloatVar y = gi.arg2floatvar(ce->args()[1]);
+      FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
+      FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       log(*space,2.0,x,y);
     }
     void p_float_log2(SolverInstanceBase& s, const Call* ce) {

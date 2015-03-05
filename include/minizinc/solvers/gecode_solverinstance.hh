@@ -195,9 +195,9 @@ namespace MiniZinc {
     /// Convert \a n to FloatValArgs
     Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
     /// Convert \a n to FloatVar
-    Gecode::FloatVar arg2floatvar(Expression* n);
+    Gecode::FloatVar arg2floatvar(FznSpace* space, Expression* n);
     /// Convert \a n to FloatVarArgs
-    Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
+    Gecode::FloatVarArgs arg2floatvarargs(FznSpace* space, Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);
