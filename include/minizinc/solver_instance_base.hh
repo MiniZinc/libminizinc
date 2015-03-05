@@ -76,7 +76,7 @@ namespace MiniZinc {
   class SolverInstanceImpl : public SolverInstanceBase {
   protected:
     typename Solver::Statistics _statistics;
-    
+    /// maps each identifier to the respective GecodeVariable in the _current_space
     IdMap<typename Solver::Variable> _variableMap;
   public:
     SolverInstanceImpl(Env& env, const Options& options) : SolverInstanceBase(env,options) {}

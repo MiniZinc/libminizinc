@@ -179,8 +179,8 @@ namespace MiniZinc {
     Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
     /// Convert \a n to IntSet
     Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
-    /// Convert \a arg to IntVarArgs
-    Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0); 
+    /// Convert \a arg to IntVarArgs   
+    Gecode::IntVarArgs arg2intvarargs(FznSpace* space, Expression* arg, int offset = 0); 
     /// Convert \a arg to BoolVarArgs
     Gecode::BoolVarArgs arg2boolvarargs(Expression* a, int offset = 0, int siv=-1);
     /// Convert \a n to BoolVar
@@ -210,10 +210,10 @@ namespace MiniZinc {
     VarDecl* resolveArrayAccess(VarDecl* array, int index);
 
     /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
-    GecodeSolver::Variable resolveVar(Expression* e);
+    GecodeSolver::Variable resolveVar(Expression* e);     
 
     /// Inserts variable gv into _variableMap with key id
-    void insertVar(Id* id, GecodeVariable gv);
+    void insertVar(Id* id, GecodeVariable gv);    
 
     void assignSolutionToOutput(void);
 

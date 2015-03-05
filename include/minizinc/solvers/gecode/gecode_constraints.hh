@@ -182,7 +182,7 @@ namespace MiniZinc {
       PosterImpl(p_count);
       PosterImpl(p_count_reif);
       PosterImpl(p_count_imp);
-      void count_rel(Gecode::IntRelType irt, SolverInstanceBase& s, const Call* call);
+      //void count_rel(Gecode::IntRelType irt, SolverInstanceBase& s, const Call* call);
       PosterImpl(p_at_most);
       PosterImpl(p_at_least);
       PosterImpl(p_bin_packing_load);
@@ -220,8 +220,8 @@ namespace MiniZinc {
       
       #ifdef GECODE_HAS_FLOAT_VARS
       PosterImpl(p_int2float);
-      void p_float_lin_cmp(GecodeSolverInstance& s, Gecode::FloatRelType frt, const Call* ce);
-      void p_float_lin_cmp_reif(GecodeSolverInstance& s, Gecode::FloatRelType frt, const Call* ce);
+      //void p_float_lin_cmp(GecodeSolverInstance& s, Gecode::FloatRelType frt, const Call* ce);
+      //void p_float_lin_cmp_reif(GecodeSolverInstance& s, Gecode::FloatRelType frt, const Call* ce);
       PosterImpl(p_float_lin_eq);
       PosterImpl(p_float_lin_eq_reif);
       PosterImpl(p_float_lin_le);

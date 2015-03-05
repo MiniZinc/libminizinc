@@ -271,8 +271,8 @@ namespace MiniZinc {
 
   inline void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
     //std::cerr << *id << ": " << id->decl() << std::endl;
-    _variableMap.insert(id->decl()->id(), gv);
-  }
+    _variableMap.insert(id->decl()->id(), gv);   
+  } 
 
   inline bool GecodeSolverInstance::valueWithinBounds(double b) {
     long long int bo = round_to_longlong(b);
@@ -309,7 +309,7 @@ namespace MiniZinc {
               if(domain->isa<SetLit>()) {
                 IntVar intVar(*this->_current_space, arg2intset(_env.envi(), domain));
                 _current_space->iv.push_back(intVar);
-                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
+                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));               
               } else {
                 IntBounds ib = compute_int_bounds(_env.envi(), domain);
                 if(ib.valid) {
@@ -333,7 +333,7 @@ namespace MiniZinc {
                   IntVar intVar(*this->_current_space, lb, ub);
                   _current_space->iv.push_back(intVar);
                   insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                        _current_space->iv.size()-1));
+                        _current_space->iv.size()-1));                  
                 } else {
                     std::stringstream ssm;
                     ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
@@ -352,14 +352,14 @@ namespace MiniZinc {
               GecodeVariable var = resolveVar(init);
               assert(var.isint());
               _current_space->iv.push_back(var.intVar(_current_space));
-              insertVar(it->e()->id(), var);
+              insertVar(it->e()->id(), var);              
             } else {
               double il = init->cast<IntLit>()->v().toInt();
               if(valueWithinBounds(il)) {
                 IntVar intVar(*this->_current_space, il, il);
                 _current_space->iv.push_back(intVar);
                 insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                      _current_space->iv.size()-1));
+                      _current_space->iv.size()-1));                
               } else {
                 std::stringstream ssm;
                 ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
@@ -578,7 +578,7 @@ namespace MiniZinc {
    }
 
   Gecode::IntVarArgs
-  GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
+  GecodeSolverInstance::arg2intvarargs(FznSpace* space, Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
     if (a->v().size() == 0) {
         IntVarArgs emptyIa(0);
@@ -586,7 +586,7 @@ namespace MiniZinc {
     }
     IntVarArgs ia(a->v().size()+offset);
     for (int i=offset; i--;)
-        ia[i] = IntVar(*this->_current_space, 0, 0);
+        ia[i] = IntVar(*space, 0, 0);
     for (int i=a->v().size(); i--;) {
         Expression* e = a->v()[i];
         int idx;
@@ -594,12 +594,12 @@ namespace MiniZinc {
             //ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
             GecodeSolver::Variable var = resolveVar(getVarDecl(e));
             assert(var.isint());
-            Gecode::IntVar v = var.intVar(_current_space);
+            Gecode::IntVar v = space->iv[var.index()];
             ia[i+offset] = v;
         } else {
             long long int value = e->cast<IntLit>()->v().toInt();
             if(valueWithinBounds(value)) {
-              IntVar iv(*this->_current_space, value, value);
+              IntVar iv(*space, value, value);
               ia[i+offset] = iv;
             } else {
               std::stringstream ssm;
@@ -868,7 +868,7 @@ namespace MiniZinc {
         return _variableMap.get(resolveArrayAccess(aa)->id());
     } else {
         std::stringstream ssm;
-        ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
+        ssm << "GecodeSolverInstance::resolveVarIndex: Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
         throw InternalError(ssm.str());
     }
   }
