@@ -153,9 +153,7 @@ namespace MiniZinc {
     /// this is the version that is called by the Gecode engine and applied to each space
     bool updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub); 
     /// post constraints incrementally (after next() has been called); this function is called by the combinators interpreter
-    virtual bool postConstraints(std::vector<Call*> cts);   
-    /// post the constraints incrementally to the given space (called by the search engine)
-    bool postConstraints(FznSpace* space, std::vector<Call*> cts);
+    virtual bool postConstraints(std::vector<Call*> cts);       
     /// add variables incrementally (after next() has been called); this function is called by the combinators interpreter
     virtual bool addVariables(std::vector<VarDecl*> vars);
     /// add variables incrementally to the given space (called by the engine)

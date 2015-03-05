@@ -45,8 +45,8 @@ namespace MiniZinc {
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); }
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }
-    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { e.postConstraints(cts, si); }
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }   
+    Gecode::SpaceStatus status(void) { return e.status(); } 
     virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
     virtual unsigned int pathEntries(void) { return e.pathEntries(); }
   };
@@ -280,8 +280,7 @@ namespace MiniZinc {
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
-    _current_space = new FznSpace();
-    debugprint(env().flat());
+    _current_space = new FznSpace();    
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {      
       if (it->e()->type().isvar()) { // par variables are retrieved from the model        
@@ -877,7 +876,9 @@ namespace MiniZinc {
   GecodeSolverInstance::next(void) {
     prepareEngine(true);
     
-   _solution = customEngine->next();
+    if(customEngine->status() != Gecode::SS_FAILED)
+      _solution = customEngine->next();
+    else return SolverInstance::UNSAT;
     
     if (_solution) {
       assignSolutionToOutput();
@@ -1476,35 +1477,35 @@ namespace MiniZinc {
         space->iv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isbool()) {
-        std::cout << "DEBUG: DID NOT add variable \"" << *(vars[i]->id())  << std::endl;
+        std::stringstream ssm;
+        ssm << "DEBUG: DID NOT (yet) add variable \"" << *(vars[i]->id())  << std::endl;
+        throw InternalError(ssm.str());       
         // TODO
       }
       else if(vars[i]->type().isfloat()) {
-        std::cout << "DEBUG: DID NOT add variable \"" << *(vars[i]->id())  << std::endl;
+        std::stringstream ssm;
+        ssm << "DEBUG: DID NOT (yet) add variable \"" << *(vars[i]->id())  << std::endl;
+        throw InternalError(ssm.str());    
         // TODO
       }
       else {
-        // TODO:        
-        std::cout << "DEBUG: This variable is neither int/bool/float nor par: \"" << *(vars[i]->id())  << std::endl; 
+        std::stringstream ssm;
+        ssm << "DEBUG: Cannot add variable of unknown type: \"" << *(vars[i]->id())  << std::endl;
+        throw EvalError(vars[i]->loc(), ssm.str());    
       }
     }    
-    return false;
+    return true;
   }  
   
   bool
   GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {
-    std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;
-    customEngine->postConstraints(cts, *this);
-    return true; 
-  }
-  
-  bool 
-  GecodeSolverInstance::postConstraints(FznSpace* space, std::vector<Call*> cts) {
+    //std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
     for(unsigned int i=0; i<cts.size(); i++) {
-      std::cout << "DEBUG: about to add constraint " << *cts[i] << " to space." << std::endl;
-    }    
-    // TODO: add constraints to space: extend _registry.post(c) with space!  
-    return false;
-  }
+      std::cout << "DEBUG: about to post constraint on the engine path: " << *cts[i] << std::endl;
+      _constraintRegistry.post(cts[i]); 
+    }
+    customEngine->status();
+    return true; 
+  }    
 
   }

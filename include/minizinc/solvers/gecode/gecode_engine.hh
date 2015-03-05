@@ -43,8 +43,8 @@ namespace MiniZinc {
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) = 0;
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0;
-    virtual void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) = 0;    
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0; 
+    virtual Gecode::SpaceStatus status(void) = 0; 
     /// returns the space (or NULL) at position \a i in the engine dynamic stack
     virtual FznSpace* getSpace(unsigned int i) = 0;
     /// returns the number of entries in the path (that do not all need to be spaces!)
@@ -121,8 +121,8 @@ namespace MiniZinc {
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si);
     /// add variables to the search engine
     void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si);
-    /// post constraints to the search engine
-    void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si);
+    /// apply status() on all spaces along the path
+    Gecode::SpaceStatus status(void);
     /// returns the space (or NULL) at position \a i in the engine dynamic stack
     FznSpace* getSpace(unsigned int i) { return static_cast<FznSpace*>(path.getSpace(i)); }
     /// returns the number of entries in the path (that do not all need to be spaces!)
@@ -138,7 +138,8 @@ namespace MiniZinc {
     GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
     void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }
-    void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { E<T>::postConstraints(cts, si); }
+    //void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { E<T>::postConstraints(cts, si); }
+    Gecode::SpaceStatus status(void) { return E<T>::status(); } 
     FznSpace* getSpace(unsigned int i) { return E<T>::getSpace(i); }
     unsigned int pathEntries(void) { return E<T>::pathEntries(); }
     FznSpace* next(void) { return E<T>::next(); }
@@ -277,18 +278,23 @@ namespace MiniZinc {
   }
   
   template<class T>
-  void
-  DFSEngine<T>::postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) {   
+  Gecode::SpaceStatus
+  DFSEngine<T>::status() {
+    Gecode::SpaceStatus status = Gecode::SS_BRANCH;
     // iterate over stack and post constraint
     if(path.empty()) 
-      return;    
+      return status;    
     for(int edge=0; edge<path.getNbEntries(); edge++) {
       T* s = static_cast<T*>(path.getSpace(edge));
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);
-        si.postConstraints(space,cts);
+        Gecode::SpaceStatus status0 = space->status();
+        if(status0 == Gecode::SS_FAILED)
+          return status0;
+        else status = status0;
       }
     }
+    return status;
   }    
 
 }
