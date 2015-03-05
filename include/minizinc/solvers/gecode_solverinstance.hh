@@ -184,9 +184,9 @@ namespace MiniZinc {
     /// Convert \a arg to BoolVarArgs
     Gecode::BoolVarArgs arg2boolvarargs(FznSpace* space, Expression* a, int offset = 0, int siv=-1);
     /// Convert \a n to BoolVar
-    Gecode::BoolVar arg2boolvar(Expression* e);
+    Gecode::BoolVar arg2boolvar(FznSpace* space, Expression* e);
     /// Convert \a n to IntVar
-    Gecode::IntVar arg2intvar(Expression* e);
+    Gecode::IntVar arg2intvar(FznSpace* space, Expression* e);
      /// convert \a arg to an ArrayLit (throws InternalError if not possible)
     ArrayLit* arg2arraylit(Expression* arg);  
     /// Check if \a b is array of Booleans (or has a single integer)

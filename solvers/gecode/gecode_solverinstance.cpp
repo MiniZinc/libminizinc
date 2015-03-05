@@ -654,16 +654,16 @@ namespace MiniZinc {
   }
 
   Gecode::BoolVar
-  GecodeSolverInstance::arg2boolvar(Expression* e) {
+  GecodeSolverInstance::arg2boolvar(FznSpace* space, Expression* e) {
     BoolVar x0;
     if (e->type().isvar()) {
         //x0 = _current_space->bv[*(int*)resolveVar(getVarDecl(e))];
         GecodeVariable var = resolveVar(getVarDecl(e));
         assert(var.isbool());
-        x0 = var.boolVar(_current_space);
+        x0 = space->bv[var.index()];
     } else {
       if(BoolLit* bl = e->dyn_cast<BoolLit>()) {
-        x0 = BoolVar(*this->_current_space, bl->v(), bl->v());
+        x0 = BoolVar(*space, bl->v(), bl->v());
       } else {
         std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
         throw new InternalError(ssm.str());
@@ -673,13 +673,13 @@ namespace MiniZinc {
   }
 
   Gecode::IntVar
-  GecodeSolverInstance::arg2intvar(Expression* e) {
+  GecodeSolverInstance::arg2intvar(FznSpace* space, Expression* e) {
     IntVar x0;
     if (e->type().isvar()) {
         //x0 = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
         GecodeVariable var = resolveVar(getVarDecl(e));
         assert(var.isint());
-        x0 = var.intVar(_current_space);
+        x0 = space->iv[var.index()];
     } else {
         IntVal i;
         if(IntLit* il = e->dyn_cast<IntLit>()) i = il->v().toInt();
@@ -688,7 +688,7 @@ namespace MiniZinc {
           std::stringstream ssm; ssm << "Expected bool or int literal instead of: " << *e;
           throw InternalError(ssm.str());
         }
-        x0 = IntVar(*this->_current_space, i.toInt(), i.toInt());
+        x0 = IntVar(*space, i.toInt(), i.toInt());
     }
     return x0;
   }

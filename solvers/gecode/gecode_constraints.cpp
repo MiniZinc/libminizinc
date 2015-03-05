@@ -90,12 +90,12 @@ namespace MiniZinc {
       Expression* rhs = ce->args()[1];
       if (lhs->type().isvarint()) { 
         if (rhs->type().isvarint()) {
-          rel(*space, s.arg2intvar(lhs), irt, s.arg2intvar(rhs), s.ann2icl(ann));
+          rel(*space, s.arg2intvar(space, lhs), irt, s.arg2intvar(space, rhs), s.ann2icl(ann));
         } else {
-          rel(*space, s.arg2intvar(lhs), irt, rhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
+          rel(*space, s.arg2intvar(space, lhs), irt, rhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
         }
       } else {
-        rel(*space, s.arg2intvar(rhs), swap(irt), lhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
+        rel(*space, s.arg2intvar(space, rhs), swap(irt), lhs->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
       }      
     }
     
@@ -143,17 +143,17 @@ namespace MiniZinc {
       }
       if (call->args()[0]->type().isvarint()) {
         if (call->args()[1]->type().isvarint()) {
-          rel(*space, s.arg2intvar(call->args()[0]), irt, s.arg2intvar(call->args()[1]),
-              Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
+          rel(*space, s.arg2intvar(space, call->args()[0]), irt, s.arg2intvar(space, call->args()[1]),
+              Reify(s.arg2boolvar(space, call->args()[2]), rm), s.ann2icl(ann));
         } else {
-          rel(*space, s.arg2intvar(call->args()[0]), irt,
+          rel(*space, s.arg2intvar(space, call->args()[0]), irt,
               call->args()[1]->cast<IntLit>()->v().toInt(),
-              Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
+              Reify(s.arg2boolvar(space, call->args()[2]), rm), s.ann2icl(ann));
         }
       } else {
-        rel(*space, s.arg2intvar(call->args()[1]), swap(irt),
+        rel(*space, s.arg2intvar(space, call->args()[1]), swap(irt),
             call->args()[0]->cast<IntLit>()->v().toInt(),
-            Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
+            Reify(s.arg2boolvar(space, call->args()[2]), rm), s.ann2icl(ann));
       }
     }
     
@@ -217,7 +217,7 @@ namespace MiniZinc {
       if (s.isBoolArray(vars,singleIntVar)) {
         if (singleIntVar != -1) {
           if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-            IntVar siv = s.arg2intvar(vars->v()[singleIntVar]);
+            IntVar siv = s.arg2intvar(space, vars->v()[singleIntVar]);
             BoolVarArgs iv = s.arg2boolvarargs(space, vars, 0, singleIntVar);
             IntArgs ia_tmp(ia.size()-1);
             int count = 0;
@@ -270,7 +270,7 @@ namespace MiniZinc {
       if (s.isBoolArray(vars,singleIntVar)) {
         if (singleIntVar != -1) {
           if (std::abs(ia[singleIntVar]) == 1 && call->args()[2]->cast<IntLit>()->v().toInt() == 0) {
-            IntVar siv = s.arg2intvar(vars->v()[singleIntVar]);
+            IntVar siv = s.arg2intvar(space, vars->v()[singleIntVar]);
             BoolVarArgs iv = s.arg2boolvarargs(space, vars, 0, singleIntVar);
             IntArgs ia_tmp(ia.size()-1);
             int count = 0;
@@ -279,22 +279,22 @@ namespace MiniZinc {
                 ia_tmp[count++] = ia[singleIntVar] == -1 ? ia[i] : -ia[i];
             }
             IntRelType t = (ia[singleIntVar] == -1 ? irt : swap(irt));
-            linear(*space, ia_tmp, iv, t, siv, Reify(s.arg2boolvar(call->args()[3]), rm), 
+            linear(*space, ia_tmp, iv, t, siv, Reify(s.arg2boolvar(space, call->args()[3]), rm), 
                 s.ann2icl(ann));
           } else {
             IntVarArgs iv = s.arg2intvarargs(space, vars);
             linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
-                Reify(s.arg2boolvar(call->args()[3]), rm), s.ann2icl(ann));
+                Reify(s.arg2boolvar(space, call->args()[3]), rm), s.ann2icl(ann));
           }
         } else {
           BoolVarArgs iv = s.arg2boolvarargs(space, vars);
           linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
-              Reify(s.arg2boolvar(call->args()[3]), rm), s.ann2icl(ann));
+              Reify(s.arg2boolvar(space, call->args()[3]), rm), s.ann2icl(ann));
         }
       } else {
         IntVarArgs iv = s.arg2intvarargs(space, vars);
         linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
-            Reify(s.arg2boolvar(call->args()[3]), rm), 
+            Reify(s.arg2boolvar(space, call->args()[3]), rm), 
             s.ann2icl(ann));
       }
     }    
@@ -405,11 +405,11 @@ namespace MiniZinc {
       BoolVarArgs iv = s.arg2boolvarargs(space, call->args()[1]);
       if (call->args()[2]->type().isvarint())
         linear(*space, ia, iv, irt, space->iv[s.resolveVar(call->args()[2]->cast<Id>()->decl()).index()],
-            Reify(s.arg2boolvar(call->args()[3]), rm), 
+            Reify(s.arg2boolvar(space, call->args()[3]), rm), 
             s.ann2icl(ann));
       else
         linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(),
-            Reify(s.arg2boolvar(call->args()[3]), rm), 
+            Reify(s.arg2boolvar(space, call->args()[3]), rm), 
             s.ann2icl(ann));
     }
     
@@ -498,17 +498,17 @@ namespace MiniZinc {
 
     void p_int_plus_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {      
       if (!call->args()[0]->type().isvarint()) {
-        rel(*space, call->args()[0]->cast<IntLit>()->v().toInt() + gi.arg2intvar(call->args()[1])
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, call->args()[0]->cast<IntLit>()->v().toInt() + gi.arg2intvar(space, call->args()[1])
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       } else if (!call->args()[1]->type().isvarint()) {
-        rel(*space, gi.arg2intvar(call->args()[0]) + call->args()[1]->cast<IntLit>()->v().toInt()
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, gi.arg2intvar(space, call->args()[0]) + call->args()[1]->cast<IntLit>()->v().toInt()
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       } else if (!call->args()[2]->type().isvarint()) {
-        rel(*space, gi.arg2intvar(call->args()[0]) + gi.arg2intvar(call->args()[1]) 
+        rel(*space, gi.arg2intvar(space, call->args()[0]) + gi.arg2intvar(space, call->args()[1]) 
             == call->args()[2]->cast<IntLit>()->v().toInt(), gi.ann2icl(call->ann()));
       } else {
-        rel(*space, gi.arg2intvar(call->args()[0]) + gi.arg2intvar(call->args()[1]) 
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, gi.arg2intvar(space, call->args()[0]) + gi.arg2intvar(space, call->args()[1]) 
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       }
     }
     
@@ -528,17 +528,17 @@ namespace MiniZinc {
 
     void p_int_minus_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {     
       if (!call->args()[0]->type().isvarint()) {
-        rel(*space, call->args()[0]->cast<IntLit>()->v().toInt() - gi.arg2intvar(call->args()[1])
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, call->args()[0]->cast<IntLit>()->v().toInt() - gi.arg2intvar(space, call->args()[1])
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       } else if (!call->args()[1]->type().isvarint()) {
-        rel(*space, gi.arg2intvar(call->args()[0]) - call->args()[1]->cast<IntLit>()->v().toInt()
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, gi.arg2intvar(space, call->args()[0]) - call->args()[1]->cast<IntLit>()->v().toInt()
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       } else if (!call->args()[2]->type().isvarint()) {
-        rel(*space, gi.arg2intvar(call->args()[0]) - gi.arg2intvar(call->args()[1]) 
+        rel(*space, gi.arg2intvar(space, call->args()[0]) - gi.arg2intvar(space, call->args()[1]) 
             == call->args()[2]->cast<IntLit>()->v().toInt(), gi.ann2icl(call->ann()));
       } else {
-        rel(*space, gi.arg2intvar(call->args()[0]) - gi.arg2intvar(call->args()[1]) 
-            == gi.arg2intvar(call->args()[2]), gi.ann2icl(call->ann()));
+        rel(*space, gi.arg2intvar(space, call->args()[0]) - gi.arg2intvar(space, call->args()[1]) 
+            == gi.arg2intvar(space, call->args()[2]), gi.ann2icl(call->ann()));
       }
     }
     
@@ -557,9 +557,9 @@ namespace MiniZinc {
     }    
 
     void p_int_times_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {     
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
-      IntVar x2 = gi.arg2intvar(call->args()[2]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
+      IntVar x2 = gi.arg2intvar(space, call->args()[2]);
       mult(*space, x0, x1, x2, gi.ann2icl(call->ann()));
     }
     void p_int_times(SolverInstanceBase& s, const Call* call) {
@@ -577,9 +577,9 @@ namespace MiniZinc {
     }    
     
     void p_int_div_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {      
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
-      IntVar x2 = gi.arg2intvar(call->args()[2]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
+      IntVar x2 = gi.arg2intvar(space, call->args()[2]);
       div(*space,x0,x1,x2, gi.ann2icl(call->ann()));
     }
     void p_int_div(SolverInstanceBase& s, const Call* call) {
@@ -595,9 +595,9 @@ namespace MiniZinc {
     }   
     
     void p_int_mod_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {      
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
-      IntVar x2 = gi.arg2intvar(call->args()[2]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
+      IntVar x2 = gi.arg2intvar(space, call->args()[2]);
       mod(*space,x0,x1,x2, gi.ann2icl(call->ann()));
     }
     void p_int_mod(SolverInstanceBase& s, const Call* call) {
@@ -613,9 +613,9 @@ namespace MiniZinc {
     }    
 
     void p_int_min_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
-      IntVar x2 = gi.arg2intvar(call->args()[2]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
+      IntVar x2 = gi.arg2intvar(space, call->args()[2]);
       min(*space, x0, x1, x2, gi.ann2icl(call->ann()));
     }
     void p_int_min(SolverInstanceBase& s, const Call* call) {
@@ -631,9 +631,9 @@ namespace MiniZinc {
     }
     
     void p_int_max_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) { 
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
-      IntVar x2 = gi.arg2intvar(call->args()[2]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
+      IntVar x2 = gi.arg2intvar(space, call->args()[2]);
       max(*space, x0, x1, x2, gi.ann2icl(call->ann()));
     }
     void p_int_max(SolverInstanceBase& s, const Call* call) {
@@ -649,8 +649,8 @@ namespace MiniZinc {
     }
     
     void p_int_negate_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
       rel(*space, x0 == -x1, gi.ann2icl(call->ann()));
     }
     void p_int_negate(SolverInstanceBase& s, const Call* call) {
@@ -668,7 +668,7 @@ namespace MiniZinc {
     ///* Boolean constraints */
     void p_bool_CMP_base(FznSpace* space, GecodeSolverInstance& s, IntRelType irt, const Call* call) {
       const Annotation& ann =call->ann();
-      rel(*space, s.arg2boolvar(call->args()[0]), irt, s.arg2boolvar(call->args()[1]), s.ann2icl(ann));
+      rel(*space, s.arg2boolvar(space, call->args()[0]), irt, s.arg2boolvar(space, call->args()[1]), s.ann2icl(ann));
     }
     void p_bool_CMP(GecodeSolverInstance& gi, IntRelType irt, const Call* call) {
       if(gi.customEngine)
@@ -683,8 +683,8 @@ namespace MiniZinc {
     
     void p_bool_CMP_reif_base(FznSpace* space, GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, const Call* call) {
       const Annotation& ann =call->ann();
-      rel(*space, s.arg2boolvar(call->args()[0]), irt, s.arg2boolvar(call->args()[1]),
-          Reify(s.arg2boolvar(call->args()[2]), rm), s.ann2icl(ann));
+      rel(*space, s.arg2boolvar(space, call->args()[0]), irt, s.arg2boolvar(space, call->args()[1]),
+          Reify(s.arg2boolvar(space, call->args()[2]), rm), s.ann2icl(ann));
     }
     void p_bool_CMP_reif(GecodeSolverInstance& gi, IntRelType irt, ReifyMode rm, const Call* call) {
       if(gi.customEngine)
@@ -752,8 +752,8 @@ namespace MiniZinc {
     }
 
 #define BOOL_OP(op) \
-    BoolVar b0 = gi.arg2boolvar(call->args()[0]); \
-    BoolVar b1 = gi.arg2boolvar(call->args()[1]); \
+    BoolVar b0 = gi.arg2boolvar(space, call->args()[0]); \
+    BoolVar b1 = gi.arg2boolvar(space, call->args()[1]); \
     if (!call->args()[2]->type().isvar() && call->args()[2]->type().isbool()) { \
       rel(*space, b0, op, b1, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann)); \
     } else { \
@@ -788,9 +788,9 @@ namespace MiniZinc {
     }    
     void p_bool_or_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann(); 
-      BoolVar b0 = gi.arg2boolvar(call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
-      BoolVar b2 = gi.arg2boolvar(call->args()[2]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[0]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
+      BoolVar b2 = gi.arg2boolvar(space, call->args()[2]);
       clause(*space, BoolOpType::BOT_OR, BoolVarArgs()<<b0<<b1, BoolVarArgs()<<b2, 1, 
           gi.ann2icl(ann));
     }
@@ -822,9 +822,9 @@ namespace MiniZinc {
     }    
     void p_bool_and_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      BoolVar b0 = gi.arg2boolvar(call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
-      BoolVar b2 = gi.arg2boolvar(call->args()[2]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[0]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
+      BoolVar b2 = gi.arg2boolvar(space, call->args()[2]);
       rel(*space, b2, BoolOpType::BOT_IMP, b0, 1, gi.ann2icl(ann));
       rel(*space, b2, BoolOpType::BOT_IMP, b1, 1, gi.ann2icl(ann));
     }
@@ -857,7 +857,7 @@ namespace MiniZinc {
     void p_array_bool_and_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       BoolVarArgs bv = gi.arg2boolvarargs(space, call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
       for (unsigned int i=bv.size(); i--;)
         rel(*space, b1, Gecode::BoolOpType::BOT_IMP, bv[i], 1, gi.ann2icl(ann));
     }
@@ -890,7 +890,7 @@ namespace MiniZinc {
     void p_array_bool_or_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       BoolVarArgs bv = gi.arg2boolvarargs(space, call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
       clause(*space, BoolOpType::BOT_OR, bv, BoolVarArgs()<<b1, 1, gi.ann2icl(ann));
     }
     void p_array_bool_or_imp(SolverInstanceBase& s, const Call* call) {      
@@ -924,7 +924,7 @@ namespace MiniZinc {
       BoolVarArgs bv = gi.arg2boolvarargs(space, call->args()[0]);
       BoolVar tmp(*space,0,1);
       rel(*space, BoolOpType::BOT_XOR, bv, tmp, gi.ann2icl(ann));
-      rel(*space, gi.arg2boolvar(call->args()[1]), BoolOpType::BOT_IMP, tmp, 1);
+      rel(*space, gi.arg2boolvar(space, call->args()[1]), BoolOpType::BOT_IMP, tmp, 1);
     }
     void p_array_bool_xor_imp(SolverInstanceBase& s, const Call* call) {      
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -958,7 +958,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();      
       BoolVarArgs bvp = gi.arg2boolvarargs(space, call->args()[0]);
       BoolVarArgs bvn = gi.arg2boolvarargs(space, call->args()[1]);
-      BoolVar b0 = gi.arg2boolvar(call->args()[2]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[2]);
       clause(*space, BoolOpType::BOT_OR, bvp, bvn, b0, gi.ann2icl(ann));
     }
     void p_array_bool_clause_reif(SolverInstanceBase& s, const Call* call) {  
@@ -976,7 +976,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();      
       BoolVarArgs bvp = gi.arg2boolvarargs(space, call->args()[0]);
       BoolVarArgs bvn = gi.arg2boolvarargs(space, call->args()[1]);
-      BoolVar b0 = gi.arg2boolvar(call->args()[2]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[2]);
       clause(*space, BoolOpType::BOT_OR, bvp, bvn, b0, gi.ann2icl(ann));
     }
     void p_array_bool_clause_imp(SolverInstanceBase& s, const Call* call) {      
@@ -1007,9 +1007,9 @@ namespace MiniZinc {
     }    
     void p_bool_xor_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      BoolVar b0 = gi.arg2boolvar(call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
-      BoolVar b2 = gi.arg2boolvar(call->args()[2]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[0]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
+      BoolVar b2 = gi.arg2boolvar(space, call->args()[2]);
       clause(*space, BoolOpType::BOT_OR, BoolVarArgs()<<b0<<b1, BoolVarArgs()<<b2, 1,
           gi.ann2icl(ann));
       clause(*space, BoolOpType::BOT_OR, BoolVarArgs(), BoolVarArgs()<<b0<<b1<<b2, 1,
@@ -1028,8 +1028,8 @@ namespace MiniZinc {
     }    
     void p_bool_l_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      BoolVar b0 = gi.arg2boolvar(call->args()[0]);
-      BoolVar b1 = gi.arg2boolvar(call->args()[1]);
+      BoolVar b0 = gi.arg2boolvar(space, call->args()[0]);
+      BoolVar b1 = gi.arg2boolvar(space, call->args()[1]);
       if (call->args()[2]->type().isbool()) {
         rel(*space, b1, BoolOpType::BOT_IMP, b0, call->args()[2]->cast<BoolLit>()->v(), gi.ann2icl(ann));
       } else {
@@ -1064,8 +1064,8 @@ namespace MiniZinc {
     }    
     void p_bool_not_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      BoolVar x0 = gi.arg2boolvar(call->args()[0]);
-      BoolVar x1 = gi.arg2boolvar(call->args()[1]);
+      BoolVar x0 = gi.arg2boolvar(space, call->args()[0]);
+      BoolVar x1 = gi.arg2boolvar(space, call->args()[1]);
       rel(*space, x0, BoolOpType::BOT_XOR, x1, 1, gi.ann2icl(ann));
     }
     void p_bool_not(SolverInstanceBase& s, const Call* call) {
@@ -1083,14 +1083,14 @@ namespace MiniZinc {
     ///* element constraints */
     void p_array_int_element_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();     
-      IntVar selector = gi.arg2intvar(call->args()[0]);
+      IntVar selector = gi.arg2intvar(space, call->args()[0]);
       rel(*space, selector > 0);
       if (call->args()[1]->type().isvar()) {
         IntVarArgs iv = gi.arg2intvarargs(space,call->args()[1], 1);
-        element(*space, iv, selector, gi.arg2intvar(call->args()[2]), gi.ann2icl(ann));
+        element(*space, iv, selector, gi.arg2intvar(space, call->args()[2]), gi.ann2icl(ann));
       } else {
         IntArgs ia = gi.arg2intargs(call->args()[1], 1);
-        element(*space, ia, selector, gi.arg2intvar(call->args()[2]), gi.ann2icl(ann));
+        element(*space, ia, selector, gi.arg2intvar(space, call->args()[2]), gi.ann2icl(ann));
       }
     }
     void p_array_int_element(SolverInstanceBase& s, const Call* call) {      
@@ -1106,14 +1106,14 @@ namespace MiniZinc {
     }    
     void p_array_bool_element_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      IntVar selector = gi.arg2intvar(call->args()[0]);
+      IntVar selector = gi.arg2intvar(space, call->args()[0]);
       rel(*space, selector > 0);
       if (call->args()[1]->type().isvar()) {
         BoolVarArgs iv = gi.arg2boolvarargs(space, call->args()[1], 1);
-        element(*space, iv, selector, gi.arg2boolvar(call->args()[2]), gi.ann2icl(ann));
+        element(*space, iv, selector, gi.arg2boolvar(space, call->args()[2]), gi.ann2icl(ann));
       } else {
         IntArgs ia = gi.arg2boolargs(call->args()[1], 1);
-        element(*space, ia, selector, gi.arg2boolvar(call->args()[2]), gi.ann2icl(ann));
+        element(*space, ia, selector, gi.arg2boolvar(space, call->args()[2]), gi.ann2icl(ann));
       }
     }
     void p_array_bool_element(SolverInstanceBase& s, const Call* call) {     
@@ -1131,8 +1131,8 @@ namespace MiniZinc {
     ///* coercion constraints */
     void p_bool2int_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      BoolVar x0 = gi.arg2boolvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
+      BoolVar x0 = gi.arg2boolvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
       if (call->args()[0]->type().isvarbool() && call->args()[1]->type().isvarint()) { 
         int index = gi.resolveVar(call->args()[0]->cast<Id>()->decl()).index();
         gi.resolveVar(call->args()[1]->cast<Id>()->decl()).setBoolAliasIndex(index);
@@ -1162,11 +1162,11 @@ namespace MiniZinc {
         if (d01.size() == 0) {
           space->fail();
         } else {
-          rel(*space, gi.arg2boolvar(call->args()[0]), IRT_GQ, d01.min());
-          rel(*space, gi.arg2boolvar(call->args()[0]), IRT_LQ, d01.max());
+          rel(*space, gi.arg2boolvar(space, call->args()[0]), IRT_GQ, d01.min());
+          rel(*space, gi.arg2boolvar(space, call->args()[0]), IRT_LQ, d01.max());
         }
       } else {
-        dom(*space, gi.arg2intvar(call->args()[0]), d);
+        dom(*space, gi.arg2intvar(space, call->args()[0]), d);
       }
     }
     void p_int_in(SolverInstanceBase& s, const Call* call) {      
@@ -1189,16 +1189,16 @@ namespace MiniZinc {
         Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
         IntSet d01(i);
         if (d01.size() == 0) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) == 0);
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) == 0);
         } else if (d01.max() == 0) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) == !gi.arg2boolvar(call->args()[0]));
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) == !gi.arg2boolvar(space, call->args()[0]));
         } else if (d01.min() == 1) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) == gi.arg2boolvar(call->args()[0]));
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) == gi.arg2boolvar(space, call->args()[0]));
         } else {
-          rel(*space, gi.arg2boolvar(call->args()[2]) == 1);
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) == 1);
         }
       } else {
-        dom(*space, gi.arg2intvar(call->args()[0]), d, gi.arg2boolvar(call->args()[2]));
+        dom(*space, gi.arg2intvar(space, call->args()[0]), d, gi.arg2boolvar(space, call->args()[2]));
       }
     }
     void p_int_in_reif(SolverInstanceBase& s, const Call* call) {      
@@ -1221,14 +1221,14 @@ namespace MiniZinc {
         Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
         IntSet d01(i);
         if (d01.size() == 0) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) == 0);
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) == 0);
         } else if (d01.max() == 0) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) >> !gi.arg2boolvar(call->args()[0]));
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) >> !gi.arg2boolvar(space, call->args()[0]));
         } else if (d01.min() == 1) {
-          rel(*space, gi.arg2boolvar(call->args()[2]) >> gi.arg2boolvar(call->args()[0]));
+          rel(*space, gi.arg2boolvar(space, call->args()[2]) >> gi.arg2boolvar(space, call->args()[0]));
         }
       } else {
-        dom(*space, gi.arg2intvar(call->args()[0]), d, Reify(gi.arg2boolvar(call->args()[2]),RM_IMP));
+        dom(*space, gi.arg2intvar(space, call->args()[0]), d, Reify(gi.arg2boolvar(space, call->args()[2]),RM_IMP));
       }
     }
     void p_int_in_imp(SolverInstanceBase& s, const Call* call) {      
@@ -1248,8 +1248,8 @@ namespace MiniZinc {
 
     void p_abs_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
-      IntVar x0 = gi.arg2intvar(call->args()[0]);
-      IntVar x1 = gi.arg2intvar(call->args()[1]);
+      IntVar x0 = gi.arg2intvar(space, call->args()[0]);
+      IntVar x1 = gi.arg2intvar(space, call->args()[1]);
       abs(*space, x0, x1, gi.ann2icl(ann));
     }
     void p_abs(SolverInstanceBase& s, const Call* call) {      
@@ -1344,14 +1344,14 @@ namespace MiniZinc {
           count(*space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
               gi.ann2icl(ann));
         } else {
-          count(*space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, gi.arg2intvar(call->args()[2]), 
+          count(*space, iv, call->args()[1]->cast<IntLit>()->v().toInt(), IRT_EQ, gi.arg2intvar(space, call->args()[2]), 
               gi.ann2icl(ann));
         }
       } else if (!call->args()[2]->type().isvarint()) {
-        count(*space, iv, gi.arg2intvar(call->args()[1]), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
+        count(*space, iv, gi.arg2intvar(space, call->args()[1]), IRT_EQ, call->args()[2]->cast<IntLit>()->v().toInt(), 
             gi.ann2icl(ann));
       } else {
-        count(*space, iv, gi.arg2intvar(call->args()[1]), IRT_EQ, gi.arg2intvar(call->args()[2]), 
+        count(*space, iv, gi.arg2intvar(space, call->args()[1]), IRT_EQ, gi.arg2intvar(space, call->args()[2]), 
             gi.ann2icl(ann));
       }
     }
@@ -1370,9 +1370,9 @@ namespace MiniZinc {
     void p_count_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       IntVarArgs iv = gi.arg2intvarargs(space, call->args()[0]);
-      IntVar x = gi.arg2intvar(call->args()[1]);
-      IntVar y = gi.arg2intvar(call->args()[2]);
-      BoolVar b = gi.arg2boolvar(call->args()[3]);
+      IntVar x = gi.arg2intvar(space, call->args()[1]);
+      IntVar y = gi.arg2intvar(space, call->args()[2]);
+      BoolVar b = gi.arg2boolvar(space, call->args()[3]);
       IntVar c(*space,0,Int::Limits::max);
       count(*space,iv,x,IRT_EQ,c,gi.ann2icl(ann));
       rel(*space, b == (c==y));
@@ -1391,9 +1391,9 @@ namespace MiniZinc {
     void p_count_imp_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();     
       IntVarArgs iv = gi.arg2intvarargs(space, call->args()[0]);
-      IntVar x = gi.arg2intvar(call->args()[1]);
-      IntVar y = gi.arg2intvar(call->args()[2]);
-      BoolVar b = gi.arg2boolvar(call->args()[3]);
+      IntVar x = gi.arg2intvar(space, call->args()[1]);
+      IntVar y = gi.arg2intvar(space, call->args()[2]);
+      BoolVar b = gi.arg2boolvar(space, call->args()[3]);
       IntVar c(*space,0,Int::Limits::max);
       count(*space,iv,x,IRT_EQ,c,gi.ann2icl(ann));
       rel(*space, b >> (c==y));
@@ -1614,7 +1614,7 @@ namespace MiniZinc {
     void p_minimum_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       IntVarArgs iv = gi.arg2intvarargs(space, call->args()[1]);
-      min(*space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
+      min(*space, iv, gi.arg2intvar(space, call->args()[0]), gi.ann2icl(ann));
     }
     void p_minimum(SolverInstanceBase& s, const Call* call) {      
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -1631,7 +1631,7 @@ namespace MiniZinc {
     void p_maximum_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       IntVarArgs iv = gi.arg2intvarargs(space, call->args()[1]);
-      max(*space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
+      max(*space, iv, gi.arg2intvar(space, call->args()[0]), gi.ann2icl(ann));
     }
     void p_maximum(SolverInstanceBase& s, const Call* call) {     
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -1886,7 +1886,7 @@ namespace MiniZinc {
       IntVarArgs duration = gi.arg2intvarargs(space, call->args()[1]);
       IntVarArgs height = gi.arg2intvarargs(space, call->args()[2]);
       int n = start.size();
-      IntVar bound = gi.arg2intvar(call->args()[3]);
+      IntVar bound = gi.arg2intvar(space, call->args()[3]);
 
       int minHeight = INT_MAX; int minHeight2 = INT_MAX;
       for (int i=n; i--;)
@@ -2068,7 +2068,7 @@ namespace MiniZinc {
       IntArgs c = gi.arg2intargs(call->args()[0]);
       IntVarArgs xv = gi.arg2intvarargs(space, call->args()[1]);
       IntVarArgs yv = gi.arg2intvarargs(space, call->args()[2]);
-      IntVar z = gi.arg2intvar(call->args()[3]);
+      IntVar z = gi.arg2intvar(space, call->args()[3]);
       circuit(*space,c,xv,yv,z,gi.ann2icl(ann));
     }
     void p_circuit_cost_array(SolverInstanceBase& s, const Call* call) {      
@@ -2087,7 +2087,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();     
       IntArgs c = gi.arg2intargs(call->args()[0]);
       IntVarArgs xv = gi.arg2intvarargs(space, call->args()[1]);
-      IntVar z = gi.arg2intvar(call->args()[2]);
+      IntVar z = gi.arg2intvar(space, call->args()[2]);
       circuit(*space,c,xv,z,gi.ann2icl(ann));
     }
     void p_circuit_cost(SolverInstanceBase& s, const Call* call) {     
@@ -2160,7 +2160,7 @@ namespace MiniZinc {
       const Annotation& ann =call->ann();     
       IntVarArgs x = gi.arg2intvarargs(space, call->args()[1]);
       if (call->args()[0]->type().isvarint()) {
-        IntVar y = gi.arg2intvar(call->args()[0]);
+        IntVar y = gi.arg2intvar(space, call->args()[0]);
         nvalues(*space,x,IRT_EQ,y,gi.ann2icl(ann));
       } else {
         nvalues(*space,x,IRT_EQ,call->args()[0]->cast<IntLit>()->v().toInt(),gi.ann2icl(ann));
@@ -2183,7 +2183,7 @@ namespace MiniZinc {
       IntVarArgs x = gi.arg2intvarargs(space, call->args()[1]);
       IntSet v = gi.arg2intset(gi.env().envi(), call->args()[2]);
       if (call->args()[0]->type().isvarint()) {
-        IntVar n = gi.arg2intvar(call->args()[0]);
+        IntVar n = gi.arg2intvar(space, call->args()[0]);
         count(*space,x,v,IRT_EQ,n,gi.ann2icl(ann));
       } else {
         count(*space,x,v,IRT_EQ,call->args()[0]->cast<IntLit>()->v().toInt(),gi.ann2icl(ann));
@@ -2204,7 +2204,7 @@ namespace MiniZinc {
     void p_member_int_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();     
       IntVarArgs x = gi.arg2intvarargs(space, call->args()[0]);
-      IntVar y = gi.arg2intvar(call->args()[1]);
+      IntVar y = gi.arg2intvar(space, call->args()[1]);
       member(*space,x,y,gi.ann2icl(ann));
     }
     void p_member_int(SolverInstanceBase& s, const Call* call) {      
@@ -2221,8 +2221,8 @@ namespace MiniZinc {
     void p_member_int_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       IntVarArgs x = gi.arg2intvarargs(space, call->args()[0]);
-      IntVar y = gi.arg2intvar(call->args()[1]);
-      BoolVar b = gi.arg2boolvar(call->args()[2]);
+      IntVar y = gi.arg2intvar(space, call->args()[1]);
+      BoolVar b = gi.arg2boolvar(space, call->args()[2]);
       member(*space,x,y,b,gi.ann2icl(ann));
     }
     void p_member_int_reif(SolverInstanceBase& s, const Call* call) {      
@@ -2239,7 +2239,7 @@ namespace MiniZinc {
     void p_member_bool_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       BoolVarArgs x = gi.arg2boolvarargs(space, call->args()[0]);
-      BoolVar y = gi.arg2boolvar(call->args()[1]);
+      BoolVar y = gi.arg2boolvar(space, call->args()[1]);
       member(*space,x,y,gi.ann2icl(ann));
     }
     void p_member_bool(SolverInstanceBase& s, const Call* call) {     
@@ -2256,8 +2256,8 @@ namespace MiniZinc {
     void p_member_bool_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();     
       BoolVarArgs x = gi.arg2boolvarargs(space, call->args()[0]);
-      BoolVar y = gi.arg2boolvar(call->args()[1]);
-      member(*space,x,y,gi.arg2boolvar(call->args()[2]),gi.ann2icl(ann));
+      BoolVar y = gi.arg2boolvar(space, call->args()[1]);
+      member(*space,x,y,gi.arg2boolvar(space, call->args()[2]),gi.ann2icl(ann));
     }
     void p_member_bool_reif(SolverInstanceBase& s, const Call* call) {      
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -2276,7 +2276,7 @@ namespace MiniZinc {
 #ifdef GECODE_HAS_FLOAT_VARS
 
     void p_int2float_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {     
-      IntVar x0 = gi.arg2intvar(ce->args()[0]);
+      IntVar x0 = gi.arg2intvar(space,ce->args()[0]);
       FloatVar x1 = gi.arg2floatvar(ce->args()[1]);
       channel(*space, x0, x1);
     }
@@ -2301,7 +2301,7 @@ namespace MiniZinc {
     void p_float_lin_cmp_reif_base(FznSpace* space, GecodeSolverInstance& s, FloatRelType frt, const Call* ce) {
       FloatValArgs fa = s.arg2floatargs(ce->args()[0]);
       FloatVarArgs fv = s.arg2floatvarargs(ce->args()[1]);
-      linear(*space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v(), s.arg2boolvar(ce->args()[3]));
+      linear(*space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v(), s.arg2boolvar(space, ce->args()[3]));
     }
     void p_float_lin_eq(SolverInstanceBase& s, const Call* ce) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -2455,7 +2455,7 @@ namespace MiniZinc {
     void p_float_eq_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
       FloatVar x = gi.arg2floatvar(ce->args()[0]);
       FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      BoolVar  b = gi.arg2boolvar(ce->args()[2]);
+      BoolVar  b = gi.arg2boolvar(space, ce->args()[2]);
       rel(*space,x,FRT_EQ,y,b);
     }
     void p_float_eq_reif(SolverInstanceBase& s, const Call* ce) {
@@ -2488,7 +2488,7 @@ namespace MiniZinc {
     void p_float_le_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
       FloatVar x = gi.arg2floatvar(ce->args()[0]);
       FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      BoolVar  b = gi.arg2boolvar(ce->args()[2]);
+      BoolVar  b = gi.arg2boolvar(space, ce->args()[2]);
       rel(*space,x,FRT_LQ,y,b);
     }
     void p_float_le_reif(SolverInstanceBase& s, const Call* ce) {
@@ -2557,7 +2557,7 @@ namespace MiniZinc {
     void p_float_lt_reif_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {      
       FloatVar x = gi.arg2floatvar(ce->args()[0]);
       FloatVar y = gi.arg2floatvar(ce->args()[1]);
-      BoolVar b = gi.arg2boolvar(ce->args()[2]);
+      BoolVar b = gi.arg2boolvar(space, ce->args()[2]);
       BoolVar b0(*space,0,1);
       BoolVar b1(*space,0,1);
       rel(*space, b == (b0 && !b1));
