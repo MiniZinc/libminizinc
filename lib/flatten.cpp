@@ -2882,6 +2882,7 @@ namespace MiniZinc {
           case BOT_DIFF:
           case BOT_SYMDIFF:
           case BOT_INTERSECT:
+          case BOT_DOTDOT:
           {
             assert(!ctx0.neg);
             assert(!ctx1.neg);
@@ -3478,23 +3479,7 @@ namespace MiniZinc {
             ret.b = conj(env,b,Ctx(),ee);
             ret.r = bind(env,ctx,r,alret);
           }
-            break;
-            
-          case BOT_DOTDOT:
-          {
-            if (bo->type().ispar()) {
-              EE ee0 = flat_exp(env,ctx,boe0,NULL,constants().var_true);
-              EE ee1 = flat_exp(env,ctx,boe1,NULL,constants().var_true);
-              ret.b = bind(env,ctx,b,constants().lit_true);
-              GCLock lock;
-              BinOp* nbo = new BinOp(Location().introduce(),ee0.r(),BOT_DOTDOT,ee1.r());
-              nbo->type(bo->type());
-              Expression* nbo_eval = eval_par(env,nbo);
-              ret.r = bind(env,ctx,r,nbo_eval);
-            } else {
-              throw InternalError("not yet implemented");
-            }
-          }
+            break;            
         }
       }
       break;

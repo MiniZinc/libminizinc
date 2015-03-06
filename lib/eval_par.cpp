@@ -2093,52 +2093,58 @@ namespace MiniZinc {
     }
     /// Visit binary operator
     void vBinOp(const BinOp& bo) {
-      IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
-      IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-      case BOT_INTERSECT:
-      case BOT_UNION:
-        {
-          IntSetRanges b0r(b0);
-          IntSetRanges b1r(b1);
-          Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
-          _bounds.push_back(IntSetVal::ai(u));
+      if (bo.op()==BOT_DOTDOT) {
+        IntBounds lb = compute_int_bounds(env, bo.lhs());
+        IntBounds ub = compute_int_bounds(env, bo.lhs());
+        _bounds.push_back(IntSetVal::a(lb.l, ub.u));
+      } else {
+        IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
+        IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
+        switch (bo.op()) {
+        case BOT_INTERSECT:
+        case BOT_UNION:
+          {
+            IntSetRanges b0r(b0);
+            IntSetRanges b1r(b1);
+            Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
+            _bounds.push_back(IntSetVal::ai(u));
+          }
+          break;
+        case BOT_DIFF:
+          {
+            _bounds.push_back(b0);
+          }
+          break;
+        case BOT_SYMDIFF:
+          valid = false;
+          _bounds.push_back(NULL);
+          break;
+        case BOT_PLUS:
+        case BOT_MINUS:
+        case BOT_MULT:
+        case BOT_DIV:
+        case BOT_IDIV:
+        case BOT_MOD:
+        case BOT_LE:
+        case BOT_LQ:
+        case BOT_GR:
+        case BOT_GQ:
+        case BOT_EQ:
+        case BOT_NQ:
+        case BOT_IN:
+        case BOT_SUBSET:
+        case BOT_SUPERSET:
+        case BOT_PLUSPLUS:
+        case BOT_EQUIV:
+        case BOT_IMPL:
+        case BOT_RIMPL:
+        case BOT_OR:
+        case BOT_AND:
+        case BOT_XOR:
+        case BOT_DOTDOT:
+          valid = false;
+          _bounds.push_back(NULL);
         }
-        break;
-      case BOT_DIFF:
-        {
-          _bounds.push_back(b0);
-        }
-        break;
-      case BOT_SYMDIFF:
-        valid = false;
-        _bounds.push_back(NULL);
-        break;
-      case BOT_PLUS:
-      case BOT_MINUS:
-      case BOT_MULT:
-      case BOT_DIV:
-      case BOT_IDIV:
-      case BOT_MOD:
-      case BOT_LE:
-      case BOT_LQ:
-      case BOT_GR:
-      case BOT_GQ:
-      case BOT_EQ:
-      case BOT_NQ:
-      case BOT_IN:
-      case BOT_SUBSET:
-      case BOT_SUPERSET:
-      case BOT_PLUSPLUS:
-      case BOT_EQUIV:
-      case BOT_IMPL:
-      case BOT_RIMPL:
-      case BOT_OR:
-      case BOT_AND:
-      case BOT_XOR:
-      case BOT_DOTDOT:
-        valid = false;
-        _bounds.push_back(NULL);
       }
     }
     /// Visit unary operator

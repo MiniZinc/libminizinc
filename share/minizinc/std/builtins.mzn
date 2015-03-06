@@ -634,6 +634,12 @@ function set of int: '..'(int: a,int: b);
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of float: '..'(float: a,float: b);
 
+function var set of int: '..'(var int: a, var int: b) ::promise_total =
+  let {
+    var set of min(lb(a),lb(b))..max(ub(a),ub(b)): s;
+    constraint forall (i in ub(s)) (i in s -> (a <= i /\ i <= b));
+  } in s;
+
 /** @group builtins.set Return the cardinality of the set \a x */
 function     int: card(    set of $T: x);
 /** @group builtins.set Return the cardinality of the set \a x */
