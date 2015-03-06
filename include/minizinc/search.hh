@@ -43,8 +43,9 @@ namespace MiniZinc {
       else { // solve using normal solve call
         status = solver->solve();
       }    
-      // process status and solution
-      if (status==SolverInstance::SAT || status==SolverInstance::OPT || env.envi().hasSolution()) {
+      // process status and solution      
+      if (status==SolverInstance::SAT && !env.envi().hasSolution() ||
+        status==SolverInstance::OPT) {
         env.evalOutput(std::cout);
       }
       std::cout << "----------\n";

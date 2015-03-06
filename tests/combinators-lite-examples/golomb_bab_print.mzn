@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 4;
+int: m = 8;
 int: n = m*m;
 
 var 0..n: obj;
@@ -45,7 +45,7 @@ solve :: combinator(
          repeat(
              and([
                  next, % get next solution
-                 %print, % print the last found solution
+                 print, % print the last found solution
                  post(obj < sol(obj)) % post constraint
              ])
          ),
