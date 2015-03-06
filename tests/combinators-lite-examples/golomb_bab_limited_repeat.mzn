@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 4;
+int: m = 6;
 int: n = m*m;
 
 var 0..n: obj;
@@ -41,15 +41,16 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 % solve using minimizing branch & bound
 solve :: combinator(
    scope( 
-     or([
-       repeat (i in 1..11) (
-           and([
-               next, % get next solution
-               post(if(hasSol()) then obj < sol(obj) else true endif) % post constraint
-           ])
-       ),
-       print % print the final solution
-    ])
+       or([
+         repeat (i in 1..11) (
+             and([
+                 next, % get next solution
+                 print, % print intermediate solution
+                 post(obj < sol(obj)) % post constraint
+             ])
+         ),
+         print
+       ])
    )
 ) 
 satisfy;

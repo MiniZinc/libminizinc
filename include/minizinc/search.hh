@@ -14,11 +14,11 @@
 
 #include <minizinc/flatten.hh>
 #include <minizinc/solver_instance_base.hh>
+#include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
   
-  class SearchHandler {
-    // TODO: management of solver copies
+  class SearchHandler {    
   public:
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
@@ -44,7 +44,7 @@ namespace MiniZinc {
         status = solver->solve();
       }    
       // process status and solution
-      if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+      if (status==SolverInstance::SAT || status==SolverInstance::OPT || env.envi().hasSolution()) {
         env.evalOutput(std::cout);
       }
       std::cout << "----------\n";
@@ -82,6 +82,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretScopeCombinator(Call* scopeComb, Env& env, SolverInstanceBase* solver);
    /// interpret and execute a NEXT combinator
   SolverInstance::Status interpretNextCombinator(Env& env, SolverInstanceBase* solver);
+  /// interpret and execute a PRINT combinator
+  SolverInstance::Status interpretPrintCombinator(Env& env, SolverInstanceBase* solver);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver);
   };

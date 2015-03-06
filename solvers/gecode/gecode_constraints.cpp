@@ -1416,13 +1416,6 @@ namespace MiniZinc {
       count(*space, iv, call->args()[2]->cast<IntLit>()->v().toInt(), irt,
           call->args()[0]->cast<IntLit>()->v().toInt(), gi.ann2icl(ann));
     }
-/*    void count_rel(IntRelType irt, SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
-      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
-      IntVarArgs iv = gi.arg2intvarargs(call->args()[1]);
-      count(*gi._current_space, iv, call->args()[2]->cast<IntLit>()->v().toInt(), irt,
-          call->args()[0]->cast<IntLit>()->v().toInt(), gi.ann2icl(ann));
-    }    */
 
     void p_at_most(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -2523,7 +2516,7 @@ namespace MiniZinc {
       FloatVar x = gi.arg2floatvar(space,ce->args()[0]);
       FloatVar y = gi.arg2floatvar(space,ce->args()[1]);
       FloatVar z = gi.arg2floatvar(space,ce->args()[2]);
-      min(*gi._current_space,x,y,z);
+      min(*space,x,y,z);
     }
     void p_float_min(SolverInstanceBase& s, const Call* ce) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);

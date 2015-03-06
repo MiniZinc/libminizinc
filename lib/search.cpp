@@ -47,7 +47,11 @@ namespace MiniZinc {
     else if(Id* id = comb->dyn_cast<Id>()) {
       if(id->str().str() == constants().combinators.next.str()) {
         return interpretNextCombinator(env,solver);
-      } else {
+      } 
+      else if (id->str().str() == constants().combinators.print.str()) {
+        return interpretPrintCombinator(env,solver);
+      }
+      else {
         std::stringstream ssm; 
         ssm << "unknown combinator id: " << id->str();
         throw TypeError(id->loc(), ssm.str());
@@ -195,16 +199,29 @@ namespace MiniZinc {
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
     std::cout << "DEBUG: NEXT combinator" << std::endl;
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SAT) env.envi().hasSolution(true);
-    // else env.envi().hasSolution(false);  TODO: we'd still have the old solution stored -> or should we remove the solution after an unsuccessful call of next? NO?
+    if(status == SolverInstance::SAT) env.envi().hasSolution(true);    
     std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
     //std::cout << "DEBUG: printing current flat model:" << std::endl;
     //debugprint(env.flat());
-    std::cout << "\nDEBUG: printing new solution:" << std::endl;
-    debugprint(env.output());
-    std::cout << "\n" << std::endl;
+    //std::cout << "\nDEBUG: printing new solution:" << std::endl;
+    //debugprint(env.output());
+    //std::cout << "\n" << std::endl;
     return status; 
   }
+  
+  SolverInstance::Status
+  SearchHandler::interpretPrintCombinator(Env& env, SolverInstanceBase* solver) {
+    if(env.envi().hasSolution()) {
+      std::cout << "DEBUG: PRINT combinator" << std::endl; 
+      debugprint(env.output());
+      //std::cout<< "\nOR BETTER:\n" << std::endl;
+      //std::cout << *(env.output()) << std::endl;
+      return SolverInstance::SAT;
+    }
+    else {      
+      throw EvalError(Location(), "No solution exists to be printed by PRINT-combinator");      
+    }
+  }  
   
   bool 
   SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {
@@ -247,9 +264,9 @@ namespace MiniZinc {
           vars.push_back(it->e());
         }
       }
-      for(unsigned int i=0; i<vars.size(); i++) {
-        std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
-      }        
+      //for(unsigned int i=0; i<vars.size(); i++) {
+       // std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+      //}        
       success = success && solver->addVariables(vars);
     }      
     
@@ -271,8 +288,8 @@ namespace MiniZinc {
           flat_cts.push_back(it->e()->cast<Call>());
         }
       }
-      for(unsigned int i=0; i<flat_cts.size(); i++)
-        std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+      //for(unsigned int i=0; i<flat_cts.size(); i++)
+        //std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
       success = success && solver->postConstraints(flat_cts);      
     }
     
@@ -305,7 +322,7 @@ namespace MiniZinc {
       }
     }
       
-    return success; // TODO: change as soon as it works in the solvers
+    return success; 
   }
   
 }

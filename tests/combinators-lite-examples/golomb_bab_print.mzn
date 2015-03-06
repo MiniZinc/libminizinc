@@ -22,10 +22,10 @@ int: n = m*m;
 
 var 0..n: obj;
 
+array[1..m] of var 0..n: mark;
+
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
-
-array[1..m] of var 0..n: mark;
 
 constraint mark[1] = 0;
 
@@ -40,15 +40,19 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
 solve :: combinator(
-   scope( 
-       repeat (i in 1..11) (
-           and([
-               next, % get next solution
-               post(obj < sol(obj)) % post constraint
-           ])
-       )
-   )
-) 
+    scope( 
+       or([
+         repeat(
+             and([
+                 next, % get next solution
+                 %print, % print the last found solution
+                 post(obj < sol(obj)) % post constraint
+             ])
+         ),
+         print
+        ])
+     )
+   ) 
 satisfy;
 
-output ["golomb ", show(obj), "\n", show(mark)];
+output ["golomb ", show(mark), "\n", show(obj)];

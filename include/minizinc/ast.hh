@@ -1366,6 +1366,7 @@ namespace MiniZinc {
         ASTString next;
         ASTString or_;
         ASTString post;
+        ASTString print;
         ASTString repeat;
         ASTString scope;
       } combinators;

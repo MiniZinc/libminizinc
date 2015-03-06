@@ -1053,6 +1053,7 @@ namespace MiniZinc {
     combinators.next = ASTString("next");
     combinators.or_ = ASTString("or");
     combinators.post = ASTString("post");
+    combinators.print = ASTString("print");
     combinators.repeat = ASTString("repeat");
     combinators.scope = ASTString("scope");
     
@@ -1173,6 +1174,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.next));
     v.push_back(new StringLit(Location(), combinators.or_));
     v.push_back(new StringLit(Location(), combinators.post));
+    v.push_back(new StringLit(Location(), combinators.print));
     v.push_back(new StringLit(Location(), combinators.repeat));
     v.push_back(new StringLit(Location(), combinators.scope));
     

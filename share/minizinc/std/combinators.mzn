@@ -11,6 +11,8 @@ annotation combinator (ann);
 annotation next;
 % post constraint expression expr in current scope
 annotation post(var bool: expr); 
+% print the last found solution according to the output statement
+annotation print;
 % define an new scope 
 annotation scope(ann);
 % repeat annotations for a limited number of times
@@ -52,7 +54,7 @@ function ann: bab_min(var int: obj, ann: s) =
            ])
        )
    );               
-function ann: bab_min(var int: obj) = bab_min(obj, print());
+function ann: bab_min(var int: obj) = bab_min(obj, print);
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj, ann: s) =   
