@@ -62,7 +62,7 @@ namespace MiniZinc {
   }
   
   void
-  Model::registerFn(FunctionI* fi) {
+  Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;
     while (m->_parent)
       m = m->_parent;
@@ -84,7 +84,7 @@ namespace MiniZinc {
           }
           if (alleq) {
             if (v[i]->e() && fi->e()) {
-              throw TypeError(fi->loc(),
+              throw TypeError(env, fi->loc(),
                               "function with the same type already defined in "
                               +v[i]->loc().toString());
               
@@ -101,7 +101,7 @@ namespace MiniZinc {
   }
 
   FunctionI*
-  Model::matchFn(const ASTString& id,
+  Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Type>& t) {
     if (id==constants().var_redef->id())
       return constants().var_redef;
@@ -169,7 +169,7 @@ namespace MiniZinc {
   }
 
   FunctionI*
-  Model::matchFn(const ASTString& id,
+  Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Expression*>& args) const {
     if (id==constants().var_redef->id())
       return constants().var_redef;
@@ -219,13 +219,13 @@ namespace MiniZinc {
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
       if (!t.isSubtypeOf(matched[i]->ti()->type()))
-        throw TypeError(botarg->loc(), "ambiguous overloading on return type of function");
+        throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];
   }
   
   FunctionI*
-  Model::matchFn(Call* c) const {
+  Model::matchFn(EnvI& env, Call* c) const {
     if (c->id()==constants().var_redef->id())
       return constants().var_redef;
     const Model* m = this;
@@ -275,7 +275,7 @@ namespace MiniZinc {
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
       if (!t.isSubtypeOf(matched[i]->ti()->type()))
-        throw TypeError(botarg->loc(), "ambiguous overloading on return type of function");
+        throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];
   }
@@ -316,4 +316,5 @@ namespace MiniZinc {
       _items.push_back(failedConstraint);
     }
   }
+
 }

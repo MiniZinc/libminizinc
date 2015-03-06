@@ -23,12 +23,12 @@ namespace MiniZinc {
   typename E::Val eval_id(EnvI& env, Expression* e) {
     Id* id = e->cast<Id>();
     if (id->decl() == NULL)
-      throw EvalError(e->loc(), "undeclared identifier", id->str().str());
+      throw EvalError(env, e->loc(), "undeclared identifier", id->str().str());
     VarDecl* vd = id->decl();
     while (vd->flat() && vd->flat() != vd)
       vd = vd->flat();
     if (vd->e() == NULL)
-      throw EvalError(vd->loc(), "cannot evaluate expression", id->str().str());
+      throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
     typename E::Val r = E::e(env,vd->e());
     if (vd->toplevel() && !vd->evaluated()) {
       vd->e(E::exp(r));
@@ -191,7 +191,7 @@ namespace MiniZinc {
     if (oob) {
       std::ostringstream oss;
       oss << "value for argument `" << *arg << "' out of bounds";
-      throw EvalError(e->loc(), oss.str());
+      throw EvalError(env, e->loc(), oss.str());
     }
   }
 
@@ -200,7 +200,7 @@ namespace MiniZinc {
     if (ev < dom_min || ev > dom_max) {
       std::ostringstream oss;
       oss << "value for argument `" << *arg << "' out of bounds";
-      throw EvalError(e->loc(), oss.str());
+      throw EvalError(env, e->loc(), oss.str());
     }
   }
   
@@ -281,13 +281,13 @@ namespace MiniZinc {
     case Expression::E_TI:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
-      throw EvalError(e->loc(), "not an array expression");
+      throw EvalError(env, e->loc(), "not an array expression");
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(env,e);
     case Expression::E_ARRAYLIT:
       return e->cast<ArrayLit>();
     case Expression::E_ARRAYACCESS:
-      throw EvalError(e->loc(),"arrays of arrays not supported");
+      throw EvalError(env, e->loc(),"arrays of arrays not supported");
     case Expression::E_COMP:
       return eval_array_comp(env,e->cast<Comprehension>());
     case Expression::E_ITE:
@@ -315,23 +315,23 @@ namespace MiniZinc {
           ret->type(e->type());
           return ret;
         } else {
-          throw EvalError(e->loc(), "not an array expression", bo->opToString());
+          throw EvalError(env, e->loc(), "not an array expression", bo->opToString());
         }
       }
       break;
     case Expression::E_UNOP:
-      throw EvalError(e->loc(), "not an array expression");
+      throw EvalError(env, e->loc(), "not an array expression");
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
         
         if (ce->decl()->_builtins.e)
           return eval_array_lit(env,ce->decl()->_builtins.e(env,ce));
 
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
         return eval_array_lit(env,eval_call<EvalCopy>(env,ce));
       }
@@ -376,7 +376,7 @@ namespace MiniZinc {
         }
         if (t.isstring())
           return new StringLit(Location(),"");
-        throw EvalError(al->loc(), "Internal error: unexpected type in array access expression");
+        throw EvalError(env, al->loc(), "Internal error: unexpected type in array access expression");
       }
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
@@ -398,10 +398,11 @@ namespace MiniZinc {
     if (success)
       return ret;
     else
-      throw EvalError(e->loc(), "array access out of bounds");
+      throw EvalError(env, e->loc(), "array access out of bounds");
   }
   
   IntSetVal* eval_intset(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_SETLIT:
       {
@@ -422,7 +423,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
     case Expression::E_TI:
     case Expression::E_UNOP:
-      throw EvalError(e->loc(),"not a set of int expression");
+      throw EvalError(env, e->loc(),"not a set of int expression");
       break;
     case Expression::E_ARRAYLIT:
       {
@@ -493,15 +494,15 @@ namespace MiniZinc {
               Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
-          default: throw EvalError(e->loc(),"not a set of int expression", bo->opToString());
+          default: throw EvalError(env, e->loc(),"not a set of int expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isint() && bo->rhs()->type().isint()) {
           if (bo->op() != BOT_DOTDOT)
-            throw EvalError(e->loc(), "not a set of int expression", bo->opToString());
+            throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
           return IntSetVal::a(eval_int(env,bo->lhs()),
                               eval_int(env,bo->rhs()));
         } else {
-          throw EvalError(e->loc(), "not a set of int expression", bo->opToString());
+          throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
         }
       }
       break;
@@ -509,7 +510,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
         
         if (ce->decl()->_builtins.s)
           return ce->decl()->_builtins.s(env,ce);
@@ -518,7 +519,7 @@ namespace MiniZinc {
           return eval_intset(env,ce->decl()->_builtins.e(env,ce));
 
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
         return eval_call<EvalIntSet>(env,ce);
       }
@@ -537,6 +538,7 @@ namespace MiniZinc {
   }
 
   bool eval_bool(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_BOOLLIT: return e->cast<BoolLit>()->v();
     case Expression::E_INTLIT: 
@@ -550,7 +552,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
     case Expression::E_TI:
       assert(false);
-      throw EvalError(e->loc(),"not a bool expression");
+      throw EvalError(env, e->loc(),"not a bool expression");
       break;
     case Expression::E_ID:
       {
@@ -599,7 +601,7 @@ namespace MiniZinc {
           case BOT_XOR: return eval_bool(env,bo->lhs())^eval_bool(env,bo->rhs());
           default:
             assert(false);
-            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isint() && bo->rhs()->type().isint()) {
           IntVal v0 = eval_int(env,bo->lhs());
@@ -613,7 +615,7 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isfloat() && bo->rhs()->type().isfloat()) {
           FloatVal v0 = eval_float(env,bo->lhs());
@@ -627,7 +629,7 @@ namespace MiniZinc {
           case BOT_NQ: return v0!=v1;
           default:
             assert(false);
-            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isint() && bo->rhs()->type().isintset()) {
           IntVal v0 = eval_int(env,bo->lhs());
@@ -637,7 +639,7 @@ namespace MiniZinc {
           case BOT_IN: return v1->contains(v0);
           default:
             assert(false);
-            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().is_set() && bo->rhs()->type().is_set()) {
           GCLock lock;
@@ -655,7 +657,7 @@ namespace MiniZinc {
           case BOT_SUBSET: return Ranges::subset(ir0,ir1);
           case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
           default:
-            throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isstring() && bo->rhs()->type().isstring()) {
           GCLock lock;
@@ -669,7 +671,7 @@ namespace MiniZinc {
             case BOT_GR: return s0>s1;
             case BOT_GQ: return s0>=s1;
             default:
-              throw EvalError(e->loc(),"not a bool expression", bo->opToString());
+              throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
         } else if (bo->op()==BOT_EQ && bo->lhs()->type().isann()) {
           return Expression::equal(eval_par(env,bo->lhs()), eval_par(env,bo->rhs()));
@@ -686,7 +688,7 @@ namespace MiniZinc {
           }
           return true;
         } else {
-          throw EvalError(e->loc(), "not a bool expression", bo->opToString());
+          throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
         }
       }
       break;
@@ -698,7 +700,7 @@ namespace MiniZinc {
         case UOT_NOT: return !v0;
         default:
           assert(false);
-          throw EvalError(e->loc(),"not a bool expression", uo->opToString());
+          throw EvalError(env, e->loc(),"not a bool expression", uo->opToString());
         }
       }
       break;
@@ -706,7 +708,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
         
         if (ce->decl()->_builtins.b)
           return ce->decl()->_builtins.b(env,ce);
@@ -715,7 +717,7 @@ namespace MiniZinc {
           return eval_bool(env,ce->decl()->_builtins.e(env,ce));
 
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
         return eval_call<EvalBoolVal>(env,ce);
       }
@@ -754,7 +756,7 @@ namespace MiniZinc {
       case Expression::E_VARDECL:
       case Expression::E_TI:
       case Expression::E_UNOP:
-        throw EvalError(e->loc(),"not a set of bool expression");
+        throw EvalError(env, e->loc(),"not a set of bool expression");
         break;
       case Expression::E_ARRAYLIT:
       {
@@ -825,15 +827,15 @@ namespace MiniZinc {
               Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
-            default: throw EvalError(e->loc(),"not a set of bool expression", bo->opToString());
+            default: throw EvalError(env, e->loc(),"not a set of bool expression", bo->opToString());
           }
         } else if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
           if (bo->op() != BOT_DOTDOT)
-            throw EvalError(e->loc(), "not a set of bool expression", bo->opToString());
+            throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
           return IntSetVal::a(eval_bool(env,bo->lhs()),
                               eval_bool(env,bo->rhs()));
         } else {
-          throw EvalError(e->loc(), "not a set of bool expression", bo->opToString());
+          throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
         }
       }
         break;
@@ -841,7 +843,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
         
         if (ce->decl()->_builtins.s)
           return ce->decl()->_builtins.s(env,ce);
@@ -850,7 +852,7 @@ namespace MiniZinc {
           return eval_boolset(env,ce->decl()->_builtins.e(env,ce));
         
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
         return eval_call<EvalBoolSet>(env,ce);
       }
@@ -872,6 +874,7 @@ namespace MiniZinc {
     if (e->type().isbool()) {
       return eval_bool(env,e);
     }
+    CallStackItem csi(env,e);
     try {
       switch (e->eid()) {
         case Expression::E_INTLIT: return e->cast<IntLit>()->v();
@@ -885,7 +888,7 @@ namespace MiniZinc {
         case Expression::E_COMP:
         case Expression::E_VARDECL:
         case Expression::E_TI:
-          throw EvalError(e->loc(),"not an integer expression");
+          throw EvalError(env, e->loc(),"not an integer expression");
           break;
         case Expression::E_ID:
         {
@@ -920,13 +923,13 @@ namespace MiniZinc {
             case BOT_MULT: return v0*v1;
             case BOT_IDIV:
               if (v1==0)
-                throw EvalError(e->loc(),"division by zero");
+                throw EvalError(env, e->loc(),"division by zero");
               return v0 / v1;
             case BOT_MOD:
               if (v1==0)
-                throw EvalError(e->loc(),"division by zero");
+                throw EvalError(env, e->loc(),"division by zero");
               return v0 % v1;
-            default: throw EvalError(e->loc(),"not an integer expression", bo->opToString());
+            default: throw EvalError(env, e->loc(),"not an integer expression", bo->opToString());
           }
         }
           break;
@@ -937,7 +940,7 @@ namespace MiniZinc {
           switch (uo->op()) {
             case UOT_PLUS: return v0;
             case UOT_MINUS: return -v0;
-            default: throw EvalError(e->loc(),"not an integer expression", uo->opToString());
+            default: throw EvalError(env, e->loc(),"not an integer expression", uo->opToString());
           }
         }
           break;
@@ -945,7 +948,7 @@ namespace MiniZinc {
         {
           Call* ce = e->cast<Call>();
           if (ce->decl()==NULL)
-            throw EvalError(e->loc(), "undeclared function", ce->id());
+            throw EvalError(env, e->loc(), "undeclared function", ce->id());
           if (ce->decl()->_builtins.i)
             return ce->decl()->_builtins.i(env,ce);
           
@@ -953,7 +956,7 @@ namespace MiniZinc {
             return eval_int(env,ce->decl()->_builtins.e(env,ce));
           
           if (ce->decl()->e()==NULL)
-            throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
           
           return eval_call<EvalIntVal>(env,ce);
         }
@@ -970,7 +973,7 @@ namespace MiniZinc {
         default: assert(false); return 0;
       }
     } catch (ArithmeticError& err) {
-      throw EvalError(e->loc(), err.msg());
+      throw EvalError(env, e->loc(), err.msg());
     }
   }
 
@@ -980,6 +983,7 @@ namespace MiniZinc {
     } else if (e->type().isbool()) {
       return eval_bool(env,e);
     }
+    CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_FLOATLIT: return e->cast<FloatLit>()->v();
       case Expression::E_INTLIT:
@@ -992,7 +996,7 @@ namespace MiniZinc {
       case Expression::E_COMP:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-        throw EvalError(e->loc(),"not a float expression");
+        throw EvalError(env, e->loc(),"not a float expression");
         break;
       case Expression::E_ID:
       {
@@ -1027,9 +1031,9 @@ namespace MiniZinc {
           case BOT_MULT: return v0*v1;
           case BOT_DIV:
             if (v1==0.0)
-              throw EvalError(e->loc(),"division by zero");
+              throw EvalError(env, e->loc(),"division by zero");
             return v0 / v1;
-          default: throw EvalError(e->loc(),"not a float expression", bo->opToString());
+          default: throw EvalError(env, e->loc(),"not a float expression", bo->opToString());
         }
       }
         break;
@@ -1040,7 +1044,7 @@ namespace MiniZinc {
         switch (uo->op()) {
           case UOT_PLUS: return v0;
           case UOT_MINUS: return -v0;
-          default: throw EvalError(e->loc(),"not a float expression", uo->opToString());
+          default: throw EvalError(env, e->loc(),"not a float expression", uo->opToString());
         }
       }
         break;
@@ -1048,7 +1052,7 @@ namespace MiniZinc {
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
         if (ce->decl()->_builtins.f)
           return ce->decl()->_builtins.f(env,ce);
         
@@ -1056,7 +1060,7 @@ namespace MiniZinc {
           return eval_float(env,ce->decl()->_builtins.e(env,ce));
 
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
         return eval_call<EvalFloatVal>(env,ce);
       }
@@ -1088,7 +1092,7 @@ namespace MiniZinc {
       case Expression::E_COMP:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-        throw EvalError(e->loc(),"not a string expression");
+        throw EvalError(env, e->loc(),"not a string expression");
         break;
       case Expression::E_ID:
       {
@@ -1119,18 +1123,18 @@ namespace MiniZinc {
         std::string v1 = eval_string(env,bo->rhs());
         switch (bo->op()) {
           case BOT_PLUSPLUS: return v0+v1;
-          default: throw EvalError(e->loc(),"not a string expression", bo->opToString());
+          default: throw EvalError(env, e->loc(),"not a string expression", bo->opToString());
         }
       }
         break;
       case Expression::E_UNOP:
-        throw EvalError(e->loc(),"not a string expression");
+        throw EvalError(env, e->loc(),"not a string expression");
         break;
       case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
         if (ce->decl()==NULL)
-          throw EvalError(e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
         if (ce->decl()->_builtins.str)
           return ce->decl()->_builtins.str(env,ce);
@@ -1138,7 +1142,7 @@ namespace MiniZinc {
           return eval_string(env,ce->decl()->_builtins.e(env,ce));
         
         if (ce->decl()->e()==NULL)
-          throw EvalError(ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
         
         return eval_call<EvalString>(env,ce);
       }
@@ -1190,7 +1194,7 @@ namespace MiniZinc {
     case Expression::E_VARDECL:
       {
         VarDecl* vd = e->cast<VarDecl>();
-        throw EvalError(vd->loc(),"cannot evaluate variable declaration", vd->id()->v());
+        throw EvalError(env, vd->loc(),"cannot evaluate variable declaration", vd->id()->v());
       }
     case Expression::E_TI:
       {
@@ -1211,7 +1215,7 @@ namespace MiniZinc {
           return e;
         Id* id = e->cast<Id>();
         if (id->decl()==NULL)
-          throw EvalError(e->loc(),"undefined identifier", id->v());
+          throw EvalError(env, e->loc(),"undefined identifier", id->v());
         if (id->decl()->ti()->domain()) {
           if (BoolLit* bl = id->decl()->ti()->domain()->dyn_cast<BoolLit>())
             return bl;
@@ -1321,7 +1325,7 @@ namespace MiniZinc {
           }
           case Expression::E_LET:
           {
-            throw EvalError(e->loc(),"cannot partially evaluate let expression");
+            throw EvalError(env, e->loc(),"cannot partially evaluate let expression");
           }
           case Expression::E_BINOP:
           {
@@ -1342,7 +1346,7 @@ namespace MiniZinc {
             return eval_par(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
           }
           default:
-            throw EvalError(e->loc(),"cannot partially evaluate expression");
+            throw EvalError(env, e->loc(),"cannot partially evaluate expression");
         }
       }
     }

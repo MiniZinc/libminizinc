@@ -169,10 +169,9 @@ int main(int argc, char** argv) {
                                std::cerr)) {
       try {
         std::vector<TypeError> typeErrors;
-        MiniZinc::typecheck(outputm,typeErrors);
-        MiniZinc::registerBuiltins(outputm);
-
         Env env(outputm);
+        MiniZinc::typecheck(env,outputm,typeErrors);
+        MiniZinc::registerBuiltins(env,outputm);
         
         typedef pair<VarDecl*,Expression*> DE;
         ASTStringMap<DE>::t declmap;
@@ -229,14 +228,14 @@ int main(int argc, char** argv) {
                     }
                     ai->e()->type(it->second.first->type());
                     ai->decl(it->second.first);
-                    typecheck(outputm, ai);
+                    typecheck(env,outputm, ai);
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
                       for (unsigned int i=0; i<c->args().size(); i++)
                         c->args()[i]->type(Type::parsetint());
                       c->args()[c->args().size()-1]->type(it->second.first->type());
-                      c->decl(outputm->matchFn(c));
+                      c->decl(outputm->matchFn(env.envi(),c));
                     }
                     it->second.first->e(ai->e());
                   }

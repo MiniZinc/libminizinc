@@ -91,16 +91,16 @@ namespace MiniZinc {
     }
 
     /// Register a builtin function item
-    void registerFn(FunctionI* fi);
+    void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
     /// Return function declaration for \a id matching \a args
-    FunctionI* matchFn(const ASTString& id,
+    FunctionI* matchFn(EnvI& env, const ASTString& id,
                        const std::vector<Expression*>& args) const;
     /// Return function declaration for \a id matching types \a t
-    FunctionI* matchFn(const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(Call* c) const;
+    FunctionI* matchFn(EnvI& env, Call* c) const;
 
     /// Return item \a i
     Item*& operator[] (int i);
@@ -241,6 +241,14 @@ namespace MiniZinc {
     void clearWarnings(void);
     
     unsigned int maxCallStack(void) const;
+  };
+
+  class CallStackItem {
+  public:
+    EnvI& env;
+    CallStackItem(EnvI& env0, Expression* e);
+    CallStackItem(EnvI& env0, Id* ident, IntVal i);
+    ~CallStackItem(void);
   };
 
   /// Visitor for model items
