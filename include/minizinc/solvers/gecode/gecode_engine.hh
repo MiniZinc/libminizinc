@@ -26,8 +26,7 @@
 namespace MiniZinc {  
    
   // forward declaration to tackle circular declaration through gecode_interface.hh
-  class GecodeInterface;
-  //class GecodeEngine;
+  class GecodeInterface; 
   
     /// search engine for standard Gecode search, wrapper class for engine
   class GecodeEngine {
@@ -52,31 +51,47 @@ namespace MiniZinc {
     virtual ~CustomEngine(void) {}
   };
   
- /* class FznSpaceIterator {
-  protected:
-    typedef FznSpace& reference;
-    typedef FznSpace* pointer;
-    typedef std::vector<FznSpace*>::iterator iterator;
-    //Gecode::Support::DynamicStack<Gecode::Search::Sequential::Path::Edge,Gecode::Heap> _ds;
-    MiniZinc::Path _path;
-    std::vector<FznSpace*>::iterator _it;
-    unsigned int _i;
+    /// meta-engine that inherits from GecodeEngine
+  template<template<class> class E,
+           template<template<class> class,class> class Meta>
+  class MetaEngine : public GecodeEngine {
+    Meta<E,FznSpace> e;
   public:
-    FznSpaceIterator() : _i(0) {}
-    FznSpaceIterator(const FznSpaceIterator& fi) : _it(fi._it), _i(0) {}
-    //FznSpaceIterator(Gecode::Support::DynamicStack<Gecode::Search::Sequential::Path::Edge,Gecode::Heap> ds, 
-    FznSpaceIterator(MiniZinc::Path path, iterator& it) : _path(path), _it(it) {      
-      while (_i!= path.entries() && !path.getSpace()) {
-        ++_it; _i++;
-      }
-    }
-    ~FznSpaceIterator() {}
+    MetaEngine(FznSpace* s, Gecode::Search::Options& o) : e(s,o) {}
+    virtual FznSpace* next(void) { return e.next(); }
+    virtual bool stopped(void) { return e.stopped(); }    
+  };
+  
+  /// meta-engine that inherits from CustomEngine
+  template<template<class> class E,
+           template<template<class> class,class> class Meta>
+  class CustomMetaEngine : public CustomEngine {
+    Meta<E,FznSpace> e;
+  public:
+    CustomMetaEngine(FznSpace* s, Gecode::Search::Options& o) : e(s,o) {}
+    virtual FznSpace* next(void) { return e.next(); }
+    virtual bool stopped(void) { return e.stopped(); }
+    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); }
+    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }   
+    Gecode::SpaceStatus status(void) { return e.status(); } 
+    virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
+    virtual unsigned int pathEntries(void) { return e.pathEntries(); }
+  };
+  
+  /// special meta (wrapper) class to allow additional functionality
+  template<template<class> class E, class T>
+  class GecodeMeta : E<T> {
+  public:
+    GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
+    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }    
+    Gecode::SpaceStatus status(void) { return E<T>::status(); } 
+    FznSpace* getSpace(unsigned int i) { return E<T>::getSpace(i); }
+    unsigned int pathEntries(void) { return E<T>::pathEntries(); }
+    FznSpace* next(void) { return E<T>::next(); }
+    bool stopped(void) { return E<T>::stopped(); }
+  };  
     
-    //iterator begin(void) { return _ds.top(); }
-    //iterator end(void) { return _ds.; }
-    reference operator*() const { return *static_cast<FznSpace>(*_it); }
-    pointer operator->() const { return static_cast<FznSpace>(*_it); }
-  }; */
   
   /// subclass of actual path to access the iterative stack
   class Path : public Gecode::Search::Sequential::Path {
@@ -89,7 +104,6 @@ namespace MiniZinc {
     int getNbEntries(void) { return ds.entries(); }    
     virtual void post(Gecode::Space& home) const;
   };
-  
   
   /// iterative DFS class that allows to add constraints along the path
   template<class T>
@@ -129,21 +143,6 @@ namespace MiniZinc {
     unsigned int pathEntries(void) { return path.getNbEntries(); }
     /// Destructor
     ~DFSEngine(void);
-  };
-  
-  /// special meta (wrapper) class to allow additional functionality
-  template<template<class> class E, class T>
-  class GecodeMeta : E<T> {
-  public:
-    GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
-    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
-    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }
-    //void postConstraints(std::vector<Call*> cts, GecodeSolverInstance& si) { E<T>::postConstraints(cts, si); }
-    Gecode::SpaceStatus status(void) { return E<T>::status(); } 
-    FznSpace* getSpace(unsigned int i) { return E<T>::getSpace(i); }
-    unsigned int pathEntries(void) { return E<T>::pathEntries(); }
-    FznSpace* next(void) { return E<T>::next(); }
-    bool stopped(void) { return E<T>::stopped(); }
   };
   
   template<class T>

@@ -22,34 +22,7 @@
 
 using namespace Gecode;
 
-namespace MiniZinc {
-  
-  /// meta-engine that inherits from GecodeEngine
-  template<template<class> class E,
-           template<template<class> class,class> class Meta>
-  class MetaEngine : public GecodeEngine {
-    Meta<E,FznSpace> e;
-  public:
-    MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
-    virtual FznSpace* next(void) { return e.next(); }
-    virtual bool stopped(void) { return e.stopped(); }    
-  };
-  
-  /// meta-engine that inherits from CustomEngine
-    template<template<class> class E,
-           template<template<class> class,class> class Meta>
-  class CustomMetaEngine : public CustomEngine {
-    Meta<E,FznSpace> e;
-  public:
-    CustomMetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
-    virtual FznSpace* next(void) { return e.next(); }
-    virtual bool stopped(void) { return e.stopped(); }
-    virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); }
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }   
-    Gecode::SpaceStatus status(void) { return e.status(); } 
-    virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
-    virtual unsigned int pathEntries(void) { return e.pathEntries(); }
-  };
+namespace MiniZinc { 
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
      : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL), customEngine(NULL) {
