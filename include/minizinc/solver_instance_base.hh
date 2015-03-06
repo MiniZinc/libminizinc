@@ -21,6 +21,7 @@
 
 namespace MiniZinc {
 
+  /// abstract class for incremental solver interfaces (incremental := solvers that allow adding of variables/constraints during search)
   class SolverInstanceBase {
   protected:
     Env& _env;
@@ -83,10 +84,32 @@ namespace MiniZinc {
     Statistics& getStatistics() { return _statistics; }
   };
   
+  
+  
+  
   /// class to inherit from, if the solver is not incremental (i.e. constraints cannot be added on the fly after calling next-solution)
   class SolverInstanceBaseNonIncremental : public SolverInstanceBase {
   public:
     bool postConstraints(std::vector<Call*> cts) { return false; }
+  };
+  
+  /// abstract solver interface for non-incremental solvers (solvers that do NOT allow adding variables/constraints during search)
+  class NISolverInstanceBase : public SolverInstanceBase {
+  private:
+    /// if true, there is a new solution whose nogoods need to be posted, false otherwise
+    bool _new_solution; 
+  protected:    
+    // overwrite this function in your solver: build the solver representation of the flat model and find the first solution
+    virtual Status nextSolution(void) = 0;
+    /// posts the nogoods representing the previous solution 
+    void postSolutionNoGoods(void);
+  public:
+    /// add constraints 
+    virtual bool postConstraints(std::vector<Call*> cts);
+   /// add variables during search (after next() has been called)
+    virtual bool addVariables(std::vector<VarDecl*> vars);   
+    /// retrieve the next solution
+    virtual Status next(void);
   };
 }
 

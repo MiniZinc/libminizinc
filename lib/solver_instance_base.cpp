@@ -40,4 +40,34 @@ namespace MiniZinc {
     }
   }
   
+  bool 
+  NISolverInstanceBase::postConstraints(std::vector<Call*> cts) {
+    // the constraints are already added to the flat model
+    return true;
+  }
+  
+  bool 
+  NISolverInstanceBase::addVariables(std::vector<VarDecl*> vars) {
+    // the variables are already added to the flat model
+    return true;
+  }
+  
+  SolverInstance::Status
+  NISolverInstanceBase::next(void) {
+    if(_new_solution)
+      postSolutionNoGoods();
+    // the variables and constraints to be posted are already added to the flat model during flattening
+    Status status = nextSolution();  
+    if(status == Status::SAT)
+      _new_solution = true;
+    else _new_solution = false;
+  }
+  
+  void
+  NISolverInstanceBase::postSolutionNoGoods(void) {
+    // TODO: obtain solution from output model
+    // TODO: derive nogoods from solution
+    // TODO: add nogoods to the flat model
+  }
+  
 }
