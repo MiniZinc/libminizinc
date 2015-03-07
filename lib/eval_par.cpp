@@ -2095,7 +2095,8 @@ namespace MiniZinc {
     void vBinOp(const BinOp& bo) {
       if (bo.op()==BOT_DOTDOT) {
         IntBounds lb = compute_int_bounds(env, bo.lhs());
-        IntBounds ub = compute_int_bounds(env, bo.lhs());
+        IntBounds ub = compute_int_bounds(env, bo.rhs());
+        valid = valid && lb.valid && ub.valid;
         _bounds.push_back(IntSetVal::a(lb.l, ub.u));
       } else {
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
