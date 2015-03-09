@@ -12,7 +12,7 @@ module1 = Extension('minizinc_internal',
                                  'gecodekernel',
                                  'gecodesupport'
                                  ],
-                    extra_compile_args=['-stdlib=libc++', '-mmacosx-version-min=10.9'],
+                    #extra_compile_args=['-stdlib=libc++', '-mmacosx-version-min=10.9'],
                     )
 
 setup (name = 'MiniZinc',

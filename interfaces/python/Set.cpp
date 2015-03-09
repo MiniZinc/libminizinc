@@ -184,7 +184,7 @@ MznSet_contains(MznSet* self, PyObject* args)
   if (PyErr_Occurred()) {
     PyObject *ptype, *pmessage, *ptraceback;
     PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-    const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
+    const char* pStrErrorMessage = PyUnicode_AsUTF8(pmessage);
     string error = "MiniZinc: Set.contains:  " + string(pStrErrorMessage);
     PyErr_SetString(ptype, error.c_str());
     return NULL;
@@ -218,7 +218,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AsUTF8(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li: " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
@@ -231,7 +231,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AsUTF8(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li, first argument:  " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
@@ -241,7 +241,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AsUTF8(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li, second argument:  " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;

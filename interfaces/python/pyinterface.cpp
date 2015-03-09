@@ -125,7 +125,7 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   } else if (PyFloat_Check(r)) {
     rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
   } else if (PyUnicode_Check(r)) {
-    rhs = new StringLit(Location(), string(PyUnicode_AS_DATA(r)));
+    rhs = new StringLit(Location(), string(PyUnicode_AsUTF8(r)));
   } else {
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_UnOp: Object must be a Python value or a MiniZinc object");
     return NULL;
@@ -211,7 +211,7 @@ Mzn_BinOp(MznModel* self, PyObject* args)
     } else if (PyFloat_Check(PyPre[i])) {
       pre[i] = new FloatLit(Location(), PyFloat_AS_DOUBLE(PyPre[i]));
     } else if (PyUnicode_Check(PyPre[i])) {
-      pre[i] = new StringLit(Location(), string(PyUnicode_AS_DATA(PyPre[i])));
+      pre[i] = new StringLit(Location(), string(PyUnicode_AsUTF8(PyPre[i])));
     } else {
       if (i == 0)
         PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_BinOp: Left hand side object must be a Python value or MiniZinc object");
