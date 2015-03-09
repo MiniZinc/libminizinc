@@ -6,8 +6,8 @@
 %     Guido Tack, 2007
 %
 %  Last modified:
-%     $Date: 2013-11-05 09:40:53 +1100 (Tue, 05 Nov 2013) $ by $Author: tack $
-%     $Revision: 14053 $
+%     $Date: 2015-01-05 17:33:06 +1100 (Mon, 05 Jan 2015) $ by $Author: tack $
+%     $Revision: 14337 $
 %
 %  This file is part of Gecode, the generic constraint
 %  development environment:
@@ -53,6 +53,10 @@ annotation int_default_search(ann: varsel, ann: valsel);
 annotation bool_default_search(ann: varsel, ann: valsel);
 annotation set_default_search(ann: varsel, ann: valsel);
 annotation float_default_search(ann: varsel, ann: valsel);
+
+% Simple LNS: upon restart, for each variable the probability of it being
+% fixed to the previous solution is 'percentage' (out of 100).
+annotation relax_and_reconstruct(array[int] of var int: x, int: percentage);
 
 % i in z <-> forall (j in x) (i in y[j])
 predicate gecode_array_set_element_intersect(var set of int: x,
@@ -101,3 +105,7 @@ predicate circuit_cost(array[int] of int: c, array[int] of var int: x,
 predicate gecode_schedule_unary(array[int] of var int: x, array[int] of int: p);
 predicate gecode_schedule_unary_optional(array[int] of var int: x,
     array[int] of int: p, array[int] of var bool: m);
+
+predicate gecode_schedule_cumulative_optional(array[int] of var int: start,
+  array[int] of int: duration, array[int] of int: usage,
+  array[int] of var bool: m, int: capacity);

@@ -6,8 +6,8 @@
 %     Guido Tack, 2007
 %
 %  Last modified:
-%     $Date: 2009-09-09 01:42:03 +1000 (Wed, 09 Sep 2009) $ by $Author: schulte $
-%     $Revision: 9689 $
+%     $Date: 2015-01-06 10:25:56 +1100 (Tue, 06 Jan 2015) $ by $Author: tack $
+%     $Revision: 14340 $
 %
 %  This file is part of Gecode, the generic constraint
 %  development environment:
@@ -34,13 +34,8 @@
 %
 %
 
-predicate gecode_maximum_int(var int: m, array[int] of var int: x);
+include "redefinitions-2.0.mzn";
 
 predicate maximum_int(var int: m, array[int] of var int: x) =
-  gecode_maximum_int(m,x);
-
-predicate maximum_int(int: m, array[int] of var int: x) =
-  if max(ub(x))=m /\ exists (y in x) (lb(y)=ub(y) /\ lb(y)=m) then true
-  else gecode_maximum_int(m,x)
-  endif;
+  array_int_maximum(m, x);
 
