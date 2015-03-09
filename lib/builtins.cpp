@@ -1553,7 +1553,7 @@ namespace MiniZinc {
     }
   }
   
-  Expression* b_sort_by(EnvI& env, Call* call) {
+  Expression* b_sort_by_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==2);
     ArrayLit* al = eval_array_lit(env,args[0]);
@@ -1568,10 +1568,37 @@ namespace MiniZinc {
       std::vector<IntVal>& order;
       Ord(std::vector<IntVal>& order0) : order(order0) {}
       bool operator()(int i, int j) {
-        return order[i] > order[j];
+        return order[i] < order[j];
       }
     } _ord(order);
-    std::sort(a.begin(), a.end(), _ord);
+    std::stable_sort(a.begin(), a.end(), _ord);
+    std::vector<Expression*> sorted(a.size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[a[i]];
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+
+  Expression* b_sort_by_float(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size()==2);
+    ArrayLit* al = eval_array_lit(env,args[0]);
+    ArrayLit* order_e = eval_array_lit(env,args[1]);
+    std::vector<FloatVal> order(order_e->v().size());
+    std::vector<int> a(order_e->v().size());
+    for (unsigned int i=0; i<order.size(); i++) {
+      a[i] = i;
+      order[i] = eval_float(env,order_e->v()[i]);
+    }
+    struct Ord {
+      std::vector<FloatVal>& order;
+      Ord(std::vector<FloatVal>& order0) : order(order0) {}
+      bool operator()(int i, int j) {
+        return order[i] < order[j];
+      }
+    } _ord(order);
+    std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
     for (unsigned int i=sorted.size(); i--;)
       sorted[i] = al->v()[a[i]];
@@ -2486,7 +2513,21 @@ namespace MiniZinc {
       std::vector<Type> t(2);
       t[0] = Type::varbot(1);
       t[1] = Type::parint(1);
-      rb(env, m, ASTString("sort_by"), t, b_sort_by);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+      t[0] = Type::bot(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varbot(1);
+      t[1] = Type::parfloat(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
+      t[0] = Type::bot(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
     }
     {
       std::vector<Type> t(1);

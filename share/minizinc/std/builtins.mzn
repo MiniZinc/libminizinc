@@ -923,8 +923,44 @@ predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_s
   @groupdef builtins.sort Array sorting operations
 */
 
-/** @group builtins.sort Return array \a x sorted by the values in \a y */
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of int: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
 function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of $T: sort_by(array[int] of $T: x, array[int] of int: y);
+
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of float: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of float: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of $T: sort_by(array[int] of $T: x, array[int] of float: y);
+
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of int: sort(array[int] of int: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
