@@ -248,7 +248,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         return rhs;
       } else if (PyUnicode_Check(pvalue)) {
         BT_STRING_PROCESS:
-        Expression* rhs = new StringLit(Location(), PyUnicode_AS_DATA(pvalue));
+        Expression* rhs = new StringLit(Location(), PyUnicode_AsUTF8(pvalue));
         code = Type::BT_STRING;
         return rhs;
       } else {

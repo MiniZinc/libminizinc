@@ -76,11 +76,11 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
     }
     if (obj != Py_None) {
       if (PyUnicode_Check(obj)) {
-        data.push_back(string(PyUnicode_AS_DATA(obj)));
+        data.push_back(string(PyUnicode_AsUTF8(obj)));
       } else if (PyList_Check(obj)) {
         Py_ssize_t n = PyList_GET_SIZE(obj);
         for (Py_ssize_t i = 0; i!=n; ++i) {
-          const char* name = PyUnicode_AS_DATA(PyList_GET_ITEM(obj, i));
+          const char* name = PyUnicode_AsUTF8(PyList_GET_ITEM(obj, i));
           if (name == NULL) {
             PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.load: Element in the list must be a filename");
             return -1;
@@ -112,7 +112,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       PyObject* value;
       GCLock lock;
       while (PyDict_Next(obj, &pos, &key, &value)) {
-        const char* name = PyUnicode_AS_DATA(key);
+        const char* name = PyUnicode_AsUTF8(key);
         if (addData(name,value) == -1) {
           // addData handles the error message
           return -1;
@@ -151,7 +151,7 @@ PyObject* MznModel::solve(PyObject* args)
     PyObject* value;
     if (dict) {
       while (PyDict_Next(dict, &pos, &key, &value)) {
-        const char* name = PyUnicode_AS_DATA(key);
+        const char* name = PyUnicode_AsUTF8(key);
         if (addData(name,value) == -1) {
           delete _m;
           _m = saveModel;
@@ -363,7 +363,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
   if (args != NULL) {
     PyObject* PyLibNames = NULL;
     if (PyUnicode_Check(args)) {
-      libNames << "\ninclude \"" << PyUnicode_AS_DATA(args) << "\";";
+      libNames << "\ninclude \"" << PyUnicode_AsUTF8(args) << "\";";
     } else if (PyTuple_Check(args)) {
       Py_ssize_t n = PyTuple_GET_SIZE(args);
       if (n > 1) {
@@ -373,7 +373,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
         PyLibNames = PyTuple_GET_ITEM(args,0);
         if (PyObject_IsTrue(PyLibNames)) {
           if (PyUnicode_Check(PyLibNames)) {
-            libNames << "\ninclude \"" << PyUnicode_AS_DATA(PyLibNames) << "\";";
+            libNames << "\ninclude \"" << PyUnicode_AsUTF8(PyLibNames) << "\";";
           } else if (PyList_Check(PyLibNames)) {
             Py_ssize_t n = PyList_GET_SIZE(PyLibNames);
             for (Py_ssize_t i = 0; i!=n; ++i) {
@@ -382,7 +382,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
                 PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Items in parsing list must be strings");
                 return -1;
               }
-              libNames << "\ninclude \"" << PyUnicode_AS_DATA(temp) << "\";";
+              libNames << "\ninclude \"" << PyUnicode_AsUTF8(temp) << "\";";
             }
           } else if (PyTuple_Check(PyLibNames)) {
             Py_ssize_t n = PyTuple_GET_SIZE(PyLibNames);
@@ -392,7 +392,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
                 PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Items in parsing tuples must be strings");
                 return -1;
               }
-              libNames << "\ninclude \"" << PyUnicode_AS_DATA(temp) << "\";";
+              libNames << "\ninclude \"" << PyUnicode_AsUTF8(temp) << "\";";
             }
           } else {
             PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Parsing argument must be a string or list/tuple of strings");

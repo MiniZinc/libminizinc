@@ -44,8 +44,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
     return NULL;
   }
   if (PyUnicode_Check(obj)) {
-    name = PyUnicode_AS_DATA(obj);
-    cout << name << endl;
+    name = PyUnicode_AsUTF8(obj);
     return MznSolver_getValueHelper(self, name);;
   } else 
   // XXX: INEFFICIENT function to retrieve values, consider optimize it later
@@ -59,7 +58,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyUnicode_AS_DATA(item);
+        name = PyUnicode_AsUTF8(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
@@ -78,7 +77,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyUnicode_AS_DATA(item);
+        name = PyUnicode_AsUTF8(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
