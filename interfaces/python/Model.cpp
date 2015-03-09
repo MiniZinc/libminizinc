@@ -89,15 +89,15 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
         }
       } else if (PyDict_Check(obj)) {
         isDict = true;
+      } else {
+        PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.load: The second argument must be either a filename, a list of filenames or a dictionary of data");
+        return -1;
       }
-
-      PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.load: The second argument must be either a filename, a list of filenames or a dictionary of data");
-      return -1;
     }
     _m = parse(string(py_string), data, *includePaths, false, false, false, errorStream);
   } else {
     char *kwlist[] = {"string","error","options"};
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|Os", kwlist, &py_string, &errorFile, &options)) {
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|ss", kwlist, &py_string, &errorFile, &options)) {
       PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.load: Keyword parsing error");
       return -1;
     }
@@ -253,6 +253,7 @@ MznModel_Constraint(MznModel* self, PyObject* args)
 /* 
  * Description: Defines the type of solution of the model
  */
+ // The responsibility to check if the parsed argument is annotation or not is of the Python interface, not the C++ interface
 static PyObject* 
 MznModel_SolveItem(MznModel* self, PyObject* args)
 {
@@ -291,37 +292,37 @@ MznModel_SolveItem(MznModel* self, PyObject* args)
     case 2: i = SolveI::max(Location(),(e)); break;
   }
   if (PyObject_IsTrue(PyAnn)) {
-    if (PyObject_TypeCheck(PyAnn, &MznAnnotation_Type)) {
-      ann = reinterpret_cast<MznAnnotation*>(PyAnn)->e;
+    if (PyObject_TypeCheck(PyAnn, &MznExpression_Type)) {
+      ann = reinterpret_cast<MznExpression*>(PyAnn)->e;
       i->ann().add(ann);
     } else if (PyList_Check(PyAnn)) {
       long n = PyList_GET_SIZE(PyAnn);
       for (long idx = 0; idx != n; ++idx) {
         PyObject* PyItem = PyList_GET_ITEM(PyAnn, idx);
-        if (!PyObject_TypeCheck(PyItem, &MznAnnotation_Type)) {
+        if (!PyObject_TypeCheck(PyItem, &MznExpression_Type)) {
           // XXX: CONSIDER REVIEW - should I delete i or it will be automatically deleted
           delete i;
           MZN_PYERR_SET_STRING(PyExc_TypeError, "MiniZinc: Model.SolveItem:  Item at position %ld must be a MiniZinc Variable", idx);
           return NULL;
         }
-        ann = reinterpret_cast<MznAnnotation*>(PyItem)->e;
+        ann = reinterpret_cast<MznExpression*>(PyItem)->e;
         i->ann().add(ann);
       }
     } else if (PyTuple_Check(PyAnn)) {
       long n = PyTuple_GET_SIZE(PyAnn);
       for (long idx = 0; idx != n; ++idx) {
         PyObject* PyItem = PyTuple_GET_ITEM(PyAnn, idx);
-        if (!PyObject_TypeCheck(PyItem, &MznAnnotation_Type)) {
-          // CONSIDER REVIEW
+        if (!PyObject_TypeCheck(PyItem, &MznExpression_Type)) {
+          // XXX: CONSIDER REVIEW
           delete i;
           MZN_PYERR_SET_STRING(PyExc_TypeError, "MiniZinc: Model.SolveItem:  Item at position %ld must be a MiniZinc Variable", idx);
           return NULL;
         }
-        ann = reinterpret_cast<MznAnnotation*>(PyItem)->e;
+        ann = reinterpret_cast<MznExpression*>(PyItem)->e;
         i->ann().add(ann);
       }
     } else {
-      // CONSIDER REVIEW
+      // XXX: CONSIDER REVIEW
       delete i;
       PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.SolveItem:  Annotation must be a single value of or a list/tuple of MiniZinc Variable Object");
       return NULL;
@@ -515,6 +516,7 @@ MznModel_setSolver(MznModel *self, PyObject *args)
   return Py_None;
 }
 
+
 /*  
  * Description: Take in a tuple of arguments, create a Variable in the Minizinc Model self
  * Arguments: 
@@ -526,11 +528,11 @@ MznModel_setSolver(MznModel *self, PyObject *args)
  *            Syntax: vector<pair<int, int> >, called dimList
  *            - dimList[i] is the lower bound and upper bound of dimension i
  *            - for example:
- *                  dimList[0] = 1,5
- *                  dimList[1] = 2,4
- *                  dimList[3] = 0,5
+ *                  dimList[0] = <1,5>
+ *                  dimList[1] = <2,4>
+ *                  dimList[3] = <0,5>
  *              means a 3d array [1..5,2..4,0..5]
- *        lower bound:
+ *        lower bound: MiniZinc Set
  *        upper bound:
  *
  *    2:    name, python value
@@ -678,7 +680,7 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   self->_m->addItem(new VarDeclI(Location(), vd));
   self->loaded = true;
 
-  PyObject* ret;
+/*  PyObject* ret;
 
   if (static_cast<TypeId>(tid) == VARSETINT) {
     ret = MznVarSet_new(&MznVarSet_Type, NULL, NULL);
@@ -696,5 +698,6 @@ MznModel_Declaration(MznModel* self, PyObject* args)
       reinterpret_cast<MznArray*>(ret)->dimList = dimList;
     }
   }
-  return ret;
+  return ret;*/
+  Py_RETURN_NONE;
 }

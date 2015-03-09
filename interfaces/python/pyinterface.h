@@ -10,12 +10,9 @@
 #include "global.h"
 
 #include "Object.h"
+#include "Set.h"
 #include "Expression.h"
 #include "Annotation.h"
-#include "Declaration.h"
-#include "Variable.h"
-#include "Array.h"
-#include "Set.h"
 #include "VarSet.h"
 
 #include "Model.h"
@@ -30,20 +27,23 @@
 
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
 static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
-static PyObject* Mzn_BinOp(MznModel* self, PyObject* args);
-static PyObject* Mzn_UnOp(MznModel* self, PyObject* args);
-static PyObject* Mzn_Call(MznModel* self, PyObject* args);
-static PyObject* Mzn_lock(MznModel* self) {GC::lock(); Py_RETURN_NONE;}
-static PyObject* Mzn_unlock(MznModel* self) {GC::unlock(); Py_RETURN_NONE;}
-static PyObject* Mzn_typeVariable(MznModel* self) {
+static PyObject* Mzn_BinOp(PyObject* self, PyObject* args);
+static PyObject* Mzn_UnOp(PyObject* self, PyObject* args);
+static PyObject* Mzn_Call(PyObject* self, PyObject* args);
+static PyObject* Mzn_lock(PyObject* self) {GC::lock(); Py_RETURN_NONE;}
+static PyObject* Mzn_unlock(PyObject* self) {GC::unlock(); Py_RETURN_NONE;}
+static PyObject* Mzn_typeVariable(PyObject* self) {
   PyObject* v = reinterpret_cast<PyObject*>(&MznVariable_Type);
   Py_INCREF(v);
   return v;
 }
 
 // Need an outer GC Lock
-static PyObject* Mzn_Id(MznModel* self, PyObject* args);
-static PyObject* Mzn_retrieveNames(MznModel* self, PyObject* args);
+static PyObject* Mzn_Id(PyObject* self, PyObject* args);
+static PyObject* Mzn_at(PyObject* self, PyObject* args);
+
+
+static PyObject* Mzn_retrieveNames(PyObject* self, PyObject* args);
 
 // This struct take over pointers to passing arguments. Be aware!
 struct MznFunction {
@@ -68,7 +68,7 @@ PyObject* eval_type(TypeInst* ti) {
     case Type::BT_FLOAT:  v = reinterpret_cast<PyObject*>(&PyFloat_Type); break;
     case Type::BT_STRING: v = reinterpret_cast<PyObject*>(&PyUnicode_Type); break;
     case Type::BT_ANN:    v = reinterpret_cast<PyObject*>(&MznAnnotation_Type); break;
-    //case Type::BT_BOT:    v = reinterpret_cast<PyObject*>(&MznSet_Type); break;
+    case Type::BT_TOP:    v = Py_None; break;
     default: //v = reinterpret_cast<PyObject*>(&MznVariable_Type);
       //cout << ti->type().bt() << endl;
       v = reinterpret_cast<PyObject*>(&MznObject_Type); break;
@@ -171,6 +171,7 @@ static PyMethodDef Mzn_methods[] = {
   {"Call", (PyCFunction)Mzn_Call, METH_VARARGS, "MiniZinc Call"},
   {"TypeVariable", (PyCFunction)Mzn_typeVariable, METH_NOARGS, "Type of MiniZinc Variable"},
 
+  {"at", (PyCFunction)Mzn_at, METH_VARARGS, "Array Access"},
   {"retrieveNames", (PyCFunction)Mzn_retrieveNames, METH_VARARGS, "Returns names of MiniZinc functions and variables"},
   {"lock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Create a lock for garbage collection"},
   {"unlock", (PyCFunction)Mzn_lock, METH_NOARGS, "Internal: Unlock a lock for garbage collection"},

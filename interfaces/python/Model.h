@@ -41,10 +41,11 @@ static PyObject* MznModel_solve(MznModel *self, PyObject* args);
 static PyObject* MznModel_setTimeLimit(MznModel* self, PyObject* args);
 static PyObject* MznModel_setSolver(MznModel* self, PyObject* args);
 static PyObject* MznModel_addData(MznModel* self, PyObject* args);
+
+
 static PyObject* MznModel_Declaration(MznModel* self, PyObject* args);
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
 static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
-static PyObject* MznModel_Call(MznModel* self, PyObject* args);
 
 static PyObject* MznModel_copy(MznModel* self);
 

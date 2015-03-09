@@ -111,6 +111,7 @@ inline Expression* one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& 
 Expression* python_to_minizinc(PyObject* pvalue, Type& type, vector<pair<int, int> >& dimList);
 
 // Special function used when loading Model from MiniZinc file
+// Note: Need an outer GCLock for this to work
 Expression* python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges);
 
 
@@ -118,7 +119,7 @@ Expression* python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ran
 string minizinc_set(long start, long end);
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer);
 
-bool PyObject_ExactTypeCheck(PyObject* ob, PyTypeObject* type) {
+inline bool PyObject_ExactTypeCheck(PyObject* ob, PyTypeObject* type) {
 	return Py_TYPE(ob) == type;
 }
 

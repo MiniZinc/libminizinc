@@ -6,7 +6,7 @@ using namespace std;
 inline PyObject* c_to_py_number(long long c_val)
 {
 #if PY_MAJOR_VERSION < 3
-  if (c_val > LONG_MAX || c_val < LONG_MIN)
+  if (c_val > LONG_MIN || c_val < LONG_MAX)
     return PyInt_FromLong( static_cast<long>(c_val) );
   else
 #endif
@@ -470,6 +470,20 @@ pydim_to_dimList(PyObject* pydim)
 
 
 // Helper functions
+// XXX: change the function name to a more meaningful name later
+// starting layer should be 0
+/* converts a python array(list) to:
+        dimensions: an array holding the size of each dimension
+        simpleArray: a 1d-array of Python value
+      return 0 if success, -1 if it is an incomplete array
+        ( incomplete array example:
+          X X X X X X
+          X X X X X
+          X X X X X X
+          X X X X X X
+        )
+*/
+
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer)
 {
   for (Py_ssize_t i=0; i<PyList_Size(value); i++) {

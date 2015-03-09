@@ -5,7 +5,7 @@
  *     Guido Tack <guido.tack@monash.edu>
  */
 
-#include "solver.h"
+#include "Solver.h"
 
 static PyObject*
 MznSolver_getValueHelper(MznSolver* self, const char* const name)
@@ -48,6 +48,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
     return MznSolver_getValueHelper(self, name);;
   } else 
   // XXX: INEFFICIENT function to retrieve values, consider optimize it later
+  // Python Dictionary would be good
     if (PyList_Check(obj)) {
       Py_ssize_t n = PyList_GET_SIZE(obj);
       PyObject* ret = PyList_New(n);
@@ -102,25 +103,6 @@ MznSolver::next()
   SolverInstance::Status status = solver->solve();
   if (status == SolverInstance::SAT || status == SolverInstance::OPT) {
     _m = env->output();
-
-    /* DEPRECATED - use Solution.getValue(name) instead
-    if (loaded_from_minizinc) {
-      PyObject* solutions = PyList_New(0);
-      PyObject* sol = PyDict_New();
-      for (unsigned int i=0; i < _m->size(); i++) {
-        if (VarDeclI* vdi = (*_m)[i]->dyn_cast<VarDeclI>()) {
-          PyObject* PyValue = minizinc_to_python(vdi->e());
-          if (PyValue == NULL)
-            return NULL;
-          PyDict_SetItemString(sol, vdi->e()->id()->str().c_str(), PyValue);
-        }
-      }
-      PyList_Append(solutions, sol);
-      PyObject* ret = Py_BuildValue("iO", status, solutions);
-      Py_DECREF(sol);
-      Py_DECREF(solutions);
-      return ret;
-    }*/
     Py_RETURN_NONE; 
   }
   if (_m == NULL)

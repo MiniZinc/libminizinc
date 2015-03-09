@@ -16,7 +16,7 @@ using namespace std;
  * Note: Need an outer GCLock for this to work
  */
 static PyObject*
-Mzn_Call(MznModel* self, PyObject* args)
+Mzn_Call(PyObject* self, PyObject* args)
 {
   const char* name;
   PyObject* variableTuple;
@@ -48,7 +48,7 @@ Mzn_Call(MznModel* self, PyObject* args)
       vector<pair<int, int> > dimList;
       expressionList[i] = python_to_minizinc(pyval, type, dimList);
       if (expressionList[i] == NULL) {
-        MZN_PYERR_SET_STRING(PyExc_RuntimeError, "MiniZinc: MznCall: Item at position %li must be a MiniZinc Object or Python int/float/string/list/tuple", i);
+        MZN_PYERR_SET_STRING(PyExc_RuntimeError, "MiniZinc: MznCall: Second argument, item at position %li must be a MiniZinc Object or Python int/float/string/list/tuple", i);
         return NULL;
       }
     }
@@ -69,16 +69,67 @@ Mzn_Call(MznModel* self, PyObject* args)
 
 // Need an outer GCLock
 static PyObject*
-Mzn_Id(MznModel* self, PyObject* args)
+Mzn_Id(PyObject* self, PyObject* args)
 {
   const char* name;
   if (!PyArg_ParseTuple(args, "s", &name)) {
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Id: Argument must be a string");
     return NULL;
   }
-  PyObject* ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
-  reinterpret_cast<MznAnnotation*>(ret)->e = new Id(Location(), name, NULL);
+  PyObject* ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  reinterpret_cast<MznExpression*>(ret)->e = new Id(Location(), name, NULL);
   return ret;
+}
+
+static PyObject* Mzn_at(PyObject* self, PyObject* args)
+{
+  PyObject* Py_array;
+  PyObject* Py_idx;
+  if (!PyArg_ParseTuple(args, "OO", &Py_array, &Py_idx)) {
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: at:  Parsing error");
+    return NULL;
+  }
+
+  if (!PyObject_TypeCheck(Py_array, &MznExpression_Type)) {
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: at:  First argument must be a MiniZinc Expression");
+    return NULL;
+  } 
+
+  if (!PyList_Check(Py_idx)) {
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: at:  Second argument must be a tuple of indices");
+    return NULL;
+  }
+
+  Py_ssize_t n = PyList_GET_SIZE(Py_idx);
+
+  vector<Expression*> idx(n);
+  for (Py_ssize_t i = 0; i!=n; ++i) {
+    PyObject* obj = PyList_GetItem(Py_idx, i);
+#if PY_MAJOR_VERSION < 3
+    if (PyInt_Check(obj)) {
+      long index = PyInt_AS_LONG(obj);
+      idx[i] = new IntLit(Location(), IntVal(index));
+    } else
+#endif
+    if (PyLong_Check(obj)) {
+      int overflow;
+      long long index = PyLong_AsLongLongAndOverflow(obj, &overflow);
+      if (overflow) {
+        MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: at:  Index at pos %li overflowed", i);
+        return NULL;
+      }
+      idx[i] = new IntLit(Location(), IntVal(index));
+    } else if (PyObject_TypeCheck(obj,&MznExpression_Type)) {
+      idx[i] = reinterpret_cast<MznExpression*>(obj)->e;
+    } else {
+      PyErr_SetString(PyExc_TypeError, "MiniZinc: ArrayAccess:  Indices must be integers or MiniZinc Expression");
+      return NULL;
+    }
+  }
+
+  MznExpression* ret = reinterpret_cast<MznExpression*> (MznExpression_new(&MznExpression_Type, NULL, NULL));
+  ret->e = new ArrayAccess(Location(), reinterpret_cast<MznExpression*>(Py_array)->e, idx);
+  return reinterpret_cast<PyObject*>(ret);
 }
 
 /* 
@@ -86,7 +137,7 @@ Mzn_Id(MznModel* self, PyObject* args)
  * Note: Need an outer GCLock for this to work
  */
 static PyObject*
-Mzn_UnOp(MznModel* self, PyObject* args)
+Mzn_UnOp(PyObject* self, PyObject* args)
 {
   /*
   enum UnOpType {
@@ -145,7 +196,7 @@ Mzn_UnOp(MznModel* self, PyObject* args)
  * Note: Need an outer GCLock for this to work
  */
 static PyObject* 
-Mzn_BinOp(MznModel* self, PyObject* args)
+Mzn_BinOp(PyObject* self, PyObject* args)
 {
   /*
   enum BinOpType {
@@ -251,7 +302,7 @@ static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* ke
 }
 
 static PyObject* 
-Mzn_retrieveNames(MznModel* self, PyObject* args) {
+Mzn_retrieveNames(PyObject* self, PyObject* args) {
   PyObject* boolfuncs = PyDict_New();
   PyObject* annfuncs = PyDict_New();
   PyObject* annvars = PyList_New(0);
