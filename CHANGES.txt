@@ -50,6 +50,7 @@ Bug fixes:
  - Report type error when trying to coerce a var set into an array
  - Report error when calling function with a value that is outside the
    declared parameter bounds
+ - Fix arg_sort builtin to implement the correct semantics
  - Fix sort_by builtin to sort in non-decreasing order, and work with floats
  
 

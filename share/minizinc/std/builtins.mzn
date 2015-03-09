@@ -974,7 +974,8 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of int:x);
+function array[int] of int: arg_sort(array[int] of int:x) =
+  sort_by([i | i in index_set(x)], x);
 
 /** @group builtins.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -982,7 +983,8 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of float:x);
+function array[int] of int: arg_sort(array[int] of float:x) =
+  sort_by([i | i in index_set(x)], x);
 
 /***
   @groupdef builtins.coercion Coercions
