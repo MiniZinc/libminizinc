@@ -66,7 +66,7 @@ PyObject* eval_type(TypeInst* ti) {
         v = reinterpret_cast<PyObject*>(&PyLong_Type);
       break;
     case Type::BT_FLOAT:  v = reinterpret_cast<PyObject*>(&PyFloat_Type); break;
-    case Type::BT_STRING: v = reinterpret_cast<PyObject*>(&PyBytes_Type); break;
+    case Type::BT_STRING: v = reinterpret_cast<PyObject*>(&PyUnicode_Type); break;
     case Type::BT_ANN:    v = reinterpret_cast<PyObject*>(&MznAnnotation_Type); break;
     //case Type::BT_BOT:    v = reinterpret_cast<PyObject*>(&MznSet_Type); break;
     default: //v = reinterpret_cast<PyObject*>(&MznVariable_Type);
@@ -92,7 +92,7 @@ void add_to_dictionary (FunctionI* fi, PyObject* toAdd)
 {
   ASTExprVec<VarDecl> params = fi->params();
   const char* str = fi->id().str().c_str();
-  PyObject* key = PyBytes_FromString(str);
+  PyObject* key = PyUnicode_FromString(str);
 
   PyObject* args_and_return_type_tuple = PyTuple_New(2);
   PyObject* args_tuple = PyTuple_New(params.size());
@@ -154,7 +154,7 @@ public:
   }
   void vVarDeclI(VarDeclI* vdi) {
     if (vdi->e()->ti()->type().isann()) {
-      PyList_Append(_annvars, PyBytes_FromString(vdi->e()->id()->str().c_str()));
+      PyList_Append(_annvars, PyUnicode_FromString(vdi->e()->id()->str().c_str()));
     }
   }
 };

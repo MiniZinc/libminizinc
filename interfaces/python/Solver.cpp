@@ -43,8 +43,9 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
     PyErr_SetString(PyExc_TypeError,"Accept 1 argument of strings or list/tuple of strings");
     return NULL;
   }
-  if (PyBytes_Check(obj)) {
-    name = PyBytes_AS_STRING(obj);
+  if (PyUnicode_Check(obj)) {
+    name = PyUnicode_AS_DATA(obj);
+    cout << name << endl;
     return MznSolver_getValueHelper(self, name);;
   } else 
   // XXX: INEFFICIENT function to retrieve values, consider optimize it later
@@ -53,12 +54,12 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
       PyObject* ret = PyList_New(n);
       for (Py_ssize_t i=0; i!=n; ++i) {
         PyObject* item = PyList_GET_ITEM(obj, i);
-        if (!PyBytes_Check(item)) {
+        if (!PyUnicode_Check(item)) {
           Py_DECREF(ret);
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyBytes_AS_STRING(item);
+        name = PyUnicode_AS_DATA(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
@@ -72,12 +73,12 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
       PyObject* ret = PyTuple_New(n);
       for (Py_ssize_t i=0; i!=n; ++i) {
         PyObject* item = PyTuple_GET_ITEM(obj, i);
-        if (!PyBytes_Check(item)) {
+        if (!PyUnicode_Check(item)) {
           Py_DECREF(ret);
           PyErr_SetString(PyExc_RuntimeError,"Elements must be strings");
           return NULL;
         }
-        name = PyBytes_AS_STRING(item);
+        name = PyUnicode_AS_DATA(item);
         PyObject* value = MznSolver_getValueHelper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
@@ -123,11 +124,10 @@ MznSolver::next()
     }*/
     Py_RETURN_NONE; 
   }
-  if (_m == NULL) {
-    return PyBytes_FromString("Unsatisfied");
-  } else {
-    return PyBytes_FromString("Reached last solution");
-  }
+  if (_m == NULL)
+    return PyUnicode_FromString("Unsatisfied");
+  else
+    return PyUnicode_FromString("Reached last solution");
 }
 
 
@@ -138,7 +138,7 @@ MznSolver_dealloc(MznSolver* self)
     delete self->env;
   if (self->solver)
     delete self->solver;
-  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+  Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 static PyObject*

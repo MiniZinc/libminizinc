@@ -109,7 +109,7 @@ Mzn_UnOp(MznModel* self, PyObject* args)
   } else if (PyBool_Check(r)) {
     rhs = new BoolLit(Location(), PyObject_IsTrue(r));
   } else
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
   if (PyInt_Check(r)) {
     rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
   } else
@@ -124,8 +124,8 @@ Mzn_UnOp(MznModel* self, PyObject* args)
     rhs = new IntLit(Location(), IntVal(c_val));
   } else if (PyFloat_Check(r)) {
     rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
-  } else if (PyBytes_Check(r)) {
-    rhs = new StringLit(Location(), string(PyBytes_AS_STRING(r)));
+  } else if (PyUnicode_Check(r)) {
+    rhs = new StringLit(Location(), string(PyUnicode_AS_DATA(r)));
   } else {
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_UnOp: Object must be a Python value or a MiniZinc object");
     return NULL;
@@ -194,7 +194,7 @@ Mzn_BinOp(MznModel* self, PyObject* args)
       pre[i] = new BoolLit(Location(), PyObject_IsTrue(PyPre[i]));
     } else 
 
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
     if (PyInt_Check(PyPre[i])) {
       pre[i] = new IntLit(Location(), IntVal(PyInt_AS_LONG(PyPre[i])));
     } else
@@ -210,8 +210,8 @@ Mzn_BinOp(MznModel* self, PyObject* args)
       pre[i] = new IntLit(Location(), IntVal(c_val));
     } else if (PyFloat_Check(PyPre[i])) {
       pre[i] = new FloatLit(Location(), PyFloat_AS_DOUBLE(PyPre[i]));
-    } else if (PyBytes_Check(PyPre[i])) {
-      pre[i] = new StringLit(Location(), string(PyBytes_AS_STRING(PyPre[i])));
+    } else if (PyUnicode_Check(PyPre[i])) {
+      pre[i] = new StringLit(Location(), string(PyUnicode_AS_DATA(PyPre[i])));
     } else {
       if (i == 0)
         PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_BinOp: Left hand side object must be a Python value or MiniZinc object");
@@ -265,7 +265,7 @@ Mzn_retrieveNames(MznModel* self, PyObject* args) {
     } else if (n == 1) {
       libName = PyTuple_GET_ITEM(args, 0);
       if (PyObject_IsTrue(libName)) {
-        if (!PyBytes_Check(libName)) {
+        if (!PyUnicode_Check(libName)) {
           PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_retrieveNames: first argument must be a string");
           return NULL;
         }

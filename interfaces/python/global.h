@@ -9,8 +9,12 @@
 
 #include <Python.h>
 
-#if Py_MAJOR_VERSION < 3
-#include <bytesobject.h>
+#if PY_MAJOR_VERSION < 3
+	#define PyUnicode_Check PyString_Check
+	#define PyUnicode_AS_DATA PyString_AS_STRING	
+ 	#define PyUnicode_FromString PyString_FromString
+ 	#define PyUnicode_Type PyString_Type
+   //#include <bytesobject.h>
 #endif
  
 #include "structmember.h"

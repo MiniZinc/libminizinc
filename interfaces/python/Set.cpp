@@ -184,7 +184,7 @@ MznSet_contains(MznSet* self, PyObject* args)
   if (PyErr_Occurred()) {
     PyObject *ptype, *pmessage, *ptraceback;
     PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-    char* pStrErrorMessage = PyBytes_AsString(pmessage);
+    const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
     string error = "MiniZinc: Set.contains:  " + string(pStrErrorMessage);
     PyErr_SetString(ptype, error.c_str());
     return NULL;
@@ -218,7 +218,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li: " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
@@ -231,7 +231,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li, first argument:  " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
@@ -241,7 +241,7 @@ MznSet_push(MznSet* self, PyObject* args) {
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
           PyErr_Fetch(&ptype, &pmessage, &ptraceback);
-          char* pStrErrorMessage = PyBytes_AsString(pmessage);
+          const char* pStrErrorMessage = PyUnicode_AS_DATA(pmessage);
           string error = "MiniZinc: Set.push: tuple item %li, second argument:  " + string(pStrErrorMessage);
           MZN_PYERR_SET_STRING(ptype, error.c_str(), i);
           return NULL;
@@ -293,7 +293,7 @@ MznSet_output(MznSet* self)
   }
   const std::string& tmp = s.str();
   const char* cstr = tmp.c_str();
-  PyObject* result = PyBytes_FromString(cstr);
+  PyObject* result = PyUnicode_FromString(cstr);
   return result;
 }
 
@@ -311,7 +311,7 @@ static PyObject* MznSet_repr(PyObject* self) {
     else output << ", ";
   }
   const std::string& tmp = output.str();
-  return PyBytes_FromString(tmp.c_str());
+  return PyUnicode_FromString(tmp.c_str());
 }
 
 
@@ -321,7 +321,7 @@ static PyObject* MznSet_repr(PyObject* self) {
 static void
 MznSetIter_dealloc(MznSetIter* self)
 {
-  self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+  Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 static PyObject*

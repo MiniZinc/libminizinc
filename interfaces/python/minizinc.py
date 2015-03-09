@@ -1070,8 +1070,8 @@ class Set(Declaration):
 	def __contains__(self, val):
 		return self.obj.contains(val)
 
-	#def __str__(self):
-	#	return self.obj
+	def __str__(self):
+		return self.obj
 
 class VarSet(Variable):
 	def __init__(self, model, argopt1, argopt2 = None, argopt3 = None):

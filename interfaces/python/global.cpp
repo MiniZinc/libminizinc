@@ -5,7 +5,7 @@ using namespace std;
 
 inline PyObject* c_to_py_number(long long c_val)
 {
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
   if (c_val > LONG_MAX || c_val < LONG_MIN)
     return PyInt_FromLong( static_cast<long>(c_val) );
   else
@@ -15,7 +15,7 @@ inline PyObject* c_to_py_number(long long c_val)
 
 inline long long py_to_c_number(PyObject* py_val)
 {
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py_val)) {
     return PyInt_AS_LONG(py_val);
   } else
@@ -36,7 +36,7 @@ inline long long py_to_c_number(PyObject* py_val)
 
 inline long long py_to_c_number(PyObject* py_val, int* overflow)
 {
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py_val)) {
     *overflow = 0;
     return PyInt_AS_LONG(py_val);
@@ -121,7 +121,7 @@ one_dim_minizinc_to_python(Expression* e, const Type& type)
     case Type::BT_STRING:
     {
       string temp(eval_string(env.envi(), e));
-      return PyBytes_FromString(temp.c_str());
+      return PyUnicode_FromString(temp.c_str());
     }
     default:
       throw logic_error("MiniZinc: one_dim_minizinc_to_python: Unexpected type code");
@@ -148,9 +148,9 @@ minizinc_to_python(VarDecl* vd)
     int dim = vd->type().dim();
 
     // Maximum size of each dimension
-    vector<long long> dmax;
+    vector<Py_ssize_t> dmax;
     // Current size of each dimension
-    vector<long long> d;
+    vector<Py_ssize_t> d;
     // p[0] holds the final array, p[1+] builds up p[0]
     vector<PyObject*> p(dim);
 
@@ -220,7 +220,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         code = Type::BT_BOOL;
         return rhs;
       } else 
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
       if (PyInt_Check(pvalue)) {
         BT_INTEGER_PROCESS_2X_VERSION:
         Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(pvalue)));
@@ -246,9 +246,9 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
         Expression* rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(pvalue));
         code = Type::BT_FLOAT;
         return rhs;
-      } else if (PyBytes_Check(pvalue)) {
+      } else if (PyUnicode_Check(pvalue)) {
         BT_STRING_PROCESS:
-        Expression* rhs = new StringLit(Location(), PyBytes_AS_STRING(pvalue));
+        Expression* rhs = new StringLit(Location(), PyUnicode_AS_DATA(pvalue));
         code = Type::BT_STRING;
         return rhs;
       } else {
@@ -258,7 +258,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
       break;
 
     case Type::BT_INT: 
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
       if (PyInt_Check(pvalue))
         goto BT_INTEGER_PROCESS_2X_VERSION;
       else
@@ -277,7 +277,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
       goto BT_FLOAT_PROCESS;
 
     case Type::BT_STRING:
-      if (!PyBytes_Check(pvalue)) {
+      if (!PyUnicode_Check(pvalue)) {
         PyErr_SetString(PyExc_TypeError,"MiniZinc: Object in an array must be of the same type: Expected an string");
         return NULL;
       }
@@ -435,7 +435,7 @@ pydim_to_dimList(PyObject* pydim)
 
     long long c_bound[2];
     for (int i=0; i!=2; ++i) {
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
       if (PyInt_Check(Py_bound[i]))
         c_bound[i] = PyInt_AS_LONG(Py_bound[i]);
       else 

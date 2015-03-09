@@ -100,7 +100,7 @@ PyObject* MznArray_at(MznArray* self, PyObject* args)
   vector<Expression*> idx(n);
   for (vector<long>::size_type i = 0; i!=n; ++i) {
     PyObject* obj = PyList_GetItem(indexList, i);
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
     if (PyInt_Check(obj)) {
       long index = PyInt_AS_LONG(obj);
       if (index<((*(self->dimList))[i]).first || index > ((*(self->dimList))[i]).second) {

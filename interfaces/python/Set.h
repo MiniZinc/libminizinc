@@ -14,6 +14,10 @@
 #include <list>
 #include <exception>
 
+#if PY_MAJOR_VERSION >= 3
+#  define Py_TPFLAGS_HAVE_ITER 0
+#endif
+
 using namespace std;
 using namespace MiniZinc;
 

@@ -75,12 +75,12 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       }
     }
     if (obj != Py_None) {
-      if (PyBytes_Check(obj)) {
-        data.push_back(string(PyBytes_AS_STRING(obj)));
+      if (PyUnicode_Check(obj)) {
+        data.push_back(string(PyUnicode_AS_DATA(obj)));
       } else if (PyList_Check(obj)) {
         Py_ssize_t n = PyList_GET_SIZE(obj);
         for (Py_ssize_t i = 0; i!=n; ++i) {
-          char* name = PyBytes_AsString(PyList_GET_ITEM(obj, i));
+          const char* name = PyUnicode_AS_DATA(PyList_GET_ITEM(obj, i));
           if (name == NULL) {
             PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.load: Element in the list must be a filename");
             return -1;
@@ -112,7 +112,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       PyObject* value;
       GCLock lock;
       while (PyDict_Next(obj, &pos, &key, &value)) {
-        char* name = PyBytes_AS_STRING(key);
+        const char* name = PyUnicode_AS_DATA(key);
         if (addData(name,value) == -1) {
           // addData handles the error message
           return -1;
@@ -151,7 +151,7 @@ PyObject* MznModel::solve(PyObject* args)
     PyObject* value;
     if (dict) {
       while (PyDict_Next(dict, &pos, &key, &value)) {
-        char* name = PyBytes_AS_STRING(key);
+        const char* name = PyUnicode_AS_DATA(key);
         if (addData(name,value) == -1) {
           delete _m;
           _m = saveModel;
@@ -362,8 +362,8 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
   libNames << "include \"globals.mzn\";";
   if (args != NULL) {
     PyObject* PyLibNames = NULL;
-    if (PyBytes_Check(args)) {
-      libNames << "\ninclude \"" << PyBytes_AS_STRING(args) << "\";";
+    if (PyUnicode_Check(args)) {
+      libNames << "\ninclude \"" << PyUnicode_AS_DATA(args) << "\";";
     } else if (PyTuple_Check(args)) {
       Py_ssize_t n = PyTuple_GET_SIZE(args);
       if (n > 1) {
@@ -372,27 +372,27 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
       } else if (n == 1) {
         PyLibNames = PyTuple_GET_ITEM(args,0);
         if (PyObject_IsTrue(PyLibNames)) {
-          if (PyBytes_Check(PyLibNames)) {
-            libNames << "\ninclude \"" << PyBytes_AS_STRING(PyLibNames) << "\";";
+          if (PyUnicode_Check(PyLibNames)) {
+            libNames << "\ninclude \"" << PyUnicode_AS_DATA(PyLibNames) << "\";";
           } else if (PyList_Check(PyLibNames)) {
             Py_ssize_t n = PyList_GET_SIZE(PyLibNames);
             for (Py_ssize_t i = 0; i!=n; ++i) {
               PyObject* temp = PyList_GET_ITEM(PyLibNames, i);
-              if (!PyBytes_Check(temp)) {
+              if (!PyUnicode_Check(temp)) {
                 PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Items in parsing list must be strings");
                 return -1;
               }
-              libNames << "\ninclude \"" << PyBytes_AS_STRING(temp) << "\";";
+              libNames << "\ninclude \"" << PyUnicode_AS_DATA(temp) << "\";";
             }
           } else if (PyTuple_Check(PyLibNames)) {
             Py_ssize_t n = PyTuple_GET_SIZE(PyLibNames);
             for (Py_ssize_t i = 0; i!=n; ++i) {
               PyObject* temp = PyTuple_GET_ITEM(PyLibNames, i);
-              if (!PyBytes_Check(temp)) {
+              if (!PyUnicode_Check(temp)) {
                 PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Items in parsing tuples must be strings");
                 return -1;
               }
-              libNames << "\ninclude \"" << PyBytes_AS_STRING(temp) << "\";";
+              libNames << "\ninclude \"" << PyUnicode_AS_DATA(temp) << "\";";
             }
           } else {
             PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.init:  Parsing argument must be a string or list/tuple of strings");
@@ -564,7 +564,7 @@ MznModel_Declaration(MznModel* self, PyObject* args)
 
 
   char* name;
-  unsigned int tid;
+  long tid;
   PyObject* pydim = NULL;
   PyObject* pylb = NULL;
   PyObject* pyub = NULL;
@@ -592,20 +592,20 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   else 
   // else if > 2 arguments, create a MiniZinc Variable
   {
-#if Py_MAJOR_VERSION < 3
+#if PY_MAJOR_VERSION < 3
     if (PyInt_Check(pyval)) {
       tid = PyInt_AS_LONG(pyval);
       pyval = NULL;
     } else
 #endif
     if (PyLong_Check(pyval)) {
-      tid = PyLong_AsLongLong(pyval);
+      tid = PyLong_AsLong(pyval);
       pyval = NULL;
     } else {
       PyErr_SetString(PyExc_TypeError, "MiniZinc: MznModel.Declaration:  Type Id must be an integer");
       return NULL;
     }
-    if (tid>17) {
+    if (tid>17 || tid<0) {
       PyErr_SetString(PyExc_ValueError, "MiniZinc: MznModel.Declaration:  Type Id is from 0 to 17");
       return NULL;
     }
@@ -669,7 +669,7 @@ MznModel_Declaration(MznModel* self, PyObject* args)
                             one_dim_python_to_minizinc(pyub,code) );
           break;
       default:
-          MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: MznModel.Declaration:  Value code %i not supported", tid);
+          MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: MznModel.Declaration:  Value code %li not supported", tid);
           return NULL;
     }
   }
