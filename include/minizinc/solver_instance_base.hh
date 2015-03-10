@@ -103,6 +103,8 @@ namespace MiniZinc {
     virtual Status nextSolution(void) = 0;
     /// posts the nogoods representing the previous solution 
     void postSolutionNoGoods(void);
+    // derives the nogoods from the last solution (through the output model) and returns them
+    std::vector<Call*> deriveNoGoodsFromSolution(void);
   public:
     /// add constraints 
     virtual bool postConstraints(std::vector<Call*> cts);

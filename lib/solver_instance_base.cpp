@@ -52,6 +52,29 @@ namespace MiniZinc {
     return true;
   }
   
+  std::vector<Call*> 
+  NISolverInstanceBase::deriveNoGoodsFromSolution(void) {
+    Model* output = env().output();    
+    std::vector<BinOp*> disequalities;
+    // collect the solution assignments from the output model
+    for(VarDeclIterator it = output->begin_vardecls(); it!=output->end_vardecls(); ++it) {
+      Id* id = it->e()->id();
+      if(!it->e()->e()) {
+        std::stringstream ssm;
+        ssm << "NISolverInstanceBase::deriveNoGoodsFromSolution: no solution assigned to \"" << *id << "\" in the output model.";
+        throw InternalError(ssm.str());
+      }      
+      Expression* e = eval_par(env().envi(), it->e()->e());
+      // create the constraints: x_i != sol_i
+      BinOp* bo = new BinOp(Location(), id, BOT_NQ, e);
+      disequalities.push_back(bo);
+    }
+    // TODO: create the constraints: \/_i { x_i != sol_i }   
+    // TODO: wrap into KeepAlive!!
+    std::vector<Call*> nogoods;
+    return nogoods;
+  }
+  
   SolverInstance::Status
   NISolverInstanceBase::next(void) {
     if(_new_solution)
