@@ -283,6 +283,12 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
+  if (flag_output_fzn == "") {
+    flag_output_fzn = flag_output_base+".fzn";
+  }
+  if (flag_output_ozn == "") {
+    flag_output_ozn = flag_output_base+".ozn";
+  }
 
   {
     std::stringstream errstream;
@@ -486,4 +492,3 @@ error:
 
   exit(EXIT_FAILURE);
 }
-
