@@ -43,7 +43,7 @@ namespace MiniZinc {
 
         std::string fznFile;
         if (!_canPipe) {
-          char tmpfile[] = "/tmp/fznfileXXXXXX";
+          char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
           mkstemp(tmpfile);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
@@ -124,7 +124,8 @@ namespace MiniZinc {
           
           if (!_canPipe) {
             remove(fznFile.c_str());
-          }         
+          } 
+          return;
         } else {
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
@@ -186,7 +187,7 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    FznProcess proc("fzn-gecode",false,_fzn);
+    FznProcess proc("flatzinc",false,_fzn);
     std::stringstream result; 
     proc.run(result);
     std::string solution;
