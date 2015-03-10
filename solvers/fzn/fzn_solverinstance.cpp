@@ -17,13 +17,14 @@
 #include <signal.h>
 #include <fstream>
 
-#include "fzn_solverinstance.hh"
+#include <minizinc/solvers/fzn_solverinstance.hh>
 
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
   
@@ -35,7 +36,7 @@ namespace MiniZinc {
       Model* _flat;
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
-      std::stringstream run(void) {
+      void run(std::stringstream& result) {
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -64,8 +65,7 @@ namespace MiniZinc {
               write(pipes[0][1], str.c_str(), str.size());
             }
           }
-          close(pipes[0][1]);
-          std::stringstream result;
+          close(pipes[0][1]);         
           
           fd_set fdset;
           struct timeval timeout;
@@ -124,8 +124,7 @@ namespace MiniZinc {
           
           if (!_canPipe) {
             remove(fznFile.c_str());
-          }
-          return result;
+          }         
         } else {
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
@@ -155,13 +154,13 @@ namespace MiniZinc {
   FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
   namespace {
-    ArrayLit* b_arrayXd(ASTExprVec<Expression> args, int d) {
+    ArrayLit* b_arrayXd(EnvI& envi, ASTExprVec<Expression> args, int d) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(args[d]);
+      ArrayLit* al = eval_array_lit(envi, args[d]);
       std::vector<std::pair<int,int> > dims(d);
       unsigned int dim1d = 1;
       for (int i=0; i<d; i++) {
-        IntSetVal* di = eval_intset(args[i]);
+        IntSetVal* di = eval_intset(envi, args[i]);
         if (di->size()==0) {
           dims[i] = std::pair<int,int>(1,0);
           dim1d = 0;
@@ -188,7 +187,8 @@ namespace MiniZinc {
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
     FznProcess proc("fzn-gecode",false,_fzn);
-    std::stringstream result = proc.run();
+    std::stringstream result; 
+    proc.run(result);
     std::string solution;
     
     typedef std::pair<VarDecl*,Expression*> DE;
@@ -209,7 +209,7 @@ namespace MiniZinc {
             it->second.first->e(it->second.second);
           }
         }
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, std::cerr);
+        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
@@ -223,7 +223,7 @@ namespace MiniZinc {
               for (unsigned int i=0; i<c->args().size(); i++)
                 c->args()[i]->type(Type::parsetint());
               c->args()[c->args().size()-1]->type(it->second.first->type());
-              ArrayLit* al = b_arrayXd(c->args(), c->args().size()-1);
+              ArrayLit* al = b_arrayXd(env().envi(), c->args(), c->args().size()-1);
               it->second.first->e(al);
             } else {
               it->second.first->e(ai->e());

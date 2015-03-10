@@ -41,7 +41,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include "fzn_solverinstance.hh"
+#include <minizinc/solvers/fzn_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;

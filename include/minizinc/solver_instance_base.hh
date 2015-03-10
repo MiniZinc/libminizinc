@@ -82,16 +82,7 @@ namespace MiniZinc {
   public:
     SolverInstanceImpl(Env& env, const Options& options) : SolverInstanceBase(env,options) {}
     Statistics& getStatistics() { return _statistics; }
-  };
-  
-  
-  
-  
-  /// class to inherit from, if the solver is not incremental (i.e. constraints cannot be added on the fly after calling next-solution)
-  class SolverInstanceBaseNonIncremental : public SolverInstanceBase {
-  public:
-    bool postConstraints(std::vector<Call*> cts) { return false; }
-  };
+  };  
   
   /// abstract solver interface for non-incremental solvers (solvers that do NOT allow adding variables/constraints during search)
   class NISolverInstanceBase : public SolverInstanceBase {
@@ -112,6 +103,11 @@ namespace MiniZinc {
     virtual bool addVariables(std::vector<VarDecl*> vars);   
     /// retrieve the next solution
     virtual Status next(void);
+  };
+  
+  // non-incremental solver instance implementation
+  template<class Solver>
+  class NISolverInstanceImpl : public NISolverInstanceBase, public SolverInstanceImpl<Solver> {  
   };
 }
 

@@ -255,7 +255,7 @@ find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX FALSE)
 set(HAS_GECODE TRUE)
-set(HAS_FZN FALSE)
+set(HAS_FZN TRUE)
 
 if(HAS_CPLEX)
   if(UNIX)
@@ -341,7 +341,7 @@ target_link_libraries(mzn2doc minizinc)
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
-		solvers/fzn/fzn_solverinstance.hh
+	#	solvers/fzn/fzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
