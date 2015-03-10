@@ -38,7 +38,7 @@ static PyMemberDef MznSolver_members[] = {
 
 static PyMethodDef MznSolver_methods[] = {
   {"next", (PyCFunction)MznSolver_next, METH_NOARGS, "Next Solution"},
-  {"getValue",(PyCFunction)MznSolver_getValue, METH_VARARGS, "Get value of a variable"},
+  {"get_value",(PyCFunction)MznSolver_getValue, METH_VARARGS, "Get value of a variable"},
   {NULL} /* Sentinel */
 };
 

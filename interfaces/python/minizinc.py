@@ -199,7 +199,20 @@ class Predicate(Expression):
 			else:
 				raise TypeError("MiniZinc: function '" + self.name + "': Unexpected Type: " + type_presentation(type(args)) )
 
+		def eval_model(args):
+			model = None
+			for val in args:
+				if isinstance(val, Expression):
+					if hasattr(val, 'model'):
+						if val.model is not None:
+							if model is None:
+								model = val.model
+							else:
+								raise TypeError("Arguments in the predicate don't belong to the same model")
+			return model
+
 		self.vars_type = eval_type(vars)
+		self.model = eval_model(vars)
 		if args_and_return_type_tuple is not None:
 			for t in args_and_return_type_tuple:
 				if self.vars_type == t[0]:
@@ -771,23 +784,20 @@ class Declaration(Expression):
 			raise TypeError('Warning: First argument must be a Model Object')
 		Expression.__init__(self, model)
 		self.name = '"' + str(id(self)) + '"'
-		self.solution_counter = -1
+		self.solve_counter = -1
+		self.next_counter = -1
 
 	def get_value(self):
-		if hasattr(self, 'solution_counter') and self.solution_counter < self.model.solution_counter:
-			self.value = self.model.mznsolver.getValue(self.name)
-			return self.value
+		if hasattr(self, 'solve_counter'):
+			if self.solve_counter == self.model.solve_counter and self.next_counter == self.model.next_counter:
+				return self.value
+			self.solve_counter = self.model.solve_counter
+			self.next_counter = self.model.next_counter
+			self.value = self.model.mznsolver.get_value(self.name)
 		if hasattr(self, 'value'):
 			return self.value
 		else:
 			return None
-			'''
-			if self.model.is_solved():
-				self.value = self.model.mznsolver.getValue(self.name)
-				return self.value
-			else:
-				return None
-			'''
 
 	def __str__(self):
 		return str(self.get_value())
@@ -795,16 +805,19 @@ class Declaration(Expression):
 	def __repr__(self):
 		return 'A Minizinc Object with the value of ' + self.__str__()
 
+
 class Construct(Declaration):
 	def __init__(self, model, arg1, arg2 = None):
 		Declaration.__init__(self, model)
-		del self.solution_counter
+		del self.solve_counter
+		del self.next_counter
 		if arg2 != None:
 			if type(arg2) is str:
 				self.name = arg2
 			else: 
 				raise TypeError('Name of variable must be a string')
 		if hasattr(arg1, 'obj'):
+			# XXX
 			self.obj = model.mznmodel.Declaration(self.name, arg1.obj)
 		else:
 			self.obj = model.mznmodel.Declaration(self.name, arg1)
@@ -872,21 +885,22 @@ class Variable(Declaration):
 			self.name = name
 
 		if typelb is bool:
-			self.obj = model.mznmodel.Declaration(self.name, 10, [])
+			model.mznmodel.Declaration(self.name, 10, [])
 			self.type = bool
 		elif typelb in integer_types:
-			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb, ub)
+			model.mznmodel.Declaration(self.name, 9, [], lb, ub)
 			self.type = int_t
 		elif typelb is float:
-			self.obj = model.mznmodel.Declaration(self.name, 11, [], lb, ub)
+			model.mznmodel.Declaration(self.name, 11, [], lb, ub)
 			self.type = float
 		elif typelb is Set:
-			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb.obj)
+			model.mznmodel.Declaration(self.name, 9, [], lb.obj)
 			self.type = int_t
 		else:
 			raise TypeError('Internal: Unexpected type')
-		#elif isinstance(lb, Declaration) or isinstance(ub, Declaration):
-		#	self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
+	
+	def set_value(self, arg):
+		self.obj.setValue(arg)
 
 class VariableConstruct(Variable, Construct):
 	def __init__(self, model, arg1, arg2 = None):
@@ -950,33 +964,43 @@ class Array(Variable):
 		tlb = type(argopt1)
 		if tlb is bool:
 			self.type = [bool] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
+			model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
 		elif tlb in integer_types:
 			self.type = [int_t] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name,9,dim_list, lb, ub)
+			model.mznmodel.Declaration(self.name,9,dim_list, lb, ub)
 		elif tlb is float:  #isinstance(lb, float):
 			self.type = [float] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
+			model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
 		elif tlb is Set:
 			self.type = [int_t] * len(dim_list)
-			self.obj = model.mznmodel.Declaration(self.name,9,dim_list,lb.obj)
+			model.mznmodel.Declaration(self.name,9,dim_list,lb.obj)
 		else:
 			raise TypeError('Unexpected type')
+
+	def setValue(self, arg):
+		self.obj.setValue(arg)
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
 
+
+# XXX: to be rewritten later
 class ArrayAccess(Array):
 	def __init__(self, model, array, idx):
 		Declaration.__init__(self, model)
-		self.array = array
 		if type(idx) is not tuple:
-			self.idx = [idx]
+			idx = [idx]
 		else:
-			self.idx = flatten(idx)
-		for i in range(len(self.idx)):
-			if hasattr(self.idx[i],'obj'):
-				self.idx[i] = self.idx[i].obj
+			idx = flatten(idx)
+		if len(idx) != len(array.dim_list):
+			raise IndexError('Requires exactly ' + str(len(self.dim_list)) + ' index values')
+		for i, value in enumerate(idx):
+			if not isinstance(value, Expression):
+				if value < array.dim_list[i][0] or value > array.dim_list[i][1]:
+					raise IndexError('Index at pos ' + str(i) + ' is out of range')
+
+		self.array = array
+		self.idx = idx
 		self.type = array.type[0]
 
 	def get_value(self):
@@ -1061,7 +1085,7 @@ class Set(Declaration):
 			self.value = self.obj
 			return self.value
 		else:
-			self.value = self.model.mznsolver.getValue(self.name)
+			self.value = self.model.mznsolver.get_value(self.name)
 			return self.value
 
 	def __iter__(self):
@@ -1109,10 +1133,10 @@ class VarSet(Variable):
 			if not (type(lb) in integer_types and type(ub) in integer_types):
 				raise TypeError('Lower bound and upper bound must be integers')
 
-		self.obj = model.mznmodel.Declaration(self.name, 12, [], lb, ub)
+		imodel.mznmodel.Declaration(self.name, 12, [], lb, ub)
 		self.type = minizinc_internal.VarSet
 
-	'''
+	'''	Python automatically evaluate a __contains__ return object to boolean
 	def __contains__(self, argopt):
 		return In([argopt, self])
 	'''
@@ -1165,10 +1189,11 @@ class Model(object):
 		self.mznmodel = minizinc_internal.Model(args)
 		if args:
 			init(args, self)
-		self.solution_counter = -1
+		self.solve_counter = -1
+		self.next_counter = -1
 		
 
-
+	'''
 	# not used anymore
 	def get_name(self,var):
 		itemList = [var_name for var_name, var_val in self.frame if var_val is var]
@@ -1178,6 +1203,7 @@ class Model(object):
 			raise LookupError('Internal Error: variable name not found')
 		else:
 			raise LookupError('The object pointed to was assigned to different names')
+	'''
 
 	def Constraint(self, *expr):
 		minizinc_internal.lock()
@@ -1191,55 +1217,43 @@ class Model(object):
 	def evaluate(self, expr):
 		if not isinstance(expr, Expression):
 			if isinstance(expr, (list, tuple)):
-				model = None
 				for i,item in enumerate(expr):
-					expr[i], m = self.evaluate(item)
-					if model is None:
-						model = m
-					elif m is not None and m != model:
-						raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
-				return (expr,model)
-			else:
-				return (expr,None)
+					expr[i] = self.evaluate(item)
+			return expr
 		if isinstance(expr, Id):
 			if expr.model_list is not None:
 				if not self in expr.model_list:
-					raise TypeError("The annotation '" + expr.name + "'' does not belong to the model")
-			return (minizinc_internal.Id(expr.name), None)
+					raise TypeError("The annotation '" + expr.name + "' does not belong to the model")
+			return minizinc_internal.Id(expr.name)
 		if isinstance(expr, Call):
 			variables = []
 			model = None
 			for i in expr.vars:
-				var, m = self.evaluate(i)
-				if model is None:
-					model = m
-				elif m is not None and model != m:
-					raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
-				variables.append(var)
+				variables.append(self.evaluate(i))
 			if expr.model_list is not None:
 				if not self in expr.model_list:
-					raise TypeError("The function '" + expr.name + "'' does not belong to the model")
-			return (minizinc_internal.Call(expr.CallCode, variables, expr.type), model)
+					raise TypeError("The function '" + expr.name + "' does not belong to the model")
+			return minizinc_internal.Call(expr.CallCode, variables, expr.type)
 		elif isinstance(expr, ArrayAccess):
-			return (expr.array.obj.at(expr.idx), expr.model)
+			for i,value in enumerate(expr.idx):
+				if isinstance(value, Expression):
+					expr.idx[i] = self.evaluate(value)
+			return minizinc_internal.at(self.evaluate(expr.array), expr.idx)
 		elif isinstance(expr, Declaration):
-			#if not expr.is_added:
-			#	expr.is_added = True
-			#	expr.name = get_name(expr)
-			#	expr.obj = mznmodel.Declaration(expr.name, expr.VarCode,
-			#						expr.dim_list, expr.lb, expr.ub)
-			return (expr.obj, expr.model)
+			if expr.model != self:
+				raise TypeError("The declaration not belongs to this model")
+			return minizinc_internal.Id(expr.name)
 		elif isinstance(expr, BinOp):
-			lhs, model = self.evaluate(expr.vars[0])
-			rhs, model2 = self.evaluate(expr.vars[1])
-			if model is None:
-				model = model2
-			if model2 is not None and model2 != model:
-				raise TypeError("Objects in '" + expr.name + "' must be free or belong to the same model")
-			return (minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs), model)
+			if expr.model is not None and expr.model != self:
+				raise TypeError("The declaration not belongs to this model")
+			lhs = self.evaluate(expr.vars[0])
+			rhs = self.evaluate(expr.vars[1])
+			return minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs)
 		elif isinstance(expr, UnOp):
-			ret, model = self.evaluate(expr.vars[0])
-			return (minizinc_internal.UnOp(expr.UnOpCode, self.evaluate(expr.vars[0])), model)
+			if expr.model is not None and expr.model != self:
+				raise TypeError("The declaration not belongs to this model")
+			rhs = self.evaluate(expr.vars[0])
+			return minizinc_internal.UnOp(expr.UnOpCode, rhs)
 		else:
 			raise TypeError('Variable Type unspecified')
 
@@ -1256,27 +1270,16 @@ class Model(object):
 				self.add_prime(exp[key])
 		else:
 			if issubclass(type(expr), Expression):
-				if (expr.is_pre()):
-					obj, model = self.evaluate(expr)
-					if model != None and model != self:
-						raise TypeError('Expressions must belong to this model')
-					self.mznmodel.Constraint(obj)
+				if expr.is_pre():
+					self.mznmodel.Constraint(self.evaluate(expr))
 				else:
 					raise(TypeError, "Unexpected expression")
 			else:
 				self.mznmodel.Constraint(expr)
-				'''
-				if isinstance(expr, bool):
-					self.mznmodel.Constraint(expr)
-				else:
-					raise(TypeError, "Argument must be a minizinc_internal expression or python boolean")
-				'''
+
 
 	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
 		return Variable(self, argopt1, argopt2, argopt3)
-		#var.name = get_name(var)
-		#var.obj = m.mznmodel.Declaration(var.name, var.code,
-		#						var.dim_list, var.lb, var.ub)
 
 	def Array(self, argopt1, argopt2, *args):
 		list_ = []
@@ -1296,30 +1299,30 @@ class Model(object):
 		else:
 			return VariableConstruct(self, argopt1, argopt2)
 
-	def __solve(self, code, expr, ann):
+	def __solve(self, code, expr, ann, data):
 		minizinc_internal.lock()
-		eval_ann, model = self.evaluate(ann)
-		if model is not None and model != self:
-			raise TypeError('Annotation must be free or belong to the same model') 
+		eval_ann = self.evaluate(ann)
 
-		eval_expr, model = self.evaluate(expr)
-		if model is not None and model != self:
-			raise TypeError('Expression must be free or belong to the same model') 
+		eval_expr = self.evaluate(expr)
 
-		temp = self.mznmodel.copy()
-		temp.SolveItem(code, eval_ann, eval_expr)
+		savedModel = self.mznmodel.copy()
+		self.mznmodel.SolveItem(code, eval_ann, eval_expr)
+		if data is not None:
+			self.add_prime(data)
 		minizinc_internal.unlock()
 
-		self.mznsolver = temp.solve()
-		self.solution_counter = -1
+		self.mznsolver = self.mznmodel.solve()
+		self.mznmodel = savedModel
+		self.solve_counter = self.solve_counter + 1
+		self.next_counter = -1
 
 
-	def satisfy(self, ann = None):
-		self.__solve(0, None, ann)
+	def satisfy(self, ann = None, data = None):
+		self.__solve(0, None, ann, data)
 	def maximize(self, expr, ann = None):
-		self.__solve(2, expr, ann)
+		self.__solve(2, expr, ann, data)
 	def minimize(self, expr, ann = None):
-		self.__solve(1, expr, ann)
+		self.__solve(1, expr, ann, data)
 	def reset(self):
 		self.__init__()
 
@@ -1327,7 +1330,7 @@ class Model(object):
 		if self.mznsolver is None:
 			raise ValueError('Model is not solved yet')
 		self.status = self.mznsolver.next()
-		self.solution_counter = self.solution_counter + 1
+		self.next_counter = self.next_counter + 1
 		return (self.status is None)
 
 	def is_loaded(self):

@@ -3,10 +3,10 @@
 
 enum Mzn_Object_Code {
   MOC_BASE, MOC_EXPR, MOC_ANN,
+                      MOC_VARSET,
 
             MOC_DECL, MOC_VAR,
                       MOC_ARR,
-                      MOC_VARSET,
             MOC_SET
 };
 
