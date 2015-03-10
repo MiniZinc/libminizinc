@@ -237,7 +237,6 @@ MznModel_Constraint(MznModel* self, PyObject* args)
   GCLock Lock;
   ConstraintI* i;
   if (PyObject_ExactTypeCheck(obj, &MznExpression_Type)) {
-    // XXX: Need to support Boolean Variable here
     i = new ConstraintI(Location(), (reinterpret_cast<MznExpression*>(obj)->e));
   } else if (PyBool_Check(obj)) {
     bool val = PyObject_IsTrue(obj);
@@ -470,7 +469,7 @@ MznModel_load(MznModel *self, PyObject *args, PyObject *keywds) {
 }
 
 static PyObject*
-MznModel_loadFromString(MznModel *self, PyObject *args, PyObject *keywds) {
+MznModel_load_from_string(MznModel *self, PyObject *args, PyObject *keywds) {
   if (self->load(args, keywds, false) < 0)
     return NULL;
   Py_RETURN_NONE;
@@ -483,11 +482,11 @@ MznModel_solve(MznModel *self, PyObject* args)
 }
 
 static PyObject*
-MznModel_setTimeLimit(MznModel *self, PyObject *args)
+MznModel_set_time_limit(MznModel *self, PyObject *args)
 {
   unsigned long long t;
   if (!PyArg_ParseTuple(args, "K", &t)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.setTimeLimit:  Time limit must be an integer");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.set_time_limit:  Time limit must be an integer");
     return NULL;
   }
   self->timeLimit = t;
@@ -495,11 +494,11 @@ MznModel_setTimeLimit(MznModel *self, PyObject *args)
 }
 
 static PyObject*
-MznModel_setSolver(MznModel *self, PyObject *args)
+MznModel_set_solver(MznModel *self, PyObject *args)
 {
   const char* s;
   if (!PyArg_ParseTuple(args, "s", &s)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.setSolver:  Solver name must be a string");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.set_solver:  Solver name must be a string");
     return NULL;
   }
   std::string name(s);
@@ -510,35 +509,14 @@ MznModel_setSolver(MznModel *self, PyObject *args)
   if (name == "gecode")
     self->sc = self->SC_GECODE;
   else {
-    MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: Model.setSolver: Unexpected solver name: %s", name.c_str());
+    MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: Model.set_solver: Unexpected solver name: %s", name.c_str());
     return NULL;
   }
   return Py_None;
 }
 
 
-/*  
- * Description: Take in a tuple of arguments, create a Variable in the Minizinc Model self
- * Arguments: 
- *    1:    name, TypeId, dimension vector, lower bound, upper bound
- *        name: string
- *        TypeId: see enum TypeId below
- *        dimension vector: empty if Variable is not an array
- *                          holds value if it is an array
- *            Syntax: vector<pair<int, int> >, called dimList
- *            - dimList[i] is the lower bound and upper bound of dimension i
- *            - for example:
- *                  dimList[0] = <1,5>
- *                  dimList[1] = <2,4>
- *                  dimList[3] = <0,5>
- *              means a 3d array [1..5,2..4,0..5]
- *        lower bound: MiniZinc Set
- *        upper bound:
- *
- *    2:    name, python value
- *        python value: Create a variable based on the existing python value
- *
- */
+
 static PyObject*
 MznModel_Declaration(MznModel* self, PyObject* args)
 {
@@ -576,7 +554,6 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   Expression* initValue = NULL;
   Py_ssize_t dim;
 
-  vector<pair<int, int> >* dimList = NULL;
   vector<TypeInst*> ranges;
   Type::BaseType code = Type::BT_UNKNOWN;
 
@@ -586,9 +563,9 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   }
   // if only 2 arguments, second value is the initial value
   if (pydim == NULL) {
-    dimList = new vector<pair<int, int> >();
-    initValue = python_to_minizinc(pyval, type, *dimList);
-    dim = dimList->size();
+    vector<pair<int, int> > dimList;
+    initValue = python_to_minizinc(pyval, type, dimList);
+    dim = dimList.size();
     domain = NULL;
   } 
   else 
@@ -611,18 +588,12 @@ MznModel_Declaration(MznModel* self, PyObject* args)
       PyErr_SetString(PyExc_ValueError, "MiniZinc: MznModel.Declaration:  Type Id is from 0 to 17");
       return NULL;
     }
-    dimList = pydim_to_dimList(pydim);
-    if (dimList == NULL)
+ 
+    int errorOccurred;
+    ranges = pydim_to_minizinc_ranges(pydim, errorOccurred);
+    if (errorOccurred)
       return NULL;
-    dim = dimList->size();
-
-    // Create an array if dimList is not empty
-    for (Py_ssize_t i=0; i!=dim; ++i) {
-      Expression* e0 = new IntLit(Location(), IntVal((*dimList)[i].first));
-      Expression* e1 = new IntLit(Location(), IntVal((*dimList)[i].second));
-      domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
-      ranges.push_back(new TypeInst(Location(), Type(), domain));
-    }
+    dim = ranges.size();
 
     // Process different types
     switch (static_cast<TypeId>(tid)) {
@@ -680,24 +651,5 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   self->_m->addItem(new VarDeclI(Location(), vd));
   self->loaded = true;
 
-/*  PyObject* ret;
-
-  if (static_cast<TypeId>(tid) == VARSETINT) {
-    ret = MznVarSet_new(&MznVarSet_Type, NULL, NULL);
-    reinterpret_cast<MznVarSet*>(ret)-> e = vd->id();
-    reinterpret_cast<MznVarSet*>(ret)->vd = vd;
-  } else {
-    if (dimList->size() == 0) {
-      ret = MznVariable_new(&MznVariable_Type, NULL, NULL);
-      reinterpret_cast<MznVariable*>(ret)->e = vd->id();
-      reinterpret_cast<MznVariable*>(ret)->vd= vd;
-    } else {
-      ret = MznArray_new(&MznArray_Type, NULL, NULL);
-      reinterpret_cast<MznArray*>(ret)->e = vd->id();
-      reinterpret_cast<MznArray*>(ret)->vd= vd;
-      reinterpret_cast<MznArray*>(ret)->dimList = dimList;
-    }
-  }
-  return ret;*/
   Py_RETURN_NONE;
 }

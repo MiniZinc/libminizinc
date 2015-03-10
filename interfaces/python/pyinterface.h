@@ -24,36 +24,90 @@
 #include "Solver.cpp"
 
 
-
+/* Helper functions that load data into a new model
+ * For example: instead of 
+        import minizinc_internal
+        model = minizinc_internal.Model()
+        model.load(...)
+  we can do this:
+        import minizinc_internal
+        model = minizinc_internal.load(...)
+ */
 static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds);
-static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds);
-static PyObject* Mzn_BinOp(PyObject* self, PyObject* args);
-static PyObject* Mzn_UnOp(PyObject* self, PyObject* args);
-static PyObject* Mzn_Call(PyObject* self, PyObject* args);
+static PyObject* Mzn_load_from_string(PyObject* self, PyObject* args, PyObject* keywds);
+
+
+// GC::lock() and GC::unlock()
 static PyObject* Mzn_lock(PyObject* self) {GC::lock(); Py_RETURN_NONE;}
 static PyObject* Mzn_unlock(PyObject* self) {GC::unlock(); Py_RETURN_NONE;}
-static PyObject* Mzn_typeVariable(PyObject* self) {
-  PyObject* v = reinterpret_cast<PyObject*>(&MznVariable_Type);
-  Py_INCREF(v);
-  return v;
-}
 
-// Need an outer GC Lock
+
+/************************************************************
+    Groups of function that need an outer GCLock to work
+ ************************************************************/
+// Note: Please see Note 1 of the first python_to_minizinc declaration in global.h first
+
+
+// Requires:
+//    - An UnOpType integer opcode
+//    - A MiniZinc expression or Python value
+static PyObject* Mzn_UnOp(PyObject* self, PyObject* args);
+
+// Requires:
+//    - A left hand sided MiniZinc expression or Python value
+//    - A BinOpType integer opcode
+//    - A right hand sided MiniZinc expression or Python value
+static PyObject* Mzn_BinOp(PyObject* self, PyObject* args);
+
+// Requires:
+//    - Name of the MiniZinc function to be called (string)
+//    - List of MiniZinc object or Python value
+//    - (Optional, deprecated) Return type of Mzn_Call
+static PyObject* Mzn_Call(PyObject* self, PyObject* args);
+
+// Requires a name(string)
 static PyObject* Mzn_Id(PyObject* self, PyObject* args);
+// Requires:
+//    - A MiniZinc expression of array type
+//    - A list of integer indices (can be MiniZinc expression as well)
 static PyObject* Mzn_at(PyObject* self, PyObject* args);
 
+// *****************  END OF GROUPS  *****************
 
+
+
+/* Definition: Returns a dictionary of keys: "boolfuncs", "annfuncs" and "annvars" (currently)
+    For each '*funcs':
+      Itself is another dictionary:
+        key: name of function
+        value:  a list of all possible combination of parsing argument types and return type:
+            for each item in that list:
+                item[0] is a tuple argument types:
+                    if a function accepts (int, int), it should be (<type 'long'>, <type 'long'>)
+
+                    if a function accepts (array of [int, int]), it should be
+                                    ( [<type 'long'>, <type 'long'>], )
+                          (notice the appearance of a list here)
+                item[1] is the return type:
+                    MiniZinc Type -   Python Type
+                        int       -     long
+                        float     -     float
+                        bool      -     bool 
+                        string    -     str
+                        VarSet    -   minizinc.VarSet
+                        Ann       -   minizinc.Annotation
+                        Top       -    NoneType   (accepts everything)
+                        others    -   minizinc.Object (means an error)
+
+    For 'annvars':
+      Just a list of ann names
+
+ */
 static PyObject* Mzn_retrieveNames(PyObject* self, PyObject* args);
 
-// This struct take over pointers to passing arguments. Be aware!
-struct MznFunction {
-  std::string name;
-  std::vector<PyObject*> args;
-  MznFunction(const std::string &name0): name(name0) {}
-  MznFunction(const std::string &name0, int size): name(name0) { args = vector<PyObject*>(size);}
-  MznFunction(const std::string &name0, const std::vector<PyObject*>& args0): name(name0), args(args0) {}
-};
 
+
+/********************* SKIP ******************************* */
 PyObject* eval_type(TypeInst* ti) {
   ASTExprVec<TypeInst> ranges = ti->ranges();
   PyObject* v;
@@ -159,17 +213,16 @@ public:
   }
 };
 
-
+/********************* END OF SKIP ******************************* */
 
 
 static PyMethodDef Mzn_methods[] = {
   {"load", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
-  {"loadFromString", (PyCFunction)Mzn_load, METH_KEYWORDS, "Load MiniZinc model from stdin"},
+  {"load_from_string", (PyCFunction)Mzn_load_from_string, METH_KEYWORDS, "Load MiniZinc model from stdin"},
   {"BinOp", (PyCFunction)Mzn_BinOp, METH_VARARGS, "Add a binary expression into the model"},
   {"UnOp", (PyCFunction)Mzn_UnOp, METH_VARARGS, "Add a unary expression into the model"},
   {"Id", (PyCFunction)Mzn_Id, METH_VARARGS, "Return a MiniZinc Variable containing the given name"},
   {"Call", (PyCFunction)Mzn_Call, METH_VARARGS, "MiniZinc Call"},
-  {"TypeVariable", (PyCFunction)Mzn_typeVariable, METH_NOARGS, "Type of MiniZinc Variable"},
 
   {"at", (PyCFunction)Mzn_at, METH_VARARGS, "Array Access"},
   {"retrieveNames", (PyCFunction)Mzn_retrieveNames, METH_VARARGS, "Returns names of MiniZinc functions and variables"},

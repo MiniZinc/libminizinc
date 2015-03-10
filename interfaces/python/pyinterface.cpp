@@ -11,18 +11,14 @@ using namespace MiniZinc;
 using namespace std;
 
 
-/* 
- * Description: Converts a minizinc call
- * Note: Need an outer GCLock for this to work
- */
 static PyObject*
 Mzn_Call(PyObject* self, PyObject* args)
 {
   const char* name;
   PyObject* variableTuple;
   PyTypeObject* returnType;
-  if (!PyArg_ParseTuple(args, "sOO", &name, &variableTuple, &returnType)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Accepts two values: a string and a tuple of minizinc variable");
+  if (!PyArg_ParseTuple(args, "sO|O", &name, &variableTuple, &returnType)) {
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Accepts 2 values: a string, a list of minizinc variable");
     PyErr_Print();
     return NULL;
   }
@@ -32,10 +28,6 @@ Mzn_Call(PyObject* self, PyObject* args)
     return NULL;
   }
 
-  if (!PyType_Check(returnType)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: Mzn_Call: Third argument must be a type");
-    return NULL;
-  }
 
   long len = PyList_GET_SIZE(variableTuple);
   vector<Expression*> expressionList(len);
@@ -54,20 +46,13 @@ Mzn_Call(PyObject* self, PyObject* args)
     }
   }
 
-  PyObject* ret;
+  PyObject* ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
   
-  // WARNING: Don't use returnType as Mzn*_new first argument
-  if (returnType == &MznAnnotation_Type)
-    ret = MznAnnotation_new(&MznAnnotation_Type, NULL, NULL);
-  else
-    ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
-
   reinterpret_cast<MznExpression*>(ret)->e = new Call(Location(), string(name), expressionList);
 
   return ret;
 }
 
-// Need an outer GCLock
 static PyObject*
 Mzn_Id(PyObject* self, PyObject* args)
 {
@@ -96,7 +81,7 @@ static PyObject* Mzn_at(PyObject* self, PyObject* args)
   } 
 
   if (!PyList_Check(Py_idx)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: at:  Second argument must be a tuple of indices");
+    PyErr_SetString(PyExc_TypeError, "MiniZinc: at:  Second argument must be a list of indices");
     return NULL;
   }
 
@@ -132,10 +117,6 @@ static PyObject* Mzn_at(PyObject* self, PyObject* args)
   return reinterpret_cast<PyObject*>(ret);
 }
 
-/* 
- * Description: Creates a minizinc UnOp expression
- * Note: Need an outer GCLock for this to work
- */
 static PyObject*
 Mzn_UnOp(PyObject* self, PyObject* args)
 {
@@ -153,10 +134,8 @@ Mzn_UnOp(PyObject* self, PyObject* args)
   }
   Expression *rhs;
 
-  if (PyObject_TypeCheck(r, &MznObject_Type)) {
-    //XXX: Maybe ignore MznSet_Type here
-    rhs = MznObject_get_e(reinterpret_cast<MznObject*>(r));
-    //rhs = (reinterpret_cast<MznObject*>(r))->e();
+  if (PyObject_TypeCheck(r, &MznExpression_Type)) {
+    rhs = reinterpret_cast<MznExpression*>(r)->e;
   } else if (PyBool_Check(r)) {
     rhs = new BoolLit(Location(), PyObject_IsTrue(r));
   } else
@@ -238,9 +217,8 @@ Mzn_BinOp(PyObject* self, PyObject* args)
   // pre[0]: lhs;
   // pre[1]: rhs;
   for (int i=0; i!=2; ++i) {
-    if (PyObject_TypeCheck(PyPre[i], &MznObject_Type)) {
-      // XXX: Maybe ignore Set Type here
-      pre[i] = MznObject_get_e(reinterpret_cast<MznObject*>(PyPre[i]));
+    if (PyObject_TypeCheck(PyPre[i], &MznExpression_Type)) {
+      pre[i] = reinterpret_cast<MznExpression*>(PyPre[i])->e;
     } else if (PyBool_Check(PyPre[i])) {
       pre[i] = new BoolLit(Location(), PyObject_IsTrue(PyPre[i]));
     } else 
@@ -290,13 +268,13 @@ static PyObject* Mzn_load(PyObject* self, PyObject* args, PyObject* keywds) {
   return model;
 }
 
-static PyObject* Mzn_loadFromString(PyObject* self, PyObject* args, PyObject* keywds) {
+static PyObject* Mzn_load_from_string(PyObject* self, PyObject* args, PyObject* keywds) {
   PyObject* model = MznModel_new(&MznModel_Type, NULL, NULL);
   if (model == NULL)
     return NULL;
   if (MznModel_init(reinterpret_cast<MznModel*>(model), NULL) < 0)
     return NULL;
-  if (MznModel_loadFromString(reinterpret_cast<MznModel*>(model), args, keywds)==NULL)
+  if (MznModel_load_from_string(reinterpret_cast<MznModel*>(model), args, keywds)==NULL)
     return NULL;
   return model;
 }
@@ -396,21 +374,6 @@ initminizinc_internal(void)
     INITERROR;
   Py_INCREF(&MznAnnotation_Type);
   PyModule_AddObject(module, "Annotation", reinterpret_cast<PyObject*>(&MznAnnotation_Type));
-
-  if (PyType_Ready(&MznDeclaration_Type) < 0)
-    INITERROR;
-  Py_INCREF(&MznDeclaration_Type);
-  PyModule_AddObject(module, "Declaration", reinterpret_cast<PyObject*>(&MznDeclaration_Type));
-
-  if (PyType_Ready(&MznVariable_Type) < 0)
-    INITERROR;
-  Py_INCREF(&MznVariable_Type);
-  PyModule_AddObject(module, "Variable", reinterpret_cast<PyObject*>(&MznVariable_Type));
-
-  if (PyType_Ready(&MznArray_Type) < 0)
-    INITERROR;
-  Py_INCREF(&MznArray_Type);
-  PyModule_AddObject(module, "Array", reinterpret_cast<PyObject*>(&MznArray_Type));
 
   if (PyType_Ready(&MznSet_Type) < 0)
     INITERROR;

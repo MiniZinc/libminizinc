@@ -8,7 +8,7 @@
 #include "Solver.h"
 
 static PyObject*
-MznSolver_getValueHelper(MznSolver* self, const char* const name)
+MznSolver_get_value_helper(MznSolver* self, const char* const name)
 {
   for (unsigned int i=0; i<self->_m->size(); ++i) {
     if (VarDeclI* vdi = (*(self->_m))[i]->dyn_cast<VarDeclI>()) {
@@ -32,7 +32,7 @@ MznSolver_getValueHelper(MznSolver* self, const char* const name)
 }
 
 static PyObject* 
-MznSolver_getValue(MznSolver* self, PyObject* args) {
+MznSolver_get_value(MznSolver* self, PyObject* args) {
   const char* name;
   PyObject* obj;
   if (!(self->_m)) {
@@ -45,7 +45,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
   }
   if (PyUnicode_Check(obj)) {
     name = PyUnicode_AsUTF8(obj);
-    return MznSolver_getValueHelper(self, name);;
+    return MznSolver_get_value_helper(self, name);;
   } else 
   // XXX: INEFFICIENT function to retrieve values, consider optimize it later
   // Python Dictionary would be good
@@ -60,7 +60,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
           return NULL;
         }
         name = PyUnicode_AsUTF8(item);
-        PyObject* value = MznSolver_getValueHelper(self, name);
+        PyObject* value = MznSolver_get_value_helper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
           return NULL;
@@ -79,7 +79,7 @@ MznSolver_getValue(MznSolver* self, PyObject* args) {
           return NULL;
         }
         name = PyUnicode_AsUTF8(item);
-        PyObject* value = MznSolver_getValueHelper(self, name);
+        PyObject* value = MznSolver_get_value_helper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
           return NULL;

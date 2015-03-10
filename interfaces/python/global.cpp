@@ -57,14 +57,12 @@ inline long long py_to_c_number(PyObject* py_val, int* overflow)
   }
 }
 
-// For internal use, only compare TypeInst, BaseType, SetType
 bool compareType(const Type& type1, const Type& type2)
 {
   return (type1.bt() == type2.bt() &&
           type1.st() == type2.st() && type1.dim() == type2.dim());
 }
 
-// Nicely presenting the type, for example: set of int or array of [int, int]
 string typePresentation(const Type& type)
 {
   string baseTypeString;
@@ -98,11 +96,6 @@ inline PyObject*
 one_dim_minizinc_to_python(Expression* e, const Type& type)
 {
   Env env(NULL);
-  /*if (vd==NULL) {
-    PyErr_SetString(PyExc_ValueError, "MiniZinc_to_Python: Value is not set");
-    return NULL;
-  } else */
-  // Here we assume that vd is not NULL
 
   if (type.st() == Type::ST_SET) {
     IntSetVal* isv = eval_intset(env.envi(),e);
@@ -187,23 +180,6 @@ minizinc_to_python(VarDecl* vd)
 }
 
 
-/*
- * Description: Helper function for python_to_minizinc
- *        converts a python value (not an array) to minizinc expression
- *        also returns the type of that value
- * Parameters: A python value - pvalue
- *             A minizinc BaseType code
- * Returns: appropriate expression or NULL if cannot convert
- * Note:  If code == Type::BT_UNKNOWN, it will be changed to the corresponding type of pvalue
- *        If code is initialized to specific type, an error will be thrown if type mismatched 
- * Accepted code type:
- *      - Type::BT_UNKNOWN: Unknown type, will be changed later to corresponding type
- *      - Type::BT_INT
- *      - Type::BT_FLOAT
- *      - Type::BT_STRING
- *      - Type::BT_BOOL
- * Note 2: Need an outer GCLock for this to work
- */
 inline Expression*
 one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
 {
@@ -296,11 +272,6 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
 }
 
 
-
-
-/*
- * Used only when importing model from MiniZinc file
- */
 Expression*
 python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
 {
@@ -351,12 +322,6 @@ python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
 }
 
 
-/* 
- * Description: Converts a python value to minizinc expression
- *              also returns the type of python value
- *              and the dimension list if it is an array
- * Note: Need an outer GCLock for this to work
- */
 Expression*
 python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& dimList)
 {
@@ -370,7 +335,6 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
     if (getList(pvalue, dimensions, simpleArray, 0) == -1) {
       // getList should set error string already
       return NULL;
-      //throw invalid_argument("Inconsistency in size of multidimensional array");
     }
     if (dimList.empty())
       for (int i=0; i!=dimensions.size(); i++)
@@ -409,80 +373,88 @@ python_to_minizinc(PyObject* pvalue, Type& returnType, vector<pair<int, int> >& 
 }
 
 
-vector<pair<int, int> >*
-pydim_to_dimList(PyObject* pydim)
+vector<TypeInst*>
+pydim_to_minizinc_ranges(PyObject* pydim, int& errorOccurred)
 {
-  vector<pair<int, int> >* dimList;
   if (!PyList_Check(pydim)) {
+    errorOccurred = 1;
     PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: argument must be a python list");
-    return NULL;
+    return vector<TypeInst*>();
   }
   Py_ssize_t dim = PyList_GET_SIZE(pydim);
-  dimList = new vector<pair<int, int> >(dim);
+  cout << dim << endl;
+  vector<TypeInst*> ranges(dim);
   for (Py_ssize_t i=0; i!=dim; ++i) {
     PyObject* temp = PyList_GET_ITEM(pydim, i);
     if (!PyList_Check(temp)) {
+      for (int j=0; j!=i; ++j)
+        delete ranges[j];
+      ranges.clear();
+      errorOccurred = 1;
       PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: objects in the list must be range lists");
-      return NULL;
+      return ranges;
     }
     PyObject* Py_bound[2];
     Py_bound[0] = PyList_GetItem(temp, 0);
     Py_bound[1] = PyList_GetItem(temp, 1);
     if (PyErr_Occurred()) {
+      for (int j=0; j!=i; ++j)
+        delete ranges[j];
+      ranges.clear();
+      errorOccurred = 1;
       PyErr_SetString(PyExc_TypeError, "MiniZinc: python_to_dimList: a range must consist of 2 values");
-      return NULL;
+      return ranges;
     }
 
     long long c_bound[2];
-    for (int i=0; i!=2; ++i) {
+    for (int k=0; k!=2; ++k) {
 #if PY_MAJOR_VERSION < 3
-      if (PyInt_Check(Py_bound[i]))
-        c_bound[i] = PyInt_AS_LONG(Py_bound[i]);
+      if (PyInt_Check(Py_bound[k]))
+        c_bound[k] = PyInt_AS_LONG(Py_bound[k]);
       else 
 #endif
-      if (PyLong_Check(Py_bound[i])) {
+      if (PyLong_Check(Py_bound[k])) {
         int overflow;
-        c_bound[i] = PyLong_AsLongLongAndOverflow(Py_bound[i], &overflow);
+        c_bound[k] = PyLong_AsLongLongAndOverflow(Py_bound[k], &overflow);
         if (overflow) {
-          switch (i) {
+          switch (k) {
             case 0: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList:  Range at pos %i: First argument is overflown", i); break;
             case 1: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList:  Range at pos %i: Second argument is overflown", i); break;
             default:
               throw logic_error("pydim_to_dimList: Unexpected iterator value");
           }
-          return NULL;
+          for (int j=0; j!=i; ++j)
+            delete ranges[j];
+          ranges.clear();
+          errorOccurred = 1;
+          return ranges;
         }
       } else {
-        switch (i) {
+        switch (k) {
           case 0: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList: Range at pos %i: First argument type is mismatched: expected a number", i); break;
           case 1: MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: python_to_dimList: Range at pos %i: Second argument type is mismatched: expected a number", i); break;
           default:
             throw logic_error("pydim_to_dimList: Unexpected iterator value");
         }
+        for (int j=0; j!=i; ++j)
+          delete ranges[j];
+        ranges.clear();
+        errorOccurred = 1;
+        return ranges;
       }
     }
     if (c_bound[0] > c_bound[1])
       swap(c_bound[0], c_bound[1]);
-    (*dimList)[i] = make_pair(c_bound[0], c_bound[1]);
+    Expression* e0 = new IntLit(Location(), IntVal(c_bound[0]));
+    Expression* e1 = new IntLit(Location(), IntVal(c_bound[1]));
+    Expression* domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
+    ranges[i] = new TypeInst(Location(), Type(), domain);
   }
-  return dimList;
+  errorOccurred = 0;
+  return ranges;
 }
 
 
-// Helper functions
-// XXX: change the function name to a more meaningful name later
-// starting layer should be 0
-/* converts a python array(list) to:
-        dimensions: an array holding the size of each dimension
-        simpleArray: a 1d-array of Python value
-      return 0 if success, -1 if it is an incomplete array
-        ( incomplete array example:
-          X X X X X X
-          X X X X X
-          X X X X X X
-          X X X X X X
-        )
-*/
 
 int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& simpleArray, const int layer)
 {
@@ -491,7 +463,7 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
       dimensions.push_back(PyList_Size(value));
     } else if (dimensions[layer]!=PyList_Size(value)) {
       PyErr_SetString(PyExc_ValueError,"MiniZinc: Inconsistency in size of multidimensional array");
-      return -1; // Inconsistent size of array (should be the same)
+      return -1;
     }
     PyObject* li = PyList_GetItem(value, i);
     if (PyList_Check(li)) {
@@ -503,12 +475,4 @@ int getList(PyObject* value, vector<Py_ssize_t>& dimensions, vector<PyObject*>& 
     }
   }
   return 0;
-}
-
-
-string minizinc_set(long start, long end) {
-  stringstream ret;
-  ret << start << ".." << end;
-  string asn(ret.str());
-  return asn;
 }

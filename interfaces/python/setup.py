@@ -1,4 +1,22 @@
 from distutils.core import setup, Extension
+import sys
+
+EXTRA_COMPILE_ARGS = [
+    '-O3',
+    '-Wno-unused-label',
+    '-Wno-unused-function',
+]
+EXTRA_LINK_ARGS = []
+
+if sys.platform == 'darwin':
+    EXTRA_COMPILE_ARGS.extend([
+        '-stdlib=libc++',
+        '-arch', 'x86_64',
+        '-mmacosx-version-min=10.8',
+    ])
+    EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libc++', '-mmacosx-version-min=10.8'])
+elif sys.platform.startwith('linux'):
+    pass
 
 module1 = Extension('minizinc_internal',
                     sources = ['pyinterface.cpp'],
@@ -12,7 +30,8 @@ module1 = Extension('minizinc_internal',
                                  'gecodekernel',
                                  'gecodesupport'
                                  ],
-                    #extra_compile_args=['-stdlib=libc++', '-mmacosx-version-min=10.9'],
+                    extra_compile_args= EXTRA_COMPILE_ARGS + ['-fPIC'],
+                    extra_link_args = EXTRA_LINK_ARGS
                     )
 
 setup (name = 'MiniZinc',

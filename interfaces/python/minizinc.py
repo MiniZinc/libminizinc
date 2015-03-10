@@ -786,6 +786,7 @@ class Declaration(Expression):
 		self.name = '"' + str(id(self)) + '"'
 		self.solve_counter = -1
 		self.next_counter = -1
+		self.value = None
 
 	def get_value(self):
 		if hasattr(self, 'solve_counter'):
@@ -794,10 +795,7 @@ class Declaration(Expression):
 			self.solve_counter = self.model.solve_counter
 			self.next_counter = self.model.next_counter
 			self.value = self.model.mznsolver.get_value(self.name)
-		if hasattr(self, 'value'):
-			return self.value
-		else:
-			return None
+		return self.value
 
 	def __str__(self):
 		return str(self.get_value())
@@ -1002,26 +1000,23 @@ class ArrayAccess(Array):
 		self.array = array
 		self.idx = idx
 		self.type = array.type[0]
+		self.value = None
 
 	def get_value(self):
-		if not hasattr(self, 'solution_counter'):
-			# must be a Constructed Variable
-			return self.value
-		if self.solution_counter < self.model.solution_counter:
-			# Model has been solved at least once
+		if hasattr(self, 'solve_counter'):
+			if self.solve_counter == self.model.solve_counter and self.next_counter == self.model.next_counter:
+				return self.value
+			self.solve_counter = self.model.solve_counter
+			self.next_counter = self.model.next_counter
 			arrayvalue = self.array.get_value()
 			if arrayvalue is None:
 				return None
 			else:
-				for i in range(len(self.idx)):
-					arrayvalue = arrayvalue[self.idx[i] - self.array.dim_list[i][0]]
+				for i,value in enumerate(self.idx):
+					arrayvalue = arrayvalue[value - self.array.dim_list[i][0]]
 				self.value = arrayvalue
-				return arrayvalue
-			return self.value
-		if hasattr(self, 'value'):
-			return self.value
-		else:
-			return None
+				return self.value
+		return self.value
 
 class ArrayConstruct(Array, Construct):
 	def __init__(self, model, arg1, arg2 = None):
@@ -1301,8 +1296,11 @@ class Model(object):
 
 	def __solve(self, code, expr, ann, data):
 		minizinc_internal.lock()
-		eval_ann = self.evaluate(ann)
 
+		if ann is not None:
+			if not hasattr(ann, 'type') or ann.type != minizinc_internal.Annotation:
+				raise TypeError('Unexpected type of annotation')
+		eval_ann = self.evaluate(ann)
 		eval_expr = self.evaluate(expr)
 
 		savedModel = self.mznmodel.copy()
@@ -1340,9 +1338,9 @@ class Model(object):
 		return self.mznsolver != None
 
 	def set_time_limit(self, time):
-		self.mznmodel.setTimeLimit(time)
+		self.mznmodel.set_time_limit(time)
 
 	def set_solver(self, solver):
-		self.mznmodel.setSolver(solver)
+		self.mznmodel.set_solver(solver)
 
 
