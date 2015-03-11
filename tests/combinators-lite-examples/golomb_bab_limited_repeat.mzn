@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 5;
+int: m = 6;
 int: n = m*m;
 
 var 0..n: obj;
@@ -49,7 +49,7 @@ solve :: combinator(
                  post(obj < sol(obj)) % post constraint
              ])
          ),
-         print
+         print() % testing print with ()
        ])
    )
 ) 

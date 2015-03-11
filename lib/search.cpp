@@ -38,6 +38,12 @@ namespace MiniZinc {
       else if(call->id().str() == constants().combinators.scope.str()) {
         return interpretScopeCombinator(call,env,solver);
       }
+      else if(call->id().str() == constants().combinators.print.str()) {
+        return interpretPrintCombinator(env,solver);
+      }
+      else if(call->id().str() == constants().combinators.next.str()) {
+        return interpretNextCombinator(env,solver);
+      }
       else {
         std::stringstream ssm; 
         ssm << "unknown combinator call: " << call->id();

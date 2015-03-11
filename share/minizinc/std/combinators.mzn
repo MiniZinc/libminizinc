@@ -32,8 +32,10 @@ annotation or(array[int] of ann);
 % returns true if there already exists a (last) solution, and returns
 % false otherwise
 %function bool: hasSol; 
-% print the output
+% print the output as print()
 function ann: print; 
+% get the next solution as next()
+function ann: next; 
 
 % assign search variable x to y
 annotation comb_assign(int: x,int: y);

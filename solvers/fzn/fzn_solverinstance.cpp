@@ -193,7 +193,7 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    FznProcess proc("flatzinc",false,_fzn); 
+    FznProcess proc("fzn-gecode",false,_fzn); // FznProcess proc("flatzinc",false,_fzn); 
     std::stringstream result; 
     proc.run(result);
     std::string solution;
