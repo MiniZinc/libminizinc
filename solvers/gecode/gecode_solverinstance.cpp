@@ -1348,10 +1348,11 @@ namespace MiniZinc {
   
   bool 
   GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
-    //std::cout << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
+    std::cerr << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
-    space->status(); // to make the space stable
+    SpaceStatus s = space->status(); // to make the space stable
+    std::cerr << "DEBUG: status of space: " << s << "\n---------------------" << std::endl;
     return true;
   }
   
@@ -1374,7 +1375,7 @@ namespace MiniZinc {
       // constants/constant arrays
       if(vars[i]->type().ispar()) {
         continue; // par identifiers (such as arrays of ints) are read from the model in the cts
-        std::cout << "DEBUG: DO NOT need to add PAR variable \"" << *(vars[i]->id())  << std::endl;
+        //std::cout << "DEBUG: DO NOT need to add PAR variable \"" << *(vars[i]->id())  << std::endl;
       }
       // integer variable
       else if(vars[i]->type().isint()) {          
@@ -1386,7 +1387,6 @@ namespace MiniZinc {
             assert(var.isint());
             space->iv.push_back(space->iv[var.index()]);
             insertVar(vars[i]->id(), var);
-            std::cout << "DEBUG: added variable: \"" << *(vars[i]->id())  << std::endl;
           } else {
             double il = init->cast<IntLit>()->v().toInt();
             if(valueWithinBounds(il)) {
@@ -1394,7 +1394,6 @@ namespace MiniZinc {
               space->iv.push_back(intVar);
               insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                    space->iv.size()-1));
-              std::cout << "DEBUG: added variable: \"" << *(vars[i]->id())  << std::endl;
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il << std::endl;
@@ -1410,7 +1409,6 @@ namespace MiniZinc {
             space->iv.push_back(intVar);
             insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
                               space->iv.size()-1));
-            std::cout << "DEBUG: added variable \"" << *(vars[i]->id())  << std::endl;
           }
           else {
             IntBounds ib = compute_int_bounds(_env.envi(), domain);
@@ -1435,8 +1433,7 @@ namespace MiniZinc {
               IntVar intVar(*space, lb, ub);
               space->iv.push_back(intVar);
               insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                    space->iv.size()-1));
-              std::cout << "DEBUG: added variable \"" << *(vars[i]->id())  << std::endl;
+                    space->iv.size()-1));             
             } else {
                 std::stringstream ssm;
                 ssm << "GecodeSolverInstance::addVariables: Error: " << *domain << " outside 32-bit int." << std::endl;
@@ -1474,8 +1471,7 @@ namespace MiniZinc {
   bool
   GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {
     //std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
-    for(unsigned int i=0; i<cts.size(); i++) {
-      std::cout << "DEBUG: about to post constraint on the engine path: " << *cts[i] << std::endl;
+    for(unsigned int i=0; i<cts.size(); i++) {      
       _constraintRegistry.post(cts[i]); 
     }
     customEngine->status();

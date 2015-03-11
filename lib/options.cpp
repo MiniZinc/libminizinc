@@ -55,6 +55,17 @@ namespace MiniZinc {
     }
   }
   
+  void Options::setStringParam(const std::string& name, KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isstring()) {
+      _options[name] = e;
+    } else {
+      std::stringstream ss;
+      ss << "For option: " << name << " expected Par string, received " << e->type().toString() << std::endl;
+      throw InternalError(ss.str());
+    }    
+  }
+  
   void Options::setIntParam(const std::string& name,   long long int e) {
     GCLock lock;
     IntLit* il = new IntLit(Location(), e);
@@ -75,6 +86,13 @@ namespace MiniZinc {
     KeepAlive ka(bl);
     
     setBoolParam(name, ka);
+  }
+  
+  void Options::setStringParam(const std::string& name, std::string str) {
+    GCLock lock;
+    StringLit* sl = new StringLit(Location(), str);
+    KeepAlive ka(sl);
+    setStringParam(name,ka);    
   }
   
   long long int Options::getIntParam(const std::string& name) const {
@@ -128,6 +146,23 @@ namespace MiniZinc {
     }
     return def;
   }
+  std::string Options::getStringParam(const std::string& name) const  {
+    if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
+      return sl->v().str();
+    } else {
+      std::stringstream ss;
+      ss << "Option: \"" << name << "\" is not Par String" << std::endl;
+      throw InternalError(ss.str());
+    }    
+  }
+  std::string Options::getStringParam(const std::string& name, std::string def) const {
+    if (hasParam(name)) {
+      if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
+        return sl->v().str();
+      }
+    }
+    return def; 
+  }  
   bool Options::hasParam(const std::string& name) const {
     return _options.find(name) != _options.end();
   }

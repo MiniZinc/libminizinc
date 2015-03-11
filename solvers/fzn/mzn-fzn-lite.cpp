@@ -89,6 +89,7 @@ int main(int argc, char** argv) {
   bool flag_output_ozn_stdout = false;
   bool flag_instance_check_only = false;
   FlatteningOptions fopts;
+  Options options; // for solving
   
   if (argc < 2)
     goto error;
@@ -186,6 +187,11 @@ int main(int argc, char** argv) {
           datafile.substr(datafile.length()-4,string::npos) != ".dzn")
         goto error;
       datafiles.push_back(datafile);
+    } else if (string(argv[i])=="--solver") {
+      i++;
+      if (i==argc)
+        goto error;
+      options.setStringParam("solver",argv[i]);            
     } else if (string(argv[i])=="--stdlib-dir") {
       i++;
       if (i==argc)
@@ -370,7 +376,7 @@ int main(int argc, char** argv) {
             
             {
               GCLock lock;
-              Options options;
+              options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
               SearchHandler* sh = new SearchHandler();
               sh->search<FZNSolverInstance>(env,options);
             }
@@ -407,11 +413,12 @@ int main(int argc, char** argv) {
   
 error:
   std::cerr << "Usage: "<< argv[0]
-  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+  << " [<options>] [-I <include path>] [--solver <executable>] <model>.mzn [<data>.dzn ...]" << std::endl
   << std::endl
   << "Options:" << std::endl
   << "  --help, -h\n    Print this help message" << std::endl
   << "  --version\n    Print version information" << std::endl
+  << "  --solver <executable>\n    Solve the model using the fzn-solver <executable> that is in the path" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
   << "  -v, --verbose\n    Print progress statements" << std::endl
   << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl

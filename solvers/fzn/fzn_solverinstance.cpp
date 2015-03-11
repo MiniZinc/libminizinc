@@ -148,7 +148,12 @@ namespace MiniZinc {
           if (!_canPipe) {
             argv[1] = strdup(fznFile.c_str());
           }
-          execvp(argv[0],argv);
+          int status = execvp(argv[0],argv);          
+          if(status != 0) {
+            std::stringstream ssm;
+            ssm << "FznProcess::run: cannot execute command: " << _fzncmd.c_str();
+            throw InternalError(ssm.str());
+          }
         }
         assert(false);
       }
@@ -196,7 +201,9 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    FznProcess proc("fzn-gecode",false,_fzn); // FznProcess proc("flatzinc",false,_fzn); 
+    std::string solver_exec = _options.getStringParam("solver","flatzinc");
+    // TODO: check if solver exec is in path
+    FznProcess proc(solver_exec,false,_fzn); 
     std::stringstream result; 
     proc.run(result);
     std::string solution;

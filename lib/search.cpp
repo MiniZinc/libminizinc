@@ -190,8 +190,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretScopeCombinator(Call* call, Env& env, SolverInstanceBase* solver) {
-    //std::cout << "DEBUG: SCOPE combinator: " << *call << std::endl;       
+  SearchHandler::interpretScopeCombinator(Call* call, Env& env, SolverInstanceBase* solver) {        
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "SCOPE-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -202,29 +201,18 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {
-    //std::cout << "DEBUG: NEXT combinator" << std::endl;
+  SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {   
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) 
-      env.envi().hasSolution(true);    
-    //std::cout << "DEBUG: status from next: " << status << ", SAT = " << SolverInstance::SAT << std::endl;
-    //std::cout << "DEBUG: printing current flat model:" << std::endl;
-    //debugprint(env.flat());
-    //std::cout << "\nDEBUG: printing new solution:" << std::endl;
-    //debugprint(env.output());
-    //std::cout << "\n" << std::endl;
+      env.envi().hasSolution(true);      
     return status; 
   }
   
   SolverInstance::Status
   SearchHandler::interpretPrintCombinator(Env& env, SolverInstanceBase* solver) {
     if(env.envi().hasSolution()) {
-      //std::cout << "DEBUG: PRINT combinator" << std::endl; 
-      //debugprint(env.output());
       env.evalOutput(std::cout);
-      std::cout << "----------"<< std::endl;
-      //std::cout<< "\nOR BETTER:\n" << std::endl;
-      //std::cout << *(env.output()) << std::endl;
+      std::cout << constants().solver_output.solution_delimiter << std::endl;     
       return SolverInstance::SAT;
     }
     else {      

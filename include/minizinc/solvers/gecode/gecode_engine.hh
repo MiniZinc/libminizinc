@@ -256,6 +256,7 @@ namespace MiniZinc {
       T* s = static_cast<T*>(path.getSpace(edge));
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);
+        std::cerr << "DEBUG: updating edge " << edge << " of " << path.getNbEntries() << std::endl;
         si.updateIntBounds(space, vd,lb,ub);
       }
     }
