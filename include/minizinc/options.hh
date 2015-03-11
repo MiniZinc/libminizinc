@@ -22,6 +22,9 @@ namespace MiniZinc {
       inline Expression* getParam(const std::string& name) const;
 
     public:
+      // add the options of the current Options into the copy
+      Options& copyEntries(Options& copy);
+      
       void setIntParam(const std::string& name,   KeepAlive e);
       void setFloatParam(const std::string& name, KeepAlive e);
       void setBoolParam(const std::string& name,  KeepAlive e);

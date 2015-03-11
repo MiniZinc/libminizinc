@@ -36,6 +36,17 @@ namespace MiniZinc {
       delete engine; 
       delete customEngine;
     }
+    
+    SolverInstanceBase*
+    GecodeSolverInstance::copy(void) {
+      Env* env_copy = _env.copyEnv();
+      Options options_copy;
+      options_copy = _options.copyEntries(options_copy);
+      GecodeSolverInstance* copy = new GecodeSolverInstance(*env_copy,options_copy);      
+      // TODO: copy the engine!
+      return copy;
+    }
+    
 
     void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
       std::stringstream ss;

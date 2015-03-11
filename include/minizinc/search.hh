@@ -12,18 +12,23 @@
 #ifndef __MINIZINC_SEARCH_HH__
 #define __MINIZINC_SEARCH_HH__
 
+#include <stack>
+
 #include <minizinc/flatten.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
   
-  class SearchHandler {    
-  public:
+  class SearchHandler { 
+  protected:
+    // the stack of scopes where the topmost scope is the scope of the next level
+    std::stack<SolverInstanceBase*> _scopes;   
+  public: 
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
     void search(Env& env, MiniZinc::Options& opt) {   
-      SolverInstanceBase* solver = new SolverInstanceBase(env,opt);
+      SolverInstanceBase* solver = new SolverInstanceBase(env,opt);     
       solver->processFlatZinc();
       
       SolverInstance::Status status;    

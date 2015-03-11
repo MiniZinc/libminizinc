@@ -145,6 +145,8 @@ namespace MiniZinc {
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);
 
+    virtual SolverInstanceBase* copy(void);
+    
     virtual Status next(void);    
     virtual void processFlatZinc(void);    
     virtual Status solve(void);

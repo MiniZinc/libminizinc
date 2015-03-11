@@ -516,11 +516,12 @@ namespace MiniZinc {
         }
       }
     }
-    
-    Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, c->e->get_ids());
+    unsigned int ids_c = e->get_ids();
+    Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, ids_c);
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
     c->e->ignorePartial = e->ignorePartial;
+    c->e->hasSolution(e->hasSolution());
     for(unsigned int i=0; i<e->callStack.size(); i++)
       c->e->callStack.push_back(copy(cmap, const_cast<Expression*>(e->callStack[i])));
     for(unsigned int i=0; i<e->errorStack.size(); i++)

@@ -164,10 +164,15 @@ namespace MiniZinc {
   : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
-  
-//  SolverInstance::Status
- // FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
+  SolverInstanceBase*
+  FZNSolverInstance::copy(void) {
+    Env* env_copy = _env.copyEnv(); 
+    Options options_copy; // TODO: do we need to use a reference/pointer instead because local variable will be removed?
+    options_copy = _options.copyEntries(options_copy);
+    return new FZNSolverInstance(*env_copy,options_copy);
+  }
+ 
   namespace {
     ArrayLit* b_arrayXd(EnvI& envi, ASTExprVec<Expression> args, int d) {
       GCLock lock;

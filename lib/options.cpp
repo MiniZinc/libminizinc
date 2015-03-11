@@ -14,6 +14,16 @@
 
 namespace MiniZinc {
   
+  Options& Options::copyEntries(Options& copy) {
+    UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive >::const_iterator it;
+    for(it = _options.begin(); it!= _options.end(); ++it) {      
+      const std::string& name = it->first;
+      Expression* e = (it->second)();
+      copy._options[name] = e;      
+    }
+    return copy;
+  }
+  
   Expression* Options::getParam(const std::string& name) const {
     UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive >::const_iterator it = _options.find(name);
     if(it == _options.end()) {

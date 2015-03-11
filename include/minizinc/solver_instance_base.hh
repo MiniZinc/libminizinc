@@ -50,6 +50,8 @@ namespace MiniZinc {
     SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
     
     virtual ~SolverInstanceBase(void) {}
+    /// returns a deep copy of the solver instance base
+    virtual SolverInstanceBase* copy() = 0;
     /// find the next solution (when overwriting this method, make sure that assignSolutionToOutput is called after a new solution is found)
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model

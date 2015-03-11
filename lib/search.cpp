@@ -196,8 +196,19 @@ namespace MiniZinc {
       ssm << "SCOPE-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(call->loc(), ssm.str());
     }
-    // TODO: create new scope in solver: solver->newScope();
-    return interpretCombinator(call->args()[0], env, solver);
+    // if this is a nested scope
+    if(!_scopes.empty()) {
+      SolverInstanceBase* solver_copy = solver->copy();
+      _scopes.push(solver_copy);
+      SolverInstance::Status status = interpretCombinator(call->args()[0], env, solver_copy);
+      _scopes.pop(); // TODO: do we even need the stack? do we need to push and pop?
+      return status;
+    } // this is not a nested scope
+    else {
+     _scopes.push(solver); 
+     return interpretCombinator(call->args()[0], env, solver);
+     _scopes.pop();
+    }    
   }
   
   SolverInstance::Status
