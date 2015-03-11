@@ -1347,7 +1347,8 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {    
+  GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
+    //std::cout << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
     space->status(); // to make the space stable

@@ -55,7 +55,7 @@ namespace MiniZinc {
                 si->ann().clear();
               }
             }
-            os << *item;            
+            os << *item;  
           }           
         }
         
@@ -81,13 +81,14 @@ namespace MiniZinc {
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
           
-          int timeout_sec = 10;
+          int timeout_sec = 50; //10 
           
           timeout.tv_sec = timeout_sec;
           timeout.tv_usec = 0;
           
           bool done = false;
           while (!done) {
+           
             switch (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout)) {
               case 0:
               {
@@ -96,12 +97,12 @@ namespace MiniZinc {
               }
                 break;
               case 1:
-              {
+              {                
                 char buffer[100];
                 int count = read(pipes[1][0], buffer, sizeof(buffer)-1);
-                if (count > 0) {
+                if (count > 0) {                  
                   buffer[count] = 0;
-                  result << buffer;
+                  result << buffer;                 
                   timeval currentTime, elapsed;
                   gettimeofday(&currentTime, NULL);
                   elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
@@ -141,9 +142,11 @@ namespace MiniZinc {
           close(pipes[1][1]);
           close(pipes[1][0]);
           close(pipes[0][1]);
-          char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0};
+          //char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0};          
+          char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};
+          //std::cerr << "####." << std::endl;
           if (!_canPipe) {
-            argv[2] = strdup(fznFile.c_str());
+            argv[1] = strdup(fznFile.c_str());
           }
           execvp(argv[0],argv);
         }
@@ -209,7 +212,8 @@ namespace MiniZinc {
     bool hadSolution = false;
     while (result.good()) {
       std::string line;
-      getline(result, line);     
+      getline(result, line); 
+      //std::cout << line << std::endl;
       if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {

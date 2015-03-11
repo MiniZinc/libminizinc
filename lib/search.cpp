@@ -253,8 +253,7 @@ namespace MiniZinc {
       Expression* domain = copy(it->e()->ti()->domain());
       domains.insert(id,domain);         
     }
-    
-    
+       
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts_eval, constants().var_true, constants().var_true);
     //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
@@ -298,7 +297,7 @@ namespace MiniZinc {
         }
       }
       //for(unsigned int i=0; i<flat_cts.size(); i++)
-        //std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+       // std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
       success = success && solver->postConstraints(flat_cts);      
     }
     
