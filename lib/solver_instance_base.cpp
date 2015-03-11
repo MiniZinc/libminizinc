@@ -32,12 +32,19 @@ namespace MiniZinc {
   }
   
   void
-  SolverInstanceBase::assignSolutionToOutput(void) {    
-    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {            
+  SolverInstanceBase::assignSolutionToOutput(void) {  
+    // TODO: fix: what if we already had a solution?
+    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {           
       if (it->e()->e() == NULL) {
-        it->e()->e(getSolutionValue(it->e()->id()));       
+        it->e()->e(getSolutionValue(it->e()->id()));          
       } 
     }
+  }
+  
+  bool
+  NISolverInstanceBase::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    // the bounds have already been updated in the flat model
+    return true;
   }
   
   bool 
@@ -78,7 +85,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  NISolverInstanceBase::next(void) {
+  NISolverInstanceBase::next(void) {   
     if(_new_solution)
       postSolutionNoGoods();
     // the variables and constraints to be posted are already added to the flat model during flattening
@@ -86,8 +93,10 @@ namespace MiniZinc {
     if(status == Status::SAT) {
       _new_solution = true;
       assignSolutionToOutput();
+      _env.envi().hasSolution(true);       
     }
     else _new_solution = false;
+    return status;
   }
   
   void

@@ -49,8 +49,14 @@ namespace MiniZinc {
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             Item* item = *it;
-            os << *item;
-          }
+            if(SolveI* si = item->dyn_cast<SolveI>()) {
+              if(si->combinator_lite()) {
+                // remove combinator lite annotation
+                si->ann().clear();
+              }
+            }
+            os << *item;            
+          }           
         }
         
         if (int childPID = fork()) {
@@ -147,12 +153,12 @@ namespace MiniZinc {
   }
   
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-  : SolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
+  : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
   
-  SolverInstance::Status
-  FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
+//  SolverInstance::Status
+ // FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
   namespace {
     ArrayLit* b_arrayXd(EnvI& envi, ASTExprVec<Expression> args, int d) {
@@ -187,7 +193,7 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    FznProcess proc("flatzinc",false,_fzn);
+    FznProcess proc("flatzinc",false,_fzn); 
     std::stringstream result; 
     proc.run(result);
     std::string solution;
@@ -203,8 +209,8 @@ namespace MiniZinc {
     bool hadSolution = false;
     while (result.good()) {
       std::string line;
-      getline(result, line);
-      if (line=="----------") {
+      getline(result, line);     
+      if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
             it->second.first->e(it->second.second);
@@ -213,7 +219,7 @@ namespace MiniZinc {
         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
-            ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
+            ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());            
             if (it==declmap.end()) {
               std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
               exit(EXIT_FAILURE);
@@ -225,21 +231,26 @@ namespace MiniZinc {
                 c->args()[i]->type(Type::parsetint());
               c->args()[c->args().size()-1]->type(it->second.first->type());
               ArrayLit* al = b_arrayXd(env().envi(), c->args(), c->args().size()-1);
-              it->second.first->e(al);
+              it->second.first->e(al);              
+              setSolution(it->second.first->id(),al);
             } else {
-              it->second.first->e(ai->e());
+              it->second.first->e(ai->e());              
+              setSolution(it->second.first->id(),ai->e());
             }
           }
         }
         delete sm;
         hadSolution = true;
-      } else if (line=="==========") {
+        if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
+          return SolverInstance::SAT;
+        }
+      } else if (line==constants().solver_output.opt.str()) {
         return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
-      } else if(line=="=====UNSATISFIABLE=====") {
+      } else if(line==constants().solver_output.unsat.str()) {
         return SolverInstance::UNSAT;
-      } else if(line=="=====UNBOUNDED=====") {
+      } else if(line==constants().solver_output.unbounded.str()) {
         return SolverInstance::UNKNOWN;
-      } else if(line=="=====UNKNOWN=====") {
+      } else if(line==constants().solver_output.unknown.str()) {
         return SolverInstance::UNKNOWN;
       } else {
         solution += line;
@@ -252,14 +263,25 @@ namespace MiniZinc {
   void
   FZNSolverInstance::processFlatZinc(void) {}  
   
-  Expression*
-  FZNSolverInstance::getSolutionValue(Id* id) {
-    assert(false);
+  void
+  FZNSolverInstance::setSolution(Id* id, Expression* e) {
+    _solution.insert(id,e);
   }
   
-  bool 
-  FZNSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
-    return false; // TODO: FZN should inherit from non-incremental interface, as soon as it is done
+  Expression*
+  FZNSolverInstance::getSolutionValue(Id* id) {
+    if(_solution.find(id) == _solution.end()) {
+      std::stringstream ssm;
+      ssm << "FZNSolverInstance::getSolutionValue: cannot find solution for id: " << *id;
+      throw InternalError(ssm.str());
+    }
+    return _solution.get(id);
+  }
+  
+  SolverInstance::Status 
+  FZNSolverInstance::nextSolution(void) {   
+    _fzn = _env.flat(); // point to the new flat model
+    return solve();
   }
   
 }

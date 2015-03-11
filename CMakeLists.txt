@@ -346,7 +346,9 @@ if(HAS_FZN)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn
+	add_executable(mzn-fzn-lite solvers/fzn/mzn-fzn-lite.cpp)
+	target_link_libraries(mzn-fzn-lite minizinc_fzn minizinc)
+	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-lite
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

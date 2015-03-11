@@ -1057,6 +1057,13 @@ namespace MiniZinc {
     combinators.repeat = ASTString("repeat");
     combinators.scope = ASTString("scope");
     
+    solver_output.solution_delimiter = ASTString("----------");
+    solver_output.sat = ASTString("==========");
+    solver_output.opt = ASTString("==========");
+    solver_output.unsat = ASTString("=====UNSATISFIABLE=====");
+    solver_output.unknown = ASTString("=====UNKNOWN=====");  
+    solver_output.unbounded = ASTString("=====UNBOUNDED=====");    
+    
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
@@ -1176,8 +1183,13 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.post));
     v.push_back(new StringLit(Location(), combinators.print));
     v.push_back(new StringLit(Location(), combinators.repeat));
-    v.push_back(new StringLit(Location(), combinators.scope));
-    
+    v.push_back(new StringLit(Location(), combinators.scope));       
+    v.push_back(new StringLit(Location(), solver_output.opt));
+    v.push_back(new StringLit(Location(), solver_output.sat));
+    v.push_back(new StringLit(Location(), solver_output.solution_delimiter));
+    v.push_back(new StringLit(Location(), solver_output.unbounded));
+    v.push_back(new StringLit(Location(), solver_output.unknown));
+    v.push_back(new StringLit(Location(), solver_output.unsat));
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);
     for (int i=-maxConstInt; i<=maxConstInt; i++)

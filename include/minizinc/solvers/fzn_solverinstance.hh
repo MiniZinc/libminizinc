@@ -22,25 +22,28 @@ namespace MiniZinc {
     typedef MiniZinc::Statistics Statistics;
   };
   
-  class FZNSolverInstance : public SolverInstanceImpl<FZNSolver> {
+  class FZNSolverInstance : public NISolverInstanceImpl<FZNSolver> {
   protected:
     Model* _fzn;
     Model* _ozn;
+    IdMap<Expression*> _solution;
   public:
     FZNSolverInstance(Env& env, const Options& options);
     
     virtual ~FZNSolverInstance(void);
     
-    virtual Status next(void);
+  //  virtual Status next(void);
     
-    virtual Status solve(void);
-    
-    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
+    virtual Status solve(void);  
     
     virtual void processFlatZinc(void);    
     
   protected:
+    void setSolution(Id* id, Expression* e);
+    
     virtual Expression* getSolutionValue(Id* id);
+    
+    virtual SolverInstance::Status nextSolution(void);
   };
   
 }

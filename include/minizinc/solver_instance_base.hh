@@ -73,23 +73,26 @@ namespace MiniZinc {
     SolverInstanceBase& operator= (const SolverInstanceBase&);
   };
   
+  // incremental solver instance implementation
   template<class Solver>
   class SolverInstanceImpl : public SolverInstanceBase {
   protected:
     typename Solver::Statistics _statistics;
-    /// maps each identifier to the respective GecodeVariable in the _current_space
+     /// maps each identifier to the respective solver variable
     IdMap<typename Solver::Variable> _variableMap;
   public:
     SolverInstanceImpl(Env& env, const Options& options) : SolverInstanceBase(env,options) {}
     Statistics& getStatistics() { return _statistics; }
   };  
   
-  /// abstract solver interface for non-incremental solvers (solvers that do NOT allow adding variables/constraints during search)
+   /// abstract solver interface for non-incremental solvers (solvers that do NOT allow adding variables/constraints during search)
   class NISolverInstanceBase : public SolverInstanceBase {
   private:
     /// if true, there is a new solution whose nogoods need to be posted, false otherwise
     bool _new_solution; 
-  protected:    
+  protected:
+    // overwrite this method in your solver 
+    virtual Expression* getSolutionValue(Id* id) = 0;
     // overwrite this function in your solver: build the solver representation of the flat model and find the first solution
     virtual Status nextSolution(void) = 0;
     /// posts the nogoods representing the previous solution 
@@ -97,18 +100,30 @@ namespace MiniZinc {
     // derives the nogoods from the last solution (through the output model) and returns them
     KeepAlive deriveNoGoodsFromSolution(void);
   public:
+    NISolverInstanceBase(Env& env, const Options& options) : SolverInstanceBase(env, options), _new_solution(false) {}    
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
     /// add constraints 
     virtual bool postConstraints(std::vector<Call*> cts);
    /// add variables during search (after next() has been called)
-    virtual bool addVariables(std::vector<VarDecl*> vars);   
+    virtual bool addVariables(std::vector<VarDecl*> vars);
     /// retrieve the next solution
     virtual Status next(void);
   };
   
   // non-incremental solver instance implementation
   template<class Solver>
-  class NISolverInstanceImpl : public NISolverInstanceBase, public SolverInstanceImpl<Solver> {  
+  class NISolverInstanceImpl : public NISolverInstanceBase {  
+  protected:
+    typename Solver::Statistics _statistics;
+    /// maps each identifier to the respective solver variable
+    IdMap<typename Solver::Variable> _variableMap;
+  public:
+    NISolverInstanceImpl(Env& env, const Options& options) : NISolverInstanceBase(env,options) {}
+    Statistics& getStatistics() { return _statistics; }
   };
+  
+ 
+  
 }
 
 #endif

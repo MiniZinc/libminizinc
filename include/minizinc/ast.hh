@@ -1370,6 +1370,14 @@ namespace MiniZinc {
         ASTString repeat;
         ASTString scope;
       } combinators;
+      struct {
+        ASTString opt;
+        ASTString sat;
+        ASTString solution_delimiter;
+        ASTString unbounded;
+        ASTString unknown;
+        ASTString unsat;
+      } solver_output;
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt
       ArrayLit* integers;
