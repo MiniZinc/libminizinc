@@ -1200,12 +1200,25 @@ class Model(object):
 			raise LookupError('The object pointed to was assigned to different names')
 	'''
 
+    def add_recursive(self, expr):
+        if isinstance(expr, (tuple, list)):
+            for i in expr:
+                self.add_recursive(i)
+        else:
+ 			if issubclass(type(expr), Expression):
+ 				if expr.is_pre():
+ 					self.mznmodel.Constraint(self.evaluate(expr))
+ 				else:
+ 					raise(TypeError, "Unexpected expression")
+ 			else:
+ 				self.mznmodel.Constraint(expr)
+
 	def Constraint(self, *expr):
 		minizinc_internal.lock()
 		if len(expr)>0:
 			self.loaded = True
 			#self.frame = inspect.currentframe().f_back.f_locals.items()
-			self.add_prime(expr)
+			self.add_recursive(expr)
 			#del self.frame
 		minizinc_internal.unlock()
 
@@ -1252,25 +1265,6 @@ class Model(object):
 		else:
 			raise TypeError('Variable Type unspecified')
 
-#Numberjack
-	def add_prime(self, expr):
-		if issubclass(type(expr), list):
-			for exp in expr:
-				self.add_prime(exp)
-		elif issubclass(type(expr), tuple):
-			for exp in expr:
-				self.add_prime(exp)
-		elif issubclass(type(expr), dict):
-			for key in expr:
-				self.add_prime(exp[key])
-		else:
-			if issubclass(type(expr), Expression):
-				if expr.is_pre():
-					self.mznmodel.Constraint(self.evaluate(expr))
-				else:
-					raise(TypeError, "Unexpected expression")
-			else:
-				self.mznmodel.Constraint(expr)
 
 
 	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
@@ -1306,7 +1300,7 @@ class Model(object):
 		savedModel = self.mznmodel.copy()
 		self.mznmodel.SolveItem(code, eval_ann, eval_expr)
 		if data is not None:
-			self.add_prime(data)
+			self.add_recursive(data)
 		minizinc_internal.unlock()
 
 		self.mznsolver = self.mznmodel.solve()
