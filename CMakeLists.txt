@@ -292,7 +292,9 @@ endif()
 
 if(HAS_GECODE)
   include_directories("${GECODE_HOME}/include")
+  include_directories("$ENV{GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
+  link_directories("$ENV{GECODE_HOME}")
 
   add_library(minizinc_gecode
           solvers/gecode/fzn_space.cpp
