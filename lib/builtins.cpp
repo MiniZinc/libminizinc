@@ -1995,10 +1995,31 @@ namespace MiniZinc {
     return std::tan(f); 
   }
   
-  IntVal b_sol_int(EnvI& env, Call* call) {
+  Expression* follow_id_to_id(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e==constants().absent)
+        return e;
+      switch (e->eid()) {
+        case Expression::E_ID:
+          if (Id* nextid = Expression::dyn_cast<Id>(e->cast<Id>()->decl()->e()))
+            e = nextid;
+          else
+            return e;
+          break;
+        default:
+          return e;
+      }
+    }
+  }
+
+  
+  Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 1);    
+    assert(args.size() == 1);
     if(Id* id = args[0]->dyn_cast<Id>()) {
+      id = follow_id_to_id(id)->cast<Id>();
       for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
@@ -2008,82 +2029,44 @@ namespace MiniZinc {
           }
           else {
             assert(it->e()->e()->type().ispar());
-            assert(it->e()->e()->type().isint());
-            return IntVal(eval_int(env, it->e()->e()));
+            return eval_par(env, it->e()->e());
           }
         }
       }
       std::stringstream ssm; 
       ssm << "could not find solution for unknown identifier: " << *id;
       throw EvalError(call->loc(), ssm.str());
+    } else if(ArrayAccess* aa = args[0]->dyn_cast<ArrayAccess>()) {
+      Id* id = aa->v()->dyn_cast<Id>();
+      if (id==NULL)
+        throw EvalError(aa->loc(), "array access in call to \"sol\" must be an identifier");
+      id = follow_id_to_id(id)->cast<Id>();
+      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
+        if(it->e()->id()->str() == id->str()) {
+          if(!it->e()->e()) {
+            std::stringstream ssm;
+            ssm << "no solution found for: " << *id;
+            throw EvalError(call->loc(), ssm.str());
+          }
+          else {
+            assert(it->e()->e()->type().ispar());
+            GCLock lock;
+            ArrayAccess* naa = new ArrayAccess(Location().introduce(),it->e()->e(),aa->idx());
+            return eval_par(env, naa);
+          }
+        }
+      }
+      std::stringstream ssm;
+      ssm << "could not find solution for unknown identifier: " << *id;
+      throw EvalError(call->loc(), ssm.str());
     }
     else {
       std::stringstream ssm; 
-      ssm << "expecting identifier as argument of \"sol\" instead of: " 
+      ssm << "expecting identifier or array access as argument of \"sol\" instead of: "
           << *args[0];
       throw EvalError(args[0]->loc(), ssm.str());
     }    
   }
-  
-  FloatVal b_sol_float(EnvI& env, Call* call) {
-    ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 1);    
-    if(Id* id = args[0]->dyn_cast<Id>()) {
-      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
-        if(it->e()->id()->str() == id->str()) {
-          if(!it->e()->e()) {
-            std::stringstream ssm; 
-            ssm << "no solution found for: " << *id;
-            throw EvalError(call->loc(), ssm.str());
-          }
-          else {
-            assert(it->e()->e()->type().ispar());
-            assert(it->e()->e()->type().isfloat());
-            return eval_float(env, it->e()->e());
-          }
-        }
-      }
-      std::stringstream ssm; 
-      ssm << "could not find solution for unknown identifier: " << *id;
-      throw EvalError(call->loc(), ssm.str());
-    }
-    else {
-      std::stringstream ssm; 
-      ssm << "expecting identifier as argument of \"sol\" instead of: " 
-          << *args[0];
-      throw EvalError(args[0]->loc(), ssm.str());
-    }    
-  }  
-  
-  bool b_sol_bool(EnvI& env, Call* call) {
-    ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 1);    
-    if(Id* id = args[0]->dyn_cast<Id>()) {
-      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
-        if(it->e()->id()->str() == id->str()) {
-          if(!it->e()->e()) {
-            std::stringstream ssm; 
-            ssm << "no solution found for: " << *id;
-            throw EvalError(call->loc(), ssm.str());
-          }
-          else {
-            assert(it->e()->e()->type().ispar());
-            assert(it->e()->e()->type().isbool());
-            return eval_bool(env, it->e()->e());
-          }
-        }
-      }
-      std::stringstream ssm; 
-      ssm << "could not find solution for unknown identifier: " << *id;
-      throw EvalError(call->loc(), ssm.str());
-    }
-    else {
-      std::stringstream ssm; 
-      ssm << "expecting identifier as argument of \"sol\" instead of: " 
-          << *args[0];
-      throw EvalError(args[0]->loc(), ssm.str());
-    }    
-  }    
   
   bool b_hasSol(EnvI& env, Call* call) {   
     return env.hasSolution();
@@ -2730,18 +2713,8 @@ namespace MiniZinc {
     }  
     {
       std::vector<Type> t(1);
-      t[0] = Type::parint();
-      rb(m, ASTString("sol"),t,b_sol_int);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::parfloat();
-      rb(m, ASTString("sol"),t,b_sol_float);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::parbool();
-      rb(m, ASTString("sol"),t,b_sol_bool);
+      t[0] = Type::optvartop();
+      rb(m, ASTString("sol"),t,b_sol);
     }
     {
       std::vector<Type> t(0); // no arguments     

@@ -2109,11 +2109,7 @@ function int: binomial(int: t, float: p);
 */  
 
 /** @group builtins.combinators Returns the last solution value for identifier \a x */
-function int: sol(var int: x);
-/** @group builtins.combinators Returns the last solution value for identifier \a x */
-function float: sol(var float: x);
-/** @group builtins.combinators Returns the last solution value for identifier \a x */
-function bool: sol(var bool: x);
+function $T: sol(var opt $T: x);
 
 /** @group builtins.combinators Returns true if there exists a solution to the problem */
 function bool: hasSol();

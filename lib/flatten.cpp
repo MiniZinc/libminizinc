@@ -3709,14 +3709,14 @@ namespace MiniZinc {
             } else {
               nctx.b = ctx.i;
             }
-          } else if (cid == constants().ids.assert || cid == constants().ids.trace) {
+          } else if (cid == constants().ids.assert || cid == constants().ids.trace || cid == "sol") {
             if (cid == constants().ids.assert && c->args().size()==2) {
               (void) decl->_builtins.b(env,c);
               ret = flat_exp(env,ctx,constants().lit_true,r,b);
             } else {
               KeepAlive callres = decl->_builtins.e(env,c);
               ret = flat_exp(env,ctx,callres(),r,b);
-              // This is all we need to do for assert, so break out of the E_CALL
+              // This is all we need to do for assert, trace and sol, so break out of the E_CALL
             }
             break;
           }
