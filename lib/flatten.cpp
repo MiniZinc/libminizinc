@@ -656,8 +656,6 @@ namespace MiniZinc {
 
   std::ostream&
   EnvI::evalOutput(std::ostream &os) {
-    std::cerr << "DEBUG: EnvI::evalOutput: printing output model before evaluating it:" << std::endl;
-    debugprint(output);
     GCLock lock;
     ArrayLit* al = eval_array_lit(*this,output->outputItem()->e());
     std::string output;

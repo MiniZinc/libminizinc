@@ -39,17 +39,17 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 
-%predicate neighbourhoodCts(array[int] of var int: x, 
-%                            float: destructionRate) = 
-%   if(hasSol()) then 
-%     let {
-%       int: n = ceil((1.0 - destructionRate)*length(x));
-%       array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
-%     } in 
-%       forall (i in idx) (
-%         x[i] = sol(x[i])
-%       )     
-%   else true endif;
+predicate neighbourhoodCts1(array[int] of var int: x, 
+                            float: destructionRate) = 
+   if(hasSol()) then 
+     let {
+       int: n = ceil((1.0 - destructionRate)*length(x));
+       array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
+     } in 
+       forall (i in idx) (
+         x[i] = sol(x[i])
+       )     
+   else true endif;
 
 
 % solve using minimizing branch & bound
@@ -60,7 +60,7 @@ scope(
       and([
         scope(
           and([
-            post(neighbourhoodCts(mark,0.3)),
+            post(neighbourhoodCts1(mark,0.3)),
             next(), % or bab
             print()
           ])

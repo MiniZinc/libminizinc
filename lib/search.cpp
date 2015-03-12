@@ -250,10 +250,10 @@ namespace MiniZinc {
   SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver) {
     Env& env = solver->env();
     bool success = true;
-    std::cout << "DEBUG: BEGIN posting constraint " << *cts << std::endl;
-    std::cout << "DEBUG: output model in POST:" << std::endl;
-    debugprint(env.output()); std::cout << "-------------------------------" << std::endl;
-    Expression* cts_eval = eval_par(env.envi(),cts);      
+    std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
+    // TODO: we somehow need to evaluate this 
+    //Expression* cts_eval = eval_par(env.envi(),cts);      
+    Expression* cts_eval = cts; //eval_bool(env.envi(),cts);
     //std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
     //debugprint(env.flat());
     int nbCtsBefore = 0;
@@ -270,9 +270,10 @@ namespace MiniZinc {
       Expression* domain = copy(it->e()->ti()->domain());
       domains.insert(id,domain);         
     }
-       
+    std::cerr << "DEBUG: before flat_exp()" << std::endl;   
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts_eval, constants().var_true, constants().var_true);
+    std::cerr << "DEBUG: after flat_exp()" << std::endl; 
     //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
     //debugprint(env.flat());    
     //std::cout<< "\n" << std::endl;
