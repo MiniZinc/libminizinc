@@ -189,7 +189,8 @@ namespace MiniZinc {
       while (cur == NULL) {
         if (path.empty())
           return NULL;
-        cur = path.recompute(d,opt.a_d,*this);
+        //int mark = path.getNbEntries();
+        cur = path.recompute(d,opt.a_d,*this); //, *cur, mark);
         if (cur != NULL)
           break;
         path.next();

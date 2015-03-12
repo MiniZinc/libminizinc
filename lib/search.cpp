@@ -214,8 +214,9 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {   
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SAT) 
-      env.envi().hasSolution(true);      
+    if(status == SolverInstance::SAT) {      
+      env.envi().hasSolution(true);    
+    }
     return status; 
   }
   
@@ -227,7 +228,7 @@ namespace MiniZinc {
       return SolverInstance::SAT;
     }
     else {      
-      throw EvalError(Location(), "No solution exists to be printed by PRINT-combinator");      
+      throw EvalError(Location(), "No solution found to be printed by PRINT-combinator");      
     }
   }  
   

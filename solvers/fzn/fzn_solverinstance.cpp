@@ -224,23 +224,22 @@ namespace MiniZinc {
     bool hadSolution = false;
     while (result.good()) {
       std::string line;
-      getline(result, line); 
-      //std::cout << line << std::endl;
+      getline(result, line);       
       if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
             it->second.first->e(it->second.second);
           }
-        }
+        }       
         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
+        for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {          
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());            
             if (it==declmap.end()) {
               std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
               exit(EXIT_FAILURE);
             }
-            if (Call* c = ai->e()->dyn_cast<Call>()) {
+            if (Call* c = ai->e()->dyn_cast<Call>()) {             
               // This is an arrayXd call, make sure we get the right builtin
               assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
               for (unsigned int i=0; i<c->args().size(); i++)
@@ -249,8 +248,8 @@ namespace MiniZinc {
               ArrayLit* al = b_arrayXd(env().envi(), c->args(), c->args().size()-1);
               it->second.first->e(al);              
               setSolution(it->second.first->id(),al);
-            } else {
-              it->second.first->e(ai->e());              
+            } else {             
+              it->second.first->e(ai->e());            
               setSolution(it->second.first->id(),ai->e());
             }
           }
@@ -269,6 +268,7 @@ namespace MiniZinc {
       } else if(line==constants().solver_output.unknown.str()) {
         return SolverInstance::UNKNOWN;
       } else {
+        line += "\n"; // break the line, especially in case it is a comment
         solution += line;
       }
     }

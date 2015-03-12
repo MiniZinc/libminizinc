@@ -34,7 +34,7 @@ namespace MiniZinc {
   void
   SolverInstanceBase::assignSolutionToOutput(void) {  
     // TODO: fix: what if we already had a solution?
-    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {           
+    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {      
       if (it->e()->e() == NULL) {
         it->e()->e(getSolutionValue(it->e()->id()));          
       } 
@@ -91,7 +91,7 @@ namespace MiniZinc {
     // the variables and constraints to be posted are already added to the flat model during flattening
     Status status = nextSolution();  
     if(status == Status::SAT) {
-      _new_solution = true;
+      _new_solution = true;      
       assignSolutionToOutput();
       _env.envi().hasSolution(true);       
     }
