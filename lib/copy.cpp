@@ -537,6 +537,10 @@ namespace MiniZinc {
     Model* c = new Model;
     for (unsigned int i=0; i<m->size(); i++)
       c->addItem(copy(cm,(*m)[i]));
+    for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+      for (unsigned int i=0; i<it->second.size(); i++)
+        c->registerFn(it->second[i]);
+    }
     cm.insert(m,c);
     return c;
   }
