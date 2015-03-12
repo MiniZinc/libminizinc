@@ -18,31 +18,32 @@
 namespace MiniZinc {
   
   SolverInstance::Status 
-  SearchHandler::interpretCombinator(Expression* comb0, Env& env, SolverInstanceBase* solver) {
+  SearchHandler::interpretCombinator(Expression* comb0, SolverInstanceBase* solver) {
+    Env& env = solver->env();
     Expression* comb = eval_par(env.envi(), comb0);
     //std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
     
     if(Call* call = comb->dyn_cast<Call>()) {      
       if(call->id().str() == constants().combinators.and_.str()) {
-        return interpretAndCombinator(call,env,solver);    
+        return interpretAndCombinator(call,solver);    
       } 
       else if(call->id().str() == constants().combinators.or_.str()) {
-        return interpretOrCombinator(call,env,solver); 
+        return interpretOrCombinator(call,solver); 
       }
       else if(call->id().str() == constants().combinators.post.str()) {
-        return interpretPostCombinator(call,env,solver);
+        return interpretPostCombinator(call,solver);
       }
       else if(call->id().str() == constants().combinators.repeat.str()) {
-        return interpretRepeatCombinator(call,env,solver);   
+        return interpretRepeatCombinator(call,solver);   
       }
       else if(call->id().str() == constants().combinators.scope.str()) {
-        return interpretScopeCombinator(call,env,solver);
+        return interpretScopeCombinator(call,solver);
       }
       else if(call->id().str() == constants().combinators.print.str()) {
-        return interpretPrintCombinator(env,solver);
+        return interpretPrintCombinator(solver);
       }
       else if(call->id().str() == constants().combinators.next.str()) {
-        return interpretNextCombinator(env,solver);
+        return interpretNextCombinator(solver);
       }
       else {
         std::stringstream ssm; 
@@ -52,10 +53,10 @@ namespace MiniZinc {
     }
     else if(Id* id = comb->dyn_cast<Id>()) {
       if(id->str().str() == constants().combinators.next.str()) {
-        return interpretNextCombinator(env,solver);
+        return interpretNextCombinator(solver);
       } 
       else if (id->str().str() == constants().combinators.print.str()) {
-        return interpretPrintCombinator(env,solver);
+        return interpretPrintCombinator(solver);
       }
       else {
         std::stringstream ssm; 
@@ -72,8 +73,8 @@ namespace MiniZinc {
   
   
   SolverInstance::Status 
-  SearchHandler::interpretAndCombinator(Call* call, Env& env, SolverInstanceBase* solver) {    
-    //std::cout << "DEBUG: AND combinator: " << (*call) << std::endl;        
+  SearchHandler::interpretAndCombinator(Call* call, SolverInstanceBase* solver) {    
+    std::cout << "DEBUG: AND combinator: " << (*call) << std::endl;    
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "AND-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -82,7 +83,7 @@ namespace MiniZinc {
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
-        SolverInstance::Status status = interpretCombinator(al->v()[i],env,solver);
+        SolverInstance::Status status = interpretCombinator(al->v()[i],solver);
         if(status != SolverInstance::SAT)               
           return status;            
       }
@@ -95,8 +96,8 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretOrCombinator(Call* call, Env& env, SolverInstanceBase* solver) {
-    //std::cout << "DEBUG: OR combinator: " << (*call) << std::endl;        
+  SearchHandler::interpretOrCombinator(Call* call, SolverInstanceBase* solver) {
+    std::cout << "DEBUG: OR combinator: " << (*call) << std::endl;        
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "OR-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -107,7 +108,7 @@ namespace MiniZinc {
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
-        status = interpretCombinator(al->v()[i],env,solver);
+        status = interpretCombinator(al->v()[i],solver);
         if(status == SolverInstance::SAT)
           oneIsFeasible = true;
       }
@@ -120,14 +121,14 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPostCombinator(Call* call, Env& env, SolverInstanceBase* solver) {
-    //std::cout << "DEBUG: POST combinator: " << *call << std::endl;
+  SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver) {   
+    std::cout << "DEBUG: POST combinator: " << *call << std::endl;
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "POST combinator takes only 1 argument instead of " << call->args().size() << " in " << *call ;
       throw TypeError(call->loc(), ssm.str());
     }
-    if(!postConstraints(call->args()[0], env, solver)) {
+    if(!postConstraints(call->args()[0], solver)) {
       std::stringstream ssm;
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(call->args()[0]->loc(), ssm.str());
@@ -136,8 +137,9 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretRepeatCombinator(Call* call, Env& env, SolverInstanceBase* solver) {
-    //std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
+  SearchHandler::interpretRepeatCombinator(Call* call, SolverInstanceBase* solver) {
+    Env& env = solver->env();
+    std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
     if(call->args().size() == 1) {  
       // repeat is restricted by comprehension (e.g. repeat (i in 1..10) (comb) )
       if(Comprehension* compr = call->args()[0]->dyn_cast<Comprehension>()) {            
@@ -167,17 +169,18 @@ namespace MiniZinc {
           SolverInstance::Status status = SolverInstance::UNKNOWN;
           // repeat the argument a limited number of times
           for(unsigned int i = 0; i<nbIterations; i++) {
-            //std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << i << "/" << (nbIterations-1) << " times" << std::endl;
-            status = interpretCombinator(compr->e(),env,solver);
-            if(status != SolverInstance::SAT)                  
-              return status;                
+            //std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << i << "/" << (nbIterations-1) << " times" << std::endl;            
+            status = interpretCombinator(compr->e(),solver);
+            if(status != SolverInstance::SAT) {             
+              return status;
+            }
           }
         }            
       }          
       else { // repeat is only restricted by satisfiability
         SolverInstance::Status status = SolverInstance::UNKNOWN;
         do {
-          status = interpretCombinator(call->args()[0],env,solver);
+          status = interpretCombinator(call->args()[0], solver);
         } while(status == SolverInstance::SAT);
         return status;
       }
@@ -190,7 +193,8 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretScopeCombinator(Call* call, Env& env, SolverInstanceBase* solver) {        
+  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver) {
+    std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "SCOPE-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -198,32 +202,42 @@ namespace MiniZinc {
     }
     // if this is a nested scope
     if(!_scopes.empty()) {
+      std::cerr << "DEBUG: Opening new nested scope" << std::endl;
       SolverInstanceBase* solver_copy = solver->copy();
-      _scopes.push(solver_copy);
-      SolverInstance::Status status = interpretCombinator(call->args()[0], env, solver_copy);
-      _scopes.pop(); // TODO: do we even need the stack? do we need to push and pop?
+      std::cerr << "DEBUG: Copied solver instance" << std::endl;
+      _scopes.push_back(solver_copy);
+      SolverInstance::Status status = interpretCombinator(call->args()[0], solver_copy);
+      _scopes.pop_back(); // remove and delete that last element -> the last scope
       return status;
     } // this is not a nested scope
     else {
-     _scopes.push(solver); 
-     return interpretCombinator(call->args()[0], env, solver);
-     _scopes.pop();
+      std::cerr << "DEBUG: Opening high-level scope" << std::endl;
+     _scopes.push_back(solver); 
+     return interpretCombinator(call->args()[0], solver);
+     _scopes.pop_back();
     }    
   }
   
   SolverInstance::Status
-  SearchHandler::interpretNextCombinator(Env& env, SolverInstanceBase* solver) {   
+  SearchHandler::interpretNextCombinator(SolverInstanceBase* solver) {
+    std::cerr << "DEBUG: NEXT combinator" << std::endl;   
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
-      env.envi().hasSolution(true);    
-    }
+      solver->env().envi().hasSolution(true);
+      // set/update the solutions in all higher scopes
+      for(unsigned int i = 0; i <_scopes.size(); i++) {
+        _scopes[i]->env().envi().hasSolution(true);
+        updateSolution(solver->env().output(), _scopes[i]->env().output());
+      }
+    }    
     return status; 
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPrintCombinator(Env& env, SolverInstanceBase* solver) {
-    if(env.envi().hasSolution()) {
-      env.evalOutput(std::cout);
+  SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver) {
+    std::cerr << "DEBUG: PRINT combinator" << std::endl;   
+    if(solver->env().envi().hasSolution()) {      
+      solver->env().evalOutput(std::cout);      
       std::cout << constants().solver_output.solution_delimiter << std::endl;     
       return SolverInstance::SAT;
     }
@@ -233,9 +247,12 @@ namespace MiniZinc {
   }  
   
   bool 
-  SearchHandler::postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver) {
+  SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver) {
+    Env& env = solver->env();
     bool success = true;
-    //std::cout << "DEBUG: BEGIN posting constraint " << *cts << std::endl;
+    std::cout << "DEBUG: BEGIN posting constraint " << *cts << std::endl;
+    std::cout << "DEBUG: output model in POST:" << std::endl;
+    debugprint(env.output()); std::cout << "-------------------------------" << std::endl;
     Expression* cts_eval = eval_par(env.envi(),cts);      
     //std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
     //debugprint(env.flat());
@@ -331,6 +348,26 @@ namespace MiniZinc {
     }
       
     return success; 
+  }
+  
+  void
+  SearchHandler::updateSolution(Model* output, Model* outputToUpdate) {    
+    IdMap<Expression*> solutions;
+    for(unsigned int i=0; i<output->size(); i++) {
+      if(VarDeclI* vdi = (*output)[i]->dyn_cast<VarDeclI>()) {
+        solutions.insert(vdi->e()->id(),vdi->e()->e());
+      }
+    }
+    for(unsigned int i=0; i<outputToUpdate->size(); i++) {
+      if(VarDeclI* vdi = (*outputToUpdate)[i]->dyn_cast<VarDeclI>()) {
+        // update the solution for the identifiers that exist in the other solution
+        Id* id = vdi->e()->id();
+        if(solutions.find(id) != solutions.end()) {
+          vdi->e()->e(solutions.get(id));
+        }
+      }
+    }    
+    //throw InternalError("SearchHandler::updateSolution: Could not update solutions in output models");   
   }
   
 }

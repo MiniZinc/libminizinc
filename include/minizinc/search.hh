@@ -23,7 +23,7 @@ namespace MiniZinc {
   class SearchHandler { 
   protected:
     // the stack of scopes where the topmost scope is the scope of the next level
-    std::stack<SolverInstanceBase*> _scopes;   
+    std::vector<SolverInstanceBase*> _scopes;   
   public: 
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
@@ -43,7 +43,7 @@ namespace MiniZinc {
             }
           }  
         }
-        status = interpretCombinator(combinator, env, solver);
+        status = interpretCombinator(combinator, solver);
       }
       else { // solve using normal solve call
         status = solver->solve();
@@ -75,23 +75,25 @@ namespace MiniZinc {
     
   private:
     /// interpret and execute the given combinator  
-  SolverInstance::Status interpretCombinator(Expression* comb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretCombinator(Expression* comb, SolverInstanceBase* solver);
   /// interpret and execute an AND combinator
-  SolverInstance::Status interpretAndCombinator(Call* andComb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver);
    /// interpret and execute an OR combinator
-  SolverInstance::Status interpretOrCombinator(Call* orComb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver);
    /// interpret and execute a POST combinator
-  SolverInstance::Status interpretPostCombinator(Call* postComb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretPostCombinator(Call* postComb, SolverInstanceBase* solver);
   /// interpret and execute a REPEAT combinator
-  SolverInstance::Status interpretRepeatCombinator(Call* repeatComb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretRepeatCombinator(Call* repeatComb, SolverInstanceBase* solver);
     /// interpret and execute a SCOPE combinator
-  SolverInstance::Status interpretScopeCombinator(Call* scopeComb, Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretScopeCombinator(Call* scopeComb, SolverInstanceBase* solver);
    /// interpret and execute a NEXT combinator
-  SolverInstance::Status interpretNextCombinator(Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretNextCombinator(SolverInstanceBase* solver);
   /// interpret and execute a PRINT combinator
-  SolverInstance::Status interpretPrintCombinator(Env& env, SolverInstanceBase* solver);
+  SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
-  bool postConstraints(Expression* cts, Env& env, SolverInstanceBase* solver);
+  bool postConstraints(Expression* cts, SolverInstanceBase* solver);
+  /// overwrite the solution in \a outputToUpdate with the solution in \a output
+  void updateSolution(Model* output, Model* outputToUpdate);
   };
  
   

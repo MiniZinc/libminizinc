@@ -371,9 +371,7 @@ int main(int argc, char** argv) {
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
 
-            {
-              if (flag_verbose)
-                std::cerr << "Processing FlatZinc...";
+            {            
 
               GCLock lock;
               Options options;

@@ -43,7 +43,9 @@ namespace MiniZinc {
       Options options_copy;
       options_copy = _options.copyEntries(options_copy);
       GecodeSolverInstance* copy = new GecodeSolverInstance(*env_copy,options_copy);      
-      // TODO: copy the engine!
+      // note: we do not need to copy the engine
+      copy->processFlatZinc();      
+      //copy->assignSolutionToOutput(); if there is already a solution
       return copy;
     }
     
@@ -893,12 +895,12 @@ namespace MiniZinc {
 
   void
   GecodeSolverInstance::prepareEngine(bool combinators) {
-    if (engine==NULL && customEngine == NULL) {
+    if (engine==NULL && customEngine == NULL) {      
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
-      std::vector<Expression*> solve_args;
-      Expression* solveExpr = _env.flat()->solveItem()->e();
-      Expression* optSearch = NULL;
+      std::vector<Expression*> solve_args;      
+      Expression* solveExpr = _env.flat()->solveItem()->e();      
+      Expression* optSearch = NULL;   
       
       switch(_current_space->_solveType) {
         case MiniZinc::SolveI::SolveType::ST_MIN:
@@ -926,8 +928,8 @@ namespace MiniZinc {
           break;
         default:
           assert(false);
-      }
-
+      }      
+      
       int seed = _options.getIntParam("seed", 1);
       double decay = _options.getFloatParam("decay", 0.5);
       
@@ -1339,7 +1341,7 @@ namespace MiniZinc {
           // add solution to the output
           for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
             if(it->e()->id()->str() == vd->id()->str()) {
-              //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+              //std::cout << "DEBUG: Assigning array solution  \"" << *array_solution << "\" to " << it->e()->id()->str() << std::endl;
               it->e()->e(array_solution); // set the solution
             }
           }
@@ -1348,13 +1350,14 @@ namespace MiniZinc {
         Expression* sol = getSolutionValue(vd->id());
         for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
           if(it->e()->id()->str() == vd->id()->str()) {
-            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+            //std::cout << "DEBUG: Assigning array solution \"" << *sol << "\" to " << it->e()->id()->str() << std::endl;
             it->e()->e(sol); // set the solution
           }
         }
       }
     }
-
+  std::cerr << "DEBUG: Printing output model after assigning solution to output:" << std::endl;
+  debugprint(_env.output());
   }
   
   bool 
@@ -1368,8 +1371,12 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {    
-    customEngine->updateIntBounds(vd,lb,ub,*this);   
+  GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    if(!customEngine) {
+      prepareEngine(true);     
+    }
+    customEngine->updateIntBounds(vd,lb,ub,*this);
+    // TODO: this should also be done in the scopes below, no?
     return true;
   }
   
