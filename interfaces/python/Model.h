@@ -77,14 +77,19 @@ static PyObject* MznModel_addData(MznModel* self, PyObject* args);
  *
  *    2:    name, python value
  *        python value: Create a variable based on the existing python value
- * Note:
+ * Return: 
+ *      Id of the declared variable
+ * Note 1: 
+ *      Don't reuse this declaration if the model with this declaration has been destroyed
+ * Note 2:
  *      Python Interface holds the responsibility of checking which type of value is declared.
- *      Return None, use Mzn_Id with its name to call it again
  */
 static PyObject* MznModel_Declaration(MznModel* self, PyObject* args);
 
 /* Function:  MznModel_Constraint
  * Description: Take in a Python boolean or MiniZinc Expression, add it to the MiniZinc Model self
+ * Return:
+ *      None
  * Note:  It is the Python Interface responsibility to check if parsed argument is of type bool or not
  */
 static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
@@ -95,6 +100,8 @@ static PyObject* MznModel_Constraint(MznModel* self, PyObject* args);
  *    Arg1: Solve Type: 0 ~ sat, 1 ~ min, 2 ~ max
  *    Arg2 (opt): Annotation
  *    Arg3 (opt): Expression to be minimize / maximize if Arg1 != 0
+ * Return: 
+ *      None
  * Note:
  *    Arg2 accepts all MiniZinc expression, but the Python Interface should ensures that 
  *    Arg2 is an expression of MiniZinc Annotation.
@@ -103,6 +110,8 @@ static PyObject* MznModel_SolveItem(MznModel* self, PyObject* args);
 
 // Returns an exact copy of the current model
 static PyObject* MznModel_copy(MznModel* self);
+// Print the MiniZinc representation of the model
+static PyObject* MznModel_debugprint(MznModel* self);
 
 static PyMethodDef MznModel_methods[] = {
   {"load", (PyCFunction)MznModel_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
@@ -116,6 +125,7 @@ static PyMethodDef MznModel_methods[] = {
   {"SolveItem", (PyCFunction)MznModel_SolveItem, METH_VARARGS, "Add a solve item into the model"},
 
   {"copy", (PyCFunction)MznModel_copy, METH_NOARGS, "Returns a copy of current model"},
+  {"debugprint", (PyCFunction)MznModel_debugprint, METH_NOARGS, "Print the MiniZinc representation of the current model"},
   {NULL} /* Sentinel */
 };
 

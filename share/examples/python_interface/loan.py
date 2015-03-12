@@ -1,6 +1,6 @@
-import minizinc
+from minizinc import *
 
-m = minizinc.Model()
+m = Model()
 
 R = m.Variable(-100.0,100000.0)
 P = m.Variable(-100.0,100000.0)

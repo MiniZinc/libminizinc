@@ -15,7 +15,7 @@ if sys.platform == 'darwin':
         '-mmacosx-version-min=10.8',
     ])
     EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libc++', '-mmacosx-version-min=10.8'])
-elif sys.platform.startwith('linux'):
+elif sys.platform.startswith('linux'):
     pass
 
 module1 = Extension('minizinc_internal',

@@ -141,7 +141,6 @@ PyObject* MznModel::solve(PyObject* args)
     PyErr_SetString(PyExc_RuntimeError, "MiniZinc: Model.solve: Parsing error");
     return NULL;
   }
-  debugprint(_m);
   Model* saveModel;
   {
     GCLock lock;
@@ -460,6 +459,13 @@ MznModel_copy(MznModel* self)
   return reinterpret_cast<PyObject*>(ret);
 }
 
+static PyObject*
+MznModel_debugprint(MznModel* self)
+{
+  debugprint(self->_m);
+  Py_RETURN_NONE;
+}
+
 
 static PyObject*
 MznModel_load(MznModel *self, PyObject *args, PyObject *keywds) {
@@ -651,5 +657,7 @@ MznModel_Declaration(MznModel* self, PyObject* args)
   self->_m->addItem(new VarDeclI(Location(), vd));
   self->loaded = true;
 
-  Py_RETURN_NONE;
+  PyObject* ret = MznExpression_new(&MznExpression_Type, NULL, NULL);
+  reinterpret_cast<MznExpression*>(ret)->e = vd->id();
+  return ret;
 }

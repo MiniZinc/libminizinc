@@ -51,7 +51,7 @@ def type_presentation(x):
 
 
 
-# All Variable and Expression declaration derived from here
+# All Variable and Expression Declaration derived from here
 class Expression(object):
 	def __init__(self, model = None):
 		self.model = model
@@ -168,7 +168,7 @@ class Expression(object):
 		return Abs( self )
 
 
-# Temporary container for expression before evaluating to minizinc_internal object
+# Temporary container for Expression before evaluating to minizinc_internal object
 class Predicate(Expression):
 	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
@@ -208,7 +208,7 @@ class Predicate(Expression):
 							if model is None:
 								model = val.model
 							else:
-								raise TypeError("Arguments in the predicate don't belong to the same model")
+								raise TypeError("Arguments in the Predicate don't belong to the same model")
 			return model
 
 		self.vars_type = eval_type(vars)
@@ -883,22 +883,19 @@ class Variable(Declaration):
 			self.name = name
 
 		if typelb is bool:
-			model.mznmodel.Declaration(self.name, 10, [])
+			self.obj = model.mznmodel.Declaration(self.name, 10, [])
 			self.type = bool
 		elif typelb in integer_types:
-			model.mznmodel.Declaration(self.name, 9, [], lb, ub)
+			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb, ub)
 			self.type = int_t
 		elif typelb is float:
-			model.mznmodel.Declaration(self.name, 11, [], lb, ub)
+			self.obj = model.mznmodel.Declaration(self.name, 11, [], lb, ub)
 			self.type = float
 		elif typelb is Set:
-			model.mznmodel.Declaration(self.name, 9, [], lb.obj)
+			self.obj = model.mznmodel.Declaration(self.name, 9, [], lb.obj)
 			self.type = int_t
 		else:
 			raise TypeError('Internal: Unexpected type')
-	
-	def set_value(self, arg):
-		self.obj.setValue(arg)
 
 class VariableConstruct(Variable, Construct):
 	def __init__(self, model, arg1, arg2 = None):
@@ -962,21 +959,18 @@ class Array(Variable):
 		tlb = type(argopt1)
 		if tlb is bool:
 			self.type = [bool] * len(dim_list)
-			model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
+			self.obj = model.mznmodel.Declaration(self.name,10,dim_list,lb,ub)
 		elif tlb in integer_types:
 			self.type = [int_t] * len(dim_list)
-			model.mznmodel.Declaration(self.name,9,dim_list, lb, ub)
+			self.obj = model.mznmodel.Declaration(self.name,9,dim_list, lb, ub)
 		elif tlb is float:  #isinstance(lb, float):
 			self.type = [float] * len(dim_list)
-			model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
+			self.obj = model.mznmodel.Declaration(self.name,11,dim_list,lb,ub)
 		elif tlb is Set:
 			self.type = [int_t] * len(dim_list)
-			model.mznmodel.Declaration(self.name,9,dim_list,lb.obj)
+			self.obj = model.mznmodel.Declaration(self.name,9,dim_list,lb.obj)
 		else:
 			raise TypeError('Unexpected type')
-
-	def setValue(self, arg):
-		self.obj.setValue(arg)
 
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
@@ -1131,7 +1125,7 @@ class VarSet(Variable):
 		imodel.mznmodel.Declaration(self.name, 12, [], lb, ub)
 		self.type = minizinc_internal.VarSet
 
-	'''	Python automatically evaluate a __contains__ return object to boolean
+	'''	Python automatiCally evaluate a __contains__ return object to boolean
 	def __contains__(self, argopt):
 		return In([argopt, self])
 	'''
@@ -1199,19 +1193,19 @@ class Model(object):
 		else:
 			raise LookupError('The object pointed to was assigned to different names')
 	'''
-
-    def add_recursive(self, expr):
-        if isinstance(expr, (tuple, list)):
-            for i in expr:
-                self.add_recursive(i)
-        else:
- 			if issubclass(type(expr), Expression):
- 				if expr.is_pre():
- 					self.mznmodel.Constraint(self.evaluate(expr))
- 				else:
- 					raise(TypeError, "Unexpected expression")
- 			else:
- 				self.mznmodel.Constraint(expr)
+	
+	def add_recursive(self, expr):
+		if isinstance(expr, (tuple, list)):
+		    for i in expr:
+		        self.add_recursive(i)
+		else:
+			if issubclass(type(expr), Expression):
+				if expr.is_pre():
+					self.mznmodel.Constraint(self.evaluate(expr))
+				else:
+					raise(TypeError, "Unexpected Expression")
+			else:
+				self.mznmodel.Constraint(expr)
 
 	def Constraint(self, *expr):
 		minizinc_internal.lock()
@@ -1246,20 +1240,20 @@ class Model(object):
 			for i,value in enumerate(expr.idx):
 				if isinstance(value, Expression):
 					expr.idx[i] = self.evaluate(value)
-			return minizinc_internal.at(self.evaluate(expr.array), expr.idx)
+			return minizinc_internal.at(expr.array.obj, expr.idx)
 		elif isinstance(expr, Declaration):
 			if expr.model != self:
-				raise TypeError("The declaration not belongs to this model")
-			return minizinc_internal.Id(expr.name)
+				raise TypeError("The Declaration not belongs to this model")
+			return expr.obj
 		elif isinstance(expr, BinOp):
 			if expr.model is not None and expr.model != self:
-				raise TypeError("The declaration not belongs to this model")
+				raise TypeError("The Declaration not belongs to this model")
 			lhs = self.evaluate(expr.vars[0])
 			rhs = self.evaluate(expr.vars[1])
 			return minizinc_internal.BinOp(lhs, expr.BinOpCode, rhs)
 		elif isinstance(expr, UnOp):
 			if expr.model is not None and expr.model != self:
-				raise TypeError("The declaration not belongs to this model")
+				raise TypeError("The Declaration not belongs to this model")
 			rhs = self.evaluate(expr.vars[0])
 			return minizinc_internal.UnOp(expr.UnOpCode, rhs)
 		else:
@@ -1298,6 +1292,9 @@ class Model(object):
 		eval_expr = self.evaluate(expr)
 
 		savedModel = self.mznmodel.copy()
+
+		# The model with declared variable cannot be deleted.
+		self.mznmodel, savedModel = savedModel, self.mznmodel
 		self.mznmodel.SolveItem(code, eval_ann, eval_expr)
 		if data is not None:
 			self.add_recursive(data)
@@ -1337,4 +1334,6 @@ class Model(object):
 	def set_solver(self, solver):
 		self.mznmodel.set_solver(solver)
 
+	def _debugprint(self):
+		self.mznmodel.debugprint()
 

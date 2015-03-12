@@ -382,7 +382,6 @@ pydim_to_minizinc_ranges(PyObject* pydim, int& errorOccurred)
     return vector<TypeInst*>();
   }
   Py_ssize_t dim = PyList_GET_SIZE(pydim);
-  cout << dim << endl;
   vector<TypeInst*> ranges(dim);
   for (Py_ssize_t i=0; i!=dim; ++i) {
     PyObject* temp = PyList_GET_ITEM(pydim, i);
