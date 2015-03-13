@@ -207,7 +207,7 @@ class Predicate(Expression):
 						if val.model is not None:
 							if model is None:
 								model = val.model
-							else:
+							elif model != val.model:
 								raise TypeError("Arguments in the Predicate don't belong to the same model")
 			return model
 
