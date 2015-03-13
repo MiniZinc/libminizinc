@@ -2028,7 +2028,7 @@ namespace MiniZinc {
             throw EvalError(call->loc(), ssm.str());
           }
           else {
-            assert(it->e()->e()->type().ispar());
+            assert(it->e()->e()->type().ispar());            
             return eval_par(env, it->e()->e());
           }
         }

@@ -1382,7 +1382,11 @@ namespace MiniZinc {
   
   bool 
   GecodeSolverInstance::addVariables(std::vector<VarDecl*> vars) {   
+    if(!customEngine) {
+      prepareEngine(true);     
+    }
     customEngine->addVariables(vars, *this);
+    // TODO: this should also be done in the scopes below, no?
     return true; 
   }
   
@@ -1491,6 +1495,9 @@ namespace MiniZinc {
     //std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
     for(unsigned int i=0; i<cts.size(); i++) {      
       _constraintRegistry.post(cts[i]); 
+    }
+    if(!customEngine) {
+      prepareEngine(true);     
     }
     customEngine->status();
     return true; 

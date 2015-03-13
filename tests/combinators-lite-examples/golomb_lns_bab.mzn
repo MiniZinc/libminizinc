@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 10;
+int: m = 4;
 int: n = m*m;
 
 var 0..n: obj;
@@ -44,7 +44,7 @@ predicate neighbourhoodCts1(array[int] of var int: x,
    if(hasSol()) then 
      let {
        int: n = ceil((1.0 - destructionRate)*length(x));
-       array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
+       array[1..n] of int: idx = [ uniform(1,length(x)-1) | i in 1..n ]; % length(x)-1: do not keep last mark
      } in 
        forall (i in idx) (
          x[i] = sol(x[i])
@@ -56,13 +56,21 @@ predicate neighbourhoodCts1(array[int] of var int: x,
 solve :: combinator(
 scope(
  or([
-    repeat (i in 1..10) (    
+    repeat (i in 1..2) (    
       and([
         scope(
           and([
             post(neighbourhoodCts1(mark,0.8)),
-            next(), %bab_min(obj),% next(), % or bab
-            print()
+            or([ % Branch & Bound
+              repeat (i in 1..2) (
+                and([
+                  next(), % get next solution
+                  print(), % print next found solution
+                  post(obj < sol(obj)) % post constraint
+                ])
+              ),
+              print % print final solution
+            ])
           ])
         ),
         post(obj < sol(obj))

@@ -527,7 +527,7 @@ namespace MiniZinc {
     for(unsigned int i=0; i<e->errorStack.size(); i++)
       c->e->errorStack.push_back(copy(cmap, const_cast<Expression*>(e->errorStack[i])));    
     for(unsigned int i=0; i<e->idStack.size(); i++)
-      c->e->idStack.push_back(e->idStack[i]);
+      c->e->idStack.push_back(int(e->idStack[i]));
     for(unsigned int i=0; i<e->warnings.size(); i++)
       c->e->warnings[i] = std::string(e->warnings[i]);
     return c;  

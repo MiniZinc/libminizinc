@@ -169,7 +169,7 @@ namespace MiniZinc {
           SolverInstance::Status status = SolverInstance::UNKNOWN;
           // repeat the argument a limited number of times
           for(unsigned int i = 0; i<nbIterations; i++) {
-            //std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << i << "/" << (nbIterations-1) << " times" << std::endl;            
+            std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << i << "/" << (nbIterations) << " times" << std::endl;            
             status = interpretCombinator(compr->e(),solver);
             if(status != SolverInstance::SAT) {             
               return status;
@@ -205,16 +205,17 @@ namespace MiniZinc {
       std::cerr << "DEBUG: Opening new nested scope" << std::endl;
       SolverInstanceBase* solver_copy = solver->copy();
       std::cerr << "DEBUG: Copied solver instance" << std::endl;
-      _scopes.push_back(solver_copy);
+      pushScope(solver_copy);
       SolverInstance::Status status = interpretCombinator(call->args()[0], solver_copy);
-      _scopes.pop_back(); // remove and delete that last element -> the last scope
+      popScope();
+      std::cerr << "DEBUG: Closed nested scope" << std::endl;
       return status;
     } // this is not a nested scope
     else {
       std::cerr << "DEBUG: Opening high-level scope" << std::endl;
-     _scopes.push_back(solver); 
+     pushScope(solver);
      return interpretCombinator(call->args()[0], solver);
-     _scopes.pop_back();
+     popScope();
     }    
   }
   
@@ -251,11 +252,7 @@ namespace MiniZinc {
     Env& env = solver->env();
     bool success = true;
     std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
-    // TODO: we somehow need to evaluate this 
-    //Expression* cts_eval = eval_par(env.envi(),cts);      
-    Expression* cts_eval = cts; //eval_bool(env.envi(),cts);
-    //std::cout << "\n\nDEBUG: Flattened model before flattening:" << std::endl;
-    //debugprint(env.flat());
+  
     int nbCtsBefore = 0;
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
       nbCtsBefore++;
@@ -269,14 +266,14 @@ namespace MiniZinc {
       Id* id = it->e()->id();
       Expression* domain = copy(it->e()->ti()->domain());
       domains.insert(id,domain);         
-    }
-    std::cerr << "DEBUG: before flat_exp()" << std::endl;   
+    }      
     // flatten the expression
-    EE ee = flat_exp(env.envi(), Ctx(), cts_eval, constants().var_true, constants().var_true);
-    std::cerr << "DEBUG: after flat_exp()" << std::endl; 
+    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
     //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
     //debugprint(env.flat());    
     //std::cout<< "\n" << std::endl;
+    //std::cout << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
+    //debugprint(_scopes[0]->env().flat());
     
     int nbVarsAfter = 0;
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
@@ -293,12 +290,13 @@ namespace MiniZinc {
       //for(unsigned int i=0; i<vars.size(); i++) {
        // std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
       //}        
-      success = success && solver->addVariables(vars);
+      success = success && solver->addVariables(vars);      
     }      
     
     oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
-    //std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
+    // std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
     //debugprint(env.flat());  
+    
     
     int nbCtsAfter = 0;
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
@@ -314,11 +312,12 @@ namespace MiniZinc {
           flat_cts.push_back(it->e()->cast<Call>());
         }
       }
-      //for(unsigned int i=0; i<flat_cts.size(); i++)
-       // std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+      for(unsigned int i=0; i<flat_cts.size(); i++)
+        std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
       success = success && solver->postConstraints(flat_cts);      
     }
     
+    bool updateBoundsOnce = false;
     // check for variable domain updates
     for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
       Id* id = it->e()->id();
@@ -334,11 +333,12 @@ namespace MiniZinc {
               int ub_old = sl_old->isv()->max().toInt();
               int ub_new = sl_new->isv()->max().toInt();
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
+              updateBoundsOnce = updateBounds || updateBoundsOnce;
               if(updateBounds) {
-                //std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
+                std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
                 success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
-                //std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
-              }             
+                std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
+              }  
             }
           }
           else {
@@ -347,7 +347,13 @@ namespace MiniZinc {
         }
       }
     }
-      
+     
+  
+    if(!updateBoundsOnce && nbCtsBefore == nbCtsAfter && nbVarsBefore == nbVarsAfter) {
+      std::cerr << "WARNING: flat model did not change after posting constraint: " << *cts << std::endl;
+    }
+              
+     
     return success; 
   }
   

@@ -17,15 +17,17 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 4;
+int: m = 10;
 int: n = m*m;
 
 array[1..m] of var 0..n: mark;
+var 0..n: obj;
 
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
 
 constraint mark[1] = 0;
+constraint obj = mark[m];
 
 constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
 
@@ -35,6 +37,19 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
-solve :: combinator(bab_min(mark[m])) satisfy;
+solve :: combinator(
+   scope(
+     or([ 
+       repeat(
+           and([
+               next, % get next solution
+               post(obj < sol(obj)), % post constraint
+               print() % print next solution
+           ])
+       ),
+       print % print final solution
+     ])
+   )
+) satisfy;
 
-output ["golomb ", show(mark), "\n"];
+output ["golomb ", show(obj), "\n", show(mark), "\n"];
