@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 4;
+int: m = 10;
 int: n = m*m;
 
 var 0..n: obj;
@@ -56,13 +56,13 @@ predicate neighbourhoodCts1(array[int] of var int: x,
 solve :: combinator(
 scope(
  or([
-    repeat (i in 1..2) (    
+    repeat (i in 1..4) (    
       and([
         scope(
           and([
             post(neighbourhoodCts1(mark,0.8)),
             or([ % Branch & Bound
-              repeat (i in 1..2) (
+              repeat (i in 1..7) (
                 and([
                   next(), % get next solution
                   print(), % print next found solution

@@ -533,8 +533,7 @@ namespace MiniZinc {
     for(unsigned int i=0; i<e->idStack.size(); i++)
       c->e->idStack.push_back(int(e->idStack[i]));
     for(unsigned int i=0; i<e->warnings.size(); i++)
-      c->e->warnings[i] = std::string(e->warnings[i]);
-    return c;  
+      c->e->warnings[i] = std::string(e->warnings[i]);     
     for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
       if((it->second).b() && (it->second).r()) {
         Expression* e = copy(cmap, (it->first)());     
@@ -544,6 +543,7 @@ namespace MiniZinc {
         c->e->map_insert(e,c_ww);
       }          
     }
+    return c; 
     // the ASTStringMap<ASTString>::t reifyMap is set in the EnvI constructor and is not changed afterwards so we need not copy it
   }
 

@@ -1356,17 +1356,17 @@ namespace MiniZinc {
         }
       }
     }
-  std::cerr << "DEBUG: Printing output model after assigning solution to output:" << std::endl;
-  debugprint(_env.output());
+  //std::cerr << "DEBUG: Printing output model after assigning solution to output:" << std::endl;
+  //debugprint(_env.output());
   }
   
   bool 
   GecodeSolverInstance::updateIntBounds(FznSpace* space, VarDecl* vd, int lb, int ub) {
-    std::cerr << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
+    //std::cerr << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
     SpaceStatus s = space->status(); // to make the space stable
-    std::cerr << "DEBUG: status of space: " << s << "\n---------------------" << std::endl;
+    //std::cerr << "DEBUG: status of space: " << s << "\n---------------------" << std::endl;
     return true;
   }
   
