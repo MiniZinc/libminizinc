@@ -518,6 +518,10 @@ namespace MiniZinc {
     }
     unsigned int ids_c = e->get_ids();
     Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, ids_c);
+    if (combinator)
+      c->combinator = copy(cmap, combinator);
+    else
+      c->combinator = NULL;
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
     c->e->ignorePartial = e->ignorePartial;

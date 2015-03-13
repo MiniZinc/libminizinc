@@ -248,6 +248,7 @@ namespace MiniZinc {
     void clearWarnings(void);
     unsigned int maxCallStack(void) const;
     std::ostream& evalOutput(std::ostream& os);
+    Expression* combinator;
     Env* copyEnv(void);
   };
 

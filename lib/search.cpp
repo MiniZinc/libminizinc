@@ -203,10 +203,11 @@ namespace MiniZinc {
     // if this is a nested scope
     if(!_scopes.empty()) {
       std::cerr << "DEBUG: Opening new nested scope" << std::endl;
+      solver->env().combinator = call->args()[0];
       SolverInstanceBase* solver_copy = solver->copy();
       std::cerr << "DEBUG: Copied solver instance" << std::endl;
       pushScope(solver_copy);
-      SolverInstance::Status status = interpretCombinator(call->args()[0], solver_copy);
+      SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy);
       popScope();
       std::cerr << "DEBUG: Closed nested scope" << std::endl;
       return status;
