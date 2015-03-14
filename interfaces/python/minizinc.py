@@ -10,15 +10,18 @@ import annotation
 
 if sys.version < '3':
 	integer_types = (int, long, )
+	python_types = (int, long, float, bool, str)
 	int_t = long
 	def longify(x):
 		return long(x)
 else:
 	integer_types = (int, )
+	python_types = (int, float, bool, str)
 	int_t = int
 	def longify(x):
 		return x
 
+# turns a complex structure of items into a list of items
 def flatten(x):
 	result = []
 	for el in x:
@@ -28,7 +31,7 @@ def flatten(x):
 			result.append(el)
 	return result
 
-
+# nicely presents the type of a variable
 def type_presentation(x):
 	if type(x) is type:
 		name = x.__name__
@@ -51,7 +54,7 @@ def type_presentation(x):
 
 
 
-# All Variable and Expression Declaration derived from here
+# All MiniZinc objects derived from here
 class Expression(object):
 	def __init__(self, model = None):
 		self.model = model
@@ -59,13 +62,7 @@ class Expression(object):
 	def __str__(self):
 		return str(self.get_value())
 
-	def is_solved(self):
-		if self == None:
-			return False
-		else:
-			return self.model.is_solved()
-
-	def is_var(self):
+	def is_decl(self):
 		return isinstance(self, Declaration)
 
 	def is_pre(self):
@@ -79,6 +76,32 @@ class Expression(object):
 			return ret
 		else:
 			return var
+
+	def eval_type(self, args):
+		if isinstance(args, Expression):
+			return args.type
+		elif type(args) in integer_types:
+			return int_t
+		elif type(args) in (float, bool, str):
+			return type(args)
+		elif type(args) is list:
+			t = None
+			for i in args:
+				if t is None:
+					t = self.eval_type(i)
+				else:
+					type_i = self.eval_type(i)
+					if t != type_i:
+						raise TypeError("Type of arguments in an array must be the same: expected: " +
+							type_presentation((t,)) + ", received: " + type_presentation((type_i,)) )
+			return [t]
+		elif type(args) is tuple:
+			t = []
+			for i in args:
+				t.append(self.eval_type(i))
+			return tuple(t)
+		else:
+			raise TypeError("Unexpected Type: " + type_presentation(type(args)) )
 
 	def __and__(self, pred):
 		return And( self, pred )
@@ -173,31 +196,6 @@ class Predicate(Expression):
 	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
 		self.name = str(name)
-		def eval_type(args):
-			if isinstance(args, Expression):
-				return args.type
-			elif type(args) in integer_types:
-				return int_t
-			elif type(args) in (float, bool, str):
-				return type(args)
-			elif type(args) is list:
-				t = None
-				for i in args:
-					if t is None:
-						t = eval_type(i)
-					else:
-						type_i = eval_type(i)
-						if t != type_i:
-							raise TypeError("MiniZinc: function '" + self.name + "': Type of arguments in an array must be the same: expected: " +
-								type_presentation((t,)) + ", received: " + type_presentation((type_i,)) )
-				return [t]
-			elif type(args) is tuple:
-				t = []
-				for i in args:
-					t.append(eval_type(i))
-				return tuple(t)
-			else:
-				raise TypeError("MiniZinc: function '" + self.name + "': Unexpected Type: " + type_presentation(type(args)) )
 
 		def eval_model(args):
 			model = None
@@ -211,7 +209,7 @@ class Predicate(Expression):
 								raise TypeError("Arguments in the Predicate don't belong to the same model")
 			return model
 
-		self.vars_type = eval_type(vars)
+		self.vars_type = self.eval_type(vars)
 		self.model = eval_model(vars)
 		if args_and_return_type_tuple is not None:
 			for t in args_and_return_type_tuple:
@@ -789,38 +787,85 @@ class Declaration(Expression):
 		self.value = None
 
 	def get_value(self):
-		if hasattr(self, 'solve_counter'):
-			if self.solve_counter == self.model.solve_counter and self.next_counter == self.model.next_counter:
-				return self.value
-			self.solve_counter = self.model.solve_counter
-			self.next_counter = self.model.next_counter
-			self.value = self.model.mznsolver.get_value(self.name)
+		if self.solve_counter == self.model.solve_counter and self.next_counter == self.model.next_counter:
+			return self.value
+		self.solve_counter = self.model.solve_counter
+		self.next_counter = self.model.next_counter
+		self.value = self.model.mznsolver.get_value(self.name)
 		return self.value
 
 	def __str__(self):
 		return str(self.get_value())
 
 	def __repr__(self):
-		return 'A Minizinc Object with the value of ' + self.__str__()
+		return 'A Minizinc ' + self.__class__.__name__ + ' with the value of ' + self.__str__()
 
 
 class Construct(Declaration):
 	def __init__(self, model, arg1, arg2 = None):
 		Declaration.__init__(self, model)
-		del self.solve_counter
-		del self.next_counter
 		if arg2 != None:
 			if type(arg2) is str:
 				self.name = arg2
 			else: 
 				raise TypeError('Name of variable must be a string')
-		if hasattr(arg1, 'obj'):
-			# XXX
-			self.obj = model.mznmodel.Declaration(self.name, arg1.obj)
+		self.type = self.eval_type(arg1)
+		self.has_minizinc_objects = False
+
+		def unwrap(arg):
+			if isinstance(arg, Expression):
+				self.has_minizinc_objects = True
+				return arg.obj
+			elif type(arg) in (list, tuple):
+				ret = []
+				for val in arg:
+					ret.append(unwrap(val))
+				return ret
+			elif type(arg) in python_types:
+				return arg
+			else:
+				raise TypeError('Unexpected type: argument should be a single/list/tuple of MiniZinc objects or Python basic types')
+
+		try:
+			self.obj = model.mznmodel.Declaration(self.name, unwrap(arg1))
+		except:
+			print sys.exc_info()[0]
+			raise
+
+		if self.has_minizinc_objects:
+			self.value = arg1
 		else:
-			self.obj = model.mznmodel.Declaration(self.name, arg1)
-		self.value = arg1
-		self.type = self.obj.type
+			self.wrapped_value = arg1
+		self.class_name = 'Construct'
+
+	'''
+		imagine we have:
+			a = Variable(1,100)				undefined
+			b = Variable(1,100)				undefined
+
+			c = Construct([a,b])			[ undefined, undefined ]
+		when the model is solved, c's value should be changed
+	'''
+
+	def get_value(self):
+		if self.has_minizinc_objects:
+			def get_value_helper(arg):
+				if isinstance(arg, Expression):
+					return arg.get_value()
+				elif type(arg) is list:
+					ret = []
+					for val in arg:
+						ret.append(get_value_helper(val))
+					return ret
+				elif type(arg) in python_types:
+					return arg
+				else:
+					raise TypeError('Internal error: Unexpected type')
+			if not (self.solve_counter == self.model.solve_counter and self.next_counter == self.obj.next_counter):
+				self.value = get_value_helper(self.wrapped_value)
+		return self.value
+
+
 
 
 class Variable(Declaration):
@@ -897,6 +942,8 @@ class Variable(Declaration):
 		else:
 			raise TypeError('Internal: Unexpected type')
 
+		self.class_name = 'Variable'
+
 class VariableConstruct(Variable, Construct):
 	def __init__(self, model, arg1, arg2 = None):
 		Construct.__init__(self, model, arg1, arg2)
@@ -972,6 +1019,8 @@ class Array(Variable):
 		else:
 			raise TypeError('Unexpected type')
 
+		self.class_name = 'Array'
+
 	def __getitem__(self, *args):
 		return ArrayAccess(self.model, self, args[0])
 
@@ -995,6 +1044,7 @@ class ArrayAccess(Array):
 		self.idx = idx
 		self.type = array.type[0]
 		self.value = None
+		self.class_name = 'Array Item'
 
 	def get_value(self):
 		if hasattr(self, 'solve_counter'):
