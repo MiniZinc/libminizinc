@@ -861,10 +861,7 @@ namespace MiniZinc {
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
     prepareEngine(true);
-    
-    if(customEngine->status() != Gecode::SS_FAILED)
-      _solution = customEngine->next();
-    else return SolverInstance::UNSAT;
+    _solution = customEngine->next();
     
     if (_solution) {
       assignSolutionToOutput();
@@ -1365,7 +1362,6 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: updating int bounds of var \"" << *vd << "\" to (" << lb << "," << ub << ")" << std::endl;
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_LQ, ub);
     Gecode::rel(*space, this->resolveVar(vd).intVar(space), IntRelType::IRT_GQ, lb);
-    SpaceStatus s = space->status(); // to make the space stable
     //std::cerr << "DEBUG: status of space: " << s << "\n---------------------" << std::endl;
     return true;
   }
@@ -1402,7 +1398,7 @@ namespace MiniZinc {
       // integer variable
       else if(vars[i]->type().isint()) {          
       // there is an initialisation expression        
-       if(vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>()) || vars[i]->e()->type().ispar() ) { 
+       if((vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>())) || vars[i]->e()->type().ispar() ) {
           Expression* init = vars[i]->e();          
           if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
             GecodeVariable var = resolveVar(init);
@@ -1499,7 +1495,6 @@ namespace MiniZinc {
     if(!customEngine) {
       prepareEngine(true);     
     }
-    customEngine->status();
     return true; 
   }    
 
