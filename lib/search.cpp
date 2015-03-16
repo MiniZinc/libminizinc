@@ -175,6 +175,7 @@ namespace MiniZinc {
               return status;
             }
           }
+          return status;
         }            
       }          
       else { // repeat is only restricted by satisfiability
