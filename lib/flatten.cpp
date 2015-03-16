@@ -205,8 +205,8 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
   }
   EnvI::EnvI(Model* orig0, Model* output0, Model* flat0,  CopyMap& cmap0,
-             IdMap<KeepAlive> reverseMappers0, unsigned int ids0) : orig(orig0), output(output0), _flat(flat0),  cmap(cmap0),
-                                                 reverseMappers(reverseMappers0), ids(ids0), _hasSolution(false) {
+             IdMap<KeepAlive> reverseMappers0, unsigned int ids0) : orig(orig0), output(output0), cmap(cmap0),
+                                                 reverseMappers(reverseMappers0), _flat(flat0), ids(ids0), _hasSolution(false) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);

@@ -80,7 +80,7 @@ namespace MiniZinc {
     /// copy constructor
     FznSpace(bool share, FznSpace&);
     /// standard constructor
-    FznSpace(void) : _copyAuxVars(true), _optVarIdx(-1), _optVarIsInt(true) {} ; 
+    FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true) {} ;
     ~FznSpace(void) {} 
             
     /// get the index of the Boolean variable in bv; return -1 if not exists
