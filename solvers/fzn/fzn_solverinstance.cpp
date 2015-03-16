@@ -81,7 +81,8 @@ namespace MiniZinc {
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
           
-          int timeout_sec = 50; //10 
+          // TODO: how to disable timeout??
+          int timeout_sec = 2147483647; //10 
           
           timeout.tv_sec = timeout_sec;
           timeout.tv_usec = 0;
@@ -273,7 +274,8 @@ namespace MiniZinc {
       }
     }
     
-    return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+    // XXX should always return 'UNKNOWN' because not well-defined termination?
+    return hadSolution ? SolverInstance::SAT : SolverInstance::UNKNOWN;
   }
   
   void
