@@ -328,6 +328,8 @@ namespace MiniZinc {
     void vSetLit(SetLit& sl) {
       Type ty; ty.st(Type::ST_SET);
       for (unsigned int i=0; i<sl.v().size(); i++) {
+        if (sl.v()[i]->type().dim() > 0)
+          throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
         if (sl.v()[i]->type().cv())
