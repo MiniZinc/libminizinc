@@ -1003,6 +1003,16 @@ function int: round(float: x);
 function int: bool2int(bool: b);
 /** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of floats  */
+function array[$T] of float: bool2float(array[$T] of bool: x) ::promise_total =
+  let {
+    array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2float(xx[i]) | i in index_set(xx)]);
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of floats  */
+function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_total =
+  let {
+    array[int] of var bool: xx = array1d(x)
+  } in arrayXd(x,[bool2float(xx[i]) | i in index_set(xx)]);
 /** @group builtins.coercion Return Boolean \a b coerced to an integer  */
 function var int: bool2int(var bool: b);
 /** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
