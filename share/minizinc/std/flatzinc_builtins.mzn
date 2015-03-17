@@ -68,6 +68,8 @@ predicate int_pow(var int: x, var int: y, var int: z);
 predicate set_in(var int: x, set of int: S);
 /** @group flatzinc Constrains \a x &in; \a S */
 predicate set_in(var int: x, var set of int: S);
+/** @group flatzinc Constrains \a x = |\a S| */
+predicate set_card(var set of int: S, var int: x);
 /** @group flatzinc Constrains \a r &harr; (\a x &in; \a S) */
 predicate set_in_reif(var int: x, set of int: S, var bool: r);
 /** @group flatzinc Constrains \a r &harr; (\a x &in; \a S) */
@@ -88,14 +90,14 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: r);
 predicate set_ne(var set of int: x, var set of int: y);
 /** @group flatzinc Constrains \a r &harr; (\a x ≠ \a y) */
 predicate set_ne_reif(var set of int: x, var set of int: y, var bool: r);
-/** @group flatzinc Returns \a x &cap; \a y */
-function var set of int: set_intersect(var set of int: x, var set of int: y);
-/** @group flatzinc Returns \a x &cup; \a y */
-function var set of int: set_union(var set of int: x, var set of int: y);
-/** @group flatzinc Returns \a x &minus; \a y */
-function var set of int: set_diff(var set of int: x, var set of int: y);
-/** @group flatzinc Returns the symmetric difference of \a x and \a y */
-function var set of int: set_symdiff(var set of int: x, var set of int: y);
+/** @group flatzinc Constrains \a r = x &cap; \a y */
+predicate set_intersect(var set of int: x, var set of int: y, var set of int: r);
+/** @group flatzinc Constrains \a r = x &cup; \a y */
+predicate set_union(var set of int: x, var set of int: y, var set of int: r);
+/** @group flatzinc Constrains \a r = x &minus; \a y */
+predicate set_diff(var set of int: x, var set of int: y, var set of int: r);
+/** @group flatzinc Constrains \a r to be the symmetric difference of \a x and \a y */
+predicate set_symdiff(var set of int: x, var set of int: y, var set of int: r);
 
 % Float constraints
 
