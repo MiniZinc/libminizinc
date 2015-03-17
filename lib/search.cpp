@@ -224,7 +224,7 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(SolverInstanceBase* solver) {
-    //std::cerr << "DEBUG: NEXT combinator" << std::endl;   
+    std::cerr << "DEBUG: NEXT combinator" << std::endl;   
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
       solver->env().envi().hasSolution(true);
@@ -233,7 +233,8 @@ namespace MiniZinc {
         _scopes[i]->env().envi().hasSolution(true);
         updateSolution(solver->env().output(), _scopes[i]->env().output());
       }
-    }    
+    }
+    std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
   }
   

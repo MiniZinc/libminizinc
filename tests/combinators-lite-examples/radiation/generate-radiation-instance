@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Use:
+#
+#   generate-radiation-instance [<matrix size> [<maximum intensity>]]
+#
+# The defaults are 5 and 8, respectively.
+#
+
+function random_number () ##  <lower bound> <upper bound>
+{
+	declare RAND
+	declare -i RANDMAX
+
+	# bash: doesn't look random at all!
+	# RANDMAX=32767
+	# RAND=${RANDOM}
+
+	RANDMAX=0xFFFF
+	RAND=$(< /proc/sys/kernel/random/uuid)
+	RAND="0x${RAND:0:4}"
+	echo $(( $1 + ((($2 - $1 + 1)*${RAND}) / (${RANDMAX} + 1)) ))
+}
+
+
+declare -i Rows Columns MaxIntensity I J
+
+Rows=${1:-5}
+Columns=${Rows}
+MaxIntensity=${2:-8}
+
+cat <<- END
+
+	m = ${Rows};	% rows
+	n = ${Columns};	% columns
+
+	% max intensity = ${MaxIntensity}
+	Intensity = [|
+END
+
+for (( J = 1; J <= Rows; J++ )) ; do
+  for (( I = 1; I <= Columns; I++ )) ; do
+    printf "%${#MaxIntensity}d" "$(random_number 0 ${MaxIntensity})"
+    if (( I < Columns )) ; then
+    	echo -n ", "
+    elif (( J < Rows )) ; then
+    	echo " |"
+    else
+    	echo
+    fi
+  done
+done
+
+cat <<- END
+	|];
+
+END
