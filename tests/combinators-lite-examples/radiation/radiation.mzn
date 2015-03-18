@@ -71,29 +71,28 @@ predicate upper_bound_on_increments(var int: N_b, array[int] of var int: L) =
 %-----------------------------------------------------------------------------%
 % Objective
 %-----------------------------------------------------------------------------%
-%var int: obj = (ub(K) + 1) * Beamtime + K;
+%var int: obj = (ub(K) + 1) * Beamtime + K; % this formulation will cause an error
 
 var int: obj;
-constraint obj  = (ub(K) + 1) * Beamtime + K;
+constraint obj = (ub(K) + 1) * Beamtime + K;
 
 solve 
-   % :: int_search(
-%		[Beamtime] ++ N ++
-%	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
-%		input_order, indomain_split, complete)
+    :: int_search(
+		[Beamtime] ++ N ++
+	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
+		input_order, indomain_split, complete)
 	minimize obj;
-
 		% really: (Beamtime, K),  i.e. in lexicographic order
 
 %-----------------------------------------------------------------------------%
 
 output [
-show(obj), "\n"
-%    "Beamtime = ", show(Beamtime), ", obj = ", show(obj), "\n",
+    show(obj)
+];
+%    "Beamtime = ", show(Beamtime), "\n",
 %    "K = ", show(K), "\n",
 %    "N = ", show(N), "\n",
-%    "Q = ", show(Q), "\n"
-];
+%    "Q = ", show(Q), "\n",
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

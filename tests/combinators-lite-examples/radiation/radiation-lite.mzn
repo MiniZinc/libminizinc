@@ -4,12 +4,11 @@
 % Sebastian Brand
 % 05/2007
 %-----------------------------------------------------------------------------%
+include "combinators.mzn";
 
 %-----------------------------------------------------------------------------%
 % Parameters
 %-----------------------------------------------------------------------------%
-
-include "combinators.mzn";
 
 int: m;  % Rows
 int: n;  % Columns
@@ -74,43 +73,28 @@ predicate upper_bound_on_increments(var int: N_b, array[int] of var int: L) =
 % Objective
 %-----------------------------------------------------------------------------%
 %var int: obj = (ub(K) + 1) * Beamtime + K;
-
 var int: obj;
 constraint obj = (ub(K) + 1) * Beamtime + K;
 
 solve 
-%    :: int_search(
-%		[Beamtime] ++ N ++
-%	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
-%		input_order, indomain_split, complete)
+    :: int_search(
+		[Beamtime] ++ N ++
+	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
+		input_order, indomain_split, complete)
+    :: combinator(scope(repeat(and([ next, print, post(obj < sol(obj)) ]))))
+    satisfy;
 %	minimize obj;
-
 		% really: (Beamtime, K),  i.e. in lexicographic order
-:: combinator(
-%   scope(
-     or([ 
-       repeat(
-           and([
-               next, % get next solution
-               post(obj < sol(obj)), % post constraint
-               print() % print next solution
-           ])
-       ),
-       print % print final solution
-     ])
- %  )
-)
-satisfy;
 
 %-----------------------------------------------------------------------------%
 
 output [
-show(obj), "\n"
-%    "Beamtime = ", show(Beamtime), ", obj = ", show(obj), "\n",
+    show(obj)
+];
+%    "Beamtime = ", show(Beamtime), "\n",
 %    "K = ", show(K), "\n",
 %    "N = ", show(N), "\n",
-%    "Q = ", show(Q), "\n"
-];
+%    "Q = ", show(Q), "\n",
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
