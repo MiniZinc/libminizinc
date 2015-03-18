@@ -268,14 +268,15 @@ namespace MiniZinc {
   void GecodeSolverInstance::processFlatZinc(void) {
     _current_space = new FznSpace();    
     // iterate over VarDecls of the flat model and create variables
-    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {      
+    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {       
       if (it->e()->type().isvar()) { // par variables are retrieved from the model        
         // check if it has an output-annotation
-        VarDecl* vd = it->e();
+        VarDecl* vd = it->e();        
         if(!vd->ann().isEmpty()) {
           if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
               vd->ann().contains(constants().ann.output_var)
             ) {
+            //std::cerr << "DEBUG: adding vardecl to _varsWithOutput: " << *vd << std::endl;
             _varsWithOutput.push_back(vd);
           }
         }
@@ -1092,7 +1093,8 @@ namespace MiniZinc {
       }
     }
   }
-
+   
+  
   void
   GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn,
                                         int seed, double decay, bool ignoreUnknown,
@@ -1299,6 +1301,87 @@ namespace MiniZinc {
     //else
       //std::cout << "DEBUG: No aux vars to branch on." << std::endl;
   }
+ 
+  
+  /*
+  void
+  GecodeSolverInstance::createBranchers(Annotation& ann, Expression* additionalAnn,
+                                        int seed, double decay, bool ignoreUnknown,
+                                        std::ostream& err) {
+    // search over all output variables -> super simple search 
+    std::vector<IntVar> intVars;
+    std::vector<BoolVar> boolVars;
+    // TODO: float vars and set vars
+    for(unsigned int i=0; i<_varsWithOutput.size(); i++) {      
+      if(_varsWithOutput[i]->ti()->isarray()) {
+        Expression* e = _varsWithOutput[i]->e();
+        if(!e) {
+          std::stringstream ssm; ssm << "GecodeSolverInstance::createBranchers: no expression assigned to output array:" << *e;
+          throw InternalError(ssm.str());
+        }
+        else if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+          //std::cerr << "DEBUG: ArrayLit = " << *al << std::endl;
+          ASTExprVec<Expression> args = al->v();
+          for(unsigned int j=0; j<args.size(); j++) {
+            //std::cerr << "DEBUG: ArrayLit element (" << (j+1) << "/" << args.size() << ") = " << *args[j] << std::endl;
+            if(Id* id = args[j]->dyn_cast<Id>()) {
+              if(id->decl()) {
+                VarDecl* decl = id->decl();
+                //std::cerr << "DEBUG: Calling resolveVar on decl = " << *decl << std::endl;
+                GecodeVariable v = resolveVar(decl);
+               // std::cerr << "DEBUG: Found variable for decl = " << *decl << std::endl;
+                if(v.isint()) {
+                  intVars.push_back(_current_space->iv[v.index()]);
+                } 
+                else if(v.isbool()) {
+                  boolVars.push_back(_current_space->bv[v.index()]);
+                }
+              }
+              else {
+                std::stringstream ssm; ssm << "DEBUG: No decl for id: " << *id << std::endl;
+                throw InternalError(ssm.str());
+              }
+            }
+            else {
+              //std::cerr << "DEBUG: array element is not an id: " << *args[j] << std::endl;
+              assert(false);
+            }
+          }
+        }       
+      }
+      else { // simple identifier
+        //std::cerr << "DEBUG: looking for variable for output var: " << *_varsWithOutput[i] << std::endl;
+        GecodeVariable v = resolveVar(_varsWithOutput[i]);
+        if(v.isint()) {
+          intVars.push_back(_current_space->iv[v.index()]);
+        } 
+        else if(v.isbool()) {
+          boolVars.push_back(_current_space->bv[v.index()]);
+        }
+      }
+    }
+    
+    IntVarArgs iv_sol(intVars.size());
+    for (unsigned int i= 0; i<intVars.size(); i++) {      
+      iv_sol[i] = intVars[i];      
+    }
+  
+    BoolVarArgs bv_sol(boolVars.size());
+    for (unsigned int i= 0; i<boolVars.size(); i++) { 
+      bv_sol[i] = boolVars[i];      
+    }
+
+    if (iv_sol.size() > 0)
+      branch(*this->_current_space, iv_sol, INT_VAR_ACTIVITY_MAX(), INT_VAL_MIN());
+      //branch(*this->_current_space, iv_sol, INT_VAR_NONE(), INT_VAL_MIN());    
+    if (bv_sol.size() > 0)
+      branch(*this->_current_space, bv_sol, INT_VAR_ACTIVITY_MAX(), INT_VAL_MIN());
+
+    //std::cout << "DEBUG: branched over " << iv_sol.size()  << " integer variables."<< std::endl;
+    //std::cout << "DEBUG: branched over " << bv_sol.size()  << " Boolean variables."<< std::endl;
+
+  }   
+  */
 
 
   void
