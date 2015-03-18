@@ -32,7 +32,7 @@ namespace MiniZinc {
   class GecodeEngine {
   public:
     virtual FznSpace* next(void) = 0;
-    virtual bool stopped(void) = 0;    
+    virtual bool stopped(void) const = 0;
     virtual ~GecodeEngine(void) {}
   };
   
@@ -40,9 +40,8 @@ namespace MiniZinc {
   class CustomEngine : public GecodeEngine {
   public:
     virtual FznSpace* next(void) = 0;
-    virtual bool stopped(void) = 0;
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si_) = 0;
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) = 0; 
+    virtual void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) = 0;
     /// returns the space (or NULL) at position \a i in the engine dynamic stack
     virtual FznSpace* getSpace(unsigned int i) = 0;
     /// returns the number of entries in the path (that do not all need to be spaces!)
@@ -58,7 +57,7 @@ namespace MiniZinc {
   public:
     MetaEngine(FznSpace* s, Gecode::Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
-    virtual bool stopped(void) { return e.stopped(); }    
+    virtual bool stopped(void) const { return e.stopped(); }
   };
   
   /// meta-engine that inherits from CustomEngine
@@ -69,9 +68,9 @@ namespace MiniZinc {
   public:
     CustomMetaEngine(FznSpace* s, Gecode::Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
-    virtual bool stopped(void) { return e.stopped(); }
+    virtual bool stopped(void) const { return e.stopped(); }
     virtual void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) { e.updateIntBounds(vd,lb,ub,si); }
-    virtual void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }   
+    virtual void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }
     virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
     virtual unsigned int pathEntries(void) { return e.pathEntries(); }
   };
@@ -82,11 +81,11 @@ namespace MiniZinc {
   public:
     GecodeMeta(T* s, const Gecode::Search::Options& o) : E<T>(s,o) {} 
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {  E<T>::updateIntBounds(vd,lb,ub,si);  }
-    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }    
+    void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) { E<T>::addVariables(vars, si); }
     FznSpace* getSpace(unsigned int i) { return E<T>::getSpace(i); }
     unsigned int pathEntries(void) { return E<T>::pathEntries(); }
     FznSpace* next(void) { return E<T>::next(); }
-    bool stopped(void) { return E<T>::stopped(); }
+    bool stopped(void) const { return E<T>::stopped(); }
   };  
     
   
@@ -185,8 +184,7 @@ namespace MiniZinc {
   };
   
   /// iterative DFS class that allows to add constraints along the path
-  template<class T>
-  class DFSEngine  : public Gecode::Search::Worker, public Gecode::EngineBase {
+  class DFSEngine  : public Gecode::Search::Worker {
   private:
     /// Search options
     Gecode::Search::Options opt;    
@@ -199,13 +197,13 @@ namespace MiniZinc {
     MiniZinc::Path path;
   public:
     /// Initialize for space \a s with options \a o
-    DFSEngine(T* s, const Gecode::Search::Options& o);
+    DFSEngine(Gecode::Space* s, const Gecode::Search::Options& o);
     /// %Search for next solution
-    T* next(void);
+    Gecode::Space* next(void);
     /// Return statistics
     Statistics statistics(void) const;
     /// Reset engine to restart at space \a s
-    void reset(T* s);
+    void reset(Gecode::Space* s);
     /// Return no-goods
     Gecode::NoGoods& nogoods(void);    
     /// adds variable to the engine
@@ -213,7 +211,7 @@ namespace MiniZinc {
     /// update the integer bounds of the given variable to the tighter bounds (lb..ub)
     void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si);
     /// add variables to the search engine
-    void addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si);
+    void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si);
     /// returns the space (or NULL) at position \a i in the engine dynamic stack
     FznSpace* getSpace(unsigned int i) { return static_cast<FznSpace*>(path.getSpace(i)); }
     /// returns the number of entries in the path (that do not all need to be spaces!)
@@ -222,9 +220,8 @@ namespace MiniZinc {
     ~DFSEngine(void);
   };
   
-  template<class T>
-  forceinline 
-  DFSEngine<T>::DFSEngine(T* s, const Gecode::Search::Options& o)
+  forceinline
+  DFSEngine::DFSEngine(Gecode::Space* s, const Gecode::Search::Options& o)
     : opt(o), d(0), path(static_cast<int>(opt.nogoods_limit)) {
     if ((s == NULL) || (s->status(*this) == Gecode::SS_FAILED)) {
       fail++;
@@ -236,9 +233,8 @@ namespace MiniZinc {
     }
   }
 
-  template<class T>
-  forceinline void  
-  DFSEngine<T>::reset(T* s) {
+  forceinline void
+  DFSEngine::reset(Gecode::Space* s) {
     delete cur;
     this->path.reset();
     d = 0;
@@ -250,15 +246,13 @@ namespace MiniZinc {
     Worker::reset();
   }
 
-  template<class T>
   forceinline Gecode::NoGoods&
-  DFSEngine<T>::nogoods(void) {
+  DFSEngine::nogoods(void) {
     return path;
   }
 
-  template<class T>
-  forceinline T*
-  DFSEngine<T>::next(void) {
+  forceinline Gecode::Space*
+  DFSEngine::next(void) {
     start();
     while (true) {
       if (stop(opt))
@@ -286,7 +280,7 @@ namespace MiniZinc {
           Gecode::Space* s = cur;
           cur = NULL;
           path.next();
-          return static_cast<T*>(s);
+          return s;
         }
         case Gecode::SS_BRANCH:
         {
@@ -310,27 +304,24 @@ namespace MiniZinc {
     return NULL;
   }
 
-  template<class T>
   forceinline Gecode::Search::Statistics
-  DFSEngine<T>::statistics(void) const {
+  DFSEngine::statistics(void) const {
     return *this;
   }
 
-  template<class T>
-  forceinline 
-  DFSEngine<T>::~DFSEngine(void) {
+  forceinline
+  DFSEngine::~DFSEngine(void) {
     delete cur;
     path.reset();
   }
   
-  template<class T>
-  void
-  DFSEngine<T>::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {   
+  inline void
+  DFSEngine::updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
     // iterate over stack and post constraint
     if(path.empty()) 
       return;    
     for(int edge=0; edge<path.getNbEntries(); edge++) {
-      T* s = static_cast<T*>(path.getSpace(edge));
+      Gecode::Space* s = path.getSpace(edge);
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);       
         si.updateIntBounds(space, vd,lb,ub);
@@ -338,20 +329,106 @@ namespace MiniZinc {
     }
   }
   
-  template<class T>
-  void
-  DFSEngine<T>::addVariables(std::vector<VarDecl*> vars, GecodeSolverInstance& si) {   
+  inline void
+  DFSEngine::addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) {
     // iterate over stack and post constraint
     if(path.empty()) 
       return;    
     for(int edge=0; edge<path.getNbEntries(); edge++) {
-      T* s = static_cast<T*>(path.getSpace(edge));
+      Gecode::Space* s = path.getSpace(edge);
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);
         si.addVariables(space, vars);
       }
     }
   }
+  
+  /// Virtualize a worker to an engine
+  template<class Worker>
+  class CombWorkerToEngine : public Gecode::Search::Engine {
+  public:
+    /// The worker to wrap into an engine
+    Worker w;
+    /// Initialization
+    CombWorkerToEngine(Gecode::Space* s, const Gecode::Search::Options& o);
+    /// Return next solution (NULL, if none exists or search has been stopped)
+    virtual Gecode::Space* next(void);
+    /// Return statistics
+    virtual Gecode::Search::Statistics statistics(void) const;
+    /// Check whether engine has been stopped
+    virtual bool stopped(void) const;
+    /// Reset engine to restart at space \a s
+    virtual void reset(Gecode::Space* s);
+    /// Return no-goods
+    virtual Gecode::NoGoods& nogoods(void);
+    
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
+      w.updateIntBounds(vd,lb,ub,si);
+    }
+    void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) {
+      w.addVariables(vars,si);
+    }
+    FznSpace* getSpace(unsigned int i) {
+      return w.getSpace(i);
+    }
+    unsigned int pathEntries(void) {
+      return w.pathEntries();
+    }
+  };
+  
+  template<class Worker>
+  CombWorkerToEngine<Worker>::CombWorkerToEngine(Gecode::Space* s, const Gecode::Search::Options& o)
+  : w(s,o) {}
+  template<class Worker>
+  Gecode::Space*
+  CombWorkerToEngine<Worker>::next(void) {
+    return w.next();
+  }
+  template<class Worker>
+  Gecode::Search::Statistics
+  CombWorkerToEngine<Worker>::statistics(void) const {
+    return w.statistics();
+  }
+  template<class Worker>
+  bool
+  CombWorkerToEngine<Worker>::stopped(void) const {
+    return w.stopped();
+  }
+  template<class Worker>
+  void
+  CombWorkerToEngine<Worker>::reset(Gecode::Space* s) {
+    w.reset(s);
+  }
+  
+  template<class Worker>
+  Gecode::NoGoods&
+  CombWorkerToEngine<Worker>::nogoods(void) {
+    return w.nogoods();
+  }
+
+  
+  template<class T>
+  class CombDFS : public Gecode::Search::EngineBase<T> {
+    using Gecode::Search::EngineBase<T>::e;
+  public:
+    CombDFS(T* s, const Gecode::Search::Options& o)
+    : Gecode::Search::EngineBase<T>(new CombWorkerToEngine<DFSEngine>(s,o)) {}
+    
+    void updateIntBounds(VarDecl* vd, int lb, int ub, GecodeSolverInstance& si) {
+      static_cast<CombWorkerToEngine<DFSEngine>*>(e)->updateIntBounds(vd, lb, ub, si);
+    }
+    void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) {
+      static_cast<CombWorkerToEngine<DFSEngine>*>(e)->addVariables(vars, si);
+    }
+    FznSpace* getSpace(unsigned int i) {
+      return static_cast<CombWorkerToEngine<DFSEngine>*>(e)->getSpace(i);
+    }
+    /// returns the number of entries in the path (that do not all need to be spaces!)
+    unsigned int pathEntries(void) {
+      return static_cast<CombWorkerToEngine<DFSEngine>*>(e)->pathEntries();
+    }
+    
+  };
   
 }
 
