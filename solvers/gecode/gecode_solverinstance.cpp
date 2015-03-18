@@ -949,7 +949,7 @@ namespace MiniZinc {
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
         if(combinators) {          
-          customEngine = new CustomMetaEngine<DFSEngine, GecodeMeta>(this->_current_space,o);
+          customEngine = new CustomMetaEngine<CombDFS, GecodeMeta>(this->_current_space,o);
         }
         else 
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
@@ -1460,7 +1460,7 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::addVariables(std::vector<VarDecl*> vars) {   
+  GecodeSolverInstance::addVariables(const std::vector<VarDecl*>& vars) {
     if(!customEngine) {
       prepareEngine(true);     
     }
@@ -1470,7 +1470,7 @@ namespace MiniZinc {
   }
   
   bool 
-  GecodeSolverInstance::addVariables(FznSpace* space, std::vector<VarDecl*> vars) {
+  GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) {
     for(unsigned int i=0; i<vars.size(); i++) {  
       //std::cout << "DEBUG: about to add variable \"" << *(vars[i]->id())  << std::endl;      
       // constants/constant arrays

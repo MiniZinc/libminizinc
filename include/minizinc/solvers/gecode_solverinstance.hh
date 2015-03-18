@@ -157,9 +157,9 @@ namespace MiniZinc {
     /// post constraints incrementally (after next() has been called); this function is called by the combinators interpreter
     virtual bool postConstraints(std::vector<Call*> cts);       
     /// add variables incrementally (after next() has been called); this function is called by the combinators interpreter
-    virtual bool addVariables(std::vector<VarDecl*> vars);
+    virtual bool addVariables(const std::vector<VarDecl*>& vars);
     /// add variables incrementally to the given space (called by the engine)
-    bool addVariables(FznSpace* space, std::vector<VarDecl*> vars);
+    bool addVariables(FznSpace* space, const std::vector<VarDecl*>& vars);
     
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.

@@ -54,7 +54,7 @@ namespace MiniZinc {
   }
   
   bool 
-  NISolverInstanceBase::addVariables(std::vector<VarDecl*> vars) {
+  NISolverInstanceBase::addVariables(const std::vector<VarDecl*>& vars) {
     // the variables are already added to the flat model
     return true;
   }
