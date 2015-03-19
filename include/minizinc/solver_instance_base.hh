@@ -70,6 +70,10 @@ namespace MiniZinc {
     Options& getOptions() { return _options; }
     Env& env(void) { return _env; }
     
+  protected:
+    /// flatten the search annotations, pushing them into the vector \a out
+    void flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out);
+    
   private:
     SolverInstanceBase(const SolverInstanceBase&);
     SolverInstanceBase& operator= (const SolverInstanceBase&);

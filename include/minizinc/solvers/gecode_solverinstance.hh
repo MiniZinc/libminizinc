@@ -201,7 +201,20 @@ namespace MiniZinc {
 #endif
     /// Convert \a ann to IntConLevel
     Gecode::IntConLevel ann2icl(const Annotation& ann);
-
+     /// convert the annotation \a s int variable selection to the respective Gecode var selection
+    Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    /// convert the annotation \a s int value selection to the respective Gecode val selection
+    Gecode::IntValBranch ann2ivalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    /// convert assign value selection
+    Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
+#ifdef GECODE_HAS_SET_VARS
+    Gecode::SetVarBranch ann2svarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    Gecode::SetValBranch ann2svalsel(std::string s, std::string r0, std::string r1, Gecode::Rnd& rnd);
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    Gecode::FloatValBranch ann2fvalsel(std::string s, std::string r0, std::string r1);
+#endif    
     /// Returns the VarDecl of \a expr and throws an InternalError if not possible
     VarDecl* getVarDecl(Expression* expr);
     /// Returns the VarDecl of \a aa 
@@ -227,7 +240,34 @@ namespace MiniZinc {
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
             bool ignoreUnknown, std::ostream& err);
     /// prepare the engine, where combinators states if search combinators will be used
-    void prepareEngine(bool combinators);
+    void prepareEngine(bool combinators);  
+    /// sets the search strategy according to the search annotation
+    void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn);
+    /// Helper: will retrieve an ArrayLit from flatzinc, if it is par, or is var with a right hand side, otherwise throws exception
+    ArrayLit* getArrayLit(Expression* e);  
+    /// set the search strategy according to the search annotation
+    void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
+                                                        std::vector<bool>& iv_searched, 
+                                                        std::vector<bool>& bv_searched,
+                                                        std::vector<bool>& sv_searched,
+                                                        std::vector<bool>& fv_searched,
+                                                        Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
+                                                        Gecode::IntValBranch& def_int_valsel,
+                                                        Gecode::TieBreak<Gecode::IntVarBranch>& def_bool_varsel,
+                                                        Gecode::IntValBranch& def_bool_valsel,
+                                                #ifdef GECODE_HAS_SET_VARS
+                                                        Gecode::SetVarBranch& def_set_varsel,
+                                                        Gecode::SetValBranch& def_set_valsel,
+                                                #endif
+                                                #ifdef GECODE_HAS_FLOAT_VARS
+                                                        Gecode::TieBreak<Gecode::FloatVarBranch>& def_float_varsel,
+                                                        Gecode::FloatValBranch& def_float_valsel,
+                                                #endif
+                                                        Gecode::Rnd& rnd,
+                                                        double decay,
+                                                        bool ignoreUnknown,
+                                                        std::ostream& err
+                                                       );
   };
 }
 
