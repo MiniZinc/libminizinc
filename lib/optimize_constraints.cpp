@@ -195,6 +195,9 @@ namespace MiniZinc {
       if (c->args()[0]->isa<IntLit>()) {
         IntVal idx = eval_int(env,c->args()[0]);
         ArrayLit* al = eval_array_lit(env,c->args()[1]);
+        if (idx < 1 || idx > al->v().size()) {
+          return OptimizeRegistry::CS_FAILED;
+        }
         Expression* result = al->v()[idx.toInt()-1];
         std::vector<Expression*> args(2);
         args[0] = result;

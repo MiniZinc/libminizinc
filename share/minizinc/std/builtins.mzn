@@ -634,6 +634,12 @@ function set of int: '..'(int: a,int: b);
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of float: '..'(float: a,float: b);
 
+function var set of int: '..'(var int: a, var int: b) ::promise_total =
+  let {
+    var set of min(lb(a),lb(b))..max(ub(a),ub(b)): s;
+    constraint forall (i in ub(s)) (i in s <-> (a <= i /\ i <= b));
+  } in s;
+
 /** @group builtins.set Return the cardinality of the set \a x */
 function     int: card(    set of $T: x);
 /** @group builtins.set Return the cardinality of the set \a x */
@@ -917,8 +923,44 @@ predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_s
   @groupdef builtins.sort Array sorting operations
 */
 
-/** @group builtins.sort Return array \a x sorted by the values in \a y */
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of int: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
 function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of $T: sort_by(array[int] of $T: x, array[int] of int: y);
+
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of float: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of float: y);
+/** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
+
+The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
+\a x[\p i] will appear in the output before \a x[\p j].
+*/
+function array[int] of $T: sort_by(array[int] of $T: x, array[int] of float: y);
+
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of int: sort(array[int] of int: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
@@ -932,7 +974,8 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of int:x);
+function array[int] of int: arg_sort(array[int] of int:x) =
+  sort_by([i | i in index_set(x)], x);
 
 /** @group builtins.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -940,7 +983,8 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of float:x);
+function array[int] of int: arg_sort(array[int] of float:x) =
+  sort_by([i | i in index_set(x)], x);
 
 /***
   @groupdef builtins.coercion Coercions
@@ -959,6 +1003,16 @@ function int: round(float: x);
 function int: bool2int(bool: b);
 /** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of floats  */
+function array[$T] of float: bool2float(array[$T] of bool: x) ::promise_total =
+  let {
+    array[int] of bool: xx = array1d(x)
+  } in arrayXd(x,[bool2float(xx[i]) | i in index_set(xx)]);
+/** @group builtins.coercion Return array of Booleans \a x coerced to an array of floats  */
+function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_total =
+  let {
+    array[int] of var bool: xx = array1d(x)
+  } in arrayXd(x,[bool2float(xx[i]) | i in index_set(xx)]);
 /** @group builtins.coercion Return Boolean \a b coerced to an integer  */
 function var int: bool2int(var bool: b);
 /** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
@@ -1153,7 +1207,7 @@ justified if \a w is negative.
 function string: format(int: w, array[$U] of var opt $T: x);
 
 /** @group builtins.string Return path of file where this function is called */
-function string: file_path;
+function string: file_path();
 
 /***
   @groupdef builtins.reflect Reflection operations

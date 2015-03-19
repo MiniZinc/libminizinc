@@ -108,6 +108,7 @@ namespace MiniZinc {
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
     std::ostream& evalOutput(std::ostream& os);
+    void createErrorStack(void);
   };
 
   Expression* follow_id(Expression* e);

@@ -226,12 +226,13 @@ int main(int argc, char** argv) {
     if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          flag_verbose, errstream)) {
       try {
+        Env env(m);
         if (flag_verbose)
           std::cerr << "Done parsing." << std::endl;
         if (flag_verbose)
           std::cerr << "Typechecking ...";
         vector<TypeError> typeErrors;
-        MiniZinc::typecheck(m, typeErrors, true);
+        MiniZinc::typecheck(env, m, typeErrors, true);
         if (typeErrors.size() > 0) {
           for (unsigned int i=0; i<typeErrors.size(); i++) {
             if (flag_verbose)
@@ -250,7 +251,6 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        Env env(m);
         std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
