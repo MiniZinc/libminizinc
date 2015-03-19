@@ -2058,15 +2058,47 @@ namespace MiniZinc {
           }
         }
         bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
-        _current_space->bv_introduced.push_back(isIntroduced);
+        space->bv_introduced.push_back(isIntroduced);
         bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-        _current_space->bv_defined.push_back(isDefined);
+        space->bv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isfloat()) {
-        std::stringstream ssm;
-        ssm << "DEBUG: DID NOT (yet) add variable \"" << *(vars[i]->id())  << std::endl;
-        throw InternalError(ssm.str());    
-        // TODO
+        if(vars[i]->e() == NULL) { // there is NO initialisation expression
+          Expression* domain = vars[i]->ti()->domain();
+          double lb, ub;
+          if (domain) {
+            FloatBounds fb = compute_float_bounds(_env.envi(), domain);
+            lb = fb.l;
+            ub = fb.u;
+          } else {
+            std::stringstream ssm;
+            ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vars[i] << std::endl;
+            throw InternalError(ssm.str());
+          }
+          FloatVar floatVar(*space, lb, ub);
+          space->fv.push_back(floatVar);
+          insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE,
+                space->fv.size()-1));
+        } else {
+          Expression* init = vars[i]->e();
+          if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+            // root->fv[root->floatVarCount++] = root->fv[*(int*)resolveVar(init)];
+            GecodeVariable var = resolveVar(init);
+            assert(var.isfloat());
+            space->fv.push_back(space->fv[var.index()]);
+            insertVar(vars[i]->id(), var);
+          } else {
+            double il = init->cast<FloatLit>()->v();
+            FloatVar floatVar(*space, il, il);
+            space->fv.push_back(floatVar);
+            insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE,
+                  space->fv.size()-1));
+          }
+        }
+        bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
+        space->fv_introduced.push_back(isIntroduced);
+        bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+        space->fv_defined.push_back(isDefined);
       }
       else {
         std::stringstream ssm;
