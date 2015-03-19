@@ -2025,10 +2025,42 @@ namespace MiniZinc {
         space->iv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isbool()) {
-        std::stringstream ssm;
-        ssm << "DEBUG: DID NOT (yet) add variable \"" << *(vars[i]->id())  << std::endl;
-        throw InternalError(ssm.str());       
-        // TODO
+        double lb=0, ub=1;
+        if(!vars[i]->e()) { // there is NO initialisation expression
+          Expression* domain = vars[i]->ti()->domain();
+          if(domain) {
+            IntBounds ib = compute_int_bounds(_env.envi(), domain);
+            lb = ib.l.toInt();
+            ub = ib.u.toInt();
+          } else {
+            lb = 0;
+            ub = 1;
+          }
+          BoolVar boolVar(*space, lb, ub);
+          space->bv.push_back(boolVar);
+          insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::BOOL_TYPE,
+                space->bv.size()-1));
+        } else { // there is an initialisation expression
+          Expression* init = vars[i]->e();
+          if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+            // root->bv[root->boolVarCount++] = root->bv[*(int*)resolveVar(init)];
+            //int index = *(int*) resolveVar(init);
+            GecodeVariable var = resolveVar(init);
+            assert(var.isbool());
+            space->bv.push_back(space->bv[var.index()]);
+            insertVar(vars[i]->id(), var);
+          } else {
+            double b = (double) init->cast<BoolLit>()->v();
+            BoolVar boolVar(*space, b, b);
+            space->bv.push_back(boolVar);
+            insertVar(vars[i]->id(), GecodeVariable(GecodeVariable::BOOL_TYPE,
+                 space->bv.size()-1));
+          }
+        }
+        bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
+        _current_space->bv_introduced.push_back(isIntroduced);
+        bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+        _current_space->bv_defined.push_back(isDefined);
       }
       else if(vars[i]->type().isfloat()) {
         std::stringstream ssm;
