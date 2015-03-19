@@ -1145,7 +1145,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<flatAnn.size(); i++) {
       if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "gecode_search") {
         //Call* c = flatAnn[i]->cast<Call>();
-        //branchWithPlugin(c->args); // TODO
+        //branchWithPlugin(c->args); 
         std::cerr << "WARNING: Not supporting search annotation \"gecode_search\" yet." << std::endl;
         return;
       } 
@@ -1930,8 +1930,7 @@ namespace MiniZinc {
     if(!customEngine) {
       prepareEngine(true);     
     }
-    customEngine->updateIntBounds(vd,lb,ub,*this);
-    // TODO: this should also be done in the scopes below, no?
+    customEngine->updateIntBounds(vd,lb,ub,*this);   
     return true;
   }
   
@@ -1940,8 +1939,7 @@ namespace MiniZinc {
     if(!customEngine) {
       prepareEngine(true);     
     }
-    customEngine->addVariables(vars, *this);
-    // TODO: this should also be done in the scopes below, no?
+    customEngine->addVariables(vars, *this);   
     return true; 
   }
   
