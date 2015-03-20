@@ -33,6 +33,8 @@ annotation time_limit(int: secs);
 annotation time_limit(float: secs);
 % limit the search nodes in the execution of next
 annotation node_limit(int: nodes);
+% limit the number of fails during search in the execution of next
+annotation fail_limit(int: fails);
 
 % return the solution value of the last solution
 %function int: sol(var int: x); 

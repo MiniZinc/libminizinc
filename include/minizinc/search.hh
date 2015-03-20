@@ -100,7 +100,11 @@ namespace MiniZinc {
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, SolverInstanceBase* solver);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output
-  void updateSolution(Model* output, Model* outputToUpdate);  
+  void updateSolution(Model* output, Model* outputToUpdate); 
+  /// interpret the LIMIT combinator \a e which is either a Call or an array of Calls
+  void interpretLimitCombinator(Expression* e, SolverInstanceBase* solver);
+  /// process node limit combinator
+  void interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver);
   /// process node limit combinator
   void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver);
   /// process a time limit combinator

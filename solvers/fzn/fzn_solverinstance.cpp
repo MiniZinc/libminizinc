@@ -146,25 +146,58 @@ namespace MiniZinc {
           close(pipes[1][0]);
           close(pipes[0][1]);
           //char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0}; 
+          int status = executeCommand(opt,fznFile);
+                  
+          if(status != 0) {
+            std::stringstream ssm;
+            ssm << "FznProcess::run: cannot execute command: " << _fzncmd.c_str();
+            throw InternalError(ssm.str());
+          }
+        }
+        assert(false);
+      }
+    
+    protected:
+      int executeCommand(Options& opt, std::string fznFile) {
           int status;
           // determine the command line arguments
           if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
-            if(opt.hasParam(constants().solver_options.node_limit.str())) {              
-              int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
-              char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
-              sprintf(time_c, "%d", time_ms); 
+            int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
+            char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+            sprintf(time_c, "%d", time_ms); 
+            // node limit
+            if(opt.hasParam(constants().solver_options.node_limit.str())) {                           
               int nodes = opt.getIntParam(constants().solver_options.node_limit.str());
               char nodes_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
-              sprintf(nodes_c, "%d", nodes);  
-              char* argv[] = {strdup(_fzncmd.c_str()),strdup("-node"), nodes_c,strdup("-time"), time_c, strdup("-"),0};          
-              if (!_canPipe) 
-                argv[5] = strdup(fznFile.c_str());
-              status = execvp(argv[0],argv);  
+              //fail limit
+              if(opt.hasParam(constants().solver_options.fail_limit.str())) {
+                int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
+                char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+                sprintf(fails_c, "%d", fails);  
+                char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-node"), nodes_c, strdup("-time"), time_c, strdup("-"),0};          
+                if (!_canPipe) 
+                  argv[7] = strdup(fznFile.c_str());
+                status = execvp(argv[0],argv);                  
+              }
+              else { // only node and time limit
+                sprintf(nodes_c, "%d", nodes);  
+                char* argv[] = {strdup(_fzncmd.c_str()),strdup("-node"), nodes_c,strdup("-time"), time_c, strdup("-"),0};          
+                if (!_canPipe) 
+                  argv[5] = strdup(fznFile.c_str());
+                status = execvp(argv[0],argv);  
+              }
             }
-            else { // only time limit
-              int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
-              char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
-              sprintf(time_c, "%d", time_ms);              
+            // fail limit
+            else if(opt.hasParam(constants().solver_options.fail_limit.str())) {
+                int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
+                char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+                sprintf(fails_c, "%d", fails);  
+                char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-time"), time_c, strdup("-"),0};          
+                if (!_canPipe) 
+                  argv[5] = strdup(fznFile.c_str());
+                status = execvp(argv[0],argv);  
+            }                      
+            else { // only time limit                     
               char* argv[] = {strdup(_fzncmd.c_str()),strdup("-time"), time_c, strdup("-"),0};          
               if (!_canPipe) 
                 argv[3] = strdup(fznFile.c_str());
@@ -179,23 +212,24 @@ namespace MiniZinc {
             if (!_canPipe) 
               argv[3] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);  
-          }
+          } // only fail limit
+          else if(opt.hasParam(constants().solver_options.fail_limit.str())) {
+            int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
+            char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+            sprintf(fails_c, "%d", fails);  
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-"),0};          
+            if (!_canPipe) 
+              argv[3] = strdup(fznFile.c_str());
+            status = execvp(argv[0],argv);  
+          }          
           else {
             char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};          
             if (!_canPipe) 
               argv[1] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);                    
-          }                   
-                  
-          if(status != 0) {
-            std::stringstream ssm;
-            ssm << "FznProcess::run: cannot execute command: " << _fzncmd.c_str();
-            throw InternalError(ssm.str());
-          }
-        }
-        assert(false);
+          }                           
+        return status;
       }
-    
     };
   }
   

@@ -240,40 +240,14 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver) {   
-    // interpret arguments to next 
+    // interpret NEXT arguments
     ASTExprVec<Expression> args = call->args();
     if(args.size()>1) {
       std::stringstream ssm;
       ssm << "NEXT-combinator takes at most 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(call->loc(), ssm.str());      
     } 
-    if(Call* c = args[0]->dyn_cast<Call>()) {
-      if(c->id() == constants().combinators.limit_time) {
-        interpretTimeLimitCombinator(c,solver);
-      } 
-      else if(c->id() == constants().combinators.limit_nodes) {
-        interpretNodeLimitCombinator(c,solver);
-      }
-      else {
-        std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
-      }
-    }
-    else if(ArrayLit* al = args[0]->dyn_cast<ArrayLit>()) {
-      ASTExprVec<Expression> elems = al->v();
-      for(unsigned int j=0; j<elems.size(); j++) {
-        if(Call* c = elems[j]->dyn_cast<Call>()) {
-          if(c->id() == constants().combinators.limit_time) 
-            interpretTimeLimitCombinator(c,solver);
-          else if(c->id() == constants().combinators.limit_nodes)
-            interpretNodeLimitCombinator(c,solver);
-          else 
-            std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
-        }
-      }
-    }
-    else {
-      std::cerr << "WARNING: Ignoring unknown argument to next:" << *args[0] << std::endl;
-    }
+    interpretLimitCombinator(args[0],solver);
       
     // get next solution
     SolverInstance::Status status = solver->next();
@@ -287,6 +261,60 @@ namespace MiniZinc {
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
+  }
+  
+  void 
+  SearchHandler::interpretLimitCombinator(Expression* e, SolverInstanceBase* solver) {
+    if(Call* c = e->dyn_cast<Call>()) {
+      if(c->id() == constants().combinators.limit_time) 
+        interpretTimeLimitCombinator(c,solver);
+      else if(c->id() == constants().combinators.limit_nodes)
+        interpretNodeLimitCombinator(c,solver);
+      else if(c->id() == constants().combinators.limit_fails)
+        interpretFailLimitCombinator(c,solver);      
+      else 
+        std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
+    }
+    else if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+      ASTExprVec<Expression> elems = al->v();
+      for(unsigned int j=0; j<elems.size(); j++) {
+        if(Call* c = elems[j]->dyn_cast<Call>()) {
+          if(c->id() == constants().combinators.limit_time) 
+            interpretTimeLimitCombinator(c,solver);
+          else if(c->id() == constants().combinators.limit_nodes)
+            interpretNodeLimitCombinator(c,solver);
+          else if(c->id() == constants().combinators.limit_fails) 
+            interpretFailLimitCombinator(c,solver);          
+          else 
+            std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
+        }
+      }
+    }
+    else {
+      std::cerr << "WARNING: Ignoring unknown argument to next:" << *e << std::endl;
+    }
+    
+  }
+  
+  void
+  SearchHandler::interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver) {    
+    ASTExprVec<Expression> args = call->args();
+    if(args.size() != 1) {
+      std::stringstream ssm; 
+      ssm << "Expecting 1 argument in call: " << *call;
+      throw EvalError(call->loc(), ssm.str());
+    }     
+    args[0] = eval_par(solver->env().envi(),args[0]);
+    Options& opt = solver->getOptions();
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
+      KeepAlive ka(il);
+      opt.setIntParam(constants().solver_options.fail_limit.str(),ka);
+    }   
+    else {
+      std::stringstream ssm; 
+      ssm << "Cannot process argument. Expecting integer value instead of: " << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
   }
   
   void

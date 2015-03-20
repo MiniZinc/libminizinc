@@ -1050,6 +1050,7 @@ namespace MiniZinc {
     ann.combinator = ASTString("combinator");
     
     combinators.and_ = ASTString("and");
+    combinators.limit_fails = ASTString("fail_limit");
     combinators.limit_nodes = ASTString("node_limit");
     combinators.limit_time = ASTString("time_limit");
     combinators.next = ASTString("next");
@@ -1066,6 +1067,7 @@ namespace MiniZinc {
     solver_output.unknown = ASTString("=====UNKNOWN=====");  
     solver_output.unbounded = ASTString("=====UNBOUNDED====="); 
     
+    solver_options.fail_limit = ASTString("fail_limit");
     solver_options.node_limit = ASTString("node_limit");
     solver_options.time_limit_sec = ASTString("time_limit_sec");
     
@@ -1184,6 +1186,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), ann.combinator));
     
     v.push_back(new StringLit(Location(), combinators.and_));
+    v.push_back(new StringLit(Location(), combinators.limit_fails));
     v.push_back(new StringLit(Location(), combinators.limit_nodes));
     v.push_back(new StringLit(Location(), combinators.limit_time));
     v.push_back(new StringLit(Location(), combinators.next));
@@ -1200,6 +1203,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), solver_output.unknown));
     v.push_back(new StringLit(Location(), solver_output.unsat));
     
+    v.push_back(new StringLit(Location(), solver_options.fail_limit));
     v.push_back(new StringLit(Location(), solver_options.node_limit));
     v.push_back(new StringLit(Location(), solver_options.time_limit_sec));
     

@@ -939,6 +939,7 @@ namespace MiniZinc {
       int nodeStop = _options.getIntParam("nodes", 0);
       nodeStop = _options.getIntParam(constants().solver_options.node_limit.str(), nodeStop);
       int failStop = _options.getIntParam("fails", 0);
+      failStop = _options.getIntParam(constants().solver_options.fail_limit.str(),failStop);
       int timeStop = _options.getIntParam("time", 0);
       timeStop  = _options.hasParam(constants().solver_options.time_limit_sec.str()) ? 
                 std::ceil(_options.getFloatParam(constants().solver_options.time_limit_sec.str()))*1000 // convert to milliseconds 
