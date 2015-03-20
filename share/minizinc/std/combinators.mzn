@@ -32,7 +32,7 @@ annotation or(array[int] of ann);
 annotation time_limit(int: secs);
 annotation time_limit(float: secs);
 % limit the search nodes in the execution of next
-annotation nodes_limit(int: nodes);
+annotation node_limit(int: nodes);
 
 % return the solution value of the last solution
 %function int: sol(var int: x); 

@@ -242,23 +242,39 @@ namespace MiniZinc {
   SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver) {   
     // interpret arguments to next 
     ASTExprVec<Expression> args = call->args();
-    for(unsigned int i=0; i<args.size(); i++) {
-      if(Call* c = args[i]->dyn_cast<Call>()) {
-        if(c->id() == constants().combinators.limit_time) {
-          interpretTimeLimitCombinator(c,solver);
-        } 
-        else if(c->id() == constants().combinators.limit_nodes) {
-          // TODO:
-        }
-        else {
-          std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
-        }
+    if(args.size()>1) {
+      std::stringstream ssm;
+      ssm << "NEXT-combinator takes at most 1 argument instead of " << call->args().size() << " in: " << *call;
+      throw TypeError(call->loc(), ssm.str());      
+    } 
+    if(Call* c = args[0]->dyn_cast<Call>()) {
+      if(c->id() == constants().combinators.limit_time) {
+        interpretTimeLimitCombinator(c,solver);
+      } 
+      else if(c->id() == constants().combinators.limit_nodes) {
+        interpretNodeLimitCombinator(c,solver);
       }
       else {
-        std::cerr << "WARNING: Ignoring unknown argument to next:" << *args[i] << std::endl;
+        std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
       }
     }
-    
+    else if(ArrayLit* al = args[0]->dyn_cast<ArrayLit>()) {
+      ASTExprVec<Expression> elems = al->v();
+      for(unsigned int j=0; j<elems.size(); j++) {
+        if(Call* c = elems[j]->dyn_cast<Call>()) {
+          if(c->id() == constants().combinators.limit_time) 
+            interpretTimeLimitCombinator(c,solver);
+          else if(c->id() == constants().combinators.limit_nodes)
+            interpretNodeLimitCombinator(c,solver);
+          else 
+            std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
+        }
+      }
+    }
+    else {
+      std::cerr << "WARNING: Ignoring unknown argument to next:" << *args[0] << std::endl;
+    }
+      
     // get next solution
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
@@ -271,6 +287,27 @@ namespace MiniZinc {
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
+  }
+  
+  void
+  SearchHandler::interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver) {    
+    ASTExprVec<Expression> args = call->args();
+    if(args.size() != 1) {
+      std::stringstream ssm; 
+      ssm << "Expecting 1 argument in call: " << *call;
+      throw EvalError(call->loc(), ssm.str());
+    }     
+    args[0] = eval_par(solver->env().envi(),args[0]);
+    Options& opt = solver->getOptions();
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
+      KeepAlive ka(il);
+      opt.setIntParam(constants().solver_options.node_limit.str(),ka);
+    }   
+    else {
+      std::stringstream ssm; 
+      ssm << "Cannot process argument. Expecting integer value instead of: " << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
   }
   
   void

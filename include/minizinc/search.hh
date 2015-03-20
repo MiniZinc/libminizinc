@@ -101,6 +101,8 @@ namespace MiniZinc {
   bool postConstraints(Expression* cts, SolverInstanceBase* solver);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output
   void updateSolution(Model* output, Model* outputToUpdate);  
+  /// process node limit combinator
+  void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver);
   /// process a time limit combinator
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver);
   

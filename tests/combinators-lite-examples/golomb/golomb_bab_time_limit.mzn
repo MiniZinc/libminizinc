@@ -19,6 +19,7 @@ include "combinators.mzn"; % include the search combinators lite
 
 int: m = 15;
 int: n = m*m;
+int: nodes = 5000;
 
 array[1..m] of var 0..n: mark;
 var 0..n: obj;
@@ -43,8 +44,8 @@ solve %:: int_search(mark, input_order, indomain, complete)
      or([ 
        repeat(
            and([
-%               next(), % get next solution with no time limit
-               next(time_limit(5.8)), % get next solution with time limit of 5.8secs
+%               next(), % get next solution with no time limit or node limit
+               next([time_limit(5.8),node_limit(nodes)]), % get next solution with time limit of 5.8secs and the given node limit
                post(obj < sol(obj)), % post constraint
                print() % print next solution
            ])

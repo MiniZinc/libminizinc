@@ -1050,7 +1050,7 @@ namespace MiniZinc {
     ann.combinator = ASTString("combinator");
     
     combinators.and_ = ASTString("and");
-    combinators.limit_nodes = ASTString("nodes_limit");
+    combinators.limit_nodes = ASTString("node_limit");
     combinators.limit_time = ASTString("time_limit");
     combinators.next = ASTString("next");
     combinators.or_ = ASTString("or");

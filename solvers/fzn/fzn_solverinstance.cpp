@@ -185,9 +185,7 @@ namespace MiniZinc {
             if (!_canPipe) 
               argv[1] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);                    
-          }        
-          
-          
+          }                   
                   
           if(status != 0) {
             std::stringstream ssm;
