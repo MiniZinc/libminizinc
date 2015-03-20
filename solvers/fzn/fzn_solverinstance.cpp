@@ -149,8 +149,17 @@ namespace MiniZinc {
           int status;
           // determine the command line arguments
           if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
-            if(opt.hasParam(constants().solver_options.node_limit.str())) {
-              // TODO
+            if(opt.hasParam(constants().solver_options.node_limit.str())) {              
+              int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
+              char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+              sprintf(time_c, "%d", time_ms); 
+              int nodes = opt.getIntParam(constants().solver_options.node_limit.str());
+              char nodes_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+              sprintf(nodes_c, "%d", nodes);  
+              char* argv[] = {strdup(_fzncmd.c_str()),strdup("-node"), nodes_c,strdup("-time"), time_c, strdup("-"),0};          
+              if (!_canPipe) 
+                argv[5] = strdup(fznFile.c_str());
+              status = execvp(argv[0],argv);  
             }
             else { // only time limit
               int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
