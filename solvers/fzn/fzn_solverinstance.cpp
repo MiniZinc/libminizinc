@@ -16,6 +16,8 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <fstream>
+#include <stdio.h>
+#include <climits>
 
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
@@ -36,7 +38,7 @@ namespace MiniZinc {
       Model* _flat;
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
-      void run(std::stringstream& result) {
+      void run(std::stringstream& result, Options& opt) {
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -143,13 +145,41 @@ namespace MiniZinc {
           close(pipes[1][1]);
           close(pipes[1][0]);
           close(pipes[0][1]);
-          //char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0};          
-          char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};
-          //std::cerr << "####." << std::endl;
-          if (!_canPipe) {
-            argv[1] = strdup(fznFile.c_str());
+          //char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0}; 
+          int status;
+          // determine the command line arguments
+          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
+            if(opt.hasParam(constants().solver_options.node_limit.str())) {
+              // TODO
+            }
+            else { // only time limit
+              int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
+              char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+              sprintf(time_c, "%d", time_ms);              
+              char* argv[] = {strdup(_fzncmd.c_str()),strdup("-time"), time_c, strdup("-"),0};          
+              if (!_canPipe) 
+                argv[3] = strdup(fznFile.c_str());
+              status = execvp(argv[0],argv);  
+            }         
+          } // only node limit
+          else if(opt.hasParam(constants().solver_options.node_limit.str())) {
+            int nodes = opt.getIntParam(constants().solver_options.node_limit.str());
+            char nodes_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
+            sprintf(nodes_c, "%d", nodes);  
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-node"), nodes_c, strdup("-"),0};          
+            if (!_canPipe) 
+              argv[3] = strdup(fznFile.c_str());
+            status = execvp(argv[0],argv);  
           }
-          int status = execvp(argv[0],argv);          
+          else {
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};          
+            if (!_canPipe) 
+              argv[1] = strdup(fznFile.c_str());
+            status = execvp(argv[0],argv);                    
+          }        
+          
+          
+                  
           if(status != 0) {
             std::stringstream ssm;
             ssm << "FznProcess::run: cannot execute command: " << _fzncmd.c_str();
@@ -158,8 +188,11 @@ namespace MiniZinc {
         }
         assert(false);
       }
+    
     };
   }
+  
+
   
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
   : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
@@ -211,7 +244,7 @@ namespace MiniZinc {
     // TODO: check if solver exec is in path
     FznProcess proc(solver_exec,false,_fzn); 
     std::stringstream result; 
-    proc.run(result);
+    proc.run(result,_options);
     std::string solution;
     
     typedef std::pair<VarDecl*,Expression*> DE;

@@ -44,7 +44,7 @@ solve %:: int_search(mark, input_order, indomain, complete)
        repeat(
            and([
 %               next(), % get next solution with no time limit
-               next(time_limit(5.8)), % get next solution with time limit of 5.8secs
+               next(time_limit(1.8)), % get next solution with time limit of 5.8secs
                post(obj < sol(obj)), % post constraint
                print() % print next solution
            ])
