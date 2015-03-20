@@ -41,8 +41,7 @@ namespace MiniZinc {
       bool getBoolParam(const std::string& name, bool def) const;
       std::string getStringParam(const std::string& name) const;
       std::string getStringParam(const std::string& name, std::string def) const;
-      bool hasParam(const std::string& name) const;
-      std::string getFznSolver(void) const;
+      bool hasParam(const std::string& name) const;      
   };
 }
 

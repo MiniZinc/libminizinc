@@ -43,7 +43,7 @@ namespace MiniZinc {
         return interpretPrintCombinator(solver);
       }
       else if(call->id().str() == constants().combinators.next.str()) {
-        return interpretNextCombinator(solver);
+        return interpretNextCombinator(call, solver);
       }
       else {
         std::stringstream ssm; 
@@ -236,6 +236,67 @@ namespace MiniZinc {
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
+  }
+  
+  SolverInstance::Status
+  SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver) {   
+    // interpret arguments to next 
+    ASTExprVec<Expression> args = call->args();
+    for(unsigned int i=0; i<args.size(); i++) {
+      if(Call* c = args[i]->dyn_cast<Call>()) {
+        if(c->id() == constants().combinators.limit_time) {
+          interpretTimeLimitCombinator(c,solver);
+        } 
+        else if(c->id() == constants().combinators.limit_nodes) {
+          // TODO:
+        }
+        else {
+          std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
+        }
+      }
+      else {
+        std::cerr << "WARNING: Ignoring unknown argument to next:" << *args[i] << std::endl;
+      }
+    }
+    
+    // get next solution
+    SolverInstance::Status status = solver->next();
+    if(status == SolverInstance::SAT) {      
+      solver->env().envi().hasSolution(true);
+      // set/update the solutions in all higher scopes
+      for(unsigned int i = 0; i <_scopes.size(); i++) {
+        _scopes[i]->env().envi().hasSolution(true);
+        updateSolution(solver->env().output(), _scopes[i]->env().output());
+      }
+    }
+    //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
+    return status; 
+  }
+  
+  void
+  SearchHandler::interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver) {
+    ASTExprVec<Expression> args = call->args();
+    if(args.size() != 1) {
+      std::stringstream ssm; 
+      ssm << "Expecting 1 argument in call: " << *call;
+      throw EvalError(call->loc(), ssm.str());
+    }     
+    Options& opt = solver->getOptions();
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
+      double time = (double) il->v().toInt();
+      FloatLit* fl = new FloatLit(Location(), time);
+      KeepAlive ka(fl);
+      opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
+    }
+    else if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
+      KeepAlive ka(fl);
+      opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
+    }
+    else {
+      std::stringstream ssm; 
+      ssm << "Cannot process argument. Expecting integer or float value instead of: " << *args[0];
+      throw EvalError(args[0]->loc(), ssm.str());
+    }    
   }
   
   SolverInstance::Status

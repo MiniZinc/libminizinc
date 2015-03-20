@@ -937,13 +937,17 @@ namespace MiniZinc {
                       std::cerr);
       
       int nodeStop = _options.getIntParam("nodes", 0);
+      nodeStop = _options.getIntParam(constants().solver_options.node_limit.str(), nodeStop);
       int failStop = _options.getIntParam("fails", 0);
       int timeStop = _options.getIntParam("time", 0);
+      timeStop  = _options.hasParam(constants().solver_options.time_limit_sec.str()) ? 
+                std::ceil(_options.getFloatParam(constants().solver_options.time_limit_sec.str()))*1000 // convert to milliseconds 
+                : timeStop;
       
       Search::Options o;
       o.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,
-                                            timeStop,
+                                            timeStop, // in ms!!
                                             false);
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {

@@ -93,12 +93,16 @@ namespace MiniZinc {
   SolverInstance::Status interpretScopeCombinator(Call* scopeComb, SolverInstanceBase* solver);
    /// interpret and execute a NEXT combinator
   SolverInstance::Status interpretNextCombinator(SolverInstanceBase* solver);
+  /// interpret and execute a NEXT combinator, respecting the arguments given in the call
+  SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver);
   /// interpret and execute a PRINT combinator
   SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, SolverInstanceBase* solver);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output
-  void updateSolution(Model* output, Model* outputToUpdate);
+  void updateSolution(Model* output, Model* outputToUpdate);  
+  /// process a time limit combinator
+  void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver);
   
   void pushScope(SolverInstanceBase* new_scope) {
     _scopes.push_back(new_scope);

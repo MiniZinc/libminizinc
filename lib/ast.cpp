@@ -1050,6 +1050,8 @@ namespace MiniZinc {
     ann.combinator = ASTString("combinator");
     
     combinators.and_ = ASTString("and");
+    combinators.limit_nodes = ASTString("nodes_limit");
+    combinators.limit_time = ASTString("time_limit");
     combinators.next = ASTString("next");
     combinators.or_ = ASTString("or");
     combinators.post = ASTString("post");
@@ -1062,7 +1064,10 @@ namespace MiniZinc {
     solver_output.opt = ASTString("==========");
     solver_output.unsat = ASTString("=====UNSATISFIABLE=====");
     solver_output.unknown = ASTString("=====UNKNOWN=====");  
-    solver_output.unbounded = ASTString("=====UNBOUNDED=====");    
+    solver_output.unbounded = ASTString("=====UNBOUNDED====="); 
+    
+    solver_options.node_limit = ASTString("node_limit");
+    solver_options.time_limit_sec = ASTString("time_limit_sec");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1177,19 +1182,26 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(new StringLit(Location(), ann.combinator));
+    
     v.push_back(new StringLit(Location(), combinators.and_));
+    v.push_back(new StringLit(Location(), combinators.limit_nodes));
+    v.push_back(new StringLit(Location(), combinators.limit_time));
     v.push_back(new StringLit(Location(), combinators.next));
     v.push_back(new StringLit(Location(), combinators.or_));
     v.push_back(new StringLit(Location(), combinators.post));
     v.push_back(new StringLit(Location(), combinators.print));
     v.push_back(new StringLit(Location(), combinators.repeat));
     v.push_back(new StringLit(Location(), combinators.scope));       
+    
     v.push_back(new StringLit(Location(), solver_output.opt));
     v.push_back(new StringLit(Location(), solver_output.sat));
     v.push_back(new StringLit(Location(), solver_output.solution_delimiter));
     v.push_back(new StringLit(Location(), solver_output.unbounded));
     v.push_back(new StringLit(Location(), solver_output.unknown));
     v.push_back(new StringLit(Location(), solver_output.unsat));
+    
+    v.push_back(new StringLit(Location(), solver_options.node_limit));
+    v.push_back(new StringLit(Location(), solver_options.time_limit_sec));
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);
     for (int i=-maxConstInt; i<=maxConstInt; i++)

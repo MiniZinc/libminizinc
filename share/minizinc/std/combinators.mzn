@@ -9,6 +9,10 @@ annotation combinator (ann);
 % direct the solver to find next solution, returns true if found and
 % false otherwise
 annotation next;
+% next can have one argument (e.g. time limits)
+annotation next(ann);
+% next can have several arguments (e.g. time limit and node limit)
+annotation next(array [int] of ann);
 % post constraint expression expr in current scope
 annotation post(var bool: expr); 
 % print the last found solution according to the output statement
@@ -24,6 +28,11 @@ annotation repeat(ann);
 annotation and(array[int] of ann);
 % execute the given annotations until all fail
 annotation or(array[int] of ann);
+% limit execution time of next to the given number of seconds
+annotation time_limit(int: secs);
+annotation time_limit(float: secs);
+% limit the search nodes in the execution of next
+annotation nodes_limit(int: nodes);
 
 % return the solution value of the last solution
 %function int: sol(var int: x); 
