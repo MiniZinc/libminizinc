@@ -2,6 +2,16 @@
 # @author		Tai Tran
 # @supervisor	Guido Tack
 
+
+#Things to add:
+# Calling solve with timer
+# Int vs Float multiplication
+# Write code for checking argument with type of None (any type can be accepted)
+# Improve the interface so that there is no need to assign MZN_STDLIB_DIR when starting python
+# args_ret_dict: some functions type checking are not written
+# Hide some internal functions such as flatten or type_presentation
+
+
 import sys
 import minizinc_internal
 import predicate
@@ -1358,9 +1368,9 @@ class Model(object):
 
 	def satisfy(self, ann = None, data = None):
 		self.__solve(0, None, ann, data)
-	def maximize(self, expr, ann = None):
+	def maximize(self, expr, ann = None, data = None):
 		self.__solve(2, expr, ann, data)
-	def minimize(self, expr, ann = None):
+	def minimize(self, expr, ann = None, data = None):
 		self.__solve(1, expr, ann, data)
 	def reset(self):
 		self.__init__()
