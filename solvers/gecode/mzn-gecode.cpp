@@ -303,8 +303,9 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
+          Env env(m);
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(m, typeErrors);
+          MiniZinc::typecheck(env, m, typeErrors, false);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -314,14 +315,13 @@ int main(int argc, char** argv) {
             }
             exit(EXIT_FAILURE);
           }
-          MiniZinc::registerBuiltins(m);
+          MiniZinc::registerBuiltins(env, m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
             if(is_flatzinc) {
               GCLock lock;
               std::string fzm = std_lib_dir + "/std/flatzinc_builtins.mzn";
