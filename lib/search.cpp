@@ -318,6 +318,7 @@ namespace MiniZinc {
       ssm << "Expecting 1 argument in call: " << *call;
       throw EvalError(call->loc(), ssm.str());
     }     
+    args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
       double time = (double) il->v().toInt();
