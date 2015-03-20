@@ -192,7 +192,7 @@ namespace MiniZinc {
                 int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
                 char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
                 sprintf(fails_c, "%d", fails);  
-                char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-time"), time_c, strdup("-"),0};          
+                char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fail"), fails_c, strdup("-time"), time_c, strdup("-"),0};          
                 if (!_canPipe) 
                   argv[5] = strdup(fznFile.c_str());
                 status = execvp(argv[0],argv);  
@@ -217,7 +217,7 @@ namespace MiniZinc {
             int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
             char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(fails_c, "%d", fails);  
-            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-"),0};          
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fail"), fails_c, strdup("-"),0};          
             if (!_canPipe) 
               argv[3] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);  
