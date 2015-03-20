@@ -51,10 +51,9 @@ namespace MiniZinc {
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             Item* item = *it;
-            if(SolveI* si = item->dyn_cast<SolveI>()) {
+            if(SolveI* si = item->dyn_cast<SolveI>()) {              
               if(si->combinator_lite()) {
-                // remove combinator lite annotation
-                si->ann().clear();
+                si->ann().removeCall(constants().ann.combinator); // remove the combinator annotation
               }
             }
             os << *item;  
