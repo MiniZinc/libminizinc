@@ -266,7 +266,7 @@ namespace MiniZinc {
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
-    _current_space = new FznSpace();    
+    _current_space = new FznSpace();  
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {       
       if (it->e()->type().isvar()) { // par variables are retrieved from the model        
@@ -864,6 +864,7 @@ namespace MiniZinc {
     prepareEngine(true);
     _solution = customEngine->next();
     
+    
     if (_solution) {
       assignSolutionToOutput();
       return SolverInstance::SAT;
@@ -961,6 +962,7 @@ namespace MiniZinc {
       } else {
         engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);        
       }
+      std::cerr << "branchers: " << _current_space->branchers() << "\n";
     }
   }
   
@@ -975,7 +977,7 @@ namespace MiniZinc {
         if(_solution) delete _solution;
         _solution = next_sol;
       }
-    }
+    }    
     
     SolverInstance::Status status = SolverInstance::SAT;
     if(engine->stopped()) {
@@ -1148,6 +1150,7 @@ namespace MiniZinc {
                                                        )  {
   
     for (unsigned int i=0; i<flatAnn.size(); i++) {
+      std::cerr << "flat ann: " << *flatAnn[i] << "\n";
       if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "gecode_search") {
         //Call* c = flatAnn[i]->cast<Call>();
         //branchWithPlugin(c->args); 
@@ -1156,6 +1159,7 @@ namespace MiniZinc {
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_search") {
         Call* call = flatAnn[i]->cast<Call>();
+        debugprint(call);
         ArrayLit *vars = getArrayLit(call->args()[0]);
         int k=vars->v().size();
         for (int i=vars->v().size(); i--;)
@@ -1170,8 +1174,8 @@ namespace MiniZinc {
           int idx = resolveVar(getVarDecl(vars->v()[i])).index();
           va[k++] = _current_space->iv[idx];
           iv_searched[idx] = true;
-          names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
-        }
+          names.push_back(getVarDecl(vars->v()[i])->id()->str().str());          
+        }        
         std::string r0, r1;
         BrancherHandle bh = branch(*_current_space, va,
         ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
@@ -1385,10 +1389,7 @@ namespace MiniZinc {
     if (additionalAnn != NULL) {
       flatAnn.push_back(additionalAnn);
     }
-    if (flatAnn.size() > 0) {
-      for(unsigned int i=0; i<flatAnn.size();i++) {
-        std::cerr << "DEBUG: flat ann: " << *flatAnn[i] << std::endl;
-      }
+    if (flatAnn.size() > 0) {      
       setSearchStrategyFromAnnotation(flatAnn, iv_searched, bv_searched,sv_searched,fv_searched,
                                       def_int_varsel,def_int_valsel,def_bool_varsel,def_bool_valsel,
                               #ifdef GECODE_HAS_SET_VARS
@@ -1414,7 +1415,8 @@ namespace MiniZinc {
             introduced++;
           }
       }
-    }
+    }  
+      
     IntVarArgs iv_sol(_current_space->iv.size()-(introduced+funcdep+searched));
     IntVarArgs iv_tmp(introduced);
     for (int i=_current_space->iv.size(), j=0, k=0; i--;) {
@@ -1711,7 +1713,7 @@ namespace MiniZinc {
         return INT_VAL_RND(rnd);
     }
     if (s == "indomain") {
-        r0 = "="; r1 = "=";
+        r0 = "="; r1 = "=";       
         return INT_VALUES_MIN();
     }
     if (s == "indomain_middle") {

@@ -20,6 +20,8 @@ namespace MiniZinc {
   SolverInstance::Status 
   SearchHandler::interpretCombinator(Expression* comb0, SolverInstanceBase* solver) {
     Env& env = solver->env();
+    //std::cout << "DEBUG: Printing flat model:" << std::endl;
+    //debugprint(solver->env().flat());
     Expression* comb = eval_par(env.envi(), comb0);
     //std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
     

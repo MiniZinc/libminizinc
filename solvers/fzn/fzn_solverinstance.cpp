@@ -56,7 +56,7 @@ namespace MiniZinc {
                 si->ann().removeCall(constants().ann.combinator); // remove the combinator annotation
               }
             }
-            os << *item;  
+            os << *item;            
           }           
         }
         
@@ -222,9 +222,9 @@ namespace MiniZinc {
             status = execvp(argv[0],argv);  
           }          
           else {
-            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};          
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-mode"),strdup("stat"),strdup("-"),0};          
             if (!_canPipe) 
-              argv[1] = strdup(fznFile.c_str());
+              argv[3] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);                    
           }                           
         return status;

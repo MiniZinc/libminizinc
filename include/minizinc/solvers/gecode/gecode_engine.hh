@@ -18,6 +18,7 @@
 #include <gecode/search/support.hh>
 #include <gecode/search/worker.hh>
 #include <gecode/support.hh>
+#include <gecode/gist.hh>
 
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/ast.hh>
@@ -254,24 +255,37 @@ namespace MiniZinc {
   forceinline Gecode::Space*
   DFSEngine::next(void) {
     start();
+    //bool started=false;
+    std::cerr << "NEXT\n";
     while (true) {
-      if (stop(opt))
+      if (stop(opt)) {
+        std::cerr << "STOPPED: fails = " << statistics().fail << std::endl;
         return NULL;
+      }
       while (cur == NULL) {
-        if (path.empty())
+        if (path.empty()) {
+          std::cerr << "empty path: fails = " << statistics().fail << std::endl;
+          std::cerr << "empty path: depth = " << statistics().depth << std::endl;
           return NULL;
+        }
         cur = path.recompute(d,opt.a_d,*this);
         if (cur != NULL)
           break;
         path.next();
       }
+      /*if (!started) {
+        started = true;
+        if (cur->status() != Gecode::SS_FAILED) {
+          Gecode::Gist::dfs(cur->clone());
+        }
+      }*/
       node++;
       switch (cur->status(*this)) {
         case Gecode::SS_FAILED:
           fail++;
           delete cur;
           cur = NULL;
-          path.next();
+          path.next();          
           break;
         case Gecode::SS_SOLVED:
         {
@@ -280,6 +294,7 @@ namespace MiniZinc {
           Gecode::Space* s = cur;
           cur = NULL;
           path.next();
+          std::cerr << "SOLVE: fails = " << statistics().fail << std::endl;
           return s;
         }
         case Gecode::SS_BRANCH:

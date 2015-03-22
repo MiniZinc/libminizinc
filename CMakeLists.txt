@@ -304,7 +304,7 @@ if(HAS_GECODE)
     solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode
-    minizinc
+    minizinc gecodegist
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport)
@@ -313,7 +313,7 @@ if(HAS_GECODE)
     solvers/gecode/mzn-gecode.cpp
   )
   target_link_libraries(mzn-gecode minizinc_gecode minizinc 
-    gecodedriver gecodesearch gecodeminimodel
+    gecodegist gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
@@ -321,7 +321,7 @@ if(HAS_GECODE)
     solvers/gecode/mzn-gecode-lite.cpp
   )
   target_link_libraries(mzn-gecode-lite minizinc_gecode minizinc 
-    gecodedriver gecodesearch gecodeminimodel
+    gecodegist gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
