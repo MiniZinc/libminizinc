@@ -42,6 +42,7 @@ namespace MiniZinc {
       return static_cast<ASTExprVecO<T*>*>(it->second);
     }
   };
+  class EnvI;
 
   /// Create a deep copy of expression \a e
   Expression* copy(Expression* e, bool followIds=false);
@@ -53,9 +54,9 @@ namespace MiniZinc {
   /// Create a deep copy of expression \a e
   Expression* copy(CopyMap& map, Expression* e, bool followIds=false);
   /// Create a deep copy of item \a i
-  Item* copy(CopyMap& map, Item* i, bool followIds=false);
+  Item* copy(CopyMap& map, Item* i, bool followIds=false); 
   /// Create a deep copy of model \a m
-  Model* copy(CopyMap& map, Model* m);
+  Model* copy(CopyMap& map, Model* m);  
 
 }
 

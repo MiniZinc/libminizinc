@@ -14,6 +14,7 @@
 
 #include <minizinc/exception.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/model.hh>
 #include <string>
 
 namespace MiniZinc {
@@ -22,16 +23,15 @@ namespace MiniZinc {
   protected:
     Location _loc;
   public:
-    LocationException(const Location& loc, const std::string& msg)
-      : Exception(msg), _loc(loc) {}
+    LocationException(EnvI& env, const Location& loc, const std::string& msg);
     virtual ~LocationException(void) throw() {}
     const Location& loc(void) const { return _loc; }
   };
 
   class TypeError : public LocationException {
   public:
-    TypeError(const Location& loc, const std::string& msg)
-      : LocationException(loc,msg) {}
+    TypeError(EnvI& env, const Location& loc, const std::string& msg)
+      : LocationException(env,loc,msg) {}
     ~TypeError(void) throw() {}
     virtual const char* what(void) const throw() {
       return "MiniZinc: type error";
@@ -40,10 +40,10 @@ namespace MiniZinc {
 
   class EvalError : public LocationException {
   public:
-    EvalError(const Location& loc, const std::string& msg)
-      : LocationException(loc,msg) {}
-    EvalError(const Location& loc, const std::string& msg, const ASTString& name)
-      : LocationException(loc,msg+" '"+name.str()+"'") {}
+    EvalError(EnvI& env, const Location& loc, const std::string& msg)
+      : LocationException(env,loc,msg) {}
+    EvalError(EnvI& env, const Location& loc, const std::string& msg, const ASTString& name)
+      : LocationException(env,loc,msg+" '"+name.str()+"'") {}
     ~EvalError(void) throw() {}
     virtual const char* what(void) const throw() {
       return "MiniZinc: evaluation error";

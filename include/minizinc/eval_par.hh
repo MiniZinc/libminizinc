@@ -96,6 +96,7 @@ namespace MiniZinc {
   eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     e->decl(gen,id)->e()->cast<IntLit>()->v(i);
+    CallStackItem csi(env, e->decl(gen,id)->id(), i);
     if (id == e->n_decls(gen)-1) {
       if (gen == e->n_generators()-1) {
         bool where = true;
@@ -133,6 +134,7 @@ namespace MiniZinc {
   eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     ArrayLit* al = in()->cast<ArrayLit>();
+    CallStackItem csi(env, e->decl(gen,id)->id(), i);
     e->decl(gen,id)->e(al->v()[i.toInt()]);
     e->rehash();
     if (id == e->n_decls(gen)-1) {

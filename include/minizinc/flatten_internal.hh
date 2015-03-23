@@ -120,6 +120,7 @@ namespace MiniZinc {
     unsigned int get_ids(void) { return ids; }
     bool hasSolution(void) { return _hasSolution; }
     void hasSolution(bool b) { _hasSolution = b; }
+    void createErrorStack(void);
   };
 
   Expression* follow_id(Expression* e);

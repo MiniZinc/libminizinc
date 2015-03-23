@@ -290,12 +290,13 @@ int main(int argc, char** argv) {
                          flag_verbose, errstream)) {
       try {
         if (flag_typecheck) {
+          Env env(m);
           if (flag_verbose)
             std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(m, typeErrors);
+          MiniZinc::typecheck(env, m, typeErrors);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -305,14 +306,13 @@ int main(int argc, char** argv) {
             }
             exit(EXIT_FAILURE);
           }
-          MiniZinc::registerBuiltins(m);
+          MiniZinc::registerBuiltins(env,m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
             try {
               flatten(env,fopts);
             } catch (LocationException& e) {

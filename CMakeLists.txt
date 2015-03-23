@@ -180,6 +180,7 @@ endif(BISON_EXEC)
 
 add_library(minizinc
 lib/ast.cpp
+lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp

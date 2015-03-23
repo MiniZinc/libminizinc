@@ -52,7 +52,9 @@ bool beginswith(string s, string t) {
 int main(int argc, char** argv) {
   string filename;
   vector<string> datafiles;
-  vector<string> includePaths;  
+  vector<string> includePaths;
+  bool is_flatzinc = false;
+
   bool flag_ignoreStdlib = false;
   bool flag_typecheck = true;
   bool flag_verbose = false;
@@ -224,11 +226,12 @@ int main(int argc, char** argv) {
         goto error;
       }
       std::string extension = input_file.substr(input_file.length()-4,string::npos);
-      if (extension == ".mzn") {
+      if (extension == ".mzn" || extension == ".fzn") {
+        is_flatzinc = extension == ".fzn";
         if (filename=="") {
           filename = input_file;
         } else {
-          std::cerr << "Error: Multiple .mzn files given." << std::endl;
+          std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
           goto error;
         }
       } else if (extension == ".dzn") {
@@ -280,6 +283,12 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
+  if (flag_output_fzn == "") {
+    flag_output_fzn = flag_output_base+".fzn";
+  }
+  if (flag_output_ozn == "") {
+    flag_output_ozn = flag_output_base+".ozn";
+  }
 
   {
     std::stringstream errstream;
@@ -294,8 +303,9 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
+          Env env(m);
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(m, typeErrors);
+          MiniZinc::typecheck(env, m, typeErrors, false);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -305,14 +315,27 @@ int main(int argc, char** argv) {
             }
             exit(EXIT_FAILURE);
           }
-          MiniZinc::registerBuiltins(m);
+          MiniZinc::registerBuiltins(env, m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
+            if(is_flatzinc) {
+              GCLock lock;
+              std::string fzm = std_lib_dir + "/std/flatzinc_builtins.mzn";
+              vector<std::string> is;
+              IncludeI* inc = new IncludeI(Location().introduce(), ASTString("flatzinc_builtins.mzn"));
+              Model* m = parse(fzm, is, includePaths, flag_ignoreStdlib, parseDocComments, flag_verbose, errstream);
+              if (m) {
+                inc->m(m);
+                m->addItem(inc);
+              } else {
+                std::cerr << "Warning: can't find flatzinc_builtins.mzn\n";
+              }
+            }
+
             try {
               flatten(env,fopts);
             } catch (LocationException& e) {
@@ -332,7 +355,7 @@ int main(int argc, char** argv) {
 //            Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            
+
             if (flag_optimize) {
               if (flag_verbose)
                 std::cerr << "Optimizing ...";
@@ -340,7 +363,7 @@ int main(int argc, char** argv) {
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
-            
+
             if (!flag_newfzn) {
               if (flag_verbose)
                 std::cerr << "Converting to old FlatZinc ...";
@@ -469,4 +492,3 @@ error:
 
   exit(EXIT_FAILURE);
 }
-

@@ -614,7 +614,7 @@ namespace MiniZinc {
     const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
     template<class T>
-    Type return_type(FunctionI* fi, const std::vector<T>& ta) {
+    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
       if (fi->id()==constants().var_redef->id())
         return Type::varbool();
       Type ret = fi->ti()->type();
@@ -640,7 +640,7 @@ namespace MiniZinc {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() > 0) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else {
               Type tiit_par = tiit;
@@ -656,7 +656,7 @@ namespace MiniZinc {
                 its_par.bt(tiit_par.bt());
               }
               if (tiit_par != its_par) {
-                throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+                throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                                 tiid.str()+" instantiated with different types ("+
                                 tiit.toString()+" vs "+
                                 it->second.toString()+")");
@@ -671,7 +671,7 @@ namespace MiniZinc {
             tii->ranges()[0]->domain()->isa<TIId>()) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           if (getType(ta[i]).dim()==0) {
-            throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
+            throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
                             " must be an array index");
           }
           Type tiit = Type::top(getType(ta[i]).dim());
@@ -680,10 +680,10 @@ namespace MiniZinc {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() == 0) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else if (it->second!=tiit) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" instantiated with different types ("+
                               tiit.toString()+" vs "+
                               it->second.toString()+")");
@@ -694,7 +694,7 @@ namespace MiniZinc {
       if (dh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
-          throw TypeError(fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
+          throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
         ret.bt(it->second.bt());
         if (ret.st()==Type::ST_PLAIN)
           ret.st(it->second.st());
@@ -702,7 +702,7 @@ namespace MiniZinc {
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
-          throw TypeError(fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
+          throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
       }
       return ret;
@@ -710,13 +710,13 @@ namespace MiniZinc {
   }
   
   Type
-  FunctionI::rtype(const std::vector<Expression*>& ta) {
-    return return_type(this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
+    return return_type(env, this, ta);
   }
 
   Type
-  FunctionI::rtype(const std::vector<Type>& ta) {
-    return return_type(this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta) {
+    return return_type(env, this, ta);
   }
 
   Type

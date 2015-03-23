@@ -25,54 +25,54 @@
 
 namespace MiniZinc {
   
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_e b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.e = b;
     } else {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_f b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.f = b;
     } else {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_i b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.i = b;
     } else {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_b b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.b = b;
     } else {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t, 
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_s b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.s = b;
     } else {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
-  void rb(Model* m, const ASTString& id, const std::vector<Type>& t,
+  void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_str b) {
-    FunctionI* fi = m->matchFn(id,t);
+    FunctionI* fi = m->matchFn(env,id,t);
     if (fi) {
       fi->_builtins.str = b;
     } else {
@@ -85,12 +85,12 @@ namespace MiniZinc {
     switch (args.size()) {
     case 1:
       if (args[0]->type().is_set()) {
-        throw EvalError(args[0]->loc(), "sets not supported");
+        throw EvalError(env, args[0]->loc(), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "Array is empty");
+          throw EvalError(env, al->loc(), "Array is empty");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(env,al->v()[i]));
@@ -101,7 +101,7 @@ namespace MiniZinc {
         return std::min(eval_int(env,args[0]),eval_int(env,args[1]));
       }
     default:
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     }
   }
 
@@ -110,12 +110,12 @@ namespace MiniZinc {
     switch (args.size()) {
     case 1:
       if (args[0]->type().is_set()) {
-        throw EvalError(args[0]->loc(), "sets not supported");
+        throw EvalError(env, args[0]->loc(), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(al->loc(), "Array is empty");
+          throw EvalError(env, al->loc(), "Array is empty");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(env,al->v()[i]));
@@ -126,7 +126,7 @@ namespace MiniZinc {
         return std::max(eval_int(env,args[0]),eval_int(env,args[1]));
       }
     default:
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     }
   }
   
@@ -135,7 +135,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(al->loc(), "Array is empty");
+      throw EvalError(env, al->loc(), "Array is empty");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -152,7 +152,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(al->loc(), "Array is empty");
+      throw EvalError(env, al->loc(), "Array is empty");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -169,7 +169,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(al->loc(), "Array is empty");
+      throw EvalError(env, al->loc(), "Array is empty");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -186,7 +186,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(al->loc(), "Array is empty");
+      throw EvalError(env, al->loc(), "Array is empty");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -215,14 +215,14 @@ namespace MiniZinc {
   bool b_has_bounds_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     IntBounds ib = compute_int_bounds(env,args[0]);
     return ib.valid && ib.l.isFinite() && ib.u.isFinite();
   }
   bool b_has_bounds_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     FloatBounds fb = compute_float_bounds(env,args[0]);
     return fb.valid;
   }
@@ -232,12 +232,12 @@ namespace MiniZinc {
     if (b.valid)
       return b.l;
     else
-      throw EvalError(e->loc(),"cannot determine bounds");
+      throw EvalError(env, e->loc(),"cannot determine bounds");
   }
   IntVal b_lb_varoptint(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     return lb_varoptint(env,args[0]);
   }
 
@@ -252,7 +252,7 @@ namespace MiniZinc {
     GCLock lock;
     Expression* e = eval_par(env,args[0]);
     if (e==constants().absent)
-      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
     return eval_int(env,e);
   }
 
@@ -261,7 +261,7 @@ namespace MiniZinc {
     GCLock lock;
     Expression* e = eval_par(env,args[0]);
     if (e==constants().absent)
-      throw EvalError(e->loc(), "cannot evaluate deopt on absent value");
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
     return eval_bool(env,e);
   }
   
@@ -289,7 +289,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(env, Location(), "lower bound of empty array undefined");
       IntVal min = IntVal::infinity;
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(env,al->v()[i]);
@@ -307,7 +307,7 @@ namespace MiniZinc {
     if (foundMin) {
       return array_lb;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(env, e->loc(),"cannot determine lower bound");
     }
   }
 
@@ -316,12 +316,12 @@ namespace MiniZinc {
     if (b.valid)
       return b.u;
     else
-      throw EvalError(e->loc(),"cannot determine bounds");
+      throw EvalError(env, e->loc(),"cannot determine bounds");
   }
   IntVal b_ub_varoptint(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     return ub_varoptint(env,args[0]);
   }
 
@@ -349,7 +349,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "upper bound of empty array undefined");
+        throw EvalError(env, Location(), "upper bound of empty array undefined");
       IntVal max = -IntVal::infinity;
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(env,al->v()[i]);
@@ -367,7 +367,7 @@ namespace MiniZinc {
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine upper bound");
+      throw EvalError(env, e->loc(),"cannot determine upper bound");
     }
   }
 
@@ -415,26 +415,26 @@ namespace MiniZinc {
     if (b.valid)
       return b.l;
     else
-      throw EvalError(e->loc(),"cannot determine bounds");
+      throw EvalError(env, e->loc(),"cannot determine bounds");
   }
   FloatVal ub_varoptfloat(EnvI& env, Expression* e) {
     FloatBounds b = compute_float_bounds(env,e);
     if (b.valid)
       return b.u;
     else
-      throw EvalError(e->loc(),"cannot determine bounds");
+      throw EvalError(env, e->loc(),"cannot determine bounds");
   }
 
   FloatVal b_lb_varoptfloat(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     return lb_varoptfloat(env,args[0]);
   }
   FloatVal b_ub_varoptfloat(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "dynamic type error");
+      throw EvalError(env, Location(), "dynamic type error");
     return ub_varoptfloat(env,args[0]);
   }
 
@@ -460,7 +460,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(env, Location(), "lower bound of empty array undefined");
       bool min_valid = false;
       FloatVal min = 0.0;
       for (unsigned int i=0; i<al->v().size(); i++) {
@@ -485,7 +485,7 @@ namespace MiniZinc {
     if (foundMin) {
       return array_lb;
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(env, e->loc(),"cannot determine lower bound");
     }
   }
   
@@ -511,7 +511,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "upper bound of empty array undefined");
+        throw EvalError(env, Location(), "upper bound of empty array undefined");
       bool max_valid = false;
       FloatVal max = 0.0;
       for (unsigned int i=0; i<al->v().size(); i++) {
@@ -536,7 +536,7 @@ namespace MiniZinc {
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(e->loc(),"cannot determine upper bound");
+      throw EvalError(env, e->loc(),"cannot determine upper bound");
     }
   }
   
@@ -558,12 +558,12 @@ namespace MiniZinc {
     switch (args.size()) {
       case 1:
         if (args[0]->type().is_set()) {
-          throw EvalError(args[0]->loc(), "sets not supported");
+          throw EvalError(env, args[0]->loc(), "sets not supported");
         } else {
           GCLock lock;
           ArrayLit* al = eval_array_lit(env,args[0]);
           if (al->v().size()==0)
-            throw EvalError(al->loc(), "min on empty array undefined");
+            throw EvalError(env, al->loc(), "min on empty array undefined");
           FloatVal m = eval_float(env,al->v()[0]);
           for (unsigned int i=1; i<al->v().size(); i++)
             m = std::min(m, eval_float(env,al->v()[i]));
@@ -574,7 +574,7 @@ namespace MiniZinc {
         return std::min(eval_float(env,args[0]),eval_float(env,args[1]));
       }
       default:
-        throw EvalError(Location(), "dynamic type error");
+        throw EvalError(env, Location(), "dynamic type error");
     }
   }
   
@@ -583,12 +583,12 @@ namespace MiniZinc {
     switch (args.size()) {
       case 1:
         if (args[0]->type().is_set()) {
-          throw EvalError(args[0]->loc(), "sets not supported");
+          throw EvalError(env, args[0]->loc(), "sets not supported");
         } else {
           GCLock lock;
           ArrayLit* al = eval_array_lit(env,args[0]);
           if (al->v().size()==0)
-            throw EvalError(al->loc(), "max on empty array undefined");
+            throw EvalError(env, al->loc(), "max on empty array undefined");
           FloatVal m = eval_float(env,al->v()[0]);
           for (unsigned int i=1; i<al->v().size(); i++)
             m = std::max(m, eval_float(env,al->v()[i]));
@@ -599,7 +599,7 @@ namespace MiniZinc {
         return std::max(eval_float(env,args[0]),eval_float(env,args[1]));
       }
       default:
-        throw EvalError(Location(), "dynamic type error");
+        throw EvalError(env, Location(), "dynamic type error");
     }
   }
   
@@ -608,12 +608,12 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->dims() < i)
-        throw EvalError(e->loc(), "index_set: wrong dimension");
+        throw EvalError(env, e->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
     Id* id = e->cast<Id>();
     if (id->decl() == NULL)
-      throw EvalError(id->loc(), "undefined identifier");
+      throw EvalError(env, id->loc(), "undefined identifier");
     if ( ( id->decl()->ti()->ranges().size()==1 &&
            id->decl()->ti()->ranges()[0]->domain() != NULL &&
            id->decl()->ti()->ranges()[0]->domain()->isa<TIId>() ) ||
@@ -623,17 +623,17 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,id);
       if (al->dims() < i)
-        throw EvalError(id->loc(), "index_set: wrong dimension");
+        throw EvalError(env, id->loc(), "index_set: wrong dimension");
       return IntSetVal::a(al->min(i-1),al->max(i-1));
     }
     if (static_cast<int>(id->decl()->ti()->ranges().size()) < i)
-      throw EvalError(id->loc(), "index_set: wrong dimension");
+      throw EvalError(env, id->loc(), "index_set: wrong dimension");
     return eval_intset(env,id->decl()->ti()->ranges()[i-1]->domain());
   }
   bool b_index_sets_agree(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 2)
-      throw EvalError(Location(), "index_sets_agree needs exactly two arguments");
+      throw EvalError(env, Location(), "index_sets_agree needs exactly two arguments");
     GCLock lock;
     ArrayLit* al0 = eval_array_lit(env,args[0]);
     ArrayLit* al1 = eval_array_lit(env,args[1]);
@@ -650,37 +650,37 @@ namespace MiniZinc {
   IntSetVal* b_index_set1(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],1);
   }
   IntSetVal* b_index_set2(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],2);
   }
   IntSetVal* b_index_set3(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],3);
   }
   IntSetVal* b_index_set4(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],4);
   }
   IntSetVal* b_index_set5(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],5);
   }
   IntSetVal* b_index_set6(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size() != 1)
-      throw EvalError(Location(), "index_set needs exactly one argument");
+      throw EvalError(env, Location(), "index_set needs exactly one argument");
     return b_index_set(env,args[0],6);
   }
 
@@ -700,7 +700,7 @@ namespace MiniZinc {
     IntSetVal* isv = compute_intset_bounds(env,e);
     if (isv)
       return isv;
-    throw EvalError(e->loc(), "cannot determine bounds of set expression");
+    throw EvalError(env, e->loc(), "cannot determine bounds of set expression");
   }
   IntSetVal* b_ub_set(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -717,7 +717,7 @@ namespace MiniZinc {
         {
           Id* id = e->cast<Id>();
           if (id->decl()==NULL)
-            throw EvalError(id->loc(),"undefined identifier");
+            throw EvalError(env, id->loc(),"undefined identifier");
           if (id->decl()->e()==NULL)
             return id->decl()->ti()->domain() != NULL;
           else
@@ -725,7 +725,7 @@ namespace MiniZinc {
         }
           break;
         default:
-          throw EvalError(e->loc(),"invalid argument to has_ub_set");
+          throw EvalError(env, e->loc(),"invalid argument to has_ub_set");
       }
     }
   }
@@ -736,7 +736,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(Location(), "upper bound of empty array undefined");
+      throw EvalError(env, Location(), "upper bound of empty array undefined");
     IntSetVal* ub = b_ub_set(env,al->v()[0]);
     for (unsigned int i=1; i<al->v().size(); i++) {
       IntSetRanges isr(ub);
@@ -753,10 +753,10 @@ namespace MiniZinc {
     for (;;) {
       if (cur==NULL) {
         if (lastid==NULL) {
-          throw EvalError(e->loc(),"invalid argument to dom");
+          throw EvalError(env, e->loc(),"invalid argument to dom");
         } else {
           if (lastid->decl()->ti()->domain()==NULL) {
-            throw EvalError(e->loc(),"invalid argument to dom");
+            throw EvalError(env, e->loc(),"invalid argument to dom");
           }
           return eval_intset(env,lastid->decl()->ti()->domain());
         }
@@ -771,7 +771,7 @@ namespace MiniZinc {
         {
           lastid = cur->cast<Id>();
           if (lastid->decl()==NULL)
-            throw EvalError(lastid->loc(),"undefined identifier");
+            throw EvalError(env, lastid->loc(),"undefined identifier");
           cur = lastid->decl()->e();
         }
         break;
@@ -827,7 +827,7 @@ namespace MiniZinc {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
-        throw EvalError(Location(), "lower bound of empty array undefined");
+        throw EvalError(env, Location(), "lower bound of empty array undefined");
       IntVal min = IntVal::infinity;
       IntVal max = -IntVal::infinity;
       for (unsigned int i=0; i<al->v().size(); i++) {
@@ -845,7 +845,7 @@ namespace MiniZinc {
     if (foundBounds) {
       return IntSetVal::a(array_lb,array_ub);
     } else {
-      throw EvalError(e->loc(),"cannot determine lower bound");
+      throw EvalError(env, e->loc(),"cannot determine lower bound");
     }
   }
   
@@ -863,15 +863,15 @@ namespace MiniZinc {
         {
           Id* id = ae->cast<Id>();
           if (id->decl()==NULL)
-            throw EvalError(id->loc(),"undefined identifier");
+            throw EvalError(env, id->loc(),"undefined identifier");
           if (id->decl()->e()==NULL)
-            throw EvalError(id->loc(),"array without initialiser");
+            throw EvalError(env, id->loc(),"array without initialiser");
           else
             ae = id->decl()->e();
         }
         break;
       default:
-        throw EvalError(ae->loc(),"invalid argument to ub");
+        throw EvalError(env, ae->loc(),"invalid argument to ub");
       }
     }
     if (al->v().size()==0)
@@ -890,13 +890,13 @@ namespace MiniZinc {
     assert(args.size()==2);
     IntBounds bx = compute_int_bounds(env,args[0]);
     if (!bx.valid)
-      throw EvalError(args[0]->loc(),"cannot determine bounds");
+      throw EvalError(env, args[0]->loc(),"cannot determine bounds");
     /// TODO: better bounds if only some input bounds are infinite
     if (!bx.l.isFinite() || !bx.u.isFinite())
       return constants().infinity->isv();
     IntBounds by = compute_int_bounds(env,args[1]);
     if (!by.valid)
-      throw EvalError(args[1]->loc(),"cannot determine bounds");
+      throw EvalError(env, args[1]->loc(),"cannot determine bounds");
     if (!by.l.isFinite() || !by.u.isFinite())
       return constants().infinity->isv();
     Ranges::Const byr(by.l,by.u);
@@ -938,7 +938,7 @@ namespace MiniZinc {
         dims[i] = std::pair<int,int>(1,0);
         dim1d = 0;
       } else if (di->size() != 1) {
-        throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
+        throw EvalError(env, args[i]->loc(), "arrayXd only defined for ranges");
       } else {
         dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
                                      static_cast<int>(di->max(0).toInt()));
@@ -946,7 +946,7 @@ namespace MiniZinc {
       }
     }
     if (dim1d != al->v().size())
-      throw EvalError(al->loc(), "mismatch in array dimensions");
+      throw EvalError(env, al->loc(), "mismatch in array dimensions");
     ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
     Type t = al->type();
     t.dim(d);
@@ -1036,7 +1036,7 @@ namespace MiniZinc {
   bool b_forall_par(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=1)
-      throw EvalError(Location(), "forall needs exactly one argument");
+      throw EvalError(env, Location(), "forall needs exactly one argument");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     for (unsigned int i=al->v().size(); i--;)
@@ -1047,7 +1047,7 @@ namespace MiniZinc {
   bool b_exists_par(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=1)
-      throw EvalError(Location(), "exists needs exactly one argument");
+      throw EvalError(env, Location(), "exists needs exactly one argument");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     for (unsigned int i=al->v().size(); i--;)
@@ -1058,7 +1058,7 @@ namespace MiniZinc {
   bool b_clause_par(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=2)
-      throw EvalError(Location(), "clause needs exactly two arguments");
+      throw EvalError(env, Location(), "clause needs exactly two arguments");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     for (unsigned int i=al->v().size(); i--;)
@@ -1073,7 +1073,7 @@ namespace MiniZinc {
   bool b_xorall_par(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=1)
-      throw EvalError(Location(), "xorall needs exactly one argument");
+      throw EvalError(env, Location(), "xorall needs exactly one argument");
     GCLock lock;
     int count = 0;
     ArrayLit* al = eval_array_lit(env,args[0]);
@@ -1084,7 +1084,7 @@ namespace MiniZinc {
   bool b_iffall_par(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=1)
-      throw EvalError(Location(), "xorall needs exactly one argument");
+      throw EvalError(env, Location(), "xorall needs exactly one argument");
     GCLock lock;
     int count = 0;
     ArrayLit* al = eval_array_lit(env,args[0]);
@@ -1096,7 +1096,7 @@ namespace MiniZinc {
   IntVal b_card(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     if (args.size()!=1)
-      throw EvalError(Location(), "card needs exactly one argument");
+      throw EvalError(env, Location(), "card needs exactly one argument");
     IntSetVal* isv = eval_intset(env,args[0]);
     IntSetRanges isr(isv);
     return Ranges::size(isr);
@@ -1153,7 +1153,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     Expression* ret = exp_is_fixed(env,args[0]);
     if (ret==NULL)
-      throw EvalError(args[0]->loc(), "expression is not fixed");
+      throw EvalError(env, args[0]->loc(), "expression is not fixed");
     return ret;
   }
 
@@ -1179,7 +1179,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<fixed.size(); i++) {
       fixed[i] = exp_is_fixed(env,al->v()[i]);
       if (fixed[i]==NULL)
-        throw EvalError(al->v()[i]->loc(), "expression is not fixed");
+        throw EvalError(env, al->v()[i]->loc(), "expression is not fixed");
     }
     ArrayLit* ret = new ArrayLit(Location(), fixed);
     Type tt = al->type();
@@ -1235,7 +1235,7 @@ namespace MiniZinc {
     IntVal r = 1;
     long long int e = eval_int(env,args[1]).toInt();
     if (e < 0)
-      throw EvalError(args[1]->loc(), "Cannot raise integer to a negative power");
+      throw EvalError(env, args[1]->loc(), "Cannot raise integer to a negative power");
     for (long long int i=e; i--;)
       r = r*p;
     return r;
@@ -1252,7 +1252,7 @@ namespace MiniZinc {
     if (eval_bool(env,args[0]))
       return true;
     StringLit* err = eval_par(env,args[1])->cast<StringLit>();
-    throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
+    throw EvalError(env, args[0]->loc(),"Assertion failed: "+err->v().str());
   }
 
   Expression* b_assert(EnvI& env, Call* call) {
@@ -1262,13 +1262,13 @@ namespace MiniZinc {
     if (eval_bool(env,args[0]))
       return args[2];
     StringLit* err = eval_par(env,args[1])->cast<StringLit>();
-    throw EvalError(args[0]->loc(),"Assertion failed: "+err->v().str());
+    throw EvalError(env, args[0]->loc(),"Assertion failed: "+err->v().str());
   }
 
   bool b_abort(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     StringLit* err = eval_par(env,args[0])->cast<StringLit>();
-    throw EvalError(args[0]->loc(),"Abort: "+err->v().str());
+    throw EvalError(env, args[0]->loc(),"Abort: "+err->v().str());
   }
   
   Expression* b_trace(EnvI& env, Call* call) {
@@ -1346,7 +1346,7 @@ namespace MiniZinc {
         assert(args.size()==3);
         prec = eval_int(env,args[1]).toInt();
         if (prec < 0)
-          throw EvalError(args[1]->loc(),"output precision cannot be negative");
+          throw EvalError(env, args[1]->loc(),"output precision cannot be negative");
         e = eval_par(env,args[2]);
       }
     } else {
@@ -1439,7 +1439,7 @@ namespace MiniZinc {
       int justify = static_cast<int>(eval_int(env,args[0]).toInt());
       int prec = static_cast<int>(eval_int(env,args[1]).toInt());
       if (prec < 0)
-        throw EvalError(args[1]->loc(), "number of digits in show_float cannot be negative");
+        throw EvalError(env, args[1]->loc(), "number of digits in show_float cannot be negative");
       std::ostringstream oss_length;
       oss_length << std::setprecision(prec) << std::fixed << fv->v();
       int fv_length = static_cast<int>(oss_length.str().size());
@@ -1553,7 +1553,7 @@ namespace MiniZinc {
     }
   }
   
-  Expression* b_sort_by(EnvI& env, Call* call) {
+  Expression* b_sort_by_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==2);
     ArrayLit* al = eval_array_lit(env,args[0]);
@@ -1568,10 +1568,37 @@ namespace MiniZinc {
       std::vector<IntVal>& order;
       Ord(std::vector<IntVal>& order0) : order(order0) {}
       bool operator()(int i, int j) {
-        return order[i] > order[j];
+        return order[i] < order[j];
       }
     } _ord(order);
-    std::sort(a.begin(), a.end(), _ord);
+    std::stable_sort(a.begin(), a.end(), _ord);
+    std::vector<Expression*> sorted(a.size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[a[i]];
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+
+  Expression* b_sort_by_float(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size()==2);
+    ArrayLit* al = eval_array_lit(env,args[0]);
+    ArrayLit* order_e = eval_array_lit(env,args[1]);
+    std::vector<FloatVal> order(order_e->v().size());
+    std::vector<int> a(order_e->v().size());
+    for (unsigned int i=0; i<order.size(); i++) {
+      a[i] = i;
+      order[i] = eval_float(env,order_e->v()[i]);
+    }
+    struct Ord {
+      std::vector<FloatVal>& order;
+      Ord(std::vector<FloatVal>& order0) : order(order0) {}
+      bool operator()(int i, int j) {
+        return order[i] < order[j];
+      }
+    } _ord(order);
+    std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
     for (unsigned int i=sorted.size(); i--;)
       sorted[i] = al->v()[a[i]];
@@ -1595,7 +1622,7 @@ namespace MiniZinc {
           case Type::BT_INT: return eval_int(env,e0) < eval_int(env,e1);
           case Type::BT_BOOL: return eval_bool(env,e0) < eval_bool(env,e1);
           case Type::BT_FLOAT: return eval_float(env,e0) < eval_float(env,e1);
-          default: throw EvalError(e0->loc(), "unsupported type for sorting");
+          default: throw EvalError(env, e0->loc(), "unsupported type for sorting");
         }
       }
     } _ord(env);
@@ -1603,38 +1630,6 @@ namespace MiniZinc {
     ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
     al_sorted->type(al->type());
     return al_sorted;
-  }
-
-  Expression* b_arg_sort(EnvI& env, Call* call) {
-    ASTExprVec<Expression> args = call->args();
-    assert(args.size()==1);
-    GCLock lock;
-    ArrayLit* al = eval_array_lit(env,args[0]);
-    std::vector<int> idx(al->v().size());
-    for (unsigned int i=idx.size(); i--;)
-      idx[i] = i;
-    struct Ord {
-      EnvI& env;
-      ArrayLit* al;
-      Ord(EnvI& env0, ArrayLit* al0) : env(env0), al(al0) {}
-      bool operator()(int i0, int i1) {
-        Expression* e0 = al->v()[i0];
-        Expression* e1 = al->v()[i1];
-        switch (e0->type().bt()) {
-          case Type::BT_INT: return eval_int(env,e0) < eval_int(env,e1);
-          case Type::BT_BOOL: return eval_bool(env,e0) < eval_bool(env,e1);
-          case Type::BT_FLOAT: return eval_float(env,e0) < eval_float(env,e1);
-          default: throw EvalError(e0->loc(), "unsupported type for sorting");
-        }
-      }
-    } _ord(env,al);
-    std::stable_sort(idx.begin(),idx.end(),_ord);
-    std::vector<Expression*> perm(idx.size());
-    for (unsigned int i=0; i<idx.size(); i++)
-      perm[idx[i]] = IntLit::a(i+1);
-    ArrayLit* perm_al = new ArrayLit(al->loc(), perm);
-    perm_al->type(Type::parint(1));
-    return perm_al;
   }
   
   std::default_random_engine& rnd_generator(void) {
@@ -1671,7 +1666,7 @@ namespace MiniZinc {
     if(lb > ub) {
       std::stringstream ssm; ssm << "lowerbound of uniform distribution \"" 
       << lb << "\" is higher than its upperbound: " << ub;
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }
     std::uniform_real_distribution<double> distribution(lb,ub);
     // return a sample from the distribution
@@ -1686,7 +1681,7 @@ namespace MiniZinc {
     if(lb > ub) {
       std::stringstream ssm; ssm << "lowerbound of uniform distribution \"" 
       << lb << "\" is higher than its upperbound: " << ub;
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }
     std::uniform_int_distribution<long long int> distribution(lb,ub);
     // return a sample from the distribution
@@ -1739,14 +1734,14 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "The shape factor for the weibull distribution \"" 
           << shape << "\" has to be greater than zero.";
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }
     const double scale = eval_float(env,args[1]);
     if(scale < 0) {
       std::stringstream ssm; 
       ssm << "The scale factor for the weibull distribution \"" 
           << scale << "\" has to be greater than zero.";
-      throw EvalError(args[1]->loc(),ssm.str());
+      throw EvalError(env, args[1]->loc(),ssm.str());
     }
     std::weibull_distribution<double> distribution(shape, scale);
     // return a sample from the distribution
@@ -1761,14 +1756,14 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "The shape factor for the weibull distribution \"" 
           << shape << "\" has to be greater than zero.";
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }
     const double scale = eval_float(env,args[1]);
     if(scale < 0) {
       std::stringstream ssm; 
       ssm << "The scale factor for the weibull distribution \"" 
           << scale << "\" has to be greater than zero.";
-      throw EvalError(args[1]->loc(),ssm.str());
+      throw EvalError(env, args[1]->loc(),ssm.str());
     }
     std::weibull_distribution<double> distribution(shape, scale);
     // return a sample from the distribution
@@ -1783,7 +1778,7 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "The lambda-parameter for the exponential distribution function \"" 
           << lambda << "\" has to be greater than zero.";
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }
     std::exponential_distribution<double> distribution(lambda);
     // return a sample from the distribution
@@ -1798,7 +1793,7 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "The lambda-parameter for the exponential distribution function \"" 
           << lambda << "\" has to be greater than zero.";
-      throw EvalError(args[0]->loc(),ssm.str());
+      throw EvalError(env, args[0]->loc(),ssm.str());
     }      
     std::exponential_distribution<double> distribution(lambda);
     // return a sample from the distribution
@@ -1910,7 +1905,7 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "expecting 1-dimensional array of weights for discrete distribution instead of: " 
           << *al << std::endl;
-      throw EvalError(al->loc(), ssm.str());
+      throw EvalError(env, al->loc(), ssm.str());
     }
     std::vector<long long int> weights(al->v().size());
     for(unsigned int i = 0; i < al->v().size(); i++) {
@@ -1995,6 +1990,7 @@ namespace MiniZinc {
     return std::tan(f); 
   }
   
+
   Expression* follow_id_to_id(Expression* e) {
     for (;;) {
       if (e==NULL)
@@ -2025,7 +2021,7 @@ namespace MiniZinc {
           if(!it->e()->e()) {
             std::stringstream ssm; 
             ssm << "no solution found for: " << *id;
-            throw EvalError(call->loc(), ssm.str());
+            throw EvalError(env, call->loc(), ssm.str());
           }
           else {
             assert(it->e()->e()->type().ispar());            
@@ -2035,18 +2031,18 @@ namespace MiniZinc {
       }
       std::stringstream ssm; 
       ssm << "could not find solution for unknown identifier: " << *id;
-      throw EvalError(call->loc(), ssm.str());
+      throw EvalError(env, call->loc(), ssm.str());
     } else if(ArrayAccess* aa = args[0]->dyn_cast<ArrayAccess>()) {
       Id* id = aa->v()->dyn_cast<Id>();
       if (id==NULL)
-        throw EvalError(aa->loc(), "array access in call to \"sol\" must be an identifier");
+        throw EvalError(env, aa->loc(), "array access in call to \"sol\" must be an identifier");
       id = follow_id_to_id(id)->cast<Id>();
       for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm;
             ssm << "no solution found for: " << *id;
-            throw EvalError(call->loc(), ssm.str());
+            throw EvalError(env, call->loc(), ssm.str());
           }
           else {
             assert(it->e()->e()->type().ispar());
@@ -2058,13 +2054,13 @@ namespace MiniZinc {
       }
       std::stringstream ssm;
       ssm << "could not find solution for unknown identifier: " << *id;
-      throw EvalError(call->loc(), ssm.str());
+      throw EvalError(env, call->loc(), ssm.str());
     }
     else {
       std::stringstream ssm; 
       ssm << "expecting identifier or array access as argument of \"sol\" instead of: "
           << *args[0];
-      throw EvalError(args[0]->loc(), ssm.str());
+      throw EvalError(env, args[0]->loc(), ssm.str());
     }    
   }
   
@@ -2072,7 +2068,8 @@ namespace MiniZinc {
     return env.hasSolution();
   }
   
-  void registerBuiltins(Model* m) {
+  void registerBuiltins(Env& e, Model* m) {
+    EnvI& env = e.envi();
     
     std::vector<Type> t_intint(2);
     t_intint[0] = Type::parint();
@@ -2082,104 +2079,104 @@ namespace MiniZinc {
     t_intarray[0] = Type::parint(-1);
     
     GCLock lock;
-    rb(m, ASTString("min"), t_intint, b_int_min);
-    rb(m, ASTString("min"), t_intarray, b_int_min);
-    rb(m, ASTString("max"), t_intint, b_int_max);
-    rb(m, ASTString("max"), t_intarray, b_int_max);
-    rb(m, constants().ids.sum, t_intarray, b_sum_int);
-    rb(m, ASTString("product"), t_intarray, b_product_int);
-    rb(m, ASTString("pow"), t_intint, b_pow_int);
+    rb(env, m, ASTString("min"), t_intint, b_int_min);
+    rb(env, m, ASTString("min"), t_intarray, b_int_min);
+    rb(env, m, ASTString("max"), t_intint, b_int_max);
+    rb(env, m, ASTString("max"), t_intarray, b_int_max);
+    rb(env, m, constants().ids.sum, t_intarray, b_sum_int);
+    rb(env, m, ASTString("product"), t_intarray, b_product_int);
+    rb(env, m, ASTString("pow"), t_intint, b_pow_int);
 
     {
       std::vector<Type> t(2);
       t[0] = Type::top(-1);
       t[1] = Type::top(-1);
-      rb(m, ASTString("index_sets_agree"), t, b_index_sets_agree);
+      rb(env, m, ASTString("index_sets_agree"), t, b_index_sets_agree);
     }
     {
       std::vector<Type> t_anyarray1(1);
       t_anyarray1[0] = Type::optvartop(1);
-      rb(m, ASTString("index_set"), t_anyarray1, b_index_set1);
+      rb(env, m, ASTString("index_set"), t_anyarray1, b_index_set1);
     }
     {
       std::vector<Type> t_anyarray2(1);
       t_anyarray2[0] = Type::optvartop(2);
-      rb(m, ASTString("index_set_1of2"), t_anyarray2, b_index_set1);
-      rb(m, ASTString("index_set_2of2"), t_anyarray2, b_index_set2);
+      rb(env, m, ASTString("index_set_1of2"), t_anyarray2, b_index_set1);
+      rb(env, m, ASTString("index_set_2of2"), t_anyarray2, b_index_set2);
     }
     {
       std::vector<Type> t_anyarray3(1);
       t_anyarray3[0] = Type::optvartop(3);
-      rb(m, ASTString("index_set_1of3"), t_anyarray3, b_index_set1);
-      rb(m, ASTString("index_set_2of3"), t_anyarray3, b_index_set2);
-      rb(m, ASTString("index_set_3of3"), t_anyarray3, b_index_set3);
+      rb(env, m, ASTString("index_set_1of3"), t_anyarray3, b_index_set1);
+      rb(env, m, ASTString("index_set_2of3"), t_anyarray3, b_index_set2);
+      rb(env, m, ASTString("index_set_3of3"), t_anyarray3, b_index_set3);
     }
     {
       std::vector<Type> t_anyarray4(1);
       t_anyarray4[0] = Type::optvartop(4);
-      rb(m, ASTString("index_set_1of4"), t_anyarray4, b_index_set1);
-      rb(m, ASTString("index_set_2of4"), t_anyarray4, b_index_set2);
-      rb(m, ASTString("index_set_3of4"), t_anyarray4, b_index_set3);
-      rb(m, ASTString("index_set_4of4"), t_anyarray4, b_index_set4);
+      rb(env, m, ASTString("index_set_1of4"), t_anyarray4, b_index_set1);
+      rb(env, m, ASTString("index_set_2of4"), t_anyarray4, b_index_set2);
+      rb(env, m, ASTString("index_set_3of4"), t_anyarray4, b_index_set3);
+      rb(env, m, ASTString("index_set_4of4"), t_anyarray4, b_index_set4);
     }
     {
       std::vector<Type> t_anyarray5(1);
       t_anyarray5[0] = Type::optvartop(5);
-      rb(m, ASTString("index_set_1of5"), t_anyarray5, b_index_set1);
-      rb(m, ASTString("index_set_2of5"), t_anyarray5, b_index_set2);
-      rb(m, ASTString("index_set_3of5"), t_anyarray5, b_index_set3);
-      rb(m, ASTString("index_set_4of5"), t_anyarray5, b_index_set4);
-      rb(m, ASTString("index_set_5of5"), t_anyarray5, b_index_set5);
+      rb(env, m, ASTString("index_set_1of5"), t_anyarray5, b_index_set1);
+      rb(env, m, ASTString("index_set_2of5"), t_anyarray5, b_index_set2);
+      rb(env, m, ASTString("index_set_3of5"), t_anyarray5, b_index_set3);
+      rb(env, m, ASTString("index_set_4of5"), t_anyarray5, b_index_set4);
+      rb(env, m, ASTString("index_set_5of5"), t_anyarray5, b_index_set5);
     }
     {
       std::vector<Type> t_anyarray6(1);
       t_anyarray6[0] = Type::optvartop(6);
-      rb(m, ASTString("index_set_1of6"), t_anyarray6, b_index_set1);
-      rb(m, ASTString("index_set_2of6"), t_anyarray6, b_index_set2);
-      rb(m, ASTString("index_set_3of6"), t_anyarray6, b_index_set3);
-      rb(m, ASTString("index_set_4of6"), t_anyarray6, b_index_set4);
-      rb(m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
-      rb(m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
+      rb(env, m, ASTString("index_set_1of6"), t_anyarray6, b_index_set1);
+      rb(env, m, ASTString("index_set_2of6"), t_anyarray6, b_index_set2);
+      rb(env, m, ASTString("index_set_3of6"), t_anyarray6, b_index_set3);
+      rb(env, m, ASTString("index_set_4of6"), t_anyarray6, b_index_set4);
+      rb(env, m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
+      rb(env, m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
     }
     {
       std::vector<Type> t_arrayXd(1);
       t_arrayXd[0] = Type::top(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
       t_arrayXd[0] = Type::vartop(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
       t_arrayXd[0] = Type::optvartop(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
     }
     {
       std::vector<Type> t_arrayXd(2);
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::top(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
       t_arrayXd[1] = Type::vartop(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
       t_arrayXd[1] = Type::optvartop(-1);
-      rb(m, ASTString("array1d"), t_arrayXd, b_array1d);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
     }
     {
       std::vector<Type> t_arrayXd(2);
       t_arrayXd[0] = Type::top(-1);
       t_arrayXd[1] = Type::top(-1);
-      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
       t_arrayXd[1] = Type::vartop(-1);
-      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
       t_arrayXd[1] = Type::optvartop(-1);
-      rb(m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
     }
     {
       std::vector<Type> t_arrayXd(3);
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::top(-1);
-      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
       t_arrayXd[2] = Type::vartop(-1);
-      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
       t_arrayXd[2] = Type::optvartop(-1);
-      rb(m, ASTString("array2d"), t_arrayXd, b_array2d);
+      rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
     }
     {
       std::vector<Type> t_arrayXd(4);
@@ -2187,11 +2184,11 @@ namespace MiniZinc {
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::top(-1);
-      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
       t_arrayXd[3] = Type::vartop(-1);
-      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
       t_arrayXd[3] = Type::optvartop(-1);
-      rb(m, ASTString("array3d"), t_arrayXd, b_array3d);
+      rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
     }
     {
       std::vector<Type> t_arrayXd(5);
@@ -2200,11 +2197,11 @@ namespace MiniZinc {
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::top(-1);
-      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
       t_arrayXd[4] = Type::vartop(-1);
-      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
       t_arrayXd[4] = Type::optvartop(-1);
-      rb(m, ASTString("array4d"), t_arrayXd, b_array4d);
+      rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
     }
     {
       std::vector<Type> t_arrayXd(6);
@@ -2214,11 +2211,11 @@ namespace MiniZinc {
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::top(-1);
-      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
       t_arrayXd[5] = Type::vartop(-1);
-      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
       t_arrayXd[5] = Type::optvartop(-1);
-      rb(m, ASTString("array5d"), t_arrayXd, b_array5d);
+      rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
     }
     {
       std::vector<Type> t_arrayXd(7);
@@ -2229,496 +2226,508 @@ namespace MiniZinc {
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::parsetint();
       t_arrayXd[6] = Type::top(-1);
-      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
       t_arrayXd[6] = Type::vartop(-1);
-      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
       t_arrayXd[6] = Type::optvartop(-1);
-      rb(m, ASTString("array6d"), t_arrayXd, b_array6d);
+      rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parbool();
       t[1] = Type::parstring();
-      rb(m, constants().ids.assert, t, b_assert_bool);
+      rb(env, m, constants().ids.assert, t, b_assert_bool);
     }
     {
       std::vector<Type> t(3);
       t[0] = Type::parbool();
       t[1] = Type::parstring();
       t[2] = Type::top();
-      rb(m, constants().ids.assert, t, b_assert);
+      rb(env, m, constants().ids.assert, t, b_assert);
       t[2] = Type::vartop();
-      rb(m, constants().ids.assert, t, b_assert);
+      rb(env, m, constants().ids.assert, t, b_assert);
       t[2] = Type::optvartop();
-      rb(m, constants().ids.assert, t, b_assert);
+      rb(env, m, constants().ids.assert, t, b_assert);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parstring();
-      rb(m, ASTString("abort"), t, b_abort);
-      rb(m, constants().ids.trace, t, b_trace);
+      rb(env, m, ASTString("abort"), t, b_abort);
+      rb(env, m, constants().ids.trace, t, b_trace);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parstring();
       t[1] = Type::top();
-      rb(m, constants().ids.trace, t, b_trace);
+      rb(env, m, constants().ids.trace, t, b_trace);
       t[1] = Type::vartop();
-      rb(m, constants().ids.trace, t, b_trace);
+      rb(env, m, constants().ids.trace, t, b_trace);
       t[1] = Type::optvartop();
-      rb(m, constants().ids.trace, t, b_trace);
+      rb(env, m, constants().ids.trace, t, b_trace);
     }
     {
       std::vector<Type> t_length(1);
       t_length[0] = Type::optvartop(-1);
-      rb(m, ASTString("length"), t_length, b_length);
+      rb(env, m, ASTString("length"), t_length, b_length);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parbool();
-      rb(m, constants().ids.bool2int, t, b_bool2int);
+      rb(env, m, constants().ids.bool2int, t, b_bool2int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parbool(-1);
-      rb(m, constants().ids.forall, t, b_forall_par);
-      rb(m, constants().ids.exists, t, b_exists_par);
-      rb(m, ASTString("xorall"), t, b_xorall_par);
-      rb(m, ASTString("iffall"), t, b_iffall_par);
+      rb(env, m, constants().ids.forall, t, b_forall_par);
+      rb(env, m, constants().ids.exists, t, b_exists_par);
+      rb(env, m, ASTString("xorall"), t, b_xorall_par);
+      rb(env, m, ASTString("iffall"), t, b_iffall_par);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parbool(-1);
       t[1] = Type::parbool(-1);
-      rb(m, constants().ids.clause, t, b_clause_par);
+      rb(env, m, constants().ids.clause, t, b_clause_par);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
-      rb(m, ASTString("ub"), t, b_ub_set);
+      rb(env, m, ASTString("ub"), t, b_ub_set);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varsetint(1);
-      rb(m, ASTString("ub_array"), t, b_array_ub_set);
+      rb(env, m, ASTString("ub_array"), t, b_array_ub_set);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      rb(m, ASTString("dom"), t, b_dom_varint);
+      rb(env, m, ASTString("dom"), t, b_dom_varint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
-      rb(m, ASTString("dom_array"), t, b_dom_array);
-      rb(m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
+      rb(env, m, ASTString("dom_array"), t, b_dom_array);
+      rb(env, m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
-      rb(m, ASTString("min"), t, b_min_parsetint);
+      rb(env, m, ASTString("min"), t, b_min_parsetint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
-      rb(m, ASTString("max"), t, b_max_parsetint);
+      rb(env, m, ASTString("max"), t, b_max_parsetint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("lb"), t, b_lb_varoptint);
+      rb(env, m, ASTString("lb"), t, b_lb_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("ub"), t, b_ub_varoptint);
+      rb(env, m, ASTString("ub"), t, b_ub_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      rb(m, ASTString("lb"), t, b_lb_varoptint);
+      rb(env, m, ASTString("lb"), t, b_lb_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      rb(m, ASTString("ub"), t, b_ub_varoptint);
+      rb(env, m, ASTString("ub"), t, b_ub_varoptint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("lb_array"), t, b_array_lb_int);
+      rb(env, m, ASTString("lb_array"), t, b_array_lb_int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("ub_array"), t, b_array_ub_int);
+      rb(env, m, ASTString("ub_array"), t, b_array_ub_int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat();
-      rb(m, ASTString("lb"), t, b_lb_varoptfloat);
+      rb(env, m, ASTString("lb"), t, b_lb_varoptfloat);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat();
-      rb(m, ASTString("ub"), t, b_ub_varoptfloat);
+      rb(env, m, ASTString("ub"), t, b_ub_varoptfloat);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat(-1);
-      rb(m, ASTString("lb_array"), t, b_array_lb_float);
+      rb(env, m, ASTString("lb_array"), t, b_array_lb_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat(-1);
-      rb(m, ASTString("ub_array"), t, b_array_ub_float);
+      rb(env, m, ASTString("ub_array"), t, b_array_ub_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
-      rb(m, ASTString("card"), t, b_card);
+      rb(env, m, ASTString("card"), t, b_card);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
-      rb(m, ASTString("abs"), t, b_abs_int);
+      rb(env, m, ASTString("abs"), t, b_abs_int);
       t[0] = Type::parfloat();
-      rb(m, ASTString("abs"), t, b_abs_float);
+      rb(env, m, ASTString("abs"), t, b_abs_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint();
-      rb(m, ASTString("has_bounds"), t, b_has_bounds_int);
+      rb(env, m, ASTString("has_bounds"), t, b_has_bounds_int);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat();
-      rb(m, ASTString("has_bounds"), t, b_has_bounds_float);
+      rb(env, m, ASTString("has_bounds"), t, b_has_bounds_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
-      rb(m, ASTString("has_ub_set"), t, b_has_ub_set);
+      rb(env, m, ASTString("has_ub_set"), t, b_has_ub_set);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::optvartop();
-      rb(m, ASTString("is_fixed"), t, b_is_fixed);
+      rb(env, m, ASTString("is_fixed"), t, b_is_fixed);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::optvartop(-1);
-      rb(m, ASTString("is_fixed"), t, b_is_fixed_array);
+      rb(env, m, ASTString("is_fixed"), t, b_is_fixed_array);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::optvartop();
-      rb(m, ASTString("fix"), t, b_fix_bool);
-      rb(m, ASTString("fix"), t, b_fix_int);
-      rb(m, ASTString("fix"), t, b_fix_set);
-      rb(m, ASTString("fix"), t, b_fix_float);
+      rb(env, m, ASTString("fix"), t, b_fix_bool);
+      rb(env, m, ASTString("fix"), t, b_fix_int);
+      rb(env, m, ASTString("fix"), t, b_fix_set);
+      rb(env, m, ASTString("fix"), t, b_fix_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::optvartop(1);
-      rb(m, ASTString("fix"), t, b_fix_array);
+      rb(env, m, ASTString("fix"), t, b_fix_array);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
-      rb(m, ASTString("int2float"), t, b_int2float);
+      rb(env, m, ASTString("int2float"), t, b_int2float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat();
-      rb(m, ASTString("ceil"), t, b_ceil);
-      rb(m, ASTString("floor"), t, b_floor);
-      rb(m, ASTString("round"), t, b_round);
-      rb(m, ASTString("log10"), t, b_log10);
-      rb(m, ASTString("log2"), t, b_log2);
-      rb(m, ASTString("ln"), t, b_ln);
-      rb(m, ASTString("exp"), t, b_exp);
-      rb(m, ASTString("sqrt"), t, b_sqrt);
+      rb(env, m, ASTString("ceil"), t, b_ceil);
+      rb(env, m, ASTString("floor"), t, b_floor);
+      rb(env, m, ASTString("round"), t, b_round);
+      rb(env, m, ASTString("log10"), t, b_log10);
+      rb(env, m, ASTString("log2"), t, b_log2);
+      rb(env, m, ASTString("ln"), t, b_ln);
+      rb(env, m, ASTString("exp"), t, b_exp);
+      rb(env, m, ASTString("sqrt"), t, b_sqrt);
       t.push_back(Type::parfloat());
-      rb(m, ASTString("log"), t, b_log);
-      rb(m, ASTString("pow"), t, b_pow);
+      rb(env, m, ASTString("log"), t, b_log);
+      rb(env, m, ASTString("pow"), t, b_pow);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
-      rb(m, constants().ids.sum, t, b_sum_float);      
-      rb(m, ASTString("product"), t, b_product_float);
+      rb(env, m, constants().ids.sum, t, b_sum_float);      
+      rb(env, m, ASTString("product"), t, b_product_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat(1);
-      rb(m, ASTString("min"), t, b_float_min);
-      rb(m, ASTString("max"), t, b_float_max);
+      rb(env, m, ASTString("min"), t, b_float_min);
+      rb(env, m, ASTString("max"), t, b_float_max);
 
       t[0] = Type::parfloat();
       t.push_back(Type::parfloat());
-      rb(m, ASTString("min"), t, b_float_min);
-      rb(m, ASTString("max"), t, b_float_max);      
+      rb(env, m, ASTString("min"), t, b_float_min);
+      rb(env, m, ASTString("max"), t, b_float_max);      
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
-      rb(m, ASTString("set2array"), t, b_set2array);
+      rb(env, m, ASTString("set2array"), t, b_set2array);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parstring();
-      rb(m, ASTString("string_length"), t, b_string_length);
+      rb(env, m, ASTString("string_length"), t, b_string_length);
     }
     {
-      rb(m, ASTString("file_path"), std::vector<Type>(), b_file_path);
+      rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::vartop();
-      rb(m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("show"), t, b_show);
       t[0] = Type::vartop();
       t[0].st(Type::ST_SET);
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("show"), t, b_show);
       t[0] = Type::vartop(-1);
-      rb(m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("show"), t, b_show);
     }
     {
       std::vector<Type> t(3);
       t[0] = t[1] = Type::parint();
       t[2] = Type::vartop();
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
       t[2] = Type::vartop();
       t[2].st(Type::ST_SET);
       t[2].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
       t[2] = Type::vartop(-1);
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parint();
       t[1] = Type::vartop();
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
       t[1] = Type::vartop();
       t[1].st(Type::ST_SET);
       t[1].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
       t[1] = Type::vartop(-1);
-      rb(m, ASTString("format"), t, b_format);
+      rb(env, m, ASTString("format"), t, b_format);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parint();
       t[1] = Type::varint();
-      rb(m, ASTString("show_int"), t, b_show_int);
+      rb(env, m, ASTString("show_int"), t, b_show_int);
     }
     {
       std::vector<Type> t(3);
       t[0] = Type::parint();
       t[1] = Type::parint();
       t[2] = Type::varfloat();
-      rb(m, ASTString("show_float"), t, b_show_float);
+      rb(env, m, ASTString("show_float"), t, b_show_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parstring(1);
-      rb(m, ASTString("concat"), t, b_concat);
+      rb(env, m, ASTString("concat"), t, b_concat);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parstring();
       t[1] = Type::parstring(1);
-      rb(m, ASTString("join"), t, b_join);
+      rb(env, m, ASTString("join"), t, b_join);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::varint();
       t[1] = Type::varint();
-      rb(m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
+      rb(env, m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parsetint(1);
-      rb(m, ASTString("array_intersect"), t, b_array_intersect);
-      rb(m, ASTString("array_union"), t, b_array_union);
+      rb(env, m, ASTString("array_intersect"), t, b_array_intersect);
+      rb(env, m, ASTString("array_union"), t, b_array_union);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parint();
       t[0].ot(Type::OT_OPTIONAL);
-      rb(m, ASTString("occurs"), t, b_occurs);
-      rb(m, ASTString("deopt"), t, b_deopt_int);
+      rb(env, m, ASTString("occurs"), t, b_occurs);
+      rb(env, m, ASTString("deopt"), t, b_deopt_int);
       t[0].bt(Type::BT_BOOL);
-      rb(m, ASTString("occurs"), t, b_occurs);
-      rb(m, ASTString("deopt"), t, b_deopt_bool);
+      rb(env, m, ASTString("occurs"), t, b_occurs);
+      rb(env, m, ASTString("deopt"), t, b_deopt_bool);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::varbot(1);
       t[1] = Type::parint(1);
-      rb(m, ASTString("sort_by"), t, b_sort_by);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+      t[0] = Type::bot(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_int);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varbot(1);
+      t[1] = Type::parfloat(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
+      t[0] = Type::bot(1);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parint(1);
-      rb(m, ASTString("sort"), t, b_sort);
-      rb(m, ASTString("arg_sort"), t, b_arg_sort);
-      rb(m, ASTString("arg_min"), t, b_arg_min_int);
-      rb(m, ASTString("arg_max"), t, b_arg_max_int);
+      rb(env, m, ASTString("sort"), t, b_sort);
+      rb(env, m, ASTString("arg_min"), t, b_arg_min_int);
+      rb(env, m, ASTString("arg_max"), t, b_arg_max_int);
       t[0] = Type::parbool(1);
-      rb(m, ASTString("sort"), t, b_sort);
+      rb(env, m, ASTString("sort"), t, b_sort);
       t[0] = Type::parfloat(1);
-      rb(m, ASTString("sort"), t, b_sort);
-      rb(m, ASTString("arg_sort"), t, b_arg_sort);
-      rb(m, ASTString("arg_min"), t, b_arg_min_float);
-      rb(m, ASTString("arg_max"), t, b_arg_max_float);
+      rb(env, m, ASTString("sort"), t, b_sort);
+      rb(env, m, ASTString("arg_min"), t, b_arg_min_float);
+      rb(env, m, ASTString("arg_max"), t, b_arg_max_float);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("atan"), t, b_atan);
+     rb(env, m, ASTString("atan"), t, b_atan);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("cos"), t, b_cos);
+     rb(env, m, ASTString("cos"), t, b_cos);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("sin"), t, b_sin);
+     rb(env, m, ASTString("sin"), t, b_sin);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("asin"), t, b_asin);
+     rb(env, m, ASTString("asin"), t, b_asin);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("acos"), t, b_acos);
+     rb(env, m, ASTString("acos"), t, b_acos);
     }
     {
      std::vector<Type> t(1);
      t[0] = Type::parfloat();
-     rb(m, ASTString("tan"), t, b_tan);
+     rb(env, m, ASTString("tan"), t, b_tan);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat();
       t[1] = Type::parfloat();     
-      rb(m, ASTString("normal"),t,b_normal_float_float); 
+      rb(env, m, ASTString("normal"),t,b_normal_float_float); 
       t[0] = Type::parint();     
-      rb(m, ASTString("normal"),t,b_normal_int_float); 
+      rb(env, m, ASTString("normal"),t,b_normal_int_float); 
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat();
       t[1] = Type::parfloat();     
-      rb(m, ASTString("uniform"),t,b_uniform_float); 
+      rb(env, m, ASTString("uniform"),t,b_uniform_float); 
       t[0] = Type::parint();
       t[1] = Type::parint();     
-      rb(m, ASTString("uniform"),t,b_uniform_int);  
+      rb(env, m, ASTString("uniform"),t,b_uniform_int);  
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat();     
-      rb(m, ASTString("poisson"),t,b_poisson_float); 
+      rb(env, m, ASTString("poisson"),t,b_poisson_float); 
       t[0] = Type::parint();    
-      rb(m, ASTString("poisson"),t,b_poisson_int);  
+      rb(env, m, ASTString("poisson"),t,b_poisson_int);  
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat();
       t[1] = Type::parfloat();     
-      rb(m, ASTString("gamma"),t,b_gamma_float_float);
+      rb(env, m, ASTString("gamma"),t,b_gamma_float_float);
       t[0] = Type::parint();
-      rb(m, ASTString("gamma"),t,b_gamma_int_float);
+      rb(env, m, ASTString("gamma"),t,b_gamma_int_float);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat();
       t[1] = Type::parfloat();     
-      rb(m, ASTString("weibull"),t,b_weibull_float_float);
+      rb(env, m, ASTString("weibull"),t,b_weibull_float_float);
       t[0] = Type::parint();
-      rb(m, ASTString("weibull"),t,b_weibull_int_float);
+      rb(env, m, ASTString("weibull"),t,b_weibull_int_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat();     
-      rb(m, ASTString("exponential"),t,b_exponential_float); 
+      rb(env, m, ASTString("exponential"),t,b_exponential_float); 
       t[0] = Type::parint();    
-      rb(m, ASTString("exponential"),t,b_exponential_int);  
+      rb(env, m, ASTString("exponential"),t,b_exponential_int);  
     }  
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat();
       t[1] = Type::parfloat();     
-      rb(m, ASTString("lognormal"),t,b_lognormal_float_float);
+      rb(env, m, ASTString("lognormal"),t,b_lognormal_float_float);
       t[0] = Type::parint();
-      rb(m, ASTString("lognormal"),t,b_lognormal_int_float);
+      rb(env, m, ASTString("lognormal"),t,b_lognormal_int_float);
     } 
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat();     
-      rb(m, ASTString("chisquared"),t,b_chisquared_float); 
+      rb(env, m, ASTString("chisquared"),t,b_chisquared_float); 
       t[0] = Type::parint();    
-      rb(m, ASTString("chisquared"),t,b_chisquared_int);  
+      rb(env, m, ASTString("chisquared"),t,b_chisquared_int);  
     }  
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat(); 
       t[1] = Type::parfloat(); 
-      rb(m, ASTString("cauchy"),t,b_cauchy_float_float); 
+      rb(env, m, ASTString("cauchy"),t,b_cauchy_float_float); 
       t[0] = Type::parint();    
-      rb(m, ASTString("cauchy"),t,b_cauchy_int_float);  
+      rb(env, m, ASTString("cauchy"),t,b_cauchy_int_float);  
     }   
     {
       std::vector<Type> t(2);
       t[0] = Type::parfloat(); 
       t[1] = Type::parfloat(); 
-      rb(m, ASTString("fdistribution"),t,b_fdistribution_float_float);  
+      rb(env, m, ASTString("fdistribution"),t,b_fdistribution_float_float);  
       t[0] = Type::parint(); 
       t[1] = Type::parint(); 
-      rb(m, ASTString("fdistribution"),t,b_fdistribution_int_int);  
+      rb(env, m, ASTString("fdistribution"),t,b_fdistribution_int_int);  
     } 
     {
       std::vector<Type> t(1);
       t[0] = Type::parfloat();     
-      rb(m, ASTString("tdistribution"),t,b_tdistribution_float); 
+      rb(env, m, ASTString("tdistribution"),t,b_tdistribution_float); 
       t[0] = Type::parint();    
-      rb(m, ASTString("tdistribution"),t,b_tdistribution_int);  
+      rb(env, m, ASTString("tdistribution"),t,b_tdistribution_int);  
     }  
     {
       std::vector<Type> t(1);
       t[0] = Type::parint(1); 
-      rb(m, ASTString("discrete_distribution"),t,b_discrete_distribution); 
+      rb(env, m, ASTString("discrete_distribution"),t,b_discrete_distribution); 
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::parint(); 
-      rb(m, ASTString("bernoulli"),t,b_bernoulli); 
+      rb(env, m, ASTString("bernoulli"),t,b_bernoulli); 
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parint(); 
       t[1] = Type::parfloat(); 
-      rb(m, ASTString("binomial"),t,b_binomial);  
+      rb(env, m, ASTString("binomial"),t,b_binomial);  
     }  
     {
       std::vector<Type> t(1);
       t[0] = Type::optvartop();
-      rb(m, ASTString("sol"),t,b_sol);
+      rb(env, m, ASTString("sol"),t,b_sol);
     }
     {
       std::vector<Type> t(0); // no arguments     
-      rb(m, ASTString("hasSol"),t,b_hasSol);
+      rb(env, m, ASTString("hasSol"),t,b_hasSol);
     }
   }
   

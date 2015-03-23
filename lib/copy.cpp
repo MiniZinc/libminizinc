@@ -537,7 +537,8 @@ namespace MiniZinc {
     Model* c = new Model;
     for (unsigned int i=0; i<m->size(); i++)
       c->addItem(copy(cm,(*m)[i]));
-    for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+    typedef ASTStringMap<std::vector<FunctionI*> >::t FnMap;
+    for (FnMap::iterator it = m->fnmap_begin(); it != m->fnmap_end(); ++it) {
       for (unsigned int i=0; i<it->second.size(); i++)
         c->registerFn(it->second[i]);
     }
@@ -545,8 +546,8 @@ namespace MiniZinc {
     return c;
   }
   Model* copy(Model* m) {
-    CopyMap cm;
+    CopyMap cm;   
     return copy(cm,m);
-  }
+  } 
   
 }

@@ -1893,7 +1893,15 @@ namespace MiniZinc {
             }
           }
           GCLock lock;
-          ArrayLit* dims = output_array_ann->args()[0]->cast<ArrayLit>();
+          ArrayLit* dims;
+          Expression* e = output_array_ann->args()[0];
+          if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+            dims = al;
+          } else if(Id* id = e->dyn_cast<Id>()) {
+            dims = id->decl()->e()->cast<ArrayLit>();
+          } else {
+            throw -1;
+          }
           std::vector<std::pair<int,int> > dims_v;
           for(unsigned int i=0;i<dims->length();i++) {
             IntSetVal* isv = eval_intset(_env.envi(), dims->v()[i]);
@@ -2108,7 +2116,7 @@ namespace MiniZinc {
       else {
         std::stringstream ssm;
         ssm << "DEBUG: Cannot add variable of unknown type: \"" << *(vars[i]->id())  << std::endl;
-        throw EvalError(vars[i]->loc(), ssm.str());    
+        throw InternalError(ssm.str());    
       }
     }    
     return true;

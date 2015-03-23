@@ -259,7 +259,7 @@ namespace MiniZinc {
           dims[i] = std::pair<int,int>(1,0);
           dim1d = 0;
         } else if (di->size() != 1) {
-          throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
+          throw EvalError(envi,args[i]->loc(), "arrayXd only defined for ranges");
         } else {
           dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
                                        static_cast<int>(di->max(0).toInt()));
@@ -267,7 +267,7 @@ namespace MiniZinc {
         }
       }
       if (dim1d != al->v().size())
-        throw EvalError(al->loc(), "mismatch in array dimensions");
+        throw EvalError(envi,al->loc(), "mismatch in array dimensions");
       ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
       Type t = al->type();
       t.dim(d);

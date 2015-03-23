@@ -8,10 +8,9 @@
 predicate equality_encoding(var int: x, array[int] of var 0..1: x_eq_d) =
     x in index_set(x_eq_d)
     /\
-    sum(d in index_set(x_eq_d))(     x_eq_d[d] ) = 1
+    sum(d in dom(x))(     x_eq_d[d] ) = 1
     /\
-    sum(d in index_set(x_eq_d))( d * x_eq_d[d] ) = x;
-
+    sum(d in dom(x))( d * x_eq_d[d] ) = x;
 
     % Array of variables:  x[i] = d  <->  x_eq_d[i,d]
 predicate equality_encoding(array[int] of var int: x,
@@ -24,9 +23,16 @@ predicate equality_encoding(array[int] of var int: x,
         sum(d in index_set_2of2(x_eq_d))( d * x_eq_d[i,d] ) = x[i]
     );
 
+function var int: eq_new_var(var int: x, int: i) =
+  if i in dom(x) then
+  let {
+    var 0..1: xi;
+  } in xi
+  else 0 endif;
+
 function array[int] of var 0..1: eq_encode(var int: x) ::promise_total =
   let {
-    array[lb(x)..ub(x)] of var 0..1: y;
+    array[int] of var 0..1: y = array1d(lb(x)..ub(x),[eq_new_var(x,i) | i in lb(x)..ub(x)]);
     constraint equality_encoding(x,y);
   } in y;
 
