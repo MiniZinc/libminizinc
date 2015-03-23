@@ -81,17 +81,22 @@ namespace MiniZinc {
           
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
-          
+
+          timeval* timeout_p = NULL;
           // TODO: how to disable timeout??
-          int timeout_sec = 2147483647; //10 
+          int timeout_sec = -1;
+          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
+            int timeout_sec = opt.getFloatParam(constants().solver_options.time_limit_sec.str());
           
-          timeout.tv_sec = timeout_sec;
-          timeout.tv_usec = 0;
+            timeout.tv_sec = timeout_sec;
+            timeout.tv_usec = 0;
+            timeout_p = &timeout;
+          }
           
           bool done = false;
           while (!done) {
            
-            switch (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout)) {
+            switch (select(FD_SETSIZE, &fdset, NULL, NULL, timeout_p)) {
               case 0:
               {
                 kill(childPID, SIGKILL);
@@ -99,26 +104,28 @@ namespace MiniZinc {
               }
                 break;
               case 1:
-              {                
+              {
                 char buffer[100];
                 int count = read(pipes[1][0], buffer, sizeof(buffer)-1);
                 if (count > 0) {                  
                   buffer[count] = 0;
-                  result << buffer;                 
-                  timeval currentTime, elapsed;
-                  gettimeofday(&currentTime, NULL);
-                  elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
-                  elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-                  if (elapsed.tv_usec < 0) {
-                    elapsed.tv_sec--;
-                    elapsed.tv_usec += 1000000;
+                  result << buffer;
+                  if (timeout_sec >= 0) {
+                    timeval currentTime, elapsed;
+                    gettimeofday(&currentTime, NULL);
+                    elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+                    elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+                    if (elapsed.tv_usec < 0) {
+                      elapsed.tv_sec--;
+                      elapsed.tv_usec += 1000000;
+                    }
+                    timeout.tv_sec = timeout_sec - elapsed.tv_sec;
+                    if (elapsed.tv_usec > 0)
+                      timeout.tv_sec--;
+                    timeout.tv_usec = 1000000 - elapsed.tv_usec;
+                    if (timeout.tv_sec <= 0 && timeout.tv_usec <=0)
+                      done = true;
                   }
-                  timeout.tv_sec = timeout_sec - elapsed.tv_sec;
-                  if (elapsed.tv_usec > 0)
-                    timeout.tv_sec--;
-                  timeout.tv_usec = 1000000 - elapsed.tv_usec;
-                  if (timeout.tv_sec <= 0 && timeout.tv_usec <=0)
-                    done = true;
                 } else {
                   done = true;
                 }
