@@ -45,6 +45,7 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+annotation mzn_path(string: s);
 
 /***
  @groupdef annotations.prop Propagation strength annotations

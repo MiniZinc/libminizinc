@@ -33,9 +33,37 @@ namespace MiniZinc {
     bool onlyRangeDomains;
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
+    /// Verbose output during flattening
+    bool verbose;
     /// Default constructor
-    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false) {}
+    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false), verbose(false) {}
   };
+
+  class Pass {
+    private:
+      FlatteningOptions fopts;
+
+    public:
+      Pass(FlatteningOptions& opts) : fopts(opts) {};
+      virtual std::string getLibrary() = 0;
+      FlatteningOptions& getFlatteningOptions() {return fopts;};
+      virtual void run(Env& env) = 0;
+      virtual ~Pass() {};
+  };
+
+  class CompilePass : public Pass {
+    private:
+      std::string library;
+
+    public:
+      CompilePass(FlatteningOptions& opts, std::string globals_library) : Pass(opts), library(globals_library) {}
+      std::string getLibrary() { return library; }
+      void run(Env& env) { };
+      ~CompilePass() {};
+  };
+
+  /// Flatten model \a m several times and record information in its env
+  void multiPassFlatten(Env& m, std::vector<std::string>& includePaths, std::vector<Pass*>& passes);
   
   /// Flatten model \a m
   void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());

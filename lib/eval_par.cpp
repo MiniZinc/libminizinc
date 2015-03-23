@@ -1360,7 +1360,7 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
-      if (e->type().dim() > 0)
+      if (e->type().dim() > 0 || e->type().isann())
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {

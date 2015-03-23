@@ -30,6 +30,8 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/timer.hh>
 
+#include <minizinc/solvers/gecode/gecode_pass.hh>
+
 using namespace MiniZinc;
 using namespace std;
 
@@ -54,6 +56,8 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_gecode = false;
+  unsigned int flag_npasses = 1;
   
   Timer starttime;
   Timer lasttime;
@@ -104,6 +108,7 @@ int main(int argc, char** argv) {
       flag_instance_check_only = true;
     } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
+      fopts.verbose = true;
     } else if (string(argv[i])==string("--newfzn")) {
       flag_newfzn = true;
     } else if (string(argv[i])==string("--no-optimize") || string(argv[i])==string("--no-optimise")) {
@@ -116,6 +121,16 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       flag_output_base = argv[i];
+    } else if (string(argv[i])=="--use-gecode") {
+      flag_gecode = true;
+    } else if (string(argv[i])=="--npass") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      int passes = atoi(argv[i]);
+      if(passes > 0)
+        flag_npasses = passes;
     } else if (beginswith(string(argv[i]),"-o")) {
         string filename(argv[i]);
         if (filename.length() > 2) {
@@ -313,8 +328,35 @@ int main(int argc, char** argv) {
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
+            Env env(m);
             try {
-              flatten(env,fopts);
+              GCLock lock;
+              std::vector<Pass*> passes;
+              Options gopts;
+              gopts.setBoolParam(std::string("only-range-domains"), fopts.onlyRangeDomains);
+              FlatteningOptions pass_opts = fopts;
+              for(unsigned int i=1; i<flag_npasses; i++) {
+                if(flag_gecode) {
+                  pass_opts.onlyRangeDomains = false;
+                  passes.push_back(new GecodePass(pass_opts, gopts, std_lib_dir+"/gecode/"));
+                } else {
+                  pass_opts.onlyRangeDomains = false;
+                  passes.push_back(new CompilePass(pass_opts, std_lib_dir+"/std/"));
+                }
+              }
+
+              std::vector<std::string> cleanIncludePaths;
+              cleanIncludePaths.push_back(std_lib_dir+"/std/");
+
+              // Multi-pass optimisations
+              if(flag_npasses > 1)
+                multiPassFlatten(env, cleanIncludePaths, passes);
+
+              // Final compilation
+              if (flag_verbose)
+                std::cerr << "Final Flattening ...";
+              flatten(env, fopts);
+
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;

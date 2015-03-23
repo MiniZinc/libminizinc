@@ -67,6 +67,9 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+    unsigned int pass;
+    int passes;
+    unsigned int maxPathDepth;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {
@@ -83,11 +86,22 @@ namespace MiniZinc {
     std::vector<std::string> warnings;
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
+    FlatteningOptions fopts;
+    unsigned int pathUse;
+
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, std::pair<WeakRef, unsigned int> > PathMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
+
   protected:
     Map map;
     Model* _flat;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+
+    PathMap pathMap;
+    ReversePathMap reversePathMap;
+    UNORDERED_NAMESPACE::unordered_map<std::string, int> filenameMap;
+
   public:
     EnvI(Model* orig0);
     ~EnvI(void);
@@ -105,8 +119,13 @@ namespace MiniZinc {
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool force, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+
+    PathMap& getPathMap() { return pathMap; }
+    ReversePathMap& getReversePathMap() { return reversePathMap; }
+    void setMaps(EnvI& env);
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
   };

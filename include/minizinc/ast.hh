@@ -1355,6 +1355,7 @@ namespace MiniZinc {
         Id* is_reverse_map;
         Id* promise_total;
         ASTString doc_comment;
+        ASTString mzn_path;
         ASTString is_introduced;
       } ann;
       static const int maxConstInt = 1000;
