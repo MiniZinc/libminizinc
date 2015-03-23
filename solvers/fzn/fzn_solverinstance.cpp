@@ -46,7 +46,7 @@ namespace MiniZinc {
         std::string fznFile;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
-          mkstemp(tmpfile);
+          mkstemps(tmpfile, 4);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
