@@ -52,6 +52,8 @@ Bug fixes:
    declared parameter bounds
  - Fix arg_sort builtin to implement the correct semantics
  - Fix sort_by builtin to sort in non-decreasing order, and work with floats
+ - Fix bug in type checker, now automatic coercions in functions defined with
+   type variables (like the comparison operators) work correctly
  
 
 Version 2.0.1
