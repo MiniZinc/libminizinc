@@ -264,12 +264,42 @@ namespace MiniZinc {
     long long int bo = round_to_longlong(b);
     return bo >= Gecode::Int::Limits::min && bo <= Gecode::Int::Limits::max;
   }
+  
+  class GecodeRangeIter {
+  public:
+    GecodeSolverInstance& si;
+    IntSetRanges& isr;
+    GecodeRangeIter(GecodeSolverInstance& gsi, IntSetRanges& isr0) : si(gsi), isr(isr0) {}
+    int min(void) const {
+      long long int val = isr.min().toInt();
+      if(si.valueWithinBounds(val)) {
+        return (int)val;
+      } else {
+        std::stringstream ssm;
+        ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
+        throw InternalError(ssm.str());
+      }
+    }
+    int max(void) const {
+      long long int val = isr.max().toInt();
+      if(si.valueWithinBounds(val)) {
+        return (int)val;
+      } else {
+        std::stringstream ssm;
+        ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
+        throw InternalError(ssm.str());
+      }
+    }
+    int width(void) const { return isr.width().toInt(); }
+    bool operator() (void) { return isr(); }
+    void operator++ (void) { ++isr; }
+  };
 
   void GecodeSolverInstance::processFlatZinc(void) {
     _current_space = new FznSpace();  
     // iterate over VarDecls of the flat model and create variables
-    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {       
-      if (it->e()->type().isvar()) { // par variables are retrieved from the model        
+    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
+      if (it->e()->type().isvar()) { // par variables are retrieved from the model
         // check if it has an output-annotation
         VarDecl* vd = it->e();        
         if(!vd->ann().isEmpty()) {
@@ -282,7 +312,58 @@ namespace MiniZinc {
         }
 
         if (it->e()->type().dim() != 0) {
-          // we ignore arrays - all their elements are defined
+          if (it->e()->ti()->domain()) {
+            ArrayLit* al = it->e()->e()->cast<ArrayLit>();
+            if (vd->type().isintarray()) {
+              IntSetVal* isv = eval_intset(_env.envi(), it->e()->ti()->domain());
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+                  ident = ident->decl()->id();
+                  GecodeVariable var = resolveVar(ident);
+                  Gecode::IntVar iv = var.intVar(_current_space);
+                  IntSetRanges isr(isv);
+                  GecodeRangeIter g_isr(*this, isr);
+                  Gecode::IntSet isr_s(g_isr);
+                  Gecode::dom(*_current_space, iv, isr_s);
+                }
+              }
+            } else if (vd->type().isintsetarray()) {
+              IntSetVal* isv = eval_intset(_env.envi(), it->e()->ti()->domain());
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+                  ident = ident->decl()->id();
+                  GecodeVariable var = resolveVar(ident);
+                  Gecode::SetVar sv = var.setVar(_current_space);
+                  IntSetRanges isr(isv);
+                  GecodeRangeIter g_isr(*this, isr);
+                  Gecode::IntSet isr_s(g_isr);
+                  Gecode::dom(*_current_space, sv, Gecode::SRT_SUB, isr_s);
+                }
+              }
+            } else if (vd->type().isfloatarray()) {
+              BinOp* bo = it->e()->ti()->domain()->cast<BinOp>();
+              FloatVal f_min = eval_float(_env.envi(), bo->lhs());
+              FloatVal f_max = eval_float(_env.envi(), bo->rhs());
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+                  ident = ident->decl()->id();
+                  GecodeVariable var = resolveVar(ident);
+                  Gecode::FloatVar fv = var.floatVar(_current_space);
+                  Gecode::dom(*_current_space, fv, f_min, f_max);
+                }
+              }
+            } else if (vd->type().isboolarray()) {
+              bool val = eval_bool(_env.envi(), it->e()->ti()->domain());
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+                  ident = ident->decl()->id();
+                  GecodeVariable var = resolveVar(ident);
+                  Gecode::BoolVar bv = var.boolVar(_current_space);
+                  Gecode::rel(*_current_space, bv, Gecode::IRT_EQ, val);
+                }
+              }
+            }
+          }
           continue;
         }
         MiniZinc::TypeInst* ti = it->e()->ti();
@@ -522,36 +603,6 @@ namespace MiniZinc {
     return ia;
   }
 
-
-  class GecodeRangeIter {
-  public:
-    GecodeSolverInstance& si;
-    IntSetRanges& isr;
-    GecodeRangeIter(GecodeSolverInstance& gsi, IntSetRanges& isr0) : si(gsi), isr(isr0) {}
-    int min(void) const {
-      long long int val = isr.min().toInt();
-      if(si.valueWithinBounds(val)) {
-        return (int)val;
-      } else {
-        std::stringstream ssm;
-        ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
-        throw InternalError(ssm.str());
-      }
-    }
-    int max(void) const {
-      long long int val = isr.max().toInt();
-      if(si.valueWithinBounds(val)) {
-        return (int)val;
-      } else {
-        std::stringstream ssm;
-        ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
-        throw InternalError(ssm.str());
-      }
-    }
-    int width(void) const { return isr.width().toInt(); }
-    bool operator() (void) { return isr(); }
-    void operator++ (void) { ++isr; }
-  };
 
   Gecode::IntSet
   GecodeSolverInstance::arg2intset(EnvI& envi, Expression* arg) {

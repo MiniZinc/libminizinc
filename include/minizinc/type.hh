@@ -168,6 +168,9 @@ namespace MiniZinc {
     bool isintarray(void) const {
       return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_INT;
     }
+    bool isfloatarray(void) const {
+      return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_FLOAT;
+    }
     bool isboolarray(void) const {
       return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_BOOL;
     }
