@@ -987,6 +987,34 @@ namespace MiniZinc {
               // Check that index sets match
               env.errorStack.clear();
               checkIndexSets(env,vd,e);
+              if (vd->ti()->domain() && e->isa<ArrayLit>()) {
+                ArrayLit* al = e->cast<ArrayLit>();
+                if (e->type().bt()==Type::BT_INT) {
+                  IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+                  for (unsigned int i=0; i<al->v().size(); i++) {
+                    if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                      VarDecl* vdi = id->decl();
+                      if (vdi->ti()->domain()==NULL) {
+                        vdi->ti()->domain(vd->ti()->domain());
+                      } else {
+                        IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
+                        IntSetRanges isvr(isv);
+                        IntSetRanges vdi_domr(vdi_dom);
+                        Ranges::Inter<IntSetRanges, IntSetRanges> inter(isvr,vdi_domr);
+                        IntSetVal* newdom = IntSetVal::ai(inter);
+                        if (newdom->size()==0) {
+                          env.addWarning("model inconsistency detected");
+                          env.flat()->fail();
+                        } else {
+                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                        }
+                      }
+                    }
+                  }
+                } else if (e->type().bt()==Type::BT_FLOAT) {
+                  /// TODO
+                }
+              }
             } else if (Id* e_id = e->dyn_cast<Id>()) {
               if (e_id == vd->id()) {
                 ret = vd->id();
