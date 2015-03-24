@@ -236,8 +236,8 @@ namespace MiniZinc {
           linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
         }
       } else {
-        IntVarArgs iv = s.arg2intvarargs(space, vars);
-        linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
+        IntVarArgs iv = s.arg2intvarargs(space, vars);        
+        linear(*space, ia, iv, irt, call->args()[2]->cast<IntLit>()->v().toInt(), s.ann2icl(ann));        
       }
     }
     

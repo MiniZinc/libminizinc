@@ -893,7 +893,7 @@ namespace MiniZinc {
   }
 
   void
-  GecodeSolverInstance::prepareEngine(bool combinators) {
+  GecodeSolverInstance::prepareEngine(bool combinators) {  
     if (engine==NULL && customEngine == NULL) {      
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -961,8 +961,7 @@ namespace MiniZinc {
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
       } else {
         engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);        
-      }
-      std::cerr << "branchers: " << _current_space->branchers() << "\n";
+      }      
     }
   }
   
@@ -1149,8 +1148,7 @@ namespace MiniZinc {
                                                         std::ostream& err
                                                        )  {
   
-    for (unsigned int i=0; i<flatAnn.size(); i++) {
-      std::cerr << "flat ann: " << *flatAnn[i] << "\n";
+    for (unsigned int i=0; i<flatAnn.size(); i++) {     
       if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "gecode_search") {
         //Call* c = flatAnn[i]->cast<Call>();
         //branchWithPlugin(c->args); 
@@ -1158,8 +1156,7 @@ namespace MiniZinc {
         return;
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_search") {
-        Call* call = flatAnn[i]->cast<Call>();
-        debugprint(call);
+        Call* call = flatAnn[i]->cast<Call>();       
         ArrayLit *vars = getArrayLit(call->args()[0]);
         int k=vars->v().size();
         for (int i=vars->v().size(); i--;)

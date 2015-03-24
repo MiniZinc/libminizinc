@@ -139,7 +139,7 @@ namespace MiniZinc {
           }
           
           if (!_canPipe) {
-            remove(fznFile.c_str());
+            remove(fznFile.c_str()); // commented for DEBUG only 
           } 
           return;
         } else {
@@ -165,17 +165,17 @@ namespace MiniZinc {
     
     protected:
       int executeCommand(Options& opt, std::string fznFile) {
-          int status;
+          int status;          
           // determine the command line arguments
-          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
+          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {            
             int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
             char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(time_c, "%d", time_ms); 
-            // node limit
+            // node limit & time limit
             if(opt.hasParam(constants().solver_options.node_limit.str())) {                           
               int nodes = opt.getIntParam(constants().solver_options.node_limit.str());
               char nodes_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
-              //fail limit
+              //fail limit & node limit & time limit
               if(opt.hasParam(constants().solver_options.fail_limit.str())) {
                 int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
                 char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
@@ -194,7 +194,7 @@ namespace MiniZinc {
               }
             }
             // fail limit
-            else if(opt.hasParam(constants().solver_options.fail_limit.str())) {
+            else if(opt.hasParam(constants().solver_options.fail_limit.str())) {                
                 int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
                 char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
                 sprintf(fails_c, "%d", fails);  
@@ -210,7 +210,7 @@ namespace MiniZinc {
               status = execvp(argv[0],argv);  
             }         
           } // only node limit
-          else if(opt.hasParam(constants().solver_options.node_limit.str())) {
+          else if(opt.hasParam(constants().solver_options.node_limit.str())) {            
             int nodes = opt.getIntParam(constants().solver_options.node_limit.str());
             char nodes_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(nodes_c, "%d", nodes);  
@@ -219,7 +219,7 @@ namespace MiniZinc {
               argv[3] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);  
           } // only fail limit
-          else if(opt.hasParam(constants().solver_options.fail_limit.str())) {
+          else if(opt.hasParam(constants().solver_options.fail_limit.str())) {           
             int fails = opt.getIntParam(constants().solver_options.fail_limit.str());
             char fails_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(fails_c, "%d", fails);  
@@ -228,10 +228,10 @@ namespace MiniZinc {
               argv[3] = strdup(fznFile.c_str());
             status = execvp(argv[0],argv);  
           }          
-          else {
-            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-mode"),strdup("stat"),strdup("-"),0};          
+          else {           
+            char* argv[] = {strdup(_fzncmd.c_str()),strdup("-"),0};             
             if (!_canPipe) 
-              argv[3] = strdup(fznFile.c_str());
+              argv[1] = strdup(fznFile.c_str());            
             status = execvp(argv[0],argv);                    
           }                           
         return status;
@@ -303,9 +303,10 @@ namespace MiniZinc {
     }
 
     bool hadSolution = false;
+    std::string sstr = result.str();    
     while (result.good()) {
       std::string line;
-      getline(result, line);       
+      getline(result, line);      
       if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {

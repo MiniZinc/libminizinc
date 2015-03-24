@@ -254,31 +254,20 @@ namespace MiniZinc {
 
   forceinline Gecode::Space*
   DFSEngine::next(void) {
-    start();
-    //bool started=false;
-    std::cerr << "NEXT\n";
+    start();   
     while (true) {
-      if (stop(opt)) {
-        std::cerr << "STOPPED: fails = " << statistics().fail << std::endl;
+      if (stop(opt)) {       
         return NULL;
       }
       while (cur == NULL) {
-        if (path.empty()) {
-          std::cerr << "empty path: fails = " << statistics().fail << std::endl;
-          std::cerr << "empty path: depth = " << statistics().depth << std::endl;
+        if (path.empty()) {         
           return NULL;
         }
         cur = path.recompute(d,opt.a_d,*this);
         if (cur != NULL)
           break;
         path.next();
-      }
-      /*if (!started) {
-        started = true;
-        if (cur->status() != Gecode::SS_FAILED) {
-          Gecode::Gist::dfs(cur->clone());
-        }
-      }*/
+      }     
       node++;
       switch (cur->status(*this)) {
         case Gecode::SS_FAILED:
@@ -293,8 +282,7 @@ namespace MiniZinc {
           (void) cur->choice();
           Gecode::Space* s = cur;
           cur = NULL;
-          path.next();
-          std::cerr << "SOLVE: fails = " << statistics().fail << std::endl;
+          path.next();                   
           return s;
         }
         case Gecode::SS_BRANCH:
