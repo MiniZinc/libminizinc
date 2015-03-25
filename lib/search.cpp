@@ -242,14 +242,15 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver) {   
-    // interpret NEXT arguments
+    // interpret NEXT arguments    
     ASTExprVec<Expression> args = call->args();
     if(args.size()>1) {
       std::stringstream ssm;
       ssm << "NEXT-combinator takes at most 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(),call->loc(), ssm.str());      
     } 
-    interpretLimitCombinator(args[0],solver);
+    if(args.size() > 0)
+      interpretLimitCombinator(args[0],solver);
       
     // get next solution
     SolverInstance::Status status = solver->next();

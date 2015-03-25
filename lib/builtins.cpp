@@ -2031,6 +2031,7 @@ namespace MiniZinc {
       }
       std::stringstream ssm; 
       ssm << "could not find solution for unknown identifier: " << *id;
+      ssm << ". Don't forget to add all identifiers you use with sol() in the output statement.";
       throw EvalError(env, call->loc(), ssm.str());
     } else if(ArrayAccess* aa = args[0]->dyn_cast<ArrayAccess>()) {
       Id* id = aa->v()->dyn_cast<Id>();
@@ -2054,6 +2055,7 @@ namespace MiniZinc {
       }
       std::stringstream ssm;
       ssm << "could not find solution for unknown identifier: " << *id;
+      ssm << ". Don't forget to add all identifiers you use with sol() in the output statement.";
       throw EvalError(env, call->loc(), ssm.str());
     }
     else {
