@@ -115,6 +115,7 @@ predicate neighbourhoodCts(array[int] of var int: x,
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
      } in 
        forall (i in idx) (
+         trace("x["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
          x[i] = sol(x[i])
        )     
    else true endif;
