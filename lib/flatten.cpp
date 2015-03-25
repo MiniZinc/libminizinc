@@ -2497,6 +2497,7 @@ namespace MiniZinc {
     case Expression::E_ID:
       {
         Id* id = e->cast<Id>();
+        id = follow_id_to_decl(id)->cast<VarDecl>()->id();
         if (id->decl()==NULL) {
           if (id->type().isann()) {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
