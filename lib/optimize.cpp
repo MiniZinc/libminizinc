@@ -765,6 +765,12 @@ namespace MiniZinc {
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
               vdi->e()->e(rewrite);
+              if (vdi->e()->e() && vdi->e()->e()->isa<Id>() && vdi->e()->type().dim()==0) {
+                Id* id1 = vdi->e()->e()->cast<Id>();
+                vdi->e()->e(NULL);
+                unify(env, vdi->e()->id(), id1);
+                pushDependentConstraints(env, id1, constraintQueue);
+              }
               pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
             }
             CollectOccurrencesE ce(env.vo,ii);
