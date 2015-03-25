@@ -2017,8 +2017,8 @@ namespace MiniZinc {
       }
       // integer variable
       else if(vars[i]->type().isint()) {          
-      // there is an initialisation expression        
-       if((vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>())) || vars[i]->e()->type().ispar() ) {
+      // there is an initialisation expression
+       if(vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>() || vars[i]->e()->type().ispar() ) ) {
           Expression* init = vars[i]->e();          
           if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
             GecodeVariable var = resolveVar(init);
