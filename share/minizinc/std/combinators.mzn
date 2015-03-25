@@ -94,10 +94,14 @@ function ann: lns (var int: obj, array[int] of var int: x,
     repeat (i in 1..iterations) (
       and([
         scope(
-          and([
+         or([
+          and([ % or and?
             post(neighbourhoodCts(x,d)),
-            next % or bab
-          ])
+            %bab_min(obj), %next, % or bab
+            print()
+          ]),
+          print()
+         ])
         ),
       post(obj < sol(obj))
       ])
@@ -115,7 +119,7 @@ predicate neighbourhoodCts(array[int] of var int: x,
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
      } in 
        forall (i in idx) (
-         trace("x["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
+         %trace("x["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
          x[i] = sol(x[i])
        )     
    else true endif;
