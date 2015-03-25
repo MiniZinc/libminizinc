@@ -1012,7 +1012,21 @@ namespace MiniZinc {
                     }
                   }
                 } else if (e->type().bt()==Type::BT_FLOAT) {
-                  /// TODO
+                  FloatVal f_min = eval_float(env, vd->ti()->domain()->cast<BinOp>()->lhs());
+                  FloatVal f_max = eval_float(env, vd->ti()->domain()->cast<BinOp>()->rhs());
+                  for (unsigned int i=0; i<al->v().size(); i++) {
+                    if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                      VarDecl* vdi = id->decl();
+                      if (vdi->ti()->domain()==NULL) {
+                        vdi->ti()->domain(vd->ti()->domain());
+                      } else {
+                        BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(vdi->ti()->domain()->cast<BinOp>(), f_min, f_max);
+                        if (ndomain != vdi->ti()->domain()) {
+                          vdi->ti()->domain(ndomain);
+                        }
+                      }
+                    }
+                  }
                 }
               }
             } else if (Id* e_id = e->dyn_cast<Id>()) {
