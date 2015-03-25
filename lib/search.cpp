@@ -18,52 +18,66 @@
 namespace MiniZinc {
   
   SolverInstance::Status 
-  SearchHandler::interpretCombinator(Expression* comb0, SolverInstanceBase* solver) {
+  SearchHandler::interpretCombinator(Expression* comb, SolverInstanceBase* solver) {
     Env& env = solver->env();
     //std::cout << "DEBUG: Printing flat model:" << std::endl;
     //debugprint(solver->env().flat());
-    Expression* comb = eval_par(env.envi(), comb0);
     //std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
     
     if(Call* call = comb->dyn_cast<Call>()) {      
-      if(call->id().str() == constants().combinators.and_.str()) {
+      if(call->id() == constants().combinators.and_) {
         return interpretAndCombinator(call,solver);    
       } 
-      else if(call->id().str() == constants().combinators.or_.str()) {
+      else if(call->id() == constants().combinators.or_) {
         return interpretOrCombinator(call,solver); 
       }
-      else if(call->id().str() == constants().combinators.post.str()) {
+      else if(call->id() == constants().combinators.post) {
         return interpretPostCombinator(call,solver);
       }
-      else if(call->id().str() == constants().combinators.repeat.str()) {
+      else if(call->id() == constants().combinators.repeat) {
         return interpretRepeatCombinator(call,solver);   
       }
-      else if(call->id().str() == constants().combinators.scope.str()) {
+      else if(call->id() == constants().combinators.scope) {
         return interpretScopeCombinator(call,solver);
       }
-      else if(call->id().str() == constants().combinators.print.str()) {
+      else if(call->id() == constants().combinators.print) {
         return interpretPrintCombinator(solver);
       }
-      else if(call->id().str() == constants().combinators.next.str()) {
+      else if(call->id() == constants().combinators.next) {
         return interpretNextCombinator(call, solver);
       }
       else {
-        std::stringstream ssm; 
-        ssm << "unknown combinator call: " << call->id();
-        throw TypeError(env.envi(), call->loc(), ssm.str());
+        std::vector<Expression*> previousParameters(call->decl()->params().size());
+        for (unsigned int i=call->decl()->params().size(); i--;) {
+          VarDecl* vd = call->decl()->params()[i];
+          previousParameters[i] = vd->e();
+          vd->flat(vd);
+          vd->e(eval_par(env.envi(), call->args()[i]));
+        }
+        
+        SolverInstance::Status ret = interpretCombinator(call->decl()->e(), solver);
+
+        for (unsigned int i=call->decl()->params().size(); i--;) {
+          VarDecl* vd = call->decl()->params()[i];
+          vd->e(previousParameters[i]);
+          vd->flat(vd->e() ? vd : NULL);
+        }
+        return ret;
       }
     }
     else if(Id* id = comb->dyn_cast<Id>()) {
-      if(id->str().str() == constants().combinators.next.str()) {
+      Expression* id_e = follow_id_to_value(id);
+      Id* ident = id_e->dyn_cast<Id>();
+      if(ident && ident->idn()==-1 && ident->v() == constants().combinators.next) {
         return interpretNextCombinator(solver);
       } 
-      else if (id->str().str() == constants().combinators.print.str()) {
+      else if (ident && ident->idn()==-1 && ident->v() == constants().combinators.print) {
         return interpretPrintCombinator(solver);
       }
       else {
         std::stringstream ssm; 
-        ssm << "unknown combinator id: " << id->str();
-        throw TypeError(env.envi(), id->loc(), ssm.str());
+        ssm << "unknown combinator id: " << *ident;
+        throw TypeError(env.envi(), ident->loc(), ssm.str());
       }
     }
     else {
