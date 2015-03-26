@@ -95,9 +95,9 @@ function ann: lns (var int: obj, array[int] of var int: x,
       and([
         scope(
          or([
-          and([ % or and?
+          and([ 
             post(neighbourhoodCts(x,d)),
-            %bab_min(obj), %next, % or bab
+            next, %bab_min(obj), %next, % or bab
             print()
           ]),
           print()
