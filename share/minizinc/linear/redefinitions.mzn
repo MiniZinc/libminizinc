@@ -610,3 +610,5 @@ predicate array_float_minimum(var float: m, array[int] of var float: x) =
     y[l] = x[l] /\
     m = y[u] /\
     forall (i in l+1 .. u) ( y[i] == min(x[i],y[i-1]) );
+
+mzn_opt_only_range_domains = true;

@@ -4810,6 +4810,16 @@ namespace MiniZinc {
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
 
+    bool onlyRangeDomains;
+    {
+      GCLock lock;
+      Call* check_only_range =
+        new Call(Location(),"mzn_check_only_range_domains", std::vector<Expression*>());
+      check_only_range->type(Type::parbool());
+      check_only_range->decl(env.orig->matchFn(e.envi(), check_only_range));
+      onlyRangeDomains = eval_bool(e.envi(), check_only_range);
+    }
+    
     class ExpandArrayDecls : public ItemVisitor {
     public:
       EnvI& env;
@@ -4994,7 +5004,7 @@ namespace MiniZinc {
           GCLock lock;
           IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
 
-          bool needRangeDomain = opt.onlyRangeDomains;
+          bool needRangeDomain = onlyRangeDomains;
           if (!needRangeDomain && dom->size() > 0) {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity())
               needRangeDomain = true;

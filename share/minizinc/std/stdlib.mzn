@@ -450,4 +450,17 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+/***
+ @groupdef options Compiler options
+*/
+
+/*** @group options Whether to only generate domains that are contiguous ranges */
+opt bool: mzn_opt_only_range_domains;
+
+/*** @group options Check whether to only generate domains that are contiguous ranges */
+
+test mzn_check_only_range_domains() =
+  if absent(mzn_opt_only_range_domains) then false
+  else deopt(mzn_opt_only_range_domains) endif;
+
 include "builtins.mzn";
