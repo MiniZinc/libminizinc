@@ -1965,8 +1965,6 @@ namespace MiniZinc {
                     bind(env, Ctx(), ident->decl(), constants().lit_true);
                     it->second.b = constants().lit_true;
                   }
-                } else {
-                  env.map_insert(c, EE(constants().lit_true,constants().lit_true));
                 }
               }
             }
