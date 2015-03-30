@@ -25,6 +25,8 @@ Changes:
  - Replace command line option --only-range-domains by optional boolean value
    so that solver libraries can set the flag directly in their redefinitions
    file.
+ - Stop flattening immediately when a model has been found to contain an
+   inconsistency.
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could

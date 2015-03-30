@@ -141,7 +141,10 @@ namespace MiniZinc {
     void compact(void);
     
     /// Make model failed
-    void fail(void);
+    void fail(EnvI& env);
+
+    /// Return whether model is known to be failed
+    bool failed(void) const;
   };
 
   class VarDeclIterator {
@@ -256,6 +259,8 @@ namespace MiniZinc {
   public:
     /// Enter model
     bool enterModel(Model* m) { return true; }
+    /// Enter item
+    bool enter(Item* m) { return true; }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -289,6 +294,8 @@ namespace MiniZinc {
           continue;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
+            continue;
+          if (!iter.enter((*cm)[i]))
             continue;
           switch ((*cm)[i]->iid()) {
           case Item::II_INC:

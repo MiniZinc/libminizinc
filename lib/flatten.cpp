@@ -268,8 +268,7 @@ namespace MiniZinc {
         ConstraintI* ci = i->cast<ConstraintI>();
         toAnnotate = ci->e();
         if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v()) {
-          addWarning("model inconsistency detected");
-          _flat->fail();
+          _flat->fail(*this);
         }
         toAdd = ci->e();
         break;
@@ -398,7 +397,6 @@ namespace MiniZinc {
   
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
-
   
   Env::Env(Model* m) : e(new EnvI(m)) {}
   Env::~Env(void) {
@@ -919,8 +917,7 @@ namespace MiniZinc {
                     id->decl()->ti()->setComputedDomain(true);
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),ibv));
                   }
@@ -947,8 +944,7 @@ namespace MiniZinc {
                     id->decl()->ti()->setComputedDomain(true);
                   }
                   if (LinearTraits<FloatLit>::domain_empty(ibv)) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else {
                     id->decl()->ti()->domain(ibv);
                   }
@@ -1003,8 +999,7 @@ namespace MiniZinc {
                         Ranges::Inter<IntSetRanges, IntSetRanges> inter(isvr,vdi_domr);
                         IntSetVal* newdom = IntSetVal::ai(inter);
                         if (newdom->size()==0) {
-                          env.addWarning("model inconsistency detected");
-                          env.flat()->fail();
+                          env.flat()->fail(env);
                         } else {
                           vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
                         }
@@ -3335,8 +3330,7 @@ namespace MiniZinc {
                     changeDom = true;
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
@@ -4020,8 +4014,7 @@ namespace MiniZinc {
                   vd->ti()->setComputedDomain(true);
                 }
                 if (!v->e()->type().is_set() && ibv->card()==0) {
-                  env.addWarning("model inconsistency detected");
-                  env.flat()->fail();
+                  env.flat()->fail(env);
                 } else {
                   vd->ti()->domain(new SetLit(Location().introduce(),ibv));
                 }
@@ -4839,6 +4832,9 @@ namespace MiniZinc {
       EnvI& env;
       bool& hadSolveItem;
       FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+      bool enter(Item* i) {
+        return !(i->isa<ConstraintI>()  && env.flat()->failed());
+      }
       void vVarDeclI(VarDeclI* v) {
         if (v->e()->type().isvar() || v->e()->type().isann()) {
           (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
@@ -4903,7 +4899,7 @@ namespace MiniZinc {
       }
     } _fv(env,hadSolveItem);
     iterItems<FV>(_fv,e.model());
-
+    
     if (!hadSolveItem) {
       e.envi().errorStack.clear();
       Location modelLoc;
@@ -4961,6 +4957,8 @@ namespace MiniZinc {
     env.collectVarDecls(true);
 
     while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
+      if (env.flat()->failed())
+        return;
       std::vector<int> agenda;
       for (int i=startItem; i<=endItem; i++) {
         agenda.push_back(i);
