@@ -593,22 +593,11 @@ namespace MiniZinc {
       env.idStack.push_back(env.callStack.size());
     env.callStack.push_back(e);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
-    std::stringstream ss;
-    ss << "DEBUG: " << ++stackCounter;
-    env.callStack.push_back(new StringLit(Location().introduce(), ss.str()));
   }
   CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : env(env0) {
     Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(ident) | static_cast<ptrdiff_t>(1));
     env.callStack.push_back(ee);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
-
-
-    std::stringstream ss;
-    ss << "DEBUG: " << ++stackCounter;
-    if(stackCounter==460) {
-      std::cerr << "WAH: " << *ident << " = " << i << std::endl;
-    }
-    env.callStack.push_back(new StringLit(Location().introduce(), ss.str()));
   }
   CallStackItem::~CallStackItem(void) {
     if (env.callStack.back()->isa<VarDecl>())
