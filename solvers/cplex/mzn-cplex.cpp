@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_only_range_domains = false;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -214,7 +215,7 @@ int main(int argc, char** argv) {
         goto error;
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
+      flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
     } else {
@@ -241,7 +242,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  fopts.onlyRangeDomains = fopts.onlyRangeDomains || globals_dir == "linear";
+  flag_only_range_domains = flag_only_range_domains || globals_dir == "linear";
 
   if (filename=="") {
     std::cerr << "Error: no model file given." << std::endl;
