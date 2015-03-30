@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         goto error;
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
+      fopts.onlyRangeDomains = true; // ANDREA: removed because onlyRangeDomains suddenly no longer part of FlatteningOptions
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
     } else {

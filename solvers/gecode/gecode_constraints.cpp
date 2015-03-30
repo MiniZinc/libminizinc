@@ -102,6 +102,7 @@ namespace MiniZinc {
     void p_int_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* ce) {
       if(s.customEngine) {
         for(unsigned int i=0; i<s.customEngine->pathEntries(); i++) {
+          std::cerr << "DEBUG: posting EQ constraint in space: " << *ce << std::endl;
           FznSpace* space = s.customEngine->getSpace(i);
           if(space) 
             p_int_CMP_base(space,s,irt,ce);

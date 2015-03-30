@@ -41,6 +41,7 @@ namespace MiniZinc {
         return interpretScopeCombinator(call,solver);
       }
       else if(call->id() == constants().combinators.print) {
+        std::cout << "DEBUG: PRINT combinator in " << call->loc() << std::endl;
         return interpretPrintCombinator(solver);
       }
       else if(call->id() == constants().combinators.next) {
@@ -399,7 +400,7 @@ namespace MiniZinc {
   SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver) {
     Env& env = solver->env();
     bool success = true;
-    //std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
+    std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
   
     int nbCtsBefore = 0;
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
@@ -415,6 +416,8 @@ namespace MiniZinc {
       Expression* domain = copy(it->e()->ti()->domain());
       domains.insert(id,domain);         
     }      
+    //std::cout << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
+    //debugprint(env.flat());  
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
     //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
@@ -435,9 +438,9 @@ namespace MiniZinc {
           vars.push_back(it->e());
         }
       }
-      //for(unsigned int i=0; i<vars.size(); i++) {
-       // std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
-      //}        
+      for(unsigned int i=0; i<vars.size(); i++) {
+        std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+      }        
       success = success && solver->addVariables(vars);      
     }      
     
@@ -460,8 +463,8 @@ namespace MiniZinc {
           flat_cts.push_back(it->e()->cast<Call>());
         }
       }
-      //for(unsigned int i=0; i<flat_cts.size(); i++)
-        //std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+      for(unsigned int i=0; i<flat_cts.size(); i++)
+        std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
       success = success && solver->postConstraints(flat_cts);      
     }
     
@@ -483,9 +486,9 @@ namespace MiniZinc {
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
               updateBoundsOnce = updateBounds || updateBoundsOnce;
               if(updateBounds) {
-                //std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
+                std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
                 success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
-                //std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
+                std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
               }  
             }
           }

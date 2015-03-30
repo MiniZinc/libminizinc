@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/model.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/prettyprinter.hh>
 
@@ -17,7 +18,7 @@
 
 namespace MiniZinc {
   
-  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {
+  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL), _failed(false) {
     GC::add(this);
   }
 
@@ -309,12 +310,19 @@ namespace MiniZinc {
   }
   
   void
-  Model::fail(void) {
+  Model::fail(EnvI& env) {
     if (!_failed) {
+      env.addWarning("model inconsistency detected");
       _failed = true;
+      for (unsigned int i=0; i<_items.size(); i++)
+        if (ConstraintI* ci = _items[i]->dyn_cast<ConstraintI>())
+          ci->remove();
       ConstraintI* failedConstraint = new ConstraintI(Location().introduce(),constants().lit_false);
       _items.push_back(failedConstraint);
     }
   }
 
+  bool Model::failed() const {
+    return _failed;
+  }
 }

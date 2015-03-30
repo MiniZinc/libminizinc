@@ -37,7 +37,7 @@ namespace MiniZinc {
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
     /// Default constructor
-    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false) {}
+    FlatteningOptions(void) : keepOutputInFzn(false) {}
   };
   
   /// Flatten model \a m

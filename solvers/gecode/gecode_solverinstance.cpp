@@ -913,9 +913,20 @@ namespace MiniZinc {
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
     prepareEngine(true);
+    std::cerr << "DEBUG: current space before calling next():  ";
+    for (unsigned i = 0; i<_current_space->iv.size(); i++) {      
+      std::cerr << _current_space->iv[i] << " ";
+    }
+    std::cerr << "\n";
     _solution = customEngine->next();
-    
-    
+    if(_solution) {
+      std::cerr << "DEBUG: solution after calling next():  ";
+      for (unsigned i = 0; i<_solution->iv.size(); i++) {      
+        std::cerr << _solution->iv[i] << " ";
+      }
+      std::cerr << "\n";
+    }
+     
     if (_solution) {
       assignSolutionToOutput();
       return SolverInstance::SAT;
@@ -2163,7 +2174,7 @@ namespace MiniZinc {
       }
       else {
         std::stringstream ssm;
-        ssm << "DEBUG: Cannot add variable of unknown type: \"" << *(vars[i]->id())  << std::endl;
+        //ssm << "DEBUG: Cannot add variable \"" << *(vars[i]->id())  << "\" of unknown type: " << (vars[i]->type())  << std::endl;
         throw InternalError(ssm.str());    
       }
     }    
@@ -2172,11 +2183,11 @@ namespace MiniZinc {
   
   bool
   GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {
-    //std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
+    std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
     for(unsigned int i=0; i<cts.size(); i++) {      
       _constraintRegistry.post(cts[i]); 
     }
-    if(!customEngine) {
+    if(!customEngine) { // TODO: why here?
       prepareEngine(true);     
     }
     return true; 
