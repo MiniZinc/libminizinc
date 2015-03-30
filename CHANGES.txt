@@ -22,6 +22,9 @@ Changes:
  - Improve error reporting, in particular for errors in comprehensions
  - Enable expressions a..b where a and b are integer variables
  - Add builtins for marking constraints as symmetry breaking or redundant
+ - Replace command line option --only-range-domains by optional boolean value
+   so that solver libraries can set the flag directly in their redefinitions
+   file.
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
