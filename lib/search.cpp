@@ -406,13 +406,17 @@ namespace MiniZinc {
       Id* id = it->e()->id();
       Expression* domain = copy(it->e()->ti()->domain());
       domains.insert(id,domain);         
-    }      
-    //std::cout << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
-    //debugprint(env.flat());  
+    }    
+    if(verbose) {
+      std::cerr << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
+      debugprint(env.flat());  
+    }
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
-    //std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
-    //debugprint(env.flat());    
+    if(verbose) {
+      std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
+      debugprint(env.flat());    
+    }
     //std::cout<< "\n" << std::endl;
     //std::cout << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
     //debugprint(_scopes[0]->env().flat());

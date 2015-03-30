@@ -1006,8 +1006,8 @@ namespace MiniZinc {
       int timeStop = _options.getIntParam("time", 0);
       timeStop  = _options.hasParam(constants().solver_options.time_limit_sec.str()) ? 
                 std::ceil(_options.getFloatParam(constants().solver_options.time_limit_sec.str()))*1000 // convert to milliseconds 
-                : timeStop;
-      
+                : timeStop;     
+                
       Search::Options o;
       o.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,

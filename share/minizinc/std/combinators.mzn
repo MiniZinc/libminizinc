@@ -58,7 +58,6 @@ annotation comb_assign(int: x,int: y);
 % ------------------- Branch & Bound -------------------------------- %
 % Branch and Bound when minimizing
 function ann: bab_min(var int: obj, ann: s) =   
-   scope( 
        repeat(
            and([
                next, % get next solution
@@ -66,12 +65,11 @@ function ann: bab_min(var int: obj, ann: s) =
                s % apply some annotation, e.g. printing the solution
            ])
        )
-   );               
+   ;               
 function ann: bab_min(var int: obj) = bab_min(obj, print);
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj, ann: s) =   
-   scope( 
        repeat(
            and([
                next, % get next solution
@@ -79,7 +77,7 @@ function ann: bab_max(var int: obj, ann: s) =
                s % apply some annotation, e.g. printing the solution
            ])
        )
-   );               
+   ;               
 function ann: bab_max(var int: obj) = bab_max(obj, print());
 
 
@@ -90,7 +88,6 @@ function ann: bab_max(var int: obj) = bab_max(obj, print());
 % that will be destroyed, i.e. the size of the neighbourhood to search)
 function ann: lns (var int: obj, array[int] of var int: x,
                    int: iterations, float: d) = 
-  scope(
     repeat (i in 1..iterations) (
       and([
         scope(
@@ -105,7 +102,6 @@ function ann: lns (var int: obj, array[int] of var int: x,
         ),
       post(obj < sol(obj))
       ])
-    )
   );
 
 % Predicate that randomly choses the neighbourhood to keep, and then 
@@ -131,7 +127,6 @@ function ann: policy_based_two_stage(array[int] of var int: stage1,
                                      var int: obj,
                                      int: nbScenarios) = 
 
-  scope(
    let { int: overall_obj = 0, % overall objective value
          array[1..nbScenarios] of int: scenario_obj = 
                                         [ 0 | i in 1..nbScenarios ]  } 
@@ -160,7 +155,6 @@ function ann: policy_based_two_stage(array[int] of var int: stage1,
                    sum (i in 1..nbScenarios) (scenario_obj[i])),
          post(obj < overall_obj) % BAB constraint on overall obj var
      ])
-  )
 ;
 
 % returns the objective variable for the given scenario 
