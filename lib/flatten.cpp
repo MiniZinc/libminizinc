@@ -3718,8 +3718,8 @@ namespace MiniZinc {
         if (decl == NULL) {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
-        }
-
+        }        
+        
         Ctx nctx = ctx;
         nctx.neg = false;
         ASTString cid = c->id();

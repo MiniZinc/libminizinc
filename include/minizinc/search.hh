@@ -31,7 +31,7 @@ namespace MiniZinc {
   public: 
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
-    void search(Env& env, MiniZinc::Options& opt) {   
+    void search(Env& env, MiniZinc::Options& opt, bool verbose = false) {   
       SolverInstanceBase* solver = new SolverInstanceBase(env,opt);     
       solver->processFlatZinc();
       
@@ -48,7 +48,7 @@ namespace MiniZinc {
           }  
         }
         initCurrentScopeIndex();
-        status = interpretCombinator(combinator, solver);
+        status = interpretCombinator(combinator, solver, verbose);
       }
       else { // solve using normal solve call
         status = solver->solve();
@@ -80,35 +80,35 @@ namespace MiniZinc {
     
   private:
     /// interpret and execute the given combinator  
-  SolverInstance::Status interpretCombinator(Expression* comb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretCombinator(Expression* comb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute an AND combinator
-  SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute an OR combinator
-  SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute a POST combinator
-  SolverInstance::Status interpretPostCombinator(Call* postComb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretPostCombinator(Call* postComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a REPEAT combinator
-  SolverInstance::Status interpretRepeatCombinator(Call* repeatComb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretRepeatCombinator(Call* repeatComb, SolverInstanceBase* solver, bool verbose);
     /// interpret and execute a SCOPE combinator
-  SolverInstance::Status interpretScopeCombinator(Call* scopeComb, SolverInstanceBase* solver);
+  SolverInstance::Status interpretScopeCombinator(Call* scopeComb, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute a NEXT combinator
-  SolverInstance::Status interpretNextCombinator(SolverInstanceBase* solver);
+  SolverInstance::Status interpretNextCombinator(SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a NEXT combinator, respecting the arguments given in the call
-  SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver);
+  SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a PRINT combinator
-  SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver);
+  SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver, bool verbose);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
-  bool postConstraints(Expression* cts, SolverInstanceBase* solver);
+  bool postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output
   void updateSolution(Model* output, Model* outputToUpdate); 
   /// interpret the LIMIT combinator \a e which is either a Call or an array of Calls
-  void interpretLimitCombinator(Expression* e, SolverInstanceBase* solver);
+  void interpretLimitCombinator(Expression* e, SolverInstanceBase* solver, bool verbose);
   /// process node limit combinator
-  void interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver);
+  void interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// process node limit combinator
-  void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver);
+  void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// process a time limit combinator
-  void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver);
+  void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   
   void pushScope(SolverInstanceBase* new_scope) {
     _scopes.push_back(new_scope);

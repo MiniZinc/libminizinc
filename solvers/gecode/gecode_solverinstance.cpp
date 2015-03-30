@@ -913,19 +913,19 @@ namespace MiniZinc {
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
     prepareEngine(true);
-    std::cerr << "DEBUG: current space before calling next():  ";
-    for (unsigned i = 0; i<_current_space->iv.size(); i++) {      
-      std::cerr << _current_space->iv[i] << " ";
-    }
-    std::cerr << "\n";
+    //std::cerr << "DEBUG: current space before calling next():  ";
+    //for (unsigned i = 0; i<_current_space->iv.size(); i++) {      
+    //  std::cerr << _current_space->iv[i] << " ";
+    // }
+    //std::cerr << "\n";
     _solution = customEngine->next();
-    if(_solution) {
-      std::cerr << "DEBUG: solution after calling next():  ";
-      for (unsigned i = 0; i<_solution->iv.size(); i++) {      
-        std::cerr << _solution->iv[i] << " ";
-      }
-      std::cerr << "\n";
-    }
+    //if(_solution) {
+      //std::cerr << "DEBUG: solution after calling next():  ";
+      //for (unsigned i = 0; i<_solution->iv.size(); i++) {      
+      //  std::cerr << _solution->iv[i] << " ";
+     //}
+      //std::cerr << "\n";
+    //}
      
     if (_solution) {
       assignSolutionToOutput();
@@ -2020,7 +2020,7 @@ namespace MiniZinc {
   bool 
   GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) {
     for(unsigned int i=0; i<vars.size(); i++) {  
-      //std::cout << "DEBUG: about to add variable \"" << *(vars[i]->id())  << std::endl;      
+      //std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
       // constants/constant arrays
       if(vars[i]->type().ispar()) {
         continue; // par identifiers (such as arrays of ints) are read from the model in the cts
@@ -2144,7 +2144,7 @@ namespace MiniZinc {
             ub = fb.u;
           } else {
             std::stringstream ssm;
-            ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vars[i] << std::endl;
+            ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *(vars[i]) << std::endl;
             throw InternalError(ssm.str());
           }
           FloatVar floatVar(*space, lb, ub);
@@ -2172,9 +2172,13 @@ namespace MiniZinc {
         bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
         space->fv_defined.push_back(isDefined);
       }
+      else if(vars[i]->type().isvar() && vars[i]->ti()->isarray()) {
+        //std::cerr << "DEBUG: Adding array of (existing?) variables:" << *vars[i] << ". Doing nothing for now..." << std::endl;
+        // do nothing -> the variables in the array are already known
+      }
       else {
         std::stringstream ssm;
-        //ssm << "DEBUG: Cannot add variable \"" << *(vars[i]->id())  << "\" of unknown type: " << (vars[i]->type())  << std::endl;
+        ssm << "DEBUG: Cannot add variable " << *(vars[i]->id())<< " of unknown type: " << (vars[i]->type().toString());
         throw InternalError(ssm.str());    
       }
     }    
@@ -2182,8 +2186,7 @@ namespace MiniZinc {
   }  
   
   bool
-  GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {
-    std::cout << "DEBUG: posting constraints in GecodeSolverInstance" << std::endl;   
+  GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {     
     for(unsigned int i=0; i<cts.size(); i++) {      
       _constraintRegistry.post(cts[i]); 
     }

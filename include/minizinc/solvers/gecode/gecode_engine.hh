@@ -323,11 +323,11 @@ namespace MiniZinc {
     // iterate over stack and post constraint
     if(path.empty()) {
       si.updateIntBounds(si._current_space, vd,lb,ub);
-      std::cerr << "DEBUG: **************** PATH is empty, so updating bounds of current space ******************** " << std::endl;
+      //std::cerr << "DEBUG: **************** PATH is empty, so updating bounds of current space ******************** " << std::endl;
       return;    
     }
     for(int edge=0; edge<path.getNbEntries(); edge++) {
-      std::cerr << "DEBUG: ------------------- PATH is NOT empty --------------------- posting update of bounds." << std::endl;
+      //std::cerr << "DEBUG: ------------------- PATH is NOT empty --------------------- posting update of bounds." << std::endl;
       Gecode::Space* s = path.getSpace(edge);
       if(s) {
         FznSpace* space = static_cast<FznSpace*>(s);       
@@ -341,7 +341,7 @@ namespace MiniZinc {
     // iterate over stack and post constraint
     if(path.empty()) {
       si.addVariables(si._current_space, vars);
-      std::cerr << "DEBUG: **************** PATH is empty, so updating variables current space ******************** " << std::endl;
+      //std::cerr << "DEBUG: **************** PATH is empty, so updating variables current space ******************** " << std::endl;
       return;    
     }
     for(int edge=0; edge<path.getNbEntries(); edge++) {

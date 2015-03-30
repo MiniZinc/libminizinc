@@ -18,7 +18,7 @@
 namespace MiniZinc {
   
   SolverInstance::Status 
-  SearchHandler::interpretCombinator(Expression* comb, SolverInstanceBase* solver) {
+  SearchHandler::interpretCombinator(Expression* comb, SolverInstanceBase* solver, bool verbose) {
     Env& env = solver->env();
     //std::cout << "DEBUG: Printing flat model:" << std::endl;
     //debugprint(solver->env().flat());
@@ -26,26 +26,27 @@ namespace MiniZinc {
     
     if(Call* call = comb->dyn_cast<Call>()) {      
       if(call->id() == constants().combinators.and_) {
-        return interpretAndCombinator(call,solver);    
+        return interpretAndCombinator(call,solver,verbose);    
       } 
       else if(call->id() == constants().combinators.or_) {
-        return interpretOrCombinator(call,solver); 
+        return interpretOrCombinator(call,solver,verbose); 
       }
       else if(call->id() == constants().combinators.post) {
-        return interpretPostCombinator(call,solver);
+        return interpretPostCombinator(call,solver,verbose);
       }
       else if(call->id() == constants().combinators.repeat) {
-        return interpretRepeatCombinator(call,solver);   
+        return interpretRepeatCombinator(call,solver,verbose);   
       }
       else if(call->id() == constants().combinators.scope) {
-        return interpretScopeCombinator(call,solver);
+        return interpretScopeCombinator(call,solver,verbose);
       }
       else if(call->id() == constants().combinators.print) {
-        std::cout << "DEBUG: PRINT combinator in " << call->loc() << std::endl;
-        return interpretPrintCombinator(solver);
+        if(verbose)
+          std::cout << "DEBUG: PRINT combinator in " << call->loc() << std::endl;
+        return interpretPrintCombinator(solver,verbose);
       }
       else if(call->id() == constants().combinators.next) {
-        return interpretNextCombinator(call, solver);
+        return interpretNextCombinator(call, solver,verbose);
       }
       else {
         std::vector<Expression*> previousParameters(call->decl()->params().size());
@@ -56,7 +57,7 @@ namespace MiniZinc {
           vd->e(eval_par(env.envi(), call->args()[i]));
         }
         
-        SolverInstance::Status ret = interpretCombinator(call->decl()->e(), solver);
+        SolverInstance::Status ret = interpretCombinator(call->decl()->e(), solver,verbose);
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -70,10 +71,10 @@ namespace MiniZinc {
       Expression* id_e = follow_id_to_value(id);
       Id* ident = id_e->dyn_cast<Id>();
       if(ident && ident->idn()==-1 && ident->v() == constants().combinators.next) {
-        return interpretNextCombinator(solver);
+        return interpretNextCombinator(solver,verbose);
       } 
       else if (ident && ident->idn()==-1 && ident->v() == constants().combinators.print) {
-        return interpretPrintCombinator(solver);
+        return interpretPrintCombinator(solver,verbose);
       }
       else {
         std::stringstream ssm; 
@@ -90,7 +91,7 @@ namespace MiniZinc {
   
   
   SolverInstance::Status 
-  SearchHandler::interpretAndCombinator(Call* call, SolverInstanceBase* solver) {    
+  SearchHandler::interpretAndCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
     //std::cout << "DEBUG: AND combinator: " << (*call) << std::endl;    
     if(call->args().size() != 1) {
       std::stringstream ssm;
@@ -100,7 +101,7 @@ namespace MiniZinc {
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
-        SolverInstance::Status status = interpretCombinator(al->v()[i],solver);
+        SolverInstance::Status status = interpretCombinator(al->v()[i],solver,verbose);
         if(status != SolverInstance::SAT)               
           return status;            
       }
@@ -113,7 +114,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretOrCombinator(Call* call, SolverInstanceBase* solver) {
+  SearchHandler::interpretOrCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     //std::cout << "DEBUG: OR combinator: " << (*call) << std::endl;        
     if(call->args().size() != 1) {
       std::stringstream ssm;
@@ -125,7 +126,7 @@ namespace MiniZinc {
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
-        status = interpretCombinator(al->v()[i],solver);
+        status = interpretCombinator(al->v()[i],solver,verbose);
         if(status == SolverInstance::SAT)
           oneIsFeasible = true;
       }
@@ -138,14 +139,14 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver) {   
+  SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver,bool verbose) {
     //std::cout << "DEBUG: POST combinator: " << *call << std::endl;
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "POST combinator takes only 1 argument instead of " << call->args().size() << " in " << *call ;
       throw TypeError(solver->env().envi(), call->loc(), ssm.str());
     }
-    if(!postConstraints(call->args()[0], solver)) {
+    if(!postConstraints(call->args()[0], solver,verbose)) {
       std::stringstream ssm;
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(solver->env().envi(),call->args()[0]->loc(), ssm.str());
@@ -154,7 +155,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretRepeatCombinator(Call* call, SolverInstanceBase* solver) {
+  SearchHandler::interpretRepeatCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     Env& env = solver->env();
     //std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
     if(call->args().size() == 1) {  
@@ -186,8 +187,9 @@ namespace MiniZinc {
           SolverInstance::Status status = SolverInstance::UNKNOWN;
           // repeat the argument a limited number of times
           for(unsigned int i = 0; i<nbIterations; i++) {
-            //std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
-            status = interpretCombinator(compr->e(),solver);
+            if(verbose)
+              std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
+            status = interpretCombinator(compr->e(),solver,verbose);
             if(status != SolverInstance::SAT) {             
               return status;
             }
@@ -198,7 +200,7 @@ namespace MiniZinc {
       else { // repeat is only restricted by satisfiability
         SolverInstance::Status status = SolverInstance::UNKNOWN;
         do {
-          status = interpretCombinator(call->args()[0], solver);
+          status = interpretCombinator(call->args()[0], solver,verbose);
         } while(status == SolverInstance::SAT);
         return status;
       }
@@ -211,7 +213,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver) {
+  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     if(call->args().size() != 1) {
       std::stringstream ssm;
@@ -225,7 +227,7 @@ namespace MiniZinc {
       SolverInstanceBase* solver_copy = solver->copy();
       //std::cerr << "DEBUG: Copied solver instance" << std::endl;
       pushScope(solver_copy);
-      SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy);
+      SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
       popScope();
       //std::cerr << "DEBUG: Closed nested scope" << std::endl;
       return status;
@@ -233,14 +235,14 @@ namespace MiniZinc {
     else {
      //std::cerr << "DEBUG: Opening high-level scope" << std::endl;
      pushScope(solver);
-     SolverInstance::Status status = interpretCombinator(call->args()[0], solver);
+     SolverInstance::Status status = interpretCombinator(call->args()[0], solver, verbose);
      popScope();
      return status;
     }    
   }
   
   SolverInstance::Status
-  SearchHandler::interpretNextCombinator(SolverInstanceBase* solver) {
+  SearchHandler::interpretNextCombinator(SolverInstanceBase* solver, bool verbose) {
    // std::cerr << "DEBUG: NEXT combinator" << std::endl;   
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
@@ -256,7 +258,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver) {   
+  SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {   
     // interpret NEXT arguments    
     ASTExprVec<Expression> args = call->args();
     if(args.size()>1) {
@@ -265,7 +267,7 @@ namespace MiniZinc {
       throw TypeError(solver->env().envi(),call->loc(), ssm.str());      
     } 
     if(args.size() > 0)
-      interpretLimitCombinator(args[0],solver);
+      interpretLimitCombinator(args[0],solver,verbose);
       
     // get next solution
     SolverInstance::Status status = solver->next();
@@ -282,14 +284,14 @@ namespace MiniZinc {
   }
   
   void 
-  SearchHandler::interpretLimitCombinator(Expression* e, SolverInstanceBase* solver) {
+  SearchHandler::interpretLimitCombinator(Expression* e, SolverInstanceBase* solver, bool verbose) {
     if(Call* c = e->dyn_cast<Call>()) {
       if(c->id() == constants().combinators.limit_time) 
-        interpretTimeLimitCombinator(c,solver);
+        interpretTimeLimitCombinator(c,solver,verbose);
       else if(c->id() == constants().combinators.limit_nodes)
-        interpretNodeLimitCombinator(c,solver);
+        interpretNodeLimitCombinator(c,solver,verbose);
       else if(c->id() == constants().combinators.limit_fails)
-        interpretFailLimitCombinator(c,solver);      
+        interpretFailLimitCombinator(c,solver,verbose);      
       else 
         std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
     }
@@ -298,11 +300,11 @@ namespace MiniZinc {
       for(unsigned int j=0; j<elems.size(); j++) {
         if(Call* c = elems[j]->dyn_cast<Call>()) {
           if(c->id() == constants().combinators.limit_time) 
-            interpretTimeLimitCombinator(c,solver);
+            interpretTimeLimitCombinator(c,solver,verbose);
           else if(c->id() == constants().combinators.limit_nodes)
-            interpretNodeLimitCombinator(c,solver);
+            interpretNodeLimitCombinator(c,solver,verbose);
           else if(c->id() == constants().combinators.limit_fails) 
-            interpretFailLimitCombinator(c,solver);          
+            interpretFailLimitCombinator(c,solver,verbose);          
           else 
             std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
         }
@@ -315,7 +317,7 @@ namespace MiniZinc {
   }
   
   void
-  SearchHandler::interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver) {    
+  SearchHandler::interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
     ASTExprVec<Expression> args = call->args();
     if(args.size() != 1) {
       std::stringstream ssm; 
@@ -336,7 +338,7 @@ namespace MiniZinc {
   }
   
   void
-  SearchHandler::interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver) {    
+  SearchHandler::interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
     ASTExprVec<Expression> args = call->args();
     if(args.size() != 1) {
       std::stringstream ssm; 
@@ -357,7 +359,7 @@ namespace MiniZinc {
   }
   
   void
-  SearchHandler::interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver) {
+  SearchHandler::interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     ASTExprVec<Expression> args = call->args();
     if(args.size() != 1) {
       std::stringstream ssm; 
@@ -384,7 +386,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver) {
+  SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {
     //std::cerr << "DEBUG: PRINT combinator" << std::endl;   
     if(solver->env().envi().hasSolution()) {      
       solver->env().evalOutput(std::cout);      
@@ -397,10 +399,11 @@ namespace MiniZinc {
   }  
   
   bool 
-  SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver) {
+  SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose) {
     Env& env = solver->env();
     bool success = true;
-    std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
+    if(verbose)
+      std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
   
     int nbCtsBefore = 0;
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
@@ -420,7 +423,7 @@ namespace MiniZinc {
     //debugprint(env.flat());  
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
-    //std::cout << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
+    //std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
     //debugprint(env.flat());    
     //std::cout<< "\n" << std::endl;
     //std::cout << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
@@ -438,9 +441,10 @@ namespace MiniZinc {
           vars.push_back(it->e());
         }
       }
-      for(unsigned int i=0; i<vars.size(); i++) {
-        std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
-      }        
+      if(verbose)
+        for(unsigned int i=0; i<vars.size(); i++) {        
+          std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+        }
       success = success && solver->addVariables(vars);      
     }      
     
@@ -463,8 +467,9 @@ namespace MiniZinc {
           flat_cts.push_back(it->e()->cast<Call>());
         }
       }
-      for(unsigned int i=0; i<flat_cts.size(); i++)
-        std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
+      if(verbose)
+        for(unsigned int i=0; i<flat_cts.size(); i++)
+          std::cout << "DEBUG: adding new (flat) constraint to solver:" << *flat_cts[i] << std::endl;      
       success = success && solver->postConstraints(flat_cts);      
     }
     
@@ -486,9 +491,9 @@ namespace MiniZinc {
               bool updateBounds = (lb_old != lb_new || ub_old != ub_new);
               updateBoundsOnce = updateBounds || updateBoundsOnce;
               if(updateBounds) {
-                std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
-                success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);
-                std::cout << "DEBUG: updated int bounds (" << lb_new << "," << ub_new << " ) of " << *id << " in solver" << std::endl;
+                if(verbose)
+                  std::cout << "DEBUG: updating intbounds of \"" << *(id->decl()) << "\" to new bounds: (" << lb_new << ", " << ub_new << ")"  << std::endl;
+                success = success && solver->updateIntBounds(id->decl(),lb_new,ub_new);               
               }  
             }
           }
