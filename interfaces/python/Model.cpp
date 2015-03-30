@@ -129,7 +129,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
 }
 
 
-PyObject* MznModel::solve(PyObject* args)
+PyObject* MznModel::solve(PyObject* args, PyObject* kwds)
 {
   if (!loaded) {
     PyErr_SetString(PyExc_RuntimeError, "MiniZinc: Model.solve: No data has been loaded into the model");
@@ -137,10 +137,17 @@ PyObject* MznModel::solve(PyObject* args)
   }
 
   PyObject* dict = NULL;
-  if (!PyArg_ParseTuple(args, "|O", &dict)) {
+
+  static char* kwlist[] = {"dict", "solver", "time", NULL};
+
+  char* solverName = "";
+  unsigned long newTimeLimit = 0;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Osk", kwlist, &dict, &solverName, &newTimeLimit)) {
     PyErr_SetString(PyExc_RuntimeError, "MiniZinc: Model.solve: Parsing error");
     return NULL;
   }
+
   Model* saveModel;
   {
     GCLock lock;
@@ -152,14 +159,28 @@ PyObject* MznModel::solve(PyObject* args)
       while (PyDict_Next(dict, &pos, &key, &value)) {
         const char* name = PyUnicode_AsUTF8(key);
         if (addData(name,value) == -1) {
-          delete _m;
-          _m = saveModel;
-          // addData handles the error message
-          return NULL;
+          // addData handled the error message
+          goto SOLVE__ERROR_HANDLING;
         }
       }
     }
+    if (newTimeLimit > 0) {
+      timeLimit = newTimeLimit;
+    }
+    if (strlen(solverName)) {
+      if (set_solver(solverName) == NULL) {
+        // setSolver handled the error message
+        goto SOLVE__ERROR_HANDLING;
+      }
+    }
+    goto SOLVE__NO_ERROR;
+    SOLVE__ERROR_HANDLING:
+    delete _m;
+    _m = saveModel;
+    return NULL;
   }
+
+  SOLVE__NO_ERROR:
   vector<TypeError> typeErrors;
   try {
     MiniZinc::typecheck(_m, typeErrors);
@@ -196,8 +217,9 @@ PyObject* MznModel::solve(PyObject* args)
   if (env->warnings().size()!=0)
   {
     stringstream warningLog;
+    warningLog << "MiniZinc: Model.solve: Warning:\n";
     for (unsigned int i=0; i<env->warnings().size(); i++) {
-      warningLog << "MiniZinc: Model.solve: Warning:  " << env->warnings()[i];
+      warningLog << env->warnings()[i];
     }
     const std::string& tmp = warningLog.str();
     const char* cstr = tmp.c_str();
@@ -213,7 +235,14 @@ PyObject* MznModel::solve(PyObject* args)
   _m = saveModel;
   MznSolver* ret = reinterpret_cast<MznSolver*>(MznSolver_new(&MznSolver_Type, NULL, NULL));
   switch (sc) {
-    case SC_GECODE: ret->solver = new GecodeSolverInstance(*env, options); break;
+    case SC_UNKNOWN:
+      delete env;
+      PyErr_SetString(PyExc_ValueError, "MiniZinc: Model.solve:  Solver name is not set");
+      return NULL;
+
+    case SC_GECODE: 
+      ret->solver = new GecodeSolverInstance(*env, options);
+      break;
   }
   ret->solver->processFlatZinc();
   ret->env = env;
@@ -406,7 +435,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
   self->includePaths = new vector<string>;
   self->includePaths->push_back(std_lib_dir+"/gecode/");
   self->includePaths->push_back(std_lib_dir+"/std/");
-  self->sc = self->SC_GECODE;
+  self->sc = MznModel::default_solver;
   stringstream errorStream;
   self->_m = parseFromString(libNamesStr,"error.txt",*(self->includePaths),false,false,false, errorStream);
   if (!(self->_m)) {
@@ -482,20 +511,37 @@ MznModel_load_from_string(MznModel *self, PyObject *args, PyObject *keywds) {
 }
 
 static PyObject*
-MznModel_solve(MznModel *self, PyObject* args)
+MznModel_solve(MznModel *self, PyObject* args, PyObject* kwds)
 {
-  return self->solve(args);
+  return self->solve(args,kwds);
 }
 
 static PyObject*
 MznModel_set_time_limit(MznModel *self, PyObject *args)
 {
-  unsigned long long t;
-  if (!PyArg_ParseTuple(args, "K", &t)) {
+  unsigned long t;
+  if (!PyArg_ParseTuple(args, "k", &t)) {
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.set_time_limit:  Time limit must be an integer");
     return NULL;
   }
   self->timeLimit = t;
+  return Py_None;
+}
+
+PyObject*
+MznModel::set_solver(const char* s)
+{
+  std::string name(s);
+  // lower characters in name
+  for (std::string::iterator i = name.begin(); i!=name.end(); ++i)
+    if (*i<='Z' && *i>='A')
+      *i = *i - ('Z'-'z');
+  if (name == "gecode")
+    sc = SC_GECODE;
+  else {
+    MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: Model.set_solver: Unexpected solver name: %s", name.c_str());
+    return NULL;
+  }
   return Py_None;
 }
 
@@ -507,18 +553,7 @@ MznModel_set_solver(MznModel *self, PyObject *args)
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Model.set_solver:  Solver name must be a string");
     return NULL;
   }
-  std::string name(s);
-  // lower characters in name
-  for (std::string::iterator i = name.begin(); i!=name.end(); ++i)
-    if (*i<='Z' && *i>='A')
-      *i = *i - ('Z'-'z');
-  if (name == "gecode")
-    self->sc = self->SC_GECODE;
-  else {
-    MZN_PYERR_SET_STRING(PyExc_ValueError, "MiniZinc: Model.set_solver: Unexpected solver name: %s", name.c_str());
-    return NULL;
-  }
-  return Py_None;
+  return (self->set_solver(s));
 }
 
 

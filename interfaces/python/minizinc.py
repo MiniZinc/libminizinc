@@ -3,14 +3,17 @@
 # @supervisor	Guido Tack
 
 
-#Things to add:
-# Calling solve with timer
-# Int vs Float multiplication
+#@Things to add:
+# Int vs Float multiplication (comparation and other command as well)
 # Write code for checking argument with type of None (any type can be accepted)
 # Improve the interface so that there is no need to assign MZN_STDLIB_DIR when starting python
 # args_ret_dict: some functions type checking are not written
 # Hide some internal functions such as flatten or type_presentation
 
+#@Suggestion:
+# Remove the user-defined name when declaring variable
+# Consider replacing it with i, where i is the number of arguments created
+#	for example: calling [a,b,c] = m.Variable(1,100,3)
 
 import sys
 import minizinc_internal
@@ -1342,7 +1345,7 @@ class Model(object):
 		else:
 			return VariableConstruct(self, argopt1, argopt2)
 
-	def __solve(self, code, expr, ann, data):
+	def __solve(self, code, expr, ann, data, solver, time):
 		minizinc_internal.lock()
 
 		if ann is not None:
@@ -1360,18 +1363,18 @@ class Model(object):
 			self.add_recursive(data)
 		minizinc_internal.unlock()
 
-		self.mznsolver = self.mznmodel.solve()
+		self.mznsolver = self.mznmodel.solve(solver = solver, time = time)
 		self.mznmodel = savedModel
 		self.solve_counter = self.solve_counter + 1
 		self.next_counter = -1
 
 
-	def satisfy(self, ann = None, data = None):
-		self.__solve(0, None, ann, data)
-	def maximize(self, expr, ann = None, data = None):
-		self.__solve(2, expr, ann, data)
-	def minimize(self, expr, ann = None, data = None):
-		self.__solve(1, expr, ann, data)
+	def satisfy(self, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(0, None, ann, data, solver, time)
+	def maximize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(2, expr, ann, data, solver, time)
+	def minimize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(1, expr, ann, data, solver, time)
 	def reset(self):
 		self.__init__()
 

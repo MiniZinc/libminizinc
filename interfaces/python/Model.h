@@ -14,21 +14,26 @@ struct MznModel {
   Model* _m;
   vector<string>* includePaths;
 
-
+  // SolverCode definition is in global.h
   enum SolverCode {
+    SC_UNKNOWN,
     SC_GECODE
-  };
-  SolverCode sc;
+  } sc;
 
-  long long timeLimit;
+  const static SolverCode default_solver = SC_UNKNOWN;
+
+  unsigned long timeLimit;
   bool loaded;
 
   MznModel();
 
   int load(PyObject *args, PyObject *keywds, bool fromFile);
   int addData(const char* const name, PyObject* value);
-  PyObject* solve(PyObject* args);
+
+  PyObject* set_solver(const char* s);
+  PyObject* solve(PyObject* args, PyObject* kwds);
 };
+
 
 void MznModelDestructor(PyObject* o);
 static PyObject* MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -38,7 +43,18 @@ static void MznModel_dealloc(MznModel* self);
 /************************************************************
             Groups of function general functions
  ************************************************************/
-static PyObject* MznModel_solve(MznModel *self, PyObject* args);
+/** Function arguments - allow keywords
+  dict: dictionary of name - value, used when loading from a minizinc file only
+    key: name of the value to be assigned
+    value: value to be assigned
+  solver: solver name
+    if solver_name == '', do nothing
+    else, solve the model using specified solver
+  time: time limit
+    if time_limit != 0, set new time limit
+ */
+static PyObject* MznModel_solve(MznModel *self, PyObject* args, PyObject* kwds);
+
 static PyObject* MznModel_set_time_limit(MznModel* self, PyObject* args);
 static PyObject* MznModel_set_solver(MznModel* self, PyObject* args);
 
@@ -48,7 +64,7 @@ static PyObject* MznModel_set_solver(MznModel* self, PyObject* args);
  ************************************************************/
 static PyObject* MznModel_load(MznModel *self, PyObject *args, PyObject *keywds);
 static PyObject* MznModel_load_from_string(MznModel *self, PyObject *args, PyObject *keywds);
-// Take in a string and a Python value
+// Take in a name and a Python value, add that data to the current model
 static PyObject* MznModel_addData(MznModel* self, PyObject* args);
 
 
@@ -113,11 +129,14 @@ static PyObject* MznModel_copy(MznModel* self);
 // Print the MiniZinc representation of the model
 static PyObject* MznModel_debugprint(MznModel* self);
 
+
+
+// Declare all the functions
 static PyMethodDef MznModel_methods[] = {
   {"load", (PyCFunction)MznModel_load, METH_KEYWORDS, "Load MiniZinc model from MiniZinc file"},
   {"load_from_string", (PyCFunction)MznModel_load_from_string, METH_KEYWORDS, "Load MiniZinc model from standard input"},
   {"addData", (PyCFunction)MznModel_addData, METH_VARARGS, "Add data to a MiniZinc model"},
-  {"solve", (PyCFunction)MznModel_solve, METH_VARARGS, "Solve a loaded MiniZinc model"},
+  {"solve", (PyCFunction)MznModel_solve, METH_VARARGS | METH_KEYWORDS, "Solve a loaded MiniZinc model"},
   {"set_time_limit", (PyCFunction)MznModel_set_time_limit, METH_VARARGS, "Limit the execution time of the model"},
   {"set_solver", (PyCFunction)MznModel_set_solver, METH_VARARGS, "Choose which model will be used to solve the model"},
   {"Declaration", (PyCFunction)MznModel_Declaration, METH_VARARGS, "Add a variable into the model"},
