@@ -21,6 +21,7 @@ Changes:
    function int: foo(); instead of just function int: foo;
  - Improve error reporting, in particular for errors in comprehensions
  - Enable expressions a..b where a and b are integer variables
+ - Add builtins for marking constraints as symmetry breaking or redundant
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
