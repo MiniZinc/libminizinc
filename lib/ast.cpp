@@ -655,14 +655,17 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (tiit_par != its_par) {
+              if (tiit_par.isSubtypeOf(its_par)) {
+                if (it->second.bt() == Type::BT_TOP)
+                  it->second.bt(tiit.bt());
+              } else if (its_par.isSubtypeOf(tiit_par)) {
+                it->second = tiit_par;
+              } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                                 tiid.str()+" instantiated with different types ("+
                                 tiit.toString()+" vs "+
                                 it->second.toString()+")");
               }
-              if (it->second.bt() == Type::BT_TOP)
-                it->second.bt(tiit.bt());
             }
           }
         }
@@ -733,8 +736,18 @@ namespace MiniZinc {
           Type toCheck = ta[i]->type();
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
-          if (toCheck != ty && ty.isSubtypeOf(toCheck)) {
-            ty = toCheck;
+          if (toCheck != ty) {
+            if (ty.isSubtypeOf(toCheck)) {
+              ty = toCheck;
+            } else {
+              Type ty_par = ty;
+              ty_par.ti(Type::TI_PAR);
+              Type toCheck_par = toCheck;
+              toCheck_par.ti(Type::TI_PAR);
+              if (ty_par.isSubtypeOf(toCheck_par)) {
+                ty.bt(toCheck.bt());
+              }
+            }
           }
         }
       }
