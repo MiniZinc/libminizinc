@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
   bool flag_optimize = true;
   bool flag_werror = false;
   bool flag_gecode = false;
+  bool flag_only_range_domains = false;
   unsigned int flag_npasses = 1;
   
   Timer starttime;
@@ -331,14 +332,12 @@ int main(int argc, char** argv) {
               GCLock lock;
               std::vector<Pass*> passes;
               Options gopts;
-              gopts.setBoolParam(std::string("only-range-domains"), fopts.onlyRangeDomains);
+              gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
               FlatteningOptions pass_opts = fopts;
               for(unsigned int i=1; i<flag_npasses; i++) {
                 if(flag_gecode) {
-                  pass_opts.onlyRangeDomains = false;
                   passes.push_back(new GecodePass(pass_opts, gopts, std_lib_dir+"/gecode/"));
                 } else {
-                  pass_opts.onlyRangeDomains = false;
                   passes.push_back(new CompilePass(pass_opts, std_lib_dir+"/std/"));
                 }
               }
