@@ -172,6 +172,11 @@ namespace MiniZinc {
           rewrite = IntLit::a(d);
           return OptimizeRegistry::CS_REWRITE;
         } else if (coeffs.size() < al_c->v().size()) {
+          if (coeffs.size()==1 && coeffs[0]==1 && d==0) {
+            rewrite = x[0]();
+            return OptimizeRegistry::CS_REWRITE;
+          }
+          
           std::vector<Expression*> coeffs_e(coeffs.size());
           std::vector<Expression*> x_e(coeffs.size());
           for (unsigned int i=0; i<coeffs.size(); i++) {
