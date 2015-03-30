@@ -19,9 +19,7 @@ namespace MiniZinc {
   
   SolverInstance::Status 
   SearchHandler::interpretCombinator(Expression* comb, SolverInstanceBase* solver, bool verbose) {
-    Env& env = solver->env();
-    //std::cout << "DEBUG: Printing flat model:" << std::endl;
-    //debugprint(solver->env().flat());
+    Env& env = solver->env();  
     //std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
     
     if(Call* call = comb->dyn_cast<Call>()) {      
@@ -219,26 +217,16 @@ namespace MiniZinc {
       std::stringstream ssm;
       ssm << "SCOPE-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(),call->loc(), ssm.str());
-    }
-    // if this is a nested scope
-    if(!_scopes.empty()) {
-      //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
-      solver->env().combinator = call->args()[0];
-      SolverInstanceBase* solver_copy = solver->copy();
-      //std::cerr << "DEBUG: Copied solver instance" << std::endl;
-      pushScope(solver_copy);
-      SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
-      popScope();
-      //std::cerr << "DEBUG: Closed nested scope" << std::endl;
-      return status;
-    } // this is not a nested scope
-    else {
-     //std::cerr << "DEBUG: Opening high-level scope" << std::endl;
-     pushScope(solver);
-     SolverInstance::Status status = interpretCombinator(call->args()[0], solver, verbose);
-     popScope();
-     return status;
-    }    
+    }   
+    //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
+    solver->env().combinator = call->args()[0];
+    SolverInstanceBase* solver_copy = solver->copy();
+    //std::cerr << "DEBUG: Copied solver instance" << std::endl;
+    pushScope(solver_copy);
+    SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
+    popScope();
+    //std::cerr << "DEBUG: Closed nested scope" << std::endl;
+    return status;
   }
   
   SolverInstance::Status
@@ -532,5 +520,15 @@ namespace MiniZinc {
     }    
     //throw InternalError("SearchHandler::updateSolution: Could not update solutions in output models");   
   }
+  
+   Expression* 
+   SearchHandler::removeRedundantScopeCombinator(Expression* combinator) {
+     if(Call* c = combinator->dyn_cast<Call>()) {
+       if(c->id() == constants().combinators.scope) {
+         return c->args()[0];
+       }
+     }
+     return combinator;
+   }
   
 }

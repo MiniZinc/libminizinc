@@ -22,12 +22,9 @@ namespace MiniZinc {
   
   class SearchHandler { 
   private:
-    // the index of the current scope
-    unsigned int _currentScope;
   protected:
     // the stack of scopes where the topmost scope is the scope of the next level
     std::vector<SolverInstanceBase*> _scopes;
-    void initCurrentScopeIndex(void) { _currentScope = 0; } 
   public: 
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
@@ -46,9 +43,11 @@ namespace MiniZinc {
               break;
             }
           }  
-        }
-        initCurrentScopeIndex();
+        }        
+        pushScope(solver);
+        combinator = removeRedundantScopeCombinator(combinator);
         status = interpretCombinator(combinator, solver, verbose);
+        popScope();
       }
       else { // solve using normal solve call
         status = solver->solve();
@@ -109,14 +108,14 @@ namespace MiniZinc {
   void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// process a time limit combinator
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
+  /// if the search combinator call has an initial SCOPE combinator, remove it, because it can be ignored
+  Expression* removeRedundantScopeCombinator(Expression* combinator);
   
   void pushScope(SolverInstanceBase* new_scope) {
-    _scopes.push_back(new_scope);
-    _currentScope++;
+    _scopes.push_back(new_scope);   
   }
   void popScope() {
-    _scopes.pop_back();
-    _currentScope--;
+    _scopes.pop_back();    
   }
   };
  
