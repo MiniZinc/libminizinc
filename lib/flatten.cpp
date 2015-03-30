@@ -479,8 +479,7 @@ namespace MiniZinc {
         ConstraintI* ci = i->cast<ConstraintI>();
         toAnnotate = ci->e();
         if (ci->e()->isa<BoolLit>() && !ci->e()->cast<BoolLit>()->v()) {
-          addWarning("model inconsistency detected");
-          _flat->fail();
+          _flat->fail(*this);
         }
         toAdd = ci->e();
         break;
@@ -618,7 +617,6 @@ namespace MiniZinc {
   
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
-
   
   Env::Env(Model* m) : e(new EnvI(m)) {}
   Env::~Env(void) {
@@ -1266,8 +1264,7 @@ namespace MiniZinc {
                     id->decl()->ti()->setComputedDomain(true);
                   }
                   if (id->type().st()==Type::ST_PLAIN && ibv->size()==0) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else {
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),ibv));
                   }
@@ -1294,8 +1291,7 @@ namespace MiniZinc {
                     id->decl()->ti()->setComputedDomain(true);
                   }
                   if (LinearTraits<FloatLit>::domain_empty(ibv)) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else {
                     id->decl()->ti()->domain(ibv);
                   }
@@ -1334,6 +1330,47 @@ namespace MiniZinc {
               // Check that index sets match
               env.errorStack.clear();
               checkIndexSets(env,vd,e);
+              if (vd->ti()->domain() && e->isa<ArrayLit>()) {
+                ArrayLit* al = e->cast<ArrayLit>();
+                if (e->type().bt()==Type::BT_INT) {
+                  IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+                  for (unsigned int i=0; i<al->v().size(); i++) {
+                    if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                      VarDecl* vdi = id->decl();
+                      if (vdi->ti()->domain()==NULL) {
+                        vdi->ti()->domain(vd->ti()->domain());
+                      } else {
+                        IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
+                        IntSetRanges isvr(isv);
+                        IntSetRanges vdi_domr(vdi_dom);
+                        Ranges::Inter<IntSetRanges, IntSetRanges> inter(isvr,vdi_domr);
+                        IntSetVal* newdom = IntSetVal::ai(inter);
+                        if (newdom->size()==0) {
+                          env.flat()->fail(env);
+                        } else {
+                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                        }
+                      }
+                    }
+                  }
+                } else if (e->type().bt()==Type::BT_FLOAT) {
+                  FloatVal f_min = eval_float(env, vd->ti()->domain()->cast<BinOp>()->lhs());
+                  FloatVal f_max = eval_float(env, vd->ti()->domain()->cast<BinOp>()->rhs());
+                  for (unsigned int i=0; i<al->v().size(); i++) {
+                    if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                      VarDecl* vdi = id->decl();
+                      if (vdi->ti()->domain()==NULL) {
+                        vdi->ti()->domain(vd->ti()->domain());
+                      } else {
+                        BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(vdi->ti()->domain()->cast<BinOp>(), f_min, f_max);
+                        if (ndomain != vdi->ti()->domain()) {
+                          vdi->ti()->domain(ndomain);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             } else if (Id* e_id = e->dyn_cast<Id>()) {
               if (e_id == vd->id()) {
                 ret = vd->id();
@@ -2277,8 +2314,6 @@ namespace MiniZinc {
                     bind(env, Ctx(), ident->decl(), constants().lit_true);
                     it->second.b = constants().lit_true;
                   }
-                } else {
-                  env.map_insert(c, EE(constants().lit_true,constants().lit_true));
                 }
               }
             }
@@ -2680,6 +2715,7 @@ namespace MiniZinc {
             throw FlatteningError(env,e->loc(), "undefined identifier");
           }
         }
+        id = follow_id_to_decl(id)->cast<VarDecl>()->id();
         if (ctx.neg && id->type().dim() > 0) {
           if (id->type().dim() > 1)
             throw InternalError("multi-dim arrays in negative positions not supported yet");
@@ -3650,8 +3686,7 @@ namespace MiniZinc {
                     changeDom = true;
                   }
                   if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
-                    env.addWarning("model inconsistency detected");
-                    env.flat()->fail();
+                    env.flat()->fail(env);
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
@@ -4340,8 +4375,7 @@ namespace MiniZinc {
                   vd->ti()->setComputedDomain(true);
                 }
                 if (!v->e()->type().is_set() && ibv->card()==0) {
-                  env.addWarning("model inconsistency detected");
-                  env.flat()->fail();
+                  env.flat()->fail(env);
                 } else {
                   vd->ti()->domain(new SetLit(Location().introduce(),ibv));
                 }
@@ -5250,6 +5284,16 @@ namespace MiniZinc {
     EnvI& env = e.envi();
     env.fopts = opt;
 
+    bool onlyRangeDomains;
+    {
+      GCLock lock;
+      Call* check_only_range =
+        new Call(Location(),"mzn_check_only_range_domains", std::vector<Expression*>());
+      check_only_range->type(Type::parbool());
+      check_only_range->decl(env.orig->matchFn(e.envi(), check_only_range));
+      onlyRangeDomains = eval_bool(e.envi(), check_only_range);
+    }
+    
     class ExpandArrayDecls : public ItemVisitor {
     public:
       EnvI& env;
@@ -5269,6 +5313,9 @@ namespace MiniZinc {
       EnvI& env;
       bool& hadSolveItem;
       FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+      bool enter(Item* i) {
+        return !(i->isa<ConstraintI>()  && env.flat()->failed());
+      }
       void vVarDeclI(VarDeclI* v) {
         if (v->e()->type().isvar() || v->e()->type().isann()) {
           (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
@@ -5333,7 +5380,7 @@ namespace MiniZinc {
       }
     } _fv(env,hadSolveItem);
     iterItems<FV>(_fv,e.model());
-
+    
     if (!hadSolveItem) {
       e.envi().errorStack.clear();
       Location modelLoc;
@@ -5391,6 +5438,8 @@ namespace MiniZinc {
     env.collectVarDecls(true);
 
     while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
+      if (env.flat()->failed())
+        return;
       std::vector<int> agenda;
       for (int i=startItem; i<=endItem; i++) {
         agenda.push_back(i);
@@ -5434,7 +5483,7 @@ namespace MiniZinc {
           GCLock lock;
           IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
 
-          bool needRangeDomain = opt.onlyRangeDomains;
+          bool needRangeDomain = onlyRangeDomains;
           if (!needRangeDomain && dom->size() > 0) {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity())
               needRangeDomain = true;

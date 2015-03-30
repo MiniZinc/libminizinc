@@ -29,14 +29,12 @@ namespace MiniZinc {
 
   /// Options for the flattener
   struct FlatteningOptions {
-    /// Variables support only ranges, convert holes into != constraints
-    bool onlyRangeDomains;
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
     /// Verbose output during flattening
     bool verbose;
     /// Default constructor
-    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false), verbose(false) {}
+    FlatteningOptions(void) : keepOutputInFzn(false), verbose(false) {}
   };
 
   class Pass {

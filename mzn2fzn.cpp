@@ -223,8 +223,6 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
-    } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
     } else {

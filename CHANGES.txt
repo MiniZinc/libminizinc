@@ -21,6 +21,12 @@ Changes:
    function int: foo(); instead of just function int: foo;
  - Improve error reporting, in particular for errors in comprehensions
  - Enable expressions a..b where a and b are integer variables
+ - Add builtins for marking constraints as symmetry breaking or redundant
+ - Replace command line option --only-range-domains by optional boolean value
+   so that solver libraries can set the flag directly in their redefinitions
+   file.
+ - Stop flattening immediately when a model has been found to contain an
+   inconsistency.
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
@@ -52,6 +58,8 @@ Bug fixes:
    declared parameter bounds
  - Fix arg_sort builtin to implement the correct semantics
  - Fix sort_by builtin to sort in non-decreasing order, and work with floats
+ - Fix bug in type checker, now automatic coercions in functions defined with
+   type variables (like the comparison operators) work correctly
  
 
 Version 2.0.1

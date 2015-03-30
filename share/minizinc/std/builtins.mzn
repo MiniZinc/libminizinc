@@ -2154,7 +2154,25 @@ function bool: bernoulli(float: p);
 
 /** @group builtins.random Return a sample from the binomial distribution defined by sample number \a t and probability \a p */
 function int: binomial(int: t, float: p);  
+
+/***
+  @groupdef builtins.special Special constraints
   
+  These predicates allow users to mark constraints as e.g. symmetry breaking
+  or redundant, so that solvers can choose to implement them differently.
+  
+  We cannot easily use annotations for this purpose, since annotations are
+  propagated to all constraints in a decomposition, which may be incorrect
+  for redundant or symmetry breaking constraints in the presence of
+  common subexpression elimination (CSE).
+*/  
+
+/** @group builtins.special Mark \a b as a symmetry breaking constraint */
+predicate symmetry_breaking_constraint(var bool: b);
+
+/** @group builtins.special Mark \a b as a redundant constraint */
+predicate redundant_constraint(var bool: b);
+
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
@@ -2163,6 +2181,7 @@ function int: binomial(int: t, float: p);
 %
 include "redefinitions.mzn";
 include "redefinitions-2.0.mzn";
+include "redefinitions-2.0.2.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
