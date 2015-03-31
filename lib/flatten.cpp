@@ -658,7 +658,9 @@ namespace MiniZinc {
 
     
     for (int i=lastError-1; i>=0; i--) {
-      Location loc = stack[i]->loc();
+      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[i]) & ~static_cast<ptrdiff_t>(1));
+      bool isCompIter = reinterpret_cast<ptrdiff_t>(stack[i]) & static_cast<ptrdiff_t>(1);
+      Location loc = e->loc();
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
       if (findFilename == filenameMap.end()) {
@@ -671,21 +673,21 @@ namespace MiniZinc {
       }
       
       os << filenameId << '.' << loc.first_line << '.' << loc.first_column << '.' << loc.last_line << '.' << loc.last_column;
-      switch (stack[i]->eid()) {
+      switch (e->eid()) {
         case Expression::E_INTLIT:
-          os << "il:" << *stack[i];
+          os << "il:" << *e;
           break;
         case Expression::E_FLOATLIT:
-          os << "fl:" << *stack[i];
+          os << "fl:" << *e;
           break;
         case Expression::E_SETLIT:
-          os << "sl:" << *stack[i];
+          os << "sl:" << *e;
           break;
         case Expression::E_BOOLLIT:
-          os << "bl:" << *stack[i];
+          os << "bl:" << *e;
           break;
         case Expression::E_STRINGLIT:
-          os << "stl:" << *stack[i];
+          os << "stl:" << *e;
           break;
         case Expression::E_ID:
           os << "id";
@@ -701,7 +703,7 @@ namespace MiniZinc {
           break;
         case Expression::E_COMP:
         {
-          const Comprehension* cmp = stack[i]->cast<Comprehension>();
+          const Comprehension* cmp = e->cast<Comprehension>();
           if (cmp->set())
             os << "sc:";
           else
@@ -717,13 +719,13 @@ namespace MiniZinc {
           os << "ite";
           break;
         case Expression::E_BINOP:
-          os << "bin:" << stack[i]->cast<BinOp>()->opToString();
+          os << "bin:" << e->cast<BinOp>()->opToString();
           break;
         case Expression::E_UNOP:
-          os << "un:" << stack[i]->cast<UnOp>()->opToString();
+          os << "un:" << e->cast<UnOp>()->opToString();
           break;
         case Expression::E_CALL:
-          os << "ca:" << stack[i]->cast<Call>()->id();
+          os << "ca:" << e->cast<Call>()->id();
           break;
         case Expression::E_VARDECL:
           os << "vd";
