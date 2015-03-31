@@ -163,8 +163,8 @@ namespace MiniZinc {
   public:
     typedef Expression* Val;
     typedef Expression* ArrayVal;
-    static Expression* e(EnvI&, Expression* e) {
-      return copy(e,true);
+    static Expression* e(EnvI& env, Expression* e) {
+      return copy(env,e,true);
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -340,7 +340,7 @@ namespace MiniZinc {
         Let* l = e->cast<Let>();
         l->pushbindings();
         ArrayLit* l_in = eval_array_lit(env,l->in());
-        ArrayLit* ret = copy(l_in,true)->cast<ArrayLit>();
+        ArrayLit* ret = copy(env,l_in,true)->cast<ArrayLit>();
         ret->flat(l_in->flat());
         l->popbindings();
         return ret;

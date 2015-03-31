@@ -23,9 +23,14 @@ namespace MiniZinc {
   class VarDeclIterator;
   class ConstraintIterator;
   
+  class CopyMap;
+  class EnvI;
+  
   /// A MiniZinc model
   class Model {
     friend class GC;
+    friend Model* copy(EnvI& env, CopyMap& cm, Model* m);
+
   protected:
     /// Previous model in root set list
     Model* _roots_prev;
