@@ -18,4 +18,8 @@
 		in Model.h: change default_solver = SC_UNKNOWN
 						-> default_solver = SC_GECODE
 
-2. 
+2. Updated arguments type checking:
+	A type of None indicates that it accepts any possible type
+
+	XXX: what if users enter a list or tuple to that position of None?
+	XXX: Python Interface type checking is getting really clumpsy and expensive now

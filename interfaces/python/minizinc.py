@@ -46,6 +46,8 @@ def flatten(x):
 
 # nicely presents the type of a variable
 def type_presentation(x):
+	if x is None:
+		return "Any_Type"
 	if type(x) is type:
 		name = x.__name__
 		if name[:9] == 'minizinc.':
@@ -205,6 +207,8 @@ class Expression(object):
 
 
 # Temporary container for Expression before evaluating to minizinc_internal object
+# Calling Predicate.init automatically check:
+#		if the arguments belong to the same model
 class Predicate(Expression):
 	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
@@ -226,7 +230,22 @@ class Predicate(Expression):
 		self.model = eval_model(vars)
 		if args_and_return_type_tuple is not None:
 			for t in args_and_return_type_tuple:
-				if self.vars_type == t[0]:
+				def check_type(expected, actual):
+					if expected is None:
+						return True
+					if len(expected) != len(actual):
+						return False
+					for i, val in enumerate(expected):
+						if (val is None):
+							pass
+						elif type(val) is list and type(actual[i]) is list:
+							if check_type(val, actual[i]) == False:
+								return False
+						elif type(val) != type(actual[i]):
+							return False
+					return True
+				if check_type(t[0], self.vars_type):
+				#self.vars_type == t[0]:
 					self.type = t[1]
 					break
 			else:
@@ -263,7 +282,9 @@ class Call(Predicate):
 args_ret_dict = {}
 
 to_assign = [ ((int_t, int_t), int_t ),
-			  ((float, float), float ) ]
+			  ((float, float), float ),
+			  ((int_t, float), float ),
+			  ((float, int_t), float)]
 args_ret_dict['add'] = to_assign
 args_ret_dict['sub'] = to_assign
 args_ret_dict['mul'] = to_assign
