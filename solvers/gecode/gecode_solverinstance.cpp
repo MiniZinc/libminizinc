@@ -1006,13 +1006,17 @@ namespace MiniZinc {
       int timeStop = _options.getIntParam("time", 0);
       timeStop  = _options.hasParam(constants().solver_options.time_limit_sec.str()) ? 
                 std::ceil(_options.getFloatParam(constants().solver_options.time_limit_sec.str()))*1000 // convert to milliseconds 
-                : timeStop;     
+                : timeStop;
+      // TODO: how to consider the number of solutions?
+      int nbSols = _options.getIntParam(constants().solver_options.solution_limit.str(), 
+                                        _env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT ? 1 : 0);
                 
       Search::Options o;
       o.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,
                                             timeStop, // in ms!!
                                             false);
+      
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);

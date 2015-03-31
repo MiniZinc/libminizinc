@@ -3433,8 +3433,7 @@ namespace MiniZinc {
           flatten_bool_op:
           {
             EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
-            
+            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);            
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             
             std::vector<EE> ees(3);

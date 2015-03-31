@@ -279,7 +279,9 @@ namespace MiniZinc {
       else if(c->id() == constants().combinators.limit_nodes)
         interpretNodeLimitCombinator(c,solver,verbose);
       else if(c->id() == constants().combinators.limit_fails)
-        interpretFailLimitCombinator(c,solver,verbose);      
+        interpretFailLimitCombinator(c,solver,verbose);   
+//      else if(c->id() == constants().combinators.limit_solutions)
+//        interpretSolutionLimitCombinator(c,solver,verbose);
       else 
         std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
     }
@@ -292,7 +294,9 @@ namespace MiniZinc {
           else if(c->id() == constants().combinators.limit_nodes)
             interpretNodeLimitCombinator(c,solver,verbose);
           else if(c->id() == constants().combinators.limit_fails) 
-            interpretFailLimitCombinator(c,solver,verbose);          
+            interpretFailLimitCombinator(c,solver,verbose);  
+//          else if(c->id() == constants().combinators.limit_solutions)
+//            interpretSolutionLimitCombinator(c,solver,verbose);
           else 
             std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
         }
@@ -344,6 +348,28 @@ namespace MiniZinc {
       ssm << "Cannot process argument. Expecting integer value instead of: " << *args[0];
       throw EvalError(solver->env().envi(),args[0]->loc(), ssm.str());
     }    
+  }
+  
+  
+  void 
+  SearchHandler::interpretSolutionLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+    ASTExprVec<Expression> args = call->args();
+    if(args.size() != 1) {
+      std::stringstream ssm; 
+      ssm << "Expecting 1 argument in call: " << *call;
+      throw EvalError(solver->env().envi(),call->loc(), ssm.str());
+    }     
+    args[0] = eval_par(solver->env().envi(),args[0]);
+    Options& opt = solver->getOptions();
+    if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
+      KeepAlive ka(il);      
+      opt.setIntParam(constants().solver_options.solution_limit.str(),ka);
+    }   
+    else {
+      std::stringstream ssm; 
+      ssm << "Cannot process argument. Expecting integer value instead of: " << *args[0];
+      throw EvalError(solver->env().envi(),args[0]->loc(), ssm.str());
+    }        
   }
   
   void
@@ -416,10 +442,11 @@ namespace MiniZinc {
     if(verbose) {
       std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
       debugprint(env.flat());    
-    }
+    
     //std::cout<< "\n" << std::endl;
-    //std::cout << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
-    //debugprint(_scopes[0]->env().flat());
+    std::cerr << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
+    debugprint(_scopes[0]->env().flat());
+    }
     
     int nbVarsAfter = 0;
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)

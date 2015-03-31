@@ -1365,6 +1365,7 @@ namespace MiniZinc {
         ASTString and_;
         ASTString limit_fails;
         ASTString limit_nodes;
+        ASTString limit_solutions;
         ASTString limit_time;        
         ASTString next;
         ASTString or_;
@@ -1384,6 +1385,7 @@ namespace MiniZinc {
       struct {
         ASTString fail_limit;
         ASTString node_limit;
+        ASTString solution_limit;
         ASTString time_limit_sec;
       } solver_options;
       static const int maxConstInt = 1000;

@@ -106,6 +106,8 @@ namespace MiniZinc {
   void interpretFailLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// process node limit combinator
   void interpretNodeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
+  /// process solution limit combinator
+  void interpretSolutionLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// process a time limit combinator
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// if the search combinator call has an initial SCOPE combinator, remove it, because it can be ignored
