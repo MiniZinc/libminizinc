@@ -29,7 +29,10 @@ namespace MiniZinc {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
-       }       
+       }
+       // Gecode can directly return best solutions
+       _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
+       _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
@@ -936,6 +939,48 @@ namespace MiniZinc {
       return SolverInstance::UNSAT;
     }
   }
+  
+  SolverInstance::Status
+  GecodeSolverInstance::best(VarDecl* objective, bool minimize) {
+    // set the objective
+    _current_space->_optVarIsInt = (objective->id()->type().isvarint());
+    Id* id = objective->id();
+    GecodeVariable var = resolveVar(id->decl());
+    if(_current_space->_optVarIsInt) {
+      IntVar intVar = var.intVar(_current_space);
+      for(int i=0; i<_current_space->iv.size(); i++) {
+        if(_current_space->iv[i].same(intVar)) {
+          _current_space->_optVarIdx = i;
+          break;
+        }
+      }
+      assert(_current_space->_optVarIdx >= 0);
+    } else {
+      FloatVar floatVar = var.floatVar(_current_space);
+      for(int i=0; i<_current_space->fv.size(); i++) {
+        if(_current_space->fv[i].same(floatVar)) {
+          _current_space->_optVarIdx = i;
+          break;
+        }
+      }
+      assert(_current_space->_optVarIdx >= 0);
+    }
+    _current_space->_solveType = minimize ? SolveI::SolveType::ST_MIN : SolveI::SolveType::ST_MAX;
+    
+    // prepare/construct the engine
+    bool combinators = true;
+    bool optimize = true;
+    prepareEngine(combinators,optimize);
+
+    // find the best solution
+    while (FznSpace* next_sol = engine->next()) {
+      if(_solution) delete _solution;
+      _solution = next_sol;
+    } // TODO: how to assure the LIMIT combinators?
+            
+    return SolverInstance::ERROR;
+  }
+  
 
   Expression*
   GecodeSolverInstance::getSolutionValue(Id* id) {
@@ -955,7 +1000,7 @@ namespace MiniZinc {
   }
 
   void
-  GecodeSolverInstance::prepareEngine(bool combinators) {  
+  GecodeSolverInstance::prepareEngine(bool combinators, bool optimize_combinator) {  
     if (engine==NULL && customEngine == NULL) {      
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -1020,8 +1065,10 @@ namespace MiniZinc {
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
-        if(combinators) {          
-          customEngine = new CustomMetaEngine<CombDFS, GecodeMeta>(this->_current_space,o);
+        if(combinators) {
+          if(optimize_combinator)
+            engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);  
+          else customEngine = new CustomMetaEngine<CombDFS, GecodeMeta>(this->_current_space,o);          
         }
         else 
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
@@ -1225,7 +1272,7 @@ namespace MiniZinc {
         Call* call = flatAnn[i]->cast<Call>();       
         ArrayLit *vars = getArrayLit(call->args()[0]);
         int k=vars->v().size();
-        for (int i=vars->v().size(); i--;)
+        for (int i=vars->v().size();i--;)
           if (!(vars->v()[i])->type().isvarint())
             k--;
         IntVarArgs va(k);

@@ -55,7 +55,25 @@ namespace MiniZinc {
           vd->e(eval_par(env.envi(), call->args()[i]));
         }
         
-        SolverInstance::Status ret = interpretCombinator(call->decl()->e(), solver,verbose);
+        SolverInstance::Status ret;
+        
+        if(call->decl()->e()) {      
+          if(verbose) 
+            std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
+          ret = interpretCombinator(call->decl()->e(), solver,verbose);
+        } else { 
+          if(verbose) 
+            std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
+          if(call->id() == constants().combinators.best_max || 
+            call->id() == constants().combinators.best_min) {
+            ret = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose);            
+          }
+          else {          
+            std::stringstream ssm; 
+            ssm << "No body for combinator: " << *call;
+            throw TypeError(env.envi(), call->loc(), ssm.str());
+          }
+        }
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -109,6 +127,29 @@ namespace MiniZinc {
       ssm << "AND-combinator takes an array as argument";
       throw TypeError(solver->env().envi(), call->loc(), ssm.str());
     }     
+  }
+  
+  SolverInstance::Status 
+  SearchHandler::interpretBestCombinator(Call* call, SolverInstanceBase* solver, bool minimize, bool verbose) {
+    if(call->args().size() == 0 || call->args().size() > 2) {
+      std::stringstream ssm;
+      ssm << call->id() << "-combinator takes at least 1 argument instead of " << call->args().size() << " in: " << *call;
+      throw TypeError(solver->env().envi(), call->loc(), ssm.str());
+    }
+    if(call->args().size() == 2) {
+      interpretLimitCombinator(call->args()[1],solver,verbose);
+    }
+     
+    VarDecl* decl;
+    if(Id* id = call->args()[0]->dyn_cast<Id>()) 
+      decl = id->decl();
+    else {
+      std::stringstream ssm;
+      ssm << "Expected identifier instead of " << *(call->args()[0]) << " in " << *call;
+      throw TypeError(solver->env().envi(), call->args()[0]->loc(), ssm.str());
+    }
+    return solver->best(decl,minimize);
+ 
   }
   
   SolverInstance::Status

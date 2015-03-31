@@ -34,7 +34,9 @@ namespace MiniZinc {
     
     virtual SolverInstanceBase* copy(void);
     
-    virtual Status solve(void);  
+    virtual Status solve(void); 
+    
+    virtual Status best(VarDecl* obj, bool minimize);
     
     virtual void processFlatZinc(void);    
     

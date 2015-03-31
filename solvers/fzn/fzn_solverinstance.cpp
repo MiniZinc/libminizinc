@@ -242,14 +242,18 @@ namespace MiniZinc {
 
   
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-  : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
+  : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {
+     // fzn-solvers can directly return best solutions by using minimize/maximize solve item
+    _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
+    _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
+  }
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
   SolverInstanceBase*
   FZNSolverInstance::copy(void) {
     Env* env_copy = _env.copyEnv(); 
-    Options options_copy; // TODO: do we need to use a reference/pointer instead because local variable will be removed?
+    Options options_copy; 
     options_copy = _options.copyEntries(options_copy);
     return new FZNSolverInstance(*env_copy,options_copy);
   }
@@ -382,5 +386,18 @@ namespace MiniZinc {
     _fzn = _env.flat(); // point to the new flat model
     return solve();
   }
+  
+  SolverInstance::Status 
+  FZNSolverInstance::best(VarDecl* obj, bool minimize) {   
+    _fzn = _env.flat(); // point to the new flat model
+    SolveI* solveI = _fzn->solveItem();    
+    SolveI* objective = minimize ? SolveI::min(Location(),obj->id()) : 
+                                   SolveI::max(Location(),obj->id());
+    // replace old solve item with min/max objective
+    // TODO: is there a nicer way to do this? memory leaks?
+    solveI = objective;
+    return solve();
+  }
+  
   
 }

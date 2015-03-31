@@ -67,6 +67,15 @@ function ann: bab_min(var int: obj, ann: s) =
        )
    ;               
 function ann: bab_min(var int: obj) = bab_min(obj, print);
+function ann: bab_min(var int: obj, array[int] of ann: limits) =
+       repeat(
+           and([
+               next(limits), % get next solution
+               post(obj < sol(obj)), % post constraint
+               print()
+           ])
+       )
+   ;  
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj, ann: s) =   

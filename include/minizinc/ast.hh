@@ -1363,6 +1363,8 @@ namespace MiniZinc {
       /// combinators lite
       struct {
         ASTString and_;
+        ASTString best_max;
+        ASTString best_min;
         ASTString limit_fails;
         ASTString limit_nodes;
         ASTString limit_solutions;
@@ -1386,7 +1388,9 @@ namespace MiniZinc {
         ASTString fail_limit;
         ASTString node_limit;
         ASTString solution_limit;
-        ASTString time_limit_sec;
+        ASTString supports_maximize;
+        ASTString supports_minimize;
+        ASTString time_limit_sec;        
       } solver_options;
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt

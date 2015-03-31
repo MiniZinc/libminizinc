@@ -1063,6 +1063,8 @@ namespace MiniZinc {
     ann.combinator = ASTString("combinator");
     
     combinators.and_ = ASTString("and");
+    combinators.best_max = ASTString("bab_max");
+    combinators.best_min = ASTString("bab_min");
     combinators.limit_fails = ASTString("fail_limit");
     combinators.limit_nodes = ASTString("node_limit");
     combinators.limit_solutions = ASTString("sol_limit");
@@ -1084,6 +1086,8 @@ namespace MiniZinc {
     solver_options.fail_limit = ASTString("fail_limit");
     solver_options.node_limit = ASTString("node_limit");
     solver_options.solution_limit = ASTString("solution_limit");
+    solver_options.supports_maximize = ASTString("supports_maximize");
+    solver_options.supports_minimize = ASTString("supports_minimize");
     solver_options.time_limit_sec = ASTString("time_limit_sec");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
@@ -1201,6 +1205,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), ann.combinator));
     
     v.push_back(new StringLit(Location(), combinators.and_));
+    v.push_back(new StringLit(Location(), combinators.best_max));
+    v.push_back(new StringLit(Location(), combinators.best_min));
     v.push_back(new StringLit(Location(), combinators.limit_fails));
     v.push_back(new StringLit(Location(), combinators.limit_nodes));
     v.push_back(new StringLit(Location(), combinators.limit_solutions));
@@ -1222,6 +1228,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), solver_options.fail_limit));
     v.push_back(new StringLit(Location(), solver_options.node_limit));
     v.push_back(new StringLit(Location(), solver_options.solution_limit));
+    v.push_back(new StringLit(Location(), solver_options.supports_maximize));
+    v.push_back(new StringLit(Location(), solver_options.supports_minimize));
     v.push_back(new StringLit(Location(), solver_options.time_limit_sec));
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);

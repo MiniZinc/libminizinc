@@ -147,7 +147,8 @@ namespace MiniZinc {
 
     virtual SolverInstanceBase* copy(void);
     
-    virtual Status next(void);    
+    virtual Status next(void);  
+    virtual Status best(VarDecl* obj, bool minimize);
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
     /// this is the version that the combinator interpreter calls which will evoke the search engine
@@ -239,8 +240,8 @@ namespace MiniZinc {
     /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
     void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
             bool ignoreUnknown, std::ostream& err);
-    /// prepare the engine, where combinators states if search combinators will be used
-    void prepareEngine(bool combinators);  
+    /// prepare the engine, where combinators states if search combinators will be used; optimize combinator is true only if combinators are used and we are optimizing (BAB)
+    void prepareEngine(bool combinators, bool optimize_combinator = false);  
     /// sets the search strategy according to the search annotation
     void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn);
     /// Helper: will retrieve an ArrayLit from flatzinc, if it is par, or is var with a right hand side, otherwise throws exception
