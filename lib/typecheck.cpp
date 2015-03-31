@@ -806,7 +806,7 @@ namespace MiniZinc {
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i->e(), true); }
       void vFunctionI(FunctionI* i) {
-        model->registerFn(i);
+        model->registerFn(env,i);
         fis.push_back(i);
       }
     } _tsv0(env.envi(),ts,m,functionItems,assignItems);

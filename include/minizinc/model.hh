@@ -25,11 +25,12 @@ namespace MiniZinc {
   class ConstraintIterator;
   
   class CopyMap;
+  class EnvI;
   
   /// A MiniZinc model
   class Model {
     friend class GC;
-    friend Model* copy(CopyMap& cm, Model* m);
+    friend Model* copy(EnvI& env, CopyMap& cm, Model* m);
   protected:
     /// Previous model in root set list
     Model* _roots_prev;
@@ -95,7 +96,7 @@ namespace MiniZinc {
     }
 
     /// Register a builtin function item
-    void registerFn(FunctionI* fi);
+    void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
     /// Return function declaration for \a id matching \a args

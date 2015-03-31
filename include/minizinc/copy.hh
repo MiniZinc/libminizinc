@@ -45,18 +45,18 @@ namespace MiniZinc {
   class EnvI;
 
   /// Create a deep copy of expression \a e
-  Expression* copy(Expression* e, bool followIds=false);
+  Expression* copy(EnvI& env, Expression* e, bool followIds=false, bool copyFundecls=false);
   /// Create a deep copy of item \a i
-  Item* copy(Item* i, bool followIds=false);
+  Item* copy(EnvI& env, Item* i, bool followIds=false, bool copyFundecls=false);
   /// Create a deep copy of model \a m
-  Model* copy(Model* m);
+  Model* copy(EnvI& env, Model* m);
 
   /// Create a deep copy of expression \a e
-  Expression* copy(CopyMap& map, Expression* e, bool followIds=false);
+  Expression* copy(EnvI& env, CopyMap& map, Expression* e, bool followIds=false, bool copyFundecls=false);
   /// Create a deep copy of item \a i
-  Item* copy(CopyMap& map, Item* i, bool followIds=false); 
+  Item* copy(EnvI& env, CopyMap& map, Item* i, bool followIds=false, bool copyFundecls=false);
   /// Create a deep copy of model \a m
-  Model* copy(CopyMap& map, Model* m);  
+  Model* copy(EnvI& env, CopyMap& map, Model* m);
 
 }
 

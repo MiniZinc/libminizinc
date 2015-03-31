@@ -471,7 +471,7 @@ namespace MiniZinc {
     IdMap<Expression*> domains;
     for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
       Id* id = it->e()->id();
-      Expression* domain = copy(it->e()->ti()->domain());
+      Expression* domain = copy(env.envi(),it->e()->ti()->domain());
       domains.insert(id,domain);         
     }    
     if(verbose) {

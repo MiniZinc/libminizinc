@@ -471,45 +471,45 @@ namespace MiniZinc {
   Env*
   Env::copyEnv(void) {   
     CopyMap cmap; 
-    Model* c_orig = copy(cmap, e->orig);
-    Model* c_output = copy(cmap, e->output);
-    Model* c_flat = copy(cmap, e->flat());    
+    Model* c_orig = copy(envi(),cmap, e->orig);
+    Model* c_output = copy(envi(),cmap, e->output);
+    Model* c_flat = copy(envi(),cmap, e->flat());
     VarOccurrences c_vo;    
     for(IdMap<UNORDERED_NAMESPACE::unordered_set<Item*> >::iterator it = e->vo._m.begin(); it!=e->vo._m.end(); it++) {
       UNORDERED_NAMESPACE::unordered_set<Item*> items = it->second;
       UNORDERED_NAMESPACE::unordered_set<Item*> c_items;
       for(UNORDERED_NAMESPACE::unordered_set<Item*>::iterator iit = items.begin(); iit!=items.end(); iit++) {
-         c_items.insert(copy(cmap,*iit));
+         c_items.insert(copy(envi(),cmap,*iit));
       }
-      c_vo._m.insert(copy(cmap,it->first)->dyn_cast<Id>(),
+      c_vo._m.insert(copy(envi(),cmap,it->first)->dyn_cast<Id>(),
                      c_items);
     }
     for(IdMap<int>::iterator it = e->vo.idx.begin(); it!=e->vo.idx.end(); it++) {
-      c_vo.idx.insert(copy(cmap, it->first)->dyn_cast<Id>(), it->second);
+      c_vo.idx.insert(copy(envi(),cmap, it->first)->dyn_cast<Id>(), it->second);
     }
     VarOccurrences c_output_vo;    
     for(IdMap<UNORDERED_NAMESPACE::unordered_set<Item*> >::iterator it = e->output_vo._m.begin(); it!=e->output_vo._m.end(); it++) {
       UNORDERED_NAMESPACE::unordered_set<Item*> items = it->second;
       UNORDERED_NAMESPACE::unordered_set<Item*> c_items;
       for(UNORDERED_NAMESPACE::unordered_set<Item*>::iterator iit = items.begin(); iit!=items.end(); iit++) {
-         c_items.insert(copy(cmap,*iit));
+         c_items.insert(copy(envi(),cmap,*iit));
       }
-      c_output_vo._m.insert(copy(cmap,it->first)->dyn_cast<Id>(),
+      c_output_vo._m.insert(copy(envi(),cmap,it->first)->dyn_cast<Id>(),
                      c_items);
     }
     for(IdMap<int>::iterator it = e->output_vo.idx.begin(); it!=e->output_vo.idx.end(); it++) {
-      c_output_vo.idx.insert(copy(cmap, it->first)->dyn_cast<Id>(), it->second);
+      c_output_vo.idx.insert(copy(envi(),cmap, it->first)->dyn_cast<Id>(), it->second);
     }       
     IdMap<KeepAlive> c_reverseMappers;    
     for(IdMap<KeepAlive>::iterator it = e->reverseMappers.begin(); it!=e->reverseMappers.end(); it++) {
-      c_reverseMappers.insert(copy(cmap,it->first)->dyn_cast<Id>(),
-                              KeepAlive(copy(cmap,(it->second)())));
+      c_reverseMappers.insert(copy(envi(),cmap,it->first)->dyn_cast<Id>(),
+                              KeepAlive(copy(envi(),cmap,(it->second)())));
     }    
     // updating the VarDecl pointers in the original model
     for(std::vector<Item*>::iterator it = c_orig->begin(); it!=c_orig->end(); it++) {
       if(VarDeclI* vdi = (*it)->dyn_cast<VarDeclI>()) {
         if(vdi->e()->flat()) {
-          vdi->e()->flat(copy(cmap,vdi->e()->flat())->cast<VarDecl>()); // copy the flat pointer
+          vdi->e()->flat(copy(envi(),cmap,vdi->e()->flat())->cast<VarDecl>()); // copy the flat pointer
         }
       }
     }
@@ -524,7 +524,7 @@ namespace MiniZinc {
     unsigned int ids_c = e->get_ids();
     Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, ids_c);
     if (combinator)
-      c->combinator = copy(cmap, combinator);
+      c->combinator = copy(envi(),cmap, combinator);
     else
       c->combinator = NULL;
     c->e->vo = c_vo;
@@ -532,18 +532,18 @@ namespace MiniZinc {
     c->e->ignorePartial = e->ignorePartial;
     c->e->hasSolution(e->hasSolution());
     for(unsigned int i=0; i<e->callStack.size(); i++)
-      c->e->callStack.push_back(copy(cmap, const_cast<Expression*>(e->callStack[i])));
+      c->e->callStack.push_back(copy(envi(),cmap, const_cast<Expression*>(e->callStack[i])));
     for(unsigned int i=0; i<e->errorStack.size(); i++)
-      c->e->errorStack.push_back(copy(cmap, const_cast<Expression*>(e->errorStack[i])));    
+      c->e->errorStack.push_back(copy(envi(),cmap, const_cast<Expression*>(e->errorStack[i])));
     for(unsigned int i=0; i<e->idStack.size(); i++)
       c->e->idStack.push_back(int(e->idStack[i]));
     for(unsigned int i=0; i<e->warnings.size(); i++)
       c->e->warnings[i] = std::string(e->warnings[i]);     
     for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
       if((it->second).b() && (it->second).r()) {
-        Expression* e = copy(cmap, (it->first)());     
-        WeakRef c_b(copy(cmap, (it->second).b()));
-        WeakRef c_r(copy(cmap, (it->second).r()));
+        Expression* e = copy(envi(),cmap, (it->first)());
+        WeakRef c_b(copy(envi(),cmap, (it->second).b()));
+        WeakRef c_r(copy(envi(),cmap, (it->second).r()));
         EnvI::WW c_ww(c_b, c_r); 
         c->e->map_insert(e,c_ww);
       }          
@@ -795,7 +795,7 @@ namespace MiniZinc {
         throw InternalError("not supported yet");
     }
     if (needNewTypeInst) {
-      TypeInst* tic = copy(vd->ti())->cast<TypeInst>();
+      TypeInst* tic = copy(env,vd->ti())->cast<TypeInst>();
       tic->setRanges(newtis);
       vd->ti(tic);
     }
@@ -4358,13 +4358,13 @@ namespace MiniZinc {
             success = false;
           } else {
             if (!isBuiltin(origdecl)) {
-              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
               CollectOccurrencesE ce(env.output_vo,decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
-              env.output->registerFn(decl);
+              env.output->registerFn(env,decl);
               env.output->addItem(decl);
               outputVarDecls(env,origdecl,decl->e());
             } else {
@@ -4439,7 +4439,7 @@ namespace MiniZinc {
         IdMap<int>::iterator idx = reallyFlat ? env.output_vo.idx.find(reallyFlat->id()) : env.output_vo.idx.end();
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
-          VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env.cmap,vd)->cast<VarDecl>());
+          VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env,env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
@@ -4457,7 +4457,7 @@ namespace MiniZinc {
           
           IdMap<KeepAlive>::iterator it;
           if ( (it = env.reverseMappers.find(nvi->e()->id())) != env.reverseMappers.end()) {
-            Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+            Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
             {
               std::vector<Type> tv(rhs->args().size());
               for (unsigned int i=rhs->args().size(); i--;) {
@@ -4472,13 +4472,13 @@ namespace MiniZinc {
                   throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
                 }
                 if (!isBuiltin(origdecl)) {
-                  decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                  decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
                   CollectOccurrencesE ce(env.output_vo,decl);
                   topDown(ce, decl->e());
                   topDown(ce, decl->ti());
                   for (unsigned int i = decl->params().size(); i--;)
                     topDown(ce, decl->params()[i]);
-                  env.output->registerFn(decl);
+                  env.output->registerFn(env,decl);
                   env.output->addItem(decl);
                 } else {
                   decl = origdecl;
@@ -4541,7 +4541,7 @@ namespace MiniZinc {
     for (unsigned int i=e.orig->size(); i--;) {
       if (OutputI* oi = (*e.orig)[i]->dyn_cast<OutputI>()) {
         GCLock lock;
-        OutputI* noi = copy(oi)->cast<OutputI>();
+        OutputI* noi = copy(e,oi)->cast<OutputI>();
         CopyOutput co(e);
         topDown(co, noi->e());
         e.flat_addItem(noi);
@@ -4572,11 +4572,11 @@ namespace MiniZinc {
                 while (reallyFlat!=reallyFlat->flat())
                   reallyFlat=reallyFlat->flat();
                 removeIsOutput(reallyFlat);
-                Expression* flate = copy(e.cmap,follow_id(reallyFlat->id()));
+                Expression* flate = copy(e,e.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(e,item,flate);
                 vd->e(flate);
               } else if ( (it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
-                Call* rhs = copy(e.cmap,it->second())->cast<Call>();
+                Call* rhs = copy(e,e.cmap,it->second())->cast<Call>();
                 std::vector<Type> tv(rhs->args().size());
                 for (unsigned int i=rhs->args().size(); i--;) {
                   tv[i] = rhs->args()[i]->type();
@@ -4589,13 +4589,13 @@ namespace MiniZinc {
                     throw FlatteningError(e,rhs->loc(),"function is used in output, par version needed");
                   }
                   if (!isBuiltin(origdecl)) {
-                    decl = copy(e.cmap,origdecl)->cast<FunctionI>();
+                    decl = copy(e,e.cmap,origdecl)->cast<FunctionI>();
                     CollectOccurrencesE ce(e.output_vo,decl);
                     topDown(ce, decl->e());
                     topDown(ce, decl->ti());
                     for (unsigned int i = decl->params().size(); i--;)
                       topDown(ce, decl->params()[i]);
-                    e.output->registerFn(decl);
+                    e.output->registerFn(e,decl);
                     e.output->addItem(decl);
                   } else {
                     decl = origdecl;
@@ -4625,7 +4625,7 @@ namespace MiniZinc {
                   if (!needOutputAnn) {
                     removeIsOutput(vd);
                     outputVarDecls(e, item, al);
-                    vd->e(copy(e.cmap,al));
+                    vd->e(copy(e,e.cmap,al));
                   }
                 }
                 if (needOutputAnn) {
@@ -4689,7 +4689,7 @@ namespace MiniZinc {
         : env(env0), vo(vo0), outputItem(outputItem0) {}
         void vOutputI(OutputI* oi) {
           GCLock lock;
-          outputItem = copy(env.cmap, oi)->cast<OutputI>();
+          outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
           env.output->addItem(outputItem);
         }
       } _ov1(e,e.output_vo,outputItem);
@@ -4732,7 +4732,7 @@ namespace MiniZinc {
         }
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
-        outputItem = copy(e.cmap, newOutputItem)->cast<OutputI>();
+        outputItem = copy(e,e.cmap, newOutputItem)->cast<OutputI>();
         e.output->addItem(outputItem);
       }
       
@@ -4763,13 +4763,13 @@ namespace MiniZinc {
             }
             if (!isBuiltin(origdecl)) {
               GCLock lock;
-              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
               CollectOccurrencesE ce(env.output_vo,decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
-              env.output->registerFn(decl);
+              env.output->registerFn(env,decl);
               env.output->addItem(decl);
             } else {
               decl = origdecl;
@@ -4788,7 +4788,7 @@ namespace MiniZinc {
           if (Expression* vd_e = env.cmap.find(vdi->e())) {
             VarDecl* vd = vd_e->cast<VarDecl>();
             GCLock lock;
-            VarDeclI* vdi_copy = copy(env.cmap,vdi)->cast<VarDeclI>();
+            VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
             makePar(vdi_copy->e());
@@ -4802,11 +4802,11 @@ namespace MiniZinc {
               while (reallyFlat!=reallyFlat->flat())
                 reallyFlat=reallyFlat->flat();
               if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
-                Expression* flate = copy(env.cmap,follow_id(reallyFlat->id()));
+                Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(env,vdi_copy,flate);
                 vd->e(flate);
               } else if ( (it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
-                Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+                Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
                 {
                   std::vector<Type> tv(rhs->args().size());
                   for (unsigned int i=rhs->args().size(); i--;) {
@@ -4820,13 +4820,13 @@ namespace MiniZinc {
                       throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
                     }
                     if (!isBuiltin(origdecl)) {
-                      decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+                      decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
                       CollectOccurrencesE ce(env.output_vo,decl);
                       topDown(ce, decl->e());
                       topDown(ce, decl->ti());
                       for (unsigned int i = decl->params().size(); i--;)
                         topDown(ce, decl->params()[i]);
-                      env.output->registerFn(decl);
+                      env.output->registerFn(env,decl);
                       env.output->addItem(decl);
                     } else {
                       decl = origdecl;
@@ -4857,7 +4857,7 @@ namespace MiniZinc {
                     }
                     if (!needOutputAnn) {
                       outputVarDecls(env, vdi_copy, al);
-                      vd->e(copy(env.cmap,al));
+                      vd->e(copy(env,env.cmap,al));
                     }
                   }
                   if (needOutputAnn) {
@@ -5170,7 +5170,7 @@ namespace MiniZinc {
           
           if (needRangeDomain) {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity()) {
-              TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
+              TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
               nti->domain(NULL);
               vdi->e()->ti(nti);
               if (dom->min(0).isFinite()) {
@@ -5192,7 +5192,7 @@ namespace MiniZinc {
               }
             } else if (dom->size() > 1) {
               SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
-              TypeInst* nti = copy(vdi->e()->ti())->cast<TypeInst>();
+              TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
               nti->domain(newDom);
               vdi->e()->ti(nti);
             }
@@ -5387,7 +5387,7 @@ namespace MiniZinc {
             vdi->e()->e()==NULL &&
             (it = env.reverseMappers.find(vdi->e()->id())) != env.reverseMappers.end()) {
           GCLock lock;
-          Call* rhs = copy(env.cmap,it->second())->cast<Call>();
+          Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
           std::vector<Type> tv(rhs->args().size());
           for (unsigned int i=rhs->args().size(); i--;) {
             tv[i] = rhs->args()[i]->type();
@@ -5401,13 +5401,13 @@ namespace MiniZinc {
               throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
-              decl = copy(env.cmap,origdecl)->cast<FunctionI>();
+              decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
               CollectOccurrencesE ce(env.output_vo,decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
-              env.output->registerFn(decl);
+              env.output->registerFn(env,decl);
               env.output->addItem(decl);
             } else {
               decl = origdecl;

@@ -63,7 +63,7 @@ namespace MiniZinc {
   }
   
   void
-  Model::registerFn(FunctionI* fi) {
+  Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;
     while (m->_parent)
       m = m->_parent;
