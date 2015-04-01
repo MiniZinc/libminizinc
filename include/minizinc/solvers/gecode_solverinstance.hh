@@ -125,6 +125,8 @@ namespace MiniZinc {
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
     bool _only_range_domains;
+    /// the objective variable for builtin-bab
+    Id* _objVar; 
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
@@ -148,7 +150,7 @@ namespace MiniZinc {
     virtual SolverInstanceBase* copy(void);
     
     virtual Status next(void);  
-    virtual Status best(VarDecl* obj, bool minimize);
+    virtual Status best(VarDecl* obj, bool minimize, bool print);
     virtual void processFlatZinc(void);    
     virtual Status solve(void);
     /// this is the version that the combinator interpreter calls which will evoke the search engine
@@ -229,7 +231,7 @@ namespace MiniZinc {
     /// Inserts variable gv into _variableMap with key id
     void insertVar(Id* id, GecodeVariable gv);    
 
-    void assignSolutionToOutput(void);
+    void assignSolutionToOutput(void);   
 
   protected:
     /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?

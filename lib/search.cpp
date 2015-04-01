@@ -63,10 +63,16 @@ namespace MiniZinc {
           ret = interpretCombinator(call->decl()->e(), solver,verbose);
         } else { 
           if(verbose) 
-            std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
+            std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
           if(call->id() == constants().combinators.best_max || 
             call->id() == constants().combinators.best_min) {
-            ret = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose);            
+            bool print = false;
+            if(call->args().size() > 1)
+              if(Id* id = call->args()[1]->dyn_cast<Id>()) 
+                if(id->str() == constants().combinators.print)
+                  print = true;
+              
+            ret = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);            
           }
           else {          
             std::stringstream ssm; 
@@ -130,7 +136,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status 
-  SearchHandler::interpretBestCombinator(Call* call, SolverInstanceBase* solver, bool minimize, bool verbose) {
+  SearchHandler::interpretBestCombinator(Call* call, SolverInstanceBase* solver, bool minimize, bool print, bool verbose) {
     if(call->args().size() == 0 || call->args().size() > 2) {
       std::stringstream ssm;
       ssm << call->id() << "-combinator takes at least 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -147,9 +153,9 @@ namespace MiniZinc {
       std::stringstream ssm;
       ssm << "Expected identifier instead of " << *(call->args()[0]) << " in " << *call;
       throw TypeError(solver->env().envi(), call->args()[0]->loc(), ssm.str());
-    }
-    return solver->best(decl,minimize);
- 
+    }     
+    
+    return solver->best(decl,minimize,print); 
   }
   
   SolverInstance::Status

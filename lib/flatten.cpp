@@ -551,6 +551,9 @@ namespace MiniZinc {
     return c; 
     // the ASTStringMap<ASTString>::t reifyMap is set in the EnvI constructor and is not changed afterwards so we need not copy it
   }
+  
+  void 
+  Env::hasSolution(bool b) { e->hasSolution(b); }
 
   std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {

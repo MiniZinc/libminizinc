@@ -83,7 +83,7 @@ namespace MiniZinc {
   /// interpret and execute an AND combinator
   SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute MAXIMISE/MINIMIZE combinator (depending on minimize flag)
-  SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool verbose);
+  SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool print, bool verbose);
    /// interpret and execute an OR combinator
   SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute a POST combinator

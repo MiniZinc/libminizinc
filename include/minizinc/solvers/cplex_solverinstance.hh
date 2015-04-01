@@ -35,6 +35,8 @@ namespace MiniZinc {
     virtual ~CPLEXSolverInstance(void);
     
     virtual Status next(void);
+    
+    virtual Status best(VarDecl* obj, bool minimize, bool print);
 
     virtual Status solve(void);
     

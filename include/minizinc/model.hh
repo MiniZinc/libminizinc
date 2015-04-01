@@ -257,6 +257,7 @@ namespace MiniZinc {
     std::ostream& evalOutput(std::ostream& os);
     Expression* combinator;
     Env* copyEnv(void);
+    void hasSolution(bool b);
   };
 
   class CallStackItem {

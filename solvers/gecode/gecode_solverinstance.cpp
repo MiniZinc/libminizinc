@@ -25,7 +25,7 @@ using namespace Gecode;
 namespace MiniZinc { 
   
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL), customEngine(NULL) {
+     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL), customEngine(NULL), _objVar(NULL) {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
@@ -941,11 +941,17 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  GecodeSolverInstance::best(VarDecl* objective, bool minimize) {
-    // set the objective
-    _current_space->_optVarIsInt = (objective->id()->type().isvarint());
+  GecodeSolverInstance::best(VarDecl* objective, bool minimize, bool print) { 
+    // set the objective 
+    _current_space->_optVarIsInt = (objective->id()->type().isvarint());  
     Id* id = objective->id();
-    GecodeVariable var = resolveVar(id->decl());
+    _objVar = id;
+    // add the variable if it has been removed during the flatzinc-optimisation-process
+    if(_variableMap.find(id) == _variableMap.end()) {       
+       std::vector<VarDecl*> vars; vars.push_back(objective);
+       addVariables(_current_space,vars);       
+    }   
+    GecodeVariable var = resolveVar(id);
     if(_current_space->_optVarIsInt) {
       IntVar intVar = var.intVar(_current_space);
       for(int i=0; i<_current_space->iv.size(); i++) {
@@ -975,10 +981,18 @@ namespace MiniZinc {
     // find the best solution
     while (FznSpace* next_sol = engine->next()) {
       if(_solution) delete _solution;
+      else env().hasSolution(true); // we need to do this here since we cannot do it on interpretor level
       _solution = next_sol;
-    } // TODO: how to assure the LIMIT combinators?
+      assignSolutionToOutput(); 
+      if(print) {
+        env().evalOutput(std::cout);      
+        std::cout << constants().solver_output.solution_delimiter << std::endl;   
+      }      
+    } 
             
-    return SolverInstance::ERROR;
+    _objVar = NULL; // reset objective variable
+    if(_solution) return SolverInstance::SAT;
+    else return SolverInstance::UNSAT;    
   }
   
 
@@ -1009,12 +1023,16 @@ namespace MiniZinc {
       Expression* optSearch = NULL;   
       
       switch(_current_space->_solveType) {
-        case MiniZinc::SolveI::SolveType::ST_MIN:
-          assert(solveExpr != NULL);
+        case MiniZinc::SolveI::SolveType::ST_MIN:          
+          if(optimize_combinator) {         
+            solveExpr = _objVar;
+          }        
+          assert(solveExpr != NULL);            
           branch_vars.push_back(solveExpr);
           solve_args.push_back(new ArrayLit(Location(), branch_vars));
-          if (!_current_space->_optVarIsInt) // TODO: why??
+          if (!_current_space->_optVarIsInt) 
             solve_args.push_back(new FloatLit(Location(), 0.0));
+          
           solve_args.push_back(new Id(Location(), "input_order", NULL));
           solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
           solve_args.push_back(new Id(Location(), "complete", NULL));
@@ -1056,6 +1074,10 @@ namespace MiniZinc {
       int nbSols = _options.getIntParam(constants().solver_options.solution_limit.str(), 
                                         _env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT ? 1 : 0);
       //std::cerr << "DEBUG: time limit in Gecode is set to: " << timeStop << "ms" << std::endl;          
+      
+      if(optimize_combinator)
+        timeStop = 5000; // change, just a hack for testing now
+      
       Search::Options o;
       o.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,
@@ -1063,12 +1085,12 @@ namespace MiniZinc {
                                             false);
       
       // TODO: add presolving part
-      if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        //engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
+      if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT || combinators) {        
         if(combinators) {
           if(optimize_combinator)
             engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);  
-          else customEngine = new CustomMetaEngine<CombDFS, GecodeMeta>(this->_current_space,o);          
+          else 
+            customEngine = new CustomMetaEngine<CombDFS, GecodeMeta>(this->_current_space,o);          
         }
         else 
           engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
@@ -1259,9 +1281,8 @@ namespace MiniZinc {
                                                         double decay,
                                                         bool ignoreUnknown,
                                                         std::ostream& err
-                                                       )  {
-  
-    for (unsigned int i=0; i<flatAnn.size(); i++) {     
+                                                       )  {    
+    for (unsigned int i=0; i<flatAnn.size(); i++) {      
       if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "gecode_search") {
         //Call* c = flatAnn[i]->cast<Call>();
         //branchWithPlugin(c->args); 
@@ -1269,8 +1290,12 @@ namespace MiniZinc {
         return;
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_search") {
-        Call* call = flatAnn[i]->cast<Call>();       
+        Call* call = flatAnn[i]->cast<Call>();            
         ArrayLit *vars = getArrayLit(call->args()[0]);
+        if(vars->v().size() == 0) { // empty array
+          std::cerr << "WARNING: trying to branch on empty array in search annotation: " << *call << std::endl;
+          continue;
+        }
         int k=vars->v().size();
         for (int i=vars->v().size();i--;)
           if (!(vars->v()[i])->type().isvarint())
@@ -1278,9 +1303,10 @@ namespace MiniZinc {
         IntVarArgs va(k);
         std::vector<std::string> names;
         k=0;
-        for (unsigned int i=0; i<vars->v().size(); i++) {
-          if (!(vars->v()[i])->type().isvarint())
+        for (unsigned int i=0; i<vars->v().size(); i++) {          
+          if (!(vars->v()[i])->type().isvarint()) {
             continue;
+          }          
           int idx = resolveVar(getVarDecl(vars->v()[i])).index();
           va[k++] = _current_space->iv[idx];
           iv_searched[idx] = true;
@@ -1496,7 +1522,7 @@ namespace MiniZinc {
       flattenSearchAnnotations(ann, flatAnn);
     }
     
-    if (additionalAnn != NULL) {
+    if (additionalAnn != NULL) {      
       flatAnn.push_back(additionalAnn);
     }
     if (flatAnn.size() > 0) {      

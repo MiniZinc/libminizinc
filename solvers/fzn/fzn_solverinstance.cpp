@@ -308,9 +308,10 @@ namespace MiniZinc {
 
     bool hadSolution = false;
     std::string sstr = result.str();    
+    std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
     while (result.good()) {
       std::string line;
-      getline(result, line);      
+      getline(result, line);    
       if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
@@ -388,7 +389,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status 
-  FZNSolverInstance::best(VarDecl* obj, bool minimize) {   
+  FZNSolverInstance::best(VarDecl* obj, bool minimize, bool print) {   
     _fzn = _env.flat(); // point to the new flat model
     SolveI* solveI = _fzn->solveItem();    
     SolveI* objective = minimize ? SolveI::min(Location(),obj->id()) : 

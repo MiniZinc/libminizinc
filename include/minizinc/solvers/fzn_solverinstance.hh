@@ -36,7 +36,7 @@ namespace MiniZinc {
     
     virtual Status solve(void); 
     
-    virtual Status best(VarDecl* obj, bool minimize);
+    virtual Status best(VarDecl* obj, bool minimize, bool print);
     
     virtual void processFlatZinc(void);    
     

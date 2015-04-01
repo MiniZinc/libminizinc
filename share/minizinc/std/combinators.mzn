@@ -60,13 +60,13 @@ annotation comb_assign(int: x,int: y);
 function ann: bab_min(var int: obj, ann: s) =   
        repeat(
            and([
-               next, % get next solution
+               next(time_limit(2.0)), % get next solution
                post(obj < sol(obj)), % post constraint
                s % apply some annotation, e.g. printing the solution
            ])
        )
    ;               
-function ann: bab_min(var int: obj) = bab_min(obj, print);
+function ann: bab_min(var int: obj) = bab_min(obj, print); %TODO
 function ann: bab_min(var int: obj, array[int] of ann: limits) =
        repeat(
            and([
@@ -89,29 +89,26 @@ function ann: bab_max(var int: obj, ann: s) =
    ;               
 function ann: bab_max(var int: obj) = bab_max(obj, print());
 
-
 % ------------------- Large Neighbourhood Search -------------------- %
 % Large Neighbourhood Search variant that takes an objective variable
 % and an array of search variables, a number of iterations and a 
 % destruction rate d (that determines the percentage of variables in x 
 % that will be destroyed, i.e. the size of the neighbourhood to search)
-function ann: lns (var int: obj, array[int] of var int: x,
+function ann: lns_min (var int: obj, array[int] of var int: x,
                    int: iterations, float: d) = 
     repeat (i in 1..iterations) (
       and([
         scope(
           and([ 
             post(neighbourhoodCts(x,d)),
-            next, %bab_min(obj), %next, % or bab
-            print()
+            or([bab_min(obj),print()]) %next, % or bab
           ]),
         ),
-        print(),
         post(obj < sol(obj))
       ])
   );
 
-function ann: lns (var int: obj, array[int] of var int: x,
+function ann: lns_min (var int: obj, array[int] of var int: x,
                    int: iterations, float: d, float: secs) = 
     repeat (i in 1..iterations) (
       and([
@@ -119,7 +116,7 @@ function ann: lns (var int: obj, array[int] of var int: x,
           or([
             and([ 
               post(neighbourhoodCts(x,d)),
-              next(time_limit(secs)), %bab_min(obj), %next, % or bab
+              bab_min(obj,time_limit(secs)), %next, % or bab
               print()
             ]),
             print()

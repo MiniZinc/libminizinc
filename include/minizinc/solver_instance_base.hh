@@ -58,7 +58,7 @@ namespace MiniZinc {
     /// find the next solution (when overwriting this method, make sure that assignSolutionToOutput is called after a new solution is found)
     virtual Status next(void) = 0;
     /// find the best solution for variable objective; if solver does not maximize/minimize then return error and set Options in constructor
-    virtual Status best(VarDecl* objective, bool minimize) = 0;
+    virtual Status best(VarDecl* objective, bool minimize, bool print) = 0;
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
