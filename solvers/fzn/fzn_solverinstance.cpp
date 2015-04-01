@@ -27,6 +27,7 @@
 #include <minizinc/builtins.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/copy.hh>
 
 namespace MiniZinc {
   
@@ -51,12 +52,14 @@ namespace MiniZinc {
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             Item* item = *it;
+            if(item->removed()) 
+              continue;
             if(SolveI* si = item->dyn_cast<SolveI>()) {              
               if(si->combinator_lite()) {
                 si->ann().removeCall(constants().ann.combinator); // remove the combinator annotation
-              }
+              }             
             }
-            os << *item;            
+            os << *item;                        
           }           
         }
         
@@ -390,13 +393,22 @@ namespace MiniZinc {
   
   SolverInstance::Status 
   FZNSolverInstance::best(VarDecl* obj, bool minimize, bool print) {   
-    _fzn = _env.flat(); // point to the new flat model
-    SolveI* solveI = _fzn->solveItem();    
-    SolveI* objective = minimize ? SolveI::min(Location(),obj->id()) : 
+    _fzn = _env.flat();
+    // replace old solve item with min/max objective  
+    SolveI* solveI = _fzn->solveItem();
+    SolveI* objective = minimize ? SolveI::min(Location(),obj->id()): 
                                    SolveI::max(Location(),obj->id());
-    // replace old solve item with min/max objective
-    // TODO: is there a nicer way to do this? memory leaks?
-    solveI = objective;
+    for(ExpressionSetIter it = solveI->ann().begin(); it!= solveI->ann().end(); ++it) {
+      if(Call* c = (*it)->dyn_cast<Call>()) {
+        if(c->id() == constants().ann.combinator) {
+          continue;
+        }
+      }
+      objective->ann().add(MiniZinc::copy(_env.envi(),(*it)));
+    }
+    solveI->remove();     
+    _fzn->addItem(objective);                                   
+    
     return solve();
   }
   

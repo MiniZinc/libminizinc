@@ -18,6 +18,7 @@
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
   
@@ -69,7 +70,7 @@ namespace MiniZinc {
     void addItem(Item* i) {
       _items.push_back(i);
       if (i->isa<SolveI>()) {
-        _solveItem = i->cast<SolveI>();
+        _solveItem = i->cast<SolveI>();        
       } else if (i->isa<OutputI>()) {
         _outputItem = i->cast<OutputI>();
       }

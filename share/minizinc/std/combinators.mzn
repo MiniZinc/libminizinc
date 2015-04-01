@@ -55,27 +55,8 @@ annotation comb_assign(int: x,int: y);
 %                    the actual combinators                           %
 % =================================================================== %
 
-% ------------------- Branch & Bound -------------------------------- %
-% Branch and Bound when minimizing
-function ann: bab_min(var int: obj, ann: s) =   
-       repeat(
-           and([
-               next(time_limit(2.0)), % get next solution
-               post(obj < sol(obj)), % post constraint
-               s % apply some annotation, e.g. printing the solution
-           ])
-       )
-   ;               
-function ann: bab_min(var int: obj) = bab_min(obj, print); %TODO
-function ann: bab_min(var int: obj, array[int] of ann: limits) =
-       repeat(
-           and([
-               next(limits), % get next solution
-               post(obj < sol(obj)), % post constraint
-               print()
-           ])
-       )
-   ;  
+% Branch&Bound minimize combinator
+include "bab_min.mzn";
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj, ann: s) =   

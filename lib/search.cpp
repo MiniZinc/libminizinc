@@ -146,14 +146,23 @@ namespace MiniZinc {
       interpretLimitCombinator(call->args()[1],solver,verbose);
     }
      
-    VarDecl* decl;
-    if(Id* id = call->args()[0]->dyn_cast<Id>()) 
+    VarDecl* decl; // TODO: use flat variable decl?
+    if(Id* id = call->args()[0]->dyn_cast<Id>()) {
       decl = id->decl();
+      if(decl->e()) { // if there is a right hand side
+        if(Id* id_rhs = decl->e()->dyn_cast<Id>()) {
+          if(id_rhs->decl())
+            decl = id_rhs->decl();
+        }
+        else { // TODO : ArrayAccess??
+        }
+      }
+    }
     else {
       std::stringstream ssm;
       ssm << "Expected identifier instead of " << *(call->args()[0]) << " in " << *call;
       throw TypeError(solver->env().envi(), call->args()[0]->loc(), ssm.str());
-    }     
+    }    
     
     return solver->best(decl,minimize,print); 
   }
