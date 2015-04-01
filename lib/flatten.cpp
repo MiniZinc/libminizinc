@@ -5075,6 +5075,35 @@ namespace MiniZinc {
             }
           }
         }
+        if (vdi && keptVariable &&
+            vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
+            vdi->e()->ti()->domain() != NULL) {
+          GCLock lock;
+          BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
+          FloatVal vmin = eval_float(env, bo->lhs());
+          FloatVal vmax = eval_float(env, bo->rhs());
+          if (vmin == -std::numeric_limits<FloatVal>::infinity() && vmax == std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+          } else if (vmin == -std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+            std::vector<Expression*> args(2);
+            args[0] = vdi->e()->id();
+            args[1] = new FloatLit(Location().introduce(), vmax);
+            Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
+            call->type(Type::varbool());
+            call->decl(env.orig->matchFn(env, call));
+            env.flat_addItem(new ConstraintI(Location().introduce(), call));
+          } else if (vmax == std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+            std::vector<Expression*> args(2);
+            args[0] = new FloatLit(Location().introduce(), vmin);
+            args[1] = vdi->e()->id();
+            Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
+            call->type(Type::varbool());
+            call->decl(env.orig->matchFn(env, call));
+            env.flat_addItem(new ConstraintI(Location().introduce(), call));
+          }
+        }
       }
       
       // rewrite some constraints if there are redefinitions
