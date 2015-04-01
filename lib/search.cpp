@@ -427,10 +427,14 @@ namespace MiniZinc {
       double time = (double) il->v().toInt();
       FloatLit* fl = new FloatLit(Location(), time);
       KeepAlive ka(fl);
+      if(verbose)
+        std::cerr << "DEBUG: setting time limit: " << *fl << std::endl;
       opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
     }
     else if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
       KeepAlive ka(fl);
+      if(verbose)
+        std::cerr << "DEBUG: setting time limit: " << *fl << std::endl;
       opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
     }
     else {
@@ -475,18 +479,18 @@ namespace MiniZinc {
       domains.insert(id,domain);         
     }    
     if(verbose) {
-      std::cerr << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
-      debugprint(env.flat());  
+      //std::cerr << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
+      //debugprint(env.flat());  
     }
     // flatten the expression
     EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
     if(verbose) {
-      std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
-      debugprint(env.flat());    
+      //std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
+      //debugprint(env.flat());    
     
     //std::cout<< "\n" << std::endl;
-    std::cerr << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
-    debugprint(_scopes[0]->env().flat());
+    //std::cerr << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
+    //debugprint(_scopes[0]->env().flat());
     }
     
     int nbVarsAfter = 0;

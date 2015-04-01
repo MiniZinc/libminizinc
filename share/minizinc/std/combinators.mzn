@@ -100,16 +100,32 @@ function ann: lns (var int: obj, array[int] of var int: x,
     repeat (i in 1..iterations) (
       and([
         scope(
-         or([
           and([ 
             post(neighbourhoodCts(x,d)),
             next, %bab_min(obj), %next, % or bab
             print()
           ]),
-          print()
-         ])
         ),
-      post(obj < sol(obj))
+        print(),
+        post(obj < sol(obj))
+      ])
+  );
+
+function ann: lns (var int: obj, array[int] of var int: x,
+                   int: iterations, float: d, float: secs) = 
+    repeat (i in 1..iterations) (
+      and([
+        scope(
+          or([
+            and([ 
+              post(neighbourhoodCts(x,d)),
+              next(time_limit(secs)), %bab_min(obj), %next, % or bab
+              print()
+            ]),
+            print()
+          ])
+        ),
+        post(obj < sol(obj))
       ])
   );
 

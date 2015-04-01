@@ -1055,7 +1055,7 @@ namespace MiniZinc {
       // TODO: how to consider the number of solutions?
       int nbSols = _options.getIntParam(constants().solver_options.solution_limit.str(), 
                                         _env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT ? 1 : 0);
-                
+      //std::cerr << "DEBUG: time limit in Gecode is set to: " << timeStop << "ms" << std::endl;          
       Search::Options o;
       o.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,
@@ -2053,18 +2053,24 @@ namespace MiniZinc {
   bool 
   GecodeSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
     if(!customEngine) {
-      prepareEngine(true);     
+      //prepareEngine(true);   
+      updateIntBounds(_current_space,vd,lb,ub);
     }
-    customEngine->updateIntBounds(vd,lb,ub,*this);   
+    else {
+      customEngine->updateIntBounds(vd,lb,ub,*this);   
+    }
     return true;
   }
   
   bool 
   GecodeSolverInstance::addVariables(const std::vector<VarDecl*>& vars) {
     if(!customEngine) {
-      prepareEngine(true);     
+      //prepareEngine(true);     
+      addVariables(_current_space,vars);
     }
-    customEngine->addVariables(vars, *this);   
+    else {
+      customEngine->addVariables(vars, *this);
+    }
     return true; 
   }
   
@@ -2240,10 +2246,7 @@ namespace MiniZinc {
   GecodeSolverInstance::postConstraints(std::vector<Call*> cts) {     
     for(unsigned int i=0; i<cts.size(); i++) {      
       _constraintRegistry.post(cts[i]); 
-    }
-    if(!customEngine) { // TODO: why here?
-      prepareEngine(true);     
-    }
+    }   
     return true; 
   }    
 
