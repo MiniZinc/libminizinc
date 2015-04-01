@@ -1678,6 +1678,8 @@ namespace MiniZinc {
     return clause;
   }
 
+  Expression* flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
+  
   /// TODO: check if all expressions are total
   /// If yes, use element encoding
   /// If not, use implication encoding
@@ -1698,7 +1700,11 @@ namespace MiniZinc {
     for (int i=0; i<ite->size(); i++) {
       bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        cond = eval_bool(env,ite->e_if(i));
+        if (ite->e_if(i)->type().cv()) {
+          cond = eval_bool(env, flat_cv_exp(env, ctx, ite->e_if(i)));
+        } else {
+          cond = eval_bool(env,ite->e_if(i));
+        }
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -2240,16 +2246,174 @@ namespace MiniZinc {
     }
     c->decl(env.orig->matchFn(env, c));
     assert(c->decl());
-    c->type(c->decl()->rtype(env, c_args));
+    Type t = c->decl()->rtype(env, c_args);
+    t.cv(bo->type().cv());
+    c->type(t);
     return c;
+  }
+
+  Expression* flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
+    GCLock lock;
+    if (e->type().ispar() && !e->type().cv()) {
+      return eval_par(env, e);
+    }
+    if (e->type().isvar()) {
+      EE ee = flat_exp(env, ctx, e, NULL,NULL);
+      if (isfalse(env, ee.b()))
+        throw FlatteningError(env, e->loc(), "cannot flatten partial function in this position");
+      return ee.r();
+    }
+    switch (e->eid()) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_TIID:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+      case Expression::E_ANON:
+        assert(false);
+        return NULL;
+      case Expression::E_ID:
+      {
+        Id* id = e->cast<Id>();
+        return flat_cv_exp(env, ctx, id->decl()->e());
+      }
+      case Expression::E_SETLIT:
+      {
+        SetLit* sl = e->cast<SetLit>();
+        if (sl->isv())
+          return sl;
+        std::vector<Expression*> es(sl->v().size());
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, sl->v()[i]);
+        }
+        GCLock lock;
+        return eval_par(env, new SetLit(Location().introduce(),es));
+      }
+      case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        std::vector<Expression*> es(al->v().size());
+        for (unsigned int i=0; i<al->v().size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, al->v()[i]);
+        }
+        GCLock lock;
+        Expression* al_ret =  eval_par(env, new ArrayLit(Location().introduce(),es));
+        Type t = al->type();
+        t.cv(false);
+        al_ret->type(t);
+        return al_ret;
+      }
+      case Expression::E_ARRAYACCESS:
+      {
+        ArrayAccess* aa = e->cast<ArrayAccess>();
+        Expression* av = flat_cv_exp(env, ctx, aa->v());
+        std::vector<Expression*> idx(aa->idx().size());
+        for (unsigned int i=0; i<aa->idx().size(); i++) {
+          idx[i] = flat_cv_exp(env, ctx, aa->idx()[i]);
+        }
+        GCLock lock;
+        return eval_par(env, new ArrayAccess(Location().introduce(),av,idx));
+      }
+      case Expression::E_COMP:
+      {
+        class EvalFlatCvExp {
+        public:
+          Ctx ctx;
+          EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
+          typedef Expression* Val;
+          typedef Expression* ArrayVal;
+          Expression* e(EnvI& env, Expression* e) {
+            return flat_cv_exp(env,ctx,e);
+          }
+          static Expression* exp(Expression* e) { return e; }
+        } eval(ctx);
+        std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env,eval,e->cast<Comprehension>());
+        ArrayLit* al_ret = new ArrayLit(e->loc(),a);
+        Type t = e->type();
+        t.cv(false);
+        al_ret->type(t);
+        return al_ret;
+      }
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (int i=0; i<ite->size(); i++) {
+          if (eval_bool(env,flat_cv_exp(env,ctx,ite->e_if(i))))
+            return flat_cv_exp(env,ctx,ite->e_then(i));
+        }
+        return flat_cv_exp(env,ctx,ite->e_else());
+      }
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        if (bo->op() == BOT_AND) {
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs());
+          if (!eval_bool(env, lhs)) {
+            return constants().lit_false;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs()));
+        } else if (bo->op() == BOT_OR) {
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs());
+          if (eval_bool(env, lhs)) {
+            return constants().lit_true;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs()));
+        }
+        GCLock lock;
+        BinOp* nbo = new BinOp(bo->loc().introduce(),flat_cv_exp(env, ctx, bo->lhs()),bo->op(),flat_cv_exp(env, ctx, bo->rhs()));
+        nbo->type(bo->type());
+        return eval_par(env, nbo);
+      }
+      case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        GCLock lock;
+        UnOp* nuo = new UnOp(uo->loc(), uo->op(), flat_cv_exp(env, ctx, uo->e()));
+        nuo->type(uo->type());
+        return eval_par(env, nuo);
+      }
+      case Expression::E_CALL:
+      {
+        Call* c = e->cast<Call>();
+        if (c->id()=="mzn_in_root_context") {
+          return constants().boollit(ctx.b==C_ROOT);
+        }
+        std::vector<Expression*> args(c->args().size());
+        for (unsigned int i=0; i<c->args().size(); i++) {
+          args[i] = flat_cv_exp(env, ctx, c->args()[i]);
+        }
+        GCLock lock;
+        Call* nc = new Call(c->loc(), c->id(), args);
+        nc->decl(c->decl());
+        nc->type(c->type());
+        return eval_par(env, nc);
+      }
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        Expression* ret = flat_cv_exp(env, ctx, l->in());
+        l->popbindings();
+        return ret;
+      }
+        
+    }
+    
   }
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     EE ret;
     assert(!e->type().isunknown());
-    if (e->type().ispar() && !e->type().cv() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
+    if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
+      
       ret.b = bind(env,Ctx(),b,constants().lit_true);
+      if (e->type().cv()) {
+        ret.r = bind(env,ctx,r,flat_cv_exp(env,ctx,e));
+        return ret;
+      }
       if (e->type().dim() > 0) {
         EnvI::Map::iterator it;
         Id* id = e->dyn_cast<Id>();
