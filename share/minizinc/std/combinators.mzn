@@ -59,16 +59,7 @@ annotation comb_assign(int: x,int: y);
 include "bab_min.mzn";
 
 % Branch and Bound when maximising
-function ann: bab_max(var int: obj, ann: s) =   
-       repeat(
-           and([
-               next, % get next solution
-               post(obj > sol(obj)), % post constraint
-               s % apply some annotation, e.g. printing the solution
-           ])
-       )
-   ;               
-function ann: bab_max(var int: obj) = bab_max(obj, print());
+include "bab_max.mzn";
 
 % ------------------- Large Neighbourhood Search -------------------- %
 % Large Neighbourhood Search variant that takes an objective variable
