@@ -1068,8 +1068,25 @@ namespace MiniZinc {
                 ibv = compute_intset_bounds(env,vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(env,vd->e());
-                if (ib.valid)
-                  ibv = IntSetVal::a(ib.l,ib.u);
+                if (ib.valid) {
+                  Call* call = vd->e()->dyn_cast<Call>();
+                  if (call && call->id()==constants().ids.lin_exp) {
+                    ArrayLit* al = eval_array_lit(env, call->args()[1]);
+                    if (al->v().size()==1) {
+                      IntBounds check_zeroone = compute_int_bounds(env, al->v()[0]);
+                      if (check_zeroone.l==0 && check_zeroone.u==1) {
+                        ArrayLit* coeffs = eval_array_lit(env, call->args()[0]);
+                        std::vector<IntVal> newdom(2);
+                        newdom[0] = 0;
+                        newdom[1] = eval_int(env, coeffs->v()[0])+eval_int(env, call->args()[2]);
+                        ibv = IntSetVal::a(newdom);
+                      }
+                    }
+                  }
+                  if (ibv==NULL) {
+                    ibv = IntSetVal::a(ib.l,ib.u);
+                  }
+                }
               }
               if (ibv) {
                 if (vd->ti()->domain()) {
