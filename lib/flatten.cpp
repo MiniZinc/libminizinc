@@ -4102,6 +4102,9 @@ namespace MiniZinc {
                 ee.b = ee.r;
                 cs.push_back(ee);
               }
+              if (vd->type().dim() > 0) {
+                checkIndexSets(env, vd, let_e);
+              }
             } else {
               if ((ctx.b==C_NEG || ctx.b==C_MIX) && !vd->ann().contains(constants().ann.promise_total)) {
                 CallStackItem csi_vd(env, vd);
