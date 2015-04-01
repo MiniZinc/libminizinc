@@ -65,6 +65,7 @@ namespace MiniZinc {
     friend IntVal operator /(const IntVal& x, const IntVal& y);
     friend IntVal operator %(const IntVal& x, const IntVal& y);
     friend IntVal std::abs(const MiniZinc::IntVal& x);
+    friend bool operator ==(const IntVal& x, const IntVal& y);
   private:
     long long int _v;
     bool _infinity;
@@ -157,7 +158,7 @@ namespace MiniZinc {
 
   inline
   bool operator ==(const IntVal& x, const IntVal& y) {
-    return x.isFinite()==y.isFinite() && x.toInt() == y.toInt();
+    return x.isFinite()==y.isFinite() && x._v == y._v;
   }
   inline
   bool operator <=(const IntVal& x, const IntVal& y) {
