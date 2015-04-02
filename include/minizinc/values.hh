@@ -20,6 +20,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <limits.h>
 
 
 namespace MiniZinc {
