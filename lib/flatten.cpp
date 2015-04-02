@@ -1223,8 +1223,25 @@ namespace MiniZinc {
                 ibv = compute_intset_bounds(env,vd->e());
               } else {
                 IntBounds ib = compute_int_bounds(env,vd->e());
-                if (ib.valid)
-                  ibv = IntSetVal::a(ib.l,ib.u);
+                if (ib.valid) {
+                  Call* call = vd->e()->dyn_cast<Call>();
+                  if (call && call->id()==constants().ids.lin_exp) {
+                    ArrayLit* al = eval_array_lit(env, call->args()[1]);
+                    if (al->v().size()==1) {
+                      IntBounds check_zeroone = compute_int_bounds(env, al->v()[0]);
+                      if (check_zeroone.l==0 && check_zeroone.u==1) {
+                        ArrayLit* coeffs = eval_array_lit(env, call->args()[0]);
+                        std::vector<IntVal> newdom(2);
+                        newdom[0] = 0;
+                        newdom[1] = eval_int(env, coeffs->v()[0])+eval_int(env, call->args()[2]);
+                        ibv = IntSetVal::a(newdom);
+                      }
+                    }
+                  }
+                  if (ibv==NULL) {
+                    ibv = IntSetVal::a(ib.l,ib.u);
+                  }
+                }
               }
               if (ibv) {
                 if (vd->ti()->domain()) {
@@ -4240,6 +4257,9 @@ namespace MiniZinc {
                 ee.b = ee.r;
                 cs.push_back(ee);
               }
+              if (vd->type().dim() > 0) {
+                checkIndexSets(env, vd, let_e);
+              }
             } else {
               if ((ctx.b==C_NEG || ctx.b==C_MIX) && !vd->ann().contains(constants().ann.promise_total)) {
                 CallStackItem csi_vd(env, vd);
@@ -5216,6 +5236,35 @@ namespace MiniZinc {
                 }
               }
             }
+          }
+        }
+        if (vdi && keptVariable &&
+            vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
+            vdi->e()->ti()->domain() != NULL) {
+          GCLock lock;
+          BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
+          FloatVal vmin = eval_float(env, bo->lhs());
+          FloatVal vmax = eval_float(env, bo->rhs());
+          if (vmin == -std::numeric_limits<FloatVal>::infinity() && vmax == std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+          } else if (vmin == -std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+            std::vector<Expression*> args(2);
+            args[0] = vdi->e()->id();
+            args[1] = new FloatLit(Location().introduce(), vmax);
+            Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
+            call->type(Type::varbool());
+            call->decl(env.orig->matchFn(env, call));
+            env.flat_addItem(new ConstraintI(Location().introduce(), call));
+          } else if (vmax == std::numeric_limits<FloatVal>::infinity()) {
+            vdi->e()->ti()->domain(NULL);
+            std::vector<Expression*> args(2);
+            args[0] = new FloatLit(Location().introduce(), vmin);
+            args[1] = vdi->e()->id();
+            Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
+            call->type(Type::varbool());
+            call->decl(env.orig->matchFn(env, call));
+            env.flat_addItem(new ConstraintI(Location().introduce(), call));
           }
         }
       }

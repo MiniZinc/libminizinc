@@ -60,6 +60,7 @@ Bug fixes:
  - Fix sort_by builtin to sort in non-decreasing order, and work with floats
  - Fix bug in type checker, now automatic coercions in functions defined with
    type variables (like the comparison operators) work correctly
+ - Check that index sets match for arrays assigned in let expressions
  
 
 Version 2.0.1
