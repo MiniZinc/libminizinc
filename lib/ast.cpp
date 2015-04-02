@@ -566,6 +566,9 @@ namespace MiniZinc {
       if (_let[i]->isa<VarDecl>()) {
         VarDecl* vd = _let[i]->cast<VarDecl>();
         GC::trail(&vd->_e,vd->e());
+        if (vd->ti()->ranges().size() > 0) {
+          GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
+        }
       }
     }
   }
