@@ -1190,8 +1190,14 @@ namespace MiniZinc {
 
   FloatVal b_int2float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    long long int i = eval_int(env,args[0]).toInt();
-    return static_cast<FloatVal>(i);
+    IntVal iv = eval_int(env,args[0]);
+    if (iv.isFinite()) {
+      long long int i = iv.toInt();
+      return static_cast<FloatVal>(i);
+    }
+    if (iv.isPlusInfinity())
+      return std::numeric_limits<FloatVal>::infinity();
+    return -std::numeric_limits<FloatVal>::infinity();
   }
   IntVal b_ceil(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();

@@ -20,6 +20,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <limits.h>
 
 
 namespace MiniZinc {
@@ -65,6 +66,7 @@ namespace MiniZinc {
     friend IntVal operator /(const IntVal& x, const IntVal& y);
     friend IntVal operator %(const IntVal& x, const IntVal& y);
     friend IntVal std::abs(const MiniZinc::IntVal& x);
+    friend bool operator ==(const IntVal& x, const IntVal& y);
   private:
     long long int _v;
     bool _infinity;
@@ -76,7 +78,11 @@ namespace MiniZinc {
     IntVal(void) : _v(0), _infinity(false) {}
     IntVal(long long int v) : _v(v), _infinity(false) {}
     
-    long long int toInt(void) const { return _v; }
+    long long int toInt(void) const {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      return _v;
+    }
     
     bool isFinite(void) const { return !_infinity; }
     bool isPlusInfinity(void) const { return _infinity && _v==1; }
@@ -153,7 +159,7 @@ namespace MiniZinc {
 
   inline
   bool operator ==(const IntVal& x, const IntVal& y) {
-    return x.isFinite()==y.isFinite() && x.toInt() == y.toInt();
+    return x.isFinite()==y.isFinite() && x._v == y._v;
   }
   inline
   bool operator <=(const IntVal& x, const IntVal& y) {
@@ -254,7 +260,13 @@ OPEN_HASH_NAMESPACE {
   public:
     size_t operator()(const MiniZinc::IntVal& s) const {
       HASH_NAMESPACE::hash<long long int> longhash;
-      size_t h = longhash(s.toInt());
+      size_t h;
+      if (s.isPlusInfinity())
+        h = longhash(LONG_MAX);
+      else if (s.isMinusInfinity())
+        h = longhash(LONG_MIN);
+      else
+        h = longhash(s.toInt());
       HASH_NAMESPACE::hash<bool> boolhash;
       h ^= boolhash(s.isFinite()) + 0x9e3779b9 + (h << 6) + (h >> 2);
       return h;
