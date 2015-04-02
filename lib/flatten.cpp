@@ -2093,11 +2093,14 @@ namespace MiniZinc {
     Expression* al_arg = (cid==constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
     EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
     ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
+    KeepAlive al_ka = al;
     if (al->dims()>1) {
       Type alt = al->type();
       alt.dim(1);
+      GCLock lock;
       al = new ArrayLit(al->loc(),al->v());
       al->type(alt);
+      al_ka = al;
     }
     Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(env,args_ee[2].r()));
     
