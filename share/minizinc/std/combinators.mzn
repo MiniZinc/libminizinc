@@ -73,7 +73,7 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
         scope(
           and([ 
             post(neighbourhoodCts(x,d)),
-            or([bab_min(obj),print()]) %next, % or bab
+            or([bab_min(obj,print),print()]) %next, % or bab
           ]),
         ),
         post(obj < sol(obj))
@@ -81,14 +81,14 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
   );
 
 function ann: lns_min (var int: obj, array[int] of var int: x,
-                   int: iterations, float: d, float: secs) = 
+                   int: iterations, float: d, int: timeout_ms) = 
     repeat (i in 1..iterations) (
       and([
         scope(
           or([
             and([ 
               post(neighbourhoodCts(x,d)),
-              bab_min(obj,time_limit(secs)), %next, % or bab
+              bab_min(obj,timeout_ms), %next, % or bab
               print()
             ]),
             print()

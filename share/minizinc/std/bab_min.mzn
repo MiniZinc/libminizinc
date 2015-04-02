@@ -8,7 +8,7 @@ function ann: bab_min(var int: obj, ann: s) =
            and([
                next(), % get next solution
                post(obj < sol(obj)), % post constraint
-               s % apply some annotation, e.g. printing the solution
+               s
            ])
        )
    ;               
@@ -22,5 +22,14 @@ function ann: bab_min(var int: obj, array[int] of ann: limits) =
        )
    ;  
 
-
 function ann: bab_min(var int: obj)  = bab_min(obj, print);
+
+function ann: bab_min(var int: obj, int: timeout_ms) = 
+       repeat(
+           and([
+               next(time_limit(timeout_ms)), % get next solution
+               post(obj < sol(obj)), % post constraint
+               print()
+           ])
+       )
+   ;

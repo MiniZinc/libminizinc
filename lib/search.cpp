@@ -439,22 +439,14 @@ namespace MiniZinc {
     args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
-      double time = (double) il->v().toInt();
-      FloatLit* fl = new FloatLit(Location(), time);
-      KeepAlive ka(fl);
+      int time = il->v().toInt();
       if(verbose)
-        std::cerr << "DEBUG: setting time limit: " << *fl << std::endl;
-      opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
-    }
-    else if(FloatLit* fl = args[0]->dyn_cast<FloatLit>()) {
-      KeepAlive ka(fl);
-      if(verbose)
-        std::cerr << "DEBUG: setting time limit: " << *fl << std::endl;
-      opt.setFloatParam(constants().solver_options.time_limit_sec.str(),ka);
+        std::cerr << "DEBUG: setting time limit: " << time << "ms" << std::endl;
+      opt.setIntParam(constants().solver_options.time_limit_ms.str(),time);
     }
     else {
       std::stringstream ssm; 
-      ssm << "Cannot process argument. Expecting integer or float value instead of: " << *args[0];
+      ssm << "Cannot process argument. Expecting integer value instead of: " << *args[0];
       throw EvalError(solver->env().envi(),args[0]->loc(), ssm.str());
     }    
   }
@@ -467,8 +459,10 @@ namespace MiniZinc {
       std::cout << constants().solver_output.solution_delimiter << std::endl;     
       return SolverInstance::SAT;
     }
-    else {      
-      throw EvalError(solver->env().envi(),Location(), "No solution found to be printed by PRINT-combinator");      
+    else {
+      if(verbose)
+        std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;      
+     return SolverInstance::UNSAT;
     }
   }  
   

@@ -1088,7 +1088,7 @@ namespace MiniZinc {
     solver_options.solution_limit = ASTString("solution_limit");
     solver_options.supports_maximize = ASTString("supports_maximize");
     solver_options.supports_minimize = ASTString("supports_minimize");
-    solver_options.time_limit_sec = ASTString("time_limit_sec");
+    solver_options.time_limit_ms = ASTString("time_limit_ms");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1230,7 +1230,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), solver_options.solution_limit));
     v.push_back(new StringLit(Location(), solver_options.supports_maximize));
     v.push_back(new StringLit(Location(), solver_options.supports_minimize));
-    v.push_back(new StringLit(Location(), solver_options.time_limit_sec));
+    v.push_back(new StringLit(Location(), solver_options.time_limit_ms));
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);
     for (int i=-maxConstInt; i<=maxConstInt; i++)

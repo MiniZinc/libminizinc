@@ -24,3 +24,13 @@ function ann: bab_max(var int: obj, array[int] of ann: limits) =
    ;  
            
 function ann: bab_max(var int: obj) = bab_max(obj, print());
+
+function ann: bab_max(var int: obj, int: timeout_ms) = 
+       repeat(
+           and([
+               next(time_limit(timeout_ms)), % get next solution
+               post(obj > sol(obj)), % post constraint
+               print()
+           ])
+       )
+   ;

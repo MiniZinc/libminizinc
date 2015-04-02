@@ -88,8 +88,8 @@ namespace MiniZinc {
           timeval* timeout_p = NULL;
           // TODO: how to disable timeout??
           int timeout_sec = -1;
-          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {
-            int timeout_sec = opt.getFloatParam(constants().solver_options.time_limit_sec.str());
+          if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
+            timeout_sec = opt.getFloatParam(constants().solver_options.time_limit_ms.str())/1000;
           
             timeout.tv_sec = timeout_sec;
             timeout.tv_usec = 0;
@@ -170,8 +170,8 @@ namespace MiniZinc {
       int executeCommand(Options& opt, std::string fznFile) {
           int status;          
           // determine the command line arguments
-          if(opt.hasParam(constants().solver_options.time_limit_sec.str())) {            
-            int time_ms = opt.getFloatParam(constants().solver_options.time_limit_sec.str())*1000;
+          if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {            
+            int time_ms = opt.getFloatParam(constants().solver_options.time_limit_ms.str());
             char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(time_c, "%d", time_ms); 
             // node limit & time limit
@@ -310,8 +310,8 @@ namespace MiniZinc {
     }
 
     bool hadSolution = false;
-    std::string sstr = result.str();    
-    std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
+    //std::string sstr = result.str();    
+    //std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
     while (result.good()) {
       std::string line;
       getline(result, line);    

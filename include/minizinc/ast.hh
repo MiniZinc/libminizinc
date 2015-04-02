@@ -1390,7 +1390,7 @@ namespace MiniZinc {
         ASTString solution_limit;
         ASTString supports_maximize;
         ASTString supports_minimize;
-        ASTString time_limit_sec;        
+        ASTString time_limit_ms;        
       } solver_options;
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt

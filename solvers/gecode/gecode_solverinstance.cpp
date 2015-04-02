@@ -1067,8 +1067,8 @@ namespace MiniZinc {
       int failStop = _options.getIntParam("fails", 0);
       failStop = _options.getIntParam(constants().solver_options.fail_limit.str(),failStop);
       int timeStop = _options.getIntParam("time", 0);
-      timeStop  = _options.hasParam(constants().solver_options.time_limit_sec.str()) ? 
-                std::ceil(_options.getFloatParam(constants().solver_options.time_limit_sec.str()))*1000 // convert to milliseconds 
+      timeStop  = _options.hasParam(constants().solver_options.time_limit_ms.str()) ? 
+                  _options.getIntParam(constants().solver_options.time_limit_ms.str())
                 : timeStop;
       // TODO: how to consider the number of solutions?
       int nbSols = _options.getIntParam(constants().solver_options.solution_limit.str(), 
