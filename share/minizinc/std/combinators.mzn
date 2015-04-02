@@ -86,8 +86,9 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
           or([
             and([ 
               post(neighbourhoodCts(x,d)),
-              bab_min(obj,timeout_ms), %next, % or bab
-              print()
+              time_limit(timeout_ms,
+                         bab_min(obj) %next
+              )
             ]),
             print()
           ])
