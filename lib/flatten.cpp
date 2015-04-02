@@ -2289,7 +2289,11 @@ namespace MiniZinc {
           es[i] = flat_cv_exp(env, ctx, sl->v()[i]);
         }
         GCLock lock;
-        return eval_par(env, new SetLit(Location().introduce(),es));
+        SetLit* sl_ret = new SetLit(Location().introduce(),es);
+        Type t = sl->type();
+        t.cv(false);
+        sl_ret->type(t);
+        return eval_par(env, sl_ret);
       }
       case Expression::E_ARRAYLIT:
       {
