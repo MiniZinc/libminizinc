@@ -174,7 +174,9 @@ constraint
 int: iterations = 10;
 int: subIterations = 4;
 float: destroyrate = 0.6;
-float: secs = 5.0;
+int: secs = 5000;
+
+opt bool: printIntermediateSolutions;
 
 solve 
 :: seq_search([int_search([successor[j] | j in NODES], first_fail, indomain_split, complete),
@@ -190,7 +192,7 @@ solve
         scope(
           or([
             and([
-              post(neighbourhood()),
+              post(neighbourhood(i)),
               next(time_limit(secs)),
               print(),
             ]),
@@ -207,9 +209,24 @@ solve
 
 satisfy;
 
-
-predicate neighbourhood() = 
-  let {  
+predicate neighbourhood(int: iter) = 
+  if iter mod 3 = 0 then
+  let {
+    string: msg = "You have the following options:\n"++
+     "1. Keep a vehicle\n"++
+     "2. Keep a route\n";
+    int: n = read_int(msg)
+  } in
+  if n=1 then let {
+    int: keep = read_int("Vehicle to keep: ")
+  } in keepVehicle(keep)
+  elseif n=2 then let {
+    int: keep = read_int("Route to keep: ")
+  } in keepRoute(keep)
+  else abort("Done.\n")
+  endif
+  else
+  let {
     % flip a coin on which neighbourhood to use
     float: coin = uniform(0.0,1.0);
   } in
@@ -223,6 +240,7 @@ predicate neighbourhood() =
      useRandomNewVehicle()
    else true
    endif  
+  endif
 ;
 
 
@@ -230,7 +248,7 @@ predicate useRandomNewVehicle() =
   if(hasSol()) then 
   let {
     set of int: unusedVehicles = { v | v in 1..nbVehicles where (sol(successor[nbCustomers+v]) == nbCustomers+nbVehicles+v) };
-    array[1..nbVehicles] of int: distribution = [ (v in unusedVehicles)  | v in 0..nbVehicles ];
+    array[1..nbVehicles+1] of int: distribution = [ (v in unusedVehicles)  | v in 0..nbVehicles ];
     int: vehicleId = discrete_distribution(distribution);
   } in 
     if card(unusedVehicles) > 0 then 
@@ -284,7 +302,7 @@ predicate keepRandomRoute() =
   if(hasSol()) then 
     let {
        set of int: usedVehicles = { v | v in 1..nbVehicles where exists(c in 1..nbCustomers) (sol(vehicle[c]) == v) };
-       array[1..nbVehicles] of int: distribution = [ (v in usedVehicles)  | v in 0..nbVehicles ];
+       array[1..nbVehicles+1] of int: distribution = [ (v in usedVehicles)  | v in 0..nbVehicles ];
        int: v = discrete_distribution(distribution);
     } in
      trace("keeping random vehicle "++show(v)++"\n") /\
