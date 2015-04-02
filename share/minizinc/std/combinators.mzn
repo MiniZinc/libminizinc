@@ -36,6 +36,8 @@ annotation scope(ann);
 annotation skip;
 % limit execution time of next to the given number of milliseconds
 annotation time_limit(int: ms);
+% limit execution time of next to the given number of milliseconds
+annotation time_limit(int: ms, ann);
 
 % print the output as print()
 function ann: print; 

@@ -12,7 +12,7 @@
 #ifndef __MINIZINC_SEARCH_HH__
 #define __MINIZINC_SEARCH_HH__
 
-#include <stack>
+#include <ctime>
 
 #include <minizinc/flatten.hh>
 #include <minizinc/solver_instance_base.hh>
@@ -25,6 +25,7 @@ namespace MiniZinc {
   protected:
     // the stack of scopes where the topmost scope is the scope of the next level
     std::vector<SolverInstanceBase*> _scopes;
+    std::vector<clock_t> _timeouts;
   public: 
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
@@ -98,6 +99,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a PRINT combinator
   SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver, bool verbose);
+      /// interpret and execute a SCOPE combinator
+  SolverInstance::Status interpretTimeLimitAdvancedCombinator(Call* scopeComb, SolverInstanceBase* solver, bool verbose);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output
@@ -121,6 +124,12 @@ namespace MiniZinc {
   void popScope() {
     _scopes.pop_back();    
   }
+  /// returns true if any of the current time limits is violated
+  bool isTimeLimitViolated(bool verbose = false);
+  /// returns the timeout time: time-now + timeout(given-in-milliseconds)
+  clock_t getTimeout(int ms);
+  /// sets timeout options (for next) in case there is a timeout
+  void setCurrentTimeout(SolverInstanceBase* solver);
   };
  
   

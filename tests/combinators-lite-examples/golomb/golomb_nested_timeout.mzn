@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 10;
+int: m = 14;
 int: n = m*m;
 
 var 0..n: obj;
@@ -53,20 +53,27 @@ predicate neighbourhoodCts1(array[int] of var int: x,
 
 float: d = 0.7;
 int: iterations = 10;
+int: timeout1 = 30000; % ms timeout for all LNS iterations
+int: timeout2 = 10000; % ms timeout for BAB in one iteration
+int: timeout3 = 5000; % ms timeout for NEXT in one BAB iteration
 
 % solve using minimizing branch & bound
 solve :: combinator(
+  time_limit(timeout1,
     repeat (i in 1..iterations) (
       and([
         scope(
           and([ 
             post(neighbourhoodCts1(mark,d)),
-            or([bab_min(obj,print),print()]) %next, % or bab
+            time_limit(timeout2,
+                       or([bab_min(obj,timeout3),print()]) %next, % or bab
+            )
           ]),
         ),
         post(obj < sol(obj))
       ])
-   )
+    )
+  )
 ) 
 satisfy;
 

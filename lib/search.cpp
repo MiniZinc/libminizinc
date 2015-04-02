@@ -9,6 +9,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <ctime>
+
 #include <minizinc/search.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/prettyprinter.hh> // for DEBUG only
@@ -48,6 +50,9 @@ namespace MiniZinc {
       }
       else if(call->id() == constants().combinators.skip) {
         return SolverInstance::SAT;
+      }
+      else if(call->id() == constants().combinators.limit_time) {
+        return interpretTimeLimitAdvancedCombinator(call, solver, verbose);
       }
       else {
         std::vector<Expression*> previousParameters(call->decl()->params().size());
@@ -296,9 +301,41 @@ namespace MiniZinc {
     return status;
   }
   
+  SolverInstance::Status 
+  SearchHandler::interpretTimeLimitAdvancedCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
+    if(call->args().size() != 2) {
+      std::stringstream ssm;
+      ssm << "TIME-LIMIT-combinator takes 2 arguments instead of " << call->args().size() << " in: " << *call;
+      throw TypeError(solver->env().envi(),call->loc(), ssm.str());
+    }
+    Expression* time = call->args()[0];
+    if(!time->type().ispar()) {
+      std::stringstream ssm;
+      ssm << "Expected par expression instead of " << *time << " in: " << *call;
+      throw TypeError(solver->env().envi(),time->loc(), ssm.str());
+    }
+ 
+    int ms = eval_int(solver->env().envi(), time).toInt();
+    clock_t t = getTimeout(ms);
+    _timeouts.push_back(t);   
+    if(isTimeLimitViolated()) {
+       _timeouts.pop_back(); // remove the time limit
+      return SolverInstance::UNKNOWN; // TODO: what to return??
+    }
+    
+    // execute argument if there is enough time
+    SolverInstance::Status status = interpretCombinator(call->args()[1], solver, verbose);
+    _timeouts.pop_back(); // remove the time limit
+    return status;
+  } 
+  
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(SolverInstanceBase* solver, bool verbose) {
    // std::cerr << "DEBUG: NEXT combinator" << std::endl;   
+    if(isTimeLimitViolated(verbose)) {
+      return SolverInstance::UNKNOWN;
+    }
+    setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
       solver->env().envi().hasSolution(true);
@@ -321,9 +358,13 @@ namespace MiniZinc {
       ssm << "NEXT-combinator takes at most 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(),call->loc(), ssm.str());      
     } 
+    if(isTimeLimitViolated(verbose)) {
+      return SolverInstance::UNKNOWN;
+    }
     if(args.size() > 0)
       interpretLimitCombinator(args[0],solver,verbose);
-      
+    setCurrentTimeout(solver); // timeout via time_limit(ms,ann) combinator
+    
     // get next solution
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SAT) {      
@@ -613,8 +654,7 @@ namespace MiniZinc {
           vdi->e()->e(solutions.get(id));
         }
       }
-    }    
-    //throw InternalError("SearchHandler::updateSolution: Could not update solutions in output models");   
+    }     
   }
   
    Expression* 
@@ -625,6 +665,57 @@ namespace MiniZinc {
        }
      }
      return combinator;
+   }
+   
+   bool 
+   SearchHandler::isTimeLimitViolated(bool verbose) {
+     clock_t time_now = std::clock();
+     for(unsigned int i=0; i<_timeouts.size(); i++) {
+       clock_t timeout = _timeouts[i];
+       if(time_now >= timeout) {
+         if(verbose)
+           std::cerr << "timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+         //std::cerr << "WARNING: timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+         return true;
+       }
+       else {
+         //if(verbose)
+          // std::cerr << "Currently at time " << (((float)time_now)/CLOCKS_PER_SEC)<< ". timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has not yet been reached." << std::endl;
+       }
+     }
+     return false;
+   }
+   
+   clock_t 
+   SearchHandler::getTimeout(int ms) {
+    clock_t t = std::clock();
+    t = t + (ms/1000)*(CLOCKS_PER_SEC);
+    //std::cerr << "DEBUG: setting time-out to: " << (((float)t)/CLOCKS_PER_SEC) << "secs" << std::endl;
+    return t;
+   }
+   
+   void 
+   SearchHandler::setCurrentTimeout(SolverInstanceBase* solver) {
+     if(_timeouts.size() == 0)
+       return;
+     clock_t smallest_timeout = _timeouts[0];
+     for(unsigned int i=1; i<_timeouts.size(); i++) {
+       clock_t timeout = _timeouts[i];
+       if(timeout < smallest_timeout)
+         smallest_timeout = timeout;
+     }
+     clock_t now = std::clock();
+     int timeout_ms = (int) ((smallest_timeout - now)/CLOCKS_PER_SEC)*1000;
+     if(timeout_ms > 0) {
+       Options& opt = solver->getOptions();
+       if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
+         int old_timeout = opt.getIntParam(constants().solver_options.time_limit_ms.str());
+         if(old_timeout <timeout_ms) // if the timeout that is already set is even smaller, keep it
+           return;
+       }
+       opt.setIntParam(constants().solver_options.time_limit_ms.str(),timeout_ms);
+       //std::cerr << "DEBUG: setting solver time-out to: " << timeout_ms << "ms" << std::endl;
+     }     
    }
   
 }
