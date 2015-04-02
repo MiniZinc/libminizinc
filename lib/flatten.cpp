@@ -2745,16 +2745,106 @@ namespace MiniZinc {
     case Expression::E_ARRAYACCESS:
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
+
+        Ctx nctx = ctx;
+        nctx.b = +nctx.b;
+        nctx.neg = false;
+        EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
+        std::vector<EE> ees;
+
+        for (unsigned int i=0; i<aa->idx().size(); i++) {
+          Expression* tmp = follow_id_to_decl(aa->idx()[i]);
+          if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+            tmp = vd->id();
+          if (tmp->type().ispar()) {
+            KeepAlive ka;
+            GCLock lock;
+            ArrayLit* al;
+            if (eev.r()->isa<ArrayLit>()) {
+              al = eev.r()->cast<ArrayLit>();
+            } else {
+              Id* id = eev.r()->cast<Id>();
+              if (id->decl()==NULL) {
+                throw InternalError("undefined identifier");
+              }
+              if (id->decl()->e()==NULL) {
+                throw InternalError("array without initialiser not supported");
+              }
+              al = follow_id(id)->cast<ArrayLit>();
+            }
+            
+            std::vector<Expression*> elems;
+            std::vector<IntVal> idx(aa->idx().size());
+            std::vector<std::pair<int,int> > dims;
+            std::vector<Expression*> newaccess;
+            std::vector<int> nonpar;
+            std::vector<int> stack;
+            for (unsigned int j=0; j<aa->idx().size(); j++) {
+              Expression* tmp = follow_id_to_decl(aa->idx()[j]);
+              if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+                tmp = vd->id();
+              if (tmp->type().ispar()) {
+                idx[j] = eval_int(env, tmp).toInt();
+              } else {
+                idx[j] = al->min(j);
+                stack.push_back(nonpar.size());
+                nonpar.push_back(j);
+                dims.push_back(std::make_pair(al->min(j), al->max(j)));
+                newaccess.push_back(aa->idx()[j]);
+              }
+            }
+            if (stack.empty()) {
+              bool success;
+              ret.r = bind(env,ctx,r,eval_arrayaccess(env, al, idx, success));
+              ees.push_back(EE(NULL,eev.b()));
+              ret.b = conj(env,b,ctx,ees);
+              return ret;
+            }
+            while (!stack.empty()) {
+              int cur = stack.back();
+              if (cur==nonpar.size()-1) {
+                stack.pop_back();
+                for (int i = al->min(nonpar[cur]); i <= al->max(nonpar[cur]); i++) {
+                  idx[nonpar[cur]] = i;
+                  bool success;
+                  elems.push_back(eval_arrayaccess(env, al, idx, success));
+                }
+              } else {
+                if (idx[nonpar[cur]].toInt()==al->max(nonpar[cur])) {
+                  idx[nonpar[cur]]=al->min(nonpar[cur]);
+                  stack.pop_back();
+                } else {
+                  idx[nonpar[cur]]++;
+                  for (unsigned int j=cur+1; j<nonpar.size(); j++)
+                    stack.push_back(j);
+                }
+              }
+            }
+            Expression* newal = new ArrayLit(al->loc(), elems, dims);
+            Type t = al->type();
+            t.dim(dims.size());
+            newal->type(t);
+            
+            ka = new ArrayAccess(aa->loc(), newal, newaccess);
+            ka()->type(aa->type());
+            EE ee = flat_exp(env,ctx,ka(),r,NULL);
+            ees.push_back(EE(NULL,ee.b()));
+            ees.push_back(EE(NULL,eev.b()));
+            ret.r = bind(env,ctx,r,ee.r());
+            ret.b = conj(env,b,ctx,ees);
+            return ret;
+          }
+        }
         
-        std::vector<EE> ees(aa->idx().size());
         Ctx dimctx = ctx;
         dimctx.neg = false;
         for (unsigned int i=0; i<aa->idx().size(); i++) {
           Expression* tmp = follow_id_to_decl(aa->idx()[i]);
           if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
             tmp = vd->id();
-          ees[i] = flat_exp(env, dimctx, tmp, NULL, NULL);
+          ees.push_back(flat_exp(env, dimctx, tmp, NULL, NULL));
         }
+        ees.push_back(EE(NULL,eev.b()));
         
         bool parAccess=true;
         for (unsigned int i=0; i<aa->idx().size(); i++) {
@@ -2763,11 +2853,6 @@ namespace MiniZinc {
             break;
           }
         }
-        Ctx nctx = ctx;
-        nctx.b = +nctx.b;
-        nctx.neg = false;
-        EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
-        ees.push_back(EE(NULL,eev.b()));
 
         if (parAccess) {
           ArrayLit* al;
