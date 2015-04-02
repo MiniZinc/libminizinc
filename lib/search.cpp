@@ -227,9 +227,10 @@ namespace MiniZinc {
             std::stringstream ssm;
             ssm << "The generator expression \"" << *in << "\" has to be par";
             throw TypeError(solver->env().envi(),in->loc(), ssm.str());
-          }              
+          }
+          int lb;
           if(BinOp* bo = in->dyn_cast<BinOp>()) {                
-            int lb = eval_int(env.envi(), bo->lhs()).toInt();
+            lb = eval_int(env.envi(), bo->lhs()).toInt();
             int ub = eval_int(env.envi(), bo->rhs()).toInt();
             nbIterations = ub - lb + 1;
           } 
@@ -240,14 +241,18 @@ namespace MiniZinc {
           }
           SolverInstance::Status status = SolverInstance::UNKNOWN;
           // repeat the argument a limited number of times
+          Expression* oldValue = compr->decl(0, 0)->e();
           for(unsigned int i = 0; i<nbIterations; i++) {
+            compr->decl(0, 0)->e(IntLit::a(lb+i));
             if(verbose)
               std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
             status = interpretCombinator(compr->e(),solver,verbose);
             if(status != SolverInstance::SAT) {             
+              compr->decl(0, 0)->e(oldValue);
               return status;
             }
           }
+          compr->decl(0, 0)->e(oldValue);
           return status;
         }            
       }          
