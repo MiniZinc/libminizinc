@@ -1284,7 +1284,52 @@ namespace MiniZinc {
     std::cerr << msg->v();
     return args.size()==1 ? constants().lit_true : args[1];
   }
+
+  bool b_print(EnvI& env, Call* call) {
+    GCLock lock;
+    std::cout << eval_string(env, call->args()[0]);
+    std::flush(std::cout);
+    return true;
+  }
   
+  IntVal b_read_int(EnvI& env, Call* call) {
+    if (call->args().size()>0) {
+      GCLock lock;
+      std::cout << eval_string(env, call->args()[0]);
+      std::flush(std::cout);
+    }
+    std::string s;
+    std::getline(std::cin, s);
+    std::istringstream iss(s);
+    long long int v;
+    iss >> v;
+    if (iss.fail())
+      throw EvalError(env, call->loc(), "input is not an integer");
+    return v;
+  }
+
+  Expression* b_read_int_array(EnvI& env, Call* call) {
+    if (call->args().size()>0) {
+      GCLock lock;
+      std::cout << eval_string(env, call->args()[0]);
+      std::flush(std::cout);
+    }
+    std::string s;
+    std::getline(std::cin, s);
+    std::istringstream iss(s);
+    std::vector<Expression*> a;
+    while (iss.good()) {
+      long long int v;
+      iss >> v;
+      if (iss.fail())
+        break;
+      a.push_back(IntLit::a(v));
+    }
+    ArrayLit* al = new ArrayLit(Location().introduce(),a);
+    al->type(Type::parint(1));
+    return al;
+  }
+
   Expression* b_set2array(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==1);
@@ -2262,6 +2307,14 @@ namespace MiniZinc {
       t[0] = Type::parstring();
       rb(env, m, ASTString("abort"), t, b_abort);
       rb(env, m, constants().ids.trace, t, b_trace);
+      rb(env, m, constants().ids.trace, t, b_print);
+      rb(env, m, ASTString("read_int"), t, b_read_int);
+      rb(env, m, ASTString("read_int_array"), t, b_read_int_array);
+    }
+    {
+      std::vector<Type> t;
+      rb(env, m, ASTString("read_int"), t, b_read_int);
+      rb(env, m, ASTString("read_int_array"), t, b_read_int_array);
     }
     {
       std::vector<Type> t(2);

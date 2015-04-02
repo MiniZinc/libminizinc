@@ -1290,6 +1290,25 @@ function bool: is_fixed(var opt $T: x);
 function bool: is_fixed(array[$U] of var opt $T: x);
 
 /***
+  @groupdef builtins.io Input and output functions
+*/
+
+/** @group builtins.io Print \a msg on the standard output stream and return true */
+test print(string: msg);
+
+/** @group builtins.io Read an integer from standard input */
+function int: read_int();
+
+/** @group builtins.io Print \a msg, then read an integer from standard input */
+function int: read_int(string: msg);
+
+/** @group builtins.io Read an array of integers from standard input */
+function array[int] of int: read_int_array();
+
+/** @group builtins.io Print \a msg, then read an array of integers from standard input */
+function array[int] of int: read_int_array(string: msg);
+
+/***
   @groupdef builtins.debug Assertions and debugging functions
   
   These functions help debug models and check that input data conforms to
