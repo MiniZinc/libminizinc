@@ -1375,6 +1375,7 @@ namespace MiniZinc {
         ASTString print;
         ASTString repeat;
         ASTString scope;
+        ASTString skip;
       } combinators;
       struct {
         ASTString opt;

@@ -46,6 +46,9 @@ namespace MiniZinc {
       else if(call->id() == constants().combinators.next) {
         return interpretNextCombinator(call, solver,verbose);
       }
+      else if(call->id() == constants().combinators.skip) {
+        return SolverInstance::SAT;
+      }
       else {
         std::vector<Expression*> previousParameters(call->decl()->params().size());
         for (unsigned int i=call->decl()->params().size(); i--;) {
@@ -97,6 +100,9 @@ namespace MiniZinc {
       } 
       else if (ident && ident->idn()==-1 && ident->v() == constants().combinators.print) {
         return interpretPrintCombinator(solver,verbose);
+      }
+      else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.skip) {
+        return SolverInstance::SAT;
       }
       else {
         std::stringstream ssm; 

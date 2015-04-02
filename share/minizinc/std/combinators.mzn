@@ -4,8 +4,12 @@
 %                   combinator lite built-ins                         %
 % =================================================================== %
 
+% execute the given annotations until one fails
+annotation and(array[int] of ann);
 % dummy annotation to wrap combinator in to avoid flattening of combinator
 annotation combinator (ann);
+% limit the number of fails during search in the execution of next
+annotation fail_limit(int: fails);
 % direct the solver to find next solution, returns true if found and
 % false otherwise
 annotation next;
@@ -13,40 +17,32 @@ annotation next;
 annotation next(ann);
 % next can have several arguments (e.g. time limit and node limit)
 annotation next(array [int] of ann);
+% limit the search nodes in the execution of next
+annotation node_limit(int: nodes);
+% execute the given annotations until all fail
+annotation or(array[int] of ann);
 % post constraint expression expr in current scope
 annotation post(var bool: expr); 
 % print the last found solution according to the output statement
 annotation print;
-% define an new scope 
-annotation scope(ann);
 % repeat annotations for a limited number of times
 annotation repeat(array[int] of ann);
 % repeat annotations an unlimited number of times until the annotation
 % is done or fails
 annotation repeat(ann);
-% execute the given annotations until one fails
-annotation and(array[int] of ann);
-% execute the given annotations until all fail
-annotation or(array[int] of ann);
-% limit execution time of next to the given number of seconds
-annotation time_limit(int: secs);
-annotation time_limit(float: secs);
-% limit the search nodes in the execution of next
-annotation node_limit(int: nodes);
-% limit the number of fails during search in the execution of next
-annotation fail_limit(int: fails);
+% define an new scope 
+annotation scope(ann);
+% do nothing (mainly for use in if-statements)
+annotation skip;
+% limit execution time of next to the given number of milliseconds
+annotation time_limit(int: ms);
 
-% return the solution value of the last solution
-%function int: sol(var int: x); 
-%function bool: sol(var bool: x);
-%function float: sol(var float: x);
-% returns true if there already exists a (last) solution, and returns
-% false otherwise
-%function bool: hasSol; 
 % print the output as print()
 function ann: print; 
 % get the next solution as next()
 function ann: next; 
+% do nothing skip()
+function ann: skip;
 
 % assign search variable x to y
 annotation comb_assign(int: x,int: y);

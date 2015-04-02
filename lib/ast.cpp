@@ -1075,6 +1075,7 @@ namespace MiniZinc {
     combinators.print = ASTString("print");
     combinators.repeat = ASTString("repeat");
     combinators.scope = ASTString("scope");
+    combinators.skip = ASTString("skip");
     
     solver_output.solution_delimiter = ASTString("----------");
     solver_output.sat = ASTString("==========");
@@ -1216,7 +1217,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.post));
     v.push_back(new StringLit(Location(), combinators.print));
     v.push_back(new StringLit(Location(), combinators.repeat));
-    v.push_back(new StringLit(Location(), combinators.scope));       
+    v.push_back(new StringLit(Location(), combinators.scope));
+    v.push_back(new StringLit(Location(), combinators.skip));
     
     v.push_back(new StringLit(Location(), solver_output.opt));
     v.push_back(new StringLit(Location(), solver_output.sat));
