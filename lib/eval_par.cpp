@@ -1360,6 +1360,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -1715,6 +1717,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeFloatBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -2001,6 +2005,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (!e->type().isintset())
