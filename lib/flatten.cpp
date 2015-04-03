@@ -2307,7 +2307,11 @@ namespace MiniZinc {
         for (unsigned int i=0; i<al->v().size(); i++) {
           es[i] = flat_cv_exp(env, ctx, al->v()[i])();
         }
-        Expression* al_ret =  eval_par(env, new ArrayLit(Location().introduce(),es));
+        std::vector<std::pair<int,int> > dims(al->dims());
+        for (unsigned int i=0; i<al->dims(); i++) {
+          dims[i] = std::make_pair(al->min(i), al->max(i));
+        }
+        Expression* al_ret =  eval_par(env, new ArrayLit(Location().introduce(),es,dims));
         Type t = al->type();
         t.cv(false);
         al_ret->type(t);
