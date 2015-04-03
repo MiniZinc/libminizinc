@@ -293,11 +293,13 @@ namespace MiniZinc {
     }
     if (toAnnotate && toAnnotate->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
+      bool allCalls = true;
       for (int i = callStack.size()-1; i >= prev; i--) {
         Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+        allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
           EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-          if (i==callStack.size()-1 || !isDefinesVarAnn(ee_ann.r()))
+          if (allCalls || !isDefinesVarAnn(ee_ann.r()))
             toAnnotate->addAnnotation(ee_ann.r());
         }
       }

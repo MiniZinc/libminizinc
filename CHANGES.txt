@@ -64,6 +64,7 @@ Bug fixes:
    type variables (like the comparison operators) work correctly
  - Check that index sets match for arrays assigned in let expressions
  - Fix bug in bounds inference for integer expressions with annotations
+ - Fix propagation of defines_var annotation to be pushed through calls
  
 
 Version 2.0.1
