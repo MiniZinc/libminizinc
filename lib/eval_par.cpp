@@ -1583,8 +1583,11 @@ namespace MiniZinc {
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(al->v()[i]);
-          if (!valid || !_bounds.back().first.isFinite() || !_bounds.back().second.isFinite())
+          if (!valid) {
+            for (unsigned int j=al->v().size()-1; j>i; j--)
+              _bounds.pop_back();
             return;
+          }
         }
         assert(stacktop+al->v().size()==_bounds.size());
         IntVal lb = d;
