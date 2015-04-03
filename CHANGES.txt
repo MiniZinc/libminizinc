@@ -27,6 +27,8 @@ Changes:
    file.
  - Stop flattening immediately when a model has been found to contain an
    inconsistency.
+ - Improve flattening of array access expressions, in particular for nested
+   array accesses that can be combined into a single element constraint
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
@@ -61,6 +63,7 @@ Bug fixes:
  - Fix bug in type checker, now automatic coercions in functions defined with
    type variables (like the comparison operators) work correctly
  - Check that index sets match for arrays assigned in let expressions
+ - Fix bug in bounds inference for integer expressions with annotations
  
 
 Version 2.0.1
