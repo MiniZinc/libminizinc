@@ -5355,6 +5355,7 @@ namespace MiniZinc {
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
                 removedItems.push_back(vdi);
+                vdi->remove();
                 keptVariable = false;
               } else {
                 vdi->e()->e(NULL);
@@ -5366,6 +5367,7 @@ namespace MiniZinc {
             }
           } else {
             removedItems.push_back(vdi);
+            vdi->remove();
             keptVariable = false;
           }
         }
