@@ -163,8 +163,8 @@ namespace MiniZinc {
   public:
     typedef Expression* Val;
     typedef Expression* ArrayVal;
-    static Expression* e(EnvI&, Expression* e) {
-      return copy(e,true);
+    static Expression* e(EnvI& env, Expression* e) {
+      return copy(env,e,true);
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -340,7 +340,7 @@ namespace MiniZinc {
         Let* l = e->cast<Let>();
         l->pushbindings();
         ArrayLit* l_in = eval_array_lit(env,l->in());
-        ArrayLit* ret = copy(l_in,true)->cast<ArrayLit>();
+        ArrayLit* ret = copy(env,l_in,true)->cast<ArrayLit>();
         ret->flat(l_in->flat());
         l->popbindings();
         return ret;
@@ -1360,7 +1360,9 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
-      if (e->type().dim() > 0 || e->type().isann())
+      if (e->type().isann())
+        return false;
+      if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {
@@ -1581,8 +1583,11 @@ namespace MiniZinc {
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(al->v()[i]);
-          if (!valid || !_bounds.back().first.isFinite() || !_bounds.back().second.isFinite())
+          if (!valid) {
+            for (unsigned int j=al->v().size()-1; j>i; j--)
+              _bounds.pop_back();
             return;
+          }
         }
         assert(stacktop+al->v().size()==_bounds.size());
         IntVal lb = d;
@@ -1715,6 +1720,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeFloatBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -2001,6 +2008,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (!e->type().isintset())

@@ -188,7 +188,7 @@ function     int: 'div'(int: x,int: y);
 
 /** @group builtins.arithmetic Return result of integer division \a x / \a y */
 function var int: 'div'(var int: x,var int: y) =
-  if not (0 in dom(y)) then div_t(x,y) else
+  if mzn_in_root_context(y) \/ not (0 in dom(y)) then div_t(x,y) else
   let { constraint y != 0 } in div_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return remainder of integer division \a x % \a y */
@@ -196,7 +196,7 @@ function     int: 'mod'(int: x,int: y);
 
 /** @group builtins.arithmetic Return remainder of integer division \a x % \a y */
 function var int: 'mod'(var int: x,var int: y) =
-  if not (0 in dom(y)) then mod_t(x,y) else
+  if mzn_in_root_context(y) \/ not (0 in dom(y)) then mod_t(x,y) else
   let { constraint y != 0 } in mod_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
@@ -1388,6 +1388,8 @@ predicate xorall_reif(array[int] of var bool: b, var bool: c) =
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 function var float: lin_exp(array[int] of float, array[int] of var float, float);
 
+test mzn_in_root_context(var $T);
+
 %-----------------------------------------------------------------------------%
 %
 % Element constraint implementations
@@ -1403,7 +1405,8 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 function var int: element_t(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var dom_bounds_array(x): r ::is_defined_var;
-    constraint array_var_int_element((idx-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
+    constraint idx in index_set(x);
+    constraint array_var_int_element_nonshifted(idx,x,r) ::defines_var(r);
   } in r;
 
 function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_total =
@@ -1412,36 +1415,25 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_int_element((idx2-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
+    constraint array_var_int_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
-  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
   } in element_mt(idx,x)
   endif;
 
-function var int: element(var int: idx1, int: idx2,
-                          array[int,int] of var int: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var int: element(int: idx1, var int: idx2,
-                          array[int,int] of var int: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
-
 function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of var int: x) =
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
-       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+  } in if mzn_in_root_context(idx1) \/
+       ((has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))))
        then
          element_t(idx1*dim+idx2-min_flat, array1d(x))
        else
@@ -1460,9 +1452,10 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
-       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))))
        then
          element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        else let {
@@ -1471,36 +1464,6 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
          constraint idx3 in index_set_3of3(x);
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
-
-function var int: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var int: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var int: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var int: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var int: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var int: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
 
 function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                           array[int,int,int,int] of var int: x) =
@@ -1513,10 +1476,11 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
-       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x))) )
        then
          element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        else let {
@@ -1527,29 +1491,14 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
 
-function var int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
 %%%%%%%%%%%%%%%%%%%
 % Element on floats
 
 function var float: element_t(var int: idx, array[int] of var float: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    constraint array_var_float_element((idx-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
+    constraint idx in index_set(x);
+    constraint array_var_float_element_nonshifted(idx,x,r) ::defines_var(r);
   } in r;
 
 function var float: element_mt(var int: idx, array[int] of var float: x) :: promise_total =
@@ -1558,36 +1507,25 @@ function var float: element_mt(var int: idx, array[int] of var float: x) :: prom
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_float_element((idx2-(min(index_set(x))-1))::domain,array1d(x),r) ::defines_var(r);
+    constraint array_var_float_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
 function var float: element(var int: idx, array[int] of var float: x) =
-  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
   } in element_mt(idx,x)
   endif;
 
-function var float: element(var int: idx1, int: idx2,
-                            array[int,int] of var float: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var float: element(int: idx1, var int: idx2,
-                            array[int,int] of var float: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
-
 function var float: element(var int: idx1, var int: idx2,
                             array[int,int] of var float: x) =
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
-       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
          element_t(idx1*dim+idx2-min_flat, array1d(x))
        else
@@ -1606,9 +1544,10 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
-       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
        then
          element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        else let {
@@ -1617,37 +1556,6 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
          constraint idx3 in index_set_3of3(x);
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
-
-function var float: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var float: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var float: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var float: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var float: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var float: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
-
 
 function var float: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                             array[int,int,int,int] of var float: x) =
@@ -1660,10 +1568,11 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
-       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x))) )
        then
          element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        else let {
@@ -1673,23 +1582,6 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
          constraint idx4 in index_set_4of4(x);
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
-
-function var float: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var float: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var float: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var float: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
                       
 %%%%%%%%%%%%%%%%%
 % Element on sets
@@ -1697,7 +1589,8 @@ function var float: element(int: idx1, var int: idx2, var int: idx3, var int: id
 function var set of int: element_t(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
-    constraint array_var_set_element(idx-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
+    constraint idx in index_set(x);
+    constraint array_var_set_element_nonshifted(idx,x,r) ::defines_var(r);
   } in r;
 
 function var set of int: element_mt(var int: idx, array[int] of var set of int: x) :: promise_total =
@@ -1706,36 +1599,25 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_set_element(idx2-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
+    constraint array_var_set_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
-  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
   } in element_mt(idx,x)
   endif;
 
-function var set of int: element(var int: idx1, int: idx2,
-                                 array[int,int] of var set of int: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var set of int: element(int: idx1, var int: idx2,
-                                 array[int,int] of var set of int: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
-
 function var set of int: element(var int: idx1, var int: idx2,
                                  array[int,int] of var set of int: x) =
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
-       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
          element_t(idx1*dim+idx2-min_flat, array1d(x))
        else
@@ -1754,9 +1636,10 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
-       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
        then
          element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        else let {
@@ -1765,36 +1648,6 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
          constraint idx3 in index_set_3of3(x);
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
-
-function var set of int: element(var int: idx1, int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var set of int: element(int: idx1, int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var set of int: element(var int: idx1, var int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var set of int: element(var int: idx1, int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
 
 function var set of int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                                  array[int,int,int,int] of var set of int: x) =
@@ -1807,10 +1660,11 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
-       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x))) )
        then
          element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        else let {
@@ -1821,29 +1675,14 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
 
-function var set of int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var set of int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var set of int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
 %%%%%%%%%%%%%%%%%%
 % Element on bools
 
 function var bool: element_t(var int: idx, array[int] of var bool: x) :: promise_total =
   let {
     var bool: r ::is_defined_var;
-    constraint array_var_bool_element(idx-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
+    constraint idx in index_set(x);
+    constraint array_var_bool_element_nonshifted(idx,x,r) ::defines_var(r);
   } in r;
 
 function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promise_total =
@@ -1852,34 +1691,23 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
     var min(index_set(x))..max(index_set(x)): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
-    constraint array_var_bool_element(idx2-(min(index_set(x))-1),array1d(x),r) ::defines_var(r);
+    constraint array_var_bool_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
-  if (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else idx in index_set(x) /\ element_mt(idx,x)
   endif;
-
-function var bool: element(var int: idx1, int: idx2,
-                          array[int,int] of var bool: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var bool: element(int: idx1, var int: idx2,
-                          array[int,int] of var bool: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
 
 function var bool: element(var int: idx1, var int: idx2,
                           array[int,int] of var bool: x) =
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
-       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
          element_t(idx1*dim+idx2-min_flat, array1d(x))
        else
@@ -1898,9 +1726,10 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
-       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x)))
+       /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
        then
          element_t(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        else let {
@@ -1909,36 +1738,6 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
          constraint idx3 in index_set_3of3(x);
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
-
-function var bool: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var bool: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var bool: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var bool: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var bool: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var bool: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                             array[int,int,int,int] of var bool: x) =
@@ -1951,10 +1750,11 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
+  } in if mzn_in_root_context(idx1) \/ (
+          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
-       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x)))
+       /\ (has_bounds(idx4) /\ lb(idx4) >= min(index_set_4of4(x)) /\ ub(idx4) <= max(index_set_4of4(x))) )
        then
          element_t(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        else let {
@@ -1965,23 +1765,6 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
 
-function var bool: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var bool: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var bool: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var bool: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-
 %-----------------------------------------------------------------------------%
 %
 % Internal functions for implementing div, mod etc
@@ -1990,15 +1773,20 @@ function set of int:compute_div_bounds(var int: x, var int: y);
 
 function var int: div_t(var int: x, var int: y) :: promise_total =
   let {
-    var (compute_div_bounds(x,y)): z ::is_defined_var; 
+    var (compute_div_bounds(x,y)): z ::is_defined_var;
+    constraint y != 0;
     constraint int_div(x,y,z) ::defines_var(z); } in z;
+
 function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
     var ((dom(y) diff {0}) union {1}): yy = if y=0 then 1 else y endif;
   } in div_t(x,yy);  
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
-  let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z; constraint int_mod(x,y,z); } in z;
+  let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z;
+        constraint y != 0;
+        constraint int_mod(x,y,z); } in z;
+
 function var int: mod_mt(var int: x, var int: y) :: promise_total =
   let {
     var {1} union dom(y): yy = if y=0 then 1 else y endif;
