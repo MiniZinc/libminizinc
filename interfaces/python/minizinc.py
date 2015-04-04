@@ -3,14 +3,17 @@
 # @supervisor	Guido Tack
 
 
-#Things to add:
-# Calling solve with timer
-# Int vs Float multiplication
+#@Things to add:
+# Int vs Float multiplication (comparation and other command as well)
 # Write code for checking argument with type of None (any type can be accepted)
 # Improve the interface so that there is no need to assign MZN_STDLIB_DIR when starting python
 # args_ret_dict: some functions type checking are not written
 # Hide some internal functions such as flatten or type_presentation
 
+#@Suggestion:
+# Remove the user-defined name when declaring variable
+# Consider replacing it with i, where i is the number of arguments created
+#	for example: calling [a,b,c] = m.Variable(1,100,3)
 
 import sys
 import minizinc_internal
@@ -43,6 +46,8 @@ def flatten(x):
 
 # nicely presents the type of a variable
 def type_presentation(x):
+	if x is None:
+		return "Any_Type"
 	if type(x) is type:
 		name = x.__name__
 		if name[:9] == 'minizinc.':
@@ -202,6 +207,8 @@ class Expression(object):
 
 
 # Temporary container for Expression before evaluating to minizinc_internal object
+# Calling Predicate.init automatically check:
+#		if the arguments belong to the same model
 class Predicate(Expression):
 	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
@@ -223,7 +230,22 @@ class Predicate(Expression):
 		self.model = eval_model(vars)
 		if args_and_return_type_tuple is not None:
 			for t in args_and_return_type_tuple:
-				if self.vars_type == t[0]:
+				def check_type(expected, actual):
+					if expected is None:
+						return True
+					if len(expected) != len(actual):
+						return False
+					for i, val in enumerate(expected):
+						if (val is None):
+							pass
+						elif type(val) is list and type(actual[i]) is list:
+							if check_type(val, actual[i]) == False:
+								return False
+						elif type(val) != type(actual[i]):
+							return False
+					return True
+				if check_type(t[0], self.vars_type):
+				#self.vars_type == t[0]:
 					self.type = t[1]
 					break
 			else:
@@ -260,7 +282,9 @@ class Call(Predicate):
 args_ret_dict = {}
 
 to_assign = [ ((int_t, int_t), int_t ),
-			  ((float, float), float ) ]
+			  ((float, float), float ),
+			  ((int_t, float), float ),
+			  ((float, int_t), float)]
 args_ret_dict['add'] = to_assign
 args_ret_dict['sub'] = to_assign
 args_ret_dict['mul'] = to_assign
@@ -1342,7 +1366,7 @@ class Model(object):
 		else:
 			return VariableConstruct(self, argopt1, argopt2)
 
-	def __solve(self, code, expr, ann, data):
+	def __solve(self, code, expr, ann, data, solver, time):
 		minizinc_internal.lock()
 
 		if ann is not None:
@@ -1360,18 +1384,18 @@ class Model(object):
 			self.add_recursive(data)
 		minizinc_internal.unlock()
 
-		self.mznsolver = self.mznmodel.solve()
+		self.mznsolver = self.mznmodel.solve(solver = solver, time = time)
 		self.mznmodel = savedModel
 		self.solve_counter = self.solve_counter + 1
 		self.next_counter = -1
 
 
-	def satisfy(self, ann = None, data = None):
-		self.__solve(0, None, ann, data)
-	def maximize(self, expr, ann = None, data = None):
-		self.__solve(2, expr, ann, data)
-	def minimize(self, expr, ann = None, data = None):
-		self.__solve(1, expr, ann, data)
+	def satisfy(self, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(0, None, ann, data, solver, time)
+	def maximize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(2, expr, ann, data, solver, time)
+	def minimize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(1, expr, ann, data, solver, time)
 	def reset(self):
 		self.__init__()
 

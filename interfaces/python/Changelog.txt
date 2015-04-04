@@ -1,0 +1,25 @@
+1. Calling solve with timer and solver (done)
+
+	For simplicity, default solver must be set in minizinc.py
+	It's easier and clearer to change the default solver to be used:
+		In minizinc.py, class Model, there are 3 lines:
+			def satisfy(self, ann = None, data = None, solver = default_solver, time = 0)
+			def maximize(self, expr, ann = None, data = None, solver = default_solver, time = 0)
+			def minimize(self, expr, ann = None, data = None, solver = default_solver, time = 0):
+
+		To change the default solver to, say Gecode, we change the line
+			solver = default_solver
+		to 
+			solver = 'gecode'
+
+
+	NOTE: to pass the responsibility of specifying the default solver to C++ files:
+		in minizinc.py: change solver = default_solver --> solver = '' 
+		in Model.h: change default_solver = SC_UNKNOWN
+						-> default_solver = SC_GECODE
+
+2. Updated arguments type checking:
+	A type of None indicates that it accepts any possible type
+
+	XXX: what if users enter a list or tuple to that position of None?
+	XXX: Python Interface type checking is getting really clumpsy and expensive now
