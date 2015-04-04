@@ -1426,18 +1426,6 @@ function var int: element(var int: idx, array[int] of var int: x) =
   } in element_mt(idx,x)
   endif;
 
-function var int: element(var int: idx1, int: idx2,
-                          array[int,int] of var int: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var int: element(int: idx1, var int: idx2,
-                          array[int,int] of var int: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
-
 function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of var int: x) =
   let {
@@ -1477,36 +1465,6 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
 
-function var int: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var int: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var int: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var int: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var int: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var int: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var int: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
-
 function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                           array[int,int,int,int] of var int: x) =
   let {
@@ -1532,22 +1490,6 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
          constraint idx4 in index_set_4of4(x);
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
-
-function var int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                          array[int,int,int,int] of var int: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
 
 %%%%%%%%%%%%%%%%%%%
 % Element on floats
@@ -1575,18 +1517,6 @@ function var float: element(var int: idx, array[int] of var float: x) =
     constraint idx in index_set(x)
   } in element_mt(idx,x)
   endif;
-
-function var float: element(var int: idx1, int: idx2,
-                            array[int,int] of var float: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var float: element(int: idx1, var int: idx2,
-                            array[int,int] of var float: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
 
 function var float: element(var int: idx1, var int: idx2,
                             array[int,int] of var float: x) =
@@ -1627,37 +1557,6 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
 
-function var float: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var float: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var float: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var float: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var float: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var float: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var float: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
-
-
 function var float: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                             array[int,int,int,int] of var float: x) =
   let {
@@ -1683,23 +1582,6 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
          constraint idx4 in index_set_4of4(x);
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
-
-function var float: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var float: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var float: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var float: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var float: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
                       
 %%%%%%%%%%%%%%%%%
 % Element on sets
@@ -1727,18 +1609,6 @@ function var set of int: element(var int: idx, array[int] of var set of int: x) 
     constraint idx in index_set(x)
   } in element_mt(idx,x)
   endif;
-
-function var set of int: element(var int: idx1, int: idx2,
-                                 array[int,int] of var set of int: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var set of int: element(int: idx1, var int: idx2,
-                                 array[int,int] of var set of int: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
 
 function var set of int: element(var int: idx1, var int: idx2,
                                  array[int,int] of var set of int: x) =
@@ -1779,36 +1649,6 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
 
-function var set of int: element(var int: idx1, int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var set of int: element(int: idx1, int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var set of int: element(var int: idx1, var int: idx2, int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var set of int: element(var int: idx1, int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, var int: idx3,
-                                 array[int,int,int] of var set of int: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
-
 function var set of int: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                                  array[int,int,int,int] of var set of int: x) =
   let {
@@ -1835,22 +1675,6 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
 
-function var set of int: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var set of int: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var set of int: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var set of int: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                                 array[int,int,int,int] of var set of int: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
 %%%%%%%%%%%%%%%%%%
 % Element on bools
 
@@ -1875,18 +1699,6 @@ function var bool: element(var int: idx, array[int] of var bool: x) =
     element_t(idx,x)
   else idx in index_set(x) /\ element_mt(idx,x)
   endif;
-
-function var bool: element(var int: idx1, int: idx2,
-                          array[int,int] of var bool: x) =
-  element(idx1,
-          array1d(min(index_set_1of2(x))..max(index_set_1of2(x)),
-                  [x[i,idx2] | i in index_set_1of2(x)]));
-
-function var bool: element(int: idx1, var int: idx2,
-                          array[int,int] of var bool: x) =
-  element(idx2,
-          array1d(min(index_set_2of2(x))..max(index_set_2of2(x)),
-                  [x[idx1,i] | i in index_set_2of2(x)]));
 
 function var bool: element(var int: idx1, var int: idx2,
                           array[int,int] of var bool: x) =
@@ -1927,36 +1739,6 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
        } in element_mt(idx1*(dim2*dim3)+idx2*dim3+idx3-min, array1d(x))
        endif;
 
-function var bool: element(var int: idx1, int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, array1d(min(index_set_1of3(x))..max(index_set_1of3(x)), [ x[i,idx2,idx3] | i in index_set_1of3(x)]));
-
-function var bool: element(int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx2, array1d(min(index_set_2of3(x))..max(index_set_2of3(x)), [ x[idx1,i,idx3] | i in index_set_2of3(x)]));
-
-function var bool: element(int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx3, array1d(min(index_set_3of3(x))..max(index_set_3of3(x)), [ x[idx1,idx2,i] | i in index_set_3of3(x)]));
-
-function var bool: element(var int: idx1, var int: idx2, int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, idx2, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              [ x[i,j,idx3] | i in index_set_1of3(x), j in index_set_2of3(x)]));
-
-function var bool: element(var int: idx1, int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx1, idx3, array2d(min(index_set_1of3(x))..max(index_set_1of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[i,idx2,j] | i in index_set_1of3(x), j in index_set_3of3(x)]));
-
-function var bool: element(int: idx1, var int: idx2, var int: idx3,
-                          array[int,int,int] of var bool: x) =
-  element(idx2, idx3, array2d(min(index_set_2of3(x))..max(index_set_2of3(x)),
-                              min(index_set_3of3(x))..max(index_set_3of3(x)),
-                              [ x[idx1,i,j] | i in index_set_2of3(x), j in index_set_3of3(x)]));
-
 function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                             array[int,int,int,int] of var bool: x) =
   let {
@@ -1982,23 +1764,6 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
          constraint idx4 in index_set_4of4(x);
        } in element_mt(idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min, array1d(x))
        endif;
-
-function var bool: element(var int: idx1, var int: idx2, var int: idx3, int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx2, idx3, array3d(index_set_1of4(x),index_set_2of4(x),index_set_3of4(x), [ x[i,j,k,idx4] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_3of4(x)]));
-
-function var bool: element(var int: idx1, var int: idx2, int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx2, idx4, array3d(index_set_1of4(x),index_set_2of4(x),index_set_4of4(x), [ x[i,j,idx3,k] | i in index_set_1of4(x), j in index_set_2of4(x), k in index_set_4of4(x)]));
-
-function var bool: element(var int: idx1, int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx1, idx3, idx4, array3d(index_set_1of4(x),index_set_3of4(x),index_set_4of4(x), [ x[i,idx2,j,k] | i in index_set_1of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
-function var bool: element(int: idx1, var int: idx2, var int: idx3, var int: idx4,
-                            array[int,int,int,int] of var bool: x) =
-  element(idx2, idx3, idx4, array3d(index_set_2of4(x),index_set_3of4(x),index_set_4of4(x), [ x[idx1,i,j,k] | i in index_set_2of4(x), j in index_set_3of4(x), k in index_set_4of4(x)]));
-
 
 %-----------------------------------------------------------------------------%
 %
