@@ -229,7 +229,7 @@ namespace MiniZinc {
       }
 
       if(tighter) {
-        vd->ti()->domain(copy(ovd->ti()->domain()));
+        vd->ti()->domain(copy(envi, ovd->ti()->domain()));
         if(vd->e() == NULL && fixed) {
           if(vd->ti()->type().isvarint()) {
             vd->type(Type::parint());
@@ -5579,7 +5579,7 @@ namespace MiniZinc {
         IncludeI* ninc = update_include(new_mod, inc, new_includePaths);
         if(ninc) new_mod->addItem(ninc);
       } else {
-        new_mod->addItem(copy(cm,item));
+        new_mod->addItem(copy(e.envi(),cm,item));
       }
     }
     class RemoveAssigns : public ItemVisitor {
