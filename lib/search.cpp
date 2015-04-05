@@ -115,6 +115,10 @@ namespace MiniZinc {
         throw TypeError(env.envi(), ident->loc(), ssm.str());
       }
     }
+    else if(Let* let = comb->dyn_cast<Let>()) {
+      std::cerr << "DEBUG: Ignoring LET combinator for now: " << *let << std::endl;
+      return SolverInstance::ERROR; // TODO
+    }    
     else {
       std::stringstream ssm; 
       ssm << "unknown combinator: " << *comb;
