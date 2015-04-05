@@ -1360,6 +1360,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -1581,8 +1583,11 @@ namespace MiniZinc {
         for (unsigned int i=al->v().size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(al->v()[i]);
-          if (!valid || !_bounds.back().first.isFinite() || !_bounds.back().second.isFinite())
+          if (!valid) {
+            for (unsigned int j=al->v().size()-1; j>i; j--)
+              _bounds.pop_back();
             return;
+          }
         }
         assert(stacktop+al->v().size()==_bounds.size());
         IntVal lb = d;
@@ -1715,6 +1720,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeFloatBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -2001,6 +2008,8 @@ namespace MiniZinc {
     EnvI& env;
     ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
+      if (e->type().isann())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (!e->type().isintset())

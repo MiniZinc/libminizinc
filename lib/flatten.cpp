@@ -338,11 +338,13 @@ namespace MiniZinc {
     }
     if (toAnnotate && toAnnotate->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
+      bool allCalls = true;
       for (int i = callStack.size()-1; i >= prev; i--) {
         Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+        allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
           EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-          if (i==callStack.size()-1 || !isDefinesVarAnn(ee_ann.r()))
+          if (allCalls || !isDefinesVarAnn(ee_ann.r()))
             toAnnotate->addAnnotation(ee_ann.r());
         }
       }
@@ -1833,6 +1835,8 @@ namespace MiniZinc {
     return clause;
   }
 
+  KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
+  
   /// TODO: check if all expressions are total
   /// If yes, use element encoding
   /// If not, use implication encoding
@@ -1853,7 +1857,12 @@ namespace MiniZinc {
     for (int i=0; i<ite->size(); i++) {
       bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
-        cond = eval_bool(env,ite->e_if(i));
+        if (ite->e_if(i)->type().cv()) {
+          KeepAlive ka = flat_cv_exp(env, ctx, ite->e_if(i));
+          cond = eval_bool(env, ka());
+        } else {
+          cond = eval_bool(env,ite->e_if(i));
+        }
         if (cond) {
           if (nr==NULL || elseconds.size()==0) {
             GC::unlock();
@@ -2242,11 +2251,14 @@ namespace MiniZinc {
     Expression* al_arg = (cid==constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
     EE flat_al = flat_exp(env,nctx,al_arg,NULL,NULL);
     ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
+    KeepAlive al_ka = al;
     if (al->dims()>1) {
       Type alt = al->type();
       alt.dim(1);
+      GCLock lock;
       al = new ArrayLit(al->loc(),al->v());
       al->type(alt);
+      al_ka = al;
     }
     Val d = (cid == constants().ids.sum ? Val(0) : LinearTraits<Lit>::eval(env,args_ee[2].r()));
     
@@ -2395,16 +2407,191 @@ namespace MiniZinc {
     }
     c->decl(env.orig->matchFn(env, c));
     assert(c->decl());
-    c->type(c->decl()->rtype(env, c_args));
+    Type t = c->decl()->rtype(env, c_args);
+    t.cv(bo->type().cv());
+    c->type(t);
     return c;
+  }
+
+  KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
+    GCLock lock;
+    if (e->type().ispar() && !e->type().cv()) {
+      return eval_par(env, e);
+    }
+    if (e->type().isvar()) {
+      EE ee = flat_exp(env, ctx, e, NULL,NULL);
+      if (isfalse(env, ee.b()))
+        throw FlatteningError(env, e->loc(), "cannot flatten partial function in this position");
+      return ee.r();
+    }
+    switch (e->eid()) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_TIID:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+      case Expression::E_ANON:
+        assert(false);
+        return NULL;
+      case Expression::E_ID:
+      {
+        Id* id = e->cast<Id>();
+        return flat_cv_exp(env, ctx, id->decl()->e());
+      }
+      case Expression::E_SETLIT:
+      {
+        SetLit* sl = e->cast<SetLit>();
+        if (sl->isv())
+          return sl;
+        std::vector<Expression*> es(sl->v().size());
+        GCLock lock;
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, sl->v()[i])();
+        }
+        SetLit* sl_ret = new SetLit(Location().introduce(),es);
+        Type t = sl->type();
+        t.cv(false);
+        sl_ret->type(t);
+        return eval_par(env, sl_ret);
+      }
+      case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        std::vector<Expression*> es(al->v().size());
+        GCLock lock;
+        for (unsigned int i=0; i<al->v().size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, al->v()[i])();
+        }
+        std::vector<std::pair<int,int> > dims(al->dims());
+        for (unsigned int i=0; i<al->dims(); i++) {
+          dims[i] = std::make_pair(al->min(i), al->max(i));
+        }
+        Expression* al_ret =  eval_par(env, new ArrayLit(Location().introduce(),es,dims));
+        Type t = al->type();
+        t.cv(false);
+        al_ret->type(t);
+        return al_ret;
+      }
+      case Expression::E_ARRAYACCESS:
+      {
+        ArrayAccess* aa = e->cast<ArrayAccess>();
+        GCLock lock;
+        Expression* av = flat_cv_exp(env, ctx, aa->v())();
+        std::vector<Expression*> idx(aa->idx().size());
+        for (unsigned int i=0; i<aa->idx().size(); i++) {
+          idx[i] = flat_cv_exp(env, ctx, aa->idx()[i])();
+        }
+        ArrayAccess* aa_ret = new ArrayAccess(Location().introduce(),av,idx);
+        Type t = aa->type();
+        t.cv(false);
+        aa_ret->type(t);
+        return eval_par(env, aa_ret);
+      }
+      case Expression::E_COMP:
+      {
+        GCLock lock;
+        class EvalFlatCvExp {
+        public:
+          Ctx ctx;
+          EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
+          typedef Expression* Val;
+          typedef Expression* ArrayVal;
+          Expression* e(EnvI& env, Expression* e) {
+            return flat_cv_exp(env,ctx,e)();
+          }
+          static Expression* exp(Expression* e) { return e; }
+        } eval(ctx);
+        std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env,eval,e->cast<Comprehension>());
+        ArrayLit* al_ret = new ArrayLit(e->loc(),a);
+        Type t = e->type();
+        t.cv(false);
+        al_ret->type(t);
+        return al_ret;
+      }
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (int i=0; i<ite->size(); i++) {
+          KeepAlive ka = flat_cv_exp(env,ctx,ite->e_if(i));
+          if (eval_bool(env,ka()))
+            return flat_cv_exp(env,ctx,ite->e_then(i));
+        }
+        return flat_cv_exp(env,ctx,ite->e_else());
+      }
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        if (bo->op() == BOT_AND) {
+          GCLock lock;
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
+          if (!eval_bool(env, lhs)) {
+            return constants().lit_false;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
+        } else if (bo->op() == BOT_OR) {
+          GCLock lock;
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
+          if (eval_bool(env, lhs)) {
+            return constants().lit_true;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
+        }
+        GCLock lock;
+        BinOp* nbo = new BinOp(bo->loc().introduce(),flat_cv_exp(env, ctx, bo->lhs())(),bo->op(),flat_cv_exp(env, ctx, bo->rhs())());
+        nbo->type(bo->type());
+        return eval_par(env, nbo);
+      }
+      case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        GCLock lock;
+        UnOp* nuo = new UnOp(uo->loc(), uo->op(), flat_cv_exp(env, ctx, uo->e())());
+        nuo->type(uo->type());
+        return eval_par(env, nuo);
+      }
+      case Expression::E_CALL:
+      {
+        Call* c = e->cast<Call>();
+        if (c->id()=="mzn_in_root_context") {
+          return constants().boollit(ctx.b==C_ROOT);
+        }
+        std::vector<Expression*> args(c->args().size());
+        GCLock lock;
+        for (unsigned int i=0; i<c->args().size(); i++) {
+          args[i] = flat_cv_exp(env, ctx, c->args()[i])();
+        }
+        Call* nc = new Call(c->loc(), c->id(), args);
+        nc->decl(c->decl());
+        nc->type(c->type());
+        return eval_par(env, nc);
+      }
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        KeepAlive ret = flat_cv_exp(env, ctx, l->in());
+        l->popbindings();
+        return ret;
+      }
+        
+    }
+    
   }
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
     EE ret;
     assert(!e->type().isunknown());
-    if (e->type().ispar() && !e->type().cv() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
+    if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
+      
       ret.b = bind(env,Ctx(),b,constants().lit_true);
+      if (e->type().cv()) {
+        KeepAlive ka = flat_cv_exp(env,ctx,e);
+        ret.r = bind(env,ctx,r,ka());
+        return ret;
+      }
       if (e->type().dim() > 0) {
         EnvI::Map::iterator it;
         Id* id = e->dyn_cast<Id>();
@@ -2720,16 +2907,188 @@ namespace MiniZinc {
     case Expression::E_ARRAYACCESS:
       {
         ArrayAccess* aa = e->cast<ArrayAccess>();
+        KeepAlive aa_ka = aa;
+
+        Ctx nctx = ctx;
+        nctx.b = +nctx.b;
+        nctx.neg = false;
+        EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
+        std::vector<EE> ees;
+
+      start_flatten_arrayaccess:
+        for (unsigned int i=0; i<aa->idx().size(); i++) {
+          Expression* tmp = follow_id_to_decl(aa->idx()[i]);
+          if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+            tmp = vd->id();
+          if (tmp->type().ispar()) {
+            ArrayLit* al;
+            if (eev.r()->isa<ArrayLit>()) {
+              al = eev.r()->cast<ArrayLit>();
+            } else {
+              Id* id = eev.r()->cast<Id>();
+              if (id->decl()==NULL) {
+                throw InternalError("undefined identifier");
+              }
+              if (id->decl()->e()==NULL) {
+                throw InternalError("array without initialiser not supported");
+              }
+              al = follow_id(id)->cast<ArrayLit>();
+            }
+            
+            std::vector<KeepAlive> elems;
+            std::vector<IntVal> idx(aa->idx().size());
+            std::vector<std::pair<int,int> > dims;
+            std::vector<Expression*> newaccess;
+            std::vector<int> nonpar;
+            std::vector<int> stack;
+            for (unsigned int j=0; j<aa->idx().size(); j++) {
+              Expression* tmp = follow_id_to_decl(aa->idx()[j]);
+              if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+                tmp = vd->id();
+              if (tmp->type().ispar()) {
+                GCLock lock;
+                idx[j] = eval_int(env, tmp).toInt();
+              } else {
+                idx[j] = al->min(j);
+                stack.push_back(nonpar.size());
+                nonpar.push_back(j);
+                dims.push_back(std::make_pair(al->min(j), al->max(j)));
+                newaccess.push_back(aa->idx()[j]);
+              }
+            }
+            if (stack.empty()) {
+              bool success;
+              KeepAlive ka;
+              {
+                GCLock lock;
+                ka = eval_arrayaccess(env, al, idx, success);
+                if (!success && ctx.b==C_ROOT && b==constants().var_true) {
+                  throw FlatteningError(env,e->loc(),"array access out of bounds");
+                }
+              }
+              ees.push_back(EE(NULL,constants().boollit(success)));
+              ees.push_back(EE(NULL,eev.b()));
+              if (aa->type().isbool() && !aa->type().isopt()) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ees.push_back(EE(NULL,ka()));
+                ret.r = conj(env,r,ctx,ees);
+              } else {
+                ret.b = conj(env,b,ctx,ees);
+                ret.r = bind(env,ctx,r,ka());
+              }
+              return ret;
+            }
+            while (!stack.empty()) {
+              int cur = stack.back();
+              if (cur==nonpar.size()-1) {
+                stack.pop_back();
+                for (int i = al->min(nonpar[cur]); i <= al->max(nonpar[cur]); i++) {
+                  idx[nonpar[cur]] = i;
+                  bool success;
+                  GCLock lock;
+                  Expression* al_idx = eval_arrayaccess(env, al, idx, success);
+                  if (!success) {
+                    if (ctx.b==C_ROOT && b==constants().var_true) {
+                      throw FlatteningError(env,e->loc(),"array access out of bounds");
+                    }
+                    ees.push_back(EE(NULL,constants().lit_false));
+                    ees.push_back(EE(NULL,eev.b()));
+                    if (aa->type().isbool() && !aa->type().isopt()) {
+                      ret.b = bind(env,Ctx(),b,constants().lit_true);
+                      ret.r = conj(env,r,ctx,ees);
+                    } else {
+                      ret.b = conj(env,b,ctx,ees);
+                      ret.r = bind(env,ctx,r,al_idx);
+                    }
+                    return ret;
+                  }
+                  elems.push_back(al_idx);
+                }
+              } else {
+                if (idx[nonpar[cur]].toInt()==al->max(nonpar[cur])) {
+                  idx[nonpar[cur]]=al->min(nonpar[cur]);
+                  stack.pop_back();
+                } else {
+                  idx[nonpar[cur]]++;
+                  for (unsigned int j=cur+1; j<nonpar.size(); j++)
+                    stack.push_back(j);
+                }
+              }
+            }
+            std::vector<Expression*> elems_e(elems.size());
+            for (unsigned int i=0; i<elems.size(); i++)
+              elems_e[i] = elems[i]();
+            {
+              GCLock lock;
+              Expression* newal = new ArrayLit(al->loc(), elems_e, dims);
+              Type t = al->type();
+              t.dim(dims.size());
+              newal->type(t);
+              eev.r = newal;
+              ArrayAccess* n_aa = new ArrayAccess(aa->loc(), newal, newaccess);
+              n_aa->type(aa->type());
+              aa = n_aa;
+              aa_ka = aa;
+            }
+          }
+        }
         
-        std::vector<EE> ees(aa->idx().size());
+        if (aa->idx().size()==1 && aa->idx()[0]->isa<ArrayAccess>()) {
+          ArrayAccess* aa_inner = aa->idx()[0]->cast<ArrayAccess>();
+          ArrayLit* al;
+          if (eev.r()->isa<ArrayLit>()) {
+            al = eev.r()->cast<ArrayLit>();
+          } else {
+            Id* id = eev.r()->cast<Id>();
+            if (id->decl()==NULL) {
+              throw InternalError("undefined identifier");
+            }
+            if (id->decl()->e()==NULL) {
+              throw InternalError("array without initialiser not supported");
+            }
+            al = follow_id(id)->cast<ArrayLit>();
+          }
+          if (aa_inner->v()->type().ispar()) {
+            KeepAlive ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
+            ArrayLit* al_inner = ka_al_inner()->cast<ArrayLit>();
+            std::vector<Expression*> composed_e(al_inner->v().size());
+            for (unsigned int i=0; i<al_inner->v().size(); i++) {
+              GCLock lock;
+              IntVal inner_idx = eval_int(env, al_inner->v()[i]);
+              if (inner_idx < al->min(0) || inner_idx > al->max(0))
+                goto flatten_arrayaccess;
+              composed_e[i] = al->v()[inner_idx.toInt()-al->min(0)];
+            }
+            std::vector<std::pair<int,int> > dims(al_inner->dims());
+            for (unsigned int i=0; i<al_inner->dims(); i++) {
+              dims[i] = std::make_pair(al_inner->min(i), al_inner->max(i));
+            }
+            {
+              GCLock lock;
+              Expression* newal = new ArrayLit(al->loc(), composed_e, dims);
+              Type t = al->type();
+              t.dim(dims.size());
+              newal->type(t);
+              eev.r = newal;
+              ArrayAccess* n_aa = new ArrayAccess(aa->loc(), newal, aa_inner->idx());
+              n_aa->type(aa->type());
+              aa = n_aa;
+              aa_ka = aa;
+              goto start_flatten_arrayaccess;
+            }
+            
+          }
+        }
+      flatten_arrayaccess:
         Ctx dimctx = ctx;
         dimctx.neg = false;
         for (unsigned int i=0; i<aa->idx().size(); i++) {
           Expression* tmp = follow_id_to_decl(aa->idx()[i]);
           if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
             tmp = vd->id();
-          ees[i] = flat_exp(env, dimctx, tmp, NULL, NULL);
+          ees.push_back(flat_exp(env, dimctx, tmp, NULL, NULL));
         }
+        ees.push_back(EE(NULL,eev.b()));
         
         bool parAccess=true;
         for (unsigned int i=0; i<aa->idx().size(); i++) {
@@ -2738,11 +3097,6 @@ namespace MiniZinc {
             break;
           }
         }
-        Ctx nctx = ctx;
-        nctx.b = +nctx.b;
-        nctx.neg = false;
-        EE eev = flat_exp(env,nctx,aa->v(),NULL,NULL);
-        ees.push_back(EE(NULL,eev.b()));
 
         if (parAccess) {
           ArrayLit* al;
@@ -5164,6 +5518,7 @@ namespace MiniZinc {
               ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
               if (vdi->e()->introduced()) {
                 removedItems.push_back(vdi);
+                vdi->remove();
                 keptVariable = false;
               } else {
                 vdi->e()->e(NULL);
@@ -5175,6 +5530,7 @@ namespace MiniZinc {
             }
           } else {
             removedItems.push_back(vdi);
+            vdi->remove();
             keptVariable = false;
           }
         }
