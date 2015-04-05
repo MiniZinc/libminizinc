@@ -48,9 +48,10 @@ solve
                next(), % find a solution for the first stage variables
                let { 
                   array[SCENARIOS] of var int: totalProfit; % second stage variables
-               } in (
+               } in (                 
                  repeat (s in SCENARIOS) (
                    and([
+                     post(firstStageAssignment()), % assign first stage variables
                      post(secondStageConstraints(s,totalProfit[s])),
                      and([bab_max(totalProfit[s]),
                           comb_assign(scenario_obj[s],sol(totalProfit[s]))])
@@ -68,6 +69,12 @@ predicate secondStageConstraints(int: scenario, var int: p) =
   p >= minProfit
 ;
 
+predicate firstStageAssignment() = 
+  forall (i in ITEMS)  (
+     selectedItems[i] = sol(selectedItems[i])
+  )
+;
+     
 
 
 output ["expected profit = "++show(expectedProfit)++"\n",        
