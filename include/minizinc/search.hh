@@ -23,7 +23,7 @@ namespace MiniZinc {
   class SearchHandler { 
   private:
   protected:
-    // the stack of scopes where the topmost scope is the scope of the next level
+    // the stack of scopes where the first scope is the root scope
     std::vector<SolverInstanceBase*> _scopes;
     std::vector<clock_t> _timeouts;
   public: 
@@ -85,6 +85,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute MAXIMISE/MINIMIZE combinator (depending on minimize flag)
   SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool print, bool verbose);
+  /// interpret and execute a new scope (defined by let)
+  SolverInstance::Status interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute an OR combinator
   SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute a POST combinator
@@ -117,6 +119,8 @@ namespace MiniZinc {
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// if the search combinator call has an initial SCOPE combinator, remove it, because it can be ignored
   Expression* removeRedundantScopeCombinator(Expression* combinator);
+  /// add the declarations in the vector to the output model in the env of the given solver
+  void addVarDeclToOutputModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose);
   
   void pushScope(SolverInstanceBase* new_scope) {
     _scopes.push_back(new_scope);   

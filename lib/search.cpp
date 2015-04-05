@@ -117,7 +117,7 @@ namespace MiniZinc {
     }
     else if(Let* let = comb->dyn_cast<Let>()) {
       std::cerr << "DEBUG: Ignoring LET combinator for now: " << *let << std::endl;
-      return SolverInstance::ERROR; // TODO
+      return interpretLetCombinator(let, solver, verbose);      
     }    
     else {
       std::stringstream ssm; 
@@ -301,6 +301,70 @@ namespace MiniZinc {
     pushScope(solver_copy);
     SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
     popScope();
+    //std::cerr << "DEBUG: Closed nested scope" << std::endl;
+    return status;
+  }
+  
+  void 
+  SearchHandler::addVarDeclToOutputModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose) {
+    for(unsigned int i=0; i<decls.size(); i++) {
+      if(VarDecl* vd = decls[i]->dyn_cast<VarDecl>()) {
+        //  create output expression of the form: [ "var-name = ", show(var-name) ]
+        std::vector<Expression*> v; // output array       
+        std::string s = vd->id()->str().str(); s.append(" = ");
+        StringLit* sl = new StringLit(Location(),s);
+        v.push_back(sl);
+        std::vector<Expression*> args;
+        args.push_back(vd->id());
+        Call* c = new Call(Location(), "show", args);
+        v.push_back(c);
+        ArrayLit* al = new ArrayLit(Location(), v);
+        std::cerr << "DEBUG: created output statement: " << *al << std::endl;
+        Model* output = solver->env().output();
+        OutputI* oi = output->outputItem();
+        Expression* outputExpr = oi->e();
+        if(ArrayLit* array = outputExpr->dyn_cast<ArrayLit>()) {
+          BinOp* bo = new BinOp(Location(), copy(solver->env().envi(), array), BinOpType::BOT_PLUSPLUS, al);
+          oi->remove();
+          OutputI* new_oi = new OutputI(Location(), bo);
+          std::cerr << "DEBUG: created new output item: " << *new_oi << std::endl;
+          solver->env().output()->addItem(new_oi);
+          VarDecl* vd_copy = copy(solver->env().envi(),vd)->cast<VarDecl>();
+          std::cerr << "DEBUG: domain of copied var decl:" << *(vd_copy->ti()->domain()) << std::endl;
+          std::cerr << "DEBUG: new solver output model: \n";
+          debugprint(solver->env().output());
+          // TODO: continue along the line that Guido mentioned
+        }
+        else if(BinOp* bo = outputExpr->dyn_cast<BinOp>()) {
+          // TODO
+        }
+        else {
+          // TODO
+        }
+      }
+      else {
+        // TODO: give warning/error message
+        continue;
+      }
+    }
+  }
+  
+  SolverInstance::Status
+  SearchHandler::interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose) {
+    //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
+    ASTExprVec<Expression> decls = let->let();
+    addVarDeclToOutputModel(decls, solver, verbose);
+    return SolverInstance::ERROR; // TODO
+    
+    //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
+    solver->env().combinator = let->in();
+    let->pushbindings();
+    SolverInstanceBase* solver_copy = solver->copy();
+    //std::cerr << "DEBUG: Copied solver instance" << std::endl;
+    pushScope(solver_copy);
+    SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
+    popScope();
+    let->popbindings();
     //std::cerr << "DEBUG: Closed nested scope" << std::endl;
     return status;
   }
