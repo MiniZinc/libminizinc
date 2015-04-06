@@ -46,15 +46,15 @@ solve
          repeat (
            and([
                next(), % find a solution for the first stage variables
-               let { 
-                  array[SCENARIOS] of var 0..maxProfit: totalProfit; % second stage variables
-               } in (                 
-                 repeat (s in SCENARIOS) (
+               repeat (s in 1..nbScenarios) (
+                 let { 
+                    var 0..maxProfit: totalProfit; % second stage variables
+                 } in (                 
                    and([
                      post(firstStageAssignment()), % assign first stage variables
-                     post(secondStageConstraints(s,totalProfit[s])),
-                     and([bab_max(totalProfit[s]),
-                          comb_assign(scenario_obj[s],sol(totalProfit[s]))])
+                     post(secondStageConstraints(s,totalProfit)),
+                     and([bab_max(totalProfit),
+                          comb_assign(scenario_obj[s],sol(totalProfit))])
                    ]) 
                  )
               ),
