@@ -26,7 +26,7 @@ array[SCENARIOS] of int: weights;
 %Decision Variable 
 array[ITEMS] of var 0..capacity: selectedItems; % :: stage(1) 
 int: maxProfit = 9999999;
-array[SCENARIOS] of var 0..maxProfit: totalProfit; % ::stage(2)
+%array[SCENARIOS] of var 0..maxProfit: totalProfit; % ::stage(2)
 var 0..maxProfit: expectedProfit;
 
 constraint forall(i in ITEMS) (selectedItems[i] >= 0);
@@ -47,7 +47,7 @@ solve
            and([
                next(), % find a solution for the first stage variables
                let { 
-                  array[SCENARIOS] of var int: totalProfit; % second stage variables
+                  array[SCENARIOS] of var 0..maxProfit: totalProfit; % second stage variables
                } in (                 
                  repeat (s in SCENARIOS) (
                    and([
@@ -78,8 +78,8 @@ predicate firstStageAssignment() =
 
 
 output ["expected profit = "++show(expectedProfit)++"\n",        
-        "selectedItems = ", show(selectedItems), "\n",
-        "total profit per scenario = ", show(totalProfit), "\n"       ];
+        "selectedItems = ", show(selectedItems), "\n" ];
+%        "total profit per scenario = ", show(totalProfit), "\n"       ];
 
 
 

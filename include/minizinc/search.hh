@@ -119,8 +119,8 @@ namespace MiniZinc {
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// if the search combinator call has an initial SCOPE combinator, remove it, because it can be ignored
   Expression* removeRedundantScopeCombinator(Expression* combinator);
-  /// add the declarations in the vector to the output model in the env of the given solver
-  void addVarDeclToOutputModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose);
+  /// add the new variable (defined by a LET) to the model, and add it to the output model so we can retrieve solutions of it
+  void addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose);
   
   void pushScope(SolverInstanceBase* new_scope) {
     _scopes.push_back(new_scope);   

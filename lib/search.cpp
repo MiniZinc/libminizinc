@@ -306,44 +306,35 @@ namespace MiniZinc {
   }
   
   void 
-  SearchHandler::addVarDeclToOutputModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose) {
+  SearchHandler::addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose) {
     for(unsigned int i=0; i<decls.size(); i++) {
       if(VarDecl* vd = decls[i]->dyn_cast<VarDecl>()) {
-        //  create output expression of the form: [ "var-name = ", show(var-name) ]
-        std::vector<Expression*> v; // output array       
-        std::string s = vd->id()->str().str(); s.append(" = ");
-        StringLit* sl = new StringLit(Location(),s);
-        v.push_back(sl);
-        std::vector<Expression*> args;
-        args.push_back(vd->id());
-        Call* c = new Call(Location(), "show", args);
-        v.push_back(c);
-        ArrayLit* al = new ArrayLit(Location(), v);
-        std::cerr << "DEBUG: created output statement: " << *al << std::endl;
-        Model* output = solver->env().output();
-        OutputI* oi = output->outputItem();
-        Expression* outputExpr = oi->e();
-        if(ArrayLit* array = outputExpr->dyn_cast<ArrayLit>()) {
-          BinOp* bo = new BinOp(Location(), copy(solver->env().envi(), array), BinOpType::BOT_PLUSPLUS, al);
-          oi->remove();
-          OutputI* new_oi = new OutputI(Location(), bo);
-          std::cerr << "DEBUG: created new output item: " << *new_oi << std::endl;
-          solver->env().output()->addItem(new_oi);
-          VarDecl* vd_copy = copy(solver->env().envi(),vd)->cast<VarDecl>();
-          std::cerr << "DEBUG: domain of copied var decl:" << *(vd_copy->ti()->domain()) << std::endl;
-          std::cerr << "DEBUG: new solver output model: \n";
-          debugprint(solver->env().output());
-          // TODO: continue along the line that Guido mentioned
+        // flatten and add the variable to the flat model
+        EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
+        VarDecl* nvd = ee.r()->cast<Id>()->decl();
+        
+        // add output annotation to the flat variable declaration
+        if (nvd->type().dim() == 0) {
+          nvd->addAnnotation(constants().ann.output_var);
+        } else {
+          // TODO: see flatten.cpp:4517
         }
-        else if(BinOp* bo = outputExpr->dyn_cast<BinOp>()) {
-          // TODO
-        }
-        else {
-          // TODO
-        }
+        
+        // Create new output variable
+        Type t = nvd->type();
+        t.ti(Type::TI_PAR); // make par
+        VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
+        output_vd->ti()->domain(NULL);
+        output_vd->flat(nvd);
+        output_vd->ann().clear();
+        output_vd->introduced(false);
+        output_vd->ti()->type(t);
+        output_vd->type(t);
+        output_vd->e(NULL);
+        solver->env().output()->addItem(new VarDeclI(Location(), output_vd));        
       }
-      else {
-        // TODO: give warning/error message
+      else { // this is a constraint
+        std::cerr << "WARNING: Specify constraints using POST. Ignoring constraint in LET: " << *decls[i]  << std::endl;
         continue;
       }
     }
@@ -353,8 +344,11 @@ namespace MiniZinc {
   SearchHandler::interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose) {
     //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
-    addVarDeclToOutputModel(decls, solver, verbose);
-    return SolverInstance::ERROR; // TODO
+    addNewVariableToModel(decls, solver, verbose); 
+    std::cerr << "\nDEBUG: Flat model after adding vars:" << std::endl;
+    debugprint(solver->env().flat());
+    std::cerr << "\nDEBUG: Output model after adding vars:" << std::endl;
+    debugprint(solver->env().output());
     
     //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
     solver->env().combinator = let->in();
