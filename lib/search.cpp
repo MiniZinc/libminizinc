@@ -345,10 +345,10 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
-    std::cerr << "\nDEBUG: Flat model after adding vars:" << std::endl;
-    debugprint(solver->env().flat());
-    std::cerr << "\nDEBUG: Output model after adding vars:" << std::endl;
-    debugprint(solver->env().output());
+    //std::cerr << "\nDEBUG: Flat model after adding vars:" << std::endl;
+    //debugprint(solver->env().flat());
+    //std::cerr << "\nDEBUG: Output model after adding vars:" << std::endl;
+    //debugprint(solver->env().output());
     
     //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
     solver->env().combinator = let->in();
@@ -725,6 +725,9 @@ namespace MiniZinc {
        if(c->id() == constants().combinators.scope) {
          return c->args()[0];
        }
+     }
+     else if(Let* let = combinator->dyn_cast<Let>()) {
+       // TODO
      }
      return combinator;
    }

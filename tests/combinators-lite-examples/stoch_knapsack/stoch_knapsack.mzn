@@ -39,7 +39,7 @@ constraint
 % Solve
 solve 
 :: combinator(
-   let { 
+   let {  % issue: this does not have to start a new scope, since we are just using it to define a constant array
      array[SCENARIOS] of int: scenario_obj = [ 0 | i in SCENARIOS ]; % initialize the objective values of each scenario with zero
    } 
    in  (
@@ -49,12 +49,15 @@ solve
                repeat (s in 1..nbScenarios) (
                  let { 
                     var 0..maxProfit: totalProfit; % second stage variables
+                    % what if variable-id already exists?
+                    % current issue: no solution found for first stage vars -> part of the solution is already set when applying next solution to output model 
                  } in (                 
                    and([
                      post(firstStageAssignment()), % assign first stage variables
                      post(secondStageConstraints(s,totalProfit)),
-                     and([bab_max(totalProfit),
-                          comb_assign(scenario_obj[s],sol(totalProfit))])
+                     bab_max(totalProfit),
+%                     scenario_obj[s]  := sol(totalProfit)
+                     comb_assign(scenario_obj[s],sol(totalProfit)) % issue: this cannot be written as e1 := e2 (for type reasons, I think)
                    ]) 
                  )
               ),
