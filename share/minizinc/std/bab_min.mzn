@@ -17,7 +17,7 @@ function ann: bab_min(var int: obj, ann: s) =
            ])
        ),
        if b then skip else fail endif 
-     )]
+     ])
     )
    ;               
 function ann: bab_min(var int: obj, array[int] of ann: limits) =

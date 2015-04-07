@@ -1068,6 +1068,7 @@ namespace MiniZinc {
     combinators.and_ = ASTString("and");
     combinators.best_max = ASTString("bab_max");
     combinators.best_min = ASTString("bab_min");
+    combinators.fail = ASTString("fail");
     combinators.limit_fails = ASTString("fail_limit");
     combinators.limit_nodes = ASTString("node_limit");
     combinators.limit_solutions = ASTString("sol_limit");
@@ -1076,6 +1077,7 @@ namespace MiniZinc {
     combinators.or_ = ASTString("or");
     combinators.post = ASTString("post");
     combinators.print = ASTString("print");
+    combinators.prune = ASTString("prune");
     combinators.repeat = ASTString("repeat");
     combinators.scope = ASTString("scope");
     combinators.skip = ASTString("skip");
@@ -1211,6 +1213,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.and_));
     v.push_back(new StringLit(Location(), combinators.best_max));
     v.push_back(new StringLit(Location(), combinators.best_min));
+    v.push_back(new StringLit(Location(), combinators.fail));
     v.push_back(new StringLit(Location(), combinators.limit_fails));
     v.push_back(new StringLit(Location(), combinators.limit_nodes));
     v.push_back(new StringLit(Location(), combinators.limit_solutions));
@@ -1219,6 +1222,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.or_));
     v.push_back(new StringLit(Location(), combinators.post));
     v.push_back(new StringLit(Location(), combinators.print));
+    v.push_back(new StringLit(Location(), combinators.prune));
     v.push_back(new StringLit(Location(), combinators.repeat));
     v.push_back(new StringLit(Location(), combinators.scope));
     v.push_back(new StringLit(Location(), combinators.skip));

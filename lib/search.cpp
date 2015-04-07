@@ -51,6 +51,12 @@ namespace MiniZinc {
       else if(call->id() == constants().combinators.skip) {
         return SolverInstance::SAT;
       }
+      else if(call->id() == constants().combinators.fail) {
+        return SolverInstance::UNSAT;
+      }
+      else if(call->id() == constants().combinators.prune) {
+        return SolverInstance::UNKNOWN;
+      }      
       else if(call->id() == constants().combinators.limit_time) {
         return interpretTimeLimitAdvancedCombinator(call, solver, verbose);
       }
@@ -108,6 +114,12 @@ namespace MiniZinc {
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.skip) {
         return SolverInstance::SAT;
+      }
+      else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.prune) {
+        return SolverInstance::UNKNOWN;
+      }
+      else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.fail) {
+        return SolverInstance::UNSAT;
       }
       else {
         std::stringstream ssm; 
@@ -218,8 +230,8 @@ namespace MiniZinc {
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(solver->env().envi(),call->args()[0]->loc(), ssm.str());
     }
-    std::cerr << "DEBUG: Flat model after interpreting POST combinator:\n" << std::endl;
-    debugprint(solver->env().flat());
+    //std::cerr << "DEBUG: Flat model after interpreting POST combinator:\n" << std::endl;
+    //debugprint(solver->env().flat());
     return SolverInstance::SAT; // well, it means that posting went well, not that there is a solution..
   }
   

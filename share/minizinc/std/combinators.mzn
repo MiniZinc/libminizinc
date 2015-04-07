@@ -8,6 +8,8 @@
 annotation and(array[int] of ann);
 % dummy annotation to wrap combinator in to avoid flattening of combinator
 annotation combinator (ann);
+% return UNSAT
+annotation fail;
 % limit the number of fails during search in the execution of next
 annotation fail_limit(int: fails);
 % direct the solver to find next solution, returns true if found and
@@ -25,6 +27,8 @@ annotation or(array[int] of ann);
 annotation post(var bool: expr); 
 % print the last found solution according to the output statement
 annotation print;
+% return UNKNOWN
+annotation prune;
 % repeat annotations for a limited number of times
 annotation repeat(array[int] of ann);
 % repeat annotations an unlimited number of times until the annotation
@@ -32,7 +36,7 @@ annotation repeat(array[int] of ann);
 annotation repeat(ann);
 % define an new scope 
 annotation scope(ann);
-% do nothing (mainly for use in if-statements)
+% do nothing and return SAT (mainly for use in if-statements)
 annotation skip;
 % limit execution time of next to the given number of milliseconds
 annotation time_limit(int: ms);
@@ -43,8 +47,12 @@ annotation time_limit(int: ms, ann);
 function ann: print; 
 % get the next solution as next()
 function ann: next; 
-% do nothing skip()
+% do nothing: return SAT, skip()
 function ann: skip;
+% return UNSAT
+function ann: fail;
+% return UNKNOWN
+function ann: prune;
 
 % assign search variable x to y
 annotation comb_assign(int: x,int: y);

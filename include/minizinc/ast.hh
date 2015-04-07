@@ -1365,6 +1365,7 @@ namespace MiniZinc {
         ASTString and_;
         ASTString best_max;
         ASTString best_min;
+        ASTString fail;
         ASTString limit_fails;
         ASTString limit_nodes;
         ASTString limit_solutions;
@@ -1373,6 +1374,7 @@ namespace MiniZinc {
         ASTString or_;
         ASTString post;
         ASTString print;
+        ASTString prune;
         ASTString repeat;
         ASTString scope;
         ASTString skip;
