@@ -4691,7 +4691,7 @@ namespace MiniZinc {
             decl->loc().filename.endsWith("/flatzinc_builtins.mzn"));
   }
   
-  void outputVarDecls(EnvI& env, Item* ci, Expression* e);
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool ignoreIntroduced = true);
 
   bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
@@ -4798,16 +4798,17 @@ namespace MiniZinc {
     topDown(_par, e);
   }
   
-  void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool ignoreIntroduced) {
     class O : public EVisitor {
     public:
       EnvI& env;
       Item* ci;
-      O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
+      bool ignore;
+      O(EnvI& env0, Item* ci0, bool ignore0) : env(env0), ci(ci0), ignore(ignore0) {}
       void vId(Id& id) {
         if (&id==constants().absent)
           return;
-        if (!id.decl()->toplevel())
+        if (ignore && !id.decl()->toplevel())
           return;
         VarDecl* vd = id.decl();
         VarDecl* reallyFlat = vd->flat();
@@ -4891,7 +4892,7 @@ namespace MiniZinc {
           topDown(ce, nvi->e());
         }
       }
-    } _o(env,ci);
+    } _o(env,ci,ignoreIntroduced);
     topDown(_o, e);
   }
 
@@ -5178,9 +5179,13 @@ namespace MiniZinc {
               VarDecl* reallyFlat = vd->flat();
               while (reallyFlat!=reallyFlat->flat())
                 reallyFlat=reallyFlat->flat();
-              if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+              if (reallyFlat->e() && reallyFlat->e()->type().ispar()) {
                 Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(env,vdi_copy,flate);
+                vd->e(flate);
+              } else if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+                outputVarDecls(env,vdi_copy,follow_id(reallyFlat->id()));
+                Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
                 vd->e(flate);
               } else if ( (it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
                 Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
