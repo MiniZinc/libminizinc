@@ -37,31 +37,33 @@ constraint
 
  
 % Solve
-solve 
+solve :: int_search(selectedItems,first_fail,indomain_max,complete)
 :: combinator(
-   let {  % issue: this does not have to start a new scope, since we are just using it to define a constant array
+   let {  
      array[SCENARIOS] of int: scenario_obj = [ 0 | i in SCENARIOS ]; % initialize the objective values of each scenario with zero
    } 
    in  (
          repeat (
            and([
                next(), % find a solution for the first stage variables
-               repeat (s in 1..nbScenarios) (
-                 let { 
-                    var 0..maxProfit: totalProfit; % second stage variables
-                    % what if variable-id already exists?
-                    % current issue: no solution found for first stage vars -> part of the solution is already set when applying next solution to output model 
-                 } in (                 
-                   and([
-                     post(firstStageAssignment()), % assign first stage variables
-                     post(secondStageConstraints(s,totalProfit)),
-                     bab_max(totalProfit),
-                     scenario_obj[s]  := sol(totalProfit)
-%                     comb_assign(scenario_obj[s],sol(totalProfit)) % issue: this cannot be written as e1 := e2 (for type reasons, I think)
-                   ]) 
-                 )
-              ),
-              post(expectedProfit > sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))) % BAB constraint on overall obj var
+               print(),
+               or([
+                 repeat (s in 1..nbScenarios) (
+                     let { 
+                        var minProfit..maxProfit: totalProfit; % second stage variables
+                     } in (                 
+                       and([
+                         post(firstStageAssignment() /\ % assign first stage variables
+                              secondStageConstraints(s,totalProfit)),                     
+                         bab_max(totalProfit),
+                         print(),
+                         scenario_obj[s]  := sol(totalProfit)
+                       ]) 
+                     )
+                   ), % end repeat
+                prune]),
+                % BAB constraint on overall obj var
+              post(expectedProfit > sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))) 
            ])
        )
   )
@@ -69,12 +71,16 @@ solve
 
 predicate secondStageConstraints(int: scenario, var int: p) = 
   p = sum(i in ITEMS)(profit[scenario,i] * selectedItems[i]) /\
-  p >= minProfit
+  trace("profit["++show(scenario)++"] = ") /\
+  forall (i in ITEMS) (trace(show(profit[scenario,i])++"*"++show(selectedItems[i])++" + ")) /\
+  trace(" == "++show(sum(i in ITEMS) (profit[scenario,i] * fix(selectedItems[i])))) /\
+  trace("\n")
 ;
 
 predicate firstStageAssignment() = 
   forall (i in ITEMS)  (
-     selectedItems[i] = sol(selectedItems[i])
+     selectedItems[i] = sol(selectedItems[i]) /\
+     trace("selectedItems["++show(i)++"] = "++show(fix(selectedItems[i]))++" (sol)\n")
   )
 ;
      

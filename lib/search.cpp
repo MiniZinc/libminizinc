@@ -115,8 +115,7 @@ namespace MiniZinc {
         throw TypeError(env.envi(), ident->loc(), ssm.str());
       }
     }
-    else if(Let* let = comb->dyn_cast<Let>()) {
-      std::cerr << "DEBUG: Ignoring LET combinator for now: " << *let << std::endl;      
+    else if(Let* let = comb->dyn_cast<Let>()) {      
       return interpretLetCombinator(let, solver, verbose);      
     }    
     else {
@@ -190,16 +189,15 @@ namespace MiniZinc {
       ssm << "OR-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(), call->loc(), ssm.str());
     }
-    SolverInstance::Status status = SolverInstance::UNKNOWN;
-    bool oneIsFeasible = false;
+    SolverInstance::Status status = SolverInstance::UNKNOWN;    
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
         status = interpretCombinator(al->v()[i],solver,verbose);
         if(status == SolverInstance::SAT)
-          oneIsFeasible = true;
+          return status;
       }
-      return oneIsFeasible ? SolverInstance::SAT : status;
+      return status;
     } else {
       std::stringstream ssm;
       ssm << "OR-combinator takes an array as argument";
@@ -220,6 +218,8 @@ namespace MiniZinc {
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(solver->env().envi(),call->args()[0]->loc(), ssm.str());
     }
+    std::cerr << "DEBUG: Flat model after interpreting POST combinator:\n" << std::endl;
+    debugprint(solver->env().flat());
     return SolverInstance::SAT; // well, it means that posting went well, not that there is a solution..
   }
   
