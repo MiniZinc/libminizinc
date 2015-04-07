@@ -1161,6 +1161,12 @@ expr :
         args[1] = $3;
         $$=new Call(@$, ASTString("comb_assign"), args);
       }
+    | MZN_IDENTIFIER array_access_tail MZN_ASSIGN expr
+      { std::vector<Expression*> args(2);
+        args[0] = createArrayAccess(@$, new Id(@1,$1,NULL), *$2); delete $2;
+        args[1] = $4;
+        $$=new Call(@$, ASTString("comb_assign"), args);
+      }
 
 expr_atom_head :
       '(' expr ')'
