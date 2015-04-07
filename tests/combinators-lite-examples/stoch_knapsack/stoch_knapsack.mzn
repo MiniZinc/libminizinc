@@ -56,8 +56,8 @@ solve
                      post(firstStageAssignment()), % assign first stage variables
                      post(secondStageConstraints(s,totalProfit)),
                      bab_max(totalProfit),
-%                     scenario_obj[s]  := sol(totalProfit)
-                     comb_assign(scenario_obj[s],sol(totalProfit)) % issue: this cannot be written as e1 := e2 (for type reasons, I think)
+                     scenario_obj[s]  := sol(totalProfit)
+%                     comb_assign(scenario_obj[s],sol(totalProfit)) % issue: this cannot be written as e1 := e2 (for type reasons, I think)
                    ]) 
                  )
               ),

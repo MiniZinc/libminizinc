@@ -116,7 +116,7 @@ namespace MiniZinc {
       }
     }
     else if(Let* let = comb->dyn_cast<Let>()) {
-      std::cerr << "DEBUG: Ignoring LET combinator for now: " << *let << std::endl;
+      std::cerr << "DEBUG: Ignoring LET combinator for now: " << *let << std::endl;      
       return interpretLetCombinator(let, solver, verbose);      
     }    
     else {
@@ -342,24 +342,21 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose) {
-    //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
+    //std::cerr << "DEBUG: LET combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
-    //std::cerr << "\nDEBUG: Flat model after adding vars:" << std::endl;
-    //debugprint(solver->env().flat());
-    //std::cerr << "\nDEBUG: Output model after adding vars:" << std::endl;
-    //debugprint(solver->env().output());
     
-    //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
     solver->env().combinator = let->in();
     let->pushbindings();
-    SolverInstanceBase* solver_copy = solver->copy();
-    //std::cerr << "DEBUG: Copied solver instance" << std::endl;
+    
+    SolverInstance::Status status;
+   
+    SolverInstanceBase* solver_copy = solver->copy();    
     pushScope(solver_copy);
-    SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
+    status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
     popScope();
-    let->popbindings();
-    //std::cerr << "DEBUG: Closed nested scope" << std::endl;
+   
+    let->popbindings();    
     return status;
   }
   
@@ -720,14 +717,16 @@ namespace MiniZinc {
   }
   
    Expression* 
-   SearchHandler::removeRedundantScopeCombinator(Expression* combinator) {
+   SearchHandler::removeRedundantScopeCombinator(Expression* combinator, SolverInstanceBase* solver, bool verbose) {
      if(Call* c = combinator->dyn_cast<Call>()) {
        if(c->id() == constants().combinators.scope) {
          return c->args()[0];
        }
      }
-     else if(Let* let = combinator->dyn_cast<Let>()) {
-       // TODO
+     else if(Let* let = combinator->dyn_cast<Let>()) {      
+        ASTExprVec<Expression> decls = let->let();
+        addNewVariableToModel(decls, solver, verbose);  
+        return let->in();     
      }
      return combinator;
    }

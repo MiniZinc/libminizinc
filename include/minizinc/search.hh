@@ -46,7 +46,7 @@ namespace MiniZinc {
           }  
         }        
         pushScope(solver);
-        combinator = removeRedundantScopeCombinator(combinator);
+        combinator = removeRedundantScopeCombinator(combinator,solver,verbose);
         status = interpretCombinator(combinator, solver, verbose);
         popScope();
       }
@@ -85,7 +85,7 @@ namespace MiniZinc {
   SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute MAXIMISE/MINIMIZE combinator (depending on minimize flag)
   SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool print, bool verbose);
-  /// interpret and execute a new scope (defined by let)
+  /// interpret and execute a new scope (defined by let); isNested is false if the LET combinator is the top-most combinator and false otherwise
   SolverInstance::Status interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute an OR combinator
   SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver, bool verbose);
@@ -118,7 +118,7 @@ namespace MiniZinc {
   /// process a time limit combinator
   void interpretTimeLimitCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// if the search combinator call has an initial SCOPE combinator, remove it, because it can be ignored
-  Expression* removeRedundantScopeCombinator(Expression* combinator);
+  Expression* removeRedundantScopeCombinator(Expression* combinator, SolverInstanceBase* solver, bool verbose);
   /// add the new variable (defined by a LET) to the model, and add it to the output model so we can retrieve solutions of it
   void addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose);
   
