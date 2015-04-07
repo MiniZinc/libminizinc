@@ -262,7 +262,7 @@ namespace MiniZinc {
             if(verbose)
               std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
             status = interpretCombinator(compr->e(),solver,verbose);
-            if(status != SolverInstance::SAT) {             
+            if(status == SolverInstance::UNSAT || status == SolverInstance::ERROR) {             
               compr->decl(0, 0)->e(oldValue);
               return status;
             }
@@ -275,7 +275,7 @@ namespace MiniZinc {
         SolverInstance::Status status = SolverInstance::UNKNOWN;
         do {
           status = interpretCombinator(call->args()[0], solver,verbose);
-        } while(status == SolverInstance::SAT);
+        } while(status != SolverInstance::UNSAT && status != SolverInstance::ERROR);
         return status;
       }
     }
