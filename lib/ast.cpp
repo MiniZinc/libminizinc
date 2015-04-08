@@ -1068,6 +1068,7 @@ namespace MiniZinc {
     combinators.and_ = ASTString("and");
     combinators.best_max = ASTString("bab_max");
     combinators.best_min = ASTString("bab_min");
+    combinators.cond = ASTString("cond");
     combinators.fail = ASTString("fail");
     combinators.limit_fails = ASTString("fail_limit");
     combinators.limit_nodes = ASTString("node_limit");
@@ -1213,6 +1214,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.and_));
     v.push_back(new StringLit(Location(), combinators.best_max));
     v.push_back(new StringLit(Location(), combinators.best_min));
+    v.push_back(new StringLit(Location(), combinators.cond));
     v.push_back(new StringLit(Location(), combinators.fail));
     v.push_back(new StringLit(Location(), combinators.limit_fails));
     v.push_back(new StringLit(Location(), combinators.limit_nodes));

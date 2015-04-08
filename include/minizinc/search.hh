@@ -66,16 +66,6 @@ namespace MiniZinc {
       switch(status) {
         case SolverInstance::SUCCESS:
           break;
- /*       case SolverInstance::OPT:
-          std::cout << "==========\n";
-          break;
-        case SolverInstance::UNKNOWN:
-          std::cout << "=====UNKNOWN=====";
-          break;
-        case SolverInstance::ERROR:
-          std::cout << "=====ERROR=====";
-          break;
-          */
         case SolverInstance::FAILURE:
           std::cout << "=====UNSAT=====";
           break;        
@@ -90,7 +80,9 @@ namespace MiniZinc {
   SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute MAXIMISE/MINIMIZE combinator (depending on minimize flag)
   SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool print, bool verbose);
-  /// interpret and execute a new scope (defined by let); isNested is false if the LET combinator is the top-most combinator and false otherwise
+  /// interpret if-then-else combibator
+  SolverInstance::Status interpretConditionalCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
+  /// interpret and execute a new scope (defined by let); isNested is false if the LET combinator is the top-most combinator and false otherwise  
   SolverInstance::Status interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute an OR combinator
   SolverInstance::Status interpretOrCombinator(Call* orComb, SolverInstanceBase* solver, bool verbose);

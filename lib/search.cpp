@@ -195,6 +195,24 @@ namespace MiniZinc {
     return solver->best(decl,minimize,print); 
   }
   
+  SolverInstance::Status 
+  SearchHandler::interpretConditionalCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+    if(call->args().size() != 3) {
+      std::stringstream ssm;
+      ssm << call->id() << "-combinator takes 3 arguments instead of " << call->args().size() << " in: " << *call;
+      throw TypeError(solver->env().envi(), call->loc(), ssm.str());
+    }    
+    Expression* condition = call->args()[0];
+    SolverInstance::Status status = interpretCombinator(condition, solver, verbose);
+    if(status == SolverInstance::SUCCESS) {
+      return interpretCombinator(call->args()[1], solver, verbose);
+    }
+    else {
+      return interpretCombinator(call->args()[2], solver, verbose);
+    }
+  }
+  
+  
   SolverInstance::Status
   SearchHandler::interpretOrCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     //std::cout << "DEBUG: OR combinator: " << (*call) << std::endl;        

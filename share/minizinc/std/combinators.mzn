@@ -8,6 +8,8 @@
 annotation and(array[int] of ann);
 % dummy annotation to wrap combinator in to avoid flattening of combinator
 annotation combinator (ann);
+% conditional: if c is successful then comb1 else comb2
+annotation cond (ann: c, ann: comb1, ann: comb2);
 % return UNSAT
 annotation fail;
 % limit the number of fails during search in the execution of next
