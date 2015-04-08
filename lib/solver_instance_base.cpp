@@ -15,7 +15,7 @@
 namespace MiniZinc {
 
   SolverInstanceBase::Status
-  SolverInstanceBase::solve(void) { return SolverInstance::ERROR; } 
+  SolverInstanceBase::solve(void) { return SolverInstance::FAILURE; } 
   
   void
   SolverInstanceBase::Registry::add(const ASTString& name, poster p) {
@@ -111,7 +111,7 @@ namespace MiniZinc {
       postSolutionNoGoods();
     // the variables and constraints to be posted are already added to the flat model during flattening
     Status status = nextSolution();  
-    if(status == Status::SAT) {
+    if(status == Status::SUCCESS) {
       _new_solution = true;      
       assignSolutionToOutput();
       _env.envi().hasSolution(true);       

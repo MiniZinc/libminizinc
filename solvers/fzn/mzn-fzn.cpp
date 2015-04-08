@@ -371,11 +371,9 @@ int main(int argc, char** argv) {
               FZNSolverInstance flatzinc(env,options);
               flatzinc.processFlatZinc();
               SolverInstance::Status status = flatzinc.solve();
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SUCCESS) {
                 env.evalOutput(std::cout);
-                std::cout << "----------\n";
-                if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                std::cout << "----------\n";                
               }
             }
             

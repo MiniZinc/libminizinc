@@ -932,11 +932,11 @@ namespace MiniZinc {
      
     if (_solution) {
       assignSolutionToOutput();
-      return SolverInstance::SAT;
-    } else if (customEngine->stopped()) {
-      return SolverInstance::UNKNOWN;
+      return SolverInstance::SUCCESS;
+    } else if (customEngine->stopped()) {      
+      return SolverInstance::FAILURE;
     } else {
-      return SolverInstance::UNSAT;
+      return SolverInstance::FAILURE;
     }
   }
   
@@ -991,8 +991,8 @@ namespace MiniZinc {
     } 
             
     _objVar = NULL; // reset objective variable
-    if(_solution) return SolverInstance::SAT;
-    else return SolverInstance::UNSAT;    
+    if(_solution) return SolverInstance::SUCCESS;
+    else return SolverInstance::FAILURE;    
   }
   
 
@@ -1113,16 +1113,16 @@ namespace MiniZinc {
       }
     }    
     
-    SolverInstance::Status status = SolverInstance::SAT;
+    SolverInstance::Status status = SolverInstance::SUCCESS;
     if(engine->stopped()) {
       if(_solution) {
-        status = SolverInstance::OPT;
+        status = SolverInstance::SUCCESS;
         assignSolutionToOutput();
       } else {
-        status = SolverInstance::UNSAT;
+        status = SolverInstance::FAILURE;
       }
     } else if(!_solution) {
-      status = SolverInstance::UNKNOWN;
+      status = SolverInstance::FAILURE;
     } else {
       assignSolutionToOutput();
     }

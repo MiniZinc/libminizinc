@@ -49,13 +49,14 @@ namespace MiniZinc {
         return interpretNextCombinator(call, solver,verbose);
       }
       else if(call->id() == constants().combinators.skip) {
-        return SolverInstance::SAT;
+        return SolverInstance::SUCCESS;
       }
       else if(call->id() == constants().combinators.fail) {
-        return SolverInstance::UNSAT;
+        // TODO: set constraint scope to COMPLETE
+        return SolverInstance::FAILURE;
       }
       else if(call->id() == constants().combinators.prune) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::FAILURE;
       }      
       else if(call->id() == constants().combinators.limit_time) {
         return interpretTimeLimitAdvancedCombinator(call, solver, verbose);
@@ -113,13 +114,14 @@ namespace MiniZinc {
         return interpretPrintCombinator(solver,verbose);
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.skip) {
-        return SolverInstance::SAT;
+        return SolverInstance::SUCCESS;
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.prune) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::FAILURE;
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.fail) {
-        return SolverInstance::UNSAT;
+        // TODO: set constraint scope to COMPLETE
+        return SolverInstance::FAILURE;
       }
       else {
         std::stringstream ssm; 
@@ -150,10 +152,10 @@ namespace MiniZinc {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
         SolverInstance::Status status = interpretCombinator(al->v()[i],solver,verbose);
-        if(status != SolverInstance::SAT)               
+        if(status == SolverInstance::FAILURE)               
           return status;            
       }
-      return SolverInstance::SAT;
+      return SolverInstance::SUCCESS;
     } else {
       std::stringstream ssm;
       ssm << "AND-combinator takes an array as argument";
@@ -201,12 +203,12 @@ namespace MiniZinc {
       ssm << "OR-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(), call->loc(), ssm.str());
     }
-    SolverInstance::Status status = SolverInstance::UNKNOWN;    
+    SolverInstance::Status status = SolverInstance::FAILURE; 
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
         status = interpretCombinator(al->v()[i],solver,verbose);
-        if(status == SolverInstance::SAT)
+        if(status == SolverInstance::SUCCESS) // stop at success
           return status;
       }
       return status;
@@ -232,12 +234,17 @@ namespace MiniZinc {
     }
     //std::cerr << "DEBUG: Flat model after interpreting POST combinator:\n" << std::endl;
     //debugprint(solver->env().flat());
-    return SolverInstance::SAT; // well, it means that posting went well, not that there is a solution..
+    return SolverInstance::SUCCESS;
   }
   
   SolverInstance::Status
   SearchHandler::interpretRepeatCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     Env& env = solver->env();
+    // check for timeout!    
+    if(isTimeLimitViolated()) {
+      setTimeoutIndex(getViolatedTimeLimitIndex());
+      return SolverInstance::FAILURE;
+    }
     //std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
     if(call->args().size() == 1) {  
       // repeat is restricted by comprehension (e.g. repeat (i in 1..10) (comb) )
@@ -266,15 +273,20 @@ namespace MiniZinc {
             ssm << "Expected set literal of the form \"(lb..ub)\" instead of \"" << *in << "\"";
             throw TypeError(solver->env().envi(),in->loc(), ssm.str());
           }
-          SolverInstance::Status status = SolverInstance::UNKNOWN;
+          SolverInstance::Status status = SolverInstance::FAILURE;
           // repeat the argument a limited number of times
           Expression* oldValue = compr->decl(0, 0)->e();
           for(unsigned int i = 0; i<nbIterations; i++) {
+            if(isTimeLimitViolated()) { // we have reached a timeout; set timeout index and stop
+              setTimeoutIndex(getViolatedTimeLimitIndex());           
+              compr->decl(0, 0)->e(oldValue);             
+              return status;
+            }
             compr->decl(0, 0)->e(IntLit::a(lb+i));
             if(verbose)
               std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
             status = interpretCombinator(compr->e(),solver,verbose);
-            if(status == SolverInstance::UNSAT || status == SolverInstance::ERROR) {             
+            if(false) { // TODO: check if constraint scope is COMPLETE in which case we should stop           
               compr->decl(0, 0)->e(oldValue);
               return status;
             }
@@ -284,10 +296,13 @@ namespace MiniZinc {
         }            
       }          
       else { // repeat is only restricted by satisfiability
-        SolverInstance::Status status = SolverInstance::UNKNOWN;
+        SolverInstance::Status status = SolverInstance::FAILURE;
+        bool timeout = isTimeLimitViolated();
         do {
           status = interpretCombinator(call->args()[0], solver,verbose);
-        } while(status != SolverInstance::UNSAT && status != SolverInstance::ERROR);
+          timeout = isTimeLimitViolated();
+        } while(!timeout); // TODO: check if constraint scope is COMPLETE, in which case we should stop
+        if(timeout) setTimeoutIndex(getViolatedTimeLimitIndex());
         return status;
       }
     }
@@ -299,7 +314,12 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
+    if(isTimeLimitViolated()) {
+      setTimeoutIndex(getViolatedTimeLimitIndex());     
+      return SolverInstance::FAILURE;
+    }
+    
     //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     if(call->args().size() != 1) {
       std::stringstream ssm;
@@ -357,17 +377,9 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: LET combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
-    
-    solver->env().combinator = let->in();
-    let->pushbindings();
-    
-    SolverInstance::Status status;
-   
-    SolverInstanceBase* solver_copy = solver->copy();    
-    pushScope(solver_copy);
-    status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
-    popScope();
-   
+       
+    let->pushbindings(); 
+    SolverInstance::Status status = interpretCombinator(let->in(), solver, verbose);   
     let->popbindings();    
     return status;
   }
@@ -388,27 +400,34 @@ namespace MiniZinc {
  
     int ms = eval_int(solver->env().envi(), time).toInt();
     clock_t t = getTimeout(ms);
-    _timeouts.push_back(t);   
+    _timeouts.push_back(t);
     if(isTimeLimitViolated()) {
-       _timeouts.pop_back(); // remove the time limit
-      return SolverInstance::UNKNOWN; // TODO: what to return??
+      int timeoutIdx = getViolatedTimeLimitIndex();
+      if(timeoutIdx == _timeouts.size()-1) // if our own time-out was already reached
+        resetTimeoutIndex();
+      _timeouts.pop_back(); // remove this time-limit     
+      return SolverInstance::FAILURE; // this is a higher level timeout, so stop
     }
-    
+ 
     // execute argument if there is enough time
-    SolverInstance::Status status = interpretCombinator(call->args()[1], solver, verbose);
+    SolverInstance::Status status = interpretCombinator(call->args()[1], solver, verbose);   
+    if(_timeoutIndex == _timeouts.size()-1) { // if this timeout has been reached
+      resetTimeoutIndex();
+    }    
     _timeouts.pop_back(); // remove the time limit
     return status;
   } 
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(SolverInstanceBase* solver, bool verbose) {
-   // std::cerr << "DEBUG: NEXT combinator" << std::endl;   
-    if(isTimeLimitViolated(verbose)) {
-      return SolverInstance::UNKNOWN;
+   // std::cerr << "DEBUG: NEXT combinator" << std::endl;       
+    if(isTimeLimitViolated()) {    
+      setTimeoutIndex(getViolatedTimeLimitIndex(verbose));
+      return SolverInstance::FAILURE;
     }
     setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SAT) {      
+    if(status == SolverInstance::SUCCESS) {      
       solver->env().envi().hasSolution(true);
       // set/update the solutions in all higher scopes
       for(unsigned int i = 0; i <_scopes.size(); i++) {
@@ -430,7 +449,8 @@ namespace MiniZinc {
       throw TypeError(solver->env().envi(),call->loc(), ssm.str());      
     } 
     if(isTimeLimitViolated(verbose)) {
-      return SolverInstance::UNKNOWN;
+      setTimeoutIndex(getViolatedTimeLimitIndex());
+      return SolverInstance::FAILURE;
     }
     if(args.size() > 0)
       interpretLimitCombinator(args[0],solver,verbose);
@@ -438,7 +458,7 @@ namespace MiniZinc {
     
     // get next solution
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SAT) {      
+    if(status == SolverInstance::SUCCESS) {      
       solver->env().envi().hasSolution(true);
       // set/update the solutions in all higher scopes
       for(unsigned int i = 0; i <_scopes.size(); i++) {
@@ -580,12 +600,12 @@ namespace MiniZinc {
     if(solver->env().envi().hasSolution()) {      
       solver->env().evalOutput(std::cout);      
       std::cout << constants().solver_output.solution_delimiter << std::endl;     
-      return SolverInstance::SAT;
+      return SolverInstance::SUCCESS;
     }
     else {
       if(verbose)
         std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;      
-     return SolverInstance::UNSAT;
+     return SolverInstance::FAILURE;
     }
   }  
   
@@ -760,6 +780,40 @@ namespace MiniZinc {
        }
      }
      return false;
+   }
+   
+   int 
+   SearchHandler::getViolatedTimeLimitIndex(bool verbose) {
+     clock_t time_now = std::clock();
+     for(unsigned int i=0; i<_timeouts.size(); i++) {
+       clock_t timeout = _timeouts[i];
+       if(time_now >= timeout) {
+         if(verbose)
+           std::cerr << "timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+         //std::cerr << "WARNING: timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+         return i;
+       }
+       else {
+         //if(verbose)
+          // std::cerr << "Currently at time " << (((float)time_now)/CLOCKS_PER_SEC)<< ". timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has not yet been reached." << std::endl;
+       }
+     }
+     return -1;
+   }   
+   
+   void 
+   SearchHandler::setTimeoutIndex(int index) {
+     // if there already is a timeout that has fired
+     if(_timeoutIndex >= 0) {
+       if(index > _timeoutIndex) // do overwrite a higher time-limit
+         return;
+     }    
+    _timeoutIndex = index;
+   }   
+   
+   void 
+   SearchHandler::resetTimeoutIndex(void) {
+     _timeoutIndex = -1;
    }
    
    clock_t 

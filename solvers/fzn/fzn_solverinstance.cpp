@@ -347,16 +347,16 @@ namespace MiniZinc {
         delete sm;
         hadSolution = true;
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-          return SolverInstance::SAT;
+          return SolverInstance::SUCCESS;
         }
       } else if (line==constants().solver_output.opt.str()) {
-        return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
+        return hadSolution ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
       } else if(line==constants().solver_output.unsat.str()) {
-        return SolverInstance::UNSAT;
+        return SolverInstance::FAILURE;
       } else if(line==constants().solver_output.unbounded.str()) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::FAILURE; // TODO: maybe special status for unbounded case?
       } else if(line==constants().solver_output.unknown.str()) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::FAILURE;
       } else {
         line += "\n"; // break the line, especially in case it is a comment
         solution += line;
@@ -364,7 +364,7 @@ namespace MiniZinc {
     }
     
     // XXX should always return 'UNKNOWN' because not well-defined termination?
-    return hadSolution ? SolverInstance::SAT : SolverInstance::UNKNOWN;
+    return hadSolution ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
   }
   
   void

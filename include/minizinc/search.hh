@@ -25,8 +25,13 @@ namespace MiniZinc {
   protected:
     // the stack of scopes where the first scope is the root scope
     std::vector<SolverInstanceBase*> _scopes;
+    // list of timeouts; the most recently set timeout is the last in the list
     std::vector<clock_t> _timeouts;
+    // the index of the timeout (in the timeout list) that has been reached
+    int _timeoutIndex;
   public: 
+    SearchHandler() : _timeoutIndex(-1) {}
+    
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
     void search(Env& env, MiniZinc::Options& opt, bool verbose = false) {   
@@ -54,15 +59,14 @@ namespace MiniZinc {
         status = solver->solve();
       }    
       // process status and solution      
-      if ( (status==SolverInstance::SAT && !env.envi().hasSolution()) ||
-          status==SolverInstance::OPT) {
+      if ( status==SolverInstance::SUCCESS) { 
         env.evalOutput(std::cout);
       }
       std::cout << "----------\n";
       switch(status) {
-        case SolverInstance::SAT:
+        case SolverInstance::SUCCESS:
           break;
-        case SolverInstance::OPT:
+ /*       case SolverInstance::OPT:
           std::cout << "==========\n";
           break;
         case SolverInstance::UNKNOWN:
@@ -71,7 +75,8 @@ namespace MiniZinc {
         case SolverInstance::ERROR:
           std::cout << "=====ERROR=====";
           break;
-        case SolverInstance::UNSAT:
+          */
+        case SolverInstance::FAILURE:
           std::cout << "=====UNSAT=====";
           break;        
       }
@@ -128,8 +133,14 @@ namespace MiniZinc {
   void popScope() {
     _scopes.pop_back();    
   }
-  /// returns true if any of the current time limits is violated
+  /// returns true if a timelimit is violated and false otherwise
   bool isTimeLimitViolated(bool verbose = false);
+  /// returns the index of the time-limit if any of the current time limits is violated, and -1 otherwise
+  int getViolatedTimeLimitIndex(bool verbose = false);
+  /// set the index of the currently violated time limit
+  void setTimeoutIndex(int index);
+  // reset the timeout index
+  void resetTimeoutIndex(void);
   /// returns the timeout time: time-now + timeout(given-in-milliseconds)
   clock_t getTimeout(int ms);
   /// sets timeout options (for next) in case there is a timeout

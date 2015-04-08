@@ -409,29 +409,17 @@ int main(int argc, char** argv) {
               SolverInstance::Status status = gecode.solve();
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SUCCESS) {
                 env.evalOutput(std::cout);
                 std::cout << "----------\n";
                 switch(status) {
-                  case SolverInstance::SAT:
-                    break;
-                  case SolverInstance::OPT:
-                    std::cout << "==========\n";
-                    break;
-                  case SolverInstance::UNKNOWN:
-                    std::cout << "=====UNKNOWN=====";
-                    break;
-                  case SolverInstance::ERROR:
-                    std::cout << "=====ERROR=====";
-                    break;
-                  case SolverInstance::UNSAT:
+                  case SolverInstance::SUCCESS:
+                    break;                 
+                  case SolverInstance::FAILURE:
                     std::cout << "=====UNSAT=====";
                     break;
                 }
-              }
-              else if(status == SolverInstance::ERROR) {
-                //std::cout << "DEBUG: solving finished with error." << std::endl;
-              }
+              }          
             }
 
           }
