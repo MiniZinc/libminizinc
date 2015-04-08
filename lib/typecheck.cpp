@@ -125,6 +125,7 @@ namespace MiniZinc {
     case Expression::E_BOOLLIT:
     case Expression::E_STRINGLIT:
     case Expression::E_ANON:
+    case Expression::E_MODEL:
       break;
     case Expression::E_SETLIT:
       {

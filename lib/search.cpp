@@ -45,9 +45,6 @@ namespace MiniZinc {
           std::cout << "DEBUG: PRINT combinator in " << call->loc() << std::endl;
         return interpretPrintCombinator(solver,verbose);
       }
-      else if(call->id() == constants().combinators.next) {
-        return interpretNextCombinator(call, solver,verbose);
-      }
       else if(call->id() == constants().combinators.skip) {
         return SolverInstance::SUCCESS;
       }
@@ -60,6 +57,12 @@ namespace MiniZinc {
       }      
       else if(call->id() == constants().combinators.limit_time) {
         return interpretTimeLimitAdvancedCombinator(call, solver, verbose);
+      }
+      else if(call->id() == constants().combinators.comb_assign) {
+        return interpretAssignCombinator(call, solver, verbose);
+      }
+      else if(call->id() == constants().combinators.commit) {
+        return interpretCommitCombinator(call, solver, verbose);
       }
       else {
         std::vector<Expression*> previousParameters(call->decl()->params().size());
@@ -152,7 +155,7 @@ namespace MiniZinc {
       assert(al->dims() == 1);
       for(unsigned int i=0; i<al->length(); i++) {
         SolverInstance::Status status = interpretCombinator(al->v()[i],solver,verbose);
-        if(status == SolverInstance::FAILURE)               
+        if(status == SolverInstance::FAILURE)
           return status;            
       }
       return SolverInstance::SUCCESS;
@@ -359,29 +362,31 @@ namespace MiniZinc {
   SearchHandler::addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose) {
     for(unsigned int i=0; i<decls.size(); i++) {
       if(VarDecl* vd = decls[i]->dyn_cast<VarDecl>()) {
-        // flatten and add the variable to the flat model
-        EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
-        VarDecl* nvd = ee.r()->cast<Id>()->decl();
-        
-        // add output annotation to the flat variable declaration
-        if (nvd->type().dim() == 0) {
-          nvd->addAnnotation(constants().ann.output_var);
-        } else {
-          // TODO: see flatten.cpp:4517
+        if (vd->type().isvar()) {
+          // flatten and add the variable to the flat model
+          EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
+          VarDecl* nvd = ee.r()->cast<Id>()->decl();
+          
+          // add output annotation to the flat variable declaration
+          if (nvd->type().dim() == 0) {
+            nvd->addAnnotation(constants().ann.output_var);
+          } else {
+            // TODO: see flatten.cpp:4517
+          }
+          
+          // Create new output variable
+          Type t = nvd->type();
+          t.ti(Type::TI_PAR); // make par
+          VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
+          output_vd->ti()->domain(NULL);
+          output_vd->flat(nvd);
+          output_vd->ann().clear();
+          output_vd->introduced(false);
+          output_vd->ti()->type(t);
+          output_vd->type(t);
+          output_vd->e(NULL);
+          solver->env().output()->addItem(new VarDeclI(Location(), output_vd));
         }
-        
-        // Create new output variable
-        Type t = nvd->type();
-        t.ti(Type::TI_PAR); // make par
-        VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
-        output_vd->ti()->domain(NULL);
-        output_vd->flat(nvd);
-        output_vd->ann().clear();
-        output_vd->introduced(false);
-        output_vd->ti()->type(t);
-        output_vd->type(t);
-        output_vd->e(NULL);
-        solver->env().output()->addItem(new VarDeclI(Location(), output_vd));        
       }
       else { // this is a constraint
         std::cerr << "WARNING: Specify constraints using POST. Ignoring constraint in LET: " << *decls[i]  << std::endl;
@@ -445,13 +450,15 @@ namespace MiniZinc {
     }
     setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {      
-      solver->env().envi().hasSolution(true);
-      // set/update the solutions in all higher scopes
-      for(unsigned int i = 0; i <_scopes.size(); i++) {
-        _scopes[i]->env().envi().hasSolution(true);
-        updateSolution(solver->env().output(), _scopes[i]->env().output());
-      }
+      if(status == SolverInstance::SUCCESS) {
+//      solver->env().envi().hasSolution(true);
+//      // set/update the solutions in all higher scopes
+//      for(unsigned int i = 0; i <_scopes.size(); i++) {
+//        _scopes[i]->env().envi().hasSolution(true);
+//        updateSolution(solver->env().output(), _scopes[i]->env().output());
+//      }
+      delete _solutionScopes.back();
+      _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
@@ -476,16 +483,68 @@ namespace MiniZinc {
     
     // get next solution
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {      
-      solver->env().envi().hasSolution(true);
-      // set/update the solutions in all higher scopes
-      for(unsigned int i = 0; i <_scopes.size(); i++) {
-        _scopes[i]->env().envi().hasSolution(true);
-        updateSolution(solver->env().output(), _scopes[i]->env().output());
-      }
+    if(status == SolverInstance::SUCCESS) {
+//      solver->env().envi().hasSolution(true);
+//      // set/update the solutions in all higher scopes
+//      for(unsigned int i = 0; i <_scopes.size(); i++) {
+//        _scopes[i]->env().envi().hasSolution(true);
+//        updateSolution(solver->env().output(), _scopes[i]->env().output());
+//      }
+      delete _solutionScopes.back();
+      _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
+  }
+  
+  SolverInstance::Status
+  SearchHandler::interpretAssignCombinator(Call *assignComb, SolverInstanceBase *solver, bool verbose) {
+    VarDecl* decl = follow_id_to_decl(assignComb->args()[0])->cast<VarDecl>();
+    if (decl->type().isann()) {
+      Call* rhs = assignComb->args()[1]->cast<Call>();
+      std::vector<Expression*> previousParameters(rhs->decl()->params().size());
+      for (unsigned int i=rhs->decl()->params().size(); i--;) {
+        VarDecl* vd = rhs->decl()->params()[i];
+        previousParameters[i] = vd->e();
+        vd->flat(vd);
+        vd->e(eval_par(solver->env().envi(), rhs->args()[i]));
+      }
+      _solutionScopes.push_back(NULL);
+      
+      SolverInstance::Status ret;
+      
+      if(rhs->decl()->e()) {
+        if(verbose)
+          std::cerr << "DEBUG: interpreting combinator " << *rhs << " according to its defined body." << std::endl;
+        ret = interpretCombinator(rhs->decl()->e(), solver,verbose);
+      } else if(rhs->id() == constants().combinators.next) {
+        ret = interpretNextCombinator(rhs, solver,verbose);
+      }
+      for (unsigned int i=rhs->decl()->params().size(); i--;) {
+        VarDecl* vd = rhs->decl()->params()[i];
+        vd->e(previousParameters[i]);
+        vd->flat(vd->e() ? vd : NULL);
+      }
+      decl->e(new ModelExp(Location(),_solutionScopes.back()));
+      _solutionScopes.pop_back();
+      return ret;
+
+    } else {
+      decl->e(eval_par(solver->env().envi(), assignComb->args()[1]));
+    }
+    return SolverInstance::SUCCESS;
+  }
+  
+  SolverInstance::Status
+  SearchHandler::interpretCommitCombinator(Call *commitComb, SolverInstanceBase* solver, bool verbose) {
+    ModelExp* me = Expression::cast<ModelExp>(follow_id(commitComb->args()[0]));
+    if (me) {
+      delete _solutionScopes.back();
+      _solutionScopes.back() = copy(solver->env().envi(),me->m());
+      return SolverInstance::SUCCESS;
+    } else {
+      return SolverInstance::FAILURE;
+    }
   }
   
   void 

@@ -25,6 +25,7 @@ namespace MiniZinc {
   protected:
     // the stack of scopes where the first scope is the root scope
     std::vector<SolverInstanceBase*> _scopes;
+    std::vector<Model*> _solutionScopes;
     // list of timeouts; the most recently set timeout is the last in the list
     std::vector<clock_t> _timeouts;
     // the index of the timeout (in the timeout list) that has been reached
@@ -49,10 +50,14 @@ namespace MiniZinc {
               break;
             }
           }  
-        }        
+        }
+        ann.removeCall(constants().ann.combinator);
         pushScope(solver);
         combinator = removeRedundantScopeCombinator(combinator,solver,verbose);
+        _solutionScopes.push_back(NULL);
         status = interpretCombinator(combinator, solver, verbose);
+        delete _solutionScopes.back();
+        _solutionScopes.pop_back();
         popScope();
       }
       else { // solve using normal solve call
@@ -98,8 +103,12 @@ namespace MiniZinc {
   SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a PRINT combinator
   SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver, bool verbose);
-      /// interpret and execute a SCOPE combinator
+  /// interpret and execute a comb_assign combinator
+  SolverInstance::Status interpretAssignCombinator(Call* assignComb, SolverInstanceBase* solver, bool verbose);
+  /// interpret and execute a SCOPE combinator
   SolverInstance::Status interpretTimeLimitAdvancedCombinator(Call* scopeComb, SolverInstanceBase* solver, bool verbose);
+  /// interpret and execute a COMMIT combinator
+  SolverInstance::Status interpretCommitCombinator(Call* commitComb, SolverInstanceBase* solver, bool verbose);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output

@@ -201,6 +201,9 @@ namespace MiniZinc {
       if (e==NULL)
         return;
       switch (e->eid()) {
+      case Expression::E_MODEL:
+        os << "<MODEL>";
+        break;
       case Expression::E_INTLIT:
         os << e->cast<IntLit>()->v();
         break;

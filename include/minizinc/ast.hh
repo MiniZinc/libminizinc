@@ -147,7 +147,7 @@ namespace MiniZinc {
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
       E_ARRAYACCESS, E_COMP, E_ITE,
       E_BINOP, E_UNOP, E_CALL, E_VARDECL, E_LET,
-      E_TI, E_TIID, EID_END = E_TIID
+      E_TI, E_TIID, E_MODEL, EID_END = E_TIID
     };
 
     ExpressionId eid(void) const {
@@ -864,6 +864,25 @@ namespace MiniZinc {
     void setComputedDomain(bool b) { _flag_1=b; }
   };
 
+  /// \brief Model expression
+  class ModelExp : public Expression {
+  protected:
+    /// Contained model (or NULL)
+    Model* _m;
+  public:
+    /// The identifier of this expression type
+    static const ExpressionId eid = E_MODEL;
+    /// Constructor
+    ModelExp(const Location& loc,
+             Model* m=NULL);
+    
+    /// Recompute hash value
+    void rehash(void);
+    
+    /// Access contained model
+    Model* m(void) const { return _m; }
+  };
+
   /**
    * \brief Base-class for items
    */
@@ -1379,6 +1398,8 @@ namespace MiniZinc {
         ASTString repeat;
         ASTString scope;
         ASTString skip;
+        ASTString comb_assign;
+        ASTString commit;
       } combinators;
       struct {
         ASTString opt;

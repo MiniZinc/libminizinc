@@ -281,6 +281,7 @@ namespace MiniZinc {
     case Expression::E_TI:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
+    case Expression::E_MODEL:
       throw EvalError(env, e->loc(), "not an array expression");
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(env,e);
@@ -1165,6 +1166,7 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_ANON:
     case Expression::E_TIID:
+    case Expression::E_MODEL:
       {
         return e;
       }

@@ -470,6 +470,11 @@ namespace MiniZinc {
   }
 
   inline
+  ModelExp::ModelExp(const Location& loc, Model* m) : Expression(loc,E_MODEL,Type::ann()), _m(m) {
+    rehash();
+  }
+  
+  inline
   IncludeI::IncludeI(const Location& loc, const ASTString& f)
   : Item(loc, II_INC), _f(f), _m(NULL) {}
   

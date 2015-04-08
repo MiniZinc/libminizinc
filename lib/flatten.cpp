@@ -5433,10 +5433,10 @@ namespace MiniZinc {
               nsi->ann().add(c);                 
               continue; // don't flatten the search combinator
             }
-          }          
+          }
           nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
         }
-        env.flat_addItem(nsi);        
+        env.flat_addItem(nsi);
       }
     } _fv(env,hadSolveItem);
     iterItems<FV>(_fv,e.model());

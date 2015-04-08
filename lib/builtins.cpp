@@ -2064,10 +2064,15 @@ namespace MiniZinc {
   
   Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 1);
-    if(Id* id = args[0]->dyn_cast<Id>()) {
+    assert(args.size() == 2);
+    ModelExp* me = Expression::cast<ModelExp>(follow_id(call->args()[0]));
+    if (me == NULL) {
+      throw EvalError(env, call->loc(), "no solution");
+    }
+    Model* outputModel = me->m();
+    if(Id* id = args[1]->dyn_cast<Id>()) {
       id = follow_id_to_id(id)->cast<Id>();
-      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {        
+      for(VarDeclIterator it=outputModel->begin_vardecls(); it!=outputModel->end_vardecls(); ++it) {
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm; 
@@ -2089,7 +2094,7 @@ namespace MiniZinc {
       if (id==NULL)
         throw EvalError(env, aa->loc(), "array access in call to \"sol\" must be an identifier");
       id = follow_id_to_id(id)->cast<Id>();
-      for(VarDeclIterator it=env.output->begin_vardecls(); it!=env.output->end_vardecls(); ++it) {
+      for(VarDeclIterator it=outputModel->begin_vardecls(); it!=outputModel->end_vardecls(); ++it) {
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm;
@@ -2112,8 +2117,8 @@ namespace MiniZinc {
     else {
       std::stringstream ssm; 
       ssm << "expecting identifier or array access as argument of \"sol\" instead of: "
-          << *args[0];
-      throw EvalError(env, args[0]->loc(), ssm.str());
+          << *args[1];
+      throw EvalError(env, args[1]->loc(), ssm.str());
     }    
   }
   
@@ -2782,12 +2787,14 @@ namespace MiniZinc {
       rb(env, m, ASTString("binomial"),t,b_binomial);  
     }  
     {
-      std::vector<Type> t(1);
-      t[0] = Type::optvartop();
+      std::vector<Type> t(2);
+      t[0] = Type::ann();
+      t[1] = Type::optvartop();
       rb(env, m, ASTString("sol"),t,b_sol);
     }
     {
-      std::vector<Type> t(0); // no arguments     
+      std::vector<Type> t(1); // no arguments
+      t[0] = Type::ann();
       rb(env, m, ASTString("hasSol"),t,b_hasSol);
     }
   }

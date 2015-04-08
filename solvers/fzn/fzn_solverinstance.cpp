@@ -305,7 +305,8 @@ namespace MiniZinc {
     ASTStringMap<DE>::t declmap;
     for (unsigned int i=0; i<_ozn->size(); i++) {
       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
-        declmap.insert(std::make_pair(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
+        GCLock lock;
+        declmap.insert(std::make_pair(vdi->e()->id()->str(),DE(vdi->e(),vdi->e()->e())));
       }
     }
 

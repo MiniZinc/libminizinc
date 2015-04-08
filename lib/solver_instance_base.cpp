@@ -82,7 +82,7 @@ namespace MiniZinc {
   
   KeepAlive 
   NISolverInstanceBase::deriveNoGoodsFromSolution(void) {
-    Model* output = env().output();    
+    Model* output = env().output();
     std::vector<Expression*> disequalities;
     // collect the solution assignments from the output model
     for(VarDeclIterator it = output->begin_vardecls(); it!=output->end_vardecls(); ++it) {
@@ -95,13 +95,18 @@ namespace MiniZinc {
       Expression* e = eval_par(env().envi(), it->e()->e());
       // create the constraints: x_i != sol_i
       BinOp* bo = new BinOp(Location(), id, BOT_NQ, e);
+      bo->type(Type::varbool());
       disequalities.push_back(bo);
     }
     ArrayLit* array = new ArrayLit(Location(), disequalities);
+    array->type(Type::varbool(1));
     std::vector<Expression*> args; 
     args.push_back(array);
-    Call* disjunction = new Call(Location(), constants().ids.exists, args); 
-    KeepAlive ka(disjunction);    
+    Call* disjunction = new Call(Location(), constants().ids.exists, args);
+    disjunction->type(Type::varbool());
+    disjunction->decl(env().model()->matchFn(env().envi(), disjunction));
+    return disequalities[0];
+    KeepAlive ka(disjunction);
     return ka;
   }
   
@@ -124,8 +129,10 @@ namespace MiniZinc {
   NISolverInstanceBase::postSolutionNoGoods(void) {
    KeepAlive nogoods = deriveNoGoodsFromSolution();    
    // flatten the nogoods, which adds it to the model
-   Expression* cts_eval = eval_par(env().envi(),nogoods()); 
-   // convert to old flatzinc 
+   debugprint(env().model());
+   flat_exp(env().envi(), Ctx(), nogoods(), constants().var_true, constants().var_true);
+   debugprint(env().flat());
+   // convert to old flatzinc
    oldflatzinc(env());
   }
   

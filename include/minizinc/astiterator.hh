@@ -102,6 +102,8 @@ namespace MiniZinc {
       }
       if (c._done) {
         switch (c._e->eid()) {
+        case Expression::E_MODEL:
+          break;
         case Expression::E_INTLIT:
           _t.vIntLit(*c._e->template cast<IntLit>());
           break;
@@ -179,6 +181,7 @@ namespace MiniZinc {
           case Expression::E_ANON:
           case Expression::E_ID:
           case Expression::E_TIID:
+          case Expression::E_MODEL:
             break;
           case Expression::E_SETLIT:
             pushVec(stack, ce->template cast<SetLit>()->v());
@@ -261,6 +264,8 @@ namespace MiniZinc {
         stack.push_back(*it);
       }
       switch (e->eid()) {
+        case Expression::E_MODEL:
+          break;
         case Expression::E_INTLIT:
         _t.vIntLit(*e->template cast<IntLit>());
         break;

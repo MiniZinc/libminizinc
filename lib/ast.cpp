@@ -76,6 +76,7 @@ namespace MiniZinc {
         case Expression::E_FLOATLIT:
         case Expression::E_BOOLLIT:
         case Expression::E_ANON:
+        case Expression::E_MODEL:
           break;
         case Expression::E_SETLIT:
           if (cur->cast<SetLit>()->isv())
@@ -610,6 +611,13 @@ namespace MiniZinc {
     return false;
   }
 
+  void
+  ModelExp::rehash(void) {
+    init_hash();
+    HASH_NAMESPACE::hash<void*> h;
+    cmb_hash(h(_m));
+  }
+  
   namespace {
     Type getType(Expression* e) { return e->type(); }
     Type getType(const Type& t) { return t; }
@@ -1082,6 +1090,8 @@ namespace MiniZinc {
     combinators.repeat = ASTString("repeat");
     combinators.scope = ASTString("scope");
     combinators.skip = ASTString("skip");
+    combinators.comb_assign = ASTString("comb_assign");
+    combinators.commit = ASTString("commit");
     
     solver_output.solution_delimiter = ASTString("----------");
     solver_output.sat = ASTString("==========");
@@ -1228,6 +1238,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), combinators.repeat));
     v.push_back(new StringLit(Location(), combinators.scope));
     v.push_back(new StringLit(Location(), combinators.skip));
+    v.push_back(new StringLit(Location(), combinators.comb_assign));
+    v.push_back(new StringLit(Location(), combinators.commit));
     
     v.push_back(new StringLit(Location(), solver_output.opt));
     v.push_back(new StringLit(Location(), solver_output.sat));
