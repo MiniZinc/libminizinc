@@ -373,17 +373,23 @@ namespace MiniZinc {
   
   void
   FZNSolverInstance::setSolution(Id* id, Expression* e) {
-    _solution.insert(id,e);
+    IdMap<Expression*>::iterator it = _solution.find(id);
+    if (it == _solution.end()) {
+      _solution.insert(id,e);
+    } else {
+      it->second = e;
+    }
   }
   
   Expression*
   FZNSolverInstance::getSolutionValue(Id* id) {
-    if(_solution.find(id) == _solution.end()) {
+    IdMap<Expression*>::iterator it = _solution.find(id);
+    if(it == _solution.end()) {
       std::stringstream ssm;
       ssm << "FZNSolverInstance::getSolutionValue: cannot find solution for id: " << *id;
       throw InternalError(ssm.str());
     }
-    return _solution.get(id);
+    return it->second;
   }
   
   SolverInstance::Status 

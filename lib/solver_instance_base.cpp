@@ -82,21 +82,17 @@ namespace MiniZinc {
   
   KeepAlive 
   NISolverInstanceBase::deriveNoGoodsFromSolution(void) {
-    Model* output = env().output();
+    Model* flat = env().flat();
     std::vector<Expression*> disequalities;
-    // collect the solution assignments from the output model
-    for(VarDeclIterator it = output->begin_vardecls(); it!=output->end_vardecls(); ++it) {
-      Id* id = it->e()->id();
-      if(!it->e()->e()) {
-        std::stringstream ssm;
-        ssm << "NISolverInstanceBase::deriveNoGoodsFromSolution: no solution assigned to \"" << *id << "\" in the output model.";
-        throw InternalError(ssm.str());
-      }      
-      Expression* e = eval_par(env().envi(), it->e()->e());
-      // create the constraints: x_i != sol_i
-      BinOp* bo = new BinOp(Location(), id, BOT_NQ, e);
-      bo->type(Type::varbool());
-      disequalities.push_back(bo);
+    for (VarDeclIterator it = flat->begin_vardecls(); it!=flat->end_vardecls(); ++it) {
+      if (it->e()->ann().contains(constants().ann.output_var)) {
+        Id* id = it->e()->id();
+        Expression* e = eval_par(env().envi(),getSolutionValue(it->e()->id()));
+        // create the constraints: x_i != sol_i
+        BinOp* bo = new BinOp(Location(), id, BOT_NQ, e);
+        bo->type(Type::varbool());
+        disequalities.push_back(bo);
+      }
     }
     ArrayLit* array = new ArrayLit(Location(), disequalities);
     array->type(Type::varbool(1));
@@ -105,7 +101,6 @@ namespace MiniZinc {
     Call* disjunction = new Call(Location(), constants().ids.exists, args);
     disjunction->type(Type::varbool());
     disjunction->decl(env().model()->matchFn(env().envi(), disjunction));
-    return disequalities[0];
     KeepAlive ka(disjunction);
     return ka;
   }
@@ -127,13 +122,11 @@ namespace MiniZinc {
   
   void
   NISolverInstanceBase::postSolutionNoGoods(void) {
-   KeepAlive nogoods = deriveNoGoodsFromSolution();    
-   // flatten the nogoods, which adds it to the model
-   debugprint(env().model());
-   flat_exp(env().envi(), Ctx(), nogoods(), constants().var_true, constants().var_true);
-   debugprint(env().flat());
-   // convert to old flatzinc
-   oldflatzinc(env());
+    KeepAlive nogoods = deriveNoGoodsFromSolution();
+    // flatten the nogoods, which adds it to the model
+    flat_exp(env().envi(), Ctx(), nogoods(), constants().var_true, constants().var_true);
+    // convert to old flatzinc
+    oldflatzinc(env());
   }
   
 }
