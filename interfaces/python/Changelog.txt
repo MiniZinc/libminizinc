@@ -23,3 +23,32 @@
 
 	XXX: what if users enter a list or tuple to that position of None?
 	XXX: Python Interface type checking is getting really clumpsy and expensive now
+
+----------------------------------------
+
+3. Internal variable name declaration is now removed:
+	Sets, Variables and Arrays are previously assigned with an internal name when created (this is the memory address of the objects)
+	Users can change the objects' name during declaring phase:
+		instead of:
+			a = model.Variable(1,10)
+		we use:
+			a = model.Variable(1,10,'a')
+		and the object <a> will have internal name 'a'
+	As we don't care about the internal names, this turns out to be useless and thus is now removed
+
+4. Changes to minizinc_internal Set initialization:
+	Is now 			minizinc_internal.Set(  [1,5], 7, [10,15]  )
+	instead of		minizinc_internal.Set( ([1,5], 7, [10,15]) )
+
+5. Set is now model independent and can be reused across multiple models
+	Set.model = None
+
+6. Introducing Model.Range:
+	Model.Range accepts up to 2 arguments:
+		ub: 	returns a MiniZinc Set from 0 to ub - 1
+		lb, ub:	returns a MiniZinc Set from lb to ub
+	Model.Set initialization reworked:
+		previously initialized with: Set( (1,2,[3,4],5) )
+		now initialized with:		 Set( 1,2,[3,4],5 )
+						  or:		 Set( 1,2,(3,4),5 )
+	Model.Set.push adds more elements onto the Set, works the same as the initialization function

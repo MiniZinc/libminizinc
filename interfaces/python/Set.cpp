@@ -195,25 +195,42 @@ MznSet_contains(MznSet* self, PyObject* args)
 
 
 static PyObject*
-MznSet_push(MznSet* self, PyObject* args) {
-  PyObject* isv;
+MznSet_push(MznSet* self, PyObject* isv) {
+  /*PyObject* isv;
   if (!PyArg_ParseTuple(args,"O",&isv)) {
     PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  Parsing error");
     return NULL;
-  }
-  if (isv == NULL)
-    Py_RETURN_NONE;
-  if (!PyList_Check(isv)) {
-    PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  Argument must be a list");
-    return NULL;
-  }
+  }*/
+//  if (isv == NULL)
+//    Py_RETURN_NONE;
 
-  Py_ssize_t size = PyList_Size(isv);
+  Py_ssize_t size = PyTuple_Size(isv);
+
   for (Py_ssize_t i = 0; i!=size; ++i) {
-    PyObject* elem = PyList_GetItem(isv,i);
-    if (PyList_Check(elem)) {
-      if (PyList_Size(elem) == 1) {
-        PyObject* py_val = PyList_GetItem(elem, 0);
+    PyObject* elem = PyTuple_GetItem(isv, i);
+
+    Mzn_PyContainer_Type elem_type = Mzn_PyContainer_Check(elem);
+    Py_ssize_t elem_size = Mzn_PyContainer_Size(elem, elem_type);
+
+    switch (elem_size) {
+      // elem_size == -1 means it is neither list nor tuple
+      case -1: {
+        int overflow;
+        long long c_val = py_to_c_number(elem, &overflow);
+        if (PyErr_Occurred()) {
+          if (overflow) {
+            MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: Set.push:  Overflow at tuple element at pos %li", i);
+            return NULL;
+          } else {
+            MZN_PYERR_SET_STRING(PyExc_TypeError, "MiniZinc: Set.push:  Type mismatched at tuple element pos %li: expected an integer or list of integers", i);
+            return NULL;
+          }
+        }
+        self->push(c_val);
+        break;
+      }
+      case 1: {
+        PyObject* py_val = Mzn_PyContainer_GetItem(elem, 0, elem_type);
         long long c_val = py_to_c_number(py_val);
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
@@ -224,9 +241,11 @@ MznSet_push(MznSet* self, PyObject* args) {
           return NULL;
         }
         self->push(c_val);
-      } else if (PyList_Size(elem) == 2) {
-        PyObject* p_min = PyList_GetItem(elem,0);
-        PyObject* p_max = PyList_GetItem(elem,1);
+        break;
+      }
+      case 2: {
+        PyObject* p_min = Mzn_PyContainer_GetItem(elem, 0, elem_type);
+        PyObject* p_max = Mzn_PyContainer_GetItem(elem, 1, elem_type);
         long long c_min = py_to_c_number(p_min);
         if (PyErr_Occurred()) {
           PyObject *ptype, *pmessage, *ptraceback;
@@ -253,23 +272,11 @@ MznSet_push(MznSet* self, PyObject* args) {
           self->push(c_max, c_min);
         else
           self->push(c_min);
-      } else {
+        break;
+      }
+      default:
         PyErr_SetString(PyExc_TypeError, "MiniZinc: Set.push:  The sublist size can only be 1 or 2");
         return NULL;
-      }
-    } else {
-      int overflow;
-      long long c_val = py_to_c_number(elem, &overflow);
-      if (PyErr_Occurred()) {
-        if (overflow) {
-          MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: Set.push:  Overflow at tuple element at pos %li", i);
-          return NULL;
-        } else {
-          MZN_PYERR_SET_STRING(PyExc_TypeError, "MiniZinc: Set.push:  Type mismatched at tuple element pos %li: expected an integer or list of integers", i);
-          return NULL;
-        }
-      }
-      self->push(c_val);
     }
   }
   Py_RETURN_NONE;
@@ -282,6 +289,12 @@ MznSet_init(MznSet* self, PyObject* args)
   if (MznSet_push(self, args) == NULL)
     return -1;
   return 0;
+}
+
+static PyObject* MznSet_clear(MznSet* self)
+{
+  self->clear();
+  Py_RETURN_NONE;
 }
 
 static PyObject*

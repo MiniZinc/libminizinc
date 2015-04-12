@@ -31,16 +31,15 @@ struct MznRange {
 /* 
  *  My custom defined Set
  *
- *  MznSet_init requires arguments, basically we cannot call minizinc_internal.Set()  (no argument)
- *  The reason is if the set is empty, a call to Expression* e() would fail.
- *  
- *  The input to MznSet_push take 1 list argument:
- *        [item1, item2, item3]
- *   For each item, it can be either a value or a list of min and max values:
+ *  MznSet_init and MznSet_push take a variable list of arguments:
+ *        (item1, item2, ..., itemn)
+ *   For each item, it can be either a value or a list/tuple of min and max values:
  *          item? = 1,4 or 5 ....
  *       or item? = [1,10] or [5,6]
+ *       or item? = (1,10) or (5,6)
  *   For example, a Set of 1..5, 7, 10..15 can be defined like this:
- *        minizinc_internal.Set( [ [1,5], 7, [10,15] ])
+ *        minizinc_internal.Set( [1,5], 7, [10,15] )
+ *
  *   The set will automatically merge ranges if it can.
  *
  *   XXX: should a Set of {1,2,6,35} be written as 1..2, 6, 35
@@ -75,16 +74,49 @@ struct MznSet: MznObject {
   }
 };
 
+enum Mzn_PyContainer_Type {
+  MZN_T_LIST,
+  MZN_T_TUPLE,
+  MZN_T_OTHER
+};
+
+inline Mzn_PyContainer_Type Mzn_PyContainer_Check(PyObject* o) {
+  if (PyList_Check(o))
+    return MZN_T_LIST;
+  else if (PyTuple_Check(o))
+    return MZN_T_TUPLE;
+  else
+    return MZN_T_OTHER;
+}
+
+inline Py_ssize_t Mzn_PyContainer_Size(PyObject* o, Mzn_PyContainer_Type t) {
+  switch (t) {
+    case MZN_T_LIST:  return PyList_Size(o);
+    case MZN_T_TUPLE: return PyTuple_Size(o);
+    default: return -1;
+  }
+}
+
+inline PyObject* Mzn_PyContainer_GetItem(PyObject* o, Py_ssize_t i, Mzn_PyContainer_Type t) {
+  switch (t) {
+    case MZN_T_LIST:  return PyList_GetItem(o, i);
+    case MZN_T_TUPLE: return PyTuple_GetItem(o, i);
+    default:  return NULL;
+  }
+}
+
 // Set representation on terminal command
 // XXX: should be redefined as MznSet_str
 static PyObject* MznSet_repr(PyObject* self);
 
+// Push accepts 1 argument, which is exactly like the Set initialization
 static PyObject* MznSet_push(MznSet* self, PyObject* args);
 static PyObject* MznSet_output(MznSet* self);
 static PyObject* MznSet_min(MznSet* self);
 static PyObject* MznSet_max(MznSet* self);
 static PyObject* MznSet_continuous(MznSet* self);
 static PyObject* MznSet_contains(MznSet* self, PyObject* args);
+static PyObject* MznSet_clear(MznSet* self);
 
 static int MznSet_init(MznSet* self, PyObject* args);
 static PyObject* MznSet_new(PyTypeObject *type, PyObject* args, PyObject* kwds);
@@ -98,6 +130,7 @@ static PyMethodDef MznSet_methods[] = {
   {"max", (PyCFunction)MznSet_max, METH_NOARGS, "Upper bound of the set"},
   {"continuous", (PyCFunction)MznSet_continuous, METH_NOARGS, "Check whether the set is continous"},
   {"contains", (PyCFunction)MznSet_contains, METH_VARARGS, "Check whether a python value is in the Set"},
+  {"clear", (PyCFunction)MznSet_clear, METH_NOARGS, "Clear the set"},
   {NULL}    /* Sentinel */
 };
 
