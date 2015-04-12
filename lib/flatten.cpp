@@ -5833,11 +5833,13 @@ namespace MiniZinc {
                   cid = constants().ids.int_.lin_eq;
                   nc.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parint(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   IntVal d = cc->args()[2]->cast<IntLit>()->v();
                   args[2] = IntLit::a(-d);
                 } else {
@@ -5845,11 +5847,13 @@ namespace MiniZinc {
                   cid = constants().ids.float_.lin_eq;
                   nc.push_back(new FloatLit(Location().introduce(),-1.0));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parfloat(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
                   args[2] = new FloatLit(Location().introduce(),-d);
                 }
