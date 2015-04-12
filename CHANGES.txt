@@ -29,6 +29,8 @@ Changes:
    inconsistency.
  - Improve flattening of array access expressions, in particular for nested
    array accesses that can be combined into a single element constraint
+ - Add command line option -s or --statistics to print statistics about the
+   generated FlatZinc
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
