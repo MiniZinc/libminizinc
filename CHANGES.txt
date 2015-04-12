@@ -65,6 +65,7 @@ Bug fixes:
  - Check that index sets match for arrays assigned in let expressions
  - Fix bug in bounds inference for integer expressions with annotations
  - Fix propagation of defines_var annotation to be pushed through calls
+ - Fix parser to accept empty 2d and 3d array literals
  
 
 Version 2.0.1
