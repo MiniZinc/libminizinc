@@ -45,6 +45,9 @@ annotation time_limit(int: ms);
 % limit execution time of next to the given number of milliseconds
 annotation time_limit(int: ms, ann);
 
+function ann: '/\'(ann: a,ann: b) = and([a,b]);
+function ann: '\/'(ann: a,ann: b) = or([a,b]);
+
 % print the output as print()
 function ann: print; 
 % get the next solution as next()
@@ -62,8 +65,8 @@ annotation comb_assign(int: x,int: y);
 % assign solution variable s to result of c
 annotation comb_assign(ann: s,ann: c);
 
-% commit solution s to current function scope
-annotation commit(ann: s);
+% commit current solution to parent function scope
+function ann: commit();
 
 annotation empty_model;
 

@@ -1988,10 +1988,10 @@ predicate redundant_constraint(var bool: b);
 */  
 
 /** @group builtins.combinators Returns the last solution value for identifier \a x */
-function $T: sol(ann: solution, var opt $T: x);
+function $T: sol(var opt $T: x);
 
 /** @group builtins.combinators Returns true if solution is bound to a solution to the problem */
-function bool: hasSol(ann: solution);
+function bool: hasSol();
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
