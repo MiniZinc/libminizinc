@@ -31,6 +31,9 @@ namespace MiniZinc {
       else if(call->id() == constants().combinators.or_) {
         return interpretOrCombinator(call,solver,verbose); 
       }
+      else if(call->id() == constants().combinators.next) {
+        return interpretNextCombinator(call,solver,verbose);
+      }      
       else if(call->id() == constants().combinators.post) {
         return interpretPostCombinator(call,solver,verbose);
       }
@@ -137,7 +140,7 @@ namespace MiniZinc {
     }    
     else {
       std::stringstream ssm; 
-      ssm << "unknown combinator: " << *comb;
+      ssm << "unknown combinator: " << *comb << " of type: " << comb->type().toString();
       throw TypeError(env.envi(), comb->loc(), ssm.str());
     }    
   }
@@ -537,6 +540,11 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretCommitCombinator(Call *commitComb, SolverInstanceBase* solver, bool verbose) {
+    if(commitComb->args().size() != 1) {
+      std::stringstream ssm; 
+      ssm << "commit takes 1 argument" << std::endl;
+      throw TypeError(solver->env().envi(), commitComb->loc(),ssm.str());
+    } 
     ModelExp* me = Expression::cast<ModelExp>(follow_id(commitComb->args()[0]));
     if (me) {
       delete _solutionScopes.back();

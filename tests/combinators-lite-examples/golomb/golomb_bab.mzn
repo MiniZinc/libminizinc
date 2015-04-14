@@ -39,11 +39,12 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 % solve using minimizing branch & bound
 solve %:: int_search(mark, input_order, indomain, complete)
  :: combinator(
-       repeat(
-               next() /\ % get next solution
-               commit()  /\ % commit to this solution
-               post(obj < sol(obj)) /\ % post constraint
+       repeat( and([
+               next(), % /\ % get next solution
+               commit(), %  /\ % commit to this solution
+               post(obj < sol(obj)),% /\ % post constraint
                print() % print the solution
+              ])
        )
 ) satisfy;
 
