@@ -2787,14 +2787,12 @@ namespace MiniZinc {
       rb(env, m, ASTString("binomial"),t,b_binomial);  
     }  
     {
-      std::vector<Type> t(2);
-      t[0] = Type::ann();
-      t[1] = Type::optvartop();
+      std::vector<Type> t(1);
+      t[0] = Type::optvartop();
       rb(env, m, ASTString("sol"),t,b_sol);
     }
     {
-      std::vector<Type> t(1); // no arguments
-      t[0] = Type::ann();
+      std::vector<Type> t(0); // no arguments     
       rb(env, m, ASTString("hasSol"),t,b_hasSol);
     }
   }

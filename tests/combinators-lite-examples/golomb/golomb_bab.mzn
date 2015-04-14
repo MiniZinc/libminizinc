@@ -39,18 +39,12 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 % solve using minimizing branch & bound
 solve %:: int_search(mark, input_order, indomain, complete)
  :: combinator(
-   scope(
-     or([ 
        repeat(
-           and([
-               next, % get next solution
-               post(obj < sol(obj)), % post constraint
-               print() % print next solution
-           ])
-       ),
-       print % print final solution
-     ])
-   ) 
+               next() /\ % get next solution
+               commit()  /\ % commit to this solution
+               post(obj < sol(obj)) /\ % post constraint
+               print() % print the solution
+       )
 ) satisfy;
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];
