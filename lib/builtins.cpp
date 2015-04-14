@@ -2064,13 +2064,12 @@ namespace MiniZinc {
   
   Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    assert(args.size() == 2);
-    ModelExp* me = Expression::cast<ModelExp>(follow_id(call->args()[0]));
-    if (me == NULL) {
-      throw EvalError(env, call->loc(), "no solution");
+    assert(args.size() == 1);
+    Model* outputModel = env.cur_solution;
+    if (outputModel==NULL) {
+      throw EvalError(env, call->loc(), "no current solution found");
     }
-    Model* outputModel = me->m();
-    if(Id* id = args[1]->dyn_cast<Id>()) {
+    if(Id* id = args[0]->dyn_cast<Id>()) {
       id = follow_id_to_id(id)->cast<Id>();
       for(VarDeclIterator it=outputModel->begin_vardecls(); it!=outputModel->end_vardecls(); ++it) {
         if(it->e()->id()->str() == id->str()) {
@@ -2117,8 +2116,8 @@ namespace MiniZinc {
     else {
       std::stringstream ssm; 
       ssm << "expecting identifier or array access as argument of \"sol\" instead of: "
-          << *args[1];
-      throw EvalError(env, args[1]->loc(), ssm.str());
+          << *args[0];
+      throw EvalError(env, args[0]->loc(), ssm.str());
     }    
   }
   

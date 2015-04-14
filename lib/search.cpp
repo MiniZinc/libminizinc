@@ -77,11 +77,13 @@ namespace MiniZinc {
         }
         
         SolverInstance::Status ret;
-        
+        Model* curBest = _solutionScopes.back();
+        _solutionScopes.push_back(NULL);
         if(call->decl()->e()) {      
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
-          ret = interpretCombinator(call->decl()->e(), solver,verbose);
+          (void) interpretCombinator(call->decl()->e(), solver,verbose);
+          ret = _solutionScopes.back()==curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
         } else { 
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
@@ -101,6 +103,8 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
+        _solutionScopes.pop_back();
+        solver->env().envi().cur_solution = _solutionScopes.back();
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -128,6 +132,9 @@ namespace MiniZinc {
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.fail) {
         // TODO: set constraint scope to COMPLETE
         return SolverInstance::FAILURE;
+      }
+      else if(ident && ident->idn()==-1 && ident->v() == "break") {
+        return interpretBreakCombinator(ident, solver, verbose);
       }
       else {
         std::stringstream ssm; 
@@ -300,11 +307,16 @@ namespace MiniZinc {
           SolverInstance::Status status = SolverInstance::FAILURE;
           // repeat the argument a limited number of times
           Expression* oldValue = compr->decl(0, 0)->e();
+          _repeat_break.push_back(false);
           for(unsigned int i = 0; i<nbIterations; i++) {
             if(isTimeLimitViolated()) { // we have reached a timeout; set timeout index and stop
               setTimeoutIndex(getViolatedTimeLimitIndex());           
               compr->decl(0, 0)->e(oldValue);             
               return status;
+            }
+            if (_repeat_break.back()) {
+              _repeat_break.pop_back();
+              return SolverInstance::FAILURE;
             }
             compr->decl(0, 0)->e(IntLit::a(lb+i));
             if(verbose)
@@ -315,6 +327,7 @@ namespace MiniZinc {
               return status;
             }
           }
+          _repeat_break.pop_back();
           compr->decl(0, 0)->e(oldValue);
           return status;
         }            
@@ -322,10 +335,15 @@ namespace MiniZinc {
       else { // repeat is only restricted by satisfiability
         SolverInstance::Status status = SolverInstance::FAILURE;
         bool timeout = isTimeLimitViolated();
+        _repeat_break.push_back(false);
         do {
           status = interpretCombinator(call->args()[0], solver,verbose);
           timeout = isTimeLimitViolated();
-        } while(!timeout); // TODO: check if constraint scope is COMPLETE, in which case we should stop
+        } while(!timeout && !_repeat_break.back()); // TODO: check if constraint scope is COMPLETE, in which case we should stop
+        bool hadBreak = _repeat_break.back();
+        _repeat_break.pop_back();
+        if (hadBreak)
+          return SolverInstance::FAILURE;
         if(timeout) setTimeoutIndex(getViolatedTimeLimitIndex());
         return status;
       }
@@ -453,15 +471,16 @@ namespace MiniZinc {
     }
     setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
-      if(status == SolverInstance::SUCCESS) {
-//      solver->env().envi().hasSolution(true);
-//      // set/update the solutions in all higher scopes
-//      for(unsigned int i = 0; i <_scopes.size(); i++) {
-//        _scopes[i]->env().envi().hasSolution(true);
-//        updateSolution(solver->env().output(), _scopes[i]->env().output());
-//      }
-      delete _solutionScopes.back();
+    if(status == SolverInstance::SUCCESS) {
+      if (verbose) {
+        std::cerr << "NEXT success, set solution in scope " << _solutionScopes.size()-1 << "\n";
+        if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
+          std::cerr << "  also delete previous solution\n";
+      }
+      if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
+        delete _solutionScopes.back();
       _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
+      solver->env().envi().cur_solution = _solutionScopes.back();
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
@@ -493,8 +512,15 @@ namespace MiniZinc {
 //        _scopes[i]->env().envi().hasSolution(true);
 //        updateSolution(solver->env().output(), _scopes[i]->env().output());
 //      }
-      delete _solutionScopes.back();
+      if (verbose) {
+        std::cerr << "NEXT success, set solution in scope " << _solutionScopes.size()-1 << "\n";
+        if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
+          std::cerr << "  also delete previous solution\n";
+      }
+      if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
+        delete _solutionScopes.back();
       _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
+      solver->env().envi().cur_solution = _solutionScopes.back();
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
@@ -540,22 +566,35 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretCommitCombinator(Call *commitComb, SolverInstanceBase* solver, bool verbose) {
-    if(commitComb->args().size() != 1) {
+    if(commitComb->args().size() != 0) {
       std::stringstream ssm; 
-      ssm << "commit takes 1 argument" << std::endl;
+      ssm << "commit takes 0 arguments" << std::endl;
       throw TypeError(solver->env().envi(), commitComb->loc(),ssm.str());
-    } 
-    ModelExp* me = Expression::cast<ModelExp>(follow_id(commitComb->args()[0]));
-    if (me) {
-      delete _solutionScopes.back();
-      _solutionScopes.back() = copy(solver->env().envi(),me->m());
-      return SolverInstance::SUCCESS;
-    } else {
-      return SolverInstance::FAILURE;
     }
+    if (_solutionScopes.size()==1) {
+      throw EvalError(solver->env().envi(), commitComb->loc(), "Cannot commit outside of function scope");
+    }
+    if (verbose) {
+      if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2])
+        std::cerr << "COMMIT delete solution and ";
+      std::cerr << "COMMIT solution into scope " << _solutionScopes.size()-2 << "\n";
+    }
+    if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2])
+      delete _solutionScopes[_solutionScopes.size()-2];
+    _solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
+    return SolverInstance::SUCCESS;
   }
   
-  void 
+  SolverInstance::Status
+  SearchHandler::interpretBreakCombinator(Id* c, SolverInstanceBase* solver, bool verbose) {
+    if (_repeat_break.size()==0) {
+      throw EvalError(solver->env().envi(), c->loc(), "break outside of repeat");
+    }
+    _repeat_break.back() = true;
+    return SolverInstance::FAILURE;
+  }
+
+  void
   SearchHandler::interpretLimitCombinator(Expression* e, SolverInstanceBase* solver, bool verbose) {
     if(Call* c = e->dyn_cast<Call>()) {
       if(c->id() == constants().combinators.limit_time) 

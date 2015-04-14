@@ -30,7 +30,9 @@ namespace MiniZinc {
     std::vector<clock_t> _timeouts;
     // the index of the timeout (in the timeout list) that has been reached
     int _timeoutIndex;
-  public: 
+    // stack of flags for breaking out of repeat loops
+    std::vector<bool> _repeat_break;
+  public:
     SearchHandler() : _timeoutIndex(-1) {}
     
     /// perform search on the flat model in the environement using the specified solver
@@ -109,6 +111,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretTimeLimitAdvancedCombinator(Call* scopeComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a COMMIT combinator
   SolverInstance::Status interpretCommitCombinator(Call* commitComb, SolverInstanceBase* solver, bool verbose);
+  /// interpret and execute a BREAK combinator
+  SolverInstance::Status interpretBreakCombinator(Id* c, SolverInstanceBase* solver, bool verbose);
   /// post the list of (unflattened) constraints (the argument of the POST combinator) in the solver
   bool postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose);
   /// overwrite the solution in \a outputToUpdate with the solution in \a output

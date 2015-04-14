@@ -36,16 +36,16 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
-% solve using minimizing branch & bound
-solve %:: int_search(mark, input_order, indomain, complete)
- :: combinator(
+function ann: mybab(var int: obj) =
        repeat( and([
-               next(), % /\ % get next solution
+               or([next(),break]), % /\ % get next solution
                commit(), %  /\ % commit to this solution
                post(obj < sol(obj)),% /\ % post constraint
-               print() % print the solution
               ])
-       )
-) satisfy;
+       );
+
+% solve using minimizing branch & bound
+solve %:: int_search(mark, input_order, indomain, complete)
+  combinator(and([mybab(obj), print()]));
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

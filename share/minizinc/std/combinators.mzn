@@ -68,7 +68,8 @@ annotation comb_assign(ann: s,ann: c);
 % commit current solution to parent function scope
 function ann: commit();
 
-annotation empty_model;
+% break out of enclosing repeat loop
+annotation break;
 
 % =================================================================== %
 %                    the actual combinators                           %

@@ -65,6 +65,7 @@ namespace MiniZinc {
   public:
     Model* orig;
     Model* output;
+    Model* cur_solution;
     VarOccurrences vo;
     VarOccurrences output_vo;
     CopyMap cmap;
