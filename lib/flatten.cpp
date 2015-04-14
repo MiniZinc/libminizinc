@@ -5854,11 +5854,13 @@ namespace MiniZinc {
                   cid = constants().ids.int_.lin_eq;
                   nc.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parint(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   IntVal d = cc->args()[2]->cast<IntLit>()->v();
                   args[2] = IntLit::a(-d);
                 } else {
@@ -5866,11 +5868,13 @@ namespace MiniZinc {
                   cid = constants().ids.float_.lin_eq;
                   nc.push_back(new FloatLit(Location().introduce(),-1.0));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parfloat(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
                   args[2] = new FloatLit(Location().introduce(),-d);
                 }
@@ -6080,4 +6084,56 @@ namespace MiniZinc {
 
   }
 
+  FlatModelStatistics statistics(Env& m) {
+    Model* flat = m.flat();
+    FlatModelStatistics stats;
+    for (unsigned int i=0; i<flat->size(); i++) {
+      if (!(*flat)[i]->removed()) {
+        if (VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
+          Type t = vdi->e()->type();
+          if (t.isvar() && t.dim()==0) {
+            if (t.is_set())
+              stats.n_set_vars++;
+            else if (t.isint())
+              stats.n_int_vars++;
+            else if (t.isbool())
+              stats.n_bool_vars++;
+            else if (t.isfloat())
+              stats.n_float_vars++;
+          }
+        } else if (ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
+          if (Call* call = ci->e()->dyn_cast<Call>()) {
+            if (call->args().size() > 0) {
+              Type all_t;
+              for (unsigned int i=0; i<call->args().size(); i++) {
+                Type t = call->args()[i]->type();
+                if (t.isvar()) {
+                  if (t.st()==Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_INT && all_t.bt()!=Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_BOOL && all_t.bt()!=Type::BT_INT && all_t.bt()!=Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                }
+              }
+              if (all_t.isvar()) {
+                if (all_t.st()==Type::ST_SET)
+                  stats.n_set_ct++;
+                else if (all_t.bt()==Type::BT_INT)
+                  stats.n_int_ct++;
+                else if (all_t.bt()==Type::BT_BOOL)
+                  stats.n_bool_ct++;
+                else if (all_t.bt()==Type::BT_FLOAT)
+                  stats.n_float_ct++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return stats;
+  }
+  
 }
