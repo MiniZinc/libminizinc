@@ -85,6 +85,8 @@ namespace MiniZinc {
   SolverInstance::Status interpretAndCombinator(Call* andComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute MAXIMISE/MINIMIZE combinator (depending on minimize flag)
   SolverInstance::Status interpretBestCombinator(Call* c, SolverInstanceBase* solver, bool minimize, bool print, bool verbose);
+  /// interpret and execute an operator given as BinOp expression (AND as well as OR)
+  SolverInstance::Status interpretBinOpCombinator(BinOp* bo, SolverInstanceBase* solver, bool verbose);
   /// interpret if-then-else combibator
   SolverInstance::Status interpretConditionalCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a new scope (defined by let); isNested is false if the LET combinator is the top-most combinator and false otherwise  
