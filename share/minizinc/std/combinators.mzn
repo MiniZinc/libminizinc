@@ -49,7 +49,9 @@ function ann: '/\'(ann: a,ann: b) = and([a,b]);
 function ann: '\/'(ann: a,ann: b) = or([a,b]);
 
 % print the output as print()
-function ann: print; 
+function ann: print;
+% print the string
+function ann: print(string);
 % get the next solution as next()
 function ann: next; 
 % do nothing: return SAT, skip()

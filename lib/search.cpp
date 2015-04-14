@@ -46,7 +46,7 @@ namespace MiniZinc {
       else if(call->id() == constants().combinators.print) {
         if(verbose)
           std::cout << "DEBUG: PRINT combinator in " << call->loc() << std::endl;
-        return interpretPrintCombinator(solver,verbose);
+        return interpretPrintCombinator(call,solver,verbose);
       }
       else if(call->id() == constants().combinators.skip) {
         return SolverInstance::SUCCESS;
@@ -121,7 +121,7 @@ namespace MiniZinc {
         return interpretNextCombinator(solver,verbose);
       } 
       else if (ident && ident->idn()==-1 && ident->v() == constants().combinators.print) {
-        return interpretPrintCombinator(solver,verbose);
+        return interpretPrintCombinator(call,solver,verbose);
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.skip) {
         return SolverInstance::SUCCESS;
@@ -763,19 +763,24 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {
-    //std::cerr << "DEBUG: PRINT combinator" << std::endl;   
-    if(solver->env().envi().hasSolution()) {      
-      solver->env().evalOutput(std::cout);      
-      std::cout << constants().solver_output.solution_delimiter << std::endl;     
+  SearchHandler::interpretPrintCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+    if (call->args().size()==0) {
+      //std::cerr << "DEBUG: PRINT combinator" << std::endl;
+      if(solver->env().envi().hasSolution()) {
+        solver->env().evalOutput(std::cout);
+        std::cout << constants().solver_output.solution_delimiter << std::endl;
+        return SolverInstance::SUCCESS;
+      }
+      else {
+        if(verbose)
+          std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;
+        return SolverInstance::FAILURE;
+      }
+    } else {
+      std::cout << eval_string(solver->env().envi(), call->args()[0]);
       return SolverInstance::SUCCESS;
     }
-    else {
-      if(verbose)
-        std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;      
-     return SolverInstance::FAILURE;
-    }
-  }  
+  }
   
   bool 
   SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose) {

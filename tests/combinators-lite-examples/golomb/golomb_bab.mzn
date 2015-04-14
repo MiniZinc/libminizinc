@@ -39,6 +39,7 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 function ann: mybab(var int: obj) =
        repeat( 
                (next() \/ break) /\
+               print("Intermediate solution with objective \(sol(obj))\n") /\
                commit() /\ post(obj < sol(obj))
               
        );
