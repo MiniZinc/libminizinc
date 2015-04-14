@@ -995,6 +995,20 @@ namespace MiniZinc {
       max(*gi._current_space, iv, gi.arg2intvar(call->args()[0]), gi.ann2icl(ann));
     }
 
+    void p_maximum_arg(SolverInstanceBase& s, const Call* call) {
+      const Annotation& ann =call->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
+      argmax(*gi._current_space, iv, gi.arg2intvar(call->args()[1]), true, gi.ann2icl(ann));
+    }
+
+    void p_minimum_arg(SolverInstanceBase& s, const Call* call) {
+      const Annotation& ann =call->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntVarArgs iv = gi.arg2intvarargs(call->args()[0]);
+      argmin(*gi._current_space, iv, gi.arg2intvar(call->args()[1]), true, gi.ann2icl(ann));
+    }
+
     void p_regular(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -1247,12 +1261,25 @@ namespace MiniZinc {
     }
 
     void p_schedule_unary_optional(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
+      const Annotation& ann = call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
       BoolVarArgs m = gi.arg2boolvarargs(call->args()[2]);
       unary(*gi._current_space, x, p, m);
+    }
+
+
+    void p_cumulative_opt(SolverInstanceBase& s, const Call* ce) {
+      const Annotation& ann = ce->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntVarArgs start = gi.arg2intvarargs(ce->args()[0]);
+      IntArgs duration = gi.arg2intargs(ce->args()[1]);
+      IntArgs height = gi.arg2intargs(ce->args()[2]);
+      BoolVarArgs opt = gi.arg2boolvarargs(ce->args()[3]);
+      int bound = ce->args()[4]->cast<IntLit>()->v().toInt();
+      unshare(*gi._current_space, start);
+      cumulative(*gi._current_space,bound,start,duration,height,opt,gi.ann2icl(ann));
     }
 
     void p_circuit(SolverInstanceBase& s, const Call* call) {

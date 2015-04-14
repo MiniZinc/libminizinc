@@ -192,6 +192,8 @@ namespace MiniZinc {
       PosterImpl(p_global_cardinality_low_up_closed);
       PosterImpl(p_minimum);
       PosterImpl(p_maximum);
+      PosterImpl(p_minimum_arg);
+      PosterImpl(p_maximum_arg);
       PosterImpl(p_regular);
       PosterImpl(p_sort);
       PosterImpl(p_inverse_offsets);
@@ -206,6 +208,7 @@ namespace MiniZinc {
       PosterImpl(p_among_seq_bool);
       PosterImpl(p_schedule_unary);
       PosterImpl(p_schedule_unary_optional);
+      PosterImpl(p_cumulative_opt);
       PosterImpl(p_circuit);
       PosterImpl(p_circuit_cost_array);
       PosterImpl(p_circuit_cost);
