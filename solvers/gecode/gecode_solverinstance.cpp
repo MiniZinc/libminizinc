@@ -156,11 +156,12 @@ namespace MiniZinc {
       registerConstraint("int_in", GecodeConstraints::p_int_in);
       registerConstraint("int_in_reif", GecodeConstraints::p_int_in_reif);
       registerConstraint("int_in_imp", GecodeConstraints::p_int_in_imp);
-//#ifndef GECODE_HAS_SET_VARS
+      //#ifndef GECODE_HAS_SET_VARS
       registerConstraint("set_in", GecodeConstraints::p_int_in);
       registerConstraint("set_in_reif", GecodeConstraints::p_int_in_reif);
       registerConstraint("set_in_imp", GecodeConstraints::p_int_in_imp);
-//#endif
+      //#endif
+
       registerConstraint("array_int_lt", GecodeConstraints::p_array_int_lt);
       registerConstraint("array_int_lq", GecodeConstraints::p_array_int_lq);
       registerConstraint("array_bool_lt", GecodeConstraints::p_array_bool_lt);
@@ -175,8 +176,10 @@ namespace MiniZinc {
       registerConstraint("global_cardinality_closed", GecodeConstraints::p_global_cardinality_closed);
       registerConstraint("global_cardinality_low_up", GecodeConstraints::p_global_cardinality_low_up);
       registerConstraint("global_cardinality_low_up_closed", GecodeConstraints::p_global_cardinality_low_up_closed);
-      registerConstraint("minimum_int", GecodeConstraints::p_minimum);
-      registerConstraint("maximum_int", GecodeConstraints::p_maximum);
+      registerConstraint("array_int_minimum", GecodeConstraints::p_minimum);
+      registerConstraint("array_int_maximum", GecodeConstraints::p_maximum);
+      registerConstraint("minimum_arg_int", GecodeConstraints::p_minimum_arg);
+      registerConstraint("maximum_arg_int", GecodeConstraints::p_maximum_arg);
       registerConstraint("regular", GecodeConstraints::p_regular);
       registerConstraint("sort", GecodeConstraints::p_sort);
       registerConstraint("inverse_offsets", GecodeConstraints::p_inverse_offsets);
@@ -189,6 +192,7 @@ namespace MiniZinc {
       registerConstraint("cumulatives", GecodeConstraints::p_cumulatives);
       registerConstraint("gecode_among_seq_int", GecodeConstraints::p_among_seq_int);
       registerConstraint("gecode_among_seq_bool", GecodeConstraints::p_among_seq_bool);
+
 
       registerConstraint("bool_lin_eq", GecodeConstraints::p_bool_lin_eq);
       registerConstraint("bool_lin_ne", GecodeConstraints::p_bool_lin_ne);
@@ -212,6 +216,7 @@ namespace MiniZinc {
 
       registerConstraint("gecode_schedule_unary", GecodeConstraints::p_schedule_unary);
       registerConstraint("gecode_schedule_unary_optional", GecodeConstraints::p_schedule_unary_optional);
+      registerConstraint("gecode_schedule_cumulative_optional", GecodeConstraints::p_cumulative_opt);
 
       registerConstraint("gecode_circuit", GecodeConstraints::p_circuit);
       registerConstraint("gecode_circuit_cost_array", GecodeConstraints::p_circuit_cost_array);

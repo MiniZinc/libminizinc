@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
   bool flag_gecode = false;
   bool flag_only_range_domains = false;
   unsigned int flag_npasses = 1;
+  bool flag_statistics = false;
   
   Timer starttime;
   Timer lasttime;
@@ -226,6 +227,8 @@ int main(int argc, char** argv) {
       globals_dir = argv[i];
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
+    } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
+      flag_statistics = true;
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -397,6 +400,59 @@ int main(int argc, char** argv) {
               env.flat()->compact();
             }
             
+            if (flag_statistics) {
+              FlatModelStatistics stats = statistics(env);
+              std::cerr << "Generated FlatZinc statistics:\n";
+              std::cerr << "Variables: ";
+              bool had_one = false;
+              if (stats.n_bool_vars) {
+                had_one = true;
+                std::cerr << stats.n_bool_vars << " bool";
+              }
+              if (stats.n_int_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_int_vars << " int";
+              }
+              if (stats.n_float_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_float_vars << " float";
+              }
+              if (stats.n_set_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_set_vars << " int";
+              }
+              if (!had_one)
+                std::cerr << "none";
+              std::cerr << "\n";
+              std::cerr << "Constraints: ";
+              had_one = false;
+              if (stats.n_bool_ct) {
+                had_one = true;
+                std::cerr << stats.n_bool_ct << " bool";
+              }
+              if (stats.n_int_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_int_ct << " int";
+              }
+              if (stats.n_float_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_float_ct << " float";
+              }
+              if (stats.n_set_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_set_ct << " int";
+              }
+              if (!had_one)
+                std::cerr << "none";
+              std::cerr << "\n";
+            }
+            
             if (flag_verbose)
               std::cerr << "Printing FlatZinc ...";
             if (flag_output_fzn_stdout) {
@@ -488,6 +544,7 @@ error:
             << "  --version\n    Print version information" << std::endl
             << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
             << "  -v, --verbose\n    Print progress statements" << std::endl
+            << "  -s, --statistics\n    Print statistics" << std::endl
             << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
             << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
             << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl

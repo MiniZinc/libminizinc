@@ -29,6 +29,8 @@ Changes:
    inconsistency.
  - Improve flattening of array access expressions, in particular for nested
    array accesses that can be combined into a single element constraint
+ - Add command line option -s or --statistics to print statistics about the
+   generated FlatZinc
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
@@ -65,6 +67,7 @@ Bug fixes:
  - Check that index sets match for arrays assigned in let expressions
  - Fix bug in bounds inference for integer expressions with annotations
  - Fix propagation of defines_var annotation to be pushed through calls
+ - Fix parser to accept empty 2d and 3d array literals
  
 
 Version 2.0.1
