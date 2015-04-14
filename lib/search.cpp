@@ -144,14 +144,58 @@ namespace MiniZinc {
     }
     else if(Let* let = comb->dyn_cast<Let>()) {      
       return interpretLetCombinator(let, solver, verbose);      
-    }    
+    } 
+    else if(BinOp* bo = comb->dyn_cast<BinOp>()) {
+      return interpretBinOpCombinator(bo,solver,verbose);
+    }
     else {
       std::stringstream ssm; 
-      ssm << "unknown combinator: " << *comb << " of type: " << comb->type().toString();
+      ssm << "unknown combinator: " << *comb << " of type: " << comb->eid();
       throw TypeError(env.envi(), comb->loc(), ssm.str());
     }    
   }
   
+  SolverInstance::Status
+  SearchHandler::interpretBinOpCombinator(BinOp* bo, SolverInstanceBase* solver, bool verbose)  {
+    BinOpType bot = bo->op();
+    if(bot != BinOpType::BOT_AND && bot != BinOpType::BOT_OR) {
+      std::stringstream ssm;
+      ssm << "unknown bin-op combinator: " << *bo << std::endl;
+      throw TypeError(solver->env().envi(),bo->loc(),ssm.str());
+    }
+    std::vector<Expression*> args;
+    Expression* lhs = bo->lhs();
+    args.push_back(bo->rhs());
+    while(BinOp* lhs_bo = lhs->dyn_cast<BinOp>()) {
+      if(lhs_bo->op() != bot) {
+        break;
+      }      
+      args.push_back(lhs_bo->rhs());     
+      lhs = lhs_bo->lhs();
+    }
+    args.push_back(lhs);
+    //reverse the arguments
+    std::vector<Expression*> and_args;    
+    for(int i=args.size()-1; i>=0; i--) {     
+      and_args.push_back(args[i]);
+    }
+    args.clear();
+    ArrayLit* al = new ArrayLit(bo->loc(),and_args);
+    args.push_back(al);
+    ASTString call_id; 
+    if(bot == BinOpType::BOT_AND) 
+      call_id = constants().combinators.and_;
+    else call_id = constants().combinators.or_;
+    Call* call = new Call(bo->loc(),
+                          call_id,
+                          args);
+    KeepAlive ka(call);
+    if(verbose)    
+      std::cerr << "DEBUG: Transformed binops into call: " << *call << " "<< std::endl;
+    if(bot == BinOpType::BOT_AND)
+      return interpretAndCombinator(call, solver, verbose);
+    else return interpretOrCombinator(call, solver, verbose);    
+  }
   
   SolverInstance::Status 
   SearchHandler::interpretAndCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
