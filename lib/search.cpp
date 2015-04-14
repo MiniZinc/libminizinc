@@ -148,6 +148,9 @@ namespace MiniZinc {
     else if(BinOp* bo = comb->dyn_cast<BinOp>()) {
       return interpretBinOpCombinator(bo,solver,verbose);
     }
+    else if(ITE* ite = comb->dyn_cast<ITE>()) {
+      return interpretConditionalCombinator(ite,solver,verbose);
+    }
     else {
       std::stringstream ssm; 
       ssm << "unknown combinator: " << *comb << " of type: " << comb->eid();
@@ -253,19 +256,31 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status 
-  SearchHandler::interpretConditionalCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
-    if(call->args().size() != 3) {
-      std::stringstream ssm;
-      ssm << call->id() << "-combinator takes 3 arguments instead of " << call->args().size() << " in: " << *call;
-      throw TypeError(solver->env().envi(), call->loc(), ssm.str());
-    }    
-    Expression* condition = call->args()[0];
-    SolverInstance::Status status = interpretCombinator(condition, solver, verbose);
-    if(status == SolverInstance::SUCCESS) {
-      return interpretCombinator(call->args()[1], solver, verbose);
-    }
-    else {
-      return interpretCombinator(call->args()[2], solver, verbose);
+  SearchHandler::interpretConditionalCombinator(Expression* e, SolverInstanceBase* solver, bool verbose) {
+    if (Call* call = e->dyn_cast<Call>()) {
+      if(call->args().size() != 3) {
+        std::stringstream ssm;
+        ssm << call->id() << "-combinator takes 3 arguments instead of " << call->args().size() << " in: " << *call;
+        throw TypeError(solver->env().envi(), call->loc(), ssm.str());
+      }
+      Expression* condition = call->args()[0];
+      SolverInstance::Status status = interpretCombinator(condition, solver, verbose);
+      if(status == SolverInstance::SUCCESS) {
+        return interpretCombinator(call->args()[1], solver, verbose);
+      }
+      else {
+        return interpretCombinator(call->args()[2], solver, verbose);
+      }
+    } else {
+      ITE* ite = e->cast<ITE>();
+      for (unsigned int i=0; i<ite->size(); i++) {
+        Expression* condition = ite->e_if(i);
+        SolverInstance::Status status = interpretCombinator(condition, solver, verbose);
+        if(status == SolverInstance::SUCCESS) {
+          return interpretCombinator(ite->e_then(i), solver, verbose);
+        }
+      }
+      return interpretCombinator(ite->e_else(), solver, verbose);
     }
   }
   

@@ -563,14 +563,23 @@ namespace MiniZinc {
       }
       bool allpresent = !(tret.isopt());
       bool varcond = false;
+      bool isann = true;
       for (int i=0; i<ite.size(); i++) {
         Expression* eif = ite.e_if(i);
         Expression* ethen = ite.e_then(i);
         varcond = varcond || (eif->type() == Type::varbool());
-        if (eif->type() != Type::parbool() && eif->type() != Type::varbool())
+        if (eif->type() == Type::ann()) {
+          if (!isann)
+            throw TypeError(_env,eif->loc(),"expected combinator condition");
+          if (tret != Type::ann())
+            throw TypeError(_env,eif->loc(),"combinator conditional must have type ann");
+        } else if (eif->type() != Type::parbool() && eif->type() != Type::varbool()) {
           throw TypeError(_env,eif->loc(),
             "expected bool conditional expression, got `"+
             eif->type().toString()+"'");
+        } else {
+          isann = false;
+        }
         if (eif->type().cv())
           tret.cv(true);
         if (ethen->type().isunknown()) {

@@ -37,11 +37,11 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 function ann: mybab(var int: obj) =
-       repeat( 
-               (next() \/ break) /\
+       repeat(
+           if next() then
                print("Intermediate solution with objective \(sol(obj))\n") /\
                commit() /\ post(obj < sol(obj))
-              
+           else break endif
        );
 
 % solve using minimizing branch & bound

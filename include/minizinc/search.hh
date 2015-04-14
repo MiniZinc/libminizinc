@@ -90,7 +90,7 @@ namespace MiniZinc {
   /// interpret and execute an operator given as BinOp expression (AND as well as OR)
   SolverInstance::Status interpretBinOpCombinator(BinOp* bo, SolverInstanceBase* solver, bool verbose);
   /// interpret if-then-else combibator
-  SolverInstance::Status interpretConditionalCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
+  SolverInstance::Status interpretConditionalCombinator(Expression* call, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a new scope (defined by let); isNested is false if the LET combinator is the top-most combinator and false otherwise  
   SolverInstance::Status interpretLetCombinator(Let* let, SolverInstanceBase* solver, bool verbose);
    /// interpret and execute an OR combinator
