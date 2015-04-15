@@ -27,7 +27,6 @@ array[SCENARIOS] of int: weights;
 array[ITEMS] of var 0..capacity: selectedItems; % :: stage(1) 
 int: maxProfit = 9999999;
 %array[SCENARIOS] of var 0..maxProfit: totalProfit; % ::stage(2)
-var 0..maxProfit: expectedProfit;
 
 constraint forall(i in ITEMS) (selectedItems[i] >= 0);
  
@@ -41,12 +40,14 @@ solve :: int_search(selectedItems,first_fail,indomain_max,complete)
 search
    let {  
      array[SCENARIOS] of int: scenario_obj = [ 0 | i in SCENARIOS ]; % initialize the objective values of each scenario with zero
+     int: expectedProfit = 0;
    } 
    in  (
          repeat (      
                next() /\ % find a solution for the first stage variables
                print("First stage solution found\n") /\
                repeat (s in 1..nbScenarios) (
+                 scope(
                      let { 
                         var minProfit..maxProfit: totalProfit; % second stage variables
                      } in (                                        
@@ -59,10 +60,12 @@ search
                               /\ break 
                          endif                      
                      )
+                 )
                ) % end repeat 
-               /\ commit() /\   % we found a solution
-                % BAB constraint on overall obj var
-               post(expectedProfit > sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))) 
+               /\ if expectedProfit < sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i])) then 
+                    expectedProfit := sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))
+                    /\ commit() /\ print("expected profit:"++show(expectedProfit)++"\n")  % we found a solution
+                  else skip() endif
         ) 
     )
 ;
@@ -84,7 +87,7 @@ predicate firstStageAssignment() =
      
 
 
-output ["expected profit = "++show(expectedProfit)++"\n",        
+output [%"expected profit = "++show(expectedProfit)++"\n",        
         "selectedItems = ", show(selectedItems), "\n" ];
 %        "total profit per scenario = ", show(totalProfit), "\n"       ];
 

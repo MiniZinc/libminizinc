@@ -25,7 +25,18 @@ function ann: bab_max(var int: obj, array[int] of ann: limits) =
    )
    ;  
            
-function ann: bab_max(var int: obj) = bab_max(obj, print());
+%function ann: bab_max(var int: obj) = bab_max(obj, print());
+
+
+function ann: bab_max(var int: obj) =   
+   repeat(
+       if next() then
+         print("Intermediate solution with objective \(sol(obj))\n") /\
+         commit() /\ 
+         post(obj > sol(obj))
+       else break endif
+   )
+;   
 
 function ann: bab_max(var int: obj, int: timeout_ms) = 
    repeat(

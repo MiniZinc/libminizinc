@@ -31,6 +31,8 @@ namespace MiniZinc {
     int _timeoutIndex;
     // stack of flags for breaking out of repeat loops
     std::vector<bool> _repeat_break;
+    // the number of intermediate variables that we have added locally in the scope (last variable contains current scope)
+    std::vector<int> _localVarsToAdd;
   public:
     SearchHandler() : _timeoutIndex(-1) {}
     
@@ -129,8 +131,9 @@ namespace MiniZinc {
   /// add the new variable (defined by a LET) to the model, and add it to the output model so we can retrieve solutions of it
   void addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose);
   
-  void pushScope(SolverInstanceBase* new_scope) {
+  void pushScope(SolverInstanceBase* new_scope) {    
     _scopes.push_back(new_scope);   
+    _localVarsToAdd.push_back(0);
   }
   void popScope() {
     if(_scopes.size() >= 2) {
@@ -141,7 +144,8 @@ namespace MiniZinc {
       }
     }
     delete _scopes.back();
-    _scopes.pop_back();    
+    _scopes.pop_back();
+    _localVarsToAdd.pop_back();
   }
   /// returns true if a timelimit is violated and false otherwise
   bool isTimeLimitViolated(bool verbose = false);

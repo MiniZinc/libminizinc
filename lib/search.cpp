@@ -279,10 +279,16 @@ namespace MiniZinc {
       ITE* ite = e->cast<ITE>();
       for (unsigned int i=0; i<ite->size(); i++) {
         Expression* condition = ite->e_if(i);
-        SolverInstance::Status status = interpretCombinator(condition, solver, verbose);
+        SolverInstance::Status status;
+        if(condition->type().isann()) {
+          status = interpretCombinator(condition, solver, verbose);
+        }
+        else {
+          status = eval_bool(solver->env().envi(), condition) ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
+        }
         if(status == SolverInstance::SUCCESS) {
           return interpretCombinator(ite->e_then(i), solver, verbose);
-        }
+        }        
       }
       return interpretCombinator(ite->e_else(), solver, verbose);
     }
@@ -450,12 +456,16 @@ namespace MiniZinc {
           // flatten and add the variable to the flat model
           EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
           VarDecl* nvd = ee.r()->cast<Id>()->decl();
+          int nbVars = _localVarsToAdd.back();          
+          _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
+          //std::cerr << "DEBUG: setting locally added var to: " << _localVarsToAdd[_localVarsToAdd.size()-1] << std::endl;
           
           // add output annotation to the flat variable declaration
           if (nvd->type().dim() == 0) {
-            nvd->addAnnotation(constants().ann.output_var);
+            nvd->addAnnotation(constants().ann.output_var);            
           } else {
             // TODO: see flatten.cpp:4517
+            // TODO: add the number of local variables according to length of array
           }
           
           // Create new output variable
@@ -808,8 +818,12 @@ namespace MiniZinc {
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
       nbCtsBefore++;
     int nbVarsBefore = 0;
-    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
+    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {
+      //std::cerr << "counting var: " << *(it)  << std::endl;
       nbVarsBefore++;        
+    }
+    nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1];
+    //std::cerr << "locally added vars: " << _localVarsToAdd[_localVarsToAdd.size()-1] << " with size: " << _localVarsToAdd.size() << std::endl;
     
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
     IdMap<Expression*> domains;
@@ -837,12 +851,18 @@ namespace MiniZinc {
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
       nbVarsAfter++;
     if(nbVarsBefore < nbVarsAfter) {
+      //std::cerr << "before:" << nbVarsBefore << ", after: " << nbVarsAfter << std::endl;
       std::vector<VarDecl*> vars;
       unsigned int i=0;
       for(VarDeclIterator it= env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {        
-        if(i<nbVarsBefore) i++;
+        if(i<nbVarsBefore) { 
+          //std::cerr << "skipping var: " << i << ": " << *(it) << std::endl;
+          i++;
+        }
         else {
+          //std::cerr << "adding var: " << i << ": " << *(it)  << std::endl;
           vars.push_back(it->e());
+          i++;
         }
       }
       if(verbose)
