@@ -1390,6 +1390,8 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 
 test mzn_in_root_context(var $T);
 
+test mzn_in_redundant_constraint();
+
 %-----------------------------------------------------------------------------%
 %
 % Element constraint implementations

@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -372,6 +372,8 @@ namespace MiniZinc {
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
+    if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint++;
     env.callStack.push_back(e);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
@@ -383,6 +385,8 @@ namespace MiniZinc {
   CallStackItem::~CallStackItem(void) {
     if (env.callStack.back()->isa<VarDecl>())
       env.idStack.pop_back();
+    if (env.callStack.back()->isa<Call>() && env.callStack.back()->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint--;
     env.callStack.pop_back();
   }
   
