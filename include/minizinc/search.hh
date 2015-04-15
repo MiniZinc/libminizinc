@@ -65,11 +65,6 @@ namespace MiniZinc {
       else { // solve using normal solve call
         status = solver->solve();
       }    
-      // process status and solution      
-      if ( status==SolverInstance::SUCCESS) { 
-        env.evalOutput(std::cout);
-      }
-      std::cout << "----------\n";
       switch(status) {
         case SolverInstance::SUCCESS:
           break;
