@@ -88,56 +88,58 @@ include "bab_max.mzn";
 %% and an array of search variables, a number of iterations and a 
 %% destruction rate d (that determines the percentage of variables in x 
 %% that will be destroyed, i.e. the size of the neighbourhood to search)
-%function ann: lns_min (var int: obj, array[int] of var int: x,
-%                   int: iterations, float: d) = 
-%    repeat (i in 1..iterations) (
-%      and([
-%        scope(
-%          and([ 
-%            post(neighbourhoodCts(x,d)),
-%            or([bab_min(obj,print),print()]) %next, % or bab
-%          ]),
-%        ),
-%        post(obj < sol(obj))
-%      ])
-%  );
-%
-%function ann: lns_min (var int: obj, array[int] of var int: x,
-%                   int: iterations, float: d, int: timeout_ms) = 
-%    repeat (i in 1..iterations) (
-%      and([
-%        scope(
-%          or([
-%            and([ 
-%              post(neighbourhoodCts(x,d)),
-%              time_limit(timeout_ms,
-%                         bab_min(obj) %next
-%              )
-%            ]),
-%            print()
-%          ])
-%        ),
-%        post(obj < sol(obj))
-%      ])
-%  );
-%
+function ann: lns_min (var int: obj, array[int] of var int: x,
+                   int: iterations, float: d) = 
+    repeat (i in 1..iterations) (
+        scope(
+            post(neighbourhoodCts(x,d)) /\
+            bab_min(obj) /\
+            commit() /\ % do we need commit here?
+            print()
+         
+        ) /\
+        post(obj < sol(obj))
+   )
+ ;
+
+function ann: lns_min (var int: obj, array[int] of var int: x,
+                   int: iterations, float: d, int: timeout_ms) = 
+    scope(
+      if next() then 
+         commit()
+      else fail() endif
+    ) 
+    /\
+    repeat (i in 1..iterations) (
+        scope(
+            post(neighbourhoodCts(x,d)) /\
+            time_limit(timeout_ms, 
+                       next()) /\ %bab_min(obj)) /\
+            commit() /\ % do we need commit here?
+            print()
+         
+        ) /\
+        post(obj < sol(obj))
+   )
+;
+
 %% Predicate that randomly choses the neighbourhood to keep, and then 
 %% posts the respective assignment constraints (assigning those variables 
 %% to the value in the last solution)
-%predicate neighbourhoodCts(array[int] of var int: x, 
-%                            float: destructionRate) = 
-%   if(hasSol()) then 
-%     let {
-%       int: n = ceil((1.0 - destructionRate)*length(x));
-%       array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
-%     } in 
-%       forall (i in idx) (
-%         %trace("x["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
-%         x[i] = sol(x[i])
-%       )     
-%   else true endif;
-%
-%
+predicate neighbourhoodCts(array[int] of var int: x, 
+                            float: destructionRate) = 
+   if(hasSol()) then 
+     let {
+       int: n = ceil((1.0 - destructionRate)*length(x));
+       array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
+     } in 
+       forall (i in idx) (
+         trace("var["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
+         x[i] = sol(x[i])
+       )     
+   else trace("hasSol() is FALSE\n") /\ true endif;
+
+
 %% ------------------- Two Stage Policy Based Search ------------------ %
 %function ann: policy_based_two_stage(array[int] of var int: stage1,
 %                                     array[int] of var int: stage2,

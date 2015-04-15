@@ -981,7 +981,7 @@ namespace MiniZinc {
     // find the best solution
     while (FznSpace* next_sol = engine->next()) {
       if(_solution) delete _solution;
-      else env().hasSolution(true); // we need to do this here since we cannot do it on interpretor level
+      //else env().hasSolution(true); // we need to do this here since we cannot do it on interpretor level
       _solution = next_sol;
       assignSolutionToOutput(); 
       if(print) {

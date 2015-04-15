@@ -104,7 +104,11 @@ namespace MiniZinc {
           }
         }
         _solutionScopes.pop_back();
-        solver->env().envi().cur_solution = _solutionScopes.back();
+        solver->env().envi().setCurSolution(_solutionScopes.back());
+        if(verbose) {
+          std::cerr << "DEBUG: Setting current solution to: " << std::endl;
+          debugprint(solver->env().envi().getCurSolution());
+        }
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -121,7 +125,7 @@ namespace MiniZinc {
         return interpretNextCombinator(solver,verbose);
       } 
       else if (ident && ident->idn()==-1 && ident->v() == constants().combinators.print) {
-        return interpretPrintCombinator(call,solver,verbose);
+        return interpretPrintCombinator(solver,verbose); 
       }
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.skip) {
         return SolverInstance::SUCCESS;
@@ -539,7 +543,7 @@ namespace MiniZinc {
       if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
         delete _solutionScopes.back();
       _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
-      solver->env().envi().cur_solution = _solutionScopes.back();
+      solver->env().envi().setCurSolution(_solutionScopes.back()); 
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
@@ -565,12 +569,6 @@ namespace MiniZinc {
     // get next solution
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
-//      solver->env().envi().hasSolution(true);
-//      // set/update the solutions in all higher scopes
-//      for(unsigned int i = 0; i <_scopes.size(); i++) {
-//        _scopes[i]->env().envi().hasSolution(true);
-//        updateSolution(solver->env().output(), _scopes[i]->env().output());
-//      }
       if (verbose) {
         std::cerr << "NEXT success, set solution in scope " << _solutionScopes.size()-1 << "\n";
         if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
@@ -579,7 +577,7 @@ namespace MiniZinc {
       if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
         delete _solutionScopes.back();
       _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
-      solver->env().envi().cur_solution = _solutionScopes.back();
+      solver->env().envi().setCurSolution(_solutionScopes.back());
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
     return status; 
@@ -638,8 +636,9 @@ namespace MiniZinc {
         std::cerr << "COMMIT delete solution and ";
       std::cerr << "COMMIT solution into scope " << _solutionScopes.size()-2 << "\n";
     }
-    if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2])
+    if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2]) {      
       delete _solutionScopes[_solutionScopes.size()-2];
+    }
     _solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
     return SolverInstance::SUCCESS;
   }
@@ -779,9 +778,10 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretPrintCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+    //std::cerr << "DEBUG: PRINT combinator: " << *call << std::endl;
     if (call->args().size()==0) {
-      //std::cerr << "DEBUG: PRINT combinator" << std::endl;
-      if(solver->env().envi().hasSolution()) {
+      
+      if(solver->env().envi().getCurSolution() != NULL) {
         solver->env().evalOutput(std::cout);
         std::cout << constants().solver_output.solution_delimiter << std::endl;
         return SolverInstance::SUCCESS;
@@ -796,6 +796,20 @@ namespace MiniZinc {
       return SolverInstance::SUCCESS;
     }
   }
+  
+  SolverInstance::Status
+  SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {  
+    if(solver->env().envi().getCurSolution() != NULL) {
+      solver->env().evalOutput(std::cout);
+      std::cout << constants().solver_output.solution_delimiter << std::endl;
+      return SolverInstance::SUCCESS;
+    }
+    else {
+      if(verbose)
+        std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;
+      return SolverInstance::FAILURE;
+    }  
+  }  
   
   bool 
   SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose) {

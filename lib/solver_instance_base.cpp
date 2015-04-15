@@ -113,8 +113,7 @@ namespace MiniZinc {
     Status status = nextSolution();  
     if(status == Status::SUCCESS) {
       _new_solution = true;      
-      assignSolutionToOutput();
-      _env.envi().hasSolution(true);       
+      assignSolutionToOutput();       
     }
     else _new_solution = false;
     return status;

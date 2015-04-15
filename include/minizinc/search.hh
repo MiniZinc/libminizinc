@@ -105,8 +105,10 @@ namespace MiniZinc {
   SolverInstance::Status interpretNextCombinator(SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a NEXT combinator, respecting the arguments given in the call
   SolverInstance::Status interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
-  /// interpret and execute a PRINT combinator
+  /// interpret and execute a PRINT combinator as call (possibly with arguments)
   SolverInstance::Status interpretPrintCombinator(Call* call, SolverInstanceBase* solver, bool verbose);
+  /// interpret and execute a PRINT combinator as Id
+  SolverInstance::Status interpretPrintCombinator(SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a comb_assign combinator
   SolverInstance::Status interpretAssignCombinator(Call* assignComb, SolverInstanceBase* solver, bool verbose);
   /// interpret and execute a SCOPE combinator

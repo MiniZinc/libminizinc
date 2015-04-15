@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), cur_solution(NULL), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), _hasSolution(false) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), cur_solution(NULL), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -206,7 +206,8 @@ namespace MiniZinc {
   }
   EnvI::EnvI(Model* orig0, Model* output0, Model* flat0,  CopyMap& cmap0,
              IdMap<KeepAlive> reverseMappers0, unsigned int ids0) : orig(orig0), output(output0), cmap(cmap0),
-                                                 reverseMappers(reverseMappers0), _flat(flat0), ids(ids0), _hasSolution(false) {
+                                                 reverseMappers(reverseMappers0), _flat(flat0), ids(ids0), 
+                                                 cur_solution(NULL) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -529,10 +530,12 @@ namespace MiniZinc {
       c->combinator = copy(envi(),cmap, combinator);
     else
       c->combinator = NULL;
+    if(e->getCurSolution() != NULL) {
+      c->e->setCurSolution(copy(envi(),cmap,e->getCurSolution()));
+    }
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
-    c->e->ignorePartial = e->ignorePartial;
-    c->e->hasSolution(e->hasSolution());
+    c->e->ignorePartial = e->ignorePartial;    
     for(unsigned int i=0; i<e->callStack.size(); i++)
       c->e->callStack.push_back(copy(envi(),cmap, const_cast<Expression*>(e->callStack[i])));
     for(unsigned int i=0; i<e->errorStack.size(); i++)
@@ -553,9 +556,6 @@ namespace MiniZinc {
     return c; 
     // the ASTStringMap<ASTString>::t reifyMap is set in the EnvI constructor and is not changed afterwards so we need not copy it
   }
-  
-  void 
-  Env::hasSolution(bool b) { e->hasSolution(b); }
 
   std::ostream&
   EnvI::dumpStack(std::ostream& os, bool errStack) {

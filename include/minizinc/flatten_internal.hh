@@ -17,6 +17,8 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/eval_par.hh>
 
+#include <minizinc/prettyprinter.hh> // for debug only!!
+
 namespace MiniZinc {
 
   /// Result of evaluation
@@ -64,8 +66,7 @@ namespace MiniZinc {
   class EnvI {
   public:
     Model* orig;
-    Model* output;
-    Model* cur_solution;
+    Model* output;    
     VarOccurrences vo;
     VarOccurrences output_vo;
     CopyMap cmap;
@@ -88,9 +89,8 @@ namespace MiniZinc {
     Map map;
     Model* _flat;
     unsigned int ids;
-    ASTStringMap<ASTString>::t reifyMap;
-    /// used for combinators lite: set to true, if a solution has been found
-    bool _hasSolution;
+    ASTStringMap<ASTString>::t reifyMap; 
+    Model* cur_solution;
   public:
     EnvI(Model* orig0);
     EnvI(Model* orig, Model* output, Model* flat, 
@@ -119,9 +119,9 @@ namespace MiniZinc {
     void collectVarDecls(bool b);
     std::ostream& evalOutput(std::ostream& os);
     unsigned int get_ids(void) { return ids; }
-    bool hasSolution(void) { return _hasSolution; }
-    void hasSolution(bool b) { _hasSolution = b; }
     void createErrorStack(void);
+    Model* getCurSolution(void) { return cur_solution; };
+    void setCurSolution(Model* sol) {cur_solution = sol; };
   };
 
   Expression* follow_id(Expression* e);
