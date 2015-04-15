@@ -125,7 +125,9 @@ namespace MiniZinc {
     Model* getCurrentSolution(void) { if(_solutionScopes.empty()) return NULL; 
                                   else return _solutionScopes[_solutionScopes.size()-1]; }
     // removes and deletes solution from lowest scope
-    void popSolution(void) { delete _solutionScopes.back(); 
+    void popSolution(void) { if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2] !=_solutionScopes[_solutionScopes.size()-1]) {  
+                                delete _solutionScopes.back();
+                             }
                              _solutionScopes.pop_back(); }
     void pushSolution(Model* sol) { _solutionScopes.push_back(sol); }
     bool hasSolution(void) { 
@@ -139,9 +141,10 @@ namespace MiniZinc {
     // replace the current solution in the current scope with a new solution (deleting the old one)
     void updateCurrentSolution(Model* new_sol) { 
       if(!_solutionScopes.empty()) {
-        delete _solutionScopes.back();
-        _solutionScopes.pop_back();
-        _solutionScopes.push_back(new_sol);       
+        if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2] !=_solutionScopes[_solutionScopes.size()-1]) {   
+          delete _solutionScopes.back();
+        }     
+        _solutionScopes[_solutionScopes.size()-1] = new_sol;
       }            
     }   
     void commitLastSolution(void) {

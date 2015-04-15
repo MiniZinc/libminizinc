@@ -82,8 +82,7 @@ namespace MiniZinc {
         if(call->decl()->e()) {      
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
-          (void) interpretCombinator(call->decl()->e(), solver,verbose);
-          ret = env.envi().getCurrentSolution() == curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
+          (void) interpretCombinator(call->decl()->e(), solver,verbose);         
         } else { 
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
@@ -95,7 +94,7 @@ namespace MiniZinc {
                 if(id->str() == constants().combinators.print)
                   print = true;
               
-            ret = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);            
+            (void) interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);            
           }
           else {          
             std::stringstream ssm; 
@@ -103,7 +102,8 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
-        env.envi().popSolution(); //_solutionScopes.pop_back();  // remove the solution from the function scope that just ended        
+        env.envi().popSolution(); //_solutionScopes.pop_back();  // remove the solution from the function scope that just ended 
+        ret = env.envi().getCurrentSolution() == curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
         //solver->env().envi().setCurSolution(_solutionScopes.back());
         //if(verbose) {
         //  std::cerr << "DEBUG: Setting current solution to: " << std::endl;
@@ -612,7 +612,7 @@ namespace MiniZinc {
       ssm << "commit takes 0 arguments" << std::endl;
       throw TypeError(solver->env().envi(), commitComb->loc(),ssm.str());
     }
-    EnvI envi = solver->env().envi();
+    EnvI& envi = solver->env().envi();
     if (envi.nbSolutionScopes()==1) {
       throw EvalError(solver->env().envi(), commitComb->loc(), "Cannot commit outside of function scope");
     }

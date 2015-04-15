@@ -38,36 +38,34 @@ constraint
  
 % Solve
 solve :: int_search(selectedItems,first_fail,indomain_max,complete)
-:: combinator(
+search
    let {  
      array[SCENARIOS] of int: scenario_obj = [ 0 | i in SCENARIOS ]; % initialize the objective values of each scenario with zero
    } 
    in  (
-         repeat (
-           and([
-               next(), % find a solution for the first stage variables
-               print(),
-               or([
-                 repeat (s in 1..nbScenarios) (
+         repeat (      
+               next() /\ % find a solution for the first stage variables
+               print("First stage solution found\n") /\
+               repeat (s in 1..nbScenarios) (
                      let { 
                         var minProfit..maxProfit: totalProfit; % second stage variables
-                     } in (                 
-                       and([
+                     } in (                                        
                          post(firstStageAssignment() /\ % assign first stage variables
-                              secondStageConstraints(s,totalProfit)),                     
-                         bab_max(totalProfit),
-                         print(),
-                         scenario_obj[s]  := sol(totalProfit)
-                       ]) 
+                              secondStageConstraints(s,totalProfit)) /\
+                         if bab_max(totalProfit) then
+                           print("Maximal total profit for scenario "++show(s)++": "++show(sol(totalProfit))++"\n") /\
+                           scenario_obj[s]  := sol(totalProfit)
+                         else print("No second stage solution found for scenario "++show(s)++"\n") 
+                              /\ break 
+                         endif                      
                      )
-                   ), % end repeat
-                prune]),
+               ) % end repeat 
+               /\ commit() /\   % we found a solution
                 % BAB constraint on overall obj var
-              post(expectedProfit > sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))) 
-           ])
-       )
-  )
-) satisfy;
+               post(expectedProfit > sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))) 
+        ) 
+    )
+;
 
 predicate secondStageConstraints(int: scenario, var int: p) = 
   p = sum(i in ITEMS)(profit[scenario,i] * selectedItems[i]) /\

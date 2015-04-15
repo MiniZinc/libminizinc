@@ -109,7 +109,7 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
             time_limit(timeout_ms, 
                        bab_min(obj)) /\
             commit() /\
-            print("Intermediate solution with objective \(sol(obj))\n")
+            print("Intermediate solution of LNS with objective \(sol(obj))\n")
          
         ) /\
         post(obj < sol(obj))
