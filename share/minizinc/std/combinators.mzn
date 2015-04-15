@@ -89,7 +89,7 @@ include "bab_max.mzn";
 %% destruction rate d (that determines the percentage of variables in x 
 %% that will be destroyed, i.e. the size of the neighbourhood to search)
 function ann: lns_min (var int: obj, array[int] of var int: x,
-                   int: iterations, float: d, bool: verbose) = 
+                   int: iterations, float: d) = 
     repeat (i in 1..iterations) (
         scope(
             post(neighbourhoodCts(x,d)) /\
@@ -103,19 +103,13 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
 
 function ann: lns_min (var int: obj, array[int] of var int: x,
                    int: iterations, float: d, int: timeout_ms) = 
-%    scope(
-%      if next() then 
-%         commit()
-%      else fail() endif
-%    ) 
-%    /\
     repeat (i in 1..iterations) (
         scope(
             post(neighbourhoodCts(x,d)) /\
             time_limit(timeout_ms, 
-                       next()) /\ %bab_min(obj)) /\
-            commit() /\ % do we need commit here?
-            print()
+                       bab_min(obj)) /\
+            commit() /\
+            print("Intermediate solution with objective \(sol(obj))\n")
          
         ) /\
         post(obj < sol(obj))

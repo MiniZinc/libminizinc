@@ -163,7 +163,7 @@ constraint
 % Objective
 % =====================================
 
-int: iterations = 10; % adjust this number depending on problem instance size?
+int: iterations = 50; % adjust this number depending on problem instance size?
 float: destroyrate = 0.3;
 int: timeout_lns_ms = 30*60*1000;  % timeout for all LNS iterations
 int: timeout_bab_ms = 3000;  % timeout for one BAB execution
@@ -178,11 +178,8 @@ solve :: seq_search([int_search([successor[j] | j in NODES], first_fail, indomai
                int_search([load[j] | j in NODES], first_fail, indomain_min, complete)
               ])   
 % LNS with restricted number of iterations and an overall time limit
-:: 
-combinator(
-     lns_min(traveltime, successor, iterations, destroyrate,verbose) 
-)
-satisfy
+search 
+     lns_min(traveltime, successor, iterations, destroyrate,timeout_bab_ms) 
 ;
 
 

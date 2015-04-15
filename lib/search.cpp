@@ -520,7 +520,7 @@ namespace MiniZinc {
     SolverInstance::Status status = interpretCombinator(call->args()[1], solver, verbose);   
     if(_timeoutIndex == _timeouts.size()-1) { // if this timeout has been reached
       resetTimeoutIndex();
-    }    
+    }   
     _timeouts.pop_back(); // remove the time limit
     return status;
   } 

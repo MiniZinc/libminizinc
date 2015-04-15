@@ -535,6 +535,7 @@ namespace MiniZinc {
 %token MZN_OUTPUT "output"
 %token MZN_PREDICATE "predicate"
 %token MZN_RECORD "record"
+%token MZN_SEARCH "search"
 %token MZN_SET "set"
 %token MZN_SOLVE "solve"
 %token MZN_STRING "string"
@@ -792,10 +793,17 @@ solve_item :
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
-    | MZN_SOLVE expr_atom_head
+    | MZN_SOLVE annotations MZN_SEARCH expr
       {
         $$ = SolveI::sat(@$);
-        if ($$) $$->cast<SolveI>()->ann().add($2);
+        if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
+        delete $2;
+        if ($$) {
+          std::vector<Expression*> args(1);
+          args[0] = $4;
+          Call* comb = new Call(@$, constants().ann.combinator, args);
+          $$->cast<SolveI>()->ann().add(comb);
+        }
       }
 
 output_item :
