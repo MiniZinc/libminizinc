@@ -2065,7 +2065,7 @@ namespace MiniZinc {
   Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    Model* outputModel = env.getCurSolution();
+    Model* outputModel = env.getCurrentSolution();
     if (outputModel==NULL) {
       throw EvalError(env, call->loc(), "no current solution found");
     }
@@ -2113,6 +2113,9 @@ namespace MiniZinc {
       ssm << ". Don't forget to add all identifiers you use with sol() in the output statement.";
       throw EvalError(env, call->loc(), ssm.str());
     }
+    else if(args[0]->type().ispar() && args[0]->type().isplain()) {
+      return eval_par(env,args[0]); 
+    }
     else {
       std::stringstream ssm; 
       ssm << "expecting identifier or array access as argument of \"sol\" instead of: "
@@ -2122,7 +2125,7 @@ namespace MiniZinc {
   }
   
   bool b_hasSol(EnvI& env, Call* call) {   
-    return env.getCurSolution() != NULL;    
+    return env.hasSolution();    
   }
   
   void registerBuiltins(Env& e, Model* m) {

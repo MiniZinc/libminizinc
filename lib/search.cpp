@@ -77,13 +77,13 @@ namespace MiniZinc {
         }
         
         SolverInstance::Status ret;
-        Model* curBest = _solutionScopes.back();
-        _solutionScopes.push_back(NULL);
+        Model* curBest = env.envi().getCurrentSolution(); //_solutionScopes.back();
+        env.envi().pushSolution(NULL); // initialize the solution for this function scope with NULL TODO: do we need to do this?
         if(call->decl()->e()) {      
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
           (void) interpretCombinator(call->decl()->e(), solver,verbose);
-          ret = _solutionScopes.back()==curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
+          ret = env.envi().getCurrentSolution() == curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
         } else { 
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
@@ -103,12 +103,12 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
-        _solutionScopes.pop_back();
-        solver->env().envi().setCurSolution(_solutionScopes.back());
-        if(verbose) {
-          std::cerr << "DEBUG: Setting current solution to: " << std::endl;
-          debugprint(solver->env().envi().getCurSolution());
-        }
+        env.envi().popSolution(); //_solutionScopes.pop_back();  // remove the solution from the function scope that just ended        
+        //solver->env().envi().setCurSolution(_solutionScopes.back());
+        //if(verbose) {
+        //  std::cerr << "DEBUG: Setting current solution to: " << std::endl;
+        //  debugprint(solver->env().envi().getCurSolution());
+        //}
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -534,18 +534,10 @@ namespace MiniZinc {
     }
     setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {
-      if (verbose) {
-        std::cerr << "NEXT success, set solution in scope " << _solutionScopes.size()-1 << "\n";
-        if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
-          std::cerr << "  also delete previous solution\n";
-      }
-      if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
-        delete _solutionScopes.back();
-      _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
-      solver->env().envi().setCurSolution(_solutionScopes.back()); 
+    if(status == SolverInstance::SUCCESS) {      
+      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
     }
-    //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
+    //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
     return status; 
   }
   
@@ -568,18 +560,9 @@ namespace MiniZinc {
     
     // get next solution
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {
-      if (verbose) {
-        std::cerr << "NEXT success, set solution in scope " << _solutionScopes.size()-1 << "\n";
-        if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
-          std::cerr << "  also delete previous solution\n";
-      }
-      if (_solutionScopes.size()==1 || _solutionScopes.back()!=_solutionScopes[_solutionScopes.size()-2])
-        delete _solutionScopes.back();
-      _solutionScopes.back() = copy(solver->env().envi(), solver->env().output());
-      solver->env().envi().setCurSolution(_solutionScopes.back());
-    }
-    //std::cerr << "DEBUG: solver returned status " << status << " (SAT = " << SolverInstance::SAT << ")" << std::endl;
+    if(status == SolverInstance::SUCCESS) {    
+      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
+    }    
     return status; 
   }
   
@@ -595,7 +578,7 @@ namespace MiniZinc {
         vd->flat(vd);
         vd->e(eval_par(solver->env().envi(), rhs->args()[i]));
       }
-      _solutionScopes.push_back(NULL);
+      solver->env().envi().pushSolution(NULL); //_solutionScopes.push_back(NULL);
       
       SolverInstance::Status ret;
       
@@ -611,8 +594,9 @@ namespace MiniZinc {
         vd->e(previousParameters[i]);
         vd->flat(vd->e() ? vd : NULL);
       }
-      decl->e(new ModelExp(Location(),_solutionScopes.back()));
-      _solutionScopes.pop_back();
+      decl->e(new ModelExp(Location(),solver->env().envi().getCurrentSolution()));
+      //_solutionScopes.pop_back();
+      solver->env().envi().popSolution(); // TODO: is this alright? What is the ModelExp?
       return ret;
 
     } else {
@@ -628,18 +612,20 @@ namespace MiniZinc {
       ssm << "commit takes 0 arguments" << std::endl;
       throw TypeError(solver->env().envi(), commitComb->loc(),ssm.str());
     }
-    if (_solutionScopes.size()==1) {
+    EnvI envi = solver->env().envi();
+    if (envi.nbSolutionScopes()==1) {
       throw EvalError(solver->env().envi(), commitComb->loc(), "Cannot commit outside of function scope");
     }
-    if (verbose) {
-      if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2])
+/*    if (verbose) {
+      if (envi.nbSolutionScopes()==2 ||envi.getSolution(envi.nbSolutionScopes()-3) != envi.getSolution(envi.nbSolutionScopes()-2))
         std::cerr << "COMMIT delete solution and ";
-      std::cerr << "COMMIT solution into scope " << _solutionScopes.size()-2 << "\n";
-    }
-    if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2]) {      
-      delete _solutionScopes[_solutionScopes.size()-2];
-    }
-    _solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
+      std::cerr << "COMMIT solution into scope " << envi.nbSolutionScopes()-2 << "\n";
+    } */
+    //if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2]) {      
+    // delete _solutionScopes[_solutionScopes.size()-2];
+    //}
+    //_solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
+    envi.commitLastSolution();
     return SolverInstance::SUCCESS;
   }
   
@@ -781,7 +767,7 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: PRINT combinator: " << *call << std::endl;
     if (call->args().size()==0) {
       
-      if(solver->env().envi().getCurSolution() != NULL) {
+      if(solver->env().envi().getCurrentSolution() != NULL) {
         solver->env().evalOutput(std::cout);
         std::cout << constants().solver_output.solution_delimiter << std::endl;
         return SolverInstance::SUCCESS;
@@ -799,7 +785,7 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {  
-    if(solver->env().envi().getCurSolution() != NULL) {
+    if(solver->env().envi().getCurrentSolution() != NULL) {
       solver->env().evalOutput(std::cout);
       std::cout << constants().solver_output.solution_delimiter << std::endl;
       return SolverInstance::SUCCESS;

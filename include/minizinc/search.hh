@@ -24,8 +24,7 @@ namespace MiniZinc {
   private:
   protected:
     // the stack of scopes where the first scope is the root scope
-    std::vector<SolverInstanceBase*> _scopes;
-    std::vector<Model*> _solutionScopes;
+    std::vector<SolverInstanceBase*> _scopes;   
     // list of timeouts; the most recently set timeout is the last in the list
     std::vector<clock_t> _timeouts;
     // the index of the timeout (in the timeout list) that has been reached
@@ -56,19 +55,18 @@ namespace MiniZinc {
         ann.removeCall(constants().ann.combinator);
         pushScope(solver);
         combinator = removeRedundantScopeCombinator(combinator,solver,verbose);
-        _solutionScopes.push_back(NULL);
-        status = interpretCombinator(combinator, solver, verbose);
-        delete _solutionScopes.back();
-        _solutionScopes.pop_back();
+        env.envi().pushSolution(NULL);
+        status = interpretCombinator(combinator, solver, verbose);        
+        env.envi().popSolution();
         popScope();
       }
       else { // solve using normal solve call
         status = solver->solve();
       }    
       // process status and solution      
-      if ( status==SolverInstance::SUCCESS) { 
-        env.evalOutput(std::cout);
-      }
+     // if ( status==SolverInstance::SUCCESS) { 
+     //   env.evalOutput(std::cout);
+     // }
       std::cout << "----------\n";
       switch(status) {
         case SolverInstance::SUCCESS:
@@ -140,6 +138,14 @@ namespace MiniZinc {
     _scopes.push_back(new_scope);   
   }
   void popScope() {
+    if(_scopes.size() >= 2) {
+      SolverInstanceBase* solver = _scopes.back();
+      Model* solution = solver->env().envi().getCurrentSolution();      
+      if(solution) {
+        _scopes[_scopes.size()-2]->env().envi().updateCurrentSolution(solution);            
+      }
+    }
+    delete _scopes.back();
     _scopes.pop_back();    
   }
   /// returns true if a timelimit is violated and false otherwise

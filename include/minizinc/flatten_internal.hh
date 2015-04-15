@@ -90,7 +90,8 @@ namespace MiniZinc {
     Model* _flat;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap; 
-    Model* cur_solution;
+    /// the solution for each function scope, where the current scope is the last in the list
+    std::vector<Model*> _solutionScopes;
   public:
     EnvI(Model* orig0);
     EnvI(Model* orig, Model* output, Model* flat, 
@@ -120,8 +121,37 @@ namespace MiniZinc {
     std::ostream& evalOutput(std::ostream& os);
     unsigned int get_ids(void) { return ids; }
     void createErrorStack(void);
-    Model* getCurSolution(void) { return cur_solution; };
-    void setCurSolution(Model* sol) {cur_solution = sol; };
+    /// returns the current solution (the solution from the lowest scope)
+    Model* getCurrentSolution(void) { if(_solutionScopes.empty()) return NULL; 
+                                  else return _solutionScopes[_solutionScopes.size()-1]; }
+    // removes and deletes solution from lowest scope
+    void popSolution(void) { delete _solutionScopes.back(); 
+                             _solutionScopes.pop_back(); }
+    void pushSolution(Model* sol) { _solutionScopes.push_back(sol); }
+    bool hasSolution(void) { 
+      if(!_solutionScopes.empty() &&_solutionScopes.back() != NULL)
+          return true;
+      else return false;   
+    }
+    Model* getSolution(int scope) { assert(scope >= 0 && scope < _solutionScopes.size()); 
+                                    return _solutionScopes[scope]; }
+    unsigned int nbSolutionScopes(void) { return _solutionScopes.size(); }
+    // replace the current solution in the current scope with a new solution (deleting the old one)
+    void updateCurrentSolution(Model* new_sol) { 
+      if(!_solutionScopes.empty()) {
+        delete _solutionScopes.back();
+        _solutionScopes.pop_back();
+        _solutionScopes.push_back(new_sol);       
+      }            
+    }   
+    void commitLastSolution(void) {
+      assert(_solutionScopes.size() >= 1);     
+      if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3] !=_solutionScopes[_solutionScopes.size()-2]) {   
+        delete _solutionScopes[_solutionScopes.size()-2];
+      }
+      _solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
+    }
+    
   };
 
   Expression* follow_id(Expression* e);

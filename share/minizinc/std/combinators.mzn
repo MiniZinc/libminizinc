@@ -89,14 +89,13 @@ include "bab_max.mzn";
 %% destruction rate d (that determines the percentage of variables in x 
 %% that will be destroyed, i.e. the size of the neighbourhood to search)
 function ann: lns_min (var int: obj, array[int] of var int: x,
-                   int: iterations, float: d) = 
+                   int: iterations, float: d, bool: verbose) = 
     repeat (i in 1..iterations) (
         scope(
             post(neighbourhoodCts(x,d)) /\
-            bab_min(obj) /\
-            commit() /\ % do we need commit here?
-            print()
-         
+            next() /\ %bab_min(obj) /\
+            commit() /\ 
+            print("Intermediate solution with objective \(sol(obj))\n")
         ) /\
         post(obj < sol(obj))
    )
@@ -104,12 +103,12 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
 
 function ann: lns_min (var int: obj, array[int] of var int: x,
                    int: iterations, float: d, int: timeout_ms) = 
-    scope(
-      if next() then 
-         commit()
-      else fail() endif
-    ) 
-    /\
+%    scope(
+%      if next() then 
+%         commit()
+%      else fail() endif
+%    ) 
+%    /\
     repeat (i in 1..iterations) (
         scope(
             post(neighbourhoodCts(x,d)) /\
@@ -132,12 +131,13 @@ predicate neighbourhoodCts(array[int] of var int: x,
      let {
        int: n = ceil((1.0 - destructionRate)*length(x));
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
-     } in 
+     } in
        forall (i in idx) (
-         trace("var["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
+ %        trace("var["++show(i)++"] = sol(x[i])\n") /\
+ %        trace("var["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
          x[i] = sol(x[i])
        )     
-   else trace("hasSol() is FALSE\n") /\ true endif;
+   else true endif;
 
 
 %% ------------------- Two Stage Policy Based Search ------------------ %

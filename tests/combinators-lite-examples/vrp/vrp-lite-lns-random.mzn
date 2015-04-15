@@ -167,6 +167,7 @@ int: iterations = 10; % adjust this number depending on problem instance size?
 float: destroyrate = 0.3;
 int: timeout_lns_ms = 30*60*1000;  % timeout for all LNS iterations
 int: timeout_bab_ms = 3000;  % timeout for one BAB execution
+bool: verbose = true;
 
 constraint
  traveltime = sum (depot in END_DEPOT_NODES) (arrivalTime[depot]);
@@ -179,7 +180,7 @@ solve :: seq_search([int_search([successor[j] | j in NODES], first_fail, indomai
 % LNS with restricted number of iterations and an overall time limit
 :: 
 combinator(
-                         lns_min(traveltime, successor, iterations, destroyrate,timeout_bab_ms) 
+     lns_min(traveltime, successor, iterations, destroyrate,verbose) 
 )
 satisfy
 ;
