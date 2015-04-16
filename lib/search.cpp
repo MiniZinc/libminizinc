@@ -462,10 +462,10 @@ namespace MiniZinc {
             std::stringstream ssm;
             ssm << "Local variable declaration may not have a right-hand-side: " << *vd << std::endl;
             throw TypeError(solver->env().envi(),vd->loc(),ssm.str());            
-          }
+          }          
           // flatten and add the variable to the flat model
-          EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
-          VarDecl* nvd = ee.r()->cast<Id>()->decl();
+          EE ee = flat_exp(solver->env().envi(),Ctx(),vd->id(),NULL,constants().var_true);
+          VarDecl* nvd = ee.r()->cast<Id>()->decl();         
           int nbVars = _localVarsToAdd.back();          
           _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
           //std::cerr << "DEBUG: setting locally added var to: " << _localVarsToAdd[_localVarsToAdd.size()-1] << std::endl;                    
@@ -480,7 +480,8 @@ namespace MiniZinc {
           output_vd->introduced(false);
           output_vd->ti()->type(t);
           output_vd->type(t);
-          output_vd->e(NULL);
+          if(nvd->type().dim() == 0)
+            output_vd->e(NULL);
           
           VarDecl* output_vd_orig = new VarDecl(vd->loc(), output_vd->ti(), vd->id(), output_vd->id());
           solver->env().output()->addItem(new VarDeclI(Location(), output_vd)); 
@@ -490,7 +491,7 @@ namespace MiniZinc {
           if (nvd->type().dim() == 0) {
             nvd->addAnnotation(constants().ann.output_var);            
           } else {           
-            ArrayLit* al= output_vd->e()->cast<ArrayLit>();
+            ArrayLit* al= output_vd->e()->cast<ArrayLit>();           
             for(unsigned int i =0;i<al->length(); i++) {
               Id* id = al->v()[i]->cast<Id>();
               id->decl()->addAnnotation(constants().ann.output_var);

@@ -1,0 +1,35 @@
+%-----------------------------------------------------------------------------%
+% Vehicle Routing problem
+% data file for deterministic model I
+%
+% We assume that there is only one depot
+%-----------------------------------------------------------------------------%
+
+nbVehicles = 1;
+nbCustomers = 3;
+timeBudget = 50;
+
+serviceTime = [5,3,2, % customer services times 
+               0,0];   % depot times
+
+nbScenarios = 2;
+
+distance = array3d(1..2, % scenario set
+                   1..5, % nodes 
+                   1..5, % nodes
+           [ 
+     % scenario 1
+             0, 4, 3, 5, 5,
+             4, 0, 2, 3, 3,
+             3, 2, 0, 2, 2,
+             5, 3, 2, 0, 0,
+             5, 3, 2, 0, 0,
+     % scenario 2
+             0, 4, 3, 5, 5,
+             4, 0, 2, 3, 3,
+             3, 2, 0, 2, 2,
+             5, 3, 2, 0, 0,
+             5, 3, 2, 0, 0
+      ]);
+
+weights = [1,1];
