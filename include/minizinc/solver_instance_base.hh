@@ -54,7 +54,7 @@ namespace MiniZinc {
     
     virtual ~SolverInstanceBase(void) {}
     /// returns a deep copy of the solver instance base
-    virtual SolverInstanceBase* copy() = 0;
+    virtual SolverInstanceBase* copy(CopyMap& cmap) = 0;
     /// find the next solution (when overwriting this method, make sure that assignSolutionToOutput is called after a new solution is found)
     virtual Status next(void) = 0;
     /// find the best solution for variable objective; if solver does not maximize/minimize then return error and set Options in constructor

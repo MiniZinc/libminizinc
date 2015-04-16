@@ -390,14 +390,11 @@ namespace MiniZinc {
             compr->decl(0, 0)->e(IntLit::a(lb+i));
             if(verbose)
               std::cout << "DEBUG: repeating combinator " << *(compr->e()) << " for " << (i+1) << "/" << (nbIterations) << " times" << std::endl;            
-            status = interpretCombinator(compr->e(),solver,verbose);
-            if(false) { // TODO: check if constraint scope is COMPLETE in which case we should stop           
-              compr->decl(0, 0)->e(oldValue);
-              return status;
-            }
+            status = interpretCombinator(compr->e(),solver,verbose);     
           }
           _repeat_break.pop_back();
           compr->decl(0, 0)->e(oldValue);
+          //std::cout << "REPEAT returning status: " << status << std::endl;
           return status;
         }            
       }          
@@ -439,34 +436,39 @@ namespace MiniZinc {
     }   
     //std::cerr << "DEBUG: Opening new nested scope" << std::endl;
     solver->env().combinator = call->args()[0];
-    SolverInstanceBase* solver_copy = solver->copy();
+    CopyMap cmap;
+    for(unsigned int i=0; i<_localVars.size(); i++) {
+      for(unsigned int j=0; j<_localVars[i].size(); j++) {
+        cmap.insert(_localVars[i][j],_localVars[i][j]);
+      }
+    }
+    SolverInstanceBase* solver_copy = solver->copy(cmap);
     //std::cerr << "DEBUG: Copied solver instance" << std::endl;
     pushScope(solver_copy);
     SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
     popScope();
-    //std::cerr << "DEBUG: Closed nested scope" << std::endl;
+    //std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
     return status;
   }
   
   void 
   SearchHandler::addNewVariableToModel(ASTExprVec<Expression> decls, SolverInstanceBase* solver, bool verbose) {
+    std::vector<VarDecl*> par_vars;
     for(unsigned int i=0; i<decls.size(); i++) {
-      if(VarDecl* vd = decls[i]->dyn_cast<VarDecl>()) {
-        if (vd->type().isvar()) {
+      if(VarDecl* vd = decls[i]->dyn_cast<VarDecl>()) {     
+        if (vd->type().isvar()) {  
+           // vd must not have a rhs!
+          if(vd->e()) {
+            std::stringstream ssm;
+            ssm << "Local variable declaration may not have a right-hand-side: " << *vd << std::endl;
+            throw TypeError(solver->env().envi(),vd->loc(),ssm.str());            
+          }
           // flatten and add the variable to the flat model
           EE ee = flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
           VarDecl* nvd = ee.r()->cast<Id>()->decl();
           int nbVars = _localVarsToAdd.back();          
           _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
-          //std::cerr << "DEBUG: setting locally added var to: " << _localVarsToAdd[_localVarsToAdd.size()-1] << std::endl;
-          
-          // add output annotation to the flat variable declaration
-          if (nvd->type().dim() == 0) {
-            nvd->addAnnotation(constants().ann.output_var);            
-          } else {
-            // TODO: see flatten.cpp:4517
-            // TODO: add the number of local variables according to length of array
-          }
+          //std::cerr << "DEBUG: setting locally added var to: " << _localVarsToAdd[_localVarsToAdd.size()-1] << std::endl;                    
           
           // Create new output variable
           Type t = nvd->type();
@@ -479,7 +481,50 @@ namespace MiniZinc {
           output_vd->ti()->type(t);
           output_vd->type(t);
           output_vd->e(NULL);
-          solver->env().output()->addItem(new VarDeclI(Location(), output_vd));
+          
+          VarDecl* output_vd_orig = new VarDecl(vd->loc(), output_vd->ti(), vd->id(), output_vd->id());
+          solver->env().output()->addItem(new VarDeclI(Location(), output_vd)); 
+          solver->env().output()->addItem(new VarDeclI(Location(), output_vd_orig)); 
+          
+          // add output annotation to the flat variable declaration
+          if (nvd->type().dim() == 0) {
+            nvd->addAnnotation(constants().ann.output_var);            
+          } else {           
+            ArrayLit* al= output_vd->e()->cast<ArrayLit>();
+            for(unsigned int i =0;i<al->length(); i++) {
+              Id* id = al->v()[i]->cast<Id>();
+              id->decl()->addAnnotation(constants().ann.output_var);
+              VarDeclI* vdi = new VarDeclI(Location(), id->decl());
+              solver->env().output()->addItem(vdi);
+            }
+            // add the number of local variables according to length of array
+            int nbVars = _localVarsToAdd.back(); 
+            _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars + al->length();
+          }
+        } else { // we have a parameter -> add it to the model by flattening
+          par_vars.push_back(vd);
+          /*std::cerr << "DEBUG: adding a local parameter/constant: " << *vd << std::endl;
+          EE ee =flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
+          
+          debugprint(solver->env().flat());
+          
+          // add to output model?
+          VarDecl* nvd = ee.r()->cast<Id>()->decl();
+                    // Create new output variable
+          Type t = nvd->type();
+          t.ti(Type::TI_PAR); // make par
+          VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
+          output_vd->ti()->domain(NULL); // TODO?
+          output_vd->flat(nvd);
+          output_vd->ann().clear();
+          output_vd->introduced(false);
+          output_vd->ti()->type(t);
+          output_vd->type(t);
+          output_vd->e(nvd->e()); // was NULL
+          
+          VarDecl* output_vd_orig = new VarDecl(vd->loc(), output_vd->ti(), vd->id(), output_vd->id());
+          solver->env().output()->addItem(new VarDeclI(Location(), output_vd)); 
+          solver->env().output()->addItem(new VarDeclI(Location(), output_vd_orig)); */
         }
       }
       else { // this is a constraint
@@ -487,6 +532,7 @@ namespace MiniZinc {
         continue;
       }
     }
+    _localVars.push_back(par_vars);
   }
   
   SolverInstance::Status
@@ -494,10 +540,12 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: LET combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
+   
        
     let->pushbindings(); 
     SolverInstance::Status status = interpretCombinator(let->in(), solver, verbose);   
-    let->popbindings();    
+    let->popbindings(); 
+    _localVars.pop_back();
     return status;
   }
   
@@ -544,7 +592,9 @@ namespace MiniZinc {
     }
     setCurrentTimeout(solver);
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {      
+    if(status == SolverInstance::SUCCESS) {
+      //std::cerr << "DEBUG: output model after next():" << std::endl;
+      //debugprint(solver->env().output());
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
@@ -570,47 +620,47 @@ namespace MiniZinc {
     
     // get next solution
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {    
+    if(status == SolverInstance::SUCCESS) { 
+      //std::cerr << "DEBUG: output model after next():" << std::endl;
+      //debugprint(solver->env().output());
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
     }    
     return status; 
   }
   
   SolverInstance::Status
-  SearchHandler::interpretAssignCombinator(Call *assignComb, SolverInstanceBase *solver, bool verbose) {
-    VarDecl* decl = follow_id_to_decl(assignComb->args()[0])->cast<VarDecl>();
-    if (decl->type().isann()) {
-      Call* rhs = assignComb->args()[1]->cast<Call>();
-      std::vector<Expression*> previousParameters(rhs->decl()->params().size());
-      for (unsigned int i=rhs->decl()->params().size(); i--;) {
-        VarDecl* vd = rhs->decl()->params()[i];
-        previousParameters[i] = vd->e();
-        vd->flat(vd);
-        vd->e(eval_par(solver->env().envi(), rhs->args()[i]));
+  SearchHandler::interpretAssignCombinator(Call *assignComb, SolverInstanceBase *solver, bool verbose) {  
+    VarDecl* decl = NULL;    
+    if(ArrayAccess* aa = assignComb->args()[0]->dyn_cast<ArrayAccess>()) {      
+      Expression* e = aa->v();
+      if(Id* id = e->dyn_cast<Id>()) {
+        decl = follow_id_to_decl(e)->cast<VarDecl>();
+       // while (decl->flat() && decl->flat() != decl)
+       //   decl = decl->flat();
+        ArrayLit* al = decl->e()->dyn_cast<ArrayLit>();
+        if (al==NULL) {
+          al = eval_array_lit(solver->env().envi(), decl->e());
+          decl->e(al);
+        }
+        int idx = eval_int(solver->env().envi(), aa->idx()[0]).toInt();
+        al->v()[idx-1] = eval_par(solver->env().envi(), assignComb->args()[1]);       
+        return SolverInstance::SUCCESS;
+        // TODO: assign value to array element!
+      } else {
+        std::stringstream ssm;
+        ssm << "Expected Id instead of : " << *e << " for assigning: " <<*decl;
+        throw TypeError(solver->env().envi(),decl->loc(),ssm.str());
       }
-      solver->env().envi().pushSolution(NULL); //_solutionScopes.push_back(NULL);
-      
-      SolverInstance::Status ret;
-      
-      if(rhs->decl()->e()) {
-        if(verbose)
-          std::cerr << "DEBUG: interpreting combinator " << *rhs << " according to its defined body." << std::endl;
-        ret = interpretCombinator(rhs->decl()->e(), solver,verbose);
-      } else if(rhs->id() == constants().combinators.next) {
-        ret = interpretNextCombinator(rhs, solver,verbose);
-      }
-      for (unsigned int i=rhs->decl()->params().size(); i--;) {
-        VarDecl* vd = rhs->decl()->params()[i];
-        vd->e(previousParameters[i]);
-        vd->flat(vd->e() ? vd : NULL);
-      }
-      decl->e(new ModelExp(Location(),solver->env().envi().getCurrentSolution()));
-      //_solutionScopes.pop_back();
-      solver->env().envi().popSolution(); // TODO: is this alright? What is the ModelExp?
-      return ret;
-
-    } else {
-      decl->e(eval_par(solver->env().envi(), assignComb->args()[1]));
+    }
+    else { // otherwise it must be an Id according to the parser
+      decl = follow_id_to_decl(assignComb->args()[0])->cast<VarDecl>();
+    }
+    if (decl->type().isann()) {  
+      std::stringstream ssm;
+      ssm << "Cannot assign value to an annotation: " << *decl;
+      throw TypeError(solver->env().envi(),decl->loc(),ssm.str()); 
+    } else {     
+      decl->e(eval_par(solver->env().envi(), assignComb->args()[1]));           
     }
     return SolverInstance::SUCCESS;
   }
@@ -818,12 +868,10 @@ namespace MiniZinc {
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
       nbCtsBefore++;
     int nbVarsBefore = 0;
-    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {
-      //std::cerr << "counting var: " << *(it)  << std::endl;
+    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {      
       nbVarsBefore++;        
     }
-    nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1];
-    //std::cerr << "locally added vars: " << _localVarsToAdd[_localVarsToAdd.size()-1] << " with size: " << _localVarsToAdd.size() << std::endl;
+    nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1];    
     
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
     IdMap<Expression*> domains;
@@ -832,20 +880,9 @@ namespace MiniZinc {
       Expression* domain = copy(env.envi(),it->e()->ti()->domain());
       domains.insert(id,domain);         
     }    
-    if(verbose) {
-      //std::cerr << "\n\nDEBUG: Flattened model BEFORE flattening: " << std::endl;   
-      //debugprint(env.flat());  
-    }
+   
     // flatten the expression
-    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);  
-    if(verbose) {
-      //std::cerr << "\n\nDEBUG: Flattened model AFTER flattening: " << std::endl;   
-      //debugprint(env.flat());    
-    
-    //std::cout<< "\n" << std::endl;
-    //std::cerr << "\n\nDEBUG: Flattened model on higher scope: ******************: " << std::endl;   
-    //debugprint(_scopes[0]->env().flat());
-    }
+    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);    
     
     int nbVarsAfter = 0;
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
@@ -901,6 +938,7 @@ namespace MiniZinc {
     // check for variable domain updates
     for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
       Id* id = it->e()->id();
+      if(id->type().ispar()) continue; // skip constants that might have been added 
       Expression* domain = it->e()->ti()->domain();          
       IdMap<Expression*>::iterator iter = domains.find(id);      
       if(iter != domains.end()) {

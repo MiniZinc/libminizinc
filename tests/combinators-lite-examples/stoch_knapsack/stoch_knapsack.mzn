@@ -28,12 +28,14 @@ array[ITEMS] of var 0..capacity: selectedItems; % :: stage(1)
 int: maxProfit = 9999999;
 %array[SCENARIOS] of var 0..maxProfit: totalProfit; % ::stage(2)
 
+
 constraint forall(i in ITEMS) (selectedItems[i] >= 0);
  
 %Capacity constraint
 constraint 
 	sum (i in ITEMS) (size[i] * selectedItems[i]) <= capacity;
 
+int: iterations = 400;
  
 % Solve
 solve :: int_search(selectedItems,first_fail,indomain_max,complete)
@@ -43,51 +45,52 @@ search
      int: expectedProfit = 0;
    } 
    in  (
-         repeat (      
-               next() /\ % find a solution for the first stage variables
-               print("First stage solution found\n") /\
+         repeat (i in 1..iterations) (      
+               (next() \/ break)  /\ % find a solution for the first stage variables
+               %print("First stage solution found\n") /\
                repeat (s in 1..nbScenarios) (
-                 scope(
+                  scope(
                      let { 
                         var minProfit..maxProfit: totalProfit; % second stage variables
                      } in (                                        
                          post(firstStageAssignment() /\ % assign first stage variables
                               secondStageConstraints(s,totalProfit)) /\
                          if bab_max(totalProfit) then
-                           print("Maximal total profit for scenario "++show(s)++": "++show(sol(totalProfit))++"\n") /\
+                           %print("Maximal total profit for scenario "++show(s)++": "++show(sol(totalProfit))++"\n") /\
                            scenario_obj[s]  := sol(totalProfit)
-                         else print("No second stage solution found for scenario "++show(s)++"\n") 
-                              /\ break 
+                         else %print("No second stage solution found for scenario "++show(s)++"\n") /\
+                              break 
                          endif                      
                      )
                  )
-               ) % end repeat 
-               /\ if expectedProfit < sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i])) then 
-                    expectedProfit := sum (i in SCENARIOS) (weights[i]*sol(scenario_obj[i]))
-                    /\ commit() /\ print("expected profit:"++show(expectedProfit)++"\n")  % we found a solution
-                  else skip() endif
-        ) 
+              ) % end repeat 
+              /\ if expectedProfit < sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) then 
+                    expectedProfit := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i]))
+                     /\ print("Best expected profit:"++show(expectedProfit)++"\n") /\ print() % we found a solution
+                  else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
+                       skip() endif
+        )
     )
 ;
 
 predicate secondStageConstraints(int: scenario, var int: p) = 
-  p = sum(i in ITEMS)(profit[scenario,i] * selectedItems[i]) /\
-  trace("profit["++show(scenario)++"] = ") /\
-  forall (i in ITEMS) (trace(show(profit[scenario,i])++"*"++show(selectedItems[i])++" + ")) /\
-  trace(" == "++show(sum(i in ITEMS) (profit[scenario,i] * fix(selectedItems[i])))) /\
-  trace("\n")
+  p = sum(i in ITEMS)(profit[scenario,i] * selectedItems[i]) %/\
+%  trace("profit["++show(scenario)++"] = ") /\
+%  forall (i in ITEMS) (trace(show(profit[scenario,i])++"*"++show(selectedItems[i])++" + ")) /\
+%  trace(" == "++show(sum(i in ITEMS) (profit[scenario,i] * fix(selectedItems[i])))) /\
+%  trace("\n")
 ;
 
 predicate firstStageAssignment() = 
   forall (i in ITEMS)  (
-     selectedItems[i] = sol(selectedItems[i]) /\
-     trace("selectedItems["++show(i)++"] = "++show(fix(selectedItems[i]))++" (sol)\n")
+     selectedItems[i] = sol(selectedItems[i]) %/\
+  %   trace("selectedItems["++show(i)++"] = "++show(fix(selectedItems[i]))++" (sol)\n")
   )
 ;
      
 
 
-output [%"expected profit = "++show(expectedProfit)++"\n",        
+output [%"expected profit = "++show(expectedProfit)++"\n",
         "selectedItems = ", show(selectedItems), "\n" ];
 %        "total profit per scenario = ", show(totalProfit), "\n"       ];
 

@@ -2065,13 +2065,13 @@ namespace MiniZinc {
   Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    Model* outputModel = env.getCurrentSolution();
+    Model* outputModel = env.getCurrentSolution();  
     if (outputModel==NULL) {
       throw EvalError(env, call->loc(), "no current solution found");
     }
     if(Id* id = args[0]->dyn_cast<Id>()) {
-      id = follow_id_to_id(id)->cast<Id>();
-      for(VarDeclIterator it=outputModel->begin_vardecls(); it!=outputModel->end_vardecls(); ++it) {
+      id = follow_id_to_id(id)->cast<Id>();     
+      for(VarDeclIterator it=outputModel->begin_vardecls(); it!=outputModel->end_vardecls(); ++it) {        
         if(it->e()->id()->str() == id->str()) {
           if(!it->e()->e()) {
             std::stringstream ssm; 

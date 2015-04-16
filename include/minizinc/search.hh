@@ -33,6 +33,8 @@ namespace MiniZinc {
     std::vector<bool> _repeat_break;
     // the number of intermediate variables that we have added locally in the scope (last variable contains current scope)
     std::vector<int> _localVarsToAdd;
+    
+    std::vector<std::vector<VarDecl*> > _localVars;
   public:
     SearchHandler() : _timeoutIndex(-1) {}
     

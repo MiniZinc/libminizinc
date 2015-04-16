@@ -41,8 +41,8 @@ namespace MiniZinc {
     }
     
     SolverInstanceBase*
-    GecodeSolverInstance::copy(void) {
-      Env* env_copy = _env.copyEnv();
+    GecodeSolverInstance::copy(CopyMap& cmap) {
+      Env* env_copy = _env.copyEnv(cmap);
       Options options_copy;
       options_copy = _options.copyEntries(options_copy);
       GecodeSolverInstance* copy = new GecodeSolverInstance(*env_copy,options_copy);      
@@ -2096,6 +2096,18 @@ namespace MiniZinc {
     }
     else {
       customEngine->addVariables(vars, *this);
+    }
+    for(unsigned int i=0; i<vars.size(); i++) {
+      VarDecl* vd = vars[i];
+      if(!vd->ann().isEmpty()) {
+        if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+            vd->ann().contains(constants().ann.output_var)
+          ) {
+          //std::cerr << "DEBUG: adding vardecl to _varsWithOutput: " << *vd << std::endl;
+          _varsWithOutput.push_back(vd);
+        }
+        
+      }
     }
     return true; 
   }

@@ -471,8 +471,7 @@ namespace MiniZinc {
     return e->dumpStack(os, true);
   }
   Env*
-  Env::copyEnv(void) {   
-    CopyMap cmap; 
+  Env::copyEnv(CopyMap& cmap) {     
     Model* c_orig = copy(envi(),cmap, e->orig);
     Model* c_output = copy(envi(),cmap, e->output);
     Model* c_flat = copy(envi(),cmap, e->flat());

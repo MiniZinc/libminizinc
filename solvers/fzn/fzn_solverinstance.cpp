@@ -254,8 +254,8 @@ namespace MiniZinc {
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
   SolverInstanceBase*
-  FZNSolverInstance::copy(void) {
-    Env* env_copy = _env.copyEnv(); 
+  FZNSolverInstance::copy(CopyMap& cmap) {
+    Env* env_copy = _env.copyEnv(cmap); 
     Options options_copy; 
     options_copy = _options.copyEntries(options_copy);
     return new FZNSolverInstance(*env_copy,options_copy);

@@ -31,8 +31,8 @@ function ann: bab_max(var int: obj, array[int] of ann: limits) =
 function ann: bab_max(var int: obj) =   
    repeat(
        if next() then
-         print("Intermediate solution with objective \(sol(obj))\n") /\
          commit() /\ 
+         %print("Intermediate solution in BAB_MAX with objective \(sol(obj))\n") /\
          post(obj > sol(obj))
        else break endif
    )

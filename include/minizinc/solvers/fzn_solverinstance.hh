@@ -32,7 +32,7 @@ namespace MiniZinc {
     
     virtual ~FZNSolverInstance(void);
     
-    virtual SolverInstanceBase* copy(void);
+    virtual SolverInstanceBase* copy(CopyMap& cmap);
     
     virtual Status solve(void); 
     
