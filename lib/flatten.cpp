@@ -3979,6 +3979,19 @@ namespace MiniZinc {
             }
             break;
           }
+        } else if (ctx.b==C_ROOT && decl->e()->isa<BoolLit>() && eval_bool(env,decl->e())) {
+          bool allBool = true;
+          for (unsigned int i=0; i<c->args().size(); i++) {
+            if (c->args()[i]->type().bt()!=Type::BT_BOOL) {
+              allBool = false;
+              break;
+            }
+          }
+          if (allBool) {
+            ret.r = bind(env,ctx,r,constants().lit_true);
+            ret.b = bind(env,ctx,b,constants().lit_true);
+            break;
+          }
         }
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
