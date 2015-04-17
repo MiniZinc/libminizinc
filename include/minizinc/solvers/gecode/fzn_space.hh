@@ -81,7 +81,7 @@ namespace MiniZinc {
     FznSpace(bool share, FznSpace&);
     /// standard constructor
     FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true) {} ;
-    ~FznSpace(void) {} 
+    ~FznSpace(void) { } 
             
     /// get the index of the Boolean variable in bv; return -1 if not exists
     int getBoolAliasIndex(Gecode::BoolVar bvar) {

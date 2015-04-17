@@ -34,7 +34,7 @@ array[SCENARIOS, NODES, NODES] of int: distance;  % distance matrix is stochasti
 
 % -------- variables ------------- %
 
-array[NODES] of var VEHICLE: vehicle %::stage(1); % which vehicle visits which customer?
+array[NODES] of var VEHICLE: vehicle; %::stage(1); % which vehicle visits which customer?
 
 % -------- constraints ---------- %
 
@@ -52,11 +52,13 @@ constraint
    );
 
 
-solve 
-search policy_based_search();
+solve ::int_search(vehicle, first_fail, indomain_split, complete) 
+search policy_based_search_min();
 
 
 % ================= SEARCH ================================= %
+
+int: iterations = 10;
 
 function ann: policy_based_search_min() = 
    let {% initialize the objective values of each scenario with zero
@@ -66,7 +68,7 @@ function ann: policy_based_search_min() =
    in  (
          repeat (i in 1..iterations) (      
                (next() \/ break)  /\ % find a solution for the first stage variables
-               print("First stage solution found\n") /\
+               print("First stage solution found\n") /\ print() /\
                repeat (s in 1..nbScenarios) (
                   scope(
                      let { 
@@ -99,7 +101,7 @@ function ann: policy_based_search_min() =
 % ======== output ============= %
 
 predicate firstStageAssignment() = 
-  forall (i in VEHICLES)  (
+  forall (i in VEHICLE)  (
     vehicle[i] = sol(vehicle[i])
     %/\  trace("vehicle["++show(i)++"] = "++show(fix(vehicle[i]))++" (sol)\n")
   )
@@ -117,14 +119,14 @@ predicate secondStageConstraints(int: scenario,
      predecessor[n] = n + nbVehicles-1
    )
 /\
-   predecessor[nbCustomers+1] = nbCustomers+2*nbVehicles;
+   predecessor[nbCustomers+1] = nbCustomers+2*nbVehicles
 
 /\  % successors of end nodes are start nodes
    forall(n in (nbCustomers+nbVehicles+1..nbCustomers+2*nbVehicles-1)) (
      successor[n] = n-nbVehicles+1 
    )
 /\
-   successor[nbCustomers+2*nbVehicles] = nbCustomers+1;
+   successor[nbCustomers+2*nbVehicles] = nbCustomers+1
 /\
 % vehicles leave the depot at time zero
    forall(n in START_DEPOT_NODES) (
@@ -152,19 +154,19 @@ predicate secondStageConstraints(int: scenario,
    )
 /\
 % alldiff + subtour elimination constraints
-   circuit( [ successor[i] | i in NODES ] );
+   circuit( [ successor[i] | i in NODES ] )
 /\
-   circuit( [ predecessor[i] | i in NODES ] );
+   circuit( [ predecessor[i] | i in NODES ] )
 
 
 % ..... time constraints ............ %
 /\
    forall(n in CUSTOMER) (
-      arrivalTime[n] + serviceTime[n] + distance[n,successor[n]] <= arrivalTime[successor[n]]
+      arrivalTime[n] + serviceTime[n] + distance[scenario,n,successor[n]] <= arrivalTime[successor[n]]
    )
 /\
    forall(n in START_DEPOT_NODES) (
-      arrivalTime[n] + serviceTime[n] + distance[n,successor[n]] <= arrivalTime[successor[n]]
+      arrivalTime[n] + serviceTime[n] + distance[scenario,n,successor[n]] <= arrivalTime[successor[n]]
    )
 /\
 

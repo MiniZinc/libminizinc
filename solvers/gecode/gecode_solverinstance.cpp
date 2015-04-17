@@ -38,6 +38,10 @@ namespace MiniZinc {
     GecodeSolverInstance::~GecodeSolverInstance(void) {
       delete engine; 
       delete customEngine;
+      if(_solution)
+        delete _solution;
+      if(_current_space)
+        delete _current_space;
     }
     
     SolverInstanceBase*
@@ -2114,7 +2118,7 @@ namespace MiniZinc {
   bool 
   GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) { 
     for(unsigned int i=0; i<vars.size(); i++) {  
-      //std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
+      std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
       // constants/constant arrays
       if(vars[i]->type().ispar()) {
         continue; // par identifiers (such as arrays of ints) are read from the model in the cts
@@ -2122,9 +2126,13 @@ namespace MiniZinc {
       }
       // integer variable
       else if(vars[i]->type().isint()) {          
-      // there is an initialisation expression
-       if(vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>() || vars[i]->e()->type().ispar() ) ) {
-          Expression* init = vars[i]->e();          
+      // there is an initialisation expression: TODO: do not ignore initialisation expressions (currently have to because init expression might not yet be part of model)
+       /*if(vars[i]->e() && (vars[i]->e()->isa<Id>() || vars[i]->e()->isa<ArrayAccess>() || vars[i]->e()->type().ispar() ) ) {
+          Expression* init = vars[i]->e();
+          if(init->isa<Id>() && vars[i]->isa<Id>()) {
+            Id* id_init = init->cast<Id>();
+            Id* id = vars[i]->cast<Id>();           
+          }
           if (init->isa<Id>() || init->isa<ArrayAccess>()) {            
             GecodeVariable var = resolveVar(init);
             assert(var.isint());
@@ -2143,9 +2151,9 @@ namespace MiniZinc {
               throw InternalError(ssm.str());
             }  
           }
-        }
+        }*/
          // no initialisation expression, or the initialisation expression is a constraint
-        else {
+        //else {
           Expression* domain = vars[i]->ti()->domain();       
           if(domain->isa<SetLit>()) {
             IntVar intVar(*space, arg2intset(_env.envi(), domain));
@@ -2183,7 +2191,7 @@ namespace MiniZinc {
                 throw InternalError(ssm.str());
             }           
           }
-        }
+        //}
                
         bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
         space->iv_introduced.push_back(isIntroduced);

@@ -824,6 +824,9 @@ namespace MiniZinc {
         return SolverInstance::FAILURE;
       }
     } else {
+      //std::cerr << "DEBUG: printing flat model before printing PRINT(""):" << std::endl;      
+      //debugprint(solver->env().flat());
+      //std::cerr << "DEBUG: trying to print: " << *(call->args()[0]) << "\n";
       std::cout << eval_string(solver->env().envi(), call->args()[0]);
       return SolverInstance::SUCCESS;
     }
@@ -954,7 +957,8 @@ namespace MiniZinc {
      
   
     if(!updateBoundsOnce && nbCtsBefore == nbCtsAfter && nbVarsBefore == nbVarsAfter) {
-      std::cerr << "WARNING: flat model did not change after posting constraint: " << *cts << std::endl;
+      if(verbose)
+        std::cerr << "WARNING: flat model did not change after posting constraint: " << *cts << std::endl;
     }
               
      

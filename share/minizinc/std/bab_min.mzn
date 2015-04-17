@@ -17,7 +17,7 @@ function ann: bab_min(var int: obj, ann: s) =
 function ann: bab_min(var int: obj) =   
    repeat(
        if next() then
-         print("Intermediate solution with objective \(sol(obj))\n") /\
+         print("Intermediate solution in BAB-MIN with objective \(sol(obj))\n") /\
          commit() /\ 
          post(obj < sol(obj))
        else break endif

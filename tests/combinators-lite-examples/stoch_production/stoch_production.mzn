@@ -13,7 +13,7 @@ set of int: CUSTOMER = 1..5; int: adelaide = 1;  int: brisbane = 2;
 int: canberra = 3;  int: darwin = 4; int: perth = 5;
 
 int: maxTransport = 1000;
-int: maxProduction = 1000;
+int: maxProduction = 100;
 int: maxPenaltyCost = 1000;
 int: maxStorageCost = 1000;
 int: maxCosts = 99000;
@@ -56,9 +56,10 @@ constraint
 %   ) :: expected
 %   ;
 
-int: iterations = 10;
+%int: iterations = 10;
 
-solve search 
+solve ::int_search(production,first_fail, indomain_median,complete) 
+search 
   policy_based_search_min();
 
 
@@ -70,7 +71,7 @@ function ann: policy_based_search_min() =
    in  (
          repeat ( %(i in 1..iterations) (      
             if next() then  % find a solution for the first stage variables
-               print("First stage solution found\n") /\
+               print("First stage solution found:\n") /\ print() /\ 
                repeat (s in 1..nbScenarios) (
                   scope(
                      let { 
