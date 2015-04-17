@@ -489,7 +489,7 @@ namespace MiniZinc {
           
           // add output annotation to the flat variable declaration
           if (nvd->type().dim() == 0) {
-            nvd->addAnnotation(constants().ann.output_var);            
+            nvd->addAnnotation(constants().ann.output_var);           
           } else {           
             ArrayLit* al= output_vd->e()->cast<ArrayLit>();           
             for(unsigned int i =0;i<al->length(); i++) {
@@ -498,34 +498,20 @@ namespace MiniZinc {
               VarDeclI* vdi = new VarDeclI(Location(), id->decl());
               solver->env().output()->addItem(vdi);
             }
+            // do the same for the vardecl in the flat model
+            ArrayLit* aln= nvd->e()->cast<ArrayLit>();           
+            for(unsigned int i =0;i<aln->length(); i++) {
+              Id* id = aln->v()[i]->cast<Id>();
+              id->decl()->addAnnotation(constants().ann.output_var);
+              VarDeclI* vdi = new VarDeclI(Location(), id->decl());
+              solver->env().output()->addItem(vdi);              
+            }
             // add the number of local variables according to length of array
             int nbVars = _localVarsToAdd.back(); 
             _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars + al->length();
           }
         } else { // we have a parameter -> add it to the model by flattening
-          par_vars.push_back(vd);
-          /*std::cerr << "DEBUG: adding a local parameter/constant: " << *vd << std::endl;
-          EE ee =flat_exp(solver->env().envi(),Ctx(),vd,NULL,constants().var_true);
-          
-          debugprint(solver->env().flat());
-          
-          // add to output model?
-          VarDecl* nvd = ee.r()->cast<Id>()->decl();
-                    // Create new output variable
-          Type t = nvd->type();
-          t.ti(Type::TI_PAR); // make par
-          VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
-          output_vd->ti()->domain(NULL); // TODO?
-          output_vd->flat(nvd);
-          output_vd->ann().clear();
-          output_vd->introduced(false);
-          output_vd->ti()->type(t);
-          output_vd->type(t);
-          output_vd->e(nvd->e()); // was NULL
-          
-          VarDecl* output_vd_orig = new VarDecl(vd->loc(), output_vd->ti(), vd->id(), output_vd->id());
-          solver->env().output()->addItem(new VarDeclI(Location(), output_vd)); 
-          solver->env().output()->addItem(new VarDeclI(Location(), output_vd_orig)); */
+          par_vars.push_back(vd);          
         }
       }
       else { // this is a constraint
@@ -541,8 +527,7 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: LET combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
-   
-       
+          
     let->pushbindings(); 
     SolverInstance::Status status = interpretCombinator(let->in(), solver, verbose);   
     let->popbindings(); 

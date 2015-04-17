@@ -2103,17 +2103,16 @@ namespace MiniZinc {
         if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
             vd->ann().contains(constants().ann.output_var)
           ) {
-          //std::cerr << "DEBUG: adding vardecl to _varsWithOutput: " << *vd << std::endl;
-          _varsWithOutput.push_back(vd);
-        }
-        
+            //std::cerr << "DEBUG: adding vardecl to _varsWithOutput: " << *vd << std::endl;
+          _varsWithOutput.push_back(vd);    
+        }        
       }
     }
     return true; 
   }
   
   bool 
-  GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) {
+  GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) { 
     for(unsigned int i=0; i<vars.size(); i++) {  
       //std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
       // constants/constant arrays
@@ -2189,7 +2188,7 @@ namespace MiniZinc {
         bool isIntroduced = vars[i]->introduced() || (MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_introduced.str()) != NULL);
         space->iv_introduced.push_back(isIntroduced);
         bool isDefined = MiniZinc::getAnnotation(vars[i]->ann(), constants().ann.is_defined_var->str().str()) != NULL;
-        space->iv_defined.push_back(isDefined);
+        space->iv_defined.push_back(isDefined);        
       }
       else if(vars[i]->type().isbool()) {
         double lb=0, ub=1;
@@ -2276,7 +2275,80 @@ namespace MiniZinc {
         ssm << "DEBUG: Cannot add variable " << *(vars[i]->id())<< " of unknown type: " << (vars[i]->type().toString());
         throw InternalError(ssm.str());    
       }
-    }    
+    } 
+        
+    // create branchers for output vars
+    std::vector<IntVar> intVars;
+    std::vector<BoolVar> boolVars;
+#ifdef GECODE_HAS_FLOAT_VARS    
+    std::vector<FloatVar> floatVars;
+#endif
+#ifdef GECODE_HAS_SET_VARS
+    std::vector<SetVar> setVars;
+#endif       
+    for(unsigned int i=0; i<vars.size(); i++) {
+      VarDecl* vd = vars[i];
+      if(!vd->ann().isEmpty()) {
+        if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+            vd->ann().contains(constants().ann.output_var)
+          ) {                     
+          GecodeSolver::Variable gv = resolveVar(vd);
+          if(gv.isint()) 
+            intVars.push_back(gv.intVar(space));
+          else if(gv.isbool()) 
+            boolVars.push_back(gv.boolVar(space));
+#ifdef GECODE_HAS_FLOAT_VARS          
+          else if(gv.isfloat()) 
+            floatVars.push_back(gv.floatVar(space));
+#endif
+#ifdef GECODE_HAS_SET_VARS 
+          else if(gv.isset()) 
+            setVars.push_back(gv.setVar(space));          
+#endif
+        }        
+      }
+    }
+   // create a brancher for the output variables (the ones that have been locally added)
+    TieBreak<IntVarBranch> def_int_varsel = INT_VAR_AFC_SIZE_MAX(0.99);
+    IntValBranch def_int_valsel = INT_VAL_MIN();
+    TieBreak<IntVarBranch> def_bool_varsel = INT_VAR_AFC_MAX(0.99);
+    IntValBranch def_bool_valsel = INT_VAL_MIN();
+#ifdef GECODE_HAS_SET_VARS
+    SetVarBranch def_set_varsel = SET_VAR_AFC_SIZE_MAX(0.99);
+    SetValBranch def_set_valsel = SET_VAL_MIN_INC();
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+    TieBreak<FloatVarBranch> def_float_varsel = FLOAT_VAR_SIZE_MIN();
+    FloatValBranch def_float_valsel = FLOAT_VAL_SPLIT_MIN();
+#endif
+    if(intVars.size() > 0) {
+      IntVarArgs iv(intVars.size());
+      for(unsigned int i=0; i<intVars.size(); i++)
+        iv[i] = intVars[i];
+      branch(*space, iv, def_int_varsel, def_int_valsel);      
+    }
+    else if(boolVars.size() > 0) {
+      BoolVarArgs bv(boolVars.size());
+      for(unsigned int i=0; i<boolVars.size(); i++)
+        bv[i] = boolVars[i];
+      branch(*space, bv, def_bool_varsel, def_bool_valsel);           
+    }
+#ifdef GECODE_HAS_FLOAT_VARS
+    else if(floatVars.size() > 0) {
+      FloatVarArgs fv(floatVars.size());
+      for(unsigned int i=0; i<floatVars.size(); i++)
+        fv[i] = floatVars[i];
+      branch(*space, fv, def_float_varsel, def_float_valsel);         
+    }
+#endif
+#ifdef GECODE_HAS_SET_VARS
+    else if(setVars.size() > 0) {
+      SetVarArgs sv(setVars.size());
+      for(unsigned int i=0; i<setVars.size(); i++)
+        sv[i] = setVars[i];
+      branch(*space, sv, def_set_varsel, def_set_valsel);           
+    }
+#endif        
     return true;
   }  
   

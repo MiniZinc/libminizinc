@@ -32,7 +32,7 @@ function ann: bab_max(var int: obj) =
    repeat(
        if next() then
          commit() /\ 
-         %print("Intermediate solution in BAB_MAX with objective \(sol(obj))\n") /\
+         print("Intermediate solution in BAB_MAX with objective \(sol(obj))\n") /\
          post(obj > sol(obj))
        else break endif
    )

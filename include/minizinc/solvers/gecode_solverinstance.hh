@@ -80,20 +80,20 @@ namespace MiniZinc {
       return _index;
     }
     
-    Gecode::IntVar intVar(MiniZinc::FznSpace* space) {
+    Gecode::IntVar& intVar(MiniZinc::FznSpace* space) {
       assert(_t == INT_TYPE);
       assert(_index < space->iv.size());
       return space->iv[_index];
     }
     
-    Gecode::BoolVar boolVar(MiniZinc::FznSpace* space) {
+    Gecode::BoolVar& boolVar(MiniZinc::FznSpace* space) {
       assert(_t == BOOL_TYPE);
       assert(_index < space->bv.size());
       return space->bv[_index];
     }
 
 #ifdef GECODE_HAS_FLOAT_VARS
-    Gecode::FloatVar floatVar(MiniZinc::FznSpace* space) {
+    Gecode::FloatVar& floatVar(MiniZinc::FznSpace* space) {
       assert(_t == FLOAT_TYPE);
       assert(_index < space->fv.size());
       return space->fv[_index];
@@ -101,7 +101,7 @@ namespace MiniZinc {
 #endif
 
 #ifdef GECODE_HAS_SET_VARS
-    Gecode::SetVar setVar(MiniZinc::FznSpace* space) {
+    Gecode::SetVar& setVar(MiniZinc::FznSpace* space) {
       assert(_t == SET_TYPE);
       assert(_index < space->sv.size());
       return space->sv[_index];

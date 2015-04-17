@@ -70,7 +70,7 @@ function ann: policy_based_search_min() =
    in  (
          repeat ( %(i in 1..iterations) (      
             if next() then  % find a solution for the first stage variables
-               %print("First stage solution found\n") /\
+               print("First stage solution found\n") /\
                repeat (s in 1..nbScenarios) (
                   scope(
                      let { 
@@ -83,10 +83,10 @@ function ann: policy_based_search_min() =
                      } in (                                        
                          post(firstStageAssignment() /\ % assign first stage variables
                               secondStageConstraints(s,scenarioCosts,transport,storageCosts,demandPenaltyCosts,overallTransportCosts)) /\
-                         if bab_max(scenarioCosts) then
-                           %print("Costs for scenario "++show(s)++": "++show(sol(scenarioCosts))++"\n") /\
+                         if bab_min(scenarioCosts) then
+                           print("Costs for scenario "++show(s)++": "++show(sol(scenarioCosts))++"\n") /\
                            scenario_obj[s]  := sol(scenarioCosts)
-                         else %print("No second stage solution found for scenario "++show(s)++"\n") /\
+                         else print("No second stage solution found for scenario "++show(s)++"\n") /\
                               break 
                          endif                      
                      )
@@ -157,4 +157,6 @@ obj =  overallTransportCosts +
 output [ " production = \n"] ++
        [ show(production[f]) ++
          " "
-       | f in FACTORY];
+       | f in FACTORY] ++
+  ["\nfirstStageCosts = ", show(firstStageCosts)]
+;
