@@ -76,12 +76,13 @@ function ann: policy_based_search_min() =
                          array[NODES] of var NODES: successor; 
                          array[NODES] of var NODES: predecessor; 
                          array[NODES] of var TIME: arrivalTime;
-                         var int: obj; % the second stage objective
+                         var 0..timeBudget*nbVehicles: obj; % the second stage objective: traveltime
                      } in (                                        
                          post(firstStageAssignment() /\ % assign first stage variables
                               secondStageConstraints(s,obj,successor,predecessor,arrivalTime)) /\
                          if bab_min(obj) then
                            print("Objective for scenario "++show(s)++": "++show(sol(obj))++"\n") /\
+                           print("Arrival times: "++show(sol(arrivalTime[nbCustomers+nbVehicles+1]))++","++"\n") /\
                            scenario_obj[s]  := sol(obj)
                          else print("No second stage solution found for scenario "++show(s)++"\n") /\
                               break 
@@ -89,8 +90,8 @@ function ann: policy_based_search_min() =
                      )
                  )
               ) % end repeat 
-              /\ if expectedObj > sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) then 
-                    expectedObj := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i]))
+              /\ if expectedObj > sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) div sum (i in SCENARIOS) (weights[i]) then 
+                    expectedObj := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) div sum (i in SCENARIOS) (weights[i])
                      /\ print("Best expected objective:"++show(expectedObj)++"\n") /\ print() % we found a solution
                   else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
                        skip() endif
@@ -171,7 +172,7 @@ predicate secondStageConstraints(int: scenario,
 /\
 
 % ..... objective ....... %
-obj = max( [ arrivalTime[i] | i in NODES ])
+obj  = sum (depot in END_DEPOT_NODES) (arrivalTime[depot])
 ;
 
 

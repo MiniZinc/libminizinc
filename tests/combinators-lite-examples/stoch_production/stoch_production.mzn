@@ -81,12 +81,14 @@ function ann: policy_based_search_min() =
                          array[CUSTOMER] of var 0..maxPenaltyCost: demandPenaltyCosts;
                          var 0..maxCosts: overallTransportCosts;
                          var 0..maxCosts: scenarioCosts; % objective for scenario
-                     } in (                                        
+                     } in (
+                         print("Scenario "++show(s)++"\n") /\ 
                          post(firstStageAssignment() /\ % assign first stage variables
                               secondStageConstraints(s,scenarioCosts,transport,storageCosts,demandPenaltyCosts,overallTransportCosts)) /\
+                         print("AFter posting constraints\n") /\
                          if bab_min(scenarioCosts) then
                            print("Costs for scenario "++show(s)++": "++show(sol(scenarioCosts))++"\n") /\
-                           scenario_obj[s]  := sol(scenarioCosts)
+   scenario_obj[s]  := sol(scenarioCosts)
                          else print("No second stage solution found for scenario "++show(s)++"\n") /\
                               break 
                          endif                      

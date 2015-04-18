@@ -2118,7 +2118,7 @@ namespace MiniZinc {
   bool 
   GecodeSolverInstance::addVariables(FznSpace* space, const std::vector<VarDecl*>& vars) { 
     for(unsigned int i=0; i<vars.size(); i++) {  
-      std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
+      //std::cerr << "DEBUG: about to add variable \"" << *(vars[i]->id()) << ", " << (i+1) << " out of " << vars.size() << std::endl;      
       // constants/constant arrays
       if(vars[i]->type().ispar()) {
         continue; // par identifiers (such as arrays of ints) are read from the model in the cts
