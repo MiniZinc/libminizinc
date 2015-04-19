@@ -1264,6 +1264,9 @@ function set of int: lb_array(array[$U] of var set of int: x);
 function set of int: ub_array(array[$U] of var set of int: x);
 /** @group builtins.reflect Return domain of \a x */
 function set of int: dom(var int: x);
+function set of int: dom(var bool: b) =
+  if is_fixed(b) then if fix(b) then {1} else {0} endif else {0,1} endif;
+
 /** @group builtins.reflect Return union of all domains of the elements in array \a x */
 function set of int: dom_array(array[$T] of var int: x);
 /** @group builtins.reflect Return approximation of union of all domains of the elements in array \a x */
