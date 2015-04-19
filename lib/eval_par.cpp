@@ -1362,6 +1362,8 @@ namespace MiniZinc {
     bool enter(Expression* e) {
       if (e->type().isann())
         return false;
+      if (e->isa<VarDecl>())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -1722,6 +1724,8 @@ namespace MiniZinc {
     bool enter(Expression* e) {
       if (e->type().isann())
         return false;
+      if (e->isa<VarDecl>())
+        return false;
       if (e->type().dim() > 0)
         return false;
       if (e->type().ispar()) {
@@ -2009,6 +2013,8 @@ namespace MiniZinc {
     ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
     bool enter(Expression* e) {
       if (e->type().isann())
+        return false;
+      if (e->isa<VarDecl>())
         return false;
       if (e->type().dim() > 0)
         return false;
