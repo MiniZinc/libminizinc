@@ -147,6 +147,9 @@ namespace MiniZinc {
         _solutionScopes[_solutionScopes.size()-1] = new_sol;
       }            
     }   
+    void setSolution(int i, Model* sol) {
+      _solutionScopes[i] = sol;
+    }
     void commitLastSolution(void) {
       assert(_solutionScopes.size() >= 1);     
       if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3] !=_solutionScopes[_solutionScopes.size()-2]) {   

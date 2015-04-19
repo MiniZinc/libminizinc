@@ -78,11 +78,12 @@ namespace MiniZinc {
         
         SolverInstance::Status ret;
         Model* curBest = env.envi().getCurrentSolution(); //_solutionScopes.back();
-        env.envi().pushSolution(NULL); // initialize the solution for this function scope with NULL TODO: do we need to do this?
+        env.envi().setSolution(env.envi().nbSolutionScopes()-1, NULL);
+        env.envi().pushSolution(NULL);
         if(call->decl()->e()) {      
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
-          (void) interpretCombinator(call->decl()->e(), solver,verbose);         
+          (void) interpretCombinator(call->decl()->e(), solver,verbose);
         } else { 
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
@@ -94,7 +95,7 @@ namespace MiniZinc {
                 if(id->str() == constants().combinators.print)
                   print = true;
               
-            (void) interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);            
+            (void) interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);
           }
           else {          
             std::stringstream ssm; 
@@ -102,8 +103,17 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
-        env.envi().popSolution(); //_solutionScopes.pop_back();  // remove the solution from the function scope that just ended 
-        ret = env.envi().getCurrentSolution() == curBest ? SolverInstance::FAILURE : SolverInstance::SUCCESS;
+        env.envi().popSolution();
+        if (env.envi().getCurrentSolution() != NULL) {
+          Model* newSol = env.envi().getCurrentSolution();
+          env.envi().setSolution(env.envi().nbSolutionScopes()-1, curBest);
+          env.envi().popSolution();
+          env.envi().pushSolution(newSol);
+          ret = SolverInstance::SUCCESS;
+        } else if (env.envi().nbSolutionScopes() > 1) {
+          ret = SolverInstance::FAILURE;
+        }
+
         //solver->env().envi().setCurSolution(_solutionScopes.back());
         //if(verbose) {
         //  std::cerr << "DEBUG: Setting current solution to: " << std::endl;
@@ -443,9 +453,19 @@ namespace MiniZinc {
       }
     }
     SolverInstanceBase* solver_copy = solver->copy(cmap);
+    if (solver->env().envi().nbSolutionScopes() > 1) {
+      solver_copy->env().envi().pushSolution(solver->env().envi().getSolution(solver->env().envi().nbSolutionScopes()-2));
+    }
+    solver_copy->env().envi().pushSolution(solver->env().envi().getCurrentSolution());
     //std::cerr << "DEBUG: Copied solver instance" << std::endl;
     pushScope(solver_copy);
     SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
+    if (solver->env().envi().nbSolutionScopes() > 1) {
+      solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-2,
+                                       solver_copy->env().envi().getSolution(0));
+    }
+    solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-1,
+                                     solver_copy->env().envi().getCurrentSolution());
     popScope();
     //std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
     return status;

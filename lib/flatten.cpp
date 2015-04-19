@@ -528,10 +528,6 @@ namespace MiniZinc {
       c->combinator = copy(envi(),cmap, combinator);
     else
       c->combinator = NULL;
-    // copy the solution for each scope
-    for(unsigned int scope=0; scope<e->nbSolutionScopes(); scope++) {
-      c->e->pushSolution(copy(envi(),cmap,e->getSolution(scope)));
-    }
     
     c->e->vo = c_vo;
     c->e->output_vo = c_output_vo;
