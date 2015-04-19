@@ -576,9 +576,11 @@ namespace MiniZinc {
       setTimeoutIndex(getViolatedTimeLimitIndex(verbose));
       return SolverInstance::FAILURE;
     }
-    setCurrentTimeout(solver);    
-    //std::cerr << "DEBUG: flat model before next():\n" << std::endl;
-    //debugprint(solver->env().flat());
+    setCurrentTimeout(solver);
+    //if(_scopes.size() ==1) {    
+    //  std::cerr << "DEBUG: flat model before next():\n" << std::endl;
+    // debugprint(solver->env().flat());
+    //}
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
       //std::cerr << "DEBUG: output model after next():" << std::endl;
@@ -607,9 +609,11 @@ namespace MiniZinc {
       interpretLimitCombinator(args[0],solver,verbose);
     setCurrentTimeout(solver); // timeout via time_limit(ms,ann) combinator
     
-    //std::cerr << "DEBUG: flat model before next():\n" << std::endl;
-    //debugprint(solver->env().flat());
-    
+     //if(_scopes.size() ==1) {   
+     // std::cerr << "DEBUG: flat model before next():\n" << std::endl;
+     // debugprint(solver->env().flat());
+     //}
+     
     // get next solution
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) { 

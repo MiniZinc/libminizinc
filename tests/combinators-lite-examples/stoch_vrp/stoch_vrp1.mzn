@@ -67,7 +67,8 @@ function ann: policy_based_search_min() =
    } 
    in  (
          repeat (i in 1..iterations) (      
-               (next() \/ break)  /\ % find a solution for the first stage variables
+              % (next() \/ (print("Could not find another solution\n") /\ break))  /\ % find a solution for the first stage variables
+           if next() then
                print("First stage solution found\n") /\ print() /\
                repeat (s in 1..nbScenarios) (
                   scope(
@@ -92,9 +93,10 @@ function ann: policy_based_search_min() =
               ) % end repeat 
               /\ if expectedObj > sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) div sum (i in SCENARIOS) (weights[i]) then 
                     expectedObj := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) div sum (i in SCENARIOS) (weights[i])
-                     /\ print("Best expected objective:"++show(expectedObj)++"\n") /\ print() % we found a solution
+                    /\ commit() /\ print("Best expected objective:"++show(expectedObj)++"\n") /\ print() % we found a solution
                   else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
                        skip() endif
+           else print("Could not find another solution\n") /\ break endif
         )
     )
 ;

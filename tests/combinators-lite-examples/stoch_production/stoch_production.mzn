@@ -43,7 +43,7 @@ var int: firstStageCosts;
 % ------------ CONSTRAINTS ------------------------------------
 
 constraint 
-  firstStageCosts =   (sum (f in FACTORY) (productionCost[f]*production[f]));
+  firstStageCosts = sum (f in FACTORY) (productionCost[f]*production[f]);
 
 % ------------ SEARCH --------------------------------------
 
@@ -97,7 +97,7 @@ function ann: policy_based_search_min() =
               ) % end repeat 
               /\ if expectedCosts > expectedValue(scenario_obj) then 
                     expectedCosts := expectedValue(scenario_obj)
-                    /\ print("Best expected costs:"++show(expectedCosts)++"\n") /\ print() % we found a solution
+                    /\ commit() /\ print("Best expected costs:"++show(expectedCosts)++"\n") /\ print() % we found a solution
                  else  skip() endif
            else break endif % we find no first stage solution 
         )
