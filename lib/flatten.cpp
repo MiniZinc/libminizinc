@@ -3654,8 +3654,9 @@ namespace MiniZinc {
             ctx0.i = ctx1.i = C_MIX;
           flatten_bool_op:
           {
-            EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
+            bool inRootCtx = (ctx0.b==ctx1.b && ctx0.b==C_ROOT && b==constants().var_true);
+            EE e0 = flat_exp(env,ctx0,boe0,NULL,inRootCtx ? b : NULL);
+            EE e1 = flat_exp(env,ctx1,boe1,NULL,inRootCtx ? b : NULL);
             
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             
