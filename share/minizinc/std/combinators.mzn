@@ -1,5 +1,5 @@
 %%%  SEARCH COMBINATORS LITE
-
+include "globals.mzn";
 % =================================================================== %
 %                   combinator lite built-ins                         %
 % =================================================================== %
@@ -84,6 +84,40 @@ include "bab_min.mzn";
 
 % Branch and Bound when maximising
 include "bab_max.mzn";
+
+
+% --------- Lexicographic Optimisation ----------------------------%
+function ann: minimize_lex(array[int] of var int: objs) =
+  next() /\ commit() /\ 
+  repeat( scope( 
+      let {array[1..length(objs)] of int:v=[ sol(objs[i])| i in 1..length(objs)]}
+        in  post(lex_less(objs, v)) /\
+            (next() /\ commit())  \/  break
+          )
+   );
+
+
+% --------- Dichotomic Search --------------------------------------%
+function ann: minimize_dicho(var int: obj) =
+let { int: low = lb(obj), int: high = ub(obj); } in
+repeat(
+   if (low = high) then
+      break
+   else
+    scope(
+     let { int: mid = low + floor((high-low)/2) } in
+     post(low <= obj /\ obj <= mid) /\
+     if next() then
+       high := sol(obj) /\
+%       print("SAT, new high: \(show(low))..*\(show(high))*\n") /\
+       commit() /\ print()
+     else
+       low := mid+1
+%       print("UNSAT, new low: *\(show(low))*..\(show(high))\n")
+     endif
+    )
+endif
+);
 
 %% ------------------- Large Neighbourhood Search -------------------- %
 %% Large Neighbourhood Search variant that takes an objective variable

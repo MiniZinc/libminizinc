@@ -51,8 +51,7 @@ namespace MiniZinc {
       else if(call->id() == constants().combinators.skip) {
         return SolverInstance::SUCCESS;
       }
-      else if(call->id() == constants().combinators.fail) {
-        // TODO: set constraint scope to COMPLETE
+      else if(call->id() == constants().combinators.fail) {        
         return SolverInstance::FAILURE;
       }
       else if(call->id() == constants().combinators.prune) {
@@ -103,7 +102,7 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
-        env.envi().popSolution();
+        env.envi().popSolution(); // TODO: something is not done here and we lose the solution
         if (env.envi().getCurrentSolution() != NULL) {
           Model* newSol = env.envi().getCurrentSolution();
           env.envi().setSolution(env.envi().nbSolutionScopes()-1, curBest);
@@ -606,8 +605,12 @@ namespace MiniZinc {
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
       //std::cerr << "DEBUG: output model after next():" << std::endl;
-      //debugprint(solver->env().output());
+      //debugprint(solver->env().output());      
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
+      // TODO: check if this makes sense; update solutions in all upper scopes?
+      //for(unsigned int i=_scopes.size()-1; i>= 0; i--) {
+       // _scopes[i]->env().envi().updateCurrentSolution(copy(_scopes[i]->env().envi(), _scopes[i]->env().output()));
+      //}
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
     return status; 
@@ -642,6 +645,11 @@ namespace MiniZinc {
       //std::cerr << "DEBUG: output model after next():" << std::endl;
       //debugprint(solver->env().output());
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
+      // TODO: check if this makes sense; update solutions in all upper scopes?
+     // for(int i=_scopes.size()-1; i>= 0; i--) {
+     //   std::cerr << "Scopes at position " << i << std::endl;
+     //   _scopes[i]->env().envi().updateCurrentSolution(copy(_scopes[i]->env().envi(), _scopes[i]->env().output()));
+     // }
     }    
     return status; 
   }
