@@ -124,6 +124,9 @@ endif
 %% and an array of search variables, a number of iterations and a 
 %% destruction rate d (that determines the percentage of variables in x 
 %% that will be destroyed, i.e. the size of the neighbourhood to search)
+
+% --------- Randomized LNS ------------------------------------ %
+
 function ann: lns_min (var int: obj, array[int] of var int: x,
                    int: iterations, float: d) = 
     repeat (i in 1..iterations) (
@@ -169,6 +172,33 @@ predicate neighbourhoodCts(array[int] of var int: x,
        )     
    else true endif;
 
+
+%---------- Adaptive LNS -----------------------------------%
+
+function ann: adaptive_lns_min(var int: obj, array[int] of var int: vars,
+                        int: iterations, int: initRate, int: exploreTime) =
+  let { int: adaRate = initRate, int: step = 1; } in%*\label{ex:alns:adaRate}*)
+  repeat (i in 1..iterations) (
+   % print("Iteration \(show(i)), rate=\(show(adaRate))\n") /\
+    scope(
+         (post(uniformNeighbourhood(vars,adaRate/100.0)) /\
+          time_limit(exploreTime,
+                next()) /\  % TODO: bab_min(obj) instead
+          commit() /\ print() )
+      \/ (adaRate := adaRate + step /\ fail)%*\label{ex:alns:adaption}*)
+    )
+    /\ post(obj < sol(obj))
+  );
+
+
+predicate uniformNeighbourhood(array[int] of var int: x, float: destrRate) = 
+  if hasSol() then
+    forall(i in index_set(x)) (
+      if uniform(0.0,1.0) > destrRate then %*\label{ex:rlns:random}*)
+        x[i] = sol(x[i])  %*\label{ex:rlns:keep}*)
+      else true endif %*\label{ex:rlns:destroy}*)
+    )
+  else true endif;
 
 %% ------------------- Two Stage Policy Based Search ------------------ %
 %function ann: policy_based_two_stage(array[int] of var int: stage1,
