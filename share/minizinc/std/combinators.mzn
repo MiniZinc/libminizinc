@@ -60,6 +60,8 @@ function ann: skip;
 function ann: fail;
 % return UNKNOWN
 function ann: prune;
+% break()
+function ann: break;
 
 % assign search variable x to y
 annotation comb_assign(int: x,int: y);

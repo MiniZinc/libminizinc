@@ -89,7 +89,7 @@ namespace MiniZinc {
           // TODO: how to disable timeout??
           int timeout_sec = -1;
           if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
-            timeout_sec = opt.getFloatParam(constants().solver_options.time_limit_ms.str())/1000;
+            timeout_sec = opt.getIntParam(constants().solver_options.time_limit_ms.str())/1000;
           
             timeout.tv_sec = timeout_sec;
             timeout.tv_usec = 0;
@@ -171,7 +171,7 @@ namespace MiniZinc {
           int status;          
           // determine the command line arguments
           if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {            
-            int time_ms = opt.getFloatParam(constants().solver_options.time_limit_ms.str());
+            int time_ms = opt.getIntParam(constants().solver_options.time_limit_ms.str());
             char time_c[(sizeof(int)*CHAR_BIT-1)/3 + 3]; 
             sprintf(time_c, "%d", time_ms); 
             // node limit & time limit

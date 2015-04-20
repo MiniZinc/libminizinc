@@ -415,7 +415,8 @@ namespace MiniZinc {
         do {
           status = interpretCombinator(call->args()[0], solver,verbose);
           timeout = isTimeLimitViolated();
-        } while(!timeout && !_repeat_break.back()); // TODO: check if constraint scope is COMPLETE, in which case we should stop
+          //std::cerr << "REPEAT BREAK status after finishing iteration of REPEAT: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
+        } while(!timeout && !_repeat_break.back());
         bool hadBreak = _repeat_break.back();
         _repeat_break.pop_back();
         if (hadBreak)
@@ -467,6 +468,7 @@ namespace MiniZinc {
     solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-1,
                                      solver_copy->env().envi().getCurrentSolution());
     popScope();
+    //std::cerr << "REPEAT BREAK status after closing scope: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
     //std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
     return status;
   }
@@ -598,8 +600,8 @@ namespace MiniZinc {
     }
     setCurrentTimeout(solver);
     //if(_scopes.size() ==1) {    
-    //  std::cerr << "DEBUG: flat model before next():\n" << std::endl;
-    // debugprint(solver->env().flat());
+     // std::cerr << "DEBUG: flat model before next():\n" << std::endl;
+     //debugprint(solver->env().flat());
     //}
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
@@ -711,6 +713,7 @@ namespace MiniZinc {
       throw EvalError(solver->env().envi(), c->loc(), "break outside of repeat");
     }
     _repeat_break.back() = true;
+    //std::cerr << "REPEAT BREAK status after interpreting BREAK: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
     return SolverInstance::FAILURE;
   }
 
