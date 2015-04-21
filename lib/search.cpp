@@ -461,11 +461,13 @@ namespace MiniZinc {
     pushScope(solver_copy);
     SolverInstance::Status status = interpretCombinator(solver_copy->env().combinator, solver_copy, verbose);
     if (solver->env().envi().nbSolutionScopes() > 1) {
-      solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-2,
-                                       solver_copy->env().envi().getSolution(0));
+      if (solver_copy->env().envi().getSolution(0) != NULL)
+        solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-2,
+                                         solver_copy->env().envi().getSolution(0));
     }
-    solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-1,
-                                     solver_copy->env().envi().getCurrentSolution());
+    if (solver_copy->env().envi().getCurrentSolution() != NULL)
+      solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-1,
+                                       solver_copy->env().envi().getCurrentSolution());
     popScope();
     //std::cerr << "REPEAT BREAK status after closing scope: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
     //std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
