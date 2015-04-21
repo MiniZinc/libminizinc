@@ -80,19 +80,60 @@ annotation break;
 % =================================================================== %
 
 % Branch&Bound minimize combinator
-include "bab_min.mzn";
+function ann: bab_min(var int: obj) =   
+   repeat(
+       if next() then
+         print("Intermediate solution in BAB-MIN with objective \(sol(obj))\n") /\
+         commit() /\ 
+         post(obj < sol(obj))
+       else break endif
+   );   
+function ann: bab_min(var int: obj, ann: s) =   
+   repeat(
+       if next() then
+         print("Intermediate solution in BAB-MIN with objective \(sol(obj))\n") /\
+         %s /\
+         commit() /\ 
+         post(obj < sol(obj))
+       else break endif
+   );   
 
 % Branch and Bound when maximising
-include "bab_max.mzn";
+function ann: bab_max(var int: obj) =   
+   repeat(
+       if next() then
+         print("Intermediate solution in BAB-MAX with objective \(sol(obj))\n") /\
+         commit() /\ 
+         post(obj > sol(obj))
+       else break endif
+   );
+function ann: bab_max(var int: obj, ann: s) =   
+   repeat(
+       and([
+           next(), % get next solution
+           commit(),
+           post(obj > sol(obj)), % post constraint
+           s % apply some annotation, e.g. printing the solution
+       ])
+   );    
+function ann: bab_max(var int: obj, array[int] of ann: limits) =
+   repeat(
+       and([
+           next(limits), % get next solution
+           commit(),
+           post(obj > sol(obj)), % post constraint
+           print()
+       ])
+   );  
 
 
 % --------- Lexicographic Optimisation ----------------------------%
 function ann: minimize_lex(array[int] of var int: objs) =
-  next() /\ commit() /\ 
+  next() /\ commit() /\ print() /\
   repeat( scope( 
       let {array[1..length(objs)] of int:v=[ sol(objs[i])| i in 1..length(objs)]}
         in  post(lex_less(objs, v)) /\
-            (next() /\ commit())  \/  break
+            (next() /\ commit() /\ print())  \/  break
           )
    );
 
