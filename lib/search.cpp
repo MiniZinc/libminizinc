@@ -72,6 +72,7 @@ namespace MiniZinc {
           VarDecl* vd = call->decl()->params()[i];
           previousParameters[i] = vd->e();
           vd->flat(vd);
+          GCLock lock;
           vd->e(eval_par(env.envi(), call->args()[i]));
         }
         
@@ -191,17 +192,22 @@ namespace MiniZinc {
       and_args.push_back(args[i]);
     }
     args.clear();
-    ArrayLit* al = new ArrayLit(bo->loc(),and_args);
-    args.push_back(al);
-    ASTString call_id; 
-    if(bot == BinOpType::BOT_AND) 
-      call_id = constants().combinators.and_;
-    else call_id = constants().combinators.or_;
-    Call* call = new Call(bo->loc(),
-                          call_id,
-                          args);
-    KeepAlive ka(call);
-    if(verbose)    
+    Call* call;
+    KeepAlive ka;
+    {
+      GCLock lock;
+      ArrayLit* al = new ArrayLit(bo->loc(),and_args);
+      args.push_back(al);
+      ASTString call_id;
+      if(bot == BinOpType::BOT_AND)
+        call_id = constants().combinators.and_;
+      else call_id = constants().combinators.or_;
+      call = new Call(bo->loc(),
+                      call_id,
+                      args);
+      ka = call;
+    }
+    if(verbose)
       std::cerr << "DEBUG: Transformed binops into call: " << *call << " "<< std::endl;
     if(bot == BinOpType::BOT_AND)
       return interpretAndCombinator(call, solver, verbose);
@@ -288,6 +294,7 @@ namespace MiniZinc {
           status = interpretCombinator(condition, solver, verbose);          
         }
         else {
+          GCLock lock;
           status = eval_bool(solver->env().envi(), condition) ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
         }
         if(status == SolverInstance::SUCCESS) {
@@ -367,7 +374,8 @@ namespace MiniZinc {
             throw TypeError(solver->env().envi(),in->loc(), ssm.str());
           }
           int lb;
-          if(BinOp* bo = in->dyn_cast<BinOp>()) {                
+          if(BinOp* bo = in->dyn_cast<BinOp>()) {
+            GCLock lock;
             lb = eval_int(env.envi(), bo->lhs()).toInt();
             int ub = eval_int(env.envi(), bo->rhs()).toInt();
             nbIterations = ub - lb + 1;
@@ -382,6 +390,7 @@ namespace MiniZinc {
           Expression* oldValue = compr->decl(0, 0)->e();
           _repeat_break.push_back(false);
           for(unsigned int i = 0; i<nbIterations; i++) {
+            GCLock lock;
             if(isTimeLimitViolated()) { // we have reached a timeout; set timeout index and stop
               setTimeoutIndex(getViolatedTimeLimitIndex());           
               compr->decl(0, 0)->e(oldValue);             
@@ -427,7 +436,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {    
+  SearchHandler::interpretScopeCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     if(isTimeLimitViolated()) {
       setTimeoutIndex(getViolatedTimeLimitIndex());     
       return SolverInstance::FAILURE;
@@ -447,7 +456,11 @@ namespace MiniZinc {
         cmap.insert(_localVars[i][j],_localVars[i][j]);
       }
     }
-    SolverInstanceBase* solver_copy = solver->copy(cmap);
+    SolverInstanceBase* solver_copy;
+    {
+      GCLock lock;
+      solver_copy = solver->copy(cmap);
+    }
     if (solver->env().envi().nbSolutionScopes() > 1) {
       solver_copy->env().envi().pushSolution(solver->env().envi().getSolution(solver->env().envi().nbSolutionScopes()-2));
     }
@@ -573,7 +586,11 @@ namespace MiniZinc {
       throw TypeError(solver->env().envi(),time->loc(), ssm.str());
     }
  
-    int ms = eval_int(solver->env().envi(), time).toInt();
+    int ms;
+    {
+      GCLock lock;
+      ms = eval_int(solver->env().envi(), time).toInt();
+    }
     clock_t t = getTimeout(ms);
     _timeouts.push_back(t);
     if(isTimeLimitViolated()) {
@@ -647,6 +664,7 @@ namespace MiniZinc {
     if(status == SolverInstance::SUCCESS) { 
       //std::cerr << "DEBUG: output model after next():" << std::endl;
       //debugprint(solver->env().output());
+      GCLock lock;
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
       // TODO: check if this makes sense; update solutions in all upper scopes?
      // for(int i=_scopes.size()-1; i>= 0; i--) {
@@ -666,6 +684,7 @@ namespace MiniZinc {
         decl = follow_id_to_decl(e)->cast<VarDecl>();
        // while (decl->flat() && decl->flat() != decl)
        //   decl = decl->flat();
+        GCLock lock;
         ArrayLit* al = decl->e()->dyn_cast<ArrayLit>();
         if (al==NULL) {
           al = eval_array_lit(solver->env().envi(), decl->e());
@@ -688,8 +707,9 @@ namespace MiniZinc {
       std::stringstream ssm;
       ssm << "Cannot assign value to an annotation: " << *decl;
       throw TypeError(solver->env().envi(),decl->loc(),ssm.str()); 
-    } else {     
-      decl->e(eval_par(solver->env().envi(), assignComb->args()[1]));           
+    } else {
+      GCLock lock;
+      decl->e(eval_par(solver->env().envi(), assignComb->args()[1]));
     }
     return SolverInstance::SUCCESS;
   }
@@ -772,7 +792,8 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "Expecting 1 argument in call: " << *call;
       throw EvalError(solver->env().envi(),call->loc(), ssm.str());
-    }     
+    }
+    GCLock lock;
     args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
@@ -793,7 +814,8 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "Expecting 1 argument in call: " << *call;
       throw EvalError(solver->env().envi(),call->loc(), ssm.str());
-    }     
+    }
+    GCLock lock;
     args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
@@ -815,7 +837,8 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "Expecting 1 argument in call: " << *call;
       throw EvalError(solver->env().envi(),call->loc(), ssm.str());
-    }     
+    }
+    GCLock lock;
     args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {      
@@ -836,7 +859,8 @@ namespace MiniZinc {
       std::stringstream ssm; 
       ssm << "Expecting 1 argument in call: " << *call;
       throw EvalError(solver->env().envi(),call->loc(), ssm.str());
-    }     
+    }
+    GCLock lock;
     args[0] = eval_par(solver->env().envi(),args[0]);
     Options& opt = solver->getOptions();
     if(IntLit* il = args[0]->dyn_cast<IntLit>()) {
@@ -858,6 +882,7 @@ namespace MiniZinc {
     if (call->args().size()==0) {
       
       if(solver->env().envi().getCurrentSolution() != NULL) {
+        GCLock lock;
         solver->env().evalOutput(std::cout);
         std::cout << constants().solver_output.solution_delimiter << std::endl;
         return SolverInstance::SUCCESS;
@@ -871,6 +896,7 @@ namespace MiniZinc {
       //std::cerr << "DEBUG: printing flat model before printing PRINT(""):" << std::endl;      
       //debugprint(solver->env().flat());
       //std::cerr << "DEBUG: trying to print: " << *(call->args()[0]) << "\n";
+      GCLock lock;
       std::cout << eval_string(solver->env().envi(), call->args()[0]);
       return SolverInstance::SUCCESS;
     }
@@ -879,6 +905,7 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {  
     if(solver->env().envi().getCurrentSolution() != NULL) {
+      GCLock lock;
       solver->env().evalOutput(std::cout);
       std::cout << constants().solver_output.solution_delimiter << std::endl;
       return SolverInstance::SUCCESS;
@@ -907,6 +934,7 @@ namespace MiniZinc {
     nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1];    
     
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
+    GCLock lock;
     IdMap<Expression*> domains;
     for(VarDeclIterator it = env.flat()->begin_vardecls(); it!= env.flat()->end_vardecls(); ++it) {
       Id* id = it->e()->id();

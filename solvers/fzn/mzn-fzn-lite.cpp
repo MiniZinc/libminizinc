@@ -377,7 +377,6 @@ int main(int argc, char** argv) {
             }
             
             {
-              GCLock lock;
               options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
               SearchHandler* sh = new SearchHandler();
               sh->search<FZNSolverInstance>(env,options,flag_verbose);

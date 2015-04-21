@@ -83,6 +83,7 @@ namespace MiniZinc {
   KeepAlive 
   NISolverInstanceBase::deriveNoGoodsFromSolution(void) {
     Model* flat = env().flat();
+    GCLock lock;
     std::vector<Expression*> disequalities;
     for (VarDeclIterator it = flat->begin_vardecls(); it!=flat->end_vardecls(); ++it) {
       if (it->e()->ann().contains(constants().ann.output_var)) {

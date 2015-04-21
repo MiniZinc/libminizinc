@@ -443,9 +443,9 @@ namespace MiniZinc {
     return copy(env,m,e,followIds,copyFundecls);
   }
 
-  Model* copy(EnvI& env, CopyMap& cm, Model* m);
+  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool);
 
-  Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls) {
+  Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool followIncludes) {
     if (i==NULL) return NULL;
     if (Item* cached = m.find(i))
       return cached;
@@ -457,7 +457,10 @@ namespace MiniZinc {
           new IncludeI(copy_location(m,i),
                       ASTString(ii->f().str()));
         m.insert(i,c);
-        c->m(copy(env,m,ii->m()),ii->own());
+        if (followIncludes) {
+          c->m(copy(env,m,ii->m(),followIncludes),ii->own());
+        } else
+          c->m(ii->m(), false);
         return c;
       }
     case Item::II_VD:
@@ -543,13 +546,13 @@ namespace MiniZinc {
     return copy(env,m,i,followIds,copyFundecls);
   }
 
-  Model* copy(EnvI& env, CopyMap& cm, Model* m) {
+  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool followIncludes) {
     if (m==NULL) return NULL;
     if (Model* cached = cm.find(m))
       return cached;
     Model* c = new Model;
     for (unsigned int i=0; i<m->size(); i++)
-      c->addItem(copy(env,cm,(*m)[i],false,true));
+      c->addItem(copy(env,cm,(*m)[i],false,true,followIncludes));
 
     for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
       for (unsigned int i=0; i<it->second.size(); i++)
@@ -560,7 +563,7 @@ namespace MiniZinc {
   }
   Model* copy(EnvI& env, Model* m) {
     CopyMap cm;
-    return copy(env,cm,m);
+    return copy(env,cm,m,true);
   }
   
 }

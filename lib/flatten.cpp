@@ -471,10 +471,10 @@ namespace MiniZinc {
     return e->dumpStack(os, true);
   }
   Env*
-  Env::copyEnv(CopyMap& cmap) {     
-    Model* c_orig = copy(envi(),cmap, e->orig);
-    Model* c_output = copy(envi(),cmap, e->output);
-    Model* c_flat = copy(envi(),cmap, e->flat());
+  Env::copyEnv(CopyMap& cmap) {
+    Model* c_orig = copy(envi(),cmap, e->orig, false);
+    Model* c_output = copy(envi(),cmap, e->output, false);
+    Model* c_flat = copy(envi(),cmap, e->flat(), false);
     VarOccurrences c_vo;    
     for(IdMap<UNORDERED_NAMESPACE::unordered_set<Item*> >::iterator it = e->vo._m.begin(); it!=e->vo._m.end(); it++) {
       UNORDERED_NAMESPACE::unordered_set<Item*> items = it->second;
@@ -5298,6 +5298,19 @@ namespace MiniZinc {
       }
     }
     e.output->compact();
+    for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
+         it != e.output_vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
   }
   
   void cleanupOutput(EnvI& env) {
@@ -6176,6 +6189,20 @@ namespace MiniZinc {
     }
     
     m->compact();
+    
+    for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
+         it != env.vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
     
     class Cmp {
     public:
