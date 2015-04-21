@@ -579,7 +579,7 @@ namespace MiniZinc {
         resetTimeoutIndex();
       _timeouts.pop_back(); // remove this time-limit     
       return SolverInstance::FAILURE; // this is a higher level timeout, so stop
-    }
+    }    
  
     // execute argument if there is enough time
     SolverInstance::Status status = interpretCombinator(call->args()[1], solver, verbose);   

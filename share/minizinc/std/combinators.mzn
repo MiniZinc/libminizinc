@@ -183,7 +183,7 @@ function ann: adaptive_lns_min(var int: obj, array[int] of var int: vars,
     scope(
          (post(uniformNeighbourhood(vars,adaRate/100.0)) /\
           time_limit(exploreTime,
-                next()) /\  % TODO: bab_min(obj) instead
+                bab_min(obj)) /\ 
           commit() /\ print() )
       \/ (adaRate := adaRate + step /\ fail)%*\label{ex:alns:adaption}*)
     )
