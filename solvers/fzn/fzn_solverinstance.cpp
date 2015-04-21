@@ -87,23 +87,40 @@ namespace MiniZinc {
 
           timeval* timeout_p = NULL;
           // TODO: how to disable timeout??
-          int timeout_sec = -1;
+          long long int timeout_msec = -1;
           if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
-            timeout_sec = opt.getIntParam(constants().solver_options.time_limit_ms.str())/1000;
-          
+            timeout_msec = opt.getIntParam(constants().solver_options.time_limit_ms.str());
+            int timeout_sec = timeout_msec / 1000;
+            int timeout_usec = (timeout_msec % 1000) * 10;
             timeout.tv_sec = timeout_sec;
-            timeout.tv_usec = 0;
+            timeout.tv_usec = timeout_usec;
             timeout_p = &timeout;
           }
           
           bool done = false;
           while (!done) {
-           
             switch (select(FD_SETSIZE, &fdset, NULL, NULL, timeout_p)) {
               case 0:
               {
-                kill(childPID, SIGKILL);
-                done = true;
+                timeval currentTime, elapsed;
+                gettimeofday(&currentTime, NULL);
+                elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+                elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+                if (elapsed.tv_usec < 0) {
+                  elapsed.tv_sec--;
+                  elapsed.tv_usec += 1000000;
+                }
+                long long int elapsed_msec = elapsed.tv_sec*1000;
+                elapsed_msec += elapsed.tv_usec/1000;
+                
+                long long int tdiff = timeout_msec - elapsed_msec;
+                if (tdiff < 0) {
+                  kill(childPID, SIGKILL);
+                  done = true;
+                } else {
+                  timeout.tv_sec = tdiff / 1000;
+                  timeout.tv_usec = (tdiff % 1000)*1000;
+                }
               }
                 break;
               case 1:
@@ -113,7 +130,7 @@ namespace MiniZinc {
                 if (count > 0) {                  
                   buffer[count] = 0;
                   result << buffer;
-                  if (timeout_sec >= 0) {
+                  if (timeout_msec >= 0) {
                     timeval currentTime, elapsed;
                     gettimeofday(&currentTime, NULL);
                     elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
@@ -122,12 +139,16 @@ namespace MiniZinc {
                       elapsed.tv_sec--;
                       elapsed.tv_usec += 1000000;
                     }
-                    timeout.tv_sec = timeout_sec - elapsed.tv_sec;
-                    if (elapsed.tv_usec > 0)
-                      timeout.tv_sec--;
-                    timeout.tv_usec = 1000000 - elapsed.tv_usec;
-                    if (timeout.tv_sec <= 0 && timeout.tv_usec <=0)
+                    long long int elapsed_msec = elapsed.tv_sec*1000;
+                    elapsed_msec += elapsed.tv_usec/1000;
+                    
+                    long long int tdiff = timeout_msec - elapsed_msec;
+                    if (tdiff < 0) {
                       done = true;
+                      kill(childPID, SIGKILL);
+                    }
+                    timeout.tv_sec = tdiff / 1000;
+                    timeout.tv_usec = (tdiff % 1000)*1000;
                   }
                 } else {
                   done = true;

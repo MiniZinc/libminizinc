@@ -12,8 +12,6 @@
 #ifndef __MINIZINC_SEARCH_HH__
 #define __MINIZINC_SEARCH_HH__
 
-#include <ctime>
-
 #include <minizinc/flatten.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/flatten_internal.hh>
@@ -26,7 +24,7 @@ namespace MiniZinc {
     // the stack of scopes where the first scope is the root scope
     std::vector<SolverInstanceBase*> _scopes;   
     // list of timeouts; the most recently set timeout is the last in the list
-    std::vector<clock_t> _timeouts;
+    std::vector<long long int> _timeouts;
     // the index of the timeout (in the timeout list) that has been reached
     int _timeoutIndex;
     // stack of flags for breaking out of repeat loops
@@ -151,7 +149,7 @@ namespace MiniZinc {
   // reset the timeout index
   void resetTimeoutIndex(void);
   /// returns the timeout time: time-now + timeout(given-in-milliseconds)
-  clock_t getTimeout(int ms);
+  long long int getTimeout(int ms);
   /// sets timeout options (for next) in case there is a timeout
   void setCurrentTimeout(SolverInstanceBase* solver);
   };

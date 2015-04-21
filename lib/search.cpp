@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <ctime>
+#include <sys/time.h>
 
 #include <minizinc/search.hh>
 #include <minizinc/solver_instance_base.hh>
@@ -591,7 +592,7 @@ namespace MiniZinc {
       GCLock lock;
       ms = eval_int(solver->env().envi(), time).toInt();
     }
-    clock_t t = getTimeout(ms);
+    long long int t = getTimeout(ms);
     _timeouts.push_back(t);
     if(isTimeLimitViolated()) {
       int timeoutIdx = getViolatedTimeLimitIndex();
@@ -1074,12 +1075,12 @@ namespace MiniZinc {
    
    bool 
    SearchHandler::isTimeLimitViolated(bool verbose) {
-     clock_t time_now = std::clock();
+     long long int time_now = getTimeout(0);
      for(unsigned int i=0; i<_timeouts.size(); i++) {
-       clock_t timeout = _timeouts[i];
+       long long int timeout = _timeouts[i];
        if(time_now >= timeout) {
          if(verbose)
-           std::cerr << "timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+           std::cerr << "timeout: " << (timeout/1000.0) << "secs has been reached." << std::endl;
          //std::cerr << "WARNING: timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
          return true;
        }
@@ -1093,9 +1094,9 @@ namespace MiniZinc {
    
    int 
    SearchHandler::getViolatedTimeLimitIndex(bool verbose) {
-     clock_t time_now = std::clock();
+     long long int time_now = getTimeout(0);
      for(unsigned int i=0; i<_timeouts.size(); i++) {
-       clock_t timeout = _timeouts[i];
+       long long int timeout = _timeouts[i];
        if(time_now >= timeout) {
          if(verbose)
            std::cerr << "timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
@@ -1125,26 +1126,28 @@ namespace MiniZinc {
      _timeoutIndex = -1;
    }
    
-   clock_t 
+   long long int
    SearchHandler::getTimeout(int ms) {
-    clock_t t = std::clock();
-    t = t + (ms/1000)*(CLOCKS_PER_SEC);
-    //std::cerr << "DEBUG: setting time-out to: " << (((float)t)/CLOCKS_PER_SEC) << "secs" << std::endl;
-    return t;
+
+     timeval now;
+     gettimeofday(&now, NULL);
+
+     long long int to = now.tv_sec*1000+(now.tv_usec/1000)+ms;
+     return to;
    }
    
    void 
    SearchHandler::setCurrentTimeout(SolverInstanceBase* solver) {
      if(_timeouts.size() == 0)
        return;
-     clock_t smallest_timeout = _timeouts[0];
+     long long int smallest_timeout = _timeouts[0];
      for(unsigned int i=1; i<_timeouts.size(); i++) {
-       clock_t timeout = _timeouts[i];
+       long long int timeout = _timeouts[i];
        if(timeout < smallest_timeout)
          smallest_timeout = timeout;
      }
-     clock_t now = std::clock();
-     int timeout_ms = (int) ((smallest_timeout - now)/CLOCKS_PER_SEC)*1000;
+     long long int now = getTimeout(0);
+     long long int timeout_ms = smallest_timeout-now;
      if(timeout_ms > 0) {
        Options& opt = solver->getOptions();
        if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
