@@ -1117,6 +1117,8 @@ namespace MiniZinc {
         // HACK: Andrea: just for experiments to show intermediate solutions (or make it a VERBOSE option)        
         assignSolutionToOutput(); // remove this after experiments
         env().evalOutput(std::cout); // remove this after experiments
+        std::cout << constants().solver_output.solution_delimiter << std::endl;
+        std::cout.flush();
       }
     }    
     
