@@ -432,8 +432,8 @@ namespace MiniZinc {
       setTimeoutIndex(getViolatedTimeLimitIndex());     
       return SolverInstance::FAILURE;
     }
-    
-    //std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
+    if (verbose)
+      std::cerr << "DEBUG: SCOPE combinator" << std::endl;   
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "SCOPE-combinator only takes 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -465,9 +465,13 @@ namespace MiniZinc {
       solver->env().envi().setSolution(solver->env().envi().nbSolutionScopes()-1,
                                        solver_copy->env().envi().getCurrentSolution());
     }
+    Env* copy_env = &solver_copy->env();
+    delete copy_env->model();
+    delete copy_env;
     popScope();
     //std::cerr << "REPEAT BREAK status after closing scope: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
-    //std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
+    if (verbose)
+      std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
     return status;
   }
   
