@@ -76,9 +76,8 @@ namespace MiniZinc {
         }
         
         SolverInstance::Status ret;
-        Model* curBest = env.envi().getCurrentSolution(); //_solutionScopes.back();
-        env.envi().setSolution(env.envi().nbSolutionScopes()-1, NULL);
-        env.envi().pushSolution(NULL);
+        env.envi().resetCommitted();
+        env.envi().pushSolution(env.envi().getCurrentSolution());
         if(call->decl()->e()) {      
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
@@ -102,12 +101,8 @@ namespace MiniZinc {
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }
-        env.envi().popSolution(); // TODO: something is not done here and we lose the solution
-        if (env.envi().getCurrentSolution() != NULL) {
-          Model* newSol = env.envi().getCurrentSolution();
-          env.envi().setSolution(env.envi().nbSolutionScopes()-1, curBest);
-          env.envi().popSolution();
-          env.envi().pushSolution(newSol);
+        env.envi().popSolution();
+        if (env.envi().isCommitted()) {
           ret = SolverInstance::SUCCESS;
         } else if (env.envi().nbSolutionScopes() > 1) {
           ret = SolverInstance::FAILURE;

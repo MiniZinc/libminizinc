@@ -671,7 +671,7 @@ namespace MiniZinc {
 
   std::ostream&
   EnvI::evalOutput(std::ostream &os) {
-    Model* outputModel = _solutionScopes.size() > 0 ? _solutionScopes.back() : output;
+    Model* outputModel = _solutionScopes.size() > 0 ? _solutionScopes.back().first : output;
     GCLock lock;
     ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e());
     std::string outputString;

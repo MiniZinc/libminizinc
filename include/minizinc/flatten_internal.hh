@@ -91,7 +91,7 @@ namespace MiniZinc {
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap; 
     /// the solution for each function scope, where the current scope is the last in the list
-    std::vector<Model*> _solutionScopes;
+    std::vector<std::pair<Model*,bool> > _solutionScopes;
   public:
     EnvI(Model* orig0);
     EnvI(Model* orig, Model* output, Model* flat, 
@@ -123,39 +123,46 @@ namespace MiniZinc {
     void createErrorStack(void);
     /// returns the current solution (the solution from the lowest scope)
     Model* getCurrentSolution(void) { if(_solutionScopes.empty()) return NULL; 
-                                  else return _solutionScopes[_solutionScopes.size()-1]; }
+                                  else return _solutionScopes[_solutionScopes.size()-1].first; }
     // removes and deletes solution from lowest scope
-    void popSolution(void) { if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2] !=_solutionScopes[_solutionScopes.size()-1]) {  
-                                delete _solutionScopes.back();
+    void popSolution(void) { if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2].first !=_solutionScopes[_solutionScopes.size()-1].first) {
+                                delete _solutionScopes.back().first;
                              }
                              _solutionScopes.pop_back(); }
-    void pushSolution(Model* sol) { _solutionScopes.push_back(sol); }
+    void pushSolution(Model* sol) { _solutionScopes.push_back(std::make_pair(sol,false)); }
     bool hasSolution(void) { 
-      if(!_solutionScopes.empty() &&_solutionScopes.back() != NULL)
+      if(!_solutionScopes.empty() &&_solutionScopes.back().first != NULL)
           return true;
       else return false;   
     }
     Model* getSolution(int scope) { assert(scope >= 0 && scope < _solutionScopes.size()); 
-                                    return _solutionScopes[scope]; }
+                                    return _solutionScopes[scope].first; }
     unsigned int nbSolutionScopes(void) { return _solutionScopes.size(); }
     // replace the current solution in the current scope with a new solution (deleting the old one)
     void updateCurrentSolution(Model* new_sol) { 
       if(!_solutionScopes.empty()) {
-        if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2] !=_solutionScopes[_solutionScopes.size()-1]) {   
-          delete _solutionScopes.back();
+        if (_solutionScopes.size()==1 || _solutionScopes[_solutionScopes.size()-2].first !=_solutionScopes[_solutionScopes.size()-1].first) {
+          delete _solutionScopes.back().first;
         }     
-        _solutionScopes[_solutionScopes.size()-1] = new_sol;
+        _solutionScopes[_solutionScopes.size()-1].first = new_sol;
       }            
     }   
     void setSolution(int i, Model* sol) {
-      _solutionScopes[i] = sol;
+      _solutionScopes[i].first = sol;
     }
     void commitLastSolution(void) {
       assert(_solutionScopes.size() >= 1);     
-      if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3] !=_solutionScopes[_solutionScopes.size()-2]) {   
-        delete _solutionScopes[_solutionScopes.size()-2];
+      if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3].first !=_solutionScopes[_solutionScopes.size()-2].first) {
+        delete _solutionScopes[_solutionScopes.size()-2].first;
       }
-      _solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
+      _solutionScopes[_solutionScopes.size()-2].first=_solutionScopes.back().first;
+      _solutionScopes[_solutionScopes.size()-2].second=true;
+    }
+    bool isCommitted(void) {
+      return _solutionScopes.back().second;
+    }
+    void resetCommitted(void) {
+      _solutionScopes.back().second = false;
     }
     
   };
