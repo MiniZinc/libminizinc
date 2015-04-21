@@ -1114,9 +1114,9 @@ namespace MiniZinc {
       while (FznSpace* next_sol = engine->next()) {
         if(_solution) delete _solution;        
         _solution = next_sol;
-        // HACK: Andrea: just for experiments to show intermediate solutions
-        assignSolutionToOutput();
-        env().evalOutput(std::cout);
+        // HACK: Andrea: just for experiments to show intermediate solutions (or make it a VERBOSE option)        
+        assignSolutionToOutput(); // remove this after experiments
+        env().evalOutput(std::cout); // remove this after experiments
       }
     }    
     

@@ -906,8 +906,9 @@ namespace MiniZinc {
   SearchHandler::interpretPrintCombinator(SolverInstanceBase* solver, bool verbose) {  
     if(solver->env().envi().getCurrentSolution() != NULL) {
       GCLock lock;
-      solver->env().evalOutput(std::cout);
+      solver->env().evalOutput(std::cout);      
       std::cout << constants().solver_output.solution_delimiter << std::endl;
+      std::cout.flush(); // flush so we can read it from within Python
       return SolverInstance::SUCCESS;
     }
     else {
