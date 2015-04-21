@@ -138,13 +138,6 @@ namespace MiniZinc {
     _localVarsToAdd.push_back(0);
   }
   void popScope() {
-    if(_scopes.size() >= 2) {
-      SolverInstanceBase* solver = _scopes.back();
-      Model* solution = solver->env().envi().getCurrentSolution();      
-      if(solution) {
-        _scopes[_scopes.size()-2]->env().envi().updateCurrentSolution(solution);            
-      }
-    }
     delete _scopes.back();
     _scopes.pop_back();
     _localVarsToAdd.pop_back();
