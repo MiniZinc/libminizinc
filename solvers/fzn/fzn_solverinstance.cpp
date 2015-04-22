@@ -47,9 +47,14 @@ namespace MiniZinc {
         std::string fznFile;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
-          mkstemps(tmpfile, 4);
+          int fd = mkstemps(tmpfile, 4);
+          close(fd);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
+          if (!os.good()) {
+            std::string last_error = strerror(errno);
+            throw InternalError(std::string("cannot open file ")+tmpfile+" for writing: "+last_error);
+          }
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             Item* item = *it;
             if(item->removed()) 
@@ -59,8 +64,8 @@ namespace MiniZinc {
                 si->ann().removeCall(constants().ann.combinator); // remove the combinator annotation
               }             
             }
-            os << *item;                        
-          }           
+            os << *item;
+          }
         }
         
         if (int childPID = fork()) {
@@ -75,7 +80,7 @@ namespace MiniZinc {
               write(pipes[0][1], str.c_str(), str.size());
             }
           }
-          close(pipes[0][1]);         
+          close(pipes[0][1]);
           
           fd_set fdset;
           struct timeval timeout;
@@ -115,7 +120,6 @@ namespace MiniZinc {
                 
                 long long int tdiff = timeout_msec - elapsed_msec;
                 if (tdiff < 0) {
-                  kill(childPID, SIGKILL);
                   done = true;
                 } else {
                   timeout.tv_sec = tdiff / 1000;
@@ -145,7 +149,6 @@ namespace MiniZinc {
                     long long int tdiff = timeout_msec - elapsed_msec;
                     if (tdiff < 0) {
                       done = true;
-                      kill(childPID, SIGKILL);
                     }
                     timeout.tv_sec = tdiff / 1000;
                     timeout.tv_usec = (tdiff % 1000)*1000;
@@ -161,10 +164,13 @@ namespace MiniZinc {
                 break;
             }
           }
+          close(pipes[1][0]);
+          kill(childPID, SIGKILL);
+          waitpid(childPID, NULL, 0);
           
           if (!_canPipe) {
             remove(fznFile.c_str()); // commented for DEBUG only 
-          } 
+          }
           return;
         } else {
           close(STDOUT_FILENO);
