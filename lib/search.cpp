@@ -661,11 +661,11 @@ namespace MiniZinc {
      //}
      
     // get next solution
+    GCLock lock;
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) { 
       //std::cerr << "DEBUG: output model after next():" << std::endl;
       //debugprint(solver->env().output());
-      GCLock lock;
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
       // TODO: check if this makes sense; update solutions in all upper scopes?
      // for(int i=_scopes.size()-1; i>= 0; i--) {
