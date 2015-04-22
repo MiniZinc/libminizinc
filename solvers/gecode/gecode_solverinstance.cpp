@@ -1815,7 +1815,7 @@ namespace MiniZinc {
         return TieBreak<IntVarBranch>(INT_VAR_AFC_MAX(decay));
     if (s == "afc_size_min")
         return TieBreak<IntVarBranch>(INT_VAR_AFC_SIZE_MIN(decay));
-    if (s == "afc_size_max") {
+    if (s == "afc_size_max" || s=="dom_w_deg") {
         return TieBreak<IntVarBranch>(INT_VAR_AFC_SIZE_MAX(decay));
     }
     if (s == "activity_min")
