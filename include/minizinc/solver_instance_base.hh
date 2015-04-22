@@ -36,6 +36,7 @@ namespace MiniZinc {
       Model* _keepAlive;
     public:
       Registry(SolverInstanceBase& base) : _base(base), _keepAlive(new Model) {}
+      ~Registry(void) { delete _keepAlive; }
       void add(const ASTString& name, poster p);
       void post(Call* c);      
     };
