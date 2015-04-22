@@ -546,7 +546,8 @@ namespace MiniZinc {
     return copy(env,m,i,followIds,copyFundecls);
   }
 
-  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool followIncludes) {
+  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool) {
+    bool followIncludes = true;
     if (m==NULL) return NULL;
     if (Model* cached = cm.find(m))
       return cached;
