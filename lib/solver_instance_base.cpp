@@ -19,6 +19,7 @@ namespace MiniZinc {
   
   void
   SolverInstanceBase::Registry::add(const ASTString& name, poster p) {
+    _keepAlive->addItem(new ConstraintI(Location(),new StringLit(Location(),name)));
     _registry.insert(std::make_pair(name, p));
   }
   void

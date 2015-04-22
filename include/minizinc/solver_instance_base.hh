@@ -33,8 +33,9 @@ namespace MiniZinc {
     protected:
       ASTStringMap<poster>::t _registry;
       SolverInstanceBase& _base;
+      Model* _keepAlive;
     public:
-      Registry(SolverInstanceBase& base) : _base(base) {}
+      Registry(SolverInstanceBase& base) : _base(base), _keepAlive(new Model) {}
       void add(const ASTString& name, poster p);
       void post(Call* c);      
     };
