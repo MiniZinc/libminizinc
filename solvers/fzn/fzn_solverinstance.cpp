@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <sys/select.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/time.h>
 #include <signal.h>
 #include <fstream>
