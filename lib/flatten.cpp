@@ -5158,6 +5158,20 @@ namespace MiniZinc {
       }
     }
     e.output->compact();
+
+    for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
+         it != e.output_vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
   }
   
   void cleanupOutput(EnvI& env) {
@@ -6033,7 +6047,21 @@ namespace MiniZinc {
     }
     
     m->compact();
-    
+
+    for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
+         it != env.vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
+
     class Cmp {
     public:
       bool operator() (Item* i, Item* j) {
