@@ -1698,7 +1698,7 @@ namespace MiniZinc {
     
     IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
     if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r);
+      r_bounds = compute_int_bounds(env,r->id());
     }
     
     VarDecl* nr = r;
