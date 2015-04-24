@@ -120,6 +120,7 @@ namespace MiniZinc {
           cur->cast<Call>()->id().mark();
           pushall(cur->cast<Call>()->_args);
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
+            fi->mark();
             fi->id().mark();
             pushstack(fi->ti());
             pushann(fi->ann());

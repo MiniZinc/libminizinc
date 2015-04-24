@@ -1160,6 +1160,12 @@ namespace MiniZinc {
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
     Type argtype(const std::vector<Expression*>& ta, int n);
+
+    /// Mark for GC
+    void mark(void) {
+      _gc_mark = 1;
+      loc().mark();
+    }
   };
 
   /**
