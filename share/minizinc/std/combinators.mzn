@@ -207,9 +207,7 @@ predicate neighbourhoodCts(array[int] of var int: x,
        array[1..n] of int: idx = [ uniform(1,length(x)) | i in 1..n ];
      } in
        forall (i in idx) (
- %        trace("var["++show(i)++"] = sol(x[i])\n") /\
- %        trace("var["++show(i)++"] = "++show(sol(x[i]))++"\n") /\
-         x[i] = sol(x[i])
+          x[i] = sol(x[i])
        )     
    else true endif;
 
@@ -218,15 +216,14 @@ predicate neighbourhoodCts(array[int] of var int: x,
 
 function ann: adaptive_lns_min(var int: obj, array[int] of var int: vars,
                         int: iterations, int: initRate, int: exploreTime) =
-  let { int: adaRate = initRate, int: step = 1; } in%*\label{ex:alns:adaRate}*)
+  let { int: adaRate = initRate, int: step = 1; } in
   repeat (i in 1..iterations) (
-   % print("Iteration \(show(i)), rate=\(show(adaRate))\n") /\
     scope(
          (post(uniformNeighbourhood(vars,adaRate/100.0)) /\
           time_limit(exploreTime,
                 bab_min(obj)) /\ 
           commit() /\ print() )
-      \/ (adaRate := adaRate + step /\ fail)%*\label{ex:alns:adaption}*)
+      \/ (adaRate := adaRate + step /\ fail)
     )
     /\ post(obj < sol(obj))
   );
@@ -235,9 +232,9 @@ function ann: adaptive_lns_min(var int: obj, array[int] of var int: vars,
 predicate uniformNeighbourhood(array[int] of var int: x, float: destrRate) = 
   if hasSol() then
     forall(i in index_set(x)) (
-      if uniform(0.0,1.0) > destrRate then %*\label{ex:rlns:random}*)
-        x[i] = sol(x[i])  %*\label{ex:rlns:keep}*)
-      else true endif %*\label{ex:rlns:destroy}*)
+      if uniform(0.0,1.0) > destrRate then 
+        x[i] = sol(x[i]) 
+      else true endif
     )
   else true endif;
 
