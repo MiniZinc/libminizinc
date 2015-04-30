@@ -3482,11 +3482,11 @@ namespace MiniZinc {
               std::vector<Expression*> clause_neg(1);
               clause_neg[0] = boe0;
               args.push_back(new ArrayLit(boe1->loc().introduce(), clause_pos));
-              Type t0 = boe0->type();
+              Type t0 = boe1->type();
               t0.dim(1);
               args[0]->type(t0);
               args.push_back(new ArrayLit(boe0->loc().introduce(), clause_neg));
-              Type t1 = boe1->type();
+              Type t1 = boe0->type();
               t1.dim(1);
               args[1]->type(t1);
               id = constants().ids.clause;
