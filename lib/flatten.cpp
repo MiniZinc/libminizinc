@@ -3466,23 +3466,32 @@ namespace MiniZinc {
               }
             }
             GC::lock();
-            std::vector<Expression*> bo_args(2);
+            std::vector<Expression*> args;
             ASTString id;
             if (ctx.neg) {
+              std::vector<Expression*> bo_args(2);
               bo_args[0] = boe0;
               bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
               bo_args[1]->type(boe1->type());
               id = constants().ids.forall;
+              args.push_back(new ArrayLit(bo->loc(),bo_args));
+              args[0]->type(Type::varbool(1));
             } else {
-              bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
-              bo_args[0]->type(boe0->type());
-              bo_args[1] = boe1;
-              id = constants().ids.exists;
+              std::vector<Expression*> clause_pos(1);
+              clause_pos[0] = boe1;
+              std::vector<Expression*> clause_neg(1);
+              clause_neg[0] = boe0;
+              args.push_back(new ArrayLit(boe1->loc().introduce(), clause_pos));
+              Type t0 = boe0->type();
+              t0.dim(1);
+              args[0]->type(t0);
+              args.push_back(new ArrayLit(boe0->loc().introduce(), clause_neg));
+              Type t1 = boe1->type();
+              t1.dim(1);
+              args[1]->type(t1);
+              id = constants().ids.clause;
             }
             ctx.neg = false;
-            std::vector<Expression*> args(1);
-            args[0]= new ArrayLit(bo->loc(),bo_args);
-            args[0]->type(Type::varbool(1));
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
             c->type(c->decl()->rtype(env,args));
