@@ -4844,7 +4844,16 @@ namespace MiniZinc {
                 rhs->decl(decl);
                 removeIsOutput(reallyFlat);
                 
-                outputVarDecls(e,item,rhs);
+                if (e.vo.occurrences(reallyFlat)==0 && reallyFlat->e()==NULL) {
+                  IdMap<int>::iterator cur_idx = e.vo.idx.find(reallyFlat->id());
+                  if (cur_idx != e.vo.idx.end()) {
+                    VarDeclI* vdi = (*e.flat())[cur_idx->second]->cast<VarDeclI>();
+                    vdi->remove();
+                  }
+                  
+                }
+                
+                outputVarDecls(e,item,it->second()->cast<Call>());
                 vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
