@@ -4022,7 +4022,9 @@ namespace MiniZinc {
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
             if (mixContext) {
-              if (c->args()[i]->type().bt()==Type::BT_BOOL) {
+              if (cid==constants().ids.clause) {
+                argctx.b = (i==0 ? +nctx.b : -nctx.b);
+              } else if (c->args()[i]->type().bt()==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->args()[i]->type().bt()==Type::BT_INT) {
                 argctx.i = C_MIX;
