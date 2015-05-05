@@ -541,7 +541,9 @@ namespace MiniZinc {
                bool ignoreStdlib,
                bool parseDocComments,
                bool verbose,
-               ostream& err) {
+               ostream& err,
+               Model* m = NULL
+              ) {
     GCLock lock;
     string fileDirname; string fileBasename;
     filepath(filename, fileDirname, fileBasename);
@@ -553,7 +555,7 @@ namespace MiniZinc {
     vector<pair<string,Model*> > files;
     map<string,Model*> seenModels;
     
-    Model* model = new Model();
+    Model* model = (m) ? m : new Model();
     model->setFilename(fileBasename);
 
     if (!ignoreStdlib) {
