@@ -847,7 +847,7 @@ namespace MiniZinc {
             GCLock lock;
             ArrayLit* al = e->cast<ArrayLit>();
             /// TODO: review if limit of 10 is a sensible choice
-            if (al->v().size() <= 10)
+            if (al->type().bt()==Type::BT_ANN || al->v().size() <= 10)
               return e;
 
             std::vector<TypeInst*> ranges(al->dims());
