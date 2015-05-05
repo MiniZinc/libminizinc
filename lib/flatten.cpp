@@ -4014,6 +4014,14 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->v()[i],r,b);
           ret.r = bind(env,ctx,r,constants().lit_true);
         } else {
+          
+          if (decl->e() && decl->params().size()==1 && decl->e()->isa<Id>() &&
+              decl->params()[0]->ti()->domain()==NULL &&
+              decl->e()->cast<Id>()->decl() == decl->params()[0]) {
+            ret = flat_exp(env, ctx, c->args()[0], r, b);
+            break;
+          }
+          
           std::vector<EE> args_ee(c->args().size());
           bool mixContext = decl->e()!=NULL ||
             (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
