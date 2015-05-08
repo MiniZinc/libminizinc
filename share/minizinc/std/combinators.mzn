@@ -66,6 +66,12 @@ function ann: break;
 % assign search variable x to y
 annotation comb_assign(int: x,int: y);
 
+% assign search variable x to y
+annotation comb_assign(float: x,float: y);
+
+% assign search variable x to y
+annotation comb_assign(bool: x,bool: y);
+
 % assign solution variable s to result of c
 annotation comb_assign(ann: s,ann: c);
 
