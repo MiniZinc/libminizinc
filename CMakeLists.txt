@@ -1,4 +1,17 @@
 cmake_minimum_required (VERSION 2.8.7)
+
+if (USE_STDLIBCPP)
+  set(MZN_LIBCPP libstdc++)
+else()
+  set(MZN_LIBCPP libc++)
+endif()
+
+if(APPLE)
+   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
+endif(APPLE)
+
 project (libminizinc CXX C)
 
 # The version number.
@@ -18,18 +31,6 @@ check_cxx_compiler_flag(-Werror HAS_WERROR)
 if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
-
-if (USE_STDLIBCPP)
-  set(MZN_LIBCPP libstdc++)
-else()
-  set(MZN_LIBCPP libc++)
-endif()
-
-if(APPLE)
-   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
-endif(APPLE)
 
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
