@@ -5986,6 +5986,19 @@ namespace MiniZinc {
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
+        
+        std::vector<Expression*> removeAnns;
+        for (ExpressionSetIter anns = ci->e()->ann().begin(); anns != ci->e()->ann().end(); ++anns) {
+          if (Call* c = (*anns)->dyn_cast<Call>()) {
+            if (c->id() == constants().ann.defines_var && c->args()[0]->type().ispar()) {
+              removeAnns.push_back(c);
+            }
+          }
+        }
+        for (unsigned int i=0; i<removeAnns.size(); i++) {
+          ci->e()->ann().remove(removeAnns[i]);
+        }
+        
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
           if (vc->id() == constants().ids.exists) {
             GCLock lock;
