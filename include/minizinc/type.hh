@@ -21,7 +21,7 @@ namespace MiniZinc {
   class Type {
   public:
     /// Type-inst
-    enum TypeInst { TI_PAR, TI_VAR, TI_SVAR };
+    enum TypeInst { TI_PAR, TI_VAR };
     /// Basic type
     enum BaseType { BT_TOP, BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
                     BT_BOT, BT_UNKNOWN };
@@ -32,7 +32,7 @@ namespace MiniZinc {
     /// Whether the par expression contains a var argument
     enum ContainsVarType { CV_NO, CV_YES };
   private:
-    unsigned int _ti : 3;
+    unsigned int _ti : 1;
     unsigned int _bt : 4;
     unsigned int _st  : 1;
     unsigned int _ot  : 1;
@@ -152,8 +152,8 @@ namespace MiniZinc {
     bool isstring(void) const { return isplain() && _bt==BT_STRING; }
     bool isvar(void) const { return _ti!=TI_PAR; }
     bool isvarbool(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_BOOL && _ot==OT_PRESENT; }
+    bool isvarfloat(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_FLOAT && _ot==OT_PRESENT; }
     bool isvarint(void) const { return _ti==TI_VAR && _dim==0 && _st==ST_PLAIN && _bt==BT_INT && _ot==OT_PRESENT; }
-    bool issvar(void) const { return _ti==TI_SVAR; }
     bool ispar(void) const { return _ti==TI_PAR; }
     bool isopt(void) const { return _ot==OT_OPTIONAL; }
     bool ispresent(void) const { return _ot==OT_PRESENT; }
@@ -215,7 +215,6 @@ namespace MiniZinc {
       switch (_ti) {
         case TI_PAR: break;
         case TI_VAR: oss<<"var "; break;
-        case TI_SVAR: oss<<"svar "; break;
       }
       if (_ot==OT_OPTIONAL) oss<<"opt ";
       if (_st==ST_SET) oss<<"set of ";
@@ -232,10 +231,21 @@ namespace MiniZinc {
       return oss.str();
     }
   public:
+    /// Check if \a bt0 is a subtype of \a bt1
+    static bool bt_subtype(const BaseType& bt0, const BaseType& bt1) {
+      if (bt0==bt1)
+        return true;
+      switch (bt0) {
+        case BT_BOOL: return (bt1==BT_INT || bt1==BT_FLOAT);
+        case BT_INT: return bt1==BT_FLOAT;
+        default: return false;
+      }
+    }
+
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t) const {
       if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
-          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && (_ti==TI_PAR || _ti==TI_SVAR) &&
+          ( bt()==BT_BOT || bt_subtype(bt(), t.bt()) || t.bt()==BT_TOP) && _ti==TI_PAR &&
           (_ot==OT_PRESENT || _ot==t._ot) )
         return true;
       // either same dimension or t has variable dimension
@@ -244,15 +254,12 @@ namespace MiniZinc {
       // same type, this is present or both optional
       if (_ti==t._ti && bt_subtype(bt(),t.bt()) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
-      // this is par or svar, other than that same type as t
-      if ((_ti==TI_PAR || _ti==TI_SVAR) && bt_subtype(bt(),t.bt()) && _st==t._st)
+      // this is par other than that same type as t
+      if (_ti==TI_PAR && bt_subtype(bt(),t.bt()) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
-      // t is svar, other than that same type as this
-      if (t._ti==TI_SVAR && bt_subtype(bt(),t.bt()) && _st==t._st)
-        return _ot==OT_PRESENT || _ot==t._ot;
-      if ( (_ti==TI_PAR || _ti==TI_SVAR) && t._bt==BT_BOT)
+      if ( _ti==TI_PAR && t._bt==BT_BOT)
         return true;
-      if ((_ti==t._ti || _ti==TI_PAR || _ti==TI_SVAR) && _bt==BT_BOT && _st==t._st)
+      if ((_ti==t._ti || _ti==TI_PAR) && _bt==BT_BOT && (_st==t._st || _st==ST_PLAIN))
         return _ot==OT_PRESENT || _ot==t._ot;
       if (t._bt==BT_TOP && (_ot==OT_PRESENT || _ot==t._ot) &&
           (t._st==ST_PLAIN || _st==t._st) &&
@@ -266,16 +273,6 @@ namespace MiniZinc {
       return toInt()<t.toInt() ? -1 : (toInt()>t.toInt() ? 1 : 0);
     }
 
-    /// Check if \a bt0 is a subtype of \a bt1
-    static bool bt_subtype(const BaseType& bt0, const BaseType& bt1) {
-      if (bt0==bt1)
-        return true;
-      switch (bt0) {
-        case BT_BOOL: return (bt1==BT_INT || bt1==BT_FLOAT);
-        case BT_INT: return bt1==BT_FLOAT;
-        default: return false;
-      }
-    }
   };
   
 };

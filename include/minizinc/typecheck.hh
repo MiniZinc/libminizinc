@@ -28,30 +28,32 @@ namespace MiniZinc {
     /// List of all declarations
     Decls decls;
     /// Map from identifiers to declarations
-    DeclMap env;
+    DeclMap idmap;
     /// Map from declarations to positions
     PosMap pos;
     
     /// Add a variable declaration
-    void add(VarDecl* vd, bool unique);
+    void add(EnvI& env, VarDecl* vd, bool unique);
     /// Remove a variable declaration
-    void remove(VarDecl* vd);
+    void remove(EnvI& env, VarDecl* vd);
+    /// Get variable declaration from identifier \a id
+    VarDecl* get(EnvI& env, const ASTString& id, const Location& loc);
     
-    VarDecl* checkId(const ASTString& id, const Location& loc);
-    VarDecl* checkId(Id* id, const Location& loc);
+    VarDecl* checkId(EnvI& env, const ASTString& id, const Location& loc);
+    VarDecl* checkId(EnvI& env, Id* id, const Location& loc);
     /// Run the topological sorting for expression \a e
-    void run(Expression* e);
+    void run(EnvI& env, Expression* e);
   };
   
   /// Type check the model \a m
-  void typecheck(Model* m, std::vector<TypeError>& typeErrors,
+  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors,
                  bool ignoreUndefinedParameters = false);
 
   /// Type check new assign item \a ai in model \a m
-  void typecheck(Model* m, AssignI* ai);
+  void typecheck(Env& env, Model* m, AssignI* ai);
 
   /// Typecheck FlatZinc variable declarations
-  void typecheck_fzn(Model* m);
+  void typecheck_fzn(Env& env, Model* m);
   
 }
 

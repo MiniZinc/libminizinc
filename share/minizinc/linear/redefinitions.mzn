@@ -2,6 +2,7 @@
 % FlatZinc built-in redefinitions for linear solvers.
 %
 % Sebastian Brand
+% Gleb Belov     Corrected array_var_float_element and float_lin_lt_reif
 %-----------------------------------------------------------------------------%
 
 function var bool: reverse_map(var int: x) = (x==1);
@@ -261,7 +262,10 @@ predicate float_lin_le_reif(array[int] of float: c, array[int] of var float: x,
 
 predicate float_lin_lt_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-    float_lin_le_reif(c, x, d - 1.0, b);
+    let { var 0.0..1.0: p = int2float(bool2int(b)) }
+    in
+    aux_float_lt_if_1(sum(i in index_set(x))( c[i] * x[i] ), d, p) /\
+    aux_float_ge_if_0(sum(i in index_set(x))( c[i] * x[i] ), d, p);
 
 %-----------------------------------------------------------------------------%
 % Minimum, maximum, absolute value
@@ -414,8 +418,7 @@ predicate array_float_element(var int: x, array[int] of float: a,
 predicate array_var_float_element(var int: x, array[int] of var float: a,
                                   var float: z) =
     let { set of int: ix = index_set(a),
-          array[ix] of var 0..1: x_eq_d,
-          array[ix] of var lb_array(a)..ub_array(a): a2 }
+          array[ix] of var 0..1: x_eq_d }
     in
     sum(i in ix)(     x_eq_d[i] ) = 1
     /\
@@ -423,12 +426,10 @@ predicate array_var_float_element(var int: x, array[int] of var float: a,
     /\
     forall(i in ix)(
         % x_eq_d[i] -> a[i] = a2[i]
-        a[i] - a2[i] >= (lb(a[i])-ub(a2[i]))*int2float(1-x_eq_d[i])
+        a[i] - z >= (lb(a[i])-ub(z))*int2float(1-x_eq_d[i])
         /\
-        a2[i] - a[i] >= (lb(a2[i])-ub(a[i]))*int2float(1-x_eq_d[i])
-    )
-    /\
-    sum(a2) = z;
+        z - a[i] >= (lb(z)-ub(a[i]))*int2float(1-x_eq_d[i])
+    );
 
 %-----------------------------------------------------------------------------%
 % Domain constraints
@@ -610,3 +611,5 @@ predicate array_float_minimum(var float: m, array[int] of var float: x) =
     y[l] = x[l] /\
     m = y[u] /\
     forall (i in l+1 .. u) ( y[i] == min(x[i],y[i-1]) );
+
+mzn_opt_only_range_domains = true;

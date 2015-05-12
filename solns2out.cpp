@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
   istream& solstream = cin;
 
   string solution_separator = "----------";
+  string solution_comma     = "";
   string unsatisfiable_msg  = "=====UNSATISFIABLE=====";
   string unbounded_msg      = "=====UNBOUNDED=====";
   string unknown_msg        = "=====UNKNOWN=====";
@@ -65,8 +66,6 @@ int main(int argc, char** argv) {
   if (argc < 2)
     goto error;
 
-  GC::init();
-  
   for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc solution printing tool, version "
@@ -104,6 +103,12 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       solution_separator = string(argv[i]);
+    } else if (string(argv[i])=="--soln-comma" ||
+               string(argv[i])=="--solution-comma") {
+      ++i;
+      if (i==argc)
+        goto error;
+      solution_comma = string(argv[i]);
     } else if (string(argv[i])=="--unsat-msg" ||
                string(argv[i])=="--unsatisfiable-msg") {
       ++i;
@@ -164,9 +169,10 @@ int main(int argc, char** argv) {
                                std::cerr)) {
       try {
         std::vector<TypeError> typeErrors;
-        MiniZinc::typecheck(outputm,typeErrors);
-        MiniZinc::registerBuiltins(outputm);
-
+        Env env(outputm);
+        MiniZinc::typecheck(env,outputm,typeErrors);
+        MiniZinc::registerBuiltins(env,outputm);
+        
         typedef pair<VarDecl*,Expression*> DE;
         ASTStringMap<DE>::t declmap;
         Expression* outputExpr = NULL;
@@ -184,6 +190,8 @@ int main(int argc, char** argv) {
             file_ostream.open(flag_output_file.c_str(), std::fstream::out);
         ostream& fout = flag_output_file.empty() ? std::cout : file_ostream;
 
+        int solutions_found = 0;
+
         string solution;
         string comments;
         for (;;) {
@@ -195,8 +203,13 @@ int main(int argc, char** argv) {
               continue;
             }
             if (line=="----------") {
+              ++solutions_found;
               if (flag_output_time)
                 fout << "% time elapsed: " << stoptime(starttime) << "\n";
+              // Put the "solution comma" before the solution itself,
+              // but only for solutions after the first one.
+              if (solutions_found > 1 && !solution_comma.empty())
+                fout << solution_comma << std::endl;
               if (outputExpr != NULL) {
                 for (unsigned int i=0; i<outputm->size(); i++) {
                   if (VarDeclI* vdi = (*outputm)[i]->dyn_cast<VarDeclI>()) {
@@ -215,24 +228,24 @@ int main(int argc, char** argv) {
                     }
                     ai->e()->type(it->second.first->type());
                     ai->decl(it->second.first);
-                    typecheck(outputm, ai);
+                    typecheck(env,outputm, ai);
                     if (Call* c = ai->e()->dyn_cast<Call>()) {
                       // This is an arrayXd call, make sure we get the right builtin
                       assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
                       for (unsigned int i=0; i<c->args().size(); i++)
                         c->args()[i]->type(Type::parsetint());
                       c->args()[c->args().size()-1]->type(it->second.first->type());
-                      c->decl(outputm->matchFn(c));
+                      c->decl(outputm->matchFn(env.envi(),c));
                     }
                     it->second.first->e(ai->e());
                   }
                 }
 
                 GCLock lock;
-                ArrayLit* al = eval_array_lit(outputExpr);
+                ArrayLit* al = eval_array_lit(env.envi(),outputExpr);
                 std::string os;
                 for (unsigned int i=0; i<al->v().size(); i++) {
-                  std::string s = eval_string(al->v()[i]);
+                  std::string s = eval_string(env.envi(),al->v()[i]);
                   if (!s.empty()) {
                     os = s;
                     fout << os;
@@ -317,7 +330,8 @@ error:
             << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
             << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
             << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
-            << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string used to separate solutions.\n    The default is to use the FlatZinc solution separator,\n    \"----------\"." << std::endl
+            << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc,\n    \"----------\"." << std::endl
+            << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate solutions.\n    The default is the empty string." << std::endl
             << "  --unsat-msg <msg>, --unsatisfiable-msg <msg>\n    Specify the message to print if the model instance is\n    unsatisfiable.\n    The default is to print \"=====UNSATISFIABLE=====\"." << std::endl
             << "  --unbounded-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unbounded.\n    The default is to print \"=====UNBOUNDED=====\"." << std::endl
             << "  --unknown-msg <msg>\n    Specify the message to print if search terminates without\n    the entire search space having been explored and no\n    solution has been found.\n    The default is to print \"=====UNKNOWN=====\"." << std::endl

@@ -16,6 +16,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <cerrno>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -53,6 +54,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_statistics = false;
   
   Timer starttime;
   Timer lasttime;
@@ -71,11 +73,9 @@ int main(int argc, char** argv) {
   bool flag_output_ozn_stdout = false;
   bool flag_instance_check_only = false;
   FlatteningOptions fopts;
-  
+
   if (argc < 2)
     goto error;
-
-  GC::init();
   
   for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
@@ -209,10 +209,10 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
-    } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
+    } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
+      flag_statistics = true;
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -291,12 +291,13 @@ int main(int argc, char** argv) {
                          flag_verbose, errstream)) {
       try {
         if (flag_typecheck) {
+          Env env(m);
           if (flag_verbose)
             std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(m, typeErrors);
+          MiniZinc::typecheck(env, m, typeErrors);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -306,14 +307,13 @@ int main(int argc, char** argv) {
             }
             exit(EXIT_FAILURE);
           }
-          MiniZinc::registerBuiltins(m);
+          MiniZinc::registerBuiltins(env,m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
             try {
               flatten(env,fopts);
             } catch (LocationException& e) {
@@ -333,7 +333,7 @@ int main(int argc, char** argv) {
             env.clearWarnings();
             Model* flat = env.flat();
             if (flag_verbose)
-              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              std::cerr << " done (" << stoptime(lasttime) << ", max stack depth " << env.maxCallStack() << ")" << std::endl;
             
             if (flag_optimize) {
               if (flag_verbose)
@@ -359,6 +359,59 @@ int main(int argc, char** argv) {
               env.flat()->compact();
             }
             
+            if (flag_statistics) {
+              FlatModelStatistics stats = statistics(env);
+              std::cerr << "Generated FlatZinc statistics:\n";
+              std::cerr << "Variables: ";
+              bool had_one = false;
+              if (stats.n_bool_vars) {
+                had_one = true;
+                std::cerr << stats.n_bool_vars << " bool";
+              }
+              if (stats.n_int_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_int_vars << " int";
+              }
+              if (stats.n_float_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_float_vars << " float";
+              }
+              if (stats.n_set_vars) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_set_vars << " int";
+              }
+              if (!had_one)
+                std::cerr << "none";
+              std::cerr << "\n";
+              std::cerr << "Constraints: ";
+              had_one = false;
+              if (stats.n_bool_ct) {
+                had_one = true;
+                std::cerr << stats.n_bool_ct << " bool";
+              }
+              if (stats.n_int_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_int_ct << " int";
+              }
+              if (stats.n_float_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_float_ct << " float";
+              }
+              if (stats.n_set_ct) {
+                if (had_one) std::cerr << ", ";
+                had_one = true;
+                std::cerr << stats.n_set_ct << " int";
+              }
+              if (!had_one)
+                std::cerr << "none";
+              std::cerr << "\n";
+            }
+            
             if (flag_verbose)
               std::cerr << "Printing FlatZinc ...";
             if (flag_output_fzn_stdout) {
@@ -367,6 +420,12 @@ int main(int argc, char** argv) {
             } else {
               std::ofstream os;
               os.open(flag_output_fzn.c_str(), ios::out);
+              if (!os.good()) {
+                if (flag_verbose)
+                  std::cerr << std::endl;
+                std::cerr << "I/O error: cannot open fzn output file. " << strerror(errno) << "." << std::endl;
+                exit(EXIT_FAILURE);
+              }
               Printer p(os,0);
               p.print(flat);
               os.close();
@@ -382,6 +441,12 @@ int main(int argc, char** argv) {
               } else {
                 std::ofstream os;
                 os.open(flag_output_ozn.c_str(), ios::out);
+                if (!os.good()) {
+                  if (flag_verbose)
+                    std::cerr << std::endl;
+                  std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
+                  exit(EXIT_FAILURE);
+                }
                 Printer p(os,0);
                 p.print(env.output());
                 os.close();
@@ -415,8 +480,18 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (flag_verbose)
-    std::cerr << "Done (overall time " << stoptime(starttime) << ")." << std::endl;
+  if (flag_verbose) {
+    std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
+    size_t mem = GC::maxMem();
+    if (mem < 1024)
+      std::cerr << "maximum memory " << mem << " bytes";
+    else if (mem < 1024*1024)
+      std::cerr << "maximum memory " << mem/1024 << " Kbytes";
+    else
+      std::cerr << "maximum memory " << mem/(1024*1024) << " Mbytes";
+    std::cerr << ")." << std::endl;
+    
+  }
   return 0;
 
 error:
@@ -428,6 +503,7 @@ error:
             << "  --version\n    Print version information" << std::endl
             << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
             << "  -v, --verbose\n    Print progress statements" << std::endl
+            << "  -s, --statistics\n    Print statistics" << std::endl
             << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
             << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
             << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl

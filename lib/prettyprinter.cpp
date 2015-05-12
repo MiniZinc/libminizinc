@@ -169,7 +169,6 @@ namespace MiniZinc {
       switch (type.ti()) {
       case Type::TI_PAR: break;
       case Type::TI_VAR: os << "var "; break;
-      case Type::TI_SVAR: os << "svar "; break;
       }
       if (type.ot()==Type::OT_OPTIONAL)
         os << "opt ";
@@ -1014,7 +1013,6 @@ namespace MiniZinc {
     switch (type.ti()) {
     case Type::TI_PAR: break;
     case Type::TI_VAR: dl->addStringToList("var "); break;
-    case Type::TI_SVAR: dl->addStringToList("svar "); break;
     }
     if (type.ot()==Type::OT_OPTIONAL)
       dl->addStringToList("opt ");

@@ -23,9 +23,14 @@ namespace MiniZinc {
   class VarDeclIterator;
   class ConstraintIterator;
   
+  class CopyMap;
+  class EnvI;
+  
   /// A MiniZinc model
   class Model {
     friend class GC;
+    friend Model* copy(EnvI& env, CopyMap& cm, Model* m);
+
   protected:
     /// Previous model in root set list
     Model* _roots_prev;
@@ -91,16 +96,16 @@ namespace MiniZinc {
     }
 
     /// Register a builtin function item
-    void registerFn(FunctionI* fi);
+    void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
     /// Return function declaration for \a id matching \a args
-    FunctionI* matchFn(const ASTString& id,
+    FunctionI* matchFn(EnvI& env, const ASTString& id,
                        const std::vector<Expression*>& args) const;
     /// Return function declaration for \a id matching types \a t
-    FunctionI* matchFn(const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(Call* c) const;
+    FunctionI* matchFn(EnvI& env, Call* c) const;
 
     /// Return item \a i
     Item*& operator[] (int i);
@@ -141,7 +146,10 @@ namespace MiniZinc {
     void compact(void);
     
     /// Make model failed
-    void fail(void);
+    void fail(EnvI& env);
+
+    /// Return whether model is known to be failed
+    bool failed(void) const;
   };
 
   class VarDeclIterator {
@@ -220,11 +228,44 @@ namespace MiniZinc {
     pointer operator->() const { return (*_it)->cast<ConstraintI>(); }
   };
 
+  
+  class EnvI;
+  
+  /// Environment
+  class Env {
+  private:
+    EnvI* e;
+  public:
+    Env(Model* m);
+    ~Env(void);
+    
+    Model* model(void);
+    Model* flat(void);
+    Model* output(void);
+    EnvI& envi(void);
+    const EnvI& envi(void) const;
+    std::ostream& dumpErrorStack(std::ostream& os);
+    const std::vector<std::string>& warnings(void);
+    void clearWarnings(void);
+    
+    unsigned int maxCallStack(void) const;
+  };
+
+  class CallStackItem {
+  public:
+    EnvI& env;
+    CallStackItem(EnvI& env0, Expression* e);
+    CallStackItem(EnvI& env0, Id* ident, IntVal i);
+    ~CallStackItem(void);
+  };
+
   /// Visitor for model items
   class ItemVisitor {
   public:
     /// Enter model
     bool enterModel(Model* m) { return true; }
+    /// Enter item
+    bool enter(Item* m) { return true; }
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -258,6 +299,8 @@ namespace MiniZinc {
           continue;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
+            continue;
+          if (!iter.enter((*cm)[i]))
             continue;
           switch ((*cm)[i]->iid()) {
           case Item::II_INC:

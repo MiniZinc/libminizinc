@@ -38,6 +38,13 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline IntLit*
+  IntLit::a(MiniZinc::IntVal v) {
+    if (v >= -constants().maxConstInt && v <= constants().maxConstInt)
+      return constants().integers->v()[v.toInt()+constants().maxConstInt]->cast<IntLit>();
+    return new IntLit(Location().introduce(), v);
+  }
+  
   inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {
@@ -147,7 +154,7 @@ namespace MiniZinc {
 
   inline
   AnonVar::AnonVar(const Location& loc)
-  : Expression(loc,E_ANON,Type::varbot()) {
+  : Expression(loc,E_ANON,Type()) {
     rehash();
   }
   
@@ -218,7 +225,7 @@ namespace MiniZinc {
     dims[0]=1;
     dims[1]=v.size();
     dims[2]=1;
-    dims[3]=v[0].size();
+    dims[3]=v.size() > 0 ? v[0].size() : 0;
     std::vector<Expression*> vv;
     for (unsigned int i=0; i<v.size(); i++)
       for (unsigned int j=0; j<v[i].size(); j++)

@@ -710,7 +710,49 @@ namespace MiniZinc { namespace Ranges {
       return CS_SUBSET;
     return disjoint ? CS_DISJOINT : CS_NONE;
   }
-  
+
+  template<class I, class J>
+  inline bool
+  less(I& i, J& j) {
+    while (i()) {
+      if (!j())
+        return false;
+      if (i.min() < j.min())
+        return true;
+      if (i.min() > j.min())
+        return false;
+      if (i.max() < j.max())
+        return true;
+      if (i.max() > j.max())
+        return false;
+      ++i;
+      ++j;
+    }
+    if (j())
+      return true;
+    return false;
+  }
+
+  template<class I, class J>
+  inline bool
+  lessEq(I& i, J& j) {
+    while (i()) {
+      if (!j())
+        return false;
+      if (i.min() < j.min())
+        return true;
+      if (i.min() > j.min())
+        return false;
+      if (i.max() < j.max())
+        return true;
+      if (i.max() > j.max())
+        return false;
+      ++i;
+      ++j;
+    }
+    return true;
+  }
+
 }}
 
 #endif

@@ -267,6 +267,8 @@ namespace MiniZinc {
     void v(IntVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
+    /// Allocate new temporary literal (tries to avoid allocation)
+    static IntLit* a(IntVal v);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -1086,6 +1088,8 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
   };
 
+  class EnvI;
+  
   /// \brief Function declaration item
   class FunctionI : public Item {
   protected:
@@ -1104,17 +1108,17 @@ namespace MiniZinc {
     static const ItemId iid = II_FUN;
     
     /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (ASTExprVec<Expression>);
+    typedef Expression* (*builtin_e) (EnvI&, Call*);
     /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (ASTExprVec<Expression>);
+    typedef IntVal (*builtin_i) (EnvI&, Call*);
     /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (ASTExprVec<Expression>);
+    typedef bool (*builtin_b) (EnvI&, Call*);
     /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (ASTExprVec<Expression>);
+    typedef FloatVal (*builtin_f) (EnvI&, Call*);
     /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (ASTExprVec<Expression>);
+    typedef IntSetVal* (*builtin_s) (EnvI&, Call*);
     /// Type of builtin string-valued functions
-    typedef std::string (*builtin_str) (ASTExprVec<Expression>);
+    typedef std::string (*builtin_str) (EnvI&, Call*);
 
     /// Builtin functions (or NULL)
     struct {
@@ -1149,13 +1153,19 @@ namespace MiniZinc {
     
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(const std::vector<Expression*>& ta);
+    Type rtype(EnvI& env, const std::vector<Expression*>& ta);
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(const std::vector<Type>& ta);
+    Type rtype(EnvI& env, const std::vector<Type>& ta);
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
     Type argtype(const std::vector<Expression*>& ta, int n);
+
+    /// Mark for GC
+    void mark(void) {
+      _gc_mark = 1;
+      loc().mark();
+    }
   };
 
   /**
@@ -1352,6 +1362,9 @@ namespace MiniZinc {
         ASTString doc_comment;
         ASTString is_introduced;
       } ann;
+      static const int maxConstInt = 1000;
+      /// Constant integers in the range -maxConstInt..maxConstInt
+      ArrayLit* integers;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit

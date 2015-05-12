@@ -120,6 +120,7 @@ namespace MiniZinc {
           cur->cast<Call>()->id().mark();
           pushall(cur->cast<Call>()->_args);
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
+            fi->mark();
             fi->id().mark();
             pushstack(fi->ti());
             pushann(fi->ann());
@@ -566,6 +567,9 @@ namespace MiniZinc {
       if (_let[i]->isa<VarDecl>()) {
         VarDecl* vd = _let[i]->cast<VarDecl>();
         GC::trail(&vd->_e,vd->e());
+        if (vd->ti()->ranges().size() > 0) {
+          GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
+        }
       }
     }
   }
@@ -614,7 +618,7 @@ namespace MiniZinc {
     const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
     template<class T>
-    Type return_type(FunctionI* fi, const std::vector<T>& ta) {
+    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
       if (fi->id()==constants().var_redef->id())
         return Type::varbool();
       Type ret = fi->ti()->type();
@@ -640,7 +644,7 @@ namespace MiniZinc {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() > 0) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else {
               Type tiit_par = tiit;
@@ -655,14 +659,17 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (tiit_par != its_par) {
-                throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              if (tiit_par.isSubtypeOf(its_par)) {
+                if (it->second.bt() == Type::BT_TOP)
+                  it->second.bt(tiit.bt());
+              } else if (its_par.isSubtypeOf(tiit_par)) {
+                it->second = tiit_par;
+              } else {
+                throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                                 tiid.str()+" instantiated with different types ("+
                                 tiit.toString()+" vs "+
                                 it->second.toString()+")");
               }
-              if (it->second.bt() == Type::BT_TOP)
-                it->second.bt(tiit.bt());
             }
           }
         }
@@ -671,7 +678,7 @@ namespace MiniZinc {
             tii->ranges()[0]->domain()->isa<TIId>()) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           if (getType(ta[i]).dim()==0) {
-            throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
+            throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
                             " must be an array index");
           }
           Type tiit = Type::top(getType(ta[i]).dim());
@@ -680,10 +687,10 @@ namespace MiniZinc {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() == 0) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" used in both array and non-array position");
             } else if (it->second!=tiit) {
-              throw TypeError(getLoc(ta[i],fi),"type-inst variable $"+
+              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" instantiated with different types ("+
                               tiit.toString()+" vs "+
                               it->second.toString()+")");
@@ -694,7 +701,7 @@ namespace MiniZinc {
       if (dh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
-          throw TypeError(fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
+          throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
         ret.bt(it->second.bt());
         if (ret.st()==Type::ST_PLAIN)
           ret.st(it->second.st());
@@ -702,7 +709,7 @@ namespace MiniZinc {
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
-          throw TypeError(fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
+          throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
       }
       return ret;
@@ -710,13 +717,13 @@ namespace MiniZinc {
   }
   
   Type
-  FunctionI::rtype(const std::vector<Expression*>& ta) {
-    return return_type(this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
+    return return_type(env, this, ta);
   }
 
   Type
-  FunctionI::rtype(const std::vector<Type>& ta) {
-    return return_type(this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta) {
+    return return_type(env, this, ta);
   }
 
   Type
@@ -733,8 +740,18 @@ namespace MiniZinc {
           Type toCheck = ta[i]->type();
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
-          if (toCheck != ty && ty.isSubtypeOf(toCheck)) {
-            ty = toCheck;
+          if (toCheck != ty) {
+            if (ty.isSubtypeOf(toCheck)) {
+              ty = toCheck;
+            } else {
+              Type ty_par = ty;
+              ty_par.ti(Type::TI_PAR);
+              Type toCheck_par = toCheck;
+              toCheck_par.ti(Type::TI_PAR);
+              if (ty_par.isSubtypeOf(toCheck_par)) {
+                ty.bt(toCheck.bt());
+              }
+            }
           }
         }
       }
@@ -917,7 +934,6 @@ namespace MiniZinc {
   }
   
   Constants::Constants(void) {
-    GC::init();
     GCLock lock;
     TypeInst* ti = new TypeInst(Location(), Type::parbool());
     lit_true = new BoolLit(Location(), true);
@@ -1162,10 +1178,19 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     
+    
+    std::vector<Expression*> v_ints(maxConstInt*2+1);
+    for (int i=-maxConstInt; i<=maxConstInt; i++)
+      v_ints[i+maxConstInt] = new IntLit(Location().introduce(), i);
+    integers = new ArrayLit(Location().introduce(), v_ints);
+    
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
+    m->addItem(new ConstraintI(Location(),integers));
     m->addItem(var_redef);
   }
+  
+  const int Constants::maxConstInt;
   
   Constants& constants(void) {
     static Constants _c;
@@ -1201,7 +1226,8 @@ namespace MiniZinc {
   Annotation::add(Expression* e) {
     if (_s == NULL)
       _s = new ExpressionSet;
-    _s->insert(e);
+    if (e)
+      _s->insert(e);
   }
   
   void
@@ -1209,12 +1235,13 @@ namespace MiniZinc {
     if (_s == NULL)
       _s = new ExpressionSet;
     for (unsigned int i=e.size(); i--;)
-      _s->insert(e[i]);
+      if (e[i])
+        _s->insert(e[i]);
   }
   
   void
   Annotation::remove(Expression* e) {
-    if (_s) {
+    if (_s && e) {
       _s->remove(e);
     }
   }

@@ -1,23 +1,4 @@
 cmake_minimum_required (VERSION 2.8.7)
-project (libminizinc CXX)
-
-# The version number.
-set (libminizinc_VERSION_MAJOR 2)
-set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 1)
-
-if (ADDITIONAL_DATE_STRING)
-  set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
-endif()
-
-include(CheckCXXCompilerFlag)
-
-SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-check_cxx_compiler_flag(-Werror HAS_WERROR)
-
-if (HAS_WERROR)
-  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
-endif()
 
 if (USE_STDLIBCPP)
   set(MZN_LIBCPP libstdc++)
@@ -31,7 +12,25 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
 
+project (libminizinc CXX)
 
+# The version number.
+set (libminizinc_VERSION_MAJOR 2)
+set (libminizinc_VERSION_MINOR 0)
+set (libminizinc_VERSION_PATCH 2)
+
+if (ADDITIONAL_DATE_STRING)
+  set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
+endif()
+
+include(CheckCXXCompilerFlag)
+
+SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+check_cxx_compiler_flag(-Werror HAS_WERROR)
+
+if (HAS_WERROR)
+  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif()
 
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
@@ -179,6 +178,7 @@ endif(BISON_EXEC)
 
 add_library(minizinc
 lib/ast.cpp
+lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
@@ -226,6 +226,7 @@ include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
+include/minizinc/thirdparty/SafeInt3.hpp
 "${parser_hh}"
 )
 

@@ -17,25 +17,6 @@
 
 namespace MiniZinc {
 
-  class EnvI;
-  
-  /// Environment for flattening
-  class Env {
-  private:
-    EnvI* e;
-  public:
-    Env(Model* m);
-    ~Env(void);
-    
-    Model* model(void);
-    Model* flat(void);
-    Model* output(void);
-    EnvI& envi(void);
-    std::ostream& dumpErrorStack(std::ostream& os);
-    const std::vector<std::string>& warnings(void);
-    void clearWarnings(void);
-  };
-
   /// Exception thrown for errors during flattening
   class FlatteningError : public LocationException {
   public:
@@ -48,12 +29,10 @@ namespace MiniZinc {
 
   /// Options for the flattener
   struct FlatteningOptions {
-    /// Variables support only ranges, convert holes into != constraints
-    bool onlyRangeDomains;
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
     /// Default constructor
-    FlatteningOptions(void) : onlyRangeDomains(false), keepOutputInFzn(false) {}
+    FlatteningOptions(void) : keepOutputInFzn(false) {}
   };
   
   /// Flatten model \a m
@@ -61,6 +40,33 @@ namespace MiniZinc {
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);
+  
+  /// Statistics on flat models
+  struct FlatModelStatistics {
+    /// Number of integer variables
+    int n_int_vars;
+    /// Number of bool variables
+    int n_bool_vars;
+    /// Number of float variables
+    int n_float_vars;
+    /// Number of set variables
+    int n_set_vars;
+    /// Number of bool constraints
+    int n_bool_ct;
+    /// Number of integer constraints
+    int n_int_ct;
+    /// Number of float constraints
+    int n_float_ct;
+    /// Number of set constraints
+    int n_set_ct;
+    /// Constructor
+    FlatModelStatistics(void)
+    : n_int_vars(0), n_bool_vars(0), n_float_vars(0), n_set_vars(0),
+      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0) {}
+  };
+  
+  /// Compute statistics for flat model in \a m
+  FlatModelStatistics statistics(Env& m);
   
 }
 

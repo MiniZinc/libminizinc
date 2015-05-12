@@ -79,7 +79,11 @@ namespace MiniZinc {
     std::vector<const Expression*> callStack;
     std::vector<const Expression*> errorStack;
     std::vector<int> idStack;
+    unsigned int maxCallStack;
     std::vector<std::string> warnings;
+    bool collect_vardecls;
+    std::vector<int> modifiedVarDecls;
+    int in_redundant_constraint;
   protected:
     Map map;
     Model* _flat;
@@ -96,11 +100,15 @@ namespace MiniZinc {
     void dump(void);
     
     void flat_addItem(Item* i);
+    void flat_removeItem(int i);
+    void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
+    void collectVarDecls(bool b);
+    void createErrorStack(void);
   };
 
   Expression* follow_id(Expression* e);
@@ -131,7 +139,7 @@ namespace MiniZinc {
   class LinearTraits<IntLit> {
   public:
     typedef IntVal Val;
-    static Val eval(Expression* e) { return eval_int(e); }
+    static Val eval(EnvI& env, Expression* e) { return eval_int(env,e); }
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
@@ -168,9 +176,9 @@ namespace MiniZinc {
     typedef IntBounds Bounds;
     static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
     static bool finite(const IntVal& v) { return v.isFinite(); }
-    static Bounds compute_bounds(Expression* e) { return compute_int_bounds(e); }
+    static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_int_bounds(env,e); }
     typedef IntSetVal* Domain;
-    static Domain eval_domain(Expression* e) { return eval_intset(e); }
+    static Domain eval_domain(EnvI& env, Expression* e) { return eval_intset(env, e); }
     static Expression* new_domain(Val v) { return new SetLit(Location().introduce(),IntSetVal::a(v,v)); }
     static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location().introduce(),IntSetVal::a(v0,v1)); }
     static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(),d); }
@@ -228,12 +236,13 @@ namespace MiniZinc {
       return static_cast<long long int>(floor(static_cast<FloatVal>(v0.toInt()) / static_cast<FloatVal>(v1.toInt())));
     }
     static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
+    static IntLit* newLit(Val v) { return IntLit::a(v); }
   };
   template<>
   class LinearTraits<FloatLit> {
   public:
     typedef FloatVal Val;
-    static Val eval(Expression* e) { return eval_float(e); }
+    static Val eval(EnvI& env, Expression* e) { return eval_float(env,e); }
     static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
       switch (bot) {
         case BOT_LE:
@@ -269,14 +278,14 @@ namespace MiniZinc {
     typedef FloatBounds Bounds;
     static bool finite(const FloatBounds& ib) { return true; }
     static bool finite(const FloatVal&) { return true; }
-    static Bounds compute_bounds(Expression* e) { return compute_float_bounds(e); }
+    static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef BinOp* Domain;
-    static Domain eval_domain(Expression* e) {
+    static Domain eval_domain(EnvI& env, Expression* e) {
       BinOp* bo = e->cast<BinOp>();
       assert(bo->op() == BOT_DOTDOT);
       if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
         return bo;
-      BinOp* ret = new BinOp(bo->loc(),eval_par(bo->lhs()),BOT_DOTDOT,eval_par(bo->rhs()));
+      BinOp* ret = new BinOp(bo->loc(),eval_par(env,bo->lhs()),BOT_DOTDOT,eval_par(env,bo->rhs()));
       ret->type(bo->type());
       return ret;
     }
@@ -364,6 +373,7 @@ namespace MiniZinc {
     }
     static Val floor_div(Val v0, Val v1) { return v0 / v1; }
     static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
+    static FloatLit* newLit(Val v) { return new FloatLit(Location().introduce(),v); }
   };
 
   template<class Lit>

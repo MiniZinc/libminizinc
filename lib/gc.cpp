@@ -114,6 +114,8 @@ namespace MiniZinc {
     size_t _free_mem;
     /// Memory threshold for next garbage collection
     size_t _gc_threshold;
+    /// High water mark of all allocated memory
+    size_t _max_alloced_mem;
 
     /// A trail item
     struct TItem {
@@ -133,7 +135,8 @@ namespace MiniZinc {
       , _weakRefs(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
-      , _gc_threshold(10) {
+      , _gc_threshold(10)
+      , _max_alloced_mem(0) {
       for (int i=_max_fl+1; i--;)
         _fl[i] = NULL;
     }
@@ -150,6 +153,7 @@ namespace MiniZinc {
         memset(newPage,255,sizeof(HeapPage)+s-1);
 #endif
       _alloced_mem += s;
+      _max_alloced_mem = std::max(_max_alloced_mem, _alloced_mem);
       _free_mem += s;
       if (exact && _page) {
         new (newPage) HeapPage(_page->next,s);
@@ -325,7 +329,9 @@ namespace MiniZinc {
   
   void
   GC::lock(void) {
-    assert(gc());
+    if (gc()==NULL) {
+      gc() = new GC();
+    }
     if (gc()->_lock_count==0)
       gc()->_heap->rungc();
     gc()->_lock_count++;
@@ -365,16 +371,14 @@ namespace MiniZinc {
 
   void
   GC::remove(Model* m) {
-    if (m->_roots_next || m->_roots_prev) {
-      GC* gc = GC::gc();
-      if (m->_roots_next == m->_roots_prev) {
-        gc->_heap->_rootset = NULL;
-      } else {
-        m->_roots_next->_roots_prev = m->_roots_prev;
-        m->_roots_prev->_roots_next = m->_roots_next;
-        if (m==gc->_heap->_rootset)
-          gc->_heap->_rootset = m->_roots_prev;
-      }
+    GC* gc = GC::gc();
+    if (m->_roots_next == m) {
+      gc->_heap->_rootset = NULL;
+    } else {
+      m->_roots_next->_roots_prev = m->_roots_prev;
+      m->_roots_prev->_roots_next = m->_roots_next;
+      if (m==gc->_heap->_rootset)
+        gc->_heap->_rootset = m->_roots_prev;
     }
   }
 
@@ -414,6 +418,8 @@ namespace MiniZinc {
     if (m==NULL)
       return;
     do {
+      m->_filepath.mark();
+      m->_filename.mark();
       for (unsigned int j=0; j<m->_items.size(); j++) {
         Item* i = m->_items[j];
         if (i->_gc_mark==0) {
@@ -622,7 +628,13 @@ namespace MiniZinc {
     }
     if (!gc->_heap->trail.empty())
       gc->_heap->trail.back().mark = false;
-  }  
+  }
+  size_t
+  GC::maxMem(void) {
+    GC* gc = GC::gc();
+    return gc->_heap->_max_alloced_mem;
+  }
+  
 
   void*
   ASTNode::operator new(size_t size) {
@@ -726,13 +738,6 @@ namespace MiniZinc {
     _e = e();
     _valid = true;
     return *this;
-  }
-
-  void
-  GC::init(void) {
-    if (gc()==NULL) {
-      gc() = new GC();
-    }
   }
 
 }

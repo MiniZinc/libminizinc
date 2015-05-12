@@ -105,5 +105,27 @@ namespace MiniZinc { namespace FileUtils {
     return stat(dirname.c_str(), &info)==0 && (info.st_mode & S_IFDIR);
 #endif
   }
+
+  std::string file_path(const std::string& filename) {
+#ifdef _MSC_VER
+    LPSTR lpBuffer, lpFilePart;
+    DWORD nBufferLength = GetFullPathName(filename.c_str(), 0,0,&lpFilePart);
+    if (!(lpBuffer = (LPTSTR)LocalAlloc(LMEM_FIXED, sizeof(TCHAR) * nBufferLength)))
+      return 0;
+    std::string ret;
+    if (!GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart)) {
+      ret = "";
+    } else {
+      ret = std::string(lpBuffer);
+    }
+    LocalFree(lpBuffer);
+    return ret;
+#else
+    char* rp = realpath(filename.c_str(), NULL);
+    std::string rp_s(rp);
+    free(rp);
+    return rp_s;
+#endif
+  }
   
 }}

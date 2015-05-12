@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/model.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/prettyprinter.hh>
 
@@ -17,7 +18,7 @@
 
 namespace MiniZinc {
   
-  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {
+  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL), _failed(false) {
     GC::add(this);
   }
 
@@ -62,7 +63,7 @@ namespace MiniZinc {
   }
   
   void
-  Model::registerFn(FunctionI* fi) {
+  Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;
     while (m->_parent)
       m = m->_parent;
@@ -84,7 +85,7 @@ namespace MiniZinc {
           }
           if (alleq) {
             if (v[i]->e() && fi->e()) {
-              throw TypeError(fi->loc(),
+              throw TypeError(env, fi->loc(),
                               "function with the same type already defined in "
                               +v[i]->loc().toString());
               
@@ -101,7 +102,7 @@ namespace MiniZinc {
   }
 
   FunctionI*
-  Model::matchFn(const ASTString& id,
+  Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Type>& t) {
     if (id==constants().var_redef->id())
       return constants().var_redef;
@@ -169,7 +170,7 @@ namespace MiniZinc {
   }
 
   FunctionI*
-  Model::matchFn(const ASTString& id,
+  Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Expression*>& args) const {
     if (id==constants().var_redef->id())
       return constants().var_redef;
@@ -181,6 +182,8 @@ namespace MiniZinc {
       return NULL;
     }
     const std::vector<FunctionI*>& v = it->second;
+    std::vector<FunctionI*> matched;
+    Expression* botarg = NULL;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -197,17 +200,33 @@ namespace MiniZinc {
             match=false;
             break;
           }
+          if (args[j]->type().isbot() && fi->params()[j]->type().bt()!=Type::BT_TOP) {
+            botarg = args[j];
+          }
         }
         if (match) {
-          return fi;
+          if (botarg)
+            matched.push_back(fi);
+          else
+            return fi;
         }
       }
     }
-    return NULL;
+    if (matched.empty())
+      return NULL;
+    if (matched.size()==1)
+      return matched[0];
+    Type t = matched[0]->ti()->type();
+    t.ti(Type::TI_PAR);
+    for (unsigned int i=1; i<matched.size(); i++) {
+      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+        throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+    }
+    return matched[0];
   }
   
   FunctionI*
-  Model::matchFn(Call* c) const {
+  Model::matchFn(EnvI& env, Call* c) const {
     if (c->id()==constants().var_redef->id())
       return constants().var_redef;
     const Model* m = this;
@@ -218,6 +237,8 @@ namespace MiniZinc {
       return NULL;
     }
     const std::vector<FunctionI*>& v = it->second;
+    std::vector<FunctionI*> matched;
+    Expression* botarg = NULL;
     for (unsigned int i=0; i<v.size(); i++) {
       FunctionI* fi = v[i];
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -235,13 +256,29 @@ namespace MiniZinc {
             match=false;
             break;
           }
+          if (c->args()[j]->type().isbot() && fi->params()[j]->type().bt()!=Type::BT_TOP) {
+            botarg = c->args()[j];
+          }
         }
         if (match) {
-          return fi;
+          if (botarg)
+            matched.push_back(fi);
+          else
+            return fi;
         }
       }
     }
-    return NULL;
+    if (matched.empty())
+      return NULL;
+    if (matched.size()==1)
+      return matched[0];
+    Type t = matched[0]->ti()->type();
+    t.ti(Type::TI_PAR);
+    for (unsigned int i=1; i<matched.size(); i++) {
+      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+        throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+    }
+    return matched[0];
   }
 
   Item*&
@@ -273,11 +310,19 @@ namespace MiniZinc {
   }
   
   void
-  Model::fail(void) {
+  Model::fail(EnvI& env) {
     if (!_failed) {
+      env.addWarning("model inconsistency detected");
       _failed = true;
+      for (unsigned int i=0; i<_items.size(); i++)
+        if (ConstraintI* ci = _items[i]->dyn_cast<ConstraintI>())
+          ci->remove();
       ConstraintI* failedConstraint = new ConstraintI(Location().introduce(),constants().lit_false);
       _items.push_back(failedConstraint);
     }
+  }
+
+  bool Model::failed() const {
+    return _failed;
   }
 }
