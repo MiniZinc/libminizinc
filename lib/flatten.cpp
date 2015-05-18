@@ -5065,6 +5065,7 @@ namespace MiniZinc {
         void vOutputI(OutputI* oi) {
           GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
+          makePar(outputItem->e());
           env.output->addItem(outputItem);
         }
       } _ov1(e,e.output_vo,outputItem);
@@ -5166,7 +5167,6 @@ namespace MiniZinc {
             VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
-            makePar(vdi_copy->e());
             vdi_copy->e()->ti()->domain(NULL);
             vdi_copy->e()->flat(vdi->e()->flat());
             vdi_copy->e()->ann().clear();
@@ -5257,6 +5257,7 @@ namespace MiniZinc {
               }
               env.output_vo.add(reallyFlat, env.output->size());
             }
+            makePar(vdi_copy->e());
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
             topDown(ce, vdi_copy->e());

@@ -428,7 +428,8 @@ namespace MiniZinc {
     default:
         assert(false);
     }
-    ret->type(e->type());
+    if (!ret->isa<Id>() || ret->cast<Id>()->decl()==NULL)
+      ret->type(e->type());
     copy_ann(env,m,e->ann(),ret->ann(),followIds,copyFundecls);
     return ret;
   }
