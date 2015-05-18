@@ -359,6 +359,7 @@ namespace MiniZinc {
     }
     //std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
     if(call->args().size() == 1) {  
+      Expression* arg = eval_par(env.envi(),call->args()[0]);
       // repeat is restricted by comprehension (e.g. repeat (i in 1..10) (comb) )
       if(Comprehension* compr = call->args()[0]->dyn_cast<Comprehension>()) {            
         if(compr->n_generators() != 1) {
@@ -375,12 +376,23 @@ namespace MiniZinc {
             throw TypeError(solver->env().envi(),in->loc(), ssm.str());
           }
           int lb;
+          if(Id* id = in->dyn_cast<Id>()) {
+            if(id->decl()->e()) {
+              in = eval_par(env.envi(), id->decl()->e());
+            }            
+          }
           if(BinOp* bo = in->dyn_cast<BinOp>()) {
             GCLock lock;
             lb = eval_int(env.envi(), bo->lhs()).toInt();
             int ub = eval_int(env.envi(), bo->rhs()).toInt();
             nbIterations = ub - lb + 1;
-          } 
+          }
+          else if(SetLit* sl = in->dyn_cast<SetLit>()) {
+            IntSetVal* isv = sl->isv();
+            lb = isv->min().toInt();
+            int ub = isv->max().toInt();
+            nbIterations = ub - lb + 1;
+          }
           else {
             std::stringstream ssm;
             ssm << "Expected set literal of the form \"(lb..ub)\" instead of \"" << *in << "\"";

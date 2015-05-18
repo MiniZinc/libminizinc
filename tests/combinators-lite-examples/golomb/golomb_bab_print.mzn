@@ -19,6 +19,7 @@ include "combinators.mzn"; % include the search combinators lite
 
 int: m = 8;
 int: n = m*m;
+set of int: TICKS = 1..m;
 
 var 0..n: obj;
 
@@ -39,20 +40,13 @@ constraint alldifferent(differences);
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
-solve :: combinator(
-    scope( 
-       or([
-         repeat(
-             and([
-                 next, % get next solution
-                 print, % print the last found solution
-                 post(obj < sol(obj)) % post constraint
-             ])
-         ),
-         print
-        ])
-     )
-   ) 
-satisfy;
+solve search 
+         repeat (i in TICKS) (
+           if next() then 
+              print() /\
+              print("iteration "++show(i)++"\n")
+           else break
+           endif
+         );
 
 output ["golomb ", show(mark), "\n", show(obj)];
