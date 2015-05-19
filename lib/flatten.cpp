@@ -5795,16 +5795,16 @@ namespace MiniZinc {
       }
     }
     
-    if (!opt.keepOutputInFzn) {
-      createOutput(env);
-    }
-    cleanupOutput(env);
   }
   
   EE flatten(EnvI& env, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt) {
     int startItem = env.flat()->size();
     EE ee = flat_exp(env,Ctx(),e,r,b);
     flatten_loop(env, startItem, opt);
+    if (!opt.keepOutputInFzn) {
+      createOutput(env);
+    }
+    cleanupOutput(env);
     return ee;
   }
   
