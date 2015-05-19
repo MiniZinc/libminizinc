@@ -5345,133 +5345,22 @@ namespace MiniZinc {
     }
     return true;
   }
-  
-  void flatten(Env& e, FlatteningOptions opt) {
-    EnvI& env = e.envi();
+
+  void flatten_loop(EnvI& env, int startItem, FlatteningOptions opt) {
+    // Flatten remaining redefinitions
+    Model& m = *env.flat();
+    int endItem = m.size()-1;
 
     bool onlyRangeDomains;
     {
       GCLock lock;
       Call* check_only_range =
-        new Call(Location(),"mzn_check_only_range_domains", std::vector<Expression*>());
+      new Call(Location(),"mzn_check_only_range_domains", std::vector<Expression*>());
       check_only_range->type(Type::parbool());
-      check_only_range->decl(env.orig->matchFn(e.envi(), check_only_range));
-      onlyRangeDomains = eval_bool(e.envi(), check_only_range);
+      check_only_range->decl(env.orig->matchFn(env, check_only_range));
+      onlyRangeDomains = eval_bool(env, check_only_range);
     }
-    
-    class ExpandArrayDecls : public ItemVisitor {
-    public:
-      EnvI& env;
-      ExpandArrayDecls(EnvI& env0) : env(env0) {}
-      void vVarDeclI(VarDeclI* v) {       
-        if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {         
-          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);          
-        }       
-      }
-    } _ead(env);
-    iterItems<ExpandArrayDecls>(_ead,e.model());;
-    
-    bool hadSolveItem = false;
-    // Flatten main model
-    class FV : public ItemVisitor {
-    public:
-      EnvI& env;
-      bool& hadSolveItem;
-      FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
-      bool enter(Item* i) {
-        return !(i->isa<ConstraintI>()  && env.flat()->failed());
-      }
-      void vVarDeclI(VarDeclI* v) {
-        if (v->e()->type().isvar() || v->e()->type().isann()) {
-          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
-        } else {
-          if (v->e()->e()==NULL) {
-            if (!v->e()->type().isann())
-              throw EvalError(env, v->e()->loc(), "Undefined parameter", v->e()->id()->v());
-          } else {
-            CallStackItem csi(env,v->e());
-            GCLock lock;
-            Location v_loc = v->e()->e()->loc();
-            if (!v->e()->e()->type().cv()) {
-              v->e()->e(eval_par(env,v->e()->e()));
-            } else {
-              EE ee = flat_exp(env, Ctx(), v->e()->e(), NULL, constants().var_true);
-              v->e()->e(ee.r());
-            }
-            if (v->e()->type().dim() > 0) {
-              checkIndexSets(env,v->e(), v->e()->e());
-              if (v->e()->ti()->domain() != NULL) {
-                ArrayLit* al = eval_array_lit(env,v->e()->e());
-                for (unsigned int i=0; i<al->v().size(); i++) {
-                  if (!checkParDomain(env,al->v()[i], v->e()->ti()->domain())) {
-                    throw EvalError(env, v_loc, "parameter value out of range");
-                  }
-                }
-              }
-            } else {
-              if (v->e()->ti()->domain() != NULL) {
-                if (!checkParDomain(env,v->e()->e(), v->e()->ti()->domain())) {
-                  throw EvalError(env, v_loc, "parameter value out of range");
-                }
-              }
-            }
-          }
-        }
-      }
-      void vConstraintI(ConstraintI* ci) {
-        (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);        
-      }
-      void vSolveI(SolveI* si) {        
-        if (hadSolveItem)
-          throw FlatteningError(env,si->loc(), "Only one solve item allowed");
-        hadSolveItem = true;
-        GCLock lock;
-        SolveI* nsi = NULL;
-        switch (si->st()) {
-        case SolveI::ST_SAT:
-          nsi = SolveI::sat(Location());
-          break;
-        case SolveI::ST_MIN:
-          nsi = SolveI::min(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
-          break;
-        case SolveI::ST_MAX:
-          nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
-          break;
-        }
-        for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-          if(Call* c = (*it)->dyn_cast<Call>()) {
-            if(c->id() == constants().ann.combinator) { 
-              nsi->ann().add(c);                 
-              continue; // don't flatten the search combinator
-            }
-          }
-          nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
-        }
-        env.flat_addItem(nsi);
-      }
-    } _fv(env,hadSolveItem);
-    iterItems<FV>(_fv,e.model());
-    
 
-    if (!hadSolveItem) {
-      e.envi().errorStack.clear();
-      Location modelLoc;
-      modelLoc.filename = e.model()->filepath();
-      throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
-    }
-    
-    // Create output model
-    if (opt.keepOutputInFzn) {
-      copyOutput(env);
-    } else {
-      createOutput(env);
-    }
-    
-    // Flatten remaining redefinitions
-    Model& m = *e.flat();
-    int startItem = 0;
-    int endItem = m.size()-1;
-    
     FunctionI* int_lin_eq;
     {
       std::vector<Type> int_lin_eq_t(3);
@@ -5495,11 +5384,11 @@ namespace MiniZinc {
       array_bool_and = (fi && fi->e()) ? fi : NULL;
       fi = env.orig->matchFn(env, ASTString("array_bool_or"), array_bool_andor_t);
       array_bool_or = (fi && fi->e()) ? fi : NULL;
-
+      
       array_bool_andor_t[1] = Type::varbool(1);
       fi = env.orig->matchFn(env, ASTString("bool_clause"), array_bool_andor_t);
       array_bool_clause = (fi && fi->e()) ? fi : NULL;
-
+      
       array_bool_andor_t.push_back(Type::varbool());
       fi = env.orig->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t);
       array_bool_clause_reif = (fi && fi->e()) ? fi : NULL;
@@ -5508,7 +5397,7 @@ namespace MiniZinc {
     std::vector<VarDecl*> deletedVarDecls;
     std::vector<VarDeclI*> removedItems;
     env.collectVarDecls(true);
-
+    
     while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
       if (env.flat()->failed())
         return;
@@ -5553,10 +5442,10 @@ namespace MiniZinc {
         if (vdi && keptVariable &&
             vdi->e()->type().isint() && vdi->e()->type().isvar() &&
             vdi->e()->ti()->domain() != NULL) {
-
+          
           GCLock lock;
           IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
-
+          
           bool needRangeDomain = onlyRangeDomains;
           if (!needRangeDomain && dom->size() > 0) {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity())
@@ -5770,7 +5659,7 @@ namespace MiniZinc {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
-
+              
             } else {
               FunctionI* decl = env.orig->matchFn(env,c);
               if (decl && decl->e()) {
@@ -5789,11 +5678,11 @@ namespace MiniZinc {
           
         }
       }
-
+      
       startItem = endItem+1;
       endItem = m.size()-1;
     }
-
+    
     for (unsigned int i=0; i<removedItems.size(); i++) {
       if (env.vo.occurrences(removedItems[i]->e())==0) {
         CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
@@ -5845,7 +5734,7 @@ namespace MiniZinc {
         }
       }
     }
-
+    
     for (unsigned int i=0; i<m.size(); i++) {
       if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
         if (Call* c = ci->e()->dyn_cast<Call>()) {
@@ -5869,11 +5758,133 @@ namespace MiniZinc {
         }
       }
     }
-
+    
     if (!opt.keepOutputInFzn) {
       createOutput(env);
     }
     cleanupOutput(env);
+  }
+  
+  EE flatten(EnvI& env, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt) {
+    int startItem = env.flat()->size();
+    EE ee = flat_exp(env,Ctx(),e,r,b);
+    flatten_loop(env, startItem, opt);
+    return ee;
+  }
+  
+  void flatten(Env& e, FlatteningOptions opt) {
+    EnvI& env = e.envi();
+
+    
+    class ExpandArrayDecls : public ItemVisitor {
+    public:
+      EnvI& env;
+      ExpandArrayDecls(EnvI& env0) : env(env0) {}
+      void vVarDeclI(VarDeclI* v) {       
+        if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {         
+          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);          
+        }       
+      }
+    } _ead(env);
+    iterItems<ExpandArrayDecls>(_ead,e.model());;
+    
+    bool hadSolveItem = false;
+    // Flatten main model
+    class FV : public ItemVisitor {
+    public:
+      EnvI& env;
+      bool& hadSolveItem;
+      FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+      bool enter(Item* i) {
+        return !(i->isa<ConstraintI>()  && env.flat()->failed());
+      }
+      void vVarDeclI(VarDeclI* v) {
+        if (v->e()->type().isvar() || v->e()->type().isann()) {
+          (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+        } else {
+          if (v->e()->e()==NULL) {
+            if (!v->e()->type().isann())
+              throw EvalError(env, v->e()->loc(), "Undefined parameter", v->e()->id()->v());
+          } else {
+            CallStackItem csi(env,v->e());
+            GCLock lock;
+            Location v_loc = v->e()->e()->loc();
+            if (!v->e()->e()->type().cv()) {
+              v->e()->e(eval_par(env,v->e()->e()));
+            } else {
+              EE ee = flat_exp(env, Ctx(), v->e()->e(), NULL, constants().var_true);
+              v->e()->e(ee.r());
+            }
+            if (v->e()->type().dim() > 0) {
+              checkIndexSets(env,v->e(), v->e()->e());
+              if (v->e()->ti()->domain() != NULL) {
+                ArrayLit* al = eval_array_lit(env,v->e()->e());
+                for (unsigned int i=0; i<al->v().size(); i++) {
+                  if (!checkParDomain(env,al->v()[i], v->e()->ti()->domain())) {
+                    throw EvalError(env, v_loc, "parameter value out of range");
+                  }
+                }
+              }
+            } else {
+              if (v->e()->ti()->domain() != NULL) {
+                if (!checkParDomain(env,v->e()->e(), v->e()->ti()->domain())) {
+                  throw EvalError(env, v_loc, "parameter value out of range");
+                }
+              }
+            }
+          }
+        }
+      }
+      void vConstraintI(ConstraintI* ci) {
+        (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);        
+      }
+      void vSolveI(SolveI* si) {        
+        if (hadSolveItem)
+          throw FlatteningError(env,si->loc(), "Only one solve item allowed");
+        hadSolveItem = true;
+        GCLock lock;
+        SolveI* nsi = NULL;
+        switch (si->st()) {
+        case SolveI::ST_SAT:
+          nsi = SolveI::sat(Location());
+          break;
+        case SolveI::ST_MIN:
+          nsi = SolveI::min(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+          break;
+        case SolveI::ST_MAX:
+          nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+          break;
+        }
+        for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+          if(Call* c = (*it)->dyn_cast<Call>()) {
+            if(c->id() == constants().ann.combinator) { 
+              nsi->ann().add(c);                 
+              continue; // don't flatten the search combinator
+            }
+          }
+          nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
+        }
+        env.flat_addItem(nsi);
+      }
+    } _fv(env,hadSolveItem);
+    iterItems<FV>(_fv,e.model());
+    
+
+    if (!hadSolveItem) {
+      e.envi().errorStack.clear();
+      Location modelLoc;
+      modelLoc.filename = e.model()->filepath();
+      throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
+    }
+    
+    // Create output model
+    if (opt.keepOutputInFzn) {
+      copyOutput(env);
+    } else {
+      createOutput(env);
+    }
+    
+    flatten_loop(env, 0, opt);
   }
   
   void oldflatzinc(Env& e) {

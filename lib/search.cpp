@@ -514,7 +514,7 @@ namespace MiniZinc {
             throw TypeError(solver->env().envi(),vd->loc(),ssm.str());            
           }          
           // flatten and add the variable to the flat model
-          EE ee = flat_exp(solver->env().envi(),Ctx(),vd->id(),NULL,constants().var_true);
+          EE ee = flatten(solver->env().envi(),vd->id(),NULL,constants().var_true);
           VarDecl* nvd = ee.r()->cast<Id>()->decl();         
           int nbVars = _localVarsToAdd.back();          
           _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
@@ -957,7 +957,7 @@ namespace MiniZinc {
     }    
    
     // flatten the expression
-    EE ee = flat_exp(env.envi(), Ctx(), cts, constants().var_true, constants().var_true);    
+    (void) flatten(env.envi(), cts, constants().var_true, constants().var_true);
     
     int nbVarsAfter = 0;
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
