@@ -359,7 +359,6 @@ namespace MiniZinc {
     }
     //std::cout << "DEBUG: REPEAT combinator: " << *call << std::endl;
     if(call->args().size() == 1) {  
-      Expression* arg = eval_par(env.envi(),call->args()[0]);
       // repeat is restricted by comprehension (e.g. repeat (i in 1..10) (comb) )
       if(Comprehension* compr = call->args()[0]->dyn_cast<Comprehension>()) {            
         if(compr->n_generators() != 1) {
@@ -638,7 +637,8 @@ namespace MiniZinc {
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
       //std::cerr << "DEBUG: output model after next():" << std::endl;
-      //debugprint(solver->env().output());      
+      //debugprint(solver->env().output());
+      GCLock lock;
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
       // TODO: check if this makes sense; update solutions in all upper scopes?
       //for(unsigned int i=_scopes.size()-1; i>= 0; i--) {
