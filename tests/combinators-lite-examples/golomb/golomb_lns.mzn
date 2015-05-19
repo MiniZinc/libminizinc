@@ -42,6 +42,6 @@ constraint differences[1] < differences[(m*(m-1)) div 2];
 
 % solve using minimizing branch & bound
 solve 
-combinator(lns_min(obj, mark, 1000, 0.7));
+search lns_min(obj, mark, 1000, 0.7);
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

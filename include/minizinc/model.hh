@@ -235,15 +235,17 @@ namespace MiniZinc {
   
   class EnvI;
   class CopyMap;
+  class FlatteningOptions;
   
   /// Environment
   class Env {
   private:
-    EnvI* e;
+    EnvI* e;    
     Env(Model* orig, Model* output, Model* flat, CopyMap& cmap, IdMap<KeepAlive> reverseMappers,
-    unsigned int ids);
+    unsigned int ids, const FlatteningOptions& fopts);
   public:
-    Env(Model* m);    
+    Env(Model* m);
+    Env(Model* m, const FlatteningOptions& fopt);
     ~Env(void);
     
     Model* model(void);

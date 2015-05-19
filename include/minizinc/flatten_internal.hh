@@ -63,7 +63,7 @@ namespace MiniZinc {
   /// Negate context \a c
   BCtx operator -(const BCtx& c);
   
-  class EnvI {
+  class EnvI { 
   public:
     Model* orig;
     Model* output;    
@@ -85,6 +85,7 @@ namespace MiniZinc {
     std::vector<std::string> warnings;
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
+    const FlatteningOptions& fopt;
   protected:
     Map map;
     Model* _flat;
@@ -94,10 +95,12 @@ namespace MiniZinc {
     std::vector<std::pair<Model*,bool> > _solutionScopes;
   public:
     EnvI(Model* orig0);
+    EnvI(Model* orig, const FlatteningOptions& fopt);
     EnvI(Model* orig, Model* output, Model* flat, 
          CopyMap& cmap,
          IdMap<KeepAlive> reverseMappers,
-         unsigned int ids
+         unsigned int ids,
+         const FlatteningOptions& fopt
         ); 
     ~EnvI(void);
     long long int genId(void);
