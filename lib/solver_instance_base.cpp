@@ -125,7 +125,7 @@ namespace MiniZinc {
   NISolverInstanceBase::postSolutionNoGoods(void) {
     KeepAlive nogoods = deriveNoGoodsFromSolution();
     // flatten the nogoods, which adds it to the model
-    flat_exp(env().envi(), Ctx(), nogoods(), constants().var_true, constants().var_true);
+    (void) flatten(env().envi(), nogoods(), constants().var_true, constants().var_true);
     // convert to old flatzinc
     oldflatzinc(env());
   }
