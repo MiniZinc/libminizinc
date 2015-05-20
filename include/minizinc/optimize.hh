@@ -45,6 +45,9 @@ namespace MiniZinc {
     /// Unify \a v0 and \a v1 (removing \a v0)
     void unify(EnvI& env, Model* m, Id* id0, Id* id1);
     
+    /// Rebuild index map after removing items from \a m
+    void rebuild(Model* m);
+    
     /// Clear all entries
     void clear(void);
   };

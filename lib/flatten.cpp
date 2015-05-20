@@ -5899,8 +5899,10 @@ namespace MiniZinc {
           }
     }
 
-    m->compact();
     EnvI& env = e.envi();
+
+    m->compact();
+    env.vo.rebuild(m);
     
     int msize = m->size();
     UNORDERED_NAMESPACE::unordered_set<Item*> globals;
@@ -6202,6 +6204,7 @@ namespace MiniZinc {
     }
     
     m->compact();
+    env.vo.rebuild(m);
     
     for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
          it != env.vo._m.end(); ++it) {

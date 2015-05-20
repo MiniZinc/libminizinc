@@ -58,6 +58,15 @@ namespace MiniZinc {
     return vi->second.size();
   }
   
+  void VarOccurrences::rebuild(MiniZinc::Model *m) {
+    idx.clear();
+    for (unsigned int i=0; i<m->size(); i++) {
+      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
+        idx.insert(vdi->e()->id(), i);
+      }
+    }
+  }
+  
   void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id *id1_0) {
     Id* id0 = id0_0->decl()->id();
     Id* id1 = id1_0->decl()->id();
