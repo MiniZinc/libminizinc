@@ -169,42 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), fopt(FlatteningOptions()) {
-   MZN_FILL_REIFY_MAP(int_,lin_eq);
-    MZN_FILL_REIFY_MAP(int_,lin_le);
-    MZN_FILL_REIFY_MAP(int_,lin_ne);
-    MZN_FILL_REIFY_MAP(int_,plus);
-    MZN_FILL_REIFY_MAP(int_,minus);
-    MZN_FILL_REIFY_MAP(int_,times);
-    MZN_FILL_REIFY_MAP(int_,div);
-    MZN_FILL_REIFY_MAP(int_,mod);
-    MZN_FILL_REIFY_MAP(int_,lt);
-    MZN_FILL_REIFY_MAP(int_,le);
-    MZN_FILL_REIFY_MAP(int_,gt);
-    MZN_FILL_REIFY_MAP(int_,ge);
-    MZN_FILL_REIFY_MAP(int_,eq);
-    MZN_FILL_REIFY_MAP(int_,ne);
-    MZN_FILL_REIFY_MAP(float_,lin_eq);
-    MZN_FILL_REIFY_MAP(float_,lin_le);
-    MZN_FILL_REIFY_MAP(float_,lin_lt);
-    MZN_FILL_REIFY_MAP(float_,lin_ne);
-    MZN_FILL_REIFY_MAP(float_,plus);
-    MZN_FILL_REIFY_MAP(float_,minus);
-    MZN_FILL_REIFY_MAP(float_,times);
-    MZN_FILL_REIFY_MAP(float_,div);
-    MZN_FILL_REIFY_MAP(float_,mod);
-    MZN_FILL_REIFY_MAP(float_,lt);
-    MZN_FILL_REIFY_MAP(float_,le);
-    MZN_FILL_REIFY_MAP(float_,gt);
-    MZN_FILL_REIFY_MAP(float_,ge);
-    MZN_FILL_REIFY_MAP(float_,eq);
-    MZN_FILL_REIFY_MAP(float_,ne);
-    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.forall,constants().ids.forall_reif));
-    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
-    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
-    reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));        
-  }
-  EnvI::EnvI(Model* orig0, const FlatteningOptions& fopt0) : orig(orig0), fopt(fopt0) {
+  EnvI::EnvI(Model* orig0, const FlatteningOptions& fopt0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), fopt(fopt0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);

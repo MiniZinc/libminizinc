@@ -93,9 +93,8 @@ namespace MiniZinc {
     ASTStringMap<ASTString>::t reifyMap; 
     /// the solution for each function scope, where the current scope is the last in the list
     std::vector<std::pair<Model*,bool> > _solutionScopes;
-  public:
-    EnvI(Model* orig0);
-    EnvI(Model* orig, const FlatteningOptions& fopt);
+  public:   
+    EnvI(Model* orig, const FlatteningOptions& fopt = FlatteningOptions());
     EnvI(Model* orig, Model* output, Model* flat, 
          CopyMap& cmap,
          IdMap<KeepAlive> reverseMappers,
