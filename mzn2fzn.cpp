@@ -541,6 +541,7 @@ error:
             << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+            << "  --input-from-stdin\n    Read the MiniZinc model from stdin. Default output names are output.mzn and output.ozn." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
