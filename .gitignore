@@ -1,6 +1,8 @@
 *.o
+*.a
 *~
 mzn2fzn
+mzn2doc
 solns2out
 makefile
 Makefile
@@ -16,3 +18,18 @@ cmake_install.cmake
 install_manifest.txt
 libminizinc.build
 libminizinc.xcodeproj
+parser.tab.cpp
+minizinc/config.hh
+minizinc/parser.tab.hh
+lexer.yy.cpp
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# Vim
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
