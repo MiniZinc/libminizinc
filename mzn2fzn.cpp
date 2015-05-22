@@ -45,10 +45,12 @@ bool beginswith(string s, string t) {
 }
 
 int main(int argc, char** argv) {
-  string filename;
+  string filename = "";
+  string inputText = "";
   vector<string> datafiles;
   vector<string> includePaths;  
   bool flag_ignoreStdlib = false;
+  bool flag_inputFromStdin = false;
   bool flag_typecheck = true;
   bool flag_verbose = false;
   bool flag_newfzn = false;
@@ -97,6 +99,8 @@ int main(int argc, char** argv) {
         }
         includePaths.push_back(argv[i]+string("/"));
       }
+    } else if (string(argv[i])==string("--input-from-stdin")) {		
+      flag_inputFromStdin = true;
     } else if (string(argv[i])==string("--ignore-stdlib")) {
       flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("--no-typecheck")) {
@@ -214,33 +218,46 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;
     } else {
-      std::string input_file(argv[i]);
-      if (input_file.length()<=4) {
-        std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
-        goto error;
-      }
-      std::string extension = input_file.substr(input_file.length()-4,string::npos);
-      if (extension == ".mzn") {
-        if (filename=="") {
-          filename = input_file;
-        } else {
-          std::cerr << "Error: Multiple .mzn files given." << std::endl;
+      if(!flag_inputFromStdin) {
+        std::string input_file(argv[i]);
+        if (input_file.length()<=4) {
+          std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
           goto error;
         }
-      } else if (extension == ".dzn") {
-        datafiles.push_back(input_file);
+        std::string extension = input_file.substr(input_file.length()-4,string::npos);
+        if (extension == ".mzn") {
+          if (filename=="") {
+            if (input_file=="") {
+              std::cerr << "Error: no model file given." << std::endl;
+              goto error;
+            } else {
+              filename = input_file;
+            }
+          } else {
+            std::cerr << "Error: Multiple .mzn files given." << std::endl;
+            goto error;
+          }
+        } else if (extension == ".dzn") {
+          datafiles.push_back(input_file);
+        } else {
+          std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+          goto error;
+        }
       } else {
-        std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
-        goto error;
+        std::cerr << "Warning: input will be read from stdin; " <<
+          "input file names will be ignored." << std::endl;
       }
     }
   }
 
-  if (filename=="") {
-    std::cerr << "Error: no model file given." << std::endl;
-    goto error;
+  if(flag_inputFromStdin) {
+    std::string currentLine;
+    while (std::getline(std::cin, currentLine))
+    {
+      inputText.append(currentLine);
+    }
   }
-  
+ 
   if (std_lib_dir=="") {
     std::string mypath = FileUtils::progpath();
     if (!mypath.empty()) {
@@ -274,7 +291,11 @@ int main(int argc, char** argv) {
   }
   
   if (flag_output_base == "") {
-    flag_output_base = filename.substr(0,filename.length()-4);
+    if(flag_inputFromStdin) {
+      flag_output_base = "output";		
+    } else {		
+      flag_output_base = filename.substr(0,filename.length()-4);		
+    }
   }
   if (flag_output_fzn == "") {
     flag_output_fzn = flag_output_base+".fzn";
@@ -287,8 +308,18 @@ int main(int argc, char** argv) {
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "'" << std::endl;
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false,
-                         flag_verbose, errstream)) {
+
+    Model* m; 
+    if(flag_inputFromStdin) {
+      m = parseFromString(inputText, filename, includePaths, flag_ignoreStdlib,
+          false, flag_verbose, errstream);
+    } else {
+      m = parse(filename, datafiles, includePaths, flag_ignoreStdlib,
+          false, flag_verbose, errstream);
+    }
+
+    if (m) {
+
       try {
         if (flag_typecheck) {
           Env env(m);
@@ -510,6 +541,7 @@ error:
             << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+            << "  --input-from-stdin\n    Read the MiniZinc model from stdin. Default output names are output.mzn and output.ozn." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
