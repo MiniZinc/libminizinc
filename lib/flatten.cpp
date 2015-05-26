@@ -693,6 +693,8 @@ namespace MiniZinc {
           break;
         case Expression::E_ID:
           os << "id";
+          if(isCompIter)
+            os << *e->cast<Id>()->decl()->e();
           break;
         case Expression::E_ANON:
           os << "anon";
