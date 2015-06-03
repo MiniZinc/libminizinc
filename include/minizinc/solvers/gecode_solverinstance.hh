@@ -198,6 +198,9 @@ namespace MiniZinc {
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
     bool _only_range_domains;
+    bool _run_sac;
+    bool _run_shave;
+    unsigned int _pre_passes;
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
@@ -223,7 +226,8 @@ namespace MiniZinc {
 
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.
-    void presolve(Model* m);
+    void presolve(Model* m = NULL);
+    bool sac(bool toFixedPoint, bool shaving);
 
     virtual Expression* getSolutionValue(Id* id);
 
