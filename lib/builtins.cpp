@@ -1285,6 +1285,10 @@ namespace MiniZinc {
     return args.size()==1 ? constants().lit_true : args[1];
   }
   
+  bool b_in_redundant_constraint(EnvI& env, Call*) {
+    return env.in_redundant_constraint > 0;
+  }
+  
   Expression* b_set2array(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==1);
@@ -2192,6 +2196,9 @@ namespace MiniZinc {
       rb(env, m, constants().ids.trace, t, b_trace);
       t[1] = Type::optvartop();
       rb(env, m, constants().ids.trace, t, b_trace);
+    }
+    {
+      rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(), b_in_redundant_constraint);
     }
     {
       std::vector<Type> t_length(1);

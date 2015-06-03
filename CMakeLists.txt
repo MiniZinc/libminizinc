@@ -1,10 +1,23 @@
 cmake_minimum_required (VERSION 2.8.7)
+
+if (USE_STDLIBCPP)
+  set(MZN_LIBCPP libstdc++)
+else()
+  set(MZN_LIBCPP libc++)
+endif()
+
+if(APPLE)
+   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
+endif(APPLE)
+
 project (libminizinc CXX C)
 
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 1)
+set (libminizinc_VERSION_PATCH 2)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -18,18 +31,6 @@ check_cxx_compiler_flag(-Werror HAS_WERROR)
 if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
-
-if (USE_STDLIBCPP)
-  set(MZN_LIBCPP libstdc++)
-else()
-  set(MZN_LIBCPP libc++)
-endif()
-
-if(APPLE)
-   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
-endif(APPLE)
 
 check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
 if (HAS_STDCPP11)
@@ -73,7 +74,6 @@ endif()
 
 CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
 int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
-
 CHECK_CXX_SOURCE_COMPILES("
 #include <stdio.h>
 #include <stdlib.h>
@@ -323,11 +323,8 @@ if(HAS_GECODE)
   )
 
 endif()
-
-
 add_executable(mzn2doc mzn2doc.cpp)
 target_link_libraries(mzn2doc minizinc)
-
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
