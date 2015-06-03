@@ -64,11 +64,12 @@ int main(int argc, char** argv) {
   bool flag_only_range_domains = false;
   bool flag_sac = false;
   bool flag_shave = false;
+  bool flag_stats = false;
   unsigned int flag_pre_passes = 1;
-  
+
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
-  
+
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
@@ -219,6 +220,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
+    } else if (string(argv[i])=="-s") {
+      flag_stats = true;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="--sac") {
@@ -416,6 +419,7 @@ int main(int argc, char** argv) {
               options.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
               options.setBoolParam(std::string("sac"),       flag_sac);
               options.setBoolParam(std::string("shave"),     flag_shave);
+              options.setBoolParam(std::string("print_stats"),     flag_stats);
               options.setIntParam(std::string("pre_passes"), flag_pre_passes);
               GecodeSolverInstance gecode(env,options);
               gecode.processFlatZinc();

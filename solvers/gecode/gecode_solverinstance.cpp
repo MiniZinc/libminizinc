@@ -28,8 +28,9 @@ namespace MiniZinc {
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) = 0;
     virtual ~GecodeEngine(void) {}
+    virtual Gecode::Search::Statistics statistics(void) = 0;
   };
-  
+
   template<template<class> class Engine,
            template<template<class> class,class> class Meta>
   class MetaEngine : public GecodeEngine {
@@ -38,12 +39,14 @@ namespace MiniZinc {
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
+    virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
-  
+
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
        : SolverInstanceImpl<GecodeSolver>(env,options),
-       _only_range_domains(false), _run_sac(false), _run_shave(false), _pre_passes(1),
-       _current_space(NULL), _solution(NULL), engine(NULL) {
+       _print_stats(false), _only_range_domains(false), _run_sac(false),
+       _run_shave(false), _pre_passes(1), _current_space(NULL),
+       _solution(NULL), engine(NULL) {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
@@ -56,6 +59,9 @@ namespace MiniZinc {
        }
        if(options.hasParam(std::string("pre_passes"))) {
          _pre_passes = options.getIntParam(std::string("pre_passes"));
+       }
+       if(options.hasParam(std::string("print_stats"))) {
+         _print_stats = options.getBoolParam(std::string("print_stats"));
        }
      }
 
@@ -978,6 +984,21 @@ namespace MiniZinc {
       }
     }
   }
+
+  void GecodeSolverInstance::print_stats(){
+      Gecode::Search::Statistics stat = engine->statistics();
+      std::cerr << "%%  variables:     " 
+        << (_current_space->iv.size() +
+            _current_space->bv.size() +
+            _current_space->sv.size()) << std::endl
+        << "%%  propagators:   " << _current_space->propagators() << std::endl
+        << "%%  propagations:  " << stat.propagate << std::endl
+        << "%%  nodes:         " << stat.node << std::endl
+        << "%%  failures:      " << stat.fail << std::endl
+        << "%%  restarts:      " << stat.restart << std::endl
+        << "%%  peak depth:    " << stat.depth << std::endl
+        << std::endl;
+  }
   
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
@@ -996,7 +1017,8 @@ namespace MiniZinc {
         _solution = next_sol;
       }
     }
-    
+
+stopped:
     SolverInstance::Status status = SolverInstance::SAT;
     if(engine->stopped()) {
       if(_solution) {
@@ -1009,6 +1031,10 @@ namespace MiniZinc {
       status = SolverInstance::UNKNOWN;
     } else {
       assignSolutionToOutput();
+    }
+    
+    if (_print_stats) {
+      print_stats();
     }
     
     return status;
@@ -1100,8 +1126,9 @@ namespace MiniZinc {
     return true;
   }
 
-  void GecodeSolverInstance::presolve(Model* orig_model) {
+  bool GecodeSolverInstance::presolve(Model* orig_model) {
     GCLock lock;
+    if(_current_space->status() == SS_FAILED) return false;
     // run SAC?
     if(_run_sac || _run_shave) {
       unsigned int iters = _pre_passes;
@@ -1112,7 +1139,6 @@ namespace MiniZinc {
         sac(true, _run_shave);
       }
     }
-    _current_space->status();
 
     if(orig_model != NULL) {
 
@@ -1200,6 +1226,7 @@ namespace MiniZinc {
         }
       }
     }
+    return true;
   }
 
   void
