@@ -354,6 +354,9 @@ int main(int argc, char** argv) {
             if (flag_werror && env.warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
+            //std::cerr << "DEBUG: Output model after flattening:\n==========================\n";
+            //debugprint(env.output());
+            //std::cerr << "==================================\n";
             //            Model* flat = env.flat();
             if (flag_verbose)
               std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -365,6 +368,9 @@ int main(int argc, char** argv) {
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
+            //std::cerr << "DEBUG: Output model after optimizing:\n==========================\n";
+            //debugprint(env.output());
+            //std::cerr << "==================================\n";
             
             if (!flag_newfzn) {
               if (flag_verbose)
@@ -376,7 +382,7 @@ int main(int argc, char** argv) {
               env.flat()->compact();
             }
             
-            {
+            {              
               options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
               SearchHandler* sh = new SearchHandler();
               sh->search<FZNSolverInstance>(env,options,flag_verbose);

@@ -66,6 +66,7 @@ namespace MiniZinc {
               }             
             }
             os << *item;
+            //std::cerr << *item; // DEBUG
           }
         }
         
@@ -332,15 +333,19 @@ namespace MiniZinc {
     
     typedef std::pair<VarDecl*,Expression*> DE;
     ASTStringMap<DE>::t declmap;
+    //std::cerr << "DEBUG: Printing output model:\n------------------------\n";
+    //debugprint(_ozn); // TODO: error in OZN model
+    //std::cerr << "------------------\n";
     for (unsigned int i=0; i<_ozn->size(); i++) {
       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
         declmap.insert(std::make_pair(vdi->e()->id()->str(),DE(vdi->e(),vdi->e()->e())));
+        //std::cerr << "DEBUG: inserting { " << (vdi->e()->id()->str()) << " -> (" << *(vdi->e()) << "," << *(vdi->e()->e()) << ") } into declmap" <<std::endl;
       }
     }
 
     bool hadSolution = false;
-    //std::string sstr = result.str();    
+    std::string sstr = result.str();    
     //std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
     while (result.good()) {
       std::string line;

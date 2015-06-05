@@ -4740,7 +4740,7 @@ namespace MiniZinc {
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(env,decl);
-              env.output->addItem(decl);
+              env.output->addItem(decl);             
               outputVarDecls(env,origdecl,decl->e());
             } else {
               decl = origdecl;
@@ -4829,7 +4829,7 @@ namespace MiniZinc {
             env.output_vo.add(reallyFlat, env.output->size());
           env.output_vo.add(nvi, env.output->size());
           env.output_vo.add(nvi->e(), ci);
-          env.output->addItem(nvi);
+          env.output->addItem(nvi);          
           
           IdMap<KeepAlive>::iterator it;
           if ( (it = env.reverseMappers.find(nvi->e()->id())) != env.reverseMappers.end()) {
@@ -4855,7 +4855,7 @@ namespace MiniZinc {
                   for (unsigned int i = decl->params().size(); i--;)
                     topDown(ce, decl->params()[i]);
                   env.output->registerFn(env,decl);
-                  env.output->addItem(decl);
+                  env.output->addItem(decl);                  
                 } else {
                   decl = origdecl;
                 }
@@ -4972,7 +4972,7 @@ namespace MiniZinc {
                     for (unsigned int i = decl->params().size(); i--;)
                       topDown(ce, decl->params()[i]);
                     e.output->registerFn(e,decl);
-                    e.output->addItem(decl);
+                    e.output->addItem(decl);                    
                   } else {
                     decl = origdecl;
                   }
@@ -5067,7 +5067,7 @@ namespace MiniZinc {
           GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
           makePar(outputItem->e());
-          env.output->addItem(outputItem);
+          env.output->addItem(outputItem);         
         }
       } _ov1(e,e.output_vo,outputItem);
       iterItems(_ov1,e.orig);
@@ -5110,7 +5110,7 @@ namespace MiniZinc {
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e,e.cmap, newOutputItem)->cast<OutputI>();
-        e.output->addItem(outputItem);
+        e.output->addItem(outputItem);        
       }
       
       class CollectFunctions : public EVisitor {
@@ -5147,7 +5147,7 @@ namespace MiniZinc {
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(env,decl);
-              env.output->addItem(decl);
+              env.output->addItem(decl);              
             } else {
               decl = origdecl;
             }
@@ -5207,7 +5207,7 @@ namespace MiniZinc {
                       for (unsigned int i = decl->params().size(); i--;)
                         topDown(ce, decl->params()[i]);
                       env.output->registerFn(env,decl);
-                      env.output->addItem(decl);
+                      env.output->addItem(decl);                      
                     } else {
                       decl = origdecl;
                     }
@@ -5262,7 +5262,7 @@ namespace MiniZinc {
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
             topDown(ce, vdi_copy->e());
-            env.output->addItem(vdi_copy);
+            env.output->addItem(vdi_copy);           
           }
         }
       } _ov2(e);
@@ -5722,7 +5722,7 @@ namespace MiniZinc {
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(env,decl);
-              env.output->addItem(decl);
+              env.output->addItem(decl);              
             } else {
               decl = origdecl;
             }

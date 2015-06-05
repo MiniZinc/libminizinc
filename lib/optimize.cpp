@@ -466,6 +466,7 @@ namespace MiniZinc {
     
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      //std::cerr << "DEBUG: cur = " << *cur << "\n"; // TODO: some variables are ignored here. uncomment and run
       if (envi.vo.occurrences(cur) == 0) {
         IdMap<int>::iterator cur_idx = envi.vo.idx.find(cur->id());
         if (cur_idx != envi.vo.idx.end() && !m[cur_idx->second]->removed()) {
@@ -484,10 +485,40 @@ namespace MiniZinc {
             }
             if (val) {
               VarDecl* vd_out = (*envi.output)[envi.output_vo.find(cur)]->cast<VarDeclI>()->e();
-              vd_out->e(val);
-              CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-              topDown(cd,cur->e());
-              envi.flat_removeItem(cur_idx->second);
+              // if vd_out is an array, replace the respective variable in the output model and in the array
+              if(vd_out->ti()->isarray()) { 
+                ASTExprVec<Expression> rhs = vd_out->e()->cast<ArrayLit>()->v();
+                for(unsigned int i=0; i<rhs.size(); i++) {
+                  if(Id* id = rhs[i]->dyn_cast<Id>()) {
+                    //std::cerr << "Looking at Id: " << *id << ", comparing to: " << *(cur->id()) << "\n";
+                    if(id->str() == cur->id()->str()) {
+                      rhs[i] = val; // TODO: check if that is really correct (replacing the Id)
+                      //std::cerr << "DEBUG: new element in the array: " << *rhs[i] << "\n";
+                      break;
+                    }
+                  }
+                }
+                //std::cerr << "DEBUG: rhs after adaption: " << *vd_out << "\n";
+                // find cur in output model and set it to val
+                for(VarDeclIterator it = envi.output->begin_vardecls(); it!= envi.output->end_vardecls(); ++it) {
+                   VarDecl* vd = it->e();
+                   if(vd->id() == cur->id()) {
+                     vd->e(val);
+                     break;
+                   }
+                }
+                //std::cerr << "DEBUG: output model after change:\n........................................\n";
+                //debugprint(envi.output);
+                //std::cerr << "....................................\n";                
+              }
+              else {
+                //std::cerr << "DEBUG: optimize: Something with output variable at position: assigning " << *vd_out << " = " << *val <<"\n";
+                vd_out->e(val);
+                CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+                topDown(cd,cur->e());
+                envi.flat_removeItem(cur_idx->second);
+              }
+              
             }
           } else {
             CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
