@@ -60,6 +60,9 @@ int main(int argc, char** argv) {
   bool flag_only_range_domains = false;
   unsigned int flag_npasses = 1;
   bool flag_statistics = false;
+  bool flag_sac = false;
+  bool flag_shave = false;
+  unsigned int flag_pre_passes = 1;
   
   Timer starttime;
   Timer lasttime;
@@ -160,6 +163,20 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (string(argv[i])=="--only-range-domains") {
+      flag_only_range_domains = true;
+    } else if (string(argv[i])=="--sac") {
+      flag_sac = true;
+    } else if (string(argv[i])=="--shave") {
+      flag_shave = true;
+    } else if (string(argv[i])=="--pre-passes") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      int passes = atoi(argv[i]);
+      if(passes >= 0)
+        flag_pre_passes = passes;
     } else if (beginswith(string(argv[i]),"-d")) {
       string filename(argv[i]);
       string datafile;
@@ -336,6 +353,10 @@ int main(int argc, char** argv) {
               std::vector<Pass*> passes;
               Options gopts;
               gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
+              gopts.setBoolParam(std::string("sac"),       flag_sac);
+              gopts.setBoolParam(std::string("shave"),     flag_shave);
+              gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
+              gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
               FlatteningOptions pass_opts = fopts;
               for(unsigned int i=1; i<flag_npasses; i++) {
                 if(flag_gecode) {
