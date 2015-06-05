@@ -86,6 +86,7 @@ namespace MiniZinc {
     std::vector<std::string> warnings;
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
+    int in_redundant_constraint;
     FlatteningOptions fopts;
     unsigned int pathUse;
 

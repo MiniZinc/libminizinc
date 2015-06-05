@@ -28,8 +28,9 @@ namespace MiniZinc {
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) = 0;
     virtual ~GecodeEngine(void) {}
+    virtual Gecode::Search::Statistics statistics(void) = 0;
   };
-  
+
   template<template<class> class Engine,
            template<template<class> class,class> class Meta>
   class MetaEngine : public GecodeEngine {
@@ -38,15 +39,30 @@ namespace MiniZinc {
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) { return e.stopped(); }
+    virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
-  
+
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-     : SolverInstanceImpl<GecodeSolver>(env,options), _only_range_domains(false), _current_space(NULL), _solution(NULL), engine(NULL) {
+       : SolverInstanceImpl<GecodeSolver>(env,options),
+       _print_stats(false), _only_range_domains(false), _run_sac(false),
+       _run_shave(false), _pre_passes(1), _current_space(NULL),
+       _solution(NULL), engine(NULL) {
        registerConstraints();
        if(options.hasParam(std::string("only-range-domains"))) {
          _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
        }
-       // processFlatZinc(); // TODO: shouldn't this better be in the constructor?
+       if(options.hasParam(std::string("sac"))) {
+         _run_sac = options.getBoolParam(std::string("sac"));
+       }
+       if(options.hasParam(std::string("shave"))) {
+         _run_shave = options.getBoolParam(std::string("shave"));
+       }
+       if(options.hasParam(std::string("pre_passes"))) {
+         _pre_passes = options.getIntParam(std::string("pre_passes"));
+       }
+       if(options.hasParam(std::string("print_stats"))) {
+         _print_stats = options.getBoolParam(std::string("print_stats"));
+       }
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
@@ -968,11 +984,31 @@ namespace MiniZinc {
       }
     }
   }
+
+  void GecodeSolverInstance::print_stats(){
+      Gecode::Search::Statistics stat = engine->statistics();
+      std::cerr << "%%  variables:     " 
+        << (_current_space->iv.size() +
+            _current_space->bv.size() +
+            _current_space->sv.size()) << std::endl
+        << "%%  propagators:   " << _current_space->propagators() << std::endl
+        << "%%  propagations:  " << stat.propagate << std::endl
+        << "%%  nodes:         " << stat.node << std::endl
+        << "%%  failures:      " << stat.fail << std::endl
+        << "%%  restarts:      " << stat.restart << std::endl
+        << "%%  peak depth:    " << stat.depth << std::endl
+        << std::endl;
+  }
   
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
 
     prepareEngine();
+
+    if(_run_sac || _run_shave) {
+      presolve();
+    }
+
     if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
       _solution = engine->next();
     } else {
@@ -981,7 +1017,8 @@ namespace MiniZinc {
         _solution = next_sol;
       }
     }
-    
+
+stopped:
     SolverInstance::Status status = SolverInstance::SAT;
     if(engine->stopped()) {
       if(_solution) {
@@ -996,112 +1033,200 @@ namespace MiniZinc {
       assignSolutionToOutput();
     }
     
+    if (_print_stats) {
+      print_stats();
+    }
+    
     return status;
   }
 
-  void GecodeSolverInstance::presolve(Model* orig_model) {
+  class IntVarComp {
+    public:
+      std::vector<Gecode::IntVar> iv;
+      IntVarComp(std::vector<Gecode::IntVar> b) {iv = b;}
+      int operator() (int a, int b) {
+        return iv[a].size() < iv[b].size();
+      }
+  };
+
+  class IntVarRangesBwd : public Int::IntVarImpBwd {
+    public:
+      IntVarRangesBwd(void) {}
+      IntVarRangesBwd(const IntVar& x) : Int::IntVarImpBwd(x.varimp()) {}
+      void init(const IntVar& x) {Int::IntVarImpBwd(x.varimp());}
+  };
+
+  bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) {
+    if(_current_space->status() == SS_FAILED) return false;
+    bool modified;
+    std::vector<int> sorted_iv;
+
+    for(unsigned int i=0; i<_current_space->iv.size(); i++) if(!_current_space->iv[i].assigned()) sorted_iv.push_back(i);
+    IntVarComp ivc(_current_space->iv);
+    sort(sorted_iv.begin(), sorted_iv.end(), ivc);
+
+    do {
+      modified = false;
+      for (unsigned int idx = 0; idx < _current_space->bv.size(); idx++) {
+        BoolVar bvar = _current_space->bv[idx];
+        if(!bvar.assigned()) {
+          for (unsigned int val = bvar.min(); val <= bvar.max(); ++val) {
+            FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+            rel(*f, f->bv[idx], IRT_EQ, val);
+            if(f->status() == SS_FAILED) {
+              rel(*_current_space, bvar, IRT_NQ, val);
+              modified = true;
+              if(_current_space->status() == SS_FAILED)
+                return false;
+            }
+            delete f;
+          }
+        }
+      }
+
+      for (unsigned int i=0; i<sorted_iv.size(); i++) {
+        unsigned int idx = sorted_iv[i];
+        IntVar ivar = _current_space->iv[idx];
+        bool tight = false;
+        unsigned int nnq = 0;
+        int fwd_min;
+        IntArgs nq(ivar.size());
+        for (IntVarValues vv(ivar); vv() && !tight; ++vv) {
+          FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+          rel(*f, f->iv[idx], IRT_EQ, vv.val());
+          if (f->status() == SS_FAILED) {
+            nq[nnq++] = vv.val();
+          } else {
+            fwd_min = vv.val();
+            tight = shaving;
+          }
+          delete f;
+        }
+        if(shaving) {
+          tight = false;
+          for (IntVarRangesBwd vr(ivar); vr() && !tight; ++vr) {
+            for (int i=vr.max(); i>=vr.min() && i>=fwd_min; i--) {
+              FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+              rel(*f, f->iv[idx], IRT_EQ, i);
+              if (f->status() == SS_FAILED)
+                nq[nnq++] = i;
+              else
+                tight = true;
+              delete f;
+            }
+          }
+        }
+        if(nnq) modified = true;
+        while (nnq--)
+          rel(*_current_space, ivar, IRT_NQ, nq[nnq]);
+        if (_current_space->status() == SS_FAILED)
+          return false;
+      }
+    } while(toFixedPoint && modified);
+    return true;
+  }
+
+  bool GecodeSolverInstance::presolve(Model* orig_model) {
     GCLock lock;
-    /* // run SAC?
-    if(opts->sac()) {
-      bool shave = opts->shave();
-      unsigned int iters = opts->npass();
+    if(_current_space->status() == SS_FAILED) return false;
+    // run SAC?
+    if(_run_sac || _run_shave) {
+      unsigned int iters = _pre_passes;
       if(iters) {
         for(unsigned int i=0; i<iters; i++)
-          sac(false, shave);
+          sac(false, _run_shave);
       } else {
-        sac(true, shave);
+        sac(true, _run_shave);
       }
-    } else { */
-    _current_space->status();
-    /* } */
-    //const char* presolve_log = opts->presolve_log();
-    //std::ofstream ofs;
-    //if(presolve_log)
-    //  ofs.open(presolve_log);
-
-    UNORDERED_NAMESPACE::unordered_map<std::string, VarDecl*> vds;
-    for(VarDeclIterator it = orig_model->begin_vardecls();
-        it != orig_model->end_vardecls();
-        ++it) {
-      VarDecl* vd = it->e();
-      vds[vd->id()->str().str()] = vd;
     }
 
-    IdMap<GecodeVariable>::iterator it;
-    for(it = _variableMap.begin(); it != _variableMap.end(); it++) {
-      VarDecl* vd = it->first->decl();
-      long long int old_domsize = 0;
-      bool holes = false;
+    if(orig_model != NULL) {
 
-      if(vd->ti()->domain()) {
-        if(vd->type().isint()) {
-          IntBounds old_bounds = compute_int_bounds(_env.envi(), vd->id());
-          long long int old_rangesize = abs(old_bounds.u.toInt() - old_bounds.l.toInt());
-          if(vd->ti()->domain()->isa<SetLit>())
-            old_domsize = arg2intset(_env.envi(), vd->ti()->domain()).size();
-          else
-            old_domsize = old_rangesize + 1;
-          holes = old_domsize < old_rangesize + 1;
-        }
+      UNORDERED_NAMESPACE::unordered_map<std::string, VarDecl*> vds;
+      for(VarDeclIterator it = orig_model->begin_vardecls();
+          it != orig_model->end_vardecls();
+          ++it) {
+        VarDecl* vd = it->e();
+        vds[vd->id()->str().str()] = vd;
       }
-      
-      std::string name = it->first->str().str();
 
+      IdMap<GecodeVariable>::iterator it;
+      for(it = _variableMap.begin(); it != _variableMap.end(); it++) {
+        VarDecl* vd = it->first->decl();
+        long long int old_domsize = 0;
+        bool holes = false;
 
-      if(vds.find(name) != vds.end()) {
-        VarDecl* nvd = vds[name];
-        Type::BaseType bt = vd->type().bt();
-        if(bt == Type::BaseType::BT_INT) {
-          IntVar intvar = it->second.intVar(_current_space);
-          const long long int l = intvar.min(), u = intvar.max();
-
-          if(l==u) {
-            if(nvd->e()) {
-              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
-            } else {
-              nvd->type(Type::parint());
-              nvd->ti(new TypeInst(nvd->loc(), Type::parint()));
-              nvd->e(new IntLit(nvd->loc(), l));
-            }
-          } else if(!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)){
-            if(_only_range_domains && !holes) {
-              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
-            } else {
-              IntVarRanges ivr(intvar);
-              nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::ai(ivr)));
-            }
+        if(vd->ti()->domain()) {
+          if(vd->type().isint()) {
+            IntBounds old_bounds = compute_int_bounds(_env.envi(), vd->id());
+            long long int old_rangesize = abs(old_bounds.u.toInt() - old_bounds.l.toInt());
+            if(vd->ti()->domain()->isa<SetLit>())
+              old_domsize = arg2intset(_env.envi(), vd->ti()->domain()).size();
+            else
+              old_domsize = old_rangesize + 1;
+            holes = old_domsize < old_rangesize + 1;
           }
-        } else if(bt == Type::BaseType::BT_BOOL) {
-          BoolVar boolvar = it->second.boolVar(_current_space);
-          int l = boolvar.min(),
-              u = boolvar.max();
-          if(l == u) {
-            if(nvd->e()) {
-              nvd->ti()->domain(constants().boollit(l));
-            } else {
-              nvd->type(Type::parbool());
-              nvd->ti(new TypeInst(nvd->loc(), Type::parbool()));
-              nvd->e(new BoolLit(nvd->loc(), l));
+        }
+
+        std::string name = it->first->str().str();
+
+
+        if(vds.find(name) != vds.end()) {
+          VarDecl* nvd = vds[name];
+          Type::BaseType bt = vd->type().bt();
+          if(bt == Type::BaseType::BT_INT) {
+            IntVar intvar = it->second.intVar(_current_space);
+            const long long int l = intvar.min(), u = intvar.max();
+
+            if(l==u) {
+              if(nvd->e()) {
+                nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
+              } else {
+                nvd->type(Type::parint());
+                nvd->ti(new TypeInst(nvd->loc(), Type::parint()));
+                nvd->e(new IntLit(nvd->loc(), l));
+              }
+            } else if(!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)){
+              if(_only_range_domains && !holes) {
+                nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
+              } else {
+                IntVarRanges ivr(intvar);
+                nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::ai(ivr)));
+              }
             }
-          }
-        } else if(bt == Type::BaseType::BT_FLOAT) {
-          Gecode::FloatVar floatvar = it->second.floatVar(_current_space);
-          if(floatvar.assigned() && !nvd->e()) {
-            FloatNum l = floatvar.min();
-            nvd->type(Type::parfloat());
-            nvd->ti(new TypeInst(nvd->loc(), Type::parfloat()));
-            nvd->e(new FloatLit(nvd->loc(), l));
-          } else {
-            FloatNum l = floatvar.min(),
-                     u = floatvar.max();
-            nvd->ti()->domain(new BinOp(nvd->loc(),
-                  new FloatLit(nvd->loc(), l),
-                  BOT_DOTDOT,
-                  new FloatLit(nvd->loc(), u)));
+          } else if(bt == Type::BaseType::BT_BOOL) {
+            BoolVar boolvar = it->second.boolVar(_current_space);
+            int l = boolvar.min(),
+                u = boolvar.max();
+            if(l == u) {
+              if(nvd->e()) {
+                nvd->ti()->domain(constants().boollit(l));
+              } else {
+                nvd->type(Type::parbool());
+                nvd->ti(new TypeInst(nvd->loc(), Type::parbool()));
+                nvd->e(new BoolLit(nvd->loc(), l));
+              }
+            }
+          } else if(bt == Type::BaseType::BT_FLOAT) {
+            Gecode::FloatVar floatvar = it->second.floatVar(_current_space);
+            if(floatvar.assigned() && !nvd->e()) {
+              FloatNum l = floatvar.min();
+              nvd->type(Type::parfloat());
+              nvd->ti(new TypeInst(nvd->loc(), Type::parfloat()));
+              nvd->e(new FloatLit(nvd->loc(), l));
+            } else {
+              FloatNum l = floatvar.min(),
+                       u = floatvar.max();
+              nvd->ti()->domain(new BinOp(nvd->loc(),
+                    new FloatLit(nvd->loc(), l),
+                    BOT_DOTDOT,
+                    new FloatLit(nvd->loc(), u)));
+            }
           }
         }
       }
     }
+    return true;
   }
 
   void

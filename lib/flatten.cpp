@@ -380,7 +380,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0), passes(1) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0), passes(1) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -592,6 +592,8 @@ namespace MiniZinc {
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
+    if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint++;
     env.callStack.push_back(e);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
@@ -603,6 +605,8 @@ namespace MiniZinc {
   CallStackItem::~CallStackItem(void) {
     if (env.callStack.back()->isa<VarDecl>())
       env.idStack.pop_back();
+    if (env.callStack.back()->isa<Call>() && env.callStack.back()->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint--;
     env.callStack.pop_back();
   }
   
@@ -1194,7 +1198,7 @@ namespace MiniZinc {
             GCLock lock;
             ArrayLit* al = e->cast<ArrayLit>();
             /// TODO: review if limit of 10 is a sensible choice
-            if (al->v().size() <= 10)
+            if (al->type().bt()==Type::BT_ANN || al->v().size() <= 10)
               return e;
 
             std::vector<TypeInst*> ranges(al->dims());
@@ -2045,7 +2049,7 @@ namespace MiniZinc {
     
     IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
     if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r);
+      r_bounds = compute_int_bounds(env,r->id());
     }
     
     VarDecl* nr = r;
@@ -3822,23 +3826,32 @@ namespace MiniZinc {
               }
             }
             GC::lock();
-            std::vector<Expression*> bo_args(2);
+            std::vector<Expression*> args;
             ASTString id;
             if (ctx.neg) {
+              std::vector<Expression*> bo_args(2);
               bo_args[0] = boe0;
               bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
               bo_args[1]->type(boe1->type());
               id = constants().ids.forall;
+              args.push_back(new ArrayLit(bo->loc(),bo_args));
+              args[0]->type(Type::varbool(1));
             } else {
-              bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
-              bo_args[0]->type(boe0->type());
-              bo_args[1] = boe1;
-              id = constants().ids.exists;
+              std::vector<Expression*> clause_pos(1);
+              clause_pos[0] = boe1;
+              std::vector<Expression*> clause_neg(1);
+              clause_neg[0] = boe0;
+              args.push_back(new ArrayLit(boe1->loc().introduce(), clause_pos));
+              Type t0 = boe1->type();
+              t0.dim(1);
+              args[0]->type(t0);
+              args.push_back(new ArrayLit(boe0->loc().introduce(), clause_neg));
+              Type t1 = boe0->type();
+              t1.dim(1);
+              args[1]->type(t1);
+              id = constants().ids.clause;
             }
             ctx.neg = false;
-            std::vector<Expression*> args(1);
-            args[0]= new ArrayLit(bo->loc(),bo_args);
-            args[0]->type(Type::varbool(1));
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
             c->type(c->decl()->rtype(env,args));
@@ -4010,8 +4023,9 @@ namespace MiniZinc {
             ctx0.i = ctx1.i = C_MIX;
           flatten_bool_op:
           {
-            EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);
+            bool inRootCtx = (ctx0.b==ctx1.b && ctx0.b==C_ROOT && b==constants().var_true);
+            EE e0 = flat_exp(env,ctx0,boe0,NULL,inRootCtx ? b : NULL);
+            EE e1 = flat_exp(env,ctx1,boe1,NULL,inRootCtx ? b : NULL);
             
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             
@@ -4335,6 +4349,19 @@ namespace MiniZinc {
             }
             break;
           }
+        } else if (ctx.b==C_ROOT && decl->e()->isa<BoolLit>() && eval_bool(env,decl->e())) {
+          bool allBool = true;
+          for (unsigned int i=0; i<c->args().size(); i++) {
+            if (c->args()[i]->type().bt()!=Type::BT_BOOL) {
+              allBool = false;
+              break;
+            }
+          }
+          if (allBool) {
+            ret.r = bind(env,ctx,r,constants().lit_true);
+            ret.b = bind(env,ctx,b,constants().lit_true);
+            break;
+          }
         }
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
@@ -4347,6 +4374,14 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->v()[i],r,b);
           ret.r = bind(env,ctx,r,constants().lit_true);
         } else {
+          
+          if (decl->e() && decl->params().size()==1 && decl->e()->isa<Id>() &&
+              decl->params()[0]->ti()->domain()==NULL &&
+              decl->e()->cast<Id>()->decl() == decl->params()[0]) {
+            ret = flat_exp(env, ctx, c->args()[0], r, b);
+            break;
+          }
+          
           std::vector<EE> args_ee(c->args().size());
           bool mixContext = decl->e()!=NULL ||
             (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
@@ -4355,7 +4390,9 @@ namespace MiniZinc {
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
             if (mixContext) {
-              if (c->args()[i]->type().bt()==Type::BT_BOOL) {
+              if (cid==constants().ids.clause) {
+                argctx.b = (i==0 ? +nctx.b : -nctx.b);
+              } else if (c->args()[i]->type().bt()==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->args()[i]->type().bt()==Type::BT_INT) {
                 argctx.i = C_MIX;
@@ -5192,7 +5229,16 @@ namespace MiniZinc {
                 rhs->decl(decl);
                 removeIsOutput(reallyFlat);
                 
-                outputVarDecls(e,item,rhs);
+                if (e.vo.occurrences(reallyFlat)==0 && reallyFlat->e()==NULL) {
+                  IdMap<int>::iterator cur_idx = e.vo.idx.find(reallyFlat->id());
+                  if (cur_idx != e.vo.idx.end()) {
+                    VarDeclI* vdi = (*e.flat())[cur_idx->second]->cast<VarDeclI>();
+                    vdi->remove();
+                  }
+                  
+                }
+                
+                outputVarDecls(e,item,it->second()->cast<Call>());
                 vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
@@ -5278,6 +5324,7 @@ namespace MiniZinc {
         void vOutputI(OutputI* oi) {
           GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
+          makePar(outputItem->e());
           env.output->addItem(outputItem);
         }
       } _ov1(e,e.output_vo,outputItem);
@@ -5379,7 +5426,6 @@ namespace MiniZinc {
             VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
-            makePar(vdi_copy->e());
             vdi_copy->e()->ti()->domain(NULL);
             vdi_copy->e()->flat(vdi->e()->flat());
             vdi_copy->e()->ann().clear();
@@ -5466,6 +5512,7 @@ namespace MiniZinc {
               }
               env.output_vo.add(reallyFlat, env.output->size());
             }
+            makePar(vdi_copy->e());
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
             topDown(ce, vdi_copy->e());
@@ -5507,6 +5554,20 @@ namespace MiniZinc {
       }
     }
     e.output->compact();
+
+    for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
+         it != e.output_vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
   }
   
   void cleanupOutput(EnvI& env) {
@@ -6461,6 +6522,19 @@ namespace MiniZinc {
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
+        
+        std::vector<Expression*> removeAnns;
+        for (ExpressionSetIter anns = ci->e()->ann().begin(); anns != ci->e()->ann().end(); ++anns) {
+          if (Call* c = (*anns)->dyn_cast<Call>()) {
+            if (c->id() == constants().ann.defines_var && c->args()[0]->type().ispar()) {
+              removeAnns.push_back(c);
+            }
+          }
+        }
+        for (unsigned int i=0; i<removeAnns.size(); i++) {
+          ci->e()->ann().remove(removeAnns[i]);
+        }
+        
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
           if (vc->id() == constants().ids.exists) {
             GCLock lock;
@@ -6551,7 +6625,21 @@ namespace MiniZinc {
     }
     
     m->compact();
-    
+
+    for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
+         it != env.vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
+
     class Cmp {
     public:
       bool operator() (Item* i, Item* j) {

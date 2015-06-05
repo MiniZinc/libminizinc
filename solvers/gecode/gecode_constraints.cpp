@@ -1042,8 +1042,7 @@ namespace MiniZinc {
       t[noOfTrans].i_state = -1;
 
       //Final states
-      SetLit* sl = call->args()[5]->isa<Id>() ? call->args()[5]->cast<Id>()->decl()->e()->cast<SetLit>() : call->args()[5]->cast<SetLit>();
-      IntSetVal* isv = sl->isv();
+      IntSetVal* isv = eval_intset(s.env().envi(), call->args()[5]);
       IntSetRanges isr(isv);
 
       int size = isv->card().toInt();
