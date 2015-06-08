@@ -41,7 +41,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include "fzn_solverinstance.hh"
+#include <minizinc/solvers/fzn_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_onlyRangeDomains = false;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -223,7 +224,7 @@ int main(int argc, char** argv) {
         goto error;
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
+      flag_onlyRangeDomains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
     } else {
@@ -308,8 +309,10 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
+
+          Env env(m);
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(m, typeErrors);
+          MiniZinc::typecheck(env, m, typeErrors);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -319,14 +322,14 @@ int main(int argc, char** argv) {
             }
             exit(EXIT_FAILURE);
           }
-          MiniZinc::registerBuiltins(m);
+          MiniZinc::registerBuiltins(env, m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
+            
             try {
               flatten(env,fopts);
             } catch (LocationException& e) {
