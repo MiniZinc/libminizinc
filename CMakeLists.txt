@@ -333,7 +333,6 @@ target_link_libraries(mzn2doc minizinc)
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
-		solvers/fzn/fzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)

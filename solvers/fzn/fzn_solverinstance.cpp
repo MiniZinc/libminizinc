@@ -17,7 +17,7 @@
 #include <signal.h>
 #include <fstream>
 
-#include "fzn_solverinstance.hh"
+#include "minizinc/solvers/fzn_solverinstance.hh"
 
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
@@ -155,18 +155,18 @@ namespace MiniZinc {
   FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
   namespace {
-    ArrayLit* b_arrayXd(ASTExprVec<Expression> args, int d) {
+    ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(args[d]);
+      ArrayLit* al = eval_array_lit(env.envi(), args[d]);
       std::vector<std::pair<int,int> > dims(d);
       unsigned int dim1d = 1;
       for (int i=0; i<d; i++) {
-        IntSetVal* di = eval_intset(args[i]);
+        IntSetVal* di = eval_intset(env.envi(), args[i]);
         if (di->size()==0) {
           dims[i] = std::pair<int,int>(1,0);
           dim1d = 0;
         } else if (di->size() != 1) {
-          throw EvalError(args[i]->loc(), "arrayXd only defined for ranges");
+          throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
         } else {
           dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
                                        static_cast<int>(di->max(0).toInt()));
@@ -174,7 +174,7 @@ namespace MiniZinc {
         }
       }
       if (dim1d != al->v().size())
-        throw EvalError(al->loc(), "mismatch in array dimensions");
+        throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
       ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
       Type t = al->type();
       t.dim(d);
@@ -209,7 +209,7 @@ namespace MiniZinc {
             it->second.first->e(it->second.second);
           }
         }
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, std::cerr);
+        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
@@ -223,7 +223,7 @@ namespace MiniZinc {
               for (unsigned int i=0; i<c->args().size(); i++)
                 c->args()[i]->type(Type::parsetint());
               c->args()[c->args().size()-1]->type(it->second.first->type());
-              ArrayLit* al = b_arrayXd(c->args(), c->args().size()-1);
+              ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
               it->second.first->e(al);
             } else {
               it->second.first->e(ai->e());
