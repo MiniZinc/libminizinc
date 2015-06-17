@@ -153,8 +153,13 @@ namespace MiniZinc {
             IntSetVal* nd = IntSetVal::ai(inter);
             if (nd->size()==0) {
               env.flat()->fail(env);
-            } else {
+            } else if (nd->card() != isv1->card()) {
               id1->decl()->ti()->domain(new SetLit(Location(), nd));
+              if (nd->card()==isv0->card()) {
+                id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
+              } else {
+                id1->decl()->ti()->setComputedDomain(false);
+              }
             }
           } else if (id0->type().isbool()) {
             if (eval_bool(env,id0->decl()->ti()->domain()) != eval_bool(env,id1->decl()->ti()->domain())) {
@@ -174,6 +179,11 @@ namespace MiniZinc {
               BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
               newdom->type(Type::parsetfloat());
               id1->decl()->ti()->domain(newdom);
+              if (lb==lb0 && ub==ub0) {
+                id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
+              } else {
+                id1->decl()->ti()->setComputedDomain(false);
+              }
             }
           }
           
