@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
       flag_optimize = false;
     } else if (string(argv[i])==string("--no-output-ozn") ||
                string(argv[i])==string("-O-")) {
-      flag_no_output_ozn = false;
+      flag_no_output_ozn = true;
     } else if (string(argv[i])=="--output-base") {
       i++;
       if (i==argc)
