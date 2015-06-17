@@ -10,6 +10,7 @@ Bug fixes:
    variables being removed although had a constraining right hand side.
  - Fix evaluation of set comprehensions.
  - Fix command line flag --no-output-ozn
+ - Fix performance problem when evaluating array expressions inside lets.
 
 Version 2.0.2
 =============
