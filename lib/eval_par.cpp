@@ -30,8 +30,9 @@ namespace MiniZinc {
     if (vd->e() == NULL)
       throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
     typename E::Val r = E::e(env,vd->e());
-    if (vd->toplevel() && !vd->evaluated()) {
-      vd->e(E::exp(r));
+    if (!vd->evaluated() && (vd->toplevel() || vd->type().dim() > 0) ) {
+      Expression* ne = E::exp(r);
+      vd->e(ne);
       vd->evaluated(true);
     }
     return r;

@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc to FlatZinc converter, version "
         << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-      std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
+      std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     if (beginswith(string(argv[i]),"-I")) {
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
       flag_optimize = false;
     } else if (string(argv[i])==string("--no-output-ozn") ||
                string(argv[i])==string("-O-")) {
-      flag_no_output_ozn = false;
+      flag_no_output_ozn = true;
     } else if (string(argv[i])=="--output-base") {
       i++;
       if (i==argc)

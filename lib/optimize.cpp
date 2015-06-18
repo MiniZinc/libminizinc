@@ -153,8 +153,13 @@ namespace MiniZinc {
             IntSetVal* nd = IntSetVal::ai(inter);
             if (nd->size()==0) {
               env.flat()->fail(env);
-            } else {
+            } else if (nd->card() != isv1->card()) {
               id1->decl()->ti()->domain(new SetLit(Location(), nd));
+              if (nd->card()==isv0->card()) {
+                id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
+              } else {
+                id1->decl()->ti()->setComputedDomain(false);
+              }
             }
           } else if (id0->type().isbool()) {
             if (eval_bool(env,id0->decl()->ti()->domain()) != eval_bool(env,id1->decl()->ti()->domain())) {
@@ -174,6 +179,11 @@ namespace MiniZinc {
               BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
               newdom->type(Type::parsetfloat());
               id1->decl()->ti()->domain(newdom);
+              if (lb==lb0 && ub==ub0) {
+                id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
+              } else {
+                id1->decl()->ti()->setComputedDomain(false);
+              }
             }
           }
           
@@ -271,6 +281,12 @@ namespace MiniZinc {
                 c->args()[0]->isa<Id>() && c->args()[1]->isa<Id>() &&
                 (c->args()[0]->cast<Id>()->decl()->e()==NULL || c->args()[1]->cast<Id>()->decl()->e()==NULL) ) {
               unify(envi, c->args()[0]->cast<Id>(), c->args()[1]->cast<Id>());
+              {
+                VarDecl* vd = c->args()[0]->cast<Id>()->decl();
+                int v0idx = envi.vo.find(vd);
+                pushVarDecl(envi, m[v0idx]->cast<VarDeclI>(), v0idx, vardeclQueue);
+              }
+              
               pushDependentConstraints(envi, c->args()[0]->cast<Id>(), constraintQueue);
               CollectDecls cd(envi.vo,deletedVarDecls,ci);
               topDown(cd,c);
@@ -431,6 +447,12 @@ namespace MiniZinc {
           if (remove) {
             deletedVarDecls.push_back(vd);
           } else {
+            simplifyConstraint(envi,m[var_idx],deletedVarDecls,constraintQueue,vardeclQueue);
+          }
+        }
+        else if (vd->type().isint() && vd->ti()->domain()) {
+          IntSetVal* isv = eval_intset(envi, vd->ti()->domain());
+          if (isv->size()==1 && isv->card()==1) {
             simplifyConstraint(envi,m[var_idx],deletedVarDecls,constraintQueue,vardeclQueue);
           }
         }
@@ -703,6 +725,58 @@ namespace MiniZinc {
           topDown(cd,c);
           env.flat_removeItem(ii);
         }
+      } else if (c->id()==constants().ids.bool2int) {
+        VarDeclI* vdi = ii->cast<VarDeclI>();
+        bool fixed = false;
+        bool b_val = false;
+        if (vdi->e()->ti()->domain()) {
+          IntSetVal* isv = eval_intset(env, vdi->e()->ti()->domain());
+          if (isv->min()<0 || isv->min()>1) {
+            env.flat()->fail(env);
+            return true;
+          }
+          fixed = isv->min()==isv->max();
+          b_val = (isv->min() == 1);
+        }
+        if (fixed) {
+          if (c->args()[0]->type().ispar()) {
+            
+          } else {
+            Id* ident = c->args()[0]->cast<Id>();
+            TypeInst* ti = ident->decl()->ti();
+            if (ti->domain() == NULL) {
+              ti->domain(constants().boollit(b_val));
+              ti->setComputedDomain(false);
+            } else if (eval_bool(env,ti->domain())!=b_val) {
+              env.flat()->fail(env);
+            }
+            pushDependentConstraints(env, ident, constraintQueue);
+            CollectDecls cd(env.vo,deletedVarDecls,ii);
+            topDown(cd,c);
+            vdi->e()->e(IntLit::a(b_val));
+            vdi->e()->ti()->setComputedDomain(true);
+            if (env.vo.occurrences(vdi->e())==0) {
+              vdi->remove();
+            }
+          }
+        } else {
+          if (BoolLit* bl = c->args()[0]->dyn_cast<BoolLit>()) {
+            IntVal v =  bl->v() ? 1 : 0;
+            CollectDecls cd(env.vo,deletedVarDecls,ii);
+            topDown(cd,c);
+            vdi->e()->e(IntLit::a(v));
+            pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+          } else if (Id* ident = c->args()[0]->dyn_cast<Id>()) {
+            if (ident->decl()->ti()->domain()) {
+              IntVal v = eval_bool(env,ident->decl()->ti()->domain()) ? 1 : 0;
+              CollectDecls cd(env.vo,deletedVarDecls,ii);
+              topDown(cd,c);
+              vdi->e()->e(IntLit::a(v));
+              pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+            }
+          }
+        }
+
       } else {
         Expression* rewrite = NULL;
         GCLock lock;

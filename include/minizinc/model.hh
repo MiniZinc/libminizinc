@@ -266,6 +266,8 @@ namespace MiniZinc {
     bool enterModel(Model* m) { return true; }
     /// Enter item
     bool enter(Item* m) { return true; }
+    /// Visit include item
+    void vIncludeI(IncludeI*) {}
     /// Visit variable declaration
     void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
@@ -308,6 +310,7 @@ namespace MiniZinc {
               models.push_back((*cm)[i]->cast<IncludeI>()->m());
               seen.insert((*cm)[i]->cast<IncludeI>()->m());
             }
+            iter.vIncludeI((*cm)[i]->cast<IncludeI>());
             break;
           case Item::II_VD:
             iter.vVarDeclI((*cm)[i]->cast<VarDeclI>());
