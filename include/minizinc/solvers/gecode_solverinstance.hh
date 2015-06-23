@@ -204,6 +204,7 @@ namespace MiniZinc {
     unsigned int _pre_passes;
     unsigned int _n_max_solutions;
     unsigned int _n_found_solutions;
+    Model* _flat;
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
