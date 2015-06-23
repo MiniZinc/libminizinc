@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(NULL), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -340,6 +340,11 @@ namespace MiniZinc {
   Model* EnvI::flat(void) {
     return _flat;
   }
+  void EnvI::swap() {
+    Model* tmp = orig;
+    orig = _flat;
+    _flat = tmp;
+  }
   ASTString EnvI::reifyId(const ASTString& id) {
     ASTStringMap<ASTString>::t::iterator it = reifyMap.find(id);
     if (it == reifyMap.end()) {
@@ -413,8 +418,11 @@ namespace MiniZinc {
   Env::model(void) { return e->orig; }
   Model*
   Env::flat(void) { return e->flat(); }
+  void
+  Env::swap() { e->swap(); }
   Model*
   Env::output(void) { return e->output; }
+
   std::ostream& 
   Env::evalOutput(std::ostream& os) { return e->evalOutput(os); }
   EnvI&
@@ -542,9 +550,69 @@ namespace MiniZinc {
     return os;
   }
 
+  void populateOutput(Env& env) {
+    EnvI& envi = env.envi();
+    Model* _flat = envi.flat();
+    Model* _output = envi.output;
+    std::vector<Expression*> outputVars;
+    int idx=0;
+    for (VarDeclIterator it = _flat->begin_vardecls();
+         it != _flat->end_vardecls(); ++it) {
+      VarDecl* vd = it->e();
+      Annotation& ann = vd->ann();
+      ArrayLit* dims = NULL;
+      bool has_output_ann = false;
+      if(!ann.isEmpty()) {
+        for(ExpressionSetIter it = ann.begin();
+            it != ann.end(); ++it) {
+          if (Call* c = (*it)->dyn_cast<Call>()) {
+            if (c->id() == constants().ann.output_array) {
+              dims = c->args()[0]->cast<ArrayLit>();
+              has_output_ann = true;
+              break;
+            }
+          } else if ((*it)->isa<Id>() && (*it)->cast<Id>() == constants().ann.output_var) {
+            has_output_ann = true;
+          }
+        }
+        if(has_output_ann) {
+          std::ostringstream s;
+          s << vd->id()->str().str() << " = ";
+          _output->addItem(new VarDeclI(Location().introduce(), vd));
+
+          if (dims) {
+            s << "array" << dims->v().size() << "d(";
+            for (unsigned int i=0; i<dims->v().size(); i++) {
+              IntSetVal* idxset = eval_intset(envi,dims->v()[i]);
+              s << *idxset << ",";
+            }
+          }
+          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          outputVars.push_back(sl);
+
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = vd->id();
+          Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = _flat->matchFn(envi, show);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+          std::string ends = dims ? ")" : "";
+          ends += ";\n";
+          StringLit* eol = new StringLit(Location().introduce(),ends);
+          outputVars.push_back(eol);
+        }
+      }
+    }
+    OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    _output->addItem(newOutputItem);
+  }
+
   std::ostream&
   EnvI::evalOutput(std::ostream &os) {
     GCLock lock;
+
     ArrayLit* al = eval_array_lit(*this,output->outputItem()->e());
     std::string output;
     for (int i=0; i<al->v().size(); i++) {
