@@ -5039,6 +5039,7 @@ namespace MiniZinc {
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(env, decl);
               env.output->addItem(decl);
+              topDown(*this, decl->e());
             } else {
               decl = origdecl;
             }
