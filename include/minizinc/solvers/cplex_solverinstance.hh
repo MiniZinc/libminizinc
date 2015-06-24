@@ -44,6 +44,13 @@ namespace MiniZinc {
     
     void assignSolutionToOutput(void);
 
+		/// PARAMS
+		int nThreads;
+		bool fVerbose;
+		std::string sExportModel;
+		double nTimeout;
+    double nWorkMemLimit;
+		
     IloModel* getIloModel(void);
     IloNum exprToIloNum(Expression* e);
     IloNumExpr exprToIloExpr(Expression* e);
