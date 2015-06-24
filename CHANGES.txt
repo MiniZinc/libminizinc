@@ -152,7 +152,7 @@ without changes.
    over variables and use var bool where conditions.
  - Any bool expression can now automatically coerce to an int expression,
    likewise for int and float. This means that you don't have to write
-   bool2int or int2float in you models any more.
+   bool2int or int2float in your models any more.
  - Equality constraints can now be posted between array expressions.
  - Arbitrary expressions can now be included ("interpolated") into strings,
    using the syntax "some text \(e) some more text", where e is any
