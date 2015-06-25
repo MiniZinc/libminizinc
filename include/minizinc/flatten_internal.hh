@@ -118,6 +118,7 @@ namespace MiniZinc {
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
+    void swap();
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     bool dumpPath(std::ostream& os, bool force, bool errStack);

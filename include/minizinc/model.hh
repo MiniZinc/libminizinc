@@ -241,6 +241,7 @@ namespace MiniZinc {
     
     Model* model(void);
     Model* flat(void);
+    void swap();
     Model* output(void);
     EnvI& envi(void);
     const EnvI& envi(void) const;

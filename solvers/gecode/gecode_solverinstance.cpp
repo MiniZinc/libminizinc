@@ -63,6 +63,7 @@ namespace MiniZinc {
        if(options.hasParam(std::string("print_stats"))) {
          _print_stats = options.getBoolParam(std::string("print_stats"));
        }
+       _flat = env.flat();
      }
 
     GecodeSolverInstance::~GecodeSolverInstance(void) {
@@ -295,7 +296,7 @@ namespace MiniZinc {
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
-    for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
+    for (VarDeclIterator it = _flat->begin_vardecls(); it != _flat->end_vardecls(); ++it) {
       if (it->e()->type().isvar()) {
         // check if it has an output-annotation
         VarDecl* vd = it->e();
@@ -318,40 +319,9 @@ namespace MiniZinc {
           if(!it->e()->e()) { // if there is no initialisation expression
             Expression* domain = ti->domain();
             if(domain) {
-              if(domain->isa<SetLit>()) {
-                IntVar intVar(*this->_current_space, arg2intset(_env.envi(), domain));
-                _current_space->iv.push_back(intVar);
-                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
-              } else {
-                IntBounds ib = compute_int_bounds(_env.envi(), domain);
-                if(ib.valid) {
-                  int lb=-1, ub=-2;
-                  if(valueWithinBounds(ib.l.toInt())) {
-                    lb = ib.l.toInt();
-                  } else {
-                    std::stringstream ssm;
-                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-                    throw InternalError(ssm.str());
-                  }
-
-                  if(valueWithinBounds(ib.u.toInt())) {
-                    ub = ib.u.toInt();
-                  } else {
-                    std::stringstream ssm;
-                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-                    throw InternalError(ssm.str());
-                  }
-
-                  IntVar intVar(*this->_current_space, lb, ub);
-                  _current_space->iv.push_back(intVar);
-                  insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE,
-                        _current_space->iv.size()-1));
-                } else {
-                    std::stringstream ssm;
-                    ssm << "GecodeSolverInstance::processFlatZinc: Error: " << *domain << " outside 32-bit int." << std::endl;
-                    throw InternalError(ssm.str());
-                }
-              }
+              IntVar intVar(*this->_current_space, arg2intset(_env.envi(), domain));
+              _current_space->iv.push_back(intVar);
+              insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
@@ -426,7 +396,7 @@ namespace MiniZinc {
             Expression* domain = ti->domain();
             double lb, ub;
             if (domain) {
-              FloatBounds fb = compute_float_bounds(_env.envi(), domain);
+              FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
               lb = fb.l;
               ub = fb.u;
             } else {
@@ -467,14 +437,14 @@ namespace MiniZinc {
     } // end for all var decls
 
     // post the constraints
-    for (ConstraintIterator it = _env.flat()->begin_constraints(); it != _env.flat()->end_constraints(); ++it) {
+    for (ConstraintIterator it = _flat->begin_constraints(); it != _flat->end_constraints(); ++it) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
         _constraintRegistry.post(c);
       }
     }
 
     // objective
-    SolveI* si = _env.flat()->solveItem();
+    SolveI* si = _flat->solveItem();
     _current_space->_solveType = si->st();
     if(si->e()) {
       _current_space->_optVarIsInt = (si->e()->type().isvarint());
@@ -928,7 +898,7 @@ namespace MiniZinc {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
       std::vector<Expression*> solve_args;
-      Expression* solveExpr = _env.flat()->solveItem()->e();
+      Expression* solveExpr = _flat->solveItem()->e();
       Expression* optSearch = NULL;
       
       switch(_current_space->_solveType) {
@@ -962,7 +932,7 @@ namespace MiniZinc {
       int seed = _options.getIntParam("seed", 1);
       double decay = _options.getFloatParam("decay", 0.5);
       
-      createBranchers(_env.flat()->solveItem()->ann(), optSearch,
+      createBranchers(_flat->solveItem()->ann(), optSearch,
                       seed, decay,
                       false, /* ignoreUnknown */
                       std::cerr);
