@@ -464,9 +464,9 @@ int main(int argc, char** argv) {
               SolverInstance::Status status = cplex.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
-                std::cout << "----------\n";
+                std::cout << "----------" << std::endl;
                 if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                  std::cout << "==========" << std::endl;
 // 								std::
               }
             }
@@ -527,6 +527,7 @@ error:
               << "-p <N>              use N threads" << std::endl
               << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
               << "--timeout <N>       stop search after N seconds" << std::endl
+              << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
               << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
               << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
               << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
