@@ -27,7 +27,6 @@
 #include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
-#include <minizinc/flatten_internal.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>

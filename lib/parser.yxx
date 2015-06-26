@@ -1022,9 +1022,19 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | set_expr MZN_INTERSECT set_expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | set_expr MZN_PLUSPLUS set_expr
@@ -1104,9 +1114,19 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | expr MZN_INTERSECT expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | expr MZN_PLUSPLUS expr

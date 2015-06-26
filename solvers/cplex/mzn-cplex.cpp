@@ -387,21 +387,13 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
+            if (is_flatzinc) {
+              GCLock lock;
+              env.swap();
+              populateOutput(env);
+            } else {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            if(is_flatzinc) {
-              GCLock lock;
-              std::string fzm = std_lib_dir + "/std/flatzinc_builtins.mzn";
-              vector<std::string> is;
-              IncludeI* inc = new IncludeI(Location().introduce(), ASTString("flatzinc_builtins.mzn"));
-              Model* m = parse(fzm, is, includePaths, flag_ignoreStdlib, parseDocComments, flag_verbose, errstream);
-              if (m) {
-                inc->m(m);
-                m->addItem(inc);
-              } else {
-                std::cerr << "Warning: can't find flatzinc_builtins.mzn\n";
-              }
-            }
 
             try {
               flatten(env,fopts);
@@ -439,6 +431,24 @@ int main(int argc, char** argv) {
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             } else {
               env.flat()->compact();
+              }
+
+              if (flag_output_fzn_stdout) {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to stdout\n";
+                Printer p(std::cout,0);
+                p.print(env.flat());
+              } else if(flag_output_fzn != "") {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to " << flag_output_fzn << "...";
+                std::ofstream os;
+                os.open(flag_output_fzn.c_str(), ios::out);
+                Printer p(os,0);
+                p.print(env.flat());
+                os.close();
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
             }
             
             /// To cout:
@@ -471,6 +481,9 @@ int main(int argc, char** argv) {
               }
             }
             
+            if(is_flatzinc) {
+              env.swap();
+            }
           }
         } else { // !flag_typecheck
           Printer p(std::cout);
