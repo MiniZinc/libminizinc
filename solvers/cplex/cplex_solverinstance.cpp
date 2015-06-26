@@ -11,7 +11,6 @@
 
 #include <minizinc/solvers/cplex_solverinstance.hh>
 #include <minizinc/eval_par.hh>
-#include </opt/ibm/ILOG/CPLEX_Studio1261/cplex/include/ilcplex/ilocplexi.h>
 
 namespace MiniZinc {
 
@@ -125,7 +124,9 @@ namespace MiniZinc {
 //     _ilomodel->end();           -- TAKES TOO LONG SOMETIMES
     delete _ilomodel;
     delete _ilocplex;
+    std::cout << "  DELETING IloEnv... " << std::flush;
     _iloenv.end();
+    std::cout << " DONE. " << std::endl;
   }
   
   SolverInstanceBase::Status CPLEXSolverInstance::next(void) {
@@ -169,6 +170,7 @@ namespace MiniZinc {
 
     try{
       _ilocplex->solve();
+      std::cout << "  IloCplex::solve() exited." << std::endl;
     } catch(IloCplex::Exception& e){
       std::stringstream ssm;
       ssm << "Caught IloCplex::Exception while solving : " << e << std::endl;
@@ -179,13 +181,13 @@ namespace MiniZinc {
     switch(ss) {
       case IloAlgorithm::Status::Optimal:
         s = SolverInstance::OPT;
-        assignSolutionToOutput();
 				std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
+        assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Feasible:
         s = SolverInstance::SAT;
-        assignSolutionToOutput();
 				std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
+        assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Infeasible:
         s = SolverInstance::UNSAT;
