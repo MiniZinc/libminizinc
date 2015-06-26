@@ -86,6 +86,7 @@ namespace MiniZinc {
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
     const FlatteningOptions& fopt;
+    int in_redundant_constraint;
   protected:
     Map map;
     Model* _flat;
