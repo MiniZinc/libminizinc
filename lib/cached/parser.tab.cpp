@@ -455,9 +455,14 @@ namespace MiniZinc {
     }
 
     model->setFilepath(filename);
-    bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    bool isFzn;
+    if (filename=="") {
+      isFzn = false;
+    } else {
+      isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    }
     ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
@@ -1247,33 +1252,33 @@ static const yytype_int16 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   645,   645,   647,   649,   652,   657,   662,   667,   672,
-     675,   683,   692,   692,   694,   710,   714,   716,   718,   719,
-     721,   723,   725,   727,   729,   733,   756,   761,   769,   775,
-     779,   784,   789,   796,   800,   808,   818,   825,   834,   846,
-     854,   855,   860,   861,   863,   868,   869,   873,   877,   882,
-     882,   885,   887,   891,   896,   900,   902,   906,   907,   913,
-     922,   925,   933,   941,   950,   959,   968,   981,   982,   986,
-     988,   990,   992,   994,   996,   998,  1004,  1007,  1009,  1015,
-    1016,  1018,  1020,  1022,  1024,  1026,  1028,  1030,  1032,  1034,
-    1036,  1038,  1040,  1042,  1044,  1050,  1052,  1067,  1068,  1070,
-    1072,  1074,  1076,  1078,  1080,  1082,  1084,  1086,  1088,  1090,
-    1092,  1094,  1096,  1098,  1100,  1102,  1104,  1106,  1108,  1110,
-    1112,  1114,  1116,  1118,  1120,  1122,  1124,  1126,  1132,  1134,
-    1141,  1154,  1156,  1158,  1160,  1163,  1165,  1168,  1170,  1172,
-    1174,  1176,  1177,  1179,  1180,  1183,  1184,  1187,  1188,  1191,
-    1192,  1195,  1196,  1199,  1200,  1203,  1204,  1205,  1210,  1212,
-    1218,  1223,  1231,  1238,  1247,  1249,  1253,  1259,  1261,  1264,
-    1267,  1269,  1273,  1276,  1279,  1281,  1285,  1287,  1291,  1293,
-    1304,  1315,  1355,  1358,  1363,  1370,  1375,  1379,  1385,  1401,
-    1402,  1406,  1408,  1410,  1412,  1414,  1416,  1418,  1420,  1422,
-    1424,  1426,  1428,  1430,  1432,  1434,  1436,  1438,  1440,  1442,
-    1444,  1446,  1448,  1450,  1452,  1454,  1456,  1458,  1462,  1470,
-    1502,  1504,  1505,  1516,  1559,  1564,  1571,  1573,  1577,  1579,
-    1587,  1589,  1598,  1598,  1601,  1607,  1618,  1619,  1622,  1626,
-    1630,  1632,  1634,  1636,  1638,  1640,  1642,  1644,  1646,  1648,
-    1650,  1652,  1654,  1656,  1658,  1660,  1662,  1664,  1666,  1668,
-    1670,  1672,  1674,  1676,  1678,  1680,  1682,  1684,  1686
+       0,   650,   650,   652,   654,   657,   662,   667,   672,   677,
+     680,   688,   697,   697,   699,   715,   719,   721,   723,   724,
+     726,   728,   730,   732,   734,   738,   761,   766,   774,   780,
+     784,   789,   794,   801,   805,   813,   823,   830,   839,   851,
+     859,   860,   865,   866,   868,   873,   874,   878,   882,   887,
+     887,   890,   892,   896,   901,   905,   907,   911,   912,   918,
+     927,   930,   938,   946,   955,   964,   973,   986,   987,   991,
+     993,   995,   997,   999,  1001,  1003,  1009,  1012,  1014,  1020,
+    1021,  1023,  1025,  1027,  1029,  1036,  1043,  1045,  1047,  1049,
+    1051,  1053,  1055,  1057,  1059,  1065,  1067,  1082,  1083,  1085,
+    1087,  1089,  1091,  1093,  1095,  1097,  1099,  1101,  1103,  1105,
+    1107,  1109,  1111,  1113,  1115,  1117,  1119,  1121,  1128,  1135,
+    1137,  1139,  1141,  1143,  1145,  1147,  1149,  1151,  1157,  1159,
+    1166,  1179,  1181,  1183,  1185,  1188,  1190,  1193,  1195,  1197,
+    1199,  1201,  1202,  1204,  1205,  1208,  1209,  1212,  1213,  1216,
+    1217,  1220,  1221,  1224,  1225,  1228,  1229,  1230,  1235,  1237,
+    1243,  1248,  1256,  1263,  1272,  1274,  1278,  1284,  1286,  1289,
+    1292,  1294,  1298,  1301,  1304,  1306,  1310,  1312,  1316,  1318,
+    1329,  1340,  1380,  1383,  1388,  1395,  1400,  1404,  1410,  1426,
+    1427,  1431,  1433,  1435,  1437,  1439,  1441,  1443,  1445,  1447,
+    1449,  1451,  1453,  1455,  1457,  1459,  1461,  1463,  1465,  1467,
+    1469,  1471,  1473,  1475,  1477,  1479,  1481,  1483,  1487,  1495,
+    1527,  1529,  1530,  1541,  1584,  1589,  1596,  1598,  1602,  1604,
+    1612,  1614,  1623,  1623,  1626,  1632,  1643,  1644,  1647,  1651,
+    1655,  1657,  1659,  1661,  1663,  1665,  1667,  1669,  1671,  1673,
+    1675,  1677,  1679,  1681,  1683,  1685,  1687,  1689,  1691,  1693,
+    1695,  1697,  1699,  1701,  1703,  1705,  1707,  1709,  1711
 };
 #endif
 
@@ -3798,12 +3803,22 @@ yyreduce:
 
   case 84:
 
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression)); ;}
+    { if ((yyvsp[(1) - (3)].expression)->isa<IntLit>() && (yyvsp[(3) - (3)].expression)->isa<IntLit>()) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[(1) - (3)].expression)->cast<IntLit>()->v(),(yyvsp[(3) - (3)].expression)->cast<IntLit>()->v()));
+        } else {
+          (yyval.expression)=new BinOp((yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression));
+        }
+      ;}
     break;
 
   case 85:
 
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression)); ;}
+    { if ((yyvsp[(3) - (6)].expression)->isa<IntLit>() && (yyvsp[(5) - (6)].expression)->isa<IntLit>()) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[(3) - (6)].expression)->cast<IntLit>()->v(),(yyvsp[(5) - (6)].expression)->cast<IntLit>()->v()));
+        } else {
+          (yyval.expression)=new BinOp((yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression));
+        }
+      ;}
     break;
 
   case 86:
@@ -3971,12 +3986,22 @@ yyreduce:
 
   case 117:
 
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression)); ;}
+    { if ((yyvsp[(1) - (3)].expression)->isa<IntLit>() && (yyvsp[(3) - (3)].expression)->isa<IntLit>()) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[(1) - (3)].expression)->cast<IntLit>()->v(),(yyvsp[(3) - (3)].expression)->cast<IntLit>()->v()));
+        } else {
+          (yyval.expression)=new BinOp((yyloc), (yyvsp[(1) - (3)].expression), BOT_DOTDOT, (yyvsp[(3) - (3)].expression));
+        }
+      ;}
     break;
 
   case 118:
 
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression)); ;}
+    { if ((yyvsp[(3) - (6)].expression)->isa<IntLit>() && (yyvsp[(5) - (6)].expression)->isa<IntLit>()) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[(3) - (6)].expression)->cast<IntLit>()->v(),(yyvsp[(5) - (6)].expression)->cast<IntLit>()->v()));
+        } else {
+          (yyval.expression)=new BinOp((yyloc), (yyvsp[(3) - (6)].expression), BOT_DOTDOT, (yyvsp[(5) - (6)].expression));
+        }
+      ;}
     break;
 
   case 119:
