@@ -55,6 +55,7 @@ int main(int argc, char** argv) {
   bool flag_optimize = true;
   bool flag_werror = false;
   bool flag_statistics = false;
+  bool flag_stdinInput = false;
   
   Timer starttime;
   Timer lasttime;
@@ -83,7 +84,7 @@ int main(int argc, char** argv) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc to FlatZinc converter, version "
         << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-      std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
+      std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     if (beginswith(string(argv[i]),"-I")) {
@@ -111,7 +112,7 @@ int main(int argc, char** argv) {
       flag_optimize = false;
     } else if (string(argv[i])==string("--no-output-ozn") ||
                string(argv[i])==string("-O-")) {
-      flag_no_output_ozn = false;
+      flag_no_output_ozn = true;
     } else if (string(argv[i])=="--output-base") {
       i++;
       if (i==argc)
@@ -144,7 +145,13 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (string(argv[i])=="-" || string(argv[i])=="--input-from-stdin") {
+      if (datafiles.size() > 0 || filename != "")
+        goto error;
+      flag_stdinInput = true;
     } else if (beginswith(string(argv[i]),"-d")) {
+      if (flag_stdinInput)
+        goto error;
       string filename(argv[i]);
       string datafile;
       if (filename.length() > 2) {
@@ -161,6 +168,8 @@ int main(int argc, char** argv) {
         goto error;
       datafiles.push_back(datafile);
     } else if (string(argv[i])=="--data") {
+      if (flag_stdinInput)
+        goto error;
       i++;
       if (i==argc) {
         goto error;
@@ -187,6 +196,8 @@ int main(int argc, char** argv) {
         globals_dir = argv[i];
       }
     } else if (beginswith(string(argv[i]),"-D")) {
+      if (flag_stdinInput)
+        goto error;
       string cmddata(argv[i]);
       if (cmddata.length() > 2) {
         datafiles.push_back("cmd:/"+cmddata.substr(2));
@@ -198,6 +209,8 @@ int main(int argc, char** argv) {
         datafiles.push_back("cmd:/"+string(argv[i]));
       }
     } else if (string(argv[i])=="--cmdline-data") {
+      if (flag_stdinInput)
+        goto error;
       i++;
       if (i==argc) {
         goto error;
@@ -214,6 +227,8 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;
     } else {
+      if (flag_stdinInput)
+        goto error;
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
         std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
@@ -236,7 +251,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (filename=="") {
+  if (filename=="" && !flag_stdinInput) {
     std::cerr << "Error: no model file given." << std::endl;
     goto error;
   }
@@ -274,7 +289,11 @@ int main(int argc, char** argv) {
   }
   
   if (flag_output_base == "") {
-    flag_output_base = filename.substr(0,filename.length()-4);
+    if (flag_stdinInput) {
+      flag_output_base = "mznout";
+    } else {
+      flag_output_base = filename.substr(0,filename.length()-4);
+    }
   }
   if (flag_output_fzn == "") {
     flag_output_fzn = flag_output_base+".fzn";
@@ -285,10 +304,23 @@ int main(int argc, char** argv) {
 
   {
     std::stringstream errstream;
-    if (flag_verbose)
-      std::cerr << "Parsing '" << filename << "'" << std::endl;
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false,
-                         flag_verbose, errstream)) {
+    if (flag_verbose) {
+      if (flag_stdinInput) {
+        std::cerr << "Parsing standard input" << std::endl;
+      } else {
+        std::cerr << "Parsing '" << filename << "'" << std::endl;
+      }
+    }
+    Model* m;
+    if (flag_stdinInput) {
+      filename = "stdin";
+      std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
+      m = parseFromString(input, filename, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+    } else {
+      m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+    }
+    
+    if (m) {
       try {
         if (flag_typecheck) {
           Env env(m);
@@ -511,7 +543,8 @@ error:
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << std::endl
-            << "Output options:" << std::endl << std::endl
+            << "Input/Output options:" << std::endl
+            << "  -, --input-from-stdin\n    Read model from standard input (no additional .mzn or .dzn files possible)" << std::endl
             << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl
             << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl

@@ -148,9 +148,14 @@ namespace MiniZinc {
     }
 
     model->setFilepath(filename);
-    bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    bool isFzn;
+    if (filename=="") {
+      isFzn = false;
+    } else {
+      isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    }
     ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
@@ -1022,9 +1027,19 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | set_expr MZN_INTERSECT set_expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | set_expr MZN_PLUSPLUS set_expr
@@ -1104,9 +1119,19 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | expr MZN_INTERSECT expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | expr MZN_PLUSPLUS expr

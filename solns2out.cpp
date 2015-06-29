@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc solution printing tool, version "
       << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-      std::cout << "Copyright (C) 2014 Monash University and NICTA" << std::endl;
+      std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help")) {

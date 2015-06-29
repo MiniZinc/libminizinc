@@ -5039,6 +5039,7 @@ namespace MiniZinc {
                 topDown(ce, decl->params()[i]);
               env.output->registerFn(env, decl);
               env.output->addItem(decl);
+              topDown(*this, decl->e());
             } else {
               decl = origdecl;
             }
@@ -5368,6 +5369,7 @@ namespace MiniZinc {
     FunctionI* array_bool_or;
     FunctionI* array_bool_clause;
     FunctionI* array_bool_clause_reif;
+    FunctionI* bool_xor;
     {
       std::vector<Type> array_bool_andor_t(2);
       array_bool_andor_t[0] = Type::varbool(1);
@@ -5385,6 +5387,13 @@ namespace MiniZinc {
       array_bool_andor_t.push_back(Type::varbool());
       fi = env.orig->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t);
       array_bool_clause_reif = (fi && fi->e()) ? fi : NULL;
+      
+      std::vector<Type> bool_xor_t(3);
+      bool_xor_t[0] = Type::varbool();
+      bool_xor_t[1] = Type::varbool();
+      bool_xor_t[2] = Type::varbool();
+      fi = env.orig->matchFn(env, constants().ids.bool_xor, bool_xor_t);
+      bool_xor = (fi && fi->e()) ? fi : NULL;
     }
     
     std::vector<VarDecl*> deletedVarDecls;
@@ -5652,7 +5661,16 @@ namespace MiniZinc {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
-
+            } else if (c->id() == constants().ids.bool_xor) {
+              if (bool_xor) {
+                std::vector<Expression*> args(3);
+                args[0] = c->args()[0];
+                args[1] = c->args()[1];
+                args[2] = c->args().size()==2 ? constants().lit_true : c->args()[2];
+                nc = new Call(c->loc().introduce(),bool_xor->id(),args);
+                nc->type(Type::varbool());
+                nc->decl(bool_xor);
+              }
             } else {
               FunctionI* decl = env.orig->matchFn(env,c);
               if (decl && decl->e()) {

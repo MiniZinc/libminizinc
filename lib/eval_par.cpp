@@ -30,8 +30,9 @@ namespace MiniZinc {
     if (vd->e() == NULL)
       throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
     typename E::Val r = E::e(env,vd->e());
-    if (vd->toplevel() && !vd->evaluated()) {
-      vd->e(E::exp(r));
+    if (!vd->evaluated() && (vd->toplevel() || vd->type().dim() > 0) ) {
+      Expression* ne = E::exp(r);
+      vd->e(ne);
       vd->evaluated(true);
     }
     return r;
@@ -1323,10 +1324,6 @@ namespace MiniZinc {
               return nc;
             }
           }
-          case Expression::E_LET:
-          {
-            throw EvalError(env, e->loc(),"cannot partially evaluate let expression");
-          }
           case Expression::E_BINOP:
           {
             BinOp* bo = e->cast<BinOp>();
@@ -1346,7 +1343,7 @@ namespace MiniZinc {
             return eval_par(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
           }
           default:
-            throw EvalError(env, e->loc(),"cannot partially evaluate expression");
+            return e;
         }
       }
     }
