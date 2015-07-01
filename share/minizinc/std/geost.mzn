@@ -32,6 +32,12 @@ predicate geost(
         ),
         % Error message
         "geost: index sets of arguments are incorrect",
+    assert(
+        % More sanity checks
+        forall(i in index_set(shape))(card(shape[i]) > 0),
+        % Error message
+        "geost: sets in shape must be non-empty",
+
         % A few useful definitions
         let { 
             set of int: DIMS    = 1..k;
@@ -68,7 +74,7 @@ predicate geost(
                 )
             )
         )
-    ); % End assert statement
+    )); % End assert statements
 
 
 /** @group globals.packing
@@ -117,6 +123,58 @@ predicate geost_bb(
                         x[o,j] + rect_offset[r,j] >= l[j]
                     /\  x[o,j] + rect_offset[r,j] + rect_size[r,j] <= u[j]
                     )
+                )
+            )
+        )
+    );
+
+/** @group globals.packing
+ A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap, and that all objects fit within a global \a k dimensional bounding box. In addition, it enforces that the bounding box is the smallest one containing all objects, i.e., each of the \a 2k boundaries is touched by at least by one object.
+    
+@param k:            the number of dimensions
+@param rect_size:    the size of each box in \a k dimensios
+@param rect_offset:  the offset of each box from the base position in \a k dimensions
+ 
+@param shape:        the set of rectangles defining the \p i-th shape. Assumption: Each pair of boxes in a shape must not overlap.
+
+@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in dimension \p j.
+@param kind:      the shape used by each object.
+
+@param l:            is an array of lower bounds, \a l[\p i] is the minimum bounding box for all objects in dimension \p i.
+@param u:            is an array of upper bounds, \a u[\p i] is the maximum bounding box for all objects in dimension \p i.
+*/
+
+predicate geost_smallest_bb(
+                      int        : k           ,
+    array[int,int] of int        : rect_size   ,
+    array[int,int] of int        : rect_offset ,
+    array[int    ] of set of int : shape       , 
+    array[int,int] of var int    : x           ,
+    array[int    ] of var int    : kind        ,
+    array[int    ] of var int    : l           ,
+    array[int    ] of var int    : u
+) = 
+    % Two useful definitions
+    let {
+        set of int: DIMS    = 1..k;
+        set of int: OBJECTS = index_set(kind); 
+    } in (
+        % Posting the geost constraint
+        geost_bb(k, rect_size, rect_offset, shape, x, kind, l, u)
+        /\ % Posting the smallest bounding box constraints
+        forall(j in DIMS)(
+            % Lower boundary
+            exists(o in OBJECTS, s in dom(kind[o]))(
+                kind[o] = s
+            /\  exists(r in shape[s])(
+                    x[o,j] + rect_offset[r,j] == l[j]
+                )
+            )
+        /\  % Upper boundary
+            exists(o in OBJECTS, s in dom(kind[o]))(
+                kind[o] = s
+            /\  exists(r in shape[s])(
+                    x[o,j] + rect_offset[r,j] + rect_size[r,j] == u[j]
                 )
             )
         )
