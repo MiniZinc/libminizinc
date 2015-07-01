@@ -2,6 +2,9 @@
 
 \usepackage{listings}
 \usepackage{hyperref}
+\usepackage{amssymb,latexsym,amsmath,stmaryrd}
+\usepackage{xspace}
+\usepackage{adjustbox}
 
 \ifx\pdftexversion\undefined
  % \usepackage[dvips]{graphicx}
@@ -18,10 +21,18 @@
 %\renewcommand*\rmdefault{ppl}
 %\renewcommand*{\familydefault}{\sfdefault}
 
-\newcommand{\shellcmd}[1]{\\\indent\indent\texttt{\# #1}\\}
+\newcommand{\Zinc}{\mbox{\sc Zinc}\xspace}
+\newcommand{\MiniZinc}{\mbox{\sc MiniZinc}\xspace}
+\newcommand{\MiniSearch}{\mbox{\sc MiniSearch}\xspace}
+\newcommand{\FlatZinc}{\mbox{\sc FlatZinc}\xspace}
+
+\newcommand{\mznfznlite}{\texttt{mzn-fzn-lite}}
+\newcommand{\mzngecodelite}{\texttt{mzn-gecode-lite}}
+
+\newcommand{\pparagraph}[1]{\vspace{2mm}\noindent\emph{#1.}}
 
 \begin{document}
-\title{MiniSearch Manual}
+\title{\MiniSearch Manual}
 \author{Andrea Rendl \and Guido Tack}
 %National ICT Australia (NICTA) and Faculty of IT, Monash University,
 %Australia
@@ -31,35 +42,36 @@
 \tableofcontents
 
 \section{Overview}
-This is the documentation and manual for using MiniSearch. We give
-a brief introduction of MiniSearch in Sec.~\ref{sec:intro}.
-If you are already familiar with using MiniZinc and want to get a brief
-overview of MiniSearch, then head straight to Sec.~\ref{sec:quickStart}
+This is the documentation and manual for using \MiniSearch. We give
+a brief introduction of \MiniSearch in Sec.~\ref{sec:intro}.
+If you are already familiar with using \MiniZinc and want to get a brief
+overview of \MiniSearch, then head straight to Sec.~\ref{sec:quickStart}
 that gives a quick introduction with examples. 
 
-If you are looking for more detailed information on the MiniSearch
+If you are looking for more detailed information on the \MiniSearch
 language and would like to write your own meta-search approaches with
 it, then have a look at Sec.~\ref{sec:minisearch} that describes the 
-components of MiniSearch in detail, and check out Sec.~\ref{sec:ownsearch}
-that provides a small tutorial on how to write your own meta-search
-on a couple of examples.
+components of \MiniSearch in detail, and check out Sec.~\ref{sec:examples}
+that discusses various \MiniSearch examples with increasing difficulty and 
+Sec.~\ref{sec:ownsearch} that provides tipps for writing your 
+own meta-search in \MiniSearch.
 
 \section{What is MiniSearch?}
 \label{sec:intro}
-MiniSearch is a language for specifying {\em meta-search}. Meta-search is any
+\MiniSearch is a language for specifying {\em meta-search}. Meta-search is any
 search approach that aims to find a good (or the best) solution,
 such as Branch-and-Bound search (BaB) or Large Neighbourhoud 
 Search (LNS). This means that with MiniSearch you can solve your 
-MiniZinc model with different kinds of meta-search, such as LNS.
+\MiniZinc model with different kinds of meta-search, such as LNS.
 
-The MiniSearch language is based on MiniZinc, and a MiniSearch
-specification is part of the MiniZinc model. MiniSearch also provides
+The \MiniSearch language is based on \MiniZinc, and a \MiniSearch
+specification is part of the \MiniZinc model. \MiniSearch also provides
 a library of predefined meta-searches that can be directly used.
 
 \section{Quick Start}
 \label{sec:quickStart}
-\subsection{Using MiniSearch in your MiniZinc model}
-How to use MiniSearch is best demonstrated on an example. Consider the MiniZinc model below of the Golomb Ruler Problem.
+\subsection{Using \MiniSearch in your \MiniZinc model}
+How to use \MiniSearch is best demonstrated on an example. Consider the \MiniZinc model below of the Golomb Ruler Problem.
 The Golomb Ruler Problem is concerned with finding a ruler of minimal length with $m$ marks,
 where the distances between all marks are different. 
 \begin{lstlisting}
@@ -184,15 +196,209 @@ mzn-fzn-lite --solver fzn_choco golomb-lns.mzn golomb.dzn
 
 Solvers can also directly support MiniSearch, by implementing its API.
 So far, Gecode supports this option and it is shipped with the distribution
-of MiniSearch as the executable \mzninline|mzn-gecode-lite|.
+of MiniSearch as the executable \mzngecodelite.
 
 In the command line, it can be executed in the following way:
 \begin{lstlisting}[language=bash]
-mzn-gecode-lite <my-model.mzn> <my-data.dzn>
+%*\mzngecodelite    <my-model.mzn> <my-data.dzn>
 \end{lstlisting}
+
 
 \section{The MiniSearch Language}
 \label{sec:minisearch}
+
+\MiniSearch is a high level meta-search language based on \MiniZinc 2.0. In \MiniSearch, \MiniZinc constructs are used for formulating the model and the constraints posted during search, and special \MiniSearch built-ins are used for specifying the search.
+
+A \MiniSearch specification is provided, together with the \mzninline|search| keyword, as an argument to \MiniZinc's \mzninline|solve| item. It is executed by the \MiniSearch kernel.
+The \MiniSearch built-ins are summarised in Tab.~\ref{tab:builtins}, but we discuss them in more detail
+in the following sections.
+
+Using these built-ins, users can define meta-search functions such as the following branch-and-bound (BaB) minimisation:
+\begin{lstlisting}
+include "minisearch.mzn"; %*\label{ex:incl}*)
+var int: obj; % other variables and constraints not shown
+solve search minimize_bab(obj); %*\label{ex:solve}*)
+output ["Objective: "++show(obj)];  %*\label{ex:output}*)
+
+function ann: minimize_bab(var int: obj) =
+  repeat( if next() then commit() /\ print() /\ post(obj < sol(obj)) %*\label{ex:specb}*)
+          else break endif ); %*\label{ex:spec}*)
+\end{lstlisting}
+The \mzninline|include| item on line~\ref{ex:incl} includes the built-in
+\MiniSearch function declarations. This is necessary for any \MiniZinc model that uses \MiniSearch.
+Line~\ref{ex:solve} contains the \MiniZinc \mzninline|solve|
+item followed by the new \mzninline|search| keyword and a user-defined \MiniSearch function that
+takes a variable representing the objective as argument. Line~\ref{ex:output} is the
+\MiniZinc \mzninline|output| item, specifying how solutions should be
+printed. Lines~\ref{ex:specb}--\ref{ex:spec} contain the actual \MiniSearch specification. We will explain the different built-ins in more detail below, but the specification can be read as follows: repeatedly try to find the next solution; and if that is successful, 
+commit to the solution, print it and add the constraint that the objective must have a lower value than the current solution.
+If unsuccessful, break out of the repeat.
+
+\begin{table}[b!]
+\centering
+\footnotesize
+\begin{tabular}{ll}
+\hline
+\MiniSearch built-ins & Description \\
+\hline
+\mzninline|next()| & find the next solution \\ 
+\mzninline|post(|$c$\mzninline|)| & post the \MiniZinc constraint $c$ in the current scope\\
+\mzninline|scope(|$s$\mzninline|)| & open a local scope containing search $s$ \\  
+\hline
+$s_1$ \mzninline|/\| $s_2$ & run $s_1$ and iff successful, run $s_2$ \\ 
+$s_1$ \mzninline|\/| $s_2$ & run $s_1$ and iff it fails, run $s_2$ \\ 
+\mzninline|if |$s$\mzninline| then |$s_1$\mzninline| else | $s_2$ & if $s$ is successful, run $s_1$, otherwise $s_2$\\  
+\mzninline|repeat(|$s$\mzninline|)| & repeat search $s$ until \mzninline|break| is executed \\  
+\mzninline|repeat (i in 1..|$N$\mzninline|)(|$s$\mzninline|)| & repeat search $s$ $N$ times or until \mzninline|break| is executed \\  
+\mzninline|break()| & break within a \mzninline|repeat| \\ 
+\mzninline|fail()| & return `failure' \\  
+\mzninline|skip()| & return `success' \\  
+\mzninline|time_limit(|$ms$,$s$\mzninline|)| & run $s$ until timelimit $ms$ is reached \\ 
+\hline
+\mzninline|print(|$S$\mzninline|)| & print \MiniZinc output string $S$\\
+\mzninline|print()| & print solution according to model output specification\\
+$c$ \mzninline|:=| $v$& assign parameter $c$ the value $v$\\
+\mzninline|commit()| & commit to last found solution in function scope\\  
+\mzninline|sol(|$v$\mzninline|)| & return solution value of variable $v$\\
+\mzninline|hasSol()| & returns true if a solution has been found\\
+\hline
+\end{tabular}
+\label{tab:builtins}
+\caption{\MiniSearch built-ins}
+\end{table}
+
+
+
+\subsection{\MiniSearch built-ins involving the solver}
+Communication with the solver is restricted to three forms: invoking the solver, adding constraints/variables to the model, and scopes for temporary variables and constraints.
+
+\subsubsection{Invoking the solver} 
+The \MiniSearch instruction for finding the next solution is \mzninline|next()|. 
+It is successful if a solution has been found, and fails otherwise. 
+The variable/value labelling strategy (such as first-fail on the smallest domain value) can be set in two ways: either
+by annotating the \mzninline|solve| item (as in standard \MiniZinc), which sets the labelling globally, for every call to \mzninline|next()|.
+Otherwise, by annotating any \MiniSearch function call, such as \mzninline|minimize_bab|, with a labelling strategy. Note, however,
+that as in \MiniZinc, solvers may ignore these annotations, for example if the labelling is not supported.
+
+Solvers may declare support for native meta-search strategies, as with global constraints, in which case these \MiniSearch functions are treated as built-ins.
+
+
+\subsubsection{Adding constraints and variables} 
+A constraint is added by calling the \mzninline|post()| built-in with a constraint as argument. Constraints can be formulated using the same \MiniZinc constructs as in the model, including global constraints, user-defined functions and predicates.
+Variables can be dynamically added during search too, using the \MiniZinc \mzninline|let| construct).
+
+\subsubsection{Search Scopes} 
+Search scopes define the lifespan of constraints and variables in the model. \MiniSearch has an implicit {\em global} search scope that contains all variables and constraints of the model. A new search scope can be created by using the \mzninline|scope(s)| built-in that takes a \MiniSearch specification \mzninline|s| as an argument. When entering a scope, search is assumed to start from the root again. Whenever the execution leaves a scope, all constraints and variables that were added in the scope are removed from the model and the solver. Execution in the enclosing scope resumes from the point where it left off.
+
+
+
+\subsection{\MiniSearch control built-ins}\label{sec:control}
+
+All \MiniSearch built-ins have an implicit return value that represents either `success' ({\em true}) or `failure' ({\em false}).
+Using this concept, we introduce \MiniSearch control built-ins.
+All built-ins execute their arguments in order.
+
+\subsubsection{And, Or, Repeat}
+The \mzninline|/\|-built-in runs its arguments in order 
+and stops to return \textit{false} as soon as one of its arguments fails. 
+Similarly, the \mzninline|\/|-built-in stops and returns \textit{success} as soon as one of its arguments succeeds.
+Existing control mechanisms of \MiniZinc such as \mzninline|if then else endif| expressions can be used as well. 
+The \mzninline|repeat(s)| built-in takes a \MiniSearch specification
+\mzninline|s| and repeats it until a \mzninline|break| built-in is
+executed; returns \emph{false} if a break happened, otherwise returns what $s$ returned.
+ The delimited variant \mzninline|repeat(i in 1..N)(s)| will execute \mzninline|s| for \mzninline|N| iterations (or until \mzninline|break| is executed).
+
+
+\subsubsection{Time-Limits}
+The built-in \mzninline|time_limit(ms,s)| imposes a time limit \mzninline|ms| (in milliseconds) on any \MiniSearch specification \mzninline|s|. This way, \mzninline|s| stops whenever the time limit is reached, returning its current status.
+Time-limits are handled transparently by the \MiniSearch kernel as an exception.
+
+\subsubsection{Assigning values to constants}
+In standard \MiniZinc constant parameters such as \mzninline|int: N=10;| cannot change their value. However, in \MiniSearch we often want to change constants across different iterations. For this purpose, we added the assignment operator \mzninline|:=| which may only be used inside a \MiniSearch specification. It overwrites that constant's current value by the value supplied.
+
+
+
+\subsection{Solution management}
+
+The strength of any meta-search language lies in using intermediate solutions to guide the remaining search. For instance, branch-and-bound needs to access the objective to post further constraints, and a Large Neighbourhood Search thaws some of the variables in a solution to continue in that neighbourhood.
+
+To facilitate working with solutions, the most recently found solution is always accessible in \MiniSearch using the \mzninline|sol| built-in, where \mzninline|sol(x)| returns the value of \mzninline|x| in the last solution. \MiniSearch also provides a \mzninline|hasSol()| built-in to test whether a solution exists.
+
+\subsubsection{User-defined functions}
+When a \MiniSearch strategy is defined as a \MiniZinc function, a local solution scope is created. This means that any solution found by a call to \mzninline|next()| inside the function is visible for the code in the function body, but not for the caller of the function when the function returns. 
+This architecture allows for calls to \mzninline|next()| to be \emph{encapsulated}, i.e., a function can make ``tentative'' calls to next in a nested search scope and only commit if these succeed. Sect.~\ref{sec:examples} shows how AND/OR search can be implemented based on this principle.
+In order to make the current solution accessible to the caller, the function must call the \mzninline|commit| built-in. A function returns `success' if it called \mzninline|commit()| at least once, and `failure' otherwise, and the last solution committed by the function will then become the current solution of the caller. 
+
+\subsubsection{Printing Solutions \& Debugging}
+The \mzninline|print()| function without any arguments prints the last found solution in the format specified in the model's \mzninline|output| item. Alternatively, \mzninline|print(s)| provides more fine-grained control over the output. It prints the string \mzninline|s|, which can be constructed dynamically from values in the solution using calls to \mzninline|sol|.
+\MiniSearch can be debugged using \mzninline|print()| and \MiniZinc's \mzninline|trace()| function to display values of parameters, variables, and 
+arbitrary expressions during search. Furthermore, the \MiniSearch interpreter uses the C++ stack, so C++ debuggers can be used to follow the meta-search.
+
+
+
+
+\section{\MiniSearch Examples}
+\label{sec:examples}
+
+In the following we present different meta-search examples, increasing in
+difficulty to illustrate the different \MiniSearch built-ins.
+
+\subsection{Printing all solutions}
+The example below shows the \MiniSearch function that finds all solutions and prints them.
+\begin{lstlisting}
+function ann: print_all_solutions() =
+  repeat (
+    if next() then print()
+    else break endif
+  );
+\end{lstlisting}
+The body of \mzninline|repeat| is executed until \mzninline|break|
+is reached: whenever the solver found another solution via \mzninline|next()|,
+it is printed with \mzninline|print()|. If no solution can be found, 
+\mzninline|repeat| stops. Note that we do not commit to the found solution
+with \mzninline|commit| and therefore the last found solution will not be
+accessible outside of the function's scope.
+This \MiniSearch function can be called in a \MiniZinc model by replacing
+the standard \mzninline|solve satisfy| or \mzninline|solve minimize| item with:
+\begin{lstlisting}
+solve search print_all_solutions();
+\end{lstlisting}
+
+
+\subsection{Printing first $n$ solutions}
+Let's extend the previous example to a function that prints all
+first $n$ solutions:
+\begin{lstlisting}
+function ann: print_first_n_solutions(int: n) =
+  repeat (i in 1..n) (
+    if next() then print()
+    else break endif
+  );
+\end{lstlisting}
+The \mzninline|repeat| builtin will stop either after 
+$n$ iterations have been reached, or \mzninline|break| has been executed
+(which happens in case there are less than $n$ solutions).
+We can call this function similarily with:
+\begin{lstlisting}
+solve search print_first_n_solutions(10);
+\end{lstlisting}
+which will print the first 10 solutions.
+
+
+\subsection{Restart Branch-and-Bound}
+
+\begin{lstlisting}
+function ann: restart_bab_min(var int: obj) =
+  repeat (
+    scope(
+      if hasSol() then post(obj < sol(obj)) 
+      else skip endif
+      /\ 
+      if next() then commit()
+      else break endif
+    )
+  );
+\end{lstlisting}
 
 
 \section{How to write your own meta-search in MiniSearch}
