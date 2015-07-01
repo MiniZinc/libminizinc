@@ -1,0 +1,152 @@
+\documentclass[a4paper,13pt,onecolumn]{article}%{memoir}
+
+\usepackage{listings}
+\usepackage{hyperref}
+
+\ifx\pdftexversion\undefined
+ % \usepackage[dvips]{graphicx}
+  \usepackage[dvips,usenames]{color}
+\else
+ % \usepackage[pdftex]{graphicx}
+  \usepackage[pdftex,usenames,dvipsnames]{color}
+\fi
+
+% MiniSearch syntax for lstlistings
+\input{minisearch-syntax.tex}
+
+% setting font family (uncomment if you want default font)
+\renewcommand*\rmdefault{ppl}
+%\renewcommand*{\familydefault}{\sfdefault}
+
+\begin{document}
+\title{MiniSearch Manual}
+\author{Andrea Rendl \and Guido Tack}
+%National ICT Australia (NICTA) and Faculty of IT, Monash University,
+%Australia
+
+\maketitle
+
+\section{Overview}
+This is the documentation and manual for using MiniSearch. If you 
+are already familiar with using MiniZinc and want to get a brief
+overview of MiniSearch, then head straight to Sec.~\ref{sec:quickStart}
+that gives a quick introduction with examples.
+
+If you are looking for more detailed information on the MiniSearch
+language and would like to write your own meta-search approaches with
+it, then have a look at Sec.~\ref{sec:minisearch} that describes the 
+components of MiniSearch in detail, and check out Sec.~\ref{sec:ownsearch}
+that provides a small tutorial on how to write your own meta-search
+on a couple of examples.
+
+
+\section{Quick Start}
+\label{sec:quickStart}
+MiniSearch is a language for specifying {\em meta-search}. Meta-search is any
+search approach that aims to find a good (or the best) solution,
+such as Branch-and-Bound search (BaB) or Large Neighbourhoud 
+Search (LNS). This means that with MiniSearch you can solve your 
+MiniZinc model with different kinds of meta-search, such as LNS.
+
+This is best demonstrated on an example. Consider the MiniZinc model below of the Golomb Ruler Problem.
+The Golomb Ruler Problem is concerned with finding a ruler of minimal length with $m$ marks,
+where the distances between all marks are different. 
+\begin{lstlisting}
+% Standard Golomb Ruler model
+include "globals.mzn";
+
+int: m;          % number of marks on the ruler
+int: n = m*m;    % upper bound for length of ruler
+
+array[1..m] of var 0..n: mark;  % the position of each mark
+array[int] of var 0..n: differences =
+    [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
+
+constraint mark[1] = 0;
+constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
+constraint alldifferent(differences);
+    % Symmetry breaking
+constraint differences[1] < differences[(m*(m-1)) div 2];
+
+solve :: int_search(mark, input_order, indomain, complete)%*\label{ex1:solve}*)
+    minimize mark[m];
+
+output ["golomb = ", show(mark), "\n"];
+\end{lstlisting}
+The \mzninline|solve| statement in line~\ref{ex1:solve} states the
+objective (minimizing the position of the last mark) and provides 
+a CP search strategy annotation\footnote{Note that the CP search strategy is a {\em tree search} strategy and not a meta-search strategy} (\mzninline|int_search|).
+This will evoke the solver to solve this problem using the CP search strategy 
+(if available), and using its standard approach for minimization (e.g. branch-and-bound for CP solvers).
+
+Now let's extend this model with MiniSearch to solve it with LNS.
+%This model can be easily extended with MiniSearch and thereby solved with
+%different solving approaches. 
+The simplest way is to use the built-in LNS definition that MiniSearch supplies, as in the example below:
+\begin{lstlisting}
+% Golomb Ruler model with Large Neighbourhood Search (LNS)
+include "globals.mzn";
+include "minisearch.mzn";%*\label{ex2:library}*)
+
+int: m;          % number of marks on the ruler
+int: n = m*m;    % upper bound for length of ruler
+
+array[1..m] of var 0..n: mark;   % the position of each mark
+array[int] of var 0..n: differences =
+    [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
+
+constraint mark[1] = 0;
+constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
+constraint alldifferent(differences);
+    % Symmetry breaking
+constraint differences[1] < differences[(m*(m-1)) div 2];
+
+int: lns_iterations;      %*\label{ex2:constStart}*)
+float: destruction_rate;  
+int: timeout_ms;          %*\label{ex2:constEnd}*)
+
+solve :: int_search(mark, input_order, indomain, complete)%*\label{ex2:solve}*)
+    search lns_min(mark[m], mark, lns_iterations, destruction_rate, timeout_ms) ;%*\label{ex2:lns}*)
+
+output ["golomb = ", show(mark), "\n"];
+\end{lstlisting}
+
+There are two changes in this model.
+First, the library \mzninline|minisearch.mzn| is included (line~\ref{ex2:library}). This
+is always necessary when using MiniSearch, since it defines all necessary built-ins. 
+%This library contains definitions of meta-searches, such as LNS, that can simply be included in the model.
+Second, in line~\ref{ex2:lns}, we use the \mzninline|search| keyword
+followed by the call to the MiniSearch built-in \mzninline|lns_min|. We declare its constant arguments 
+in lines\ref{ex2:constStart}-~\ref{ex2:constEnd}.
+The built-in  \mzninline|lns_min| has  the following signature:
+\begin{lstlisting}
+function ann: lns_min (var int: obj, 
+                       array[int] of var int: x,
+                       int: iterations, 
+                       float: d,
+                       int: timeout_ms);
+\end{lstlisting}
+where \mzninline|obj| is the objective variable that is sought to be minimized,
+\mzninline|x| is the array of search variables on which LNS will be performed,
+\mzninline|iterations| is the number of LNS iterations, \mzninline|d| is the 
+destruction rate, i.e. the percentage of variables in \mzninline|x| that 
+should be destroyed (freed) in each LNS iteration, and finally, 
+\mzninline|timeout_ms| is the timeout in milliseconds for each 
+LNS iteration. Below is a sample data file for the LNS Golomb Ruler model.
+\begin{lstlisting}
+% Sample data file for Golomb Ruler with LNS
+m = 19;                    
+lns_iterations = 100;       % 100 LNS iterations
+destruction_rate = 0.2;     % 20% destruction rate per iteration
+timeout_ms = 6*1000;        % 6 seconds timeout per iteration
+\end{lstlisting}
+
+
+\section{The MiniSearch Language}
+\label{sec:minisearch}
+
+
+\section{How to write your own meta-search in MiniSearch}
+\label{sec:ownsearch}
+
+\end{document}
