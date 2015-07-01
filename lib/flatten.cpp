@@ -169,7 +169,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0, const FlatteningOptions& fopt0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), _flat(new Model), ids(0), fopt(fopt0) {
+  EnvI::EnvI(Model* orig0, const FlatteningOptions& fopt0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), ids(0), fopt(fopt0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -417,6 +417,8 @@ namespace MiniZinc {
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
+    if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint++;
     env.callStack.push_back(e);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
@@ -428,6 +430,8 @@ namespace MiniZinc {
   CallStackItem::~CallStackItem(void) {
     if (env.callStack.back()->isa<VarDecl>())
       env.idStack.pop_back();
+    if (env.callStack.back()->isa<Call>() && env.callStack.back()->cast<Call>()->id()=="redundant_constraint")
+      env.in_redundant_constraint--;
     env.callStack.pop_back();
   }
   
@@ -996,7 +1000,7 @@ namespace MiniZinc {
             GCLock lock;
             ArrayLit* al = e->cast<ArrayLit>();
             /// TODO: review if limit of 10 is a sensible choice
-            if (al->v().size() <= 10)
+            if (al->type().bt()==Type::BT_ANN || al->v().size() <= 10)
               return e;
 
             std::vector<TypeInst*> ranges(al->dims());
@@ -1847,7 +1851,7 @@ namespace MiniZinc {
     
     IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
     if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r);
+      r_bounds = compute_int_bounds(env,r->id());
     }
     
     VarDecl* nr = r;
@@ -3616,23 +3620,32 @@ namespace MiniZinc {
               }
             }
             GC::lock();
-            std::vector<Expression*> bo_args(2);
+            std::vector<Expression*> args;
             ASTString id;
             if (ctx.neg) {
+              std::vector<Expression*> bo_args(2);
               bo_args[0] = boe0;
               bo_args[1] = new UnOp(bo->loc(),UOT_NOT,boe1);
               bo_args[1]->type(boe1->type());
               id = constants().ids.forall;
+              args.push_back(new ArrayLit(bo->loc(),bo_args));
+              args[0]->type(Type::varbool(1));
             } else {
-              bo_args[0] = new UnOp(bo->loc(),UOT_NOT,boe0);
-              bo_args[0]->type(boe0->type());
-              bo_args[1] = boe1;
-              id = constants().ids.exists;
+              std::vector<Expression*> clause_pos(1);
+              clause_pos[0] = boe1;
+              std::vector<Expression*> clause_neg(1);
+              clause_neg[0] = boe0;
+              args.push_back(new ArrayLit(boe1->loc().introduce(), clause_pos));
+              Type t0 = boe1->type();
+              t0.dim(1);
+              args[0]->type(t0);
+              args.push_back(new ArrayLit(boe0->loc().introduce(), clause_neg));
+              Type t1 = boe0->type();
+              t1.dim(1);
+              args[1]->type(t1);
+              id = constants().ids.clause;
             }
             ctx.neg = false;
-            std::vector<Expression*> args(1);
-            args[0]= new ArrayLit(bo->loc(),bo_args);
-            args[0]->type(Type::varbool(1));
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
             c->type(c->decl()->rtype(env,args));
@@ -3804,8 +3817,10 @@ namespace MiniZinc {
             ctx0.i = ctx1.i = C_MIX;
           flatten_bool_op:
           {
-            EE e0 = flat_exp(env,ctx0,boe0,NULL,NULL);
-            EE e1 = flat_exp(env,ctx1,boe1,NULL,NULL);            
+            bool inRootCtx = (ctx0.b==ctx1.b && ctx0.b==C_ROOT && b==constants().var_true);
+            EE e0 = flat_exp(env,ctx0,boe0,NULL,inRootCtx ? b : NULL);
+            EE e1 = flat_exp(env,ctx1,boe1,NULL,inRootCtx ? b : NULL);
+
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             
             std::vector<EE> ees(3);
@@ -4128,6 +4143,19 @@ namespace MiniZinc {
             }
             break;
           }
+        } else if (ctx.b==C_ROOT && decl->e()->isa<BoolLit>() && eval_bool(env,decl->e())) {
+          bool allBool = true;
+          for (unsigned int i=0; i<c->args().size(); i++) {
+            if (c->args()[i]->type().bt()!=Type::BT_BOOL) {
+              allBool = false;
+              break;
+            }
+          }
+          if (allBool) {
+            ret.r = bind(env,ctx,r,constants().lit_true);
+            ret.b = bind(env,ctx,b,constants().lit_true);
+            break;
+          }
         }
 
         if (ctx.b==C_ROOT && decl->e()==NULL &&
@@ -4140,6 +4168,14 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->v()[i],r,b);
           ret.r = bind(env,ctx,r,constants().lit_true);
         } else {
+          
+          if (decl->e() && decl->params().size()==1 && decl->e()->isa<Id>() &&
+              decl->params()[0]->ti()->domain()==NULL &&
+              decl->e()->cast<Id>()->decl() == decl->params()[0]) {
+            ret = flat_exp(env, ctx, c->args()[0], r, b);
+            break;
+          }
+          
           std::vector<EE> args_ee(c->args().size());
           bool mixContext = decl->e()!=NULL ||
             (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
@@ -4148,7 +4184,9 @@ namespace MiniZinc {
           for (unsigned int i=c->args().size(); i--;) {
             Ctx argctx = nctx;
             if (mixContext) {
-              if (c->args()[i]->type().bt()==Type::BT_BOOL) {
+              if (cid==constants().ids.clause) {
+                argctx.b = (i==0 ? +nctx.b : -nctx.b);
+              } else if (c->args()[i]->type().bt()==Type::BT_BOOL) {
                 argctx.b = C_MIX;
               } else if (c->args()[i]->type().bt()==Type::BT_INT) {
                 argctx.i = C_MIX;
@@ -4980,7 +5018,16 @@ namespace MiniZinc {
                 rhs->decl(decl);
                 removeIsOutput(reallyFlat);
                 
-                outputVarDecls(e,item,rhs);
+                if (e.vo.occurrences(reallyFlat)==0 && reallyFlat->e()==NULL) {
+                  IdMap<int>::iterator cur_idx = e.vo.idx.find(reallyFlat->id());
+                  if (cur_idx != e.vo.idx.end()) {
+                    VarDeclI* vdi = (*e.flat())[cur_idx->second]->cast<VarDeclI>();
+                    vdi->remove();
+                  }
+                  
+                }
+                
+                outputVarDecls(e,item,it->second()->cast<Call>());
                 vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
@@ -5067,7 +5114,7 @@ namespace MiniZinc {
           GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
           makePar(outputItem->e());
-          env.output->addItem(outputItem);         
+          env.output->addItem(outputItem);
         }
       } _ov1(e,e.output_vo,outputItem);
       iterItems(_ov1,e.orig);
@@ -5146,8 +5193,9 @@ namespace MiniZinc {
               topDown(ce, decl->ti());
               for (unsigned int i = decl->params().size(); i--;)
                 topDown(ce, decl->params()[i]);
-              env.output->registerFn(env,decl);
-              env.output->addItem(decl);              
+              env.output->registerFn(env, decl);
+              env.output->addItem(decl);
+              topDown(*this, decl->e());
             } else {
               decl = origdecl;
             }
@@ -5300,6 +5348,7 @@ namespace MiniZinc {
       }
     }
     e.output->compact();
+
     for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
          it != e.output_vo._m.end(); ++it) {
       std::vector<Item*> toRemove;
@@ -6026,11 +6075,13 @@ namespace MiniZinc {
                   cid = constants().ids.int_.lin_eq;
                   nc.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parint(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   IntVal d = cc->args()[2]->cast<IntLit>()->v();
                   args[2] = IntLit::a(-d);
                 } else {
@@ -6038,11 +6089,13 @@ namespace MiniZinc {
                   cid = constants().ids.float_.lin_eq;
                   nc.push_back(new FloatLit(Location().introduce(),-1.0));
                   args[0] = new ArrayLit(Location().introduce(),nc);
+                  args[0]->type(Type::parfloat(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->v().size());
                   std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
                   nx.push_back(vd->id());
                   args[1] = new ArrayLit(Location().introduce(),nx);
+                  args[1]->type(le_x->type());
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
                   args[2] = new FloatLit(Location().introduce(),-d);
                 }
@@ -6114,6 +6167,19 @@ namespace MiniZinc {
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
+        
+        std::vector<Expression*> removeAnns;
+        for (ExpressionSetIter anns = ci->e()->ann().begin(); anns != ci->e()->ann().end(); ++anns) {
+          if (Call* c = (*anns)->dyn_cast<Call>()) {
+            if (c->id() == constants().ann.defines_var && c->args()[0]->type().ispar()) {
+              removeAnns.push_back(c);
+            }
+          }
+        }
+        for (unsigned int i=0; i<removeAnns.size(); i++) {
+          ci->e()->ann().remove(removeAnns[i]);
+        }
+        
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
           if (vc->id() == constants().ids.exists) {
             GCLock lock;
@@ -6219,7 +6285,7 @@ namespace MiniZinc {
         it->second.erase(toRemove[i]);
       }
     }
-    
+
     class Cmp {
     public:
       bool operator() (Item* i, Item* j) {
@@ -6267,4 +6333,56 @@ namespace MiniZinc {
 
   }
 
+  FlatModelStatistics statistics(Env& m) {
+    Model* flat = m.flat();
+    FlatModelStatistics stats;
+    for (unsigned int i=0; i<flat->size(); i++) {
+      if (!(*flat)[i]->removed()) {
+        if (VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
+          Type t = vdi->e()->type();
+          if (t.isvar() && t.dim()==0) {
+            if (t.is_set())
+              stats.n_set_vars++;
+            else if (t.isint())
+              stats.n_int_vars++;
+            else if (t.isbool())
+              stats.n_bool_vars++;
+            else if (t.isfloat())
+              stats.n_float_vars++;
+          }
+        } else if (ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
+          if (Call* call = ci->e()->dyn_cast<Call>()) {
+            if (call->args().size() > 0) {
+              Type all_t;
+              for (unsigned int i=0; i<call->args().size(); i++) {
+                Type t = call->args()[i]->type();
+                if (t.isvar()) {
+                  if (t.st()==Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_INT && all_t.bt()!=Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                  else if (t.bt()==Type::BT_BOOL && all_t.bt()!=Type::BT_INT && all_t.bt()!=Type::BT_FLOAT && all_t.st()!=Type::ST_SET)
+                    all_t = t;
+                }
+              }
+              if (all_t.isvar()) {
+                if (all_t.st()==Type::ST_SET)
+                  stats.n_set_ct++;
+                else if (all_t.bt()==Type::BT_INT)
+                  stats.n_int_ct++;
+                else if (all_t.bt()==Type::BT_BOOL)
+                  stats.n_bool_ct++;
+                else if (all_t.bt()==Type::BT_FLOAT)
+                  stats.n_float_ct++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return stats;
+  }
+  
 }

@@ -183,7 +183,8 @@ namespace MiniZinc {
   void
   eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
-    IntSetRanges rsi(in()->cast<SetLit>()->isv());
+    IntSetVal* isv = eval_intset(env, in());
+    IntSetRanges rsi(isv);
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
       eval_comp_set<Eval>(env, eval,e,gen,id,rsv.val(),in,a);

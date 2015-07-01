@@ -148,9 +148,14 @@ namespace MiniZinc {
     }
 
     model->setFilepath(filename);
-    bool isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
-    isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    bool isFzn;
+    if (filename=="") {
+      isFzn = false;
+    } else {
+      isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+    }
     ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
@@ -1036,9 +1041,19 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | set_expr MZN_INTERSECT set_expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | set_expr MZN_PLUSPLUS set_expr
@@ -1118,9 +1133,19 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { $$=new BinOp(@$, $1, BOT_DOTDOT, $3); }
+      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=new BinOp(@$, $3, BOT_DOTDOT, $5); }
+      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
     | expr MZN_INTERSECT expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
     | expr MZN_PLUSPLUS expr
@@ -1314,7 +1339,9 @@ simple_array_literal :
       { $$=new ArrayLit(@$, *$2); delete $2; }
 
 simple_array_literal_2d :
-      MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
+      MZN_LEFT_2D_BRACKET MZN_RIGHT_2D_BRACKET
+      { $$=new ArrayLit(@$, std::vector<std::vector<Expression*> >()); }
+    | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
       { if ($2) {
           $$=new ArrayLit(@$, *$2);
           for (unsigned int i=1; i<$2->size(); i++)
@@ -1336,47 +1363,50 @@ simple_array_literal_2d :
           $$ = NULL;
         }
       }
-| MZN_LEFT_2D_BRACKET simple_array_literal_3d_list MZN_RIGHT_2D_BRACKET
-{
-  if ($2) {
-    std::vector<std::pair<int,int> > dims(3);
-    dims[0] = std::pair<int,int>(1,$2->size());
-    if ($2->size()==0) {
-      dims[1] = std::pair<int,int>(1,0);
-      dims[2] = std::pair<int,int>(1,0);
-    } else {
-      dims[1] = std::pair<int,int>(1,(*$2)[0].size());
-      if ((*$2)[0].size()==0) {
-        dims[2] = std::pair<int,int>(1,0);
-      } else {
-        dims[2] = std::pair<int,int>(1,(*$2)[0][0].size());
-      }
-    }
-    std::vector<Expression*> a;
-    for (unsigned int i=0; i<dims[0].second; i++) {
-      if ((*$2)[i].size() != dims[1].second) {
-        yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
-      } else {
-        for (unsigned int j=0; j<dims[1].second; j++) {
-          if ((*$2)[i][j].size() != dims[2].second) {
+    | MZN_LEFT_2D_BRACKET simple_array_literal_3d_list MZN_RIGHT_2D_BRACKET
+    {
+      if ($2) {
+        std::vector<std::pair<int,int> > dims(3);
+        dims[0] = std::pair<int,int>(1,$2->size());
+        if ($2->size()==0) {
+          dims[1] = std::pair<int,int>(1,0);
+          dims[2] = std::pair<int,int>(1,0);
+        } else {
+          dims[1] = std::pair<int,int>(1,(*$2)[0].size());
+          if ((*$2)[0].size()==0) {
+            dims[2] = std::pair<int,int>(1,0);
+          } else {
+            dims[2] = std::pair<int,int>(1,(*$2)[0][0].size());
+          }
+        }
+        std::vector<Expression*> a;
+        for (unsigned int i=0; i<dims[0].second; i++) {
+          if ((*$2)[i].size() != dims[1].second) {
             yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
           } else {
-            for (unsigned int k=0; k<dims[2].second; k++) {
-              a.push_back((*$2)[i][j][k]);
+            for (unsigned int j=0; j<dims[1].second; j++) {
+              if ((*$2)[i][j].size() != dims[2].second) {
+                yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
+              } else {
+                for (unsigned int k=0; k<dims[2].second; k++) {
+                  a.push_back((*$2)[i][j][k]);
+                }
+              }
             }
           }
         }
+        $$ = new ArrayLit(@$,a,dims);
+        delete $2;
+      } else {
+        $$ = NULL;
       }
     }
-    $$ = new ArrayLit(@$,a,dims);
-    delete $2;
-  } else {
-    $$ = NULL;
-  }
-}
 
 simple_array_literal_3d_list :
-      '|' simple_array_literal_2d_list '|'
+      '|' '|'
+      { $$=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+      }
+    | '|' simple_array_literal_2d_list '|'
       { $$=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
         $$->push_back(*$2);
         delete $2;

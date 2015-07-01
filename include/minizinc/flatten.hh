@@ -46,6 +46,33 @@ namespace MiniZinc {
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);
   
+  /// Statistics on flat models
+  struct FlatModelStatistics {
+    /// Number of integer variables
+    int n_int_vars;
+    /// Number of bool variables
+    int n_bool_vars;
+    /// Number of float variables
+    int n_float_vars;
+    /// Number of set variables
+    int n_set_vars;
+    /// Number of bool constraints
+    int n_bool_ct;
+    /// Number of integer constraints
+    int n_int_ct;
+    /// Number of float constraints
+    int n_float_ct;
+    /// Number of set constraints
+    int n_set_ct;
+    /// Constructor
+    FlatModelStatistics(void)
+    : n_int_vars(0), n_bool_vars(0), n_float_vars(0), n_set_vars(0),
+      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0) {}
+  };
+  
+  /// Compute statistics for flat model in \a m
+  FlatModelStatistics statistics(Env& m);
+  
 }
 
 #endif

@@ -2,6 +2,20 @@
 # MiniZinc Changelog #
 ======================
 
+Version 2.0.3
+=============
+
+Changes:
+ - Models can now be read from standard input (using the "-" or
+   "--input-from-stdin" command line options). Thanks to Sebastian Kosch.
+
+Bug fixes:
+ - Fix unification of aliased variables which could sometimes result in
+   variables being removed although had a constraining right hand side.
+ - Fix evaluation of set comprehensions.
+ - Fix command line flag --no-output-ozn
+ - Fix performance problem when evaluating array expressions inside lets.
+
 Version 2.0.2
 =============
 
@@ -21,7 +35,12 @@ Changes:
    function int: foo(); instead of just function int: foo;
  - Improve error reporting, in particular for errors in comprehensions
  - Enable expressions a..b where a and b are integer variables
- - Add builtins for marking constraints as symmetry breaking or redundant
+ - Add redundant_constraint and symmetry_breaking_constraint builtins, these
+   can be rewritten by solver libraries to allow e.g. local search solvers to
+   ignore redundant constraints.
+ - Improve flattening of predicates that simply return their arguments (makes
+   the redundant_constraint and symmetry_breaking_constraint predicates work
+   in more situations).
  - Replace command line option --only-range-domains by optional boolean value
    so that solver libraries can set the flag directly in their redefinitions
    file.
@@ -29,6 +48,12 @@ Changes:
    inconsistency.
  - Improve flattening of array access expressions, in particular for nested
    array accesses that can be combined into a single element constraint
+ - Add command line option -s or --statistics to print statistics about the
+   generated FlatZinc
+ - Improve bounds computation for if-then-else expressions
+ - Clause arguments are compiled in positive and negative contexts instead of
+   mixed. That means that predicates that introduce free variables can now
+   be used in the positive part of a clause.
 
 Bug fixes:
  - Fix simplification of linear expressions, negative coefficients could
@@ -65,6 +90,13 @@ Bug fixes:
  - Check that index sets match for arrays assigned in let expressions
  - Fix bug in bounds inference for integer expressions with annotations
  - Fix propagation of defines_var annotation to be pushed through calls
+ - Fix parser to accept empty 2d and 3d array literals
+ - Fix flattening to remove defines_var annotations with par argument, e.g.
+   defines_var(2), which could be introduced by the optimisation pass
+ - Fix output model creation for variables that have been redefined, and
+   remove more unused variables from the FlatZinc.
+ - Fix bug in the garbage collector that could result in function items not
+   being kept alive in rare cases.
  
 
 Version 2.0.1
@@ -120,7 +152,7 @@ without changes.
    over variables and use var bool where conditions.
  - Any bool expression can now automatically coerce to an int expression,
    likewise for int and float. This means that you don't have to write
-   bool2int or int2float in you models any more.
+   bool2int or int2float in your models any more.
  - Equality constraints can now be posted between array expressions.
  - Arbitrary expressions can now be included ("interpolated") into strings,
    using the syntax "some text \(e) some more text", where e is any
