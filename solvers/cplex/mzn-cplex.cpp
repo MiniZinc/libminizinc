@@ -25,6 +25,7 @@
 #include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
+#include <minizinc/flatten_internal.hh>  // temp., TODO
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
@@ -60,8 +61,16 @@ int main(int argc, char** argv) {
   bool flag_optimize = true;
   bool flag_werror = false;
   bool flag_only_range_domains = false;
+	
+			/// PARAMS
+		int nThreads=-1;
+		string sExportModel;
+		double nTimeout=-1;
+    double nWorkMemLimit=-1;
+
   
   clock_t starttime = std::clock();
+	clock_t starttime01 = starttime;
   clock_t lasttime = std::clock();
   
   string std_lib_dir;
@@ -218,6 +227,63 @@ int main(int argc, char** argv) {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
+    } else if (string(argv[i])=="--writeModel") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sExportModel = argv[i];
+    } else if (beginswith(string(argv[i]),"-p")) {
+      string nP(argv[i]);
+      if (nP.length() > 2) {
+				nP.erase(0, 2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+			iss >> nThreads;
+			if (!iss && !iss.eof()) {
+				cerr << "\nBad value for -p: " << nP << endl;
+				goto error;
+			}
+    } else if (beginswith(string(argv[i]),"--timeout")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nTimeout;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --timeout: " << nP << endl;
+        goto error;
+      }
+    } else if (beginswith(string(argv[i]),"--workmem")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nWorkMemLimit;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --workmem: " << nP << endl;
+        goto error;
+      }
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -284,12 +350,12 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  if (flag_output_fzn == "") {
-    flag_output_fzn = flag_output_base+".fzn";
-  }
-  if (flag_output_ozn == "") {
-    flag_output_ozn = flag_output_base+".ozn";
-  }
+//   if (flag_output_fzn == "") {
+//     flag_output_fzn = flag_output_base+".fzn";
+//   }
+//   if (flag_output_ozn == "") {
+//     flag_output_ozn = flag_output_base+".ozn";
+//   }
 
   {
     std::stringstream errstream;
@@ -385,17 +451,33 @@ int main(int argc, char** argv) {
               }
             }
             
+            /// To cout:
+            std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+						std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
+
+            /// To cout:
+//             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
+//             env.envi().dump();
+            
             {
               GCLock lock;
               Options options;
               CPLEXSolverInstance cplex(env,options);
+              
+							cplex.sExportModel = sExportModel;
+							cplex.fVerbose = flag_verbose;
+							cplex.nThreads = nThreads;
+							cplex.nTimeout = nTimeout;
+              cplex.nWorkMemLimit = nWorkMemLimit;
+              
               cplex.processFlatZinc();
               SolverInstance::Status status = cplex.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
                 env.evalOutput(std::cout);
-                std::cout << "----------\n";
+                std::cout << "----------" << std::endl;
                 if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                  std::cout << "==========" << std::endl;
+// 								std::
               }
             }
             
@@ -448,7 +530,24 @@ error:
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << std::endl
-            << "Output options:" << std::endl << std::endl
+            << "MIP solver options:" << std::endl
+  // -s                  print statistics
+//            << "  --readParam <file>  read CPLEX parameters from file
+//               << "--writeParam <file> write CPLEX parameters to file
+//               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
+              << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
+              << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
+              << "-p <N>              use N threads" << std::endl
+              << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+              << "--timeout <N>       stop search after N seconds" << std::endl
+              << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
+              << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
+              << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
+              << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
+              << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
+              
+            << std::endl
+            << "Output options:" << std::endl
             << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl
             << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl

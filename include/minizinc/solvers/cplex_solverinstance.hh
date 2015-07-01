@@ -13,7 +13,7 @@
 #define __MINIZINC_CPLEX_SOLVER_INSTANCE_HH__
 
 #include <minizinc/solver_instance_base.hh>
-#include <ilcplex/ilocplex.h>
+#include <ilcplex/ilocplex.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
 
 namespace MiniZinc {
 
@@ -44,6 +44,13 @@ namespace MiniZinc {
     
     void assignSolutionToOutput(void);
 
+		/// PARAMS
+		int nThreads;
+		bool fVerbose;
+		std::string sExportModel;
+		double nTimeout;
+    double nWorkMemLimit;
+		
     IloModel* getIloModel(void);
     IloNum exprToIloNum(Expression* e);
     IloNumExpr exprToIloExpr(Expression* e);

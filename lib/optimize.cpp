@@ -207,7 +207,7 @@ namespace MiniZinc {
     }
   }
   
-  void substitueFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
+  void substituteFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
   void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                               std::vector<int>& vardeclQueue,
                               std::vector<Item*>& constraintQueue,
@@ -466,7 +466,7 @@ namespace MiniZinc {
         } else {
           item->cast<VarDeclI>()->flag(false);
         }
-        substitueFixedVars(envi, item, deletedVarDecls);
+        substituteFixedVars(envi, item, deletedVarDecls);
         handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
       }
     }
@@ -564,7 +564,7 @@ namespace MiniZinc {
     }
   };
   
-  void substitueFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls) {
+  void substituteFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls) {
     SubstitutionVisitor sv;
     if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
       topDown(sv, ci->e());

@@ -121,10 +121,12 @@ namespace MiniZinc {
   }
   
   CPLEXSolverInstance::~CPLEXSolverInstance(void) {
-    _ilomodel->end();
+//     _ilomodel->end();           -- TAKES TOO LONG SOMETIMES
     delete _ilomodel;
     delete _ilocplex;
+    std::cout << "  DELETING IloEnv... " << std::flush;
     _iloenv.end();
+    std::cout << " DONE. " << std::endl;
   }
   
   SolverInstanceBase::Status CPLEXSolverInstance::next(void) {
@@ -146,39 +148,77 @@ namespace MiniZinc {
 
     _ilocplex = new IloCplex(*_ilomodel);
     
-    _ilocplex->setOut(_iloenv.getNullStream());
-    
+		if (not fVerbose)
+			_ilocplex->setOut(_iloenv.getNullStream());
+
+    if (sExportModel.size())
+			_ilocplex->exportModel(sExportModel.c_str());
+		
+		if (nThreads>0)
+			_ilocplex->setParam(IloCplex::Param::Threads, nThreads);
+		
+		if (nTimeout>0) {
+      _ilocplex->setParam(IloCplex::Param::ClockType, 1);   // 0 - auto, 1 - CPU, 2- wall clock
+      _ilocplex->setParam(IloCplex::Param::TimeLimit, nTimeout);
+    }
+
+    if (nWorkMemLimit>0) {
+      _ilocplex->setParam(IloCplex::Param::WorkMem, nWorkMemLimit);
+    }
+
+// 		_ilocplex->setParam(IloCplex::Param::Emphasis::MIP, 1);      -- SEEMS WORSE ON AMAZE.MZN
+
     try{
       _ilocplex->solve();
+      std::cout << "  IloCplex::solve() exited." << std::endl;
     } catch(IloCplex::Exception& e){
       std::stringstream ssm;
       ssm << "Caught IloCplex::Exception while solving : " << e << std::endl;
       throw InternalError(ssm.str());
     }
-    IloCplex::Status ss = _ilocplex->getCplexStatus();
+    IloAlgorithm::Status ss = _ilocplex->getStatus();
     Status s;
     switch(ss) {
-      case IloCplex::Status::Optimal:
-      case IloCplex::Status::OptimalTol:
+      case IloAlgorithm::Status::Optimal:
         s = SolverInstance::OPT;
+				std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
-      case IloCplex::Status::Feasible:
+      case IloAlgorithm::Status::Feasible:
         s = SolverInstance::SAT;
+				std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
-      case IloCplex::Status::Infeasible:
+      case IloAlgorithm::Status::Infeasible:
         s = SolverInstance::UNSAT;
+        std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
         break;
-      case IloCplex::Status::Unbounded:
+      case IloAlgorithm::Status::Unbounded:
+      case IloAlgorithm::Status::InfeasibleOrUnbounded:
+      case IloAlgorithm::Status::Error:
         s = SolverInstance::ERROR;
+        std::cout << "\n   ---------------------   MIP__ERROR   ----------------------------------" << std::endl;
         break;
-      case IloCplex::Status::AbortTimeLim:
-        s = SolverInstance::UNKNOWN;
-        break;
+//       case IloCplex::Status::AbortTimeLim:    -- getCplexStatus()
+//         s = SolverInstance::TIMELIMIT;
+//         assignSolutionToOutput();
+//         break;
       default:
         s = SolverInstance::UNKNOWN;
+        std::cout << "\n   ---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;
     }
+    if (IloAlgorithm::Status::Optimal==ss || IloAlgorithm::Status::Feasible==ss) {
+			/// PRINT THE MAIN RESULTS FIRST:
+			std::cout << "% MIP_Objective_ : " << _ilocplex->getObjValue() << std::endl;
+			std::cout << "% MIP_AbsGap__   : "
+				<< std::fabs(_ilocplex->getBestObjValue()-_ilocplex->getObjValue()) << std::endl;
+			std::cout << "% MIP_RelGap__   : " << _ilocplex->getMIPRelativeGap() << std::endl;
+    } else {
+			std::cout << "\n   ------------  NO FEASIBLE SOLUTION FOUND  ----------------------------" << std::endl;
+		}
+		std::cout   << "% MIP_BestBound_ : " << _ilocplex->getBestObjValue() << std::endl;
+ 		std::cout   << "% Real/CPU Time_ : " << _ilocplex->getTime() << " sec\n" << std::endl;
+		std::cout << "------------------------------------------------------------------------\n"<< std::endl;
     return s;
     
   }
@@ -345,6 +385,7 @@ namespace MiniZinc {
   }
   
   void CPLEXSolverInstance::assignSolutionToOutput(void) {
+
     //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];

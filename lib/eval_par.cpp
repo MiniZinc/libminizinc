@@ -1324,10 +1324,6 @@ namespace MiniZinc {
               return nc;
             }
           }
-          case Expression::E_LET:
-          {
-            throw EvalError(env, e->loc(),"cannot partially evaluate let expression");
-          }
           case Expression::E_BINOP:
           {
             BinOp* bo = e->cast<BinOp>();
@@ -1344,10 +1340,22 @@ namespace MiniZinc {
           }
           case Expression::E_ARRAYACCESS:
           {
-            return eval_par(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
+            ArrayAccess* aa = e->cast<ArrayAccess>();
+            for (unsigned int i=0; i<aa->idx().size(); i++) {
+              if (!aa->idx()[i]->type().ispar()) {
+                std::vector<Expression*> idx(aa->idx().size());
+                for (unsigned int j=0; j<aa->idx().size(); j++) {
+                  idx[j] = eval_par(env, aa->idx()[j]);
+                }
+                ArrayAccess* aa_new = new ArrayAccess(e->loc(), eval_par(env, aa->v()),idx);
+                aa_new->type(aa->type());
+                return aa_new;
+              }
+            }
+            return eval_par(env,eval_arrayaccess(env,aa));
           }
           default:
-            throw EvalError(env, e->loc(),"cannot partially evaluate expression");
+            return e;
         }
       }
     }
