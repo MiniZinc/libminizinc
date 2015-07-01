@@ -15,8 +15,10 @@
 \input{minisearch-syntax.tex}
 
 % setting font family (uncomment if you want default font)
-\renewcommand*\rmdefault{ppl}
+%\renewcommand*\rmdefault{ppl}
 %\renewcommand*{\familydefault}{\sfdefault}
+
+\newcommand{\shellcmd}[1]{\\\indent\indent\texttt{\# #1}\\}
 
 \begin{document}
 \title{MiniSearch Manual}
@@ -26,11 +28,14 @@
 
 \maketitle
 
+\tableofcontents
+
 \section{Overview}
-This is the documentation and manual for using MiniSearch. If you 
-are already familiar with using MiniZinc and want to get a brief
+This is the documentation and manual for using MiniSearch. We give
+a brief introduction of MiniSearch in Sec.~\ref{sec:intro}.
+If you are already familiar with using MiniZinc and want to get a brief
 overview of MiniSearch, then head straight to Sec.~\ref{sec:quickStart}
-that gives a quick introduction with examples.
+that gives a quick introduction with examples. 
 
 If you are looking for more detailed information on the MiniSearch
 language and would like to write your own meta-search approaches with
@@ -39,16 +44,22 @@ components of MiniSearch in detail, and check out Sec.~\ref{sec:ownsearch}
 that provides a small tutorial on how to write your own meta-search
 on a couple of examples.
 
-
-\section{Quick Start}
-\label{sec:quickStart}
+\section{What is MiniSearch?}
+\label{sec:intro}
 MiniSearch is a language for specifying {\em meta-search}. Meta-search is any
 search approach that aims to find a good (or the best) solution,
 such as Branch-and-Bound search (BaB) or Large Neighbourhoud 
 Search (LNS). This means that with MiniSearch you can solve your 
 MiniZinc model with different kinds of meta-search, such as LNS.
 
-This is best demonstrated on an example. Consider the MiniZinc model below of the Golomb Ruler Problem.
+The MiniSearch language is based on MiniZinc, and a MiniSearch
+specification is part of the MiniZinc model. MiniSearch also provides
+a library of predefined meta-searches that can be directly used.
+
+\section{Quick Start}
+\label{sec:quickStart}
+\subsection{Using MiniSearch in your MiniZinc model}
+How to use MiniSearch is best demonstrated on an example. Consider the MiniZinc model below of the Golomb Ruler Problem.
 The Golomb Ruler Problem is concerned with finding a ruler of minimal length with $m$ marks,
 where the distances between all marks are different. 
 \begin{lstlisting}
@@ -65,8 +76,7 @@ array[int] of var 0..n: differences =
 constraint mark[1] = 0;
 constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
 constraint alldifferent(differences);
-    % Symmetry breaking
-constraint differences[1] < differences[(m*(m-1)) div 2];
+constraint differences[1] < differences[(m*(m-1)) div 2]; % Sym breaking
 
 solve :: int_search(mark, input_order, indomain, complete)%*\label{ex1:solve}*)
     minimize mark[m];
@@ -97,16 +107,16 @@ array[int] of var 0..n: differences =
 
 constraint mark[1] = 0;
 constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
-constraint alldifferent(differences);
-    % Symmetry breaking
-constraint differences[1] < differences[(m*(m-1)) div 2];
+constraint alldifferent(differences);   
+constraint differences[1] < differences[(m*(m-1)) div 2]; % Sym breaking
 
 int: lns_iterations;      %*\label{ex2:constStart}*)
 float: destruction_rate;  
 int: timeout_ms;          %*\label{ex2:constEnd}*)
 
 solve :: int_search(mark, input_order, indomain, complete)%*\label{ex2:solve}*)
-    search lns_min(mark[m], mark, lns_iterations, destruction_rate, timeout_ms) ;%*\label{ex2:lns}*)
+    search lns_min(mark[m], mark, lns_iterations, %*\label{ex2:lns}*)
+                   destruction_rate, timeout_ms);
 
 output ["golomb = ", show(mark), "\n"];
 \end{lstlisting}
@@ -141,6 +151,45 @@ destruction_rate = 0.2;     % 20% destruction rate per iteration
 timeout_ms = 6*1000;        % 6 seconds timeout per iteration
 \end{lstlisting}
 
+\subsection{Running MiniSearch in your MiniZinc model}
+
+
+The simplest way to run your MiniZinc model with MiniSearch
+is by using a solver that can take FlatZinc as input, such 
+as Gecode, Choco or or-tools. These solvers provide executables
+such as \mzninline|fzn-gecode| or \mzninline|fzn_choco|.
+
+
+\subsubsection{Running MiniSearch with a FlatZinc solver}
+
+If you are using the command line, use the \mzninline|mzn-fzn-lite|
+executable and execute it in the following way:
+\begin{lstlisting}[language=bash]
+mzn-fzn-lite --solver <fzn-solver> <my-model.mzn> <my-data.dzn>
+\end{lstlisting}
+where \mzninline|<fzn-solver>| stands for the FlatZinc
+solver (don't forget to add the path if it is not in the PATH), 
+\mzninline|<my-model.mzn>| stands for the MiniZinc model that
+contains a MiniSearch specification, and \mzninline|<my-data.dzn>|
+is the optional data file. As an example, if we write the 
+Golomb Ruler model with LNS into the file \mzninline|golomb-lns.mzn|
+and write the sample data specification from above into 
+\mzninline|golomb.dzn|, and we want to run it on \mzninline|fzn_choco|,
+we execute the following command:
+\begin{lstlisting}[language=bash]
+mzn-fzn-lite --solver fzn_choco golomb-lns.mzn golomb.dzn
+\end{lstlisting}
+
+\subsubsection{Running MiniSearch with an incremental MiniSearch solver}
+
+Solvers can also directly support MiniSearch, by implementing its API.
+So far, Gecode supports this option and it is shipped with the distribution
+of MiniSearch as the executable \mzninline|mzn-gecode-lite|.
+
+In the command line, it can be executed in the following way:
+\begin{lstlisting}[language=bash]
+mzn-gecode-lite <my-model.mzn> <my-data.dzn>
+\end{lstlisting}
 
 \section{The MiniSearch Language}
 \label{sec:minisearch}
