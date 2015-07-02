@@ -5678,17 +5678,37 @@ namespace MiniZinc {
     std::string filename = inc->f().str();
     std::vector<std::string> datafiles;
 
-    std::string full_filename;
-    for(unsigned int i=0; i<includes.size(); i++) {
-      std::string path = includes[i];
-      full_filename = path + '/' + filename;
-      std::ifstream fi(full_filename);
-      if(fi.is_open()) {
-        Model* inc_mod = parse(full_filename, datafiles, includes, true, true, false, std::cerr);
+    std::string parentPath = parent->filepath().str();
+    parentPath.erase(std::find(parentPath.rbegin(), parentPath.rend(), '/').base(), parentPath.end());
+
+    std::stringstream full_filename;
+
+    if(parentPath.empty())
+      full_filename << filename;
+    else
+      full_filename << parentPath << "/" << filename;
+
+    std::ifstream fi(full_filename.str());
+    if(fi.is_open()) {
+        Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, false, std::cerr);
         IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
         inc_mod->setParent(parent);
         return new_inc;
+    } else {
+      for(unsigned int i=0; i<includes.size(); i++) {
+        full_filename.str(std::string());
+        std::string path = includes[i];
+        full_filename << path << '/' << filename;
+        std::ifstream fi(full_filename.str());
+        std::cerr << full_filename.str() << "\n";
+        if(fi.is_open()) {
+          Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, false, std::cerr);
+          IncludeI* new_inc = new IncludeI(inc->loc(), filename);
+          new_inc->m(inc_mod);
+          inc_mod->setParent(parent);
+          return new_inc;
+        }
       }
     }
     return NULL;
