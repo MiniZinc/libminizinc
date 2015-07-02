@@ -43,26 +43,14 @@ namespace MiniZinc {
   };
 
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-       : SolverInstanceImpl<GecodeSolver>(env,options),
-       _print_stats(false), _only_range_domains(false), _run_sac(false),
-       _run_shave(false), _pre_passes(1), _current_space(NULL),
+       : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
-       if(options.hasParam(std::string("only-range-domains"))) {
-         _only_range_domains = options.getBoolParam(std::string("only-range-domains"));
-       }
-       if(options.hasParam(std::string("sac"))) {
-         _run_sac = options.getBoolParam(std::string("sac"));
-       }
-       if(options.hasParam(std::string("shave"))) {
-         _run_shave = options.getBoolParam(std::string("shave"));
-       }
-       if(options.hasParam(std::string("pre_passes"))) {
-         _pre_passes = options.getIntParam(std::string("pre_passes"));
-       }
-       if(options.hasParam(std::string("print_stats"))) {
-         _print_stats = options.getBoolParam(std::string("print_stats"));
-       }
+       _only_range_domains = options.getBoolParam(std::string("only-range-domains"), false);
+       _run_sac = options.getBoolParam(std::string("sac"), false);
+       _run_shave = options.getBoolParam(std::string("shave"), false);
+       _pre_passes = options.getIntParam(std::string("pre_passes"), 1);
+       _print_stats = options.getBoolParam(std::string("print_stats"), false);
        _flat = env.flat();
      }
 
