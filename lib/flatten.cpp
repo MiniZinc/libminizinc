@@ -671,7 +671,6 @@ namespace MiniZinc {
     int curloc_l = -1;
     std::string sep = ";";
 
-    
     for (int i=lastError-1; i>=0; i--) {
       Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[i]) & ~static_cast<ptrdiff_t>(1));
       bool isCompIter = reinterpret_cast<ptrdiff_t>(stack[i]) & static_cast<ptrdiff_t>(1);
@@ -686,7 +685,10 @@ namespace MiniZinc {
       } else {
         filenameId = findFilename->second;
       }
-      
+
+      if(fopts.only_toplevel_paths && filenameId != 0)
+        return false;
+
       os << filenameId << '.' << loc.first_line << '.' << loc.first_column << '.' << loc.last_line << '.' << loc.last_column;
       switch (e->eid()) {
         case Expression::E_INTLIT:

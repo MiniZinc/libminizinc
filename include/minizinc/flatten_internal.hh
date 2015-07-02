@@ -92,6 +92,7 @@ namespace MiniZinc {
 
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, std::pair<WeakRef, unsigned int> > PathMap;
     typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
 
   protected:
     Map map;
@@ -101,7 +102,7 @@ namespace MiniZinc {
 
     PathMap pathMap;
     ReversePathMap reversePathMap;
-    UNORDERED_NAMESPACE::unordered_map<std::string, int> filenameMap;
+    FilenameMap filenameMap;
 
   public:
     EnvI(Model* orig0);
@@ -127,6 +128,8 @@ namespace MiniZinc {
 
     PathMap& getPathMap() { return pathMap; }
     ReversePathMap& getReversePathMap() { return reversePathMap; }
+    FilenameMap& getFilenameMap() { return filenameMap; }
+
     void setMaps(EnvI& env);
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);

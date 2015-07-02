@@ -33,8 +33,10 @@ namespace MiniZinc {
     bool keepOutputInFzn;
     /// Verbose output during flattening
     bool verbose;
+    /// Only use paths for variables introduced by file 0 (the MiniZinc model)
+    bool only_toplevel_paths;
     /// Default constructor
-    FlatteningOptions(void) : keepOutputInFzn(false), verbose(false) {}
+    FlatteningOptions(void) : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false) {}
   };
 
   class Pass {

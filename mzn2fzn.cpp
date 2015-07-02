@@ -170,6 +170,8 @@ int main(int argc, char** argv) {
       flag_sac = true;
     } else if (string(argv[i])=="--shave") {
       flag_shave = true;
+    } else if (string(argv[i])=="--only-toplevel-presolve") {
+      fopts.only_toplevel_paths = true;
     } else if (string(argv[i])=="--pre-passes") {
       i++;
       if (i==argc) {
