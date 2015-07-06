@@ -796,11 +796,19 @@ namespace MiniZinc {
     /// Set payload
     void payload(int i) { _payload = i; }
   };
+  
+  class EnvI;
+  class CopyMap;
+  
   /// \brief %Let expression
   class Let : public Expression {
+    friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls);
+    friend class Expression;
   protected:
     /// List of local declarations
     ASTExprVec<Expression> _let;
+    /// Copy of original local declarations
+    ASTExprVec<Expression> _let_orig;
     /// Body of the let
     Expression* _in;
   public:
