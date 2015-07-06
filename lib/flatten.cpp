@@ -2340,6 +2340,7 @@ namespace MiniZinc {
       }
       case Expression::E_COMP:
       {
+        Comprehension* c = e->cast<Comprehension>();
         GCLock lock;
         class EvalFlatCvExp {
         public:
@@ -2352,12 +2353,39 @@ namespace MiniZinc {
           }
           static Expression* exp(Expression* e) { return e; }
         } eval(ctx);
-        std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env,eval,e->cast<Comprehension>());
-        ArrayLit* al_ret = new ArrayLit(e->loc(),a);
-        Type t = e->type();
+        std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env,eval,c);
+
+        Type t = Type::bot();
+        bool allPar = true;
+        for (unsigned int i=0; i<a.size(); i++) {
+          if (t==Type::bot())
+            t = a[i]->type();
+          if (!a[i]->type().ispar())
+            allPar = false;
+        }
+        if (!allPar)
+          t.ti(Type::TI_VAR);
+        if (c->set())
+          t.st(Type::ST_SET);
+        else
+          t.dim(c->type().dim());
         t.cv(false);
-        al_ret->type(t);
-        return al_ret;
+        if (c->set()) {
+          if (c->type().ispar() && allPar) {
+            SetLit* sl = new SetLit(c->loc().introduce(), a);
+            sl->type(t);
+            Expression* slr = eval_par(env,sl);
+            slr->type(t);
+            return slr;
+          } else {
+            throw InternalError("var set comprehensions not supported yet");
+          }
+        } else {
+          ArrayLit* alr = new ArrayLit(Location().introduce(),a);
+          alr->type(t);
+          alr->flat(true);
+          return alr;
+        }
       }
       case Expression::E_ITE:
       {
@@ -3127,39 +3155,45 @@ namespace MiniZinc {
           Ctx ctx;
           EvalF(Ctx ctx0) : ctx(ctx0) {}
           typedef EE ArrayVal;
-          EE e(EnvI& env, Expression* e) {
+          EE e(EnvI& env, Expression* e0) {
             VarDecl* b = ctx.b==C_ROOT ? constants().var_true : NULL;
-            VarDecl* r = (ctx.b == C_ROOT && e->type().isbool() && !e->type().isopt()) ? constants().var_true : NULL;
-            return flat_exp(env,ctx,e,r,b);
+            VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isopt()) ? constants().var_true : NULL;
+            return flat_exp(env,ctx,e0,r,b);
           }
         } _evalf(ctx);
         std::vector<EE> elems_ee = eval_comp<EvalF>(env,_evalf,c);
         std::vector<Expression*> elems(elems_ee.size());
+        Type elemType = Type::bot();
         bool allPar = true;
         for (unsigned int i=elems.size(); i--;) {
           elems[i] = elems_ee[i].r();
+          if (elemType==Type::bot())
+            elemType = elems[i]->type();
           if (!elems[i]->type().ispar())
             allPar = false;
         }
+        if (!allPar)
+          elemType.ti(Type::TI_VAR);
+        if (c->set())
+          elemType.st(Type::ST_SET);
+        else
+          elemType.dim(c->type().dim());
         KeepAlive ka;
         {
           GCLock lock;
           if (c->set()) {
             if (c->type().ispar() && allPar) {
               SetLit* sl = new SetLit(c->loc(), elems);
-              sl->type(c->type());
+              sl->type(elemType);
               Expression* slr = eval_par(env,sl);
-              slr->type(c->type());
+              slr->type(elemType);
               ka = slr;
             } else {
               throw InternalError("var set comprehensions not supported yet");
             }
           } else {
             ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
-            Type alt = c->type();
-            if (allPar)
-              alt.ti(Type::TI_PAR);
-            alr->type(alt);
+            alr->type(elemType);
             alr->flat(true);
             ka = alr;
           }
