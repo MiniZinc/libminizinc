@@ -253,8 +253,31 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX TRUE)
+set(HAS_GUROBI FALSE)
 set(HAS_GECODE FALSE)
-set(HAS_FZN FALSE)
+set(HAS_FZN    FALSE)
+
+if(HAS_GUROBI)
+	
+  include_directories("${GUROBI_HOME}/include")
+  link_directories("${GUROBI_HOME}/lib")
+
+	add_library(minizinc_gurobi
+		solvers/gurobi/gurobi_solverinstance.cpp
+	)
+
+	target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+
+	add_executable(mzn-gurobi
+	  solvers/gurobi/mzn-gurobi.cpp
+	)
+	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
 
 if(HAS_CPLEX)
   if(UNIX)
