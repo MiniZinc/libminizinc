@@ -43,7 +43,13 @@ namespace MiniZinc {
     void setStringParam(const std::string& name, KeepAlive e);
     void setStringParam(const std::string& name, std::string& e);
     std::string getStringParam(const std::string& name) const;
-    std::string getStringParam(const std::string& name, std::string& def) const;   
+    std::string getStringParam(const std::string& name, std::string& def) const; 
+    
+    // NOTE: setting string vector parameters is very expensive since they are converted into ArrayLits and back
+    void setStringVectorParam(const std::string& name, KeepAlive e);
+    void setStringVectorParam(const std::string& name, const std::vector<std::string>& e);
+    std::vector<std::string> getStringVectorParam(const std::string& name) const;
+    std::vector<std::string> getStringVectorParam(const std::string& name, std::vector<std::string>& def) const; 
   };
 }
 
