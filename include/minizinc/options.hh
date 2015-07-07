@@ -36,6 +36,15 @@ namespace MiniZinc {
       bool getBoolParam(const std::string& name, bool def) const;
       bool hasParam(const std::string& name) const;
   };
+  
+  // Options for the command line interface
+  class CLIOptions : public Options {
+  public:
+    void setStringParam(const std::string& name, KeepAlive e);
+    void setStringParam(const std::string& name, std::string& e);
+    std::string getStringParam(const std::string& name) const;
+    std::string getStringParam(const std::string& name, std::string& def) const;   
+  };
 }
 
 #endif

@@ -131,4 +131,44 @@ namespace MiniZinc {
   bool Options::hasParam(const std::string& name) const {
     return _options.find(name) != _options.end();
   }
+  
+  void CLIOptions::setStringParam(const std::string& name, KeepAlive ka) {
+    Expression* e = ka();
+    if(e && e->type().ispar() && e->type().isstring()) {
+      _options[name] = e;
+    } else {
+      std::stringstream ss;
+      ss << "For option: " << name << " expected Par String, received " << e->type().toString() << std::endl;
+      throw InternalError(ss.str());
+    }
+  }
+  
+  void CLIOptions::setStringParam(const std::string& name, std::string& s) {
+    GCLock lock;
+    StringLit* sl = new StringLit(Location(), s);
+    KeepAlive ka(sl);
+    
+    setStringParam(name, ka);
+  }
+  
+  std::string CLIOptions::getStringParam(const std::string& name) const {
+    if(hasParam(name)) {
+      if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
+        return sl->v().str();
+      }
+    }    
+    std::stringstream ss;
+    ss << "Option: \"" << name << "\" does not exist or is not Par String" << std::endl;
+    throw InternalError(ss.str());    
+  }
+  
+  std::string CLIOptions::getStringParam(const std::string& name, std::string& def) const {
+    if(hasParam(name)) {
+      if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
+        return sl->v().str();
+      }
+    } 
+    return def;
+  }
+  
 }
