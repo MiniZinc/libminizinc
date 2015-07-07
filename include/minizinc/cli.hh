@@ -24,14 +24,14 @@ namespace MiniZinc {
     std::string getStringParam(const std::string& name) const;
     std::string getStringParam(const std::string& name, std::string& def) const; 
     
-    // NOTE: setting string vector parameters is very expensive since they are converted into ArrayLits and back
+    // NOTE: setting string vector parameters is very expensive since they are converted into ArrayLits/ASTExprVecs and back
     void setStringVectorParam(const std::string& name, KeepAlive e);
     void setStringVectorParam(const std::string& name, const std::vector<std::string>& e);
     std::vector<std::string> getStringVectorParam(const std::string& name) const;
     std::vector<std::string> getStringVectorParam(const std::string& name, std::vector<std::string>& def) const; 
   };
   
-  /// class for each CLI option
+  /// class for each CLI option that MiniZinc recognizes
   class CLIOption {
   protected:
     /// option name as given in the command line, e.g. \"--help\"
@@ -53,6 +53,19 @@ namespace MiniZinc {
     bool setValue(bool v);
     bool setValue(float f);
     bool setValue(std::vector<std::string> v);
+  };
+
+  /// parser for command line arguments for MiniZinc
+  class CLIParser {
+  protected:
+    /// the options that are recognized by MiniZinc
+    UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption&> _known_options;
+    
+  public:
+    /// initiates the default MiniZinc CLI options
+    CLIParser(void); 
+    /// parses the command line arguments and stores them in CLIOptions that is returned
+    CLIOptions& parseCLI(int argc, char** argv);
   };
 }
 
