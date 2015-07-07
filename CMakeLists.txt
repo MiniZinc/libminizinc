@@ -184,6 +184,7 @@ lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
+lib/cli.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
@@ -212,6 +213,7 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
+include/minizinc/cli.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
