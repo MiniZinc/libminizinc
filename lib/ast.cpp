@@ -1068,6 +1068,42 @@ namespace MiniZinc {
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
+    cli.cmdlineData_short_str = ASTString("-D");
+    cli.cmdlineData_str = ASTString("--cmdline-data");
+    cli.datafile_str = ASTString("--data");
+    cli.datafile_short_str = ASTString("-d");
+    cli.globalsDir_str = ASTString("--globals-dir");
+    cli.globalsDir_alt_str = ASTString("--mzn-globals-dir");
+    cli.globalsDir_short_str = ASTString("-G");
+    cli.help_str = ASTString("--help");
+    cli.help_short_str = ASTString("--help");
+    cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
+    cli.include_str = ASTString("-I");
+    cli.instanceCheckOnly_str = ASTString("--instance-check-only");
+    cli.newfzn_str = ASTString("--newfzn");
+    cli.no_optimize_str = ASTString("--no-optimize");
+    cli.no_optimize_alt_str = ASTString("--no-optimise");
+    cli.no_outputOzn_str = ASTString("--no-output-ozn");
+    cli.no_outputOzn_short_str = ASTString("-O-");
+    cli.no_typecheck_str = ASTString("--no-typecheck");
+    cli.onlyRangeDomains_str = ASTString("--only-range-domains");
+    cli.outputBase_str = ASTString("--output-base");
+    cli.outputFznToStdout_str = ASTString("--output-to-stdout");
+    cli.outputFznToStdout_alt_str = ASTString("--output-fzn-to-stdout");
+    cli.outputOznToFile_str = ASTString("--output-ozn-to-file");
+    cli.outputOznToStdout_str = ASTString("--output-ozn-to-stdout");
+    cli.outputToFile_alt_str = ASTString("--output-fzn-to-file");
+    cli.outputToFile_short_str = ASTString("-o");
+    cli.outputToFile_str = ASTString("--output-to-file"); 
+    cli.statistics_str = ASTString("--statistics");
+    cli.statistics_short_str = ASTString("-s");
+    cli.stdlib_str = ASTString("--stdlib-dir");
+    cli.verbose_str = ASTString("--verbose");
+    cli.verbose_short_str = ASTString("-v");
+    cli.version_str = ASTString("--version");
+    cli.werror_str = ASTString("-Werror");
+    
+    
     std::vector<Expression*> v;
     v.push_back(ti);
     v.push_back(lit_true);
@@ -1177,6 +1213,41 @@ namespace MiniZinc {
     v.push_back(ann.promise_total);
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
+    
+    v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
+    v.push_back(new StringLit(Location(),cli.cmdlineData_str));
+    v.push_back(new StringLit(Location(),cli.datafile_short_str));
+    v.push_back(new StringLit(Location(),cli.datafile_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_alt_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_short_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_str));
+    v.push_back(new StringLit(Location(),cli.help_short_str));
+    v.push_back(new StringLit(Location(),cli.help_str));
+    v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
+    v.push_back(new StringLit(Location(),cli.include_str));
+    v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
+    v.push_back(new StringLit(Location(),cli.newfzn_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_short_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_str));
+    v.push_back(new StringLit(Location(),cli.no_typecheck_str));
+    v.push_back(new StringLit(Location(),cli.onlyRangeDomains_str));
+    v.push_back(new StringLit(Location(),cli.outputBase_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToFile_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputToFile_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputToFile_short_str));
+    v.push_back(new StringLit(Location(),cli.outputToFile_str));
+    v.push_back(new StringLit(Location(),cli.statistics_short_str));
+    v.push_back(new StringLit(Location(),cli.statistics_str));
+    v.push_back(new StringLit(Location(),cli.stdlib_str));
+    v.push_back(new StringLit(Location(),cli.verbose_short_str));
+    v.push_back(new StringLit(Location(),cli.verbose_str));
+    v.push_back(new StringLit(Location(),cli.version_str));
+    v.push_back(new StringLit(Location(),cli.werror_str));    
     
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);

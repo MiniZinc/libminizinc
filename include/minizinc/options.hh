@@ -3,6 +3,7 @@
 /*
  *  Main authors:
  *     Guido Tack <guido.tack@monash.edu>
+ *     Andrea Rendl <andrea.rendl@nicta.com.au>
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -50,6 +51,30 @@ namespace MiniZinc {
     void setStringVectorParam(const std::string& name, const std::vector<std::string>& e);
     std::vector<std::string> getStringVectorParam(const std::string& name) const;
     std::vector<std::string> getStringVectorParam(const std::string& name, std::vector<std::string>& def) const; 
+  };
+  
+  /// class for each CLI option
+  class CLIOption {
+  protected:
+    /// option name as given in the command line, e.g. \"--help\"
+    const std::string _name;
+    /// the number of arguments of the option
+    int _nbArgs;
+    /// the arg string can begin with the name, e.g. -I/home/user/mydir/
+    bool _beginsWith;
+    /// the value the option has been set to via the command line
+    KeepAlive _value;
+    //// default value
+    KeepAlive _def;
+  public:
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive def) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
+    
+    bool setValue(std::string v);
+    bool setValue(int v);
+    bool setValue(bool v);
+    bool setValue(float f);
+    bool setValue(std::vector<std::string> v);
   };
 }
 

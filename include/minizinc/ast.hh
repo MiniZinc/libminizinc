@@ -1363,6 +1363,45 @@ namespace MiniZinc {
         ASTString doc_comment;
         ASTString is_introduced;
       } ann;
+
+      /// Command line options
+      struct { /// basic MiniZinc command line options
+        ASTString cmdlineData_str;
+        ASTString cmdlineData_short_str;        
+        ASTString datafile_str;
+        ASTString datafile_short_str;
+        ASTString globalsDir_str;
+        ASTString globalsDir_alt_str;
+        ASTString globalsDir_short_str;
+        ASTString help_str;
+        ASTString help_short_str;
+        ASTString ignoreStdlib_str;
+        ASTString include_str;
+        ASTString instanceCheckOnly_str;
+        ASTString no_optimize_str;
+        ASTString no_optimize_alt_str;
+        ASTString no_outputOzn_str;
+        ASTString no_outputOzn_short_str;
+        ASTString no_typecheck_str;       
+        ASTString newfzn_str;
+        ASTString onlyRangeDomains_str;
+        ASTString outputBase_str;
+        ASTString outputFznToStdout_str;
+        ASTString outputFznToStdout_alt_str;
+        ASTString outputOznToFile_str;
+        ASTString outputOznToStdout_str;
+        ASTString outputToFile_str;
+        ASTString outputToFile_alt_str;
+        ASTString outputToFile_short_str;
+        ASTString statistics_str;
+        ASTString statistics_short_str;
+        ASTString stdlib_str;
+        ASTString verbose_str;
+        ASTString verbose_short_str;
+        ASTString version_str;
+        ASTString werror_str; 
+      } cli;
+      
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt
       ArrayLit* integers;
