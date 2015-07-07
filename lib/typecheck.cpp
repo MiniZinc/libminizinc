@@ -24,8 +24,8 @@ namespace MiniZinc {
     UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
     VarDeclCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
     bool operator()(Expression* e0, Expression* e1) {
-      if (VarDecl* vd0 = e0->dyn_cast<VarDecl>()) {
-        if (VarDecl* vd1 = e1->dyn_cast<VarDecl>()) {
+      if (VarDecl* vd0 = Expression::dyn_cast<VarDecl>(e0)) {
+        if (VarDecl* vd1 = Expression::dyn_cast<VarDecl>(e1)) {
           return _pos[vd0] < _pos[vd1];
         } else {
           return true;
@@ -243,6 +243,13 @@ namespace MiniZinc {
         run(env, let->in());
         VarDeclCmp poscmp(pos);
         std::stable_sort(let->let().begin(), let->let().end(), poscmp);
+        for (unsigned int i=0; i<let->let().size(); i++) {
+          if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+            let->let_orig()[i] = vd->e();
+          } else {
+            let->let_orig()[i] = NULL;
+          }
+        }
         for (unsigned int i=0; i<let->let().size(); i++) {
           if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
             remove(env, vd);

@@ -822,6 +822,8 @@ namespace MiniZinc {
 
     /// Access local declarations
     ASTExprVec<Expression> let(void) const { return _let; }
+    /// Access local declarations
+    ASTExprVec<Expression> let_orig(void) const { return _let_orig; }
     /// Access body
     Expression* in(void) const { return _in; }
     
