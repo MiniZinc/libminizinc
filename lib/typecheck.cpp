@@ -187,8 +187,19 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* be = e->cast<BinOp>();
-        run(env, be->lhs());
-        run(env, be->rhs());
+        std::vector<Expression*> todo;
+        todo.push_back(be->lhs());
+        todo.push_back(be->rhs());
+        while (!todo.empty()) {
+          Expression* e = todo.back();
+          todo.pop_back();
+          if (BinOp* e_bo = e->dyn_cast<BinOp>()) {
+            todo.push_back(e_bo->lhs());
+            todo.push_back(e_bo->rhs());
+          } else {
+            run(env, e);
+          }
+        }
       }
       break;
     case Expression::E_UNOP:
