@@ -155,17 +155,21 @@ namespace MiniZinc {
   }
   
   void CLIParser::generateDefaultCLIOptions(void) {
-   // initialize the standard options                             
+   // initialize the standard options      
+  _known_options[constants().cli.cmdlineData_short_str.str()] = new CLIOption(constants().cli.cmdlineData_short_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );  
+  _known_options[constants().cli.cmdlineData_str.str()] = new CLIOption(constants().cli.cmdlineData_str.str(),
+                                                                              1, /*nbArgs*/ false /* begins with */ );    
   _known_options[constants().cli.datafile_short_str.str()] = new CLIOption(constants().cli.datafile_short_str.str(),
                                                                               1, /*nbArgs*/ true /* begins with */ );
   _known_options[constants().cli.datafile_str.str()] = new CLIOption(constants().cli.datafile_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );
+                                                                              1, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.globalsDir_alt_str.str()] = new CLIOption(constants().cli.globalsDir_alt_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );
+                                                                              1, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.globalsDir_short_str.str()] = new CLIOption(constants().cli.globalsDir_short_str.str(),
                                                                               1, /*nbArgs*/ true /* begins with */ );
   _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );
+                                                                              1, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.help_short_str.str()] = new CLIOption(constants().cli.help_short_str.str(),
                                                                               0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.help_str.str()] = new CLIOption(constants().cli.help_str.str(),
@@ -181,8 +185,47 @@ namespace MiniZinc {
   _known_options[constants().cli.no_optimize_alt_str.str()] = new CLIOption(constants().cli.no_optimize_alt_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ ); 
   _known_options[constants().cli.no_optimize_str.str()] = new CLIOption(constants().cli.no_optimize_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ ); 
-  // TODO: continue entering other options
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.no_outputOzn_short_str.str()] = new CLIOption(constants().cli.no_outputOzn_short_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.no_outputOzn_str.str()] = new CLIOption(constants().cli.no_outputOzn_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.no_typecheck_str.str()] = new CLIOption(constants().cli.no_typecheck_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.onlyRangeDomains_str.str()] = new CLIOption(constants().cli.onlyRangeDomains_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputBase_str.str()] = new CLIOption(constants().cli.outputBase_str.str(),
+                                                                            1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputFznToFile_alt_str.str()] = new CLIOption(constants().cli.outputFznToFile_alt_str.str(),
+                                                                            1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputFznToFile_str.str()] = new CLIOption(constants().cli.outputFznToFile_str.str(),
+                                                                            1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputFznToFile_short_str.str()] = new CLIOption(constants().cli.outputFznToFile_short_str.str(),
+                                                                            1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.outputFznToStdout_alt_str.str()] = new CLIOption(constants().cli.outputFznToStdout_alt_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputFznToStdout_str.str()] = new CLIOption(constants().cli.outputFznToStdout_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputOznToFile_str.str()] = new CLIOption(constants().cli.outputOznToFile_str.str(),
+                                                                            1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.outputOznToStdout_str.str()] = new CLIOption(constants().cli.outputOznToStdout_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.statistics_short_str.str()] = new CLIOption(constants().cli.statistics_short_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.statistics_str.str()] = new CLIOption(constants().cli.statistics_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.stdlib_str.str()] = new CLIOption(constants().cli.stdlib_str.str(),
+                                                                            1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.verbose_short_str.str()] = new CLIOption(constants().cli.verbose_short_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.verbose_str.str()] = new CLIOption(constants().cli.verbose_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.werror_str.str()] = new CLIOption(constants().cli.werror_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ );
   }
   
   CLIOptions* CLIParser::parseCLI(int argc, char** argv) {

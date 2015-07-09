@@ -1112,9 +1112,9 @@ namespace MiniZinc {
     cli.outputFznToStdout_alt_str = ASTString("--output-fzn-to-stdout");
     cli.outputOznToFile_str = ASTString("--output-ozn-to-file");
     cli.outputOznToStdout_str = ASTString("--output-ozn-to-stdout");
-    cli.outputToFile_alt_str = ASTString("--output-fzn-to-file");
-    cli.outputToFile_short_str = ASTString("-o");
-    cli.outputToFile_str = ASTString("--output-to-file"); 
+    cli.outputFznToFile_alt_str = ASTString("--output-fzn-to-file");
+    cli.outputFznToFile_short_str = ASTString("-o");
+    cli.outputFznToFile_str = ASTString("--output-to-file"); 
     cli.statistics_str = ASTString("--statistics");
     cli.statistics_short_str = ASTString("-s");
     cli.stdlib_str = ASTString("--stdlib-dir");
@@ -1258,9 +1258,9 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
     v.push_back(new StringLit(Location(),cli.outputOznToFile_str));
     v.push_back(new StringLit(Location(),cli.outputOznToStdout_str));
-    v.push_back(new StringLit(Location(),cli.outputToFile_alt_str));
-    v.push_back(new StringLit(Location(),cli.outputToFile_short_str));
-    v.push_back(new StringLit(Location(),cli.outputToFile_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_short_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_str));
     v.push_back(new StringLit(Location(),cli.statistics_short_str));
     v.push_back(new StringLit(Location(),cli.statistics_str));
     v.push_back(new StringLit(Location(),cli.stdlib_str));

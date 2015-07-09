@@ -1400,9 +1400,9 @@ namespace MiniZinc {
         ASTString outputFznToStdout_alt_str;
         ASTString outputOznToFile_str;
         ASTString outputOznToStdout_str;
-        ASTString outputToFile_str;
-        ASTString outputToFile_alt_str;
-        ASTString outputToFile_short_str;
+        ASTString outputFznToFile_str;
+        ASTString outputFznToFile_alt_str;
+        ASTString outputFznToFile_short_str;
         ASTString statistics_str;
         ASTString statistics_short_str;
         ASTString stdlib_str;

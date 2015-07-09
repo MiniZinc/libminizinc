@@ -44,6 +44,7 @@ namespace MiniZinc {
     KeepAlive _value;
     //// default value
     KeepAlive _def;
+    // TODO: add function pointer to function to be executed for this option
   public:
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
