@@ -45,8 +45,10 @@ namespace MiniZinc {
     //// default value
     KeepAlive _def;
   public:
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive def) : 
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) {}
     
     bool setValue(std::string v);
     bool setValue(int v);
@@ -59,13 +61,21 @@ namespace MiniZinc {
   class CLIParser {
   protected:
     /// the options that are recognized by MiniZinc
-    UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption&> _known_options;
+    UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption*> _known_options;
     
   public:
     /// initiates the default MiniZinc CLI options
     CLIParser(void); 
     /// parses the command line arguments and stores them in CLIOptions that is returned
-    CLIOptions& parseCLI(int argc, char** argv);
+    CLIOptions* parseCLI(int argc, char** argv);
+    
+  protected:
+    /// creates the default MiniZinc CLI options and enters them into the _known_options map
+    void generateDefaultCLIOptions(void);
+    /// returns true if the given option \a opt (such as "-h") is part of the known options
+    bool knowsOption(const std::string& opt) const;
+    /// returns pointer to the CLIOption object that represents CLI option \a name
+    CLIOption* getCLIOption(const std::string& name) const;
   };
 }
 

@@ -110,4 +110,107 @@ namespace MiniZinc {
     }
     return def;
   }  
+  
+  bool CLIOption::setValue(std::string s) {
+    GCLock lock;
+    StringLit* sl = new StringLit(Location(),s);
+    _value = KeepAlive(sl);
+    return true;
+  }
+  
+  bool CLIOption::setValue(int v) {
+    GCLock lock;
+    IntLit* il = new IntLit(Location(),IntVal(v));
+    _value = KeepAlive(il);
+    return true;    
+  }
+  
+  bool CLIOption::setValue(bool b) {
+    GCLock lock;
+    BoolLit* bl = new BoolLit(Location(),b);
+    _value = KeepAlive(bl);
+    return true;
+  }
+  
+  bool CLIOption::setValue(float f) {
+    GCLock lock;
+    FloatLit* fl = new FloatLit(Location(),f);
+    _value = KeepAlive(fl);
+    return true;
+  }
+  
+  bool CLIOption::setValue(std::vector<std::string> v) {
+    GCLock lock;
+    std::vector<Expression*> vs;
+    for(unsigned int i=0; i<v.size(); i++)       
+      vs.push_back(new StringLit(Location(),v[i]));
+    ASTExprVec<Expression> vec(vs);
+    ArrayLit* al = new ArrayLit(Location(), vec);
+    _value = KeepAlive(al);
+    return true;
+  }
+  
+  CLIParser::CLIParser(void) {
+    generateDefaultCLIOptions();
+  }
+  
+  void CLIParser::generateDefaultCLIOptions(void) {
+   // initialize the standard options                             
+  _known_options[constants().cli.datafile_short_str.str()] = new CLIOption(constants().cli.datafile_short_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.datafile_str.str()] = new CLIOption(constants().cli.datafile_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.globalsDir_alt_str.str()] = new CLIOption(constants().cli.globalsDir_alt_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.globalsDir_short_str.str()] = new CLIOption(constants().cli.globalsDir_short_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ );
+  _known_options[constants().cli.help_short_str.str()] = new CLIOption(constants().cli.help_short_str.str(),
+                                                                              0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.help_str.str()] = new CLIOption(constants().cli.help_str.str(),
+                                                                              0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.ignoreStdlib_str.str()] = new CLIOption(constants().cli.ignoreStdlib_str.str(),
+                                                                              0, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.include_str.str()] = new CLIOption(constants().cli.include_str.str(),
+                                                                              1, /*nbArgs*/ true /* begins with */ ); 
+  _known_options[constants().cli.instanceCheckOnly_str.str()] = new CLIOption(constants().cli.instanceCheckOnly_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+  _known_options[constants().cli.newfzn_str.str()] = new CLIOption(constants().cli.newfzn_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+  _known_options[constants().cli.no_optimize_alt_str.str()] = new CLIOption(constants().cli.no_optimize_alt_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+  _known_options[constants().cli.no_optimize_str.str()] = new CLIOption(constants().cli.no_optimize_str.str(),
+                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+  // TODO: continue entering other options
+  }
+  
+  CLIOptions* CLIParser::parseCLI(int argc, char** argv) {
+    CLIOptions* opts = new CLIOptions();
+    int cnt = argc-1;
+    while(cnt >= 0) {     
+      const std::string arg = std::string(argv[cnt]);
+      if(knowsOption(arg)) {
+        // TODO: set value for CLIOption
+      }
+      else {
+        // TODO: store the option anyway and give a warning
+      }
+    }
+    return opts;
+  }
+  
+  bool CLIParser::knowsOption(const std::string& name) const {
+    return _known_options.find(name) != _known_options.end();
+  }
+  
+  CLIOption* CLIParser::getCLIOption(const std::string& name) const {
+    UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption* >::const_iterator it = _known_options.find(name);
+    if(it == _known_options.end()) {
+      std::stringstream ss;
+      ss << "Could not find CLI option: \"" << name << "\"." << std::endl;
+      throw InternalError(ss.str());
+    }
+    return (it->second);
+  }
 }
