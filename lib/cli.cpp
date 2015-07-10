@@ -109,7 +109,22 @@ namespace MiniZinc {
       }
     }
     return def;
-  }  
+  } 
+  
+  // functions for each CLI option
+  void cli_cmdlineData(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.cmdlineData.str(),s);
+  }
+  void cli_datafile(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.datafile.str(),s);
+  }
+  void cli_no_optimize(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.optimize.str(),false);
+  }
+  void cli_no_typecheck(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.typecheck.str(),false);
+  }
+  // TODO: write the functions for the other CLI options
   
   CLIParser::CLIParser(void) {
     generateDefaultCLIOptions();
@@ -118,13 +133,13 @@ namespace MiniZinc {
   void CLIParser::generateDefaultCLIOptions(void) {
    // initialize the standard options      
   _known_options[constants().cli.cmdlineData_short_str.str()] = new CLIOption(constants().cli.cmdlineData_short_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );  
+                                                                              1, /*nbArgs*/ true /* begins with */, cli_cmdlineData );  
   _known_options[constants().cli.cmdlineData_str.str()] = new CLIOption(constants().cli.cmdlineData_str.str(),
-                                                                              1, /*nbArgs*/ false /* begins with */ );    
+                                                                              1, /*nbArgs*/ false /* begins with */, cli_cmdlineData );    
   _known_options[constants().cli.datafile_short_str.str()] = new CLIOption(constants().cli.datafile_short_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );
+                                                                              1, /*nbArgs*/ true /* begins with */, cli_datafile );
   _known_options[constants().cli.datafile_str.str()] = new CLIOption(constants().cli.datafile_str.str(),
-                                                                              1, /*nbArgs*/ false /* begins with */ );
+                                                                              1, /*nbArgs*/ false /* begins with */, cli_datafile );
   _known_options[constants().cli.globalsDir_alt_str.str()] = new CLIOption(constants().cli.globalsDir_alt_str.str(),
                                                                               1, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.globalsDir_short_str.str()] = new CLIOption(constants().cli.globalsDir_short_str.str(),
@@ -144,15 +159,15 @@ namespace MiniZinc {
   _known_options[constants().cli.newfzn_str.str()] = new CLIOption(constants().cli.newfzn_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ ); 
   _known_options[constants().cli.no_optimize_alt_str.str()] = new CLIOption(constants().cli.no_optimize_alt_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_no_optimize ); 
   _known_options[constants().cli.no_optimize_str.str()] = new CLIOption(constants().cli.no_optimize_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_no_optimize );
   _known_options[constants().cli.no_outputOzn_short_str.str()] = new CLIOption(constants().cli.no_outputOzn_short_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.no_outputOzn_str.str()] = new CLIOption(constants().cli.no_outputOzn_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.no_typecheck_str.str()] = new CLIOption(constants().cli.no_typecheck_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_no_typecheck );
   _known_options[constants().cli.rangeDomainsOnly_str.str()] = new CLIOption(constants().cli.rangeDomainsOnly_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.outputBase_str.str()] = new CLIOption(constants().cli.outputBase_str.str(),
@@ -191,30 +206,41 @@ namespace MiniZinc {
   
   CLIOptions* CLIParser::parseCLI(int argc, char** argv) {
     CLIOptions* opts = new CLIOptions();
-    int cnt = 0;
-    while(cnt < argc) {     
-      const std::string arg = std::string(argv[cnt]);
-      cnt++;
+    int idx = 0;
+    while(idx < argc) {     
+      const std::string arg = std::string(argv[idx]);
+      idx++;
       if(knowsOption(arg)) {        
         CLIOption* o = getCLIOption(arg);
-        if(o->takesArgs()) {
+        int nbArgs = o->getNbArgs();
+        if(nbArgs == 0) {
+          o->func.no_args(opts);
+        }      
+        else if(nbArgs == 1) {
+          if(idx >= argc) {
+            std::cerr << "Missing argument for option: " << arg << std::endl;
+            error();
+          }
+          std::string s = std::string(argv[idx]);
+          o->func.str_arg(opts,s); // TODO: check for int-argument option
+          idx++;
+        }
+        else { // more than 1 argument
           std::vector<std::string> args;
           for(int i=0; i<o->getNbArgs(); i++) {
-            if(cnt >= argc) {
+            if(idx >= argc) {
               std::cerr << "Missing argument for option: " << arg << std::endl;
               error();
             }
-            args.push_back(std::string(argv[cnt]));
-            cnt++;
+            args.push_back(std::string(argv[idx]));
+            idx++;
           }
           o->func.str_args(opts,args); // execute the function for option o
         }
-        else {
-          o->func.no_args(opts);
-        }        
       }
-      else {
-        // TODO: store the option anyway and give a warning
+      // the given option is not known
+      else { 
+        // TODO: store the option anyway and give a warning that it is not known
       }
     }
     return opts;
@@ -238,10 +264,4 @@ namespace MiniZinc {
     exit(EXIT_FAILURE);
   }
   
-  
-  // functions for each CLI option
-  void cli_no_optimize(CLIOptions* opt) {
-    opt->setBoolParam(constants().opts.optimize.str(),false);
-  }  
-  // TODO: write the functions for other CLI options
 }

@@ -45,22 +45,32 @@ namespace MiniZinc {
     
     // function pointers to function to be executed for this option    
     typedef void (*func_no_args) (CLIOptions* opt);
-    typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);
-    typedef void (*func_int_args) (CLIOptions* opt, std::vector<int> args);
+    typedef void (*func_str_arg) (CLIOptions* opt, std::string& s);
+    typedef void (*func_int_arg) (CLIOptions* opt, int v);
+    typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);    
     
   public:
     struct {
-      func_int_args int_args;
+      func_int_arg int_arg;
       func_no_args no_args;
+      func_str_arg str_arg;
       func_str_args str_args;
     } func;
     
   public:
-    // TODO: extend constructors with function pointers
+    // TODO: extend constructor with function pointers
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
+    
     CLIOption(const std::string& name, int nbArgs, bool beginsWith) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) {}
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) {} // TODO: remove constructor when all function pointers are added
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_no_args f) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.no_args = f; }    
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_str_arg f) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.str_arg = f; }
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_int_arg f) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.int_arg = f; }
+    
     
     bool takesArgs(void) { return _nbArgs > 0; }
     const int getNbArgs(void) const { return _nbArgs; }
