@@ -1393,8 +1393,7 @@ namespace MiniZinc {
         ASTString no_outputOzn_str;
         ASTString no_outputOzn_short_str;
         ASTString no_typecheck_str;       
-        ASTString newfzn_str;
-        ASTString onlyRangeDomains_str;
+        ASTString newfzn_str;        
         ASTString outputBase_str;
         ASTString outputFznToStdout_str;
         ASTString outputFznToStdout_alt_str;
@@ -1403,6 +1402,7 @@ namespace MiniZinc {
         ASTString outputFznToFile_str;
         ASTString outputFznToFile_alt_str;
         ASTString outputFznToFile_short_str;
+        ASTString rangeDomainsOnly_str;
         ASTString statistics_str;
         ASTString statistics_short_str;
         ASTString stdlib_str;
@@ -1411,6 +1411,28 @@ namespace MiniZinc {
         ASTString version_str;
         ASTString werror_str; 
       } cli;
+      
+      /// options strings to find setting in Options map
+      struct {
+        ASTString cmdlineData;
+        ASTString datafile;
+        ASTString fznToStdout;
+        ASTString fznToFile;
+        ASTString globalsDir;
+        ASTString includeDir;
+        ASTString instanceCheckOnly;
+        ASTString newfzn;        
+        ASTString optimize;
+        ASTString outputBase;
+        ASTString oznToFile;
+        ASTString oznToStdout;
+        ASTString rangeDomainsOnly;
+        ASTString statistics;
+        ASTString stdlib;
+        ASTString typecheck;
+        ASTString verbose;
+        ASTString werror;
+      } opts;
       
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt

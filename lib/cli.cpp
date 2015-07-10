@@ -153,7 +153,7 @@ namespace MiniZinc {
                                                                             0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.no_typecheck_str.str()] = new CLIOption(constants().cli.no_typecheck_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ );
-  _known_options[constants().cli.onlyRangeDomains_str.str()] = new CLIOption(constants().cli.onlyRangeDomains_str.str(),
+  _known_options[constants().cli.rangeDomainsOnly_str.str()] = new CLIOption(constants().cli.rangeDomainsOnly_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */ );
   _known_options[constants().cli.outputBase_str.str()] = new CLIOption(constants().cli.outputBase_str.str(),
                                                                             1, /*nbArgs*/ false /* begins with */ );
@@ -237,4 +237,11 @@ namespace MiniZinc {
   void CLIParser::error(void) {
     exit(EXIT_FAILURE);
   }
+  
+  
+  // functions for each CLI option
+  void cli_no_optimize(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.optimize.str(),false);
+  }  
+  // TODO: write the functions for other CLI options
 }
