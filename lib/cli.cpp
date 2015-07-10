@@ -111,45 +111,6 @@ namespace MiniZinc {
     return def;
   }  
   
-  bool CLIOption::setValue(std::string s) {
-    GCLock lock;
-    StringLit* sl = new StringLit(Location(),s);
-    _value = KeepAlive(sl);
-    return true;
-  }
-  
-  bool CLIOption::setValue(int v) {
-    GCLock lock;
-    IntLit* il = new IntLit(Location(),IntVal(v));
-    _value = KeepAlive(il);
-    return true;    
-  }
-  
-  bool CLIOption::setValue(bool b) {
-    GCLock lock;
-    BoolLit* bl = new BoolLit(Location(),b);
-    _value = KeepAlive(bl);
-    return true;
-  }
-  
-  bool CLIOption::setValue(float f) {
-    GCLock lock;
-    FloatLit* fl = new FloatLit(Location(),f);
-    _value = KeepAlive(fl);
-    return true;
-  }
-  
-  bool CLIOption::setValue(std::vector<std::string> v) {
-    GCLock lock;
-    std::vector<Expression*> vs;
-    for(unsigned int i=0; i<v.size(); i++)       
-      vs.push_back(new StringLit(Location(),v[i]));
-    ASTExprVec<Expression> vec(vs);
-    ArrayLit* al = new ArrayLit(Location(), vec);
-    _value = KeepAlive(al);
-    return true;
-  }
-  
   CLIParser::CLIParser(void) {
     generateDefaultCLIOptions();
   }
@@ -233,8 +194,15 @@ namespace MiniZinc {
     int cnt = argc-1;
     while(cnt >= 0) {     
       const std::string arg = std::string(argv[cnt]);
-      if(knowsOption(arg)) {
-        // TODO: set value for CLIOption
+      if(knowsOption(arg)) {        
+        CLIOption* o = getCLIOption(arg);
+        if(o->takesArgs()) {
+          // TODO: execute function with argument(s)
+        }
+        else {
+          // TODO: execute function
+        }
+        cnt =- 1 + o->getNbArgs();
       }
       else {
         // TODO: store the option anyway and give a warning

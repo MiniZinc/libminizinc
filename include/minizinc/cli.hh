@@ -40,8 +40,6 @@ namespace MiniZinc {
     int _nbArgs;
     /// the arg string can begin with the name, e.g. -I/home/user/mydir/
     bool _beginsWith;
-    /// the value the option has been set to via the command line
-    KeepAlive _value;
     //// default value
     KeepAlive _def;
     // TODO: add function pointer to function to be executed for this option
@@ -51,11 +49,8 @@ namespace MiniZinc {
     CLIOption(const std::string& name, int nbArgs, bool beginsWith) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) {}
     
-    bool setValue(std::string v);
-    bool setValue(int v);
-    bool setValue(bool v);
-    bool setValue(float f);
-    bool setValue(std::vector<std::string> v);
+    bool takesArgs(void) { return _nbArgs > 0; }
+    const int getNbArgs(void) const { return _nbArgs; }
   };
 
   /// parser for command line arguments for MiniZinc
