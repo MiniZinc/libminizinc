@@ -42,8 +42,21 @@ namespace MiniZinc {
     bool _beginsWith;
     //// default value
     KeepAlive _def;
-    // TODO: add function pointer to function to be executed for this option
+    
+    // function pointers to function to be executed for this option    
+    typedef void (*func_no_args) (CLIOptions* opt);
+    typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);
+    typedef void (*func_int_args) (CLIOptions* opt, std::vector<int> args);
+    
   public:
+    struct {
+      func_int_args int_args;
+      func_no_args no_args;
+      func_str_args str_args;
+    } func;
+    
+  public:
+    // TODO: extend constructors with function pointers
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
     CLIOption(const std::string& name, int nbArgs, bool beginsWith) : 
@@ -72,6 +85,8 @@ namespace MiniZinc {
     bool knowsOption(const std::string& opt) const;
     /// returns pointer to the CLIOption object that represents CLI option \a name
     CLIOption* getCLIOption(const std::string& name) const;
+    /// default functionality that will be executed when a CLI error occurred
+    void error(void);
   };
 }
 

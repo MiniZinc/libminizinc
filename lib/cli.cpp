@@ -191,18 +191,27 @@ namespace MiniZinc {
   
   CLIOptions* CLIParser::parseCLI(int argc, char** argv) {
     CLIOptions* opts = new CLIOptions();
-    int cnt = argc-1;
-    while(cnt >= 0) {     
+    int cnt = 0;
+    while(cnt < argc) {     
       const std::string arg = std::string(argv[cnt]);
+      cnt++;
       if(knowsOption(arg)) {        
         CLIOption* o = getCLIOption(arg);
         if(o->takesArgs()) {
-          // TODO: execute function with argument(s)
+          std::vector<std::string> args;
+          for(int i=0; i<o->getNbArgs(); i++) {
+            if(cnt >= argc) {
+              std::cerr << "Missing argument for option: " << arg << std::endl;
+              error();
+            }
+            args.push_back(std::string(argv[cnt]));
+            cnt++;
+          }
+          o->func.str_args(opts,args); // execute the function for option o
         }
         else {
-          // TODO: execute function
-        }
-        cnt =- 1 + o->getNbArgs();
+          o->func.no_args(opts);
+        }        
       }
       else {
         // TODO: store the option anyway and give a warning
@@ -223,5 +232,9 @@ namespace MiniZinc {
       throw InternalError(ss.str());
     }
     return (it->second);
+  }
+  
+  void CLIParser::error(void) {
+    exit(EXIT_FAILURE);
   }
 }
