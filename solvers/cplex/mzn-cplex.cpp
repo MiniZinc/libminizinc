@@ -61,6 +61,7 @@ int main(int argc, char** argv) {
   bool flag_optimize = true;
   bool flag_werror = false;
   bool flag_only_range_domains = false;
+  bool flag_all_solutions = false;
 
   /// PARAMS
   int nThreads=-1;
@@ -223,6 +224,8 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
+    } else if (string(argv[i])=="-a") {
+      flag_all_solutions = true;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
@@ -452,8 +455,10 @@ int main(int argc, char** argv) {
             }
 
             /// To cout:
-            std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
-            std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
+            if(flag_verbose) {
+              std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+              std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
+            }
 
             /// To cout:
             //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
@@ -462,22 +467,20 @@ int main(int argc, char** argv) {
             {
               GCLock lock;
               Options options;
+              options.setBoolParam  ("all_solutions",    flag_all_solutions);
+              options.setStringParam("export_model",     sExportModel);
+              options.setBoolParam  ("verbose",          flag_verbose);
+              options.setIntParam   ("parallel_threads", nThreads);
+              options.setFloatParam ("timelimit",        nTimeout);
+              options.setFloatParam ("memory_limit",     nWorkMemLimit);
+
               CPLEXSolverInstance cplex(env,options);
-
-              cplex.sExportModel = sExportModel;
-              cplex.fVerbose = flag_verbose;
-              cplex.nThreads = nThreads;
-              cplex.nTimeout = nTimeout;
-              cplex.nWorkMemLimit = nWorkMemLimit;
-
               cplex.processFlatZinc();
               SolverInstance::Status status = cplex.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-                env.evalOutput(std::cout);
-                std::cout << "----------" << std::endl;
+                cplex.printSolution();
                 if (status==SolverInstance::OPT)
                   std::cout << "==========" << std::endl;
-                // 								std::
               }
             }
 
