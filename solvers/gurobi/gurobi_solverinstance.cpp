@@ -265,19 +265,19 @@ namespace MiniZinc {
     } catch (...) {
       std::cerr << "Exception during optimization" << std::endl;
     }
-    int status = _grb_model->get(GRB_IntAttr_Status);
     Status s;
+    int status = _grb_model->get(GRB_IntAttr_Status);
+    int nSolutions = _grb_model->get(GRB_IntAttr_SolCount);
     switch(status) {
       case GRB_OPTIMAL:
         s = SolverInstance::OPT;
         //std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
-      //case IloAlgorithm::Status::Feasible:
-      //  s = SolverInstance::SAT;
-      //  std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
-      //  assignSolutionToOutput();
-      //  break;
+        s = SolverInstance::SAT;
+        //std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
+        assignSolutionToOutput();
+        break;
       case GRB_INFEASIBLE:
         s = SolverInstance::UNSAT;
         //std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
@@ -287,10 +287,12 @@ namespace MiniZinc {
         s = SolverInstance::ERROR;
         //std::cout << "\n   ---------------------   MIP__ERROR   ----------------------------------" << std::endl;
         break;
-      //case GRB_TIME_LIMIT:
-      //  s = SolverInstance::TIMELIMIT;
-      //  //assignSolutionToOutput();
-      //  break;
+      case GRB_TIME_LIMIT:
+      case GRB_SUBOPTIMAL:
+        s = SolverInstance::SAT;
+        if(nSolutions > 0)
+          assignSolutionToOutput();
+        break;
       default:
         s = SolverInstance::UNKNOWN;
         //std::cout << "\n   ---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;

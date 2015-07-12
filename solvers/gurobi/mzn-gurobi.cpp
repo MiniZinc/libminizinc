@@ -477,7 +477,6 @@ int main(int argc, char** argv) {
                 std::cout << "----------" << std::endl;
                 if (status==SolverInstance::OPT)
                   std::cout << "==========" << std::endl;
-// 								std::
               }
             }
             
