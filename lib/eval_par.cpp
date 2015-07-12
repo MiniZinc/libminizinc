@@ -1615,6 +1615,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
@@ -1936,6 +1941,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(FBounds(0.0,0.0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         FloatVal d = le ? c.args()[2]->cast<FloatLit>()->v() : 0.0;
         int stacktop = _bounds.size();
