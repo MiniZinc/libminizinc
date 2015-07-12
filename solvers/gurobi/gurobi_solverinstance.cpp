@@ -211,6 +211,12 @@ namespace MiniZinc {
         std::cerr << e.getMessage() << std::endl;
         std::exit(1);
       }
+      fVerbose      = options.getBoolParam  ("verbose",          false);
+      all_solutions = options.getBoolParam  ("all_solutions",    false);
+      nThreads      = options.getIntParam   ("parallel_threads",     1);
+      nTimeout      = options.getFloatParam ("timelimit",          0.0);
+      sExportModel  = options.getStringParam("export_model",        "");
+
       registerConstraints();
     }
 
@@ -239,24 +245,84 @@ namespace MiniZinc {
     return SolverInstance::ERROR;
   }
 
+
+  class SolutionCallback: public GRBCallback
+  {
+    public:
+      GurobiSolverInstance& gsi;
+      double lastiter;
+      double lastnode;
+      int numvars;
+      GRBVar* vars;
+      SolutionCallback(GurobiSolverInstance& grbsi, int xnumvars, GRBVar* xvars) : gsi(grbsi) {
+        lastiter = lastnode = -GRB_INFINITY;
+        numvars = xnumvars;
+        vars = xvars;
+      }
+      double getValue(GRBVar v) {
+        return getSolution(v);
+      }
+    protected:
+      void callback () {
+        try {
+          if (where == GRB_CB_MIPSOL) {
+
+            gsi.printSolution(this);
+          }
+        } catch (GRBException e) {
+          std::cout << "Error number: " << e.getErrorCode() << std::endl;
+          std::cout << e.getMessage() << std::endl;
+        } catch (...) {
+          std::cout << "Error during callback" << std::endl;
+        }
+      }
+  };
+
+  void GurobiSolverInstance::printSolution(SolutionCallback* cb) {
+    assignSolutionToOutput(cb);
+    std::stringstream ss;
+    _env.evalOutput(ss);
+    std::string output = ss.str();
+
+    std::hash<std::string> str_hash;
+    size_t h = str_hash(output);
+    if(previousOutput.find(h) == previousOutput.end()) {
+      previousOutput.insert(h);
+      std::cout << output;
+      std::cout << "----------" << std::endl;
+    }
+  }
+
   SolverInstanceBase::Status GurobiSolverInstance::solve(void) {
     SolveI* solveItem = _env.flat()->solveItem();
-    if (_env.flat()->solveItem()->st() != SolveI::SolveType::ST_SAT) {
-      short sense = -1;
-      if (solveItem->st() == SolveI::SolveType::ST_MIN)
-        sense = 1;
-      _grb_model->set(GRB_IntAttr_ModelSense, sense);
-    }
-
-    _grb_model->getEnv().set(GRB_IntParam_OutputFlag, fVerbose);
-
-    if (nThreads>0)
-      _grb_model->getEnv().set(GRB_IntParam_Threads, nThreads);
-
-    if (nTimeout>0)
-      _grb_model->getEnv().set(GRB_DoubleParam_TimeLimit, nTimeout);
-
     try{
+      if (_env.flat()->solveItem()->st() != SolveI::SolveType::ST_SAT) {
+        short sense = -1;
+        if (solveItem->st() == SolveI::SolveType::ST_MIN)
+          sense = 1;
+        _grb_model->set(GRB_IntAttr_ModelSense, sense);
+      }
+
+      _grb_model->getEnv().set(GRB_IntParam_OutputFlag, fVerbose);
+
+      if (nThreads>0)
+        _grb_model->getEnv().set(GRB_IntParam_Threads, nThreads);
+
+      if (nTimeout>0)
+        _grb_model->getEnv().set(GRB_DoubleParam_TimeLimit, nTimeout);
+
+      int numvars = _grb_model->get(GRB_IntAttr_NumVars);
+      GRBVar* vars = _grb_model->getVars();
+      SolutionCallback cb = SolutionCallback(*this, numvars, vars);
+
+      if (all_solutions) {
+        _grb_model->setCallback(&cb);
+      }
+
+      if (!sExportModel.empty()) {
+        _grb_model->write(sExportModel);
+      }
+
       _grb_model->optimize();
       //std::cout << "  _grb_model::optimize() exited." << std::endl;
     } catch (GRBException e) {
@@ -395,9 +461,16 @@ namespace MiniZinc {
 
   void GurobiSolverInstance::resetSolver(void) {}
 
-  Expression* GurobiSolverInstance::getSolutionValue(Id* id) {
+  Expression* GurobiSolverInstance::getSolutionValue(Id* id, SolutionCallback* cb) {
     id = id->decl()->id();
-    double val = exprToVar(id).get(GRB_DoubleAttr_X);
+    GRBVar var = exprToVar(id);
+    double val;
+    if(cb!=NULL) {
+      val = cb->getValue(var);
+    } else {
+      val = var.get(GRB_DoubleAttr_X);
+    }
+
     switch (id->type().bt()) {
       case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
       case Type::BT_FLOAT: return new FloatLit(Location(), val);
@@ -408,7 +481,7 @@ namespace MiniZinc {
 
   GRBModel* GurobiSolverInstance::getGRBModel(void) { return _grb_model; }
 
-  void GurobiSolverInstance::assignSolutionToOutput(void) {
+  void GurobiSolverInstance::assignSolutionToOutput(SolutionCallback* cb) {
 
     //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
@@ -423,7 +496,7 @@ namespace MiniZinc {
           for(unsigned int j=0; j<array.size(); j++) {
             if(Id* id = array[j]->dyn_cast<Id>()) {
               //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
-              array_elems.push_back(getSolutionValue(id));
+              array_elems.push_back(getSolutionValue(id, cb));
             } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
               array_elems.push_back(intLit);
             } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
@@ -459,7 +532,7 @@ namespace MiniZinc {
           }
         }
       } else if(vd->ann().contains(constants().ann.output_var)) {
-        Expression* sol = getSolutionValue(vd->id());
+        Expression* sol = getSolutionValue(vd->id(), cb);
         vd->e(sol);
         for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
           if(it->e()->id()->str() == vd->id()->str()) {

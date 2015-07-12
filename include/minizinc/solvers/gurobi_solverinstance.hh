@@ -17,6 +17,8 @@
 
 namespace MiniZinc {
 
+  class SolutionCallback;
+
   class GurobiSolver {
   public:
     typedef GRBVar Variable;
@@ -28,6 +30,7 @@ namespace MiniZinc {
     GRBEnv* _grb_env;
     GRBModel* _grb_model;
     std::vector<VarDecl*> _varsWithOutput;
+    UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
   public:
     GurobiSolverInstance(Env& env, const Options& options);
 
@@ -41,7 +44,9 @@ namespace MiniZinc {
 
     virtual void resetSolver(void);
 
-    void assignSolutionToOutput(void);
+    void assignSolutionToOutput(SolutionCallback* cb = NULL);
+
+    void printSolution(SolutionCallback* cb = NULL);
 
 		/// PARAMS
 		int nThreads;
@@ -49,6 +54,7 @@ namespace MiniZinc {
 		std::string sExportModel;
 		double nTimeout;
     double nWorkMemLimit;
+    bool all_solutions;
 		
     GRBModel* getGRBModel(void);
     GRBVar exprToVar(Expression* e);
@@ -56,7 +62,10 @@ namespace MiniZinc {
     GRBVar* exprToVarArray(Expression* e);
 
   protected:
-    virtual Expression* getSolutionValue(Id* id);
+    Expression* getSolutionValue(Id* id, SolutionCallback* cb = NULL);
+    virtual Expression* getSolutionValue(Id* id) {
+      return getSolutionValue(id, NULL);
+    };
 
     void registerConstraints(void);
   };
