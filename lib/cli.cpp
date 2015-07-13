@@ -118,8 +118,31 @@ namespace MiniZinc {
   void cli_datafile(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.datafile.str(),s);
   }
+  void cli_globals_dir(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.globalsDir.str(),s);
+  }
+  void cli_help(CLIOptions* opt) {
+    // TODO: print description of each CLIOption (TODO: add description to each option)
+    std::cerr << "HELP is in construction.\n" ;
+    exit(EXIT_FAILURE);
+  }
+  void cli_ignoreStdlib(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.ignoreStdlib.str(), true);
+  }
+  void cli_include(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.includeDir.str(),s);
+  }
+  void cli_instanceCheckOnly(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.instanceCheckOnly.str(),true);
+  }
+  void cli_newfzn(CLIOptions* opt) { // TODO: is the default FALSE??
+    opt->setBoolParam(constants().opts.newfzn.str(),true);
+  }
   void cli_no_optimize(CLIOptions* opt) {
     opt->setBoolParam(constants().opts.optimize.str(),false);
+  }
+  void cli_no_outputOzn(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.noOznOutput.str(),true);
   }
   void cli_no_typecheck(CLIOptions* opt) {
     opt->setBoolParam(constants().opts.typecheck.str(),false);
@@ -141,31 +164,31 @@ namespace MiniZinc {
   _known_options[constants().cli.datafile_str.str()] = new CLIOption(constants().cli.datafile_str.str(),
                                                                               1, /*nbArgs*/ false /* begins with */, cli_datafile );
   _known_options[constants().cli.globalsDir_alt_str.str()] = new CLIOption(constants().cli.globalsDir_alt_str.str(),
-                                                                              1, /*nbArgs*/ false /* begins with */ );
+                                                                              1, /*nbArgs*/ false /* begins with */, cli_globals_dir );
   _known_options[constants().cli.globalsDir_short_str.str()] = new CLIOption(constants().cli.globalsDir_short_str.str(),
                                                                               1, /*nbArgs*/ true /* begins with */ );
-  _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(),
-                                                                              1, /*nbArgs*/ false /* begins with */ );
+  _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(), // TODO
+                                                                              1, /*nbArgs*/ false /* begins with */, cli_globals_dir );
   _known_options[constants().cli.help_short_str.str()] = new CLIOption(constants().cli.help_short_str.str(),
-                                                                              0, /*nbArgs*/ false /* begins with */ );
+                                                                              0, /*nbArgs*/ false /* begins with */, cli_help );
   _known_options[constants().cli.help_str.str()] = new CLIOption(constants().cli.help_str.str(),
-                                                                              0, /*nbArgs*/ false /* begins with */ );
+                                                                              0, /*nbArgs*/ false /* begins with */, cli_help );
   _known_options[constants().cli.ignoreStdlib_str.str()] = new CLIOption(constants().cli.ignoreStdlib_str.str(),
-                                                                              0, /*nbArgs*/ false /* begins with */ );
+                                                                              0, /*nbArgs*/ false /* begins with */, cli_ignoreStdlib );
   _known_options[constants().cli.include_str.str()] = new CLIOption(constants().cli.include_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ ); 
+                                                                              1, /*nbArgs*/ true /* begins with */, cli_include ); 
   _known_options[constants().cli.instanceCheckOnly_str.str()] = new CLIOption(constants().cli.instanceCheckOnly_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_instanceCheckOnly ); 
   _known_options[constants().cli.newfzn_str.str()] = new CLIOption(constants().cli.newfzn_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ ); 
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_newfzn ); 
   _known_options[constants().cli.no_optimize_alt_str.str()] = new CLIOption(constants().cli.no_optimize_alt_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */, cli_no_optimize ); 
   _known_options[constants().cli.no_optimize_str.str()] = new CLIOption(constants().cli.no_optimize_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */, cli_no_optimize );
   _known_options[constants().cli.no_outputOzn_short_str.str()] = new CLIOption(constants().cli.no_outputOzn_short_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_no_outputOzn );
   _known_options[constants().cli.no_outputOzn_str.str()] = new CLIOption(constants().cli.no_outputOzn_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_no_outputOzn );
   _known_options[constants().cli.no_typecheck_str.str()] = new CLIOption(constants().cli.no_typecheck_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */, cli_no_typecheck );
   _known_options[constants().cli.rangeDomainsOnly_str.str()] = new CLIOption(constants().cli.rangeDomainsOnly_str.str(),
@@ -243,6 +266,7 @@ namespace MiniZinc {
         // TODO: store the option anyway and give a warning that it is not known
       }
     }
+    // TODO: set default options in case they are not set
     return opts;
   }
   

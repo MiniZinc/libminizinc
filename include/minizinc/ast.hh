@@ -1419,9 +1419,11 @@ namespace MiniZinc {
         ASTString fznToStdout;
         ASTString fznToFile;
         ASTString globalsDir;
+        ASTString ignoreStdlib;
         ASTString includeDir;
         ASTString instanceCheckOnly;
-        ASTString newfzn;        
+        ASTString newfzn;  
+        ASTString noOznOutput;
         ASTString optimize;
         ASTString outputBase;
         ASTString oznToFile;
