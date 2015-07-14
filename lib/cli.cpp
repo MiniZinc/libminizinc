@@ -147,7 +147,42 @@ namespace MiniZinc {
   void cli_no_typecheck(CLIOptions* opt) {
     opt->setBoolParam(constants().opts.typecheck.str(),false);
   }
-  // TODO: write the functions for the other CLI options
+  void cli_rangeDomainsOnly(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.rangeDomainsOnly.str(),true);
+  }
+  void cli_outputBase(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.outputBase.str(),s);
+  }
+  void cli_outputFznToFile(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.fznToFile.str(),s);
+  }
+  void cli_outputFznToStdout(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.fznToStdout.str(),true);
+  }
+  void cli_oznToFile(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.oznToFile.str(),s);
+  }
+  void cli_oznToStdout(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.oznToStdout.str(),true);
+  }
+  void cli_statistics(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.statistics.str(),true);
+  }
+  void cli_stdlib(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.stdlib.str(),s);
+  }
+  void cli_verbose(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.verbose.str(),true);
+  }
+  void cli_version(CLIOptions* opt) {
+    std::cout << "NICTA MiniZinc to FlatZinc converter, version "
+      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
+    std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
+    std::exit(EXIT_SUCCESS);
+  }
+  void cli_werror(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.werror.str(),true);
+  }
   
   CLIParser::CLIParser(void) {
     generateDefaultCLIOptions();
@@ -166,8 +201,8 @@ namespace MiniZinc {
   _known_options[constants().cli.globalsDir_alt_str.str()] = new CLIOption(constants().cli.globalsDir_alt_str.str(),
                                                                               1, /*nbArgs*/ false /* begins with */, cli_globals_dir );
   _known_options[constants().cli.globalsDir_short_str.str()] = new CLIOption(constants().cli.globalsDir_short_str.str(),
-                                                                              1, /*nbArgs*/ true /* begins with */ );
-  _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(), // TODO
+                                                                              1, /*nbArgs*/ true /* begins with */, cli_globals_dir );
+  _known_options[constants().cli.globalsDir_str.str()] = new CLIOption(constants().cli.globalsDir_str.str(),
                                                                               1, /*nbArgs*/ false /* begins with */, cli_globals_dir );
   _known_options[constants().cli.help_short_str.str()] = new CLIOption(constants().cli.help_short_str.str(),
                                                                               0, /*nbArgs*/ false /* begins with */, cli_help );
@@ -192,39 +227,39 @@ namespace MiniZinc {
   _known_options[constants().cli.no_typecheck_str.str()] = new CLIOption(constants().cli.no_typecheck_str.str(),
                                                                             0, /*nbArgs*/ false /* begins with */, cli_no_typecheck );
   _known_options[constants().cli.rangeDomainsOnly_str.str()] = new CLIOption(constants().cli.rangeDomainsOnly_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_rangeDomainsOnly );
   _known_options[constants().cli.outputBase_str.str()] = new CLIOption(constants().cli.outputBase_str.str(),
-                                                                            1, /*nbArgs*/ false /* begins with */ );
+                                                                            1, /*nbArgs*/ false /* begins with */, cli_outputBase );
   _known_options[constants().cli.outputFznToFile_alt_str.str()] = new CLIOption(constants().cli.outputFznToFile_alt_str.str(),
-                                                                            1, /*nbArgs*/ false /* begins with */ );
+                                                                            1, /*nbArgs*/ false /* begins with */, cli_outputFznToFile );
   _known_options[constants().cli.outputFznToFile_str.str()] = new CLIOption(constants().cli.outputFznToFile_str.str(),
-                                                                            1, /*nbArgs*/ false /* begins with */ );
+                                                                            1, /*nbArgs*/ false /* begins with */, cli_outputFznToFile );
   _known_options[constants().cli.outputFznToFile_short_str.str()] = new CLIOption(constants().cli.outputFznToFile_short_str.str(),
-                                                                            1, /*nbArgs*/ true /* begins with */ );
+                                                                            1, /*nbArgs*/ true /* begins with */, cli_outputFznToFile );
   _known_options[constants().cli.outputFznToStdout_alt_str.str()] = new CLIOption(constants().cli.outputFznToStdout_alt_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_outputFznToStdout );
   _known_options[constants().cli.outputFznToStdout_str.str()] = new CLIOption(constants().cli.outputFznToStdout_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_outputFznToStdout );
   _known_options[constants().cli.outputOznToFile_str.str()] = new CLIOption(constants().cli.outputOznToFile_str.str(),
-                                                                            1, /*nbArgs*/ false /* begins with */ );
+                                                                            1, /*nbArgs*/ false /* begins with */,cli_oznToFile );
   _known_options[constants().cli.outputOznToStdout_str.str()] = new CLIOption(constants().cli.outputOznToStdout_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */ , cli_oznToStdout);
   _known_options[constants().cli.statistics_short_str.str()] = new CLIOption(constants().cli.statistics_short_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_statistics );
   _known_options[constants().cli.statistics_str.str()] = new CLIOption(constants().cli.statistics_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_statistics );
   _known_options[constants().cli.stdlib_str.str()] = new CLIOption(constants().cli.stdlib_str.str(),
-                                                                            1, /*nbArgs*/ false /* begins with */ );
+                                                                            1, /*nbArgs*/ false /* begins with */ , cli_stdlib);
   _known_options[constants().cli.verbose_short_str.str()] = new CLIOption(constants().cli.verbose_short_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_verbose );
   _known_options[constants().cli.verbose_str.str()] = new CLIOption(constants().cli.verbose_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */,  cli_verbose );
   _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_version );
   _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_version );
   _known_options[constants().cli.werror_str.str()] = new CLIOption(constants().cli.werror_str.str(),
-                                                                            0, /*nbArgs*/ false /* begins with */ );
+                                                                            0, /*nbArgs*/ false /* begins with */, cli_werror );
   }
   
   CLIOptions* CLIParser::parseCLI(int argc, char** argv) {

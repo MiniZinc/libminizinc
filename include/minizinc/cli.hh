@@ -58,12 +58,10 @@ namespace MiniZinc {
     } func;
     
   public:
-    // TODO: extend constructor with function pointers
+    // TODO: extend this constructor with function pointers
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
-    
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) {} // TODO: remove constructor when all function pointers are added
+        
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_no_args f) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.no_args = f; }    
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_str_arg f) : 
