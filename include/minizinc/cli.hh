@@ -39,9 +39,13 @@ namespace MiniZinc {
     /// the number of arguments of the option
     int _nbArgs;
     /// the arg string can begin with the name, e.g. -I/home/user/mydir/
-    bool _beginsWith;
-    //// default value
-    KeepAlive _def;
+    bool _beginsWith;    
+    /// default boolean value
+    bool _bdef;
+    /// default string value
+    std::string _sdef;
+    /// the string under which the option value will be stored in the CLIOptions map
+    const std::string _optMapString;
     
     // function pointers to function to be executed for this option    
     typedef void (*func_no_args) (CLIOptions* opt);
@@ -58,12 +62,14 @@ namespace MiniZinc {
     } func;
     
   public:
-    // TODO: extend this constructor with function pointers
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, KeepAlive& def) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _def(def) {}
+    // TODO: extend these constructors with function pointers   
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, bool def, CLIOption::func_no_args f) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _bdef(def) { func.no_args = f; }
+    CLIOption(const std::string& name, int nbArgs, bool beginsWith, std::string& def) : 
+    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _sdef(def) {}
         
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_no_args f) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.no_args = f; }    
+    //CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_no_args f) : 
+    //_name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.no_args = f; }    
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_str_arg f) : 
     _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.str_arg = f; }
     CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_int_arg f) : 
@@ -72,6 +78,11 @@ namespace MiniZinc {
     
     bool takesArgs(void) { return _nbArgs > 0; }
     const int getNbArgs(void) const { return _nbArgs; }
+    /// returns the string under which the value of the option will be stored in CLIOptions
+    const std::string& getOptMapString(void) { return _optMapString; }
+    
+    bool getBoolDefaultValue(void) const { return _bdef; }
+    std::string getStringDefaultValue(void) const { return _sdef; }
   };
 
   /// parser for command line arguments for MiniZinc
