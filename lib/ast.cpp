@@ -1125,12 +1125,14 @@ namespace MiniZinc {
     
     opts.cmdlineData = ASTString("cmdlineData");
     opts.datafile = ASTString("datafile");
+    opts.datafiles = ASTString("datafiles");
     opts.fznToFile = ASTString("fznToFile");
     opts.fznToStdout = ASTString("fznToStdout");
     opts.globalsDir = ASTString("globalsDir");
     opts.ignoreStdlib = ASTString("ignoreStdlib");
     opts.includeDir = ASTString("includeDir");
     opts.instanceCheckOnly = ASTString("instanceCheckOnly");
+    opts.model = ASTString("model");
     opts.newfzn = ASTString("newfzn");
     opts.noOznOutput = ASTString("noOznOutput");
     opts.optimize = ASTString("optimize");
@@ -1291,12 +1293,14 @@ namespace MiniZinc {
     
     v.push_back(new StringLit(Location(),opts.cmdlineData));
     v.push_back(new StringLit(Location(),opts.datafile));
+    v.push_back(new StringLit(Location(),opts.datafiles));
     v.push_back(new StringLit(Location(),opts.fznToFile));
     v.push_back(new StringLit(Location(),opts.fznToStdout));
     v.push_back(new StringLit(Location(),opts.globalsDir));
     v.push_back(new StringLit(Location(),opts.ignoreStdlib));
     v.push_back(new StringLit(Location(),opts.includeDir));
     v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
+    v.push_back(new StringLit(Location(),opts.model));
     v.push_back(new StringLit(Location(),opts.newfzn));
     v.push_back(new StringLit(Location(),opts.noOznOutput));
     v.push_back(new StringLit(Location(),opts.optimize));

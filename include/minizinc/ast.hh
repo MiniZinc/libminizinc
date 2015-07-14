@@ -1416,12 +1416,14 @@ namespace MiniZinc {
       struct {
         ASTString cmdlineData;
         ASTString datafile;
+        ASTString datafiles;
         ASTString fznToStdout;
         ASTString fznToFile;
         ASTString globalsDir;
         ASTString ignoreStdlib;
         ASTString includeDir;
         ASTString instanceCheckOnly;
+        ASTString model;
         ASTString newfzn;  
         ASTString noOznOutput;
         ASTString optimize;

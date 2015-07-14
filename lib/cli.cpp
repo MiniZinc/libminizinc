@@ -122,7 +122,7 @@ namespace MiniZinc {
   }
   void cli_help(CLIOptions* opt) {
     // TODO: print description of each CLIOption (TODO: add description to each option)
-    std::cerr << "HELP is in construction.\n" ;
+    std::cerr << "HELP is under construction.\n" ;
     exit(EXIT_FAILURE);
   }
   void cli_ignoreStdlib(CLIOptions* opt) {
@@ -188,6 +188,7 @@ namespace MiniZinc {
   }
   
   void CLIParser::generateDefaultCLIOptions(void) {
+    // TODO: option model-name
    // initialize the standard MiniZinc options      
   _known_options[constants().cli.cmdlineData_short_str.str()] = new CLIOption(constants().cli.cmdlineData_short_str.str(),
                                                                               1, /*nbArgs*/ true /* begins with */, cli_cmdlineData );  
@@ -264,16 +265,41 @@ namespace MiniZinc {
   CLIOptions* CLIParser::parseArgs(int argc, char** argv) {
     CLIOptions* opts = new CLIOptions();
     int idx = 0;
+    std::string model;
+    std::vector<std::string> datafiles;
     while(idx < argc) {     
       const std::string arg = std::string(argv[idx]);
-      idx++;
+      idx++;     
       if(knowsOption(arg)) {        
         applyOption(opts,argv,argc,idx,arg);
       }      
-      else { 
-        // TODO: store the option anyway and give a warning that it is not known
+      else {        
+        std::string extension = arg.substr(arg.length()-4,std::string::npos);
+        if (extension == ".mzn") {
+          if(model != "") {
+            std::cerr << "Error: Multiple .mzn files given." << std::endl;
+            error();
+          }
+          model = arg;
+        }
+        else if(extension == ".dzn") 
+          datafiles.push_back(arg);                 
+        else {
+          // TODO: store the option anyway and give a warning that it is not known
+          std::cerr << "Warning: Unknown option: " << arg << std::endl;
+        }
       }
-    } 
+    }
+    if(model==""){
+      std::cerr << "Error: No model file given." << std::endl;
+      error();
+    }
+    opts->setStringParam(constants().opts.model.str(),model);
+    if(datafiles.size() == 1)
+      opts->setStringParam(constants().opts.datafile.str(),datafiles[0]);      
+    else if (datafiles.size() > 1)
+      opts->setStringVectorParam(constants().opts.datafiles.str(),datafiles);
+    
     // set default options in case they are not set
     setDefaultOptionValues(opts);
     return opts;
@@ -326,7 +352,7 @@ namespace MiniZinc {
     }      
     else if(nbArgs == 1) {
       if(idx >= argc) {
-        std::cerr << "Missing argument for option: " << arg << std::endl;
+        std::cerr << "Error: Missing argument for option: " << arg << std::endl;
         error();
       }
       std::string s = std::string(argv[idx]);
@@ -337,7 +363,7 @@ namespace MiniZinc {
       std::vector<std::string> args;
       for(int i=0; i<o->getNbArgs(); i++) {
         if(idx >= argc) {
-          std::cerr << "Missing argument for option: " << arg << std::endl;
+          std::cerr << "Error: Missing argument for option: " << arg << std::endl;
           error();
         }
         args.push_back(std::string(argv[idx]));
