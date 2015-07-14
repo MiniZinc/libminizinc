@@ -95,7 +95,7 @@ namespace MiniZinc {
     /// initiates the default MiniZinc CLI options
     CLIParser(void); 
     /// parses the command line arguments and stores them in CLIOptions that is returned
-    CLIOptions* parseCLI(int argc, char** argv);
+    CLIOptions* parseArgs(int argc, char** argv);
     
   protected:
     /// creates the default MiniZinc CLI options and enters them into the _known_options map
@@ -106,6 +106,10 @@ namespace MiniZinc {
     CLIOption* getCLIOption(const std::string& name) const;
     /// default functionality that will be executed when a CLI error occurred
     void error(void);
+    /// set the options that were not assigned by the command line to their default values
+    void setDefaultOptionValues(CLIOptions* opt);
+    
+    void applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg);
   };
 }
 

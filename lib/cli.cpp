@@ -10,7 +10,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/cli.hh>
-//#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
   
@@ -111,7 +110,7 @@ namespace MiniZinc {
     return def;
   } 
   
-  // functions for each CLI option
+  // function for each CLI option
   void cli_cmdlineData(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.cmdlineData.str(),s);
   }
@@ -262,66 +261,21 @@ namespace MiniZinc {
                                                                             0, /*nbArgs*/ false /* begins with */, false /* default */, cli_werror );
   }
   
-  CLIOptions* CLIParser::parseCLI(int argc, char** argv) {
+  CLIOptions* CLIParser::parseArgs(int argc, char** argv) {
     CLIOptions* opts = new CLIOptions();
     int idx = 0;
     while(idx < argc) {     
       const std::string arg = std::string(argv[idx]);
       idx++;
       if(knowsOption(arg)) {        
-        CLIOption* o = getCLIOption(arg);
-        int nbArgs = o->getNbArgs();
-        if(nbArgs == 0) {
-          o->func.no_args(opts);
-        }      
-        else if(nbArgs == 1) {
-          if(idx >= argc) {
-            std::cerr << "Missing argument for option: " << arg << std::endl;
-            error();
-          }
-          std::string s = std::string(argv[idx]);
-          o->func.str_arg(opts,s); // TODO: check for int-argument option (though there are none in the current options)
-          idx++;
-        }
-        else { // more than 1 argument
-          std::vector<std::string> args;
-          for(int i=0; i<o->getNbArgs(); i++) {
-            if(idx >= argc) {
-              std::cerr << "Missing argument for option: " << arg << std::endl;
-              error();
-            }
-            args.push_back(std::string(argv[idx]));
-            idx++;
-          }
-          o->func.str_args(opts,args); // execute the function for option o
-        }
-      }
-      // the given option is not known
+        applyOption(opts,argv,argc,idx,arg);
+      }      
       else { 
         // TODO: store the option anyway and give a warning that it is not known
       }
-    }
+    } 
     // set default options in case they are not set
-    for(UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption* >::const_iterator it =_known_options.begin(); it!=_known_options.end(); ++it) {
-       if(opts->hasParam(it->second->getOptMapString())) {
-         // do nothing
-       }
-       else {
-         CLIOption* o = it->second;
-         int nbArgs = o->getNbArgs();
-         if(nbArgs == 0) {
-           opts->setBoolParam(o->getOptMapString(), o->getBoolDefaultValue()); 
-         }
-         else if(nbArgs == 1) {
-           // TODO: check for integer values (though there are none in the current options)
-           std::string def = o->getStringDefaultValue();
-           opts->setStringParam(o->getOptMapString(), def); 
-         }
-         else {
-           // TODO
-         }
-       }
-    }
+    setDefaultOptionValues(opts);
     return opts;
   }
   
@@ -340,7 +294,57 @@ namespace MiniZinc {
   }
   
   void CLIParser::error(void) {
+    // TODO: print proper error message, including help
     exit(EXIT_FAILURE);
+  }
+  
+  void CLIParser::setDefaultOptionValues(CLIOptions* opts) {
+    for(UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption* >::const_iterator it =_known_options.begin(); it!=_known_options.end(); ++it) {
+      if(!opts->hasParam(it->second->getOptMapString())) {      
+        CLIOption* o = it->second;
+        int nbArgs = o->getNbArgs();
+        if(nbArgs == 0) {
+          opts->setBoolParam(o->getOptMapString(), o->getBoolDefaultValue()); 
+        }
+        else if(nbArgs == 1) {
+          // TODO: check for integer values (though there are none in the current options)
+          std::string def = o->getStringDefaultValue();
+          opts->setStringParam(o->getOptMapString(), def); 
+        }
+        else {
+          // TODO: are there default string vector options?
+        }
+      }
+    }
+  }
+  
+  void CLIParser::applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg) {
+    CLIOption* o = getCLIOption(arg);
+    int nbArgs = o->getNbArgs();
+    if(nbArgs == 0) {
+      o->func.no_args(opts); // execute the function for option o
+    }      
+    else if(nbArgs == 1) {
+      if(idx >= argc) {
+        std::cerr << "Missing argument for option: " << arg << std::endl;
+        error();
+      }
+      std::string s = std::string(argv[idx]);
+      o->func.str_arg(opts,s); // TODO: check for int-argument option (though there are none in the current options)
+      idx++;
+    }
+    else { // more than 1 argument
+      std::vector<std::string> args;
+      for(int i=0; i<o->getNbArgs(); i++) {
+        if(idx >= argc) {
+          std::cerr << "Missing argument for option: " << arg << std::endl;
+          error();
+        }
+        args.push_back(std::string(argv[idx]));
+        idx++;
+      }
+      o->func.str_args(opts,args); // execute the function for option o
+    }
   }
   
 }
