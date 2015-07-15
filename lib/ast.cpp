@@ -1131,6 +1131,7 @@ namespace MiniZinc {
     opts.globalsDir = ASTString("globalsDir");
     opts.ignoreStdlib = ASTString("ignoreStdlib");
     opts.includeDir = ASTString("includeDir");
+    opts.includePaths = ASTString("includePaths");
     opts.instanceCheckOnly = ASTString("instanceCheckOnly");
     opts.model = ASTString("model");
     opts.newfzn = ASTString("newfzn");
@@ -1298,6 +1299,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.fznToStdout));
     v.push_back(new StringLit(Location(),opts.globalsDir));
     v.push_back(new StringLit(Location(),opts.ignoreStdlib));
+    v.push_back(new StringLit(Location(),opts.includePaths));
     v.push_back(new StringLit(Location(),opts.includeDir));
     v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
     v.push_back(new StringLit(Location(),opts.model));

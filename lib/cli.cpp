@@ -214,8 +214,7 @@ namespace MiniZinc {
     generateDefaultCLIOptions();
   }
   
-  void CLIParser::generateDefaultCLIOptions(void) {
-    // TODO: option model-name
+  void CLIParser::generateDefaultCLIOptions(void) {   
    // initialize the standard MiniZinc options      
   _known_options[constants().cli.cmdlineData_short_str.str()] = new CLIOption(constants().cli.cmdlineData_short_str.str(),
                                                                               true /* begins with */, 
@@ -311,9 +310,7 @@ namespace MiniZinc {
                                                                     false /* default */, 
                                                                     constants().opts.verbose.str(), cli_verbose );
   _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
-                                                                    false /* default */, cli_version );
-  _known_options[constants().cli.version_str.str()] = new CLIOption(constants().cli.version_str.str(),
-                                                                    false /* default */, cli_version );
+                                                                    false /* default */, cli_version ); 
   _known_options[constants().cli.werror_str.str()] = new CLIOption(constants().cli.werror_str.str(),
                                                                    false /* default */, 
                                                                    constants().opts.werror.str(), cli_werror );
@@ -343,7 +340,7 @@ namespace MiniZinc {
           datafiles.push_back(arg);                 
         else {
           // TODO: store the option anyway and give a warning that it is not known
-          std::cerr << "Warning: Unknown option: " << arg << std::endl;
+          std::cerr << "Warning: Ignoring unknown option: " << arg << std::endl;
         }
       }
     }
@@ -355,8 +352,7 @@ namespace MiniZinc {
     if(datafiles.size() == 1)
       opts->setStringParam(constants().opts.datafile.str(),datafiles[0]);      
     else if (datafiles.size() > 1)
-      opts->setStringVectorParam(constants().opts.datafiles.str(),datafiles);
-    
+      opts->setStringVectorParam(constants().opts.datafiles.str(),datafiles);    
     // set default options in case they are not set
     setDefaultOptionValues(opts);
     return opts;
@@ -383,8 +379,7 @@ namespace MiniZinc {
   
   void CLIParser::setDefaultOptionValues(CLIOptions* opts) {
     for(UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption* >::const_iterator it =_known_options.begin(); it!=_known_options.end(); ++it) {
-      if(!opts->hasParam(it->second->getOptMapString())) {   
-        std::cerr << "DEBUG: setting default value of option: " << it->second->getOptMapString() << std::endl;
+      if(!opts->hasParam(it->second->getOptMapString())) {          
         CLIOption* o = it->second;
         int nbArgs = o->getNbArgs();
         if(nbArgs == 0) {
@@ -418,7 +413,31 @@ namespace MiniZinc {
     if(output_ozn =="") {
       output_ozn = output_base+".ozn";
       opts->setStringParam(constants().opts.oznToFile.str(),output_fzn);
-    }      
+    }  
+    std::vector<std::string> datafiles;
+    if(opts->hasParam(constants().opts.datafiles.str())) 
+      datafiles = opts->getStringVectorParam(constants().opts.datafiles.str());
+    else if(opts->hasParam(constants().opts.datafile.str())) {
+      std::string s = opts->getStringParam(constants().opts.datafile.str());
+      if(s!="")
+        datafiles.push_back(s);
+    }
+    if(datafiles.size() > 0)
+      opts->setStringVectorParam(constants().opts.datafiles.str(), datafiles);
+    std::vector<std::string> includePaths;
+    std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());
+    std::string std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
+    if (globals_dir!="") {
+      includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
+    }
+    includePaths.push_back(std_lib_dir+"/std/");  
+    for (unsigned int i=0; i<includePaths.size(); i++) {
+      if (!FileUtils::directory_exists(includePaths[i])) {
+        std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+        std::exit(EXIT_FAILURE);
+      }
+    }
+    opts->setStringVectorParam(constants().opts.includePaths.str(),includePaths);
   }
   
   void CLIParser::applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg) {

@@ -1422,6 +1422,7 @@ namespace MiniZinc {
         ASTString globalsDir;
         ASTString ignoreStdlib;
         ASTString includeDir;
+        ASTString includePaths;
         ASTString instanceCheckOnly;
         ASTString model;
         ASTString newfzn;  

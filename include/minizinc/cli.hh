@@ -169,7 +169,7 @@ namespace MiniZinc {
     void error(void);
     /// set the options that were not assigned by the command line to their default values
     void setDefaultOptionValues(CLIOptions* opt);
-    
+    /// applies the option \a arg given the argument vector and the next working index \a idx
     void applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg);
   };
 }

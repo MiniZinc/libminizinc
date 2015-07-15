@@ -57,37 +57,28 @@ int main(int argc, char** argv) {
   clock_t lasttime = std::clock();
   
   CLIParser cp; 
-  CLIOptions* opts = cp.parseArgs(argc,argv);
+  CLIOptions* opts;
+  try {
+    opts = cp.parseArgs(argc,argv);
+  } catch (Exception& e) {        
+    std::cerr << e.what() << ": " << e.msg() << std::endl;
+    exit(EXIT_FAILURE);           
+  }
     
   std::string filename = opts->getStringParam(constants().opts.model.str());  
   std::vector<std::string> datafiles;
-  if(opts->hasParam(constants().opts.datafiles.str())) 
-    datafiles = opts->getStringVectorParam(constants().opts.datafiles.str());
-  else if(opts->hasParam(constants().opts.datafile.str())) {
-    std::string s = opts->getStringParam(constants().opts.datafile.str());
-    if(s!="")
-      datafiles.push_back(s);
-  }  
+  if(opts->hasParam(constants().opts.datafiles.str())) {
+    datafiles= opts->getStringVectorParam(constants().opts.datafiles.str()); 
+  }
   string std_lib_dir =  opts->getStringParam(constants().opts.stdlib.str());    
   std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());
-  std::vector<std::string> includePaths;
-  if (globals_dir!="") {
-    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
-  }
-  includePaths.push_back(std_lib_dir+"/std/");  
-  for (unsigned int i=0; i<includePaths.size(); i++) {
-    if (!FileUtils::directory_exists(includePaths[i])) {
-      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
-      std::exit(EXIT_FAILURE);
-    }
-  }  
+  std::vector<std::string> includePaths = opts->getStringVectorParam(constants().opts.includePaths.str());  
   std::string output_base = opts->getStringParam(constants().opts.outputBase.str());  
   std::string output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
   std::string output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
   bool flag_verbose = opts->getBoolParam(constants().opts.verbose.str());
   bool flag_werror = opts->getBoolParam(constants().opts.werror.str());
   bool flag_ignoreStdlib = opts->getBoolParam(constants().opts.ignoreStdlib.str());
-  
   
   {
     std::stringstream errstream;
@@ -168,8 +159,7 @@ int main(int argc, char** argv) {
                 Printer p(std::cout,0);
                 p.print(env.output());
               } else {
-                std::ofstream os;
-                std::cerr << "DEBUG: output_ozn: " << output_ozn << std::endl;
+                std::ofstream os;                
                 os.open(output_ozn.c_str(), ios::out);
                 if (!os.good()) {
                   if (flag_verbose)
