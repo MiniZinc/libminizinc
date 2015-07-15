@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/cli.hh>
+#include <minizinc/file_utils.hh>
 
 namespace MiniZinc {
   
@@ -110,7 +111,7 @@ namespace MiniZinc {
     return def;
   } 
   
-  // function for each CLI option
+  // functions for each CLI option
   void cli_cmdlineData(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.cmdlineData.str(),s);
   }
@@ -181,6 +182,32 @@ namespace MiniZinc {
   }
   void cli_werror(CLIOptions* opt) {
     opt->setBoolParam(constants().opts.werror.str(),true);
+  }
+  
+  void cli_init_stdlib(CLIOptions* opts, CLIOption* o) {
+    std::string std_lib_dir;
+    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+      std_lib_dir = std::string(MZNSTDLIBDIR);
+    }    
+    if(std_lib_dir == "") {
+      std::string mypath = FileUtils::progpath();
+      if (!mypath.empty()) {
+        if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/share/minizinc";
+        } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/../share/minizinc";
+        } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/../../share/minizinc";
+        }
+      }
+    }
+    if (std_lib_dir=="") {
+      std::cerr << "Error: unknown minizinc standard library directory.\n"
+      << "Specify --stdlib-dir on the command line or set the\n"
+      << "MZN_STDLIB_DIR environment variable.\n";
+      std::exit(EXIT_FAILURE);
+    }
+    o->setDefaultString(std_lib_dir);
   }
   
   CLIParser::CLIParser(void) {
@@ -276,7 +303,7 @@ namespace MiniZinc {
                                                                        false /* default */, 
                                                                        constants().opts.statistics.str(), cli_statistics );
   _known_options[constants().cli.stdlib_str.str()] = new CLIOption(constants().cli.stdlib_str.str(),
-                                                                   false /* begins with */ , constants().opts.stdlib.str(), cli_stdlib);
+                                                                   false /* begins with */ , constants().opts.stdlib.str(), cli_stdlib, cli_init_stdlib);
   _known_options[constants().cli.verbose_short_str.str()] = new CLIOption(constants().cli.verbose_short_str.str(),
                                                                           false /* default */, 
                                                                           constants().opts.verbose.str(), cli_verbose );
@@ -365,14 +392,33 @@ namespace MiniZinc {
         }
         else if(nbArgs == 1) {
           // TODO: check for integer values (though there are none in the current options)
+          if(o->_init != NULL) { // if there is an initialisation function for the default value
+            o->_init(opts,o);
+          }
           std::string def = o->getStringDefaultValue();
           opts->setStringParam(o->getOptMapString(), def); 
         }
-        else {
-          // TODO: are there default string vector options?
-        }
+        /*else {
+          // NOTE: there currently are NO string vector options
+        } */
       }
     }
+    std::string filename = opts->getStringParam(constants().opts.model.str());       
+    std::string output_base = opts->getStringParam(constants().opts.outputBase.str());  
+    if(output_base =="") {
+      output_base = filename.substr(0,filename.length()-4);
+      opts->setStringParam(constants().opts.outputBase.str(), output_base);
+    }    
+    std::string output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
+    if(output_fzn=="") {
+      output_fzn = output_base+".fzn";
+      opts->setStringParam(constants().opts.fznToFile.str(),output_fzn);
+    }
+    std::string output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
+    if(output_ozn =="") {
+      output_ozn = output_base+".ozn";
+      opts->setStringParam(constants().opts.oznToFile.str(),output_fzn);
+    }      
   }
   
   void CLIParser::applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg) {
@@ -390,7 +436,7 @@ namespace MiniZinc {
       o->func.str_arg(opts,s); // TODO: check for int-argument option (though there are none in the current options)
       idx++;
     }
-    else { // more than 1 argument
+   /* else { // NOTE: more than 1 argument: not in use at the moment
       std::vector<std::string> args;
       for(int i=0; i<o->getNbArgs(); i++) {
         if(idx >= argc) {
@@ -401,7 +447,7 @@ namespace MiniZinc {
         idx++;
       }
       o->func.str_args(opts,args); // execute the function for option o
-    }
+    } */
   }
   
 }

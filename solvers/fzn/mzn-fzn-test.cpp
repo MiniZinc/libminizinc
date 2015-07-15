@@ -56,49 +56,20 @@ int main(int argc, char** argv) {
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
   
-  CLIParser cp; CLIOptions* opts = cp.parseArgs(argc,argv);
+  CLIParser cp; 
+  CLIOptions* opts = cp.parseArgs(argc,argv);
     
   std::string filename = opts->getStringParam(constants().opts.model.str());  
   std::vector<std::string> datafiles;
-  if(opts->hasParam(constants().opts.datafiles.str())) {
+  if(opts->hasParam(constants().opts.datafiles.str())) 
     datafiles = opts->getStringVectorParam(constants().opts.datafiles.str());
-  }
   else if(opts->hasParam(constants().opts.datafile.str())) {
     std::string s = opts->getStringParam(constants().opts.datafile.str());
     if(s!="")
       datafiles.push_back(s);
-  }
-  
-  string std_lib_dir;
-  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-    std_lib_dir = string(MZNSTDLIBDIR);
-  }
-  if(opts->hasParam(constants().opts.stdlib.str())) {
-    std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
-  }
-  if(std_lib_dir == "") {
-    std::string mypath = FileUtils::progpath();
-    if (!mypath.empty()) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../../share/minizinc";
-      }
-    }
-  }
-  if (std_lib_dir=="") {
-    std::cerr << "Error: unknown minizinc standard library directory.\n"
-    << "Specify --stdlib-dir on the command line or set the\n"
-    << "MZN_STDLIB_DIR environment variable.\n";
-    std::exit(EXIT_FAILURE);
-  }
-  
-  std::string globals_dir;
-  if(opts->hasParam(constants().opts.globalsDir.str())) {
-    globals_dir  = opts->getStringParam(constants().opts.globalsDir.str());
   }  
+  string std_lib_dir =  opts->getStringParam(constants().opts.stdlib.str());    
+  std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());
   std::vector<std::string> includePaths;
   if (globals_dir!="") {
     includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
@@ -109,34 +80,15 @@ int main(int argc, char** argv) {
       std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
       std::exit(EXIT_FAILURE);
     }
-  }
-  
-  std::string output_base;
-  if(opts->hasParam(constants().opts.outputBase.str())) 
-    output_base = opts->getStringParam(constants().opts.outputBase.str());  
-  if(output_base =="") {
-    output_base = filename.substr(0,filename.length()-4);
-  }
-  std::string output_fzn;
-  if(opts->hasParam(constants().opts.fznToFile.str())) {
-    output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
-  }
-  if(output_fzn=="") {
-    output_fzn = output_base+".fzn";
-  }
-  std::string output_ozn;
-  if(opts->hasParam(constants().opts.oznToFile.str())) {
-    output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
-  }
-  if(output_ozn =="") {
-    output_ozn = output_base+".ozn";
-  }
-  
-  std::cerr << "DEBUG: Parsed input:\nmodel = " << filename << "\ndata = " << (datafiles.size() == 0 ? "" : datafiles[0]) << "\nglobals-dir = " << globals_dir << "\noutputbase = " << output_base << std::endl;
-  
+  }  
+  std::string output_base = opts->getStringParam(constants().opts.outputBase.str());  
+  std::string output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
+  std::string output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
   bool flag_verbose = opts->getBoolParam(constants().opts.verbose.str());
   bool flag_werror = opts->getBoolParam(constants().opts.werror.str());
   bool flag_ignoreStdlib = opts->getBoolParam(constants().opts.ignoreStdlib.str());
+  
+  
   {
     std::stringstream errstream;
     if (flag_verbose)

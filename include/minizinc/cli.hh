@@ -53,13 +53,19 @@ namespace MiniZinc {
     typedef void (*func_int_arg) (CLIOptions* opt, int v);
     typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);    
     
+    // function pointer to functions that set default String option value
+    typedef void (*func_init) (CLIOptions* opt, CLIOption* o);
+    
   public:
     struct {
       func_int_arg int_arg;
       func_no_args no_args;
       func_str_arg str_arg;
-      func_str_args str_args;
+      //func_str_args str_args;
     } func;
+    
+    // functions to initialize the String option
+    func_init _init;    
     
   public:
     /**
@@ -74,8 +80,9 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(const std::string& name, bool def, const std::string& optMapString, CLIOption::func_no_args f) : 
-      _name(name), _bdef(def), _optMapString(optMapString) 
-      { func.no_args = f; _nbArgs = 0; _beginsWith = false; }   
+      _name(name), _bdef(def), _optMapString(optMapString), _init(NULL),
+      _nbArgs(0), _beginsWith(false) 
+      { func.int_arg = NULL; func.no_args = f; func.str_arg = NULL; }   
     
     /**
        * Constructor for a Boolean command line option that whose value does not need 
@@ -86,8 +93,27 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(const std::string& name, bool def, CLIOption::func_no_args f) : 
-    _name(name), _bdef(def) { func.no_args = f; _nbArgs = 0; _beginsWith = false; }
+      _name(name), _bdef(def), _nbArgs(0), _beginsWith(false), _init(NULL)
+       { func.no_args = f; func.int_arg = NULL; func.str_arg = NULL; }
         
+    /** 
+       * Constructor for a String command line option whose value will later be stored 
+       * in CLIOptions. The number of arguments (on the command line) to the option are 
+       * given through the function pointer type: this constructor is for String options 
+       * that take one argument on the command line and that needs to be initialized in
+       * case the option is not given in the command line.
+       * 
+       * @param name the command line string for the option, e.g. --stdlib /home/user/mylib/
+       * @param beginsWith true, if the option's argument can be concatenated with the option name, e.g. -I/home/user/mznlib
+       * @param optMapString the string that (will) map to the option value in CLIOptions
+       * @param f the function to be executed when this option is given in the command line
+       * @param init the function to be executed when this option is NOT given in the command line, to set the defaul string value
+       */      
+    CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, 
+              CLIOption::func_str_arg f, CLIOption::func_init init) : 
+     _name(name), _beginsWith(beginsWith), _optMapString(optMapString), _init(init)
+      { func.str_arg = f; func.no_args = NULL; func.int_arg = NULL;  _nbArgs = 1; }
+
     /** 
        * Constructor for a String command line option whose value will later be stored 
        * in CLIOptions. The number of arguments (on the command line) to the option are 
@@ -97,13 +123,16 @@ namespace MiniZinc {
        * @param name the command line string for the option, e.g. --stdlib /home/user/mylib/
        * @param beginsWith true, if the option's argument can be concatenated with the option name, e.g. -I/home/user/mznlib
        * @param optMapString the string that (will) map to the option value in CLIOptions
-       * @param f the function to be executed when this option is given in the command line
-       */  
-    // TODO: add string option constructor that takes an initialisation function as argument (for setting stdlib etc)
+       * @param f the function to be executed when this option is given in the command line       
+       */      
     CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_str_arg f) : 
-    _name(name), _beginsWith(beginsWith), _optMapString(optMapString) { func.str_arg = f; _nbArgs = 1; }
-    CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_int_arg f) : 
-    _name(name), _beginsWith(beginsWith), _optMapString(optMapString) { func.int_arg = f; _nbArgs = 1; }
+     _name(name), _beginsWith(beginsWith), _optMapString(optMapString), _init(NULL), _nbArgs(1)
+      { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.str_arg = NULL; }      
+      
+    // The int constructor is currently not used (there are no int options I know of)
+    //CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_int_arg f) : 
+    //_name(name), _beginsWith(beginsWith), _optMapString(optMapString), _init(NULL) 
+    // { func.int_arg = f; func.no_args = NULL; func.str_arg = NULL; _nbArgs = 1; }
     
     
     bool takesArgs(void) { return _nbArgs > 0; }
@@ -113,6 +142,8 @@ namespace MiniZinc {
     
     bool getBoolDefaultValue(void) const { return _bdef; }
     std::string getStringDefaultValue(void) const { return _sdef; }
+    
+    void setDefaultString(std::string& s) { _sdef = s; }
   };
 
   /// parser for command line arguments for MiniZinc
