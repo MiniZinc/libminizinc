@@ -62,18 +62,48 @@ namespace MiniZinc {
     } func;
     
   public:
-    // TODO: extend these constructors with function pointers   
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, bool def, CLIOption::func_no_args f) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _bdef(def) { func.no_args = f; }
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, std::string& def) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith), _sdef(def) {}
+    /**
+       * Constructor for a Boolean command line option whose value will later be stored 
+       * in CLIOptions. The number of arguments (on the command line) to the option are 
+       * given through the function pointer type: this constructor is for Boolean options 
+       * that take no arguments on the command line.
+       * 
+       * @param name the command line string for the option, e.g. "--verbose"         
+       * @param def default value for the option (defined by optMapString!)
+       * @param optMapString the string that (will) map to the option value in CLIOptions, e.g. "verbose"
+       * @param f the function to be executed when this option is given in the command line
+       */  
+    CLIOption(const std::string& name, bool def, const std::string& optMapString, CLIOption::func_no_args f) : 
+      _name(name), _bdef(def), _optMapString(optMapString) 
+      { func.no_args = f; _nbArgs = 0; _beginsWith = false; }   
+    
+    /**
+       * Constructor for a Boolean command line option that whose value does not need 
+       * to be stored in CLIOptions. The Boolean option has not command line parameter.
+       * 
+       * @param name the command line string for the option, e.g. --version  
+       * @param def default value for the option (if there is none, set to anything)
+       * @param f the function to be executed when this option is given in the command line
+       */  
+    CLIOption(const std::string& name, bool def, CLIOption::func_no_args f) : 
+    _name(name), _bdef(def) { func.no_args = f; _nbArgs = 0; _beginsWith = false; }
         
-    //CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_no_args f) : 
-    //_name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.no_args = f; }    
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_str_arg f) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.str_arg = f; }
-    CLIOption(const std::string& name, int nbArgs, bool beginsWith, CLIOption::func_int_arg f) : 
-    _name(name), _nbArgs(nbArgs), _beginsWith(beginsWith) { func.int_arg = f; }
+    /** 
+       * Constructor for a String command line option whose value will later be stored 
+       * in CLIOptions. The number of arguments (on the command line) to the option are 
+       * given through the function pointer type: this constructor is for String options 
+       * that take one argument on the command line.
+       * 
+       * @param name the command line string for the option, e.g. --stdlib /home/user/mylib/
+       * @param beginsWith true, if the option's argument can be concatenated with the option name, e.g. -I/home/user/mznlib
+       * @param optMapString the string that (will) map to the option value in CLIOptions
+       * @param f the function to be executed when this option is given in the command line
+       */  
+    // TODO: add string option constructor that takes an initialisation function as argument (for setting stdlib etc)
+    CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_str_arg f) : 
+    _name(name), _beginsWith(beginsWith), _optMapString(optMapString) { func.str_arg = f; _nbArgs = 1; }
+    CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_int_arg f) : 
+    _name(name), _beginsWith(beginsWith), _optMapString(optMapString) { func.int_arg = f; _nbArgs = 1; }
     
     
     bool takesArgs(void) { return _nbArgs > 0; }

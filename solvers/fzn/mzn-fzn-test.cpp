@@ -56,8 +56,7 @@ int main(int argc, char** argv) {
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
   
-  CLIParser cp;
-  CLIOptions* opts = cp.parseArgs(argc,argv);
+  CLIParser cp; CLIOptions* opts = cp.parseArgs(argc,argv);
     
   std::string filename = opts->getStringParam(constants().opts.model.str());  
   std::vector<std::string> datafiles;
@@ -77,7 +76,7 @@ int main(int argc, char** argv) {
   if(opts->hasParam(constants().opts.stdlib.str())) {
     std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
   }
-  else {
+  if(std_lib_dir == "") {
     std::string mypath = FileUtils::progpath();
     if (!mypath.empty()) {
       if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
@@ -115,23 +114,25 @@ int main(int argc, char** argv) {
   std::string output_base;
   if(opts->hasParam(constants().opts.outputBase.str())) 
     output_base = opts->getStringParam(constants().opts.outputBase.str());  
-  else {
+  if(output_base =="") {
     output_base = filename.substr(0,filename.length()-4);
   }
   std::string output_fzn;
   if(opts->hasParam(constants().opts.fznToFile.str())) {
     output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
   }
-  else {
+  if(output_fzn=="") {
     output_fzn = output_base+".fzn";
   }
   std::string output_ozn;
   if(opts->hasParam(constants().opts.oznToFile.str())) {
     output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
   }
-  else {
+  if(output_ozn =="") {
     output_ozn = output_base+".ozn";
   }
+  
+  std::cerr << "DEBUG: Parsed input:\nmodel = " << filename << "\ndata = " << (datafiles.size() == 0 ? "" : datafiles[0]) << "\nglobals-dir = " << globals_dir << "\noutputbase = " << output_base << std::endl;
   
   bool flag_verbose = opts->getBoolParam(constants().opts.verbose.str());
   bool flag_werror = opts->getBoolParam(constants().opts.werror.str());
@@ -216,6 +217,7 @@ int main(int argc, char** argv) {
                 p.print(env.output());
               } else {
                 std::ofstream os;
+                std::cerr << "DEBUG: output_ozn: " << output_ozn << std::endl;
                 os.open(output_ozn.c_str(), ios::out);
                 if (!os.good()) {
                   if (flag_verbose)
@@ -260,7 +262,7 @@ int main(int argc, char** argv) {
         if (flag_verbose)
           std::cerr << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);           
       }
       delete m;
     } else {
