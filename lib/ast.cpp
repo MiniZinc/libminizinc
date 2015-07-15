@@ -135,6 +135,7 @@ namespace MiniZinc {
           break;
         case Expression::E_LET:
           pushall(cur->cast<Let>()->let());
+          pushall(cur->cast<Let>()->_let_orig);
           pushstack(cur->cast<Let>()->in());
           break;
         case Expression::E_TI:
@@ -560,16 +561,35 @@ namespace MiniZinc {
     for (unsigned int i=_let.size(); i--;)
       cmb_hash(Expression::hash(_let[i]));
   }
+
+  Let::Let(const Location& loc,
+           const std::vector<Expression*>& let, Expression* in)
+  : Expression(loc,E_LET,Type()) {
+    _let = ASTExprVec<Expression>(let);
+    std::vector<Expression*> vde(let.size());
+    for (unsigned int i=0; i<let.size(); i++) {
+      if (VarDecl* vd = let[i]->dyn_cast<VarDecl>()) {
+        vde[i] =  vd->e();
+      } else {
+        vde[i] = NULL;
+      }
+    }
+    _let_orig = ASTExprVec<Expression>(vde);
+    _in = in;
+    rehash();
+  }
+
+  
   void
   Let::pushbindings(void) {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
-      if (_let[i]->isa<VarDecl>()) {
-        VarDecl* vd = _let[i]->cast<VarDecl>();
+      if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
         GC::trail(&vd->_e,vd->e());
         if (vd->ti()->ranges().size() > 0) {
           GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
         }
+        vd->e(_let_orig[i]);
       }
     }
   }
@@ -1069,6 +1089,65 @@ namespace MiniZinc {
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
+    cli.cmdlineData_short_str = ASTString("-D");
+    cli.cmdlineData_str = ASTString("--cmdline-data");
+    cli.datafile_str = ASTString("--data");
+    cli.datafile_short_str = ASTString("-d");
+    cli.globalsDir_str = ASTString("--globals-dir");
+    cli.globalsDir_alt_str = ASTString("--mzn-globals-dir");
+    cli.globalsDir_short_str = ASTString("-G");
+    cli.help_str = ASTString("--help");
+    cli.help_short_str = ASTString("--help");
+    cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
+    cli.include_str = ASTString("-I");
+    cli.instanceCheckOnly_str = ASTString("--instance-check-only");
+    cli.newfzn_str = ASTString("--newfzn");
+    cli.no_optimize_str = ASTString("--no-optimize");
+    cli.no_optimize_alt_str = ASTString("--no-optimise");
+    cli.no_outputOzn_str = ASTString("--no-output-ozn");
+    cli.no_outputOzn_short_str = ASTString("-O-");
+    cli.no_typecheck_str = ASTString("--no-typecheck");    
+    cli.outputBase_str = ASTString("--output-base");
+    cli.outputFznToStdout_str = ASTString("--output-to-stdout");
+    cli.outputFznToStdout_alt_str = ASTString("--output-fzn-to-stdout");
+    cli.outputOznToFile_str = ASTString("--output-ozn-to-file");
+    cli.outputOznToStdout_str = ASTString("--output-ozn-to-stdout");
+    cli.outputFznToFile_alt_str = ASTString("--output-fzn-to-file");
+    cli.outputFznToFile_short_str = ASTString("-o");
+    cli.outputFznToFile_str = ASTString("--output-to-file"); 
+    cli.rangeDomainsOnly_str = ASTString("--only-range-domains");
+    cli.statistics_str = ASTString("--statistics");
+    cli.statistics_short_str = ASTString("-s");
+    cli.stdlib_str = ASTString("--stdlib-dir");
+    cli.verbose_str = ASTString("--verbose");
+    cli.verbose_short_str = ASTString("-v");
+    cli.version_str = ASTString("--version");
+    cli.werror_str = ASTString("-Werror");
+    
+    opts.cmdlineData = ASTString("cmdlineData");
+    opts.datafile = ASTString("datafile");
+    opts.datafiles = ASTString("datafiles");
+    opts.fznToFile = ASTString("fznToFile");
+    opts.fznToStdout = ASTString("fznToStdout");
+    opts.globalsDir = ASTString("globalsDir");
+    opts.ignoreStdlib = ASTString("ignoreStdlib");
+    opts.includeDir = ASTString("includeDir");
+    opts.includePaths = ASTString("includePaths");
+    opts.instanceCheckOnly = ASTString("instanceCheckOnly");
+    opts.model = ASTString("model");
+    opts.newfzn = ASTString("newfzn");
+    opts.noOznOutput = ASTString("noOznOutput");
+    opts.optimize = ASTString("optimize");
+    opts.outputBase = ASTString("outputBase");
+    opts.oznToFile = ASTString("oznToFile");
+    opts.oznToStdout = ASTString("oznToStdout");
+    opts.rangeDomainsOnly = ASTString("rangeDomainsOnly");
+    opts.statistics = ASTString("statistics");
+    opts.stdlib = ASTString("stdlib");
+    opts.typecheck = ASTString("typecheck");
+    opts.verbose = ASTString("verbose");
+    opts.werror = ASTString("werror");
+    
     std::vector<Expression*> v;
     v.push_back(ti);
     v.push_back(lit_true);
@@ -1179,6 +1258,65 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(),ann.mzn_path));
     v.push_back(new StringLit(Location(), ann.is_introduced));
+    
+    v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
+    v.push_back(new StringLit(Location(),cli.cmdlineData_str));
+    v.push_back(new StringLit(Location(),cli.datafile_short_str));
+    v.push_back(new StringLit(Location(),cli.datafile_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_alt_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_short_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_str));
+    v.push_back(new StringLit(Location(),cli.help_short_str));
+    v.push_back(new StringLit(Location(),cli.help_str));
+    v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
+    v.push_back(new StringLit(Location(),cli.include_str));
+    v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
+    v.push_back(new StringLit(Location(),cli.newfzn_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_short_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_str));
+    v.push_back(new StringLit(Location(),cli.no_typecheck_str));    
+    v.push_back(new StringLit(Location(),cli.outputBase_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToFile_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_short_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_str));
+    v.push_back(new StringLit(Location(),cli.rangeDomainsOnly_str));
+    v.push_back(new StringLit(Location(),cli.statistics_short_str));
+    v.push_back(new StringLit(Location(),cli.statistics_str));
+    v.push_back(new StringLit(Location(),cli.stdlib_str));
+    v.push_back(new StringLit(Location(),cli.verbose_short_str));
+    v.push_back(new StringLit(Location(),cli.verbose_str));
+    v.push_back(new StringLit(Location(),cli.version_str));
+    v.push_back(new StringLit(Location(),cli.werror_str));    
+    
+    v.push_back(new StringLit(Location(),opts.cmdlineData));
+    v.push_back(new StringLit(Location(),opts.datafile));
+    v.push_back(new StringLit(Location(),opts.datafiles));
+    v.push_back(new StringLit(Location(),opts.fznToFile));
+    v.push_back(new StringLit(Location(),opts.fznToStdout));
+    v.push_back(new StringLit(Location(),opts.globalsDir));
+    v.push_back(new StringLit(Location(),opts.ignoreStdlib));
+    v.push_back(new StringLit(Location(),opts.includePaths));
+    v.push_back(new StringLit(Location(),opts.includeDir));
+    v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
+    v.push_back(new StringLit(Location(),opts.model));
+    v.push_back(new StringLit(Location(),opts.newfzn));
+    v.push_back(new StringLit(Location(),opts.noOznOutput));
+    v.push_back(new StringLit(Location(),opts.optimize));
+    v.push_back(new StringLit(Location(),opts.outputBase));
+    v.push_back(new StringLit(Location(),opts.oznToFile));
+    v.push_back(new StringLit(Location(),opts.oznToStdout));
+    v.push_back(new StringLit(Location(),opts.rangeDomainsOnly));
+    v.push_back(new StringLit(Location(),opts.statistics));
+    v.push_back(new StringLit(Location(),opts.stdlib));
+    v.push_back(new StringLit(Location(),opts.typecheck));
+    v.push_back(new StringLit(Location(),opts.verbose));
+    v.push_back(new StringLit(Location(),opts.werror));
     
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);

@@ -25,15 +25,19 @@ namespace MiniZinc {
       void setIntParam(const std::string& name,   KeepAlive e);
       void setFloatParam(const std::string& name, KeepAlive e);
       void setBoolParam(const std::string& name,  KeepAlive e);
+      void setStringParam(const std::string& name,  KeepAlive e);
       void setIntParam(const std::string& name,   long long int e);
       void setFloatParam(const std::string& name, double e);
       void setBoolParam(const std::string& name,  bool e);
+      void setStringParam(const std::string& name, std::string e);
       long long int getIntParam(const std::string& name) const;
       long long int getIntParam(const std::string& name, long long int def) const;
       double getFloatParam(const std::string& name) const;
       double getFloatParam(const std::string& name, double def) const;
       bool getBoolParam(const std::string& name) const;
       bool getBoolParam(const std::string& name, bool def) const;
+      std::string getStringParam(const std::string& name) const;
+      std::string getStringParam(const std::string& name, std::string def) const;
       bool hasParam(const std::string& name) const;
   };
 }

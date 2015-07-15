@@ -184,6 +184,7 @@ lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
+lib/cli.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
@@ -212,6 +213,7 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
+include/minizinc/cli.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
@@ -256,9 +258,32 @@ add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
 
-set(HAS_CPLEX TRUE)
+set(HAS_CPLEX  TRUE)
+set(HAS_GUROBI TRUE)
 set(HAS_GECODE TRUE)
-set(HAS_FZN FALSE)
+set(HAS_FZN    TRUE)
+
+if(HAS_GUROBI)
+	
+  include_directories("${GUROBI_HOME}/include")
+  link_directories("${GUROBI_HOME}/lib")
+
+	add_library(minizinc_gurobi
+		solvers/gurobi/gurobi_solverinstance.cpp
+	)
+
+	target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+
+	add_executable(mzn-gurobi
+	  solvers/gurobi/mzn-gurobi.cpp
+	)
+	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
 
 if(HAS_CPLEX)
   if(UNIX)
@@ -337,7 +362,9 @@ if(HAS_FZN)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn
+        add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp)
+	target_link_libraries(mzn-fzn-test minizinc_fzn minizinc)
+	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-test
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

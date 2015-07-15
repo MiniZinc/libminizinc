@@ -31,7 +31,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include <minizinc/solvers/cplex_solverinstance.hh>
+#include <minizinc/solvers/gurobi_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -159,6 +159,8 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (string(argv[i]) == "-a" ) {
+      flag_all_solutions = true;
     } else if (beginswith(string(argv[i]),"-d")) {
       string filename(argv[i]);
       string datafile;
@@ -224,8 +226,6 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
-    } else if (string(argv[i])=="-a") {
-      flag_all_solutions = true;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
@@ -455,10 +455,8 @@ int main(int argc, char** argv) {
             }
 
             /// To cout:
-            if(flag_verbose) {
-              std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
-              std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
-            }
+            //std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+            //std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
 
             /// To cout:
             //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
@@ -467,18 +465,18 @@ int main(int argc, char** argv) {
             {
               GCLock lock;
               Options options;
+
               options.setBoolParam  ("all_solutions",    flag_all_solutions);
               options.setStringParam("export_model",     sExportModel);
               options.setBoolParam  ("verbose",          flag_verbose);
               options.setIntParam   ("parallel_threads", nThreads);
               options.setFloatParam ("timelimit",        nTimeout);
-              options.setFloatParam ("memory_limit",     nWorkMemLimit);
 
-              CPLEXSolverInstance cplex(env,options);
-              cplex.processFlatZinc();
-              SolverInstance::Status status = cplex.solve();
+              GurobiSolverInstance gurobi(env,options);
+              gurobi.processFlatZinc();
+              SolverInstance::Status status = gurobi.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-                cplex.printSolution();
+                gurobi.printSolution();
                 if (status==SolverInstance::OPT)
                   std::cout << "==========" << std::endl;
               }
@@ -535,18 +533,18 @@ error:
   << std::endl
   << "MIP solver options:" << std::endl
   // -s                  print statistics
-  //            << "  --readParam <file>  read CPLEX parameters from file
-  //               << "--writeParam <file> write CPLEX parameters to file
-  //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
+  //            << "  --readParam <file>  read Gurobi parameters from file
+  //               << "--writeParam <file> write Gurobi parameters to file
+  //               << "--tuneParam         instruct Gurobi to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
   << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
   << "-p <N>              use N threads" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
-  << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
-  << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
-  << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
+  << "--readParam <file>  read Gurobi parameters from file   NOT IMPL" << std::endl
+  << "--writeParam <file> write Gurobi parameters to file   NOT IMPL" << std::endl
+  << "--tuneParam         instruct Gurobi to tune parameters instead of solving   NOT IMPL" << std::endl
   << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
 
   << std::endl

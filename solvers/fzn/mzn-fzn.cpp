@@ -368,6 +368,29 @@ int main(int argc, char** argv) {
               env.flat()->compact();
             }
             
+            if (!flag_no_output_ozn) {
+              if (flag_verbose)
+                std::cerr << "Printing .ozn ...";
+              if (flag_output_ozn_stdout) {
+                Printer p(std::cout,0);
+                p.print(env.output());
+              } else {
+                std::ofstream os;
+                os.open(flag_output_ozn.c_str(), ios::out);
+                if (!os.good()) {
+                  if (flag_verbose)
+                    std::cerr << std::endl;
+                  std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
+                  exit(EXIT_FAILURE);
+                }
+                Printer p(os,0);
+                p.print(env.output());
+                os.close();
+              }
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+            
             {
               GCLock lock;
               Options options;

@@ -35,7 +35,7 @@ namespace MiniZinc {
       Model* _flat;
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
-      std::stringstream run(void) {
+      std::string run(void) {
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -125,7 +125,7 @@ namespace MiniZinc {
           if (!_canPipe) {
             remove(fznFile.c_str());
           }
-          return result;
+          return result.str();
         } else {
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
@@ -188,7 +188,9 @@ namespace MiniZinc {
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
     FznProcess proc("fzn-gecode",false,_fzn);
-    std::stringstream result = proc.run();
+    std::string r = proc.run();
+    std::stringstream result;
+    result << r;
     std::string solution;
     
     typedef std::pair<VarDecl*,Expression*> DE;
