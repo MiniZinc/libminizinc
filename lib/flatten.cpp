@@ -897,15 +897,15 @@ namespace MiniZinc {
       ArrayLit* dims = NULL;
       bool has_output_ann = false;
       if(!ann.isEmpty()) {
-        for(ExpressionSetIter it = ann.begin();
-            it != ann.end(); ++it) {
-          if (Call* c = (*it)->dyn_cast<Call>()) {
+        for(ExpressionSetIter ait = ann.begin();
+            ait != ann.end(); ++ait) {
+          if (Call* c = (*ait)->dyn_cast<Call>()) {
             if (c->id() == constants().ann.output_array) {
               dims = c->args()[0]->cast<ArrayLit>();
               has_output_ann = true;
               break;
             }
-          } else if ((*it)->isa<Id>() && (*it)->cast<Id>() == constants().ann.output_var) {
+          } else if ((*ait)->isa<Id>() && (*ait)->cast<Id>()->str() == constants().ann.output_var->str()) {
             has_output_ann = true;
           }
         }
