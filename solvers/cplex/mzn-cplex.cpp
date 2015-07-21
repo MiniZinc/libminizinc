@@ -365,9 +365,9 @@ int main(int argc, char** argv) {
     bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
+    try {
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
           parseDocComments, flag_verbose, errstream)) {
-      try {
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -456,7 +456,7 @@ int main(int argc, char** argv) {
 
             /// To cout:
             if(flag_verbose) {
-              std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+              std::cout << "\n   %-------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
               std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
             }
 
@@ -492,23 +492,23 @@ int main(int argc, char** argv) {
           Printer p(std::cout);
           p.print(m);
         }
-      } catch (LocationException& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.loc() << ":" << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      } catch (Exception& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      }
       delete m;
     } else {
       if (flag_verbose)
         std::cerr << std::endl;
       std::copy(istreambuf_iterator<char>(errstream),istreambuf_iterator<char>(),ostreambuf_iterator<char>(std::cerr));
+      exit(EXIT_FAILURE);
+    }
+    } catch (LocationException& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+      exit(EXIT_FAILURE);
+    } catch (Exception& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
       exit(EXIT_FAILURE);
     }
   }
@@ -519,7 +519,7 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl
   << std::endl
   << "Options:" << std::endl
   << "  --help, -h\n    Print this help message" << std::endl
