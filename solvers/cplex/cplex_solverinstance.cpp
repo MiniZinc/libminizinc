@@ -130,11 +130,11 @@ namespace MiniZinc {
     delete _ilomodel;
     delete _ilocplex;
     if(fVerbose) {
-      std::cout << "  DELETING IloEnv... " << std::flush;
+      std::cout << "  %DELETING IloEnv... " << std::flush;
     }
     _iloenv.end();
     if(fVerbose) {
-      std::cout << " DONE. " << std::endl;
+      std::cout << " %DONE. " << std::endl;
     }
   }
   
@@ -236,7 +236,7 @@ namespace MiniZinc {
 
     try{
       _ilocplex->solve();
-      if(fVerbose) std::cout << "  IloCplex::solve() exited." << std::endl;
+      if(fVerbose) std::cout << "  %IloCplex::solve() exited." << std::endl;
     } catch(IloCplex::Exception& e){
       std::stringstream ssm;
       ssm << "Caught IloCplex::Exception while solving : " << e << std::endl;
@@ -247,23 +247,23 @@ namespace MiniZinc {
     switch(ss) {
       case IloAlgorithm::Status::Optimal:
         s = SolverInstance::OPT;
-        if(fVerbose) std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
+        if(fVerbose) std::cout << "\n   %----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Feasible:
         s = SolverInstance::SAT;
-        if(fVerbose) std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
+        if(fVerbose) std::cout << "\n   %---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Infeasible:
         s = SolverInstance::UNSAT;
-        if(fVerbose) std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
+        if(fVerbose) std::cout << "\n   %---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
         break;
       case IloAlgorithm::Status::Unbounded:
       case IloAlgorithm::Status::InfeasibleOrUnbounded:
       case IloAlgorithm::Status::Error:
         s = SolverInstance::ERROR;
-        std::cout << "\n   ---------------------   MIP__ERROR   ----------------------------------" << std::endl;
+        std::cout << "\n   %---------------------   MIP__ERROR   ----------------------------------" << std::endl;
         break;
         //       case IloCplex::Status::AbortTimeLim:    -- getCplexStatus()
         //         s = SolverInstance::TIMELIMIT;
@@ -271,7 +271,7 @@ namespace MiniZinc {
         //         break;
       default:
         s = SolverInstance::UNKNOWN;
-        std::cout << "\n   ---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;
+        std::cout << "\n   %---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;
     }
 
     if(fVerbose) {
@@ -282,11 +282,11 @@ namespace MiniZinc {
           << std::fabs(_ilocplex->getBestObjValue()-_ilocplex->getObjValue()) << std::endl;
         std::cout << "% MIP_RelGap__   : " << _ilocplex->getMIPRelativeGap() << std::endl;
       } else {
-        std::cout << "\n   ------------  NO FEASIBLE SOLUTION FOUND  ----------------------------" << std::endl;
+        std::cout << "\n   %------------  NO FEASIBLE SOLUTION FOUND  ----------------------------" << std::endl;
       }
       std::cout   << "% MIP_BestBound_ : " << _ilocplex->getBestObjValue() << std::endl;
       std::cout   << "% Real/CPU Time_ : " << _ilocplex->getTime() << " sec\n" << std::endl;
-      std::cout << "------------------------------------------------------------------------\n"<< std::endl;
+      std::cout << "%------------------------------------------------------------------------\n"<< std::endl;
     }
     return s;
 

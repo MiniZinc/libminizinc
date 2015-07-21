@@ -192,6 +192,8 @@ namespace MiniZinc {
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
+      if (nullptr==this)
+        throw InternalError("isa: nullptr");
       return _id==T::eid;
     }
     /// Cast expression to type \a T*
