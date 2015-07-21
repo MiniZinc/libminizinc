@@ -121,9 +121,29 @@ namespace MiniZinc {
   void cli_globals_dir(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.globalsDir.str(),s);
   }
-  void cli_help(CLIOptions* opt, CLIParser::opt_map knownOptions) {
-    // TODO: print description of each CLIOption (TODO: add description to each option)
-    std::cerr << "HELP is under construction.\n" ; 
+  void cli_help(CLIOptions* opt, CLIParser::opt_map knownOptions, std::string command) {
+    std::cerr << "Usage: "<< command
+            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+            << std::endl
+            << "Options:" << std::endl;
+    // TODO: group options by type and display them alphabetically
+    for(CLIParser::opt_map::const_iterator it = knownOptions.begin(); it!=knownOptions.end(); ++it) {
+      CLIOption* o = it->second;
+      std::vector<std::string> cmd_opts = o->getCommandLineNames();      
+      std::cerr << "  " << std::endl;
+      for(unsigned int i=0; i<cmd_opts.size(); i++) {
+        std::cerr << cmd_opts[i];
+        for(unsigned int j=0; j<o->getNbArgs(); j++) {
+          if(o->getNbArgs() == 1)
+            std::cerr << " <arg>"; // TODO: allow options to specify names of its arguments
+          else std::cerr << " <arg" << (j+1) << ">" << (o->getNbArgs() == j-1 ? "" : " ") ;
+        }
+        if(i<cmd_opts.size()-1) 
+          std::cerr << ", ";
+      }
+      std::cerr << "\n    " << o->getDescription(); // TODO: include line breaks into description if too long
+    }   
+    std::cerr << std::endl;
     exit(EXIT_FAILURE);
   }
   void cli_ignoreStdlib(CLIOptions* opt) {
@@ -481,7 +501,7 @@ namespace MiniZinc {
     if(nbArgs == 0) {
       if(o->func.opts_arg == NULL)
         o->func.no_args(opts); // execute the function for option o
-      else o->func.opts_arg(opts,_known_options);
+      else o->func.opts_arg(opts,_known_options,std::string(argv[0]));
     }      
     else if(nbArgs == 1) {
       if(idx >= argc) {
