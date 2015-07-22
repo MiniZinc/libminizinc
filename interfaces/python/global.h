@@ -63,6 +63,7 @@ static PyObject* MznVariable_init_error;
 static PyObject* MznSet_error;
 
 
+
 // Macro that combines snprintf and PyErr_SetString into one.
 // First argument is PyExc_*Error, Second argument is like ordinary printf function
 #define MZN_PYERR_SET_STRING(py_type_error, ...)	\

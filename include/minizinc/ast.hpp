@@ -440,16 +440,6 @@ namespace MiniZinc {
     _flat = WeakRef(vd);
   }
 
-  
-  inline
-  Let::Let(const Location& loc,
-           const std::vector<Expression*>& let, Expression* in)
-  : Expression(loc,E_LET,Type()) {
-    _let = ASTExprVec<Expression>(let);
-    _in = in;
-    rehash();
-  }
-
   inline
   TypeInst::TypeInst(const Location& loc,
                      const Type& type,

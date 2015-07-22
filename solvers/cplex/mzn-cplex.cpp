@@ -25,6 +25,7 @@
 #include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
+#include <minizinc/flatten_internal.hh>  // temp., TODO
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
@@ -59,16 +60,26 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
-  
+  bool flag_only_range_domains = false;
+  bool flag_all_solutions = false;
+
+  /// PARAMS
+  int nThreads=-1;
+  string sExportModel;
+  double nTimeout=-1;
+  double nWorkMemLimit=-1;
+
+
   clock_t starttime = std::clock();
+  clock_t starttime01 = starttime;
   clock_t lasttime = std::clock();
-  
+
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
   string globals_dir = "linear";
-  
+
   bool flag_no_output_ozn = false;
   string flag_output_base;
   string flag_output_fzn;
@@ -77,13 +88,13 @@ int main(int argc, char** argv) {
   bool flag_output_ozn_stdout = false;
   bool flag_instance_check_only = false;
   FlatteningOptions fopts;
-  
+
   if (argc < 2)
     goto error;
 
   for (int i=1; i<argc; i++) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
-        goto error;
+      goto error;
     if (string(argv[i])==string("--version")) {
       std::cout << "NICTA MiniZinc to FlatZinc converter, version "
         << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
@@ -114,7 +125,7 @@ int main(int argc, char** argv) {
     } else if (string(argv[i])==string("--no-optimize") || string(argv[i])==string("--no-optimise")) {
       flag_optimize = false;
     } else if (string(argv[i])==string("--no-output-ozn") ||
-               string(argv[i])==string("-O-")) {
+        string(argv[i])==string("-O-")) {
       flag_no_output_ozn = false;
     } else if (string(argv[i])=="--output-base") {
       i++;
@@ -122,18 +133,18 @@ int main(int argc, char** argv) {
         goto error;
       flag_output_base = argv[i];
     } else if (beginswith(string(argv[i]),"-o")) {
-        string filename(argv[i]);
-        if (filename.length() > 2) {
-          flag_output_fzn = filename.substr(2);
-        } else {
-          i++;
-          if (i==argc) {
-            goto error;
-          }
-          flag_output_fzn = argv[i];
+      string filename(argv[i]);
+      if (filename.length() > 2) {
+        flag_output_fzn = filename.substr(2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
         }
+        flag_output_fzn = argv[i];
+      }
     } else if (string(argv[i])=="--output-to-file" ||
-               string(argv[i])=="--output-fzn-to-file") {
+        string(argv[i])=="--output-fzn-to-file") {
       i++;
       if (i==argc)
         goto error;
@@ -144,7 +155,7 @@ int main(int argc, char** argv) {
         goto error;
       flag_output_ozn = argv[i];
     } else if (string(argv[i])=="--output-to-stdout" ||
-               string(argv[i])=="--output-fzn-to-stdout") {
+        string(argv[i])=="--output-fzn-to-stdout") {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
@@ -208,15 +219,74 @@ int main(int argc, char** argv) {
       }
       datafiles.push_back("cmd:/"+string(argv[i]));
     } else if (string(argv[i])=="--globals-dir" ||
-               string(argv[i])=="--mzn-globals-dir") {
+        string(argv[i])=="--mzn-globals-dir") {
       i++;
       if (i==argc)
         goto error;
       globals_dir = argv[i];
+    } else if (string(argv[i])=="-a") {
+      flag_all_solutions = true;
     } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true;
+      flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
+    } else if (string(argv[i])=="--writeModel") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sExportModel = argv[i];
+    } else if (beginswith(string(argv[i]),"-p")) {
+      string nP(argv[i]);
+      if (nP.length() > 2) {
+        nP.erase(0, 2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nThreads;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for -p: " << nP << endl;
+        goto error;
+      }
+    } else if (beginswith(string(argv[i]),"--timeout")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nTimeout;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --timeout: " << nP << endl;
+        goto error;
+      }
+    } else if (beginswith(string(argv[i]),"--workmem")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nWorkMemLimit;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --workmem: " << nP << endl;
+        goto error;
+      }
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -241,13 +311,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  fopts.onlyRangeDomains = fopts.onlyRangeDomains || globals_dir == "linear";
+  flag_only_range_domains = flag_only_range_domains || globals_dir == "linear";
 
   if (filename=="") {
     std::cerr << "Error: no model file given." << std::endl;
     goto error;
   }
-  
+
   if (std_lib_dir=="") {
     std::string mypath = FileUtils::progpath();
     if (!mypath.empty()) {
@@ -260,44 +330,44 @@ int main(int argc, char** argv) {
       }
     }
   }
-  
+
   if (std_lib_dir=="") {
     std::cerr << "Error: unknown minizinc standard library directory.\n"
-              << "Specify --stdlib-dir on the command line or set the\n"
-              << "MZN_STDLIB_DIR environment variable.\n";
+      << "Specify --stdlib-dir on the command line or set the\n"
+      << "MZN_STDLIB_DIR environment variable.\n";
     std::exit(EXIT_FAILURE);
   }
-  
+
   if (globals_dir!="") {
     includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
   }
   includePaths.push_back(std_lib_dir+"/std/");
-  
+
   for (unsigned int i=0; i<includePaths.size(); i++) {
     if (!FileUtils::directory_exists(includePaths[i])) {
       std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
       std::exit(EXIT_FAILURE);
     }
   }
-  
+
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  if (flag_output_fzn == "") {
-    flag_output_fzn = flag_output_base+".fzn";
-  }
-  if (flag_output_ozn == "") {
-    flag_output_ozn = flag_output_base+".ozn";
-  }
+  //   if (flag_output_fzn == "") {
+  //     flag_output_fzn = flag_output_base+".fzn";
+  //   }
+  //   if (flag_output_ozn == "") {
+  //     flag_output_ozn = flag_output_base+".ozn";
+  //   }
 
   {
     std::stringstream errstream;
     bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
+    try {
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
-                         parseDocComments, flag_verbose, errstream)) {
-      try {
+          parseDocComments, flag_verbose, errstream)) {
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -320,96 +390,125 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
-            if (flag_verbose)
-              std::cerr << "Flattening ...";
-            if(is_flatzinc) {
+            if (is_flatzinc) {
               GCLock lock;
-              std::string fzm = std_lib_dir + "/std/flatzinc_builtins.mzn";
-              vector<std::string> is;
-              IncludeI* inc = new IncludeI(Location().introduce(), ASTString("flatzinc_builtins.mzn"));
-              Model* m = parse(fzm, is, includePaths, flag_ignoreStdlib, parseDocComments, flag_verbose, errstream);
-              if (m) {
-                inc->m(m);
-                m->addItem(inc);
+              env.swap();
+              populateOutput(env);
+            } else {
+              if (flag_verbose)
+                std::cerr << "Flattening ...";
+
+              try {
+                flatten(env,fopts);
+              } catch (LocationException& e) {
+                if (flag_verbose)
+                  std::cerr << std::endl;
+                std::cerr << e.what() << ": " << std::endl;
+                env.dumpErrorStack(std::cerr);
+                std::cerr << "  " << e.msg() << std::endl;
+                exit(EXIT_FAILURE);
+              }
+              for (unsigned int i=0; i<env.warnings().size(); i++) {
+                std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+              }
+              if (flag_werror && env.warnings().size() > 0) {
+                exit(EXIT_FAILURE);
+              }
+              //            Model* flat = env.flat();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+
+              if (flag_optimize) {
+                if (flag_verbose)
+                  std::cerr << "Optimizing ...";
+                optimize(env);
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+
+              if (!flag_newfzn) {
+                if (flag_verbose)
+                  std::cerr << "Converting to old FlatZinc ...";
+                oldflatzinc(env);
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               } else {
-                std::cerr << "Warning: can't find flatzinc_builtins.mzn\n";
+                env.flat()->compact();
+              }
+
+              if (flag_output_fzn_stdout) {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to stdout\n";
+                Printer p(std::cout,0);
+                p.print(env.flat());
+              } else if(flag_output_fzn != "") {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to " << flag_output_fzn << "...";
+                std::ofstream os;
+                os.open(flag_output_fzn.c_str(), ios::out);
+                Printer p(os,0);
+                p.print(env.flat());
+                os.close();
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
             }
 
-            try {
-              flatten(env,fopts);
-            } catch (LocationException& e) {
-              if (flag_verbose)
-                std::cerr << std::endl;
-              std::cerr << e.what() << ": " << std::endl;
-              env.dumpErrorStack(std::cerr);
-              std::cerr << "  " << e.msg() << std::endl;
-              exit(EXIT_FAILURE);
+            /// To cout:
+            if(flag_verbose) {
+              std::cout << "\n   %-------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+              std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
             }
-            for (unsigned int i=0; i<env.warnings().size(); i++) {
-              std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
-            }
-            if (flag_werror && env.warnings().size() > 0) {
-              exit(EXIT_FAILURE);
-            }
-//            Model* flat = env.flat();
-            if (flag_verbose)
-              std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            
-            if (flag_optimize) {
-              if (flag_verbose)
-                std::cerr << "Optimizing ...";
-              optimize(env);
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            }
-            
-            if (!flag_newfzn) {
-              if (flag_verbose)
-                std::cerr << "Converting to old FlatZinc ...";
-              oldflatzinc(env);
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            } else {
-              env.flat()->compact();
-            }
-            
+
+            /// To cout:
+            //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
+            //             env.envi().dump();
+
             {
               GCLock lock;
               Options options;
+              options.setBoolParam  ("all_solutions",    flag_all_solutions);
+              options.setStringParam("export_model",     sExportModel);
+              options.setBoolParam  ("verbose",          flag_verbose);
+              options.setIntParam   ("parallel_threads", nThreads);
+              options.setFloatParam ("timelimit",        nTimeout);
+              options.setFloatParam ("memory_limit",     nWorkMemLimit);
+
               CPLEXSolverInstance cplex(env,options);
               cplex.processFlatZinc();
               SolverInstance::Status status = cplex.solve();
               if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-                env.evalOutput(std::cout);
-                std::cout << "----------\n";
+                cplex.printSolution();
                 if (status==SolverInstance::OPT)
-                  std::cout << "==========\n";
+                  std::cout << "==========" << std::endl;
               }
             }
-            
+
+            if(is_flatzinc) {
+              env.swap();
+            }
           }
         } else { // !flag_typecheck
           Printer p(std::cout);
           p.print(m);
         }
-      } catch (LocationException& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.loc() << ":" << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      } catch (Exception& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      }
       delete m;
     } else {
       if (flag_verbose)
         std::cerr << std::endl;
       std::copy(istreambuf_iterator<char>(errstream),istreambuf_iterator<char>(),ostreambuf_iterator<char>(std::cerr));
+      exit(EXIT_FAILURE);
+    }
+    } catch (LocationException& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+      exit(EXIT_FAILURE);
+    } catch (Exception& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
       exit(EXIT_FAILURE);
     }
   }
@@ -420,28 +519,45 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
-            << std::endl
-            << "Options:" << std::endl
-            << "  --help, -h\n    Print this help message" << std::endl
-            << "  --version\n    Print version information" << std::endl
-            << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-            << "  -v, --verbose\n    Print progress statements" << std::endl
-            << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
-            << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
-            << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
-            << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
-            << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-            << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-            << std::endl
-            << "Output options:" << std::endl << std::endl
-            << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
-            << "  --output-base <name>\n    Base name for output files" << std::endl
-            << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
-            << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
-            << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
-            << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
-            << "  -Werror\n    Turn warnings into errors" << std::endl
+  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl
+  << std::endl
+  << "Options:" << std::endl
+  << "  --help, -h\n    Print this help message" << std::endl
+  << "  --version\n    Print version information" << std::endl
+  << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+  << "  -v, --verbose\n    Print progress statements" << std::endl
+  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+  << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+  << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
+  << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
+  << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+  << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+  << std::endl
+  << "MIP solver options:" << std::endl
+  // -s                  print statistics
+  //            << "  --readParam <file>  read CPLEX parameters from file
+  //               << "--writeParam <file> write CPLEX parameters to file
+  //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
+  << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
+  << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
+  << "-p <N>              use N threads" << std::endl
+  << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+  << "--timeout <N>       stop search after N seconds" << std::endl
+  << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
+  << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
+  << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
+  << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
+  << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
+
+  << std::endl
+  << "Output options:" << std::endl
+  << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+  << "  --output-base <name>\n    Base name for output files" << std::endl
+  << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+  << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
+  << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
+  << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+  << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 
   exit(EXIT_FAILURE);

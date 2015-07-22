@@ -3,14 +3,63 @@
 # @supervisor	Guido Tack
 
 
-#Things to add:
-# Calling solve with timer
-# Int vs Float multiplication
-# Write code for checking argument with type of None (any type can be accepted)
+#@Things to add:
 # Improve the interface so that there is no need to assign MZN_STDLIB_DIR when starting python
 # args_ret_dict: some functions type checking are not written
 # Hide some internal functions such as flatten or type_presentation
 
+#@Suggestion:
+# Remove the user-defined name when declaring variable
+# Consider replacing it with i, where i is the number of arguments created
+#	for example: calling [a,b,c] = m.Variable(1,100,3)
+
+'''
+@Usage:
+definition:
+	lb: lower bound,
+	ub: upper bound,
+	set:minizinc.Model.Set)
+
+
+* Declaration *
+
+minizinc.Model:
+	accepts 1 optional argument:
+		a string or list of strings indicating libraries to be included.
+	returns:
+		model to be used, for example:
+			m = minizinc.Model
+			i = m.Variable
+			s = m.Set
+			m.Constraint
+			m.satisfy
+			etc..
+minizinc.Model.Set:
+	accepts multiple arguments:
+		item1, item2, ... itemn
+		item?: a number - single element
+			or a list/tuple of 2 elements - elements ranging from lb to ub
+	returns:
+		an object to be used
+	functions:
+		push - push more elements onto the set
+		clear - clear all elements in the set
+minizinc.Model.Variable:
+	accepts up to 2 arguments:
+		<None>			: a boolean variable
+		ub				: a variable ranging from 0 to ub - 1
+		lb, ub			: a variable ranging from lb to ub
+		set				: a variable based on the set
+minizinc.Model.Array:
+minizinc.Model.Construct:
+
+
+
+
+* Functions *
+minizinc.Model.satisfy
+minizinc.Model.next
+'''
 
 import sys
 import minizinc_internal
@@ -43,6 +92,8 @@ def flatten(x):
 
 # nicely presents the type of a variable
 def type_presentation(x):
+	if x is None:
+		return "Any_Type"
 	if type(x) is type:
 		name = x.__name__
 		if name[:9] == 'minizinc.':
@@ -202,6 +253,8 @@ class Expression(object):
 
 
 # Temporary container for Expression before evaluating to minizinc_internal object
+# Calling Predicate.init automatically check:
+#		if the arguments belong to the same model
 class Predicate(Expression):
 	def __init__(self, vars, args_and_return_type_tuple = None, name = None, model = None):
 		self.vars = vars
@@ -223,7 +276,22 @@ class Predicate(Expression):
 		self.model = eval_model(vars)
 		if args_and_return_type_tuple is not None:
 			for t in args_and_return_type_tuple:
-				if self.vars_type == t[0]:
+				def check_type(expected, actual):
+					if expected is None:
+						return True
+					if len(expected) != len(actual):
+						return False
+					for i, val in enumerate(expected):
+						if (val is None):
+							pass
+						elif type(val) is list and type(actual[i]) is list:
+							if check_type(val, actual[i]) == False:
+								return False
+						elif type(val) != type(actual[i]):
+							return False
+					return True
+				if check_type(t[0], self.vars_type):
+				#self.vars_type == t[0]:
 					self.type = t[1]
 					break
 			else:
@@ -260,7 +328,9 @@ class Call(Predicate):
 args_ret_dict = {}
 
 to_assign = [ ((int_t, int_t), int_t ),
-			  ((float, float), float ) ]
+			  ((float, float), float ),
+			  ((int_t, float), float ),
+			  ((float, int_t), float)]
 args_ret_dict['add'] = to_assign
 args_ret_dict['sub'] = to_assign
 args_ret_dict['mul'] = to_assign
@@ -812,13 +882,8 @@ class Declaration(Expression):
 
 
 class Construct(Declaration):
-	def __init__(self, model, arg1, arg2 = None):
+	def __init__(self, model, arg1):
 		Declaration.__init__(self, model)
-		if arg2 != None:
-			if type(arg2) is str:
-				self.name = arg2
-			else: 
-				raise TypeError('Name of variable must be a string')
 		self.type = self.eval_type(arg1)
 		self.has_minizinc_objects = False
 
@@ -879,17 +944,13 @@ class Construct(Declaration):
 
 
 class Variable(Declaration):
-	def __init__(self, model, arg1=None, arg2=None, arg3=None):
+	def __init__(self, model, arg1=None, arg2=None):
 		Declaration.__init__(self, model)
-		name = None
 		lb, ub = False, True
-		code = None
 		if arg1 is not None:
 			typearg1 = type(arg1)
 			if arg2 is None:
-				if typearg1 is str:
-					name = arg1
-				elif typearg1 is Set:
+				if typearg1 is Set:
 					lb = arg1
 					ub = None
 				elif typearg1 in (list,tuple):
@@ -899,27 +960,7 @@ class Variable(Declaration):
 				else:
 					ub = arg1 - 1
 					lb = typearg1(lb)
-			elif arg3 is None:
-				typearg2 = type(arg2)
-				if typearg2 is str:
-					name = arg2
-					if typearg1 is Set:
-						lb = arg1
-						ub = None
-					elif typearg1 in (list, tuple):
-						if len(arg1) != 2:
-							raise ValueError('Requires a list or tuple of exactly 2 numbers')
-						lb,ub = sorted(arg1)[0,1]
-					elif typearg1 in integer_types:
-						ub = arg1 - 1
-						lb = typearg1(ub)
-					else:
-						raise TypeError('Requires a set, list or an integer')
-				else:
-					lb,ub = arg1, arg2
 			else:
-				if type(arg3) is not str:
-					raise TypeError('Third argument must be a string')
 				lb,ub = arg1, arg2
 
 		typelb, typeub = type(lb), type(ub)
@@ -934,8 +975,6 @@ class Variable(Declaration):
 				raise ValueError('Lower bound cannot be greater than upper bound')
 
 		self.dim_list = []
-		if name is not None:
-			self.name = name
 
 		if typelb is bool:
 			self.obj = model.mznmodel.Declaration(self.name, 10, [])
@@ -981,10 +1020,8 @@ class Array(Variable):
 					dim_list.append([i.min(), i.max()])
 				else:
 					raise TypeError('Array ranges must be continuous')
-			elif isinstance(i, str):
-				self.name = i
 			else:
-				raise RuntimeError('Unknown error')
+				raise TypeError('Unknown type')
 
 		if type(argopt1) is Set:
 			lb = argopt1
@@ -1078,29 +1115,17 @@ class ArrayConstruct(Array, Construct):
 
 
 class Set(Declaration):
-	def __init__(self, model, argopt1, argopt2=None, argopt3=None):
-		if isinstance(model, Model) == False:
-			argopt3 = argopt2
-			argopt2 = argopt1
-			argopt1 = model
-			self.model = None
-		else:
-			self.model = model
+	# Set is model independent and can be reused in multiple models
+	# Thus, Set.model = None
+	def __init__(self, *args):
+		self.model = None
 		self.name = '"' + str(id(self)) + '"'
-
-		name = None
+		'''
 		lb, ub = None, None
 		set_list = None
 
-		if argopt3 is not None:
+		if argopt2 is not None:
 			lb,ub = argopt1, argopt2
-			name = argopt3
-		elif argopt2 is not None:
-			if type(argopt2) is str:
-				name = argopt2
-				ub = argopt1
-			else:
-				lb,ub = argopt1, argopt2
 		else:
 			if type(argopt1) is list:
 				set_list = argopt1
@@ -1108,17 +1133,20 @@ class Set(Declaration):
 				ub = argopt1 - 1
 				lb = 0
 
-		if name is not None:
-			if type(name) is not str:
-				raise TypeError('Name must be a string');
-			else:
-				self.name = name
 		if set_list is None:
 			if not (type(lb) in integer_types and type(ub) in integer_types):
 				raise TypeError('Lower bound and upper bound must be integers')
 			set_list = [[lb, ub]]
-		self.obj = minizinc_internal.Set(set_list)
+		'''
+		self.obj = minizinc_internal.Set(*args)
 		self.type = minizinc_internal.Set
+		self.class_name = 'Set'
+
+	def push(self, *args):
+		self.obj.push(*args)
+
+	def clear(self):
+		self.obj.clear()
 
 	def continuous(self):
 		return self.obj.continuous()
@@ -1130,12 +1158,7 @@ class Set(Declaration):
 		return self.obj.max()
 
 	def get_value(self):
-		if type(self.obj) is minizinc_internal.Set:
-			self.value = self.obj
-			return self.value
-		else:
-			self.value = self.model.mznsolver.get_value(self.name)
-			return self.value
+		return self.obj
 
 	def __iter__(self):
 		return self.obj.__iter__()
@@ -1143,26 +1166,15 @@ class Set(Declaration):
 	def __contains__(self, val):
 		return self.obj.contains(val)
 
-	def __str__(self):
-		return self.obj
-
 class VarSet(Variable):
-	def __init__(self, model, argopt1, argopt2 = None, argopt3 = None):
+	def __init__(self, model, argopt1, argopt2 = None):
 		self.model = model
 		self.name = '"' + str(id(self)) + '"'
 
-		name = None
 		lb, ub = None, None
 		set_list = None
-		if argopt3 is not None:
+		if argopt2 is not None:
 			lb,ub = argopt1, argopt2
-			name = argopt3
-		elif argopt2 is not None:
-			if type(argopt2) is str:
-				name = argopt2
-				ub = argopt1
-			else:
-				lb,ub = argopt1, argopt2
 		else:
 			if type(argopt1) is list:
 				set_list = argopt1
@@ -1173,19 +1185,17 @@ class VarSet(Variable):
 				ub = argopt1 - 1
 				lb = 0
 
-		if name is not None:
-			if type(name) is not str:
-				raise TypeError('Name must be a string');
-			else:
-				self.name = name
 		if set_list is None:
 			if not (type(lb) in integer_types and type(ub) in integer_types):
 				raise TypeError('Lower bound and upper bound must be integers')
 
-		imodel.mznmodel.Declaration(self.name, 12, [], lb, ub)
+		model.mznmodel.Declaration(self.name, 12, [], lb, ub)
 		self.type = minizinc_internal.VarSet
+		self.class_name = 'Var Set'
 
 	'''	Python automatiCally evaluate a __contains__ return object to boolean
+		thus, we have to use seperate In class instead of 
+			for i in VarSet
 	def __contains__(self, argopt):
 		return In([argopt, self])
 	'''
@@ -1321,8 +1331,8 @@ class Model(object):
 
 
 
-	def Variable(self, argopt1=None, argopt2=None, argopt3=None):
-		return Variable(self, argopt1, argopt2, argopt3)
+	def Variable(self, argopt1=None, argopt2=None):
+		return Variable(self, argopt1, argopt2)
 
 	def Array(self, argopt1, argopt2, *args):
 		list_ = []
@@ -1330,19 +1340,25 @@ class Model(object):
 			list_.append(i)
 		return Array(self, argopt1, argopt2, *list_)
 
-	def Set(self, argopt1, argopt2=None, argopt3=None):
-		return Set(self, argopt1, argopt2, argopt3)
+	def Set(self, *args):
+		return Set(*args)
 
-	def VarSet(self, argopt1, argopt2 = None, argopt3 = None):
-		return VarSet(self, argopt1, argopt2, argopt3)
-
-	def Construct(self, argopt1, argopt2 = None):
-		if isinstance(argopt1, list):
-			return ArrayConstruct(self, argopt1, argopt2)
+	def Range(self, arg1, arg2 = None):
+		if (arg2 is None):
+			return Set((0, arg1 - 1))
 		else:
-			return VariableConstruct(self, argopt1, argopt2)
+			return Set((arg1, arg2))
 
-	def __solve(self, code, expr, ann, data):
+	def VarSet(self, argopt1, argopt2 = None):
+		return VarSet(self, argopt1, argopt2)
+
+	def Construct(self, argopt1):
+		if isinstance(argopt1, list):
+			return ArrayConstruct(self, argopt1)
+		else:
+			return VariableConstruct(self, argopt1)
+
+	def __solve(self, code, expr, ann, data, solver, time):
 		minizinc_internal.lock()
 
 		if ann is not None:
@@ -1360,18 +1376,18 @@ class Model(object):
 			self.add_recursive(data)
 		minizinc_internal.unlock()
 
-		self.mznsolver = self.mznmodel.solve()
+		self.mznsolver = self.mznmodel.solve(solver = solver, time = time)
 		self.mznmodel = savedModel
 		self.solve_counter = self.solve_counter + 1
 		self.next_counter = -1
 
 
-	def satisfy(self, ann = None, data = None):
-		self.__solve(0, None, ann, data)
-	def maximize(self, expr, ann = None, data = None):
-		self.__solve(2, expr, ann, data)
-	def minimize(self, expr, ann = None, data = None):
-		self.__solve(1, expr, ann, data)
+	def satisfy(self, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(0, None, ann, data, solver, time)
+	def maximize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(2, expr, ann, data, solver, time)
+	def minimize(self, expr, ann = None, data = None, solver = 'gecode', time = 0):
+		self.__solve(1, expr, ann, data, solver, time)
 	def reset(self):
 		self.__init__()
 

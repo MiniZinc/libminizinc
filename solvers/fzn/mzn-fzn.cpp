@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
   bool flag_newfzn = false;
   bool flag_optimize = true;
   bool flag_werror = false;
+  bool flag_onlyRangeDomains = false;
   
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
@@ -223,7 +224,7 @@ int main(int argc, char** argv) {
         goto error;
       globals_dir = argv[i];
     } else if (string(argv[i])=="--only-range-domains") {
-      fopts.onlyRangeDomains = true; // ANDREA: removed because onlyRangeDomains suddenly no longer part of FlatteningOptions
+      flag_onlyRangeDomains = true;
     } else if (string(argv[i])=="-Werror") {
       flag_werror = true;
     } else {
@@ -308,8 +309,9 @@ int main(int argc, char** argv) {
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
-          vector<TypeError> typeErrors;
+
           Env env(m);
+          vector<TypeError> typeErrors;
           MiniZinc::typecheck(env, m, typeErrors);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
@@ -326,7 +328,8 @@ int main(int argc, char** argv) {
           
           if (!flag_instance_check_only) {
             if (flag_verbose)
-              std::cerr << "Flattening ...";            
+              std::cerr << "Flattening ...";
+            
             try {
               flatten(env,fopts);
             } catch (LocationException& e) {
@@ -363,6 +366,29 @@ int main(int argc, char** argv) {
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             } else {
               env.flat()->compact();
+            }
+            
+            if (!flag_no_output_ozn) {
+              if (flag_verbose)
+                std::cerr << "Printing .ozn ...";
+              if (flag_output_ozn_stdout) {
+                Printer p(std::cout,0);
+                p.print(env.output());
+              } else {
+                std::ofstream os;
+                os.open(flag_output_ozn.c_str(), ios::out);
+                if (!os.good()) {
+                  if (flag_verbose)
+                    std::cerr << std::endl;
+                  std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
+                  exit(EXIT_FAILURE);
+                }
+                Printer p(os,0);
+                p.print(env.output());
+                os.close();
+              }
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
             
             {

@@ -17,7 +17,7 @@ project (libminizinc CXX C)
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 2)
+set (libminizinc_VERSION_PATCH 4)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -74,7 +74,6 @@ endif()
 
 CHECK_CXX_SOURCE_COMPILES("#include <cstdlib>
 int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
-
 CHECK_CXX_SOURCE_COMPILES("
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,6 +184,7 @@ lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
+lib/cli.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
@@ -214,6 +214,7 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
+include/minizinc/cli.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
@@ -256,8 +257,31 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX FALSE)
+set(HAS_GUROBI FALSE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN TRUE)
+
+if(HAS_GUROBI)	
+  include_directories("${GUROBI_HOME}/include")
+  link_directories("${GUROBI_HOME}/lib")
+
+	add_library(minizinc_gurobi
+		solvers/gurobi/gurobi_solverinstance.cpp
+	)
+
+	target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+
+	add_executable(mzn-gurobi
+	  solvers/gurobi/mzn-gurobi.cpp
+	)
+	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
 
 if(HAS_CPLEX)
   if(UNIX)
@@ -339,22 +363,20 @@ if(HAS_GECODE)
   )
 
 endif()
-
-
 add_executable(mzn2doc mzn2doc.cpp)
 target_link_libraries(mzn2doc minizinc)
-
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
-	#	solvers/fzn/fzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
 	add_executable(mzn-fzn-lite solvers/fzn/mzn-fzn-lite.cpp)
 	target_link_libraries(mzn-fzn-lite minizinc_fzn minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-lite
+        add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp)
+	target_link_libraries(mzn-fzn-test minizinc_fzn minizinc)
+	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-lite mzn-fzn-test
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

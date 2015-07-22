@@ -192,6 +192,8 @@ namespace MiniZinc {
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
+      if (nullptr==this)
+        throw InternalError("isa: nullptr");
       return _id==T::eid;
     }
     /// Cast expression to type \a T*
@@ -797,11 +799,19 @@ namespace MiniZinc {
     /// Set payload
     void payload(int i) { _payload = i; }
   };
+  
+  class EnvI;
+  class CopyMap;
+  
   /// \brief %Let expression
   class Let : public Expression {
+    friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls);
+    friend class Expression;
   protected:
     /// List of local declarations
     ASTExprVec<Expression> _let;
+    /// Copy of original local declarations
+    ASTExprVec<Expression> _let_orig;
     /// Body of the let
     Expression* _in;
   public:
@@ -815,6 +825,8 @@ namespace MiniZinc {
 
     /// Access local declarations
     ASTExprVec<Expression> let(void) const { return _let; }
+    /// Access local declarations
+    ASTExprVec<Expression> let_orig(void) const { return _let_orig; }
     /// Access body
     Expression* in(void) const { return _in; }
     
@@ -1423,6 +1435,72 @@ namespace MiniZinc {
         ASTString supports_minimize;
         ASTString time_limit_ms;        
       } solver_options;
+
+      /// Command line options
+      struct { /// basic MiniZinc command line options
+        ASTString cmdlineData_str;
+        ASTString cmdlineData_short_str;        
+        ASTString datafile_str;
+        ASTString datafile_short_str;
+        ASTString globalsDir_str;
+        ASTString globalsDir_alt_str;
+        ASTString globalsDir_short_str;
+        ASTString help_str;
+        ASTString help_short_str;
+        ASTString ignoreStdlib_str;
+        ASTString include_str;
+        ASTString instanceCheckOnly_str;
+        ASTString no_optimize_str;
+        ASTString no_optimize_alt_str;
+        ASTString no_outputOzn_str;
+        ASTString no_outputOzn_short_str;
+        ASTString no_typecheck_str;       
+        ASTString newfzn_str;        
+        ASTString outputBase_str;
+        ASTString outputFznToStdout_str;
+        ASTString outputFznToStdout_alt_str;
+        ASTString outputOznToFile_str;
+        ASTString outputOznToStdout_str;
+        ASTString outputFznToFile_str;
+        ASTString outputFznToFile_alt_str;
+        ASTString outputFznToFile_short_str;
+        ASTString rangeDomainsOnly_str;
+        ASTString statistics_str;
+        ASTString statistics_short_str;
+        ASTString stdlib_str;
+        ASTString verbose_str;
+        ASTString verbose_short_str;
+        ASTString version_str;
+        ASTString werror_str; 
+      } cli;
+      
+      /// options strings to find setting in Options map
+      struct {
+        ASTString cmdlineData;
+        ASTString datafile;
+        ASTString datafiles;
+        ASTString fznToStdout;
+        ASTString fznToFile;
+        ASTString globalsDir;
+        ASTString ignoreStdlib;
+        ASTString includeDir;
+        ASTString includePaths;
+        ASTString instanceCheckOnly;
+        ASTString model;
+        ASTString newfzn;  
+        ASTString noOznOutput;
+        ASTString optimize;
+        ASTString outputBase;
+        ASTString oznToFile;
+        ASTString oznToStdout;
+        ASTString rangeDomainsOnly;
+        ASTString statistics;
+        ASTString stdlib;
+        ASTString typecheck;
+        ASTString verbose;
+        ASTString werror;
+      } opts;
+      
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt
       ArrayLit* integers;

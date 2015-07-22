@@ -124,9 +124,18 @@ namespace MiniZinc {
   
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
+    bool _print_stats;
     bool _only_range_domains;
     /// the objective variable for builtin-bab
     Id* _objVar; 
+
+    bool _run_sac;
+    bool _run_shave;
+    unsigned int _pre_passes;
+    unsigned int _n_max_solutions;
+    unsigned int _n_found_solutions;
+    Model* _flat; // TODO: do we need this? Can't we access _env->flat()?
+
   public:
     /// the Gecode space that will be/has been solved
     FznSpace* _current_space; 
@@ -166,7 +175,9 @@ namespace MiniZinc {
     
     // Presolve the currently loaded model, updating variables with the same
     // names in the given Model* m.
-    void presolve(Model* m);
+    bool presolve(Model* m = NULL);
+    bool sac(bool toFixedPoint, bool shaving);
+    void print_stats();
 
     virtual Expression* getSolutionValue(Id* id);
 

@@ -1342,7 +1342,19 @@ namespace MiniZinc {
           }
           case Expression::E_ARRAYACCESS:
           {
-            return eval_par(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
+            ArrayAccess* aa = e->cast<ArrayAccess>();
+            for (unsigned int i=0; i<aa->idx().size(); i++) {
+              if (!aa->idx()[i]->type().ispar()) {
+                std::vector<Expression*> idx(aa->idx().size());
+                for (unsigned int j=0; j<aa->idx().size(); j++) {
+                  idx[j] = eval_par(env, aa->idx()[j]);
+                }
+                ArrayAccess* aa_new = new ArrayAccess(e->loc(), eval_par(env, aa->v()),idx);
+                aa_new->type(aa->type());
+                return aa_new;
+              }
+            }
+            return eval_par(env,eval_arrayaccess(env,aa));
           }
           default:
             return e;
@@ -1605,6 +1617,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
@@ -1926,6 +1943,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(FBounds(0.0,0.0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         FloatVal d = le ? c.args()[2]->cast<FloatLit>()->v() : 0.0;
         int stacktop = _bounds.size();

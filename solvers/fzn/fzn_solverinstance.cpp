@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <climits>
 
+
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
 #include <minizinc/parser.hh>
@@ -40,7 +41,8 @@ namespace MiniZinc {
       Model* _flat;
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
-      void run(std::stringstream& result, Options& opt) {
+      std::string run(Options& opt) {
+        std::stringstream result;
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -173,7 +175,7 @@ namespace MiniZinc {
           if (!_canPipe) {
             remove(fznFile.c_str()); // commented for DEBUG only 
           }
-          return;
+          return result.str();
         } else {
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
@@ -292,18 +294,18 @@ namespace MiniZinc {
   }
  
   namespace {
-    ArrayLit* b_arrayXd(EnvI& envi, ASTExprVec<Expression> args, int d) {
+    ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
       GCLock lock;
-      ArrayLit* al = eval_array_lit(envi, args[d]);
+      ArrayLit* al = eval_array_lit(env.envi(), args[d]);
       std::vector<std::pair<int,int> > dims(d);
       unsigned int dim1d = 1;
       for (int i=0; i<d; i++) {
-        IntSetVal* di = eval_intset(envi, args[i]);
+        IntSetVal* di = eval_intset(env.envi(), args[i]);
         if (di->size()==0) {
           dims[i] = std::pair<int,int>(1,0);
           dim1d = 0;
         } else if (di->size() != 1) {
-          throw EvalError(envi,args[i]->loc(), "arrayXd only defined for ranges");
+          throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
         } else {
           dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
                                        static_cast<int>(di->max(0).toInt()));
@@ -311,7 +313,7 @@ namespace MiniZinc {
         }
       }
       if (dim1d != al->v().size())
-        throw EvalError(envi,al->loc(), "mismatch in array dimensions");
+        throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
       ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
       Type t = al->type();
       t.dim(d);
@@ -324,11 +326,12 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    std::string solver_exec = _options.getStringParam("solver","flatzinc");
+    std::string solver_exec = _options.getStringParam("solver","fzn-gecode");
     // TODO: check if solver exec is in path
     FznProcess proc(solver_exec,false,_fzn); 
-    std::stringstream result; 
-    proc.run(result,_options);
+    std::string r = proc.run(_options);
+    std::stringstream result;
+    result << r;
     std::string solution;
     
     typedef std::pair<VarDecl*,Expression*> DE;
@@ -370,19 +373,21 @@ namespace MiniZinc {
               for (unsigned int i=0; i<c->args().size(); i++)
                 c->args()[i]->type(Type::parsetint());
               c->args()[c->args().size()-1]->type(it->second.first->type());
-              ArrayLit* al = b_arrayXd(env().envi(), c->args(), c->args().size()-1);
+              ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
               it->second.first->e(al);              
               setSolution(it->second.first->id(),al);
             } else {             
               it->second.first->e(ai->e());            
               setSolution(it->second.first->id(),ai->e());
+              ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
+              it->second.first->e(al);           
             }
           }
-        }
-        delete sm;
-        hadSolution = true;
-        if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-          return SolverInstance::SUCCESS;
+          delete sm;
+          hadSolution = true;
+          if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
+            return SolverInstance::SUCCESS;
+          }
         }
       } else if (line==constants().solver_output.opt.str()) {
         return hadSolution ? SolverInstance::SUCCESS : SolverInstance::FAILURE;

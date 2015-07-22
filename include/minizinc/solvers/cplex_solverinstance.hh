@@ -13,22 +13,26 @@
 #define __MINIZINC_CPLEX_SOLVER_INSTANCE_HH__
 
 #include <minizinc/solver_instance_base.hh>
-#include <ilcplex/ilocplex.h>
+#include <ilcplex/ilocplex.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
+#include <ilcplex/ilocplexi.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
 
 namespace MiniZinc {
 
+  class SolutionCallbackI;
+
   class CPLEXSolver {
-  public:
-    typedef IloNumVar Variable;
-    typedef MiniZinc::Statistics Statistics;
+    public:
+      typedef IloNumVar Variable;
+      typedef MiniZinc::Statistics Statistics;
   };
-  
+
   class CPLEXSolverInstance : public SolverInstanceImpl<CPLEXSolver> {
   protected:
     IloEnv _iloenv;
     IloModel* _ilomodel;
     IloCplex* _ilocplex;
     std::vector<VarDecl*> _varsWithOutput;
+    UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
   public:
     CPLEXSolverInstance(Env& env, const Options& options);
 
@@ -44,7 +48,17 @@ namespace MiniZinc {
   
     virtual void processFlatZinc(void);
     
+    virtual void resetSolver(void);
+    
     void assignSolutionToOutput(void);
+    
+      /// PARAMS
+    int nThreads;
+    bool fVerbose;
+    std::string sExportModel;
+    double nTimeout;
+    double nWorkMemLimit;
+    bool all_solutions;
 
     IloModel* getIloModel(void);
     IloNum exprToIloNum(Expression* e);
@@ -53,12 +67,15 @@ namespace MiniZinc {
     IloNumArray exprToIloNumArray(Expression* e);
     IloNumVarArray exprToIloNumVarArray(Expression* e);
     
-  protected:
-    virtual Expression* getSolutionValue(Id* id);
+  protected:   
+    Expression* getSolutionValue(Id* id, SolutionCallbackI* cb = NULL);
+    virtual Expression* getSolutionValue(Id* id) {
+      return getSolutionValue(id, NULL);
+    }
 
     void registerConstraints(void);
   };
-  
+
 }
 
 #endif

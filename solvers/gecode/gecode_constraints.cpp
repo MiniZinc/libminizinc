@@ -1590,7 +1590,6 @@ namespace MiniZinc {
       IntSetArgs y(cover.size());
       for (int i=cover.size(); i--;)
         y[i] = IntSet(lbound[i],ubound[i]);
-
       count(*space, x, y, cover, gi.ann2icl(ann));
     }
     void p_global_cardinality_low_up_closed(SolverInstanceBase& s, const Call* call) {    
@@ -1639,6 +1638,44 @@ namespace MiniZinc {
         p_maximum_base(gi._current_space,gi,call);  
     }
 
+    void p_maximum_arg_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
+      const Annotation& ann =call->ann();
+      IntVarArgs iv = gi.arg2intvarargs(space, call->args()[0]);
+      argmax(*space, iv, gi.arg2intvar(space, call->args()[1]), true, gi.ann2icl(ann));
+    }
+
+    void p_maximum_arg(SolverInstanceBase& s, const Call* call) {
+      const Annotation& ann =call->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if(gi.customEngine)
+        for(unsigned int i=0; i<gi.customEngine->pathEntries(); i++) {
+          FznSpace* space = gi.customEngine->getSpace(i);
+          if(space)
+            p_maximum_arg_base(space,gi,call);
+        }        
+      else 
+        p_maximum_arg_base(gi._current_space,gi,call);  
+    }
+
+    void p_minimum_arg_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) { 
+      const Annotation& ann =call->ann();
+      IntVarArgs iv = gi.arg2intvarargs(space, call->args()[0]);
+      argmin(*space, iv, gi.arg2intvar(space, call->args()[1]), true, gi.ann2icl(ann));
+    }
+    
+    void p_minimum_arg(SolverInstanceBase& s, const Call* call) {
+      const Annotation& ann =call->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if(gi.customEngine)
+        for(unsigned int i=0; i<gi.customEngine->pathEntries(); i++) {
+          FznSpace* space = gi.customEngine->getSpace(i);
+          if(space)
+            p_minimum_arg_base(space,gi,call);
+        }        
+      else 
+        p_minimum_arg_base(gi._current_space,gi,call);  
+    }
+
     void p_regular_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      
       IntVarArgs iv = gi.arg2intvarargs(space, call->args()[0]);
@@ -1671,8 +1708,7 @@ namespace MiniZinc {
       t[noOfTrans].i_state = -1;
 
       //Final states
-      SetLit* sl = call->args()[5]->isa<Id>() ? call->args()[5]->cast<Id>()->decl()->e()->cast<SetLit>() : call->args()[5]->cast<SetLit>();
-      IntSetVal* isv = sl->isv();
+      IntSetVal* isv = eval_intset(gi.env().envi(), call->args()[5]);
       IntSetRanges isr(isv);
 
       int size = isv->card().toInt();
@@ -2026,8 +2062,9 @@ namespace MiniZinc {
       IntVarArgs x = gi.arg2intvarargs(space, call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
       BoolVarArgs m = gi.arg2boolvarargs(space, call->args()[2]);
-      unary(*space, x, p, m);
+      unary(*space, x, p, m);      
     }
+    
     void p_schedule_unary_optional(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       if(gi.customEngine)
@@ -2039,6 +2076,30 @@ namespace MiniZinc {
       else 
         p_schedule_unary_optional_base(gi._current_space,gi,call); 
     }    
+
+    void p_cumulative_opt_base(FznSpace* space, GecodeSolverInstance& gi, const Call* ce) {
+      const Annotation& ann = ce->ann();      
+      IntVarArgs start = gi.arg2intvarargs(space, ce->args()[0]);
+      IntArgs duration = gi.arg2intargs(ce->args()[1]);
+      IntArgs height = gi.arg2intargs(ce->args()[2]);
+      BoolVarArgs opt = gi.arg2boolvarargs(space, ce->args()[3]);
+      int bound = ce->args()[4]->cast<IntLit>()->v().toInt();
+      unshare(*space, start);
+      cumulative(*space,bound,start,duration,height,opt,gi.ann2icl(ann));
+    }    
+    
+    void p_cumulative_opt(SolverInstanceBase& s, const Call* ce) {
+      const Annotation& ann = ce->ann();
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if(gi.customEngine)
+        for(unsigned int i=0; i<gi.customEngine->pathEntries(); i++) {
+          FznSpace* space = gi.customEngine->getSpace(i);
+          if(space)
+            p_cumulative_opt_base(space,gi,ce);
+        }        
+      else 
+        p_cumulative_opt_base(gi._current_space,gi,ce); 
+    }     
 
     void p_circuit_base(FznSpace* space, GecodeSolverInstance& gi, const Call* call) {
       const Annotation& ann =call->ann();      

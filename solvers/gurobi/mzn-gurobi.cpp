@@ -1,9 +1,7 @@
-/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+// * -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
  *  Main authors:
- *     Kevin Leo <kevin.leo@monash.edu>
- *     Andrea Rendl <andrea.rendl@nicta.com.au>
  *     Guido Tack <guido.tack@monash.edu>
  */
 
@@ -27,12 +25,13 @@
 #include <minizinc/astexception.hh>
 
 #include <minizinc/flatten.hh>
+#include <minizinc/flatten_internal.hh>  // temp., TODO
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/solvers/gurobi_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -52,7 +51,7 @@ bool beginswith(string s, string t) {
 int main(int argc, char** argv) {
   string filename;
   vector<string> datafiles;
-  vector<string> includePaths;
+  vector<string> includePaths;  
   bool is_flatzinc = false;
 
   bool flag_ignoreStdlib = false;
@@ -62,19 +61,24 @@ int main(int argc, char** argv) {
   bool flag_optimize = true;
   bool flag_werror = false;
   bool flag_only_range_domains = false;
-  bool flag_sac = false;
-  bool flag_shave = false;
-  bool flag_stats = false;
-  unsigned int flag_pre_passes = 1;
+  bool flag_all_solutions = false;
+
+  /// PARAMS
+  int nThreads=-1;
+  string sExportModel;
+  double nTimeout=-1;
+  double nWorkMemLimit=-1;
+
 
   clock_t starttime = std::clock();
+  clock_t starttime01 = starttime;
   clock_t lasttime = std::clock();
 
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
-  string globals_dir = "gecode";
+  string globals_dir = "linear";
 
   bool flag_no_output_ozn = false;
   string flag_output_base;
@@ -155,6 +159,8 @@ int main(int argc, char** argv) {
       flag_output_fzn_stdout = true;
     } else if (string(argv[i])=="--output-ozn-to-stdout") {
       flag_output_ozn_stdout = true;
+    } else if (string(argv[i]) == "-a" ) {
+      flag_all_solutions = true;
     } else if (beginswith(string(argv[i]),"-d")) {
       string filename(argv[i]);
       string datafile;
@@ -220,24 +226,67 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       globals_dir = argv[i];
-    } else if (string(argv[i])=="-s") {
-      flag_stats = true;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
-    } else if (string(argv[i])=="--sac") {
-      flag_sac = true;
-    } else if (string(argv[i])=="--shave") {
-      flag_shave = true;
-    } else if (string(argv[i])=="--pre-passes") {
+    } else if (string(argv[i])=="-Werror") {
+      flag_werror = true;
+    } else if (string(argv[i])=="--writeModel") {
       i++;
       if (i==argc) {
         goto error;
       }
-      int passes = atoi(argv[i]);
-      if(passes >= 0)
-        flag_pre_passes = passes;
-    } else if (string(argv[i])=="-Werror") {
-      flag_werror = true;
+      sExportModel = argv[i];
+    } else if (beginswith(string(argv[i]),"-p")) {
+      string nP(argv[i]);
+      if (nP.length() > 2) {
+        nP.erase(0, 2);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nThreads;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for -p: " << nP << endl;
+        goto error;
+      }
+    } else if (beginswith(string(argv[i]),"--timeout")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nTimeout;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --timeout: " << nP << endl;
+        goto error;
+      }
+    } else if (beginswith(string(argv[i]),"--workmem")) {
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nWorkMemLimit;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --workmem: " << nP << endl;
+        goto error;
+      }
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -261,6 +310,8 @@ int main(int argc, char** argv) {
       }
     }
   }
+
+  flag_only_range_domains = flag_only_range_domains || globals_dir == "linear";
 
   if (filename=="") {
     std::cerr << "Error: no model file given." << std::endl;
@@ -302,19 +353,19 @@ int main(int argc, char** argv) {
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  if (flag_output_fzn == "") {
-    flag_output_fzn = flag_output_base+".fzn";
-  }
-  if (flag_output_ozn == "") {
-    flag_output_ozn = flag_output_base+".ozn";
-  }
+  //   if (flag_output_fzn == "") {
+  //     flag_output_fzn = flag_output_base+".fzn";
+  //   }
+  //   if (flag_output_ozn == "") {
+  //     flag_output_ozn = flag_output_base+".ozn";
+  //   }
 
   {
     std::stringstream errstream;
     bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib,
+    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
           parseDocComments, flag_verbose, errstream)) {
       try {
         if (flag_typecheck) {
@@ -403,40 +454,32 @@ int main(int argc, char** argv) {
               }
             }
 
-            {
-              if (flag_verbose)
-                std::cerr << "Processing FlatZinc...";
+            /// To cout:
+            //std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+            //std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
 
+            /// To cout:
+            //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
+            //             env.envi().dump();
+
+            {
               GCLock lock;
               Options options;
-              options.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
-              options.setBoolParam(std::string("sac"),       flag_sac);
-              options.setBoolParam(std::string("shave"),     flag_shave);
-              options.setBoolParam(std::string("print_stats"),     flag_stats);
-              options.setIntParam(std::string("pre_passes"), flag_pre_passes);
-              GecodeSolverInstance gecode(env,options);
-              gecode.processFlatZinc();
 
+              options.setBoolParam  ("all_solutions",    flag_all_solutions);
+              options.setStringParam("export_model",     sExportModel);
+              options.setBoolParam  ("verbose",          flag_verbose);
+              options.setIntParam   ("parallel_threads", nThreads);
+              options.setFloatParam ("timelimit",        nTimeout);
 
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-
-              if (flag_verbose)
-                std::cerr << "Starting solve() ...";
-              SolverInstance::Status status = gecode.solve();
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              if (status==SolverInstance::SUCCESS) {
-                env.evalOutput(std::cout);
-                std::cout << "----------\n";
-                switch(status) {
-                  case SolverInstance::SUCCESS:
-                    break;                 
-                  case SolverInstance::FAILURE:
-                    std::cout << "=====UNSAT=====";
-                    break;
-                }
-              }          
+              GurobiSolverInstance gurobi(env,options);
+              gurobi.processFlatZinc();
+              SolverInstance::Status status = gurobi.solve();
+              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+                gurobi.printSolution();
+                if (status==SolverInstance::OPT)
+                  std::cout << "==========" << std::endl;
+              }
             }
 
             if(is_flatzinc) {
@@ -488,7 +531,24 @@ error:
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
   << std::endl
-  << "Output options:" << std::endl << std::endl
+  << "MIP solver options:" << std::endl
+  // -s                  print statistics
+  //            << "  --readParam <file>  read Gurobi parameters from file
+  //               << "--writeParam <file> write Gurobi parameters to file
+  //               << "--tuneParam         instruct Gurobi to tune parameters instead of solving
+  << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
+  << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
+  << "-p <N>              use N threads" << std::endl
+  << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+  << "--timeout <N>       stop search after N seconds" << std::endl
+  << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
+  << "--readParam <file>  read Gurobi parameters from file   NOT IMPL" << std::endl
+  << "--writeParam <file> write Gurobi parameters to file   NOT IMPL" << std::endl
+  << "--tuneParam         instruct Gurobi to tune parameters instead of solving   NOT IMPL" << std::endl
+  << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
+
+  << std::endl
+  << "Output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
   << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl

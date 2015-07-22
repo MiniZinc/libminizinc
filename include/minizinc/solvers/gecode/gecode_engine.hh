@@ -35,6 +35,7 @@ namespace MiniZinc {
     virtual FznSpace* next(void) = 0;
     virtual bool stopped(void) const = 0;
     virtual ~GecodeEngine(void) {}
+    virtual Gecode::Search::Statistics statistics(void) = 0;
   };
   
    /// custom search engine for search combinators, wrapper class for engine
@@ -47,7 +48,8 @@ namespace MiniZinc {
     virtual FznSpace* getSpace(unsigned int i) = 0;
     /// returns the number of entries in the path (that do not all need to be spaces!)
     virtual unsigned int pathEntries(void) = 0;
-    virtual ~CustomEngine(void) {}
+    virtual ~CustomEngine(void) {}  
+    virtual Gecode::Search::Statistics statistics(void) = 0;
   };
   
     /// meta-engine that inherits from GecodeEngine
@@ -59,6 +61,7 @@ namespace MiniZinc {
     MetaEngine(FznSpace* s, Gecode::Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
     virtual bool stopped(void) const { return e.stopped(); }
+    virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
   
   /// meta-engine that inherits from CustomEngine
@@ -74,6 +77,7 @@ namespace MiniZinc {
     virtual void addVariables(const std::vector<VarDecl*>& vars, GecodeSolverInstance& si) { e.addVariables(vars, si); }
     virtual FznSpace* getSpace(unsigned int i) { return e.getSpace(i); }
     virtual unsigned int pathEntries(void) { return e.pathEntries(); }
+    virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
   
   /// special meta (wrapper) class to allow additional functionality
@@ -87,6 +91,7 @@ namespace MiniZinc {
     unsigned int pathEntries(void) { return E<T>::pathEntries(); }
     FznSpace* next(void) { return E<T>::next(); }
     bool stopped(void) const { return E<T>::stopped(); }
+    virtual Gecode::Search::Statistics statistics(void) { return E<T>::statistics(); }
   };  
     
   

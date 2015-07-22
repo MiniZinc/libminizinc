@@ -45,6 +45,9 @@ namespace MiniZinc {
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);
+
+  /// Populate FlatZinc output model
+  void populateOutput(Env& e);
   
   /// Statistics on flat models
   struct FlatModelStatistics {
