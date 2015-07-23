@@ -85,7 +85,7 @@ namespace MiniZinc {
     typedef void (*func_str_arg) (CLIOptions* opt, std::string& s);
     typedef void (*func_int_arg) (CLIOptions* opt, int v);
     //typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);  
-    typedef void (*func_known_opts) (CLIOptions* opt, CLIParser::opt_map known_opts);
+    typedef void (*func_known_opts) (CLIOptions* opt, CLIParser::opt_map known_opts, std::string cmd);
     
     // function pointer to functions that set default String option value
     typedef void (*func_init) (CLIOptions* opt, CLIOption* o);
@@ -185,11 +185,12 @@ namespace MiniZinc {
     bool takesArgs(void) { return _nbArgs > 0; }
     const int getNbArgs(void) const { return _nbArgs; }
     /// returns the string under which the value of the option will be stored in CLIOptions
-    const std::string& getOptMapString(void) { return _optMapString; }
-    
+    const std::string& getOptMapString(void) { return _optMapString; }    
     bool getBoolDefaultValue(void) const { return _bdef; }
     std::string getStringDefaultValue(void) const { return _sdef; } 
     std::string getDescription(void) const { return _description; }
+    /// returns the list of strings that can be used for this option in the command line
+    std::vector<std::string> getCommandLineNames(void) { return _names; }
     
     void setDefaultString(std::string& s) { _sdef = s; }
   };
