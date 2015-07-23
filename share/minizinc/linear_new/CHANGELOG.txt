@@ -1,0 +1,6 @@
+
+2015-07-20       
+                 Special handling of array_int_element which is a linear fn. No much diff on ProjPlanning_12_8.
+                 [REVERTED]
+                 Replaced array_int_element by the old (forall(.. -> ..))
+                 82s vs 45s on ProjPlanning_12_8
