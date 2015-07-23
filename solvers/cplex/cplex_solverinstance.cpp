@@ -189,14 +189,24 @@ namespace MiniZinc {
   SolverInstanceBase::Status CPLEXSolverInstance::solve(void) {
     IloObjective obj;
     if (_env.flat()->solveItem()->st() != SolveI::SolveType::ST_SAT) {
-      if (_env.flat()->solveItem()->st() == SolveI::SolveType::ST_MAX)
+      if (_env.flat()->solveItem()->st() == SolveI::SolveType::ST_MAX) {
         obj = IloMaximize(_iloenv);
-      else
+        if(fVerbose)
+          std::cout << "   %  MAXIMIZATION_PROBLEM. " << std::endl;
+      }
+      else {
         obj = IloMinimize(_iloenv);
+        if(fVerbose)
+          std::cout << "   %  MINIMIZATION_PROBLEM. " << std::endl;
+      }
 
       IloNumVar v = exprToIloNumVar(_env.flat()->solveItem()->e());
       obj.setLinearCoef(v, 1);
       _ilomodel->add(obj);
+    }
+    else {
+      if(fVerbose)
+        std::cout << "   %  SATISFACTION_PROBLEM. " << std::endl;
     }
 
     _ilocplex = new IloCplex(*_ilomodel);
@@ -231,6 +241,9 @@ namespace MiniZinc {
     if (nWorkMemLimit>0) {
       _ilocplex->setParam(IloCplex::Param::WorkMem, nWorkMemLimit);
     }
+    
+    if(fVerbose)
+      std::cerr << "   %  CPLEX VERSION: " << _ilocplex->getVersion() << std::endl;
 
     // 		_ilocplex->setParam(IloCplex::Param::Emphasis::MIP, 1);      -- SEEMS WORSE ON AMAZE.MZN
 
