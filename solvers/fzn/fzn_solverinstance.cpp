@@ -152,7 +152,7 @@ namespace MiniZinc {
   FZNSolverInstance::~FZNSolverInstance(void) {}
   
   SolverInstance::Status
-  FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
+    FZNSolverInstance::next(void) { return SolverInstance::SS_ERROR; }
 
   namespace {
     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
@@ -235,19 +235,19 @@ namespace MiniZinc {
         delete sm;
         hadSolution = true;
       } else if (line=="==========") {
-        return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
+        return hadSolution ? SolverInstance::SS_OPT : SolverInstance::SS_UNSAT;
       } else if(line=="=====UNSATISFIABLE=====") {
-        return SolverInstance::UNSAT;
+        return SolverInstance::SS_UNSAT;
       } else if(line=="=====UNBOUNDED=====") {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::SS_UNKNOWN;
       } else if(line=="=====UNKNOWN=====") {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::SS_UNKNOWN;
       } else {
         solution += line;
       }
     }
     
-    return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+    return hadSolution ? SolverInstance::SS_SAT : SolverInstance::SS_UNSAT;
   }
   
   void

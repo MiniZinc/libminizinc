@@ -1544,8 +1544,9 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s); \
       FloatVar x = gi.arg2floatvar(ce->args()[0]);\
       FloatVar y = gi.arg2floatvar(ce->args()[1]);\
-      Op(gi ,x,y);\
+      Op(*gi._current_space,x,y);\
     }
+
     P_FLOAT_OP(acos)
       P_FLOAT_OP(asin)
       P_FLOAT_OP(atan)

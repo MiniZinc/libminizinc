@@ -850,11 +850,11 @@ namespace MiniZinc {
     
     if (_solution) {
       assignSolutionToOutput();
-      return SolverInstance::SAT;
+      return SolverInstance::SS_SAT;
     } else if (engine->stopped()) {
-      return SolverInstance::UNKNOWN;
+      return SolverInstance::SS_UNKNOWN;
     } else {
-      return SolverInstance::UNSAT;
+      return SolverInstance::SS_UNSAT;
     }
   }
 
@@ -977,16 +977,16 @@ namespace MiniZinc {
     }
 
 stopped:
-    SolverInstance::Status status = SolverInstance::SAT;
+    SolverInstance::Status status = SolverInstance::SS_SAT;
     if(engine->stopped()) {
       if(_solution) {
-        status = SolverInstance::OPT;
+        status = SolverInstance::SS_OPT;
         assignSolutionToOutput();
       } else {
-        status = SolverInstance::UNSAT;
+        status = SolverInstance::SS_UNSAT;
       }
     } else if(!_solution) {
-      status = SolverInstance::UNKNOWN;
+      status = SolverInstance::SS_UNKNOWN;
     } else {
       assignSolutionToOutput();
     }
