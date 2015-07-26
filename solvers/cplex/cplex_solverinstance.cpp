@@ -139,7 +139,7 @@ namespace MiniZinc {
   }
   
   SolverInstanceBase::Status CPLEXSolverInstance::next(void) {
-    return SolverInstance::ERROR;
+    return SolverInstance::SS_ERROR;
   }
 
   class SolutionCallbackI : public IloCplex::MIPInfoCallbackI {
@@ -259,23 +259,23 @@ namespace MiniZinc {
     Status s;
     switch(ss) {
       case IloAlgorithm::Status::Optimal:
-        s = SolverInstance::OPT;
+        s = SolverInstance::SS_OPT;
         if(fVerbose) std::cout << "\n   %----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Feasible:
-        s = SolverInstance::SAT;
+        s = SolverInstance::SS_SAT;
         if(fVerbose) std::cout << "\n   %---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
       case IloAlgorithm::Status::Infeasible:
-        s = SolverInstance::UNSAT;
+        s = SolverInstance::SS_UNSAT;
         if(fVerbose) std::cout << "\n   %---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
         break;
       case IloAlgorithm::Status::Unbounded:
       case IloAlgorithm::Status::InfeasibleOrUnbounded:
       case IloAlgorithm::Status::Error:
-        s = SolverInstance::ERROR;
+        s = SolverInstance::SS_ERROR;
         std::cout << "\n   %---------------------   MIP__ERROR   ----------------------------------" << std::endl;
         break;
         //       case IloCplex::Status::AbortTimeLim:    -- getCplexStatus()
@@ -283,7 +283,7 @@ namespace MiniZinc {
         //         assignSolutionToOutput();
         //         break;
       default:
-        s = SolverInstance::UNKNOWN;
+        s = SolverInstance::SS_UNKNOWN;
         std::cout << "\n   %---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;
     }
 

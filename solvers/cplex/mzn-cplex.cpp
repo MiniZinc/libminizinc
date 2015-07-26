@@ -477,9 +477,9 @@ int main(int argc, char** argv) {
               CPLEXSolverInstance cplex(env,options);
               cplex.processFlatZinc();
               SolverInstance::Status status = cplex.solve();
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SS_SAT || status==SolverInstance::SS_OPT) {
                 cplex.printSolution();
-                if (status==SolverInstance::OPT)
+                if (status==SolverInstance::SS_OPT)
                   std::cout << "==========" << std::endl;
               }
             }
