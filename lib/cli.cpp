@@ -12,6 +12,8 @@
 #include <minizinc/cli.hh>
 #include <minizinc/file_utils.hh>
 
+#include <set>
+
 namespace MiniZinc {
   
   void CLIOptions::setStringVectorParam(const std::string& name, KeepAlive ka) {
@@ -87,12 +89,23 @@ namespace MiniZinc {
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]";
             
     for(unsigned int i=0; i<categories.size(); i++) {
-      std::cerr << "\n\n" << categories[i] << ":\n";      
+      std::cerr << "\n\n" << categories[i] << ":\n";
+      /*struct InsensitiveCompare { 
+        bool operator() (const CLIOption& ca, const CLIOption& cb) const {
+          std::string a = ca.getCommandLineNames()[0];
+          std::string b = cb.getCommandLineNames()[0];
+          return std::strcmp(a.c_str(), b.c_str()) < 0;
+        }
+      };*/
+      std::set<CLIOption*> options;      
       // TODO: display options alphabetically
       for(CLIParser::opt_map::const_iterator it = knownOptions.begin(); it!=knownOptions.end(); ++it) {
         CLIOption* o = it->second;
         if(o->getCategory() != categories[i])
           continue; // skip this option
+        if(options.find(o) != options.end())
+          continue; // we've already printed the option
+        options.insert(o);
         std::vector<std::string> cmd_opts = o->getCommandLineNames();      
         std::cerr << "  " << std::endl;
         for(unsigned int i=0; i<cmd_opts.size(); i++) {
