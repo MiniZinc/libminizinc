@@ -53,27 +53,27 @@ namespace MiniZinc {
     void assignSolutionToOutput(void);
     
       /// PARAMS
-    int nThreads;
-    bool fVerbose;
-    std::string sExportModel;
-    double nTimeout;
-    double nWorkMemLimit;
-    bool all_solutions;
+      int nThreads;
+      bool fVerbose;
+      std::string sExportModel, sReadParam, sWriteParam;
+      double nTimeout;
+      double nWorkMemLimit;
+      bool all_solutions;
 
-    IloModel* getIloModel(void);
-    IloNum exprToIloNum(Expression* e);
-    IloNumExpr exprToIloExpr(Expression* e);
-    IloNumVar exprToIloNumVar(Expression* e);
-    IloNumArray exprToIloNumArray(Expression* e);
-    IloNumVarArray exprToIloNumVarArray(Expression* e);
-    
-  protected:   
-    Expression* getSolutionValue(Id* id, SolutionCallbackI* cb = NULL);
-    virtual Expression* getSolutionValue(Id* id) {
-      return getSolutionValue(id, NULL);
-    }
+      IloModel* getIloModel(void);
+      IloNum exprToIloNum(Expression* e);
+      IloNumExpr exprToIloExpr(Expression* e);
+      IloNumVar exprToIloNumVar(Expression* e);
+      IloNumArray exprToIloNumArray(Expression* e);
+      IloNumVarArray exprToIloNumVarArray(Expression* e);
 
-    void registerConstraints(void);
+    protected:
+      Expression* getSolutionValue(Id* id, SolutionCallbackI* cb = NULL);
+      virtual Expression* getSolutionValue(Id* id) {
+        return getSolutionValue(id, NULL);
+      }
+
+      void registerConstraints(void);
   };
 
 }

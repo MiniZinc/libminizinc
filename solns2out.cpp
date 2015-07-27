@@ -240,7 +240,8 @@ int main(int argc, char** argv) {
                     it->second.first->e(ai->e());
                   }
                 }
-
+                delete sm;
+                
                 GCLock lock;
                 ArrayLit* al = eval_array_lit(env.envi(),outputExpr);
                 std::string os;
