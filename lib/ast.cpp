@@ -1096,7 +1096,7 @@ namespace MiniZinc {
     cli.globalsDir_alt_str = ASTString("--mzn-globals-dir");
     cli.globalsDir_short_str = ASTString("-G");
     cli.help_str = ASTString("--help");
-    cli.help_short_str = ASTString("--help");
+    cli.help_short_str = ASTString("-h");
     cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
     cli.include_str = ASTString("-I");
     cli.instanceCheckOnly_str = ASTString("--instance-check-only");
@@ -1150,6 +1150,7 @@ namespace MiniZinc {
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
     cli_cat.solver = ASTString("Solver Options");
+    cli_cat.translation = ASTString("Translation Options");
     
     std::vector<Expression*> v;
     v.push_back(ti);
@@ -1323,6 +1324,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));
     v.push_back(new StringLit(Location(),cli_cat.solver));
+    v.push_back(new StringLit(Location(),cli_cat.translation));
     
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);

@@ -1444,8 +1444,9 @@ namespace MiniZinc {
       /// categories of the command line interface options
       struct {
         ASTString general;
-        ASTString io;
+        ASTString io;        
         ASTString solver;
+        ASTString translation;
       } cli_cat;
       
       static const int maxConstInt = 1000;

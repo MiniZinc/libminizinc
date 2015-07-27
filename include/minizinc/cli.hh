@@ -76,6 +76,8 @@ namespace MiniZinc {
     const std::string _optMapString;
     /// the description of the option in the help message
     std::string _description;
+    /// the category the Option belongs to (one of the categories defined in ast.hh: cli_cat
+    std::string _category;
     
     // function pointers to function to be executed for this option    
     typedef void (*func_no_args) (CLIOptions* opt);
@@ -106,9 +108,10 @@ namespace MiniZinc {
        * @param optMapString the string that (will) map to the option value in CLIOptions, e.g. "verbose"
        * @param f the function to be executed when this option is given in the command line
        */  
-    CLIOption(std::vector<std::string> names, bool def, const std::string& optMapString, std::string description, CLIOption::func_no_args f) : 
+    CLIOption(std::vector<std::string> names, bool def, const std::string& optMapString, std::string description, 
+              std::string category, CLIOption::func_no_args f) : 
       _names(names), _bdef(def), _optMapString(optMapString),
-      _nbArgs(0), _beginsWith(false), _description(description)
+      _nbArgs(0), _beginsWith(false), _description(description), _category(category)
       { func.int_arg = NULL; func.no_args = f; func.str_arg = NULL; func.opts_arg = NULL; }   
     
     /**
@@ -119,8 +122,8 @@ namespace MiniZinc {
        * @param def default value for the option (if there is none, set to anything)       
        * @param f the function to be executed when this option is given in the command line
        */  
-    CLIOption(std::vector<std::string> names , bool def, std::string description, CLIOption::func_no_args f) : 
-      _names(names), _bdef(def), _nbArgs(0), _beginsWith(false), _description(description)
+    CLIOption(std::vector<std::string> names , bool def, std::string description, std::string category, CLIOption::func_no_args f) : 
+      _names(names), _bdef(def), _nbArgs(0), _beginsWith(false), _description(description), _category(category)
        { func.no_args = f; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = NULL; }
        
     /**
@@ -131,8 +134,8 @@ namespace MiniZinc {
        * @param name the command line string for the option, e.g. --help      
        * @param f the function to be executed when this option is given in the command line
        */  
-    CLIOption(std::vector<std::string> names, std::string description, CLIOption::func_known_opts f) : 
-      _names(names), _bdef(false), _nbArgs(0), _beginsWith(false), _description(description)
+    CLIOption(std::vector<std::string> names, std::string description, std::string category, CLIOption::func_known_opts f) : 
+      _names(names), _bdef(false), _nbArgs(0), _beginsWith(false), _description(description), _category(category)
        { func.no_args = NULL; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = f; }       
         
     /** 
@@ -146,8 +149,9 @@ namespace MiniZinc {
        * @param optMapString the string that (will) map to the option value in CLIOptions
        * @param f the function to be executed when this option is given in the command line       
        */      
-    CLIOption(std::vector<std::string> names, bool beginsWith, const std::string& optMapString, std::string description, CLIOption::func_str_arg f) : 
-     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _nbArgs(1), _description(description)
+    CLIOption(std::vector<std::string> names, bool beginsWith, const std::string& optMapString, std::string description, 
+              std::string category, CLIOption::func_str_arg f) : 
+     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _nbArgs(1), _description(description), _category(category)
       { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.str_arg = NULL; func.opts_arg = NULL; }      
       
     // The int constructor is currently not used (there are no int options I know of)
@@ -165,6 +169,7 @@ namespace MiniZinc {
     std::string getDescription(void) const { return _description; }
     /// returns the list of strings that can be used for this option in the command line
     std::vector<std::string> getCommandLineNames(void) { return _names; }
+    std::string& getCategory(void) { return _category; }
     
     void setDefaultString(std::string& s) { _sdef = s; }
   };
