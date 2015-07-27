@@ -1,7 +1,10 @@
 /*
 % FlatZinc built-in redefinitions for linear solvers.
 %
-% Sebastian Brand, Gleb Belov (2015)
+% AUTHORS
+% Sebastian Brand
+% Gleb Belov (2015)
+%   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
 */
 %-----------------------------------------------------------------------------%
 % TODO. Have some simple basic constraints (better for presolve) + facets as user cuts

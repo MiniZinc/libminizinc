@@ -52,7 +52,7 @@ namespace MiniZinc {
       /// PARAMS
       int nThreads;
       bool fVerbose;
-      std::string sExportModel;
+      std::string sExportModel, sReadParam, sWriteParam;
       double nTimeout;
       double nWorkMemLimit;
       bool all_solutions;

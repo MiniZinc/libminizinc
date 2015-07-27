@@ -95,7 +95,116 @@ namespace MiniZinc {
       model->add(constraint);
       
     }
-  }
+  
+  /// INDICATORS
+    template<typename T>
+    void p_lin_reif(SolverInstanceBase& si0, const Call* call, LIN_CON_TYPE lt) {
+      CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
+      IloModel* model = (IloModel*) (si.getIloModel());
+      ASTExprVec<Expression> args = call->args();
+      IloNumArray ilocoeffs = si.exprToIloNumArray(args[0]);
+      IloNumVarArray ilovars = si.exprToIloNumVarArray(args[1]);
+      IloNum res = si.exprToIloNum(args[2]);
+      IloNumVar flg = si.exprToIloNumVar(args[3]);
+
+      switch (lt) {
+        case LQ:
+          model->add(flg == (IloScalProd(ilovars, ilocoeffs) <= res));
+          break;
+        case EQ:
+          model->add(flg == (IloScalProd(ilovars, ilocoeffs) == res));
+          break;
+        default:
+          abort();
+      }
+    }
+    template<typename T>
+    void p_lin_le0_if0(SolverInstanceBase& si0, const Call* call) {
+      CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
+      IloModel* model = (IloModel*) (si.getIloModel());
+      ASTExprVec<Expression> args = call->args();
+      IloNumVar res = si.exprToIloNumVar(args[0]);
+      IloNumVar flg = si.exprToIloNumVar(args[1]);
+
+      model->add(IloIfThen(model->getEnv(), 0==flg, res<=0));
+    }
+    template<typename T>
+    void p_lin_eq_if1(SolverInstanceBase& si0, const Call* call) {
+      CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
+      IloModel* model = (IloModel*) (si.getIloModel());
+      ASTExprVec<Expression> args = call->args();
+      IloNumVar res1 = si.exprToIloNumVar(args[0]);
+      IloNumVar res2 = si.exprToIloNumVar(args[1]);
+      IloNumVar flg = si.exprToIloNumVar(args[2]);
+
+      model->add(IloIfThen(model->getEnv(), 1==flg, res1==res2));
+    }
+    
+    void p_int_lin_reif(SolverInstanceBase& si, const Call* call, LIN_CON_TYPE lt) {
+      p_lin_reif<long long int>(si, call, lt);
+    }
+    void p_int_lin_le_reif(SolverInstanceBase& si, const Call* call) {
+      p_int_lin_reif(si, call, LQ);
+    }
+    void p_int_lin_eq_reif(SolverInstanceBase& si, const Call* call) {
+      p_int_lin_reif(si, call, EQ);
+    }
+    void p_float_lin_reif(SolverInstanceBase& si, const Call* call, LIN_CON_TYPE lt) {
+      p_lin_reif<double>(si, call, lt);
+    }
+    void p_float_lin_le_reif(SolverInstanceBase& si, const Call* call) {
+      p_float_lin_reif(si, call, LQ);
+    }
+    void p_float_lin_eq_reif(SolverInstanceBase& si, const Call* call) {
+      p_float_lin_reif(si, call, EQ);
+    }
+    void p_int_le0_if0(SolverInstanceBase& si, const Call* call) {
+      p_lin_le0_if0<long long int>(si, call);
+    }
+    void p_float_le0_if0(SolverInstanceBase& si, const Call* call) {
+      p_lin_le0_if0<double>(si, call);
+    }
+    void p_float_eq_if1(SolverInstanceBase& si, const Call* call) {
+      p_lin_eq_if1<double>(si, call);
+    }
+    void p_ne(SolverInstanceBase& si0, const Call* call) {
+      CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
+      ASTExprVec<Expression> args = call->args();
+      IloNumVar vara = si.exprToIloNumVar(args[0]);
+      IloNumVar varb = si.exprToIloNumVar(args[1]);
+      IloModel* model = si.getIloModel();
+      
+      model->add(vara != varb);
+    }
+
+    enum P_MINMAX {p_min, p_max};
+    void p_minmax(SolverInstanceBase& si0, const Call* call, P_MINMAX pmm) {
+      CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
+      ASTExprVec<Expression> args = call->args();
+      IloNumVar z = si.exprToIloNumVar(args[0]);
+      IloNumVarArray vara = si.exprToIloNumVarArray(args[1]);
+      IloModel* model = si.getIloModel();
+      
+      if (p_min == pmm)
+        model->add(z == IloMin(vara));
+      else
+        model->add(z == IloMax(vara));
+    }
+    void p_int_min(SolverInstanceBase& si, const Call* call) {
+      p_minmax(si, call, p_min);
+    }
+    void p_int_max(SolverInstanceBase& si, const Call* call) {
+      p_minmax(si, call, p_max);
+    }
+    void p_float_min(SolverInstanceBase& si, const Call* call) {
+      p_minmax(si, call, p_min);
+    }
+    void p_float_max(SolverInstanceBase& si, const Call* call) {
+      p_minmax(si, call, p_max);
+    }
+
+  }  // namespace CplexConstraints
+
   
   CPLEXSolverInstance::CPLEXSolverInstance(Env& env, const Options& options)
   : SolverInstanceImpl<CPLEXSolver>(env,options), _ilomodel(NULL), _ilocplex(NULL) {
@@ -105,6 +214,8 @@ namespace MiniZinc {
     nTimeout      = options.getFloatParam ("timelimit",          0.0);
     sExportModel  = options.getStringParam("export_model",        "");
     nWorkMemLimit = options.getFloatParam ("memory_limit",        -1);
+    sReadParam    = options.getStringParam("read_param",          "");
+    sWriteParam   = options.getStringParam("write_param",         "");
 
     registerConstraints();
   }
@@ -123,6 +234,21 @@ namespace MiniZinc {
     _constraintRegistry.add(ASTString("float_lin_eq"), CplexConstraints::p_float_lin_eq);
     _constraintRegistry.add(ASTString("float_lin_le"), CplexConstraints::p_float_lin_le);
     _constraintRegistry.add(ASTString("float_plus"), CplexConstraints::p_plus);
+    
+    /// INDICATORS
+    _constraintRegistry.add(ASTString("int_lin_eq_reif__IND"), CplexConstraints::p_int_lin_eq_reif);
+    _constraintRegistry.add(ASTString("int_lin_le_reif__IND"), CplexConstraints::p_int_lin_le_reif);
+    _constraintRegistry.add(ASTString("int_lin_ne__IND"), CplexConstraints::p_ne);
+    _constraintRegistry.add(ASTString("aux_int_le_zero_if_0__IND"), CplexConstraints::p_int_le0_if0);
+    _constraintRegistry.add(ASTString("float_lin_le_reif__IND"), CplexConstraints::p_float_lin_le_reif);
+    _constraintRegistry.add(ASTString("aux_float_eq_if_1__IND"), CplexConstraints::p_float_eq_if1);
+    _constraintRegistry.add(ASTString("aux_float_le_zero_if_0__IND"), CplexConstraints::p_float_le0_if0);
+
+    _constraintRegistry.add(ASTString("array_int_minimum__IND"), CplexConstraints::p_int_min);
+    _constraintRegistry.add(ASTString("array_int_maximum__IND"), CplexConstraints::p_int_max);
+    _constraintRegistry.add(ASTString("array_float_minimum__IND"), CplexConstraints::p_float_min);
+    _constraintRegistry.add(ASTString("array_float_maximum__IND"), CplexConstraints::p_float_max);
+
   }
   
   CPLEXSolverInstance::~CPLEXSolverInstance(void) {
@@ -209,45 +335,51 @@ namespace MiniZinc {
         std::cout << "   %  SATISFACTION_PROBLEM. " << std::endl;
     }
 
-    _ilocplex = new IloCplex(*_ilomodel);
+    try{
+      _ilocplex = new IloCplex(*_ilomodel);
 
-    if (not fVerbose && not all_solutions)
-      _ilocplex->setOut(_iloenv.getNullStream());
-    else
-      _ilocplex->setOut(std::cerr);
+      if (not fVerbose && not all_solutions)
+        _ilocplex->setOut(_iloenv.getNullStream());
+      else
+        _ilocplex->setOut(std::cerr);
 
 
-    if(all_solutions) {
-      IloNum lastObjVal = (obj.getSense() == IloObjective::Minimize ) ?
-        IloInfinity : -IloInfinity;
+      if(all_solutions && obj.getImpl()) {
+        IloNum lastObjVal = (obj.getSense() == IloObjective::Minimize ) ?
+          IloInfinity : -IloInfinity;
 
-      _ilocplex->use(SolutionCallback(_iloenv, lastObjVal, *this));
-      // Turn off CPLEX logging
-      if(!fVerbose)
-        _ilocplex->setParam(IloCplex::MIPDisplay, 0);
-    }
+        _ilocplex->use(SolutionCallback(_iloenv, lastObjVal, *this));
+        // Turn off CPLEX logging
+        if(!fVerbose)
+          _ilocplex->setParam(IloCplex::MIPDisplay, 0);
+      }
 
-    if (sExportModel.size())
-      _ilocplex->exportModel(sExportModel.c_str());
+      if (sExportModel.size())
+        _ilocplex->exportModel(sExportModel.c_str());
 
-    if (nThreads>0)
-      _ilocplex->setParam(IloCplex::Param::Threads, nThreads);
+      if (nThreads>0)
+        _ilocplex->setParam(IloCplex::Param::Threads, nThreads);
 
-    if (nTimeout>0) {
-      _ilocplex->setParam(IloCplex::Param::ClockType, 1);   // 0 - auto, 1 - CPU, 2- wall clock
-      _ilocplex->setParam(IloCplex::Param::TimeLimit, nTimeout);
-    }
+      if (nTimeout>0) {
+        _ilocplex->setParam(IloCplex::Param::ClockType, 1);   // 0 - auto, 1 - CPU, 2- wall clock
+        _ilocplex->setParam(IloCplex::Param::TimeLimit, nTimeout);
+      }
 
-    if (nWorkMemLimit>0) {
-      _ilocplex->setParam(IloCplex::Param::WorkMem, nWorkMemLimit);
-    }
-    
-    if(fVerbose)
-      std::cerr << "   %  CPLEX VERSION: " << _ilocplex->getVersion() << std::endl;
+      if (nWorkMemLimit>0) {
+        _ilocplex->setParam(IloCplex::Param::WorkMem, nWorkMemLimit);
+      }
+      
+      if (sReadParam.size())
+        _ilocplex->readParam(sReadParam.c_str());
+      
+      if (sWriteParam.size())
+        _ilocplex->writeParam(sWriteParam.c_str());
+      
+      if(fVerbose)
+        std::cerr << "   %  CPLEX VERSION: " << _ilocplex->getVersion() << std::endl;
 
     // 		_ilocplex->setParam(IloCplex::Param::Emphasis::MIP, 1);      -- SEEMS WORSE ON AMAZE.MZN
 
-    try{
       _ilocplex->solve();
       if(fVerbose) std::cout << "  %IloCplex::solve() exited." << std::endl;
     } catch(IloCplex::Exception& e){
