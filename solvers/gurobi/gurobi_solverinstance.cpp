@@ -242,7 +242,7 @@ namespace MiniZinc {
   }
 
   SolverInstanceBase::Status GurobiSolverInstance::next(void) {
-    return SolverInstance::ERROR;
+    return SolverInstance::FAILURE;
   }
 
 
@@ -336,31 +336,31 @@ namespace MiniZinc {
     int nSolutions = _grb_model->get(GRB_IntAttr_SolCount);
     switch(status) {
       case GRB_OPTIMAL:
-        s = SolverInstance::OPT;
+        s = SolverInstance::SUCCESS;
         //std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
-        s = SolverInstance::SAT;
+        s = SolverInstance::SUCCESS;
         //std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
       case GRB_INFEASIBLE:
-        s = SolverInstance::UNSAT;
+        s = SolverInstance::FAILURE;
         //std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
         break;
       case GRB_UNBOUNDED:
       case GRB_INF_OR_UNBD:
-        s = SolverInstance::ERROR;
+        s = SolverInstance::FAILURE;
         //std::cout << "\n   ---------------------   MIP__ERROR   ----------------------------------" << std::endl;
         break;
       case GRB_TIME_LIMIT:
       case GRB_SUBOPTIMAL:
-        s = SolverInstance::SAT;
+        s = SolverInstance::FAILURE;
         if(nSolutions > 0)
           assignSolutionToOutput();
         break;
       default:
-        s = SolverInstance::UNKNOWN;
+        s = SolverInstance::FAILURE;
         //std::cout << "\n   ---------------------   MIP__UNKNOWN_STATUS   ----------------------------------" << std::endl;
     }
     //if (IloAlgorithm::Status::Optimal==ss || IloAlgorithm::Status::Feasible==ss) {
@@ -541,7 +541,18 @@ namespace MiniZinc {
           }
         }
       }
-    }
-
+    }   
+  }
+  
+  SolverInstance::Status GurobiSolverInstance::best(VarDecl* objective, bool minimize, bool print) {
+    return Status::FAILURE;  // TODO for MiniSearch!
+  }
+  
+  SolverInstanceBase* GurobiSolverInstance::copy(CopyMap& cmap) {
+    return NULL; // TODO for MiniSearch!
+  }
+  
+  bool GurobiSolverInstance::updateIntBounds(VarDecl* vd, int lb, int ub) {
+    return false; // TODO for MiniSearch!
   }
 }

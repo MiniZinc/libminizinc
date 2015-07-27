@@ -47,6 +47,12 @@ namespace MiniZinc {
     void assignSolutionToOutput(SolutionCallback* cb = NULL);
 
     void printSolution(SolutionCallback* cb = NULL);
+    
+    virtual Status best(VarDecl* objective, bool minimize, bool print);
+    
+    virtual SolverInstanceBase* copy(CopyMap& cmap);
+    
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub);
 
 		/// PARAMS
 		int nThreads;

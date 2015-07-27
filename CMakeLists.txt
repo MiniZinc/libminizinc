@@ -257,7 +257,7 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX FALSE)
-set(HAS_GUROBI FALSE)
+set(HAS_GUROBI TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN TRUE)
 

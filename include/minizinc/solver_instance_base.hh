@@ -66,7 +66,7 @@ namespace MiniZinc {
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);
     /// update the bounds of the given variables to the new integer bounds during search (after next() has been called)
-    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub) = 0;
+    virtual bool updateIntBounds(VarDecl* vd, int lb, int ub) = 0; // TODO: shouldn't this not be purely virtual, like postConstraints and addVariables?
     /// post constraints during search (after next() has been called)
     virtual bool postConstraints(std::vector<Call*> cts) { return false; }    
     /// add variables during search (after next() has been called)

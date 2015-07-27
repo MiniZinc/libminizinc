@@ -475,10 +475,10 @@ int main(int argc, char** argv) {
               GurobiSolverInstance gurobi(env,options);
               gurobi.processFlatZinc();
               SolverInstance::Status status = gurobi.solve();
-              if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
+              if (status==SolverInstance::SUCCESS) {
                 gurobi.printSolution();
-                if (status==SolverInstance::OPT)
-                  std::cout << "==========" << std::endl;
+                //if (status==SolverInstance::OPT)
+                //  std::cout << "==========" << std::endl;
               }
             }
 
