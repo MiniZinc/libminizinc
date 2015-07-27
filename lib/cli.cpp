@@ -276,7 +276,7 @@ namespace MiniZinc {
     
     std::vector<std::string> n_output; n_output.push_back(constants().cli.outputBase_str.str());
     _known_options[constants().cli.outputBase_str.str()] = new CLIOption(n_output, false /* begins with */, constants().opts.outputBase.str(), 
-                                                                         "Base name for output files.", constants().cli_cat.general.str(), cli_outputBase );
+                                                                         "Base name for output files.", constants().cli_cat.io.str(), cli_outputBase );
     
     std::vector<std::string> n_fznToFile; 
     n_fznToFile.push_back(constants().cli.outputFznToFile_alt_str.str());
