@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
             
             {
               GCLock lock;
-              Options options; // TODO: update the Options from CLIOptions!
+              Options options = *opts;
               FZNSolverInstance flatzinc(env,options);
               flatzinc.processFlatZinc();
               SolverInstance::Status status = flatzinc.solve();
@@ -187,6 +187,7 @@ int main(int argc, char** argv) {
                 if (status==SolverInstance::OPT)
                   std::cout << "==========\n";
               }
+              delete opts;
             }
             
           }

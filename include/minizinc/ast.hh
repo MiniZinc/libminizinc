@@ -1441,6 +1441,13 @@ namespace MiniZinc {
         ASTString werror;
       } opts;
       
+      /// categories of the command line interface options
+      struct {
+        ASTString general;
+        ASTString io;
+        ASTString solver;
+      } cli_cat;
+      
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt
       ArrayLit* integers;

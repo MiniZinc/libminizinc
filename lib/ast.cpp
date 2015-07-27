@@ -1147,6 +1147,10 @@ namespace MiniZinc {
     opts.verbose = ASTString("verbose");
     opts.werror = ASTString("werror");
     
+    cli_cat.general = ASTString("General Options");
+    cli_cat.io = ASTString("Input/Output Options");
+    cli_cat.solver = ASTString("Solver Options");
+    
     std::vector<Expression*> v;
     v.push_back(ti);
     v.push_back(lit_true);
@@ -1315,6 +1319,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.typecheck));
     v.push_back(new StringLit(Location(),opts.verbose));
     v.push_back(new StringLit(Location(),opts.werror));
+    
+    v.push_back(new StringLit(Location(),cli_cat.general));
+    v.push_back(new StringLit(Location(),cli_cat.io));
+    v.push_back(new StringLit(Location(),cli_cat.solver));
     
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);

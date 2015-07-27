@@ -19,11 +19,6 @@ namespace MiniZinc {
   // Options for the command line interface
   class CLIOptions : public Options {
   public:
-    void setStringParam(const std::string& name, KeepAlive e);
-    void setStringParam(const std::string& name, std::string& e);
-    std::string getStringParam(const std::string& name) const;
-    std::string getStringParam(const std::string& name, std::string& def) const; 
-    
     // NOTE: setting string vector parameters is very expensive since they are converted into ArrayLits/ASTExprVecs and back
     void setStringVectorParam(const std::string& name, KeepAlive e);
     void setStringVectorParam(const std::string& name, const std::vector<std::string>& e);
@@ -40,6 +35,8 @@ namespace MiniZinc {
   protected:    
     /// the options that are recognized by MiniZinc
     opt_map _known_options;
+    /// the different categories of the known options
+    std::vector<std::string> _cli_categories;
     
   public:
     /// initiates the default MiniZinc CLI options
@@ -49,7 +46,7 @@ namespace MiniZinc {
     
   protected:
     /// creates the default MiniZinc CLI options and enters them into the _known_options map
-    void generateDefaultCLIOptions(void);
+    void generateDefaultCLIOptions(void);  
     /// returns true if the given option \a opt (such as "-h") is part of the known options
     bool knowsOption(const std::string& opt) const;
     /// returns pointer to the CLIOption object that represents CLI option \a name
@@ -85,10 +82,7 @@ namespace MiniZinc {
     typedef void (*func_str_arg) (CLIOptions* opt, std::string& s);
     typedef void (*func_int_arg) (CLIOptions* opt, int v);
     //typedef void (*func_str_args) (CLIOptions* opt, std::vector<std::string> args);  
-    typedef void (*func_known_opts) (CLIOptions* opt, CLIParser::opt_map known_opts, std::string cmd);
-    
-    // function pointer to functions that set default String option value
-    typedef void (*func_init) (CLIOptions* opt, CLIOption* o);
+    typedef void (*func_known_opts) (CLIOptions* opt, CLIParser::opt_map known_opts, std::string cmd, std::vector<std::string> categories);       
     
   public:
     struct {
@@ -99,8 +93,6 @@ namespace MiniZinc {
       //func_str_args str_args;
     } func;
     
-    // functions to initialize the String option
-    func_init _init;    
     
   public:
     /**
@@ -115,7 +107,7 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names, bool def, const std::string& optMapString, std::string description, CLIOption::func_no_args f) : 
-      _names(names), _bdef(def), _optMapString(optMapString), _init(NULL),
+      _names(names), _bdef(def), _optMapString(optMapString),
       _nbArgs(0), _beginsWith(false), _description(description)
       { func.int_arg = NULL; func.no_args = f; func.str_arg = NULL; func.opts_arg = NULL; }   
     
@@ -128,7 +120,7 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names , bool def, std::string description, CLIOption::func_no_args f) : 
-      _names(names), _bdef(def), _nbArgs(0), _beginsWith(false), _init(NULL), _description(description)
+      _names(names), _bdef(def), _nbArgs(0), _beginsWith(false), _description(description)
        { func.no_args = f; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = NULL; }
        
     /**
@@ -140,27 +132,9 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names, std::string description, CLIOption::func_known_opts f) : 
-      _names(names), _bdef(false), _nbArgs(0), _beginsWith(false), _init(NULL), _description(description)
+      _names(names), _bdef(false), _nbArgs(0), _beginsWith(false), _description(description)
        { func.no_args = NULL; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = f; }       
         
-    /** 
-       * Constructor for a String command line option whose value will later be stored 
-       * in CLIOptions. The number of arguments (on the command line) to the option are 
-       * given through the function pointer type: this constructor is for String options 
-       * that take one argument on the command line and that needs to be initialized in
-       * case the option is not given in the command line.
-       * 
-       * @param name the command line string for the option, e.g. --stdlib /home/user/mylib/
-       * @param beginsWith true, if the option's argument can be concatenated with the option name, e.g. -I/home/user/mznlib
-       * @param optMapString the string that (will) map to the option value in CLIOptions
-       * @param f the function to be executed when this option is given in the command line
-       * @param init the function to be executed when this option is NOT given in the command line, to set the defaul string value
-       */      
-    CLIOption(std::vector<std::string> names, bool beginsWith, std::string description, const std::string& optMapString,
-              CLIOption::func_str_arg f, CLIOption::func_init init) : 
-     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _init(init), _description(description)
-      { func.str_arg = f; func.no_args = NULL; func.int_arg = NULL;  _nbArgs = 1; func.opts_arg = NULL;}
-
     /** 
        * Constructor for a String command line option whose value will later be stored 
        * in CLIOptions. The number of arguments (on the command line) to the option are 
@@ -173,12 +147,12 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line       
        */      
     CLIOption(std::vector<std::string> names, bool beginsWith, const std::string& optMapString, std::string description, CLIOption::func_str_arg f) : 
-     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _init(NULL), _nbArgs(1), _description(description)
+     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _nbArgs(1), _description(description)
       { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.str_arg = NULL; func.opts_arg = NULL; }      
       
     // The int constructor is currently not used (there are no int options I know of)
     //CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_int_arg f) : 
-    //_name(name), _beginsWith(beginsWith), _optMapString(optMapString), _init(NULL) 
+    //_name(name), _beginsWith(beginsWith), _optMapString(optMapString), 
     // { func.int_arg = f; func.no_args = NULL; func.str_arg = NULL; _nbArgs = 1; }
     
     

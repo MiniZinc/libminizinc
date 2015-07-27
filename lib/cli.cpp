@@ -14,45 +14,6 @@
 
 namespace MiniZinc {
   
-  void CLIOptions::setStringParam(const std::string& name, KeepAlive ka) {
-    Expression* e = ka();
-    if(e && e->type().ispar() && e->type().isstring()) {
-      _options[name] = e;
-    } else {
-      std::stringstream ss;
-      ss << "For option: " << name << " expected Par String, received " << e->type().toString() << std::endl;
-      throw InternalError(ss.str());
-    }
-  }
-  
-  void CLIOptions::setStringParam(const std::string& name, std::string& s) {
-    GCLock lock;
-    StringLit* sl = new StringLit(Location(), s);
-    KeepAlive ka(sl);
-    
-    setStringParam(name, ka);
-  }
-  
-  std::string CLIOptions::getStringParam(const std::string& name) const {
-    if(hasParam(name)) {
-      if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
-        return sl->v().str();
-      }
-    }    
-    std::stringstream ss;
-    ss << "Option: \"" << name << "\" does not exist or is not Par String" << std::endl;
-    throw InternalError(ss.str());    
-  }
-  
-  std::string CLIOptions::getStringParam(const std::string& name, std::string& def) const {
-    if(hasParam(name)) {
-      if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
-        return sl->v().str();
-      }
-    } 
-    return def;
-  }
-  
   void CLIOptions::setStringVectorParam(const std::string& name, KeepAlive ka) {
    Expression* e = ka();
     if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
@@ -121,7 +82,7 @@ namespace MiniZinc {
   void cli_globals_dir(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.globalsDir.str(),s);
   }
-  void cli_help(CLIOptions* opt, CLIParser::opt_map knownOptions, std::string command) {
+  void cli_help(CLIOptions* opt, CLIParser::opt_map knownOptions, std::string command, std::vector<std::string> categories) {
     std::cerr << "Usage: "<< command
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
             << std::endl
@@ -204,33 +165,9 @@ namespace MiniZinc {
     opt->setBoolParam(constants().opts.werror.str(),true);
   }
   
-  void cli_init_stdlib(CLIOptions* opts, CLIOption* o) {
-    std::string std_lib_dir;
-    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-      std_lib_dir = std::string(MZNSTDLIBDIR);
-    }    
-    if(std_lib_dir == "") {
-      std::string mypath = FileUtils::progpath();
-      if (!mypath.empty()) {
-        if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-          std_lib_dir = mypath+"/share/minizinc";
-        } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-          std_lib_dir = mypath+"/../share/minizinc";
-        } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-          std_lib_dir = mypath+"/../../share/minizinc";
-        }
-      }
-    }
-    if (std_lib_dir=="") {
-      std::cerr << "Error: unknown minizinc standard library directory.\n"
-      << "Specify --stdlib-dir on the command line or set the\n"
-      << "MZN_STDLIB_DIR environment variable.\n";
-      std::exit(EXIT_FAILURE);
-    }
-    o->setDefaultString(std_lib_dir);
-  }
-  
-  CLIParser::CLIParser(void) {
+  CLIParser::CLIParser(void) {   
+    _cli_categories.push_back(constants().cli_cat.general.str());
+    _cli_categories.push_back(constants().cli_cat.io.str());
     generateDefaultCLIOptions();
   }
   
@@ -353,7 +290,7 @@ namespace MiniZinc {
   
     std::vector<std::string> n_stdlib; n_stdlib.push_back(constants().cli.stdlib_str.str());
     _known_options[constants().cli.stdlib_str.str()] = new CLIOption(n_stdlib, false /* begins with */ , constants().opts.stdlib.str(), 
-                                                                   "Path to MiniZinc standard library directory", cli_stdlib, cli_init_stdlib);
+                                                                   "Path to MiniZinc standard library directory", cli_stdlib);
   
     std::vector<std::string> n_verbose;
     n_verbose.push_back(constants().cli.verbose_short_str.str());
@@ -372,7 +309,7 @@ namespace MiniZinc {
   }
   
   CLIOptions* CLIParser::parseArgs(int argc, char** argv) {
-    CLIOptions* opts = new CLIOptions();
+    CLIOptions* opts = new CLIOptions();    
     int idx = 1; // omit the command
     std::string model;
     std::vector<std::string> datafiles;
@@ -441,10 +378,7 @@ namespace MiniZinc {
           opts->setBoolParam(o->getOptMapString(), o->getBoolDefaultValue()); 
         }
         else if(nbArgs == 1) {
-          // TODO: check for integer values (though there are none in the current options)
-          if(o->_init != NULL) { // if there is an initialisation function for the default value
-            o->_init(opts,o);
-          }
+          // TODO: check for integer values (though there are none in the current options)          
           std::string def = o->getStringDefaultValue();
           opts->setStringParam(o->getOptMapString(), def); 
         }
@@ -458,7 +392,30 @@ namespace MiniZinc {
     if(output_base =="") {
       output_base = filename.substr(0,filename.length()-4);
       opts->setStringParam(constants().opts.outputBase.str(), output_base);
+    }
+    std::string std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
+    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+      std_lib_dir = std::string(MZNSTDLIBDIR);
     }    
+    if(std_lib_dir == "") {
+      std::string mypath = FileUtils::progpath();
+      if (!mypath.empty()) {
+        if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/share/minizinc";
+        } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/../share/minizinc";
+        } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
+          std_lib_dir = mypath+"/../../share/minizinc";
+        }
+      }
+    }
+    if (std_lib_dir=="") {
+      std::cerr << "Error: unknown minizinc standard library directory.\n"
+      << "Specify --stdlib-dir on the command line or set the\n"
+      << "MZN_STDLIB_DIR environment variable.\n";
+      std::exit(EXIT_FAILURE);
+    }
+    opts->setStringParam(constants().opts.stdlib.str(),std_lib_dir);
     std::string output_fzn = opts->getStringParam(constants().opts.fznToFile.str());
     if(output_fzn=="") {
       output_fzn = output_base+".fzn";
@@ -480,8 +437,7 @@ namespace MiniZinc {
     if(datafiles.size() > 0)
       opts->setStringVectorParam(constants().opts.datafiles.str(), datafiles);
     std::vector<std::string> includePaths;
-    std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());
-    std::string std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
+    std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());    
     if (globals_dir!="") {
       includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
     }
@@ -501,7 +457,7 @@ namespace MiniZinc {
     if(nbArgs == 0) {
       if(o->func.opts_arg == NULL)
         o->func.no_args(opts); // execute the function for option o
-      else o->func.opts_arg(opts,_known_options,std::string(argv[0]));
+      else o->func.opts_arg(opts,_known_options,std::string(argv[0]),_cli_categories); // help function
     }      
     else if(nbArgs == 1) {
       if(idx >= argc) {
