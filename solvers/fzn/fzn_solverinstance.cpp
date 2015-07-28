@@ -139,7 +139,12 @@ namespace MiniZinc {
           if (!_canPipe) {
             argv[2] = strdup(fznFile.c_str());
           }
-          execvp(argv[0],argv);
+          int status = execvp(argv[0],argv);          
+          if(status == -1) {
+            std::stringstream ssm;
+            ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
+            throw InternalError(ssm.str());
+          }
         }
         assert(false);
       }
@@ -187,7 +192,14 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    FznProcess proc("fzn-gecode",false,_fzn);
+    std:: string fzn_solver = "fzn-gecode";
+    if(_options.hasParam(constants().opts.solver.fzn_solver.str()))
+      fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str());
+    if(_options.hasParam(constants().opts.verbose.str())) {
+      if(_options.getBoolParam(constants().opts.verbose.str()))
+        std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
+    }
+    FznProcess proc(fzn_solver,false,_fzn); 
     std::string r = proc.run();
     std::stringstream result;
     result << r;
