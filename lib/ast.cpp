@@ -1139,9 +1139,10 @@ namespace MiniZinc {
     cli.globalsDir_alt_str = ASTString("--mzn-globals-dir");
     cli.globalsDir_short_str = ASTString("-G");
     cli.help_str = ASTString("--help");
-    cli.help_short_str = ASTString("--help");
+    cli.help_short_str = ASTString("-h");
     cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
     cli.include_str = ASTString("-I");
+    cli.inputFromStdin_str = ASTString("--input-from-stdin");
     cli.instanceCheckOnly_str = ASTString("--instance-check-only");
     cli.newfzn_str = ASTString("--newfzn");
     cli.no_optimize_str = ASTString("--no-optimize");
@@ -1166,6 +1167,9 @@ namespace MiniZinc {
     cli.version_str = ASTString("--version");
     cli.werror_str = ASTString("-Werror");
     
+    cli.solver.all_sols_str = ASTString("-a");
+    cli.solver.fzn_solver_str = ASTString("--solver");
+    
     opts.cmdlineData = ASTString("cmdlineData");
     opts.datafile = ASTString("datafile");
     opts.datafiles = ASTString("datafiles");
@@ -1175,6 +1179,7 @@ namespace MiniZinc {
     opts.ignoreStdlib = ASTString("ignoreStdlib");
     opts.includeDir = ASTString("includeDir");
     opts.includePaths = ASTString("includePaths");
+    opts.inputFromStdin = ASTString("inputStdin");
     opts.instanceCheckOnly = ASTString("instanceCheckOnly");
     opts.model = ASTString("model");
     opts.newfzn = ASTString("newfzn");
@@ -1189,6 +1194,14 @@ namespace MiniZinc {
     opts.typecheck = ASTString("typecheck");
     opts.verbose = ASTString("verbose");
     opts.werror = ASTString("werror");
+    
+    opts.solver.allSols = ASTString("allSols");
+    opts.solver.fzn_solver = ASTString("fznsolver");
+    
+    cli_cat.general = ASTString("General Options");
+    cli_cat.io = ASTString("Input/Output Options");
+    cli_cat.solver = ASTString("Solver Options");
+    cli_cat.translation = ASTString("Translation Options");
     
     std::vector<Expression*> v;
     v.push_back(ti);
@@ -1346,6 +1359,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.help_str));
     v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
     v.push_back(new StringLit(Location(),cli.include_str));
+    v.push_back(new StringLit(Location(),cli.inputFromStdin_str));
     v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
     v.push_back(new StringLit(Location(),cli.newfzn_str));
     v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
@@ -1368,7 +1382,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.verbose_short_str));
     v.push_back(new StringLit(Location(),cli.verbose_str));
     v.push_back(new StringLit(Location(),cli.version_str));
-    v.push_back(new StringLit(Location(),cli.werror_str));    
+    v.push_back(new StringLit(Location(),cli.werror_str)); 
+    
+    v.push_back(new StringLit(Location(),cli.solver.all_sols_str));
+    v.push_back(new StringLit(Location(),cli.solver.fzn_solver_str));
     
     v.push_back(new StringLit(Location(),opts.cmdlineData));
     v.push_back(new StringLit(Location(),opts.datafile));
@@ -1379,6 +1396,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.ignoreStdlib));
     v.push_back(new StringLit(Location(),opts.includePaths));
     v.push_back(new StringLit(Location(),opts.includeDir));
+    v.push_back(new StringLit(Location(),opts.inputFromStdin));
     v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
     v.push_back(new StringLit(Location(),opts.model));
     v.push_back(new StringLit(Location(),opts.newfzn));
@@ -1392,7 +1410,16 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.stdlib));
     v.push_back(new StringLit(Location(),opts.typecheck));
     v.push_back(new StringLit(Location(),opts.verbose));
-    v.push_back(new StringLit(Location(),opts.werror));    
+    v.push_back(new StringLit(Location(),opts.werror));
+    
+    v.push_back(new StringLit(Location(),opts.solver.allSols));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
+    
+    v.push_back(new StringLit(Location(),cli_cat.general));
+    v.push_back(new StringLit(Location(),cli_cat.io));
+    v.push_back(new StringLit(Location(),cli_cat.solver));
+    v.push_back(new StringLit(Location(),cli_cat.translation));
+    
     
     std::vector<Expression*> v_ints(maxConstInt*2+1);
     for (int i=-maxConstInt; i<=maxConstInt; i++)

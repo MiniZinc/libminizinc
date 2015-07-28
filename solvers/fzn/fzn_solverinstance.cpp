@@ -326,9 +326,15 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    std::string solver_exec = _options.getStringParam("solver","fzn-gecode");
-    // TODO: check if solver exec is in path
-    FznProcess proc(solver_exec,false,_fzn); 
+    std:: string fzn_solver = "fzn-gecode";
+    if(_options.hasParam(constants().opts.solver.fzn_solver.str()))
+      fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str());
+    else fzn_solver = _options.getStringParam("solver","fzn-gecode"); // old CLI
+    if(_options.hasParam(constants().opts.verbose.str())) {
+      if(_options.getBoolParam(constants().opts.verbose.str()))
+        std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
+    }
+    FznProcess proc(fzn_solver,false,_fzn); 
     std::string r = proc.run(_options);
     std::stringstream result;
     result << r;
