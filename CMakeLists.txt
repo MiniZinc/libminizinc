@@ -249,6 +249,9 @@ include/minizinc/thirdparty/SafeInt3.hpp
 add_executable(mzn2fzn mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 
+add_executable(mzn2fzn_test mzn2fzn_test.cpp)
+target_link_libraries(mzn2fzn_test minizinc)
+
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
@@ -375,7 +378,7 @@ if(HAS_FZN)
 		ARCHIVE DESTINATION lib)
 endif()
 
-INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2fzn mzn2fzn_test solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
