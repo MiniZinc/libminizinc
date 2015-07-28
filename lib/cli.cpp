@@ -491,7 +491,12 @@ namespace MiniZinc {
         error();
       }
       std::string s = std::string(argv[idx]);
-      o->func.str_arg(opts,s); // TODO: check for int-argument option (though there are none in the current options)
+      if(o->func.str_arg == NULL) {
+        std::stringstream ssm; 
+        ssm << "Function for CLIOption \"" << arg << "\" is NULL. Expected function with one string argument.";
+        throw InternalError(ssm.str());
+      }
+      o->func.str_arg(opts,s);
       idx++;
     }
    /* else { // NOTE: more than 1 argument: not in use at the moment
@@ -506,6 +511,39 @@ namespace MiniZinc {
       }
       o->func.str_args(opts,args); // execute the function for option o
     } */
+  }
+  
+  CLISParser::CLISParser(void)  {   
+    _cli_categories.push_back(constants().cli_cat.solver.str());
+    generateDefaultSolverOptions();    
+  }
+  
+  // The functions to be executed for the solver options
+  void cli_allSols(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.solver.allSols.str(),true);
+  }
+  
+  void cli_fzn_solver(CLIOptions* opt, std::string& s) {
+    opt->setStringParam(constants().opts.solver.fzn_solver.str(),s);
+  }
+  
+  void CLISParser::generateDefaultSolverOptions(void) {
+    std::vector<std::string> n_allSols; 
+    n_allSols.push_back(constants().cli.solver.all_sols_str.str());    
+    CLIOption* o_allSols = new CLIOption(n_allSols, false /* default value */, 
+                                      constants().opts.solver.allSols.str(), 
+                                      "Find all solutions.",
+                                      constants().cli_cat.solver.str(),
+                                      cli_allSols ); 
+    _known_options[constants().cli.solver.all_sols_str.str()] = o_allSols;
+    
+    std::vector<std::string> n_fzn_solver;
+    n_fzn_solver.push_back(constants().cli.solver.fzn_solver_str.str());
+    CLIOption* o_fznSolver = new CLIOption(n_fzn_solver, false /* begins with*/,
+                                           constants().opts.solver.fzn_solver.str(),
+                                           "The (path to the) fzn-solver for solving the problem",
+                                           constants().cli_cat.solver.str(), cli_fzn_solver);
+    _known_options[constants().cli.solver.fzn_solver_str.str()] = o_fznSolver;
   }
   
 }

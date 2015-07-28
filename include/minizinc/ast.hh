@@ -1412,6 +1412,12 @@ namespace MiniZinc {
         ASTString verbose_short_str;
         ASTString version_str;
         ASTString werror_str; 
+        
+        struct {
+          ASTString all_sols_str;
+          ASTString fzn_solver_str;
+        } solver;
+        
       } cli;
       
       /// options strings to find setting in Options map
@@ -1439,6 +1445,12 @@ namespace MiniZinc {
         ASTString typecheck;
         ASTString verbose;
         ASTString werror;
+        
+        struct {
+          ASTString allSols;
+          ASTString fzn_solver;
+        } solver;
+        
       } opts;
       
       /// categories of the command line interface options

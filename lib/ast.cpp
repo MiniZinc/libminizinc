@@ -1123,6 +1123,9 @@ namespace MiniZinc {
     cli.version_str = ASTString("--version");
     cli.werror_str = ASTString("-Werror");
     
+    cli.solver.all_sols_str = ASTString("-a");
+    cli.solver.fzn_solver_str = ASTString("--solver");
+    
     opts.cmdlineData = ASTString("cmdlineData");
     opts.datafile = ASTString("datafile");
     opts.datafiles = ASTString("datafiles");
@@ -1146,6 +1149,9 @@ namespace MiniZinc {
     opts.typecheck = ASTString("typecheck");
     opts.verbose = ASTString("verbose");
     opts.werror = ASTString("werror");
+    
+    opts.solver.allSols = ASTString("allSols");
+    opts.solver.fzn_solver = ASTString("fznsolver");
     
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
@@ -1295,7 +1301,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.verbose_short_str));
     v.push_back(new StringLit(Location(),cli.verbose_str));
     v.push_back(new StringLit(Location(),cli.version_str));
-    v.push_back(new StringLit(Location(),cli.werror_str));    
+    v.push_back(new StringLit(Location(),cli.werror_str)); 
+    
+    v.push_back(new StringLit(Location(),cli.solver.all_sols_str));
+    v.push_back(new StringLit(Location(),cli.solver.fzn_solver_str));
     
     v.push_back(new StringLit(Location(),opts.cmdlineData));
     v.push_back(new StringLit(Location(),opts.datafile));
@@ -1320,6 +1329,9 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.typecheck));
     v.push_back(new StringLit(Location(),opts.verbose));
     v.push_back(new StringLit(Location(),opts.werror));
+    
+    v.push_back(new StringLit(Location(),opts.solver.allSols));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
     
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));

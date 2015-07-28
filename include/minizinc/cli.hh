@@ -28,7 +28,7 @@ namespace MiniZinc {
   
   class CLIOption;
   
-  /// parser for command line arguments for MiniZinc
+  /// parser for command line arguments for standard MiniZinc (does not recognize solver options)
   class CLIParser {
   public:
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, CLIOption*> opt_map;
@@ -60,6 +60,15 @@ namespace MiniZinc {
     /// applies the option \a arg given the argument vector and the next working index \a idx
     void applyOption(CLIOptions* opts, char** argv, int& argc, int& idx, const std::string& arg);
   };  
+  
+  /// command line interface parser that also recognizes solver options
+  class CLISParser : public CLIParser {
+  public:
+    CLISParser(void);
+  protected:
+    /// creates the default CLI options for solvers and enters them to _known_options
+    void generateDefaultSolverOptions(void);
+  };
   
   /// class for each CLI option that MiniZinc recognizes
   class CLIOption {
@@ -101,13 +110,15 @@ namespace MiniZinc {
   public:
     /**
        * Constructor for a Boolean command line option whose value will later be stored 
-       * in CLIOptions. The number of arguments (on the command line) to the option are 
+       * in CLIOptions/Options. The number of arguments (on the command line) to the option are 
        * given through the function pointer type: this constructor is for Boolean options 
        * that take no arguments on the command line.
        * 
        * @param name the command line strings for the option, e.g. "--verbose"         
        * @param def default value for the option (defined by optMapString!)
        * @param optMapString the string that (will) map to the option value in CLIOptions, e.g. "verbose"
+       * @param description the description of the option as it should be printed in --help
+       * @param category the category of the option; select one of constants().cli_cat.*
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names, bool def, const std::string& optMapString, std::string description, 
@@ -118,10 +129,12 @@ namespace MiniZinc {
     
     /**
        * Constructor for a Boolean command line option that whose value does not need 
-       * to be stored in CLIOptions. The Boolean option has not command line parameter.
+       * to be stored in CLIOptions/Options. The Boolean option has not command line parameter.
        * 
        * @param name the command line string for the option, e.g. --version  
-       * @param def default value for the option (if there is none, set to anything)       
+       * @param def default value for the option (if there is none, set to anything)
+       * @param description the description of the option as it should be printed in --help
+       * @param category the category of the option; select one of constants().cli_cat.*   
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names , bool def, std::string description, std::string category, CLIOption::func_no_args f) : 
@@ -130,10 +143,12 @@ namespace MiniZinc {
        
     /**
        * Constructor for a Boolean command line option that whose value does not need 
-       * to be stored in CLIOptions but that needs to know all known options to be executed. 
+       * to be stored in CLIOptions/Options but that needs to know all known options to be executed. 
        * The Boolean option has no command line parameter.
        * 
-       * @param name the command line string for the option, e.g. --help      
+       * @param name the command line string for the option, e.g. --help
+       * @param description the description of the option as it should be printed in --help
+       * @param category the category of the option; select one of constants().cli_cat.*    
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names, std::string description, std::string category, CLIOption::func_known_opts f) : 
@@ -142,19 +157,21 @@ namespace MiniZinc {
         
     /** 
        * Constructor for a String command line option whose value will later be stored 
-       * in CLIOptions. The number of arguments (on the command line) to the option are 
+       * in CLIOptions/Options. The number of arguments (on the command line) to the option are 
        * given through the function pointer type: this constructor is for String options 
        * that take one argument on the command line.
        * 
        * @param name the command line string for the option, e.g. --stdlib /home/user/mylib/
        * @param beginsWith true, if the option's argument can be concatenated with the option name, e.g. -I/home/user/mznlib
-       * @param optMapString the string that (will) map to the option value in CLIOptions
+       * @param optMapString the string that (will) map to the option value in CLIOptions/Options
+       * @param description the description of the option as it should be printed in --help
+       * @param category the category of the option; select one of constants().cli_cat.*
        * @param f the function to be executed when this option is given in the command line       
        */      
     CLIOption(std::vector<std::string> names, bool beginsWith, const std::string& optMapString, std::string description, 
               std::string category, CLIOption::func_str_arg f) : 
      _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _nbArgs(1), _description(description), _category(category)
-      { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.str_arg = NULL; func.opts_arg = NULL; }      
+      { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.opts_arg = NULL; }      
       
     // The int constructor is currently not used (there are no int options I know of)
     //CLIOption(const std::string& name, bool beginsWith, const std::string& optMapString, CLIOption::func_int_arg f) : 

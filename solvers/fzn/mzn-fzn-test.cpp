@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   clock_t starttime = std::clock();
   clock_t lasttime = std::clock();
   
-  CLIParser cp; 
+  CLISParser cp; 
   CLIOptions* opts;
   try {
     opts = cp.parseArgs(argc,argv);
