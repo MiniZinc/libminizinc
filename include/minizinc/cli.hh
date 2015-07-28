@@ -37,6 +37,8 @@ namespace MiniZinc {
     opt_map _known_options;
     /// the different categories of the known options
     std::vector<std::string> _cli_categories;
+    /// the default command parameters for help, such as '[<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]'
+    std::string _cmd_params;
     
   public:
     /// initiates the default MiniZinc CLI options

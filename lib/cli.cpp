@@ -85,9 +85,7 @@ namespace MiniZinc {
     opt->setStringParam(constants().opts.globalsDir.str(),s);
   }
   void cli_help(CLIOptions* opt, CLIParser::opt_map knownOptions, std::string command, std::vector<std::string> categories) {
-    std::cerr << "Usage: "<< command
-            << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]";
-            
+    std::cerr << "Usage: "<< command;            
     for(unsigned int i=0; i<categories.size(); i++) {
       std::cerr << "\n\n" << categories[i] << ":\n";
       /*struct InsensitiveCompare { 
@@ -186,6 +184,7 @@ namespace MiniZinc {
     _cli_categories.push_back(constants().cli_cat.general.str());
     _cli_categories.push_back(constants().cli_cat.io.str()); 
     _cli_categories.push_back(constants().cli_cat.translation.str());
+    _cmd_params = "[<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]";
     generateDefaultCLIOptions();
   }
   
@@ -481,7 +480,10 @@ namespace MiniZinc {
     if(nbArgs == 0) {
       if(o->func.opts_arg == NULL)
         o->func.no_args(opts); // execute the function for option o
-      else o->func.opts_arg(opts,_known_options,std::string(argv[0]),_cli_categories); // help function
+      else {
+        std::string cmd = std::string(argv[0])+" "+_cmd_params;
+        o->func.opts_arg(opts,_known_options,cmd,_cli_categories); // help function
+      }
     }      
     else if(nbArgs == 1) {
       if(idx >= argc) {
