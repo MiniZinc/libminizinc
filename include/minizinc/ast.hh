@@ -1389,6 +1389,7 @@ namespace MiniZinc {
         ASTString help_short_str;
         ASTString ignoreStdlib_str;
         ASTString include_str;
+        ASTString inputFromStdin_str;
         ASTString instanceCheckOnly_str;
         ASTString no_optimize_str;
         ASTString no_optimize_alt_str;
@@ -1432,6 +1433,7 @@ namespace MiniZinc {
         ASTString includeDir;
         ASTString includePaths;
         ASTString instanceCheckOnly;
+        ASTString inputFromStdin;
         ASTString model;
         ASTString newfzn;  
         ASTString noOznOutput;

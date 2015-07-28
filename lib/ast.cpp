@@ -1099,6 +1099,7 @@ namespace MiniZinc {
     cli.help_short_str = ASTString("-h");
     cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
     cli.include_str = ASTString("-I");
+    cli.inputFromStdin_str = ASTString("--input-from-stdin");
     cli.instanceCheckOnly_str = ASTString("--instance-check-only");
     cli.newfzn_str = ASTString("--newfzn");
     cli.no_optimize_str = ASTString("--no-optimize");
@@ -1135,6 +1136,7 @@ namespace MiniZinc {
     opts.ignoreStdlib = ASTString("ignoreStdlib");
     opts.includeDir = ASTString("includeDir");
     opts.includePaths = ASTString("includePaths");
+    opts.inputFromStdin = ASTString("inputStdin");
     opts.instanceCheckOnly = ASTString("instanceCheckOnly");
     opts.model = ASTString("model");
     opts.newfzn = ASTString("newfzn");
@@ -1279,6 +1281,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.help_str));
     v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
     v.push_back(new StringLit(Location(),cli.include_str));
+    v.push_back(new StringLit(Location(),cli.inputFromStdin_str));
     v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
     v.push_back(new StringLit(Location(),cli.newfzn_str));
     v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
@@ -1315,6 +1318,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.ignoreStdlib));
     v.push_back(new StringLit(Location(),opts.includePaths));
     v.push_back(new StringLit(Location(),opts.includeDir));
+    v.push_back(new StringLit(Location(),opts.inputFromStdin));
     v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
     v.push_back(new StringLit(Location(),opts.model));
     v.push_back(new StringLit(Location(),opts.newfzn));

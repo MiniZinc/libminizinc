@@ -49,7 +49,7 @@ bool beginswith(string s, string t) {
 
 int main(int argc, char** argv) {
 
-  bool flag_stdinInput = false;  // TODO: add this option!
+  
   Timer starttime;
   Timer lasttime;   
   FlatteningOptions fopts;
@@ -77,13 +77,7 @@ int main(int argc, char** argv) {
   bool flag_verbose = opts->getBoolParam(constants().opts.verbose.str());
   bool flag_werror = opts->getBoolParam(constants().opts.werror.str());
   bool flag_ignoreStdlib = opts->getBoolParam(constants().opts.ignoreStdlib.str());
-
-
-  
-  if (output_base == "") { // TODO: move this to parser!
-    if (flag_stdinInput) 
-      output_base = "mznout";
-  }
+  bool flag_stdinInput = opts->getBoolParam(constants().opts.inputFromStdin.str());
 
   {
     std::stringstream errstream;

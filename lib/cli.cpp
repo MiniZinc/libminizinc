@@ -128,6 +128,9 @@ namespace MiniZinc {
   void cli_include(CLIOptions* opt, std::string& s) {
     opt->setStringParam(constants().opts.includeDir.str(),s);
   }
+  void cli_inputFromStdin(CLIOptions* opt) {
+    opt->setBoolParam(constants().opts.inputFromStdin.str(),true);
+  }
   void cli_instanceCheckOnly(CLIOptions* opt) {
     opt->setBoolParam(constants().opts.instanceCheckOnly.str(),true);
   }
@@ -239,6 +242,12 @@ namespace MiniZinc {
     _known_options[constants().cli.include_str.str()] = new CLIOption(n_include, true /* begins with */, 
                                                                     constants().opts.includeDir.str(), "Specify include path", 
                                                                     constants().cli_cat.general.str(),  cli_include ); 
+    
+    std::vector<std::string> n_inputStdin; n_inputStdin.push_back(constants().cli.inputFromStdin_str.str());
+    _known_options[constants().cli.inputFromStdin_str.str()] = new CLIOption(n_inputStdin, false /* default value */,
+                                                                             constants().opts.inputFromStdin.str(), 
+                                                                             "Problem input will be given via stdin.", constants().cli_cat.io.str(), 
+                                                                             cli_inputFromStdin);
     
     std::vector<std::string> n_instanceCk; n_instanceCk.push_back(constants().cli.instanceCheckOnly_str.str());
     _known_options[constants().cli.instanceCheckOnly_str.str()] = new CLIOption(n_instanceCk, false /* default */, constants().opts.instanceCheckOnly.str(), 
@@ -413,7 +422,10 @@ namespace MiniZinc {
     std::string filename = opts->getStringParam(constants().opts.model.str());       
     std::string output_base = opts->getStringParam(constants().opts.outputBase.str());  
     if(output_base =="") {
-      output_base = filename.substr(0,filename.length()-4);
+      if (opts->getBoolParam(constants().opts.inputFromStdin.str())) 
+        output_base = "mznout";
+      else
+        output_base = filename.substr(0,filename.length()-4);
       opts->setStringParam(constants().opts.outputBase.str(), output_base);
     }
     std::string std_lib_dir = opts->getStringParam(constants().opts.stdlib.str());
