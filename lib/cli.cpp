@@ -351,21 +351,24 @@ namespace MiniZinc {
       if(knowsOption(arg)) {        
         applyOption(opts,argv,argc,idx,arg);
       }      
-      else {        
-        std::string extension = arg.substr(arg.length()-4,std::string::npos);
-        if (extension == ".mzn") {
-          if(model != "") {
-            std::cerr << "Error: Multiple .mzn files given." << std::endl;
-            error();
+      else { 
+        if(arg.length() > 4) {
+          std::string extension = arg.substr(arg.length()-4,std::string::npos);
+          if (extension == ".mzn") {
+            if(model != "") {
+              std::cerr << "Error: Multiple .mzn files given." << std::endl;
+              error();
+            }
+            model = arg;
+            continue;
           }
-          model = arg;
-        }
-        else if(extension == ".dzn") 
-          datafiles.push_back(arg);                 
-        else {
-          // TODO: store the option anyway and give a warning that it is not known
-          std::cerr << "Warning: Ignoring unknown option: " << arg << std::endl;
-        }
+          else if(extension == ".dzn") {
+            datafiles.push_back(arg);                 
+            continue;
+          }
+        }       
+        // TODO: store the option anyway and give a warning that it is not known
+        std::cerr << "Warning: Ignoring unknown option: " << arg << std::endl;       
       }
     }
     if(model==""){
@@ -459,7 +462,7 @@ namespace MiniZinc {
     std::string output_ozn = opts->getStringParam(constants().opts.oznToFile.str());
     if(output_ozn =="") {
       output_ozn = output_base+".ozn";
-      opts->setStringParam(constants().opts.oznToFile.str(),output_fzn);
+      opts->setStringParam(constants().opts.oznToFile.str(),output_ozn);
     }  
     std::vector<std::string> datafiles;
     if(opts->hasParam(constants().opts.datafiles.str())) 
@@ -474,7 +477,11 @@ namespace MiniZinc {
     std::vector<std::string> includePaths;
     std::string globals_dir = opts->getStringParam(constants().opts.globalsDir.str());    
     if (globals_dir!="") {
-      includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
+      if(globals_dir.back() != '/') {
+        globals_dir = globals_dir+"/";
+        opts->setStringParam(constants().opts.globalsDir.str(),globals_dir);
+      }
+      includePaths.push_back(globals_dir);
     }
     includePaths.push_back(std_lib_dir+"/std/");  
     for (unsigned int i=0; i<includePaths.size(); i++) {

@@ -79,6 +79,10 @@ int main(int argc, char** argv) {
   bool flag_ignoreStdlib = opts->getBoolParam(constants().opts.ignoreStdlib.str());
   bool flag_stdinInput = opts->getBoolParam(constants().opts.inputFromStdin.str());
 
+  std::cerr << "DEBUG: stdlib-dir = " << std_lib_dir << "\n";
+  std::cerr << "DEBUG: globals-dir = " << globals_dir << "\n";
+  std::cerr << "DEBUG: output-fzn = " << output_fzn << "\n";
+  
   {
     std::stringstream errstream;
     if (flag_verbose) {
