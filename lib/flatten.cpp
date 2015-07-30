@@ -5147,7 +5147,8 @@ namespace MiniZinc {
                 // If the VarDecl does not have a usable right hand side, it needs to be
                 // marked as output in the FlatZinc
                 assert(vd->flat());
-
+                
+             
                 bool needOutputAnn = true;
                 if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
                   ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
@@ -5187,7 +5188,7 @@ namespace MiniZinc {
                   }
                 }
               }
-              vd->flat(NULL);
+              //vd->flat(NULL);
             }
             e.output_vo.add(item->cast<VarDeclI>(), i);
             CollectOccurrencesE ce(e.output_vo,item);
@@ -5441,6 +5442,7 @@ namespace MiniZinc {
         if (e.output_vo.occurrences(vdi->e())==0) {
           CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
+          assert(vdi->e()->flat());
           removeIsOutput(vdi->e()->flat());
           vdi->remove();
         }
@@ -5455,6 +5457,7 @@ namespace MiniZinc {
           if (!vdi->removed()) {
             CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
             topDown(cd,cur->e());
+            assert(vdi->e()->flat());
             removeIsOutput(vdi->e()->flat());
             vdi->remove();
           }
@@ -5947,7 +5950,9 @@ namespace MiniZinc {
     EE ee = flat_exp(env,Ctx(),e,r,b);
     flatten_loop(env, startItem, opt);
     if (!opt.keepOutputInFzn) {
+      debugprint(env.output); std::cerr << "=======================\n" ;
       createOutput(env);
+      debugprint(env.output);
     }
     cleanupOutput(env);
     return ee;

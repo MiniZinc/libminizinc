@@ -342,6 +342,9 @@ namespace MiniZinc {
     
     typedef std::pair<VarDecl*,Expression*> DE;
     ASTStringMap<DE>::t declmap;
+    //std::cerr << "DEBUG: Printing fzn model:\n------------------------\n";
+    //debugprint(_fzn); // TODO: error in OZN model
+    //std::cerr << "------------------\n";
     //std::cerr << "DEBUG: Printing output model:\n------------------------\n";
     //debugprint(_ozn); // TODO: error in OZN model
     //std::cerr << "------------------\n";
@@ -366,12 +369,16 @@ namespace MiniZinc {
           }
         }       
         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {          
+        // std::cerr << "Printing solution model:\n" << std::endl;
+        //debugprint(sm);
+        //std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+        for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {            
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
+            //std::cerr << "processing item in model:" << (*ai) << "\n";
             ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());            
             if (it==declmap.end()) {
               std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
-              exit(EXIT_FAILURE);
+              exit(EXIT_FAILURE);            
             }
             if (Call* c = ai->e()->dyn_cast<Call>()) {             
               // This is an arrayXd call, make sure we get the right builtin
@@ -382,19 +389,22 @@ namespace MiniZinc {
               ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
               it->second.first->e(al);              
               setSolution(it->second.first->id(),al);
-            } else {             
-              it->second.first->e(ai->e());            
+              //std::cerr << "DEBUG: setting " << *(it->second.first->id()) << " as " << *(al) << "\n";
+            } else {  
+              //std::cerr << "DEBUG: assign item: " << *ai << "\n";
+              it->second.first->e(ai->e());       
+              //std::cerr << "DEBUG: it->second.first: " << *(it->second.first) << "\n";
               setSolution(it->second.first->id(),ai->e());
-              ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
-              it->second.first->e(al);           
+              //std::cerr << "DEBUG: setting " << *(it->second.first->id()) << " as " << *(ai->e()) << "\n";                  
             }
           }
-          delete sm;
-          hadSolution = true;
-          if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
-            return SolverInstance::SUCCESS;
-          }
         }
+        delete sm;
+        hadSolution = true;
+        if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
+          return SolverInstance::SUCCESS;
+        }          
+        
       } else if (line==constants().solver_output.opt.str()) {
         return hadSolution ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
       } else if(line==constants().solver_output.unsat.str()) {

@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
 
               Options options;
               SearchHandler* sh = new SearchHandler();
-              sh->search<GecodeSolverInstance>(env,options,flag_verbose);
+              sh->search<GecodeSolverInstance>(env,options);
             }
           }
               

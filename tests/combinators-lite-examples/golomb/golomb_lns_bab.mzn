@@ -47,7 +47,7 @@ predicate neighbourhoodCts1(array[int] of var int: x,
        array[1..n] of int: idx = [ uniform(1,length(x)-1) | i in 1..n ]; % length(x)-1: do not keep last mark
      } in 
        forall (i in idx) (
-         x[i] = sol(x[i])
+         x[i] = sol(x[i]) /\ trace("x["++show(i)++"] = "++show(sol(x[i]))++";\n")
        )     
    else true endif;
 
@@ -55,19 +55,19 @@ float: d = 0.7;
 int: iterations = 10;
 
 % solve using minimizing branch & bound
-solve :: combinator(
-    repeat (i in 1..iterations) (
-      and([
+solve search post(true) /\ bab_min(obj) ;
+%lns_with_builtin_min(obj, mark, d, iterations);
+%minimize obj;
+
+function ann: lns_with_builtin_min (var int: obj, array[int] of var int: x, float: d, int: iterations) =
+repeat (i in 1..iterations) (
         scope(
-          and([ 
-            post(neighbourhoodCts1(mark,d)),
-            or([bab_min(obj,print),print()]) %next, % or bab
-          ]),
-        ),
+            post(neighbourhoodCts(x,d)) /\
+            time_limit(5*1000, bab_min(obj)) /\
+            commit() /\ 
+            print("Intermediate solution with objective \(sol(obj))\n")
+        ) /\
         post(obj < sol(obj))
-      ])
-   )
-) 
-satisfy;
+);
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

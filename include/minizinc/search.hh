@@ -38,9 +38,10 @@ namespace MiniZinc {
     
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
-    void search(Env& env, MiniZinc::Options& opt, bool verbose = false) {   
+    void search(Env& env, MiniZinc::Options& opt) {   
       SolverInstanceBase* solver = new SolverInstanceBase(env,opt);     
       solver->processFlatZinc();
+      bool verbose = opt.getBoolParam(constants().opts.verbose.str(),false);
       
       SolverInstance::Status status;    
       Expression* combinator = NULL;

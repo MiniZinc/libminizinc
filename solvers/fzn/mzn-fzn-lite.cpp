@@ -384,8 +384,9 @@ int main(int argc, char** argv) {
             
             {              
               options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
+              options.setBoolParam(constants().opts.verbose.str(),flag_verbose); // Quick fix until we switched to new CLI
               SearchHandler* sh = new SearchHandler();
-              sh->search<FZNSolverInstance>(env,options,flag_verbose);
+              sh->search<FZNSolverInstance>(env,options);
             }
             
           }

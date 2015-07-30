@@ -240,6 +240,8 @@ namespace MiniZinc {
   
   SolverInstance::Status 
   SearchHandler::interpretBestCombinator(Call* call, SolverInstanceBase* solver, bool minimize, bool print, bool verbose) {
+    if(verbose)
+      std::cerr << "DEBUG: Interpreting BEST combinator\n" ;
     if(call->args().size() == 0 || call->args().size() > 2) {
       std::stringstream ssm;
       ssm << call->id() << "-combinator takes at least 1 argument instead of " << call->args().size() << " in: " << *call;
@@ -258,6 +260,8 @@ namespace MiniZinc {
             decl = id_rhs->decl();
         }
         else { // TODO : ArrayAccess??
+          std::cerr << "TODO: array access" << std::endl;
+          exit(EXIT_FAILURE);
         }
       }
     }
@@ -933,6 +937,9 @@ namespace MiniZinc {
   
   bool 
   SearchHandler::postConstraints(Expression* cts, SolverInstanceBase* solver, bool verbose) {
+    if(BoolLit* bl = cts->dyn_cast<BoolLit>()) {
+      if(bl->v()) return true;
+    }    
     Env& env = solver->env();
     bool success = true;
     if(verbose)
