@@ -56,14 +56,17 @@ int: iterations = 10;
 
 % solve using minimizing branch & bound
 solve search 
-post(true) /\ bab_min(obj) /\ print() ;
-%lns_with_builtin_min(obj, mark, d, iterations);
+%scope ( post(true) /\ bab_min(obj) /\ print() ) ;
+lns_with_builtin_min(obj, mark, d, iterations) /\ print();
 %minimize obj;
 
 function ann: lns_with_builtin_min (var int: obj, array[int] of var int: x, float: d, int: iterations) =
 repeat (i in 1..iterations) (
         scope(
-            post(neighbourhoodCts(x,d)) /\
+%            if hasSol() then
+              post(neighbourhoodCts(x,d)) /\ post(true) 
+%            else skip endif
+           /\
             time_limit(5*1000, bab_min(obj)) /\
             commit() /\ 
             print("Intermediate solution with objective \(sol(obj))\n")

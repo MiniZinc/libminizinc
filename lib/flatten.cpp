@@ -536,6 +536,14 @@ namespace MiniZinc {
         }
       }
     }
+    // updating the VarDecl pointers in the output model
+    for(std::vector<Item*>::iterator it = c_output->begin(); it!=c_output->end(); it++) {
+      if(VarDeclI* vdi = (*it)->dyn_cast<VarDeclI>()) {
+        if(vdi->e()->flat()) {
+          vdi->e()->flat(copy(envi(),cmap,vdi->e()->flat())->cast<VarDecl>()); // copy the flat pointer
+        }
+      }
+    }
     unsigned int ids_c = e->get_ids();
     Env* c = new Env(c_orig, c_output, c_flat, cmap, c_reverseMappers, ids_c, e->fopt);
     if (combinator)
@@ -5093,9 +5101,9 @@ namespace MiniZinc {
             GCLock lock;
             VarDecl* reallyFlat = vd->flat();
             while (reallyFlat && reallyFlat!=reallyFlat->flat())
-              reallyFlat=reallyFlat->flat();
-            if (vd->e()==NULL) {
-              if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+              reallyFlat=reallyFlat->flat();           
+            if (vd->e()==NULL) {              
+              if (vd->flat() && vd->flat()->e() && vd->flat()->e()->type().ispar()) {
                 VarDecl* reallyFlat = vd->flat();
                 while (reallyFlat!=reallyFlat->flat())
                   reallyFlat=reallyFlat->flat();
@@ -5150,7 +5158,7 @@ namespace MiniZinc {
                 
              
                 bool needOutputAnn = true;
-                if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+                if (reallyFlat && reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) { 
                   ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
                   for (unsigned int i=0; i<al->v().size(); i++) {
                     if (Id* id = al->v()[i]->dyn_cast<Id>()) {
@@ -5167,7 +5175,7 @@ namespace MiniZinc {
                   }
                 }
                 if (needOutputAnn) {
-                  if (!isOutput(vd->flat())) {
+                  if (vd->flat() && !isOutput(vd->flat())) { 
                     GCLock lock;
                     if (vd->type().dim() == 0) {
                       vd->flat()->addAnnotation(constants().ann.output_var);
@@ -5189,10 +5197,10 @@ namespace MiniZinc {
                 }
               }
               //vd->flat(NULL);
-            }
-            e.output_vo.add(item->cast<VarDeclI>(), i);
+            }            
+            e.output_vo.add(item->cast<VarDeclI>(), i);           
             CollectOccurrencesE ce(e.output_vo,item);
-            topDown(ce, vd);
+            topDown(ce, vd);            
           }
             break;
           case Item::II_OUT:
@@ -5434,8 +5442,7 @@ namespace MiniZinc {
       CollectOccurrencesE ce(e.output_vo,outputItem);
       topDown(ce, outputItem->e());
 
-    }
-    
+    } 
     std::vector<VarDecl*> deletedVarDecls;
     for (unsigned int i=0; i<e.output->size(); i++) {
       if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
@@ -5447,7 +5454,7 @@ namespace MiniZinc {
           vdi->remove();
         }
       }
-    }
+    }    
     while (!deletedVarDecls.empty()) {
       VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
       if (e.output_vo.occurrences(cur) == 0) {
@@ -5463,8 +5470,8 @@ namespace MiniZinc {
           }
         }
       }
-    }
-    e.output->compact();
+    }    
+    e.output->compact();   
 
     for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
          it != e.output_vo._m.end(); ++it) {

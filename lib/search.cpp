@@ -964,7 +964,13 @@ namespace MiniZinc {
     }    
    
     // flatten the expression
+    //std::cerr << "DEBUG: ozn model before flattening:\n..........................\n";
+    //debugprint(env.output());
+    //std::cerr << "............................................\n";
     (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, env.envi().fopt);
+    //std::cerr << "DEBUG: ozn model aFTER flattening:\n..........................\n";
+    //debugprint(env.output());
+    //std::cerr << "............................................\n";
     
     int nbVarsAfter = 0;
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)

@@ -353,6 +353,11 @@ namespace MiniZinc {
     bool hadSolution = false;
     std::string sstr = result.str();    
     //std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
+    //std::cerr << "DEBUG: printing fzn model:\n---------------------------------\n";
+    //debugprint(_fzn);
+    //std::cerr << "=============================\nDEBUG: printing ozn model:\n---------------------------------\n";
+    //debugprint(_ozn);    
+    //std::cerr << "=======================\n";
     while (result.good()) {
       std::string line;
       getline(result, line);    
@@ -363,6 +368,9 @@ namespace MiniZinc {
           }
         }       
         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);       
+        //std::cerr << "DEBUG: printing solution model:\n";
+        //debugprint(sm);
+        //std::cerr << "=======================================\n";
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {            
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             //std::cerr << "processing item in model:" << (*ai) << "\n";
