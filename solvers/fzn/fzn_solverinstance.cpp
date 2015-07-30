@@ -366,8 +366,10 @@ namespace MiniZinc {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
             it->second.first->e(it->second.second);
           }
-        }       
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);       
+        }
+        std::cout << "let's see ****" << std::endl;
+        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
+        std::cout << "let's see **** whether " << std::endl;
         //std::cerr << "DEBUG: printing solution model:\n";
         //debugprint(sm);
         //std::cerr << "=======================================\n";

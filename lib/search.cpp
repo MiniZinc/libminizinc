@@ -1003,8 +1003,10 @@ namespace MiniZinc {
     oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
     // std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
     //debugprint(env.flat());  
-    
-    
+    //david
+    //Printer p(std::cout);
+    //p.print(env.flat());
+    //what eve
     int nbCtsAfter = 0;
     for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
       nbCtsAfter++;
@@ -1068,7 +1070,7 @@ namespace MiniZinc {
   }
   
   void
-  SearchHandler::updateSolution(Model* output, Model* outputToUpdate) {    
+  SearchHandler::updateSolution(Model* output, Model* outputToUpdate) {
     IdMap<Expression*> solutions;
     for(unsigned int i=0; i<output->size(); i++) {
       if(VarDeclI* vdi = (*output)[i]->dyn_cast<VarDeclI>()) {

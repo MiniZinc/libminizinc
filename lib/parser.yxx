@@ -148,7 +148,8 @@ namespace MiniZinc {
     }
 
     model->setFilepath(filename);
-    bool isFzn;
+
+   bool isFzn;
     if (filename=="") {
       isFzn = false;
     } else {
@@ -156,7 +157,7 @@ namespace MiniZinc {
       isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
       isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
     }
-    ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
+		ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     yyparse(&pp);

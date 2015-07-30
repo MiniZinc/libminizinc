@@ -38,14 +38,17 @@ namespace MiniZinc {
     
     /// perform search on the flat model in the environement using the specified solver
     template<class SolverInstanceBase>
-    void search(Env& env, MiniZinc::Options& opt) {   
+    void search(Env& env, MiniZinc::Options& opt) {
       SolverInstanceBase* solver = new SolverInstanceBase(env,opt);     
       solver->processFlatZinc();
+      std::cout << "solver_item: " << *env.flat()->solveItem() << std::endl;
+      
       bool verbose = opt.getBoolParam(constants().opts.verbose.str(),false);
       
       SolverInstance::Status status;    
       Expression* combinator = NULL;
       if(env.flat()->solveItem()->combinator_lite()) {
+        std::cout << "solver_item: " << env.flat()->solveItem()->combinator_lite() << std::endl;
         Annotation& ann = env.flat()->solveItem()->ann(); 
         for(ExpressionSetIter it = ann.begin(); it!=ann.end(); it++) {
           if(Call* c = (*it)->dyn_cast<Call>()) {
