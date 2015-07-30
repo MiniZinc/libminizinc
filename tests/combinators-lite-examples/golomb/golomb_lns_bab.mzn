@@ -63,15 +63,15 @@ lns_with_builtin_min(obj, mark, d, iterations) /\ print();
 function ann: lns_with_builtin_min (var int: obj, array[int] of var int: x, float: d, int: iterations) =
 repeat (i in 1..iterations) (
         scope(
-%            if hasSol() then
-              post(neighbourhoodCts(x,d)) /\ post(true) 
-%            else skip endif
-           /\
-            time_limit(5*1000, bab_min(obj)) /\
-            commit() /\ 
-            print("Intermediate solution with objective \(sol(obj))\n")
+            if hasSol() then
+              print("Iteration \(i)\n") /\
+              post(neighbourhoodCts1(x,d)) /\ 
+              time_limit(10*1000, bab_min(obj)) /\
+              print("Intermediate solution with objective \(sol(obj))\n") /\
+              commit() 
+            else next() /\ commit() /\ print("First solution with objective \(sol(obj))\n") endif
         ) /\
-        post(obj < sol(obj))
+        post(obj < sol(obj)) /\ print("Posting new lower bound: "++show(sol(obj))++"\n")
 );
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

@@ -86,23 +86,7 @@ annotation break;
 % =================================================================== %
 
 % Branch&Bound minimize combinator
-function ann: bab_min(var int: obj) =   
-   repeat(
-       if next() then
-         print("Intermediate solution in BAB-MIN with objective \(sol(obj))\n") /\
-         commit() /\ 
-         post(obj < sol(obj))
-       else break endif
-   );   
-function ann: bab_min(var int: obj, ann: s) =   
-   repeat(
-       if next() then
-         print("Intermediate solution in BAB-MIN with objective \(sol(obj))\n") /\
-         %s /\
-         commit() /\ 
-         post(obj < sol(obj))
-       else break endif
-   );   
+include "bab_min.mzn";
 
 % Branch and Bound when maximising
 function ann: bab_max(var int: obj) =   
