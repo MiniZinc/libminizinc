@@ -5949,10 +5949,8 @@ namespace MiniZinc {
     int startItem = env.flat()->size();
     EE ee = flat_exp(env,Ctx(),e,r,b);
     flatten_loop(env, startItem, opt);
-    if (!opt.keepOutputInFzn) {
-      debugprint(env.output); std::cerr << "=======================\n" ;
-      createOutput(env);
-      debugprint(env.output);
+    if (!opt.keepOutputInFzn) {     
+      createOutput(env);      
     }
     cleanupOutput(env);
     return ee;

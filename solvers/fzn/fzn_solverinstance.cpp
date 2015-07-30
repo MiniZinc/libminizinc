@@ -341,13 +341,7 @@ namespace MiniZinc {
     std::string solution;
     
     typedef std::pair<VarDecl*,Expression*> DE;
-    ASTStringMap<DE>::t declmap;
-    //std::cerr << "DEBUG: Printing fzn model:\n------------------------\n";
-    //debugprint(_fzn); // TODO: error in OZN model
-    //std::cerr << "------------------\n";
-    //std::cerr << "DEBUG: Printing output model:\n------------------------\n";
-    //debugprint(_ozn); // TODO: error in OZN model
-    //std::cerr << "------------------\n";
+    ASTStringMap<DE>::t declmap;    
     for (unsigned int i=0; i<_ozn->size(); i++) {
       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
@@ -368,10 +362,7 @@ namespace MiniZinc {
             it->second.first->e(it->second.second);
           }
         }       
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        // std::cerr << "Printing solution model:\n" << std::endl;
-        //debugprint(sm);
-        //std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);       
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {            
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             //std::cerr << "processing item in model:" << (*ai) << "\n";
@@ -391,14 +382,16 @@ namespace MiniZinc {
               setSolution(it->second.first->id(),al);
               //std::cerr << "DEBUG: setting " << *(it->second.first->id()) << " as " << *(al) << "\n";
             } else {  
-              //std::cerr << "DEBUG: assign item: " << *ai << "\n";
               it->second.first->e(ai->e());       
-              //std::cerr << "DEBUG: it->second.first: " << *(it->second.first) << "\n";
+              if(it->second.second) { // ID_X = ID_Y, then also set ID_Y
+                if(Id* id = it->second.second->dyn_cast<Id>()) 
+                  setSolution(id,ai->e());
+              }
               setSolution(it->second.first->id(),ai->e());
               //std::cerr << "DEBUG: setting " << *(it->second.first->id()) << " as " << *(ai->e()) << "\n";                  
             }
           }
-        }
+        }        
         delete sm;
         hadSolution = true;
         if(_env.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {

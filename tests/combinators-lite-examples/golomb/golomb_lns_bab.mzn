@@ -55,7 +55,8 @@ float: d = 0.7;
 int: iterations = 10;
 
 % solve using minimizing branch & bound
-solve search post(true) /\ bab_min(obj) ;
+solve search 
+post(true) /\ bab_min(obj) /\ print() ;
 %lns_with_builtin_min(obj, mark, d, iterations);
 %minimize obj;
 
