@@ -93,9 +93,12 @@ namespace MiniZinc {
             if(call->args().size() > 1)
               if(Id* id = call->args()[1]->dyn_cast<Id>()) 
                 if(id->str() == constants().combinators.print)
-                  print = true;
-              
-            (void) interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, verbose, print);
+                  print = true;            
+            int status = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, print, verbose);
+            if(status == SolverInstance::SUCCESS) {
+              solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
+              env.envi().commitLastSolution();
+            }
           }
           else {          
             std::stringstream ssm; 
@@ -241,7 +244,7 @@ namespace MiniZinc {
   SolverInstance::Status 
   SearchHandler::interpretBestCombinator(Call* call, SolverInstanceBase* solver, bool minimize, bool print, bool verbose) {
     if(verbose)
-      std::cerr << "DEBUG: Interpreting BEST combinator\n" ;
+      std::cerr << "DEBUG: Interpreting BEST combinator: " << *call << "\n" ;
     if(call->args().size() == 0 || call->args().size() > 2) {
       std::stringstream ssm;
       ssm << call->id() << "-combinator takes at least 1 argument instead of " << call->args().size() << " in: " << *call;

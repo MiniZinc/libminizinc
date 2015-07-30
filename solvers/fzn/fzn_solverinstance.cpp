@@ -472,7 +472,14 @@ namespace MiniZinc {
     solveI->remove();     
     _fzn->addItem(objective);                                   
     
-    return solve();
+    //std::cerr << "DEBUG: printing modified fzn model for BEST:\n";
+    //debugprint(_fzn);
+    //std::cerr << "====================================\n";
+    
+    SolverInstance::Status status = solve();   
+    if(print && status == SolverInstance::SUCCESS)
+      _env.evalOutput(std::cerr);
+    return status;
   }
   
   

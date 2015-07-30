@@ -66,7 +66,9 @@ repeat (i in 1..iterations) (
             if hasSol() then
               print("Iteration \(i)\n") /\
               post(neighbourhoodCts1(x,d)) /\ 
-              time_limit(10*1000, bab_min(obj)) /\
+              print("After posting neighbourhood constraints\n") /\
+%              time_limit(10*1000, bab_min(obj)) /\
+              bab_min(obj) /\ 
               print("Intermediate solution with objective \(sol(obj))\n") /\
               commit() 
             else next() /\ commit() /\ print("First solution with objective \(sol(obj))\n") endif
