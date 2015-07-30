@@ -593,7 +593,7 @@ namespace MiniZinc {
 %left MZN_PLUS MZN_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
 %nonassoc MZN_NOT
-%right MZN_PLUSPLUS
+%left MZN_PLUSPLUS
 %left MZN_QUOTED_IDENTIFIER
 %left MZN_COLONCOLON
 
@@ -1594,9 +1594,19 @@ comp_or_expr :
 
 let_expr :
       MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
-      { $$=new Let(@$, *$3, $6); delete $3; }
+      { if ($3 && $6) {
+          $$=new Let(@$, *$3, $6); delete $3;
+        } else {
+          $$=NULL;
+        }
+      }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
-      { $$=new Let(@$, *$3, $7); delete $3; }
+      { if ($3 && $7) {
+          $$=new Let(@$, *$3, $7); delete $3;
+        } else {
+          $$=NULL;
+        }
+      }
 
 let_vardecl_item_list :
       let_vardecl_item

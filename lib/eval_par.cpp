@@ -466,9 +466,11 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        if (bo->lhs()->type().isintset() && bo->rhs()->type().isintset()) {
-          IntSetVal* v0 = eval_intset(env,bo->lhs());
-          IntSetVal* v1 = eval_intset(env,bo->rhs());
+        Expression* lhs = eval_par(env, bo->lhs());
+        Expression* rhs = eval_par(env, bo->rhs());
+        if (lhs->type().isintset() && rhs->type().isintset()) {
+          IntSetVal* v0 = eval_intset(env,lhs);
+          IntSetVal* v1 = eval_intset(env,rhs);
           IntSetRanges ir0(v0);
           IntSetRanges ir1(v1);
           switch (bo->op()) {
@@ -497,11 +499,11 @@ namespace MiniZinc {
             }
           default: throw EvalError(env, e->loc(),"not a set of int expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isint() && bo->rhs()->type().isint()) {
+        } else if (lhs->type().isint() && rhs->type().isint()) {
           if (bo->op() != BOT_DOTDOT)
             throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
-          return IntSetVal::a(eval_int(env,bo->lhs()),
-                              eval_int(env,bo->rhs()));
+          return IntSetVal::a(eval_int(env,lhs),
+                              eval_int(env,rhs));
         } else {
           throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
         }
@@ -580,47 +582,33 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        if ( bo->op()==BOT_EQ && (bo->lhs()->type().isopt() || bo->rhs()->type().isopt()) ) {
-          Expression* elhs = eval_par(env,bo->lhs());
-          Expression* erhs = eval_par(env,bo->rhs());
-          if (elhs == constants().absent || erhs==constants().absent)
-            return bo->lhs()==bo->rhs();
+        Expression* lhs = eval_par(env, bo->lhs());
+        Expression* rhs = eval_par(env, bo->rhs());
+        if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
+          if (lhs == constants().absent || rhs==constants().absent)
+            return lhs==rhs;
         }
-        if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
+        if (lhs->type().isbool() && rhs->type().isbool()) {
           switch (bo->op()) {
-          case BOT_LE: return eval_bool(env,bo->lhs())<eval_bool(env,bo->rhs());
-          case BOT_LQ: return eval_bool(env,bo->lhs())<=eval_bool(env,bo->rhs());
-          case BOT_GR: return eval_bool(env,bo->lhs())>eval_bool(env,bo->rhs());
-          case BOT_GQ: return eval_bool(env,bo->lhs())>=eval_bool(env,bo->rhs());
-          case BOT_EQ: return eval_bool(env,bo->lhs())==eval_bool(env,bo->rhs());
-          case BOT_NQ: return eval_bool(env,bo->lhs())!=eval_bool(env,bo->rhs());
-          case BOT_EQUIV: return eval_bool(env,bo->lhs())==eval_bool(env,bo->rhs());
-          case BOT_IMPL: return (!eval_bool(env,bo->lhs()))||eval_bool(env,bo->rhs());
-          case BOT_RIMPL: return (!eval_bool(env,bo->rhs()))||eval_bool(env,bo->lhs());
-          case BOT_OR: return eval_bool(env,bo->lhs())||eval_bool(env,bo->rhs());
-          case BOT_AND: return eval_bool(env,bo->lhs())&&eval_bool(env,bo->rhs());
-          case BOT_XOR: return eval_bool(env,bo->lhs())^eval_bool(env,bo->rhs());
+          case BOT_LE: return eval_bool(env,lhs)<eval_bool(env,rhs);
+          case BOT_LQ: return eval_bool(env,lhs)<=eval_bool(env,rhs);
+          case BOT_GR: return eval_bool(env,lhs)>eval_bool(env,rhs);
+          case BOT_GQ: return eval_bool(env,lhs)>=eval_bool(env,rhs);
+          case BOT_EQ: return eval_bool(env,lhs)==eval_bool(env,rhs);
+          case BOT_NQ: return eval_bool(env,lhs)!=eval_bool(env,rhs);
+          case BOT_EQUIV: return eval_bool(env,lhs)==eval_bool(env,rhs);
+          case BOT_IMPL: return (!eval_bool(env,lhs))||eval_bool(env,rhs);
+          case BOT_RIMPL: return (!eval_bool(env,rhs))||eval_bool(env,lhs);
+          case BOT_OR: return eval_bool(env,lhs)||eval_bool(env,rhs);
+          case BOT_AND: return eval_bool(env,lhs)&&eval_bool(env,rhs);
+          case BOT_XOR: return eval_bool(env,lhs)^eval_bool(env,rhs);
           default:
             assert(false);
             throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isint() && bo->rhs()->type().isint()) {
-          IntVal v0 = eval_int(env,bo->lhs());
-          IntVal v1 = eval_int(env,bo->rhs());
-          switch (bo->op()) {
-          case BOT_LE: return v0<v1;
-          case BOT_LQ: return v0<=v1;
-          case BOT_GR: return v0>v1;
-          case BOT_GQ: return v0>=v1;
-          case BOT_EQ: return v0==v1;
-          case BOT_NQ: return v0!=v1;
-          default:
-            assert(false);
-            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
-          }
-        } else if (bo->lhs()->type().isfloat() && bo->rhs()->type().isfloat()) {
-          FloatVal v0 = eval_float(env,bo->lhs());
-          FloatVal v1 = eval_float(env,bo->rhs());
+        } else if (lhs->type().isint() && rhs->type().isint()) {
+          IntVal v0 = eval_int(env,lhs);
+          IntVal v1 = eval_int(env,rhs);
           switch (bo->op()) {
           case BOT_LE: return v0<v1;
           case BOT_LQ: return v0<=v1;
@@ -632,20 +620,34 @@ namespace MiniZinc {
             assert(false);
             throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isint() && bo->rhs()->type().isintset()) {
-          IntVal v0 = eval_int(env,bo->lhs());
+        } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
+          FloatVal v0 = eval_float(env,lhs);
+          FloatVal v1 = eval_float(env,rhs);
+          switch (bo->op()) {
+          case BOT_LE: return v0<v1;
+          case BOT_LQ: return v0<=v1;
+          case BOT_GR: return v0>v1;
+          case BOT_GQ: return v0>=v1;
+          case BOT_EQ: return v0==v1;
+          case BOT_NQ: return v0!=v1;
+          default:
+            assert(false);
+            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+          }
+        } else if (lhs->type().isint() && rhs->type().isintset()) {
+          IntVal v0 = eval_int(env,lhs);
           GCLock lock;
-          IntSetVal* v1 = eval_intset(env,bo->rhs());
+          IntSetVal* v1 = eval_intset(env,rhs);
           switch (bo->op()) {
           case BOT_IN: return v1->contains(v0);
           default:
             assert(false);
             throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().is_set() && bo->rhs()->type().is_set()) {
+        } else if (lhs->type().is_set() && rhs->type().is_set()) {
           GCLock lock;
-          IntSetVal* v0 = eval_intset(env,bo->lhs());
-          IntSetVal* v1 = eval_intset(env,bo->rhs());
+          IntSetVal* v0 = eval_intset(env,lhs);
+          IntSetVal* v1 = eval_intset(env,rhs);
           IntSetRanges ir0(v0);
           IntSetRanges ir1(v1);
           switch (bo->op()) {
@@ -660,10 +662,10 @@ namespace MiniZinc {
           default:
             throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isstring() && bo->rhs()->type().isstring()) {
+        } else if (lhs->type().isstring() && rhs->type().isstring()) {
           GCLock lock;
-          std::string s0 = eval_string(env,bo->lhs());
-          std::string s1 = eval_string(env,bo->rhs());
+          std::string s0 = eval_string(env,lhs);
+          std::string s1 = eval_string(env,rhs);
           switch (bo->op()) {
             case BOT_EQ: return s0==s1;
             case BOT_NQ: return s0!=s1;
@@ -674,12 +676,12 @@ namespace MiniZinc {
             default:
               throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
           }
-        } else if (bo->op()==BOT_EQ && bo->lhs()->type().isann()) {
-          return Expression::equal(eval_par(env,bo->lhs()), eval_par(env,bo->rhs()));
-        } else if (bo->op()==BOT_EQ && bo->lhs()->type().dim() > 0 &&
-                   bo->rhs()->type().dim() > 0) {
-          ArrayLit* al0 = eval_array_lit(env,bo->lhs());
-          ArrayLit* al1 = eval_array_lit(env,bo->rhs());
+        } else if (bo->op()==BOT_EQ && lhs->type().isann()) {
+          return Expression::equal(lhs, rhs);
+        } else if (bo->op()==BOT_EQ && lhs->type().dim() > 0 &&
+                   rhs->type().dim() > 0) {
+          ArrayLit* al0 = eval_array_lit(env,lhs);
+          ArrayLit* al1 = eval_array_lit(env,rhs);
           if (al0->v().size() != al1->v().size())
             return false;
           for (unsigned int i=0; i<al0->v().size(); i++) {
@@ -799,9 +801,11 @@ namespace MiniZinc {
       case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        if (bo->lhs()->type().isintset() && bo->rhs()->type().isintset()) {
-          IntSetVal* v0 = eval_boolset(env,bo->lhs());
-          IntSetVal* v1 = eval_boolset(env,bo->rhs());
+        Expression* lhs = eval_par(env, bo->lhs());
+        Expression* rhs = eval_par(env, bo->rhs());
+        if (lhs->type().isintset() && rhs->type().isintset()) {
+          IntSetVal* v0 = eval_boolset(env,lhs);
+          IntSetVal* v1 = eval_boolset(env,rhs);
           IntSetRanges ir0(v0);
           IntSetRanges ir1(v1);
           switch (bo->op()) {
@@ -830,11 +834,11 @@ namespace MiniZinc {
             }
             default: throw EvalError(env, e->loc(),"not a set of bool expression", bo->opToString());
           }
-        } else if (bo->lhs()->type().isbool() && bo->rhs()->type().isbool()) {
+        } else if (lhs->type().isbool() && rhs->type().isbool()) {
           if (bo->op() != BOT_DOTDOT)
             throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
-          return IntSetVal::a(eval_bool(env,bo->lhs()),
-                              eval_bool(env,bo->rhs()));
+          return IntSetVal::a(eval_bool(env,lhs),
+                              eval_bool(env,rhs));
         } else {
           throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
         }
@@ -1615,6 +1619,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(Bounds(0,0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
@@ -1936,6 +1945,11 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (c.args()[le ? 1 : 0]->type().isopt()) {
+          valid = false;
+          _bounds.push_back(FBounds(0.0,0.0));
+          return;
+        }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
         FloatVal d = le ? c.args()[2]->cast<FloatLit>()->v() : 0.0;
         int stacktop = _bounds.size();

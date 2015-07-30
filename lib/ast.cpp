@@ -135,6 +135,7 @@ namespace MiniZinc {
           break;
         case Expression::E_LET:
           pushall(cur->cast<Let>()->let());
+          pushall(cur->cast<Let>()->_let_orig);
           pushstack(cur->cast<Let>()->in());
           break;
         case Expression::E_TI:
@@ -560,16 +561,35 @@ namespace MiniZinc {
     for (unsigned int i=_let.size(); i--;)
       cmb_hash(Expression::hash(_let[i]));
   }
+
+  Let::Let(const Location& loc,
+           const std::vector<Expression*>& let, Expression* in)
+  : Expression(loc,E_LET,Type()) {
+    _let = ASTExprVec<Expression>(let);
+    std::vector<Expression*> vde(let.size());
+    for (unsigned int i=0; i<let.size(); i++) {
+      if (VarDecl* vd = Expression::dyn_cast<VarDecl>(let[i])) {
+        vde[i] =  vd->e();
+      } else {
+        vde[i] = NULL;
+      }
+    }
+    _let_orig = ASTExprVec<Expression>(vde);
+    _in = in;
+    rehash();
+  }
+
+  
   void
   Let::pushbindings(void) {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
-      if (_let[i]->isa<VarDecl>()) {
-        VarDecl* vd = _let[i]->cast<VarDecl>();
+      if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
         GC::trail(&vd->_e,vd->e());
         if (vd->ti()->ranges().size() > 0) {
           GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
         }
+        vd->e(_let_orig[i]);
       }
     }
   }
