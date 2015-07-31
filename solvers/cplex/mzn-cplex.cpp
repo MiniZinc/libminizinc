@@ -64,10 +64,12 @@ int main(int argc, char** argv) {
   bool flag_all_solutions = false;
 
   /// PARAMS
-  int nThreads=-1;
+  int nThreads=1;
   string sExportModel;
   double nTimeout=-1;
   double nWorkMemLimit=-1;
+  string sReadParams;
+  string sWriteParams;
 
 
   clock_t starttime = std::clock();
@@ -226,6 +228,8 @@ int main(int argc, char** argv) {
       globals_dir = argv[i];
     } else if (string(argv[i])=="-a") {
       flag_all_solutions = true;
+    } else if (string(argv[i])=="-f") {
+      std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
@@ -287,6 +291,18 @@ int main(int argc, char** argv) {
         cerr << "\nBad value for --workmem: " << nP << endl;
         goto error;
       }
+    } else if (string(argv[i])=="--readParam") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sReadParams = argv[i];
+    } else if (string(argv[i])=="--writeParam") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sWriteParams = argv[i];
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -473,6 +489,8 @@ int main(int argc, char** argv) {
               options.setIntParam   ("parallel_threads", nThreads);
               options.setFloatParam ("timelimit",        nTimeout);
               options.setFloatParam ("memory_limit",     nWorkMemLimit);
+              options.setStringParam("read_param",       sReadParams);
+              options.setStringParam("write_param",      sWriteParams);
 
               CPLEXSolverInstance cplex(env,options);
               cplex.processFlatZinc();
@@ -539,13 +557,13 @@ error:
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
-  << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
-  << "-p <N>              use N threads" << std::endl
+  << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "-p <N>              use N threads, default: 1" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
-  << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
-  << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
+  << "--readParam <file>  read CPLEX parameters from file" << std::endl
+  << "--writeParam <file> write CPLEX parameters to file" << std::endl
   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
   << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
 

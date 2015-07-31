@@ -1389,6 +1389,7 @@ namespace MiniZinc {
         ASTString help_short_str;
         ASTString ignoreStdlib_str;
         ASTString include_str;
+        ASTString inputFromStdin_str;
         ASTString instanceCheckOnly_str;
         ASTString no_optimize_str;
         ASTString no_optimize_alt_str;
@@ -1412,6 +1413,12 @@ namespace MiniZinc {
         ASTString verbose_short_str;
         ASTString version_str;
         ASTString werror_str; 
+        
+        struct {
+          ASTString all_sols_str;
+          ASTString fzn_solver_str;
+        } solver;
+        
       } cli;
       
       /// options strings to find setting in Options map
@@ -1426,6 +1433,7 @@ namespace MiniZinc {
         ASTString includeDir;
         ASTString includePaths;
         ASTString instanceCheckOnly;
+        ASTString inputFromStdin;
         ASTString model;
         ASTString newfzn;  
         ASTString noOznOutput;
@@ -1439,7 +1447,21 @@ namespace MiniZinc {
         ASTString typecheck;
         ASTString verbose;
         ASTString werror;
+        
+        struct {
+          ASTString allSols;
+          ASTString fzn_solver;
+        } solver;
+        
       } opts;
+      
+      /// categories of the command line interface options
+      struct {
+        ASTString general;
+        ASTString io;        
+        ASTString solver;
+        ASTString translation;
+      } cli_cat;
       
       static const int maxConstInt = 1000;
       /// Constant integers in the range -maxConstInt..maxConstInt

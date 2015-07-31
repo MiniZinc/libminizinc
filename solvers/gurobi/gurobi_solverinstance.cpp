@@ -340,10 +340,11 @@ namespace MiniZinc {
         //std::cout << "\n   ----------------------  MIP__OPTIMAL  ----------------------------------" << std::endl;
         assignSolutionToOutput();
         break;
-        s = SolverInstance::SS_SAT;
-        //std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
-        assignSolutionToOutput();
-        break;
+//       case GRB_FEASIBLE:
+//         s = SolverInstance::SAT;
+//         //std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
+//         assignSolutionToOutput();
+//         break;
       case GRB_INFEASIBLE:
         s = SolverInstance::SS_UNSAT;
         //std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;

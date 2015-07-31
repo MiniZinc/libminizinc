@@ -45,7 +45,7 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
                     x[i] in 1..S             % Do this in case it's a var.
                       /\  %% trying to eliminate non-reachable states:
                     let {
-                      set of int: va_R = { d[va, vx] | va in dom(a[i]), vx in dom(x[i]) }
+                      set of int: va_R = { d[va, vx] | va in dom(a[i]), vx in dom(x[i]) } diff { 0 }     %% Bug in MZN 2.0.4
                     } in
                         a[i+1] in va_R
                 )
@@ -66,7 +66,7 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
             } in
         forall(i in index_set(x)) (
             let {
-              set of int: va_R = { d[va, vx] | va in dom(a[i]), vx in dom(x[i]) }
+              set of int: va_R = { d[va, vx] | va in dom(a[i]), vx in dom(x[i]) } diff { 0 }     %% Bug in MZN 2.0.4
             } in
               my_trace("   S" ++ show(i)
                 ++ ": dom(a[i])=" ++ show(dom(a[i]))
