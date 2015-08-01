@@ -120,11 +120,13 @@ namespace MiniZinc {
   
   /// Check if \a e is NULL or true
   bool istrue(EnvI& env, Expression* e) {
+    GCLock lock;
     return e==NULL || (e->type().ispar() && e->type().isbool()
                        && eval_bool(env,e));
   }  
   /// Check if \a e is non-NULL and false
   bool isfalse(EnvI& env, Expression* e) {
+    GCLock lock;
     return e!=NULL && e->type().ispar() && e->type().isbool()
            && !eval_bool(env,e);
   }  
@@ -2477,7 +2479,7 @@ namespace MiniZinc {
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
             id->decl()->flat(vd);
-            ArrayLit* al = vd->e()->cast<ArrayLit>();
+            ArrayLit* al = follow_id(vd->id())->cast<ArrayLit>();
             if (al->v().size()==0) {
               if (r==NULL)
                 ret.r = al;
@@ -3483,7 +3485,12 @@ namespace MiniZinc {
           case BOT_IMPL:
           {
             if (ctx.b==C_ROOT && r==constants().var_true && boe0->type().ispar()) {
-              if (eval_bool(env,boe0)) {
+              bool b;
+              {
+                GCLock lock;
+                b = eval_bool(env,boe0);
+              }
+              if (b) {
                 Ctx nctx = ctx;
                 nctx.neg = negArgs;
                 nctx.b = negArgs ? C_NEG : C_ROOT;
@@ -3497,7 +3504,12 @@ namespace MiniZinc {
               break;
             }
             if (ctx.b==C_ROOT && r==constants().var_true && boe1->type().ispar()) {
-              if (eval_bool(env,boe1)) {
+              bool b;
+              {
+                GCLock lock;
+                b = eval_bool(env,boe1);
+              }
+              if (b) {
                 Ctx nctx = ctx;
                 nctx.neg = negArgs;
                 nctx.b = negArgs ? C_NEG : C_ROOT;
@@ -5233,7 +5245,6 @@ namespace MiniZinc {
         }
       }
     }
-    e.output->compact();
 
     for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
          it != e.output_vo._m.end(); ++it) {
@@ -6153,6 +6164,7 @@ namespace MiniZinc {
     }
     
     m->compact();
+    e.envi().output->compact();
 
     for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
          it != env.vo._m.end(); ++it) {

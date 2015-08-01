@@ -389,6 +389,7 @@ int main(int argc, char** argv) {
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             } else {
               env.flat()->compact();
+              env.output()->compact();
             }
             
             if (flag_statistics) {
