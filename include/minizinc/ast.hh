@@ -1376,6 +1376,8 @@ namespace MiniZinc {
         ASTString set_card;
         
         ASTString introduced_var;
+        
+        ASTString quad_obj;
       } ids;
     
       /// Identifiers for Boolean contexts

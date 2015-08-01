@@ -20,7 +20,7 @@
 #include <minizinc/solver_instance.hh>
 
 namespace MiniZinc {
-
+  
   /// abstract class for incremental solver interfaces (incremental := solvers that allow adding of variables/constraints during search)
   class SolverInstanceBase {
   protected:

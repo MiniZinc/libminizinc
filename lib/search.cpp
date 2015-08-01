@@ -80,21 +80,22 @@ namespace MiniZinc {
         SolverInstance::Status ret;
         env.envi().resetCommitted();
         env.envi().pushSolution(env.envi().getCurrentSolution());
-        if(call->decl()->e()) {      
+        if(call->decl()->e()) {
           if(verbose) 
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its defined body." << std::endl;
           (void) interpretCombinator(call->decl()->e(), solver,verbose);
-        } else { 
-          if(verbose) 
+        } else {
+          if(verbose)
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
           if(call->id() == constants().combinators.best_max || 
             call->id() == constants().combinators.best_min) {
             bool print = false;
             if(call->args().size() > 1)
-              if(Id* id = call->args()[1]->dyn_cast<Id>()) 
+              if(Id* id = call->args()[1]->dyn_cast<Id>())
                 if(id->str() == constants().combinators.print)
-                  print = true;            
+                  print = true;
             int status = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, print, verbose);
+            
             if(status == SolverInstance::SUCCESS) {
               solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
               env.envi().commitLastSolution();
@@ -256,6 +257,7 @@ namespace MiniZinc {
      
     VarDecl* decl; // TODO: use flat variable decl?
     if(Id* id = call->args()[0]->dyn_cast<Id>()) {
+//      std::cout << "&&& id: " << *id ->decl() << std::endl;
       decl = id->decl();
       if(decl->e()) { // if there is a right hand side
         if(Id* id_rhs = decl->e()->dyn_cast<Id>()) {
@@ -272,9 +274,8 @@ namespace MiniZinc {
       std::stringstream ssm;
       ssm << "Expected identifier instead of " << *(call->args()[0]) << " in " << *call;
       throw TypeError(solver->env().envi(), call->args()[0]->loc(), ssm.str());
-    }    
-    
-    return solver->best(decl,minimize,print); 
+    }
+    return solver->best(decl,minimize,print);
   }
   
   SolverInstance::Status 

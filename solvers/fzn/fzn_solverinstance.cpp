@@ -32,7 +32,7 @@
 #include <minizinc/copy.hh>
 
 namespace MiniZinc {
-  
+  void translateObj(Env& e);
   namespace {
     class FznProcess {
     protected:
@@ -367,9 +367,7 @@ namespace MiniZinc {
             it->second.first->e(it->second.second);
           }
         }
-        std::cout << "let's see ****" << std::endl;
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        std::cout << "let's see **** whether " << std::endl;
+        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);        
         //std::cerr << "DEBUG: printing solution model:\n";
         //debugprint(sm);
         //std::cerr << "=======================================\n";
@@ -457,12 +455,13 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status 
-  FZNSolverInstance::best(VarDecl* obj, bool minimize, bool print) {   
+  FZNSolverInstance::best(VarDecl* obj, bool minimize, bool print) {
     _fzn = _env.flat();
     // replace old solve item with min/max objective  
     SolveI* solveI = _fzn->solveItem();
-    SolveI* objective = minimize ? SolveI::min(Location(),obj->id()): 
+    SolveI* objective = minimize ? SolveI::min(Location(),obj->id()):
                                    SolveI::max(Location(),obj->id());
+    
     for(ExpressionSetIter it = solveI->ann().begin(); it!= solveI->ann().end(); ++it) {
       if(Call* c = (*it)->dyn_cast<Call>()) {
         if(c->id() == constants().ann.combinator) {
@@ -471,18 +470,171 @@ namespace MiniZinc {
       }
       objective->ann().add(MiniZinc::copy(_env.envi(),(*it)));
     }
-    solveI->remove();     
-    _fzn->addItem(objective);                                   
-    
+    solveI->remove();
+    _fzn->addItem(objective);
+    _env.flat()->compact();
     //std::cerr << "DEBUG: printing modified fzn model for BEST:\n";
     //debugprint(_fzn);
     //std::cerr << "====================================\n";
-    
-    SolverInstance::Status status = solve();   
+    /*
+    std::cout <<"++++++++++++++ before ++++++++++++++++"<<std::endl;
+    Printer p(std::cout);
+    p.print(_env.flat());
+    std::cout << "============== before ==============="<< std::endl;
+    */
+    translateObj(_env);
+    /*
+    std::cout <<"++++++++++++++ after ++++++++++++++++"<<std::endl;
+    p.print(_env.flat());
+    std::cout << "============== after ==============="<< std::endl;
+     */
+    SolverInstance::Status status = solve();
     if(print && status == SolverInstance::SUCCESS)
       _env.evalOutput(std::cerr);
     return status;
   }
   
-  
+  //extensions David
+  void translateObj(Env& e) {
+    GCLock lock;
+    Model* m = e.flat();
+    SolveI* si = m->solveItem();
+    si->remove();
+    Id* si_id_0 = si->e()->cast<Id>();
+    
+    //todo test whether the solve item is acutally float, the followin code is based on this assupiton
+    
+    if(!si_id_0->decl()->e()){
+      IdMap<Expression*> definitionMap;
+      //todo: how can I avoid the same id twice on the map
+      //which items do I  need on the map
+      
+      //iterate over all costraints in model
+      for (ConstraintIterator it = e.flat()->begin_constraints();
+           it != e.flat()->end_constraints(); ++it) {
+        //iterate over all elements in each constraint
+        for (ExpressionSetIter anns = it->e()->ann().begin();
+             anns != it->e()->ann().end(); ++anns) {
+          //if constraint "defines_var"
+          if (Call* ann_c = (*anns)->dyn_cast<Call>()) {
+            if (ann_c->id()==constants().ann.defines_var) {
+              Id* ident = ann_c->args()[0]->cast<Id>();
+              //put constraint onto map and  remove them from model, but add them later again
+              definitionMap.insert(ident, it->e());
+              it->remove();
+            }
+          }
+        }
+        if (Call* c = it->e()->dyn_cast<Call>()) {
+          // TODO: can this introduce cycles?
+          if (c->id()==constants().ids.int2float) {
+            if (Id* ident = c->args()[0]->dyn_cast<Id>()) {
+              if (definitionMap.find(ident)==definitionMap.end())
+              definitionMap.insert(ident, c);
+              it->remove();
+            }
+
+            if (Id* ident = c->args()[1]->dyn_cast<Id>()) {
+              if (definitionMap.find(ident)==definitionMap.end())
+              definitionMap.insert(ident, c);
+            }
+
+          }
+        }
+      }
+      
+      
+      Id* si_id = si->e()->cast<Id>(); // solve maximize si_id
+      IdMap<Expression*>::iterator si_it =  definitionMap.find(si_id);
+      
+      Call* si_call = si_it->second->dyn_cast<Call>(); //float_lin_eq(X_INTRODUCED_8,[profit,X_INTRODUCED_5,X_INTRODUCED_3],-0.0):: defines_var(profit)
+      ASTExprVec<Expression> si_args = si_call->args();
+      ASTExprVec<Expression> obj_var = si_args[1]->dyn_cast<ArrayLit>()->v();
+      float si_const = si_args[2]->dyn_cast<FloatLit>()->v();
+      
+      std::vector<Expression*> var;
+      std::vector<Expression*> qMat;
+      std::vector<Expression*> cVec;
+      std::vector<int> q_vector;
+      
+      ASTExprVec<Expression> si_args_red;
+    
+      int idx = 0;
+      for(int i=0; i<obj_var.size();i++){
+        //if not objective variable
+        if(obj_var[i]->dyn_cast<Id>()->str() != si_id_0->str()){
+          //used to construct the qMat
+          std::vector<int> tmp_vector(obj_var.size()-1, 0);
+          Id* quad_var_id = obj_var[i]->dyn_cast<Id>();
+          IdMap<Expression*>::iterator var_it = definitionMap.find(quad_var_id);
+          //assumption: the call is float_times -> needs to be veryfied
+          if(Call* quad_fun = var_it->second->dyn_cast<Call>()){
+            if(quad_fun->id() == constants().ids.float_.times){
+              var.push_back(quad_var_id);
+              definitionMap.remove(quad_var_id);
+              //assumption -> same variable is not in float_times and somehow linear -> is that true??
+              cVec.push_back(new IntLit(Location(),0));
+              tmp_vector[idx]=1;
+            }
+            else{
+              cVec.push_back(new IntLit(Location(),1));
+              definitionMap.remove(quad_var_id);
+              var.push_back(quad_var_id);
+            }
+          }
+          q_vector.insert(q_vector.end(),tmp_vector.begin(),tmp_vector.end());
+          idx++;
+        }
+      }
+      for(int i=0; i<var.size() ;i++){
+      }
+      for(int idx=0;idx<q_vector.size();idx++){
+        qMat.push_back(new IntLit(Location(),q_vector[idx]));
+      }
+
+      SolveI* nsi = NULL;
+      
+      std::vector<Expression*> argsExpr;
+      
+      argsExpr.push_back(new ArrayLit(Location(),var));
+      argsExpr.push_back(new ArrayLit(Location(),qMat));
+      argsExpr.push_back(new ArrayLit(Location(),cVec));
+      //add a constant at the end, probably not used for the progressive hedging implementation
+      argsExpr.push_back(new FloatLit(Location(),si_const));
+      
+      //how do I determine wether min or max in case of satisfy for the PH
+      //could make it default for the initial tests
+      Call* c = new Call(Location(), constants().ids.quad_obj, argsExpr);
+      c->type(Type::varint());
+      
+      switch (si->st()) {
+          case SolveI::ST_SAT:
+          nsi = SolveI::sat(Location());
+          break;
+          case SolveI::ST_MIN:
+          nsi = SolveI::min(Location(),c);
+          break;
+          case SolveI::ST_MAX:
+          nsi = SolveI::max(Location(),c);
+          break;
+      }
+      
+      for(IdMap<Expression*>::iterator it = definitionMap.begin();
+          it != definitionMap.end();it++){
+        Call* tmp = it->second->dyn_cast<Call>();
+        std::vector<Expression*> argsExpr;
+        for(int i=0; i<tmp->args().size();i++){
+            argsExpr.push_back(tmp->args()[i]);
+        }
+        Call* c_tmp = new Call(Location(), tmp->id(),argsExpr);
+        ConstraintI* c = new ConstraintI(Location(),c_tmp);
+        m->addItem(c);
+      }
+      m->addItem(nsi);
+
+    }
+    else{
+      std::cout << "should not enter here in fzn-solverinstance.cpp -> translateObj(..)"<<std::endl;
+       }
+  }
 }

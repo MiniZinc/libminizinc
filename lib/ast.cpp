@@ -1070,6 +1070,7 @@ namespace MiniZinc {
     ids.set_card = ASTString("set_card");
     
     ids.introduced_var = ASTString("__INTRODUCED");
+    ids.quad_obj = ASTString("quad_obj");
 
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
@@ -1300,6 +1301,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.introduced_var));
+    v.push_back(new StringLit(Location(),ids.quad_obj));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);

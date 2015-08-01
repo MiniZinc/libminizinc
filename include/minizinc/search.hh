@@ -41,7 +41,6 @@ namespace MiniZinc {
     void search(Env& env, MiniZinc::Options& opt) {
       SolverInstanceBase* solver = new SolverInstanceBase(env,opt);     
       solver->processFlatZinc();
-      std::cout << "solver_item: " << *env.flat()->solveItem() << std::endl;
       
       bool verbose = opt.getBoolParam(constants().opts.verbose.str(),false);
       
@@ -77,7 +76,6 @@ namespace MiniZinc {
           std::cout << "=====UNSAT=====";
           break;        
       }
-      std::cout << std::endl;
     }
     
   private:
