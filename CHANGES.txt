@@ -2,6 +2,20 @@
 # MiniZinc Changelog #
 ======================
 
+Version 2.0.6
+=============
+
+Changes:
+ - Add parser support for hexadecimal floating point constants.
+
+Bug fixes:
+ - Fix bounds computation for some calls (abs, int_times).
+ - Fix flattening of some array declarations (when right hand side is
+   an identifier).
+ - Add four missing GC locks (could lead to incorrect garbage collection).
+ - Compact output model only after optimisation phase (could lead to 
+   incorrect items being removed from output model).
+
 Version 2.0.5
 =============
 
