@@ -5245,7 +5245,6 @@ namespace MiniZinc {
         }
       }
     }
-    e.output->compact();
 
     for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
          it != e.output_vo._m.end(); ++it) {
@@ -6165,6 +6164,7 @@ namespace MiniZinc {
     }
     
     m->compact();
+    e.envi().output->compact();
 
     for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
          it != env.vo._m.end(); ++it) {
