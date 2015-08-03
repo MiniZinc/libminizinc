@@ -476,18 +476,20 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: printing modified fzn model for BEST:\n";
     //debugprint(_fzn);
     //std::cerr << "====================================\n";
-    /*
-    std::cout <<"++++++++++++++ before ++++++++++++++++"<<std::endl;
-    Printer p(std::cout);
-    p.print(_env.flat());
-    std::cout << "============== before ==============="<< std::endl;
-    */
-    translateObj(_env);
-    /*
-    std::cout <<"++++++++++++++ after ++++++++++++++++"<<std::endl;
-    p.print(_env.flat());
-    std::cout << "============== after ==============="<< std::endl;
-     */
+    
+    if(false){
+      std::cout <<"++++++++++++++ before ++++++++++++++++"<<std::endl;
+      Printer p(std::cout);
+      p.print(_env.flat());
+      std::cout << "============== before ==============="<< std::endl;
+      
+      translateObj(_env);
+      /*
+      std::cout <<"++++++++++++++ after ++++++++++++++++"<<std::endl;
+      p.print(_env.flat());
+      std::cout << "============== after ==============="<< std::endl;
+       */
+    }
     SolverInstance::Status status = solve();
     if(print && status == SolverInstance::SUCCESS)
       _env.evalOutput(std::cerr);
@@ -496,6 +498,11 @@ namespace MiniZinc {
   
   //extensions David
   void translateObj(Env& e) {
+    // how to find out whether tranlating or not?
+    // how to deal with interger objective functions
+    // test whether fzn-cplex is happy with linear objective functions
+    
+    std::cout << "entered translate objective"<< std::endl;
     GCLock lock;
     Model* m = e.flat();
     SolveI* si = m->solveItem();
@@ -503,7 +510,6 @@ namespace MiniZinc {
     Id* si_id_0 = si->e()->cast<Id>();
     
     //todo test whether the solve item is acutally float, the followin code is based on this assupiton
-    
     if(!si_id_0->decl()->e()){
       IdMap<Expression*> definitionMap;
       //todo: how can I avoid the same id twice on the map
@@ -546,9 +552,17 @@ namespace MiniZinc {
       
       Id* si_id = si->e()->cast<Id>(); // solve maximize si_id
       IdMap<Expression*>::iterator si_it =  definitionMap.find(si_id);
-      
       Call* si_call = si_it->second->dyn_cast<Call>(); //float_lin_eq(X_INTRODUCED_8,[profit,X_INTRODUCED_5,X_INTRODUCED_3],-0.0):: defines_var(profit)
       ASTExprVec<Expression> si_args = si_call->args();
+      std::cout << "solve item: " << *si_args[0] << std::endl;
+      std::cout << "solve item: " << *si_args[1] << std::endl;
+      std::cout << "solve item: " << *si_args[2] << std::endl;
+      ArrayLit* int_lin_args = si_args[1]->dyn_cast<ArrayLit>();
+      
+      
+      
+//      std::cout << "juhaaaa" << int_lin_args->v() << std::endl;
+      //todo check if si_args are variables or arrays
       ASTExprVec<Expression> obj_var = si_args[1]->dyn_cast<ArrayLit>()->v();
       float si_const = si_args[2]->dyn_cast<FloatLit>()->v();
       
