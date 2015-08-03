@@ -435,8 +435,15 @@ namespace MiniZinc {
     else
       _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~static_cast<ptrdiff_t>(1));
   }
+ 
   inline void
   VarDecl::flat(VarDecl* vd) {
+    //static int count = 0;
+    //if(vd == NULL) {
+    //  if (count==7529)
+    //    std::cerr << "found it\n";
+    //  std::cerr << "DEBUG: " << (this) << " " << flat() << " " << count++ << "\n";
+    // }
     _flat = WeakRef(vd);
   }
 

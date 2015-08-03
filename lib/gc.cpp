@@ -523,9 +523,10 @@ namespace MiniZinc {
             case Item::II_SOL:
               static_cast<SolveI*>(n)->ann().~Annotation();
               break;
-            case Expression::E_VARDECL:
+            case Expression::E_VARDECL: 
               // Reset WeakRef inside VarDecl
-              static_cast<VarDecl*>(n)->flat(NULL);
+              //std::cerr << "DEBUG: GC: set flat(NULL) for varDecl: " << *(static_cast<VarDecl*>(n)) << "\n";    
+              static_cast<VarDecl*>(n)->flat(NULL);                      
               // fall through
             default:
               if (n->_id >= ASTNode::NID_END+1 && n->_id <= Expression::EID_END) {

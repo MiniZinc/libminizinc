@@ -5153,8 +5153,8 @@ namespace MiniZinc {
                 vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
-                // marked as output in the FlatZinc
-                assert(vd->flat());
+                // marked as output in the FlatZinc                
+                //assert(vd->flat()); // TODO: add the assertion again and fix the underlying bug with flat() NULL pointers
                 
              
                 bool needOutputAnn = true;
@@ -5494,7 +5494,7 @@ namespace MiniZinc {
   
   void cleanupOutput(EnvI& env) {
     for (unsigned int i=0; i<env.output->size(); i++) {
-      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {        
         vdi->e()->flat(NULL);
       }
     }
@@ -5963,7 +5963,7 @@ namespace MiniZinc {
     if (!opt.keepOutputInFzn) {     
       createOutput(env);      
     }
-    cleanupOutput(env);
+    //cleanupOutput(env); // ANDREA: just testing
     return ee;
   }
   

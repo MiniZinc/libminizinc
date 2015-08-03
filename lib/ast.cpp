@@ -18,7 +18,7 @@
 #include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
-
+  
   Location::Location(void)
   : first_line(0),
     first_column(0),
