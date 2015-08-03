@@ -5449,9 +5449,11 @@ namespace MiniZinc {
         if (e.output_vo.occurrences(vdi->e())==0) {
           CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
-          assert(vdi->e()->flat());
-          removeIsOutput(vdi->e()->flat());
+          if(vdi->e()->flat())
+            removeIsOutput(vdi->e()->flat());
           vdi->remove();
+          if (e.output_vo.find(vdi->e()) != -1)
+            e.output_vo.remove(vdi->e());
         }
       }
     }    
@@ -5467,6 +5469,8 @@ namespace MiniZinc {
             assert(vdi->e()->flat());
             removeIsOutput(vdi->e()->flat());
             vdi->remove();
+            if (e.output_vo.find(vdi->e()) != -1)
+              e.output_vo.remove(vdi->e());
           }
         }
       }
