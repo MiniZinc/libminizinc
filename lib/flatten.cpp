@@ -5123,7 +5123,8 @@ namespace MiniZinc {
             vdi_copy->e()->ann().clear();
             vdi_copy->e()->introduced(false);
             IdMap<KeepAlive>::iterator it;
-            if (!vdi->e()->type().ispar()) {
+            if (!vdi->e()->type().ispar() &&
+                (vdi->e()->e()==NULL || !vdi->e()->e()->type().ispar())) {
               VarDecl* reallyFlat = vd->flat();
               while (reallyFlat!=reallyFlat->flat())
                 reallyFlat=reallyFlat->flat();
