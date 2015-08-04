@@ -5166,7 +5166,7 @@ namespace MiniZinc {
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
                 // marked as output in the FlatZinc                
-                //assert(vd->flat()); // TODO: add the assertion again and fix the underlying bug with flat() NULL pointers
+                assert(vd->flat()); 
                 
              
                 bool needOutputAnn = true;
