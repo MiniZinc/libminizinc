@@ -3606,8 +3606,8 @@ namespace MiniZinc {
               ctx.neg = false;
               ctx.b = -ctx.b;
               bot = BOT_EQUIV;
-              ctx0.b = ctx1.b = C_MIX;
             }
+            ctx0.b = ctx1.b = C_MIX;
             goto flatten_bool_op;
           case BOT_LE:
             if (ctx.neg) {
