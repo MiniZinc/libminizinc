@@ -569,7 +569,7 @@ namespace MiniZinc {
     _let = ASTExprVec<Expression>(let);
     std::vector<Expression*> vde(let.size());
     for (unsigned int i=0; i<let.size(); i++) {
-      if (VarDecl* vd = let[i]->dyn_cast<VarDecl>()) {
+      if (VarDecl* vd = Expression::dyn_cast<VarDecl>(let[i])) {
         vde[i] =  vd->e();
       } else {
         vde[i] = NULL;

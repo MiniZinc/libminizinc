@@ -45,18 +45,18 @@ namespace MiniZinc {
   class EnvI;
 
   /// Create a deep copy of expression \a e
-  Expression* copy(EnvI& env, Expression* e, bool followIds=false, bool copyFundecls=false);
+  Expression* copy(EnvI& env, Expression* e, bool followIds=false, bool copyFundecls=false, bool isFlatModel=false);
   /// Create a deep copy of item \a i
-  Item* copy(EnvI& env, Item* i, bool followIds=false, bool copyFundecls=false);
+  Item* copy(EnvI& env, Item* i, bool followIds=false, bool copyFundecls=false, bool isFlatModel=false);
   /// Create a deep copy of model \a m
   Model* copy(EnvI& env, Model* m);
 
   /// Create a deep copy of expression \a e
-  Expression* copy(EnvI& env, CopyMap& map, Expression* e, bool followIds=false, bool copyFundecls=false);
+  Expression* copy(EnvI& env, CopyMap& map, Expression* e, bool followIds=false, bool copyFundecls=false, bool isFlatModel=false);
   /// Create a deep copy of item \a i
-  Item* copy(EnvI& env, CopyMap& map, Item* i, bool followIds=false, bool copyFundecls=false, bool followIncludes=true);
+  Item* copy(EnvI& env, CopyMap& map, Item* i, bool followIds=false, bool copyFundecls=false, bool followIncludes=true, bool isFlatModel=false);
   /// Create a deep copy of model \a m
-  Model* copy(EnvI& env, CopyMap& map, Model* m, bool followIncludes);
+  Model* copy(EnvI& env, CopyMap& map, Model* m, bool followIncludes, bool isFlatModel=false);
 
 }
 

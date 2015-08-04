@@ -1686,9 +1686,6 @@ namespace MiniZinc {
           _bounds.push_back(Bounds(0,0));
         }
       } else if (c.id() == "int_times") {
-        BottomUpIterator<ComputeIntBounds> cbi(*this);
-        cbi.run(c.args()[0]);
-        cbi.run(c.args()[1]);
         Bounds b1 = _bounds.back(); _bounds.pop_back();
         Bounds b0 = _bounds.back(); _bounds.pop_back();
         if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
@@ -1706,8 +1703,6 @@ namespace MiniZinc {
       } else if (c.id() == constants().ids.bool2int) {
           _bounds.push_back(Bounds(0,1));
       } else if (c.id() == "abs") {
-        BottomUpIterator<ComputeIntBounds> cbi(*this);
-        cbi.run(c.args()[0]);
         Bounds b0 = _bounds.back();
         if (b0.first < 0) {
           _bounds.pop_back();

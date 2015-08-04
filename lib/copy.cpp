@@ -83,9 +83,9 @@ namespace MiniZinc {
     return copy_location(m,i->loc());
   }
 
-  void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds, bool copyFundecls);
+  void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds, bool copyFundecls, bool isFlatModel);
   
-  Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls) {
+  Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls, bool isFlatModel) {
     if (e==NULL) return NULL;
     if (Expression* cached = m.find(e))
       return cached;
@@ -128,7 +128,7 @@ namespace MiniZinc {
           } else {
             std::vector<Expression*> elems(s->v().size());
             for (unsigned int i=s->v().size(); i--;)
-              elems[i] = copy(env,m,s->v()[i],followIds,copyFundecls);
+              elems[i] = copy(env,m,s->v()[i],followIds,copyFundecls,isFlatModel);
             ASTExprVec<Expression> ce(elems);
             m.insert(s->v(),ce);
             c->v(ce);
@@ -201,7 +201,7 @@ namespace MiniZinc {
         } else {
           Id* c;
           if (id->decl()) {
-            VarDecl* vd = static_cast<VarDecl*>(copy(env,m,id->decl(),followIds,copyFundecls));
+            VarDecl* vd = static_cast<VarDecl*>(copy(env,m,id->decl(),followIds,copyFundecls,isFlatModel));
             c = vd->id();
           } else {
             if (id->idn()!=-1) {
@@ -246,7 +246,7 @@ namespace MiniZinc {
         } else {
           std::vector<Expression*> elems(al->v().size());
           for (unsigned int i=al->v().size(); i--;)
-            elems[i] = copy(env,m,al->v()[i],followIds,copyFundecls);
+            elems[i] = copy(env,m,al->v()[i],followIds,copyFundecls,isFlatModel);
           ASTExprVec<Expression> ce(elems);
           m.insert(al->v(),ce);
           v = ce.vec();
@@ -267,12 +267,12 @@ namespace MiniZinc {
         } else {
           std::vector<Expression*> elems(aa->idx().size());
           for (unsigned int i=aa->idx().size(); i--;)
-            elems[i] = copy(env,m,aa->idx()[i],followIds,copyFundecls);
+            elems[i] = copy(env,m,aa->idx()[i],followIds,copyFundecls,isFlatModel);
           ASTExprVec<Expression> ce(elems);
           m.insert(aa->idx(),ce);
           idx = ce.vec();
         }
-        c->v(copy(env,m,aa->v(),followIds,copyFundecls));
+        c->v(copy(env,m,aa->v(),followIds,copyFundecls,isFlatModel));
         c->idx(ASTExprVec<Expression>(idx));
         ret = c;
       }
@@ -285,14 +285,14 @@ namespace MiniZinc {
           new Comprehension(copy_location(m,e),NULL,g,c->set());
         m.insert(c,cc);
 
-        g._w = copy(env,m,c->where(),followIds,copyFundecls);
+        g._w = copy(env,m,c->where(),followIds,copyFundecls,isFlatModel);
         for (int i=0; i<c->n_generators(); i++) {
           std::vector<VarDecl*> vv;
           for (int j=0; j<c->n_decls(i); j++)
-            vv.push_back(static_cast<VarDecl*>(copy(env,m,c->decl(i,j),followIds,copyFundecls)));
-          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls)));
+            vv.push_back(static_cast<VarDecl*>(copy(env,m,c->decl(i,j),followIds,copyFundecls,isFlatModel)));
+          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel)));
         }
-        cc->init(copy(env,m,c->e(),followIds,copyFundecls),g);
+        cc->init(copy(env,m,c->e(),followIds,copyFundecls,isFlatModel),g);
         ret = cc;
       }
       break;
@@ -303,10 +303,10 @@ namespace MiniZinc {
         m.insert(e,c);
         std::vector<Expression*> ifthen(2*ite->size());
         for (unsigned int i=ite->size(); i--;) {
-          ifthen[2*i] = copy(env,m,ite->e_if(i),followIds,copyFundecls);
-          ifthen[2*i+1] = copy(env,m,ite->e_then(i),followIds,copyFundecls);
+          ifthen[2*i] = copy(env,m,ite->e_if(i),followIds,copyFundecls,isFlatModel);
+          ifthen[2*i+1] = copy(env,m,ite->e_then(i),followIds,copyFundecls,isFlatModel);
         }
-        c->init(ifthen,copy(env,m,ite->e_else(),followIds,copyFundecls));
+        c->init(ifthen,copy(env,m,ite->e_else(),followIds,copyFundecls,isFlatModel));
         ret = c;
       }
       break;
@@ -315,8 +315,8 @@ namespace MiniZinc {
         BinOp* b = e->cast<BinOp>();
         BinOp* c = new BinOp(copy_location(m,e),NULL,b->op(),NULL);
         m.insert(e,c);
-        c->lhs(copy(env,m,b->lhs(),followIds,copyFundecls));
-        c->rhs(copy(env,m,b->rhs(),followIds,copyFundecls));
+        c->lhs(copy(env,m,b->lhs(),followIds,copyFundecls,isFlatModel));
+        c->rhs(copy(env,m,b->rhs(),followIds,copyFundecls,isFlatModel));
         ret = c;
       }
       break;
@@ -325,7 +325,7 @@ namespace MiniZinc {
         UnOp* b = e->cast<UnOp>();
         UnOp* c = new UnOp(copy_location(m,e),b->op(),NULL);
         m.insert(e,c);
-        c->e(copy(env,m,b->e(),followIds,copyFundecls));
+        c->e(copy(env,m,b->e(),followIds,copyFundecls,isFlatModel));
         ret = c;
       }
       break;
@@ -350,7 +350,7 @@ namespace MiniZinc {
         m.insert(e,c);
         std::vector<Expression*> args(ca->args().size());
         for (unsigned int i=ca->args().size(); i--;)
-          args[i] = copy(env,m,ca->args()[i],followIds,copyFundecls);
+          args[i] = copy(env,m,ca->args()[i],followIds,copyFundecls,isFlatModel);
         c->args(args);
         ret = c;
       }
@@ -373,14 +373,14 @@ namespace MiniZinc {
         }
         c->toplevel(vd->toplevel());
         c->introduced(vd->introduced());
-        if (vd->flat()==vd)
+        if (isFlatModel && vd->flat()==vd)
           c->flat(c);
         else
           c->flat(vd->flat());
         c->payload(vd->payload());
         m.insert(e,c);
-        c->ti(static_cast<TypeInst*>(copy(env,m,vd->ti(),followIds,copyFundecls)));
-        c->e(copy(env,m,vd->e(),followIds,copyFundecls));
+        c->ti(static_cast<TypeInst*>(copy(env,m,vd->ti(),followIds,copyFundecls,isFlatModel)));
+        c->e(copy(env,m,vd->e(),followIds,copyFundecls,isFlatModel));
         c->type(c->ti()->type());
         c->id()->type(c->type());
         ret = c;
@@ -391,10 +391,10 @@ namespace MiniZinc {
         Let* l = e->cast<Let>();
         std::vector<Expression*> let(l->let().size());
         for (unsigned int i=l->let().size(); i--;)
-          let[i] = copy(env,m,l->let()[i],followIds,copyFundecls);
-        Let* c = new Let(copy_location(m,e),let,copy(env,m,l->in(),followIds,copyFundecls));
+          let[i] = copy(env,m,l->let()[i],followIds,copyFundecls,isFlatModel);
+        Let* c = new Let(copy_location(m,e),let,copy(env,m,l->in(),followIds,copyFundecls,isFlatModel));
         for (unsigned int i=l->let().size(); i--;) {
-          c->_let_orig[i] = copy(env,m,l->_let_orig[i],followIds,copyFundecls);
+          c->_let_orig[i] = copy(env,m,l->_let_orig[i],followIds,copyFundecls,isFlatModel);
         }
         
         m.insert(e,c);
@@ -412,11 +412,11 @@ namespace MiniZinc {
         } else {
           std::vector<TypeInst*> rr(t->ranges().size());
           for (unsigned int i=t->ranges().size(); i--;)
-            rr[i] = static_cast<TypeInst*>(copy(env,m,t->ranges()[i],followIds,copyFundecls));
+            rr[i] = static_cast<TypeInst*>(copy(env,m,t->ranges()[i],followIds,copyFundecls,isFlatModel));
           r = ASTExprVecO<TypeInst*>::a(rr);
         }
         TypeInst* c = new TypeInst(copy_location(m,e),t->type(),
-          ASTExprVec<TypeInst>(r),copy(env,m,t->domain(),followIds,copyFundecls));
+          ASTExprVec<TypeInst>(r),copy(env,m,t->domain(),followIds,copyFundecls,isFlatModel));
         m.insert(e,c);
         ret = c;
       }
@@ -434,23 +434,24 @@ namespace MiniZinc {
     }
     if (!ret->isa<Id>() || ret->cast<Id>()->decl()==NULL)
       ret->type(e->type());
-    copy_ann(env,m,e->ann(),ret->ann(),followIds,copyFundecls);
+    copy_ann(env,m,e->ann(),ret->ann(),followIds,copyFundecls,isFlatModel);
     return ret;
   }
 
-  void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds, bool copyFundecls) {
+  void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds, bool copyFundecls, bool isFlatModel) {
     for (ExpressionSetIter it = oldAnn.begin(); it != oldAnn.end(); ++it)
-      newAnn.add(copy(env,m,*it,followIds,copyFundecls));
+      newAnn.add(copy(env,m,*it,followIds,copyFundecls,isFlatModel));
   }
 
-  Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls) {
+  Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls, bool isFlatModel) {
     CopyMap m;
-    return copy(env,m,e,followIds,copyFundecls);
+    return copy(env,m,e,followIds,copyFundecls,isFlatModel);
   }
 
-  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool);
 
-  Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool followIncludes) {
+  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool followIncludes, bool isFlatModel);
+
+  Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool followIncludes, bool isFlatModel) {
     if (i==NULL) return NULL;
     if (Item* cached = m.find(i))
       return cached;
@@ -474,7 +475,7 @@ namespace MiniZinc {
         VarDeclI* c = new VarDeclI(copy_location(m,i),
           NULL);
         m.insert(i,c);
-        c->e(static_cast<VarDecl*>(copy(env,m,v->e(),followIds,copyFundecls)));
+        c->e(static_cast<VarDecl*>(copy(env,m,v->e(),followIds,copyFundecls,isFlatModel)));
         return c;
       }
     case Item::II_ASN:
@@ -484,8 +485,8 @@ namespace MiniZinc {
           new AssignI(copy_location(m,i),
                      a->id().str(),NULL);
         m.insert(i,c);
-        c->e(copy(env,m,a->e(),followIds,copyFundecls));
-        c->decl(static_cast<VarDecl*>(copy(env,m,a->decl(),followIds,copyFundecls)));
+        c->e(copy(env,m,a->e(),followIds,copyFundecls,isFlatModel));
+        c->decl(static_cast<VarDecl*>(copy(env,m,a->decl(),followIds,copyFundecls,isFlatModel)));
         return c;
       }
     case Item::II_CON:
@@ -493,7 +494,7 @@ namespace MiniZinc {
         ConstraintI* cc = i->cast<ConstraintI>();
         ConstraintI* c = new ConstraintI(copy_location(m,i),NULL);
         m.insert(i,c);
-        c->e(copy(env,m,cc->e(),followIds,copyFundecls));
+        c->e(copy(env,m,cc->e(),followIds,copyFundecls,isFlatModel));
         return c;
       }
     case Item::II_SOL:
@@ -505,20 +506,20 @@ namespace MiniZinc {
           c = SolveI::sat(Location());
           break;
         case SolveI::ST_MIN:
-          c = SolveI::min(Location(),copy(env,m,s->e(),followIds,copyFundecls));
+          c = SolveI::min(Location(),copy(env,m,s->e(),followIds,copyFundecls,isFlatModel));
           break;
         case SolveI::ST_MAX:
-          c = SolveI::max(Location(),copy(env,m,s->e(),followIds,copyFundecls));
+          c = SolveI::max(Location(),copy(env,m,s->e(),followIds,copyFundecls,isFlatModel));
           break;
         }
-        copy_ann(env,m, s->ann(), c->ann(), followIds,copyFundecls);
+        copy_ann(env,m, s->ann(), c->ann(), followIds,copyFundecls,isFlatModel);
         m.insert(i,c);
         return c;
       }
     case Item::II_OUT:
       {
         OutputI* o = i->cast<OutputI>();
-        OutputI* c = new OutputI(copy_location(m,i),copy(env,m,o->e(),followIds,copyFundecls));
+        OutputI* c = new OutputI(copy_location(m,i),copy(env,m,o->e(),followIds,copyFundecls,isFlatModel));
         m.insert(i,c);
         return c;
       }
@@ -527,10 +528,10 @@ namespace MiniZinc {
         FunctionI* f = i->cast<FunctionI>();
         std::vector<VarDecl*> params(f->params().size());
         for (unsigned int j=f->params().size(); j--;)
-          params[j] = static_cast<VarDecl*>(copy(env,m,f->params()[j],followIds,copyFundecls));
+          params[j] = static_cast<VarDecl*>(copy(env,m,f->params()[j],followIds,copyFundecls,isFlatModel));
         FunctionI* c = new FunctionI(copy_location(m,i),f->id().str(),
-          static_cast<TypeInst*>(copy(env,m,f->ti(),followIds,copyFundecls)),
-                                     params, copy(env,m,f->e(),followIds,copyFundecls));
+          static_cast<TypeInst*>(copy(env,m,f->ti(),followIds,copyFundecls,isFlatModel)),
+                                     params, copy(env,m,f->e(),followIds,copyFundecls,isFlatModel));
         c->_builtins.e = f->_builtins.e;
         c->_builtins.i = f->_builtins.i;
         c->_builtins.f = f->_builtins.f;
@@ -538,7 +539,7 @@ namespace MiniZinc {
         c->_builtins.s = f->_builtins.s;
         c->_builtins.str = f->_builtins.str;
 
-        copy_ann(env,m, f->ann(), c->ann(), followIds,copyFundecls);
+        copy_ann(env,m, f->ann(), c->ann(), followIds,copyFundecls,isFlatModel);
         m.insert(i,c);
         return c;
       }
@@ -546,12 +547,13 @@ namespace MiniZinc {
     }
   }
 
-  Item* copy(EnvI& env, Item* i, bool followIds, bool copyFundecls) {
+  Item* copy(EnvI& env, Item* i, bool followIds, bool copyFundecls, bool isFlatModel) {
     CopyMap m;
-    return copy(env,m,i,followIds,copyFundecls);
+    return copy(env,m,i,followIds,copyFundecls,isFlatModel);
   }
 
-  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool) {
+
+  Model* copy(EnvI& env, CopyMap& cm, Model* m, bool, bool isFlatModel) {
     bool followIncludes = true;
     if (m==NULL) return NULL;
     if (Model* cached = cm.find(m))
@@ -562,7 +564,7 @@ namespace MiniZinc {
 
     for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
       for (unsigned int i=0; i<it->second.size(); i++)
-        c->registerFn(env,copy(env,cm,it->second[i],false,true)->cast<FunctionI>());
+        c->registerFn(env,copy(env,cm,it->second[i],false,true,isFlatModel)->cast<FunctionI>());
     }
     cm.insert(m,c);
     return c;
