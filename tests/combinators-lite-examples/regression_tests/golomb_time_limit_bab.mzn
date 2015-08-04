@@ -17,9 +17,8 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 15;
+int: m = 13;
 int: n = m*m;
-int: nodes = 5000;
 
 array[1..m] of var 0..n: mark;
 var 0..n: obj;
@@ -37,22 +36,10 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
+int: time_ms = 5000;
+
 % solve using minimizing branch & bound
 solve %:: int_search(mark, input_order, indomain, complete)
- :: combinator(
-   scope(
-     or([ 
-       repeat(
-           and([
-%               next(), % get next solution with no time limit or node limit
-               next([time_limit(5.8),node_limit(nodes)]), % get next solution with time limit of 5.8secs and the given node limit
-               post(obj < sol(obj)), % post constraint
-               print() % print next solution
-           ])
-       ),
-       print % print final solution
-     ])
-   ) 
-) satisfy;
+search time_limit(time_ms, bab_min(obj)) /\ print();
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

@@ -17,16 +17,15 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 8;
+int: m = 14;
 int: n = m*m;
-set of int: TICKS = 1..m;
 
 var 0..n: obj;
 
-array[1..m] of var 0..n: mark;
-
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
+
+array[1..m] of var 0..n: mark;
 
 constraint mark[1] = 0;
 
@@ -39,14 +38,17 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
+int: iterations = 7;
 % solve using minimizing branch & bound
-solve search 
-         repeat (i in TICKS) (
-           if next() then 
-              print() /\
-              print("iteration "++show(i)++"\n")
-           else break
-           endif
-         );
+solve search my_bab(obj,iterations);
 
-output ["golomb ", show(mark), "\n", show(obj)];
+function ann: my_bab(var int: obj, int: iterations) =
+         repeat (i in 1..iterations) (
+                 next /\ % get next solution
+                 print /\ % print intermediate solution
+                 commit() /\
+                 post(obj < sol(obj)) % post constraint
+         );
+   
+
+output ["golomb ", show(obj), "\n", show(mark)];

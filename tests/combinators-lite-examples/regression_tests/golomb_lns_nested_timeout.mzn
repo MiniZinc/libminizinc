@@ -17,17 +17,18 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 15;
+int: m = 14;
 int: n = m*m;
-int: fails = 7000;
+
+var 0..n: obj;
 
 array[1..m] of var 0..n: mark;
-var 0..n: obj;
 
 array[int] of var 0..n: differences =
     [ mark[j] - mark[i] | i in 1..m, j in i+1..m];
 
 constraint mark[1] = 0;
+
 constraint obj = mark[m];
 
 constraint forall ( i in 1..m-1 ) ( mark[i] < mark[i+1] );
@@ -37,22 +38,36 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
+
+predicate neighbourhoodCts1(array[int] of var int: x, 
+                            float: destructionRate) = 
+   if(hasSol()) then 
+     let {
+       int: n = ceil((1.0 - destructionRate)*length(x));
+       array[1..n] of int: idx = [ uniform(1,length(x)-1) | i in 1..n ]; % length(x)-1: do not keep last mark
+     } in 
+       forall (i in idx) (
+         x[i] = sol(x[i])
+       )     
+   else true endif;
+
+float: d = 0.7;
+int: iterations = 10;
+int: timeout1 = 30000; % ms timeout for all LNS iterations
+int: timeout2 = 50000; % ms timeout for BAB in one iteration
+
 % solve using minimizing branch & bound
-solve %:: int_search(mark, input_order, indomain, complete)
- :: combinator(
-   scope(
-     or([ 
-       repeat(
-           and([
-%               next(), % get next solution with no time limit or node limit
-               next(fail_limit(fails)), % get next solution with time limit of 5.8secs and the given node limit
-               post(obj < sol(obj)), % post constraint
-               print() % print next solution
-           ])
-       ),
-       print % print final solution
-     ])
-   ) 
-) satisfy;
+solve search 
+time_limit(timeout1,
+    repeat (i in 1..iterations) (
+        scope(
+            post(neighbourhoodCts1(mark,d)) /\
+            time_limit(timeout2,
+                       bab_min(obj)) %next, % or bab
+            /\ print()            
+        ) /\
+        post(obj < sol(obj))
+    )
+  );
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];
