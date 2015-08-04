@@ -25,8 +25,8 @@ namespace MiniZinc {
     if (id->decl() == NULL)
       throw EvalError(env, e->loc(), "undeclared identifier", id->str().str());
     VarDecl* vd = id->decl();
-    while (vd->flat() && vd->flat() != vd)
-      vd = vd->flat();
+    while (vd->flat() && vd->flat() != vd) // TODO: check if we are evaluating something in the output model or not (add flag to eval_par etc)
+      vd = vd->flat();    
     if (vd->e() == NULL)
       throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
     typename E::Val r = E::e(env,vd->e());
@@ -382,16 +382,16 @@ namespace MiniZinc {
       }
       realdim /= al->max(i)-al->min(i)+1;
       realidx += (ix-al->min(i))*realdim;
-    }
+    }    
     assert(realidx >= 0 && realidx <= al->v().size());
     return al->v()[static_cast<unsigned int>(realidx.toInt())];
   }
-  Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {
+  Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {    
     ArrayLit* al = eval_array_lit(env,e->v());
     std::vector<IntVal> dims(e->idx().size());
     for (unsigned int i=e->idx().size(); i--;) {
       dims[i] = eval_int(env,e->idx()[i]);
-    }
+    }    
     return eval_arrayaccess(env,al,dims,success);
   }
   Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
@@ -876,7 +876,7 @@ namespace MiniZinc {
     }
   }
   
-  IntVal eval_int(EnvI& env,Expression* e) {
+  IntVal eval_int(EnvI& env,Expression* e) {    
     if (e->type().isbool()) {
       return eval_bool(env,e);
     }
@@ -898,7 +898,7 @@ namespace MiniZinc {
           break;
         case Expression::E_ID:
         {
-          GCLock lock;
+          GCLock lock;                    
           return eval_id<EvalIntLit>(env,e)->v();
         }
           break;
@@ -1167,7 +1167,7 @@ namespace MiniZinc {
   }
 
   Expression* eval_par(EnvI& env, Expression* e) {
-    if (e==NULL) return NULL;
+    if (e==NULL) return NULL;   
     switch (e->eid()) {
     case Expression::E_ANON:
     case Expression::E_TIID:
@@ -1251,9 +1251,9 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       return e;
     default:
-      {
-        if (e->type().dim() != 0) {
-          ArrayLit* al = eval_array_lit(env,e);
+      {        
+        if (e->type().dim() != 0) {                   
+          ArrayLit* al = eval_array_lit(env,e);         
           std::vector<Expression*> args(al->v().size());
           for (unsigned int i=al->v().size(); i--;)
             args[i] = eval_par(env,al->v()[i]);
@@ -1345,7 +1345,7 @@ namespace MiniZinc {
             return nuo;
           }
           case Expression::E_ARRAYACCESS:
-          {
+          {           
             ArrayAccess* aa = e->cast<ArrayAccess>();
             for (unsigned int i=0; i<aa->idx().size(); i++) {
               if (!aa->idx()[i]->type().ispar()) {
@@ -1358,7 +1358,7 @@ namespace MiniZinc {
                 return aa_new;
               }
             }
-            return eval_par(env,eval_arrayaccess(env,aa));
+            return eval_par(env,eval_arrayaccess(env,aa)); // TODO: continue eval_arrayaccess
           }
           default:
             return e;

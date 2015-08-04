@@ -34,23 +34,8 @@ constraint
         )
     );
 
-solve :: combinator(
-    scope( 
-       or([
-         repeat(
-             and([
-                 next, % get next solution
-                 print, % print the last found solution
-                 post(end < sol(end)) % post constraint
-             ])
-         ),
-         print
-        ])
-     )
-   ) 
-satisfy;
-
-%minimize end;
+solve search
+time_limit(5000,bab_min(end));
 
 output [
   "jobshop2x2\n",

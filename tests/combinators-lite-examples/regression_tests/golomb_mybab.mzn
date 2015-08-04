@@ -46,6 +46,7 @@ function ann: mybab(var int: obj) =
 
 % solve using minimizing branch & bound
 solve :: int_search(mark, input_order, indomain, complete)
-  search mybab(obj) /\ print();
+%  search mybab(obj) /\ print();
+  search time_limit(3000, bab_min(obj)) /\ print();
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

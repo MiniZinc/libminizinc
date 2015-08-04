@@ -89,21 +89,17 @@ constraint
     (exists (j in 1..n_stores) (supplier[j] == i)) == open[i]
   );
 
-solve ::combinator(
-    scope( 
-       or([
-         repeat(i in 1..10) ( % 10 iterations
-             and([
-                 next, % get next solution
-                 print, % print the last found solution
-                 post(Total < sol(Total)) % post constraint
-             ])
-         ),
-         print % print final solution
-        ])
-     )
-   ) 
-satisfy;
+
+int: ms = 10000;
+
+solve  :: int_search(
+    supplier ++ cost ++ [bool2int(open[i]) | i in 1..n_suppliers],
+    first_fail,
+    indomain_split,
+    complete
+  )
+%  minimize Total;
+search time_limit(ms, bab_min(Total)) /\ print();
 
 %  :: int_search(
 %    supplier ++ cost ++ [bool2int(open[i]) | i in 1..n_suppliers],
@@ -119,34 +115,36 @@ output
   [ "\nTotal = ", show(Total) ]
   ++
   [ "\nsupplier = [\n" ]
-  ++
-  [ "\t" ++ show(supplier[i]) ++
-    if i = n_stores then "\n]"
-    elseif i mod 5 = 0 then ",\n"
-    else ","
-    endif
-  | i in 1..n_stores
-  ]
-  ++
-  [ "\ncost = [\n" ]
-  ++
-  [ "\t" ++ show(cost[i]) ++
-    if i = n_stores then "\n]"
-    elseif i mod 5 = 0 then ",\n"
-    else ","
-    endif
-  | i in 1..n_stores
-  ]
-  ++
-  [ "\nopen = [\n" ]
-  ++
-  [ "\t" ++ show(open[i]) ++
-    if i = n_suppliers then "\n]\n"
-    elseif i mod 5 = 0 then ",\n"
-    else ","
-    endif
-  | i in 1..n_suppliers
-  ]
+ ++ [ show(supplier)++"\n" ]
+   ++ [ show(supplier[1])++"\n" ]
+%  ++
+%  [ "\t" ++ show(supplier[i]) ++
+%    if i = n_stores then "\n]"
+%    elseif i mod 5 = 0 then ",\n"
+%    else ","
+%    endif
+%  | i in 1..n_stores
+%  ]
+%  ++
+%  [ "\ncost = [\n" ]
+%  ++
+%  [ "\t" ++ show(cost[i]) ++
+%    if i = n_stores then "\n]"
+%    elseif i mod 5 = 0 then ",\n"
+%    else ","
+%    endif
+%  | i in 1..n_stores
+%  ]
+%  ++
+%  [ "\nopen = [\n" ]
+%  ++
+%  [ "\t" ++ show(open[i]) ++
+%    if i = n_suppliers then "\n]\n"
+%    elseif i mod 5 = 0 then ",\n"
+%    else ","
+%    endif
+%  | i in 1..n_suppliers
+%  ]
 
 %-----------------------------------------------------------------------------
 %-----------------------------------------------------------------------------

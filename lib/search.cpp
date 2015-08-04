@@ -904,6 +904,7 @@ namespace MiniZinc {
       
       if(solver->env().envi().getCurrentSolution() != NULL) {
         GCLock lock;
+        //std::cerr <<"DEBUG: before eval output\n";
         solver->env().evalOutput(std::cout);
         std::cout << constants().solver_output.solution_delimiter << std::endl;
         return SolverInstance::SUCCESS;

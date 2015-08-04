@@ -755,8 +755,11 @@ namespace MiniZinc {
   std::ostream&
   EnvI::evalOutput(std::ostream &os) {
     Model* outputModel = _solutionScopes.size() > 0 ? _solutionScopes.back().first : output;
+    //std::cerr << "DEBUG: evalOutput: printing current output model:\n";
+    //debugprint(outputModel);
+    //std::cerr << "===============\n";
     GCLock lock;
-    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e());
+    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e()); // TODO: add flag to eval_array_lit that we are evaluating an output model
     std::string outputString;
     for (int i=0; i<al->v().size(); i++) {
       std::string s = eval_string(*this, al->v()[i]);
