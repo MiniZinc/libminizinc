@@ -20,15 +20,15 @@
 namespace MiniZinc {
 
   template<class E>
-  typename E::Val eval_id(EnvI& env, Expression* e, bool eval_outputmodel = false) {
+  typename E::Val eval_id(EnvI& env, Expression* e, bool eval_outputmodel) {
     Id* id = e->cast<Id>();
     if (id->decl() == NULL)
       throw EvalError(env, e->loc(), "undeclared identifier", id->str().str());
     VarDecl* vd = id->decl();
-    if(!eval_outputmodel) {      
+    if(!eval_outputmodel) {
       while (vd->flat() && vd->flat() != vd) 
         vd = vd->flat();   
-    }    
+    }
     if (vd->e() == NULL)
       throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
     typename E::Val r = E::e(env,vd->e());
@@ -44,8 +44,8 @@ namespace MiniZinc {
   public:
     typedef IntLit* Val;
     typedef Expression* ArrayVal;
-    static IntLit* e(EnvI& env, Expression* e) {
-      return IntLit::a(eval_int(env, e));
+    static IntLit* e(EnvI& env, Expression* e, bool om = false) {
+      return IntLit::a(eval_int(env, e, om));
     }
     static Expression* exp(IntLit* e) { return e; }
   };
@@ -70,8 +70,8 @@ namespace MiniZinc {
   public:
     typedef FloatLit* Val;
     typedef Expression* ArrayVal;
-    static FloatLit* e(EnvI& env, Expression* e) {
-      return new FloatLit(Location(),eval_float(env, e));
+    static FloatLit* e(EnvI& env, Expression* e, bool om = false) {
+      return new FloatLit(Location(),eval_float(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -88,8 +88,8 @@ namespace MiniZinc {
   public:
     typedef StringLit* Val;
     typedef Expression* ArrayVal;
-    static StringLit* e(EnvI& env, Expression* e) {
-      return new StringLit(Location(),eval_string(env, e));
+    static StringLit* e(EnvI& env, Expression* e, bool om = false) {
+      return new StringLit(Location(),eval_string(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -97,8 +97,8 @@ namespace MiniZinc {
   public:
     typedef BoolLit* Val;
     typedef Expression* ArrayVal;
-    static BoolLit* e(EnvI& env, Expression* e) {
-      return constants().boollit(eval_bool(env, e));
+    static BoolLit* e(EnvI& env, Expression* e, bool om = false) {
+      return constants().boollit(eval_bool(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -114,8 +114,8 @@ namespace MiniZinc {
   public:
     typedef ArrayLit* Val;
     typedef Expression* ArrayVal;
-    static ArrayLit* e(EnvI& env, Expression* e) {
-      return eval_array_lit(env, e);
+    static ArrayLit* e(EnvI& env, Expression* e, bool om = false) {
+      return eval_array_lit(env, e, om);
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -139,8 +139,8 @@ namespace MiniZinc {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
-    static SetLit* e(EnvI& env, Expression* e) {
-      return new SetLit(e->loc(),eval_intset(env, e));
+    static SetLit* e(EnvI& env, Expression* e, bool om = false) {
+      return new SetLit(e->loc(),eval_intset(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -148,8 +148,8 @@ namespace MiniZinc {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
-    static SetLit* e(EnvI& env, Expression* e) {
-      return new SetLit(e->loc(),eval_boolset(env, e));
+    static SetLit* e(EnvI& env, Expression* e, bool om = false) {
+      return new SetLit(e->loc(),eval_boolset(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -289,7 +289,9 @@ namespace MiniZinc {
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(env,e, om);
     case Expression::E_ARRAYLIT:
+    {
       return e->cast<ArrayLit>();
+    }
     case Expression::E_ARRAYACCESS:
       throw EvalError(env, e->loc(),"arrays of arrays not supported");
     case Expression::E_COMP:
@@ -388,7 +390,7 @@ namespace MiniZinc {
     assert(realidx >= 0 && realidx <= al->v().size());
     return al->v()[static_cast<unsigned int>(realidx.toInt())];
   }
-  Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success, bool om) {    
+  Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success, bool om) {
     ArrayLit* al = eval_array_lit(env,e->v(),om);
     std::vector<IntVal> dims(e->idx().size());
     for (unsigned int i=e->idx().size(); i--;) {
@@ -447,7 +449,7 @@ namespace MiniZinc {
     case Expression::E_ID:
       {
         GCLock lock;
-        return eval_id<EvalSetLit>(env,e,om)->isv(); // TODO
+        return eval_id<EvalSetLit>(env,e,om)->isv();
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -901,13 +903,13 @@ namespace MiniZinc {
         case Expression::E_ID:
         {
           GCLock lock;                    
-          return eval_id<EvalIntLit>(env,e,om)->v(); // TODO
+          return eval_id<EvalIntLit>(env,e,om)->v();
         }
           break;
         case Expression::E_ARRAYACCESS:
         {
           GCLock lock;
-          return eval_int(env,eval_arrayaccess(env,e->cast<ArrayAccess>()),om);
+          return eval_int(env,eval_arrayaccess(env,e->cast<ArrayAccess>(),om),om);
         }
           break;
         case Expression::E_ITE:
@@ -1273,22 +1275,22 @@ namespace MiniZinc {
           return ret;
         }
         if (e->type().isintset()) {
-          return EvalSetLit::e(env,e);
+          return EvalSetLit::e(env,e,om);
         }
         if (e->type().isboolset()) {
-          return EvalBoolSetLit::e(env,e);
+          return EvalBoolSetLit::e(env,e,om);
         }
         if (e->type()==Type::parint()) {
-          return EvalIntLit::e(env,e);
+          return EvalIntLit::e(env,e,om);
         }
         if (e->type()==Type::parbool()) {
-          return EvalBoolLit::e(env,e);
+          return EvalBoolLit::e(env,e,om);
         }
         if (e->type()==Type::parfloat()) {
-          return EvalFloatLit::e(env,e);
+          return EvalFloatLit::e(env,e,om);
         }
         if (e->type()==Type::parstring()) {
-          return EvalStringLit::e(env,e);
+          return EvalStringLit::e(env,e,om);
         }
         switch (e->eid()) {
           case Expression::E_ITE:
@@ -1347,7 +1349,7 @@ namespace MiniZinc {
             return nuo;
           }
           case Expression::E_ARRAYACCESS:
-          {           
+          {
             ArrayAccess* aa = e->cast<ArrayAccess>();
             for (unsigned int i=0; i<aa->idx().size(); i++) {
               if (!aa->idx()[i]->type().ispar()) {
@@ -1360,7 +1362,7 @@ namespace MiniZinc {
                 return aa_new;
               }
             }
-            return eval_par(env,eval_arrayaccess(env,aa,om)); 
+            return eval_par(env,eval_arrayaccess(env,aa,om),om); 
           }
           default:
             return e;

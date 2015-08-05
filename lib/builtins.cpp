@@ -1362,7 +1362,7 @@ namespace MiniZinc {
   std::string show(EnvI& env, Expression* exp) {
     std::ostringstream oss;
     GCLock lock;
-    Expression* e = eval_par(env,exp);
+    Expression* e = eval_par(env,exp,true);
     if (e->type().isvar()) {
       Printer p(oss,0,false);
       p.print(e);

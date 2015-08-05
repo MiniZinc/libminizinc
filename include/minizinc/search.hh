@@ -46,8 +46,7 @@ namespace MiniZinc {
       
       SolverInstance::Status status;    
       Expression* combinator = NULL;
-      if(env.flat()->solveItem()->combinator_lite()) {
-        std::cout << "solver_item: " << env.flat()->solveItem()->combinator_lite() << std::endl;
+      if(env.flat()->solveItem()->combinator_lite()) {        
         Annotation& ann = env.flat()->solveItem()->ann(); 
         for(ExpressionSetIter it = ann.begin(); it!=ann.end(); it++) {
           if(Call* c = (*it)->dyn_cast<Call>()) {

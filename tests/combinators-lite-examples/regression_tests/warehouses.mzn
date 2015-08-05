@@ -115,36 +115,36 @@ output
   [ "\nTotal = ", show(Total) ]
   ++
   [ "\nsupplier = [\n" ]
- ++ [ show(supplier)++"\n" ]
-   ++ [ show(supplier[1])++"\n" ]
-%  ++
-%  [ "\t" ++ show(supplier[i]) ++
-%    if i = n_stores then "\n]"
-%    elseif i mod 5 = 0 then ",\n"
-%    else ","
-%    endif
-%  | i in 1..n_stores
-%  ]
-%  ++
-%  [ "\ncost = [\n" ]
-%  ++
-%  [ "\t" ++ show(cost[i]) ++
-%    if i = n_stores then "\n]"
-%    elseif i mod 5 = 0 then ",\n"
-%    else ","
-%    endif
-%  | i in 1..n_stores
-%  ]
-%  ++
-%  [ "\nopen = [\n" ]
-%  ++
-%  [ "\t" ++ show(open[i]) ++
-%    if i = n_suppliers then "\n]\n"
-%    elseif i mod 5 = 0 then ",\n"
-%    else ","
-%    endif
-%  | i in 1..n_suppliers
-%  ]
+% ++ [ show(supplier)++"\n" ]
+%   ++ [ show(supplier[1])++"\n" ]
+  ++
+  [ "\t" ++ show(supplier[i]) ++
+    if i = n_stores then "\n]"
+    elseif i mod 5 = 0 then ",\n"
+    else ","
+    endif
+  | i in 1..n_stores
+  ]
+  ++
+  [ "\ncost = [\n" ]
+  ++
+  [ "\t" ++ show(cost[i]) ++
+    if i = n_stores then "\n]"
+    elseif i mod 5 = 0 then ",\n"
+    else ","
+    endif
+  | i in 1..n_stores
+  ]
+  ++
+  [ "\nopen = [\n" ]
+  ++
+  [ "\t" ++ show(open[i]) ++
+    if i = n_suppliers then "\n]\n"
+    elseif i mod 5 = 0 then ",\n"
+    else ","
+    endif
+  | i in 1..n_suppliers
+  ]
 
 %-----------------------------------------------------------------------------
 %-----------------------------------------------------------------------------
