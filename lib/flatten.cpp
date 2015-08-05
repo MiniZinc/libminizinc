@@ -759,10 +759,11 @@ namespace MiniZinc {
     //debugprint(outputModel);
     //std::cerr << "===============\n";
     GCLock lock;
-    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e()); // TODO: add flag to eval_array_lit that we are evaluating an output model
+    bool eval_outputmodel = true;
+    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e(), eval_outputmodel); 
     std::string outputString;
     for (int i=0; i<al->v().size(); i++) {
-      std::string s = eval_string(*this, al->v()[i]);
+      std::string s = eval_string(*this, al->v()[i], eval_outputmodel);
       if (!s.empty()) {
         outputString = s;
         os << outputString;
@@ -3072,7 +3073,7 @@ namespace MiniZinc {
               KeepAlive ka;
               {
                 GCLock lock;
-                ka = eval_arrayaccess(env, al, idx, success);
+                ka = eval_arrayaccess(env, al, idx, success,false);
                 if (!success && ctx.b==C_ROOT && b==constants().var_true) {
                   throw FlatteningError(env,e->loc(),"array access out of bounds");
                 }
@@ -3097,7 +3098,7 @@ namespace MiniZinc {
                   idx[nonpar[cur]] = i;
                   bool success;
                   GCLock lock;
-                  Expression* al_idx = eval_arrayaccess(env, al, idx, success);
+                  Expression* al_idx = eval_arrayaccess(env, al, idx, success,false);
                   if (!success) {
                     if (ctx.b==C_ROOT && b==constants().var_true) {
                       throw FlatteningError(env,e->loc(),"array access out of bounds");
@@ -3230,7 +3231,7 @@ namespace MiniZinc {
             std::vector<IntVal> dims(aa->idx().size());
             for (unsigned int i=aa->idx().size(); i--;)
               dims[i] = eval_int(env,ees[i].r());
-            ka = eval_arrayaccess(env,al,dims,success);
+            ka = eval_arrayaccess(env,al,dims,success,false);
           }
           if (!success && ctx.b==C_ROOT && b==constants().var_true) {
             throw FlatteningError(env,e->loc(),"array access out of bounds");

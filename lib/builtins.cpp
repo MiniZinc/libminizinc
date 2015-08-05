@@ -250,7 +250,7 @@ namespace MiniZinc {
   IntVal b_deopt_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
-    Expression* e = eval_par(env,args[0]);
+    Expression* e = eval_par(env,args[0]);    
     if (e==constants().absent)
       throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
     return eval_int(env,e);
@@ -259,9 +259,13 @@ namespace MiniZinc {
   bool b_deopt_bool(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
+    std::cerr << "DEBUG: args[0] before evaluating: " << * args[0] << std::endl;
     Expression* e = eval_par(env,args[0]);
-    if (e==constants().absent)
-      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    if (e==constants().absent) {
+      std::stringstream ssm; ssm << "Error with evaluating e = " << *e << "\n";
+      throw EvalError(env, e->loc(), ssm.str());
+      //throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    }
     return eval_bool(env,e);
   }
   
@@ -778,7 +782,7 @@ namespace MiniZinc {
       case Expression::E_ARRAYACCESS:
         {
           bool success;
-          cur = eval_arrayaccess(env,cur->cast<ArrayAccess>(), success);
+          cur = eval_arrayaccess(env,cur->cast<ArrayAccess>(), success,false);
           if (!success) {
             cur = NULL;
           }
