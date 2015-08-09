@@ -295,6 +295,8 @@ if(HAS_CPLEX)
 
 #	add_definitions(-DIL_STD)
 	
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
 		solvers/cplex/cplex_solverinstance.cpp
@@ -306,8 +308,6 @@ if(HAS_CPLEX)
     "${CPLEX_STUDIO_DIR}/cplex/include"
   )
   target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
-  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
   
 	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
 
