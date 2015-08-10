@@ -2906,7 +2906,7 @@ namespace MiniZinc {
           if (vd==NULL) {
             vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()->cast<Id>()->decl();
             id->decl()->flat(vd);
-            ArrayLit* al = id->decl()->e()->cast<ArrayLit>();
+            ArrayLit* al = vd->e()->cast<ArrayLit>();
             if (al->v().size()==0) {
               if (r==NULL)
                 ret.r = al;

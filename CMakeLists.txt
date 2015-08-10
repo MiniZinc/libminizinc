@@ -254,9 +254,11 @@ target_link_libraries(mzn2fzn minizinc_gecode minizinc
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(mzn2fzn_test mzn2fzn_test.cpp)
+target_link_libraries(mzn2fzn_test minizinc)
+
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
-
 
 set(HAS_CPLEX  TRUE)
 set(HAS_GUROBI TRUE)
@@ -265,18 +267,18 @@ set(HAS_FZN    TRUE)
 
 if(HAS_GUROBI)
 	
-  include_directories("${GUROBI_HOME}/include")
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
 		solvers/gurobi/gurobi_solverinstance.cpp
 	)
-
+  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
 
 	add_executable(mzn-gurobi
 	  solvers/gurobi/mzn-gurobi.cpp
 	)
+  target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
@@ -294,23 +296,33 @@ if(HAS_CPLEX)
      set(CPLEX_ARCH "osx")
   endif(APPLE)
 
-	add_definitions(-DIL_STD)
+#	add_definitions(-DIL_STD)
 	
-  include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
-  include_directories("${CPLEX_STUDIO_DIR}/concert/include")
   link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
   link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
 		solvers/cplex/cplex_solverinstance.cpp
 	)
-
+  SET_TARGET_PROPERTIES(minizinc_cplex
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               )
+  target_include_directories(minizinc_cplex PRIVATE
+    "${CPLEX_STUDIO_DIR}/cplex/include"
+  )
+  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+  
 	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
 
 	add_executable(mzn-cplex
 	  solvers/cplex/mzn-cplex.cpp
 	)
-	target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+	SET_TARGET_PROPERTIES(mzn-cplex
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               )
+  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
+  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+  target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -370,7 +382,7 @@ if(HAS_FZN)
 		ARCHIVE DESTINATION lib)
 endif()
 
-INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2fzn mzn2fzn_test solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

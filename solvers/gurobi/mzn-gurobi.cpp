@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
   bool flag_all_solutions = false;
 
   /// PARAMS
-  int nThreads=-1;
+  int nThreads=1;
   string sExportModel;
   double nTimeout=-1;
   double nWorkMemLimit=-1;
@@ -161,6 +161,8 @@ int main(int argc, char** argv) {
       flag_output_ozn_stdout = true;
     } else if (string(argv[i]) == "-a" ) {
       flag_all_solutions = true;
+    } else if (string(argv[i])=="-f") {
+      std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
     } else if (beginswith(string(argv[i]),"-d")) {
       string filename(argv[i]);
       string datafile;
@@ -537,7 +539,7 @@ error:
   //               << "--writeParam <file> write Gurobi parameters to file
   //               << "--tuneParam         instruct Gurobi to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
-  << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
+  << "-a                  print intermediate solutions. Optimization problems only" << std::endl
   << "-p <N>              use N threads" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
@@ -545,7 +547,6 @@ error:
   << "--readParam <file>  read Gurobi parameters from file   NOT IMPL" << std::endl
   << "--writeParam <file> write Gurobi parameters to file   NOT IMPL" << std::endl
   << "--tuneParam         instruct Gurobi to tune parameters instead of solving   NOT IMPL" << std::endl
-  << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
 
   << std::endl
   << "Output options:" << std::endl

@@ -64,10 +64,12 @@ int main(int argc, char** argv) {
   bool flag_all_solutions = false;
 
   /// PARAMS
-  int nThreads=-1;
+  int nThreads=1;
   string sExportModel;
   double nTimeout=-1;
   double nWorkMemLimit=-1;
+  string sReadParams;
+  string sWriteParams;
 
 
   clock_t starttime = std::clock();
@@ -226,6 +228,8 @@ int main(int argc, char** argv) {
       globals_dir = argv[i];
     } else if (string(argv[i])=="-a") {
       flag_all_solutions = true;
+    } else if (string(argv[i])=="-f") {
+      std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
     } else if (string(argv[i])=="--only-range-domains") {
       flag_only_range_domains = true;
     } else if (string(argv[i])=="-Werror") {
@@ -287,6 +291,18 @@ int main(int argc, char** argv) {
         cerr << "\nBad value for --workmem: " << nP << endl;
         goto error;
       }
+    } else if (string(argv[i])=="--readParam") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sReadParams = argv[i];
+    } else if (string(argv[i])=="--writeParam") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      sWriteParams = argv[i];
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -365,9 +381,9 @@ int main(int argc, char** argv) {
     bool parseDocComments = false;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
+    try {
     if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
           parseDocComments, flag_verbose, errstream)) {
-      try {
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -456,7 +472,7 @@ int main(int argc, char** argv) {
 
             /// To cout:
             if(flag_verbose) {
-              std::cout << "\n   -------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
+              std::cout << "\n   %-------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
               std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
             }
 
@@ -473,6 +489,8 @@ int main(int argc, char** argv) {
               options.setIntParam   ("parallel_threads", nThreads);
               options.setFloatParam ("timelimit",        nTimeout);
               options.setFloatParam ("memory_limit",     nWorkMemLimit);
+              options.setStringParam("read_param",       sReadParams);
+              options.setStringParam("write_param",      sWriteParams);
 
               CPLEXSolverInstance cplex(env,options);
               cplex.processFlatZinc();
@@ -492,23 +510,23 @@ int main(int argc, char** argv) {
           Printer p(std::cout);
           p.print(m);
         }
-      } catch (LocationException& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.loc() << ":" << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      } catch (Exception& e) {
-        if (flag_verbose)
-          std::cerr << std::endl;
-        std::cerr << e.what() << ": " << e.msg() << std::endl;
-        exit(EXIT_FAILURE);
-      }
       delete m;
     } else {
       if (flag_verbose)
         std::cerr << std::endl;
       std::copy(istreambuf_iterator<char>(errstream),istreambuf_iterator<char>(),ostreambuf_iterator<char>(std::cerr));
+      exit(EXIT_FAILURE);
+    }
+    } catch (LocationException& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+      exit(EXIT_FAILURE);
+    } catch (Exception& e) {
+      if (flag_verbose)
+        std::cerr << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
       exit(EXIT_FAILURE);
     }
   }
@@ -519,7 +537,7 @@ int main(int argc, char** argv) {
 
 error:
   std::cerr << "Usage: "<< argv[0]
-  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
+  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl
   << std::endl
   << "Options:" << std::endl
   << "  --help, -h\n    Print this help message" << std::endl
@@ -539,13 +557,13 @@ error:
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps)" << std::endl
-  << "--solutionCallback  print intermediate solutions  NOT IMPL" << std::endl
-  << "-p <N>              use N threads" << std::endl
+  << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "-p <N>              use N threads, default: 1" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
-  << "--readParam <file>  read CPLEX parameters from file   NOT IMPL" << std::endl
-  << "--writeParam <file> write CPLEX parameters to file   NOT IMPL" << std::endl
+  << "--readParam <file>  read CPLEX parameters from file" << std::endl
+  << "--writeParam <file> write CPLEX parameters to file" << std::endl
   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL" << std::endl
   << "--solutionCallback  print intermediate solutions   NOT IMPL" << std::endl
 
