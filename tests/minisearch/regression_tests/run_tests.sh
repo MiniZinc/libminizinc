@@ -26,7 +26,7 @@ for solver in "${FZN_SOLVERS[@]}"; do
 	    echo "ERROR: $solver: $file"
 	else 
 	    echo "OK: $solver: $file"
-	    rm $file.err
+	    rm $file.$solver.err
 	fi
     done
 done

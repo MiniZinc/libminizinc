@@ -372,6 +372,11 @@ namespace MiniZinc {
         //std::cerr << "DEBUG: printing solution model:\n";
         //debugprint(sm);
         //std::cerr << "=======================================\n";
+        if(sm == NULL) {
+          std::stringstream ssm;
+          ssm << "Error in solver " << fzn_solver <<". Could not parse solver output to MiniZinc solution:\n" << solution;
+          throw InternalError(ssm.str());
+        }
         for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {            
           if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
             //std::cerr << "processing item in model:" << (*ai) << "\n";
