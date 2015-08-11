@@ -521,7 +521,8 @@ namespace MiniZinc {
             throw TypeError(solver->env().envi(),vd->loc(),ssm.str());            
           }          
           // flatten and add the variable to the flat model
-          EE ee = flatten(solver->env().envi(),vd->id(),NULL,constants().var_true,solver->env().envi().fopt);
+          EE ee = flatten(solver->env().envi(),vd->id(),NULL,constants().var_true,solver->env().envi().fopt,false);
+          //std::cerr << "DEBUG: flat model after adding new variables by flattening:\n"; debugprint(solver->env().flat()); std::cerr << "===============================\n";
           VarDecl* nvd = ee.r()->cast<Id>()->decl();         
           int nbVars = _localVarsToAdd.back();          
           _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
@@ -584,8 +585,8 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: LET combinator" << std::endl;   
     ASTExprVec<Expression> decls = let->let();
     addNewVariableToModel(decls, solver, verbose); 
-          
-    let->pushbindings(); 
+    
+    let->pushbindings();     
     SolverInstance::Status status = interpretCombinator(let->in(), solver, verbose);   
     let->popbindings(); 
     _localVars.pop_back();

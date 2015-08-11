@@ -178,7 +178,7 @@ namespace MiniZinc {
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
   /// Flatten expression \a e
-  EE flatten(EnvI& m, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt = FlatteningOptions());
+  EE flatten(EnvI& m, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt = FlatteningOptions(), bool flattenLoop = true);
 
   class CmpExpIdx {
   public:
