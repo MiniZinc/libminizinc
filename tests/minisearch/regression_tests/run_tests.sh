@@ -1,23 +1,32 @@
 #!/bin/bash
 #
 # Regression tests for MiniSearch
+#
+# NOTE: Set the paths and solvers according to your system
 
-EXE_PATH="/home/arendl/work/libmzn/build/"
-EXE="mzn-fzn-lite"
+# path to MiniSearch executable
+EXE_PATH="/home/arendl/work/libmzn/build/"  
+# the MiniSearch executable
+EXE="mzn-fzn-lite"  
 MZN_EXE=$EXE_PATH$EXE
-FZN_SOLVER="/home/arendl/software/gecode/svn-trunk/tools/flatzinc/fzn-gecode"
+# the flatzinc solvers that should be tested
+FZN_SOLVERS=("fzn-gecode" "fzn_chuffed" "fzn_choco" "fzn-ortools")
+
+# be verbose about the tests
 VERBOSE=false
 
-for file in $( ls *.mzn ); do
-  if [ "$VERBOSE" = true ] ; then
-      echo "$MZN_EXE --solver $FZN_SOLVER $file > $file.out 2> $file.err"
-  fi
-  $MZN_EXE --solver $FZN_SOLVER $file > $file.out 2> $file.err
-  if [ -s $file.err ] # if $file.err is not empty
-  then 
-       echo "ERROR: $file"
-  else 
-       echo "OK: $file"
-       rm $file.err
-  fi
+for solver in "${FZN_SOLVERS[@]}"; do
+    for file in $( ls *.mzn ); do
+	if [ "$VERBOSE" = true ] ; then
+	    echo "$MZN_EXE --solver $solver $file > $file.$solver.out 2> $file.$solver.err"
+	fi
+	$MZN_EXE --solver $solver $file > $file.$solver.out 2> $file.$solver.err
+	if [ -s $file.$solver.err ] # if $file.$solver.err is not empty
+	then 
+	    echo "ERROR: $solver: $file"
+	else 
+	    echo "OK: $solver: $file"
+	    rm $file.err
+	fi
+    done
 done
