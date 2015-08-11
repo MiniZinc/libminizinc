@@ -553,6 +553,9 @@ namespace MiniZinc {
             for(unsigned int i =0;i<al->length(); i++) {
               Id* id = al->v()[i]->cast<Id>();
               id->decl()->addAnnotation(constants().ann.output_var);
+              Type tt = id->decl()->type();
+              tt.ti(Type::TI_PAR); // make it par
+              id->decl()->ti()->type(tt);
               VarDeclI* vdi = new VarDeclI(Location(), id->decl());
               solver->env().output()->addItem(vdi);
             }
@@ -561,13 +564,14 @@ namespace MiniZinc {
             for(unsigned int i =0;i<aln->length(); i++) {
               Id* id = aln->v()[i]->cast<Id>();
               id->decl()->addAnnotation(constants().ann.output_var);
-              VarDeclI* vdi = new VarDeclI(Location(), id->decl());
-              solver->env().output()->addItem(vdi);              
+              //VarDeclI* vdi = new VarDeclI(Location(), id->decl()); // DEBUG
+              //solver->env().output()->addItem(vdi);              // DEBUG
             }
             // add the number of local variables according to length of array
             int nbVars = _localVarsToAdd.back(); 
             _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars + al->length();
-          }
+          }          
+          
         } else { // we have a parameter -> add it to the model by flattening
           par_vars.push_back(vd);          
         }

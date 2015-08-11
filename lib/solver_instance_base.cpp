@@ -88,7 +88,7 @@ namespace MiniZinc {
     std::vector<Expression*> disequalities;
     for (VarDeclIterator it = flat->begin_vardecls(); it!=flat->end_vardecls(); ++it) {
       if (it->e()->ann().contains(constants().ann.output_var)) {
-        Id* id = it->e()->id();
+        Id* id = it->e()->id();        
         Expression* e = eval_par(env().envi(),getSolutionValue(it->e()->id()));
         // create the constraints: x_i != sol_i
         BinOp* bo = new BinOp(Location(), id, BOT_NQ, e);

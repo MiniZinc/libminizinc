@@ -173,8 +173,8 @@ namespace MiniZinc {
           waitpid(childPID, NULL, 0);
           
           if (!_canPipe) {            
-            //remove(fznFile.c_str()); // commented for DEBUG only: do not remove fzn file
-            std::cerr << "DEBUG: name of fzn-file = " << fznFile << std::endl;
+            remove(fznFile.c_str()); // commented for DEBUG only: do not remove fzn file
+            //std::cerr << "DEBUG: name of fzn-file = " << fznFile << std::endl;
           }
           return result.str();
         } else {

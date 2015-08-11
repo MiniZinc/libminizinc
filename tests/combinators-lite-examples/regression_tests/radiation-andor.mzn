@@ -73,7 +73,7 @@ var int: obj;
 constraint obj = (ub(K) + 1) * Beamtime + K;
 
 
-int: timeout = 10*60*1000;
+int: timeout = 10*1000; % in milliseconds
 
 solve 
     :: int_search(
@@ -83,7 +83,7 @@ solve
 %	minimize obj;
 		% really: (Beamtime, K),  i.e. in lexicographic order
 
-search time_limit(timeout, and_or_min()) /\ print();
+search time_limit(timeout, and_or_min()) /\ (if hasSol() then print() else skip() endif);
 
 
 function ann: and_or_min() = 
@@ -108,7 +108,7 @@ function ann: and_or_min() =
                      )
                  )
               ) % end repeat 
-              /\ commit() /\  print() % we found a solution
+              /\ commit() /\  print("We found a solution with value "++show(obj)++".\n") % we found a solution
               /\ post(obj < sol(obj)) 
            else break endif % we find no master solution         
     )
