@@ -72,21 +72,38 @@ predicate upper_bound_on_increments(var int: N_b, array[int] of var int: L) =
 %-----------------------------------------------------------------------------%
 % Objective
 %-----------------------------------------------------------------------------%
-%var int: obj = (ub(K) + 1) * Beamtime + K;
 var int: obj;
 constraint obj = (ub(K) + 1) * Beamtime + K;
+
+int: timeout_ms = 10*1000;
 
 solve 
     :: int_search(
 		[Beamtime] ++ N ++
 	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
 		input_order, indomain_split, complete)
-    :: combinator(scope(repeat(and([ next, print, post(obj < sol(obj)) ]))))
-    satisfy;
+search 
+    time_limit(timeout_ms, bab_min(obj)) /\ 
+    if hasSol() then print() else print("No solution found within timelimit.\n") endif;
 %	minimize obj;
 		% really: (Beamtime, K),  i.e. in lexicographic order
 
 %-----------------------------------------------------------------------------%
+% Instance 
+%-----------------------------------------------------------------------------%
+m = 5;	% rows
+n = 5;	% columns
+
+% max intensity = 8
+Intensity = [|
+6, 4, 5, 3, 4 |
+2, 3, 0, 1, 8 |
+0, 7, 5, 6, 3 |
+5, 2, 3, 1, 2 |
+0, 1, 8, 0, 6
+|];
+
+
 
 output [
     show(obj)

@@ -4,6 +4,8 @@
 % Sebastian Brand
 % 05/2007
 %-----------------------------------------------------------------------------%
+include "globals.mzn";
+include "combinators.mzn";
 
 %-----------------------------------------------------------------------------%
 % Parameters
@@ -71,26 +73,41 @@ predicate upper_bound_on_increments(var int: N_b, array[int] of var int: L) =
 %-----------------------------------------------------------------------------%
 % Objective
 %-----------------------------------------------------------------------------%
-%var int: obj = (ub(K) + 1) * Beamtime + K; % this formulation will cause an error
-
-var int: obj;
-constraint obj = (ub(K) + 1) * Beamtime + K;
+int: timeout = 10*60*1000; % timeout in milliseconds
 
 solve 
     :: int_search(
 		[Beamtime] ++ N ++
 	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
-		input_order, indomain_split, complete)
-	minimize obj;
+		dom_w_deg, indomain_min, complete)
+    search time_limit(timeout, minimize_lex([K,Beamtime])) /\ print();
+
+%function ann: mylex(var int: obj1, var int: obj2) =
+%    next() /\ commit() /\ print() /\
+%    repeat(scope( post(lex_less([obj1, obj2], [sol(obj1), sol(obj2)])) /\
+%                  next() /\ commit() /\ print() \/ break ));
+%	minimize obj;
 		% really: (Beamtime, K),  i.e. in lexicographic order
 
 %-----------------------------------------------------------------------------%
+% Instance 
+%-----------------------------------------------------------------------------%
+m = 5;	% rows
+n = 5;	% columns
+
+% max intensity = 8
+Intensity = [|
+6, 4, 5, 3, 4 |
+2, 3, 0, 1, 8 |
+0, 7, 5, 6, 3 |
+5, 2, 3, 1, 2 |
+0, 1, 8, 0, 6
+|];
+
 
 output [
-    show(obj)
+    show(Beamtime), "|", show(K)
 ];
-%    "Beamtime = ", show(Beamtime), "\n",
-%    "K = ", show(K), "\n",
 %    "N = ", show(N), "\n",
 %    "Q = ", show(Q), "\n",
 
