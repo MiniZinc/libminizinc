@@ -23,7 +23,24 @@ for solver in "${FZN_SOLVERS[@]}"; do
 	$MZN_EXE --solver $solver $file > $file.$solver.out 2> $file.$solver.err
 	if [ -s $file.$solver.err ] # if $file.$solver.err is not empty
 	then 
-	    echo "ERROR: $solver: $file"
+	    # special case is Choco which always prints SLF4J error messages on stderr
+            if [[ "$solver" = "fzn_choco" ]]; then 
+                # check if there is a line that does not start with SLF4J
+                error=false
+		while read line
+		do 
+                   if [[ "$line" != SLF4J* ]]; then # line does not start with SLF4J
+		       error=true
+		   fi		   
+		done < $file.$solver.err
+                if [ "$error" = false ] ; then
+		    echo "OK: $solver: $file"
+		else 
+		    echo "ERROR: $solver: $file"
+		fi		    
+            else 
+		echo "ERROR: $solver: $file"
+	    fi
 	else 
 	    echo "OK: $solver: $file"
 	    rm $file.$solver.err
