@@ -17,7 +17,7 @@
 include "globals.mzn";
 include "combinators.mzn"; % include the search combinators lite
 
-int: m = 14;
+int: m = 8; % 13
 int: n = m*m;
 
 var 0..n: obj;
@@ -38,16 +38,19 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
-int: iterations = 4;
+int: iterations = 30;
+int: ms = 10*1000; % milliseconds
 % solve using minimizing branch & bound
-solve search my_bab(obj,iterations);
+solve search time_limit(ms, my_bab(obj,iterations));
 
 function ann: my_bab(var int: obj, int: iterations) =
          repeat (i in 1..iterations) (
-                 next /\ % get next solution
-                 print /\ % print intermediate solution
-                 commit() /\
-                 post(obj < sol(obj)) % post constraint
+                 print("Iteration "++show(i)++"\n") /\
+                 if next then  % get next solution
+                    print /\ % print intermediate solution
+                    commit() /\
+                    post(obj < sol(obj)) % post constraint
+                 else break endif
          );
    
 

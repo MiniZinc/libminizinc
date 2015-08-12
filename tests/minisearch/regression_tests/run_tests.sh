@@ -44,9 +44,9 @@ do
                 error=false
 		while read line
 		do 
-                   if [[ "$line" != SLF4J* ]]; then # line does not start with SLF4J
-		       error=true
-		   fi		   
+                    if [[ "$line" != SLF4J* ]]; then # line does not start with SLF4J
+			error=true
+		    fi		   
 		done < $file.$solver.err
                 if [ "$error" = false ] ; then
 		    echo $success_msg
@@ -54,9 +54,24 @@ do
 		else 
 		    echo $error_msg
 		fi		    
-            else 
+            elif [[ "$solver" = "fzn_chuffed" ]]; then 
+		error=false
+		while read line
+		do 
+                    if [[ "$line" != %* ]]; then # line does not start with MiniZinc comment
+			error=true
+		    fi		   
+		done < $file.$solver.err
+		if  [ "$error" = false ] ; then
+		    echo $success_msg
+		    rm $file.$solver.err
+		else 
+		    echo $error_msg
+		fi		    
+	    else 
 		echo $error_msg
 	    fi
+        # else: err file is empty
 	else 
 	    echo $success_msg
 	    rm $file.$solver.err
