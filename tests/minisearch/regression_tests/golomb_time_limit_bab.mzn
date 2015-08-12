@@ -36,7 +36,7 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
-int: time_ms = 5000;
+int: time_ms = 5*1000;
 
 % solve using minimizing branch & bound
 solve %:: int_search(mark, input_order, indomain, complete)

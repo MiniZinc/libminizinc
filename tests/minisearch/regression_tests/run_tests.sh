@@ -29,6 +29,13 @@ do
 	    echo "$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
 	fi
 	$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err
+
+	add_on=""
+	if [ "$VERBOSE" = true ] ; then
+	    add_on="    $MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
+	fi
+	error_msg="ERROR: $solver: $file"$add_on
+	success_msg="OK: $solver: $file"$add_on
 	if [ -s $file.$solver.err ] # if $file.$solver.err is not empty
 	then 
 	    # special case is Choco which always prints SLF4J error messages on stderr
@@ -42,15 +49,16 @@ do
 		   fi		   
 		done < $file.$solver.err
                 if [ "$error" = false ] ; then
-		    echo "OK: $solver: $file"
+		    echo $success_msg
+		    rm $file.$solver.err
 		else 
-		    echo "ERROR: $solver: $file\t$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
+		    echo $error_msg
 		fi		    
             else 
-		echo "ERROR: $solver: $file"
+		echo $error_msg
 	    fi
 	else 
-	    echo "OK: $solver: $file"
+	    echo $success_msg
 	    rm $file.$solver.err
 	fi
     done

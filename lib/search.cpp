@@ -252,6 +252,12 @@ namespace MiniZinc {
       ssm << call->id() << "-combinator takes at least 1 argument instead of " << call->args().size() << " in: " << *call;
       throw TypeError(solver->env().envi(), call->loc(), ssm.str());
     }
+    if(isTimeLimitViolated()) {    
+      setTimeoutIndex(getViolatedTimeLimitIndex(verbose));
+      return SolverInstance::FAILURE;
+    }
+    setCurrentTimeout(solver);
+    
     if(call->args().size() == 2) {
       interpretLimitCombinator(call->args()[1],solver,verbose);
     }
