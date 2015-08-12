@@ -97,6 +97,7 @@ namespace MiniZinc {
             int status = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, print, verbose);
             
             if(status == SolverInstance::SUCCESS) {
+              GCLock lock;
               solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
               env.envi().commitLastSolution();
             }

@@ -38,7 +38,7 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
-int: iterations = 7;
+int: iterations = 4;
 % solve using minimizing branch & bound
 solve search my_bab(obj,iterations);
 

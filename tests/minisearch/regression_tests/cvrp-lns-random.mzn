@@ -165,8 +165,8 @@ constraint
 
 int: iterations = 100; % adjust this number depending on problem instance size?
 float: destroyrate = 0.3;
-int: timeout_lns_ms = 60*1000;  % timeout for all LNS iterations
-int: timeout_bab_ms = 3000;  % timeout for one BAB execution
+int: timeout_lns_ms = 10*1000;  % timeout for all LNS iterations
+int: timeout_bab_ms = 3*000;  % timeout for one BAB execution
 bool: verbose = true;
 
 constraint

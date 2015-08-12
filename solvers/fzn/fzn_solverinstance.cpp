@@ -73,6 +73,7 @@ namespace MiniZinc {
         }
         
         if (int childPID = fork()) {
+          //std::cout << "DEBUG: if childpid = fork(). Processing timeouts etc. " << std::endl;
           close(pipes[0][0]);
           close(pipes[1][1]);
           if (_canPipe) {
@@ -99,6 +100,7 @@ namespace MiniZinc {
           long long int timeout_msec = -1;
           if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
             timeout_msec = opt.getIntParam(constants().solver_options.time_limit_ms.str());
+            //std::cerr << "DEBUG: runProcess: solve timeout in ms = " << timeout_msec << std::endl;
             int timeout_sec = timeout_msec / 1000;
             int timeout_usec = (timeout_msec % 1000) * 10;
             timeout.tv_sec = timeout_sec;
@@ -178,6 +180,7 @@ namespace MiniZinc {
           }
           return result.str();
         } else {
+          //std::cout << "DEBUG: if NOT childpid = fork(). Executing command. " << std::endl;
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
           dup2(pipes[0][0], STDIN_FILENO);
@@ -463,6 +466,7 @@ namespace MiniZinc {
   SolverInstance::Status 
   FZNSolverInstance::best(VarDecl* obj, bool minimize, bool print) {
     _fzn = _env.flat();
+    GCLock lock;
     // replace old solve item with min/max objective  
     SolveI* solveI = _fzn->solveItem();
     SolveI* objective = minimize ? SolveI::min(Location(),obj->id()):

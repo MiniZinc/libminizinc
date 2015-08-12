@@ -11,16 +11,24 @@ EXE="mzn-fzn-lite"
 MZN_EXE=$EXE_PATH$EXE
 # the flatzinc solvers that should be tested
 FZN_SOLVERS=("fzn-gecode" "fzn_chuffed" "fzn_choco" "fzn-ortools")
+FZN_SOLVERS_INCLUDES=("/home/arendl/software/gecode/gecode-install/share/gecode/mznlib" # gecode
+                      "/home/arendl/software/chuffed-angee/binary/linux/mznlib"         # chuffed
+                      "/home/arendl/software/choco/choco-master-03-2015/choco-parsers-master/src/chocofzn/globals/" # choco
+                      "/home/arendl/software/or-tools/or-git/src/flatzinc/mznlib"        # ortools
+                       )
 
 # be verbose about the tests
 VERBOSE=false
 
-for solver in "${FZN_SOLVERS[@]}"; do
+for ((i=0; i < ${#FZN_SOLVERS}; i++)) 
+do
+    solver=${FZN_SOLVERS[$i]}
+    globals=${FZN_SOLVERS_INCLUDES[$i]}
     for file in $( ls *.mzn ); do
 	if [ "$VERBOSE" = true ] ; then
-	    echo "$MZN_EXE --solver $solver $file > $file.$solver.out 2> $file.$solver.err"
+	    echo "$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
 	fi
-	$MZN_EXE --solver $solver $file > $file.$solver.out 2> $file.$solver.err
+	$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err
 	if [ -s $file.$solver.err ] # if $file.$solver.err is not empty
 	then 
 	    # special case is Choco which always prints SLF4J error messages on stderr
@@ -36,7 +44,7 @@ for solver in "${FZN_SOLVERS[@]}"; do
                 if [ "$error" = false ] ; then
 		    echo "OK: $solver: $file"
 		else 
-		    echo "ERROR: $solver: $file"
+		    echo "ERROR: $solver: $file\t$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
 		fi		    
             else 
 		echo "ERROR: $solver: $file"
