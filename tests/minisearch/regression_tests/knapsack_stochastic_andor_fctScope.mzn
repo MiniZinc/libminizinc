@@ -97,7 +97,7 @@ function ann: my_search(int: iterations) =
               ) % end repeat 
               /\ if expectedProfit < sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) then 
                     expectedProfit := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i]))
-                     /\ print("Best expected profit:"++show(expectedProfit div sum(i in SCENARIOS)(weights[i]))++"\n") /\ print() % we found a solution
+                     /\ print("Best expected profit:"++show(expectedProfit div sum(i in SCENARIOS)(weights[i]))++"\n") /\ print() /\ commit() % we found a solution
    else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
                        skip() endif
         )
