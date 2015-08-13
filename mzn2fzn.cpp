@@ -30,7 +30,9 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/timer.hh>
 
+#ifdef HAS_GECODE
 #include <minizinc/solvers/gecode/gecode_pass.hh>
+#endif
 
 using namespace MiniZinc;
 using namespace std;
@@ -128,7 +130,11 @@ int main(int argc, char** argv) {
         goto error;
       flag_output_base = argv[i];
     } else if (string(argv[i])=="--use-gecode") {
+#ifdef HAS_GECODE
       flag_gecode = true;
+#else
+      std::cerr << "warning: Gecode not available.\n";
+#endif
     } else if (string(argv[i])=="--npass") {
       i++;
       if (i==argc) {
@@ -385,16 +391,20 @@ int main(int argc, char** argv) {
             try {
               GCLock lock;
               std::vector<Pass*> passes;
+#ifdef HAS_GECODE
               Options gopts;
               gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
               gopts.setBoolParam(std::string("sac"),       flag_sac);
               gopts.setBoolParam(std::string("shave"),     flag_shave);
               gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
               gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
+#endif
               FlatteningOptions pass_opts = fopts;
               for(unsigned int i=1; i<flag_npasses; i++) {
                 if(flag_gecode) {
+#ifdef HAS_GECODE
                   passes.push_back(new GecodePass(pass_opts, gopts, std_lib_dir+"/gecode/"));
+#endif
                 } else {
                   passes.push_back(new CompilePass(pass_opts, std_lib_dir+"/std/"));
                 }

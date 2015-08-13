@@ -247,12 +247,21 @@ include/minizinc/thirdparty/SafeInt3.hpp
 
 find_package ( Threads REQUIRED )
 
+
+set(HAS_CPLEX  TRUE)
+set(HAS_GUROBI TRUE)
+set(HAS_GECODE TRUE)
+set(HAS_FZN    TRUE)
+
 # add the executable
 add_executable(mzn2fzn mzn2fzn.cpp)
-target_link_libraries(mzn2fzn minizinc_gecode minizinc
-    gecodedriver gecodesearch gecodeminimodel
-    gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
+
+if(HAS_GECODE)
+  set(GECODE_INTERFACE "minizinc_gecode")
+  set(GECODE_LIBS gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
+endif()
+
+target_link_libraries(mzn2fzn ${GECODE_INTERFACE} minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
@@ -260,13 +269,7 @@ target_link_libraries(mzn2fzn_test minizinc)
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
-set(HAS_CPLEX  TRUE)
-set(HAS_GUROBI TRUE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    TRUE)
-
 if(HAS_GUROBI)
-	
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
@@ -331,6 +334,7 @@ if(HAS_CPLEX)
 endif()
 
 if(HAS_GECODE)
+  add_definitions(-DHAS_GECODE)
   include_directories("${GECODE_HOME}/include")
   link_directories("${GECODE_HOME}/lib")
 
