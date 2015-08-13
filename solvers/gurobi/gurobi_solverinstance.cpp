@@ -15,12 +15,19 @@
 namespace MiniZinc {
 
   GRBVar GurobiSolverInstance::exprToVar(Expression* arg) {
+        GRBVar var;
     if (IntLit* il = arg->dyn_cast<IntLit>()) {
-      return _grb_model->addVar(il->v().toInt(), il->v().toInt(), 0.0, GRB_INTEGER, "temp_i");
+            var = _grb_model->addVar(il->v().toInt(), il->v().toInt(), 0.0, GRB_INTEGER, "temp_i");
+            _grb_model->update();
+            return var;
     } else if (FloatLit* fl = arg->dyn_cast<FloatLit>()) {
-      return _grb_model->addVar(fl->v(), fl->v(), 0.0, GRB_CONTINUOUS, "temp_f");
+            var = _grb_model->addVar(fl->v(), fl->v(), 0.0, GRB_CONTINUOUS, "temp_f");
+            _grb_model->update();
+            return var;
     } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
-      return _grb_model->addVar(bl->v(), bl->v(), 0.0, GRB_INTEGER, "temp_b");
+            var = _grb_model->addVar(bl->v(), bl->v(), 0.0, GRB_INTEGER, "temp_b");
+            _grb_model->update();
+            return var;
     } else if (Id* ident = arg->dyn_cast<Id>()) {
       return _variableMap.get(ident->decl()->id());
     }
@@ -216,7 +223,6 @@ namespace MiniZinc {
       nThreads      = options.getIntParam   ("parallel_threads",     1);
       nTimeout      = options.getFloatParam ("timelimit",          0.0);
       sExportModel  = options.getStringParam("export_model",        "");
-
       registerConstraints();
     }
 
@@ -244,7 +250,6 @@ namespace MiniZinc {
   SolverInstanceBase::Status GurobiSolverInstance::next(void) {
     return SolverInstance::ERROR;
   }
-
 
   class SolutionCallback: public GRBCallback
   {
@@ -292,24 +297,23 @@ namespace MiniZinc {
       std::cout << "----------" << std::endl;
     }
   }
-
   SolverInstanceBase::Status GurobiSolverInstance::solve(void) {
     SolveI* solveItem = _env.flat()->solveItem();
     try{
-      if (_env.flat()->solveItem()->st() != SolveI::SolveType::ST_SAT) {
-        short sense = -1;
-        if (solveItem->st() == SolveI::SolveType::ST_MIN)
-          sense = 1;
-        _grb_model->set(GRB_IntAttr_ModelSense, sense);
-      }
+    if (_env.flat()->solveItem()->st() != SolveI::SolveType::ST_SAT) {
+      short sense = -1;
+      if (solveItem->st() == SolveI::SolveType::ST_MIN)
+        sense = 1;
+      _grb_model->set(GRB_IntAttr_ModelSense, sense);
+    }
 
-      _grb_model->getEnv().set(GRB_IntParam_OutputFlag, fVerbose);
+    _grb_model->getEnv().set(GRB_IntParam_OutputFlag, fVerbose);
 
-      if (nThreads>0)
-        _grb_model->getEnv().set(GRB_IntParam_Threads, nThreads);
+    if (nThreads>0)
+      _grb_model->getEnv().set(GRB_IntParam_Threads, nThreads);
 
-      if (nTimeout>0)
-        _grb_model->getEnv().set(GRB_DoubleParam_TimeLimit, nTimeout);
+    if (nTimeout>0)
+      _grb_model->getEnv().set(GRB_DoubleParam_TimeLimit, nTimeout);
 
       int numvars = _grb_model->get(GRB_IntAttr_NumVars);
       GRBVar* vars = _grb_model->getVars();
@@ -322,7 +326,6 @@ namespace MiniZinc {
       if (!sExportModel.empty()) {
         _grb_model->write(sExportModel);
       }
-
       _grb_model->optimize();
       //std::cout << "  _grb_model::optimize() exited." << std::endl;
     } catch (GRBException e) {
@@ -341,10 +344,10 @@ namespace MiniZinc {
         assignSolutionToOutput();
         break;
 //       case GRB_FEASIBLE:
-//         s = SolverInstance::SAT;
+      //  s = SolverInstance::SAT;
 //         //std::cout << "\n   ---------------------  MIP__FEASIBLE  ----------------------------------" << std::endl;
-//         assignSolutionToOutput();
-//         break;
+      //  assignSolutionToOutput();
+      //  break;
       case GRB_INFEASIBLE:
         s = SolverInstance::UNSAT;
         //std::cout << "\n   ---------------------  MIP__INFEASIBLE  ----------------------------------" << std::endl;
@@ -444,6 +447,7 @@ namespace MiniZinc {
           res = exprToVar(it->e()->e());
         } else {
           res = _grb_model->addVar(lb, ub, vd==objVd ? 1.0 : 0.0, type, id->str().c_str());
+                    _grb_model->update();
         }
 
         _variableMap.insert(id, res);
@@ -471,7 +475,6 @@ namespace MiniZinc {
     } else {
       val = var.get(GRB_DoubleAttr_X);
     }
-
     switch (id->type().bt()) {
       case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
       case Type::BT_FLOAT: return new FloatLit(Location(), val);
