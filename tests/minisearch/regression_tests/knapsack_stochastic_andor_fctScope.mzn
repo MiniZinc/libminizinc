@@ -35,11 +35,41 @@ constraint forall(i in ITEMS) (selectedItems[i] >= 0);
 constraint 
 	sum (i in ITEMS) (size[i] * selectedItems[i]) <= capacity;
 
-int: iterations = 400;
+
+
+% ----------------------------------------------------------------------
+% Instance 
+% ----------------------------------------------------------------------
+
+nItems = 10;
+capacity = 10000; %2426;
+minProfit = 2426;
+size =  [107, 119, 188, 265, 374, 481, 751, 797, 811, 960];
+
+nbScenarios = 2;
+weights =[3, 2];
+profit = array2d(1..2, ITEMS, 
+[
+ 	%Scenario 1
+	81, 69, 276, 291, 422, 572, 886, 741, 405, 1363,
+	%Scenario 2
+	115, 132, 236, 233, 340, 399, 660, 884, 1240, 912,
+] ); 
+
+% ----------------------------------------------------------------------
+% Objective and Search
+% ----------------------------------------------------------------------
+
+int: iterations = 10;
  
 % Solve
 solve :: int_search(selectedItems,first_fail,indomain_max,complete)
-search
+search 
+my_search(iterations);
+
+
+
+function ann: my_search(int: iterations) =
    let {  
      array[SCENARIOS] of int: scenario_obj = [ 0 | i in SCENARIOS ]; % initialize the objective values of each scenario with zero
      int: expectedProfit = 0;
@@ -47,14 +77,15 @@ search
    in  (
          repeat (i in 1..iterations) (      
                (next() \/ break)  /\ % find a solution for the first stage variables
-               print("First stage solution found\n") /\
+               %print("First stage solution found\n") /\
                repeat (s in 1..nbScenarios) (
                   scope(
                      let { 
                         var minProfit..maxProfit: totalProfit; % second stage variables
                      } in (                                        
                          post(firstStageAssignment() /\ % assign first stage variables
-                              secondStageConstraints(s,totalProfit)) /\
+                              totalProfit = sum(i in ITEMS)(profit[s,i] * selectedItems[i])) /\
+%                              secondStageConstraints(s,totalProfit)) /\
                          if bab_max(totalProfit) then
                            print("Maximal total profit for scenario "++show(s)++": "++show(sol(totalProfit))++"\n") /\
                            scenario_obj[s]  := sol(totalProfit)
@@ -66,8 +97,8 @@ search
               ) % end repeat 
               /\ if expectedProfit < sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])) then 
                     expectedProfit := sum (i in SCENARIOS) (weights[i]*(scenario_obj[i]))
-                     /\ print("Best expected profit:"++show(expectedProfit)++"\n") /\ print() % we found a solution
-                  else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
+                     /\ print("Best expected profit:"++show(expectedProfit div sum(i in SCENARIOS)(weights[i]))++"\n") /\ print() % we found a solution
+   else %print("So-far best expected profit: "++show(expectedProfit)++" is better than just found expected profit: "++show(sum (i in SCENARIOS) (weights[i]*(scenario_obj[i])))++"\n") /\
                        skip() endif
         )
     )
@@ -83,8 +114,8 @@ predicate secondStageConstraints(int: scenario, var int: p) =
 
 predicate firstStageAssignment() = 
   forall (i in ITEMS)  (
-     selectedItems[i] = sol(selectedItems[i]) /\
-     trace("selectedItems["++show(i)++"] = "++show(sol(selectedItems[i]))++" (sol)\n")
+     selectedItems[i] = sol(selectedItems[i]) %/\
+     %trace("selectedItems["++show(i)++"] = "++show(sol(selectedItems[i]))++" (sol)\n")
   )
 ;
      

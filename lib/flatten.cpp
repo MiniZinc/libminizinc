@@ -5978,9 +5978,9 @@ namespace MiniZinc {
   
   EE flatten(EnvI& env, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt, bool flattenLoop) {
     int startItem = env.flat()->size();
-    EE ee = flat_exp(env,Ctx(),e,r,b);
+    EE ee = flat_exp(env,Ctx(),e,r,b);    
     if(flattenLoop)
-      flatten_loop(env, startItem, opt);    
+      flatten_loop(env, startItem, opt);        
     if (!opt.keepOutputInFzn) {     
       createOutput(env);      
     }

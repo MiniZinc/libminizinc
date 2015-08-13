@@ -110,11 +110,15 @@ namespace MiniZinc {
         }
         env.envi().popSolution();
         if (env.envi().isCommitted()) {
+          //std::cerr << "DEBUG: Solution is committed\n";
           ret = SolverInstance::SUCCESS;
-        } else if (env.envi().nbSolutionScopes() > 1) {
+        } else if (env.envi().nbSolutionScopes() >= 1) {
+          //std::cerr << "DEBUG Solution is NOT committed\n";
           ret = SolverInstance::FAILURE;
-        }
-
+        } else {
+          //std::cerr << "DEBUG: Solution is NOT committed and #solution-scopes is NOT greater than 1\n";
+          //std::cerr << "DEBUG: #solutionscopes = " << env.envi().nbSolutionScopes() << "\n"; 
+        }      
         //solver->env().envi().setCurSolution(_solutionScopes.back());
         //if(verbose) {
         //  std::cerr << "DEBUG: Setting current solution to: " << std::endl;
@@ -349,6 +353,8 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver,bool verbose) {
     //std::cout << "DEBUG: POST combinator: " << *call << std::endl;
+    //std::cerr << "========================\nDEBUG: output model BEFORE interpreting POST combinator:\n" << std::endl;
+    //debugprint(solver->env().output()); std::cerr << "=========================================\n";
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "POST combinator takes only 1 argument instead of " << call->args().size() << " in " << *call ;
@@ -359,8 +365,10 @@ namespace MiniZinc {
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(solver->env().envi(),call->args()[0]->loc(), ssm.str());
     }
-    //std::cerr << "DEBUG: Flat model after interpreting POST combinator:\n" << std::endl;
-    //debugprint(solver->env().flat());
+    //std::cerr << "========================\nDEBUG: output model AFTER interpreting POST combinator:\n" << std::endl;
+    //debugprint(solver->env().output()); std::cerr << "=========================================\n";
+    //std::cerr << "========================\nDEBUG: flat model AFTER interpreting POST combinator:\n" << std::endl;
+    //debugprint(solver->env().flat()); std::cerr << "=========================================\n";
     return SolverInstance::SUCCESS;
   }
   
@@ -577,7 +585,12 @@ namespace MiniZinc {
             // add the number of local variables according to length of array
             int nbVars = _localVarsToAdd.back(); 
             _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars + al->length();
-          }          
+          }   
+          
+          //std::cerr << "========================\nDEBUG: flat model AFTER adding local variable:\n" << std::endl;
+          //debugprint(solver->env().flat()); std::cerr << "=========================================\n";
+          //std::cerr << "DEBUG: output model after adding local variable:\n" ;
+          //debugprint(solver->env().output()); std::cerr << "===========================================\n";
           
         } else { // we have a parameter -> add it to the model by flattening
           par_vars.push_back(vd);          
@@ -644,7 +657,8 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(SolverInstanceBase* solver, bool verbose) {
-    //std::cerr << "DEBUG: NEXT combinator" << std::endl;       
+    if(verbose)
+      std::cerr << "DEBUG: NEXT combinator" << std::endl;       
     if(isTimeLimitViolated()) {    
       setTimeoutIndex(getViolatedTimeLimitIndex(verbose));
       return SolverInstance::FAILURE;
@@ -656,14 +670,12 @@ namespace MiniZinc {
     //}
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {
-      //std::cerr << "DEBUG: output model after next():" << std::endl;
-      //debugprint(solver->env().output());
+      std::cerr << "DEBUG: output model after next(), before updating solution:\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
+      debugprint(solver->env().output());
       GCLock lock;
-      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
-      // TODO: check if this makes sense; update solutions in all upper scopes?
-      //for(unsigned int i=_scopes.size()-1; i>= 0; i--) {
-       // _scopes[i]->env().envi().updateCurrentSolution(copy(_scopes[i]->env().envi(), _scopes[i]->env().output()));
-      //}
+      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));     
+      std::cerr << "DEBUG: output model after next(), AFTER updating solution:\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
+      debugprint(solver->env().output());
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
     return status; 
@@ -671,7 +683,8 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
-    //std::cerr << "DEBUG: NEXT combinator" << std::endl; 
+    if(verbose)
+      std::cerr << "DEBUG: NEXT() combinator" << std::endl; 
     // interpret NEXT arguments    
     ASTExprVec<Expression> args = call->args();
     if(args.size()>1) {
@@ -696,15 +709,11 @@ namespace MiniZinc {
     GCLock lock;
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) { 
-      //std::cerr << "DEBUG: output model after next():" << std::endl;
+      //std::cerr << "DEBUG: output model after next():\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
       //debugprint(solver->env().output());
-      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));
-      // TODO: check if this makes sense; update solutions in all upper scopes?
-     // for(int i=_scopes.size()-1; i>= 0; i--) {
-     //   std::cerr << "Scopes at position " << i << std::endl;
-     //   _scopes[i]->env().envi().updateCurrentSolution(copy(_scopes[i]->env().envi(), _scopes[i]->env().output()));
-     // }
-    }    
+      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));      
+    } 
+    //std::cerr << "DEBUG: finished next() with status = " << status << ", SUCCESS = " << SolverInstance::SUCCESS << "\n";
     return status; 
   }
   
@@ -912,7 +921,7 @@ namespace MiniZinc {
   SolverInstance::Status
   SearchHandler::interpretPrintCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
     //std::cerr << "DEBUG: PRINT combinator: " << *call << std::endl;
-    if (call->args().size()==0) {
+    if (call->args().size()==0) {        
       
       if(solver->env().envi().getCurrentSolution() != NULL) {
         GCLock lock;
@@ -930,6 +939,8 @@ namespace MiniZinc {
       //std::cerr << "DEBUG: printing flat model before printing PRINT(""):" << std::endl;      
       //debugprint(solver->env().flat());
       //std::cerr << "DEBUG: trying to print: " << *(call->args()[0]) << "\n";
+      //std::cerr << "DEBUG: interpretPrintCombinator/3: output model before evaluating output:\n";
+      //debugprint(solver->env().output()); std::cerr << "==============================================\n";
       GCLock lock;
       std::cout << eval_string(solver->env().envi(), call->args()[0]);
       return SolverInstance::SUCCESS;
@@ -969,7 +980,9 @@ namespace MiniZinc {
     for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {      
       nbVarsBefore++;        
     }
-    nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1];    
+    //std::cerr << "DEBUG: ************ postConstraints: nbVarsBefore = " << nbVarsBefore << ", local vars to add = " << _localVarsToAdd[_localVarsToAdd.size()-1] << "\n";
+    nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1]; // We've already added the local vars!   
+    
     
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
     GCLock lock;
@@ -981,17 +994,21 @@ namespace MiniZinc {
     }    
    
     // flatten the expression
-    //std::cerr << "DEBUG: ozn model before flattening:\n..........................\n";
-    //debugprint(env.output());
+    //std::cerr << "DEBUG: flat model before flattening:\n..........................\n";
+    //debugprint(env.flat());
     //std::cerr << "............................................\n";
-    (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, env.envi().fopt);
-    //std::cerr << "DEBUG: ozn model aFTER flattening:\n..........................\n";
-    //debugprint(env.output());
+    FlatteningOptions fopt; fopt.keepOutputInFzn = true;  
+    (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, fopt); //env.envi().fopt);
+    //env.envi().fopt.keepOutputInFzn = b;
+    //std::cerr << "DEBUG: flat model aFTER flattening:\n..........................\n";
+    //debugprint(env.flat());
     //std::cerr << "............................................\n";
     
     int nbVarsAfter = 0;
-    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it)
+    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {
       nbVarsAfter++;
+    }
+    //std::cerr << "DEBUG: #varsbefore = " << nbVarsBefore << ", #varsAfter = " << nbVarsAfter << std::endl;
     if(nbVarsBefore < nbVarsAfter) {
       //std::cerr << "before:" << nbVarsBefore << ", after: " << nbVarsAfter << std::endl;
       std::vector<VarDecl*> vars;
@@ -1009,7 +1026,7 @@ namespace MiniZinc {
       }
       if(verbose)
         for(unsigned int i=0; i<vars.size(); i++) {        
-          std::cout << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+          std::cerr << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
         }
       success = success && solver->addVariables(vars);      
     }      
