@@ -561,9 +561,9 @@ namespace MiniZinc {
     for(unsigned int i=0; i<e->errorStack.size(); i++)
       c->e->errorStack.push_back(copy(envi(),cmap, const_cast<Expression*>(e->errorStack[i])));
     for(unsigned int i=0; i<e->idStack.size(); i++)
-      c->e->idStack.push_back(int(e->idStack[i]));
+      c->e->idStack.push_back(int(e->idStack[i]));    
     for(unsigned int i=0; i<e->warnings.size(); i++)
-      c->e->warnings[i] = std::string(e->warnings[i]);     
+      c->e->warnings.push_back(std::string(e->warnings[i]));
     for(KeepAliveMap<EnvI::WW>::iterator it = e->map_begin(); it!= e->map_end();it++) {
       if((it->second).b() && (it->second).r()) {
         Expression* e = copy(envi(),cmap, (it->first)());

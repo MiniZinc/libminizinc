@@ -110,14 +110,20 @@ namespace MiniZinc {
         }
         env.envi().popSolution();
         if (env.envi().isCommitted()) {
-          //std::cerr << "DEBUG: Solution is committed\n";
+          if(verbose)
+            std::cerr << "DEBUG: Solution is committed\n";
           ret = SolverInstance::SUCCESS;
-        } else if (env.envi().nbSolutionScopes() >= 1) {
-          //std::cerr << "DEBUG Solution is NOT committed\n";
+        } else if (env.envi().nbSolutionScopes() > 1) {
+          if(verbose)
+            std::cerr << "DEBUG Solution is NOT committed\n";
           ret = SolverInstance::FAILURE;
         } else {
-          //std::cerr << "DEBUG: Solution is NOT committed and #solution-scopes is NOT greater than 1\n";
-          //std::cerr << "DEBUG: #solutionscopes = " << env.envi().nbSolutionScopes() << "\n"; 
+          if(verbose) {
+            std::cerr << "DEBUG: Solution is NOT committed and #solution-scopes is NOT greater than 1\n";
+            std::cerr << "DEBUG: #solutionscopes = " << env.envi().nbSolutionScopes() << "\n"; 
+          }
+          // TODO
+          ret = SolverInstance::SUCCESS;
         }      
         //solver->env().envi().setCurSolution(_solutionScopes.back());
         //if(verbose) {
@@ -669,13 +675,9 @@ namespace MiniZinc {
      //debugprint(solver->env().flat());
     //}
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) {
-      std::cerr << "DEBUG: output model after next(), before updating solution:\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
-      debugprint(solver->env().output());
+    if(status == SolverInstance::SUCCESS) {      
       GCLock lock;
-      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));     
-      std::cerr << "DEBUG: output model after next(), AFTER updating solution:\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
-      debugprint(solver->env().output());
+      solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));           
     }
     //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
     return status; 

@@ -6,7 +6,7 @@
 function ann: bab_max(var int: obj) =   
    repeat(
        if next() then
-         %print("Intermediate solution in BAB-MAX with objective \(sol(obj))\n") /\
+         %gprint("Intermediate solution in BAB-MAX with objective \(sol(obj))\n") /\
          commit() /\ 
          post(obj > sol(obj))
        else break endif

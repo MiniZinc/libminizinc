@@ -72,7 +72,7 @@ namespace MiniZinc {
         case SolverInstance::SUCCESS:
           break;
         case SolverInstance::FAILURE:
-          std::cout << "=====UNSAT=====";
+          std::cout << "=====UNSAT=====\n";
           break;        
       }
     }

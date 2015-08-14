@@ -24,6 +24,9 @@ for ((i=0; i < ${#FZN_SOLVERS}; i++))
 do
     solver=${FZN_SOLVERS[$i]}
     globals=${FZN_SOLVERS_INCLUDES[$i]}
+    if [[ "$solver" = "" ]]; then 
+	break
+    fi
     for file in $( ls *.mzn ); do
 	if [ "$VERBOSE" = true ] ; then
 	    echo "$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
