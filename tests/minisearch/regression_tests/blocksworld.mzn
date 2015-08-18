@@ -100,12 +100,12 @@ solve   :: int_search(
             complete
         )
 %        satisfy;
-search blocksworld(iterations) /\ 
-       if hasSol() then print() else print("No solution found.") endif;
+search blocksworld(iterations, on) /\ 
+       if hasSol() then skip() else print("No solution found.") endif;
 
 
 
-function ann: blocksworld(int: iterations) = % array[int,int] of var int: on2) = 
+function ann: blocksworld(int: iterations,  array[int,int] of var int: on2) = 
   % if we find a solution with the minimal number of steps
   if scope(post(goalState(n_steps,on)) /\
            next() 
@@ -119,7 +119,20 @@ function ann: blocksworld(int: iterations) = % array[int,int] of var int: on2) =
              array[n_steps..nbSteps, blocks] of var locs: on_plus; % additional moves after minimal number of steps
           } in (
              post(blocksworldConstraints(on_plus,n_steps..nbSteps,nbSteps)) /\
-             if next() then commit() /\ print("Solved in "++show(nbSteps)++" steps.\n") /\ break
+             if next() then commit() /\ print("Solved in "++show(nbSteps)++" steps.\n") 
+                            % print the solution
+                            /\ repeat (s in 1..nbSteps) (
+                                 repeat (b in 1..n_blocks) (
+                                    if b = 1 then print("Step " ++ show(s) ++ ":\n") else skip
+                                    endif /\
+                                    print("  block "++show(b) ++ " on " ++
+                                           if s <= n_steps then show(sol(on2[s, b])) 
+                                           else show(sol(on_plus[s,b]))
+                                           endif
+                                          ++ "\n")
+                                 )
+                               )
+                            /\ break
              else skip endif
           )
        )
@@ -127,8 +140,8 @@ function ann: blocksworld(int: iterations) = % array[int,int] of var int: on2) =
   endif
 ;
 
+
 predicate blocksworldConstraints(array[int,blocks] of var int: on_p, set of int: STEPS, int: lastStep) = 
-% TODO: connection constraint between on an on_p
     % Constrain the goal state.
     %
    goalState(lastStep, on_p)
@@ -157,6 +170,16 @@ predicate blocksworldConstraints(array[int,blocks] of var int: on_p, set of int:
     ->
         (   clear_p(s, b, on_p)
         /\  clear_p(s, on_p[s + 1, b], on_p)
+        )
+    )
+
+% connection constraint between on an on_p
+/\
+    forall (b in blocks) (
+        on[n_steps, b] != on_p[n_steps+1, b]
+    ->
+        (   clear_p(n_steps, b, on)
+        /\  clear_p(n_steps, on_p[n_steps+1, b], on_p)
         )
     )
 ;
