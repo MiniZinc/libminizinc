@@ -44,7 +44,7 @@ array [steps, blocks] of var locs: on;
     % Constrain the starting state.
     %
 
-predicate keepAlive__(array[int,int] of var int: x);
+predicate keepAlive__(array[int,int] of var int);
  
 constraint keepAlive__(on);
 
@@ -91,7 +91,7 @@ constraint
 
 include "combinators.mzn";
 
-int: iterations = 10;
+int: iterations = 5;
 
 solve   :: int_search(
             [on[s, b] | s in steps, b in blocks],

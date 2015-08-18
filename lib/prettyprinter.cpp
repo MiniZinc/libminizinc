@@ -529,30 +529,35 @@ namespace MiniZinc {
             }
             if(!is_isv) {
               ArrayLit* al = NULL;
-              Expression* e = vd.e();            
-              while (al==NULL) {
-                switch (e->eid()) {
-                  case Expression::E_ARRAYLIT:
-                    al = e->cast<ArrayLit>();
-                  break;
-                  case Expression::E_ID:
-                    e = e->cast<Id>()->decl()->e();
-                  break;
-                  default:
-                    assert(false);
-                }
+              Expression* e = vd.e();
+              if(e == NULL) {                
+                p(vd.ti());
               }
-              std::vector<int> dims(2);
-              dims[0] = 1;
-              dims[1] = al->length();
-              IntSetVal* isv = IntSetVal::a(1,al->length());
-              std::vector<TypeInst*> r(1);
-              r[0] = new TypeInst(vd.ti()->ranges()[0]->loc(),
-                                  vd.ti()->ranges()[0]->type(),
-                                  new SetLit(Location().introduce(),isv));
-              ASTExprVec<TypeInst> ranges(r);
-              TypeInst* ti = new TypeInst(vd.ti()->loc(),vd.ti()->type(),ranges,vd.ti()->domain());
-              p(ti);       
+              else {
+                while (al==NULL) {
+                  switch (e->eid()) {
+                    case Expression::E_ARRAYLIT:
+                      al = e->cast<ArrayLit>();
+                    break;
+                    case Expression::E_ID:
+                      e = e->cast<Id>()->decl()->e();
+                    break;
+                    default:
+                      assert(false);
+                  }
+                }
+                std::vector<int> dims(2);
+                dims[0] = 1;
+                dims[1] = al->length();
+                IntSetVal* isv = IntSetVal::a(1,al->length());
+                std::vector<TypeInst*> r(1);
+                r[0] = new TypeInst(vd.ti()->ranges()[0]->loc(),
+                                    vd.ti()->ranges()[0]->type(),
+                                    new SetLit(Location().introduce(),isv));
+                ASTExprVec<TypeInst> ranges(r);
+                TypeInst* ti = new TypeInst(vd.ti()->loc(),vd.ti()->type(),ranges,vd.ti()->domain());
+                p(ti);    
+              }
             }
           } else {
             p(vd.ti());
