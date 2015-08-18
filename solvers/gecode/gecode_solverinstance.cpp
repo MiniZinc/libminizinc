@@ -562,6 +562,7 @@ namespace MiniZinc {
     // post the constraints
     for (ConstraintIterator it = _flat->begin_constraints(); it != _flat->end_constraints(); ++it) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
+        if(c->id() == constants().combinators.keepAlive) continue; //ignore keepAlive constraint
         _constraintRegistry.post(c);        
       }
     }

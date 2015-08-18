@@ -632,7 +632,7 @@ namespace MiniZinc {
         break;
       case Item::II_CON:
         if(Call* c = i->cast<ConstraintI>()->e()->dyn_cast<Call>()) {
-          if(c->id().str() == "keepAlive__") {
+          if(c->id() == constants().combinators.keepAlive) {
             return; // do not print this constraint
           }
         }
@@ -671,7 +671,7 @@ namespace MiniZinc {
           } else if (fi.ti()->type() == Type::parbool()) {
             os << "test ";
           } else if (fi.ti()->type() == Type::varbool()) {
-            if(fi.id().str() == "keepAlive__") {
+            if(fi.id() == constants().combinators.keepAlive) {
               // do not print the predicate
               return;
             }
