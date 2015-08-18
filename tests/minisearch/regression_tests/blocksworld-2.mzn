@@ -74,7 +74,7 @@ constraint
     % A clear block is one that has no other block on top of it.
     % The table is always clear.
     %
-predicate clear(steps: s, var locs: l) =
+predicate clear(int: s, var locs: l) =
     l < 0  \/  forall (b in blocks) (on[s, b] != l);
 
     % If a block moves then it must (a) be clear and (b) its destination
@@ -101,13 +101,13 @@ solve   :: int_search(
         )
 %        satisfy;
 search blocksworld(iterations, on) /\ 
-       if hasSol() then skip() else print("No solution found.") endif;
+       if hasSol() then skip() else print("No solution found.\n") endif;
 
 
 
 function ann: blocksworld(int: iterations,  array[int,int] of var int: on2) = 
   % if we find a solution with the minimal number of steps
-  if scope(post(goalState(n_steps,on)) /\
+  if scope(post(goalState(n_steps,on2)) /\
            next() 
      ) then commit() /\ print("Solved in minimal number of steps.\n")
   % otherwise iteratively increase the number of steps
@@ -116,9 +116,10 @@ function ann: blocksworld(int: iterations,  array[int,int] of var int: on2) =
        scope (
           let {
              int: nbSteps = i+n_steps;
-             array[n_steps..nbSteps, blocks] of var locs: on_plus; % additional moves after minimal number of steps
+             set of int: Range = n_steps+1..nbSteps;
+             array[Range, blocks] of var locs: on_plus; % additional moves after minimal number of steps
           } in (
-             post(blocksworldConstraints(on_plus,n_steps..nbSteps,nbSteps)) /\
+             post(blocksworldConstraints(on_plus,Range,nbSteps)) /\
              if next() then commit() /\ print("Solved in "++show(nbSteps)++" steps.\n") 
                             % print the solution
                             /\ repeat (s in 1..nbSteps) (
@@ -133,7 +134,7 @@ function ann: blocksworld(int: iterations,  array[int,int] of var int: on2) =
                                  )
                                )
                             /\ break
-             else skip endif
+             else skip /\ print("No solution found for "++show(nbSteps)++" steps.\n") endif
           )
        )
     )
@@ -178,7 +179,7 @@ predicate blocksworldConstraints(array[int,blocks] of var int: on_p, set of int:
     forall (b in blocks) (
         on[n_steps, b] != on_p[n_steps+1, b]
     ->
-        (   clear_p(n_steps, b, on)
+        (   clear(n_steps, b)
         /\  clear(n_steps, on_p[n_steps+1, b])
         )
     )
@@ -197,10 +198,10 @@ predicate goalState(int: lastStep, array[int,int] of var int: on_) =
     forall (b in blocks) (
         if final_loc[b] = Table then
             on_[lastStep, b] = -b  
-            %/\ trace("on["++show(lastStep)++", "++show(b)++"] = -"++show(b)++";\n")
+            /\ trace("on["++show(lastStep)++", "++show(b)++"] = -"++show(b)++";\n")
         else
             on_[lastStep, b] = final_loc[b] 
-            %/\ trace("on["++show(lastStep)++", "++show(b)++"] = "++show(final_loc[b])++";\n")
+            /\ trace("on["++show(lastStep)++", "++show(b)++"] = "++show(final_loc[b])++";\n")
         endif
     );
 
@@ -208,32 +209,37 @@ predicate goalState(int: lastStep, array[int,int] of var int: on_) =
 %  Instance (instance1)
 % -----------------------------------------------
 
-n_blocks = 3;
+n_blocks = 5;
 
 int: a = 1;
 int: b = 2;
 int: c = 3;
+int: d = 4;
+int: e = 5;
 
 % Initial state:
 %
+%  E
+%  D
 %  C
-%  A
 %  B
+%  A
 % ---
-%              A  B      C
-initial_loc = [b, Table, a];
+%              A      B  C  D  E
+initial_loc = [Table, a, b, c, d];
 
 % Goal state:
 %
 %  A
 %  B
 %  C
+%  D
+%  E
 % ---
-%            A  B  C
-final_loc = [b, c, Table];
+%            A  B  C  D  E
+final_loc = [b, c, d, e, Table];
 
-n_steps = 3; % 4 in original instance
-
+n_steps = 5; % 6 in original instance
 
 
 output
