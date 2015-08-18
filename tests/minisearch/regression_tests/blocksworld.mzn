@@ -2,6 +2,7 @@
 % vim: ft=zinc ts=4 sw=4 et tw=0
 %
 % A state-based blocks-world model.
+% Extended with MiniSearch
 
 include "globals.mzn";
 
@@ -42,6 +43,11 @@ array [steps, blocks] of var locs: on;
 
     % Constrain the starting state.
     %
+
+predicate keepAlive__(array[int,int] of var int: x);
+ 
+constraint keepAlive__(on);
+
 constraint
     forall (b in blocks) (
         if initial_loc[b] = Table then
@@ -97,7 +103,9 @@ solve   :: int_search(
 search blocksworld(iterations) /\ 
        if hasSol() then print() else print("No solution found.") endif;
 
-function ann: blocksworld(int: iterations) = 
+
+
+function ann: blocksworld(int: iterations) = % array[int,int] of var int: on2) = 
   % if we find a solution with the minimal number of steps
   if scope(post(goalState(n_steps,on)) /\
            next() 
@@ -120,6 +128,7 @@ function ann: blocksworld(int: iterations) =
 ;
 
 predicate blocksworldConstraints(array[int,blocks] of var int: on_p, set of int: STEPS, int: lastStep) = 
+% TODO: connection constraint between on an on_p
     % Constrain the goal state.
     %
    goalState(lastStep, on_p)
@@ -159,14 +168,16 @@ predicate clear_p(steps: s, var locs: l, array[int,int] of var int: on_p) =
     l < 0  \/  forall (b in blocks) (on_p[s, b] != l);
 
 
-predicate goalState(int: lastStep, array[int,int] of var int: on) =
+predicate goalState(int: lastStep, array[int,int] of var int: on_) =
     % Constrain the goal state.
     %
     forall (b in blocks) (
         if final_loc[b] = Table then
-            on[lastStep, b] = -b
+            on_[lastStep, b] = -b  
+            %/\ trace("on["++show(lastStep)++", "++show(b)++"] = -"++show(b)++";\n")
         else
-            on[lastStep, b] = final_loc[b]
+            on_[lastStep, b] = final_loc[b] 
+            %/\ trace("on["++show(lastStep)++", "++show(b)++"] = "++show(final_loc[b])++";\n")
         endif
     );
 
@@ -212,5 +223,5 @@ output
         endif ++
         "  block " ++ show(b) ++ " on " ++ show(on[s, b]) ++ "\n"
     |   s in 1..n_steps, b in 1..n_blocks
-    ];
+    ] ++ ["on = "++show(on)++"\n"];
 

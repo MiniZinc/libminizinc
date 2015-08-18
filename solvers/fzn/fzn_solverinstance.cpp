@@ -47,6 +47,8 @@ namespace MiniZinc {
         pipe(pipes[0]);
         pipe(pipes[1]);
 
+       
+        
         std::string fznFile;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
@@ -54,6 +56,8 @@ namespace MiniZinc {
           close(fd);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
+          MiniZinc::Printer p(os,0);
+          //MiniZinc::Printer p_debug(std::cerr,0); // uncomment to see flatzinc model for FZN solver
           if (!os.good()) {
             std::string last_error = strerror(errno);
             throw InternalError(std::string("cannot open file ")+tmpfile+" for writing: "+last_error);
@@ -67,8 +71,9 @@ namespace MiniZinc {
                 si->ann().removeCall(constants().ann.combinator); // remove the combinator annotation
               }             
             }
-            os << *item;
-            //std::cerr << *item; // DEBUG
+            //os << *item;
+            p.print(item);            
+            //p_debug.print(item); // DEBUG: uncomment to see flatzinc model that is sent to FZN solver
           }
         }
         

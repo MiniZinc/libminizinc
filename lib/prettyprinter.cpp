@@ -286,7 +286,7 @@ namespace MiniZinc {
         {
           const ArrayLit& al = *e->cast<ArrayLit>();
           int n = al.dims();
-          if (n == 1 && al.min(0) == 1) {
+          if (_flatZinc || ( n == 1 && al.min(0) == 1 ) ) {
             os << "[";
             for (unsigned int i = 0; i < al.v().size(); i++) {
               p(al.v()[i]);
@@ -503,24 +503,64 @@ namespace MiniZinc {
         break;
       case Expression::E_CALL:
         {
-          const Call& c = *e->cast<Call>();
+          const Call& c = *e->cast<Call>();        
           os << c.id() << "(";
           for (unsigned int i = 0; i < c.args().size(); i++) {
             p(c.args()[i]);
             if (i < c.args().size()-1)
               os << ",";
           }
-          os << ")";
+          os << ")";        
         }
         break;
       case Expression::E_VARDECL:
-        {
-          const VarDecl& vd = *e->cast<VarDecl>();
-          p(vd.ti());
+        {         
+          const VarDecl& vd = *e->cast<VarDecl>();           
+          bool is_isv = false;
+          if (_flatZinc && vd.type().dim()>0) {
+            if (vd.ti()->ranges().size() == 1 &&
+              vd.ti()->ranges()[0]->domain() != NULL &&
+              vd.ti()->ranges()[0]->domain()->isa<SetLit>()) {
+              IntSetVal* isv = vd.ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
+              if (isv && (isv->size()==0 || isv->min(0)==1)) {
+                p(vd.ti());               
+                is_isv = true;
+              }
+            }
+            if(!is_isv) {
+              ArrayLit* al = NULL;
+              Expression* e = vd.e();            
+              while (al==NULL) {
+                switch (e->eid()) {
+                  case Expression::E_ARRAYLIT:
+                    al = e->cast<ArrayLit>();
+                  break;
+                  case Expression::E_ID:
+                    e = e->cast<Id>()->decl()->e();
+                  break;
+                  default:
+                    assert(false);
+                }
+              }
+              std::vector<int> dims(2);
+              dims[0] = 1;
+              dims[1] = al->length();
+              IntSetVal* isv = IntSetVal::a(1,al->length());
+              std::vector<TypeInst*> r(1);
+              r[0] = new TypeInst(vd.ti()->ranges()[0]->loc(),
+                                  vd.ti()->ranges()[0]->type(),
+                                  new SetLit(Location().introduce(),isv));
+              ASTExprVec<TypeInst> ranges(r);
+              TypeInst* ti = new TypeInst(vd.ti()->loc(),vd.ti()->type(),ranges,vd.ti()->domain());
+              p(ti);       
+            }
+          } else {
+            p(vd.ti());
+          }
           if (vd.id()->idn() != -1) {
             os << ": X_INTRODUCED_" << vd.id()->idn();
           } else if (vd.id()->v().size() != 0)
-            os << ": " << vd.id()->v();
+            os << ": " << vd.id()->v();          
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
@@ -586,6 +626,11 @@ namespace MiniZinc {
         p(i->cast<AssignI>()->e());
         break;
       case Item::II_CON:
+        if(Call* c = i->cast<ConstraintI>()->e()->dyn_cast<Call>()) {
+          if(c->id().str() == "keepAlive__") {
+            return; // do not print this constraint
+          }
+        }
         os << "constraint ";
         p(i->cast<ConstraintI>()->e());
         break;
@@ -621,7 +666,11 @@ namespace MiniZinc {
           } else if (fi.ti()->type() == Type::parbool()) {
             os << "test ";
           } else if (fi.ti()->type() == Type::varbool()) {
-            os << "predicate ";
+            if(fi.id().str() == "keepAlive__") {
+              // do not print the predicate
+              return;
+            }
+            os << "predicate ";            
           } else {
             os << "function ";
             p(fi.ti());

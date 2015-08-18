@@ -999,10 +999,11 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: flat model before flattening:\n..........................\n";
     //debugprint(env.flat());
     //std::cerr << "............................................\n";
-    FlatteningOptions fopt; fopt.keepOutputInFzn = true;  
+    FlatteningOptions fopt; 
+    fopt.keepOutputInFzn = _localVarsToAdd[_localVarsToAdd.size()-1] > 0;  // keep the output vars since they are local vars
     (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, fopt); //env.envi().fopt);
     //env.envi().fopt.keepOutputInFzn = b;
-    //std::cerr << "DEBUG: flat model aFTER flattening:\n..........................\n";
+    //std::cerr << "DEBUG: flat model AFTER flattening:\n..........................\n";
     //debugprint(env.flat());
     //std::cerr << "............................................\n";
     

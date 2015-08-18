@@ -5978,9 +5978,9 @@ namespace MiniZinc {
   
   EE flatten(EnvI& env, Expression* e, VarDecl* r, VarDecl* b, FlatteningOptions opt, bool flattenLoop) {
     int startItem = env.flat()->size();
-    EE ee = flat_exp(env,Ctx(),e,r,b);    
+    EE ee = flat_exp(env,Ctx(),e,r,b);
     if(flattenLoop)
-      flatten_loop(env, startItem, opt);        
+      flatten_loop(env, startItem, opt); 
     if (!opt.keepOutputInFzn) {     
       createOutput(env);      
     }
@@ -6318,10 +6318,10 @@ namespace MiniZinc {
           std::vector<int> dims(2);
           dims[0] = 1;
           dims[1] = al->length();
-          al->setDims(ASTIntVec(dims));
+          //al->setDims(ASTIntVec(dims));
           IntSetVal* isv = IntSetVal::a(1,al->length());
           if (vd->ti()->ranges().size() == 1) {
-            vd->ti()->ranges()[0]->domain(new SetLit(Location().introduce(),isv));
+            //vd->ti()->ranges()[0]->domain(new SetLit(Location().introduce(),isv));
           } else {
             std::vector<TypeInst*> r(1);
             r[0] = new TypeInst(vd->ti()->ranges()[0]->loc(),
@@ -6329,7 +6329,7 @@ namespace MiniZinc {
                                 new SetLit(Location().introduce(),isv));
             ASTExprVec<TypeInst> ranges(r);
             TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
-            vd->ti(ti);
+            //vd->ti(ti);
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
