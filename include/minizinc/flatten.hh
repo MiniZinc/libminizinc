@@ -45,6 +45,9 @@ namespace MiniZinc {
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);
+  
+  void oldflatzinc_basic(Env& m);
+  void oldflatzinc_compact_sort(Env& m);
 
   /// Populate FlatZinc output model
   void populateOutput(Env& e);

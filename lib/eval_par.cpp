@@ -25,7 +25,11 @@ namespace MiniZinc {
     if (id->decl() == NULL)
       throw EvalError(env, e->loc(), "undeclared identifier", id->str().str());
     VarDecl* vd = id->decl();
-    if(!eval_outputmodel) {
+    if(vd->type().ispar() && vd->e()) {
+      
+    }
+    //if(!eval_outputmodel) {
+    else {
       while (vd->flat() && vd->flat() != vd) 
         vd = vd->flat();   
     }

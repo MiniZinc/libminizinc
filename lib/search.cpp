@@ -543,6 +543,7 @@ namespace MiniZinc {
           }          
           // flatten and add the variable to the flat model
           EE ee = flatten(solver->env().envi(),vd->id(),NULL,constants().var_true,solver->env().envi().fopt,false);
+          oldflatzinc(solver->env());
           //std::cerr << "DEBUG: flat model after adding new variables by flattening:\n"; debugprint(solver->env().flat()); std::cerr << "===============================\n";
           VarDecl* nvd = ee.r()->cast<Id>()->decl();         
           int nbVars = _localVarsToAdd.back();          
@@ -976,11 +977,15 @@ namespace MiniZinc {
       std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
   
     int nbCtsBefore = 0;
-    for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
-      nbCtsBefore++;
     int nbVarsBefore = 0;
-    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {      
-      nbVarsBefore++;        
+    Model* flat = env.flat();
+    for(unsigned int i=0; i < flat->size(); i++) {
+      if(VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
+        if(!vdi->removed()) nbVarsBefore++;
+      }
+      if(ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
+        if(!ci->removed()) nbCtsBefore++;
+      }      
     }
     //std::cerr << "DEBUG: ************ postConstraints: nbVarsBefore = " << nbVarsBefore << ", local vars to add = " << _localVarsToAdd[_localVarsToAdd.size()-1] << "\n";
     nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1]; // We've already added the local vars!   
@@ -1007,52 +1012,70 @@ namespace MiniZinc {
     //debugprint(env.flat());
     //std::cerr << "............................................\n";
     
-    int nbVarsAfter = 0;
-    for(VarDeclIterator it=env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {
-      nbVarsAfter++;
+    
+    
+    
+    int nbVarsAfter, nbCtsAfter = 0;
+    for(unsigned int i=0; i < flat->size(); i++) {
+      if(VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
+        if(!vdi->removed()) nbVarsAfter++;
+      }
+      if(ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
+        if(!ci->removed()) nbCtsAfter++;
+      }      
     }
     //std::cerr << "DEBUG: #varsbefore = " << nbVarsBefore << ", #varsAfter = " << nbVarsAfter << std::endl;
     if(nbVarsBefore < nbVarsAfter) {
       //std::cerr << "before:" << nbVarsBefore << ", after: " << nbVarsAfter << std::endl;
-      std::vector<VarDecl*> vars;
+      std::vector<Id*> ids;
       unsigned int i=0;
-      for(VarDeclIterator it= env.flat()->begin_vardecls(); it!=env.flat()->end_vardecls(); ++it) {        
-        if(i<nbVarsBefore) { 
-          //std::cerr << "skipping var: " << i << ": " << *(it) << std::endl;
-          i++;
-        }
-        else {
-          //std::cerr << "adding var: " << i << ": " << *(it)  << std::endl;
-          vars.push_back(it->e());
-          i++;
+      for(unsigned int j=0; j<flat->size(); j++) {
+        if(VarDeclI* vdi = (*flat)[j]->dyn_cast<VarDeclI>()) { 
+          if(!vdi->removed()) {
+            if(i<nbVarsBefore) { 
+              //std::cerr << "skipping var: " << i << ": " << *(it) << std::endl;
+              i++;
+            }
+            else {
+              //std::cerr << "adding var: " << i << ": " << *(it)  << std::endl;
+              ids.push_back(vdi->e()->id());
+              i++;
+            }
+          }
         }
       }
+      //oldflatzinc(env);
+      std::vector<VarDecl*> vars;
+      for (unsigned int j=0; j<ids.size(); j++) {
+        vars.push_back(ids[j]->decl());
+      }
       if(verbose)
-        for(unsigned int i=0; i<vars.size(); i++) {        
-          std::cerr << "DEBUG: adding new variable to solver:" << *vars[i] << std::endl;
+        for(unsigned int j=0; j<vars.size(); j++) {        
+          std::cerr << "DEBUG: adding new variable to solver:" << *vars[j] << std::endl;
         }
       success = success && solver->addVariables(vars);      
     }      
-    
-    oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
+    //else {
+    //  oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
+    //}
     // std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
     //debugprint(env.flat());  
     //david
     //Printer p(std::cout);
     //p.print(env.flat());
     //what eve
-    int nbCtsAfter = 0;
-    for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it)
-      nbCtsAfter++;
-    
-        
+             
     if(nbCtsBefore < nbCtsAfter) {       
       std::vector<Call*> flat_cts;
       int i = 0;
-      for(ConstraintIterator it=env.flat()->begin_constraints(); it!=env.flat()->end_constraints(); ++it) {
-        if(i<nbCtsBefore) i++;
-        else {
-          flat_cts.push_back(it->e()->cast<Call>());
+      for(unsigned int j=0; j<flat->size(); j++) {
+        if(ConstraintI* ci = (*flat)[j]->dyn_cast<ConstraintI>()) {
+          if(!ci->removed()) {
+            if(i<nbCtsBefore) i++;
+            else {
+              flat_cts.push_back(ci->e()->cast<Call>());
+            }
+          }
         }
       }
       if(verbose)

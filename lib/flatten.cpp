@@ -760,7 +760,7 @@ namespace MiniZinc {
     //std::cerr << "===============\n";
     GCLock lock;
     bool eval_outputmodel = true;
-    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e(), eval_outputmodel); 
+    ArrayLit* al = eval_array_lit(*this,outputModel->outputItem()->e(), eval_outputmodel);     
     std::string outputString;
     for (int i=0; i<al->v().size(); i++) {
       std::string s = eval_string(*this, al->v()[i], eval_outputmodel);
@@ -6103,7 +6103,7 @@ namespace MiniZinc {
     flatten_loop(env, 0, opt);
   }
   
-  void oldflatzinc(Env& e) {
+  void oldflatzinc_basic(Env& e) {
     Model* m = e.flat();
     for (unsigned int i=0; i<m->size(); i++) {
       Item* item = (*m)[i];
@@ -6115,9 +6115,6 @@ namespace MiniZinc {
     }
 
     EnvI& env = e.envi();
-
-    m->compact();
-    env.vo.rebuild(m);
     
     int msize = m->size();
     UNORDERED_NAMESPACE::unordered_set<Item*> globals;
@@ -6434,10 +6431,6 @@ namespace MiniZinc {
     for (unsigned int i=0; i<declsWithIds.size(); i++) {
       (*m)[declsWithIds[i]] = sortedVarDecls[i];
     }
-    
-    m->compact();
-    e.envi().output->compact();
-
 
     for (IdMap<VarOccurrences::Items>::iterator it = env.vo._m.begin();
          it != env.vo._m.end(); ++it) {
@@ -6452,6 +6445,14 @@ namespace MiniZinc {
         it->second.erase(toRemove[i]);
       }
     }
+  }
+  
+  void oldflatzinc_compact_sort(Env& e) {
+    Model* m = e.flat();
+    EnvI& env = e.envi();
+    m->compact();
+    env.vo.rebuild(m);
+    e.envi().output->compact();
 
     class Cmp {
     public:
@@ -6496,8 +6497,12 @@ namespace MiniZinc {
         return false;
       }
     } _cmp;
-    std::stable_sort(m->begin(),m->end(),_cmp);
-
+    std::stable_sort(m->begin(),m->end(),_cmp);     
+  }
+  
+  void oldflatzinc(Env& e) {
+    oldflatzinc_basic(e);
+    oldflatzinc_compact_sort(e);
   }
 
   FlatModelStatistics statistics(Env& m) {

@@ -170,7 +170,7 @@ namespace MiniZinc {
     VarDeclIterator() {}
     VarDeclIterator(const VarDeclIterator& vi) : _it(vi._it) {}
     VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
-      while (_it != _model->end() && !(*_it)->isa<VarDeclI>()) {
+      while (_it != _model->end() && (!(*_it)->isa<VarDeclI>() || (*_it)->removed())) {
         ++_it;
       }
     }
@@ -187,7 +187,7 @@ namespace MiniZinc {
     VarDeclIterator& operator++() {
       do {
         ++_it;
-      } while (_it != _model->end() && !(*_it)->isa<VarDeclI>());
+      } while (_it != _model->end() && (!(*_it)->isa<VarDeclI>() || (*_it)->removed()));
       return *this;
     }
     

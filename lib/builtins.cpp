@@ -1108,7 +1108,7 @@ namespace MiniZinc {
   
   Expression* exp_is_fixed(EnvI& env, Expression* e) {
     GCLock lock;
-    Expression* cur = eval_par(env,e);
+    Expression* cur = eval_par(env,e,true); // TODO: set from EnvI
     for (;;) {
       if (cur==NULL)
         return NULL;
@@ -1134,7 +1134,7 @@ namespace MiniZinc {
   
   bool b_is_fixed(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    assert(args.size()==1);
+    assert(args.size()==1);    
     return exp_is_fixed(env,args[0]) != NULL;
   }
 
@@ -1154,14 +1154,16 @@ namespace MiniZinc {
 
   Expression* b_fix(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
+    //std::cerr << "DEBUG: FIX: " << *call << "\n";
     assert(args.size()==1);
     Expression* ret = exp_is_fixed(env,args[0]);
     if (ret==NULL)
       throw EvalError(env, args[0]->loc(), "expression is not fixed");
+    //std::cerr << "DEBUG: return from fix = " << *ret << "\n";
     return ret;
   }
 
-  IntVal b_fix_int(EnvI& env, Call* call) {
+  IntVal b_fix_int(EnvI& env, Call* call) {    
     return eval_int(env,b_fix(env,call));
   }
   bool b_fix_bool(EnvI& env, Call* call) {
