@@ -1411,6 +1411,8 @@ stopped:
             if(Id* id = array[j]->dyn_cast<Id>()) {
               //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
               array_elems.push_back(getSolutionValue(id));
+            } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
+              array_elems.push_back(floatLit);
             } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
               array_elems.push_back(intLit);
             } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
