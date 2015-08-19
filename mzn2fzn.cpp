@@ -317,9 +317,6 @@ int main(int argc, char** argv) {
     std::exit(EXIT_FAILURE);
   }
   
-  if (globals_dir!="") {
-    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
-  }
   includePaths.push_back(std_lib_dir+"/std/");
   
   for (unsigned int i=0; i<includePaths.size(); i++) {
@@ -364,30 +361,16 @@ int main(int argc, char** argv) {
     if (m) {
       try {
         if (flag_typecheck) {
-          Env env(m);
+          Env* env = new Env(m);
           if (flag_verbose)
             std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
-          if (flag_verbose)
-            std::cerr << "Typechecking ...";
-          vector<TypeError> typeErrors;
-          MiniZinc::typecheck(env, m, typeErrors);
-          if (typeErrors.size() > 0) {
-            for (unsigned int i=0; i<typeErrors.size(); i++) {
-              if (flag_verbose)
-                std::cerr << std::endl;
-              std::cerr << typeErrors[i].loc() << ":" << std::endl;
-              std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-            }
-            exit(EXIT_FAILURE);
-          }
-          MiniZinc::registerBuiltins(env,m);
+
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (flag_verbose)
               std::cerr << "Flattening ...";
-            Env env(m);
             try {
               GCLock lock;
               std::vector<Pass*> passes;
@@ -400,73 +383,40 @@ int main(int argc, char** argv) {
               gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
 #endif
               FlatteningOptions pass_opts = fopts;
+
               for(unsigned int i=1; i<flag_npasses; i++) {
                 if(flag_gecode) {
 #ifdef HAS_GECODE
-                  passes.push_back(new GecodePass(pass_opts, gopts, std_lib_dir+"/gecode/"));
+                  passes.push_back(new CompilePass(env, pass_opts, std_lib_dir+"/gecode/", includePaths, true));
+                  passes.push_back(new GecodePass(gopts));
 #endif
                 } else {
-                  passes.push_back(new CompilePass(pass_opts, std_lib_dir+"/std/"));
+                  passes.push_back(new CompilePass(env, pass_opts, std_lib_dir+"/std/", includePaths,  true));
                 }
               }
+              passes.push_back(new CompilePass(env, fopts, std_lib_dir+"/"+globals_dir+"/", includePaths, true));
 
-              std::vector<std::string> cleanIncludePaths;
-              cleanIncludePaths.push_back(std_lib_dir+"/std/");
-
-              // Multi-pass optimisations
-              if(flag_npasses > 1)
-                multiPassFlatten(env, cleanIncludePaths, passes);
-
-              // Final compilation
-              if (flag_verbose)
-                std::cerr << "Final Flattening ...";
-              flatten(env, fopts);
-
+              env = multiPassFlatten(*env, passes);
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;
               std::cerr << e.what() << ": " << std::endl;
-              env.dumpErrorStack(std::cerr);
+              env->dumpErrorStack(std::cerr);
               std::cerr << "  " << e.msg() << std::endl;
               exit(EXIT_FAILURE);
             }
-            for (unsigned int i=0; i<env.warnings().size(); i++) {
-              std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+            for (unsigned int i=0; i<env->warnings().size(); i++) {
+              std::cerr << (flag_werror ? "Error: " : "Warning: ") << env->warnings()[i];
             }
-            if (flag_werror && env.warnings().size() > 0) {
+            if (flag_werror && env->warnings().size() > 0) {
               exit(EXIT_FAILURE);
             }
-            env.clearWarnings();
-            Model* flat = env.flat();
-            if (flag_verbose)
-              std::cerr << " done (" << stoptime(lasttime) << ", max stack depth " << env.maxCallStack() << ")" << std::endl;
-            
-            if (flag_optimize) {
-              if (flag_verbose)
-                std::cerr << "Optimizing ...";
-              optimize(env);
-              for (unsigned int i=0; i<env.warnings().size(); i++) {
-                std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
-              }
-              if (flag_werror && env.warnings().size() > 0) {
-                exit(EXIT_FAILURE);
-              }
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            }
-            
-            if (!flag_newfzn) {
-              if (flag_verbose)
-                std::cerr << "Converting to old FlatZinc ...";
-              oldflatzinc(env);
-              if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-            } else {
-              env.flat()->compact();
-            }
+            env->clearWarnings();
+
+            Model* flat = env->flat();
             
             if (flag_statistics) {
-              FlatModelStatistics stats = statistics(env);
+              FlatModelStatistics stats = statistics(*env);
               std::cerr << "Generated FlatZinc statistics:\n";
               std::cerr << "Variables: ";
               bool had_one = false;
@@ -543,7 +493,7 @@ int main(int argc, char** argv) {
                 std::cerr << "Printing .ozn ...";
               if (flag_output_ozn_stdout) {
                 Printer p(std::cout,0);
-                p.print(env.output());
+                p.print(env->output());
               } else {
                 std::ofstream os;
                 os.open(flag_output_ozn.c_str(), ios::out);
@@ -554,7 +504,7 @@ int main(int argc, char** argv) {
                   exit(EXIT_FAILURE);
                 }
                 Printer p(os,0);
-                p.print(env.output());
+                p.print(env->output());
                 os.close();
               }
               if (flag_verbose)

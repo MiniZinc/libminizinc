@@ -135,7 +135,7 @@ namespace MiniZinc {
   bool isfalse(EnvI& env, Expression* e) {
     return e!=NULL && e->type().ispar() && e->type().isbool()
            && !eval_bool(env,e);
-  }  
+  }
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
@@ -5735,8 +5735,9 @@ namespace MiniZinc {
       full_filename << parentPath << "/" << filename;
 
     std::ifstream fi(full_filename.str());
+    bool verbose = false;
     if(fi.is_open()) {
-        Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, false, std::cerr);
+        Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, verbose, std::cerr);
         IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
         inc_mod->setParent(parent);
@@ -5747,9 +5748,8 @@ namespace MiniZinc {
         std::string path = includes[i];
         full_filename << path << '/' << filename;
         std::ifstream fi(full_filename.str());
-        std::cerr << full_filename.str() << "\n";
         if(fi.is_open()) {
-          Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, false, std::cerr);
+          Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, verbose, std::cerr);
           IncludeI* new_inc = new IncludeI(inc->loc(), filename);
           new_inc->m(inc_mod);
           inc_mod->setParent(parent);
@@ -5759,7 +5759,6 @@ namespace MiniZinc {
     }
     return NULL;
   }
-
 
   Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir) {
     GC::lock();
@@ -5783,16 +5782,6 @@ namespace MiniZinc {
         new_mod->addItem(copy(e.envi(),cm,item));
       }
     }
-    class RemoveAssigns : public ItemVisitor {
-      public:
-      void vAssignI(AssignI* ai) {
-        ai->remove();
-      }
-    };
-
-    RemoveAssigns ra;
-    iterItems(ra, new_mod);
-    new_mod->compact();
 
     Env* fenv = new Env(new_mod);
     std::vector<TypeError> typeErrors;
@@ -5820,41 +5809,72 @@ namespace MiniZinc {
     start.reset();
     return oss.str();
   }
-  void multiPassFlatten(Env& e, std::vector<std::string>& includePaths, std::vector<Pass*>& passes) {
-    EnvI& ei = e.envi();
-    ei.passes = passes.size()+1;
-    Env* pre_env = &e;
+
+  CompilePass::CompilePass(Env* e,
+                           FlatteningOptions& opts,
+                           std::string globals_library,
+                           std::vector<std::string> include_paths,
+                           bool change_lib = true) :
+    env(e),
+    fopts(opts),
+    library(globals_library),
+    includePaths(include_paths),
+    change_library(change_lib) {
+  }
+
+  bool CompilePass::pre(Env* env) {
+    return change_library || env->flat()->size() == 0;
+  }
+
+  Env* CompilePass::run(Env* store) {
     Timer lasttime;
-    for(unsigned int i=0; i<passes.size(); i++) {
-      std::string library = passes[i]->getLibrary();
-      FlatteningOptions& fopts = passes[i]->getFlatteningOptions();
+    if(fopts.verbose)
+      std::cerr << "\tFlatten with \'" << library << "\' library ...";
 
-      if(fopts.verbose) {
-        std::cerr << "Pass " << i << ":\n";
-        std::cerr << "\tFlatten with \'" << library << "\' library ...";
-      }
-      pre_env = changeLibrary(*pre_env, includePaths, library);
-      pre_env->envi().passes = ei.passes;
-      pre_env->envi().maxPathDepth = ei.maxPathDepth;
+    Env* new_env;
+    if(change_library) {
+      new_env = changeLibrary(*env, includePaths, library);
 
-      flatten(*pre_env, fopts);
-      optimize(*pre_env);
-      oldflatzinc(*pre_env);
-      if(fopts.verbose) {
-        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-        std::cerr << "\tRunning pass ...";
-      }
-
-      passes[i]->run(*pre_env);
-
-      if(fopts.verbose)
-        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-
-      ei.maxPathDepth = ei.maxPathDepth > pre_env->envi().maxPathDepth ? ei.maxPathDepth : pre_env->envi().maxPathDepth;
-      ei.pass++;
+      new_env->envi().passes = store->envi().passes;
+      new_env->envi().maxPathDepth = store->envi().maxPathDepth;
+      new_env->envi().pass = store->envi().pass;
+      new_env->envi().setMaps(store->envi());
+    } else {
+      new_env = env;
     }
 
-    ei.setMaps(pre_env->envi());
+    flatten(*new_env, fopts);
+    optimize(*new_env);
+    oldflatzinc(*new_env);
+
+    if(fopts.verbose)
+      std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+
+    return new_env;
+  }
+
+  CompilePass::~CompilePass() {};
+
+  Env* multiPassFlatten(Env& e, std::vector<Pass*>& passes) {
+    Env* pre_env = &e;
+    pre_env->envi().passes = passes.size();
+    Timer lasttime;
+    bool verbose = false;
+    for(unsigned int i=0; i<passes.size(); i++) {
+      pre_env->envi().pass = i;
+      if(verbose)
+        std::cerr << "Start pass " << i << ":\n";
+
+      if(passes[i]->pre(pre_env)) {
+
+        pre_env = passes[i]->run(pre_env);
+
+        if(verbose)
+          std::cerr << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
+      }
+    }
+
+    return pre_env;
   }
   
   void flatten(Env& e, FlatteningOptions opt) {

@@ -40,30 +40,35 @@ namespace MiniZinc {
   };
 
   class Pass {
-    private:
-      FlatteningOptions fopts;
-
     public:
-      Pass(FlatteningOptions& opts) : fopts(opts) {};
-      virtual std::string getLibrary() = 0;
-      FlatteningOptions& getFlatteningOptions() {return fopts;};
-      virtual void run(Env& env) = 0;
+      Pass() {};
+      virtual bool pre(Env* env) = 0;
+      virtual Env* run(Env* env) = 0;
       virtual ~Pass() {};
   };
-
+  
   class CompilePass : public Pass {
     private:
+      Env* env;
+      FlatteningOptions fopts;
       std::string library;
+      std::vector<std::string> includePaths;
+      bool change_library;
 
     public:
-      CompilePass(FlatteningOptions& opts, std::string globals_library) : Pass(opts), library(globals_library) {}
-      std::string getLibrary() { return library; }
-      void run(Env& env) { };
-      ~CompilePass() {};
+      CompilePass(Env* e,
+                  FlatteningOptions& opts,
+                  std::string globals_library,
+                  std::vector<std::string> include_paths,
+                  bool change_lib);
+
+      bool pre(Env* env);
+      Env* run(Env* env);
+      ~CompilePass();
   };
 
   /// Flatten model \a m several times and record information in its env
-  void multiPassFlatten(Env& m, std::vector<std::string>& includePaths, std::vector<Pass*>& passes);
+  Env* multiPassFlatten(Env& m, std::vector<Pass*>& passes);
   
   /// Flatten model \a m
   void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());

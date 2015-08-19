@@ -8,16 +8,13 @@
 namespace MiniZinc {
 
   class GecodePass : public Pass {
-    std::string library;
     Options gopts;
 
     public:
-    GecodePass(FlatteningOptions& opts,
-               Options& gopts,
-               std::string lib = "gecode");
+    GecodePass(Options& gopts);
 
-    std::string getLibrary();
-    void run(Env& e);
+    bool pre(Env* e);
+    Env* run(Env* e);
   };
 
 }

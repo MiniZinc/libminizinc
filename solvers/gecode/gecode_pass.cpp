@@ -4,14 +4,17 @@
 
 namespace MiniZinc {
 
-  GecodePass::GecodePass(FlatteningOptions& opts, Options& g_opts, std::string lib) : Pass(opts), gopts(g_opts), library(lib) {}
+  GecodePass::GecodePass(Options& g_opts) : gopts(g_opts) {}
 
-  std::string GecodePass::getLibrary() { return library; }
+  bool GecodePass::pre(Env* env) {
+    return env->flat()->size() > 0;
+  }
 
-  void GecodePass::run(Env& env) {
-    GecodeSolverInstance gecode(env,gopts);
+  Env* GecodePass::run(Env* env) {
+    GecodeSolverInstance gecode(*env,gopts);
     gecode.processFlatZinc();
-    gecode.presolve(env.flat());
+    gecode.presolve(env->flat());
+    return env;
   }
 }
 
