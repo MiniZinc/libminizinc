@@ -553,6 +553,7 @@ namespace MiniZinc {
           // Create new output variable
           Type t = nvd->type();
           t.ti(Type::TI_PAR); // make par
+          GCLock lock;
           VarDecl* output_vd = copy(solver->env().envi(), nvd)->cast<VarDecl>(); 
           output_vd->ti()->domain(NULL);
           output_vd->flat(nvd);
@@ -974,7 +975,10 @@ namespace MiniZinc {
     Env& env = solver->env();
     bool success = true;
     if(verbose)
-      std::cout << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;    
+      std::cerr << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;
+
+    //std::cerr << "DEBUG: output model before posting constraint " << *cts << "\n";
+    //debugprint(env.output()); std::cerr << "=============================\n" ;
   
     int nbCtsBefore = 0;
     int nbVarsBefore = 0;
