@@ -48,7 +48,7 @@ namespace MiniZinc {
         pipe(pipes[1]);
 
        
-        
+        //std::cerr << "DEBUG:===========================================\n";
         std::string fznFile;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";

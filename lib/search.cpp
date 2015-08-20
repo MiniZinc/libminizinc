@@ -989,8 +989,7 @@ namespace MiniZinc {
     }
     //std::cerr << "DEBUG: ************ postConstraints: nbVarsBefore = " << nbVarsBefore << ", local vars to add = " << _localVarsToAdd[_localVarsToAdd.size()-1] << "\n";
     nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1]; // We've already added the local vars!   
-    
-    
+           
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
     GCLock lock;
     IdMap<Expression*> domains;
@@ -1011,9 +1010,7 @@ namespace MiniZinc {
     //std::cerr << "DEBUG: flat model AFTER flattening:\n..........................\n";
     //debugprint(env.flat());
     //std::cerr << "............................................\n";
-    
-    
-    
+    oldflatzinc_basic(env);
     
     int nbVarsAfter, nbCtsAfter = 0;
     for(unsigned int i=0; i < flat->size(); i++) {
@@ -1122,7 +1119,8 @@ namespace MiniZinc {
         std::cerr << "WARNING: flat model did not change after posting constraint: " << *cts << std::endl;
     }
               
-     
+    oldflatzinc_compact_sort(env);
+    
     return success; 
   }
   
