@@ -108,9 +108,10 @@ namespace MiniZinc {
   
   SolverInstance::Status
   NISolverInstanceBase::next(void) {   
-    if(_new_solution)
+    if(_new_solution) {    
+      // the variables and constraints to be posted are already added to the flat model during flattening
       postSolutionNoGoods();
-    // the variables and constraints to be posted are already added to the flat model during flattening
+    }    
     Status status = nextSolution();  
     if(status == Status::SUCCESS) {
       _new_solution = true;      
@@ -122,9 +123,11 @@ namespace MiniZinc {
   
   void
   NISolverInstanceBase::postSolutionNoGoods(void) {
-    KeepAlive nogoods = deriveNoGoodsFromSolution();
+    KeepAlive nogoods = deriveNoGoodsFromSolution();    
     // flatten the nogoods, which adds it to the model
-    (void) flatten(env().envi(), nogoods(), constants().var_true, constants().var_true);
+    FlatteningOptions fopt; 
+    fopt.keepOutputInFzn = true;
+    (void) flatten(env().envi(), nogoods(), constants().var_true, constants().var_true, fopt); 
     // convert to old flatzinc
     oldflatzinc(env());
   }

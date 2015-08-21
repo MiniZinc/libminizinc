@@ -549,6 +549,7 @@ namespace MiniZinc {
                 std::vector<int> dims(2);
                 dims[0] = 1;
                 dims[1] = al->length();
+                GCLock lock;
                 IntSetVal* isv = IntSetVal::a(1,al->length());
                 std::vector<TypeInst*> r(1);
                 r[0] = new TypeInst(vd.ti()->ranges()[0]->loc(),

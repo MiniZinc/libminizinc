@@ -2075,7 +2075,7 @@ namespace MiniZinc {
   Expression* b_sol(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    Model* outputModel = env.getCurrentSolution();  
+    Model* outputModel = env.output; //env.getCurrentSolution();    
     if (outputModel==NULL) {
       throw EvalError(env, call->loc(), "no current solution found");
     }

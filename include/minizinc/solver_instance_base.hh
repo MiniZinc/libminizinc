@@ -102,8 +102,8 @@ namespace MiniZinc {
   class NISolverInstanceBase : public SolverInstanceBase {
   private:
     /// if true, there is a new solution whose nogoods need to be posted, false otherwise
-    bool _new_solution; 
-  protected:
+    bool _new_solution;    
+  protected:     
     // overwrite this method in your solver 
     virtual Expression* getSolutionValue(Id* id) = 0;
     // overwrite this function in your solver: build the solver representation of the flat model and find the first solution

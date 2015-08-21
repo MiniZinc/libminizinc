@@ -687,6 +687,7 @@ namespace MiniZinc {
   
   SolverInstance::Status
   SearchHandler::interpretNextCombinator(Call* call, SolverInstanceBase* solver, bool verbose) {
+    
     if(verbose)
       std::cerr << "DEBUG: NEXT() combinator" << std::endl; 
     // interpret NEXT arguments    
@@ -702,19 +703,12 @@ namespace MiniZinc {
     }
     if(args.size() > 0)
       interpretLimitCombinator(args[0],solver,verbose);
-    setCurrentTimeout(solver); // timeout via time_limit(ms,ann) combinator
+    setCurrentTimeout(solver); // timeout via time_limit(ms,ann) combinator       
     
-     //if(_scopes.size() ==1) {   
-     // std::cerr << "DEBUG: flat model before next():\n" << std::endl;
-     // debugprint(solver->env().flat());
-     //}
-     
     // get next solution
-    GCLock lock;
+    GCLock lock;   
     SolverInstance::Status status = solver->next();
-    if(status == SolverInstance::SUCCESS) { 
-      //std::cerr << "DEBUG: output model after next():\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n" << std::endl;
-      //debugprint(solver->env().output());
+    if(status == SolverInstance::SUCCESS) {       
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));      
     } 
     //std::cerr << "DEBUG: finished next() with status = " << status << ", SUCCESS = " << SolverInstance::SUCCESS << "\n";
@@ -737,6 +731,11 @@ namespace MiniZinc {
           decl->e(al);
         }
         int idx = eval_int(solver->env().envi(), aa->idx()[0]).toInt();
+        if(idx > al->v().size()) {
+          std::stringstream ssm;
+          ssm << "index " << idx << " is out of bounds for array: " << *id;
+          throw EvalError(solver->env().envi(), al->loc(), ssm.str());
+        }
         al->v()[idx-1] = eval_par(solver->env().envi(), assignComb->args()[1]);       
         return SolverInstance::SUCCESS;
         // TODO: assign value to array element!
@@ -1124,6 +1123,8 @@ namespace MiniZinc {
     }
               
     oldflatzinc_compact_sort(env);
+    //std::cerr << "DEBUG: output model AFTER posting constraint " << *cts << " with outputmodel at: " << env.output() << "\n";
+    //debugprint(env.output()); std::cerr << "=============================\n" ;
     
     return success; 
   }

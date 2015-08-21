@@ -289,7 +289,7 @@ namespace MiniZinc {
   : NISolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {
      // fzn-solvers can directly return best solutions by using minimize/maximize solve item
     _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
-    _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);
+    _options.setBoolParam(constants().solver_options.supports_maximize.str(),true);       
   }
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
