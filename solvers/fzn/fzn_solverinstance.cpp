@@ -9,24 +9,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <unistd.h>
+
+#include "minizinc/solvers/fzn_solverinstance.hh"
+
 #include <cstdio>
-#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+
 #include <signal.h>
 #include <fstream>
 #include <stdio.h>
 #include <climits>
 
 
+
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
-#include <minizinc/parser.hh>
+#ifdef _WIN32
+#define NOMINMAX
+#include <Windows.h>
+#include <tchar.h>
+#include <atlstr.h>
+#else
+#include <unistd.h>
+#include <sys/select.h>
+#endif
+
+
+#include <minizinc/timer.hh>
 #include <minizinc/prettyprinter.hh>
-#include <minizinc/typecheck.hh>
-#include <minizinc/builtins.hh>
+#include <minizinc/parser.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/copy.hh>
@@ -41,8 +54,148 @@ namespace MiniZinc {
       Model* _flat;
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
+      
       std::string run(Options& opt) {
+#ifdef _WIN32
+
+        SECURITY_ATTRIBUTES saAttr;
+        saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+        saAttr.bInheritHandle = TRUE;
+        saAttr.lpSecurityDescriptor = NULL;
+
+        HANDLE g_hChildStd_IN_Rd = NULL;
+        HANDLE g_hChildStd_IN_Wr = NULL;
+        HANDLE g_hChildStd_OUT_Rd = NULL;
+        HANDLE g_hChildStd_OUT_Wr = NULL;
+
+        // Create a pipe for the child process's STDOUT. 
+
+        if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Ensure the read handle to the pipe for STDOUT is not inherited.
+        if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Create a pipe for the child process's STDIN
+        if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Ensure the write handle to the pipe for STDIN is not inherited. 
+        if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        std::string fznFile;
+        if (!_canPipe) {
+          TCHAR szTempFileName[MAX_PATH];
+          TCHAR lpTempPathBuffer[MAX_PATH];
+
+          GetTempPath(MAX_PATH, lpTempPathBuffer);
+          GetTempFileName(lpTempPathBuffer,
+            "tmp_fzn_", 0, szTempFileName);
+
+          fznFile = szTempFileName;
+          std::ofstream os(fznFile);
+          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
+            Item* item = *it;
+            os << *item;
+          }
+        }
+
+        PROCESS_INFORMATION piProcInfo;
+        STARTUPINFO siStartInfo;
+        BOOL bSuccess = FALSE;
+
+        // Set up members of the PROCESS_INFORMATION structure.
+        ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+        // Set up members of the STARTUPINFO structure. 
+        // This structure specifies the STDIN and STDOUT handles for redirection.
+        ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
+        siStartInfo.cb = sizeof(STARTUPINFO);
+        siStartInfo.hStdError = g_hChildStd_OUT_Wr;
+        siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
+        siStartInfo.hStdInput = g_hChildStd_IN_Rd;
+        siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+        std::stringstream cmdline;
+        cmdline << strdup(_fzncmd.c_str()) << " " << strdup("-a") << " ";
+        if (_canPipe) {
+          cmdline << strdup("-");
+        }
+        else {
+          cmdline << strdup(fznFile.c_str());
+        }
+
+        char* cmdstr = strdup(cmdline.str().c_str());
+
+        bool processStarted = CreateProcess(NULL,
+          cmdstr,        // command line 
+          NULL,          // process security attributes 
+          NULL,          // primary thread security attributes 
+          TRUE,          // handles are inherited 
+          0,             // creation flags 
+          NULL,          // use parent's environment 
+          NULL,          // use parent's current directory 
+          &siStartInfo,  // STARTUPINFO pointer 
+          &piProcInfo);  // receives PROCESS_INFORMATION 
+
+        if (!processStarted) {
+          std::stringstream ssm;
+          ssm << "Error occurred when executing FZN solver with command \"" << cmdstr << "\".";
+          throw InternalError(ssm.str());
+        }
+
+        CloseHandle(piProcInfo.hProcess);
+        CloseHandle(piProcInfo.hThread);
+        delete cmdstr;
+
+        if (_canPipe) {
+          DWORD dwRead, dwWritten;
+          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
+            std::stringstream ss;
+            Item* item = *it;
+            ss << *item;
+            std::string str = ss.str();
+            bSuccess = WriteFile(g_hChildStd_IN_Wr, str.c_str(),
+              dwRead, &dwWritten, NULL);
+          }
+        }
+
+        // Stop ReadFile from blocking
+        CloseHandle(g_hChildStd_OUT_Wr);
+
+        Timer starttime;
+        int timeout_sec = 10;
+
+        bool done = false;
         std::stringstream result;
+        while (!done) {
+          char buffer[255];
+          DWORD count = 0;
+          bool bSuccess = ReadFile(g_hChildStd_OUT_Rd, buffer, sizeof(buffer) - 1, &count, NULL);
+
+          if (bSuccess && count > 0) {
+            buffer[count] = 0;
+            result << buffer;
+
+            double elapsed = starttime.ms();
+
+            if (elapsed > timeout_sec * 1000)
+              done = true;
+          }
+          else {
+            done = true;
+          }
+        }
+
+        if (!_canPipe) {
+          remove(fznFile.c_str());
+        }
+
+        return result.str();
+      }
+#else
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -76,7 +229,7 @@ namespace MiniZinc {
             //p_debug.print(item); // DEBUG: uncomment to see flatzinc model that is sent to FZN solver
           }
         }
-        
+
         if (int childPID = fork()) {
           //std::cout << "DEBUG: if childpid = fork(). Processing timeouts etc. " << std::endl;
           close(pipes[0][0]);
@@ -91,33 +244,37 @@ namespace MiniZinc {
             }
           }
           close(pipes[0][1]);
-          
+          std::stringstream result;
+
           fd_set fdset;
           struct timeval timeout;
           FD_ZERO(&fdset);
           FD_SET(pipes[1][0], &fdset);
-          
+
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
 
-          timeval* timeout_p = NULL;
-          // TODO: how to disable timeout??
-          long long int timeout_msec = -1;
-          if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
-            timeout_msec = opt.getIntParam(constants().solver_options.time_limit_ms.str());
-            //std::cerr << "DEBUG: runProcess: solve timeout in ms = " << timeout_msec << std::endl;
-            int timeout_sec = timeout_msec / 1000;
-            int timeout_usec = (timeout_msec % 1000) * 10;
-            timeout.tv_sec = timeout_sec;
-            timeout.tv_usec = timeout_usec;
-            timeout_p = &timeout;
-          }
-          
+          int timeout_sec = 10;
+
+          timeout.tv_sec = timeout_sec;
+          timeout.tv_usec = 0;
+
           bool done = false;
           while (!done) {
-            switch (select(FD_SETSIZE, &fdset, NULL, NULL, timeout_p)) {
-              case 0:
-              {
+            switch (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout)) {
+            case 0:
+            {
+              kill(childPID, SIGKILL);
+              done = true;
+            }
+            break;
+            case 1:
+            {
+              char buffer[100];
+              int count = read(pipes[1][0], buffer, sizeof(buffer) - 1);
+              if (count > 0) {
+                buffer[count] = 0;
+                result << buffer;
                 timeval currentTime, elapsed;
                 gettimeofday(&currentTime, NULL);
                 elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
@@ -126,66 +283,31 @@ namespace MiniZinc {
                   elapsed.tv_sec--;
                   elapsed.tv_usec += 1000000;
                 }
-                long long int elapsed_msec = elapsed.tv_sec*1000;
-                elapsed_msec += elapsed.tv_usec/1000;
-                
-                long long int tdiff = timeout_msec - elapsed_msec;
-                if (tdiff < 0) {
+                timeout.tv_sec = timeout_sec - elapsed.tv_sec;
+                if (elapsed.tv_usec > 0)
+                  timeout.tv_sec--;
+                timeout.tv_usec = 1000000 - elapsed.tv_usec;
+                if (timeout.tv_sec <= 0 && timeout.tv_usec <= 0)
                   done = true;
-                } else {
-                  timeout.tv_sec = tdiff / 1000;
-                  timeout.tv_usec = (tdiff % 1000)*1000;
-                }
               }
-                break;
-              case 1:
-              {
-                char buffer[100];
-                int count = read(pipes[1][0], buffer, sizeof(buffer)-1);
-                if (count > 0) {                  
-                  buffer[count] = 0;
-                  result << buffer;
-                  if (timeout_msec >= 0) {
-                    timeval currentTime, elapsed;
-                    gettimeofday(&currentTime, NULL);
-                    elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
-                    elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-                    if (elapsed.tv_usec < 0) {
-                      elapsed.tv_sec--;
-                      elapsed.tv_usec += 1000000;
-                    }
-                    long long int elapsed_msec = elapsed.tv_sec*1000;
-                    elapsed_msec += elapsed.tv_usec/1000;
-                    
-                    long long int tdiff = timeout_msec - elapsed_msec;
-                    if (tdiff < 0) {
-                      done = true;
-                    }
-                    timeout.tv_sec = tdiff / 1000;
-                    timeout.tv_usec = (tdiff % 1000)*1000;
-                  }
-                } else {
-                  done = true;
-                }
+              else {
+                done = true;
               }
-                break;
-              case -1:
-              {
-              }
-                break;
+            }
+            break;
+            case -1:
+            {
+            }
+            break;
             }
           }
-          close(pipes[1][0]);
-          kill(childPID, SIGKILL);
-          waitpid(childPID, NULL, 0);
-          
-          if (!_canPipe) {            
-            remove(fznFile.c_str()); // commented for DEBUG only: do not remove fzn file
-            //std::cerr << "DEBUG: name of fzn-file = " << fznFile << std::endl;
+          if (!_canPipe) {
+            remove(fznFile.c_str());
           }
           return result.str();
-        } else {
-          //std::cout << "DEBUG: if NOT childpid = fork(). Executing command. " << std::endl;
+        }
+        else {
+
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
           dup2(pipes[0][0], STDIN_FILENO);
@@ -194,6 +316,7 @@ namespace MiniZinc {
           close(pipes[1][1]);
           close(pipes[1][0]);
           close(pipes[0][1]);
+
           //char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0}; 
           int status = executeCommand(opt,fznFile);
                   
@@ -205,6 +328,7 @@ namespace MiniZinc {
         }
         assert(false);
       }
+#endif
     
     protected:
       int executeCommand(Options& opt, std::string fznFile) {
@@ -332,6 +456,10 @@ namespace MiniZinc {
     }
   }
   
+  bool beginswith(std::string s, std::string t) {
+    return s.compare(0, t.length(), t) == 0;
+  }
+
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
@@ -369,6 +497,7 @@ namespace MiniZinc {
     //std::cerr << "=======================\n";
     while (result.good()) {
       std::string line;
+
       getline(result, line);    
       if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
@@ -434,6 +563,7 @@ namespace MiniZinc {
       }
     }
     
+
     // XXX should always return 'UNKNOWN' because not well-defined termination?
     return hadSolution ? SolverInstance::SUCCESS : SolverInstance::FAILURE;
   }
@@ -460,6 +590,9 @@ namespace MiniZinc {
       throw InternalError(ssm.str());
     }
     return it->second;
+    // TODO: should it be the cases below?
+    //assert(false);
+    //return NULL;
   }
   
   SolverInstance::Status 

@@ -2656,6 +2656,7 @@ namespace MiniZinc {
       FloatVar y = gi.arg2floatvar(space,ce->args()[1]);\
       Op(gi ,x,y);\
     }
+
     P_FLOAT_OP(acos)
       P_FLOAT_OP(asin)
       P_FLOAT_OP(atan)

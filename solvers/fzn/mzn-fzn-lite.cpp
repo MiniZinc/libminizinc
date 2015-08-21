@@ -368,6 +368,7 @@ int main(int argc, char** argv) {
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
+
             //std::cerr << "DEBUG: Output model after optimizing:\n==========================\n";
             //debugprint(env.output());
             //std::cerr << "==================================\n";
@@ -383,7 +384,7 @@ int main(int argc, char** argv) {
             }
             
             {              
-              options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
+              //options.getStringParam("solver","flatzinc"); // set flatzinc to default solver
               options.setBoolParam(constants().opts.verbose.str(),flag_verbose); // Quick fix until we switched to new CLI
               SearchHandler* sh = new SearchHandler();
               sh->search<FZNSolverInstance>(env,options);
