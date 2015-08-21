@@ -31,7 +31,7 @@ namespace MiniZinc {
     std::vector<bool> _repeat_break;
     // the number of intermediate variables that we have added locally in the scope (last variable contains current scope)
     std::vector<int> _localVarsToAdd;
-    
+    // the list of variables (per scope) that are added locally
     std::vector<std::vector<VarDecl*> > _localVars;
   public:
     SearchHandler() : _timeoutIndex(-1) {}
@@ -70,9 +70,10 @@ namespace MiniZinc {
       }    
       switch(status) {
         case SolverInstance::SUCCESS:
+          std::cout << constants().solver_output.sat;
           break;
         case SolverInstance::FAILURE:
-          std::cout << "=====UNSAT=====\n";
+          std::cout << constants().solver_output.unsat;;
           break;        
       }
     }

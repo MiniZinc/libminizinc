@@ -22,8 +22,7 @@ namespace MiniZinc {
   
   SolverInstance::Status 
   SearchHandler::interpretCombinator(Expression* comb, SolverInstanceBase* solver, bool verbose) {
-    Env& env = solver->env();  
-    //std::cout << "DEBUG: Interpreting combinator: " << *comb << std::endl;
+    Env& env = solver->env();     
     
     if(Call* call = comb->dyn_cast<Call>()) {      
       if(call->id() == constants().combinators.and_) {
@@ -109,27 +108,13 @@ namespace MiniZinc {
           }
         }
         env.envi().popSolution();
-        if (env.envi().isCommitted()) {
-          if(verbose)
-            std::cerr << "DEBUG: Solution is committed\n";
+        if (env.envi().isCommitted()) {          
           ret = SolverInstance::SUCCESS;
-        } else if (env.envi().nbSolutionScopes() > 1) {
-          if(verbose)
-            std::cerr << "DEBUG Solution is NOT committed\n";
+        } else if (env.envi().nbSolutionScopes() > 1) {          
           ret = SolverInstance::FAILURE;
-        } else {
-          if(verbose) {
-            std::cerr << "DEBUG: Solution is NOT committed and #solution-scopes is NOT greater than 1\n";
-            std::cerr << "DEBUG: #solutionscopes = " << env.envi().nbSolutionScopes() << "\n"; 
-          }
-          // TODO
+        } else {              
           ret = SolverInstance::SUCCESS;
-        }      
-        //solver->env().envi().setCurSolution(_solutionScopes.back());
-        //if(verbose) {
-        //  std::cerr << "DEBUG: Setting current solution to: " << std::endl;
-        //  debugprint(solver->env().envi().getCurSolution());
-        //}
+        }             
 
         for (unsigned int i=call->decl()->params().size(); i--;) {
           VarDecl* vd = call->decl()->params()[i];
@@ -154,8 +139,7 @@ namespace MiniZinc {
       else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.prune) {
         return SolverInstance::FAILURE;
       }
-      else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.fail) {
-        // TODO: set constraint scope to COMPLETE
+      else if(ident && ident->idn()==-1 && ident->v() == constants().combinators.fail) {        
         return SolverInstance::FAILURE;
       }
       else if(ident && ident->idn()==-1 && ident->v() == "break") {
@@ -360,10 +344,7 @@ namespace MiniZinc {
   }
   
   SolverInstance::Status
-  SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver,bool verbose) {
-    //std::cout << "DEBUG: POST combinator: " << *call << std::endl;
-    //std::cerr << "========================\nDEBUG: output model BEFORE interpreting POST combinator:\n" << std::endl;
-    //debugprint(solver->env().output()); std::cerr << "=========================================\n";
+  SearchHandler::interpretPostCombinator(Call* call, SolverInstanceBase* solver,bool verbose) {   
     if(call->args().size() != 1) {
       std::stringstream ssm;
       ssm << "POST combinator takes only 1 argument instead of " << call->args().size() << " in " << *call ;
@@ -373,11 +354,7 @@ namespace MiniZinc {
       std::stringstream ssm;
       ssm << "could not post constraints: " << *(call->args()[0]) ;
       throw TypeError(solver->env().envi(),call->args()[0]->loc(), ssm.str());
-    }
-    //std::cerr << "========================\nDEBUG: output model AFTER interpreting POST combinator:\n" << std::endl;
-    //debugprint(solver->env().output()); std::cerr << "=========================================\n";
-    //std::cerr << "========================\nDEBUG: flat model AFTER interpreting POST combinator:\n" << std::endl;
-    //debugprint(solver->env().flat()); std::cerr << "=========================================\n";
+    }    
     return SolverInstance::SUCCESS;
   }
   
@@ -525,8 +502,7 @@ namespace MiniZinc {
     Env* copy_env = &solver_copy->env();
     delete copy_env->model();
     delete copy_env;
-    popScope();
-    //std::cerr << "REPEAT BREAK status after closing scope: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
+    popScope();    
     if (verbose)
       std::cout << "DEBUG: Returning SCOPE status: " << status << std::endl;
     return status;
@@ -547,11 +523,10 @@ namespace MiniZinc {
           // flatten and add the variable to the flat model
           EE ee = flatten(solver->env().envi(),vd->id(),NULL,constants().var_true,solver->env().envi().fopt,false);
           oldflatzinc(solver->env());
-          //std::cerr << "DEBUG: flat model after adding new variables by flattening:\n"; debugprint(solver->env().flat()); std::cerr << "===============================\n";
+          
           VarDecl* nvd = ee.r()->cast<Id>()->decl();         
           int nbVars = _localVarsToAdd.back();          
           _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars+1;
-          //std::cerr << "DEBUG: setting locally added var to: " << _localVarsToAdd[_localVarsToAdd.size()-1] << std::endl;                    
           
           // Create new output variable
           Type t = nvd->type();
@@ -589,26 +564,19 @@ namespace MiniZinc {
             ArrayLit* aln= nvd->e()->cast<ArrayLit>();           
             for(unsigned int i =0;i<aln->length(); i++) {
               Id* id = aln->v()[i]->cast<Id>();
-              id->decl()->addAnnotation(constants().ann.output_var);
-              //VarDeclI* vdi = new VarDeclI(Location(), id->decl()); // DEBUG
-              //solver->env().output()->addItem(vdi);              // DEBUG
+              id->decl()->addAnnotation(constants().ann.output_var);              
             }
             // add the number of local variables according to length of array
             int nbVars = _localVarsToAdd.back(); 
             _localVarsToAdd[_localVarsToAdd.size()-1] = nbVars + al->length();
           }   
           
-          //std::cerr << "========================\nDEBUG: flat model AFTER adding local variable:\n" << std::endl;
-          //debugprint(solver->env().flat()); std::cerr << "=========================================\n";
-          //std::cerr << "DEBUG: output model after adding local variable:\n" ;
-          //debugprint(solver->env().output()); std::cerr << "===========================================\n";
-          
         } else { // we have a parameter -> add it to the model by flattening
           par_vars.push_back(vd);          
         }
       }
       else { // this is a constraint
-        std::cerr << "WARNING: Specify constraints using POST. Ignoring constraint in LET: " << *decls[i]  << std::endl;
+        std::cerr << "WARNING: Specify constraints using POST(). Ignoring constraint in LET: " << *decls[i]  << std::endl;
         continue;
       }
     }
@@ -683,8 +651,7 @@ namespace MiniZinc {
     if(status == SolverInstance::SUCCESS) {      
       GCLock lock;
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));           
-    }
-    //std::cerr << "DEBUG: solver returned status " << status << " (SUCCESS = " << SolverInstance::SUCCESS << ")" << std::endl;
+    }    
     return status; 
   }
   
@@ -717,8 +684,7 @@ namespace MiniZinc {
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {       
       solver->env().envi().updateCurrentSolution(copy(solver->env().envi(), solver->env().output()));      
-    } 
-    //std::cerr << "DEBUG: finished next() with status = " << status << ", SUCCESS = " << SolverInstance::SUCCESS << "\n";
+    }
     return status; 
     
   }
@@ -778,15 +744,6 @@ namespace MiniZinc {
     if (envi.nbSolutionScopes()==1) {
       throw EvalError(solver->env().envi(), commitComb->loc(), "Cannot commit outside of function scope");
     }
-/*    if (verbose) {
-      if (envi.nbSolutionScopes()==2 ||envi.getSolution(envi.nbSolutionScopes()-3) != envi.getSolution(envi.nbSolutionScopes()-2))
-        std::cerr << "COMMIT delete solution and ";
-      std::cerr << "COMMIT solution into scope " << envi.nbSolutionScopes()-2 << "\n";
-    } */
-    //if (_solutionScopes.size()==2 || _solutionScopes[_solutionScopes.size()-3]!=_solutionScopes[_solutionScopes.size()-2]) {      
-    // delete _solutionScopes[_solutionScopes.size()-2];
-    //}
-    //_solutionScopes[_solutionScopes.size()-2]=_solutionScopes.back();
     envi.commitLastSolution();
     return SolverInstance::SUCCESS;
   }
@@ -796,8 +753,7 @@ namespace MiniZinc {
     if (_repeat_break.size()==0) {
       throw EvalError(solver->env().envi(), c->loc(), "break outside of repeat");
     }
-    _repeat_break.back() = true;
-    //std::cerr << "REPEAT BREAK status after interpreting BREAK: " << _repeat_break.back() << ", with size: " << _repeat_break.size() << std::endl;
+    _repeat_break.back() = true;    
     return SolverInstance::FAILURE;
   }
 
@@ -810,8 +766,6 @@ namespace MiniZinc {
         interpretNodeLimitCombinator(c,solver,verbose);
       else if(c->id() == constants().combinators.limit_fails)
         interpretFailLimitCombinator(c,solver,verbose);   
-//      else if(c->id() == constants().combinators.limit_solutions)
-//        interpretSolutionLimitCombinator(c,solver,verbose);
       else 
         std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
     }
@@ -825,8 +779,6 @@ namespace MiniZinc {
             interpretNodeLimitCombinator(c,solver,verbose);
           else if(c->id() == constants().combinators.limit_fails) 
             interpretFailLimitCombinator(c,solver,verbose);  
-//          else if(c->id() == constants().combinators.limit_solutions)
-//            interpretSolutionLimitCombinator(c,solver,verbose);
           else 
             std::cerr << "WARNING: Ignoring unknown argument to next:" << *c << std::endl;
         }
@@ -935,8 +887,7 @@ namespace MiniZinc {
     if (call->args().size()==0) {        
       
       if(solver->env().envi().getCurrentSolution() != NULL) {
-        GCLock lock;
-        //std::cerr <<"DEBUG: before eval output\n";
+        GCLock lock;        
         solver->env().evalOutput(std::cout);
         std::cout << constants().solver_output.solution_delimiter << std::endl;
         return SolverInstance::SUCCESS;
@@ -946,12 +897,7 @@ namespace MiniZinc {
           std::cerr << "No solution found to be printed by PRINT-combinator" << std::endl;
         return SolverInstance::FAILURE;
       }
-    } else {
-      //std::cerr << "DEBUG: printing flat model before printing PRINT(""):" << std::endl;      
-      //debugprint(solver->env().flat());
-      //std::cerr << "DEBUG: trying to print: " << *(call->args()[0]) << "\n";
-      //std::cerr << "DEBUG: interpretPrintCombinator/3: output model before evaluating output:\n";
-      //debugprint(solver->env().output()); std::cerr << "==============================================\n";
+    } else {      
       GCLock lock;
       std::cout << eval_string(solver->env().envi(), call->args()[0]);
       return SolverInstance::SUCCESS;
@@ -984,9 +930,6 @@ namespace MiniZinc {
     if(verbose)
       std::cerr << "DEBUG: BEGIN posting constraint: " << *cts << std::endl;
 
-    //std::cerr << "DEBUG: output model before posting constraint " << *cts << "\n";
-    //debugprint(env.output()); std::cerr << "=============================\n" ;
-  
     int nbCtsBefore = 0;
     int nbVarsBefore = 0;
     Model* flat = env.flat();
@@ -998,7 +941,6 @@ namespace MiniZinc {
         if(!ci->removed()) nbCtsBefore++;
       }      
     }
-    //std::cerr << "DEBUG: ************ postConstraints: nbVarsBefore = " << nbVarsBefore << ", local vars to add = " << _localVarsToAdd[_localVarsToAdd.size()-1] << "\n";
     nbVarsBefore = nbVarsBefore - _localVarsToAdd[_localVarsToAdd.size()-1]; // We've already added the local vars!   
            
     // store the domains of each variable in an IdMap to later check changes in the domain (after flattening)
@@ -1011,16 +953,9 @@ namespace MiniZinc {
     }    
    
     // flatten the expression
-    //std::cerr << "DEBUG: flat model before flattening:\n..........................\n";
-    //debugprint(env.flat());
-    //std::cerr << "............................................\n";
     FlatteningOptions fopt; 
     fopt.keepOutputInFzn = _localVarsToAdd[_localVarsToAdd.size()-1] > 0;  // keep the output vars since they are local vars
-    (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, fopt); //env.envi().fopt);
-    //env.envi().fopt.keepOutputInFzn = b;
-    //std::cerr << "DEBUG: flat model AFTER flattening:\n..........................\n";
-    //debugprint(env.flat());
-    //std::cerr << "............................................\n";
+    (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, fopt); //env.envi().fopt);    
     oldflatzinc_basic(env);
     
     int nbVarsAfter, nbCtsAfter = 0;
@@ -1031,28 +966,23 @@ namespace MiniZinc {
       if(ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
         if(!ci->removed()) nbCtsAfter++;
       }      
-    }
-    //std::cerr << "DEBUG: #varsbefore = " << nbVarsBefore << ", #varsAfter = " << nbVarsAfter << std::endl;
+    }   
     if(nbVarsBefore < nbVarsAfter) {
-      //std::cerr << "before:" << nbVarsBefore << ", after: " << nbVarsAfter << std::endl;
       std::vector<Id*> ids;
       unsigned int i=0;
       for(unsigned int j=0; j<flat->size(); j++) {
         if(VarDeclI* vdi = (*flat)[j]->dyn_cast<VarDeclI>()) { 
           if(!vdi->removed()) {
             if(i<nbVarsBefore) { 
-              //std::cerr << "skipping var: " << i << ": " << *(it) << std::endl;
               i++;
             }
             else {
-              //std::cerr << "adding var: " << i << ": " << *(it)  << std::endl;
               ids.push_back(vdi->e()->id());
               i++;
             }
           }
         }
       }
-      //oldflatzinc(env);
       std::vector<VarDecl*> vars;
       for (unsigned int j=0; j<ids.size(); j++) {
         vars.push_back(ids[j]->decl());
@@ -1063,15 +993,6 @@ namespace MiniZinc {
         }
       success = success && solver->addVariables(vars);      
     }      
-    //else {
-    //  oldflatzinc(env); // TODO: make sure oldflatzinc preserves order of constraints!!
-    //}
-    // std::cout << "\n\nDEBUG: Flattened model AFTER calling oldflatzinc: " << std::endl;   
-    //debugprint(env.flat());  
-    //david
-    //Printer p(std::cout);
-    //p.print(env.flat());
-    //what eve
              
     if(nbCtsBefore < nbCtsAfter) {       
       std::vector<Call*> flat_cts;
@@ -1123,17 +1044,11 @@ namespace MiniZinc {
         }
       }
     }
-     
-  
     if(!updateBoundsOnce && nbCtsBefore == nbCtsAfter && nbVarsBefore == nbVarsAfter) {
       if(verbose)
         std::cerr << "WARNING: flat model did not change after posting constraint: " << *cts << std::endl;
-    }
-              
+    }       
     oldflatzinc_compact_sort(env);
-    //std::cerr << "DEBUG: output model AFTER posting constraint " << *cts << " with outputmodel at: " << env.output() << "\n";
-    //debugprint(env.output()); std::cerr << "=============================\n" ;
-    
     return success; 
   }
   
@@ -1178,13 +1093,8 @@ namespace MiniZinc {
        long long int timeout = _timeouts[i];
        if(time_now >= timeout) {
          if(verbose)
-           std::cerr << "timeout: " << (timeout/1000.0) << "secs has been reached." << std::endl;
-         //std::cerr << "WARNING: timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+           std::cerr << "timeout: " << (timeout/1000.0) << "secs has been reached." << std::endl;        
          return true;
-       }
-       else {
-         //if(verbose)
-          // std::cerr << "Currently at time " << (((float)time_now)/CLOCKS_PER_SEC)<< ". timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has not yet been reached." << std::endl;
        }
      }
      return false;
@@ -1198,12 +1108,8 @@ namespace MiniZinc {
        if(time_now >= timeout) {
          if(verbose)
            std::cerr << "timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
-         //std::cerr << "WARNING: timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has been reached." << std::endl;
+         
          return i;
-       }
-       else {
-         //if(verbose)
-          // std::cerr << "Currently at time " << (((float)time_now)/CLOCKS_PER_SEC)<< ". timeout: " << (((float)timeout)/CLOCKS_PER_SEC) << "secs has not yet been reached." << std::endl;
        }
      }
      return -1;
@@ -1226,10 +1132,8 @@ namespace MiniZinc {
    
    long long int
    SearchHandler::getTimeout(int ms) {
-
      timeval now;
      gettimeofday(&now, NULL);
-
      long long int to = now.tv_sec*1000+(now.tv_usec/1000)+ms;
      return to;
    }
@@ -1253,8 +1157,7 @@ namespace MiniZinc {
          if(old_timeout <timeout_ms) // if the timeout that is already set is even smaller, keep it
            return;
        }
-       opt.setIntParam(constants().solver_options.time_limit_ms.str(),timeout_ms);
-       //std::cerr << "DEBUG: setting solver time-out to: " << timeout_ms << "ms" << std::endl;
+       opt.setIntParam(constants().solver_options.time_limit_ms.str(),timeout_ms);       
      }     
    }
   
