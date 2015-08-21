@@ -272,6 +272,9 @@ namespace MiniZinc {
       interpretLimitCombinator(call->args()[1],solver,verbose);
     }
      
+    if(solver->env().flat()->failed())
+      return SolverInstance::FAILURE;
+    
     VarDecl* decl; // TODO: use flat variable decl?
     if(Id* id = call->args()[0]->dyn_cast<Id>()) {
 //      std::cout << "&&& id: " << *id ->decl() << std::endl;
@@ -672,10 +675,10 @@ namespace MiniZinc {
       return SolverInstance::FAILURE;
     }
     setCurrentTimeout(solver);
-    //if(_scopes.size() ==1) {    
-     // std::cerr << "DEBUG: flat model before next():\n" << std::endl;
-     //debugprint(solver->env().flat());
-    //}
+    
+    if(solver->env().flat()->failed())
+      return SolverInstance::FAILURE;
+    
     SolverInstance::Status status = solver->next();
     if(status == SolverInstance::SUCCESS) {      
       GCLock lock;
@@ -704,7 +707,11 @@ namespace MiniZinc {
     if(args.size() > 0)
       interpretLimitCombinator(args[0],solver,verbose);
     setCurrentTimeout(solver); // timeout via time_limit(ms,ann) combinator       
-    
+       
+    if(solver->env().flat()->failed()) {      
+      return SolverInstance::FAILURE;
+    }
+  
     // get next solution
     GCLock lock;   
     SolverInstance::Status status = solver->next();
@@ -713,6 +720,7 @@ namespace MiniZinc {
     } 
     //std::cerr << "DEBUG: finished next() with status = " << status << ", SUCCESS = " << SolverInstance::SUCCESS << "\n";
     return status; 
+    
   }
   
   SolverInstance::Status
