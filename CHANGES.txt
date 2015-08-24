@@ -2,6 +2,41 @@
 # MiniZinc Changelog #
 ======================
 
+Version 2.0.6
+=============
+
+Changes:
+ - Add parser support for hexadecimal floating point constants.
+
+Bug fixes:
+ - Fix bounds computation for some calls (abs, int_times).
+ - Fix flattening of some array declarations (when right hand side is
+   an identifier).
+ - Add four missing GC locks (could lead to incorrect garbage collection).
+ - Compact output model only after optimisation phase (could lead to 
+   incorrect items being removed from output model).
+
+Version 2.0.5
+=============
+
+Changes:
+ - Improve the standard decomposition for the cumulative constraint.
+ - Better handling of binary operators during type checking and flattening,
+   can sometimes avoid stack overflows (e.g. for large conjunctions).
+ - Make ++ operator left associative (avoid stack overflows in the parser).
+ - Add ::domain annotations to linear constraints generated from
+   multi-dimensional element constraints.
+ - Greatly improved linearisation library.
+
+Bug fixes:
+ - Fix recursive function calls that contain let expressions.
+ - Fix compilation of comprehensions inside parametric functions.
+ - Fix a memory leak in solns2out.
+ - Fix a problem in the evaluation of binary operators.
+ - Fix a bug in the flattening of array literals.
+ - Fix a bug that would crash the parser on certain syntax errors in let
+   expressions.
+
 Version 2.0.4
 =============
 

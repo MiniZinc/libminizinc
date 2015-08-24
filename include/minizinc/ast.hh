@@ -805,7 +805,7 @@ namespace MiniZinc {
   
   /// \brief %Let expression
   class Let : public Expression {
-    friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls);
+    friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls, bool isFlatModel);
     friend class Expression;
   protected:
     /// List of local declarations

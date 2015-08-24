@@ -1,0 +1,2 @@
+test_multioutput.mzn:4:
+MiniZinc: type error: Only one output item allowed
