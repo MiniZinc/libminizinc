@@ -822,15 +822,27 @@ namespace MiniZinc {
       EnvI& env;
       TopoSorter& ts;
       Model* model;
+      bool hadSolveItem;
+      bool hadOutputItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0)
-        : env(env0), ts(ts0), model(model0), fis(fis0), ais(ais0) {}
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), hadOutputItem(false), fis(fis0), ais(ais0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i->e(), true); }
       void vFunctionI(FunctionI* i) {
         model->registerFn(env, i);
         fis.push_back(i);
+      }
+      void vSolveI(SolveI* si) {
+        if (hadSolveItem)
+          throw TypeError(env,si->loc(),"Only one solve item allowed");
+        hadSolveItem = true;
+      }
+      void vOutputI(OutputI* oi) {
+        if (hadOutputItem)
+          throw TypeError(env,oi->loc(),"Only one output item allowed");
+        hadOutputItem = true;
       }
     } _tsv0(env.envi(),ts,m,functionItems,assignItems);
     iterItems(_tsv0,m);

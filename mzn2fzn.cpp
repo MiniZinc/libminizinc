@@ -33,7 +33,6 @@
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode/gecode_pass.hh>
 #endif
-
 using namespace MiniZinc;
 using namespace std;
 
@@ -364,7 +363,6 @@ int main(int argc, char** argv) {
           Env* env = new Env(m);
           if (flag_verbose)
             std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
-
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
@@ -412,7 +410,7 @@ int main(int argc, char** argv) {
               exit(EXIT_FAILURE);
             }
             env->clearWarnings();
-
+            
             Model* flat = env->flat();
             
             if (flag_statistics) {

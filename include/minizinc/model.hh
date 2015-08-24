@@ -29,7 +29,7 @@ namespace MiniZinc {
   /// A MiniZinc model
   class Model {
     friend class GC;
-    friend Model* copy(EnvI& env, CopyMap& cm, Model* m);
+    friend Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
 
   protected:
     /// Previous model in root set list
