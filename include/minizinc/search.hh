@@ -152,7 +152,7 @@ namespace MiniZinc {
   // reset the timeout index
   void resetTimeoutIndex(void);
   /// returns the timeout time: time-now + timeout(given-in-milliseconds)
-  long long int getTimeout(int ms);
+  //long long int getTimeout(int ms);
   /// sets timeout options (for next) in case there is a timeout
   void setCurrentTimeout(SolverInstanceBase* solver);
   };

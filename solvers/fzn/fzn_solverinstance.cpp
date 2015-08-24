@@ -15,7 +15,6 @@
 #include <cstdio>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/time.h>
 
 #include <signal.h>
 #include <fstream>

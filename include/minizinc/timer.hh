@@ -16,6 +16,7 @@
 #include <windows.h>
 #else
 #include <sys/time.h>
+#include <cstddef>
 #endif
 
 namespace MiniZinc {
@@ -66,7 +67,24 @@ namespace MiniZinc {
 #endif
     }
   };
-  
+   /// return the number of milliseconds of the current moment
+   inline long long ms_now() {
+#ifdef _WIN32
+      static LARGE_INTEGER s_frequency;
+      static BOOL s_use_qpc = QueryPerformanceFrequency(&s_frequency);
+      if (s_use_qpc) {
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        return (1000LL * now.QuadPart) / s_frequency.QuadPart;
+      } else {
+        return GetTickCount();
+      }
+#else
+      timeval now;
+      gettimeofday(&now, NULL);
+      return now.tv_sec*1000+(now.tv_usec/1000);
+#endif
+    }        
 }
 
 #endif

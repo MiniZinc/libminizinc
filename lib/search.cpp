@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <ctime>
-#include <sys/time.h>
+#include <minizinc/timer.hh>
 
 #include <minizinc/search.hh>
 #include <minizinc/solver_instance_base.hh>
@@ -615,7 +614,7 @@ namespace MiniZinc {
       GCLock lock;
       ms = eval_int(solver->env().envi(), time).toInt();
     }
-    long long int t = getTimeout(ms);
+    long long int t = ms_now() + ms;
     _timeouts.push_back(t);
     if(isTimeLimitViolated()) {
       int timeoutIdx = getViolatedTimeLimitIndex();
@@ -1088,7 +1087,7 @@ namespace MiniZinc {
    
    bool 
    SearchHandler::isTimeLimitViolated(bool verbose) {
-     long long int time_now = getTimeout(0);
+     long long int time_now = ms_now();
      for(unsigned int i=0; i<_timeouts.size(); i++) {
        long long int timeout = _timeouts[i];
        if(time_now >= timeout) {
@@ -1102,7 +1101,7 @@ namespace MiniZinc {
    
    int 
    SearchHandler::getViolatedTimeLimitIndex(bool verbose) {
-     long long int time_now = getTimeout(0);
+     long long int time_now = ms_now();
      for(unsigned int i=0; i<_timeouts.size(); i++) {
        long long int timeout = _timeouts[i];
        if(time_now >= timeout) {
@@ -1130,13 +1129,13 @@ namespace MiniZinc {
      _timeoutIndex = -1;
    }
    
-   long long int
+ /*  long long int
    SearchHandler::getTimeout(int ms) {
      timeval now;
      gettimeofday(&now, NULL);
      long long int to = now.tv_sec*1000+(now.tv_usec/1000)+ms;
      return to;
-   }
+   } */
    
    void 
    SearchHandler::setCurrentTimeout(SolverInstanceBase* solver) {
@@ -1148,8 +1147,8 @@ namespace MiniZinc {
        if(timeout < smallest_timeout)
          smallest_timeout = timeout;
      }
-     long long int now = getTimeout(0);
-     long long int timeout_ms = smallest_timeout-now;
+     long long int now = ms_now();
+     long long int timeout_ms = smallest_timeout- now;
      if(timeout_ms > 0) {
        Options& opt = solver->getOptions();
        if(opt.hasParam(constants().solver_options.time_limit_ms.str())) {
