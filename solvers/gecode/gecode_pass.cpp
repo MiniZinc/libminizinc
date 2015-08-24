@@ -11,9 +11,14 @@ namespace MiniZinc {
   }
 
   Env* GecodePass::run(Env* env) {
-    GecodeSolverInstance gecode(*env,gopts);
-    gecode.processFlatZinc();
-    gecode.presolve(env->flat());
+    try {
+      GecodeSolverInstance gecode(*env,gopts);
+      gecode.processFlatZinc();
+      gecode.presolve(env->flat());
+    } catch(InternalError e) {
+      std::cerr << "Warning during presolve: " << e.msg() << std::endl;
+
+    }
     return env;
   }
 }
