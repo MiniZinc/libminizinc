@@ -507,19 +507,23 @@ namespace MiniZinc {
 
   Expression* CPLEXSolverInstance::getSolutionValue(Id* id, SolutionCallbackI* cb) {
     id = id->decl()->id();
-    IloNumVar var = exprToIloNumVar(id);
-    IloNum val;
-    if(cb) {
-      val = cb->getValue(var);
-    } else {
-      val = _ilocplex->getValue(var);
-    }
+    if(id->type().isvar()) {
+      IloNumVar var = exprToIloNumVar(id);
+      IloNum val;
+      if(cb) {
+        val = cb->getValue(var);
+      } else {
+        val = _ilocplex->getValue(var);
+      }
 
-    switch (id->type().bt()) {
-      case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
-      case Type::BT_FLOAT: return new FloatLit(Location(), val);
-      case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
-      default: return NULL;
+      switch (id->type().bt()) {
+        case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
+        case Type::BT_FLOAT: return new FloatLit(Location(), val);
+        case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
+        default: return NULL;
+      }
+    } else {
+      return id->decl()->e();
     }
   }
 

@@ -468,18 +468,22 @@ namespace MiniZinc {
 
   Expression* GurobiSolverInstance::getSolutionValue(Id* id, SolutionCallback* cb) {
     id = id->decl()->id();
-    GRBVar var = exprToVar(id);
-    double val;
-    if(cb!=NULL) {
-      val = cb->getValue(var);
+    if(id->type().isvar()) {
+      GRBVar var = exprToVar(id);
+      double val;
+      if(cb!=NULL) {
+        val = cb->getValue(var);
+      } else {
+        val = var.get(GRB_DoubleAttr_X);
+      }
+      switch (id->type().bt()) {
+        case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
+        case Type::BT_FLOAT: return new FloatLit(Location(), val);
+        case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
+        default: return NULL;
+      }
     } else {
-      val = var.get(GRB_DoubleAttr_X);
-    }
-    switch (id->type().bt()) {
-      case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
-      case Type::BT_FLOAT: return new FloatLit(Location(), val);
-      case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
-      default: return NULL;
+      return id->decl()->e();
     }
   }
 
