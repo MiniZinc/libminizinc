@@ -14,7 +14,9 @@
 
 #include <cstdio>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 
 #include <signal.h>
 #include <fstream>
@@ -29,7 +31,7 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <tchar.h>
-#include <atlstr.h>
+//#include <atlstr.h>
 #else
 #include <unistd.h>
 #include <sys/select.h>
@@ -330,6 +332,11 @@ namespace MiniZinc {
 #endif
     
     protected:
+#ifdef _WIN32
+      int executeCommand(Options& opt, std::string fznFile) {
+	return -1;
+      }
+#else
       int executeCommand(Options& opt, std::string fznFile) {
           int status;          
           // determine the command line arguments
@@ -403,9 +410,10 @@ namespace MiniZinc {
           }                           
         return status;
       }
+ #endif 
     };
   }
-  
+
 
   
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)

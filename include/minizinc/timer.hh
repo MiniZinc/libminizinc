@@ -13,7 +13,9 @@
 #define __MINIZINC_TIMER_HH__
 
 #ifdef _WIN32
+#define NOMINMAX
 #include <windows.h>
+#include <time.h>
 #else
 #include <sys/time.h>
 #include <cstddef>
