@@ -5112,6 +5112,9 @@ namespace MiniZinc {
         EnvI& env;
         OV2(EnvI& env0) : env(env0) {}
         void vVarDeclI(VarDeclI* vdi) {
+          IdMap<int>::iterator idx = env.output_vo.idx.find(vdi->e()->id());
+          if (idx!=env.output_vo.idx.end())
+            return;
           if (Expression* vd_e = env.cmap.find(vdi->e())) {
             VarDecl* vd = vd_e->cast<VarDecl>();
             GCLock lock;
