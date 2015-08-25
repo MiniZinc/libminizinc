@@ -223,7 +223,7 @@ namespace MiniZinc {
     }
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
-      for(unsigned int i=0; i<al->length(); i++) {
+      for(int i=0; i<al->length(); i++) {
         SolverInstance::Status status = interpretCombinator(al->v()[i],solver,verbose);
         if(status == SolverInstance::FAILURE)
           return status;            
@@ -299,7 +299,7 @@ namespace MiniZinc {
       }
     } else {
       ITE* ite = e->cast<ITE>();      
-      for (unsigned int i=0; i<ite->size(); i++) {
+      for (int i=0; i<ite->size(); i++) {
         Expression* condition = ite->e_if(i);
         SolverInstance::Status status;        
         if(condition->type().isann()) {         
@@ -329,7 +329,7 @@ namespace MiniZinc {
     SolverInstance::Status status = SolverInstance::FAILURE; 
     if(ArrayLit* al = call->args()[0]->dyn_cast<ArrayLit>()) {
       assert(al->dims() == 1);
-      for(unsigned int i=0; i<al->length(); i++) {
+      for(int i=0; i<al->length(); i++) {
         status = interpretCombinator(al->v()[i],solver,verbose);
         if(status == SolverInstance::SUCCESS) // stop at success
           return status;
@@ -376,7 +376,7 @@ namespace MiniZinc {
         }
         else {
           Expression* in = compr->in(0);
-          int nbIterations = 0;              
+          unsigned int nbIterations = 0;              
           if(!in->type().ispar()) {
             std::stringstream ssm;
             ssm << "The generator expression \"" << *in << "\" has to be par";
@@ -550,7 +550,7 @@ namespace MiniZinc {
             nvd->addAnnotation(constants().ann.output_var);           
           } else {           
             ArrayLit* al= output_vd->e()->cast<ArrayLit>();           
-            for(unsigned int i =0;i<al->length(); i++) {
+            for(int i =0;i<al->length(); i++) {
               Id* id = al->v()[i]->cast<Id>();
               id->decl()->addAnnotation(constants().ann.output_var);
               Type tt = id->decl()->type();
@@ -561,7 +561,7 @@ namespace MiniZinc {
             }
             // do the same for the vardecl in the flat model
             ArrayLit* aln= nvd->e()->cast<ArrayLit>();           
-            for(unsigned int i =0;i<aln->length(); i++) {
+            for(int i =0;i<aln->length(); i++) {
               Id* id = aln->v()[i]->cast<Id>();
               id->decl()->addAnnotation(constants().ann.output_var);              
             }
@@ -957,7 +957,8 @@ namespace MiniZinc {
     (void) flatten(env.envi(), cts, constants().var_true, constants().var_true, fopt); //env.envi().fopt);    
     oldflatzinc_basic(env);
     
-    int nbVarsAfter, nbCtsAfter = 0;
+    int nbVarsAfter = 0;
+    int nbCtsAfter = 0;
     for(unsigned int i=0; i < flat->size(); i++) {
       if(VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
         if(!vdi->removed()) nbVarsAfter++;

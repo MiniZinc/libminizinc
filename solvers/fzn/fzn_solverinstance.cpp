@@ -97,9 +97,17 @@ namespace MiniZinc {
 
           fznFile = szTempFileName;
           std::ofstream os(fznFile);
+          MiniZinc::Printer p(os,0);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             Item* item = *it;
-            os << *item;
+            if(item->removed()) 
+              continue;
+            if(SolveI* si = item->dyn_cast<SolveI>()) {
+              if(si->combinator_lite())
+                si->ann().removeCall(constants().ann.combinator);
+            }
+            //std::cerr << *item; // DEBUG
+            p.print(item);
           }
         }
 
@@ -179,6 +187,7 @@ namespace MiniZinc {
           if (bSuccess && count > 0) {
             buffer[count] = 0;
             result << buffer;
+            //std::cerr << buffer; // DEBUG        
 
             double elapsed = starttime.ms();
 
@@ -495,7 +504,7 @@ namespace MiniZinc {
     }
 
     bool hadSolution = false;
-    std::string sstr = result.str();    
+    //std::string sstr = result.str();    
     //std::cerr << "DEBUG: output from solver:\n" << sstr << std::endl;
     //std::cerr << "DEBUG: printing fzn model:\n---------------------------------\n";
     //debugprint(_fzn);
@@ -505,8 +514,10 @@ namespace MiniZinc {
     while (result.good()) {
       std::string line;
 
-      getline(result, line);    
-      if (line==constants().solver_output.solution_delimiter.str()) {
+      getline(result, line);
+      std::string s = constants().solver_output.solution_delimiter.str();
+      if(!line.compare(0,s.size(),s)) { // compare the start of the line to avoid comparing dodgy WIN eols
+//      if (line==constants().solver_output.solution_delimiter.str()) {
         if (hadSolution) {
           for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
             it->second.first->e(it->second.second);
