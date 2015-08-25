@@ -5509,6 +5509,9 @@ namespace MiniZinc {
             keptVariable = false;
           }
         }
+        if (vdi && keptVariable && vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
+          vdi->e()->ti()->domain(NULL);
+        }
         if (vdi && keptVariable &&
             vdi->e()->type().isint() && vdi->e()->type().isvar() &&
             vdi->e()->ti()->domain() != NULL) {
@@ -5521,7 +5524,6 @@ namespace MiniZinc {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity())
               needRangeDomain = true;
           }
-          
           if (needRangeDomain) {
             if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity()) {
               TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
