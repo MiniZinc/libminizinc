@@ -1033,18 +1033,23 @@ namespace MiniZinc {
 
   Expression*
   GecodeSolverInstance::getSolutionValue(Id* id) {
-    GecodeVariable var = resolveVar(id->decl()->id());
-    switch (id->type().bt()) {
-      case Type::BT_INT:
-        assert(var.intVar(_solution).assigned());
-        return new IntLit(Location(), var.intVar(_solution).val());
-      case Type::BT_BOOL:
-        assert(var.boolVar(_solution).assigned());
-        return new BoolLit(Location(), var.boolVar(_solution).val());
-      case Type::BT_FLOAT:
-        assert(var.floatVar(_solution).assigned());
-        return new FloatLit(Location(), (var.floatVar(_solution).val()).med());
-      default: return NULL;
+    id = id->decl()->id();
+    if(id->type().isvar()) {
+      GecodeVariable var = resolveVar(id->decl()->id());
+      switch (id->type().bt()) {
+        case Type::BT_INT:
+          assert(var.intVar(_solution).assigned());
+          return new IntLit(Location(), var.intVar(_solution).val());
+        case Type::BT_BOOL:
+          assert(var.boolVar(_solution).assigned());
+          return new BoolLit(Location(), var.boolVar(_solution).val());
+        case Type::BT_FLOAT:
+          assert(var.floatVar(_solution).assigned());
+          return new FloatLit(Location(), (var.floatVar(_solution).val()).med());
+        default: return NULL;
+      }
+    } else {
+      return id->decl()->e();
     }
   }
 
@@ -2163,6 +2168,8 @@ namespace MiniZinc {
             if(Id* id = array[j]->dyn_cast<Id>()) {
               //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
               array_elems.push_back(getSolutionValue(id));
+            } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
+              array_elems.push_back(floatLit);
             } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
               array_elems.push_back(intLit);
             } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {

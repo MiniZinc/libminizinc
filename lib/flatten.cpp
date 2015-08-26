@@ -3840,8 +3840,8 @@ namespace MiniZinc {
               ctx.neg = false;
               ctx.b = -ctx.b;
               bot = BOT_EQUIV;
-              ctx0.b = ctx1.b = C_MIX;
             }
+            ctx0.b = ctx1.b = C_MIX;
             goto flatten_bool_op;
           case BOT_LE:
             if (ctx.neg) {
@@ -4031,9 +4031,9 @@ namespace MiniZinc {
               le0 = get_linexp<FloatLit>(e0.r());
             }
             if (le0) {
-              if (boe1->type().isint() && !boe0->type().isopt()) {
+              if (boe1->type().isint() && !boe1->type().isopt()) {
                 le1 = get_linexp<IntLit>(e1.r());
-              } else if (boe1->type().isfloat() && !boe0->type().isopt()) {
+              } else if (boe1->type().isfloat() && !boe1->type().isopt()) {
                 le1 = get_linexp<FloatLit>(e1.r());
               }
             }
@@ -5361,6 +5361,7 @@ namespace MiniZinc {
             vdi_copy->e()->introduced(false);
             IdMap<KeepAlive>::iterator it;
             if (!vdi->e()->type().ispar()) {
+              /// begin HEAD
               VarDecl* reallyFlat = vd->flat();
               while (reallyFlat!=reallyFlat->flat())
                 reallyFlat=reallyFlat->flat();
@@ -5396,13 +5397,14 @@ namespace MiniZinc {
                       env.output->registerFn(env,decl);
                       env.output->addItem(decl);                      
                     } else {
-                      decl = origdecl;
-                    }
+                      decl = origdecl;     
+                    }                    
                   }
-                  rhs->decl(decl);
+                  rhs->decl(decl);                      
                 }
                 outputVarDecls(env,vdi_copy,rhs);
                 vd->e(rhs);
+              
               } else if (cannotUseRHSForOutput(env,vd->e())) {
                 // If the VarDecl does not have a usable right hand side, it needs to be
                 // marked as output in the FlatZinc
