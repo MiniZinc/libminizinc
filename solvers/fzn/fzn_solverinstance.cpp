@@ -311,6 +311,7 @@ namespace MiniZinc {
             break;
             }
           }
+          close(pipes[1][0]);
           if (!_canPipe) {
             remove(fznFile.c_str());
           }
@@ -365,7 +366,7 @@ namespace MiniZinc {
                 char* argv[] = {strdup(_fzncmd.c_str()),strdup("-fails"), fails_c, strdup("-node"), nodes_c, strdup("-"),0};          
                 if (!_canPipe) 
                   argv[5] = strdup(fznFile.c_str());
-                status = execv(argv[0],argv);                  
+                status = execvp(argv[0],argv);
               }
               else { // only node and time limit
                 sprintf(nodes_c, "%d", nodes);  
