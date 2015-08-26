@@ -5,7 +5,8 @@
 # NOTE: Set the paths and solvers according to your system
 
 # path to MiniSearch executable
-EXE_PATH="/home/arendl/work/libmzn/build/"  
+EXE_PATH="../../../build/"  
+STDLIB_DIR="../../../share/minizinc"
 # the MiniSearch executable
 EXE="mzn-fzn-lite"  
 MZN_EXE=$EXE_PATH$EXE
@@ -29,13 +30,13 @@ do
     fi
     for file in $( ls *.mzn ); do
 	if [ "$VERBOSE" = true ] ; then
-	    echo "$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
+	    echo "$MZN_EXE --stdlib-dir $STDLIB_DIR --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
 	fi
-	$MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err
+	$MZN_EXE --stdlib-dir $STDLIB_DIR --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err
 
 	add_on=""
 	if [ "$VERBOSE" = true ] ; then
-	    add_on="    $MZN_EXE --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
+	    add_on="    $MZN_EXE --stdlib-dir $STDLIB_DIR --solver $solver -I$globals $file > $file.$solver.out 2> $file.$solver.err"
 	fi
 	error_msg="ERROR: $solver: $file"$add_on
 	success_msg="OK: $solver: $file"$add_on
