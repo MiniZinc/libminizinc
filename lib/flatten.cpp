@@ -4954,7 +4954,7 @@ namespace MiniZinc {
     vd->ann().removeCall(constants().ann.output_array);
   }
   
-  void makePar(Expression* e) {
+  void makePar(EnvI& env, Expression* e) {
     class Par : public EVisitor {
     public:
       /// Visit variable declaration
@@ -4970,6 +4970,15 @@ namespace MiniZinc {
       }
     } _par;
     topDown(_par, e);
+    class Decls : public EVisitor {
+    public:
+      EnvI& env;
+      Decls(EnvI& env0) : env(env0) {}
+      void vCall(Call& c) {
+        c.decl(env.orig->matchFn(env,&c));
+      }
+    } _decls(env);
+    topDown(_decls, e);
   }
   
   void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool ignoreIntroduced) {
@@ -4996,7 +5005,7 @@ namespace MiniZinc {
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
           }
-          makePar(nvi->e());
+          makePar(env,nvi->e());
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
           nvi->e()->ann().clear();
@@ -5252,7 +5261,7 @@ namespace MiniZinc {
         void vOutputI(OutputI* oi) {
           GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
-          makePar(outputItem->e());
+          makePar(env,outputItem->e());
           env.output->addItem(outputItem);
         }
       } _ov1(e,e.output_vo,outputItem);
@@ -5447,7 +5456,7 @@ namespace MiniZinc {
               }
               env.output_vo.add(reallyFlat, env.output->size());
             }
-            makePar(vdi_copy->e());
+            makePar(env,vdi_copy->e());
             env.output_vo.add(vdi_copy, env.output->size());
             CollectOccurrencesE ce(env.output_vo,vdi_copy);
             topDown(ce, vdi_copy->e());
