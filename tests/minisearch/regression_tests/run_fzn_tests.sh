@@ -8,7 +8,7 @@
 EXE_PATH="../../../build/"  
 STDLIB_DIR="../../../share/minizinc"
 # the MiniSearch executable
-EXE="mzn-fzn-lite"  
+EXE="minisearch"  
 MZN_EXE=$EXE_PATH$EXE
 # the flatzinc solvers that should be tested
 FZN_SOLVERS=("fzn-gecode" "fzn_chuffed" "fzn_choco" "fzn-ortools")

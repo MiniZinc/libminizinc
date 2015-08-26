@@ -5,7 +5,7 @@
 # NOTE: Set the paths and solvers according to your system
 
 # path to MiniSearch executable
-EXE_PATH="/home/arendl/work/libmzn/build/"  
+EXE_PATH="../../../build/"  
 # the MiniSearch executable
 EXE="mzn-gecode-lite"  
 MZN_EXE=$EXE_PATH$EXE

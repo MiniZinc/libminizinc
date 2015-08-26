@@ -12,10 +12,10 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
 
-project (minizinc CXX C)
+project (minisearch CXX C)
 
 # The version number.
-set (libminizinc_VERSION_MAJOR 2)
+set (libminizinc_VERSION_MAJOR 0)
 set (libminizinc_VERSION_MINOR 1)
 set (libminizinc_VERSION_PATCH 0b1)
 
@@ -251,9 +251,6 @@ include/minizinc/thirdparty/SafeInt3.hpp
 add_executable(mzn2fzn mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 
-add_executable(mzn2fzn_test mzn2fzn_test.cpp)
-target_link_libraries(mzn2fzn_test minizinc)
-
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
@@ -316,19 +313,15 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
-	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
-	add_executable(mzn-fzn-lite solvers/fzn/mzn-fzn-lite.cpp)
-	target_link_libraries(mzn-fzn-lite minizinc_fzn minizinc)
-        add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp)
-	target_link_libraries(mzn-fzn-test minizinc_fzn minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-lite mzn-fzn-test
+	add_executable(minisearch solvers/fzn/mzn-fzn-lite.cpp)
+	target_link_libraries(minisearch minizinc_fzn minizinc)
+	INSTALL(TARGETS minizinc_fzn minisearch
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
 endif()
 
-INSTALL(TARGETS mzn2fzn mzn2fzn_test solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -369,7 +362,7 @@ INSTALL(DIRECTORY include/minizinc
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
-INSTALL(DIRECTORY share/examples DESTINATION share)
+INSTALL(DIRECTORY tests/minisearch/regression_tests DESTINATION examples)
 INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
 INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
 
