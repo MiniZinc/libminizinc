@@ -361,7 +361,6 @@ INSTALL(DIRECTORY include/minizinc
 )
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
-INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY tests/minisearch/regression_tests DESTINATION examples)
 INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
 INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
