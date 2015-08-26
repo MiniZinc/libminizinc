@@ -15,7 +15,7 @@
 %------------------------------------------------------------------------%
 
 include "globals.mzn";
-include "combinators.mzn"; % include the search combinators lite
+include "minisearch.mzn"; % include the search minisearch lite
 
 int: m = 7;
 int: n = m*m;

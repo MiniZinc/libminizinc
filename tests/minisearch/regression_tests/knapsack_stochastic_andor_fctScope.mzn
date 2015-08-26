@@ -9,7 +9,7 @@
 
 
 include "globals.mzn";
-include "combinators.mzn";
+include "minisearch.mzn";
 
 % Parameters
 int: nItems;

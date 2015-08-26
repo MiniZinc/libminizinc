@@ -28,7 +28,7 @@ include "alldifferent.mzn";
 % SEARCH 
 % ----------------------------------------------------------
 
-include "combinators.mzn";
+include "minisearch.mzn";
 int: k = 4; % the number of diverse solutions
 bool: verbose = false;
 

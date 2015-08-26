@@ -7,7 +7,7 @@
 %============================================================================%
 
 include "globals.mzn";
-include "combinators.mzn";
+include "minisearch.mzn";
 
 int: N; % number of nodes in the MIP model
 int: Capacity; % maximum capacity of each vehicle

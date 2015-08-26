@@ -89,7 +89,7 @@ constraint
         )
     );
 
-include "combinators.mzn";
+include "minisearch.mzn";
 
 int: iterations = 5;
 

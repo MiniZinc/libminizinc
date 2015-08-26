@@ -28,7 +28,7 @@ include "alldifferent.mzn";
 % SEARCH 
 % ----------------------------------------------------------
 
-include "combinators.mzn";
+include "minisearch.mzn";
 int: k = 4; % find 4 solutions
 
 solve ::

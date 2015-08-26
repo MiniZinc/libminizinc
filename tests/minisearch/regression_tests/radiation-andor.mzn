@@ -9,7 +9,7 @@
 % Parameters
 %-----------------------------------------------------------------------------%
 
-include "combinators.mzn";
+include "minisearch.mzn";
 
 int: m;  % Rows
 int: n;  % Columns

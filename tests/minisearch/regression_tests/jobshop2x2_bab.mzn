@@ -5,7 +5,7 @@
 % (square) job shop scheduling in MiniZinc
 %-----------------------------------------------------------------------------%
 
-include "combinators.mzn";
+include "minisearch.mzn";
 %-----------------------------------------------------------------------------%
 % Instance
 
