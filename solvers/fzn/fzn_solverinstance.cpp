@@ -57,6 +57,7 @@ namespace MiniZinc {
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
       
       std::string run(Options& opt) {
+        bool verbose = opt.getBoolParam(constants().opts.verbose.str(),false);
 #ifdef _WIN32
 
         SECURITY_ATTRIBUTES saAttr;
@@ -219,8 +220,10 @@ namespace MiniZinc {
           close(fd);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
-          MiniZinc::Printer p(os,0);
-          //MiniZinc::Printer p_debug(std::cerr,0); // uncomment to see flatzinc model for FZN solver
+          MiniZinc::Printer p(os,0);          
+          if(verbose) {
+            std::cerr << "Printing FlatZinc model for solver:\n";                      
+          }
           if (!os.good()) {
             std::string last_error = strerror(errno);
             throw InternalError(std::string("cannot open file ")+tmpfile+" for writing: "+last_error);
@@ -235,8 +238,11 @@ namespace MiniZinc {
               }             
             }
             //os << *item;
-            p.print(item);            
-            //p_debug.print(item); // DEBUG: uncomment to see flatzinc model that is sent to FZN solver
+            p.print(item); 
+            if(verbose) {
+              MiniZinc::Printer p_debug(std::cerr,0);
+              p_debug.print(item); // DEBUG: uncomment to see flatzinc model that is sent to FZN solver
+            }
           }
         }
 

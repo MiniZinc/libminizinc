@@ -164,6 +164,35 @@ function ann: lns_min (var int: obj, array[int] of var int: x,
    )
 ;
 
+
+function ann: lns_max (var int: obj, array[int] of var int: x,
+                   int: iterations, float: d) = 
+    repeat (i in 1..iterations) (
+        scope(
+            post(neighbourhoodCts(x,d)) /\
+            next() /\ %bab_min(obj) /\
+            commit() /\ 
+            print("Intermediate solution with objective \(sol(obj))\n")
+        ) /\
+        post(obj > sol(obj))
+   )
+ ;
+
+function ann: lns_min (var int: obj, array[int] of var int: x,
+                   int: iterations, float: d, int: timeout_ms) = 
+    repeat (i in 1..iterations) (
+        scope(
+            post(neighbourhoodCts(x,d)) /\
+            time_limit(timeout_ms, 
+                       bab_max(obj)) /\
+            commit() /\
+            print("Intermediate solution of LNS with objective \(sol(obj))\n")
+         
+        ) /\
+        post(obj > sol(obj))
+   )
+;
+
 %% Predicate that randomly choses the neighbourhood to keep, and then 
 %% posts the respective assignment constraints (assigning those variables 
 %% to the value in the last solution)
@@ -196,6 +225,21 @@ function ann: adaptive_lns_min(var int: obj, array[int] of var int: vars,
     /\ post(obj < sol(obj))
   );
 
+  
+function ann: adaptive_lns_max(var int: obj, array[int] of var int: vars,
+                        int: iterations, int: initRate, int: exploreTime) =
+  let { int: adaRate = initRate, int: step = 1; } in
+  repeat (i in 1..iterations) (
+    scope(
+         (post(uniformNeighbourhood(vars,adaRate/100.0)) /\
+          time_limit(exploreTime,
+                bab_max(obj)) /\ 
+          commit() /\ print() )
+      \/ (adaRate := adaRate + step /\ fail)
+    )
+    /\ post(obj > sol(obj))
+  );
+  
 
 predicate uniformNeighbourhood(array[int] of var int: x, float: destrRate) = 
   if hasSol() then
