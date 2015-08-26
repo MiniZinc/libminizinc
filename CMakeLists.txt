@@ -12,12 +12,12 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
 
-project (libminizinc CXX C)
+project (minizinc CXX C)
 
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
-set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 6)
+set (libminizinc_VERSION_MINOR 1)
+set (libminizinc_VERSION_PATCH 0b1)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -259,9 +259,8 @@ target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
-set(HAS_GECODE FALSE)
-set(HAS_FZN    TRUE)
-
+option (HAS_GECODE "Build with Gecode" OFF)
+option (HAS_FZN "Build with text-based FlatZinc interface" ON)
 
 if(HAS_GECODE)
   include_directories("${GECODE_HOME}/include")
@@ -385,7 +384,6 @@ IF(WIN32 AND NOT UNIX)
   SET(CPACK_NSIS_MODIFY_PATH ON)
   SET(CPACK_GENERATOR "ZIP")
 ELSE(WIN32 AND NOT UNIX)
-  SET(CPACK_STRIP_FILES "bin/MyExecutable")
   SET(CPACK_SOURCE_STRIP_FILES "")
   SET(CPACK_GENERATOR "TGZ")
 ENDIF(WIN32 AND NOT UNIX)
