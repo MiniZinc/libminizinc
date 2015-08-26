@@ -81,6 +81,10 @@ function ann: commit();
 % break out of enclosing repeat loop
 annotation break;
 
+% do not remove the given array of variables during optimisation
+% of FlatZinc, since it is used in MiniSearch
+predicate keepAlive__(array [$U] of var $T);
+
 % =================================================================== %
 %                    the MiniSearch built meta-searches               %
 % =================================================================== %
