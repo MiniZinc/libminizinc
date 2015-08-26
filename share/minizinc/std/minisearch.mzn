@@ -178,7 +178,7 @@ function ann: lns_max (var int: obj, array[int] of var int: x,
    )
  ;
 
-function ann: lns_min (var int: obj, array[int] of var int: x,
+function ann: lns_max (var int: obj, array[int] of var int: x,
                    int: iterations, float: d, int: timeout_ms) = 
     repeat (i in 1..iterations) (
         scope(
