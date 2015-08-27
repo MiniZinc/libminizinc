@@ -350,6 +350,16 @@ endif()
 
 option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF) 
 
+option(BUILD_32BIT "Build for 32bit architectures" OFF)
+
+if(BUILD_32BIT)
+set_target_properties(minisearch PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+set_target_properties(mzn2doc mzn2fzn solns2out PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+set_target_properties(minizinc_fzn PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+set_target_properties(minizinc PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+set (CMAKE_C_FLAGS "-m32")
+endif()
+
 if (BUILD_STATIC_EXECUTABLE)
   set(CMAKE_EXE_LINKER_FLAGS -static)
 endif()
