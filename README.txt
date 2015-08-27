@@ -19,10 +19,27 @@ into your shell in this directory. Checkout the documentation on how to
 get a FlatZinc solver if have not got any installed on your system.
 
 
+
 ** Documentation **
 
 For a detailed documentation please visit:
 http://www.minizinc.org/minisearch
+
+
+
+** Compilation **
+
+This package contains pre-compiled binary files, but you can also compile
+the source yourself. For this you need cmake, bison and flex installed. 
+Type the following commands in your terminal in the current directory:
+
+mkdir build
+cd build
+cmake ..
+make
+
+This will create the binary files in the build/ directory.
+
 
 
 ** Bugs **
