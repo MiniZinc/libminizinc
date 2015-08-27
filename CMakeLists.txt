@@ -315,7 +315,7 @@ if(HAS_FZN)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable(minisearch solvers/fzn/mzn-fzn-lite.cpp)
 	target_link_libraries(minisearch minizinc_fzn minizinc)
-	INSTALL(TARGETS minizinc_fzn minisearch
+	INSTALL(TARGETS minisearch
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
@@ -363,7 +363,7 @@ INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(FILES README.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/tests/minisearch/regression_tests/ DESTINATION examples FILES_MATCHING PATTERN "*.mzn")
 #INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
-INSTALL(DIRECTORY lib/cached DESTINATION lib)
+#INSTALL(DIRECTORY lib/cached DESTINATION lib)
 #INSTALL(DIRECTORY solvers DESTINATION solvers/..)
 #INSTALL(DIRECTORY lib DESTINATION lib/..)
 #INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
