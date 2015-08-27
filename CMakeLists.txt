@@ -348,20 +348,20 @@ if (BUILD_HTML_DOCUMENTATION)
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 
-option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" ON) #ANDREA: put this ON instead of OFF also makes no difference
 
 if (BUILD_STATIC_EXECUTABLE)
   set(CMAKE_EXE_LINKER_FLAGS -static)
 endif()
 
-INSTALL(DIRECTORY share/minizinc DESTINATION share)
+INSTALL(DIRECTORY share/minizinc DESTINATION share) #ANDREA: copies share/* instead of only share/minizinc
 INSTALL(DIRECTORY include/minizinc
         DESTINATION include
         PATTERN config.hh.in EXCLUDE
 )
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
-INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
-INSTALL(DIRECTORY tests/minisearch/regression_tests DESTINATION examples)
+INSTALL(FILES README.txt LICENSE.txt CMakeLists.txt DESTINATION doc/..) #ANDREA: put them to main directory?
+INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/tests/minisearch/regression_tests/ DESTINATION examples FILES_MATCHING PATTERN "*.mzn")
 INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
 INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
 

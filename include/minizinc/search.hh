@@ -70,10 +70,10 @@ namespace MiniZinc {
       }    
       switch(status) {
         case SolverInstance::SUCCESS:
-          std::cout << constants().solver_output.sat;
+          std::cout << constants().solver_output.sat << std::endl;
           break;
         case SolverInstance::FAILURE:
-          std::cout << constants().solver_output.unsat;;
+          std::cout << constants().solver_output.unsat << std::endl;
           break;        
       }
     }
