@@ -321,11 +321,11 @@ if(HAS_FZN)
 		ARCHIVE DESTINATION lib)
 endif()
 
-INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
+#INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
+#  RUNTIME DESTINATION bin
+#  LIBRARY DESTINATION lib
+#  ARCHIVE DESTINATION lib
+#)
 
 option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
 
@@ -355,19 +355,19 @@ if (BUILD_STATIC_EXECUTABLE)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
-INSTALL(DIRECTORY include/minizinc
-        DESTINATION include
+#INSTALL(DIRECTORY include/minizinc
+#        DESTINATION include
 #        PATTERN config.hh.in EXCLUDE
-)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
-INSTALL(FILES README.txt LICENSE.txt CMakeLists.txt DESTINATION doc/..)
+#)
+#INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
+INSTALL(FILES README.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/tests/minisearch/regression_tests/ DESTINATION examples FILES_MATCHING PATTERN "*.mzn")
 #INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
 INSTALL(DIRECTORY lib/cached DESTINATION lib)
-INSTALL(DIRECTORY solvers DESTINATION solvers/..)
-INSTALL(DIRECTORY lib DESTINATION lib/..)
-INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
-INSTALL(FILES mzn2doc.cpp mzn2fzn.cpp solns2out.cpp DESTINATION lib/..)
+#INSTALL(DIRECTORY solvers DESTINATION solvers/..)
+#INSTALL(DIRECTORY lib DESTINATION lib/..)
+#INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
+#INSTALL(FILES mzn2doc.cpp mzn2fzn.cpp solns2out.cpp DESTINATION lib/..)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})

@@ -7,7 +7,7 @@ language and tool chain. It provides a backend that supports all
 FlatZinc solvers.
 
 The source code can be obtained from the feature/minisearch branch on 
-github: https://github.com/MiniZinc/libminizinc
+github: https://github.com/MiniZinc/libminizinc/tree/feature/minisearch
 
 
 ** Getting Started **
