@@ -1,17 +1,20 @@
 MiniSearch 0.1
 ==============
 
-This package contains the source code and binary files for the MiniSearch 
-meta-search language, which includes the MiniZinc 2.1beta constraint 
-modelling language and tool chain. It provides a backend that supports all
+This package contains the binary files for the MiniSearch meta-search 
+language, which includes the MiniZinc 2.1beta constraint modelling 
+language and tool chain. It provides a backend that supports all
 FlatZinc solvers.
+
+The source code can be obtained from the feature/minisearch branch on 
+github: https://github.com/MiniZinc/libminizinc
 
 
 ** Getting Started **
 
-The binary files are in the bin/ directory and you find examples in the 
-example/ directory. The MiniSearch binary is called minisearch. You can 
-run an example with your FlatZinc solver by typing, for instance
+The minisearch binary file is in the bin/ directory and you can find 
+examples in the example/ directory. You can run an example with your 
+FlatZinc solver by typing, for instance
 
 ./bin/minisearch --solver <your-fzn-solver> examples/golomb_lns.mzn
 
@@ -24,21 +27,6 @@ get a FlatZinc solver if have not got any installed on your system.
 
 For a detailed documentation please visit:
 http://www.minizinc.org/minisearch
-
-
-
-** Compilation **
-
-This package contains pre-compiled binary files, but you can also compile
-the source yourself. For this you need cmake, bison and flex installed. 
-Type the following commands in your terminal in the current directory:
-
-mkdir build
-cd build
-cmake ..
-make
-
-This will create the binary files in the build/ directory.
 
 
 
