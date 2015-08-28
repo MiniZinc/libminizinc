@@ -14,12 +14,17 @@ github: https://github.com/MiniZinc/libminizinc/tree/feature/minisearch
 
 The minisearch binary file is in the bin/ directory and you can find 
 examples in the example/ directory. You can run an example with your 
-FlatZinc solver by typing, for instance
+FlatZinc solver by typing, for instance for Linux or Mac OS:
 
 ./bin/minisearch --solver <your-fzn-solver> examples/golomb_lns.mzn
 
-into your shell in this directory. Checkout the documentation on how to
-get a FlatZinc solver if have not got any installed on your system.
+or Windows:
+
+cd bin
+minisearch.exe --solver <your-fzn-solver.exe> ..\examples\golomb_lns.mzn
+
+into your shell in this directory. Check out the documentation on how 
+to get a FlatZinc solver if have not got any installed on your system.
 
 
 

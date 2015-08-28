@@ -18,7 +18,7 @@ http://www.minizinc.org/minisearch
 
 README.txt                   --->   this file
 CMakeLists.txt               --->   cmake file
-README_binary_package.txt    --->   README for binary package
+README_bin.txt               --->   README for binary package
 lib/                         --->   cpp Files and libs
 doc/                         --->   some MiniZinc documenation
 solvers/                     --->   solver backends
