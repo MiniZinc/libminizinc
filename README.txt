@@ -61,9 +61,6 @@ minisearch.exe. See 'Getting Started' on how to execute it.
 
 * NOTE *
 
-After compilation the build/ folder will contain the binary file
-minisearch (Linux, Mac OS) or minisearch.exe (Windows). 
-
 The instructions above will compile the sources for a 64bit machine. 
 If you are compiling for a 32-bit architecture, then set the cmake 
 option 'BUILD_32BIT' by:
@@ -99,9 +96,8 @@ get a FlatZinc solver if have not got any installed on your system.
 
 Note that you also have to set the MiniZinc standard library path
 $MZN_STDLIB_DIR to share/minizinc/ since it contains the MiniSearch
-buildin definitions.
-You can also manually set the stdlib path by adding the --stdlib-dir 
-option to calling minisearch:
+buildin definitions. You can also manually set the stdlib path by 
+adding the --stdlib-dir option to calling minisearch:
 
 ./build/minisearch --solver <your-fzn-solver> --stdlib-dir share/minizinc/ tests/minisearch/regression_tests/golomb_lns.mzn
 
