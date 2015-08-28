@@ -54,6 +54,7 @@ and execute cmake:
 
 mkdir build
 cd build
+cmake ..
 cmake --build .
 
 After compilation the build/Release folder will contain the binary file
@@ -106,20 +107,20 @@ adding the --stdlib-dir option to calling minisearch:
 
 * Windows *
 After compilation, the minisearch binary file is in the 
-build\Release directory and you can find MiniSearch examples in 
-the directory: tests\minisearch\regression_tests. You can run an 
+build/Debug directory and you can find MiniSearch examples in 
+the directory: tests/minisearch/regression_tests. You can run an 
 example with your FlatZinc solver <fzn-solver.exe> by typing, for 
 instance
 
-cd build\Release
-minisearch.exe --solver <fzn-solver.exe> ..\tests\minisearch\regression_tests\golomb_lns.mzn
+cd build/Debug
+minisearch.exe --solver <fzn-solver.exe> ../../tests/minisearch/regression_tests/golomb_lns.mzn
 
 Note that you also have to set the MiniZinc standard library path
-$MZN_STDLIB_DIR to share\minizinc since it contains the MiniSearch
+$MZN_STDLIB_DIR to share/minizinc since it contains the MiniSearch
 builtin definitions. You can also manually set the stdlib path by 
 adding the --stdlib-dir option to calling minisearch:
 
-minisearch.exe --solver <fzn-solver.exe> --stdlib-dir ..\share\minizinc\  ..\tests\minisearch\regression_tests\golomb_lns.mzn
+minisearch.exe --solver <fzn-solver.exe> --stdlib-dir ../../share/minizinc  ../../tests/minisearch/regression_tests/golomb_lns.mzn
 
 
 
