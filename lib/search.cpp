@@ -86,13 +86,16 @@ namespace MiniZinc {
           if(verbose)
             std::cerr << "DEBUG: interpreting combinator " << *call << " according to its solver implementation." << std::endl;
           if(call->id() == constants().combinators.best_max || 
-            call->id() == constants().combinators.best_min) {
+            call->id() == constants().combinators.best_min || 
+            call->id() == constants().combinators.best_max_old || 
+            call->id() == constants().combinators.best_min_old) {
             bool print = false;
             if(call->args().size() > 1)
               if(Id* id = call->args()[1]->dyn_cast<Id>())
                 if(id->str() == constants().combinators.print)
                   print = true;
-            int status = interpretBestCombinator(call, solver, call->id() == constants().combinators.best_min, print, verbose);
+            bool minimize = (call->id() == constants().combinators.best_min || call->id() == constants().combinators.best_min_old);
+            int status = interpretBestCombinator(call, solver, minimize, print, verbose);
             
             if(status == SolverInstance::SUCCESS) {
               GCLock lock;
@@ -102,7 +105,7 @@ namespace MiniZinc {
           }
           else {          
             std::stringstream ssm; 
-            ssm << "No body for combinator: " << *call;
+            ssm << "No body for combinator or unknown combinator: " << *call;
             throw TypeError(env.envi(), call->loc(), ssm.str());
           }
         }

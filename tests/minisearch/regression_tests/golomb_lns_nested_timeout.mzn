@@ -65,7 +65,7 @@ time_limit(timeout1,
             if hasSol() then 
             post(neighbourhoodCts1(mark,d)) /\
             time_limit(timeout2,
-                       bab_min(obj)) %next, % or bab
+                       minimize_bab(obj)) %next, % or bab
             else next() 
             endif
             /\ print()

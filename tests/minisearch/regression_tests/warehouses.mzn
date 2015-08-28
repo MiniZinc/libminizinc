@@ -99,7 +99,7 @@ solve  :: int_search(
     complete
   )
 %  minimize Total;
-search time_limit(ms, bab_min(Total)) /\ print();
+search time_limit(ms, minimize_bab(Total)) /\ print();
 
 %  :: int_search(
 %    supplier ++ cost ++ [bool2int(open[i]) | i in 1..n_suppliers],

@@ -14,4 +14,11 @@ function ann: bab_max(var int: obj, bool: verbose) =
          post(obj > sol(obj))
        else break endif
    );
-function ann: bab_max(var int: obj) = bab_max(obj, false);
+
+function ann: bab_max(var int: obj) = 
+   repeat(
+       if next() then
+         commit() /\ 
+         post(obj > sol(obj))
+       else break endif
+   );

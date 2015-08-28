@@ -1404,6 +1404,8 @@ namespace MiniZinc {
         ASTString and_;
         ASTString best_max;
         ASTString best_min;
+        ASTString best_max_old;
+        ASTString best_min_old;
         ASTString cond;
         ASTString fail;
         ASTString keepAlive;

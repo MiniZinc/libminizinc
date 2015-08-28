@@ -216,7 +216,7 @@ function ann: specialized_lns(int: iterations, int: ms, var int: obj) =
         scope(             
               if hasSol() then 
                  post(neighbourhood()) /\
-                 time_limit(ms, bab_min(traveltime))
+                 time_limit(ms, minimize_bab(traveltime))
               else  time_limit(ms,next()) endif /\
               commit() /\
               print("Intermediate solution of LNS with objective \(sol(obj)).\n")

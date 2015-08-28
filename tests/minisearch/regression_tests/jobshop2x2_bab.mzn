@@ -35,7 +35,7 @@ constraint
     );
 
 solve search
-time_limit(5000,bab_min(end));
+time_limit(5000,minimize_bab(end));
 
 output [
   "jobshop2x2\n",

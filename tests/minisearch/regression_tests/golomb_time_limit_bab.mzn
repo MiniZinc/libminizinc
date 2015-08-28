@@ -40,6 +40,6 @@ int: time_ms = 5*1000;
 
 % solve using minimizing branch & bound
 solve %:: int_search(mark, input_order, indomain, complete)
-search time_limit(time_ms, bab_min(obj)) /\ print();
+search time_limit(time_ms, minimize_bab(obj)) /\ print();
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];

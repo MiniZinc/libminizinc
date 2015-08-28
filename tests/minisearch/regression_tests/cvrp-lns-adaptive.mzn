@@ -195,7 +195,7 @@ function ann: adaptive_lns(var int: obj, array[int] of var int: vars,
          if hasSol() then 
            print("Iteration "++show(i)++", rate="++show(nSize)++"\n") /\ 
           ( post(uniformNeighbourhood1(vars,nSize/100.0)) /\
-             time_limit(exploreTime, bab_min(obj)) /\
+             time_limit(exploreTime, minimize_bab(obj)) /\
              commit() /\ print()
            ) \/ (nSize := nSize + step /\ fail)  
          else next() /\ print() /\ commit() endif

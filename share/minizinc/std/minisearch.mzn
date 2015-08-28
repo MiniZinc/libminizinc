@@ -92,17 +92,11 @@ predicate keepAlive__(var $T);
 
 % Branch&Bound minimize combinator
 include "bab_min.mzn";
-function ann: minimize_bab(var int: obj) = bab_min(obj, false);
-function ann: minimize_bab(var int: obj, bool: verbose) = bab_min(obj, verbose);
-function ann: minimise_bab(var int: obj) = bab_min(obj, false);
-function ann: minimise_bab(var int: obj, bool: verbose) = bab_min(obj, verbose);
+include "minimize_bab.mzn";
 
 % Branch and Bound when maximising
 include "bab_max.mzn";
-function ann: maximize_bab(var int: obj) = bab_max(obj, false);
-function ann: maximize_bab(var int: obj, bool: verbose) = bab_max(obj, verbose);
-function ann: maximise_bab(var int: obj) = bab_max(obj, false);
-function ann: maximise_bab(var int: obj, bool: verbose) = bab_max(obj, verbose);
+include "maximize_bab.mzn";
 
 
 % --------- Lexicographic Optimisation ----------------------------%

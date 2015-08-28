@@ -59,7 +59,7 @@ function ann: greedy_maxDiverseKset(array[int] of var int: Vars, int: K, bool: v
      scope( 
           let {var int: obj;} in        
           post(obj = sum(j in 1..L,i in index_set(Vars))(Store[(j-1)*vl + i] != Vars[i])) /\
-          bab_max(obj) /\ commit() /\ 
+          maximize_bab(obj) /\ commit() /\ 
           print("Found new diverse solution with obj = "++show(sol(obj))++"\n") /\ 
           print() /\ 
             % store this newly found solution

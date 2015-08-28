@@ -83,7 +83,7 @@ solve
 	    [Q[i,j,b] | i in Rows, j in Columns, b in BTimes ],
 		input_order, indomain_split, complete)
 search 
-    time_limit(timeout_ms, bab_min(obj)) /\ 
+    time_limit(timeout_ms, minimize_bab(obj)) /\ 
     if hasSol() then print() else print("No solution found within timelimit.\n") endif;
 %	minimize obj;
 		% really: (Beamtime, K),  i.e. in lexicographic order

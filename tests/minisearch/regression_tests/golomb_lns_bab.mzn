@@ -56,7 +56,7 @@ int: iterations = 10;
 
 % solve using minimizing branch & bound
 solve search 
-%scope ( post(true) /\ bab_min(obj) /\ print() ) ;
+%scope ( post(true) /\ minimize_bab(obj) /\ print() ) ;
 lns_with_builtin_min(obj, mark, d, iterations) /\ print();
 %minimize obj;
 
@@ -67,8 +67,8 @@ repeat (i in 1..iterations) (
               print("Iteration \(i)\n") /\
               post(neighbourhoodCts1(x,d)) /\ 
               print("After posting neighbourhood constraints\n") /\
-%              time_limit(10*1000, bab_min(obj)) /\
-              bab_min(obj) /\ 
+%              time_limit(10*1000, minimize_bab(obj)) /\
+              minimize_bab(obj) /\ 
               print("Intermediate solution with objective \(sol(obj))\n") /\
               commit() 
             else next() /\ commit() /\ print("First solution with objective \(sol(obj))\n") endif

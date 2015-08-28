@@ -19,7 +19,7 @@ FZN_SOLVERS_INCLUDES=("/home/arendl/software/gecode/gecode-install/share/gecode/
                        )
 
 # be verbose about the tests
-VERBOSE=false
+VERBOSE=true
 
 for ((i=0; i < ${#FZN_SOLVERS}; i++)) 
 do
