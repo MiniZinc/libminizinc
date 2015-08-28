@@ -84,22 +84,42 @@ in the build/ directory that contains the binary package.
 
 ** Getting Started **
 
+* Linux and Mac OS *
 After compilation, the minisearch binary file is in the build/ 
-directory and you can find MiniSearch examples in the 
-tests/minisearch/regression_tests/ directory. You can run an 
-example with your FlatZinc solver by typing, for instance
+directory and you can find MiniSearch examples in the directory:
+tests/minisearch/regression_tests/. You can run an example with 
+your FlatZinc solver <fzn-solver> by typing, for instance
 
-./build/minisearch --solver <your-fzn-solver> tests/minisearch/regression_tests/golomb_lns.mzn
+./build/minisearch --solver <fzn-solver> tests/minisearch/regression_tests/golomb_lns.mzn
 
-into your shell in this directory. Check out the documentation on how to
-get a FlatZinc solver if have not got any installed on your system.
+into your shell in this directory. Check out the documentation on 
+how to get a FlatZinc solver if have not got any installed on your 
+system.
 
 Note that you also have to set the MiniZinc standard library path
 $MZN_STDLIB_DIR to share/minizinc/ since it contains the MiniSearch
-buildin definitions. You can also manually set the stdlib path by 
+builtin definitions. You can also manually set the stdlib path by 
 adding the --stdlib-dir option to calling minisearch:
 
-./build/minisearch --solver <your-fzn-solver> --stdlib-dir share/minizinc/ tests/minisearch/regression_tests/golomb_lns.mzn
+./build/minisearch --solver <fzn-solver> --stdlib-dir share/minizinc/ tests/minisearch/regression_tests/golomb_lns.mzn
+
+
+* Windows *
+After compilation, the minisearch binary file is in the 
+build/Release directory and you can find MiniSearch examples in 
+the directory: tests/minisearch/regression_tests/. You can run an 
+example with your FlatZinc solver <fzn-solver.exe> by typing, for 
+instance
+
+cd build/Release
+minisearch.exe --solver <fzn-solver.exe> ..\tests\minisearch\regression_tests\golomb_lns.mzn
+
+Note that you also have to set the MiniZinc standard library path
+$MZN_STDLIB_DIR to share/minizinc/ since it contains the MiniSearch
+builtin definitions. You can also manually set the stdlib path by 
+adding the --stdlib-dir option to calling minisearch:
+
+minisearch.exe --solver <fzn-solver.exe> --stdlib-dir ..\share\minizinc\  ..\tests\minisearch\regression_tests\golomb_lns.mzn
 
 
 
