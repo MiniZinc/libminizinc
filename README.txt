@@ -65,7 +65,7 @@ The instructions above will compile the sources for a 64bit machine.
 If you are compiling for a 32-bit architecture, then set the cmake 
 option 'BUILD_32BIT' by:
 
-cmake -DBUILD_32BIT ..
+cmake -DBUILD_32BIT=ON ..
 
 
 
