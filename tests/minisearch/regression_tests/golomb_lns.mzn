@@ -38,8 +38,16 @@ constraint alldifferent(differences);
     % Symmetry breaking
 constraint differences[1] < differences[(m*(m-1)) div 2];
 
+int: timeout_ms = 7*1000; % 7 seconds timeout
+int: iterations = 100;
 
 solve 
-search time_limit(7000, lns_min(obj, mark, 1000, 0.7));
+search time_limit(timeout_ms, 
+                  lns_min(obj, mark, iterations, 0.7))
+      /\ if hasSol() then 
+              print("Best solution found within time-limit:\n") /\ print()
+         else print("No solution found within time-limit.\n")
+         endif
+      ;
 
 output ["golomb ", show(obj), "\n", show(mark), "\n"];
