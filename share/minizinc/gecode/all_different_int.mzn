@@ -34,18 +34,4 @@
 %
 %
 
-predicate gecode_all_different_int(array[int] of var int: x);
-%predicate all_different_int(array[int] of var int: x) = gecode_all_different_int(x);
-predicate all_different_int(array[int] of var int: xs) = 
-  let {
-    set of int: cs = {fix(x) | x in xs where is_fixed(x)};
-    array[int] of var int: ys = [x | x in xs where not is_fixed(x)];
-    constraint forall(y in ys, c in cs) (y != c);
-  } in
-    if length(ys) <= 1 then true
-    elseif length(ys) == 2 then ys[1] != ys[2]
-    else gecode_all_different_int(ys)
-    endif;
-
-predicate all_different_int_reif(array[int] of var int: x, var bool: r) =
-  r = forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
+predicate all_different_int(array[int] of var int: x);

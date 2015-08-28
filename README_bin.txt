@@ -42,6 +42,32 @@ or, for Windows:
 cd bin
 minisearch.exe --solver <your-fzn-solver.exe> --stdlib-dir ../share/minizinc ../examples/golomb_lns.mzn
 
+Furthermore, remember that MiniZinc can generate FlatZinc that is 
+tailored to your FlatZinc solver, but to do this, you need to include 
+the solver's MiniZinc globals definition library. You can do this with
+the -I option. Let us assume you have a solver fzn-mysolver, where the 
+globals library is in <solver-dir>/share/minizinc/mysolver. Then add 
+the option -I to your call for Linux/Mac OS:
+
+./bin/minisearch --solver fzn-mysolver -I<solver-dir>/share/minizinc/mysolver/ examples/golomb_lns.mzn
+
+or Windows:
+
+cd bin
+minisearch.exe --solver fzn-mysolver.exe -I<solver-dir>/share/minizinc/mysolver/ ../examples/golomb_lns.mzn
+
+This should improve your FlatZinc solver's performance. Also, if you
+have fzn-gecode installed, you can directly use the gecode globals lib
+in share/minizinc/gecode by simply adding the option -Ggecode to your
+call for Linux/Mac OS:
+
+./bin/minisearch --solver fzn-gecode -Ggecode examples/golomb_lns.mzn
+
+or Windows:
+
+cd bin
+minisearch.exe --solver fzn-gecode.exe -Ggecode ../examples/golomb_lns.mzn
+
 
 
 ** Documentation **
