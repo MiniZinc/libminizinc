@@ -33,9 +33,14 @@ to get a FlatZinc solver if have not got any installed on your system.
 Please note that you will need to set the MiniZinc standard library 
 environement variable $MZN_STDLIB_PATH to share/minizinc to include 
 the MiniSearch builtins. You can also manually set the stdlib path by 
-adding the --stdlib-dir option to calling minisearch:
+adding the --stdlib-dir option to calling minisearch for Linux/Mac OS:
 
 ./bin/minisearch --solver <your-fzn-solver> --stdlib-dir share/minizinc/ examples/golomb_lns.mzn
+
+or, for Windows:
+
+cd bin
+minisearch.exe --solver <your-fzn-solver.exe> --stdlib-dir ../share/minizinc ../examples/golomb_lns.mzn
 
 
 
