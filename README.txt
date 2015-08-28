@@ -106,16 +106,16 @@ adding the --stdlib-dir option to calling minisearch:
 
 * Windows *
 After compilation, the minisearch binary file is in the 
-build/Release directory and you can find MiniSearch examples in 
-the directory: tests/minisearch/regression_tests/. You can run an 
+build\Release directory and you can find MiniSearch examples in 
+the directory: tests\minisearch\regression_tests. You can run an 
 example with your FlatZinc solver <fzn-solver.exe> by typing, for 
 instance
 
-cd build/Release
+cd build\Release
 minisearch.exe --solver <fzn-solver.exe> ..\tests\minisearch\regression_tests\golomb_lns.mzn
 
 Note that you also have to set the MiniZinc standard library path
-$MZN_STDLIB_DIR to share/minizinc/ since it contains the MiniSearch
+$MZN_STDLIB_DIR to share\minizinc since it contains the MiniSearch
 builtin definitions. You can also manually set the stdlib path by 
 adding the --stdlib-dir option to calling minisearch:
 

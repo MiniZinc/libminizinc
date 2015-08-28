@@ -248,11 +248,11 @@ include/minizinc/thirdparty/SafeInt3.hpp
 )
 
 # add the executable
-add_executable(mzn2fzn mzn2fzn.cpp)
-target_link_libraries(mzn2fzn minizinc)
+#add_executable(mzn2fzn mzn2fzn.cpp)
+#target_link_libraries(mzn2fzn minizinc)
 
-add_executable(solns2out solns2out.cpp)
-target_link_libraries(solns2out minizinc)
+#add_executable(solns2out solns2out.cpp)
+#target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
@@ -306,8 +306,8 @@ if(HAS_GECODE)
   )
 
 endif()
-add_executable(mzn2doc mzn2doc.cpp)
-target_link_libraries(mzn2doc minizinc)
+#add_executable(mzn2doc mzn2doc.cpp)
+#target_link_libraries(mzn2doc minizinc)
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
@@ -354,7 +354,7 @@ option(BUILD_32BIT "Build for 32bit architectures" OFF)
 
 if(BUILD_32BIT)
 set_target_properties(minisearch PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
-set_target_properties(mzn2doc mzn2fzn solns2out PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+#set_target_properties(mzn2doc mzn2fzn solns2out PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 set_target_properties(minizinc_fzn PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 set_target_properties(minizinc PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 set (CMAKE_C_FLAGS "-m32")
@@ -366,8 +366,7 @@ endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 
-INSTALL(FILES LICENSE.txt DESTINATION doc/..)
-INSTALL(FILES README_binary_package.txt DESTINATION doc/../README.txt)
+INSTALL(FILES LICENSE.txt README_bin.txt DESTINATION doc/..)
 INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/tests/minisearch/regression_tests/ DESTINATION examples FILES_MATCHING PATTERN "*.mzn")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
