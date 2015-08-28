@@ -8,6 +8,10 @@ FlatZinc solvers.
 
 The source code can be obtained from the feature/minisearch branch on 
 github: https://github.com/MiniZinc/libminizinc/tree/feature/minisearch
+by calling:
+
+git clone -b feature/minisearch https://github.com/MiniZinc/libminizinc.git
+
 
 
 ** Getting Started **
@@ -21,10 +25,17 @@ FlatZinc solver by typing, for instance for Linux or Mac OS:
 or Windows:
 
 cd bin
-minisearch.exe --solver <your-fzn-solver.exe> ..\examples\golomb_lns.mzn
+minisearch.exe --solver <your-fzn-solver.exe> ../examples/golomb_lns.mzn
 
 into your shell in this directory. Check out the documentation on how 
 to get a FlatZinc solver if have not got any installed on your system.
+
+Please note that you will need to set the MiniZinc standard library 
+environement variable $MZN_STDLIB_PATH to share/minizinc to include 
+the MiniSearch builtins. You can also manually set the stdlib path by 
+adding the --stdlib-dir option to calling minisearch:
+
+./bin/minisearch --solver <your-fzn-solver> --stdlib-dir share/minizinc/ examples/golomb_lns.mzn
 
 
 
