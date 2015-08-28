@@ -981,19 +981,25 @@ namespace MiniZinc {
       }
     }
 
-stopped:
-    SolverInstance::Status status = SolverInstance::SAT;
-    if(engine->stopped()) {
-      if(_solution) {
-        status = SolverInstance::OPT;
-        assignSolutionToOutput();
+    SolverInstance::Status status;
+    
+    if (_solution) {
+      assignSolutionToOutput();
+      if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+        status = SolverInstance::SAT;
+      } else {
+        if (engine->stopped()) {
+          status = SolverInstance::UNKNOWN;
+        } else {
+          status = SolverInstance::OPT;
+        }
+      }
+    } else {
+      if (engine->stopped()) {
+        status = SolverInstance::UNKNOWN;
       } else {
         status = SolverInstance::UNSAT;
       }
-    } else if(!_solution) {
-      status = SolverInstance::UNKNOWN;
-    } else {
-      assignSolutionToOutput();
     }
     
     if (_print_stats) {
