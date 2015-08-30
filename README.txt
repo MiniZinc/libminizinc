@@ -48,25 +48,33 @@ make
 After compilation the build/ folder will contain the binary file
 minisearch. See 'Getting Started' on how to execute it. 
 
+Note: The instructions above will compile the sources for a 64bit 
+machine. If you are compiling for a 32-bit architecture, then set 
+the cmake option 'BUILD_32BIT' by:
+
+cmake -DBUILD_32BIT=ON ..
+
+
 * Windows *
 Create a build/ folder in the current directory and change into it
-and execute cmake:
+and execute cmake where you set the project file type, for instance 
+Visual Studio 12 (type 'cmake --help' to get a list of all project
+file generators):
 
 mkdir build
 cd build
-cmake ..
+cmake -G"Visual Studio 12 2013" ..
 cmake --build .
 
-After compilation the build/Release folder will contain the binary file
+After compilation the build/Debug folder will contain the binary file
 minisearch.exe. See 'Getting Started' on how to execute it. 
 
-* NOTE *
+Note: The instructions above will compile the sources for a 32bit 
+machine. If you are compiling for a 64-bit architecture, then set 
+the cmake option for a 64bit architecture, for instance:
 
-The instructions above will compile the sources for a 64bit machine. 
-If you are compiling for a 32-bit architecture, then set the cmake 
-option 'BUILD_32BIT' by:
+cmake -G"Visual Studio 12 2013 Win64" ..
 
-cmake -DBUILD_32BIT=ON ..
 
 
 
