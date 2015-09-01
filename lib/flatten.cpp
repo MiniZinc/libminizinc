@@ -3062,7 +3062,7 @@ namespace MiniZinc {
           std::vector<Expression*> where;
           GCLock lock;
           for (int i=0; i<c->n_generators(); i++) {
-            if (c->in(i)->type().isvar()) {
+            if (c->in(i)->type().isvar() && c->in(i)->type().dim()==0) {
               std::vector<Expression*> args(1);
               args[0] = c->in(i);
               Call* ub = new Call(Location().introduce(),"ub",args);
