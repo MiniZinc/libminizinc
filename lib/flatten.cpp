@@ -3373,7 +3373,7 @@ namespace MiniZinc {
                 ret = flat_exp(env,ctx,ka(),r,b);
                 break;
               }
-            } else if (bot==BOT_DIV) {
+            } else if (bot==BOT_DIV || bot==BOT_IDIV) {
               Expression* e0r = e0.r();
               Expression* e1r = e1.r();
               if (e1r->type().ispar() && e1r->type().isint()) {
