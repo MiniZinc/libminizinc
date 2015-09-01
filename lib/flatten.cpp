@@ -672,13 +672,13 @@ namespace MiniZinc {
           if (domain->min() >= lb)
             return false;
           IntSetRanges dr(domain);
-          Ranges::Const cr(lb,IntVal::infinity);
+          Ranges::Const cr(lb,IntVal::infinity());
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
           id->decl()->ti()->setComputedDomain(false);
         } else {
-          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb,IntVal::infinity)));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb,IntVal::infinity())));
         }
         return false;
       } else if (e1->type().ispar() && e0->isa<Id>()) {
@@ -690,13 +690,13 @@ namespace MiniZinc {
           if (domain->max() <= ub)
             return false;
           IntSetRanges dr(domain);
-          Ranges::Const cr(-IntVal::infinity, ub);
+          Ranges::Const cr(-IntVal::infinity(), ub);
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
           id->decl()->ti()->setComputedDomain(false);
         } else {
-          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity, ub)));
+          id->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity(), ub)));
         }
       }
     } else if (c->id()==constants().ids.int_.lin_le) {
@@ -705,8 +705,8 @@ namespace MiniZinc {
         ArrayLit* al_x = follow_id(c->args()[1])->cast<ArrayLit>();
         IntVal coeff = eval_int(env,al_c->v()[0]);
         IntVal y = eval_int(env,c->args()[2]);
-        IntVal lb = -IntVal::infinity;
-        IntVal ub = IntVal::infinity;
+        IntVal lb = -IntVal::infinity();
+        IntVal ub = IntVal::infinity();
         IntVal r = y % coeff;
         if (coeff >= 0) {
           ub = y / coeff;
@@ -868,19 +868,19 @@ namespace MiniZinc {
             assert(!al->type().isbot());
             Expression* domain = NULL;
             if (al->v().size() > 0 && al->v()[0]->type().isint()) {
-              IntVal min = IntVal::infinity;
-              IntVal max = -IntVal::infinity;
+              IntVal min = IntVal::infinity();
+              IntVal max = -IntVal::infinity();
               for (unsigned int i=0; i<al->v().size(); i++) {
                 IntBounds ib = compute_int_bounds(env,al->v()[i]);
                 if (!ib.valid) {
-                  min = -IntVal::infinity;
-                  max = IntVal::infinity;
+                  min = -IntVal::infinity();
+                  max = IntVal::infinity();
                   break;
                 }
                 min = std::min(min, ib.l);
                 max = std::max(max, ib.u);
               }
-              if (min != -IntVal::infinity && max != IntVal::infinity) {
+              if (min != -IntVal::infinity() && max != IntVal::infinity()) {
                 domain = new SetLit(Location().introduce(), IntSetVal::a(min,max));
               }
             }
@@ -1704,7 +1704,7 @@ namespace MiniZinc {
     
     GC::lock();
     
-    IntBounds r_bounds(IntVal::infinity,-IntVal::infinity,true);
+    IntBounds r_bounds(IntVal::infinity(),-IntVal::infinity(),true);
     if (r && r->type().isint()) {
       r_bounds = compute_int_bounds(env,r->id());
     }

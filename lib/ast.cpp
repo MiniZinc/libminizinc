@@ -968,7 +968,8 @@ namespace MiniZinc {
     absent_t.ot(Type::OT_OPTIONAL);
     absent->type(absent_t);
     
-    infinity = new SetLit(Location(), IntSetVal::a(-IntVal::infinity, IntVal::infinity));
+    IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+    infinity = new SetLit(Location(), isv_infty);
     
     ids.forall = ASTString("forall");
     ids.forall_reif = ASTString("forall_reif");

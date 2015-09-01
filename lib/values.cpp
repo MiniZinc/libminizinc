@@ -14,8 +14,13 @@
 
 namespace MiniZinc {
   
-  const IntVal IntVal::minint = IntVal(INT_MIN);
-  const IntVal IntVal::maxint = IntVal(INT_MAX);
-  const IntVal IntVal::infinity = IntVal(1,true);
-  
+  const IntVal IntVal::minint(void) { return IntVal(INT_MIN); }
+  const IntVal IntVal::maxint(void) { return IntVal(INT_MAX); }
+  const IntVal IntVal::infinity(void) { return IntVal(1,true); }
+ 
+  IntSetVal::IntSetVal(IntVal m, IntVal n) : ASTChunk(sizeof(Range)) {
+    get(0).min = m;
+    get(0).max = n;
+  }
+
 }
