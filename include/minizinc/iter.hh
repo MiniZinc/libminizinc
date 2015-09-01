@@ -92,7 +92,7 @@ namespace MiniZinc { namespace Ranges {
       return 0;
     if (mi.isFinite() && ma.isFinite())
       return ma-mi+1;
-    return IntVal::infinity;
+    return IntVal::infinity();
   }
   
   
@@ -181,7 +181,7 @@ namespace MiniZinc { namespace Ranges {
       return 0;
     if (min().isFinite() && max().isFinite())
       return max()-min()+1;
-    return IntVal::infinity;
+    return IntVal::infinity();
   }
 
   class Const {
@@ -231,7 +231,7 @@ namespace MiniZinc { namespace Ranges {
       return 0;
     if (min().isFinite() && max().isFinite())
       return max()-min()+1;
-    return IntVal::infinity;
+    return IntVal::infinity();
   }
   
   /**
@@ -637,7 +637,7 @@ namespace MiniZinc { namespace Ranges {
       if (i.width().isFinite()) {
         s += i.width(); ++i;
       } else {
-        return IntVal::infinity;
+        return IntVal::infinity();
       }
     }
     return s;
