@@ -5147,6 +5147,7 @@ namespace MiniZinc {
                 outputVarDecls(env,vdi_copy,flate);
                 vd->e(flate);
               } else {
+                vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
                 VarDecl* reallyFlat = vd->flat();
               
                 while (reallyFlat!=reallyFlat->flat())
@@ -5190,9 +5191,9 @@ namespace MiniZinc {
                   // If the VarDecl does not have a usable right hand side, it needs to be
                   // marked as output in the FlatZinc
                   vd->e(NULL);
-                  assert(vdi->e()->flat());
-                  if (vdi->e()->type().dim() == 0) {
-                    vdi->e()->flat()->addAnnotation(constants().ann.output_var);
+                  assert(vd->flat());
+                  if (vd->type().dim() == 0) {
+                    vd->flat()->addAnnotation(constants().ann.output_var);
                   } else {
                     bool needOutputAnn = true;
                     if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
@@ -5214,19 +5215,20 @@ namespace MiniZinc {
                       std::vector<Expression*> args(vdi->e()->type().dim());
                       for (unsigned int i=0; i<args.size(); i++) {
                         if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
-                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vdi->e()->flat()->ti()->ranges()[i]->domain()));
+                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->flat()->ti()->ranges()[i]->domain()));
                         } else {
-                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vdi->e()->ti()->ranges()[i]->domain()));
+                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->ti()->ranges()[i]->domain()));
                         }
                       }
                       ArrayLit* al = new ArrayLit(Location().introduce(), args);
                       args.resize(1);
                       args[0] = al;
-                      vdi->e()->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                      vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
                     }
                   }
                 }
-                env.output_vo.add(reallyFlat, env.output->size());
+                if (env.output_vo.find(reallyFlat) == -1)
+                  env.output_vo.add(reallyFlat, env.output->size());
               }
             }
             makePar(env,vdi_copy->e());
