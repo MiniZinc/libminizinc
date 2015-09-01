@@ -738,6 +738,12 @@ namespace MiniZinc {
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
+    if (Id* ident = e->dyn_cast<Id>()) {
+      if (ident->decl()) {
+        VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
+        e = e_vd->id();
+      }
+    }
     if (ctx.neg) {
       assert(e->type().bt() == Type::BT_BOOL);
       if (vd==constants().var_true) {
