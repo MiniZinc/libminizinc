@@ -176,7 +176,9 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_OUT_Wr);
 
         Timer starttime;
-        int timeout_sec = 10;
+        int timeout_sec = 99999999; // TODO: proper fix
+        if(opt.hasParam(constants().solver_options.time_limit_ms.str()))
+          timeout_sec = opt.getIntParam(constants().solver_options.time_limit_ms.str());
 
         bool done = false;
         std::stringstream result;
