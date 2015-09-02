@@ -253,3 +253,34 @@ predicate uniformNeighbourhood(array[int] of var int: x, float: destrRate) =
       else true endif
     )
   else true endif;
+
+
+% --------- Maximally Diverse Solutions --------------------------------------%
+
+function ann: greedy_maxDiverseKset(array[int] of var int: vars, int: K) =
+  let { array[int] of int: Store = [0 | x in 1..K*length(vars)];
+        int: vl = length(vars);
+        int: L = 0 % current length
+  } in
+  next() /\ commit() /\ print("Found solution\n") /\ print() /\
+  % initialize the store
+  repeat(i in 1..vl) (
+       Store[i] := sol(vars[i]) 
+  ) /\ 
+
+  repeat(
+     if L = K-1 then break else L := L+1 endif /\     
+     %print("L = "++show(L)++"\n") /\
+     scope( 
+          let {var int: obj;} in        
+          post(obj = sum(j in 1..L,i in index_set(vars))(Store[(j-1)*vl + i] != vars[i])) /\
+          maximize_bab(obj) /\ commit() /\ 
+          print("Found new diverse solution with obj = "++show(sol(obj))++"\n") /\ 
+          %print() /\ 
+            % store this newly found solution
+          repeat(i in 1..vl) ( 
+            Store[(L-1)* vl + i] := sol(vars[i])
+          )  
+     )
+  )
+;

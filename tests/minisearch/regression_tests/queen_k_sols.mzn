@@ -5,6 +5,8 @@
 % By Reza Rafeh July 2005
 % MiniZinc version
 % Peter Stuckey September 30 2006
+% MiniSearch version
+% Andrea Rendl, August 2015
 
 int: n = 8;
 
@@ -19,10 +21,8 @@ constraint
     alldifferent(i in 1..n)(q[i] + n-i);
 
 constraint q[1] = 2;
-%constraint q[2] = 1;
 
 include "alldifferent.mzn";
-
 
 % ----------------------------------------------------------
 % SEARCH 
@@ -44,10 +44,12 @@ find_k_solutions(k);
 
 function ann: find_k_solutions(int: k) = 
    repeat (i in 1..k) (
-      if next() then print("Solution "++show(i)++":\n") /\ print() 
-      else print("No more solutions found\n") /\ break endif
-   ) 
-;
+      if next() then 
+          commit() /\ print("Solution "++show(i)++":\n") /\ print() 
+      else 
+          print("No more solutions found\n") /\ break 
+      endif
+   );
 
 
 output	["8 queens, CP version:\n"] ++
