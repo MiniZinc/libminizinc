@@ -206,6 +206,7 @@ lib/parser.yxx
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
+passes/compile_pass.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
 include/minizinc/astexception.hh
@@ -342,7 +343,7 @@ if(HAS_GECODE)
           solvers/gecode/fzn_space.cpp
           solvers/gecode/gecode_solverinstance.cpp
           solvers/gecode/gecode_constraints.cpp
-          solvers/gecode/gecode_pass.cpp
+          passes/gecode_pass.cpp
           solvers/gecode/aux_brancher.hh)
 
   target_link_libraries(minizinc_gecode

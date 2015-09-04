@@ -46,26 +46,6 @@ namespace MiniZinc {
       virtual Env* run(Env* env) = 0;
       virtual ~Pass() {};
   };
-  
-  class CompilePass : public Pass {
-    private:
-      Env* env;
-      FlatteningOptions fopts;
-      std::string library;
-      std::vector<std::string> includePaths;
-      bool change_library;
-
-    public:
-      CompilePass(Env* e,
-                  FlatteningOptions& opts,
-                  std::string globals_library,
-                  std::vector<std::string> include_paths,
-                  bool change_lib);
-
-      bool pre(Env* env);
-      Env* run(Env* env);
-      ~CompilePass();
-  };
 
   /// Flatten model \a m several times and record information in its env
   Env* multiPassFlatten(Env& m, std::vector<Pass*>& passes);

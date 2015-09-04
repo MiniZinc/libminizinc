@@ -24,6 +24,7 @@
 #include <minizinc/typecheck.hh>
 #include <minizinc/astexception.hh>
 
+#include <minizinc/passes/compile_pass.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
