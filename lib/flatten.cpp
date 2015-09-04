@@ -3619,18 +3619,18 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GQ;
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = +ctx0.i;
                 ctx1.i = -ctx1.i;
               }
             } else {
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = -ctx0.i;
                 ctx1.i = +ctx1.i;
               }
@@ -3640,18 +3640,18 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_GR;
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = +ctx0.i;
                 ctx1.i = -ctx1.i;
               }
             } else {
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = -ctx0.i;
                 ctx1.i = +ctx1.i;
               }
@@ -3661,18 +3661,18 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LQ;
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = -ctx0.i;
                 ctx1.i = +ctx1.i;
               }
             } else {
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = +ctx0.i;
                 ctx1.i = -ctx1.i;
               }
@@ -3682,18 +3682,18 @@ namespace MiniZinc {
             if (ctx.neg) {
               doubleNeg = true;
               bot = BOT_LE;
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = -ctx0.i;
                 ctx1.i = +ctx1.i;
               }
             } else {
-              if (boe0->type().isbool()) {
+              if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
-              } else if (boe0->type().isint()) {
+              } else if (boe0->type().bt()==Type::BT_INT) {
                 ctx0.i = +ctx0.i;
                 ctx1.i = -ctx1.i;
               }
@@ -3704,9 +3704,9 @@ namespace MiniZinc {
               doubleNeg = true;
               bot = BOT_NQ;
             }
-            if (boe0->type().isbool()) {
+            if (boe0->type().bt()==Type::BT_BOOL) {
               ctx0.b = ctx1.b = C_MIX;
-            } else if (boe0->type().isint()) {
+            } else if (boe0->type().bt()==Type::BT_INT) {
               ctx0.i = ctx1.i = C_MIX;
             }
             goto flatten_bool_op;
@@ -3715,9 +3715,9 @@ namespace MiniZinc {
               doubleNeg = true;
               bot = BOT_EQ;
             }
-            if (boe0->type().isbool()) {
+            if (boe0->type().bt()==Type::BT_BOOL) {
               ctx0.b = ctx1.b = C_MIX;
-            } else if (boe0->type().isint()) {
+            } else if (boe0->type().bt()==Type::BT_INT) {
               ctx0.i = ctx1.i = C_MIX;
             }
             goto flatten_bool_op;
