@@ -3180,6 +3180,10 @@ namespace MiniZinc {
           if (!elems[i]->type().ispar())
             allPar = false;
         }
+        if (elemType.isbot()) {
+          elemType = c->type();
+          elemType.ti(Type::TI_PAR);
+        }
         if (!allPar)
           elemType.ti(Type::TI_VAR);
         if (c->set())
@@ -3206,6 +3210,7 @@ namespace MiniZinc {
             ka = alr;
           }
         }
+        assert(!ka()->type().isbot());
         ret.b = conj(env,b,Ctx(),elems_ee);
         ret.r = bind(env,Ctx(),r,ka());
       }
@@ -4107,6 +4112,7 @@ namespace MiniZinc {
               tmp = vd->id();
             CallArgItem cai(env);
             args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
+            assert(!args_ee[i].r()->type().isbot());
             isPartial |= isfalse(env, args_ee[i].b());
           }
           if (isPartial && c->type().isbool() && !c->type().isopt()) {
