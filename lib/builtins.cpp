@@ -696,6 +696,13 @@ namespace MiniZinc {
     IntSetVal* isv = eval_intset(env,args[0]);
     return isv->max();
   }
+  IntSetVal* b_lb_set(EnvI& env, Call* e) {
+    Expression* ee = eval_par(env, e->args()[0]);
+    if (ee->type().ispar()) {
+      return eval_intset(env, ee);
+    }
+    return IntSetVal::a();
+  }
   IntSetVal* b_ub_set(EnvI& env, Expression* e) {
     IntSetVal* isv = compute_intset_bounds(env,e);
     if (isv)
@@ -2229,6 +2236,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
       rb(env, m, ASTString("ub"), t, b_ub_set);
+      rb(env, m, ASTString("lb"), t, b_lb_set);
     }
     {
       std::vector<Type> t(1);
