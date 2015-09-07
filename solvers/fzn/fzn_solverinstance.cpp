@@ -272,7 +272,7 @@ namespace MiniZinc {
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
 
-          int timeout_sec = 10;
+          int timeout_sec = 99999999; // TODO: proper fix
 
           timeout.tv_sec = timeout_sec;
           timeout.tv_usec = 0;
