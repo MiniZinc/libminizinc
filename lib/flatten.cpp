@@ -4895,6 +4895,8 @@ namespace MiniZinc {
       e.output_vo.clear();
       for (unsigned int i=0; i<e.output->size(); i++) {
         Item* item = (*e.output)[i];
+        if (item->removed())
+          continue;
         switch (item->iid()) {
           case Item::II_VD:
           {
@@ -5255,7 +5257,7 @@ namespace MiniZinc {
     std::vector<VarDecl*> deletedVarDecls;
     for (unsigned int i=0; i<e.output->size(); i++) {
       if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
-        if (e.output_vo.occurrences(vdi->e())==0) {
+        if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0) {
           CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
           removeIsOutput(vdi->e()->flat());
