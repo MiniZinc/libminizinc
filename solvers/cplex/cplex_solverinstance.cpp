@@ -15,6 +15,23 @@
 namespace MiniZinc {
 
   namespace CplexConstraints {
+    
+    bool CheckAnnUserCut(const Call* call) {
+      if(!call->ann().isEmpty()) {
+        if(call->ann().contains(constants().ann.user_cut)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    bool CheckAnnLazyConstraint(const Call* call) {
+      if(!call->ann().isEmpty()) {
+        if(call->ann().contains(constants().ann.lazy_constraint)) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     enum LIN_CON_TYPE {LQ,EQ,GQ};
 
@@ -44,7 +61,18 @@ namespace MiniZinc {
       }
       IloRange range(model->getEnv(), lb, ub);
       range.setLinearCoefs(ilovars, ilocoeffs);
-      model->add(range);
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC) {
+        si.userCuts->add(range);
+        // std::cerr << " UC " << std::flush;
+      }
+      if (fLC) {
+        si.lazyConstraints->add(range);
+       // std::cerr << " UC " << std::flush;
+      }
+      if (!fUC && !fLC)
+        model->add(range);
     }
     
     void p_int_lin(SolverInstanceBase& si, const Call* call, LIN_CON_TYPE lt) {
@@ -73,7 +101,14 @@ namespace MiniZinc {
       IloModel* model = si.getIloModel();
       IloConstraint constraint(vara == varb);
       
-      model->add(constraint);
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC)
+        si.userCuts->add(constraint);
+      if (fLC)
+        si.lazyConstraints->add(constraint);
+      if (!fUC && !fLC)
+        model->add(constraint);
     }
     void p_le(SolverInstanceBase& si0, const Call* call) {
       CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
@@ -82,7 +117,14 @@ namespace MiniZinc {
       IloExpr varb = si.exprToIloExpr(args[1]);
       IloModel* model = si.getIloModel();
       IloConstraint constraint(vara <= varb);
-      model->add(constraint);
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC)
+        si.userCuts->add(constraint);
+      if (fLC)
+        si.lazyConstraints->add(constraint);
+      if (!fUC && !fLC)
+        model->add(constraint);
     }
     void p_plus(SolverInstanceBase& si0, const Call* call) {
       CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
@@ -92,8 +134,14 @@ namespace MiniZinc {
       IloExpr varc = si.exprToIloExpr(args[2]);
       IloModel* model = si.getIloModel();
       IloConstraint constraint(varc == (vara + varb));
-      model->add(constraint);
-      
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC)
+        si.userCuts->add(constraint);
+      if (fLC)
+        si.lazyConstraints->add(constraint);
+      if (!fUC && !fLC)
+        model->add(constraint);
     }
   
   /// INDICATORS
@@ -253,6 +301,8 @@ namespace MiniZinc {
   
   CPLEXSolverInstance::~CPLEXSolverInstance(void) {
 //     _ilomodel->end();           -- TAKES TOO LONG SOMETIMES
+    delete userCuts;
+    delete lazyConstraints;
     delete _ilomodel;
     delete _ilocplex;
     if(fVerbose) {
@@ -337,6 +387,17 @@ namespace MiniZinc {
 
     try{
       _ilocplex = new IloCplex(*_ilomodel);
+      
+      if (userCuts->getSize()) {
+        if (fVerbose)
+          std::cerr << "  % ADDING " << userCuts->getSize() << " USER CUTS." << std::endl;
+        _ilocplex->addUserCuts(*userCuts);
+      }
+      if (lazyConstraints->getSize()) {
+        if (fVerbose)
+          std::cerr << "  % ADDING " << lazyConstraints->getSize() << " LAZY CONSTRAINTS." << std::endl;
+        _ilocplex->addLazyConstraints(*lazyConstraints);
+      }
 
       if (not fVerbose && not all_solutions)
         _ilocplex->setOut(_iloenv.getNullStream());
@@ -439,6 +500,8 @@ namespace MiniZinc {
   
   void CPLEXSolverInstance::processFlatZinc(void) {
     _ilomodel = new IloModel(_iloenv);
+    userCuts = new IloConstraintArray(_iloenv);
+    lazyConstraints = new IloConstraintArray(_iloenv);
   
     for (VarDeclIterator it = _env.flat()->begin_vardecls(); it != _env.flat()->end_vardecls(); ++it) {
       VarDecl* vd = it->e();

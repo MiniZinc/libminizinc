@@ -7,8 +7,12 @@
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
 */
 %-----------------------------------------------------------------------------%
-% TODO. Have some simple basic constraints (better for presolve) + facets as user cuts
+% Have some simple basic constraints (better for presolve) + facets as user cuts.
+% Have some rarely-violated constraints as lazy cuts.
+% (Symmetry constraints are both user+lazy, see redef-2.0.2.mzn)
 %-----------------------------------------------------------------------------%
+ann: user_cut;
+ann: lazy_constraint;
 
 include "domain_encodings.mzn";
 
@@ -25,7 +29,8 @@ test my_trace(string: msg) ::promise_total
 %-----------------------------------------------------------------------------%
 %  Parameters
 %    -- for unary encoding: maximal domain length to invoke it
-int: nMZN__UnaryLenMax__ALL=2000;    %% can be used by the indiv. cases
+int: nMZN__UnaryLenMin__ALL=1;    %% can be used by the indiv. cases
+int: nMZN__UnaryLenMax__ALL=10;    %% can be used by the indiv. cases
 int: nMZN__UnarySizeMax_intTimes=20;
 int: nMZN__UnarySizeMax_cumul=2000;
 int: nMZN__UnarySizeMax_1step_regular=20000;   %% network-flow decomp in the regular constraint
@@ -37,6 +42,10 @@ bool: fMZN__IgnoreRedundantCumulative=false;
 
 %-----------------------------------------------------------------------------%
 %  Some more detailed parameters
+int: nMZN__UnaryLenMin_leq       = nMZN__UnaryLenMin__ALL;
+int: nMZN__UnaryLenMin_neq       = nMZN__UnaryLenMin__ALL;
+int: nMZN__UnaryLenMin_eq        = nMZN__UnaryLenMin__ALL;
+int: nMZN__UnaryLenMax_leq       = nMZN__UnaryLenMax__ALL;
 int: nMZN__UnaryLenMax_neq       = nMZN__UnaryLenMax__ALL;
 int: nMZN__UnaryLenMax_eq        = nMZN__UnaryLenMax__ALL;
 int: nMZN__UnaryLenMax_setIn     = nMZN__UnaryLenMax__ALL;
@@ -265,19 +274,21 @@ predicate int_le_reif(var int: x, var int: y, var bool: b) =
   else
     let {
       var 0..1: p = bool2int(b)
-% , var int: x_y = x-y
     }
     in            %% No big difference using the binary decomposition:
 %     my_trace("  int_le_reif( var " ++ show(dom(x)) ++ ", var " ++ show(dom(y))
 %       ++ ", dom(x-y) = " ++ show(dom(x-y))
 %       ++ ", var \(b))\n") /\
-%     if card(dom(x_y))<20 then
-%       let { array[int] of var int: p = eq_encode(x_y) } in
+%     if card(dom(x-y)) in nMZN__UnaryLenMin_leq..nMZN__UnaryLenMax_leq then
+%       let { 
+%         var int: x_y = x-y,
+%         array[int] of var int: pp = eq_encode(x_y)
+%       } in
 %       my_trace ("    -- by unary: dom(x-y) = " ++ show(dom(x_y)) ++ "\n") /\
-%       sum ( i in dom(x_y) where i<=0 ) ( p[i] ) == bool2int(b)
+%       sum ( i in dom(x_y) where i<=0 ) ( pp[i] ) == p
 %     else
-      aux_int_le_if_1(x, y, p) /\
-      aux_int_gt_if_0(x, y, p)
+       aux_int_le_if_1(x, y, p) /\
+       aux_int_gt_if_0(x, y, p)
 %     endif
   endif
 ;
@@ -303,7 +314,7 @@ predicate int_ne(var int: x, int: y) =
          x <= y-1
        elseif y==lb(x) then
          x >= y+1
-        elseif card(dom(x))<nMZN__UnaryLenMax_neq then                          %% PARAM TODO
+        elseif card(dom(x)) in nMZN__UnaryLenMin_neq..nMZN__UnaryLenMax_neq then                          %% PARAM TODO
           let {
             array[int] of var int: p = eq_encode(x);
           } in
@@ -366,7 +377,7 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
       int_lt_reif(y, x, not b)
     elseif y==ub(x) then
       int_lt_reif(x, y, not b)
-    elseif card(dom(x))<nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
+    elseif card(dom(x)) in nMZN__UnaryLenMin_eq..nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
       let {
         array[int] of var int: p = eq_encode(x);
       } in
@@ -748,8 +759,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
           aux_float_eq_if_1(z, a[i], p[i])
       )
       %% Cuts: seems better without?
-  %    /\ array_var_float_element__ROOF([  a[i] | i in dom(i01) ],  z)
-  %    /\ array_var_float_element__ROOF([ -a[i] | i in dom(i01) ], -z)
+      /\ array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z) :: user_cut
+      /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z) :: user_cut
     endif ;
 
 %%% Facets on the upper surface of the z-a polytope
@@ -778,7 +789,7 @@ predicate array_var_float_element__ROOF(array[int] of var float: a,
     } in
        %%% "ROOF"
     forall (i in 1..n where
-        ((i<n /\ ULB[i]!=ULB[i+1]) \/ i==n)        %% not the same
+          if i<n then ULB[i]!=ULB[i+1] else true endif        %% not the same
         )(
       z <= ULB[i]
            + sum( j in i..n where AU_srt_ub[i] != AL_srt_ub[i] )        %% not a const
@@ -1246,7 +1257,8 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
         AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
       m >= AM_srt[i]
          - sum(j in 1..i-1 where AL_srt[j]<AM_srt[i] /\ AL_srt[j]<AU_srt[j])
-           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) ) )
+           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) ) :: user_cut
+                                   )
   );
 
 
