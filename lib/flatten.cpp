@@ -2726,7 +2726,11 @@ namespace MiniZinc {
                     env.map_insert(vd->e(),ee);
                 }
               } else {
-                vd = it->second.r()->cast<VarDecl>();
+                if (it->second.r()->isa<VarDecl>()) {
+                  vd = it->second.r()->cast<VarDecl>();
+                } else {
+                  rete = it->second.r();
+                }
               }
             }
             if (rete==NULL) {
