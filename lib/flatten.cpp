@@ -4116,7 +4116,6 @@ namespace MiniZinc {
               tmp = vd->id();
             CallArgItem cai(env);
             args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
-            assert(!args_ee[i].r()->type().isbot());
             isPartial |= isfalse(env, args_ee[i].b());
           }
           if (isPartial && c->type().isbool() && !c->type().isopt()) {
