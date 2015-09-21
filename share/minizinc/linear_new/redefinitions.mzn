@@ -7,12 +7,17 @@
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
 */
 %-----------------------------------------------------------------------------%
-% Have some simple basic constraints (better for presolve) + facets as user cuts.
-% Have some rarely-violated constraints as lazy cuts.
+% Have some simple basic constraints directly in the model (better for presolve)
+%   + facets as user cuts?
+% Have some rarely-violated constraints as lazy cuts?
 % (Symmetry constraints are both user+lazy, see redef-2.0.2.mzn)
 %-----------------------------------------------------------------------------%
 ann: user_cut;
 ann: lazy_constraint;
+%%% comment away the assignments to have those as normal constraints
+%%% But be aware that CPLEX 12.6.1 & 2 have bugs on user cuts
+ann: MIP_cut = user_cut;
+ann: MIP_lazy = lazy_constraint;
 
 include "domain_encodings.mzn";
 
@@ -25,27 +30,39 @@ test my_trace(string: msg) ::promise_total
   = if occurs(mzn__my_trace_on) /\ deopt(mzn__my_trace_on) then
       trace(msg)
     else true endif;
+%%% Set =true to PRINT TRACING messages for the currently debugged constraints:
+opt bool: mzn__my_trace__DBG_on
+   = false;
+   %= true;
+test my_trace__DBG(string: msg) ::promise_total
+  = if occurs(mzn__my_trace__DBG_on) /\ deopt(mzn__my_trace__DBG_on) then
+      trace(msg)
+    else true endif;
 
 %-----------------------------------------------------------------------------%
 %  Parameters
-%    -- for unary encoding: maximal domain length to invoke it
+bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only. 
+    %% Reifs give wrong result on 2012/amaze, so using implications only
+%    For unary encoding: maximal domain length to invoke it
 int: nMZN__UnaryLenMin__ALL=1;    %% can be used by the indiv. cases
-int: nMZN__UnaryLenMax__ALL=10;    %% can be used by the indiv. cases
+int: nMZN__UnaryLenMax__ALL=2000;    %% can be used by the indiv. cases
 int: nMZN__UnarySizeMax_intTimes=20;
 int: nMZN__UnarySizeMax_cumul=2000;
 int: nMZN__UnarySizeMax_1step_regular=20000;   %% network-flow decomp in the regular constraint
 
-bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% ----- NOT WORKING NOW, use redefs_2.0.2.mzn: 
     %%%%% ----  bool: fMZN__IgnoreAllUserRedundant=false;   %% ignore all user-spec redundant constr
 
+bool: fElementCuts=false;       %% Use simple XZ & XZB cuts for element & minimum
+bool: fUseXBZCutGen=false;      %% Use XZB cut generator for element & minimum
+
 %-----------------------------------------------------------------------------%
 %  Some more detailed parameters
-int: nMZN__UnaryLenMin_leq       = nMZN__UnaryLenMin__ALL;
+int: nMZN__UnaryLenMin_leq       = 1;
 int: nMZN__UnaryLenMin_neq       = nMZN__UnaryLenMin__ALL;
 int: nMZN__UnaryLenMin_eq        = nMZN__UnaryLenMin__ALL;
-int: nMZN__UnaryLenMax_leq       = nMZN__UnaryLenMax__ALL;
+int: nMZN__UnaryLenMax_leq       = -1;
 int: nMZN__UnaryLenMax_neq       = nMZN__UnaryLenMax__ALL;
 int: nMZN__UnaryLenMax_eq        = nMZN__UnaryLenMax__ALL;
 int: nMZN__UnaryLenMax_setIn     = nMZN__UnaryLenMax__ALL;
@@ -85,7 +102,7 @@ predicate bool_not(var bool: p, var bool: q) =
 
 predicate bool_and(var bool: p, var bool: q, var bool: r) =
   my_trace("  bool_and: \(p) /\\ \(q) <-> \(r) \n") /\
-  if fMZN__UseIndicators then
+  if false then
       int_lin_le_reif__IND( [-1, -1], [p, q], -2, r)
   else
     bool_and__INT(bool2int(p), bool2int(q), bool2int(r))
@@ -101,6 +118,7 @@ predicate bool_and__INT(var int: x, var int: y, var int: z) =
 predicate bool_or(var bool: p, var bool: q, var bool: r) =
   my_trace("  bool_or: \(p) \\/ \(q) <-> \(r) \n") /\
   if fMZN__UseIndicators then
+      my_trace__DBG("  bool_or  INDIC: \(p) \\/ \(q) <-> \(r) \n") /\
       int_lin_le_reif__IND( [-1, -1], [p, q], -1, r)
   else
     let { var int: x = bool2int(p),
@@ -115,7 +133,8 @@ predicate bool_or(var bool: p, var bool: q, var bool: r) =
 
 
 predicate bool_xor(var bool: p, var bool: q, var bool: r) =
-  if fMZN__UseIndicators then
+  if false then
+      my_trace__DBG("  bool_xor  INDIC: \(p) \\/ \(q) <-> \(r) \n") /\
       int_lin_eq_reif__IND( [1, 1], [p, q], 1, r)
   else
     let { var int: x = bool2int(p),
@@ -132,7 +151,8 @@ predicate bool_xor(var bool: p, var bool: q, var bool: r) =
 predicate bool_eq_reif(var bool: p, var bool: q, var bool: r) =
     if is_fixed(r) then   % frequent case
         if fix(r) = true then p = q else bool_not(p,q) endif
-    elseif fMZN__UseIndicators then
+    elseif false then
+      my_trace__DBG("  bool_eq_reif  INDIC: \(p) \\/ \(q) <-> \(r) \n") /\
       int_lin_eq_reif__IND( [1, -1], [p, q], 0, r)
     else
       let { var int: x = bool2int(p),
@@ -159,7 +179,8 @@ predicate bool_le(var bool: p, var bool: q) =
 
 
 predicate bool_le_reif(var bool: p, var bool: q, var bool: r) =
-  if fMZN__UseIndicators then
+  if false then
+      my_trace__DBG("  bool_le_reif  INDIC: \(p) \\/ \(q) <-> \(r) \n") /\
       int_lin_le_reif__IND( [1, -1], [p, q], 0, r)
   else
     let { var int: x = bool2int(p),
@@ -200,7 +221,8 @@ predicate array_bool_or(array[int] of var bool: a, var bool: b) =
     in
   my_trace( "  array_bool_or: \(a), \(b), " ++
       " array_bool_or(" ++ show(length(a)) ++ "): vars 0..1: \(c), \(x) \n") /\
-  if fMZN__UseIndicators then
+  if false then
+      my_trace__DBG("  array_bool_or  INDIC: " ++ show(length(a)) ++ " elements. \n") /\
       int_lin_le_reif__IND( [ -1 | i in index_set(a) ], c, -1, b)
   else
     sum(c) >= x /\
@@ -225,7 +247,8 @@ predicate array_bool_and(array[int] of var bool: a, var bool: b) =
     in
   my_trace( % "  array_bool_and: \(a), \(b), " ++
       " array_bool_and(" ++ show(length(a)) ++ "): vars 0..1: \(c), \(x) \n") /\
-  if fMZN__UseIndicators then
+  if false then
+      my_trace__DBG("  array_bool_and  INDIC: " ++ show(length(a)) ++ " elements. \n") /\
       int_lin_le_reif__IND( [ -1 | i in index_set(a) ], c, -length(a), b)
   else
     length(a) - sum(c) >=  1 - x /\
@@ -269,26 +292,25 @@ predicate bool_lin_eq_reif(array[int] of int: c, array[int] of var bool: x,
 predicate int_le_reif(var int: x, var int: y, var bool: b) =
   if ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
-  elseif fMZN__UseIndicators then
+  elseif false then
+      my_trace__DBG("  int_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
       int_lin_le_reif__IND( [1, -1], [x, y], 0, b)
   else
     let {
       var 0..1: p = bool2int(b)
+% , var int: x_y = x-y
     }
     in            %% No big difference using the binary decomposition:
 %     my_trace("  int_le_reif( var " ++ show(dom(x)) ++ ", var " ++ show(dom(y))
 %       ++ ", dom(x-y) = " ++ show(dom(x-y))
 %       ++ ", var \(b))\n") /\
-%     if card(dom(x-y)) in nMZN__UnaryLenMin_leq..nMZN__UnaryLenMax_leq then
-%       let { 
-%         var int: x_y = x-y,
-%         array[int] of var int: pp = eq_encode(x_y)
-%       } in
+%     if card(dom(x_y))<20 then
+%       let { array[int] of var int: p = eq_encode(x_y) } in
 %       my_trace ("    -- by unary: dom(x-y) = " ++ show(dom(x_y)) ++ "\n") /\
-%       sum ( i in dom(x_y) where i<=0 ) ( pp[i] ) == p
+%       sum ( i in dom(x_y) where i<=0 ) ( p[i] ) == bool2int(b)
 %     else
-       aux_int_le_if_1(x, y, p) /\
-       aux_int_gt_if_0(x, y, p)
+      aux_int_le_if_1(x, y, p) /\
+      aux_int_gt_if_0(x, y, p)
 %     endif
   endif
 ;
@@ -314,7 +336,7 @@ predicate int_ne(var int: x, int: y) =
          x <= y-1
        elseif y==lb(x) then
          x >= y+1
-        elseif card(dom(x)) in nMZN__UnaryLenMin_neq..nMZN__UnaryLenMax_neq then                          %% PARAM TODO
+        elseif card(dom(x))<nMZN__UnaryLenMax_neq then                          %% PARAM TODO
           let {
             array[int] of var int: p = eq_encode(x);
           } in
@@ -326,10 +348,11 @@ predicate int_ne(var int: x, int: y) =
      endif;
 
 predicate int_ne__SIMPLE(var int: x, var int: y) =
-  if fMZN__UseIndicators then
+  if false then
 %    let { var bool: fEq; } in
 %      int_lin_eq_reif__IND( [1, -1], [x, y], 0, fEq) /\
 %      fEq = false    %% -- this is how CPLEX 12.6.2 needs it, not in the BOUNDS section   TODO?
+      my_trace__DBG("  int_ne  INDIC: \(x) \\/ \(y)  \n") /\
       int_lin_ne__IND( [1, -1], [x, y], 0)
   else
     let { var 0..1: p }
@@ -340,10 +363,11 @@ predicate int_ne__SIMPLE(var int: x, var int: y) =
 
 
 predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
-  if fMZN__UseIndicators then
+  if false then
 %    let { var bool: fEq; } in
 %      int_lin_eq_reif__IND( c, x, d, fEq ) /\
 %      fEq = false    %% -- this is how CPLEX 12.6.2 needs it, not in the BOUNDS section   TODO?
+      my_trace__DBG("  int_lin_ne  INDIC: " ++ show(length(c)) ++ "  elements. \n") /\
       int_lin_ne__IND( c, x, d )
   else
     int_ne(sum(i in index_set(x))( c[i]*x[i] ),d)
@@ -377,7 +401,7 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
       int_lt_reif(y, x, not b)
     elseif y==ub(x) then
       int_lt_reif(x, y, not b)
-    elseif card(dom(x)) in nMZN__UnaryLenMin_eq..nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
+    elseif card(dom(x))<nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
       let {
         array[int] of var int: p = eq_encode(x);
       } in
@@ -432,7 +456,8 @@ predicate int_lin_lt_reif(array[int] of int: c, array[int] of var int: x,
 %-----------------------------------------------------------------------------%
 
 predicate float_le_reif(var float: x, var float: y, var bool: b) =
-  if fMZN__UseIndicators then
+  if false then
+    my_trace__DBG("  float_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
     float_lin_le_reif__IND( [1.0, -1.0], [x, y], 0.0, b)
   else
     let { var int: p = bool2int(b) }
@@ -480,7 +505,8 @@ predicate float_lin_ne_reif(array[int] of float: c, array[int] of var float: x,
 
 predicate float_lin_le_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-  if fMZN__UseIndicators then
+  if false then
+    my_trace__DBG("  float_lin_le_reif__IND  INDIC: " ++ show(length(c)) ++ " elements. \n") /\
     float_lin_le_reif__IND( c, x, d, b)
   else
     let { var int: p = (bool2int(b)) }
@@ -758,9 +784,15 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
       forall (i in dom(i00))(
           aux_float_eq_if_1(z, a[i], p[i])
       )
-      %% Cuts: seems better without?
-      /\ array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z) :: user_cut
-      /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z) :: user_cut
+      %% Cuts:
+        /\ 
+        if fElementCuts then
+          array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z) % :: MIP_cut   %% these 2 better as user cuts - too slow
+          /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z) % :: MIP_cut   %% or even skip them
+          /\    array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  %:: MIP_cut
+          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  %:: MIP_cut -- no, bug in CPLEX 12.6.1&2
+        else true
+        endif
     endif ;
 
 %%% Facets on the upper surface of the z-a polytope
@@ -789,12 +821,36 @@ predicate array_var_float_element__ROOF(array[int] of var float: a,
     } in
        %%% "ROOF"
     forall (i in 1..n where
-          if i<n then ULB[i]!=ULB[i+1] else true endif        %% not the same
+          if i==n then true else ULB[i]!=ULB[i+1] endif        %% not the same base bound
         )(
       z <= ULB[i]
            + sum( j in i..n where AU_srt_ub[i] != AL_srt_ub[i] )        %% not a const
              ( (AU_srt_ub[j]-ULB[i]) * (a[srt_ub[j]]-AL_srt_ub[j]) / (AU_srt_ub[j]-AL_srt_ub[j]) ) )
     ;
+
+predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int] of var int: b, var float: z) =
+   %% Adding some cuts a priori, also to make solver extract the variables
+    (z <= sum(i in index_set(x))(ub(x[i]) * b[i])) %:: MIP_cut   -- does not work to put them here TODO
+    /\
+    forall(i in index_set(x))
+      ( assert(lb(x[i]) == -ub(-x[i]) /\ ub(x[i]) == -lb(-x[i]), " negated var's bounds should swap " ) /\
+        z <= x[i] + sum(j in index_set(x) where i!=j)((ub(x[j])-lb(x[i]))*b[j])) %:: MIP_cut   %% (ub_j-lb_i) * b_j
+    /\
+    forall(i in index_set(x))
+      ( z <= ub(x[i])*b[i] + sum(j in index_set(x) where i!=j)(x[j]+lb(x[j])*(b[j]-1)) ) %:: MIP_cut   %% (ub_j-lb_i) * b_j
+    /\
+    (z <= sum(i in index_set(x))(x[i] + lb(x[i]) * (b[i]-1))) %:: MIP_cut
+    /\
+    if fUseXBZCutGen then
+%           my_trace__DBG("  % array_float_minimum_I: calling array_var_float_element__XBZ_lb: lb(-x), ub(-x), lb(b), ub(b):\n  % "
+%             ++ show(lb([ -x[i] | i in sActive ])) ++ "\n  % "
+%             ++ show(ub([ -x[i] | i in sActive ])) ++ "\n  % "
+%             ++ show(lb([ p[i] | i in sActive ])) ++ "\n  % "
+%             ++ show(ub([ p[i] | i in sActive ])) ++ "\n  %  --------------------------------------\n"
+%          ) /\
+      array_var_float_element__XBZ_lb__cutgen(x, b, z)   :: MIP_cut
+    else true
+    endif;
 
 %-----------------------------------------------------------------------------%
 % Set constraints
@@ -1086,7 +1142,8 @@ annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3
 % Auxiliary: equality reified onto a 0/1 variable
 
 predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
-  if fMZN__UseIndicators then
+  if false then
+    my_trace__DBG("  aux_int_eq_iff_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     int_lin_eq_reif__IND([1, -1], [x, y], 0, (p==1))
   else
     let { array[1..2] of var 0..1: q }
@@ -1131,6 +1188,7 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
 
 predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   if fMZN__UseIndicators then
+    my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
   else
     aux_float_le_if_1(x, y, p) /\
@@ -1143,7 +1201,7 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
 
 % Base cases
 
-predicate aux_int_le_zero_if_0(var int: x, var 0..1: p) =
+predicate aux_int_le_zero_if_0(var int: x, var int: p) =
 %    my_trace("  aux_int_le_zero_if_0( \(x), \(p))\n") /\
 %     if card(dom(x))<20 then
 %       let { array[int] of var int: pp = eq_encode(x) } in
@@ -1151,6 +1209,7 @@ predicate aux_int_le_zero_if_0(var int: x, var 0..1: p) =
 %       sum ( i in dom(x) where i<=0 ) ( pp[i] ) == p
 %     else
   if fMZN__UseIndicators then
+    my_trace__DBG("  aux_int_le_zero_if_0  INDIC: \(x) \\/ \(p) \n") /\
     aux_int_le_zero_if_0__IND(x, p)
   else
       x <= ub(x) * p
@@ -1158,6 +1217,7 @@ predicate aux_int_le_zero_if_0(var int: x, var 0..1: p) =
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   if fMZN__UseIndicators then
+    my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
     aux_float_le_zero_if_0__IND(x, p)
   else
     x <= ub(x) * p
@@ -1223,9 +1283,13 @@ annotation bool_search(array[int] of var bool: x, ann:a1, ann:a2, ann:a3) =
 
 predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
     let { int: n = length(x),
+          constraint assert(1 == min(index_set(x)), "  array_float_minimum_I: argument indexed not from 1??"),
           array[1..n] of var 0..1: p,
           int: iMinUB = arg_min([ub(x[i]) | i in 1..n]),
           float: MinUB = ub(x[iMinUB]),
+          set of int: sActive__ = { i | i in 1..n where lb(x[i])<MinUB },
+          set of int: sActive = if card(sActive__)>0 then sActive__
+                                else { iMinUB } endif,
           constraint     m >= lb_array(x) /\   m <= MinUB,
           array[int] of float: AL = [ lb(x[i]) | i in 1..n],
           array[int] of int: srt = sort_by([i | i in 1..n], AL),
@@ -1235,8 +1299,8 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
           array[int] of float: AM_srt = AL_srt ++ [MinUB]
                                         %% -- these are z-levels of extreme points
         } in
-    assert(index_set(x) == index_set(AL),
-    "array_float_minimum_I: second argument must have index set 1..length()",
+%    assert(index_set(x) == index_set(AL),
+%    "array_float_minimum_I: second argument must have index set 1..length()") /\
 %       my_trace("array_float_minimum_I: " ++ show(lb(m)) ++ " <= m <= " ++ show(ub(m))) /\
 %        ++ "\n AL = " ++ show(AL)
 %        ++ "\n srt_lb = " ++ show(srt)
@@ -1247,7 +1311,7 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
     1 == sum(p) /\
     forall (i in index_set(x))
       ( 
-        if lb(x[i])<MinUB \/ i==iMinUB                %% for at least 1 element
+        if i in sActive                               %% for at least 1 element
         then 
              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
         else 0==p[i] endif )
@@ -1257,9 +1321,14 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
         AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
       m >= AM_srt[i]
          - sum(j in 1..i-1 where AL_srt[j]<AM_srt[i] /\ AL_srt[j]<AU_srt[j])
-           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) ) :: user_cut
+           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) ) % :: MIP_cut
                                    )
-  );
+    /\
+    if card(sActive)>1 /\ fElementCuts then
+           array_var_float_element__XBZ_lb([ -x[i] | i in sActive ],  [  p[i] | i in sActive ], -m)  %% :: MIP_cut -- no, CPLEX bug
+    else true
+    endif
+  ;
 
 
 
@@ -1276,6 +1345,9 @@ predicate array_int_minimum__IND(var int: m, array[int] of var int: x);
 predicate array_int_maximum__IND(var int: m, array[int] of var int: x);
 predicate array_float_minimum__IND(var float: m, array[int] of var float: x);
 predicate array_float_maximum__IND(var float: m, array[int] of var float: x);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% XBZ cut generator, currently CPLEX only %%%%%%%%%%%%%%%%%%%%%%%%%%
+predicate array_var_float_element__XBZ_lb__cutgen(array[int] of var float: x, array[int] of var int: b, var float: z);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Necessary for MIP: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mzn_opt_only_range_domains = true;

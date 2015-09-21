@@ -215,14 +215,15 @@ namespace MiniZinc {
     void p_float_eq_if1(SolverInstanceBase& si, const Call* call) {
       p_lin_eq_if1<double>(si, call);
     }
-    void p_ne(SolverInstanceBase& si0, const Call* call) {
+    void p_lin_ne(SolverInstanceBase& si0, const Call* call) {
       CPLEXSolverInstance& si = static_cast<CPLEXSolverInstance&>(si0);
       ASTExprVec<Expression> args = call->args();
-      IloNumVar vara = si.exprToIloNumVar(args[0]);
-      IloNumVar varb = si.exprToIloNumVar(args[1]);
+      IloNumArray coefs = si.exprToIloNumArray(args[0]);
+      IloNumVarArray vars = si.exprToIloNumVarArray(args[1]);
+      IloNum rhs = si.exprToIloNum(args[2]);
       IloModel* model = si.getIloModel();
       
-      model->add(vara != varb);
+      model->add(IloScalProd(coefs, vars) != rhs);
     }
 
     enum P_MINMAX {p_min, p_max};
@@ -286,7 +287,7 @@ namespace MiniZinc {
     /// INDICATORS
     _constraintRegistry.add(ASTString("int_lin_eq_reif__IND"), CplexConstraints::p_int_lin_eq_reif);
     _constraintRegistry.add(ASTString("int_lin_le_reif__IND"), CplexConstraints::p_int_lin_le_reif);
-    _constraintRegistry.add(ASTString("int_lin_ne__IND"), CplexConstraints::p_ne);
+    _constraintRegistry.add(ASTString("int_lin_ne__IND"), CplexConstraints::p_lin_ne);
     _constraintRegistry.add(ASTString("aux_int_le_zero_if_0__IND"), CplexConstraints::p_int_le0_if0);
     _constraintRegistry.add(ASTString("float_lin_le_reif__IND"), CplexConstraints::p_float_lin_le_reif);
     _constraintRegistry.add(ASTString("aux_float_eq_if_1__IND"), CplexConstraints::p_float_eq_if1);
