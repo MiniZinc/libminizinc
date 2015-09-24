@@ -989,6 +989,7 @@ namespace MiniZinc {
               }
             } else {
               vd->ti()->domain(vd->e());
+              vd->ti()->setComputedDomain(true);
             }
             std::vector<Expression*> args(2);
             args[0] = vd->id();

@@ -647,7 +647,7 @@ namespace MiniZinc {
             case Type::BT_BOOL:
               if (ti->domain() == NULL) {
                 ti->domain(constants().boollit(eval_bool(env,arg)));
-                ti->setComputedDomain(false);
+                ti->setComputedDomain(true);
                 canRemove = true;
               } else {
                 if (eval_bool(env,ti->domain())==eval_bool(env,arg)) {
