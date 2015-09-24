@@ -976,12 +976,20 @@ namespace MiniZinc {
         if (vd->e()==NULL) {
           Expression* ret = e;
           if (e==NULL || (e->type().ispar() && e->type().isbool())) {
+            GCLock lock;
             if (e==NULL || eval_bool(env,e)) {
               vd->e(constants().lit_true);
             } else {
               vd->e(constants().lit_false);
             }
-            GCLock lock;
+            if (vd->ti()->domain()) {
+              if (vd->ti()->domain() != vd->e()) {
+                env.flat()->fail(env);
+                return vd->id();
+              }
+            } else {
+              vd->ti()->domain(vd->e());
+            }
             std::vector<Expression*> args(2);
             args[0] = vd->id();
             args[1] = vd->e();
@@ -6314,6 +6322,8 @@ namespace MiniZinc {
             args[1] = constants().lit_true;
             Call* neq = new Call(Location().introduce(),constants().ids.bool_eq,args);
             ci->e(neq);
+          } else {
+            ci->remove();
           }
         }
       } else if (SolveI* si = (*m)[i]->dyn_cast<SolveI>()) {
