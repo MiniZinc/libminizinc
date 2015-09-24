@@ -556,7 +556,8 @@ namespace MiniZinc {
     void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
       for (unsigned int i=0; i<removed.size(); i++) {
         if (env.vo.remove(removed[i], item) == 0) {
-          if (removed[i]->e()==NULL || removed[i]->ti()->domain()==NULL || removed[i]->ti()->computedDomain()) {
+          if ( (removed[i]->e()==NULL || removed[i]->ti()->domain()==NULL || removed[i]->ti()->computedDomain())
+               && !isOutput(removed[i]) ) {
             deletedVarDecls.push_back(removed[i]);
           }
         }
@@ -632,7 +633,8 @@ namespace MiniZinc {
           env.flat_removeItem(ii);
         } else if (is_true &&
                    ((c->args()[0]->isa<Id>() && c->args()[1]->type().ispar()) ||
-                    (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) ) {
+                    (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) )
+        {
           Id* ident = c->args()[0]->isa<Id>() ? c->args()[0]->cast<Id>() : c->args()[1]->cast<Id>();
           Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
           bool canRemove = false;
@@ -661,13 +663,13 @@ namespace MiniZinc {
               IntVal d = eval_int(env,arg);
               if (ti->domain() == NULL) {
                 ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                ti->setComputedDomain(false);
+                ti->setComputedDomain(true);
                 canRemove = true;
               } else {
                 IntSetVal* isv = eval_intset(env,ti->domain());
                 if (isv->contains(d)) {
                   ident->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                  ident->decl()->ti()->setComputedDomain(false);
+                  ident->decl()->ti()->setComputedDomain(true);
                   canRemove = true;
                 } else {
                   env.flat()->fail(env);
@@ -680,13 +682,13 @@ namespace MiniZinc {
             {
               if (ti->domain() == NULL) {
                 ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
-                ti->setComputedDomain(false);
+                ti->setComputedDomain(true);
                 canRemove = true;
               } else {
                 FloatVal value = eval_float(env,arg);
                 if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
                   ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
-                  ti->setComputedDomain(false);
+                  ti->setComputedDomain(true);
                   canRemove = true;
                 } else {
                   env.flat()->fail(env);
