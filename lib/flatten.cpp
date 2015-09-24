@@ -1674,23 +1674,6 @@ namespace MiniZinc {
     return NULL;
   }
 
-  
-  Expression* createImplication(EnvI& env, const std::vector<Expression*>& elseconds, Expression* ifcond, Expression* then) {
-    std::vector<Expression*> clauseArgs(2);
-    std::vector<Expression*> pos = elseconds;
-    pos.push_back(then);
-    std::vector<Expression*> neg;
-    if (ifcond)
-      neg.push_back(ifcond);
-    clauseArgs[0] = new ArrayLit(Location().introduce(), pos);
-    clauseArgs[0]->type(Type::varbool(1));
-    clauseArgs[1] = new ArrayLit(Location().introduce(), neg);
-    clauseArgs[1]->type(Type::varbool(1));
-    Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
-    clause->decl(env.orig->matchFn(env, clause));
-    clause->type(clause->decl()->rtype(env, clauseArgs));
-    return clause;
-  }
 
   KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
   
@@ -1699,21 +1682,34 @@ namespace MiniZinc {
   /// If not, use implication encoding
   EE flat_ite(EnvI& env,Ctx ctx, ITE* ite, VarDecl* r, VarDecl* b) {
     
-    std::vector<Expression*> clauses;
-    std::vector<Expression*> elseconds;
-    
+    // The conditions of each branch of the if-then-else
+    std::vector<Expression*> conditions;
+    // Whether the right hand side of each branch is defined
+    std::vector<Expression*> defined;
+
     GC::lock();
     
+    // Compute bounds of result as union bounds of all branches
     IntBounds r_bounds(IntVal::infinity(),-IntVal::infinity(),true);
     if (r && r->type().isint()) {
       r_bounds = compute_int_bounds(env,r->id());
     }
     
     VarDecl* nr = r;
+
+    if (b==NULL) {
+      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+    }
     
+
+    Ctx cmix;
+    cmix.b = C_MIX;
+    cmix.i = C_MIX;
+
     for (int i=0; i<ite->size(); i++) {
       bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
+        // par bool case: evaluate condition statically
         if (ite->e_if(i)->type().cv()) {
           KeepAlive ka = flat_cv_exp(env, ctx, ite->e_if(i));
           cond = eval_bool(env, ka());
@@ -1721,40 +1717,101 @@ namespace MiniZinc {
           cond = eval_bool(env,ite->e_if(i));
         }
         if (cond) {
-          if (nr==NULL || elseconds.size()==0) {
+          if (nr==NULL || conditions.size()==0) {
+            // no var conditions before this one, so we can simply emit
+            // the then branch
             GC::unlock();
             return flat_exp(env,ctx,ite->e_then(i),r,b);
           }
+          // had var conditions, so we have to take them into account
+          // and emit new conditional clause
+          Ctx cmix;
+          cmix.b = C_MIX;
+          cmix.i = C_MIX;
+          EE ethen = flat_exp(env, cmix, ite->e_then(i), NULL, NULL);
+
           Expression* eq_then;
           if (nr == constants().var_true) {
-            eq_then = ite->e_then(i);
+            eq_then = ethen.r();
           } else {
-            eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_then(i));
+            eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ethen.r());
             eq_then->type(Type::varbool());
           }
-          clauses.push_back(createImplication(env, elseconds, NULL, eq_then));
-          break;
+
+          {
+            std::vector<Expression*> neg;
+            std::vector<Expression*> clauseArgs(2);
+            if (b != constants().var_true)
+              neg.push_back(b->id());
+            // temporarily push the then part onto the conditions
+            conditions.push_back(eq_then);
+            clauseArgs[0] = new ArrayLit(Location().introduce(),conditions);
+            clauseArgs[0]->type(Type::varbool(1));
+            clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+            clauseArgs[1]->type(Type::varbool(1));
+            {
+              // b -> r=r[i]
+              Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+              clause->decl(env.orig->matchFn(env, clause));
+              clause->type(clause->decl()->rtype(env, clauseArgs));
+              (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+            }
+            conditions.pop_back();
+          }
+          
+          // add another condition and definedness variable
+          conditions.push_back(constants().lit_true);
+          defined.push_back(ethen.b());
         }
       } else {
         if (nr==NULL) {
+          // need to introduce new result variable
           TypeInst* ti = new TypeInst(Location().introduce(),ite->type(),NULL);
-          nr = new VarDecl(ite->loc(),ti,env.genId());
-          nr->introduced(true);
-          nr->flat(nr);
-          nr->addAnnotation(constants().ann.promise_total);
-          clauses.push_back(nr);
+          nr = newVarDecl(env, Ctx(), ti, NULL, NULL, NULL);
         }
+        
+        // flatten the then branch
+        EE ethen = flat_exp(env, cmix, ite->e_then(i), NULL, NULL);
+        
         Expression* eq_then;
         if (nr == constants().var_true) {
-          eq_then = ite->e_then(i);
+          eq_then = ethen.r();
         } else {
-          eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_then(i));
+          eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ethen.r());
           eq_then->type(Type::varbool());
         }
-        clauses.push_back(createImplication(env, elseconds, ite->e_if(i), eq_then));
-        elseconds.push_back(ite->e_if(i));
+        
+        {
+          // Create a clause with all the previous conditions negated, the
+          // current condition, and the then branch.
+          // Also take partiality into account.
+          std::vector<Expression*> neg(1);
+          std::vector<Expression*> clauseArgs(2);
+          neg[0] = ite->e_if(i);
+          if (b != constants().var_true)
+            neg.push_back(b->id());
+          // temporarily push the then part onto the conditions
+          conditions.push_back(eq_then);
+          clauseArgs[0] = new ArrayLit(Location().introduce(),conditions);
+          clauseArgs[0]->type(Type::varbool(1));
+          clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+          clauseArgs[1]->type(Type::varbool(1));
+          {
+            // b /\ c[i] -> r=r[i]
+            Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+            clause->decl(env.orig->matchFn(env, clause));
+            clause->type(clause->decl()->rtype(env, clauseArgs));
+            (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+          }
+          conditions.pop_back();
+        }
+        
+        // add current condition and definedness variable
+        conditions.push_back(ite->e_if(i));
+        defined.push_back(ethen.b());
+        
       }
-
+      // update bounds
       if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
         IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
         if (ib_then.valid) {
@@ -1765,13 +1822,17 @@ namespace MiniZinc {
           r_bounds = IntBounds(0,0,false);
         }
       }
-    
+      
     }
-    if (nr==NULL || elseconds.size()==0) {
+    
+    if (nr==NULL || conditions.size()==0) {
+      // no var condition, and all par conditions were false,
+      // so simply emit else branch
       GC::unlock();
       return flat_exp(env,ctx,ite->e_else(),r,b);
     }
 
+    // update bounds of result with bounds of else branch
     if (r_bounds.valid && ite->e_else()->type().isint()) {
       IntBounds ib_else = compute_int_bounds(env,ite->e_else());
       if (ib_else.valid) {
@@ -1782,20 +1843,102 @@ namespace MiniZinc {
       }
     }
 
+    // flatten else branch
+    EE eelse = flat_exp(env, cmix, ite->e_else(), NULL, NULL);
+    
     Expression* eq_else;
     if (nr == constants().var_true) {
-      eq_else = ite->e_else();
+      eq_else = eelse.r();
     } else {
-      eq_else = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ite->e_else());
+      eq_else = new BinOp(Location().introduce(),nr->id(),BOT_EQ,eelse.r());
       eq_else->type(Type::varbool());
     }
-    clauses.push_back(createImplication(env, elseconds, NULL, eq_else));
+
+    {
+      // Create a clause with all the previous conditions negated, and
+      // the else branch.
+      // Also take partiality into account.
+      std::vector<Expression*> neg;
+      std::vector<Expression*> clauseArgs(2);
+      if (b != constants().var_true)
+        neg.push_back(b->id());
+      // temporarily push the then part onto the conditions
+      conditions.push_back(eq_else);
+      clauseArgs[0] = new ArrayLit(Location().introduce(),conditions);
+      clauseArgs[0]->type(Type::varbool(1));
+      clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+      clauseArgs[1]->type(Type::varbool(1));
+      {
+        // b /\ c[i] -> r=r[i]
+        Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+        clause->decl(env.orig->matchFn(env, clause));
+        clause->type(clause->decl()->rtype(env, clauseArgs));
+        (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+      }
+      conditions.pop_back();
+    }
     
-    Let* let = new Let(Location().introduce(),clauses,nr->id());
-    let->type(nr->id()->type());
-    KeepAlive ka = let;
+    conditions.push_back(constants().lit_true);
+    defined.push_back(eelse.b());
+    
+    // If all branches are defined, then the result is also defined
+    bool allDefined = true;
+    for (unsigned int i=0; i<defined.size(); i++) {
+      if (! (defined[i]->type().ispar() && defined[i]->type().isbool()
+             && eval_bool(env,defined[i])) ) {
+        allDefined = false;
+        break;
+      }
+    }
+    if (allDefined) {
+      bind(env, ctx, b, constants().lit_true);
+    } else {
+      // Otherwise, generate clauses linking b and the definedness variables
+      std::vector<Expression*> pos;
+      std::vector<Expression*> neg(2);
+      std::vector<Expression*> clauseArgs(2);
+      
+      for (unsigned int i=0; i<conditions.size(); i++) {
+        neg[0] = conditions[i];
+        neg[1] = b->id();
+        pos.push_back(defined[i]);
+        clauseArgs[0] = new ArrayLit(Location().introduce(),pos);
+        clauseArgs[0]->type(Type::varbool(1));
+        clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+        clauseArgs[1]->type(Type::varbool(1));
+        {
+          // b /\ c[i] -> b[i]
+          Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+          clause->decl(env.orig->matchFn(env, clause));
+          clause->type(clause->decl()->rtype(env, clauseArgs));
+          clause->ann().add(constants().ann.promise_total);
+          (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+        }
+        pos.pop_back();
+        pos.push_back(b->id());
+        neg[1] = defined[i];
+        clauseArgs[0] = new ArrayLit(Location().introduce(),pos);
+        clauseArgs[0]->type(Type::varbool(1));
+        clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+        clauseArgs[1]->type(Type::varbool(1));
+        {
+          // b[i] /\ c -> b
+          Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+          clause->decl(env.orig->matchFn(env, clause));
+          clause->type(clause->decl()->rtype(env, clauseArgs));
+          clause->ann().add(constants().ann.promise_total);
+          (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+        }
+        pos.push_back(conditions[i]);
+      }
+      
+    }
+
+    EE ret;
+    ret.r = nr->id();
+    ret.b = b->id();
     GC::unlock();
-    return flat_exp(env, ctx, ka(), r, b);
+    return ret;
   }
 
   template<class Lit>
@@ -4588,7 +4731,7 @@ namespace MiniZinc {
               vd->flat(vd);
             }
           } else {
-            if (ctx.b==C_ROOT) {
+            if (ctx.b==C_ROOT || le->ann().contains(constants().ann.promise_total)) {
               (void) flat_exp(env,Ctx(),le,constants().var_true,constants().var_true);
             } else {
               EE ee = flat_exp(env,ctx,le,NULL,constants().var_true);
