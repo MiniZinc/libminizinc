@@ -6271,6 +6271,17 @@ namespace MiniZinc {
         }
         
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
+          for (unsigned int i=0; i<vc->args().size(); i++) {
+            if (ArrayLit* al = vc->args()[i]->dyn_cast<ArrayLit>()) {
+              if (al->dims()>1 || al->min(0)!= 1) {
+                std::vector<int> dims(2);
+                dims[0] = 1;
+                dims[1] = al->length();
+                GCLock lock;
+                al->setDims(ASTIntVec(dims));
+              }
+            }
+          }
           if (vc->id() == constants().ids.exists) {
             GCLock lock;
             vc->id(ASTString("array_bool_or"));
