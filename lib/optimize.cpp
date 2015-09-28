@@ -257,7 +257,7 @@ namespace MiniZinc {
     std::vector<Item*> constraintQueue;
     std::vector<int> vardeclQueue;
     
-    std::vector<Item*> boolConstraints;
+    std::vector<int> boolConstraints;
     
     GCLock lock;
 
@@ -308,7 +308,7 @@ namespace MiniZinc {
               }
               toRemoveConstraints.push_back(i);
             } else if (c->id()==constants().ids.exists || c->id()==constants().ids.clause) {
-              boolConstraints.push_back(m[i]);
+              boolConstraints.push_back(i);
             }
           } else if (Id* id = ci->e()->dyn_cast<Id>()) {
             if (id->decl()->ti()->domain() == constants().lit_false) {
@@ -337,7 +337,7 @@ namespace MiniZinc {
         }
         if (Call* c = Expression::dyn_cast<Call>(vdi->e()->e())) {
           if (c->id()==constants().ids.forall || c->id()==constants().ids.exists || c->id()==constants().ids.clause) {
-            boolConstraints.push_back(m[i]);
+            boolConstraints.push_back(i);
           }
         }
         if (vdi->e()->type().isint()) {
@@ -353,6 +353,95 @@ namespace MiniZinc {
         
       }
     }
+    
+    for (unsigned int i=boolConstraints.size(); i--;) {
+      Item* bi = m[boolConstraints[i]];
+      if (bi->removed())
+        continue;
+      Call* c;
+      
+      if (bi->isa<ConstraintI>()) {
+        c = bi->cast<ConstraintI>()->e()->dyn_cast<Call>();
+      } else {
+        c = bi->cast<VarDeclI>()->e()->e()->dyn_cast<Call>();
+      }
+      if (c==NULL)
+        continue;
+      bool isConjunction = (c->id() == constants().ids.forall);
+      bool subsumed = false;
+      Id* finalId = NULL;
+      bool finalIdNeg = false;
+      int idCount = 0;
+      for (unsigned int j=0; j<c->args().size(); j++) {
+        bool unit = (j==0 ? isConjunction : !isConjunction);
+        ArrayLit* al = follow_id(c->args()[j])->cast<ArrayLit>();
+        for (unsigned int k=0; k<al->v().size(); k++) {
+          if (Id* ident = al->v()[k]->dyn_cast<Id>()) {
+            if (ident->decl()->ti()->domain() ||
+                (ident->decl()->e() && ident->decl()->e()->type().ispar()) ) {
+              bool identValue = ident->decl()->ti()->domain() ?
+                eval_bool(envi, ident->decl()->ti()->domain()) :
+                eval_bool(envi, ident->decl()->e());
+              if (identValue != unit) {
+                subsumed = true;
+                goto subsumed_check_done;
+              }
+            } else {
+              idCount++;
+              finalId = ident;
+              finalIdNeg = (j==1);
+            }
+          } else {
+            if (al->v()[k]->cast<BoolLit>()->v()!=unit) {
+              subsumed = true;
+              goto subsumed_check_done;
+            }
+          }
+        }
+      }
+    subsumed_check_done:
+      if (subsumed) {
+        if (isConjunction) {
+          if (bi->isa<ConstraintI>()) {
+            env.envi().flat()->fail(env.envi());
+          } else {
+            CollectDecls cd(envi.vo,deletedVarDecls,bi);
+            topDown(cd,bi->cast<VarDeclI>()->e()->e());
+            bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_false);
+            bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
+            bi->cast<VarDeclI>()->e()->e(constants().lit_false);
+            pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
+            pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+          }
+        } else {
+          if (bi->isa<ConstraintI>()) {
+            CollectDecls cd(envi.vo,deletedVarDecls,bi);
+            topDown(cd,bi->cast<ConstraintI>()->e());
+            bi->remove();
+          } else {
+            CollectDecls cd(envi.vo,deletedVarDecls,bi);
+            topDown(cd,bi->cast<VarDeclI>()->e()->e());
+            bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_true);
+            bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
+            bi->cast<VarDeclI>()->e()->e(constants().lit_true);
+            pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
+            pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+          }
+        }
+      }
+      else if (idCount==1 && bi->isa<ConstraintI>()) {
+        assert(finalId->decl()->ti()->domain()==NULL);
+        finalId->decl()->ti()->domain(constants().boollit(!finalIdNeg));
+        if (finalId->decl()->e()==NULL)
+          finalId->decl()->e(constants().boollit(!finalIdNeg));
+        CollectDecls cd(envi.vo,deletedVarDecls,bi);
+        topDown(cd,bi->cast<ConstraintI>()->e());
+        bi->remove();
+        pushVarDecl(envi, envi.vo.idx.find(finalId->decl()->id())->second, vardeclQueue);
+        pushDependentConstraints(envi, finalId, constraintQueue);
+      }
+    }
+    
     for (unsigned int i=toAssignBoolVars.size(); i--;) {
       if (m[toAssignBoolVars[i]]->removed())
         continue;
@@ -492,7 +581,7 @@ namespace MiniZinc {
     }
     
     for (unsigned int i=boolConstraints.size(); i--;) {
-      Item* bi = boolConstraints[i];
+      Item* bi = m[boolConstraints[i]];
       if (bi->removed())
         continue;
       Call* c;
