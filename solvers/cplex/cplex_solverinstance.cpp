@@ -674,6 +674,7 @@ namespace MiniZinc {
   }
   
   void CPLEXSolverInstance::assignSolutionToOutput(SolutionCallbackI* cb) {
+    // should make this faster  TODO
     //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];
