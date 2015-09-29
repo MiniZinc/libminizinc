@@ -20,7 +20,7 @@ namespace MiniZinc {
   protected:
     SolverInstanceBase* _si;
   public:
-    enum Status { OPT, SAT, UNSAT, UNKNOWN, ERROR };
+    enum Status { OPT, SAT, UNSAT, UNBND, UNKNOWN, ERROR };
   };
   
 }

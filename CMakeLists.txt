@@ -257,10 +257,11 @@ target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
-set(HAS_CPLEX FALSE)
-set(HAS_GUROBI TRUE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    TRUE)
+set(HAS_CPLEX TRUE)
+set(HAS_CPLEX_OLD FALSE)
+set(HAS_GUROBI FALSE)
+set(HAS_GECODE FALSE)
+set(HAS_FZN    FALSE)
 
 if(HAS_GUROBI)
 	
@@ -296,10 +297,10 @@ if(HAS_CPLEX)
 #	add_definitions(-DIL_STD)
 	
   link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
-  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
+#  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
-		solvers/cplex/cplex_solverinstance.cpp
+		lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
@@ -307,21 +308,64 @@ if(HAS_CPLEX)
   target_include_directories(minizinc_cplex PRIVATE
     "${CPLEX_STUDIO_DIR}/cplex/include"
   )
-  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+#  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc ilocplex cplex concert)
+	target_link_libraries(minizinc_cplex minizinc cplex)
 
 	add_executable(mzn-cplex
-	  solvers/cplex/mzn-cplex.cpp
+	  lib/flattener.cpp lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
 	SET_TARGET_PROPERTIES(mzn-cplex
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex minizinc_cplex minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+#  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+  target_link_libraries(mzn-cplex minizinc_cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
+if(HAS_CPLEX_OLD)
+  if(UNIX)
+    set(CPLEX_ARCH "linux")
+  endif(UNIX)
+
+  if(APPLE)
+     set(CPLEX_ARCH "osx")
+  endif(APPLE)
+
+# add_definitions(-DIL_STD)
+  
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
+
+  add_library(minizinc_cplex_old
+    solvers/cplex/cplex_solverinstance.cpp
+  )
+  SET_TARGET_PROPERTIES(minizinc_cplex_old
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               )
+  target_include_directories(minizinc_cplex_old PRIVATE
+    "${CPLEX_STUDIO_DIR}/cplex/include"
+  )
+  target_include_directories(minizinc_cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+  
+  target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert)
+
+  add_executable(mzn-cplex_old
+    solvers/cplex/mzn-cplex.cpp
+  )
+  SET_TARGET_PROPERTIES(mzn-cplex_old
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               )
+  target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
+  target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
+  target_link_libraries(mzn-cplex_old minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_cplex_old mzn-cplex_old
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
