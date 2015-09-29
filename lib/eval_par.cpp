@@ -1389,7 +1389,7 @@ namespace MiniZinc {
         return false;
       }
       if (ITE* ite = e->dyn_cast<ITE>()) {
-        Bounds itebounds(IntVal::infinity, -IntVal::infinity);
+        Bounds itebounds(IntVal::infinity(), -IntVal::infinity());
         for (unsigned int i=0; i<ite->size(); i++) {
           if (ite->e_if(i)->type().ispar() && ite->e_if(i)->type().cv()==Type::CV_NO) {
             if (eval_bool(env, ite->e_if(i))) {
@@ -1461,7 +1461,7 @@ namespace MiniZinc {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(vd->e());
         } else {
-          _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
+          _bounds.push_back(Bounds(-IntVal::infinity(),IntVal::infinity()));
         }
       }
     }

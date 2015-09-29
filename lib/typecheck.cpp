@@ -715,6 +715,11 @@ namespace MiniZinc {
         Expression* li = let.let()[i];
         cv = cv || li->type().cv();
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
+          if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
+              vdi->ti()->domain()==NULL) {
+            _typeErrors.push_back(TypeError(_env,vdi->loc(),
+                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
+          }
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(_env,vdi->loc(),
               "let variable `"+vdi->id()->v().str()+"' must be initialised");
@@ -940,6 +945,12 @@ namespace MiniZinc {
           if (i->e()->ti()->hasTiVariable()) {
             _typeErrors.push_back(TypeError(env, i->e()->loc(),
                                             "type-inst variables not allowed in type-inst for `"+i->e()->id()->str().str()+"'"));
+          }
+          VarDecl* vdi = i->e();
+          if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
+              vdi->ti()->domain()==NULL) {
+            _typeErrors.push_back(TypeError(env,vdi->loc(),
+                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
           }
         }
         void vAssignI(AssignI* i) {

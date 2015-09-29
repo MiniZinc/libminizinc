@@ -1195,7 +1195,7 @@ expr_atom_head :
     | MZN_INTEGER_LITERAL
       { $$=new IntLit(@$, $1); }
     | MZN_INFINITY
-      { $$=new IntLit(@$, IntVal::infinity); }
+      { $$=new IntLit(@$, IntVal::infinity()); }
     | MZN_FLOAT_LITERAL
       { $$=new FloatLit(@$, $1); }
     | string_expr
