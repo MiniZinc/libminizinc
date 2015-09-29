@@ -811,13 +811,14 @@ namespace MiniZinc {
           }
           
         }
-      } else if (is_true && c->id()==constants().ids.int_.le && ((c->args()[0]->isa<Id>() && c->args()[1]->type().ispar()) ||
-                                                                 (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) ) {
+      } else if ((is_true || is_false) &&
+                 c->id()==constants().ids.int_.le && ((c->args()[0]->isa<Id>() && c->args()[1]->type().ispar()) ||
+                                                      (c->args()[1]->isa<Id>() && c->args()[0]->type().ispar())) ) {
         Id* ident = c->args()[0]->isa<Id>() ? c->args()[0]->cast<Id>() : c->args()[1]->cast<Id>();
         Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
         IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(env,ident->decl()->ti()->domain()) : NULL;
         if (domain) {
-          BinOpType bot = c->args()[0]->isa<Id>() ? BOT_LQ : BOT_GQ;
+          BinOpType bot = c->args()[0]->isa<Id>() ? (is_true ? BOT_LQ : BOT_GQ) : (is_true ? BOT_GQ: BOT_LQ);
           IntSetVal* newDomain = LinearTraits<IntLit>::limit_domain(bot, domain, eval_int(env,arg));
           ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
           ident->decl()->ti()->setComputedDomain(false);
