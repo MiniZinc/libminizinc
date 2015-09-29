@@ -45,12 +45,11 @@ namespace MiniZinc {
 
   void
   SolverInstanceBase::assignSolutionToOutput(void) {
-    for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
+    for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
       if (it->e()->e() == NULL) {
         it->e()->e(getSolutionValue(it->e()->id()));
       }
     }
   }
-  
-  
-}
+
+}  // namespace MiniZinc
