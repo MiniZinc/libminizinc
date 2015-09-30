@@ -829,16 +829,12 @@ namespace MiniZinc {
           Id* ident = c->args()[0]->isa<Id>() ? c->args()[0]->cast<Id>() : c->args()[1]->cast<Id>();
           Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
           bool canRemove = false;
-          if (ident->decl()->e()==NULL) {
-            ident->decl()->e(c->args()[0]->isa<IntLit>() ? c->args()[0] : c->args()[1]);
-            canRemove = true;
-          }
           TypeInst* ti = ident->decl()->ti();
           switch (ident->type().bt()) {
             case Type::BT_BOOL:
               if (ti->domain() == NULL) {
                 ti->domain(constants().boollit(eval_bool(env,arg)));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
               } else {
                 if (eval_bool(env,ti->domain())==eval_bool(env,arg)) {
@@ -854,13 +850,13 @@ namespace MiniZinc {
               IntVal d = eval_int(env,arg);
               if (ti->domain() == NULL) {
                 ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
               } else {
                 IntSetVal* isv = eval_intset(env,ti->domain());
                 if (isv->contains(d)) {
                   ident->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(d,d)));
-                  ident->decl()->ti()->setComputedDomain(true);
+                  ident->decl()->ti()->setComputedDomain(false);
                   canRemove = true;
                 } else {
                   env.flat()->fail(env);
@@ -873,13 +869,13 @@ namespace MiniZinc {
             {
               if (ti->domain() == NULL) {
                 ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
-                ti->setComputedDomain(true);
+                ti->setComputedDomain(false);
                 canRemove = true;
               } else {
                 FloatVal value = eval_float(env,arg);
                 if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
                   ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
-                  ti->setComputedDomain(true);
+                  ti->setComputedDomain(false);
                   canRemove = true;
                 } else {
                   env.flat()->fail(env);
@@ -891,7 +887,14 @@ namespace MiniZinc {
             default:
               break;
           }
-          
+          if (ident->decl()->e()==NULL) {
+            ident->decl()->e(c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0]);
+            ti->setComputedDomain(true);
+            canRemove = true;
+          }
+
+          if (ident->decl()->e()->isa<Call>())
+            constraintQueue.push_back((*env.flat())[env.vo.find(ident->decl())]);
           pushDependentConstraints(env, ident, constraintQueue);
           if (canRemove) {
             CollectDecls cd(env.vo,deletedVarDecls,ii);
@@ -1011,8 +1014,19 @@ namespace MiniZinc {
             }
           case OptimizeRegistry::CS_REWRITE:
           {
-            CollectDecls cd(env.vo,deletedVarDecls,ii);
+
+            std::vector<VarDecl*> tdv;
+            CollectDecls cd(env.vo,tdv,ii);
             topDown(cd,c);
+
+            CollectOccurrencesE ce(env.vo,ii);
+            topDown(ce,rewrite);
+
+            for (unsigned int i=0; i<tdv.size(); i++) {
+              if (env.vo.occurrences(tdv[i])==0)
+                deletedVarDecls.push_back(tdv[i]);
+            }
+            
             assert(rewrite != NULL);
             if (ConstraintI* ci = ii->dyn_cast<ConstraintI>()) {
               ci->e(rewrite);
@@ -1028,8 +1042,6 @@ namespace MiniZinc {
               }
               pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
             }
-            CollectOccurrencesE ce(env.vo,ii);
-            topDown(ce,rewrite);
             return true;
           }
         }
