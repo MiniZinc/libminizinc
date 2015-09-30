@@ -235,7 +235,7 @@ void MIP_cplex_wrapper::doAddVars
     }
   }
   status = CPXnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
-  wrap_assert( !status,  "Failed to declare variable." );
+  wrap_assert( !status,  "Failed to declare variables." );
 }
 
 void MIP_cplex_wrapper::addRow
@@ -280,9 +280,11 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
        s = Status::OPT;
        break;
      case CPXMIP_INFEASIBLE:
+       s = Status::UNSAT;
+       break;
 //      case CPXMIP_OPTIMAL_INFEAS:
      case CPXMIP_INForUNBD:
-       s = Status::UNSAT;
+       s = Status::UNSATorUNBND;
        break;
      case CPXMIP_SOL_LIM:
      case CPXMIP_NODE_LIM_FEAS:

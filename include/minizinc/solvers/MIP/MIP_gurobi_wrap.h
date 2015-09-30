@@ -10,24 +10,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_CPLEX_WRAPPER_H__
-#define __MIP_CPLEX_WRAPPER_H__
+#ifndef __MIP_GUROBI_WRAPPER_H__
+#define __MIP_GUROBI_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.h>
-#include <ilcplex/cplex.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
+extern "C" {
+  #include <gurobi_c.h>     // need GUROBI_HOME defined
+}
 
-class MIP_cplex_wrapper : public MIP_wrapper {
-    CPXENVptr     env = 0;
-    CPXLPptr      lp = 0;
-    int           status;
-    char          cplex_buffer[CPXMESSAGEBUFSIZE];
-    char          cplex_status_buffer[CPXMESSAGEBUFSIZE];
+class MIP_gurobi_wrapper : public MIP_wrapper {
+    GRBenv        * env = 0;
+    GRBmodel      * model = 0;
+    int             error;
+    string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
+    string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
     
     vector<double> x;
 
   public:
-    MIP_cplex_wrapper() { openCPLEX(); }
-    virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
+    MIP_gurobi_wrapper() { openGUROBI(); }
+    virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
     
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(ostream& );
@@ -38,8 +40,8 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 
     /// derived should overload and call the ancestor
 //     virtual void cleanup();
-    void openCPLEX();
-    void closeCPLEX();
+    void openGUROBI();
+    void closeGUROBI();
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
@@ -54,10 +56,12 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min
     
-    virtual double getInfBound() { return CPX_INFBOUND; }
+    virtual double getInfBound() { return GRB_INFINITY; }
                         
-    virtual int getNCols() { return CPXgetnumcols (env, lp); }
-    virtual int getNRows() { return CPXgetnumrows (env, lp); }
+    virtual int getNCols()
+      { int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols; }
+    virtual int getNRows()
+      { int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols; }
                         
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
@@ -84,8 +88,8 @@ class MIP_cplex_wrapper : public MIP_wrapper {
   protected:
     void wrap_assert(bool , string , bool fTerm=true);
     
-    /// Need to consider the 100 status codes in CPLEX and change with every version? TODO
-    Status convertStatus(int cplexStatus);
+    /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
+    Status convertStatus(int gurobiStatus);
 };
 
-#endif  // __MIP_CPLEX_WRAPPER_H__
+#endif  // __MIP_GUROBI_WRAPPER_H__

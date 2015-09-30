@@ -55,8 +55,8 @@ int main(int argc, const char** argv) {
     } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else {
-      cout << "  Flatenning produced status " << slv.getFlt()->status << "  TODO" << endl;   // TODO
-    }
+      cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
+    }   // TODO  Move evalOutput() here
     slv.printStatistics();
 
     fSuccess = true;
@@ -221,6 +221,8 @@ void MznSolver::solve()
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
   else if (status==SolverInstance::UNBND)
       std::cout << "=====UNBOUNDED=====" << std::endl;
+  else if (status==SolverInstance::UNSATorUNBND)
+      std::cout << "=====UNSATorUNBOUNDED=====" << std::endl;
   else if (status==SolverInstance::UNKNOWN)
       std::cout << "=====UNKNOWN=====" << std::endl;
   else if (status==SolverInstance::ERROR)

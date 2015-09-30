@@ -22,6 +22,7 @@ using namespace std;
 class MIP_wrapper;
 /// Namespace MIP_WrapperFactory providing static service functions
 /// The implementation of a MIP wrapper should define these
+/// !!! Assuming it's always 1 MIP solver in a static module
 namespace MIP_WrapperFactory {
     /// static functions creating a MIP wrapper, defined in a .cpp
     MIP_wrapper* GetDefaultMIPWrapper();
@@ -55,7 +56,7 @@ class MIP_wrapper {
     static const int MaskConsType_Normal = 1;
     static const int MaskConsType_Usercut = 2;
     static const int MaskConsType_Lazy = 4;
-    enum Status { OPT, SAT, UNSAT, UNBND, UNKNOWN, ERROR };
+    enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
   private:
     /// Columns for SCIP upfront and with obj coefs:
     vector<double> colObj, colLB, colUB;
@@ -74,7 +75,7 @@ class MIP_wrapper {
   public:
     struct Output {
       Status status;
-      const char* statusName="Untouched";
+      string statusName="Untouched";
       double objVal;
       double bestBound;
       double *x = 0;
@@ -123,7 +124,7 @@ class MIP_wrapper {
     virtual VarId addLitVar(double v, string name="lit") {
       VarId res = addVarLocal(0.0, v, v, REAL, name);
       addVar(res);
-//       cerr << "  AddLitVar " << v << endl;
+       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
       return res;
     }
     /// adding all local variables upfront. Makes sure it's called only once
@@ -136,7 +137,7 @@ class MIP_wrapper {
       assert(j == getNCols());
       doAddVars(1, &colObj[j], &colLB[j], &colUB[j], &colTypes[j], &colNames[j]);
     }
-    /// actual adding new variables to the solver
+    /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi)
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, string *names) = 0;
 
@@ -151,8 +152,8 @@ class MIP_wrapper {
     
     virtual double getInfBound() = 0;
                         
-    virtual size_t getNCols() = 0;
-    virtual size_t getNRows() = 0;
+    virtual int getNCols() = 0;
+    virtual int getNRows() = 0;
                         
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
@@ -169,7 +170,7 @@ class MIP_wrapper {
     virtual double getCPUTime() = 0;
     
     virtual Status getStatus() = 0;
-    virtual const char* getStatusName() = 0;
+    virtual string getStatusName() = 0;
 
      virtual int getNNodes() = 0;
      virtual int getNOpen() = 0;

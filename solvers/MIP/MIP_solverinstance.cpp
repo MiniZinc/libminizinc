@@ -161,7 +161,7 @@ namespace SCIPConstraints {
 
 void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("int2float"),    SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("bool_eq"),      SCIPConstraints::p_eq);
+  _constraintRegistry.add(ASTString("bool_eq"),      SCIPConstraints::p_eq);   // for inconsistency reported in fzn
 //   _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq);
 //   _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le);
   _constraintRegistry.add(ASTString("int_lin_eq"),   SCIPConstraints::p_int_lin_eq);
@@ -255,6 +255,9 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
       break;
     case MIP_wrapper::Status::UNBND:
       s = SolverInstance::UNBND;
+      break;
+    case MIP_wrapper::Status::UNSATorUNBND:
+      s = SolverInstance::UNSATorUNBND;
       break;
     case MIP_wrapper::Status::UNKNOWN:
       s = SolverInstance::UNKNOWN;

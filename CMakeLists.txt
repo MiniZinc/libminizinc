@@ -259,25 +259,46 @@ find_package ( Threads REQUIRED )
 
 set(HAS_CPLEX TRUE)
 set(HAS_CPLEX_OLD FALSE)
-set(HAS_GUROBI FALSE)
+set(HAS_GUROBI TRUE)
+set(HAS_GUROBI_OLD FALSE)
 set(HAS_GECODE FALSE)
 set(HAS_FZN    FALSE)
 
 if(HAS_GUROBI)
-	
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
-		solvers/gurobi/gurobi_solverinstance.cpp
+    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+	target_link_libraries(minizinc_gurobi minizinc gurobi60)
 
 	add_executable(mzn-gurobi
-	  solvers/gurobi/mzn-gurobi.cpp
+    lib/flattener.cpp lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
+if(HAS_GUROBI_OLD)
+  link_directories("${GUROBI_HOME}/lib")
+
+  add_library(minizinc_gurobi
+    solvers/gurobi/gurobi_solverinstance.cpp
+  )
+  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+
+  add_executable(mzn-gurobi
+    solvers/gurobi/mzn-gurobi.cpp
+  )
+  target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
