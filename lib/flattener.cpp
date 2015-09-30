@@ -92,7 +92,7 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     flag_optimize = false;
   } else if (string(argv[i])==string("--no-output-ozn") ||
       string(argv[i])==string("-O-")) {
-    flag_no_output_ozn = false;
+    flag_no_output_ozn = true;
   } else if (string(argv[i])=="--output-base") {
     i++;
     if (i==argc)
@@ -197,7 +197,7 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
   } else {
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
-      std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
+//       std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
       goto error;
     }
     std::string extension = input_file.substr(input_file.length()-4,string::npos);
@@ -212,7 +212,7 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     } else if (extension == ".dzn") {
       datafiles.push_back(input_file);
     } else {
-      std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+//       std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
       goto error;
     }
   }
@@ -222,6 +222,7 @@ error:
 }
 
 Flattener::Flattener(bool fOutputByDef_)
+  : fOutputByDefault(fOutputByDef_)
 {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
@@ -287,12 +288,24 @@ void Flattener::flatten()
   if (flag_output_base == "") {
     flag_output_base = filename.substr(0,filename.length()-4);
   }
-  //   if (flag_output_fzn == "") {
-  //     flag_output_fzn = flag_output_base+".fzn";
-  //   }
-  //   if (flag_output_ozn == "") {
-  //     flag_output_ozn = flag_output_base+".ozn";
-  //   }
+  
+  if (flag_output_fzn == filename) {
+    cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
+    flag_output_fzn = "";
+  }
+  if (flag_output_ozn == filename) {
+    cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
+    flag_output_ozn = "";
+  }
+  
+  if (fOutputByDefault) {
+    if (flag_output_fzn == "") {
+      flag_output_fzn = flag_output_base+".fzn";
+    }
+    if (flag_output_ozn == "" && not flag_no_output_ozn) {
+      flag_output_ozn = flag_output_base+".ozn";
+    }
+  }
 
   {
     std::stringstream errstream;
@@ -345,7 +358,7 @@ void Flattener::flatten()
                 exit(EXIT_FAILURE);
               }
               for (unsigned int i=0; i<env.warnings().size(); i++) {
-                std::cerr << (flag_werror ? "Error: " : "Warning: ") << env.warnings()[i];
+                std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env.warnings()[i];
               }
               if (flag_werror && env.warnings().size() > 0) {
                 exit(EXIT_FAILURE);
@@ -385,8 +398,6 @@ void Flattener::flatten()
                 Printer p(os,0);
                 p.print(env.flat());
                 os.close();
-                if (flag_verbose)
-                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
             }
 
@@ -428,6 +439,13 @@ void Flattener::flatten()
       exit(EXIT_FAILURE);
     }
   }
+  
+  if (getEnv()->flat()->failed()) {
+    status = SolverInstance::UNSAT;
+  }
+  
+  if (flag_verbose)
+    std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
 }
 
 void Flattener::printStatistics(ostream&)

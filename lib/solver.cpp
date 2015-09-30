@@ -47,9 +47,16 @@ int main(int argc, const char** argv) {
       exit(EXIT_FAILURE);
     }
     slv.flatten();
-    GCLock lock;
-    slv.addSolverInterface();   // should be moved forward?  TODO
-    slv.solve();
+    if (SolverInstance::UNKNOWN == slv.getFlt()->status)
+    {
+      GCLock lock;
+      slv.addSolverInterface();
+      slv.solve();
+    } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
+      std::cout << "=====UNSATISFIABLE=====" << std::endl;
+    } else {
+      cout << "  Flatenning produced status " << slv.getFlt()->status << "  TODO" << endl;   // TODO
+    }
     slv.printStatistics();
 
     fSuccess = true;
