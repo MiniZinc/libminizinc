@@ -1287,9 +1287,10 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
           array[1..n] of var 0..1: p,
           int: iMinUB = arg_min([ub(x[i]) | i in 1..n]),
           float: MinUB = ub(x[iMinUB]),
-          set of int: sActive__ = { i | i in 1..n where lb(x[i])<MinUB },
-          set of int: sActive = if card(sActive__)>0 then sActive__
-                                else { iMinUB } endif,
+          set of int: sLBLess = { i | i in 1..n where lb(x[i])<MinUB },
+          set of int: sUBEqual = { i | i in 1..n where ub(x[i])==MinUB },
+          set of int: sActive = if card(sLBLess intersect sUBEqual)>0 then sLBLess
+                                else sLBLess union { iMinUB } endif,
           constraint     m >= lb_array(x) /\   m <= MinUB,
           array[int] of float: AL = [ lb(x[i]) | i in 1..n],
           array[int] of int: srt = sort_by([i | i in 1..n], AL),
@@ -1301,13 +1302,14 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
         } in
 %    assert(index_set(x) == index_set(AL),
 %    "array_float_minimum_I: second argument must have index set 1..length()") /\
-%       my_trace("array_float_minimum_I: " ++ show(lb(m)) ++ " <= m <= " ++ show(ub(m))) /\
-%        ++ "\n AL = " ++ show(AL)
-%        ++ "\n srt_lb = " ++ show(srt)
-%        ++ "\n AL_srt = " ++ show(AL_srt)
-%        ++ "\n AU_srt = " ++ show(AU_srt)
-%        ++ "\n MinUB = " ++ show(MinUB)
-%        ++ "\n" ,
+       my_trace("array_float_minimum_I: " ++ show(lb(m)) ++ " <= m <= " ++ show(ub(m)) 
+        ++ "\n AL = " ++ show(AL)
+        ++ "\n srt_lb = " ++ show(srt)
+        ++ "\n AL_srt = " ++ show(AL_srt)
+        ++ "\n AU_srt = " ++ show(AU_srt)
+        ++ "\n MinUB = " ++ show(MinUB)
+        ++ "\n sActive = " ++ show(sActive)
+        ++ "\n" ) /\
     1 == sum(p) /\
     forall (i in index_set(x))
       ( 
@@ -1316,7 +1318,8 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
         else 0==p[i] endif )
                                                       %% -- exclude too big x[i]
-    /\ forall (i in 2..n+1  where
+    /\
+      forall (i in 2..n+1  where
         AM_srt[i]<=MinUB  /\                          %% this is a new "start level"
         AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
       m >= AM_srt[i]
