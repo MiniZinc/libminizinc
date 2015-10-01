@@ -24,14 +24,6 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     char          cplex_status_buffer[CPXMESSAGEBUFSIZE];
     
     vector<double> x;
-  public:
-    struct CBUserInfo {
-      MIP_wrapper::Output* pOutput=0;
-      void *ppp=0;  // external info
-      SolCallbackFn solcbfn=0;
-    };
-  private:
-    CBUserInfo cbui;
 
   public:
     MIP_cplex_wrapper() { openCPLEX(); }
@@ -70,13 +62,6 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-    /// solution callback handler, the wrapper might not have these callbacks implemented
-    virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) {
-      assert(cbfn);
-      cbui.pOutput = &output;
-      cbui.ppp = info;
-      cbui.solcbfn = cbfn;
-    }
     virtual void solve(); 
     
     /// OUTPUT:

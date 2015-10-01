@@ -219,7 +219,7 @@ void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   // multi-threading? TODO
   MIP_solverinstance* pSI = (MIP_solverinstance*)( pp );
   assert(pSI);
-  if (fabs(pSI->lastIncumbent - out.objVal) > 1e-5*(1.0 + fabs(out.objVal))) {
+  if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
     pSI->lastIncumbent = out.objVal;
     pSI->printSolution(std::cout);
   }

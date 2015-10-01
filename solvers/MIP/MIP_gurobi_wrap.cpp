@@ -20,6 +20,7 @@
 #include <string>
 #include <cstring>
 #include <ctime>
+#include <cmath>
 #include <stdexcept>
 
 using namespace std;
@@ -254,6 +255,71 @@ void MIP_gurobi_wrapper::addRow
   wrap_assert( !error,  "Failed to add constraint." );
 }
 
+/// SolutionCallback ------------------------------------------------------------------------
+/// CPLEX ensures thread-safety
+static int __stdcall
+solcallback(GRBmodel *model,
+           void     *cbdata,
+           int       where,
+           void     *usrdata)
+{
+    MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) usrdata;
+    double nodecnt, actnodes, objVal;
+    int    solcnt;
+    int    newincumbent=0;
+
+    if (where == GRB_CB_MIP) {
+        /* General MIP callback */
+        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
+          GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
+       info->pOutput->nOpenNodes = actnodes;
+    }
+    if (where != GRB_CB_MIPSOL)
+      return 0;
+    
+    /* MIP solution callback */
+ 
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
+    info->pOutput->nNodes = nodecnt;
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+
+   if ( solcnt ) {
+      
+      if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+         newincumbent = 1;
+         info->pOutput->objVal = objVal;
+        info->pOutput->status = MIP_wrapper::SAT;
+        info->pOutput->statusName = "feasible from a callback";
+      }
+   }
+
+//    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
+//       double walltime;
+//       double dettime;
+
+//       status = CPXgettime (env, &walltime);
+//       if ( status )  goto TERMINATE;
+// 
+//       status = CPXgetdettime (env, &dettime);
+//       if ( status )  goto TERMINATE;
+// 
+//    }
+
+   if ( newincumbent ) {
+      assert(info->pOutput->x);
+      GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, info->pOutput->x);
+      
+      info->pOutput->dCPUTime = -1;
+
+      /// Call the user function:
+      if (info->solcbfn)
+          (*info->solcbfn)(*info->pOutput, info->ppp);
+   }
+   
+   return 0;
+} /* END logcallback */
+// end SolutionCallback ---------------------------------------------------------------------
 
 
 MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
@@ -335,6 +401,15 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      error = GRBwriteparams (env, sWriteParams.c_str());
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
+
+       /// Solution callback
+   output.nCols = colObj.size();
+   x.resize(output.nCols);
+   output.x = &x[0];
+   if (flag_all_solutions && cbui.solcbfn) {
+      error = GRBsetcallbackfunc(model, solcallback, (void *) &cbui);
+      wrap_assert(!error, "Failed to set solution callback", false);
+   }
 
    output.dCPUTime = std::clock();
 

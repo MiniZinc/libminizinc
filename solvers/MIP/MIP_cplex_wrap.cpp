@@ -278,7 +278,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
 {
    int status = 0;
 
-   MIP_cplex_wrapper::CBUserInfo *info = (MIP_cplex_wrapper::CBUserInfo*) cbhandle;
+   MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) cbhandle;
    int        hasincumbent = 0;
    int        newincumbent = 0;
    double objVal;
@@ -315,7 +315,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
 
       status = CPXgetcallbackinfo (env, cbdata, wherefrom,
                                    CPX_CALLBACK_INFO_BEST_REMAINING, &info->pOutput->bestBound);
-      if ( status )  goto TERMINATE;
+//       if ( status )  goto TERMINATE;
 
 //       status = CPXgettime (env, &walltime);
 //       if ( status )  goto TERMINATE;
@@ -331,6 +331,8 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
                                         info->pOutput->x,
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
+
+      info->pOutput->dCPUTime = -1;
 
       /// Call the user function:
       if (info->solcbfn)

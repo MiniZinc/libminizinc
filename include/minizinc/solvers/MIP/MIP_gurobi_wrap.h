@@ -70,8 +70,6 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-    /// solution callback handler, the wrapper might not have these callbacks implemented
-    virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) { }   // TODO
     virtual void solve(); 
     
     /// OUTPUT:

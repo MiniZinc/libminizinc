@@ -89,6 +89,17 @@ class MIP_wrapper {
     Output output;
 
   public:
+    /// solution callback handler, the wrapper might not have these callbacks implemented
+    typedef void (*SolCallbackFn)(const Output& , void* );
+    struct CBUserInfo {
+      MIP_wrapper::Output* pOutput=0;
+      void *ppp=0;  // external info
+      SolCallbackFn solcbfn=0;
+    };
+  protected:
+    CBUserInfo cbui;
+
+  public:
 //     MIP_wrapper() { /*resetModel();*/ }
     virtual ~MIP_wrapper() { /* cleanup(); */ }
 
@@ -180,10 +191,14 @@ class MIP_wrapper {
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-    /// solution callback handler, the wrapper might not have these callbacks implemented
-    typedef void (*SolCallbackFn)(const Output& , void* );
     /// Set solution callback. Thread-safety??
-    virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) = 0;
+    /// solution callback handler, the wrapper might not have these callbacks implemented
+    virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) {
+      assert(cbfn);
+      cbui.pOutput = &output;
+      cbui.ppp = info;
+      cbui.solcbfn = cbfn;
+    }
     virtual void solve() = 0; 
     
     /// OUTPUT, should also work in a callback
