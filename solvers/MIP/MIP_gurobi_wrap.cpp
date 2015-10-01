@@ -148,7 +148,8 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
     sWriteParams = argv[i];
-  }
+  } else
+    return false;
   return true;
 error:
   return false;
@@ -286,6 +287,8 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
+  error = GRBupdatemodel(model);                  // for model export
+  wrap_assert( !error,  "Failed to update model." );
 
   /////////////// Last-minute solver options //////////////////
   /* Turn on output to the screen */
@@ -306,8 +309,11 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       // Turn off GUROBI logging
 
    if (nThreads>0) {
-     error = GRBsetintparam(env, "Threads", nThreads);
-     wrap_assert(!error, "Failed to set GRB_PARAM_Threads.", false);
+     error = GRBsetintparam(env, GRB_INT_PAR_THREADS, nThreads);
+//      int nn;    // THE SETTING FAILS TO WORK IN 6.0.5.
+//      error = GRBgetintparam(env, GRB_INT_PAR_THREADS, &nn);
+//      cerr << "Set " << nThreads << " threads, reported " << nn << endl;
+     wrap_assert(!error, "Failed to set GRB_INT_PAR_THREADS.", false);
    }
 
     if (nTimeout>0) {
@@ -357,8 +363,9 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, output.x);
       wrap_assert(!error, "Failed to get variable values.");
    }
+   output.bestBound = 1e308;
    error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
-   wrap_assert(!error, "Failed to get the best bound.");
+   wrap_assert(!error, "Failed to get the best bound.", false);
    double nNodes=-1;
    error = GRBgetdblattr(model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
    output.nNodes = nNodes;

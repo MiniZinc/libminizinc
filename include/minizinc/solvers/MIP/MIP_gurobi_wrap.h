@@ -58,10 +58,14 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     
     virtual double getInfBound() { return GRB_INFINITY; }
                         
-    virtual int getNCols()
-      { int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols; }
-    virtual int getNRows()
-      { int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols; }
+    virtual int getNCols() {
+      assert(not GRBupdatemodel(model));
+      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
+    }
+    virtual int getNRows() {
+      assert(not GRBupdatemodel(model));
+      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
+    }
                         
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0

@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <string>
 #include <cstring>
+#include <cmath>
 #include <stdexcept>
 
 using namespace std;
@@ -150,7 +151,8 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
     sWriteParams = argv[i];
-  }
+  } else
+    return false;
   return true;
 error:
   return false;
@@ -269,6 +271,78 @@ void MIP_cplex_wrapper::addRow
 }
 
 
+/// SolutionCallback ------------------------------------------------------------------------
+/// CPLEX ensures thread-safety
+static int CPXPUBLIC
+solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
+{
+   int status = 0;
+
+   MIP_cplex_wrapper::CBUserInfo *info = (MIP_cplex_wrapper::CBUserInfo*) cbhandle;
+   int        hasincumbent = 0;
+   int        newincumbent = 0;
+   double objVal;
+
+   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+                                CPX_CALLBACK_INFO_NODE_COUNT, &info->pOutput->nNodes);
+   if ( status )  goto TERMINATE;
+
+   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+                                CPX_CALLBACK_INFO_NODES_LEFT, &info->pOutput->nOpenNodes);
+   if ( status )  goto TERMINATE;
+
+   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+                                CPX_CALLBACK_INFO_MIP_FEAS, &hasincumbent);
+   if ( status )  goto TERMINATE;
+
+   if ( hasincumbent ) {
+      status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+                                   CPX_CALLBACK_INFO_BEST_INTEGER, &objVal);
+      if ( status )  goto TERMINATE;
+      
+      if ( fabs(info->pOutput->objVal - objVal) > 1e-5*(1.0 + fabs(objVal)) ) {
+         newincumbent = 1;
+         info->pOutput->objVal = objVal;
+        info->pOutput->status = MIP_wrapper::SAT;
+        info->pOutput->statusName = "feasible from a callback";
+
+      }
+   }
+
+//    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
+//       double walltime;
+//       double dettime;
+
+      status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+                                   CPX_CALLBACK_INFO_BEST_REMAINING, &info->pOutput->bestBound);
+      if ( status )  goto TERMINATE;
+
+//       status = CPXgettime (env, &walltime);
+//       if ( status )  goto TERMINATE;
+// 
+//       status = CPXgetdettime (env, &dettime);
+//       if ( status )  goto TERMINATE;
+// 
+//    }
+
+   if ( newincumbent ) {
+      assert(info->pOutput->x);
+      status = CPXgetcallbackincumbent (env, cbdata, wherefrom,
+                                        info->pOutput->x,
+                                        0, info->pOutput->nCols-1);
+      if ( status )  goto TERMINATE;
+
+      /// Call the user function:
+      if (info->solcbfn)
+          (*info->solcbfn)(*info->pOutput, info->ppp);
+   }
+   
+
+TERMINATE:
+   return (status);
+
+} /* END logcallback */
+// end SolutionCallback ---------------------------------------------------------------------
 
 MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
 {
@@ -276,8 +350,8 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
    /* Converting the status. */
    switch(cplexStatus) {
      case CPXMIP_OPTIMAL:
-     case CPXMIP_OPTIMAL_TOL:
        s = Status::OPT;
+       wrap_assert(CPXgetsolnpoolnumsolns(env, lp), "Optimality reported but pool empty?", false);
        break;
      case CPXMIP_INFEASIBLE:
        s = Status::UNSAT;
@@ -294,9 +368,9 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
      case CPXMIP_ABORT_FEAS:
      case CPXMIP_FAIL_FEAS_NO_TREE:
        s = Status::SAT;
+       wrap_assert(CPXgetsolnpoolnumsolns(env, lp), "Feasibility reported but pool empty?", false);
        break;
      case CPXMIP_UNBOUNDED:
-     case CPXMIP_ABORT_RELAXATION_UNBOUNDED:
        s = Status::UNBND;
        break;
      case CPXMIP_ABORT_INFEAS:
@@ -304,7 +378,12 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
        s = Status::ERROR;
        break;
      default:
-       s = Status::UNKNOWN;
+//      case CPXMIP_OPTIMAL_TOL:
+//      case CPXMIP_ABORT_RELAXATION_UNBOUNDED:
+       if (CPXgetsolnpoolnumsolns (env, lp))
+         s = Status::SAT;
+       else
+        s = Status::UNKNOWN;
    }
    return s;
 }
@@ -322,7 +401,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
    status =  CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
    wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
-   status =  CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP, CPX_OFF);    // Access original model
+   status =  CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
    wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.", false);
    if (sExportModel.size()) {
      status = CPXwriteprob (env, lp, sExportModel.c_str(), NULL);
@@ -359,6 +438,15 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      status = CPXwriteparam (env, sWriteParams.c_str());
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
+    
+   /// Solution callback
+   output.nCols = colObj.size();
+   x.resize(output.nCols);
+   output.x = &x[0];
+   if (flag_all_solutions && cbui.solcbfn) {
+      status = CPXsetinfocallbackfunc (env, solcallback, &cbui);
+      wrap_assert(!status, "Failed to set solution callback", false);
+   }
 
    status = CPXgettime (env, &output.dCPUTime);
    wrap_assert(!status, "Failed to get time stamp.", false);
@@ -395,8 +483,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       status = CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
    }
+   output.bestBound = 1e308;
    status = CPXgetbestobjval (env, lp, &output.bestBound);
-   wrap_assert(!status, "Failed to get the best bound.");
+   wrap_assert(!status, "Failed to get the best bound.", false);
    output.nNodes = CPXgetnodecnt (env, lp);
    output.nOpenNodes = CPXgetnodeleftcnt (env, lp);
 }

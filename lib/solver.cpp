@@ -175,6 +175,7 @@ bool MznSolver::processOptions(int argc, const char** argv)
         cout << (*it)->getVersion() << endl;
       std::exit(EXIT_SUCCESS);
     }
+    //  TODO  move --verbose here
     if (not getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)

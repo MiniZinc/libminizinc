@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <cassert>
 
 using namespace std;
@@ -57,7 +58,7 @@ class MIP_wrapper {
     static const int MaskConsType_Usercut = 2;
     static const int MaskConsType_Lazy = 4;
     enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
-  private:
+  protected:
     /// Columns for SCIP upfront and with obj coefs:
     vector<double> colObj, colLB, colUB;
     vector<VarType> colTypes;
@@ -78,6 +79,7 @@ class MIP_wrapper {
       string statusName="Untouched";
       double objVal;
       double bestBound;
+      int nCols;
       double *x = 0;
       int nNodes;
       int nOpenNodes;
@@ -101,10 +103,18 @@ class MIP_wrapper {
 //     virtual void printVersion(ostream& os) { os << "Abstract MIP wrapper"; }
 //     virtual void printHelp(ostream& ) { }
 
-    /// adding a variable just internally, used in processFlatzinc()
+  private:
+    bool fPhase1Over = false;
+    /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
     virtual VarId addVarLocal(double obj, double lb, double ub, 
                              VarType vt, string name="") {
-//       cerr << "  addVarLocal: colObj.size() == " << colObj.size() << endl;
+//       cerr << "  addVarLocal: colObj.size() == " << colObj.size()
+//         << " obj == " <<obj
+//         << " lb == " << lb
+//         << " ub == " << ub
+//         << " vt == " << vt
+//         << " nm == " << name
+//         << endl;
       colObj.push_back(obj);
       colLB.push_back(lb);
       colUB.push_back(ub);
@@ -112,34 +122,46 @@ class MIP_wrapper {
       colNames.push_back(name);
       return colObj.size()-1;
     }
-    /// adding a a variable, at once to the solver
+    /// add the given var to the solver. Asserts all previous are added. Phase >=2. No direct use
+    virtual void addVar(int j) {
+      assert(j == getNCols());
+      assert(fPhase1Over);
+      doAddVars(1, &colObj[j], &colLB[j], &colUB[j], &colTypes[j], &colNames[j]);
+    }
+    /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi). No direct use
+    virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
+      VarType *vt, string *names) = 0;
+  public:
+    /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
                              VarType vt, string name=0) {
+//       cerr << "  AddVar: " << lb << ":   ";
       VarId res = addVarLocal(obj, lb, ub, vt, name);
-      addVar(res);
-//       cerr << "  AddVar: " << lb << endl;
+      if (fPhase1Over)
+        addVar(res);
       return res;
     }
-    /// adding a literal as a variable, at once to the solver
-    virtual VarId addLitVar(double v, string name="lit") {
+    /// adding a literal as a variable. Should not happen in feasible models
+    virtual VarId addLitVar(double v) {
+      ostringstream oss;
+      oss << "lit_" << v;
+      string name = oss.str();
+      size_t pos = name.find('.');
+      if (string::npos != pos)
+        name.replace(pos, 1, "_");
       VarId res = addVarLocal(0.0, v, v, REAL, name);
-      addVar(res);
-       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
+      if (fPhase1Over)
+        addVar(res);
+      cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
       return res;
     }
     /// adding all local variables upfront. Makes sure it's called only once
-    virtual void addVars() {
+    virtual void addPhase1Vars() {
       assert(0 == getNCols());
+      assert(not fPhase1Over);
+      fPhase1Over = true;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
     }
-    /// add the given var and asserts all previous are added
-    virtual void addVar(int j) {
-      assert(j == getNCols());
-      doAddVars(1, &colObj[j], &colLB[j], &colUB[j], &colTypes[j], &colNames[j]);
-    }
-    /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi)
-    virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names) = 0;
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
@@ -160,6 +182,7 @@ class MIP_wrapper {
 
     /// solution callback handler, the wrapper might not have these callbacks implemented
     typedef void (*SolCallbackFn)(const Output& , void* );
+    /// Set solution callback. Thread-safety??
     virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) = 0;
     virtual void solve() = 0; 
     

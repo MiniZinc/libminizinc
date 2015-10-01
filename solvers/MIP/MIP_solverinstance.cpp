@@ -126,7 +126,11 @@ namespace SCIPConstraints {
 
     // See if the solver adds indexation itself:
 //     std::stringstream ss;
-//     ss << "p_lin_" << gi.getMIPWrapper()->getNRows();
+//     cerr << "p_lin_" << gi.getMIPWrapper()->getNRows();
+//     cerr << "  coefs: ";
+//     for (size_t i=0; i<coefs.size(); ++i)
+//       cerr << coefs[i] << ", ";
+//     cerr << endl;
     gi.getMIPWrapper()->addRow(nvars, &vars[0], &coefs[0], lt, rhs,
                                MIP_wrapper::MaskConsType_Normal, "p_lin_");
   }
@@ -237,7 +241,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   
   
   lastIncumbent = 1e200;                  // for callbacks
-  getMIPWrapper()->provideSolutionCallback(&HandleSolutionCallback, this);
+  getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
 
   getMIPWrapper()->solve();
 
@@ -333,7 +337,7 @@ void MIP_solverinstance::processFlatZinc(void) {
         res = exprToVar(it->e()->e());
       } else {
         double obj = vd==objVd ? 1.0 : 0.0;
-        res = getMIPWrapper()->addVarLocal(obj, lb, ub, vType, id->str().c_str());
+        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       }
 //       std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
 //           << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
@@ -341,7 +345,7 @@ void MIP_solverinstance::processFlatZinc(void) {
       assert( res == _variableMap.get(id) );
     }
   }
-  getMIPWrapper()->addVars(); 
+  getMIPWrapper()->addPhase1Vars(); 
  
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
     if (Call* c = it->e()->dyn_cast<Call>()) {
