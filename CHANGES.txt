@@ -53,6 +53,9 @@ Bug fixes:
  - Use is_fixed in cumulative definition.
  - Fix bug where a par right hand side of a variable mentioned in the output
    would cause a crash.
+ - Fix variable dependency tracking during rewriting in the optimisation phase.
+   Could previously lead to variables being removed that are still required.
+   Fixes #54.
 
 Version 2.0.6
 =============
