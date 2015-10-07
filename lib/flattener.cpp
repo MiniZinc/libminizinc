@@ -242,6 +242,9 @@ void Flattener::flatten()
 {
   starttime01 = std::clock();
   lasttime = starttime01;
+  
+  if (flag_verbose)
+    printVersion(cerr);
 
   if (beginswith(globals_dir, "linear")) {
     flag_only_range_domains = true;

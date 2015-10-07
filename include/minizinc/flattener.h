@@ -100,6 +100,12 @@ namespace MiniZinc {
     return oss.str();
   }
 
+  inline std::string timeDiff(clock_t t1, clock_t t2) {
+    std::ostringstream oss;
+    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t1-t2) / CLOCKS_PER_SEC)) << " s";
+    return oss.str();
+  }
+
   inline bool beginswith(string s, string t) {
     return s.compare(0, t.length(), t)==0;
   }

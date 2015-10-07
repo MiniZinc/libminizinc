@@ -13,6 +13,7 @@
 #define __MIP_WRAPPER__
 
 #include <vector>
+#include <set>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -114,8 +115,9 @@ class MIP_wrapper {
 //     virtual void printVersion(ostream& os) { os << "Abstract MIP wrapper"; }
 //     virtual void printHelp(ostream& ) { }
 
-  private:
+  public:
     bool fPhase1Over = false;
+  private:
     /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
     virtual VarId addVarLocal(double obj, double lb, double ub, 
                              VarType vt, string name="") {
@@ -142,7 +144,12 @@ class MIP_wrapper {
     /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi). No direct use
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, string *names) = 0;
+
   public:
+    /// debugging stuff
+    int nLiteralCreations = 0;
+    set<double> sLitValues;
+    
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
                              VarType vt, string name=0) {
@@ -163,15 +170,19 @@ class MIP_wrapper {
       VarId res = addVarLocal(0.0, v, v, REAL, name);
       if (fPhase1Over)
         addVar(res);
-      cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
+//       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
+      ++ nLiteralCreations;
+      sLitValues.insert(v);
       return res;
     }
     /// adding all local variables upfront. Makes sure it's called only once
     virtual void addPhase1Vars() {
       assert(0 == getNCols());
       assert(not fPhase1Over);
-      fPhase1Over = true;
+      if (fVerbose)
+        cerr << "MIP: adding the " << colObj.size() << " Phase 1 variables" << endl;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
+      fPhase1Over = true;    // SCIP needs after adding
     }
 
     /// adding a linear constraint

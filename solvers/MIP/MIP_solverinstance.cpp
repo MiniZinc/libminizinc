@@ -345,13 +345,22 @@ void MIP_solverinstance::processFlatZinc(void) {
       assert( res == _variableMap.get(id) );
     }
   }
-  getMIPWrapper()->addPhase1Vars(); 
+  if (mip_wrap->fVerbose && mip_wrap->nLiteralCreations)
+    cerr << "  MIP_wrapper: prior to Phase 1,  "
+      << mip_wrap->nLiteralCreations << " literals with"
+      << mip_wrap-> sLitValues.size() << " values created." << endl;
+  if (not getMIPWrapper()->fPhase1Over)
+    getMIPWrapper()->addPhase1Vars(); 
  
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
     if (Call* c = it->e()->dyn_cast<Call>()) {
       _constraintRegistry.post(c);
     }
   }
+  if (mip_wrap->fVerbose && mip_wrap->nLiteralCreations)
+    cerr << "  MIP_wrapper: overall,  "
+      << mip_wrap->nLiteralCreations << " literals with"
+      << mip_wrap-> sLitValues.size() << " values created." << endl;
 }  // processFlatZinc
 
 Expression* MIP_solverinstance::getSolutionValue(Id* id) {

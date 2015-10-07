@@ -300,7 +300,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
                                    CPX_CALLBACK_INFO_BEST_INTEGER, &objVal);
       if ( status )  goto TERMINATE;
       
-      if ( fabs(info->pOutput->objVal - objVal) > 1e-5*(1.0 + fabs(objVal)) ) {
+      if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
          newincumbent = 1;
          info->pOutput->objVal = objVal;
         info->pOutput->status = MIP_wrapper::SAT;

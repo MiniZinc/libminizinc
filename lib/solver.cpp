@@ -35,7 +35,7 @@ using namespace std;
 using namespace MiniZinc;
 
 int main(int argc, const char** argv) {
-  clock_t starttime = std::clock();
+  clock_t starttime = std::clock(), endFlatTime=0, endTime;
   bool fSuccess = false;
   
   MznSolver slv;
@@ -47,6 +47,7 @@ int main(int argc, const char** argv) {
       exit(EXIT_FAILURE);
     }
     slv.flatten();
+    endFlatTime = clock();
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       GCLock lock;
@@ -81,8 +82,13 @@ int main(int argc, const char** argv) {
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
   }
 
-  if (slv.get_flag_verbose())
-    std::cerr << "Done (overall time " << stoptime(starttime) << ")." << std::endl;
+  endTime = clock();
+  if (slv.get_flag_verbose()) {
+    std::cerr << "   Done (";
+    if (endFlatTime)
+      cerr << "flattening time " << timeDiff(endFlatTime, starttime) << ", ";
+    cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+  }
   return not fSuccess;
 }   // int main()
 
@@ -156,6 +162,10 @@ void MznSolver::addSolverInterface()
   assert(getGlobalSolverRegistry()->getSolverFactories().size());
   si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
   assert(si);
+  if (get_flag_verbose())
+    cerr
+    << "  ---------------------------------------------------------------------------\n"
+    << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
 }
 
 bool MznSolver::processOptions(int argc, const char** argv)
