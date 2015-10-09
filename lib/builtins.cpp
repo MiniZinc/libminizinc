@@ -307,7 +307,7 @@ namespace MiniZinc {
     if (foundMin) {
       return array_lb;
     } else {
-      throw EvalError(env, e->loc(),"cannot determine lower bound");
+      return -IntVal::infinity();
     }
   }
 
@@ -852,7 +852,7 @@ namespace MiniZinc {
     if (foundBounds) {
       return IntSetVal::a(array_lb,array_ub);
     } else {
-      return -IntVal::infinity();
+      throw EvalError(env, e->loc(),"cannot determine lower bound");
     }
   }
   
