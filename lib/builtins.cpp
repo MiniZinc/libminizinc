@@ -232,7 +232,7 @@ namespace MiniZinc {
     if (b.valid)
       return b.l;
     else
-      throw EvalError(env, e->loc(),"cannot determine bounds");
+      return -IntVal::infinity();
   }
   IntVal b_lb_varoptint(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -316,7 +316,7 @@ namespace MiniZinc {
     if (b.valid)
       return b.u;
     else
-      throw EvalError(env, e->loc(),"cannot determine bounds");
+      return IntVal::infinity();
   }
   IntVal b_ub_varoptint(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -367,7 +367,7 @@ namespace MiniZinc {
     if (foundMax) {
       return array_ub;
     } else {
-      throw EvalError(env, e->loc(),"cannot determine upper bound");
+      return IntVal::infinity();
     }
   }
 
@@ -852,7 +852,7 @@ namespace MiniZinc {
     if (foundBounds) {
       return IntSetVal::a(array_lb,array_ub);
     } else {
-      throw EvalError(env, e->loc(),"cannot determine lower bound");
+      return -IntVal::infinity();
     }
   }
   
@@ -878,7 +878,7 @@ namespace MiniZinc {
         }
         break;
       default:
-        throw EvalError(env, ae->loc(),"invalid argument to ub");
+        throw EvalError(env, ae->loc(),"invalid argument to dom");
       }
     }
     if (al->v().size()==0)
