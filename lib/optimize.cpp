@@ -910,7 +910,7 @@ namespace MiniZinc {
         Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
         IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(env,ident->decl()->ti()->domain()) : NULL;
         if (domain) {
-          BinOpType bot = c->args()[0]->isa<Id>() ? (is_true ? BOT_LQ : BOT_GQ) : (is_true ? BOT_GQ: BOT_LQ);
+          BinOpType bot = c->args()[0]->isa<Id>() ? (is_true ? BOT_LQ : BOT_GR) : (is_true ? BOT_GQ: BOT_LE);
           IntSetVal* newDomain = LinearTraits<IntLit>::limit_domain(bot, domain, eval_int(env,arg));
           ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
           ident->decl()->ti()->setComputedDomain(false);
