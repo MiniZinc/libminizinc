@@ -191,6 +191,13 @@ void MIP_solverinstance::printSolution(ostream& os) {
     previousOutput.insert(h);
     std::cout << output;
 //     if(fVerbose)
+    printStatistics(cout);
+    std::cout << "----------" << std::endl;
+  }
+}
+
+void MIP_solverinstance::printStatistics(ostream& os)
+{
     {
       int nPrec = cout.precision(12);
       cout << "  % Status: " << mip_wrap->getStatusName() << endl;
@@ -211,9 +218,8 @@ void MIP_solverinstance::printSolution(ostream& os) {
 //       std::cout   << "% Real/CPU Time_ : " << mip_wrap->getCPUTime() << " sec\n" << std::endl;
 //       std::cout << "%------------------------------------------------------------------------\n"<< std::endl;
     }
-    std::cout << "----------" << std::endl;
-  }
 }
+
 
 void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   // multi-threading? TODO
@@ -244,6 +250,8 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
 
   getMIPWrapper()->solve();
+  
+  printStatistics(cout);
 
   MIP_wrapper::Status sw = getMIPWrapper()->getStatus();
   SolverInstance::Status s = SolverInstance::UNKNOWN;

@@ -78,10 +78,10 @@ class MIP_wrapper {
     struct Output {
       Status status;
       string statusName="Untouched";
-      double objVal;
-      double bestBound;
+      double objVal = 1e308;
+      double bestBound = 1e308;
       int nCols;
-      double *x = 0;
+      const double *x = 0;
       int nNodes;
       int nOpenNodes;
       double dCPUTime;
@@ -213,7 +213,7 @@ class MIP_wrapper {
     virtual void solve() = 0; 
     
     /// OUTPUT, should also work in a callback
-    virtual double* getValues() = 0;
+    virtual const double* getValues() = 0;
     virtual double getObjValue() = 0;
     virtual double getBestBound() = 0;
     virtual double getCPUTime() = 0;

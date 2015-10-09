@@ -10,26 +10,31 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_GUROBI_WRAPPER_H__
-#define __MIP_GUROBI_WRAPPER_H__
+#ifndef __MIP_OSICBC_WRAPPER_H__
+#define __MIP_OSICBC_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.h>
-extern "C" {
-  #include <gurobi_c.h>     // need GUROBI_HOME defined
-}
+                    // CMakeLists.txt needs OSICBC_HOME defined
+// #include <CoinPackedVector.hpp>
+// #include <CoinPackedMatrix.hpp>
+// #include <CoinShallowPackedVector.hpp>
+// #include <CoinTime.hpp>
+// #include <OsiSolverInterface.hpp>
+#include <OsiCbcSolverInterface.hpp>
 
-class MIP_gurobi_wrapper : public MIP_wrapper {
-    GRBenv        * env = 0;
-    GRBmodel      * model = 0;
+
+class MIP_osicbc_wrapper : public MIP_wrapper {
+    OsiCbcSolverInterface osi;
+//     CoinPackedMatrix* matrix = 0;
     int             error;
-    string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
-    string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
+    string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
+//     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
     
-    vector<double> x;
+//     vector<double> x;
 
   public:
-    MIP_gurobi_wrapper() { openGUROBI(); }
-    virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
+    MIP_osicbc_wrapper() { openOSICBC(); }
+    virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
     
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(ostream& );
@@ -40,8 +45,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
     /// derived should overload and call the ancestor
 //     virtual void cleanup();
-    void openGUROBI();
-    void closeGUROBI();
+    void openOSICBC() { }
+    void closeOSICBC() { }
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
@@ -56,15 +61,13 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min
     
-    virtual double getInfBound() { return GRB_INFINITY; }
+    virtual double getInfBound() { return osi.getInfinity(); }
                         
     virtual int getNCols() {
-      assert(not GRBupdatemodel(model));
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
+      return osi.getNumCols();
     }
     virtual int getNRows() {
-      assert(not GRBupdatemodel(model));
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
+      return osi.getNumRows();
     }
                         
 //     void setObjUB(double ub) { objUB = ub; }
@@ -88,10 +91,12 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
+    OsiSolverInterface& getOsiSolver(void) { return osi; }
+
     void wrap_assert(bool , string , bool fTerm=true);
     
-    /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
-    Status convertStatus(int gurobiStatus);
+    /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
+    Status convertStatus();
 };
 
-#endif  // __MIP_GUROBI_WRAPPER_H__
+#endif  // __MIP_OSICBC_WRAPPER_H__

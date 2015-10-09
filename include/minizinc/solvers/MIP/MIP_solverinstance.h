@@ -66,6 +66,7 @@ namespace MiniZinc {
 
       void assignSolutionToOutput();   // needs to be public for the callback?
       void printSolution(ostream& );
+      void printStatistics(ostream& );
 
 //       /// PARAMS
 //       int nThreads;

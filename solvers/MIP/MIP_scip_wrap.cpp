@@ -274,79 +274,6 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
 
 
 /// SolutionCallback ------------------------------------------------------------------------
-/// SCIP ensures thread-safety?  TODO
-// // static int SCIP_PUBLIC
-// // solcallback (SCIP_CENVptr env, void *cbdata, int wherefrom, void *cbhandle)
-// // {
-// //    int status = 0;
-// // 
-// //    MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) cbhandle;
-// //    int        hasincumbent = 0;
-// //    int        newincumbent = 0;
-// //    double objVal;
-// // 
-// //    status = SCIP_getcallbackinfo (env, cbdata, wherefrom,
-// //                                 SCIP__CALLBACK_INFO_NODE_COUNT, &info->pOutput->nNodes);
-// //    if ( status )  goto TERMINATE;
-// // 
-// //    status = SCIP_getcallbackinfo (env, cbdata, wherefrom,
-// //                                 SCIP__CALLBACK_INFO_NODES_LEFT, &info->pOutput->nOpenNodes);
-// //    if ( status )  goto TERMINATE;
-// // 
-// //    status = SCIP_getcallbackinfo (env, cbdata, wherefrom,
-// //                                 SCIP__CALLBACK_INFO_MIP_FEAS, &hasincumbent);
-// //    if ( status )  goto TERMINATE;
-// // 
-// //    if ( hasincumbent ) {
-// //       status = SCIP_getcallbackinfo (env, cbdata, wherefrom,
-// //                                    SCIP__CALLBACK_INFO_BEST_INTEGER, &objVal);
-// //       if ( status )  goto TERMINATE;
-// //       
-// //       if ( fabs(info->pOutput->objVal - objVal) > 1e-5*(1.0 + fabs(objVal)) ) {
-// //          newincumbent = 1;
-// //          info->pOutput->objVal = objVal;
-// //         info->pOutput->status = MIP_wrapper::SAT;
-// //         info->pOutput->statusName = "feasible from a callback";
-// // 
-// //       }
-// //    }
-// // 
-// // //    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
-// // //       double walltime;
-// // //       double dettime;
-// // 
-// //       status = SCIP_getcallbackinfo (env, cbdata, wherefrom,
-// //                                    SCIP__CALLBACK_INFO_BEST_REMAINING, &info->pOutput->bestBound);
-// // //       if ( status )  goto TERMINATE;
-// // 
-// // //       status = SCIP_gettime (env, &walltime);
-// // //       if ( status )  goto TERMINATE;
-// // // 
-// // //       status = SCIP_getdettime (env, &dettime);
-// // //       if ( status )  goto TERMINATE;
-// // // 
-// // //    }
-// // 
-// //    if ( newincumbent ) {
-// //       assert(info->pOutput->x);
-// //       status = SCIP_getcallbackincumbent (env, cbdata, wherefrom,
-// //                                         info->pOutput->x,
-// //                                         0, info->pOutput->nCols-1);
-// //       if ( status )  goto TERMINATE;
-// // 
-// //       info->pOutput->dCPUTime = -1;
-// // 
-// //       /// Call the user function:
-// //       if (info->solcbfn)
-// //           (*info->solcbfn)(*info->pOutput, info->ppp);
-// //    }
-// //    
-// // 
-// // TERMINATE:
-// //    return (status);
-// // 
-// // } /* END logcallback */
-// end SolutionCallback ---------------------------------------------------------------------
 
 /// From event_bestsol.c:
 #define EVENTHDLR_NAME         "bestsol"
@@ -431,15 +358,15 @@ SCIP_DECL_EVENTEXEC(eventExecBestsol)
         cbuiPtr->pOutput->objVal = objVal;
       cbuiPtr->pOutput->status = MIP_wrapper::SAT;
       cbuiPtr->pOutput->statusName = "feasible from a callback";
-
     }
 
    if ( newincumbent && scipVarsPtr ) {
       assert(cbuiPtr->pOutput->x);
       SCIP_CALL( SCIPgetSolVals(scip, bestsol, cbuiPtr->pOutput->nCols,
-                                scipVarsPtr, cbuiPtr->pOutput->x) );
+                                scipVarsPtr, (double*)cbuiPtr->pOutput->x) );
 //       wrap_assert(!retcode, "Failed to get variable values.");
-      cbuiPtr->pOutput->nNodes = SCIPsolGetNodenum (bestsol);
+      cbuiPtr->pOutput->nNodes = SCIPgetNNodes (scip);
+      cbuiPtr->pOutput->nOpenNodes = SCIPgetNNodesLeft(scip);
       cbuiPtr->pOutput->bestBound = SCIPgetDualbound (scip);
 
       cbuiPtr->pOutput->dCPUTime = -1;
@@ -564,7 +491,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    if (flag_all_solutions && cbui.solcbfn && !cbuiPtr) {
    /* include event handler for best solution found */
      SCIP_CALL( SCIPincludeEventHdlrBestsol(scip) );
-     cbuiPtr = &cbui;   // not thread-safe...                                   TODO
+     cbuiPtr = &cbui;   // not thread-safe...         TODO
      scipVarsPtr = &scipVars[0];
 //       retcode = SCIP_setinfocallbackfunc (env, solcallback, &cbui);
 //       wrap_assert(!retcode, "Failed to set solution callback", false);
@@ -586,21 +513,19 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //    output.statusName = SCIP_getstatstring (env, solstat, scip_status_buffer);
 
    /// Continuing to fill the output object:
+   output.objVal = SCIPgetPrimalbound (scip);
+   output.bestBound = SCIPgetDualbound (scip);
+//    wrap_assert(!retcode, "Failed to get the best bound.", false);
    if (Status::OPT == output.status || Status::SAT ==output.status) {
-      output.objVal = SCIPgetPrimalbound (scip);
 //       wrap_assert( !retcode, "No MIP objective value available." );
       
       x.resize(cur_numcols);
       output.x = &x[0];
-      SCIP_CALL( SCIPgetSolVals(scip, SCIPgetBestSol(scip), cur_numcols, &scipVars[0], output.x) );
+      SCIP_CALL( SCIPgetSolVals(scip, SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
 //       wrap_assert(!retcode, "Failed to get variable values.");
-      output.nNodes = SCIPsolGetNodenum (SCIPgetBestSol(scip));
-   } else {
-      output.nNodes = -1;
    }
-   output.bestBound = SCIPgetDualbound (scip);
-//    wrap_assert(!retcode, "Failed to get the best bound.", false);
-   output.nOpenNodes = -1;  // SCIP_getnodeleftcnt (env, lp);
+   output.nNodes = SCIPgetNNodes (scip);
+   output.nOpenNodes = SCIPgetNNodesLeft(scip);  // SCIP_getnodeleftcnt (env, lp);
 
    SCIP_CALL( SCIPfreeTransform(scip) );
 

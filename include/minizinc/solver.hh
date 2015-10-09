@@ -51,10 +51,11 @@ namespace MiniZinc {
     
     typedef vector<auto_ptr<SolverInstanceBase> > SIStorage;
     SIStorage sistorage;
-  public:
+//   public:
     SolverFactory()            { getGlobalSolverRegistry()->addSolverFactory(this); }
     virtual ~SolverFactory()   { getGlobalSolverRegistry()->removeSolverFactory(this); }
     
+  public:
     /// Function createSI also adds each SI to the local storage
     SolverInstanceBase * createSI(Env& env);
     /// also providing a manual destroy function.

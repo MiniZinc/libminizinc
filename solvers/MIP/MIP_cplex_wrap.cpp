@@ -328,7 +328,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
    if ( newincumbent ) {
       assert(info->pOutput->x);
       status = CPXgetcallbackincumbent (env, cbdata, wherefrom,
-                                        info->pOutput->x,
+                                        (double*)info->pOutput->x,
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
 

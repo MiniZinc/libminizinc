@@ -274,7 +274,8 @@ find_package ( Threads REQUIRED )
 set(HAS_CPLEX TRUE)
 set(HAS_GUROBI TRUE)
 set(HAS_SCIP TRUE)
-set(HAS_GECODE FALSE)
+set(HAS_OSICBC TRUE)
+set(HAS_GECODE TRUE)
 set(HAS_FZN    FALSE)
 
 set(HAS_CPLEX_OLD FALSE)
@@ -288,13 +289,13 @@ if(HAS_GUROBI)
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi60)
+	target_link_libraries(minizinc_gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi
-    lib/flattener.cpp lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
@@ -306,19 +307,19 @@ endif()
 if(HAS_GUROBI_OLD)
   link_directories("${GUROBI_HOME}/lib")
 
-  add_library(minizinc_gurobi
+  add_library(minizinc_gurobi_old
     solvers/gurobi/gurobi_solverinstance.cpp
   )
-  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(minizinc_gurobi minizinc gurobi_c++ gurobi60)
+  target_include_directories(minizinc_gurobi_old PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(minizinc_gurobi_old minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-gurobi
+  add_executable(mzn-gurobi-old
     solvers/gurobi/mzn-gurobi.cpp
   )
-  target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(mzn-gurobi minizinc_gurobi minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+#   target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(mzn-gurobi-old minizinc_gurobi)
 
-  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+  INSTALL(TARGETS minizinc_gurobi_old mzn-gurobi-old
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -343,24 +344,23 @@ if(HAS_CPLEX)
 		lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
+                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
                                )
   target_include_directories(minizinc_cplex PRIVATE
     "${CPLEX_STUDIO_DIR}/cplex/include"
   )
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc cplex)
+	target_link_libraries(minizinc_cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-cplex
-	  lib/flattener.cpp lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+	  lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
 	SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-#  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex minizinc_cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -394,7 +394,7 @@ if(HAS_CPLEX_OLD)
   )
   target_include_directories(minizinc_cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-  target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert)
+  target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-cplex_old
     solvers/cplex/mzn-cplex.cpp
@@ -404,7 +404,7 @@ if(HAS_CPLEX_OLD)
                                )
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex_old minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex_old mzn-cplex_old
     RUNTIME DESTINATION bin
@@ -438,7 +438,7 @@ if(HAS_SCIP)
   add_library(minizinc_mip_scip
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
-  include_directories(
+  target_include_directories(minizinc_mip_scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
@@ -450,9 +450,13 @@ if(HAS_SCIP)
     ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-mip-scip
-    lib/flattener.cpp lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+      lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
-  target_link_libraries(mzn-mip-scip minizinc_mip_scip minizinc 
+  target_include_directories(mzn-mip-scip PRIVATE
+    "${SCIP_DIR}/src"
+    "${SOPLEX_DIR}/src"
+    "${ZIMPL_DIR}/src")
+  target_link_libraries(mzn-mip-scip minizinc
     scip 
     nlpi.cppad #objscip
     lpispx soplex
@@ -466,8 +470,32 @@ if(HAS_SCIP)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
+if(HAS_OSICBC)
+  # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.6 coin-Cbc-2.9.6'
+  # as opposed to their docu: the /stable/2.9 directory is different.
+  set(OSICBC_HOME $ENV{OSICBC_HOME})
+  link_directories("${OSICBC_HOME}/lib")
+
+  add_library(minizinc_osicbc
+    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+  )
+  target_include_directories(minizinc_osicbc PRIVATE "${OSICBC_HOME}/include/coin/")
+  target_link_libraries(minizinc_osicbc minizinc OsiCbc Cbc CbcSolver CoinUtils
+    # Cgl OsiClp Osi Clp  lapacke lapack blas bz2 z -lpthread
+    )
+
+  add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
+  target_link_libraries(mzn-cbc minizinc OsiCbc Cbc CbcSolver CoinUtils )
+
+  INSTALL(TARGETS minizinc_osicbc mzn-cbc
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
-  include_directories("${GECODE_HOME}/include")
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
@@ -476,19 +504,17 @@ if(HAS_GECODE)
 		solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
 
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport)
+    gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-gecode
     solvers/gecode/mzn-gecode.cpp
   )
-  target_link_libraries(mzn-gecode minizinc_gecode minizinc 
-    gecodedriver gecodesearch gecodeminimodel
-    gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-gecode minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
     RUNTIME DESTINATION bin

@@ -308,7 +308,7 @@ solcallback(GRBmodel *model,
 
    if ( newincumbent ) {
       assert(info->pOutput->x);
-      GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, info->pOutput->x);
+      GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
       
       info->pOutput->dCPUTime = -1;
 
@@ -383,7 +383,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    }
 
     if (nTimeout>0) {
-     error = GRBsetdblparam(env, "TimeLimit", nTimeout);
+     error = GRBsetdblparam(env, GRB_DBL_PAR_TIMELIMIT, nTimeout);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -435,7 +435,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       
       x.resize(cur_numcols);
       output.x = &x[0];
-      error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, output.x);
+      error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
       wrap_assert(!error, "Failed to get variable values.");
    }
    output.bestBound = 1e308;

@@ -82,7 +82,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     virtual SCIP_RETCODE solve_SCIP();
     
     /// OUTPUT:
-    virtual double* getValues() { return output.x; }
+    virtual const double* getValues() { return output.x; }
     virtual double getObjValue() { return output.objVal; }
     virtual double getBestBound() { return output.bestBound; }
     virtual double getCPUTime() { return output.dCPUTime; }
