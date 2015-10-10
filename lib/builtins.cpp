@@ -271,7 +271,7 @@ namespace MiniZinc {
     Expression* e = follow_id_to_decl(args[0]);
     
     bool foundMin = false;
-    IntVal array_lb = -IntVal::infinity;
+    IntVal array_lb = -IntVal::infinity();
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
@@ -290,7 +290,7 @@ namespace MiniZinc {
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
         throw EvalError(env, Location(), "lower bound of empty array undefined");
-      IntVal min = IntVal::infinity;
+      IntVal min = IntVal::infinity();
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(env,al->v()[i]);
         if (!ib.valid)
@@ -331,7 +331,7 @@ namespace MiniZinc {
     Expression* e = follow_id_to_decl(args[0]);
     
     bool foundMax = false;
-    IntVal array_ub = IntVal::infinity;
+    IntVal array_ub = IntVal::infinity();
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
@@ -350,7 +350,7 @@ namespace MiniZinc {
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
         throw EvalError(env, Location(), "upper bound of empty array undefined");
-      IntVal max = -IntVal::infinity;
+      IntVal max = -IntVal::infinity();
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(env,al->v()[i]);
         if (!ib.valid)
@@ -696,6 +696,13 @@ namespace MiniZinc {
     IntSetVal* isv = eval_intset(env,args[0]);
     return isv->max();
   }
+  IntSetVal* b_lb_set(EnvI& env, Call* e) {
+    Expression* ee = eval_par(env, e->args()[0]);
+    if (ee->type().ispar()) {
+      return eval_intset(env, ee);
+    }
+    return IntSetVal::a();
+  }
   IntSetVal* b_ub_set(EnvI& env, Expression* e) {
     IntSetVal* isv = compute_intset_bounds(env,e);
     if (isv)
@@ -803,8 +810,8 @@ namespace MiniZinc {
     Expression* e = follow_id_to_decl(arg_e);
     
     bool foundBounds = false;
-    IntVal array_lb = -IntVal::infinity;
-    IntVal array_ub = IntVal::infinity;
+    IntVal array_lb = -IntVal::infinity();
+    IntVal array_ub = IntVal::infinity();
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
@@ -828,8 +835,8 @@ namespace MiniZinc {
       ArrayLit* al = eval_array_lit(env,e);
       if (al->v().size()==0)
         throw EvalError(env, Location(), "lower bound of empty array undefined");
-      IntVal min = IntVal::infinity;
-      IntVal max = -IntVal::infinity;
+      IntVal min = IntVal::infinity();
+      IntVal max = -IntVal::infinity();
       for (unsigned int i=0; i<al->v().size(); i++) {
         IntBounds ib = compute_int_bounds(env,al->v()[i]);
         if (!ib.valid)
@@ -903,8 +910,9 @@ namespace MiniZinc {
     Ranges::Const by0(0,0);
     Ranges::Diff<Ranges::Const, Ranges::Const> byr0(byr,by0);
 
-    IntVal min=IntVal::maxint;
-    IntVal max=IntVal::minint;
+
+    IntVal min=IntVal::maxint();
+    IntVal max=IntVal::minint();
     min = std::min(min, bx.l / byr0.min());
     min = std::min(min, bx.l / byr0.max());
     min = std::min(min, bx.u / byr0.min());
@@ -2228,6 +2236,7 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varsetint();
       rb(env, m, ASTString("ub"), t, b_ub_set);
+      rb(env, m, ASTString("lb"), t, b_lb_set);
     }
     {
       std::vector<Type> t(1);

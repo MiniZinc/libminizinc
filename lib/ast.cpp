@@ -968,7 +968,8 @@ namespace MiniZinc {
     absent_t.ot(Type::OT_OPTIONAL);
     absent->type(absent_t);
     
-    infinity = new SetLit(Location(), IntSetVal::a(-IntVal::infinity, IntVal::infinity));
+    IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+    infinity = new SetLit(Location(), isv_infty);
     
     ids.forall = ASTString("forall");
     ids.forall_reif = ASTString("forall_reif");
@@ -1085,6 +1086,10 @@ namespace MiniZinc {
     ann.doc_comment = ASTString("doc_comment");
     ann.mzn_path = ASTString("mzn_path");
     ann.is_introduced = ASTString("is_introduced");
+    ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
+    ann.user_cut->type(Type::ann());
+    ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
+    ann.lazy_constraint->type(Type::ann());
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1271,6 +1276,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(),ann.mzn_path));
     v.push_back(new StringLit(Location(), ann.is_introduced));
+    v.push_back(ann.user_cut);
+    v.push_back(ann.lazy_constraint);
     
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));

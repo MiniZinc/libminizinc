@@ -64,6 +64,8 @@ namespace MiniZinc {
       IloNumArray exprToIloNumArray(Expression* e);
       IloNumVarArray exprToIloNumVarArray(Expression* e);
 
+      IloConstraintArray *userCuts, *lazyConstraints;
+
     protected:
       Expression* getSolutionValue(Id* id, SolutionCallbackI* cb = NULL);
       virtual Expression* getSolutionValue(Id* id) {

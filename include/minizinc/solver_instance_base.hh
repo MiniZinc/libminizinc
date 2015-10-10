@@ -12,6 +12,8 @@
 #ifndef __MINIZINC_SOLVER_INSTANCE_BASE_HH__
 #define __MINIZINC_SOLVER_INSTANCE_BASE_HH__
 
+#include <iostream>
+
 #include <minizinc/model.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
@@ -22,6 +24,7 @@
 namespace MiniZinc {
 
   class SolverInstanceBase {
+//     Env* pEnv = 0;
   protected:
     Env& _env;
     Options _options;
@@ -36,19 +39,33 @@ namespace MiniZinc {
       Registry(SolverInstanceBase& base) : _base(base) {}
       void add(const ASTString& name, poster p);
       void post(Call* c);      
+      void cleanup() { _registry.clear(); }
     };
     
     Registry _constraintRegistry;
     
     virtual Expression* getSolutionValue(Id* id) = 0;
 
-    void assignSolutionToOutput(void);
+    /// Assign output for all vars:
+    virtual void assignSolutionToOutput(void);
     
   public:
     typedef SolverInstance::Status Status;
     SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
     
-    virtual ~SolverInstanceBase(void) {}
+    /// Probably should not be overridden above if using cleanup() again?
+    /// Dangerous in C++. TODO
+    virtual ~SolverInstanceBase(void) { /*cleanup();*/ }
+    
+    /// Set/get the environment:
+    virtual Env* getEnv() const { assert(&_env); return &_env; }
+    virtual Env& env(void) const { return *getEnv(); }
+    
+    virtual void setOptions(Options& o) { _options = o; }
+    virtual Options& getOptions() { return _options; }
+
+    virtual void printSolution(std::ostream& ) { }
+
     /// find the next solution
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model
@@ -63,26 +80,39 @@ namespace MiniZinc {
     virtual void resetWithConstraints(Model::iterator begin, Model::iterator end);
     /// add permanent constraints given by the iterator to the solver instance
     virtual void processPermanentConstraints(Model::iterator begin, Model::iterator end);
-    void setOptions(Options& o) { _options = o; }
-    Options& getOptions() { return _options; }
-    Env& env(void) { return _env; }
+    /// clean up solver completely, e.g., before taking another problem environment
+    /// derived classes should call their ancestor's cleanup after theirs
+    /// Not implementing for now - only checking that env is set at most once. TODO
+//     virtual void cleanup() { cleanupBase(); }
+//     virtual void cleanupBase() {
+//       _constraintRegistry.cleanup();
+//       pEnv = 0;
+//     }
     
   private:
     SolverInstanceBase(const SolverInstanceBase&);
     SolverInstanceBase& operator= (const SolverInstanceBase&);
   };
+
   
   template<class Solver>
   class SolverInstanceImpl : public SolverInstanceBase {
+  public:
+    typedef typename Solver::Variable VarId;
+
   protected:
     typename Solver::Statistics _statistics;
     
-    IdMap<typename Solver::Variable> _variableMap;
+    IdMap<VarId> _variableMap;
+
   public:
-    SolverInstanceImpl(Env& env, const Options& options) : SolverInstanceBase(env,options) {}
+    SolverInstanceImpl(Env& env, const Options& options=Options()) : SolverInstanceBase(env, options) {}
+    
+//     void cleanup() { _statistics.cleanup(); _variableMap.clear(); SolverInstanceBase::cleanup(); }
+    
     Statistics& getStatistics() { return _statistics; }
   };
-  
+
 }
 
 #endif

@@ -91,7 +91,7 @@ let {
   {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 } 
 }  
 in 
-  trace("  cumul_tasks: " ++ show(card(tasks)) ++ " tasks\n") /\
+  my_trace("  cumul_tasks: " ++ show(card(tasks)) ++ " tasks\n") /\
   forall( j in tasks) (
     b-r[j] >= sum( i in tasks where i != j
         /\ lb(s[i])<=ub(s[j]) /\ lb(s[j])<ub(s[i]+d[i])   %% -- seems slower on mspsp ???

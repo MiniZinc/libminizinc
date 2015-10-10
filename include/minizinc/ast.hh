@@ -1375,6 +1375,8 @@ namespace MiniZinc {
         ASTString doc_comment;
         ASTString mzn_path;
         ASTString is_introduced;
+        Id* user_cut;            // MIP
+        Id* lazy_constraint;            // MIP
       } ann;
 
       /// Command line options

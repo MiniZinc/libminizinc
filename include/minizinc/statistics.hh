@@ -43,6 +43,8 @@ namespace MiniZinc {
       double objective();
 
       Statistics& operator+=(Statistics& s);
+      
+      virtual void cleanup() { _time = _nodes = _failures = 0; }
   };
 }
 

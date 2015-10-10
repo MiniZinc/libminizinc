@@ -137,9 +137,9 @@ namespace MiniZinc {
         throw ArithmeticError("arithmetic operation on infinite value");
       --_v;
     }
-    static const IntVal minint;
-    static const IntVal maxint;
-    static const IntVal infinity;
+    static const IntVal minint(void);
+    static const IntVal maxint(void);
+    static const IntVal infinity(void);
     
     /// Infinity-safe addition
     IntVal plus(int x) {
@@ -230,7 +230,7 @@ namespace MiniZinc {
 namespace std {
   inline
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-    if (!x.isFinite()) return MiniZinc::IntVal::infinity;
+    if (!x.isFinite()) return MiniZinc::IntVal::infinity();
     MiniZinc::IntVal::SI y(x.toInt());
     return y < 0 ? MiniZinc::IntVal(static_cast<long long int>(-y)) : x;
   }
@@ -306,10 +306,7 @@ namespace MiniZinc {
     /// Construct empty set
     IntSetVal(void) : ASTChunk(0) {}
     /// Construct set of single range
-    IntSetVal(IntVal m, IntVal n) : ASTChunk(sizeof(Range)) {
-      get(0).min = m;
-      get(0).max = n;
-    }
+    IntSetVal(IntVal m, IntVal n);
     /// Construct set from \a s
     IntSetVal(const std::vector<Range>& s)
       : ASTChunk(sizeof(Range)*s.size()) {
@@ -325,9 +322,9 @@ namespace MiniZinc {
     /// Return number of ranges
     int size(void) const { return _size / sizeof(Range); }
     /// Return minimum, or infinity if set is empty
-    IntVal min(void) const { return size()==0 ? IntVal::infinity : get(0).min; }
+    IntVal min(void) const { return size()==0 ? IntVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty
-    IntVal max(void) const { return size()==0 ? -IntVal::infinity : get(size()-1).max; }
+    IntVal max(void) const { return size()==0 ? -IntVal::infinity() : get(size()-1).max; }
     /// Return minimum of range \a i
     IntVal min(int i) const { assert(i<size()); return get(i).min; }
     /// Return maximum of range \a i
@@ -338,7 +335,7 @@ namespace MiniZinc {
       if (min(i).isFinite() && max(i).isFinite())
         return max(i)-min(i)+1;
       else
-        return IntVal::infinity;
+        return IntVal::infinity();
     }
     /// Return cardinality
     IntVal card(void) const {
@@ -347,7 +344,7 @@ namespace MiniZinc {
         if (width(i).isFinite())
           c += width(i);
         else
-          return IntVal::infinity;
+          return IntVal::infinity();
       }
       return c;
     }

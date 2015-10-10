@@ -27,7 +27,7 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
     assert(F subset 1..Q,
         "regular: final states in 'F' contain states outside 1..Q",
 
-          trace("  regular: index_set(x)=" ++ show(index_set(x))
+          my_trace("  regular: index_set(x)=" ++ show(index_set(x))
             ++ ",  dom_array(x)=" ++ show(dom_array(x))
             ++ ",  dom_array(a)=" ++ show(1..Q)
             ++ "\n") /\
@@ -80,7 +80,7 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
                 (eq_a[i+1, va] == 0)
               %/\ a[i+1] in min(va_R)..max(va_R)
         )
-         /\ trace("  regular -- domains after prop: index_set(x)=" ++ show(index_set(x))
+         /\ my_trace("  regular -- domains after prop: index_set(x)=" ++ show(index_set(x))
             ++ ",  dom_array(x)=" ++ show(dom_array(x))
             ++ ",  dom_array(a)=" ++ show(dom_array(a))
             ++ "\n")

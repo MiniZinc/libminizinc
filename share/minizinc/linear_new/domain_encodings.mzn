@@ -51,7 +51,11 @@ function array[int] of var int: eq_encode(var int: x) ::promise_total =
   let {
     array[int] of var int: y = array1d(lb(x)..ub(x),[eq_new_var(x,i) | i in lb(x)..ub(x)]);
     constraint equality_encoding(x,y);
-    constraint if card(dom(x))>200 then trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ "\n") else true endif;
+    constraint
+      if card(dom(x))>0 then
+        my_trace__DBG("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ",  card( dom(\(x)) ) = " ++ show(card(dom(x))) ++ "\n")
+      else true endif;
+ %%   constraint assert(card(dom(x))>1, "  eq_encode: card(dom(\(x))) == " ++ show(card(dom(x))));
   } in  y;
 
 function array[int] of int: eq_encode(int: x) ::promise_total =
