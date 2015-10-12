@@ -37,6 +37,8 @@ namespace MiniZinc {
       std::vector<VarDecl*> _varsWithOutput;
       UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
       
+      std::map<string, VarDecl*> mOutputDecls;
+      
     public:
       double lastIncumbent;
     public:
