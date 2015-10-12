@@ -147,7 +147,6 @@ class MIP_wrapper {
 
   public:
     /// debugging stuff
-    int nLiteralCreations = 0;
     set<double> sLitValues;
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
@@ -162,7 +161,7 @@ class MIP_wrapper {
     /// adding a literal as a variable. Should not happen in feasible models
     virtual VarId addLitVar(double v) {
       ostringstream oss;
-      oss << "lit_" << v;
+      oss << "lit_" << v << "__" << (nLitVars++);
       string name = oss.str();
       size_t pos = name.find('.');
       if (string::npos != pos)
@@ -171,10 +170,10 @@ class MIP_wrapper {
       if (fPhase1Over)
         addVar(res);
 //       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
-      ++ nLiteralCreations;
       sLitValues.insert(v);
       return res;
     }
+    int nLitVars=0;
     /// adding all local variables upfront. Makes sure it's called only once
     virtual void addPhase1Vars() {
       assert(0 == getNCols());
@@ -190,6 +189,7 @@ class MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         string rowName = "") = 0;
+    int nAddedRows = 0;   // for name counting
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s) = 0;   // +/-1 for max/min

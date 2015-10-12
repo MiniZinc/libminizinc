@@ -25,8 +25,10 @@
 using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.h>
+#include <CbcSolver.hpp>
 #include <CbcConfig.h>
 #include <ClpConfig.h>
+
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
@@ -46,11 +48,12 @@ string MIP_WrapperFactory::getVersion( ) {
 
 void MIP_WrapperFactory::printHelp(ostream& os) {
   os
-  << "OSICBC  MIP wrapper options:" << std::endl
+  << "OSICBC MIP wrapper options:" << std::endl
   // -s                  print statistics
   //            << "  --readParam <file>  read OSICBC parameters from file
   //               << "--writeParam <file> write OSICBC parameters to file
   //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
+  << "--cmdArgs \"args\" command-line args passed to CbcMain1, e.g., \"-cuts off -preprocess off -passc 1\"" << std::endl
   << "--writeModel <file> write model to <file> (.mps)" << std::endl
 //   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
 //   << "-p <N>              use N threads, default: 1" << std::endl
@@ -75,12 +78,15 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sReadParams;
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
+ 
+ static   string cbc_cmdOptions;
 
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
-//   if (string(argv[i])=="-a") {
+   if (string(argv[i])=="-a") {
+     cerr << "\n  WARNING: No solution callbacks implemented for coin-cbc." << endl;
 //     flag_all_solutions = true;
-//   } else
+   } else
     if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (string(argv[i])=="--writeModel") {
@@ -89,8 +95,15 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
     sExportModel = argv[i];
+  } else if (string(argv[i])=="--cbcArgs") {
+    i++;
+    if (i==argc) {
+      goto error;
+    }
+    cbc_cmdOptions = argv[i];
   }
-//   else if (beginswith(string(argv[i]),"-p")) {
+  else if (beginswith(string(argv[i]),"-p")) {
+    cerr << "\n  WARNING: No multi-thread support in coin-cbc." << endl;
 //     string nP(argv[i]);
 //     if (nP.length() > 2) {
 //       nP.erase(0, 2);
@@ -107,7 +120,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
 //       cerr << "\nBad value for -p: " << nP << endl;
 //       goto error;
 //     }
-//   }
+  }
   else if (beginswith(string(argv[i]),"--timeout")) {
     string nP(argv[i]);
     if (nP.length() > 9) {
@@ -290,6 +303,36 @@ void MIP_osicbc_wrapper::addRow
 // } /* END logcallback */
 // end SolutionCallback ---------------------------------------------------------------------
 
+MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel *pModel)
+{
+  Status s = Status::UNKNOWN;
+   /* Converting the status. */
+   if (pModel->isProvenOptimal()) {
+       s = Status::OPT;
+       output.statusName = "Optimal";
+//        wrap_assert(osi., "Optimality reported but pool empty?", false);
+   } else if (pModel->isProvenInfeasible()) {
+       s = Status::UNSAT;
+       output.statusName = "Infeasible";
+   } else if (pModel->isProvenDualInfeasible()) {
+       s = Status::UNBND;
+       output.statusName = "Dual infeasible";
+//        s = Status::UNSATorUNBND;
+   } else if   // wrong: (pModel->getColSolution())
+     (fabs(pModel->getObjValue()) < 1e50)
+   {
+       s = Status::SAT;
+       output.statusName = "Feasible";
+   } else if (pModel->isAbandoned()) {     // AFTER feas-ty
+       s = Status::ERROR;
+       output.statusName = "Abandoned";
+   } else {
+     s = Status::UNKNOWN;
+     output.statusName = "Unknown";
+   }
+   return s;
+}
+
 MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 {
   Status s = Status::UNKNOWN;
@@ -308,9 +351,12 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
    } else if (osi.isAbandoned()) {
        s = Status::ERROR;
        output.statusName = "Abandoned";
-   } else if (osi.getColSolution()) {
+   } else if   // wrong: (pModel->getColSolution())
+     (fabs(osi.getObjValue()) < osi.getInfinity())
+   {
        s = Status::SAT;
        output.statusName = "Feasible";
+       cout << " getSolverObjValue(as minim) == " << osi.getObjValue() << endl;
    }
    else {
      s = Status::UNKNOWN;
@@ -323,6 +369,26 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+//       osi->loadProblem(*matrix, 
+  {
+      std::vector<VarId> integer_vars;
+      for(unsigned int i=0; i<colObj.size(); i++) {
+        if(REAL != colTypes[i]
+//           && is_used[i]
+        ) {
+          integer_vars.push_back(i);
+        }
+      }
+      osi.setInteger(integer_vars.data(), integer_vars.size());
+  }
+    if(sExportModel.size()) {
+      // Not implemented for OsiClp:
+//       osi.setColNames(colNames, 0, colObj.size(), 0);
+      vector<const char*> colN(colObj.size());
+      for (int j=0; j<colNames.size(); ++j)
+        colN[j] = colNames[j].c_str();
+      osi.writeMpsNative(sExportModel.c_str(), 0, colN.data());
+    }
   /* Turn on output to the screen */
      class NullCoinMessageHandler : public CoinMessageHandler {
       int print() {
@@ -333,22 +399,31 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       }
     } nullHandler;
 
+//     CbcSolver control(osi);
+//     // initialize   ???????
+//     control.fillValuesInSolver();  
+//     CbcModel * pModel = control.model();
+    
+    CbcModel model(osi);
+    
     if(fVerbose) {
-       osi.getModelPtr()->messageHandler()->setLogLevel(1);
-//        osi.getRealSolverPtr()->messageHandler()->setLogLevel(1);
+//        osi.messageHandler()->setLogLevel(1);
+//        osi.getModelPtr()->setLogLevel(1);
+//        osi.getRealSolverPtr()->messageHandler()->setLogLevel(0);
+       model.setLogLevel(1);
+       model.solver()->messageHandler()->setLogLevel(0);
     } else {
-      osi.passInMessageHandler(&nullHandler);
-      osi.messageHandler()->setLogLevel(0);
-      osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
+      model.passInMessageHandler(&nullHandler);
+      model.messageHandler()->setLogLevel(0);
+      model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+//       osi.passInMessageHandler(&nullHandler);
+//       osi.messageHandler()->setLogLevel(0);
+//       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
     if(nTimeout > 0.0) {
-      osi.setMaximumSeconds(nTimeout);
-    }
-
-    if(sExportModel.size()) {
-      osi.setColNames(colNames, 0, colObj.size(), 0);
-      osi.writeMps(sExportModel.c_str());
+//       osi.setMaximumSeconds(nTimeout);
+      model.setMaximumSeconds(nTimeout);
     }
 
    /// TODO
@@ -372,43 +447,51 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 
    /* Optimize the problem and obtain solution. */
     try {
-//       osi->loadProblem(*matrix,
-      std::vector<VarId> integer_vars;
-      for(unsigned int i=0; i<colObj.size(); i++) {
-        if(REAL != colTypes[i]
-//           && is_used[i]
-        ) {
-          integer_vars.push_back(i);
-        }
-      }
-      osi.setInteger(integer_vars.data(), integer_vars.size());
-      osi.branchAndBound();
+//       model.branchAndBound();
+//       osi.branchAndBound();
+
+      /// TAKEN FORM DRIVER3.CPP, seems to use most features:
+//      CbcMain0(model);
+//      CbcCbcParamUtils::setCbcModelDefaults(model) ;
+//       const char * argv2[]={"mzn-cbc","-solve","-quit"};
+//        CbcMain1(3,argv2,model);
+      cbc_cmdOptions += " -solve";
+      cbc_cmdOptions += " -quit";
+//       if (fVerbose)
+//         cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
+      callCbc(cbc_cmdOptions, model);
     } catch (CoinError& err) {
       err.print(true);
     }
+    
 
    output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
-   output.status = convertStatus();
+   output.status = convertStatus(&model);
+//    output.status = convertStatus();
 
    /// Continuing to fill the output object:
    if (Status::OPT == output.status || Status::SAT ==output.status) {
-     output.objVal = osi.getObjValue();
+     output.objVal = model.getObjValue();
+//      output.objVal = osi.getObjValue();
 
       /* The size of the problem should be obtained by asking OSICBC what
           the actual size is, rather than using what was passed to CBCcopylp.
           cur_numrows and cur_numcols store the current number of rows and
           columns, respectively.  */   // ?????????????? TODO
 
-    //    int cur_numrows = CBCgetnumrows (env, lp);
-      int cur_numcols = osi.getNumCols ();
+      int cur_numcols = model.getNumCols ();
+//       int cur_numcols = osi.getNumCols ();
       assert(cur_numcols == colObj.size());
       
-      output.x = osi.getColSolution();
+      output.x = model.getColSolution();
+//       output.x = osi.getColSolution();
       wrap_assert(output.x, "Failed to get variable values.");
    }
-   output.bestBound = osi.getModelPtr()->getBestPossibleObjValue();
-   output.nNodes = osi.getNodeCount();
+   output.bestBound = model.getBestPossibleObjValue();
+//    output.bestBound = -1;
+   output.nNodes = model.getNodeCount();
+//    output.nNodes = osi.getNodeCount();
    output.nOpenNodes = -1;
 }
 
@@ -417,3 +500,140 @@ void MIP_osicbc_wrapper::setObjSense(int s)
   osi.setObjSense(-s);
 }
 
+/*
+
+try the following for example:
+
+CbcMain0(model); 
+const char * argv2[]={"driver4","-cuts","off" ,"-preprocess","off","-passc","1","-solve","-quit"};
+CbcMain1(9,argv2,model);
+
+you can add any feature you want to argv2 ...
+
+if you want to add cuts yourself, or heuristics, do the following:
+
+  OsiSolverInterface *solver2 = osi;
+  CglPreProcess *process = new CglPreProcess;
+  solver2 = process->preProcess(*solver,false,2);
+
+    CbcModel model1(*solver2);
+  
+    model1.initialSolve();
+    
+  //==============================================
+ 
+  CglProbing generator1;
+  generator1.setUsingObjective(true);
+  generator1.setMaxPass(1);
+  generator1.setMaxPassRoot(5);
+  generator1.setMaxProbe(10);
+  generator1.setMaxProbeRoot(1000);
+  generator1.setMaxLook(50);
+  generator1.setMaxLookRoot(500);
+  generator1.setMaxElements(200);
+  generator1.setRowCuts(3);
+
+  CglGomory generator2;
+  generator2.setLimit(300);
+
+  CglKnapsackCover generator3;
+
+  CglRedSplit generator4;
+  generator4.setLimit(200);
+
+  CglClique generator5;
+  generator5.setStarCliqueReport(false);
+  generator5.setRowCliqueReport(false);
+
+  CglMixedIntegerRounding2 mixedGen;
+  CglFlowCover flowGen;
+  
+  CglGMI cut1;
+  CglMixedIntegerRounding2 cut2;
+  CglOddHole cut3;
+  CglSimpleRounding cut4;
+  CglResidualCapacity cut5;
+  CglTwomir cut6;
+  CglZeroHalf cut7;
+  
+  model1.addCutGenerator(&generator1,-1,"Probing");
+  model1.addCutGenerator(&generator2,-1,"Gomory");
+  model1.addCutGenerator(&generator3,-1,"Knapsack");
+  model1.addCutGenerator(&generator4,-1,"RedSplit");
+  model1.addCutGenerator(&generator5,-1,"Clique");
+  model1.addCutGenerator(&flowGen,-1,"FlowCover");
+  model1.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");
+  model1.addCutGenerator(&cut1,-1,"GMI");
+  model1.addCutGenerator(&cut2,-1,"MixedIntegerRounding2");
+  model1.addCutGenerator(&cut3,-1,"OddHole");
+  model1.addCutGenerator(&cut4,-1,"SimpleRounding");
+  model1.addCutGenerator(&cut5,-1,"ResidualCapacity");
+  model1.addCutGenerator(&cut6,-1,"Twomir");
+  model1.addCutGenerator(&cut7,-1,"ZeroHalf");
+  
+ 
+
+  CbcRounding heuristic1(model1);
+  CbcHeuristicLocal heuristic2(model1);
+
+  
+ model1.addHeuristic(&heuristic1);
+ model1.addHeuristic(&heuristic2);
+
+ 
+  
+  
+    model1.setMaximumCutPassesAtRoot(50); 
+    model1.setMaximumCutPasses(1000);
+  
+  
+  
+  model1.branchAndBound();
+  
+  
+  OsiSolverInterface * solver3;
+  
+  process->postProcess(*model1.solver());
+  
+  solver3 = solver;
+  
+ or, use the default strategy:
+
+CbcStrategyDefault strategy(5);
+model1.setStrategy(strategy);
+ 
+
+  
+  
+  
+
+On Sun, Oct 11, 2015 at 8:38 PM, Gleb Belov <gleb.belov@monash.edu> wrote:
+
+    Hi,
+
+    I am trying to call Cbc 2.9.6 from my program. When using the tutorial-style approach
+
+    OsiClpSolverInterface osi;
+    osi.add .......
+    CbcModel model(osi);
+    model.branchAndBound();
+
+    there seem to be no cuts and other stuff applied. When using the method from the examples,
+
+    CbcMain0(model);
+    const char * argv2[]={"driver4","-solve","-quit"};
+    CbcMain1(3,argv2,model);
+
+    there are cuts applied, but obviously different (less aggressive) to the standalone Cbc executable. I also tried CbcSolver class but its method solve() is not found by the linker. So what is the 'standard' way of using the 'default' add-ons?
+
+    Moreover. The attached example crashes both in the standalone Cbc and in the CbcCmain0/1 variant after a few minutes.
+
+    Thanks
+
+    _______________________________________________
+    Cbc mailing list
+    Cbc@list.coin-or.org
+    http://list.coin-or.org/mailman/listinfo/cbc
+
+
+ */

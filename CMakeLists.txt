@@ -480,13 +480,13 @@ if(HAS_OSICBC)
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
   target_include_directories(minizinc_osicbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(minizinc_osicbc minizinc OsiCbc Cbc CbcSolver CoinUtils
+  target_link_libraries(minizinc_osicbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m
     # Cgl OsiClp Osi Clp  lapacke lapack blas bz2 z -lpthread
     )
 
   add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
   target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(mzn-cbc minizinc OsiCbc Cbc CbcSolver CoinUtils )
+  target_link_libraries(mzn-cbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m )
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin

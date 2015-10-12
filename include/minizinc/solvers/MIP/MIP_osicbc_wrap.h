@@ -20,11 +20,15 @@
 // #include <CoinShallowPackedVector.hpp>
 // #include <CoinTime.hpp>
 // #include <OsiSolverInterface.hpp>
-#include <OsiCbcSolverInterface.hpp>
+//  #include <OsiCbcSolverInterface.hpp>
+#include <OsiClpSolverInterface.hpp>
+#include <CbcModel.hpp>
+// #include <CbcSolver.hpp>
 
 
 class MIP_osicbc_wrapper : public MIP_wrapper {
-    OsiCbcSolverInterface osi;
+//     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
+    OsiClpSolverInterface osi;
 //     CoinPackedMatrix* matrix = 0;
     int             error;
     string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
@@ -91,11 +95,12 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
-    OsiSolverInterface& getOsiSolver(void) { return osi; }
+//     OsiSolverInterface& getOsiSolver(void) { return osi; }
 
     void wrap_assert(bool , string , bool fTerm=true);
     
     /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
+    Status convertStatus(CbcModel *pModel);
     Status convertStatus();
 };
 
