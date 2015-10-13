@@ -65,6 +65,9 @@ namespace MiniZinc {
     virtual Options& getOptions() { return _options; }
 
     virtual void printSolution(std::ostream& ) { }
+    
+    virtual void printStatistics(std::ostream&, bool fLegend=0) { }
+    virtual void printStatisticsLine(std::ostream&, bool fLegend=0) { }
 
     /// find the next solution
     virtual Status next(void) = 0;

@@ -68,7 +68,8 @@ namespace MiniZinc {
 
       void assignSolutionToOutput();   // needs to be public for the callback?
       void printSolution(ostream& );
-      void printStatistics(ostream& );
+      virtual void printStatistics(std::ostream&, bool fLegend=0);
+      virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
 
 //       /// PARAMS
 //       int nThreads;

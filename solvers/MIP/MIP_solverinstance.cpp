@@ -191,17 +191,18 @@ void MIP_solverinstance::printSolution(ostream& os) {
     previousOutput.insert(h);
     std::cout << output;
 //     if(fVerbose)
-    printStatistics(cout);
+    printStatistics(cout, 1);
     std::cout << "----------" << std::endl;
   }
 }
 
-void MIP_solverinstance::printStatistics(ostream& os)
+void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
     {
       int nPrec = cout.precision(12);
-      cout << "  % Status: " << mip_wrap->getStatusName() << endl;
-      cout << "  % MIP_obj, MIP_bound, CPU_time, nodes: ";
+      cout << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
+      if (fLegend)
+        cout << "  % obj, bound, CPU_time, nodes (left): ";
       cout << mip_wrap->getObjValue() << ",  ";
       cout << mip_wrap->getBestBound() << ",  ";
       cout << mip_wrap->getCPUTime() << ",  ";
@@ -251,7 +252,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 
   getMIPWrapper()->solve();
   
-  printStatistics(cout);
+//   printStatistics(cout, 1);   MznSolver does this (if it wants)
 
   MIP_wrapper::Status sw = getMIPWrapper()->getStatus();
   SolverInstance::Status s = SolverInstance::UNKNOWN;

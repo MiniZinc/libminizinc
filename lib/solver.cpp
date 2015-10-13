@@ -185,7 +185,10 @@ bool MznSolver::processOptions(int argc, const char** argv)
         cout << (*it)->getVersion() << endl;
       std::exit(EXIT_SUCCESS);
     }
-    //  TODO  move --verbose here
+    //  moving --verbose here:
+    if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
+      flag_verbose = true;
+    }
     if (not getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
@@ -203,6 +206,14 @@ NotFound:
 
 void MznSolver::printHelp()
 {
+  cout
+    << "MiniZinc driver.\n"
+    << "Options:" << std::endl
+    << "  --help, -h\n     Print this help message" << std::endl
+    << "  --version\n     Print version information" << std::endl
+    << "  -v, --verbose\n     Print progress statements" << std::endl
+    << std::endl;
+  ;
   getFlt()->printHelp(cout);
   cout << endl;
   for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
@@ -214,6 +225,7 @@ void MznSolver::printHelp()
 
 void MznSolver::flatten()
 {
+  getFlt()->set_flag_verbose(get_flag_verbose());
   getFlt()->flatten();
 }
 
@@ -244,7 +256,7 @@ void MznSolver::solve()
 
 void MznSolver::printStatistics()
 { // from both flt and si?
-
+  getSI()->printStatisticsLine(cout, 1);
 }
 
 
