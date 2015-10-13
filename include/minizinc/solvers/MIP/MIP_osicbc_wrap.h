@@ -34,7 +34,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
 //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
     
-//     vector<double> x;
+    vector<double> x;
 
   public:
     MIP_osicbc_wrapper() { openOSICBC(); }

@@ -164,7 +164,8 @@ void MznSolver::addSolverInterface()
   assert(si);
   if (get_flag_verbose())
     cerr
-    << "  ---------------------------------------------------------------------------\n"
+//     << "  ---------------------------------------------------------------------------\n"
+    << "      % SOLVING PHASE\n"
     << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
 }
 

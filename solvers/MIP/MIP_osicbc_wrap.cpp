@@ -53,12 +53,12 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read OSICBC parameters from file
   //               << "--writeParam <file> write OSICBC parameters to file
   //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
-  << "--cmdArgs \"args\" command-line args passed to CbcMain1, e.g., \"-cuts off -preprocess off -passc 1\"" << std::endl
-  << "--writeModel <file> write model to <file> (.mps)" << std::endl
+  << "--cbcArgs \"args\"      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\". \"-preprocess off\" recommended in 2.9.6" << std::endl
+  << "--writeModel <file>   write model to <file> (.mps)" << std::endl
 //   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
 //   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds" << std::endl
+  << "--timeout <N>         stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
 //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
@@ -84,7 +84,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
    if (string(argv[i])=="-a") {
-     cerr << "\n  WARNING: No solution callbacks implemented for coin-cbc." << endl;
+     cerr << "\n  WARNING: -a: No solution callbacks implemented for coin-cbc.\n"
+       "However, kill -SIGINT <pid> should work like Ctrl-C and produce final output" << endl;
 //     flag_all_solutions = true;
    } else
     if (string(argv[i])=="-f") {
@@ -100,26 +101,26 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
     if (i==argc) {
       goto error;
     }
-    cbc_cmdOptions = argv[i];
+    cbc_cmdOptions += argv[i];
   }
   else if (beginswith(string(argv[i]),"-p")) {
-    cerr << "\n  WARNING: No multi-thread support in coin-cbc." << endl;
-//     string nP(argv[i]);
-//     if (nP.length() > 2) {
-//       nP.erase(0, 2);
-//     } else {
-//       i++;
-//       if (i==argc) {
-//         goto error;
-//       }
-//       nP = argv[i];
-//     }
-//     istringstream iss(nP);
-//     iss >> nThreads;
-//     if (!iss && !iss.eof()) {
-//       cerr << "\nBad value for -p: " << nP << endl;
-//       goto error;
-//     }
+    cerr << "\n  WARNING: -p: No multi-threading in coin-cbc." << endl;
+    string nP(argv[i]);
+    if (nP.length() > 2) {
+      nP.erase(0, 2);
+    } else {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      nP = argv[i];
+    }
+    istringstream iss(nP);
+    iss >> nThreads;
+    if (!iss && !iss.eof()) {
+      cerr << "\nBad value for -p: " << nP << endl;
+      goto error;
+    }
   }
   else if (beginswith(string(argv[i]),"--timeout")) {
     string nP(argv[i]);
@@ -139,24 +140,26 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
   }
-//   else if (beginswith(string(argv[i]),"--workmem")) {
-//     string nP(argv[i]);
-//     if (nP.length() > 9) {
-//       nP.erase(0, 9);
-//     } else {
-//       i++;
-//       if (i==argc) {
-//         goto error;
-//       }
-//       nP = argv[i];
-//     }
-//     istringstream iss(nP);
-//     iss >> nWorkMemLimit;
-//     if (!iss && !iss.eof()) {
-//       cerr << "\nBad value for --workmem: " << nP << endl;
-//       goto error;
-//     }
-//   } else if (string(argv[i])=="--readParam") {
+   else if (beginswith(string(argv[i]),"--workmem")) {
+      cerr << "  WARNING: --workmem: not supported in coin-cbc" << endl;
+      string nP(argv[i]);
+      if (nP.length() > 9) {
+        nP.erase(0, 9);
+      } else {
+        i++;
+        if (i==argc) {
+          goto error;
+        }
+        nP = argv[i];
+      }
+      istringstream iss(nP);
+      iss >> nWorkMemLimit;
+      if (!iss && !iss.eof()) {
+        cerr << "\nBad value for --workmem: " << nP << endl;
+        goto error;
+      }
+   }
+//   else if (string(argv[i])=="--readParam") {
 //     i++;
 //     if (i==argc) {
 //       goto error;
@@ -484,9 +487,10 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //       int cur_numcols = osi.getNumCols ();
       assert(cur_numcols == colObj.size());
       
-      output.x = model.getColSolution();
+      wrap_assert(model.getColSolution(), "Failed to get variable values.");
+      x.assign( model.getColSolution(), model.getColSolution() + cur_numcols ); // ColSolution();
+      output.x = x.data();
 //       output.x = osi.getColSolution();
-      wrap_assert(output.x, "Failed to get variable values.");
    }
    output.bestBound = model.getBestPossibleObjValue();
 //    output.bestBound = -1;
@@ -634,6 +638,53 @@ On Sun, Oct 11, 2015 at 8:38 PM, Gleb Belov <gleb.belov@monash.edu> wrote:
     Cbc mailing list
     Cbc@list.coin-or.org
     http://list.coin-or.org/mailman/listinfo/cbc
+
+
+    
+
+Hi, what is currently good way to have a solution callback in Cbc? the 
+interrupt example shows 2 ways, don't know which is right.
+
+Moreover, it says that the solution would be given for the preprocessed 
+model. Is it possible to produce one for the original? Is it possible to 
+call other functions from inside, such as number of nodes, dual bound?
+
+Thanks
+
+From john.forrest at fastercoin.com  Thu Oct  8 10:34:15 2015
+From: john.forrest at fastercoin.com (John Forrest)
+Date: Thu, 8 Oct 2015 15:34:15 +0100
+Subject: [Cbc] Solution callbacks
+In-Reply-To: <5615F778.9020601@monash.edu>
+References: <5615F778.9020601@monash.edu>
+Message-ID: <56167EE7.6000607@fastercoin.com>
+
+Gleb,
+
+On 08/10/15 05:56, Gleb Belov wrote:
+> Hi, what is currently good way to have a solution callback in Cbc? the 
+> interrupt example shows 2 ways, don't know which is right.
+>
+
+It is the event handling code you would be using.
+> Moreover, it says that the solution would be given for the 
+> preprocessed model. Is it possible to produce one for the original? 
+
+At present no.  In principle not difficult.  First the callback function 
+would have to be modified to get passed the CglPreProcess object - 
+easy.  Then in event handler you could make a copy of object and 
+postsolve (you need a copy as postsolve deletes data).
+> Is it possible to call other functions from inside, such as number of 
+> nodes, dual bound?
+
+Yes - you have CbcModel * model_ so things like that are available (or 
+could easily be made available)
+
+>
+> Thanks
+>
+
+John Forrest
 
 
  */
