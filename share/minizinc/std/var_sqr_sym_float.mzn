@@ -1,0 +1,30 @@
+%-----------------------------------------------------------------------------%
+% Default static symmetry breaking constraints for variable square symmetries.
+% Prunes any symmetrically equivalent solutions using a variable permutation
+% symmetry with a permutation for each of the symmetries in the size eight
+% square symmetry group.
+%-----------------------------------------------------------------------------%
+
+include "var_perm_sym.mzn";
+
+predicate var_sqr_sym_float(array[int,int] of var float: x) =
+    let { int: n = card(index_set_1of2(x));
+          int: n2 = card(index_set_2of2(x));
+          constraint assert(n = n2,
+                            "square symmetry applied to non-square array");
+          int: l = n * n;
+          array[1..l] of var float: y = [ x[i,j] | i in index_set_1of2(x),
+                                                   j in index_set_2of2(x) ];
+          array[1..8,1..l] of 1..l: p = array2d(1..8,1..l,
+              [ if     k == 1 then i*n + j - n
+                elseif k == 2 then (n - j)*n + i           % r270
+                elseif k == 3 then (n - i)*n + (n - j)+1   % r180
+                elseif k == 4 then (j*n - n) + (n - i + 1) % r90
+                elseif k == 5 then (n - i)*n + j           % x flip
+                elseif k == 6 then (i*n - n) + (n - j + 1) % y flip
+                elseif k == 7 then (n - j)*n + (n - i + 1) % d2 flip
+                else               (j*n - n) + i           % d1 flip
+                endif
+              | k in 1..8, i,j in 1..n]) }
+    in
+    var_perm_sym(y,p);

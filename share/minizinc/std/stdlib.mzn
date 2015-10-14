@@ -48,6 +48,19 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general Declare that the annotated predicate is a symmetry declaration.
+  Symmetry predicates must have ordered versions (suffix "_ord") with the same arguments as it's
+  unordered version as well as an additional 1-dimensional array of variables with the same type
+  as the first argument (usually denoted "order").
+  Symmetry predicates are replaced with their ordered versions when multiple occur within the same
+  model. When this happens the additional "order" variable is provided. It follows the variable order
+  of the 'global_order' search annotation, the search strategy and then the symmetry predicates.
+  Symmetry breaking methods (either static or dynamic) should ensure that all symmetry breaking
+  predicates provided are correct and consistent in combination by using this order if necessary.
+  Ordering happens after reification, so a reified ordered symmetry predicate will have the
+  combined suffix "_reif_ord".
+*/
+annotation symmetry;
 
 /***
  @groupdef annotations.prop Propagation strength annotations
@@ -111,6 +124,17 @@ annotation set_search(
     ann: choice,
     ann: explore
 );
+
+/** @group annotations.search Define a global order for symmetry breaking predicates.
+
+  When multiple symmetry predicates exist, a global order is used to order the
+  variables used so that consistent lexicographical symmetry breaking constraints
+  can be generated.
+  A global_order predicate is not required. The global order is automatically
+  extended with any additional variables appearing in the search order, followed
+  by any additional variables appearing in the symmetry predicates.
+*/
+annotation global_order(array[int] of var $t: x);
 
 /***
  @groupdef annotations.search.varsel Variable selection annotations

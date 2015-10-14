@@ -168,7 +168,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), in_maybe_partial(0), _flat(new Model), _failed(false), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), in_maybe_partial(0), collect_symmetry_vars(true), num_symmetry_predicates(0), flatten_symmetry_predicates(true), _flat(new Model), _failed(false), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -345,6 +345,11 @@ namespace MiniZinc {
   void EnvI::collectVarDecls(bool b) {
     collect_vardecls = b;
   }
+
+  void EnvI::collectSymmetryVars(bool b) {
+    collect_symmetry_vars = b;
+  }
+
   void EnvI::vo_add_exp(VarDecl* vd) {
     if (vd->e() && vd->e()->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
@@ -362,6 +367,7 @@ namespace MiniZinc {
     if (collect_vardecls)
       modifiedVarDecls.push_back(idx);
   }
+
   Model* EnvI::flat(void) {
     return _flat;
   }
@@ -377,6 +383,9 @@ namespace MiniZinc {
     } else {
       return it->second;
     }
+  }
+  ASTString EnvI::symOrdId(const ASTString& id) {
+    return id.str()+"_ord";
   }
 #undef MZN_FILL_REIFY_MAP
   
@@ -691,6 +700,10 @@ namespace MiniZinc {
 
   bool isReverseMap(BinOp* e) {
     return e->ann().contains(constants().ann.is_reverse_map);
+  }
+
+  bool requiresGlobalOrder(FunctionI* fi) {
+    return fi->ann().contains(constants().ann.symmetry);
   }
 
   void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e) {
@@ -4428,12 +4441,15 @@ namespace MiniZinc {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
         }
-        
+
         if (decl->params().size()==1) {
           if (Call* call_body = Expression::dyn_cast<Call>(decl->e())) {
             if (call_body->args().size()==1 && Expression::equal(call_body->args()[0],decl->params()[0]->id())) {
-              c->id(call_body->id());
-              c->decl(call_body->decl());
+              // Symmetry predicates are handled later on
+              if (!c->type().isbool() || !requiresGlobalOrder(decl) || (!env.collect_symmetry_vars && !(env.num_symmetry_predicates > 1 && env.flatten_symmetry_predicates))) {
+                c->id(call_body->id());
+                c->decl(call_body->decl());
+              }
             }
           }
         }
@@ -4818,6 +4834,71 @@ namespace MiniZinc {
               }
             }
           call_nonreif:
+            // Handle symmetry predicates
+            if (cr()->type().isbool() && requiresGlobalOrder(decl)) {
+              if (env.collect_symmetry_vars) {
+                // Leave symmetry predicates unflattened initially, they are recorded and flattened later
+                GCLock lock;
+                Call* cr_c = cr()->cast<Call>();
+                ret.b = conj(env,b,Ctx(),args_ee);
+                ret.r = bind(env,ctx,r,cr_c);
+                env.num_symmetry_predicates++;
+
+                // Record the variables that may need to be ordered
+                ArrayLit* al = eval_array_lit(env,c->args()[0]);
+                for (unsigned int i=0; i < al->v().size(); i++) {
+                  Expression* eid = flat_exp(env, Ctx(), al->v()[i], NULL, constants().var_true).r();
+                  if (eid->isa<Id>()) {
+                    Id* id = eid->cast<Id>();
+                    if (env.symmetryVars.find(id) == env.symmetryVars.end()) {
+                      env.orderedSymmetryVars.push_back(id);
+                      env.symmetryVars.insert(id);
+                    }
+                  } else {
+                    throw FlatteningError(env, eid->loc(), "the first argument of a symmetry predicate must be a variable array");
+                  }
+                }
+                return ret;
+              } else if (env.num_symmetry_predicates > 1 && env.flatten_symmetry_predicates) {
+                // Flatten symmetry predicates when ordering is required
+                Call* cr_c = cr()->cast<Call>();
+                int nargs = cr_c->args().size();
+                std::vector<Expression*> args(nargs + 1);
+                for (unsigned int j = 0; j < nargs; j++) {
+                  args[j] = c->args()[j];
+                }
+
+                Type order_type = Type::vartop(1);
+                order_type.bt(args[0]->type().bt());
+                std::vector<Expression*> orderedVars;
+                for (std::vector<Id*>::iterator id = env.orderedSymmetryVars.begin(); id != env.orderedSymmetryVars.end(); id++) {
+                  if (Type::bt_subtype((*id)->type().bt(), order_type.bt())) {
+                    orderedVars.push_back(*id);
+                  }
+                }
+                ArrayLit* order = new ArrayLit(Location().introduce(), orderedVars);
+                order->type(order_type);
+                args[nargs] = order;
+
+                {
+                  GCLock lock;
+                  cid = env.symOrdId(c->id());
+                  c = new Call(Location().introduce(), cid, args);
+                  decl = env.orig->matchFn(env, c);
+                  if (decl==NULL)
+                    throw FlatteningError(env,cr_c->loc(), "predicate '" + cr_c->id().str() + "' annotated with symmetry must have _ord version");
+                  c->type(decl->rtype(env, args));
+                  assert(decl);
+                  c->decl(decl);
+                }
+                // We don't currently handle ordering symmetry predicates within symmetry predicates
+                env.flatten_symmetry_predicates = false;
+                ret = flat_exp(env, ctx, c, r, b);
+                env.flatten_symmetry_predicates = true;
+                return ret;
+              }
+            }
+
             if ( (cr()->type().ispar() && !cr()->type().isann()) || decl->e()==NULL) {
               Call* cr_c = cr()->cast<Call>();
               /// All builtins are total
@@ -5876,10 +5957,100 @@ namespace MiniZinc {
             nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
             break;
           }
+          bool hadGlobalOrder = false;
+          bool hadSearchOrder = false;
+          std::vector<Id*> globalOrder;
+          std::vector<Id*> searchOrder;
           for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+            if ((*it)->isa<Call>()) {
+              Call* c = (*it)->cast<Call>();
+              // Extract ordering from global_order
+              if (c->id() == constants().ann.global_order) {
+                if (hadGlobalOrder)
+                  throw FlatteningError(env,si->loc(), "Only one global_order annotation is allowed");
+                hadGlobalOrder = true;
+
+                ArrayLit* al = eval_array_lit(env,c->args()[0]);
+                for (unsigned int i=0; i < al->v().size(); i++) {
+                  Expression* eid = flat_exp(env, Ctx(), al->v()[i], NULL, constants().var_true).r();
+                  if (eid->isa<Id>()) {
+                    globalOrder.push_back(eid->cast<Id>());
+                  }
+                }
+                continue;
+              } else if ((c->id() == constants().ann.seq_search  || c->id() == constants().ann.int_search   ||
+                          c->id() == constants().ann.bool_search || c->id() == constants().ann.float_search ||
+                          c->id() == constants().ann.set_search) && !hadSearchOrder) {
+                hadSearchOrder = true;
+
+                // Extract ordering from search strategy
+                Expression* flatSearch = flat_exp(env,Ctx(),c,NULL,constants().var_true).r();
+                if (flatSearch->isa<Call>()) {
+                  std::vector<Call*> searches;
+                  searches.push_back(flatSearch->cast<Call>());
+                  while (!searches.empty()) {
+                    Call* search = searches.back();
+                    searches.pop_back();
+                    if (search->id() == constants().ann.seq_search) {
+                      ArrayLit* al = eval_array_lit(env,search->args()[0]);
+                      for (unsigned int i=al->v().size(); i--;) {
+                        if (al->v()[i]->isa<Call>()) {
+                          Call* cs = al->v()[i]->cast<Call>();
+                          if (cs->id() == constants().ann.seq_search  || cs->id() == constants().ann.int_search   ||
+                              cs->id() == constants().ann.bool_search || cs->id() == constants().ann.float_search ||
+                              cs->id() == constants().ann.set_search) {
+                            searches.push_back(cs);
+                          }
+                        }
+                      }
+                    } else if (search->id() == constants().ann.int_search   || search->id() == constants().ann.bool_search ||
+                               search->id() == constants().ann.float_search || search->id() == constants().ann.set_search) {
+                      ArrayLit* al = eval_array_lit(env,search->args()[0]);
+                      for (unsigned int i=0; i < al->v().size(); i++) {
+                        Expression* eid = flat_exp(env, Ctx(), al->v()[i], NULL, constants().var_true).r();
+                        if (eid->isa<Id>()) {
+                          searchOrder.push_back(eid->cast<Id>());
+                        }
+                      }
+                    }
+                  }
+                }
+                nsi->ann().add(flatSearch);
+                continue;
+              }
+            }
             nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
           }
           env.flat_addItem(nsi);
+
+          // Recreate global order to respect global_order, then search strategy, then any remaining symmetry predicate variables
+          if (globalOrder.size() > 0 || searchOrder.size() > 0) {
+            std::vector<Id*> predicateVars(env.orderedSymmetryVars);
+            env.orderedSymmetryVars.clear();
+            env.symmetryVars.clear();
+            if (globalOrder.size() > 0) {
+              for (unsigned int i = 0; i < globalOrder.size(); i++) {
+                if (env.symmetryVars.find(globalOrder[i]) == env.symmetryVars.end()) {
+                  env.orderedSymmetryVars.push_back(globalOrder[i]);
+                  env.symmetryVars.insert(globalOrder[i]);
+                }
+              }
+            }
+            if (searchOrder.size() > 0) {
+              for (unsigned int i = 0; i < searchOrder.size(); i++) {
+                if (env.symmetryVars.find(searchOrder[i]) == env.symmetryVars.end()) {
+                  env.orderedSymmetryVars.push_back(searchOrder[i]);
+                  env.symmetryVars.insert(searchOrder[i]);
+                }
+              }
+            }
+            for (unsigned int i = 0; i < predicateVars.size(); i++) {
+              if (env.symmetryVars.find(predicateVars[i]) == env.symmetryVars.end()) {
+                env.orderedSymmetryVars.push_back(predicateVars[i]);
+                env.symmetryVars.insert(predicateVars[i]);
+              }
+            }
+          }
         }
       } _fv(env,hadSolveItem);
       iterItems<FV>(_fv,e.model());
@@ -5899,7 +6070,7 @@ namespace MiniZinc {
       } else {
         createOutput(env, deletedVarDecls);
       }
-      
+
       // Flatten remaining redefinitions
       Model& m = *e.flat();
       int startItem = 0;
@@ -5948,6 +6119,7 @@ namespace MiniZinc {
       
       std::vector<VarDeclI*> removedItems;
       env.collectVarDecls(true);
+      env.collectSymmetryVars(false);
 
       while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
         if (env.failed())
@@ -6163,7 +6335,7 @@ namespace MiniZinc {
                         cid = env.reifyId(c->id());
                       }
                       FunctionI* decl = env.orig->matchFn(env,cid,args);
-                      if (decl && decl->e()) {
+                      if (decl && (decl->e() || (c->type().isbool() && requiresGlobalOrder(decl)))) {
                         nc = new Call(c->loc().introduce(),cid,args);
                         nc->type(Type::varbool());
                         nc->decl(decl);
@@ -6226,7 +6398,7 @@ namespace MiniZinc {
                 }
               } else {
                 FunctionI* decl = env.orig->matchFn(env,c);
-                if (decl && decl->e()) {
+                if (decl && (decl->e() || (c->type().isbool() && requiresGlobalOrder(decl)))) {
                   nc = c;
                   nc->decl(decl);
                 }

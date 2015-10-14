@@ -18,6 +18,7 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
 
@@ -87,6 +88,11 @@ namespace MiniZinc {
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
     int in_maybe_partial;
+    bool collect_symmetry_vars;
+    int num_symmetry_predicates;
+    bool flatten_symmetry_predicates;
+    std::vector<Id*> orderedSymmetryVars;
+    UNORDERED_NAMESPACE::unordered_set<Id*> symmetryVars;
   protected:
     Map map;
     Model* _flat;
@@ -113,11 +119,13 @@ namespace MiniZinc {
     void swap();
     void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
+    ASTString symOrdId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
+    void collectSymmetryVars(bool b);
     void createErrorStack(void);
   };
 

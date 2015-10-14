@@ -1100,6 +1100,14 @@ namespace MiniZinc {
     ann.user_cut->type(Type::ann());
     ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
     ann.lazy_constraint->type(Type::ann());
+    ann.symmetry = new Id(Location(), ASTString("symmetry"), NULL);
+    ann.symmetry->type(Type::ann());
+    ann.global_order = ASTString("global_order");
+    ann.seq_search = ASTString("seq_search");
+    ann.int_search = ASTString("int_search");
+    ann.bool_search = ASTString("bool_search");
+    ann.float_search = ASTString("float_search");
+    ann.set_search = ASTString("set_search");
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1293,7 +1301,14 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);
-    
+    v.push_back(ann.symmetry);
+    v.push_back(new StringLit(Location(),ann.global_order));
+    v.push_back(new StringLit(Location(),ann.seq_search));
+    v.push_back(new StringLit(Location(),ann.int_search));
+    v.push_back(new StringLit(Location(),ann.bool_search));
+    v.push_back(new StringLit(Location(),ann.float_search));
+    v.push_back(new StringLit(Location(),ann.set_search));
+
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
     v.push_back(new StringLit(Location(),cli.datafile_short_str));

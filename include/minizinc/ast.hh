@@ -1429,6 +1429,13 @@ namespace MiniZinc {
         ASTString is_introduced;
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP
+        Id* symmetry;
+        ASTString global_order;
+        ASTString seq_search;
+        ASTString int_search;
+        ASTString bool_search;
+        ASTString float_search;
+        ASTString set_search;
       } ann;
 
       /// Command line options
