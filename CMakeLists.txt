@@ -3,8 +3,17 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
-project (libminizinc CXX)
+set(HAS_CPLEX TRUE)
+set(HAS_GUROBI TRUE)
+set(HAS_SCIP TRUE)
+set(HAS_OSICBC TRUE)
+set(HAS_GECODE TRUE)
+set(HAS_FZN    FALSE)
 
+set(HAS_CPLEX_OLD FALSE)
+set(HAS_GUROBI_OLD FALSE)
+
+# -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
@@ -272,16 +281,6 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_CPLEX TRUE)
-set(HAS_GUROBI TRUE)
-set(HAS_SCIP TRUE)
-set(HAS_OSICBC TRUE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    FALSE)
-
-set(HAS_CPLEX_OLD FALSE)
-set(HAS_GUROBI_OLD FALSE)
-
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GUROBI)
   link_directories("${GUROBI_HOME}/lib")
