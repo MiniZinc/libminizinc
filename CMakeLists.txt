@@ -3,10 +3,12 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
+project (libminizinc CXX)
+
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 6)
+set (libminizinc_VERSION_PATCH 7)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -34,7 +36,6 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
 
-# -------------------------------------------------------------------------------------------------------------------
 include(CheckCXXCompilerFlag)
 
 SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")

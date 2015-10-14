@@ -1,0 +1,4 @@
+output ["x = ",show(x),";\n","y = ",show(y),";\n","z = ",show(z),";\n"];
+int: x;
+int: y;
+int: z;

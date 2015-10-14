@@ -2,6 +2,61 @@
 # MiniZinc Changelog #
 ======================
 
+All bug numbers refer to the issue tracker at
+https://github.com/MiniZinc/libminizinc/issues
+
+Version 2.0.7
+=============
+
+Changes:
+ - Improved propagation of Boolean constants in the optimisation phase. This
+   should result in far fewer aliases and improves simplification of
+   conjunctions, disjunctions and clauses.
+ - Add special case handling for integer division by 1.
+
+Bug fixes:
+
+ - Fix FlatZinc generator phase, need to turn all array literal arguments into
+   1-based single dimensional arrays.
+ - Fix compilation of if-then-else expressions with var conditions (which didn't
+   implement proper partiality/totality semantics). Fixes #42.
+ - Provide correct bounds for weak opt var arithmetic. Fixes #51.
+ - Need to be able to handle unflattened annotations. Fixes #53.
+ - Fix generation of output model (needs to ignore items that have been removed
+   previously).
+ - Add missing lb(var set of int) builtin. Fixes #47.
+ - Check that var set declarations have a finite element type. Fixes #46.
+ - Fix translation context for binary operators on arrays.
+ - Need to access IntVal::infinity as a function, otherwise depending on linker
+   etc it may become 0 in some cases. Fixes #40.
+ - Change pretty printer to use one less digit when printing float literals.
+   This fixes #41 (or at least provides a workaround), but some double
+   constants may still be rounded incorrectly when pretty printing and reading
+   them back in. The real fix will be to output hex float literals (coming
+   soon).
+ - Distinguish between generalised comprehensions (iterating over sets) and
+   iterating over arrays. Fixes compilation of comprehensions where iteration
+   over an array is combined with var where clauses. Fixes #45.
+ - Fix bug in creation of output model where sometimes chains of variable
+   definitions could lead to crashes.
+ - Avoi creating mutually recursive definitions in some corner cases, which
+   could cause the compiler to run into infinite loops.
+ - Don't copy vardecl items to output model that are already there. Fixes #44.
+ - Remove domain from array declarations in FlatZinc (avoids problems with
+   domains where holes need to be removed and when there are infinities in the
+   domains)
+ - Fix flattening of equality operator between non-opt and opt vars
+ - Check that model contains a single solve and output item during type
+   checking (previously, multiple output items were not detected and resulted
+   in incorrect .ozn files).
+ - Fix flattening of xor (arguments need to be in mixed context).
+ - Use is_fixed in cumulative definition.
+ - Fix bug where a par right hand side of a variable mentioned in the output
+   would cause a crash.
+ - Fix variable dependency tracking during rewriting in the optimisation phase.
+   Could previously lead to variables being removed that are still required.
+   Fixes #54.
+
 Version 2.0.6
 =============
 
