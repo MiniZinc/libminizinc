@@ -984,6 +984,12 @@ The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 */
 function array[int] of $T: sort_by(array[int] of $T: x, array[int] of float: y);
 
+/** @group builtins.sort Return array \a x sorted by the order that it's variables appear in \a y
+
+Any variables that do not occur in \a y will be sorted after the variables occuring in \a y.
+*/
+function array[int] of var $T: sort_by_var(array[int] of var $T: x, array[int] of var $T: y);
+
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
 function array[int] of int: sort(array[int] of int: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
@@ -1008,6 +1014,13 @@ The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \
 */
 function array[int] of int: arg_sort(array[int] of float:x) =
   sort_by([i | i in index_set(x)], x);
+
+/** @group builtins.sort
+Returns the permutation which causes the variables in \a x to be sorted as they appear in \a y
+
+Any variables that do not occur in \a y will be sorted after the variables occuring in \a y.
+*/
+function array[int] of int: index_sort(array[int] of var $T: x, array[int] of var $T: y);
 
 /***
   @groupdef builtins.coercion Coercions

@@ -1636,6 +1636,88 @@ namespace MiniZinc {
     return al_sorted;
   }
 
+  // Returns the index array idx of al, sorted so that the expressions in al are ordered as in order_e
+  std::vector<int> b_id_sort(ArrayLit* al, ArrayLit* order_e) {
+    // Create an order mapping from expression ids to position in order_e
+    std::vector<int> idy(order_e->v().size());
+    for (unsigned int i=idy.size(); i--;)
+      idy[i] = i;
+    struct OrdY {
+      ArrayLit* order;
+      OrdY(ArrayLit* order0) : order(order0) {}
+      bool operator()(int i0, int i1) {
+        Expression* e0 = order->v()[i0];
+        Expression* e1 = order->v()[i1];
+        if (Expression::equal(e0, e1))
+          return false;
+        if (e0->isa<Id>() && e1->isa<Id>() &&
+            e0->cast<Id>()->idn() != -1 &&
+            e1->cast<Id>()->idn() != -1)
+          return e0->cast<Id>()->idn() < e1->cast<Id>()->idn();
+        return e0 < e1;
+      }
+    } _ordY(order_e);
+    std::stable_sort(idy.begin(),idy.end(),_ordY);
+
+    typedef UNORDERED_NAMESPACE::unordered_map<Id*,int,ExpressionHash,IdEq> OrderMap;
+    OrderMap order;
+    for (unsigned int i=idy.size(); i--;)
+      order.insert(std::pair<Id*,int>(order_e->v()[idy[i]]->cast<Id>(), idy[i]));
+
+    // Sort the ids of the expressions of the input array according to the order mapping
+    std::vector<int> idx(al->v().size());
+    for (unsigned int i=idx.size(); i--;)
+      idx[i] = i;
+    struct OrdX {
+      ArrayLit* al;
+      OrderMap order;
+      OrdX(ArrayLit* al0, OrderMap& order0) : al(al0), order(order0) {}
+      bool operator()(int i0, int i1) {
+        OrderMap::iterator x = order.find(al->v()[i0]->cast<Id>());
+        OrderMap::iterator y = order.find(al->v()[i1]->cast<Id>());
+
+        if (x == order.end())
+          return false;
+        else if (y == order.end())
+          return true;
+        else
+          return x->second < y->second;
+      }
+    } _ordX(al, order);
+    std::stable_sort(idx.begin(),idx.end(),_ordX);
+    return idx;
+  }
+
+  Expression* b_sort_by_var(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size()==2);
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(env,args[0]);
+    ArrayLit* order_e = eval_array_lit(env,args[1]);
+    std::vector<int> idx = b_id_sort(al, order_e);
+    std::vector<Expression*> sorted(idx.size());
+    for (unsigned int i=sorted.size(); i--;)
+      sorted[i] = al->v()[idx[i]];
+    ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
+    al_sorted->type(al->type());
+    return al_sorted;
+  }
+
+  Expression* b_index_sort(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size()==2);
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(env,args[0]);
+    ArrayLit* order_e = eval_array_lit(env,args[1]);
+    std::vector<int> idx = b_id_sort(al, order_e);
+    std::vector<Expression*> perm(idx.size());
+    for (unsigned int i=perm.size(); i--;)
+      perm[idx[i]] = IntLit::a(i+1);
+    ArrayLit* perm_al = new ArrayLit(al->loc(), perm);
+    perm_al->type(Type::parint(1));
+    return perm_al;
+  }
+
   Expression* b_sort(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==1);
@@ -2539,6 +2621,13 @@ namespace MiniZinc {
       rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
       t[0].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("sort_by"), t, b_sort_by_float);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varbot(1);
+      t[1] = Type::varbot(1);
+      rb(env, m, ASTString("sort_by_var"), t, b_sort_by_var);
+      rb(env, m, ASTString("index_sort"), t, b_index_sort);
     }
     {
       std::vector<Type> t(1);
