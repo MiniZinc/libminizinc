@@ -590,7 +590,7 @@ namespace MiniZinc {
       if (bi->isa<ConstraintI>()) {
         c = bi->cast<ConstraintI>()->e()->dyn_cast<Call>();
       } else {
-        c = bi->cast<VarDeclI>()->e()->e()->dyn_cast<Call>();
+        c = Expression::dyn_cast<Call>(bi->cast<VarDeclI>()->e()->e());
       }
       if (c==NULL)
         continue;
@@ -1257,6 +1257,7 @@ namespace MiniZinc {
                 env.flat()->fail(env);
                 vdi->e()->e(constants().boollit(isConjunction));
               }
+              toRemove.push_back(vdi);
             }
           } else {
             // not subsumed, nonfixed==1
