@@ -318,7 +318,10 @@ void MIP_solverinstance::processFlatZinc(void) {
         throw InternalError(ssm.str());
       }
       double lb, ub;
-      if (ti->domain()) {
+      if (MIP_wrapper::VarType::BINARY == vType) {
+        lb = 0.0;
+        ub = 1.0;
+      } else if (ti->domain()) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           assert(fb.valid);
