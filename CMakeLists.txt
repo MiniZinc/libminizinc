@@ -10,8 +10,8 @@ set(HAS_OSICBC TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN    FALSE)
 
-set(HAS_CPLEX_OLD FALSE)
-set(HAS_GUROBI_OLD FALSE)
+set(HAS_CPLEX_OLD TRUE)
+set(HAS_GUROBI_OLD TRUE)
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
@@ -316,8 +316,8 @@ if(HAS_GUROBI_OLD)
   add_executable(mzn-gurobi-old
     solvers/gurobi/mzn-gurobi.cpp
   )
-#   target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(mzn-gurobi-old minizinc_gurobi)
+  target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(mzn-gurobi-old minizinc_gurobi_old)
 
   INSTALL(TARGETS minizinc_gurobi_old mzn-gurobi-old
     RUNTIME DESTINATION bin
@@ -404,7 +404,7 @@ if(HAS_CPLEX_OLD)
                                )
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex_old minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex_old mzn-cplex_old
     RUNTIME DESTINATION bin

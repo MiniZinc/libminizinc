@@ -317,27 +317,20 @@ void MIP_solverinstance::processFlatZinc(void) {
         ssm << "This type of var is not handled by MIP: " << *it << std::endl;
         throw InternalError(ssm.str());
       }
-      double lb, ub;
-      if (MIP_wrapper::VarType::BINARY == vType) {
-        lb = 0.0;
-        ub = 1.0;
-      } else if (ti->domain()) {
+      double lb=0.0, ub=1.0;  // for bool
+      if (ti->domain()) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           assert(fb.valid);
           lb = fb.l;
           ub = fb.u;
-        } else /*if (type == SCIP_VARTYPE_INTEGER)*/ {
+        } else if (MIP_wrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
           assert(ib.valid);
           lb = ib.l.toInt();
           ub = ib.u.toInt();
         } 
-//         else {
-//           lb = -SCIPinfinity(scip);
-//           ub = SCIPinfinity(scip);
-//         }
-      } else {
+      } else if (MIP_wrapper::VarType::BINARY != vType) {
         lb = -getMIPWrapper()->getInfBound();  // if just 1 bound inf, using MZN's default?  TODO
         ub = -lb;
       }
@@ -351,8 +344,9 @@ void MIP_solverinstance::processFlatZinc(void) {
         double obj = vd==objVd ? 1.0 : 0.0;
         res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       }
-//       std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
-//           << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
+//       if ("X_INTRODUCED_108" == string(id->str().c_str()))
+//        std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
+//            << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }
