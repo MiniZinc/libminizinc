@@ -392,9 +392,9 @@ void Flattener::flatten()
                 p.print(env.flat());
               } else if(flag_output_fzn != "") {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to " << flag_output_fzn << " ... ";
+                  std::cerr << "Printing FlatZinc to '" << flag_output_fzn << "' ... ";
                 std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
+                os.open(flag_output_fzn.c_str(), std::ios::out);
                 Printer p(os,0);
                 p.print(env.flat());
                 os.close();

@@ -99,6 +99,38 @@ void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
 
 namespace SCIPConstraints {
 
+  bool CheckAnnUserCut(const Call* call) {
+    if(!call->ann().isEmpty()) {
+      if(call->ann().contains(constants().ann.user_cut)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool CheckAnnLazyConstraint(const Call* call) {
+    if(!call->ann().isEmpty()) {
+      if(call->ann().contains(constants().ann.lazy_constraint)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  int GetMaskConsType(const Call* call) {
+    int mask=0;
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC) {
+        mask |= MIP_wrapper::MaskConsType_Usercut;
+      }
+      if (fLC) {
+        mask |= MIP_wrapper::MaskConsType_Lazy;
+      }
+      if (!fUC && !fLC)
+        mask |= MIP_wrapper::MaskConsType_Normal;
+      return mask;
+//       return MIP_wrapper::MaskConsType_Normal;    // recognition fails
+  }
+
   void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
     Env& _env = gi.env();
@@ -132,7 +164,7 @@ namespace SCIPConstraints {
 //       cerr << coefs[i] << ", ";
 //     cerr << endl;
     gi.getMIPWrapper()->addRow(nvars, &vars[0], &coefs[0], lt, rhs,
-                               MIP_wrapper::MaskConsType_Normal, ss.str());
+                               GetMaskConsType(call), ss.str());
   }
 
   void p_int_lin_le(SolverInstanceBase& si, const Call* call) {
@@ -159,7 +191,7 @@ namespace SCIPConstraints {
       std::stringstream ss;
       ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
       gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
-                               MIP_wrapper::MaskConsType_Normal, ss.str());
+                               GetMaskConsType(call), ss.str());
     }
 }
 

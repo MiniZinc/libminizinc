@@ -14,10 +14,9 @@
 %-----------------------------------------------------------------------------%
 ann: user_cut;
 ann: lazy_constraint;
-%%% comment away the assignments to have those as normal constraints
-%%% But be aware that CPLEX 12.6.1 & 2 have bugs on user cuts
-ann: MIP_cut = user_cut;
-ann: MIP_lazy = lazy_constraint;
+%%% comment away the assignments to have those as normal constraints  
+ann: MIP_cut;  % = user_cut;  seem worse
+ann: MIP_lazy;  % = lazy_constraint;
 
 include "domain_encodings.mzn";
 
@@ -787,10 +786,10 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
       %% Cuts:
         /\ 
         if fElementCuts then
-          array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z) % :: MIP_cut   %% these 2 better as user cuts - too slow
-          /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z) % :: MIP_cut   %% or even skip them
-          /\    array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  %:: MIP_cut
-          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  %:: MIP_cut -- no, bug in CPLEX 12.6.1&2
+          array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z)  :: MIP_cut   %% these 2 better as user cuts - too slow
+          /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z)  :: MIP_cut   %% or even skip them
+          /\    array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
+          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
         else true
         endif
     endif ;
@@ -1324,11 +1323,11 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
         AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
       m >= AM_srt[i]
          - sum(j in 1..i-1 where AL_srt[j]<AM_srt[i] /\ AL_srt[j]<AU_srt[j])
-           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) ) % :: MIP_cut
+           ( (AU_srt[j]-x[srt[j]]) * (AM_srt[i]-AL_srt[j]) / (AU_srt[j]-AL_srt[j]) )  :: MIP_cut
                                    )
     /\
     if card(sActive)>1 /\ fElementCuts then
-           array_var_float_element__XBZ_lb([ -x[i] | i in sActive ],  [  p[i] | i in sActive ], -m)  %% :: MIP_cut -- no, CPLEX bug
+           array_var_float_element__XBZ_lb([ -x[i] | i in sActive ],  [  p[i] | i in sActive ], -m)  :: MIP_cut 
     else true
     endif
   ;
