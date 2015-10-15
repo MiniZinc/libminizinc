@@ -3,10 +3,21 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
+set(HAS_CPLEX TRUE)
+set(HAS_GUROBI TRUE)
+set(HAS_SCIP TRUE)
+set(HAS_OSICBC TRUE)
+set(HAS_GECODE TRUE)
+set(HAS_FZN    FALSE)
+
+set(HAS_CPLEX_OLD TRUE)
+set(HAS_GUROBI_OLD TRUE)
+
+# -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 6)
+set (libminizinc_VERSION_PATCH 7)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -33,8 +44,6 @@ if(APPLE)
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
-
-# -------------------------------------------------------------------------------------------------------------------
 
 include(CheckCXXCompilerFlag)
 
@@ -192,17 +201,6 @@ else(BISON_EXEC)
 endif(BISON_EXEC)
 
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_CPLEX TRUE)
-set(HAS_GUROBI TRUE)
-set(HAS_SCIP FALSE)
-set(HAS_OSICBC FALSE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    FALSE)
-
-set(HAS_CPLEX_OLD FALSE)
-set(HAS_GUROBI_OLD FALSE)
-
-# -------------------------------------------------------------------------------------------------------------------
 add_library(minizinc
 lib/ast.cpp
 lib/astexception.cpp
@@ -288,10 +286,10 @@ target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
+# -------------------------------------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GUROBI)
-	
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
@@ -325,8 +323,8 @@ if(HAS_GUROBI_OLD)
   add_executable(mzn-gurobi-old
     solvers/gurobi/mzn-gurobi.cpp
   )
-#   target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(mzn-gurobi-old minizinc_gurobi)
+  target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
+  target_link_libraries(mzn-gurobi-old minizinc_gurobi_old)
 
   INSTALL(TARGETS minizinc_gurobi_old mzn-gurobi-old
     RUNTIME DESTINATION bin
@@ -413,7 +411,7 @@ if(HAS_CPLEX_OLD)
                                )
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex_old minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex_old mzn-cplex_old
     RUNTIME DESTINATION bin
@@ -489,13 +487,13 @@ if(HAS_OSICBC)
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
   target_include_directories(minizinc_osicbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(minizinc_osicbc minizinc OsiCbc Cbc CbcSolver CoinUtils
+  target_link_libraries(minizinc_osicbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m
     # Cgl OsiClp Osi Clp  lapacke lapack blas bz2 z -lpthread
     )
 
   add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
   target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(mzn-cbc minizinc OsiCbc Cbc CbcSolver CoinUtils )
+  target_link_libraries(mzn-cbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m )
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
@@ -538,9 +536,11 @@ if(HAS_GECODE)
   )
 
 endif()
+
 # -------------------------------------------------------------------------------------------------------------------
 add_executable(mzn2doc mzn2doc.cpp)
 target_link_libraries(mzn2doc minizinc)
+
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_FZN)
 	add_library(minizinc_fzn
@@ -586,12 +586,12 @@ if (BUILD_HTML_DOCUMENTATION)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
 INSTALL(DIRECTORY include/minizinc
         DESTINATION include
         PATTERN config.hh.in EXCLUDE
 )
+
 # -------------------------------------------------------------------------------------------------------------------
 INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)

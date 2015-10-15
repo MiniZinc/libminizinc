@@ -28,6 +28,7 @@ namespace MiniZinc {
   class SolverFactory;
   
   /// SolverRegistry is a storage for all SolverFactories in linked modules
+  /// NOTE THAT the .cpp containing its SolverFactory should be linked directly [in g++ 4.9.2]
   class SolverRegistry {
   public:
     void addSolverFactory(SolverFactory * );
@@ -78,6 +79,11 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
+    
+    /// global options
+    bool flag_verbose=0;
+    
+    /// solver options, not used    TODO
     Options options_solver;          // currently can create solver object only after flattening
                                      // so unflexible with solver cmdline options  TODO
   public:
@@ -92,7 +98,7 @@ namespace MiniZinc {
     
     virtual Flattener* getFlt() { assert(flt); return flt; }
     virtual SolverInstanceBase* getSI() { assert(si); return si; }
-    virtual bool get_flag_verbose() { return getFlt()->get_flag_verbose(); }
+    virtual bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
     
   private:
   };

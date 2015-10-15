@@ -121,6 +121,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
   } else if (beginswith(string(argv[i]),"--workmem")) {
+    cerr << "  WARNING: --workmem: not supported in coin-cbc" << endl;
     string nP(argv[i]);
     if (nP.length() > 9) {
       nP.erase(0, 9);

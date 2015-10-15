@@ -53,6 +53,7 @@ namespace MiniZinc {
     virtual void flatten();
     virtual void printStatistics(ostream& );
     
+    virtual void set_flag_verbose(bool f) { flag_verbose = f; }
     virtual bool get_flag_verbose() const { return flag_verbose; }
     virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
     virtual Model* getModel() const { assert(pModel.get()); return pModel.get(); }

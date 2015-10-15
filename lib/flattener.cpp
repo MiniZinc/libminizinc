@@ -41,11 +41,8 @@ void Flattener::printHelp(ostream& os)
   << "Usage: <executable>"  //<< argv[0]
   << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl
   << std::endl
-  << "Options:" << std::endl
-  << "  --help, -h\n    Print this help message" << std::endl
-  << "  --version\n    Print version information" << std::endl
+  << "Flattener options:" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-  << "  -v, --verbose\n    Print progress statements" << std::endl
   << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
@@ -54,7 +51,7 @@ void Flattener::printHelp(ostream& os)
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
   << std::endl;
   os
-  << "Output options:" << std::endl
+  << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
   << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl

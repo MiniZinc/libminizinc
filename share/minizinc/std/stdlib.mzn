@@ -372,14 +372,24 @@ function var opt int: max(array[int] of var opt int: x) ::promise_total =
 /** @group optiontypes.int Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
-    if absent(x) \/ absent(y) then <>
-    else deopt(x)+deopt(y) endif;
+    let { 
+    int: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
+    int: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
+    } in result;
 
 /** @group optiontypes.int Weak subtraction. Return difference of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
-    if absent(x) \/ absent(y) then <>
-    else deopt(x)-deopt(y) endif;
+    let { 
+    int: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
+    int: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
+    } in result;
 
 /** @group optiontypes.int Weak multiplication. Return product of \a x and \a y if both
 are present, otherwise return absent. */

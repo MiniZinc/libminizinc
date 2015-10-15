@@ -65,6 +65,9 @@ namespace MiniZinc {
     virtual Options& getOptions() { return _options; }
 
     virtual void printSolution(std::ostream& ) { }
+    
+    virtual void printStatistics(std::ostream&, bool fLegend=0) { }
+    virtual void printStatisticsLine(std::ostream&, bool fLegend=0) { }
 
     /// find the next solution
     virtual Status next(void) = 0;
@@ -111,6 +114,10 @@ namespace MiniZinc {
 //     void cleanup() { _statistics.cleanup(); _variableMap.clear(); SolverInstanceBase::cleanup(); }
     
     Statistics& getStatistics() { return _statistics; }
+    // Could implement the ancestor's print functions:                 TODO?
+//     virtual void printStatistics(std::ostream&, bool fLegend=0) { }
+//     virtual void printStatisticsLine(std::ostream&, bool fLegend=0) { }
+
   };
 
 }

@@ -124,15 +124,15 @@ namespace SCIPConstraints {
       throw InternalError("p_lin: rhs unknown type");
     }
 
-    // See if the solver adds indexation itself:
-//     std::stringstream ss;
-//     cerr << "p_lin_" << gi.getMIPWrapper()->getNRows();
+    // See if the solver adds indexation itself: no.
+    std::stringstream ss;
+    ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
 //     cerr << "  coefs: ";
 //     for (size_t i=0; i<coefs.size(); ++i)
 //       cerr << coefs[i] << ", ";
 //     cerr << endl;
     gi.getMIPWrapper()->addRow(nvars, &vars[0], &coefs[0], lt, rhs,
-                               MIP_wrapper::MaskConsType_Normal, "p_lin_");
+                               MIP_wrapper::MaskConsType_Normal, ss.str());
   }
 
   void p_int_lin_le(SolverInstanceBase& si, const Call* call) {
@@ -156,10 +156,10 @@ namespace SCIPConstraints {
       vars[1] = gi.exprToVar(args[1]);
       double coefs[2] = {-1.0, 1.0};
 
-//       std::stringstream ss;
-//       ss << "p_eq_" << SCIPgetNConss(scip);
+      std::stringstream ss;
+      ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
       gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
-                               MIP_wrapper::MaskConsType_Normal, "p_eq_");
+                               MIP_wrapper::MaskConsType_Normal, ss.str());
     }
 }
 
@@ -191,17 +191,18 @@ void MIP_solverinstance::printSolution(ostream& os) {
     previousOutput.insert(h);
     std::cout << output;
 //     if(fVerbose)
-    printStatistics(cout);
+    printStatistics(cout, 1);
     std::cout << "----------" << std::endl;
   }
 }
 
-void MIP_solverinstance::printStatistics(ostream& os)
+void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
     {
       int nPrec = cout.precision(12);
-      cout << "  % Status: " << mip_wrap->getStatusName() << endl;
-      cout << "  % MIP_obj, MIP_bound, CPU_time, nodes: ";
+      cout << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
+      if (fLegend)
+        cout << "  % obj, bound, CPU_time, nodes (left): ";
       cout << mip_wrap->getObjValue() << ",  ";
       cout << mip_wrap->getBestBound() << ",  ";
       cout << mip_wrap->getCPUTime() << ",  ";
@@ -251,7 +252,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 
   getMIPWrapper()->solve();
   
-  printStatistics(cout);
+//   printStatistics(cout, 1);   MznSolver does this (if it wants)
 
   MIP_wrapper::Status sw = getMIPWrapper()->getStatus();
   SolverInstance::Status s = SolverInstance::UNKNOWN;
@@ -316,24 +317,20 @@ void MIP_solverinstance::processFlatZinc(void) {
         ssm << "This type of var is not handled by MIP: " << *it << std::endl;
         throw InternalError(ssm.str());
       }
-      double lb, ub;
+      double lb=0.0, ub=1.0;  // for bool
       if (ti->domain()) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           assert(fb.valid);
           lb = fb.l;
           ub = fb.u;
-        } else /*if (type == SCIP_VARTYPE_INTEGER)*/ {
+        } else if (MIP_wrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
           assert(ib.valid);
           lb = ib.l.toInt();
           ub = ib.u.toInt();
         } 
-//         else {
-//           lb = -SCIPinfinity(scip);
-//           ub = SCIPinfinity(scip);
-//         }
-      } else {
+      } else if (MIP_wrapper::VarType::BINARY != vType) {
         lb = -getMIPWrapper()->getInfBound();  // if just 1 bound inf, using MZN's default?  TODO
         ub = -lb;
       }
@@ -342,20 +339,21 @@ void MIP_solverinstance::processFlatZinc(void) {
       Id* id = it->e()->id();
       id = id->decl()->id();
       if (it->e()->e()) {
-        res = exprToVar(it->e()->e());
+        res = exprToVar(it->e()->e());     // modify obj coef??     TODO
       } else {
         double obj = vd==objVd ? 1.0 : 0.0;
         res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       }
-//       std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
-//           << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
+//       if ("X_INTRODUCED_108" == string(id->str().c_str()))
+//        std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
+//            << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }
   }
-  if (mip_wrap->fVerbose && mip_wrap->nLiteralCreations)
+  if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
     cerr << "  MIP_wrapper: prior to Phase 1,  "
-      << mip_wrap->nLiteralCreations << " literals with"
+      << mip_wrap->nLitVars << " literals with"
       << mip_wrap-> sLitValues.size() << " values created." << endl;
   if (not getMIPWrapper()->fPhase1Over)
     getMIPWrapper()->addPhase1Vars(); 
@@ -365,9 +363,9 @@ void MIP_solverinstance::processFlatZinc(void) {
       _constraintRegistry.post(c);
     }
   }
-  if (mip_wrap->fVerbose && mip_wrap->nLiteralCreations)
+  if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
     cerr << "  MIP_wrapper: overall,  "
-      << mip_wrap->nLiteralCreations << " literals with"
+      << mip_wrap->nLitVars << " literals with"
       << mip_wrap-> sLitValues.size() << " values created." << endl;
 }  // processFlatZinc
 
@@ -390,6 +388,11 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 
 
 void MIP_solverinstance::assignSolutionToOutput() {
+  if (mOutputDecls.empty()) {   // fill output decls map
+     for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
+        mOutputDecls[it->e()->id()->str().str()] = it->e();
+     }
+  }
 
   //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
   for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
@@ -405,6 +408,8 @@ void MIP_solverinstance::assignSolutionToOutput() {
           if(Id* id = array[j]->dyn_cast<Id>()) {
             //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
             array_elems.push_back(getSolutionValue(id));
+          } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
+            array_elems.push_back(floatLit);
           } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
             array_elems.push_back(intLit);
           } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
@@ -432,25 +437,30 @@ void MIP_solverinstance::assignSolutionToOutput() {
         ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
         KeepAlive ka(array_solution);
         // add solution to the output
-        for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
-          if(it->e()->id()->str() == vd->id()->str()) {
-            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-            it->e()->e(array_solution); // set the solution
-          }
-        }
+//         for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
+//           if(it->e()->id()->str() == vd->id()->str()) {
+//             //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+//             it->e()->e(array_solution); // set the solution
+//           }
+//         }
+        auto it = mOutputDecls.find(vd->id()->str().str());
+        if (mOutputDecls.end() != it)
+          it->second->e(array_solution);
       }
     } else if(vd->ann().contains(constants().ann.output_var)) {
       Expression* sol = getSolutionValue(vd->id());
       vd->e(sol);
-      for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
-        if(it->e()->id()->str() == vd->id()->str()) {
-          //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-          it->e()->e(sol); // set the solution
-        }
-      }
+//       for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
+//         if(it->e()->id()->str() == vd->id()->str()) {
+//           //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
+//           it->e()->e(sol); // set the solution
+//         }
+//       }
+      auto it = mOutputDecls.find(vd->id()->str().str());
+      if (mOutputDecls.end() != it)
+        it->second->e(sol);
     }
   }
 
 }
 
-  

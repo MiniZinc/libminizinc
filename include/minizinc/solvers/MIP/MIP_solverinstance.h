@@ -37,6 +37,8 @@ namespace MiniZinc {
       std::vector<VarDecl*> _varsWithOutput;
       UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
       
+      std::map<string, VarDecl*> mOutputDecls;
+      
     public:
       double lastIncumbent;
     public:
@@ -66,7 +68,8 @@ namespace MiniZinc {
 
       void assignSolutionToOutput();   // needs to be public for the callback?
       void printSolution(ostream& );
-      void printStatistics(ostream& );
+      virtual void printStatistics(std::ostream&, bool fLegend=0);
+      virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
 
 //       /// PARAMS
 //       int nThreads;
