@@ -388,7 +388,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
      case CPXMIP_UNBOUNDED:
        s = Status::UNBND;
        break;
-     case CPXMIP_ABORT_INFEAS:
+//      case CPXMIP_ABORT_INFEAS:
      case CPXMIP_FAIL_INFEAS:
        s = Status::ERROR;
        break;
