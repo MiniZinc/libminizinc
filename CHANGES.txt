@@ -5,6 +5,18 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.8
+=============
+
+Bug fixes:
+
+ - Fix incorrect negation of some reified comparisons.
+ - Make lb/ub functions work in more cases.
+ - Fix several bugs in the optimisation phase (could lead to incorrect
+   FlatZinc and crashes).
+ - Fix a problem with reverse mapper functions when the result of the reverse
+   mapper can be fixed to a constant.
+
 Version 2.0.7
 =============
 
