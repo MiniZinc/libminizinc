@@ -590,7 +590,7 @@ namespace MiniZinc {
       if (bi->isa<ConstraintI>()) {
         c = bi->cast<ConstraintI>()->e()->dyn_cast<Call>();
       } else {
-        c = bi->cast<VarDeclI>()->e()->e()->dyn_cast<Call>();
+        c = Expression::dyn_cast<Call>(bi->cast<VarDeclI>()->e()->e());
       }
       if (c==NULL)
         continue;
@@ -910,7 +910,7 @@ namespace MiniZinc {
         Expression* arg = c->args()[0]->isa<Id>() ? c->args()[1] : c->args()[0];
         IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(env,ident->decl()->ti()->domain()) : NULL;
         if (domain) {
-          BinOpType bot = c->args()[0]->isa<Id>() ? (is_true ? BOT_LQ : BOT_GQ) : (is_true ? BOT_GQ: BOT_LQ);
+          BinOpType bot = c->args()[0]->isa<Id>() ? (is_true ? BOT_LQ : BOT_GR) : (is_true ? BOT_GQ: BOT_LE);
           IntSetVal* newDomain = LinearTraits<IntLit>::limit_domain(bot, domain, eval_int(env,arg));
           ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
           ident->decl()->ti()->setComputedDomain(false);
@@ -1257,6 +1257,7 @@ namespace MiniZinc {
                 env.flat()->fail(env);
                 vdi->e()->e(constants().boollit(isConjunction));
               }
+              toRemove.push_back(vdi);
             }
           } else {
             // not subsumed, nonfixed==1
@@ -1276,8 +1277,7 @@ namespace MiniZinc {
                 vd->e(constants().lit_true);
               }
             } else {
-              vdi->e()->e(id);
-              vardeclQueue.push_back(env.vo.idx.find(vdi->e()->id())->second);
+              remove = false;
             }
           }
           

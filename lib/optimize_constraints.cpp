@@ -145,11 +145,15 @@ namespace MiniZinc {
         al_c_new->type(Type::parint(1));
         ArrayLit* al_x_new = new ArrayLit(al_x->loc(),x_e);
         al_x_new->type(al_x->type());
-        c->args()[0] = al_c_new;
-        c->args()[1] = al_x_new;
-        if (d != 0) {
-          c->args()[2] = IntLit::a(eval_int(env,c->args()[2])-d);
-        }
+        
+        std::vector<Expression*> args(3);
+        args[0] = al_c_new;
+        args[1] = al_x_new;
+        args[2] = IntLit::a(eval_int(env,c->args()[2])-d);
+        Call* nc = new Call(Location(), c->id(), args);
+        nc->type(Type::varbool());
+        rewrite = nc;
+        return OptimizeRegistry::CS_REWRITE;
       }
       return OptimizeRegistry::CS_OK;
     }
@@ -187,9 +191,15 @@ namespace MiniZinc {
           al_c_new->type(Type::parint(1));
           ArrayLit* al_x_new = new ArrayLit(al_x->loc(),x_e);
           al_x_new->type(al_x->type());
-          c->args()[0] = al_c_new;
-          c->args()[1] = al_x_new;
-          c->args()[2] = IntLit::a(d);
+          
+          std::vector<Expression*> args(3);
+          args[0] = al_c_new;
+          args[1] = al_x_new;
+          args[2] = IntLit::a(d);
+          Call* nc = new Call(Location(),c->id(),args);
+          nc->type(c->type());
+          rewrite = nc;
+          return OptimizeRegistry::CS_REWRITE;
         }
       }
       return OptimizeRegistry::CS_OK;
