@@ -1277,8 +1277,7 @@ namespace MiniZinc {
                 vd->e(constants().lit_true);
               }
             } else {
-              vdi->e()->e(id);
-              vardeclQueue.push_back(env.vo.idx.find(vdi->e()->id())->second);
+              remove = false;
             }
           }
           
