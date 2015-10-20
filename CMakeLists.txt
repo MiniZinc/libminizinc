@@ -282,7 +282,7 @@ find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)
+if(HAS_GUROBI)  # Version 6.0.5
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
@@ -326,7 +326,7 @@ if(HAS_GUROBI_OLD)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_CPLEX)
+if(HAS_CPLEX)  # Version 12.6.2
   if(UNIX)
     set(CPLEX_ARCH "linux")
   endif(UNIX)
@@ -414,6 +414,7 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)
+  # SCIP version tested: 3.2.0
   set(SCIP_DIR $ENV{SCIP_DIR})
   set(SOPLEX_DIR $ENV{SOPLEX_DIR})
   set(ZIMPL_DIR $ENV{ZIMPL_DIR})
@@ -471,7 +472,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_OSICBC)
-  # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.6 coin-Cbc-2.9.6'
+  # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.7 coin-Cbc-2.9.7'
   # as opposed to their docu: the /stable/2.9 directory is different.
   set(OSICBC_HOME $ENV{OSICBC_HOME})
   link_directories("${OSICBC_HOME}/lib")
