@@ -71,6 +71,14 @@ sort, arg_sort, arg_min, arg_max
  - A new tool, mzn2doc, can produce html output from the documentation
    comments. The MiniZinc distribution contains the documentation for global
    constraints and builtins generated directly from the library source code.
+   
+** New MIP solver interfaces **
+
+ - The executables mzn-cplex, mzn-gurobi, mzn-mip-scip and mzn-cbc use the
+   corresponding MIP solver. They can interpret FlatZinc code compiled with
+   -Glinear(_old), also as a driver handling both phases (flattening and solving).
+ - For COIN-CBC 2.9.6 it is recommended to switch off preprocessing
+   (--cbcArgs "-preprocess off")
 
 ** Bugs **
 
