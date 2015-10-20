@@ -110,8 +110,8 @@ namespace MiniZinc {
 //       assert(it != _m.end());
       if (_m.end() == it)   { // Changing so it stays in Release version
         std::string msg = "Id ";
-        if (ident)
-          msg += ident->v().c_str();
+//         if (ident)                 // could be a segfault...
+//           msg += ident->v().c_str();
         msg += " not found";
         throw InternalError(msg);
       }
