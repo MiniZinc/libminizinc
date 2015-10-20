@@ -101,9 +101,9 @@ namespace MiniZinc {
     return oss.str();
   }
 
-  inline std::string timeDiff(clock_t t1, clock_t t2) {
+  inline std::string timeDiff(clock_t t2, clock_t t1) {
     std::ostringstream oss;
-    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t1-t2) / CLOCKS_PER_SEC)) << " s";
+    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t2-t1) / CLOCKS_PER_SEC)) << " s";
     return oss.str();
   }
 

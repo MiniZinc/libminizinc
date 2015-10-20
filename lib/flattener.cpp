@@ -470,8 +470,8 @@ void Flattener::flatten()
     status = SolverInstance::UNSAT;
   }
   
-  if (flag_verbose)
-    std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
+//   if (flag_verbose)
+//     std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
 }
 
 void Flattener::printStatistics(ostream&)

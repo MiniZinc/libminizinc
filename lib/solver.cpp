@@ -35,7 +35,7 @@ using namespace std;
 using namespace MiniZinc;
 
 int main(int argc, const char** argv) {
-  clock_t starttime = std::clock(), endFlatTime=0, endTime;
+  clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
   
   MznSolver slv;
@@ -47,7 +47,7 @@ int main(int argc, const char** argv) {
       exit(EXIT_FAILURE);
     }
     slv.flatten();
-    endFlatTime = clock();
+    
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       GCLock lock;
@@ -85,8 +85,6 @@ int main(int argc, const char** argv) {
   endTime = clock();
   if (slv.get_flag_verbose()) {
     std::cerr << "   Done (";
-    if (endFlatTime)
-      cerr << "flattening time " << timeDiff(endFlatTime, starttime) << ", ";
     cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
   }
   return not fSuccess;
@@ -227,7 +225,11 @@ void MznSolver::printHelp()
 void MznSolver::flatten()
 {
   getFlt()->set_flag_verbose(get_flag_verbose());
+  clock_t tm01 = clock();
   getFlt()->flatten();
+  if (get_flag_verbose())
+    std::cerr << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
+
 }
 
 void MznSolver::solve()
