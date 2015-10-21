@@ -4852,6 +4852,7 @@ namespace MiniZinc {
               env.output->registerFn(env, decl);
               env.output->addItem(decl);
               outputVarDecls(env,origdecl,decl->e());
+              outputVarDecls(env,origdecl,decl->ti());
             } else {
               decl = origdecl;
             }
