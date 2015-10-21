@@ -275,9 +275,6 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     }
   }
   
-  /// last-minute solver params
-  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
-  
   
   lastIncumbent = 1e200;                  // for callbacks
   getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
@@ -314,6 +311,9 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 }
 
 void MIP_solverinstance::processFlatZinc(void) {
+  /// last-minute solver params
+  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
+  
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;
@@ -385,7 +385,7 @@ void MIP_solverinstance::processFlatZinc(void) {
   }
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
     cerr << "  MIP_wrapper: prior to Phase 1,  "
-      << mip_wrap->nLitVars << " literals with"
+      << mip_wrap->nLitVars << " literals with "
       << mip_wrap-> sLitValues.size() << " values created." << endl;
   if (not getMIPWrapper()->fPhase1Over)
     getMIPWrapper()->addPhase1Vars(); 
@@ -397,7 +397,7 @@ void MIP_solverinstance::processFlatZinc(void) {
   }
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
     cerr << "  MIP_wrapper: overall,  "
-      << mip_wrap->nLitVars << " literals with"
+      << mip_wrap->nLitVars << " literals with "
       << mip_wrap-> sLitValues.size() << " values created." << endl;
 }  // processFlatZinc
 
