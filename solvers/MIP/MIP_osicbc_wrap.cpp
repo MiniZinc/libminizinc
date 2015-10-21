@@ -227,7 +227,12 @@ void MIP_osicbc_wrapper::addRow
         throw runtime_error("  MIP_wrapper: unknown constraint type");
     }
   // ignoring mask for now.  TODO
-  osi.addRow(cpv, rlb, rub);
+  try {
+    osi.addRow(cpv, rlb, rub);
+  } catch (const CoinError& err) {
+    cerr << "  COIN-OR Error: " << err.message() << endl;
+    throw runtime_error(err.message());
+  }
 }
 
 
