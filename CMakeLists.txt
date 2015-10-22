@@ -10,8 +10,8 @@ set(HAS_OSICBC TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN    FALSE)
 
-set(HAS_CPLEX_OLD TRUE)
-set(HAS_GUROBI_OLD TRUE)
+set(HAS_CPLEX_OLD FALSE)
+set(HAS_GUROBI_OLD FALSE)
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
@@ -308,13 +308,13 @@ if(HAS_GUROBI_OLD)
   link_directories("${GUROBI_HOME}/lib")
 
   add_library(minizinc_gurobi_old
-    solvers/gurobi/gurobi_solverinstance.cpp
+    solvers/OLD/gurobi/gurobi_solverinstance.cpp
   )
   target_include_directories(minizinc_gurobi_old PRIVATE "${GUROBI_HOME}/include")
   target_link_libraries(minizinc_gurobi_old minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-gurobi-old
-    solvers/gurobi/mzn-gurobi.cpp
+    solvers/OLD/gurobi/mzn-gurobi.cpp
   )
   target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
   target_link_libraries(mzn-gurobi-old minizinc_gurobi_old)
@@ -389,7 +389,7 @@ if(HAS_CPLEX_OLD)
   link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
   add_library(minizinc_cplex_old
-    solvers/cplex/cplex_solverinstance.cpp
+    solvers/OLD/cplex/cplex_solverinstance.cpp
   )
   SET_TARGET_PROPERTIES(minizinc_cplex_old
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
@@ -402,7 +402,7 @@ if(HAS_CPLEX_OLD)
   target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-cplex_old
-    solvers/cplex/mzn-cplex.cpp
+    solvers/OLD/cplex/mzn-cplex.cpp
   )
   SET_TARGET_PROPERTIES(mzn-cplex_old
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
