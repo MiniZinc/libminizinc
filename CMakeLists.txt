@@ -24,11 +24,11 @@ if (ADDITIONAL_DATE_STRING)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
-
-# -------------------------------------------------------------------------------------------------------------------
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)  ## does not work TODO
 if (BUILD_STATIC_EXECUTABLE)
-  set(CMAKE_EXE_LINKER_FLAGS -static)
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  SET(BUILD_SHARED_LIBRARIES OFF)
+  SET(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -356,9 +356,14 @@ if(HAS_CPLEX)  # Version 12.6.2
 	add_executable(mzn-cplex
 	  lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
-	SET_TARGET_PROPERTIES(mzn-cplex
+  SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
+  # if (BUILD_STATIC_EXECUTABLE)
+  SET_TARGET_PROPERTIES(mzn-cplex
+                               PROPERTIES LINK_FLAGS "-static"
+                               )
+  # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
 
@@ -471,9 +476,7 @@ if(HAS_SCIP)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)
-  # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.7 coin-Cbc-2.9.7'
-  # as opposed to their docu: the /stable/2.9 directory is different.
+if(HAS_OSICBC)  # Version release/2.9.7
   set(OSICBC_HOME $ENV{OSICBC_HOME})
   link_directories("${OSICBC_HOME}/lib")
 

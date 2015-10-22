@@ -36,10 +36,8 @@ MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
 }
 
 string MIP_WrapperFactory::getVersion( ) {
-//   # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.6 coin-Cbc-2.9.6'
-//   # as opposed to their docu: the /stable/2.9 directory is different.  TODO
   string v = "  MIP wrapper for OSICBC ";
-  v += CBC_VERSION;                     // Cbc_config.h says 2.8              TODO
+  v += CBC_VERSION;                     // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
   v += CLP_VERSION;
   v += "  Compiled  " __DATE__ "  " __TIME__;
