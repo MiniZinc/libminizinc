@@ -489,6 +489,11 @@ if(HAS_OSICBC)  # Version release/2.9.7
     )
 
   add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  # if (BUILD_STATIC_EXECUTABLE)
+#   SET_TARGET_PROPERTIES(mzn-cbc
+#                                PROPERTIES LINK_FLAGS "-static"
+#                                )
+  # endif()
   target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
   target_link_libraries(mzn-cbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m )
 
