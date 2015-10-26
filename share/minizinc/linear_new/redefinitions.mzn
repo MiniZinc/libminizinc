@@ -15,8 +15,8 @@
 ann: user_cut;
 ann: lazy_constraint;
 %%% comment away the assignments to have those as normal constraints  
-ann: MIP_cut;  % = user_cut;  seem worse
-ann: MIP_lazy;  % = lazy_constraint;
+ann: MIP_cut = user_cut;     %% better in total
+ann: MIP_lazy = lazy_constraint;
 
 include "domain_encodings.mzn";
 
