@@ -208,7 +208,6 @@ void MIP_osicbc_wrapper::addRow
   (int nnz, int* rmatind, double* rmatval, MIP_wrapper::LinConType sense,
    double rhs, int mask, string rowName)
 {
-  CoinPackedVector cpv(nnz, rmatind, rmatval);
   /// Convert var types:
   double rlb=rhs, rub=rhs;
   char ssense=0;
@@ -225,12 +224,21 @@ void MIP_osicbc_wrapper::addRow
         throw runtime_error("  MIP_wrapper: unknown constraint type");
     }
   // ignoring mask for now.  TODO
-  try {
-    osi.addRow(cpv, rlb, rub);
-  } catch (const CoinError& err) {
-    cerr << "  COIN-OR Error: " << err.message() << endl;
-    throw runtime_error(err.message());
-  }
+  // 1-by-1 too slow:
+//   try {
+//     CoinPackedVector cpv(nnz, rmatind, rmatval);
+//     osi.addRow(cpv, rlb, rub);
+//   } catch (const CoinError& err) {
+//     cerr << "  COIN-OR Error: " << err.message() << endl;
+//     throw runtime_error(err.message());
+//   }
+  /// Segfault:
+//   rowStarts.push_back(columns.size());
+//   columns.insert(columns.end(), rmatind, rmatind + nnz);
+//   element.insert(element.end(), rmatval, rmatval + nnz);
+  rows.push_back(CoinPackedVector(nnz, rmatind, rmatval));
+  rowlb.push_back(rlb);
+  rowub.push_back(rub);
 }
 
 
@@ -373,10 +381,30 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 
 
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
-
+  try {
+    /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
+    /// But this gives segf:
+//     osi.addRows(rowStarts.size(), rowStarts.data(),
+//                 columns.data(), element.data(), rowlb.data(), rowub.data());
+    /// So:
+    if (fVerbose)
+      cerr << "  CBC: adding constraints physically..." << flush;
+    vector<CoinPackedVectorBase*> pRows(rowlb.size());
+    for (int i=0; i<rowlb.size(); ++i)
+      pRows[i] = &rows[i];
+    osi.addRows(rowlb.size(), pRows.data(), rowlb.data(), rowub.data());
+//     rowStarts.clear();
+//     columns.clear();
+//     element.clear();
+    pRows.clear();
+    rows.clear();
+    rowlb.clear();
+    rowub.clear();
+    if (fVerbose)
+      cerr << " done." << endl;
   /////////////// Last-minute solver options //////////////////
 //       osi->loadProblem(*matrix, 
-  {
+    {
       std::vector<VarId> integer_vars;
       for(unsigned int i=0; i<colObj.size(); i++) {
         if(REAL != colTypes[i]
@@ -386,7 +414,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
         }
       }
       osi.setInteger(integer_vars.data(), integer_vars.size());
-  }
+    }
     if(sExportModel.size()) {
       // Not implemented for OsiClp:
 //       osi.setColNames(colNames, 0, colObj.size(), 0);
@@ -452,7 +480,6 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    output.dCPUTime = clock();
 
    /* Optimize the problem and obtain solution. */
-    try {
 //       model.branchAndBound();
 //       osi.branchAndBound();
 
@@ -461,45 +488,45 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //      CbcCbcParamUtils::setCbcModelDefaults(model) ;
 //       const char * argv2[]={"mzn-cbc","-solve","-quit"};
 //        CbcMain1(3,argv2,model);
-      cbc_cmdOptions += " -solve";
-      cbc_cmdOptions += " -quit";
+    cbc_cmdOptions += " -solve";
+    cbc_cmdOptions += " -quit";
 //       if (fVerbose)
 //         cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
-      callCbc(cbc_cmdOptions, model);
-    } catch (CoinError& err) {
-      err.print(true);
-    }
+    callCbc(cbc_cmdOptions, model);
     
 
-   output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
+    output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
-   output.status = convertStatus(&model);
-//    output.status = convertStatus();
+    output.status = convertStatus(&model);
+  //    output.status = convertStatus();
 
-   /// Continuing to fill the output object:
-   if (Status::OPT == output.status || Status::SAT ==output.status) {
-     output.objVal = model.getObjValue();
-//      output.objVal = osi.getObjValue();
+    /// Continuing to fill the output object:
+    if (Status::OPT == output.status || Status::SAT ==output.status) {
+      output.objVal = model.getObjValue();
+  //      output.objVal = osi.getObjValue();
 
-      /* The size of the problem should be obtained by asking OSICBC what
-          the actual size is, rather than using what was passed to CBCcopylp.
-          cur_numrows and cur_numcols store the current number of rows and
-          columns, respectively.  */   // ?????????????? TODO
+        /* The size of the problem should be obtained by asking OSICBC what
+            the actual size is, rather than using what was passed to CBCcopylp.
+            cur_numrows and cur_numcols store the current number of rows and
+            columns, respectively.  */   // ?????????????? TODO
 
-      int cur_numcols = model.getNumCols ();
-//       int cur_numcols = osi.getNumCols ();
-      assert(cur_numcols == colObj.size());
-      
-      wrap_assert(model.getColSolution(), "Failed to get variable values.");
-      x.assign( model.getColSolution(), model.getColSolution() + cur_numcols ); // ColSolution();
-      output.x = x.data();
-//       output.x = osi.getColSolution();
-   }
-   output.bestBound = model.getBestPossibleObjValue();
-//    output.bestBound = -1;
-   output.nNodes = model.getNodeCount();
-//    output.nNodes = osi.getNodeCount();
-   output.nOpenNodes = -1;
+        int cur_numcols = model.getNumCols ();
+  //       int cur_numcols = osi.getNumCols ();
+        assert(cur_numcols == colObj.size());
+        
+        wrap_assert(model.getColSolution(), "Failed to get variable values.");
+        x.assign( model.getColSolution(), model.getColSolution() + cur_numcols ); // ColSolution();
+        output.x = x.data();
+  //       output.x = osi.getColSolution();
+    }
+    output.bestBound = model.getBestPossibleObjValue();
+  //    output.bestBound = -1;
+    output.nNodes = model.getNodeCount();
+  //    output.nNodes = osi.getNodeCount();
+    output.nOpenNodes = -1;
+  } catch (CoinError& err) {
+    err.print(true);
+  }
 }
 
 void MIP_osicbc_wrapper::setObjSense(int s)
