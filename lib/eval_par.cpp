@@ -334,7 +334,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_array_lit(env,eval_call<EvalCopy>(env,ce));
+        return eval_call<EvalArrayLit>(env,ce);
       }
     case Expression::E_LET:
       {
