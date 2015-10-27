@@ -634,9 +634,15 @@ elseif is_fixed(y) then
       constraint z=zn*max(dom(x) diff {0})*max(dom(y) diff {0});
     } in
     bool_and__INT(xn,yn,zn)
-  elseif card(dom(x)) * card(dom(y)) > nMZN__UnarySizeMax_intTimes then                    %% PARAM
+  elseif card(dom(x)) * card(dom(y)) > nMZN__UnarySizeMax_intTimes
+    %% Peter's idea for *bool:
+    \/ (card(dom(x))==2 /\ 0 in dom(x))
+    \/ (card(dom(y))==2 /\ 0 in dom(y))
+    then                    %% PARAM
     %% ALSO NO POINT IF <=4.          TODO
-    if card(dom(x)) > card(dom(y)) then int_times(y,x,z)
+    if card(dom(x)) > card(dom(y)) \/
+      ( card(dom(x))==card(dom(y)) /\ 0 in dom(y) /\ not (0 in dom(x)) )
+      then int_times(y,x,z)
     else
        my_trace ( " int_times(x,y,z): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
        my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "\n" ) /\
