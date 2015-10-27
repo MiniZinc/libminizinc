@@ -117,6 +117,15 @@ namespace MiniZinc {
     }
     static Expression* exp(Expression* e) { return e; }
   };
+  class EvalArrayLitCopy {
+  public:
+    typedef ArrayLit* Val;
+    typedef Expression* ArrayVal;
+    static ArrayLit* e(EnvI& env, Expression* e) {
+      return copy(env,eval_array_lit(env, e),true)->cast<ArrayLit>();
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
   class EvalIntSet {
   public:
     typedef IntSetVal* Val;
@@ -334,7 +343,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_call<EvalArrayLit>(env,ce);
+        return eval_call<EvalArrayLitCopy>(env,ce);
       }
     case Expression::E_LET:
       {
