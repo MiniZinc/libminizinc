@@ -384,14 +384,14 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-    cerr << "  MIP_wrapper: during Phase 1,  "
+    cerr << "  MIP_solverinstance: during Phase 1,  "
       << mip_wrap->nLitVars << " literals with "
       << mip_wrap-> sLitValues.size() << " values used." << endl;
   if (not getMIPWrapper()->fPhase1Over)
     getMIPWrapper()->addPhase1Vars(); 
 
   if (mip_wrap->fVerbose)
-    cerr << "  MIP_wrapper: adding constraints..." << flush;
+    cerr << "  MIP_solverinstance: adding constraints..." << flush;
   
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
     if (Call* c = it->e()->dyn_cast<Call>()) {
@@ -402,7 +402,7 @@ void MIP_solverinstance::processFlatZinc(void) {
     cerr << " done, " << mip_wrap->getNRows() << " rows and "
     << mip_wrap->getNCols() << " columns in total." << endl;
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-    cerr << "  MIP_wrapper: overall,  "
+    cerr << "  MIP_solverinstance: overall,  "
       << mip_wrap->nLitVars << " literals with "
       << mip_wrap-> sLitValues.size() << " values used." << endl;
 }  // processFlatZinc

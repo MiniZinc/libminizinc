@@ -387,8 +387,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //     osi.addRows(rowStarts.size(), rowStarts.data(),
 //                 columns.data(), element.data(), rowlb.data(), rowub.data());
     /// So:
+    MIP_wrapper::addPhase1Vars();         // only now
     if (fVerbose)
-      cerr << "  CBC: adding constraints physically..." << flush;
+      cerr << "  MIP_osicbc_wrapper: adding constraints physically..." << flush;
     vector<CoinPackedVectorBase*> pRows(rowlb.size());
     for (int i=0; i<rowlb.size(); ++i)
       pRows[i] = &rows[i];

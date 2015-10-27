@@ -61,6 +61,11 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, string *names);
+    
+    void addPhase1Vars() {
+      if (fVerbose)
+        cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << endl;
+    }
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,

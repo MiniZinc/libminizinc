@@ -439,7 +439,8 @@ if(HAS_SCIP)
   endif(APPLE)
   
   set(SCIP_LIB_EXTRAS
-    readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
+    readline
+    z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp

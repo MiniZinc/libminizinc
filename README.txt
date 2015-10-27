@@ -76,9 +76,7 @@ sort, arg_sort, arg_min, arg_max
 
  - The executables mzn-cplex, mzn-gurobi, mzn-mip-scip and mzn-cbc use the
    corresponding MIP solver. They can interpret FlatZinc code compiled with
-   -Glinear(_old), also as a driver handling both phases (flattening and solving).
- - For COIN-CBC 2.9.6 it is recommended to switch off preprocessing
-   (--cbcArgs "-preprocess off")
+   -Glinear(_old), as well as handle both phases (flattening and solving).
 
 ** Bugs **
 
