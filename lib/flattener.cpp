@@ -392,13 +392,39 @@ void Flattener::flatten()
                 p.print(env.flat());
               } else if(flag_output_fzn != "") {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to " << flag_output_fzn << "...";
+                  std::cerr << "Printing FlatZinc to '" << flag_output_fzn << "' ... ";
                 std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
+                os.open(flag_output_fzn.c_str(), std::ios::out);
                 Printer p(os,0);
                 p.print(env.flat());
                 os.close();
               }
+              
+              if (!flag_no_output_ozn) {
+                if (flag_output_ozn_stdout) {
+                  if (flag_verbose)
+                    std::cerr << "Printing .ozn ...";
+                  Printer p(std::cout,0);
+                  p.print(env.output());
+                } else if (flag_output_ozn != "") {
+                  std::ofstream os;
+                  if (flag_verbose)
+                    std::cerr << "Printing '" << flag_output_ozn << "' ...";
+                  os.open(flag_output_ozn.c_str(), std::ios::out);
+                  if (!os.good()) {
+                    if (flag_verbose)
+                      std::cerr << std::endl;
+                    std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
+                    exit(EXIT_FAILURE);
+                  }
+                  Printer p(os,0);
+                  p.print(env.output());
+                  os.close();
+                }
+//                 if (flag_verbose)
+//                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+
             }
 
             /// To cout:
@@ -444,8 +470,8 @@ void Flattener::flatten()
     status = SolverInstance::UNSAT;
   }
   
-  if (flag_verbose)
-    std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
+//   if (flag_verbose)
+//     std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
 }
 
 void Flattener::printStatistics(ostream&)

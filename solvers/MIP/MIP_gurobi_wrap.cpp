@@ -251,9 +251,11 @@ void MIP_gurobi_wrapper::addRow
   const int rcnt=1;
   const int rmatbeg[] = { 0 };
   const char * pRName = rowName.c_str();
-  // ignoring mask for now.  TODO
-  error = GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
-  wrap_assert( !error,  "Failed to add constraint." );
+//   if (MaskConsType_Normal & mask) {
+  /// User cuts & lazy only by callback in Gurobi:
+    error = GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
+    wrap_assert( !error,  "Failed to add constraint." );
+//   }
 }
 
 /// SolutionCallback ------------------------------------------------------------------------

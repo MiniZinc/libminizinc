@@ -49,8 +49,9 @@ solns2out tools. These are drop-in replacements for the MiniZinc 1.6 versions.
 Add the bin directory in the installation path to your PATH environment variable if necessary,
 or (if you did not install) add the "build" directory to your PATH.
 
-We currently do not provide the minizinc driver program that was part
+Except for MIP solvers, we currently do not provide the minizinc driver program that was part
 of MiniZinc 1.6 in the source distribution. It is however included in the
 binary distributions. If you have both MiniZinc 1.6 and 2 installed (and MiniZinc 2.0
 occurs on the PATH before 1.6), you can use the old minizinc driver
-with the new versions of mzn2fzn and solns2out.
+with the new versions of mzn2fzn and solns2out. For MIP, setting HAS_... in CMakeLists.txt
+produces the corresponding mzn-... invoking that solver.

@@ -31,7 +31,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <minizinc/solver_instance.hh>
-#include <minizinc/solvers/cplex_solverinstance.hh>
+#include <minizinc/solvers/OLD/cplex_solverinstance.hh>
 
 using namespace MiniZinc;
 using namespace std;

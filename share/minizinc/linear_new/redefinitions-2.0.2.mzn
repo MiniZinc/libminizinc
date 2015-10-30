@@ -3,10 +3,12 @@
 
 
 predicate symmetry_breaking_constraint(var bool: b) =
-    (b)  :: MIP_lazy :: MIP_cut;   %% forall() is needed to accept annotations TODO
+    (b)  % :: MIP_lazy :: MIP_cut   %% forall() is needed to accept annotations TODO
+    ;
 
-predicate redundant_constraint(var bool: b) = (b) :: MIP_cut;
-  % = true;
+predicate redundant_constraint(var bool: b) = (b) % :: MIP_cut;
+  % = true
+  ;
 
 %% Linearized element: just call without shifting
 predicate array_var_bool_element_nonshifted(var int: idx, array[int] of var bool: x, var bool: c) =

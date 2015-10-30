@@ -35,6 +35,12 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
 //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
     
     vector<double> x;
+    
+    // To add constraints:
+//     vector<int> rowStarts, columns;
+    vector<CoinPackedVector> rows;
+    vector<double> //element,
+      rowlb, rowub;
 
   public:
     MIP_osicbc_wrapper() { openOSICBC(); }
@@ -55,6 +61,11 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, string *names);
+    
+    void addPhase1Vars() {
+      if (fVerbose)
+        cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << endl;
+    }
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
@@ -71,6 +82,8 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       return osi.getNumCols();
     }
     virtual int getNRows() {
+      if (rowlb.size())
+        return rowlb.size();
       return osi.getNumRows();
     }
                         

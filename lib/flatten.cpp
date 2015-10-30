@@ -3840,8 +3840,9 @@ namespace MiniZinc {
           keepAlive->decl(constants().var_redef);
           ret = flat_exp(env, Ctx(), keepAlive, constants().var_true, constants().var_true);
           
-          env.reverseMappers.insert(ee.r()->cast<Id>(),revMap);
-          
+          if (ee.r()->isa<Id>()) {
+            env.reverseMappers.insert(ee.r()->cast<Id>(),revMap);
+          }
           break;
         }
         if ( (bo->op()==BOT_EQ ||  bo->op()==BOT_EQUIV) && (bo->lhs()==constants().absent || bo->rhs()==constants().absent) ) {

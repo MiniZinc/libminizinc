@@ -263,11 +263,24 @@ void MIP_cplex_wrapper::addRow
   const int rcnt=1;
   const int rmatbeg[] = { 0 };
   char * pRName = (char*)rowName.c_str();
-  // ignoring mask for now.  TODO
-  status = CPXaddrows (env, lp, ccnt, rcnt, nnz, &rhs,
+  if (MaskConsType_Normal & mask) {
+    status = CPXaddrows (env, lp, ccnt, rcnt, nnz, &rhs,
         &ssense, rmatbeg, rmatind, rmatval,
         NULL, &pRName);
-  wrap_assert( !status,  "Failed to add constraint." );
+    wrap_assert( !status,  "Failed to add constraint." );
+  }
+  if (MaskConsType_Usercut & mask) {
+    status = CPXaddusercuts (env, lp, rcnt, nnz, &rhs,
+        &ssense, rmatbeg, rmatind, rmatval,
+        &pRName);
+    wrap_assert( !status,  "Failed to add usercut." );
+  }
+  if (MaskConsType_Lazy & mask) {
+    status = CPXaddlazyconstraints (env, lp, rcnt, nnz, &rhs,
+        &ssense, rmatbeg, rmatind, rmatval,
+        &pRName);
+    wrap_assert( !status,  "Failed to add lazy constraint." );
+  }
 }
 
 
@@ -375,7 +388,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
      case CPXMIP_UNBOUNDED:
        s = Status::UNBND;
        break;
-     case CPXMIP_ABORT_INFEAS:
+//      case CPXMIP_ABORT_INFEAS:
      case CPXMIP_FAIL_INFEAS:
        s = Status::ERROR;
        break;

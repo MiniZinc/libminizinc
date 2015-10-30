@@ -99,6 +99,38 @@ void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
 
 namespace SCIPConstraints {
 
+  bool CheckAnnUserCut(const Call* call) {
+    if(!call->ann().isEmpty()) {
+      if(call->ann().contains(constants().ann.user_cut)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool CheckAnnLazyConstraint(const Call* call) {
+    if(!call->ann().isEmpty()) {
+      if(call->ann().contains(constants().ann.lazy_constraint)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  int GetMaskConsType(const Call* call) {
+    int mask=0;
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC) {
+        mask |= MIP_wrapper::MaskConsType_Usercut;
+      }
+      if (fLC) {
+        mask |= MIP_wrapper::MaskConsType_Lazy;
+      }
+      if (!fUC && !fLC)
+        mask |= MIP_wrapper::MaskConsType_Normal;
+      return mask;
+//       return MIP_wrapper::MaskConsType_Normal;    // recognition fails
+  }
+
   void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
     Env& _env = gi.env();
@@ -132,7 +164,7 @@ namespace SCIPConstraints {
 //       cerr << coefs[i] << ", ";
 //     cerr << endl;
     gi.getMIPWrapper()->addRow(nvars, &vars[0], &coefs[0], lt, rhs,
-                               MIP_wrapper::MaskConsType_Normal, ss.str());
+                               GetMaskConsType(call), ss.str());
   }
 
   void p_int_lin_le(SolverInstanceBase& si, const Call* call) {
@@ -159,7 +191,7 @@ namespace SCIPConstraints {
       std::stringstream ss;
       ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
       gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
-                               MIP_wrapper::MaskConsType_Normal, ss.str());
+                               GetMaskConsType(call), ss.str());
     }
 }
 
@@ -243,9 +275,6 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     }
   }
   
-  /// last-minute solver params
-  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
-  
   
   lastIncumbent = 1e200;                  // for callbacks
   getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
@@ -282,6 +311,9 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 }
 
 void MIP_solverinstance::processFlatZinc(void) {
+  /// last-minute solver params
+  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
+  
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;
@@ -352,21 +384,27 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-    cerr << "  MIP_wrapper: prior to Phase 1,  "
-      << mip_wrap->nLitVars << " literals with"
-      << mip_wrap-> sLitValues.size() << " values created." << endl;
+    cerr << "  MIP_solverinstance: during Phase 1,  "
+      << mip_wrap->nLitVars << " literals with "
+      << mip_wrap-> sLitValues.size() << " values used." << endl;
   if (not getMIPWrapper()->fPhase1Over)
     getMIPWrapper()->addPhase1Vars(); 
- 
+
+  if (mip_wrap->fVerbose)
+    cerr << "  MIP_solverinstance: adding constraints..." << flush;
+  
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
     if (Call* c = it->e()->dyn_cast<Call>()) {
       _constraintRegistry.post(c);
     }
   }
+  if (mip_wrap->fVerbose)
+    cerr << " done, " << mip_wrap->getNRows() << " rows and "
+    << mip_wrap->getNCols() << " columns in total." << endl;
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-    cerr << "  MIP_wrapper: overall,  "
-      << mip_wrap->nLitVars << " literals with"
-      << mip_wrap-> sLitValues.size() << " values created." << endl;
+    cerr << "  MIP_solverinstance: overall,  "
+      << mip_wrap->nLitVars << " literals with "
+      << mip_wrap-> sLitValues.size() << " values used." << endl;
 }  // processFlatZinc
 
 Expression* MIP_solverinstance::getSolutionValue(Id* id) {

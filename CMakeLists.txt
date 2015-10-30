@@ -10,8 +10,8 @@ set(HAS_OSICBC TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN    FALSE)
 
-set(HAS_CPLEX_OLD TRUE)
-set(HAS_GUROBI_OLD TRUE)
+set(HAS_CPLEX_OLD FALSE)
+set(HAS_GUROBI_OLD FALSE)
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
@@ -24,11 +24,11 @@ if (ADDITIONAL_DATE_STRING)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
-
-# -------------------------------------------------------------------------------------------------------------------
+option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)  ## does not work TODO
 if (BUILD_STATIC_EXECUTABLE)
-  set(CMAKE_EXE_LINKER_FLAGS -static)
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  SET(BUILD_SHARED_LIBRARIES OFF)
+  SET(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ find_package ( Threads REQUIRED )
 # -------------------------------------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)
+if(HAS_GUROBI)  # Version 6.0.5
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
@@ -315,13 +315,13 @@ if(HAS_GUROBI_OLD)
   link_directories("${GUROBI_HOME}/lib")
 
   add_library(minizinc_gurobi_old
-    solvers/gurobi/gurobi_solverinstance.cpp
+    solvers/OLD/gurobi/gurobi_solverinstance.cpp
   )
   target_include_directories(minizinc_gurobi_old PRIVATE "${GUROBI_HOME}/include")
   target_link_libraries(minizinc_gurobi_old minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-gurobi-old
-    solvers/gurobi/mzn-gurobi.cpp
+    solvers/OLD/gurobi/mzn-gurobi.cpp
   )
   target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
   target_link_libraries(mzn-gurobi-old minizinc_gurobi_old)
@@ -333,7 +333,7 @@ if(HAS_GUROBI_OLD)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_CPLEX)
+if(HAS_CPLEX)  # Version 12.6.2
   if(UNIX)
     set(CPLEX_ARCH "linux")
   endif(UNIX)
@@ -363,9 +363,14 @@ if(HAS_CPLEX)
 	add_executable(mzn-cplex
 	  lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
-	SET_TARGET_PROPERTIES(mzn-cplex
+  SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
+  # if (BUILD_STATIC_EXECUTABLE)
+  SET_TARGET_PROPERTIES(mzn-cplex
+                               PROPERTIES LINK_FLAGS "-static"
+                               )
+  # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
 
@@ -391,7 +396,7 @@ if(HAS_CPLEX_OLD)
   link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
   add_library(minizinc_cplex_old
-    solvers/cplex/cplex_solverinstance.cpp
+    solvers/OLD/cplex/cplex_solverinstance.cpp
   )
   SET_TARGET_PROPERTIES(minizinc_cplex_old
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
@@ -404,7 +409,7 @@ if(HAS_CPLEX_OLD)
   target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-cplex_old
-    solvers/cplex/mzn-cplex.cpp
+    solvers/OLD/cplex/mzn-cplex.cpp
   )
   SET_TARGET_PROPERTIES(mzn-cplex_old
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
@@ -421,6 +426,7 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)
+  # SCIP version tested: 3.2.0
   set(SCIP_DIR $ENV{SCIP_DIR})
   set(SOPLEX_DIR $ENV{SOPLEX_DIR})
   set(ZIMPL_DIR $ENV{ZIMPL_DIR})
@@ -440,7 +446,8 @@ if(HAS_SCIP)
   endif(APPLE)
   
   set(SCIP_LIB_EXTRAS
-    readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
+    readline
+    z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
@@ -477,9 +484,7 @@ if(HAS_SCIP)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)
-  # Note that you should get Cbc by e.g. 'svn co https://projects.coin-or.org/svn/Cbc/releases/2.9.6 coin-Cbc-2.9.6'
-  # as opposed to their docu: the /stable/2.9 directory is different.
+if(HAS_OSICBC)  # Version release/2.9.7
   set(OSICBC_HOME $ENV{OSICBC_HOME})
   link_directories("${OSICBC_HOME}/lib")
 
@@ -492,6 +497,11 @@ if(HAS_OSICBC)
     )
 
   add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  # if (BUILD_STATIC_EXECUTABLE)
+#   SET_TARGET_PROPERTIES(mzn-cbc
+#                                PROPERTIES LINK_FLAGS "-static"
+#                                )
+  # endif()
   target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
   target_link_libraries(mzn-cbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m )
 

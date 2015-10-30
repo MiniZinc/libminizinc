@@ -15,6 +15,7 @@
 #include <minizinc/ast.hh>
 
 #include <minizinc/stl_map_set.hh>
+#include <minizinc/exception.hh>
 
 namespace MiniZinc {
   
@@ -106,7 +107,14 @@ namespace MiniZinc {
     }
     T& get(Id* ident) {
       iterator it = find(ident);
-      assert(it != _m.end());
+//       assert(it != _m.end());
+      if (_m.end() == it)   { // Changing so it stays in Release version
+        std::string msg = "Id ";
+//         if (ident)                 // could be a segfault...
+//           msg += ident->v().c_str();
+        msg += " not found";
+        throw InternalError(msg);
+      }
       return it->second;
     }
   };

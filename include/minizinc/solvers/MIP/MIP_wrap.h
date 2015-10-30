@@ -13,7 +13,7 @@
 #define __MIP_WRAPPER__
 
 #include <vector>
-#include <set>
+#include <map>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -147,7 +147,8 @@ class MIP_wrapper {
 
   public:
     /// debugging stuff
-    set<double> sLitValues;
+//     set<double> sLitValues;
+    map<double, VarId> sLitValues;
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
@@ -158,29 +159,36 @@ class MIP_wrapper {
         addVar(res);
       return res;
     }
+    int nLitVars=0;
     /// adding a literal as a variable. Should not happen in feasible models
     virtual VarId addLitVar(double v) {
+      // Cannot do this: at least CBC does not support duplicated indexes    TODO??
+//       ++nLitVars;
+//       auto itFound = sLitValues.find(v);
+//       if (sLitValues.end() != itFound)
+//         return itFound->second;
       ostringstream oss;
       oss << "lit_" << v << "__" << (nLitVars++);
       string name = oss.str();
       size_t pos = name.find('.');
       if (string::npos != pos)
-        name.replace(pos, 1, "_");
+        name.replace(pos, 1, "p");
       VarId res = addVarLocal(0.0, v, v, REAL, name);
       if (fPhase1Over)
         addVar(res);
 //       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
-      sLitValues.insert(v);
+      sLitValues[v] = res;
       return res;
     }
-    int nLitVars=0;
     /// adding all local variables upfront. Makes sure it's called only once
     virtual void addPhase1Vars() {
       assert(0 == getNCols());
       assert(not fPhase1Over);
       if (fVerbose)
-        cerr << "MIP: adding the " << colObj.size() << " Phase 1 variables" << endl;
+        cerr << "  MIP: adding the " << colObj.size() << " Phase-1 variables..." << flush;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
+      if (fVerbose)
+        cerr << " done." << endl;
       fPhase1Over = true;    // SCIP needs after adding
     }
 
