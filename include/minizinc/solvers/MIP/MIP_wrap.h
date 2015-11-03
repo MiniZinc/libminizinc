@@ -185,7 +185,7 @@ class MIP_wrapper {
       assert(0 == getNCols());
       assert(not fPhase1Over);
       if (fVerbose)
-        cerr << "  MIP: adding the " << colObj.size() << " Phase-1 variables..." << flush;
+        cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << flush;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
       if (fVerbose)
         cerr << " done." << endl;
