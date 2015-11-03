@@ -4623,37 +4623,7 @@ namespace MiniZinc {
             nctx.b = C_MIX;
           if (v->e()) {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
-            if (v->e()->type().bt()==Type::BT_INT && v->e()->type().dim()==0) {
-              IntSetVal* ibv = NULL;
-              if (v->e()->type().is_set()) {
-                ibv = compute_intset_bounds(env,v->e());
-              } else {
-                IntBounds ib = compute_int_bounds(env,v->e());
-                if (ib.valid)
-                  ibv = IntSetVal::a(ib.l,ib.u);
-              }
-              if (ibv) {
-                if (vd->ti()->domain()) {
-                  IntSetVal* domain = eval_intset(env,vd->ti()->domain());
-                  IntSetRanges dr(domain);
-                  IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  IntSetVal* newibv = IntSetVal::ai(i);
-                  if (ibv->card() == newibv->card()) {
-                    vd->ti()->setComputedDomain(true);
-                  } else {
-                    ibv = newibv;
-                  }
-                } else {
-                  vd->ti()->setComputedDomain(true);
-                }
-                if (!v->e()->type().is_set() && ibv->card()==0) {
-                  env.flat()->fail(env);
-                } else {
-                  vd->ti()->domain(new SetLit(Location().introduce(),ibv));
-                }
-              }
-            } else if (v->e()->type().dim() > 0) {
+            if (v->e()->type().dim() > 0) {
               Expression* ee = follow_id_to_decl(vd->e());
               if (ee->isa<VarDecl>())
                 ee = ee->cast<VarDecl>()->e();
