@@ -219,6 +219,7 @@ namespace MiniZinc {
     UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
     /// The solver engine
     GecodeEngine* engine;
+    Gecode::Search::Options engine_options;
 
     GecodeSolverInstance(Env& env, const Options& options);
     virtual ~GecodeSolverInstance(void);

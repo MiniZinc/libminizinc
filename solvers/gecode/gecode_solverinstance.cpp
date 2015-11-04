@@ -426,9 +426,11 @@ namespace MiniZinc {
 
     // post the constraints
     for (ConstraintIterator it = _flat->begin_constraints(); it != _flat->end_constraints(); ++it) {
+      if(!it->removed()) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
         _constraintRegistry.post(c);
       }
+    }
     }
 
     // objective
@@ -933,17 +935,16 @@ namespace MiniZinc {
       int nodeStop = _options.getIntParam("nodes", 0);
       int failStop = _options.getIntParam("fails", 0);
       int timeStop = _options.getIntParam("time", 0);
-      
-      Search::Options o;
-      o.stop = Driver::CombinedStop::create(nodeStop,
+
+      engine_options.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,
                                             timeStop,
                                             false);
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,o);
+        engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,engine_options);
       } else {
-        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,o);
+        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->_current_space,engine_options);
       }
     }
   }
@@ -981,24 +982,35 @@ namespace MiniZinc {
       }
     }
 
-    SolverInstance::Status status;
-    
     if (_solution) {
       assignSolutionToOutput();
       if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        status = SolverInstance::SAT;
+        _status = SolverInstance::SAT;
       } else {
         if (engine->stopped()) {
-          status = SolverInstance::UNKNOWN;
+          Gecode::Search::Statistics stat = engine->statistics();
+          int r = static_cast<Driver::CombinedStop*>(engine_options.stop)->reason(stat, engine_options);
+          if (r & Driver::CombinedStop::SR_INT)
+            std::cerr << "user interrupt " << std::endl;
+          else {
+            if (r & Driver::CombinedStop::SR_NODE)
+              _status_reason = SolverInstance::SR_LIMIT;
+            if (r & Driver::CombinedStop::SR_FAIL)
+              _status_reason = SolverInstance::SR_LIMIT;
+            if (r & Driver::CombinedStop::SR_TIME)
+              _status_reason = SolverInstance::SR_LIMIT;
+            std::cerr << "limit reached" << std::endl << std::endl;
+          }
+          _status = SolverInstance::UNKNOWN;
         } else {
-          status = SolverInstance::OPT;
+          _status = SolverInstance::OPT;
         }
       }
     } else {
       if (engine->stopped()) {
-        status = SolverInstance::UNKNOWN;
+        _status = SolverInstance::UNKNOWN;
       } else {
-        status = SolverInstance::UNSAT;
+        _status = SolverInstance::UNSAT;
       }
     }
     
@@ -1006,7 +1018,7 @@ namespace MiniZinc {
       print_stats();
     }
     
-    return status;
+    return _status;
   }
 
   class IntVarComp {
