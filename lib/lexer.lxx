@@ -47,6 +47,19 @@ bool strtointval(const char* s, long long int& v) {
   return !iss.fail();
 }
 
+bool fast_strtointval(const char* s, long long int& v) {
+  MiniZinc::IntVal x = 0;
+  try {
+    for (; *s != '\0'; ++s) {
+      x = (x*10) + (*s - '0');
+    }
+  } catch (MiniZinc::ArithmeticError&) {
+    return false;
+  }
+  v = x.toInt();
+  return true;
+}
+
 bool strtofloatval(const char* s, double& v) {
   std::istringstream iss(s);
   iss >> v;
@@ -174,7 +187,7 @@ char* bufferData(void* parm) {
 "false"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 [0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    if (strtointval(yytext, yylval->iValue))
+                    if (fast_strtointval(yytext, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
