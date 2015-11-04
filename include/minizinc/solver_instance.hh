@@ -21,6 +21,7 @@ namespace MiniZinc {
     SolverInstanceBase* _si;
   public:
     enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
+    enum StatusReason { SR_OK=-5, SR_TIME, SR_MEMORY, SR_LIMIT, SR_ERROR };
   };
   
 }

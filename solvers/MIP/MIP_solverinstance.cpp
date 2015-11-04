@@ -270,9 +270,16 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
     if (solveItem->st() == SolveI::SolveType::ST_MAX) {
       getMIPWrapper()->setObjSense(1);
+      if (mip_wrap->fVerbose)
+        cerr << "    MIP_solverinstance: this is a MAXimization problem." << endl;
     } else {
       getMIPWrapper()->setObjSense(-1);
+      if (mip_wrap->fVerbose)
+        cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
     }
+  } else {
+    if (mip_wrap->fVerbose)
+      cerr << "    MIP_solverinstance: this is a SATisfiability problem." << endl;
   }
   
   
@@ -313,7 +320,6 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 void MIP_solverinstance::processFlatZinc(void) {
   /// last-minute solver params
   mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
-  
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;

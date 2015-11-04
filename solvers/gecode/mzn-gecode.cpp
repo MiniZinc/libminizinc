@@ -435,7 +435,12 @@ int main(int argc, char** argv) {
               } else {
                 switch(status) {
                   case SolverInstance::UNKNOWN:
-                    std::cout << "=====UNKNOWN=====\n";
+                    {
+                      std::cout << "=====UNKNOWN=====\n";
+                      SolverInstance::StatusReason reason = gecode.reason();
+                      if(reason == SolverInstance::SR_LIMIT)
+                        std::cout << "% A limit was reached\n";
+                    }
                     break;
                   case SolverInstance::ERROR:
                     std::cout << "=====ERROR=====\n";

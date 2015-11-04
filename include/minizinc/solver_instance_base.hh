@@ -51,7 +51,10 @@ namespace MiniZinc {
     
   public:
     typedef SolverInstance::Status Status;
-    SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this) {}
+    typedef SolverInstance::StatusReason StatusReason;
+    Status _status;
+    StatusReason _status_reason;
+    SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options), _constraintRegistry(*this), _status(SolverInstance::UNKNOWN), _status_reason(SolverInstance::SR_OK) {}
     
     /// Probably should not be overridden above if using cleanup() again?
     /// Dangerous in C++. TODO
@@ -75,6 +78,11 @@ namespace MiniZinc {
     virtual void processFlatZinc(void) = 0;
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);
+    /// return reason for status given by solve
+    virtual StatusReason reason(void) {return _status_reason;}
+    virtual Status status(void) {return _status;}
+    
+
     /// reset the model to its core (removing temporary cts) and the solver to the root node of the search 
     void reset(void);
     /// reset the solver to the root node of the search TODO: difference between reset() and resetSolver()?
