@@ -10,8 +10,8 @@
 ann: user_cut;
 ann: lazy_constraint;
 %%% comment away the assignments to have those as normal constraints  
-ann: MIP_cut = user_cut;     %% better in total
-ann: MIP_lazy = lazy_constraint;
+ann: MIP_cut; % = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
+ann: MIP_lazy; % = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
 %  Parameters
@@ -487,7 +487,7 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
         z <= x[i] + sum(j in index_set(x) where i!=j)((ub(x[j])-lb(x[i]))*b[j])) %:: MIP_cut   %% (ub_j-lb_i) * b_j
     /\
     forall(i in index_set(x))
-      ( z <= ub(x[i])*b[i] + sum(j in index_set(x) where i!=j)(x[j]+lb(x[j])*(b[j]-1)) ) %:: MIP_cut   %% (ub_j-lb_i) * b_j
+      ( z <= ub(x[i])*b[i] + sum(j in index_set(x) where i!=j)(x[j]+lb(x[j])*(b[j]-1)) ) %:: MIP_cut
     /\
     (z <= sum(i in index_set(x))(x[i] + lb(x[i]) * (b[i]-1))) %:: MIP_cut
     /\
