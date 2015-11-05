@@ -286,6 +286,8 @@ namespace MiniZinc {
     void v(FloatVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
+    /// Allocate new temporary literal (tries to avoid allocation)
+    static FloatLit* a(FloatVal v);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
@@ -1374,6 +1376,8 @@ namespace MiniZinc {
       } ann;
       /// Keep track of allocated integer literals
       UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
+      /// Keep track of allocated float literals
+      UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef> floatMap;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit

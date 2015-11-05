@@ -1219,7 +1219,7 @@ namespace MiniZinc {
                   nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
                 } else {
                   FloatVal d = c->args()[2]->cast<FloatLit>()->v();
-                  args.push_back(new FloatLit(Location().introduce(),-d));
+                  args.push_back(FloatLit::a(-d));
                   nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
                 }
               } else {
@@ -4158,7 +4158,7 @@ namespace MiniZinc {
             if (uo->e()->type().bt()==Type::BT_INT)
               zero = IntLit::a(0);
             else
-              zero = new FloatLit(Location().introduce(),0.0);
+              zero = FloatLit::a(0.0);
             BinOp* bo = new BinOp(Location().introduce(),zero,BOT_MINUS,uo->e());
             bo->type(uo->type());
             KeepAlive ka(bo);
@@ -5740,7 +5740,7 @@ namespace MiniZinc {
             vdi->e()->ti()->domain(NULL);
             std::vector<Expression*> args(2);
             args[0] = vdi->e()->id();
-            args[1] = new FloatLit(Location().introduce(), vmax);
+            args[1] = FloatLit::a(vmax);
             Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
             call->type(Type::varbool());
             call->decl(env.orig->matchFn(env, call));
@@ -5748,7 +5748,7 @@ namespace MiniZinc {
           } else if (vmax == std::numeric_limits<FloatVal>::infinity()) {
             vdi->e()->ti()->domain(NULL);
             std::vector<Expression*> args(2);
-            args[0] = new FloatLit(Location().introduce(), vmin);
+            args[0] = FloatLit::a(vmin);
             args[1] = vdi->e()->id();
             Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
             call->type(Type::varbool());
@@ -6150,7 +6150,7 @@ namespace MiniZinc {
                 } else {
                   // float
                   cid = constants().ids.float_.lin_eq;
-                  nc.push_back(new FloatLit(Location().introduce(),-1.0));
+                  nc.push_back(FloatLit::a(-1.0));
                   args[0] = new ArrayLit(Location().introduce(),nc);
                   args[0]->type(Type::parfloat(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
@@ -6160,7 +6160,7 @@ namespace MiniZinc {
                   args[1] = new ArrayLit(Location().introduce(),nx);
                   args[1]->type(le_x->type());
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
-                  args[2] = new FloatLit(Location().introduce(),-d);
+                  args[2] = FloatLit::a(-d);
                 }
               } else {
                 if (cc->id() == "card") {

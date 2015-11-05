@@ -62,14 +62,14 @@ namespace MiniZinc {
     static FloatVal e(EnvI& env, Expression* e) {
       return eval_float(env, e);
     }
-    static Expression* exp(FloatVal e) { return new FloatLit(Location(),e); }
+    static Expression* exp(FloatVal e) { return FloatLit::a(e); }
   };
   class EvalFloatLit {
   public:
     typedef FloatLit* Val;
     typedef Expression* ArrayVal;
     static FloatLit* e(EnvI& env, Expression* e) {
-      return new FloatLit(Location(),eval_float(env, e));
+      return FloatLit::a(eval_float(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -378,7 +378,7 @@ namespace MiniZinc {
         if (t.isbool())
           return constants().lit_false;
         if (t.isfloat())
-          return new FloatLit(Location(),0.0);
+          return FloatLit::a(0.0);
         if (t.st() == Type::ST_SET || t.isbot()) {
           SetLit* ret = new SetLit(Location(),std::vector<Expression*>());
           ret->type(t);
