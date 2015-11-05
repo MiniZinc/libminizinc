@@ -155,11 +155,17 @@ namespace MiniZinc {
       else
         return *this;
     }
+    
+    size_t hash(void) const {
+      HASH_NAMESPACE::hash<long long int> longhash;
+      return longhash(_v);
+    }
+    
   };
 
   inline
   bool operator ==(const IntVal& x, const IntVal& y) {
-    return x.isFinite()==y.isFinite() && x._v == y._v;
+    return x._infinity==y._infinity && x._v == y._v;
   }
   inline
   bool operator <=(const IntVal& x, const IntVal& y) {
@@ -259,17 +265,7 @@ OPEN_HASH_NAMESPACE {
   struct hash<MiniZinc::IntVal> {
   public:
     size_t operator()(const MiniZinc::IntVal& s) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
-      size_t h;
-      if (s.isPlusInfinity())
-        h = longhash(LONG_MAX);
-      else if (s.isMinusInfinity())
-        h = longhash(LONG_MIN);
-      else
-        h = longhash(s.toInt());
-      HASH_NAMESPACE::hash<bool> boolhash;
-      h ^= boolhash(s.isFinite()) + 0x9e3779b9 + (h << 6) + (h >> 2);
-      return h;
+      return s.hash();
     }
   };
 CLOSE_HASH_NAMESPACE }

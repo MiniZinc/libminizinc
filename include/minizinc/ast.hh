@@ -1465,9 +1465,8 @@ namespace MiniZinc {
         ASTString translation;
       } cli_cat;
       
-      static const int maxConstInt = 1000;
-      /// Constant integers in the range -maxConstInt..maxConstInt
-      ArrayLit* integers;
+      /// Keep track of allocated integer literals
+      UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit

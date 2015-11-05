@@ -1349,20 +1349,11 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli_cat.solver));
     v.push_back(new StringLit(Location(),cli_cat.translation));
     
-    
-    std::vector<Expression*> v_ints(maxConstInt*2+1);
-    for (int i=-maxConstInt; i<=maxConstInt; i++)
-      v_ints[i+maxConstInt] = new IntLit(Location().introduce(), i);
-    integers = new ArrayLit(Location().introduce(), v_ints);
-    
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
-    m->addItem(new ConstraintI(Location(),integers));
     m->addItem(var_redef);
   }
-  
-  const int Constants::maxConstInt;
-  
+    
   Constants& constants(void) {
     static Constants _c;
     return _c;
