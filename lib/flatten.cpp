@@ -385,9 +385,10 @@ namespace MiniZinc {
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
   CallStackItem::~CallStackItem(void) {
-    if (env.callStack.back()->isa<VarDecl>())
+    Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(env.callStack.back()) & ~static_cast<ptrdiff_t>(1));
+    if (e->isa<VarDecl>())
       env.idStack.pop_back();
-    if (env.callStack.back()->isa<Call>() && env.callStack.back()->cast<Call>()->id()=="redundant_constraint")
+    if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
       env.in_redundant_constraint--;
     env.callStack.pop_back();
   }
