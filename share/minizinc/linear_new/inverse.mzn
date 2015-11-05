@@ -25,4 +25,3 @@ predicate inverse(array[int] of var int: f,
     forall(i in index_set(f), j in index_set(invf)) (
         ((j == f[i]) <-> (i == invf[j]))
     );
-

@@ -56,6 +56,18 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline FloatLit*
+  FloatLit::a(MiniZinc::FloatVal v) {
+    UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
+    if (it==constants().floatMap.end() || it->second()==NULL) {
+      FloatLit* fl = new FloatLit(Location().introduce(), v);
+      constants().floatMap.insert(std::make_pair(v, fl));
+      return fl;
+    } else {
+      return it->second()->cast<FloatLit>();
+    }
+  }
+
   inline
   SetLit::SetLit(const Location& loc,
                  const std::vector<Expression*>& v)
