@@ -1191,7 +1191,7 @@ expr_atom_head :
       { $$=createArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
-      { $$=new BoolLit(@$, ($1!=0)); }
+      { $$=constants().boollit(($1!=0)); }
     | MZN_INTEGER_LITERAL
       { $$=new IntLit(@$, $1); }
     | MZN_INFINITY

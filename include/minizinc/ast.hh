@@ -328,8 +328,6 @@ namespace MiniZinc {
     BoolLit(const Location& loc, bool v);
     /// Access value
     bool v(void) const { return _v; }
-    /// Set value
-    void v(bool val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
