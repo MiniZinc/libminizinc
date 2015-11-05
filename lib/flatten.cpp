@@ -4552,12 +4552,12 @@ namespace MiniZinc {
                 args_ee.push_back(res);
                 ret.b = conj(env,b,Ctx(),args_ee);
                 ret.r = bind(env,ctx,r,res.r());
-                if (!ctx.neg)
+                if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
               } else {
                 ret.b = conj(env,b,Ctx(),args_ee);
                 ret.r = bind(env,ctx,r,cr_c);
-                if (!ctx.neg)
+                if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
               }
             } else {
@@ -4594,7 +4594,7 @@ namespace MiniZinc {
                 }
                 ret.b = conj(env,b,Ctx(),args_ee);
               }
-              if (!ctx.neg)
+              if (!ctx.neg && !cr()->type().isann())
                 env.map_insert(cr(),ret);
 
               // Restore previous mapping
