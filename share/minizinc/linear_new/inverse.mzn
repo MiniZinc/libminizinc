@@ -26,8 +26,3 @@ predicate inverse(array[int] of var int: f,
         ((j == f[i]) <-> (i == invf[j]))
     );
 
-function array[int] of var int: inverse(array[int] of var int: f) =
-    let {
-      array[lb_array(f)..ub_array(f)] of var index_set(f): invf;
-      constraint inverse(f,invf);
-    } in f;
