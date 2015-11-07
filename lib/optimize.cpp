@@ -176,7 +176,7 @@ namespace MiniZinc {
             FloatVal lb = std::max(lb0,lb1);
             FloatVal ub = std::min(ub0,ub1);
             if (lb != lb1 || ub != ub1) {
-              BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+              BinOp* newdom = new BinOp(Location(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
               newdom->type(Type::parsetfloat());
               id1->decl()->ti()->domain(newdom);
               if (lb==lb0 && ub==ub0) {
