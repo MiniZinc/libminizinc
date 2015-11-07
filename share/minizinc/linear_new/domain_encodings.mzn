@@ -10,7 +10,12 @@ predicate equality_encoding(var int: x, array[int] of var int: x_eq_d) =
     /\
     sum(d in dom(x))(     x_eq_d[d] ) = 1
     /\
-    sum(d in dom(x))( d * x_eq_d[d] ) = x;
+    sum(d in dom(x))( d * x_eq_d[d] ) = x
+    /\
+    if fPostprocessDomains then
+      equality_encoding__POST(x, x_eq_d)
+    else true endif
+    ;
 
     % Two variables:  x = d /\ y = e  <->  x_eq_d[d] /\ y_eq_e[e] /\ xy_eq_de[d, e]
 predicate equality_encoding(var int: x, var int: y,

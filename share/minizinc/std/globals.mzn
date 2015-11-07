@@ -75,6 +75,7 @@ include "global_cardinality_low_up_closed.mzn";
 include "increasing.mzn";
 include "int_set_channel.mzn";
 include "inverse.mzn";
+include "inverse_fn.mzn";
 include "inverse_set.mzn";
 include "knapsack.mzn";
 include "lex_greater.mzn";

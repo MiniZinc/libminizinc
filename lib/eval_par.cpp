@@ -62,14 +62,14 @@ namespace MiniZinc {
     static FloatVal e(EnvI& env, Expression* e) {
       return eval_float(env, e);
     }
-    static Expression* exp(FloatVal e) { return new FloatLit(Location(),e); }
+    static Expression* exp(FloatVal e) { return FloatLit::a(e); }
   };
   class EvalFloatLit {
   public:
     typedef FloatLit* Val;
     typedef Expression* ArrayVal;
     static FloatLit* e(EnvI& env, Expression* e) {
-      return new FloatLit(Location(),eval_float(env, e));
+      return FloatLit::a(eval_float(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -114,6 +114,15 @@ namespace MiniZinc {
     typedef Expression* ArrayVal;
     static ArrayLit* e(EnvI& env, Expression* e) {
       return eval_array_lit(env, e);
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
+  class EvalArrayLitCopy {
+  public:
+    typedef ArrayLit* Val;
+    typedef Expression* ArrayVal;
+    static ArrayLit* e(EnvI& env, Expression* e) {
+      return copy(env,eval_array_lit(env, e),true)->cast<ArrayLit>();
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -334,7 +343,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_array_lit(env,eval_call<EvalCopy>(env,ce));
+        return eval_call<EvalArrayLitCopy>(env,ce);
       }
     case Expression::E_LET:
       {
@@ -369,7 +378,7 @@ namespace MiniZinc {
         if (t.isbool())
           return constants().lit_false;
         if (t.isfloat())
-          return new FloatLit(Location(),0.0);
+          return FloatLit::a(0.0);
         if (t.st() == Type::ST_SET || t.isbot()) {
           SetLit* ret = new SetLit(Location(),std::vector<Expression*>());
           ret->type(t);
@@ -403,13 +412,15 @@ namespace MiniZinc {
   }
   
   IntSetVal* eval_intset(EnvI& env, Expression* e) {
+    if (SetLit* sl = e->dyn_cast<SetLit>()) {
+      if (sl->isv())
+        return sl->isv();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        if (sl->isv())
-          return sl->isv();
         std::vector<IntVal> vals(sl->v().size());
         for (unsigned int i=0; i<sl->v().size(); i++)
           vals[i] = eval_int(env,sl->v()[i]);
@@ -541,10 +552,12 @@ namespace MiniZinc {
   }
 
   bool eval_bool(EnvI& env, Expression* e) {
+    if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+      return bl->v();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
-    case Expression::E_BOOLLIT: return e->cast<BoolLit>()->v();
-    case Expression::E_INTLIT: 
+    case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
     case Expression::E_ANON:
@@ -879,10 +892,12 @@ namespace MiniZinc {
     if (e->type().isbool()) {
       return eval_bool(env,e);
     }
+    if (IntLit* il = e->dyn_cast<IntLit>()) {
+      return il->v();
+    }
     CallStackItem csi(env,e);
     try {
       switch (e->eid()) {
-        case Expression::E_INTLIT: return e->cast<IntLit>()->v();
         case Expression::E_FLOATLIT:
         case Expression::E_BOOLLIT:
         case Expression::E_STRINGLIT:
@@ -988,9 +1003,11 @@ namespace MiniZinc {
     } else if (e->type().isbool()) {
       return eval_bool(env,e);
     }
+    if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+      return fl->v();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
-      case Expression::E_FLOATLIT: return e->cast<FloatLit>()->v();
       case Expression::E_INTLIT:
       case Expression::E_BOOLLIT:
       case Expression::E_STRINGLIT:

@@ -176,7 +176,7 @@ namespace MiniZinc {
             FloatVal lb = std::max(lb0,lb1);
             FloatVal ub = std::min(ub0,ub1);
             if (lb != lb1 || ub != ub1) {
-              BinOp* newdom = new BinOp(Location(), new FloatLit(Location(),lb), BOT_DOTDOT, new FloatLit(Location(),ub));
+              BinOp* newdom = new BinOp(Location(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
               newdom->type(Type::parsetfloat());
               id1->decl()->ti()->domain(newdom);
               if (lb==lb0 && ub==ub0) {
@@ -559,15 +559,21 @@ namespace MiniZinc {
         Item* item = constraintQueue.back();
         constraintQueue.pop_back();
         Call* c;
+        ArrayLit* al;
         if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
           ci->flag(false);
           c = Expression::dyn_cast<Call>(ci->e());
+          al = NULL;
         } else {
           item->cast<VarDeclI>()->flag(false);
           c = Expression::dyn_cast<Call>(item->cast<VarDeclI>()->e()->e());
+          al = Expression::dyn_cast<ArrayLit>(item->cast<VarDeclI>()->e()->e());
         }
-        if (!c || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists ||
-                    c->id()==constants().ids.clause) ) {
+        if (al) {
+          substituteFixedVars(envi, item, deletedVarDecls);
+          pushDependentConstraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
+        } else if (!c || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists ||
+                           c->id()==constants().ids.clause) ) {
           substituteFixedVars(envi, item, deletedVarDecls);
           handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
         }
