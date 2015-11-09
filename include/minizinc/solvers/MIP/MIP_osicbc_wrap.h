@@ -79,7 +79,8 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     virtual double getInfBound() { return osi.getInfinity(); }
                         
     virtual int getNCols() {
-      return osi.getNumCols();
+      int nc = osi.getNumCols();
+      return nc ? nc : colLB.size();
     }
     virtual int getNRows() {
       if (rowlb.size())
