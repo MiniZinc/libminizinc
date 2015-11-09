@@ -345,14 +345,21 @@ void MIP_solverinstance::processFlatZinc(void) {
     if (vd->type().dim() == 0 && it->e()->type().isvar()) {
       MiniZinc::TypeInst* ti = it->e()->ti();
       MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;     // fInt = false;
-      if (ti->type().isvarint())
+      if (ti->type().isvarint() or ti->type().isint())
         vType = MIP_wrapper::VarType::INT;
-      else if (ti->type().isvarbool()) {
+      else if (ti->type().isvarbool() or ti->type().isbool()) {
         vType = MIP_wrapper::VarType::BINARY;
-      } else if (ti->type().isvarfloat()) {
+      } else if (ti->type().isvarfloat() or ti->type().isfloat()) {
       } else {
         std::stringstream ssm;
         ssm << "This type of var is not handled by MIP: " << *it << std::endl;
+        ssm << "  VarDecl flags (ti, bt, st, ot): "
+          << ti->type().ti()
+          << ti->type().bt()
+          << ti->type().st()
+          << ti->type().ot()
+          << ", dim == " << ti->type().dim()
+          << endl;
         throw InternalError(ssm.str());
       }
       double lb=0.0, ub=1.0;  // for bool
