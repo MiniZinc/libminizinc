@@ -115,12 +115,18 @@ SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/html)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/pdf)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
   ${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in
   ${PROJECT_BINARY_DIR}/minizinc/config.hh
+  )
+
+configure_file (
+  ${PROJECT_SOURCE_DIR}/doc/spec/version.tex.in
+  ${PROJECT_BINARY_DIR}/doc/pdf/version.tex
   )
 
 include_directories(${PROJECT_BINARY_DIR})
@@ -265,6 +271,16 @@ if (BUILD_HTML_DOCUMENTATION)
        ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
        DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
+option (BUILD_PDF_DOCUMENTATION "Build PDF documentation for the MiniZinc language" OFF)
+
+if (BUILD_HTML_DOCUMENTATION)
+  add_custom_target(doc_spec ALL
+    DEPENDS doc/spec/common-spec.tex doc/spec/minizinc-spec.tex
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc/spec
+    COMMAND latexmk -pdf -output-directory=${PROJECT_BINARY_DIR}/doc/pdf minizinc-spec
+  )
 endif()
 
 option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
