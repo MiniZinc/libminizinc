@@ -1663,6 +1663,23 @@ namespace MiniZinc {
     x.resize(ci);
     return false;
   }
+  bool contains_dups(std::vector<KeepAlive>& x, std::vector<KeepAlive>& y) {
+    if (x.size()==0 || y.size()==0)
+      return false;
+    unsigned int ix=0;
+    unsigned int iy=0;
+    for (;;) {
+      if (x[ix]()==y[iy]())
+        return true;
+      if (x[ix]() < y[iy]()) {
+        ix++;
+      } else {
+        iy++;
+      }
+      if (ix==x.size() || iy==y.size())
+        return false;
+    }
+  }
 
   /// Return a lin_exp or id if \a e is a lin_exp or id
   template<class Lit>
@@ -4281,7 +4298,84 @@ namespace MiniZinc {
           }
 
           std::vector<KeepAlive> args;
-          if (decl->e()==NULL && (cid == constants().ids.forall || cid == constants().ids.exists)) {
+          if (decl->e()==NULL && (cid == constants().ids.exists || cid == constants().ids.clause)) {
+
+            std::vector<KeepAlive> pos_alv;
+            std::vector<KeepAlive> neg_alv;
+            for (unsigned int i=0; i<args_ee.size(); i++) {
+              std::vector<KeepAlive>& local_pos = i==0 ? pos_alv : neg_alv;
+              std::vector<KeepAlive>& local_neg = i==1 ? pos_alv : neg_alv;
+              ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
+              std::vector<KeepAlive> alv;
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Call* sc = same_call(al->v()[i],cid)) {
+                  GCLock lock;
+                  ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
+                  for (unsigned int j=0; j<sc_c->v().size(); j++) {
+                    alv.push_back(sc_c->v()[j]);
+                  }
+                } else {
+                  alv.push_back(al->v()[i]);
+                }
+              }
+
+              for (unsigned int j=0; j<alv.size(); j++) {
+                Call* neg_call = same_call(alv[j](),constants().ids.bool_eq);
+                if (neg_call &&
+                    Expression::equal(neg_call->args()[1],constants().lit_false)) {
+                  local_neg.push_back(neg_call->args()[0]);
+                } else {
+                  Call* clause = same_call(alv[j](),constants().ids.clause);
+                  if (clause) {
+                    ArrayLit* clause_pos = eval_array_lit(env,clause->args()[0]);
+                    for (unsigned int k=0; k<clause_pos->v().size(); k++) {
+                      local_pos.push_back(clause_pos->v()[k]);
+                    }
+                    ArrayLit* clause_neg = eval_array_lit(env,clause->args()[1]);
+                    for (unsigned int k=0; k<clause_neg->v().size(); k++) {
+                      local_neg.push_back(clause_neg->v()[k]);
+                    }
+                  } else {
+                    local_pos.push_back(alv[j]);
+                  }
+                }
+              }
+            }
+            bool subsumed = remove_dups(pos_alv,false);
+            subsumed = subsumed || remove_dups(neg_alv,true);
+            subsumed = subsumed || contains_dups(pos_alv, neg_alv);
+            if (subsumed) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              return ret;
+            }
+            if (neg_alv.empty()) {
+              if (pos_alv.size()==0) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,constants().lit_false);
+                return ret;
+              } else if (pos_alv.size()==1) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,pos_alv[0]());
+                return ret;
+              }
+              GCLock lock;
+              ArrayLit* nal = new ArrayLit(Location().introduce(),toExpVec(pos_alv));
+              nal->type(Type::varbool(1));
+              args.push_back(nal);
+              cid = constants().ids.exists;
+            } else {
+              GCLock lock;
+              ArrayLit* pos_al = new ArrayLit(Location().introduce(),toExpVec(pos_alv));
+              pos_al->type(Type::varbool(1));
+              ArrayLit* neg_al = new ArrayLit(Location().introduce(),toExpVec(neg_alv));
+              neg_al->type(Type::varbool(1));
+              cid = constants().ids.clause;
+              args.push_back(pos_al);
+              args.push_back(neg_al);
+            }
+
+          } else if (decl->e()==NULL && cid == constants().ids.forall) {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->v().size(); i++) {
@@ -4295,82 +4389,25 @@ namespace MiniZinc {
                 alv.push_back(al->v()[i]);
               }
             }
-            if (cid == constants().ids.exists) {
-              std::vector<KeepAlive> pos_alv;
-              std::vector<KeepAlive> neg_alv;
-              for (unsigned int i=0; i<alv.size(); i++) {
-                Call* neg_call = same_call(alv[i](),constants().ids.bool_eq);
-                if (neg_call && 
-                    Expression::equal(neg_call->args()[1],constants().lit_false)) {
-                  neg_alv.push_back(neg_call->args()[0]);
-                } else {
-                  Call* clause = same_call(alv[i](),constants().ids.clause);
-                  if (clause) {
-                    ArrayLit* clause_pos = eval_array_lit(env,clause->args()[0]);
-                    for (unsigned int j=0; j<clause_pos->v().size(); j++) {
-                      pos_alv.push_back(clause_pos->v()[j]);
-                    }
-                    ArrayLit* clause_neg = eval_array_lit(env,clause->args()[1]);
-                    for (unsigned int j=0; j<clause_neg->v().size(); j++) {
-                      neg_alv.push_back(clause_neg->v()[j]);
-                    }
-                  } else {
-                    pos_alv.push_back(alv[i]);
-                  }
-                }
-              }
-              bool subsumed = remove_dups(pos_alv,false);
-              subsumed = subsumed || remove_dups(neg_alv,true);
-              if (subsumed) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_true);
-                return ret;
-              }
-              if (neg_alv.empty()) {
-                if (pos_alv.size()==0) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  ret.r = bind(env,ctx,r,constants().lit_false);
-                  return ret;
-                } else if (pos_alv.size()==1) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  ret.r = bind(env,ctx,r,pos_alv[0]());
-                  return ret;
-                }
-                GCLock lock;
-                ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(pos_alv));
-                nal->type(al->type());
-                args.push_back(nal);
-              } else {
-                GCLock lock;
-                ArrayLit* pos_al = new ArrayLit(al->loc(),toExpVec(pos_alv));
-                pos_al->type(al->type());
-                ArrayLit* neg_al = new ArrayLit(al->loc(),toExpVec(neg_alv));
-                neg_al->type(al->type());
-                cid = constants().ids.clause;
-                args.push_back(pos_al);
-                args.push_back(neg_al);
-              }
-            } else /* cid=="forall" */ {
-              bool subsumed = remove_dups(alv,true);
-              if (subsumed) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_false);
-                return ret;
-              }
-              if (alv.size()==0) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_true);
-                return ret;
-              } else if (alv.size()==1) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,alv[0]());
-                return ret;
-              }
-              GCLock lock;
-              ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(alv));
-              nal->type(al->type());
-              args.push_back(nal);
+            bool subsumed = remove_dups(alv,true);
+            if (subsumed) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_false);
+              return ret;
             }
+            if (alv.size()==0) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              return ret;
+            } else if (alv.size()==1) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,alv[0]());
+              return ret;
+            }
+            GCLock lock;
+            ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(alv));
+            nal->type(al->type());
+            args.push_back(nal);
           } else if (decl->e()==NULL && (cid == constants().ids.lin_exp || cid==constants().ids.sum)) {
             if (e->type().isint()) {
               flatten_linexp_call<IntLit>(env,ctx,nctx,cid,c,ret,b,r,args_ee,args);
