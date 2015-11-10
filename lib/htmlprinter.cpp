@@ -568,6 +568,19 @@ namespace MiniZinc {
         }
         
         os << "</div>\n<div class='mzn-fundecl-doc'>\n";
+
+        if (fi->id().c_str()[0]=='\'') {
+          std::string op = fi->id().str();
+          op = op.substr(1,op.length()-2);
+          const char* space = (op[0]>='a' ? " " : "");
+          if (fi->params().size()==2) {
+            os << "<p>Usage: <span class=\"mzn-arg\">" << *fi->params()[0]->id() << space
+               << op << space << *fi->params()[1]->id() << "</span></p>";
+          } else if (fi->params().size()==1) {
+            os << "<p>Usage: <span class=\"mzn-arg\">" << op << space << *fi->params()[0]->id() << "</span></p>";
+          }
+        }
+
         std::string dshtml = addHTML(ds);
 
         os << dshtml;
