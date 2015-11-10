@@ -275,7 +275,7 @@ endif()
 
 option (BUILD_PDF_DOCUMENTATION "Build PDF documentation for the MiniZinc language" OFF)
 
-if (BUILD_HTML_DOCUMENTATION)
+if (BUILD_PDF_DOCUMENTATION)
   add_custom_target(doc_spec ALL
     DEPENDS doc/spec/common-spec.tex doc/spec/minizinc-spec.tex
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc/spec
