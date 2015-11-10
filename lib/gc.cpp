@@ -546,6 +546,9 @@ namespace MiniZinc {
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
             _free_mem += ns;
+#if defined(MINIZINC_GC_STATS)
+            gc_stats[fln->_id].second++;
+#endif
             assert(_alloced_mem >= _free_mem);
           } else {
             assert(off==0);
