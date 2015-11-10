@@ -510,10 +510,10 @@ namespace MiniZinc {
           os << "if-then-else expression" << std::endl;
           break;
         case Expression::E_BINOP:
-          os << "binary '" << e->cast<BinOp>()->opToString() << "' operator expression" << std::endl;
+          os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
           break;
         case Expression::E_UNOP:
-          os << "unary '" << e->cast<UnOp>()->opToString() << "' operator expression" << std::endl;
+          os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
           break;
         case Expression::E_CALL:
           os << "call '" << e->cast<Call>()->id() << "'" << std::endl;
