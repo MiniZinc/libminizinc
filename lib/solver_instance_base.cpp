@@ -52,4 +52,23 @@ namespace MiniZinc {
     }
   }
 
+ void 
+  SolverInstanceBase::flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+        Expression* e = *i;
+        if(e->isa<Call>() && e->cast<Call>()->id().str() == "seq_search") {
+            Call* c = e->cast<Call>();
+            ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
+            for(unsigned int i=0; i<anns->v().size(); i++) {
+                Annotation subann;
+                subann.add(anns->v()[i]);
+                flattenSearchAnnotations(subann, out);
+            }
+        } else {
+            out.push_back(*i);
+        }
+    }
+  }
+
+
 }  // namespace MiniZinc
