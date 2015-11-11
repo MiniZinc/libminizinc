@@ -223,7 +223,51 @@ namespace MiniZinc {
       }
       return OptimizeRegistry::CS_OK;
     }
-
+ 
+    OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      std::vector<VarDecl*> pos;
+      std::vector<VarDecl*> neg;
+      ArrayLit* al_pos = eval_array_lit(env, c->args()[0]);
+      for (unsigned int i=0; i<al_pos->v().size(); i++) {
+        if (Id* ident = al_pos->v()[i]->dyn_cast<Id>()) {
+          if (ident->decl()->ti()->domain()==NULL)
+            pos.push_back(ident->decl());
+        }
+      }
+      ArrayLit* al_neg = eval_array_lit(env, c->args()[1]);
+      for (unsigned int i=0; i<al_neg->v().size(); i++) {
+        if (Id* ident = al_neg->v()[i]->dyn_cast<Id>()) {
+          if (ident->decl()->ti()->domain()==NULL)
+            neg.push_back(ident->decl());
+        }
+      }
+      bool subsumed = false;
+      if (pos.size() > 0 && neg.size() > 0) {
+        std::sort(pos.begin(),pos.end());
+        std::sort(neg.begin(), neg.end());
+        unsigned int ix=0;
+        unsigned int iy=0;
+        for (;;) {
+          if (pos[ix]==neg[iy]) {
+            subsumed = true;
+            break;
+          }
+          if (pos[ix] < neg[iy]) {
+            ix++;
+          } else {
+            iy++;
+          }
+          if (ix==pos.size() || iy==neg.size())
+            break;
+        }
+      }
+      if (subsumed) {
+        return OptimizeRegistry::CS_ENTAILED;
+      } else {
+        return OptimizeRegistry::CS_OK;
+      }
+    }
+    
     class Register {
     public:
       Register(void) {
@@ -241,6 +285,8 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(id_element, o_element);
         OptimizeRegistry::registry().reg(constants().ids.lin_exp, o_lin_exp);
         OptimizeRegistry::registry().reg(id_var_element, o_element);
+        OptimizeRegistry::registry().reg(constants().ids.clause, o_clause);
+        OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
       }
     } _r;
     
