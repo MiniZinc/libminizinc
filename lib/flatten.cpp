@@ -273,6 +273,32 @@ namespace MiniZinc {
     return origId ? origId : new Id(Location().introduce(),env.genId(), NULL);
   }
 
+  StringLit* getLongestMznPathAnnotation(EnvI& env, const Expression* e) {
+    StringLit* sl = NULL;
+
+    if(const VarDecl* vd = e->dyn_cast<const VarDecl>()) {
+      EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+      EnvI::ReversePathMap::iterator it = reversePathMap.find(vd->id()->decl());
+      if(it != reversePathMap.end()) {
+        sl = new StringLit(Location(), it->second);
+      }
+    } else {
+      for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        if(Call* ca = (*it)->dyn_cast<Call>()) {
+          if(ca->id() == constants().ann.mzn_path) {
+            StringLit* sl1 = ca->args()[0]->cast<StringLit>();
+            if(sl) {
+              if(sl1->v().size() > sl->v().size())
+                sl = sl1;
+            } else {
+              sl = sl1;
+            }
+          }
+        }
+      }
+    }
+    return sl;
+  }
   void addPathAnnotation(EnvI& env, Expression* e) {
     if(!e->type().isann()) {
       GCLock lock;
@@ -280,10 +306,13 @@ namespace MiniZinc {
       ann.removeCall(constants().ann.mzn_path);
 
       std::vector<Expression*> path_args(1);
-      path_args[0] = new StringLit(Location(), getPath(env));
+      std::string p = getPath(env);
+      if(p.size() != 0) {
+        path_args[0] = new StringLit(Location(), p);
       Call* path_call = new Call(e->loc(), constants().ann.mzn_path, path_args);
       path_call->type(Type::ann());
       e->addAnnotation(path_call);
+      }
     }
   }
 
@@ -6294,22 +6323,9 @@ namespace MiniZinc {
                 if (nc != c) {
                   vd->addAnnotation(constants().ann.is_defined_var);
                   nc->addAnnotation(definesVarAnn(vd->id()));
-                }
-                StringLit* sl = NULL;
-                for(ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
-                  if(Call* ca = (*it)->dyn_cast<Call>()) {
-                    if(ca->id() == constants().ann.mzn_path) {
-                      StringLit* sl1 = ca->args()[0]->cast<StringLit>();
-                      if(sl) {
-                        if(sl1->v().size() > sl->v().size())
-                          sl = sl1;
-                      } else {
-                        sl = sl1;
-                      }
-                    }
-                  }
-                }
+                }             
 
+                StringLit* sl = getLongestMznPathAnnotation(env, c);
                 CallStackItem* csi=NULL;
                 if(sl)
                   csi = new CallStackItem(env, sl);
@@ -6371,20 +6387,7 @@ namespace MiniZinc {
               topDown(cd,c);
               ci->e(constants().lit_true);
               env.flat_removeItem(i);
-              StringLit* sl = NULL;
-              for(ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
-                if(Call* ca = (*it)->dyn_cast<Call>()) {
-                  if(ca->id() == constants().ann.mzn_path) {
-                    StringLit* sl1 = ca->args()[0]->cast<StringLit>();
-                    if(sl) {
-                      if(sl1->v().size() > sl->v().size())
-                        sl = sl1;
-                    } else {
-                      sl = sl1;
-                    }
-                  }
-                }
-              }
+              StringLit* sl = getLongestMznPathAnnotation(env, c);
               CallStackItem* csi=NULL;
               if(sl)
                 csi = new CallStackItem(env, sl);
