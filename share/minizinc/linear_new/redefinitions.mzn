@@ -30,7 +30,7 @@ bool: fMinimumCutsXZ=false;       %% Use simple XZ & XZB cuts for minimum
 bool: fMinimumCutsXZB=false;       %% Use simple XZ & XZB cuts for minimum
 bool: fUseXBZCutGen=false;      %% Use XZB cut generator for element & minimum
 
-bool: fIntTimesBool=false;      %% Special handling of multiplication with a boolean
+bool: fIntTimesBool=true;       %% Special handling of multiplication with a boolean(*const)
 
 int: nMZN__UnarySizeMax_intTimes=20;
 int: nMZN__UnarySizeMax_cumul=2000;
