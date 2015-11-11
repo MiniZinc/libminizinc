@@ -285,7 +285,7 @@ namespace MiniZinc {
 
     // iterate over VarDecls of the flat model and create variables
     for (VarDeclIterator it = _flat->begin_vardecls(); it != _flat->end_vardecls(); ++it) {
-      if (it->e()->type().isvar()) {
+      if (!it->removed() && it->e()->type().isvar()) {
         // check if it has an output-annotation
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
