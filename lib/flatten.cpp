@@ -2524,7 +2524,6 @@ namespace MiniZinc {
         public:
           Ctx ctx;
           EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
-          typedef Expression* Val;
           typedef Expression* ArrayVal;
           Expression* e(EnvI& env, Expression* e) {
             return flat_cv_exp(env,ctx,e)();
