@@ -727,6 +727,7 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(_env,vdi->loc(),
                                             "type-inst variables not allowed in type-inst for let variable `"+vdi->id()->str().str()+"'"));
           }
+          let.let_orig()[i] = vdi->e();
         }
       }
       Type ty = let.in()->type();
