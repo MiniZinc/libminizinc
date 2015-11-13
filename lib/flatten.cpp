@@ -367,7 +367,8 @@ namespace MiniZinc {
   void EnvI::createErrorStack(void) {
     errorStack.clear();
     for (unsigned int i=callStack.size(); i--;) {
-      errorStack.push_back(callStack[i]);
+      KeepAlive ka(callStack[i]);
+      errorStack.push_back(ka);
     }
   }
   
@@ -430,7 +431,14 @@ namespace MiniZinc {
   EnvI::dumpStack(std::ostream& os, bool errStack) {
     int lastError = 0;
     
-    std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
+    std::vector<Expression*> errStackCopy;
+    if (errStack) {
+      errStackCopy.resize(errorStack.size());
+      for (unsigned int i=0; i<errorStack.size(); i++)
+        errStackCopy[i] = errorStack[i]();
+    }
+    
+    std::vector<Expression*>& stack = errStack ? errStackCopy : callStack;
     
     for (; lastError < stack.size(); lastError++) {
       Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[lastError]) & ~static_cast<ptrdiff_t>(1));
