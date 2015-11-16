@@ -2863,6 +2863,12 @@ namespace MiniZinc {
             Type tt = vd->ti()->type();
             tt.dim(0);
             
+            if (asize > Constants::max_array_size) {
+              std::ostringstream oss;
+              oss << "array size (" << asize << ") exceeds maximum allowed size (" << Constants::max_array_size << ")";
+              throw FlatteningError(env,vd->loc(),oss.str());
+            }
+            
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());

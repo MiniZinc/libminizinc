@@ -1203,7 +1203,9 @@ namespace MiniZinc {
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
     m->addItem(var_redef);
   }
-    
+  
+  const int Constants::max_array_size;
+  
   Constants& constants(void) {
     static Constants _c;
     return _c;
