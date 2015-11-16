@@ -803,16 +803,16 @@ output_item :
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                           Type::varbool()),*$3,$5);
+      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::varbool()),*$3,$5);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                           Type::parbool()),*$3,$5);
+      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::parbool()),*$3,$5);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
@@ -821,14 +821,14 @@ predicate_item :
 
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
-      { $$ = new FunctionI(@$,$4,$2,*$5,$7);
+      { if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7);
         if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
         delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
-      { $$ = new FunctionI(@$,$3,$1,*$5,$8);
+      { if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8);
         if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
@@ -850,7 +850,7 @@ annotation_item :
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
       { TypeInst* ti=new TypeInst(@1,Type::ann());
-        $$ = new FunctionI(@$,$2,ti,*$3,$5);
+        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5);
         delete $3;
       }
 
@@ -1027,14 +1027,18 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+      { if ($1==NULL || $3==NULL) {
+          $$ = NULL;
+        } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+      { if ($3==NULL || $5==NULL) {
+          $$ = NULL;
+        } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
           $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
@@ -1119,14 +1123,18 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+      { if ($1==NULL || $3==NULL) {
+          $$ = NULL;
+        } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+      { if ($3==NULL || $5==NULL) {
+          $$ = NULL;
+        } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
           $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
@@ -1179,16 +1187,16 @@ expr_atom_head :
       '(' expr ')'
       { $$=$2; }
     | '(' expr ')' array_access_tail
-      { $$=createArrayAccess(@$, $2, *$4); delete $4; }
+      { if ($4) $$=createArrayAccess(@$, $2, *$4); delete $4; }
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, NULL); free($1); }
     | MZN_IDENTIFIER array_access_tail
-      { $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
+      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
     | MZN_UNDERSCORE array_access_tail
-      { $$=createArrayAccess(@$, new AnonVar(@$), *$2);
+      { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_BOOL_LITERAL
       { $$=constants().boollit(($1!=0)); }
@@ -1203,32 +1211,32 @@ expr_atom_head :
       { $$=constants().absent; }
     | set_literal
     | set_literal array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | set_comp
     | set_comp array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal
     | simple_array_literal array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal_2d
     | simple_array_literal_2d array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_comp
     | simple_array_comp array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | if_then_else_expr
     | if_then_else_expr array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
     | let_expr
     | call_expr
     | call_expr array_access_tail
-      { $$=createArrayAccess(@$, $1, *$2);
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
 
 string_expr:
@@ -1241,13 +1249,13 @@ string_expr:
 
 string_quote_rest:
       expr_list_head MZN_STRING_QUOTE_END
-      { $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS, new StringLit(@$,$2));
+      { if ($1) $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS, new StringLit(@$,$2));
         free($2);
         delete $1;
       }
     | expr_list_head MZN_STRING_QUOTE_MID string_quote_rest
-      { $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS,
-                     new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+      { if ($1) $$=new BinOp(@$, new Call(@$, ASTString("format"), *$1), BOT_PLUSPLUS,
+                             new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
         free($2);
         delete $1;
       }
@@ -1272,19 +1280,20 @@ set_literal :
       '{' '}'
       { $$ = new SetLit(@$, std::vector<Expression*>()); }
     | '{' expr_list '}'
-      { $$ = new SetLit(@$, *$2); delete $2; }
+      { if ($2) $$ = new SetLit(@$, *$2);
+        delete $2; }
 
 set_comp :
       '{' expr '|' comp_tail '}'
-      { $$ = new Comprehension(@$, $2, *$4, true);
+      { if ($4) $$ = new Comprehension(@$, $2, *$4, true);
         delete $4;
       }
 
 comp_tail :
       generator_list
-      { $$=new Generators; $$->_g = *$1; $$->_w = NULL; delete $1; }
+      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = NULL; delete $1; }
     | generator_list MZN_WHERE expr
-      { $$=new Generators; $$->_g = *$1; $$->_w = $3; delete $1; }
+      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = $3; delete $1; }
 
 generator_list : generator_list_head comma_or_none
 
@@ -1292,11 +1301,11 @@ generator_list_head :
       generator
       { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
     | generator_list_head ',' generator
-      { $$=$1; if ($3) $$->push_back(*$3); delete $3; }
+      { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
 
 generator : 
       id_list MZN_IN expr
-      { if ($3) $$=new Generator(*$1,$3); else $$=NULL; delete $1; }
+      { if ($1 && $3) $$=new Generator(*$1,$3); else $$=NULL; delete $1; }
 
 id_list : id_list_head comma_or_none
 
@@ -1304,13 +1313,13 @@ id_list_head :
       MZN_IDENTIFIER
       { $$=new std::vector<std::string>; $$->push_back($1); free($1); }
     | id_list_head ',' MZN_IDENTIFIER
-      { $$=$1; $$->push_back($3); free($3); }
+      { $$=$1; if ($$ && $3) $$->push_back($3); free($3); }
 
 simple_array_literal : 
       MZN_LEFT_BRACKET MZN_RIGHT_BRACKET
       { $$=new ArrayLit(@$, std::vector<MiniZinc::Expression*>()); }
     | MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
-      { $$=new ArrayLit(@$, *$2); delete $2; }
+      { if ($2) $$=new ArrayLit(@$, *$2); delete $2; }
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET MZN_RIGHT_2D_BRACKET
@@ -1382,27 +1391,27 @@ simple_array_literal_3d_list :
       }
     | '|' simple_array_literal_2d_list '|'
       { $$=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
-        $$->push_back(*$2);
+        if ($2) $$->push_back(*$2);
         delete $2;
       }
     | simple_array_literal_3d_list ',' '|' simple_array_literal_2d_list '|'
       { $$=$1;
-        if ($$) $$->push_back(*$4);
+        if ($$ && $4) $$->push_back(*$4);
         delete $4;
       }
 
 simple_array_literal_2d_list :
       expr_list
       { $$=new std::vector<std::vector<MiniZinc::Expression*> >;
-        $$->push_back(*$1);
+        if ($1) $$->push_back(*$1);
         delete $1;
       }
     | simple_array_literal_2d_list '|' expr_list
-      { $$=$1; if ($$) $$->push_back(*$3); delete $3; }
+      { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
 
 simple_array_comp :
       MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
-      { $$=new Comprehension(@$, $2, *$4, false);
+      { if ($4) $$=new Comprehension(@$, $2, *$4, false);
         delete $4;
       }
 
@@ -1425,7 +1434,7 @@ if_then_else_expr :
 elseif_list :
       { $$=new std::vector<MiniZinc::Expression*>; }
     | elseif_list MZN_ELSEIF expr MZN_THEN expr
-      { $$=$1; if ($$) { $$->push_back($3); $$->push_back($5); } }
+      { $$=$1; if ($$ && $3 && $5) { $$->push_back($3); $$->push_back($5); } }
 
 quoted_op :
       MZN_EQUIV_QUOTED
@@ -1583,12 +1592,14 @@ call_expr :
 comp_or_expr :
       expr_list
       { $$=new pair<vector<Expression*>,Expression*>;
-        $$->first=*$1; $$->second=NULL;
+        if ($1) $$->first=*$1;
+        $$->second=NULL;
         delete $1;
       }
     | expr_list MZN_WHERE expr
       { $$=new pair<vector<Expression*>,Expression*>;
-        $$->first=*$1; $$->second=$3;
+        if ($1) $$->first=*$1;
+        $$->second=$3;
         delete $1;
       }
 
@@ -1620,10 +1631,10 @@ let_vardecl_item_list :
         }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
-      { $$=$1; $$->push_back($3); }
+      { $$=$1; if ($$ && $3) $$->push_back($3); }
     | let_vardecl_item_list comma_or_semi constraint_item
       { $$=$1;
-        if ($3) {
+        if ($$ && $3) {
           ConstraintI* ce = $3->cast<ConstraintI>();
           $$->push_back(ce->e());
           ce->e(NULL);
@@ -1665,58 +1676,58 @@ id_or_quoted_op :
       MZN_IDENTIFIER
       { $$=$1; }
     | MZN_EQUIV_QUOTED
-      { $$=strdup("<->"); }
+      { $$=strdup("'<->'"); }
     | MZN_IMPL_QUOTED
-      { $$=strdup("->"); }
+      { $$=strdup("'->'"); }
     | MZN_RIMPL_QUOTED
-      { $$=strdup("<-"); }
+      { $$=strdup("'<-'"); }
     | MZN_OR_QUOTED
-      { $$=strdup("\\/"); }
+      { $$=strdup("'\\/'"); }
     | MZN_XOR_QUOTED
-      { $$=strdup("xor"); }
+      { $$=strdup("'xor'"); }
     | MZN_AND_QUOTED
-      { $$=strdup("/\\"); }
+      { $$=strdup("'/\\'"); }
     | MZN_LE_QUOTED
-      { $$=strdup("<"); }
+      { $$=strdup("'<'"); }
     | MZN_GR_QUOTED
-      { $$=strdup(">"); }
+      { $$=strdup("'>'"); }
     | MZN_LQ_QUOTED
-      { $$=strdup("<="); }
+      { $$=strdup("'<='"); }
     | MZN_GQ_QUOTED
-      { $$=strdup(">="); }
+      { $$=strdup("'>='"); }
     | MZN_EQ_QUOTED
-      { $$=strdup("="); }
+      { $$=strdup("'='"); }
     | MZN_NQ_QUOTED
-      { $$=strdup("!="); }
+      { $$=strdup("'!='"); }
     | MZN_IN_QUOTED
-      { $$=strdup("in"); }
+      { $$=strdup("'in'"); }
     | MZN_SUBSET_QUOTED
-      { $$=strdup("subset"); }
+      { $$=strdup("'subset'"); }
     | MZN_SUPERSET_QUOTED
-      { $$=strdup("superset"); }
+      { $$=strdup("'superset'"); }
     | MZN_UNION_QUOTED
-      { $$=strdup("union"); }
+      { $$=strdup("'union'"); }
     | MZN_DIFF_QUOTED
-      { $$=strdup("diff"); }
+      { $$=strdup("'diff'"); }
     | MZN_SYMDIFF_QUOTED
-      { $$=strdup("symdiff"); }
+      { $$=strdup("'symdiff'"); }
     | MZN_DOTDOT_QUOTED
-      { $$=strdup(".."); }
+      { $$=strdup("'..'"); }
     | MZN_PLUS_QUOTED
-      { $$=strdup("+"); }
+      { $$=strdup("'+'"); }
     | MZN_MINUS_QUOTED
-      { $$=strdup("-"); }
+      { $$=strdup("'-'"); }
     | MZN_MULT_QUOTED
-      { $$=strdup("*"); }
+      { $$=strdup("'*'"); }
     | MZN_DIV_QUOTED
-      { $$=strdup("/"); }
+      { $$=strdup("'/'"); }
     | MZN_IDIV_QUOTED
-      { $$=strdup("div"); }
+      { $$=strdup("'div'"); }
     | MZN_MOD_QUOTED
-      { $$=strdup("mod"); }
+      { $$=strdup("'mod'"); }
     | MZN_INTERSECT_QUOTED
-      { $$=strdup("intersect"); }
+      { $$=strdup("'intersect'"); }
     | MZN_NOT_QUOTED
-      { $$=strdup("not"); }
+      { $$=strdup("'not'"); }
     | MZN_PLUSPLUS_QUOTED
-      { $$=strdup("++"); }
+      { $$=strdup("'++'"); }

@@ -372,6 +372,9 @@ namespace MiniZinc {
       Id* finalId = NULL;
       bool finalIdNeg = false;
       int idCount = 0;
+      std::vector<VarDecl*> pos;
+      std::vector<VarDecl*> neg;
+      
       for (unsigned int j=0; j<c->args().size(); j++) {
         bool unit = (j==0 ? isConjunction : !isConjunction);
         ArrayLit* al = follow_id(c->args()[j])->cast<ArrayLit>();
@@ -390,6 +393,10 @@ namespace MiniZinc {
               idCount++;
               finalId = ident;
               finalIdNeg = (j==1);
+              if (j==0)
+                pos.push_back(ident->decl());
+              else
+                neg.push_back(ident->decl());
             }
           } else {
             if (al->v()[k]->cast<BoolLit>()->v()!=unit) {
@@ -399,6 +406,26 @@ namespace MiniZinc {
           }
         }
       }
+      if (pos.size() > 0 && neg.size() > 0) {
+        std::sort(pos.begin(),pos.end());
+        std::sort(neg.begin(), neg.end());
+        unsigned int ix=0;
+        unsigned int iy=0;
+        for (;;) {
+          if (pos[ix]==neg[iy]) {
+            subsumed = true;
+            break;
+          }
+          if (pos[ix] < neg[iy]) {
+            ix++;
+          } else {
+            iy++;
+          }
+          if (ix==pos.size() || iy==neg.size())
+            break;
+        }
+      }
+
     subsumed_check_done:
       if (subsumed) {
         if (isConjunction) {
