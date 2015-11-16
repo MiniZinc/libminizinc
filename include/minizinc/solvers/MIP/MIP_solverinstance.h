@@ -41,6 +41,7 @@ namespace MiniZinc {
       
     public:
       double lastIncumbent;
+      double dObjVarLB=-1e300, dObjVarUB=1e300;
     public:
 
       MIP_solverinstance(Env& env) :

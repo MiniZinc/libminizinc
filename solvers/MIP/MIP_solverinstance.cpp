@@ -277,6 +277,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
     }
+    if (mip_wrap->fVerbose) {
+      cerr << "    MIP_solverinstance: bounds for the objective function: "
+        << dObjVarLB << ", " << dObjVarUB << endl;
+    }
   } else {
     if (mip_wrap->fVerbose)
       cerr << "    MIP_solverinstance: this is a SATisfiability problem." << endl;
@@ -342,7 +346,7 @@ void MIP_solverinstance::processFlatZinc(void) {
         _varsWithOutput.push_back(vd);
       }
     }
-    if (vd->type().dim() == 0 && it->e()->type().isvar()) {
+    if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
       MiniZinc::TypeInst* ti = it->e()->ti();
       MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;     // fInt = false;
       if (ti->type().isvarint() or ti->type().isint())
@@ -388,6 +392,10 @@ void MIP_solverinstance::processFlatZinc(void) {
       } else {
         double obj = vd==objVd ? 1.0 : 0.0;
         res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
+        if (vd==objVd) {
+          dObjVarLB = lb;
+          dObjVarUB = ub;
+        }
       }
 //       if ("X_INTRODUCED_108" == string(id->str().c_str()))
 //        std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
