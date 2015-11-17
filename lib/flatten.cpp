@@ -3751,6 +3751,9 @@ namespace MiniZinc {
             ctx.neg = false;
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
+            if (c->decl()==NULL) {
+              throw FlatteningError(env,c->loc(), "cannot find matching declaration");
+            }
             c->type(c->decl()->rtype(env,args));
             KeepAlive ka(c);
             GC::unlock();
