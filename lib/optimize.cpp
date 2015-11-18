@@ -212,7 +212,7 @@ namespace MiniZinc {
                               std::vector<int>& vardeclQueue,
                               std::vector<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
-                              ExpressionMap<int>& nonFixedLiteralCount);
+                              UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
@@ -480,7 +480,7 @@ namespace MiniZinc {
       }
     }
     
-    ExpressionMap<int> nonFixedLiteralCount;
+    UNORDERED_NAMESPACE::unordered_map<Expression*, int> nonFixedLiteralCount;
     while (!vardeclQueue.empty() || !constraintQueue.empty()) {
       while (!vardeclQueue.empty()) {
         int var_idx = vardeclQueue.back();
@@ -1094,7 +1094,7 @@ namespace MiniZinc {
     }
   }
 
-  int decrementNonFixedVars(ExpressionMap<int>& nonFixedLiteralCount, Call* c) {
+  int decrementNonFixedVars(UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
     ExpressionMap<int>::iterator it = nonFixedLiteralCount.find(c);
     if (it==nonFixedLiteralCount.end()) {
       int nonFixedVars = 0;
@@ -1107,7 +1107,7 @@ namespace MiniZinc {
         }
       }
       nonFixedVars--; // for the identifier we're currently processing
-      nonFixedLiteralCount.insert(c, nonFixedVars);
+      nonFixedLiteralCount.insert(std::make_pair(c, nonFixedVars));
       return nonFixedVars;
     } else {
       it->second--;
@@ -1119,7 +1119,7 @@ namespace MiniZinc {
                               std::vector<int>& vardeclQueue,
                               std::vector<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
-                              ExpressionMap<int>& nonFixedLiteralCount) {
+                              UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount) {
     if (ii->isa<SolveI>()) {
       remove = false;
       return;
