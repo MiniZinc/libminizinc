@@ -542,6 +542,8 @@ namespace MiniZinc {
           IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id());
           if (it != envi.vo._m.end()) {
             for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
+              if ((*item)->removed())
+                continue;
               if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
                 if (vdi->e()->e() && vdi->e()->e()->isa<ArrayLit>()) {
                   IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id());
