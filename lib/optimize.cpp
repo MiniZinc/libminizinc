@@ -296,8 +296,8 @@ namespace MiniZinc {
               envi.flat_removeItem(i);
             } else if (c->id()==constants().ids.forall) {
               ArrayLit* al = follow_id(c->args()[0])->cast<ArrayLit>();
-              for (unsigned int i=al->v().size(); i--;) {
-                if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+              for (unsigned int j=al->v().size(); j--;) {
+                if (Id* id = al->v()[j]->dyn_cast<Id>()) {
                   if (id->decl()->ti()->domain()==NULL) {
                     toAssignBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
                   } else if (id->decl()->ti()->domain() == constants().lit_false) {

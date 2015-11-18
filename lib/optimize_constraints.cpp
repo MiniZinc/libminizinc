@@ -37,7 +37,7 @@ namespace MiniZinc {
   
   namespace Optimizers {
     
-    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expression*& rewrite) {
       ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
       std::vector<IntVal> coeffs(al_c->v().size());
       for (unsigned int i=0; i<al_c->v().size(); i++) {
@@ -64,7 +64,7 @@ namespace MiniZinc {
         } else {
           return OptimizeRegistry::CS_ENTAILED;
         }
-      } else if (coeffs.size()==1 && (i->isa<ConstraintI>() || i->cast<VarDeclI>()->e()->ti()->domain()==constants().lit_true)) {
+      } else if (coeffs.size()==1 && (ii->isa<ConstraintI>() || ii->cast<VarDeclI>()->e()->ti()->domain()==constants().lit_true)) {
         VarDecl* vd = x[0]()->cast<Id>()->decl();
         IntSetVal* domain = vd->ti()->domain() ? eval_intset(env,vd->ti()->domain()) : NULL;
         if (c->id()==constants().ids.int_.lin_eq) {
@@ -92,13 +92,13 @@ namespace MiniZinc {
           } else {
             double nd_d = static_cast<double>(ad.toInt()) / static_cast<double>(ac.toInt());
             if (coeffs[0] >= 0 && rd >= 0) {
-              nd = std::floor(nd_d);
+              nd = static_cast<long long int>(std::floor(nd_d));
             } else if (rd >= 0) {
-              nd = -std::floor(nd_d);
+              nd = -static_cast<long long int>(std::floor(nd_d));
             } else if (coeffs[0] >= 0) {
-              nd = -std::ceil(nd_d);
+              nd = -static_cast<long long int>(std::ceil(nd_d));
             } else {
-              nd = std::ceil(nd_d);
+              nd = static_cast<long long int>(std::ceil(nd_d));
             }
           }
           bool swapSign = coeffs[0] < 0;
