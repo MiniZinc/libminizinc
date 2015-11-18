@@ -1095,7 +1095,7 @@ namespace MiniZinc {
   }
 
   int decrementNonFixedVars(UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
-    ExpressionMap<int>::iterator it = nonFixedLiteralCount.find(c);
+    UNORDERED_NAMESPACE::unordered_map<Expression*,int>::iterator it = nonFixedLiteralCount.find(c);
     if (it==nonFixedLiteralCount.end()) {
       int nonFixedVars = 0;
       for (unsigned int i=0; i<c->args().size(); i++) {
