@@ -4538,7 +4538,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (cr()->type().isbool() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
+            if (cr()->type().isbool() &&  !cr()->type().ispar() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
               std::vector<Type> argtypes(args.size());
               for (unsigned int i=0; i<args.size(); i++)
                 argtypes[i] = args[i]()->type();
@@ -4586,7 +4586,7 @@ namespace MiniZinc {
               }
             }
           call_nonreif:
-            if (decl->e()==NULL) {
+            if ( (cr()->type().ispar() && !cr()->type().isann()) || decl->e()==NULL) {
               Call* cr_c = cr()->cast<Call>();
               /// All builtins are total
               std::vector<Type> argt(cr_c->args().size());
