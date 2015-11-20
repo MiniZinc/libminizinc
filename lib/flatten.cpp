@@ -255,7 +255,7 @@ namespace MiniZinc {
   std::string getPath(EnvI& env, bool force = false) {
     std::string path;
     std::stringstream ss;
-    if(env.dumpPath(ss, force, false))
+    if(env.dumpPath(ss, force))
       path = ss.str();
     return path;
   }
@@ -688,24 +688,22 @@ namespace MiniZinc {
   }
  
   bool
-  EnvI::dumpPath(std::ostream& os, bool force = false, bool errStack = false) {
-    std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
-
-    if (stack.size() > maxPathDepth) {
+  EnvI::dumpPath(std::ostream& os, bool force = false) {
+    if (callStack.size() > maxPathDepth) {
       if(!force && pass >= passes-1) {
         return false;
       }
-      maxPathDepth = stack.size();
+      maxPathDepth = callStack.size();
     }
 
-    int lastError = stack.size();
+    int lastError = callStack.size();
 
     int curloc_l = -1;
     std::string sep = ";";
 
     for (int i=lastError-1; i>=0; i--) {
-      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[i]) & ~static_cast<ptrdiff_t>(1));
-      bool isCompIter = reinterpret_cast<ptrdiff_t>(stack[i]) & static_cast<ptrdiff_t>(1);
+      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+      bool isCompIter = reinterpret_cast<ptrdiff_t>(callStack[i]) & static_cast<ptrdiff_t>(1);
       Location loc = e->loc();
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
