@@ -91,51 +91,57 @@ namespace MiniZinc {
     IntVal& operator +=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v += x._v;
+      _v = toSafeInt() + x.toSafeInt();
       return *this;
     }
     IntVal& operator -=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v -= x._v;
+      _v = toSafeInt() - x.toSafeInt();
       return *this;
     }
     IntVal& operator *=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v *= x._v;
+      _v = toSafeInt() * x.toSafeInt();
       return *this;
     }
     IntVal& operator /=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v /= x._v;
+      _v = toSafeInt() / x.toSafeInt();
       return *this;
     }
     IntVal operator -() const {
       IntVal r = *this;
-      r._v = -r._v;
+      r._v = -r.toSafeInt();
       return r;
     }
-    void operator ++() {
+    IntVal& operator ++() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      ++_v;
+      _v = toSafeInt() + 1;
+      return *this;
     }
-    void operator ++(int) {
+    IntVal operator ++(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      ++_v;
+      IntVal ret = *this;
+      _v = toSafeInt() + 1;
+      return ret;
     }
-    void operator --() {
+    IntVal& operator --() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      --_v;
+      _v = toSafeInt() - 1;
+      return *this;
     }
-    void operator --(int) {
+    IntVal operator --(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      --_v;
+      IntVal ret = *this;
+      _v = toSafeInt() - 1;
+      return ret;
     }
     static const IntVal minint(void);
     static const IntVal maxint(void);

@@ -1789,6 +1789,8 @@ namespace MiniZinc {
         if (e->type().isfloat()) {
           FloatVal v = eval_float(env,e);
           _bounds.push_back(FBounds(v,v));
+        } else {
+          valid = false;
         }
         return false;
       } else {

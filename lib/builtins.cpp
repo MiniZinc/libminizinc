@@ -913,15 +913,6 @@ namespace MiniZinc {
 
     IntVal min=IntVal::maxint();
     IntVal max=IntVal::minint();
-    min = std::min(min, bx.l / byr0.min());
-    min = std::min(min, bx.l / byr0.max());
-    min = std::min(min, bx.u / byr0.min());
-    min = std::min(min, bx.u / byr0.max());
-    max = std::max(max, bx.l / byr0.min());
-    max = std::max(max, bx.l / byr0.max());
-    max = std::max(max, bx.u / byr0.min());
-    max = std::max(max, bx.u / byr0.max());
-    ++byr0;
     if (byr0()) {
       min = std::min(min, bx.l / byr0.min());
       min = std::min(min, bx.l / byr0.max());
@@ -931,6 +922,17 @@ namespace MiniZinc {
       max = std::max(max, bx.l / byr0.max());
       max = std::max(max, bx.u / byr0.min());
       max = std::max(max, bx.u / byr0.max());
+      ++byr0;
+      if (byr0()) {
+        min = std::min(min, bx.l / byr0.min());
+        min = std::min(min, bx.l / byr0.max());
+        min = std::min(min, bx.u / byr0.min());
+        min = std::min(min, bx.u / byr0.max());
+        max = std::max(max, bx.l / byr0.min());
+        max = std::max(max, bx.l / byr0.max());
+        max = std::max(max, bx.u / byr0.min());
+        max = std::max(max, bx.u / byr0.max());
+      }
     }
     return IntSetVal::a(min,max);
   }

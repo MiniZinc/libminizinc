@@ -79,8 +79,8 @@ namespace MiniZinc {
     };
     typedef KeepAliveMap<WW> Map;
     bool ignorePartial;
-    std::vector<const Expression*> callStack;
-    std::vector<const Expression*> errorStack;
+    std::vector<Expression*> callStack;
+    std::vector<KeepAlive> errorStack;
     std::vector<int> idStack;
     unsigned int maxCallStack;
     std::vector<std::string> warnings;
