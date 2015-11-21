@@ -1279,7 +1279,7 @@ namespace MiniZinc {
           }
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
           Type t = al->type();
-          if (t.isbot() && ret->v().size() > 0) {
+          if ( (t.bt()==Type::BT_BOT || t.bt()==Type::BT_TOP) && ret->v().size() > 0) {
             t.bt(ret->v()[0]->type().bt());
           }
           ret->type(t);
