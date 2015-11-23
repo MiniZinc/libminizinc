@@ -999,7 +999,7 @@ base_ti_expr_tail :
     | MZN_ANN
       { $$ = new TypeInst(@$,Type::ann()); }
     | set_expr
-      { $$ = new TypeInst(@$,Type(),$1); }
+        { if ($1) $$ = new TypeInst(@$,Type(),$1); }
     | MZN_TI_IDENTIFIER
       { $$ = new TypeInst(@$,Type::top(),
                          new TIId(@$, $1));
@@ -1524,8 +1524,10 @@ quoted_op_call :
             $$ = $3;
           } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
             $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
+            $$ = $3;
           } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
+            $$ = $3;
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
           }
