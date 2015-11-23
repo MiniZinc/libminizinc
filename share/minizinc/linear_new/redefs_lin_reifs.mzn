@@ -254,7 +254,7 @@ predicate float_le_reif(var float: x, var float: y, var bool: b) =
 %% TODO
 predicate float_lt_reif(var float: x, var float: y, var bool: b) =
   if fPostprocessDomains then
-    float_lt_reif__POST(x, y, b, float_lt_EPS_coef__)
+    aux_float_lt_zero_iff_1__POST(x - y, b, float_lt_EPS_coef__)
   else
     let { var int: p = bool2int(b) }
     in
@@ -372,30 +372,31 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
   
 % ----------------------------- Domains postpro ---------------------------
     
-% predicate int_le_reif__POST(var int: x, var int: y, var bool: b);
+%%%%%%%%%%%%%%%%%% predicate int_le_reif__POST(var int: x, var int: y, var int: b);
+%%%%%%%%%%%%%%%%%% predicate int_le_reif__POST(int: x, var int: y, var int: b);
+%%%%%%% var int: b:  bool2int is a reverse_map, not passed to .fzn
 %% var, const
-predicate int_le_reif__POST(var int: x, int: y, var bool: b);
-% predicate int_le_reif__POST(int: x, var int: y, var bool: b);
+predicate int_le_reif__POST(var int: x, int: y, var int: b);
 %% var, const
-predicate int_ge_reif__POST(var int: x, int: y, var bool: b);
+predicate int_ge_reif__POST(var int: x, int: y, var int: b);
 
 %% var, const
-predicate int_eq_reif__POST(var int: x, int: y, var bool: b);
+predicate int_eq_reif__POST(var int: x, int: y, var int: b);
 %% var, const
 predicate int_ne__POST(var int: x, int: y);
 
-% predicate float_le_reif__POST(var float: x, var float: y, var bool: b);
+%%%%%%%%%%%%%%%%%% predicate float_le_reif__POST(var float: x, var float: y, var int: b);
+%%%%%%%%%%%%%%%%%% predicate float_le_reif__POST(float: x, var float: y, var int: b);
 %% var, const
-predicate float_le_reif__POST(var float: x, float: y, var bool: b);
+predicate float_le_reif__POST(var float: x, float: y, var int: b);
 %% var, const
-predicate float_ge_reif__POST(var float: x, float: y, var bool: b);
-%predicate float_le_reif__POST(float: x, var float: y, var bool: b);
+predicate float_ge_reif__POST(var float: x, float: y, var int: b);
 
 %% var, var
-predicate float_lt_reif__POST(var float: x, var float: y, var bool: b, float: eps_coef);
+predicate aux_float_lt_zero_iff_1__POST(var float: x, var int: b, float: eps_coef);
 
 %% var, const
-predicate float_eq_reif__POST(var float: x, float: y, var bool: b);
+predicate float_eq_reif__POST(var float: x, float: y, var int: b);
 %% var, const
 predicate float_ne__POST(var float: x, float: y, float: eps_coef);
 

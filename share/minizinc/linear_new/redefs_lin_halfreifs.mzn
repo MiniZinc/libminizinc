@@ -15,7 +15,7 @@
 %% used e.g. in element
 predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   if fPostprocessDomains then
-    aux_float_eq_if_1__POST(x, y, p)
+    aux_float_eq_zero_if_1__POST(x - y, p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
@@ -52,7 +52,7 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
 
 predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   if fPostprocessDomains then
-    aux_float_lt_zero_if_0__POST(x, p)
+    aux_float_lt_zero_if_0__POST(x, p, float_lt_EPS_coef__)
   else
     let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
     in
@@ -107,10 +107,10 @@ predicate aux_float_lt_if_1(var float: x, var float: y, var int: p) =
 
     
 % -------------------------- Domains postpro ---------------------------    
-    %% Should see if an original int var x-y exists and has eq_encode?
-predicate aux_float_eq_if_1__POST(var float: x, var float: y, var int: p);
+    %% To avoid looking if an original int var x-y exists and has eq_encode:
+predicate aux_float_eq_zero_if_1__POST(var float: x, var int: p);
 
 predicate aux_int_le_zero_if_0__POST(var int: x, var int: p);
 predicate aux_float_le_zero_if_0__POST(var float: x, var int: p);
-predicate aux_float_lt_zero_if_0__POST(var float: x, var int: p);
+predicate aux_float_lt_zero_if_0__POST(var float: x, var int: p, float: eps);
 

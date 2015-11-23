@@ -384,6 +384,10 @@ void MIP_solverinstance::processFlatZinc(void) {
         ub = -lb;
       }
 
+//       IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
+//       if (dom->size() > 1)
+//         throw runtime_error("MIP_solverinstance: domains with holes not supported, use --MIPdomains");
+
       VarId res;
       Id* id = it->e()->id();
       id = id->decl()->id();

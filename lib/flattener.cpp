@@ -367,6 +367,14 @@ void Flattener::flatten()
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
+              if (flag_MIPdomains) {
+                if (flag_verbose)
+                  std::cerr << "Looking for MIP domains ...";
+                MIPdomains(env);
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+
               if (flag_optimize) {
                 if (flag_verbose)
                   std::cerr << "Optimizing ...";

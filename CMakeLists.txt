@@ -228,6 +228,7 @@ lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
+lib/MIPdomains.cpp
 lib/optimize.cpp
 lib/options.cpp
 lib/optimize_constraints.cpp

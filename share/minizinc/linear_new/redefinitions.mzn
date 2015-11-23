@@ -5,6 +5,7 @@
 % Sebastian Brand
 % Gleb Belov (2015)
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
+% TODO McCormick envelopes
 */
 %-----------------------------------------------------------------------------%
 ann: user_cut;
@@ -17,7 +18,7 @@ ann: MIP_lazy; % = lazy_constraint;
 %  Parameters
 bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
     %% Reifs give wrong result on 2012/amaze, so using implications only
-bool: fPostprocessDomains=false;     %% True to pass all domain-related
+bool: fPostprocessDomains=true;     %% True to pass all domain-related
                                      %% constraints (...__POST) to FlatZinc
 
 bool: fMZN__IgnoreRedundantCumulative=false;
@@ -810,18 +811,20 @@ annotation bool_search(array[int] of var bool: x, ann:a1, ann:a2, ann:a3) =
     % Single variable:  x = d  <->  x_eq_d[d]
 predicate equality_encoding__POST(var int: x, array[int] of var int: x_eq_d);
 
+%%%%%%% var int: b:  bool2int is a reverse_map, not passed to .fzn
 predicate set_in__POST(var int: x, set of int: s__);
-predicate set_in_reif__POST(var int: x, set of int: s__, var bool: b);
+predicate set_in_reif__POST(var int: x, set of int: s__, var int: b);
 
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOGICAL CONSTRAINTS TO THE SOLVER %%%%%%%%%%%%%%%%%%%%%%%%%%
-predicate int_lin_eq_reif__IND(array[int] of int: c, array[int] of var int: x, int: d, var bool: b);
-predicate int_lin_le_reif__IND(array[int] of int: c, array[int] of var int: x, int: d, var bool: b);
+%%%%%%% var int: b:  bool2int is a reverse_map, not passed to .fzn  =>  REPEAT TESTS. TODO
+predicate int_lin_eq_reif__IND(array[int] of int: c, array[int] of var int: x, int: d, var int: b);
+predicate int_lin_le_reif__IND(array[int] of int: c, array[int] of var int: x, int: d, var int: b);
 predicate int_lin_ne__IND(array[int] of int: c, array[int] of var int: x, int: d);
 predicate aux_int_le_zero_if_0__IND(var int: x, var int: b);
-predicate float_lin_le_reif__IND(array[int] of float: c, array[int] of var float: x, float: d, var bool: b);
+predicate float_lin_le_reif__IND(array[int] of float: c, array[int] of var float: x, float: d, var int: b);
 predicate aux_float_eq_if_1__IND(var float: x, var float: y, var int: b);
 predicate aux_float_le_zero_if_0__IND(var float: x, var int: b);
 
