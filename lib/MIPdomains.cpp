@@ -37,8 +37,8 @@ namespace MiniZinc {
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
     void MIPdomains() {
-      registerLinearConstraints();
-      register__POSTconstraints();
+      registerLinearConstraintDecls();
+      register__POSTconstraintDecls();
       register__POSTvariables();
       constructVarViewCliques();
       printStats(std::cerr);
@@ -60,7 +60,7 @@ namespace MiniZinc {
     std::vector<Type> float_lin_eq_t = {Type::parfloat(1), Type::varfloat(1), Type::parfloat()};
     std::vector<Type> t_VIVF = { Type::varint(), Type::varfloat() };
       
-    void registerLinearConstraints()
+    void registerLinearConstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -142,7 +142,7 @@ namespace MiniZinc {
     
     std::vector<VarDescr> vVarDescr;
     
-    void register__POSTconstraints()
+    void register__POSTconstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -199,7 +199,7 @@ namespace MiniZinc {
           if ( auto ipct = mCallTypes.find(c->decl())
                 != mCallTypes.end() ) {
             assert( c->args().size() > 1 );
-          VarDecl* vd0 = expr2VarDecl(c->args()[0]);
+            VarDecl* vd0 = expr2VarDecl(c->args()[0]);
             std::cerr << "  Call " << c->id().str()
               << " uses variable " << vd0->id()->str();
             if ( vd0->payload() == -1 ) {         // not yet visited
@@ -207,7 +207,7 @@ namespace MiniZinc {
               vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
               // bounds/domains later for each involved var TODO
               if (vd0->e())
-                CheckInitExpr(vd0);
+                checkInitExpr(vd0);
             } else {
               std::cerr << " (already touched)";
             }
@@ -225,41 +225,103 @@ namespace MiniZinc {
     
     // Should only be called on a newly added variable
     // OR when looking thru all non-touched vars
-    void CheckInitExpr(VarDecl* vd) {
+    /// Checks init expr of a variable
+    /// Return true IFF new connection
+    /// The bool param states if propagating from the rhs
+    // Guido: cannot be recursive in FZN
+    bool checkInitExpr(VarDecl* vd, bool fCheckArg=false) {
       assert( vd->e() );
-      std::cerr << "  Checking init expr  ";
-      debugprint(vd);
+      if ( not vd->type().isint() and not vd->type().isfloat() )
+        return false;
+      if ( not fCheckArg )
+        assert( vd->payload() >= 0 );
       if ( Id* id = vd->e()->dyn_cast<Id>() ) {
-        LinEqData led;
-        led.vd = { vd, expr2VarDecl(id->decl()->e()) };
+//         const int f1 = ( vd->payload()>=0 );
+//         const int f2 = ( id->decl()->payload()>=0 );
+        assert( not id->decl()->e() );      // no initexpr for initexpr
+        if ( not fCheckArg or ( id->decl()->payload()>=0 ) ) {
+          std::cerr << "  Checking init expr  ";
+          debugprint(vd);
+          LinEqData led;
+          // FAILS:
+  //         led.vd = { vd, expr2VarDecl(id->decl()->e()) };
+          led.vd = { vd, expr2VarDecl( vd->e() ) };
+          led.coefs = { 1.0, -1.0 };
+          led.rhs = 0.0;
+          put2VarsConnection( led, false );
+          return true;
+        }
+      } else if ( Call* c = vd->e()->dyn_cast<Call>() ) {
+        if ( lin_exp_int==c->decl() || lin_exp_float==c->decl() ) {
+//             std::cerr << "  NOTE call " << std::flush;
+//             debugprint(c);
+          assert( c->args().size() == 3 );
+          ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
+          assert( al );
+          assert( al->v().size() >= 1 );
+          if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
+            LinEqData led;
+            led.vd = { vd, expr2VarDecl(al->v()[0]) };
+//             const int f1 = ( vd->payload()>=0 );
+//             const int f2 = ( led.vd[1]->payload()>=0 );
+            assert( not led.vd[1]->e() );      // no initexpr for initexpr
+            if ( not fCheckArg or ( led.vd[1]->payload()>=0 ) ) {
+              // Can use another map here:
+//               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
+//                 continue;
+//               sCallLinEq2.insert(c);     // memorize this call
+              std::cerr << "  REG call " << std::flush;
+              debugprint(vd);
+              expr2Array(c->args()[0], led.coefs);
+              led.coefs = { -1.0, led.coefs[0] };
+              led.rhs = -expr2Const(c->args()[2]);             // MINUS
+              put2VarsConnection( led, false );
+              return true;
+            }
+          } else {                        // larger eqns
+            // TODO should be here?
+          }
+        }
       }
+      return false;
     }
 
   //   typedef std::vector<int> TAgenda;
     
     /// Build var cliques (i.e. of var pairs viewing each other)
     void constructVarViewCliques() {
+//       std::cerr << "  Model: " << std::endl;
+//       debugprint(getEnv()->flat());
+      
   //     TAgenda agenda(vVarDescr.size()), agendaNext;
   //     for ( int i=0; i<agenda.size(); ++i )
   //       agenda[i] = i;
       bool fChanges;
       do {
         fChanges = false;
-        PropagateViews(fChanges);
-        PropagateImplViews(fChanges);
+        propagateViews(fChanges);
+        propagateImplViews(fChanges);
       } while ( fChanges );
     }
     
-    void PropagateViews(bool &fChanges) {
+    void propagateViews(bool &fChanges) {
       EnvI& env = getEnv()->envi();
       GCLock lock;
       
-      // Can also go thru all vars to check init expr. TODO
-      
       // Iterate thru original 2-variable equalities to mark views:
       Model& mFlat = *getEnv()->flat();
-//       std::cerr << "  Model: " << std::endl;
-//       debugprint(&mFlat);
+      
+      std::cerr << "  Check all initexpr if they access a touched variable:" << std::endl;
+      for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
+        if ( ivd->removed() )
+          continue;
+        if ( ivd->e()->e() and ivd->e()->payload()<0       // untouched
+          and ( ivd->e()->type().isint() or ivd->e()->type().isfloat() ) )
+          if ( checkInitExpr(ivd->e(), true) )
+            fChanges = true;
+      }
+        
+      std::cerr << "  Check all constraints for 2-var equations:" << std::endl;
       for( ConstraintIterator ic=mFlat.begin_constraints();
               ic != mFlat.end_constraints(); ++ic ) {
 //         std::cerr << "  SEE constraint: " << "      ";
@@ -278,6 +340,7 @@ namespace MiniZinc {
             if ( al->v().size() == 2 ) {   // 2-term eqn
               LinEqData led;
               expr2DeclArray(c->args()[1], led.vd);
+              // At least 1 touched var:
               if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
                   continue;
@@ -295,13 +358,14 @@ namespace MiniZinc {
             }
           }
           else if ( int2float==c->decl() || constants().var_redef==c->decl() ) {
-            std::cerr << "  NOTE call " << std::flush;
-            debugprint(c);
+//             std::cerr << "  NOTE call " << std::flush;
+//             debugprint(c);
             assert( c->args().size() == 2 );
             LinEqData led;
             led.vd.resize(2);
             led.vd[0] = expr2VarDecl(c->args()[0]);
             led.vd[1] = expr2VarDecl(c->args()[1]);
+            // At least 1 touched var:
             if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
               if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
                 continue;
@@ -318,17 +382,36 @@ namespace MiniZinc {
       }
     }
 
-    void PropagateImplViews(bool &fChanges) {
+    void propagateImplViews(bool &fChanges) {
       EnvI& env = getEnv()->envi();
       GCLock lock;
       
       // TODO
     }
   
-    // Could be better to mark the calls instead:
+    /// Could be better to mark the calls instead:
     UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float;
     
-    void put2VarsConnection( LinEqData& led ) {
+    /// register a 2-variable lin eq
+    void put2VarsConnection( LinEqData& led, bool fCheckinitExpr=true ) {
+      assert( led.coefs.size() == led.vd.size() );
+      assert( led.vd.size() == 2 );
+      std::cerr << "  Register 2-var connection: ( [";
+      for (auto c : led.coefs)
+        std::cerr << c << ' ';
+      std::cerr << " ] * [ ";
+      for (auto v : led.vd)
+        std::cerr << v->id()->str() << ' ';
+      std::cerr << " ] ) == " << led.rhs << std::endl;
+      // register if new variables
+      for ( auto vd : led.vd ) {
+        if ( vd->payload() == -1 ) {         // not yet visited
+          vd->payload( vVarDescr.size() );
+          vVarDescr.push_back( VarDescr( vd, vd->type().isint() ) );  // can use /prmTypes/ as well
+          if ( fCheckinitExpr and vd->e() )
+            checkInitExpr(vd);
+        }
+      }
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
@@ -357,7 +440,8 @@ namespace MiniZinc {
       } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
         return ( bl->v() );
       } else {
-        throw InternalError("unexpected expression instead of a literal");
+        throw InternalError(
+          "unexpected expression instead of an int/float/bool literal");
       }
       return 0.0;
     }
