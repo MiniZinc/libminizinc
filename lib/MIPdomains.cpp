@@ -27,21 +27,26 @@
 
 //#include <map>
 
-/// TO CONSIDER and TODO
+/// TODOs
 /// set_in etc. are not propagated between views
 /// CLEANUP after work: ~destructor
-/// Also check initexpr of all vars?  TODO
+/// Also check initexpr of all vars?  DONE
+/// In case of only_range_domains we'd need to register inequalities
+///   - so better turn that off TODO
 
 namespace MiniZinc {
   class MIPD {  
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
-    void MIPdomains() {
+    bool MIPdomains() {
       registerLinearConstraintDecls();
       register__POSTconstraintDecls();
       register__POSTvariables();
       constructVarViewCliques();
+      if ( not decomposeDomains() )
+        return false;
       printStats(std::cerr);
+      return true;
     }
     
   private:
@@ -134,8 +139,9 @@ namespace MiniZinc {
       VarDescr(VarDecl* vd_, boolShort fi, double l_=0.0, double u_=0.0)
         : vd(vd_), fInt(fi), lb(l_), ub(u_)  { }
       double lb, ub;
-      boolShort fInt;
       VarDecl* vd = 0;
+      int nClique = -1;                 // clique number
+      boolShort fInt;
       boolShort fPropagatedViews=0;
       boolShort fPropagatedLargerEqns=0;
     };
@@ -392,6 +398,27 @@ namespace MiniZinc {
     /// Could be better to mark the calls instead:
     UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float;
     
+    class TClique : public std::vector<LinEqData> {       // need more info?
+    public:
+      VarDecl* varRef0=0;  // this is the first var to which all others are related
+      VarDecl* varRef1=0;  // this is the chosen main reference.
+         // it is a var with eq_encode, or
+         // an (integer if any) variable with the least rel. factor
+      bool fRef1HasEqEncode=false;
+      /// This map stores the relations y = ax+b of all the clique's vars to the main one
+      UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::pair<double, double> > mRef0, mRef1;
+      
+    public:
+      /// This function takes the 1st variable and relates all to it
+      /// Return false if contrad / disconnected graph
+      bool findRelations0() {
+        
+        return true;
+      }
+    };
+    typedef std::vector<TClique> TCLiqueList;
+    TCLiqueList aCliques;
+    
     /// register a 2-variable lin eq
     void put2VarsConnection( LinEqData& led, bool fCheckinitExpr=true ) {
       assert( led.coefs.size() == led.vd.size() );
@@ -404,14 +431,60 @@ namespace MiniZinc {
         std::cerr << v->id()->str() << ' ';
       std::cerr << " ] ) == " << led.rhs << std::endl;
       // register if new variables
+//       std::vector<bool> fHaveClq(led.vd.size(), false);
+      int nCliqueAvailable=-1;
       for ( auto vd : led.vd ) {
         if ( vd->payload() == -1 ) {         // not yet visited
           vd->payload( vVarDescr.size() );
           vVarDescr.push_back( VarDescr( vd, vd->type().isint() ) );  // can use /prmTypes/ as well
           if ( fCheckinitExpr and vd->e() )
             checkInitExpr(vd);
+        } else {
+          int nMaybeClq = vVarDescr[vd->payload()].nClique;
+          if ( nMaybeClq >= 0 )
+            nCliqueAvailable = nMaybeClq;
+//           assert( nCliqueAvailable>=0 );
+//           fHaveClq[i] = true;
         }
       }
+      if ( nCliqueAvailable < 0 ) {    // no clique found
+        nCliqueAvailable = aCliques.size();
+        aCliques.resize(aCliques.size() + 1);
+      }
+      TClique& clqNew = aCliques[nCliqueAvailable];
+      clqNew.push_back( led );
+      for ( auto vd : led.vd ) {       // merging cliques
+        int& nMaybeClq = vVarDescr[vd->payload()].nClique;
+        if ( nMaybeClq >= 0 and nMaybeClq != nCliqueAvailable ) {
+          TClique& clqOld = aCliques[nMaybeClq];
+          clqNew.insert(clqNew.end(), clqOld.begin(), clqOld.end());
+          clqOld.clear();                // Can use C++11 move      TODO
+          std::cerr << "    +++ Joining cliques" << std::endl;
+        }          
+        nMaybeClq = nCliqueAvailable;  // Could mark as 'unused'  TODO
+      }
+    }
+    
+    /// Vars without explicit clique still need a decomposition.
+    /// Notice all __POSTs, set_in's and eq_encode's to it
+    /// In each clique, relate all vars to one chosen
+    /// Find all "smallest rel. factor" variables, integer if any
+    /// Among them, prefer a one with eq_encode
+    /// Relate all vars to it
+    /// Refer all __POSTs and dom() to it
+    /// build domain decomposition
+    /// Implement all domain constraints, incl. possible transfers of eq_encode's
+    bool decomposeDomains() {
+      EnvI& env = getEnv()->envi();
+      GCLock lock;
+      
+//       for (int iClq=0; iClq<aCliques.size(); ++iClq ) {
+//         TClique& clq = aCliques[iClq];
+//       }
+      for ( int iVar=0; iVar<vVarDescr.size(); ++iVar ) {
+        VarDescr& var = vVarDescr[iVar];
+      }
+      return true;
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
@@ -455,14 +528,20 @@ namespace MiniZinc {
     }
     
     void printStats(std::ostream& os) {
-      os << "N cliques ";
+      int nc=0;
+      for ( auto cl : aCliques )
+        if ( cl.size() )
+          ++nc;
+      os << "N cliques " << aCliques.size() << "  total, "
+         << nc << " final" << std::endl;
     }
 
   };  // class MIPD
 
   void MIPdomains(Env& env) {
     MIPD mipd(&env);
-    mipd.MIPdomains();
+    if ( not mipd.MIPdomains() )
+      env.flat()->fail(env.envi());
   }
   
 }  // namespace MiniZinc
