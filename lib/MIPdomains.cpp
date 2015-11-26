@@ -25,7 +25,7 @@
 #include <minizinc/prettyprinter.hh>
 //#include <ostream>
 
-//#include <map>
+#include <map>
 
 /// TODOs
 /// set_in etc. are not propagated between views
@@ -53,6 +53,8 @@ namespace MiniZinc {
     
     Env* __env=0;
     Env* getEnv() { assert(__env); return __env; }
+    
+    typedef VarDecl* PVarDecl;
     
     FunctionI *int_lin_eq;
     FunctionI *int_lin_le;
@@ -111,7 +113,7 @@ namespace MiniZinc {
     enum EnumVarType { VT_None, VT_Int, VT_Float };
 
     /// struct DomainCallType describes & characterizes a possible domain constr call
-    struct DomainCallType {
+    struct DCT {
       const char* sFuncName=0;
       const std::vector<Type>& aParams;
   //     unsigned iItem;          // call's item number in the flat
@@ -119,16 +121,19 @@ namespace MiniZinc {
       EnumConstrType nConstrType = CT_None;  //
       EnumCmpType nCmpType = CMPT_None;
       EnumVarType nVarType = VT_None;
+      FunctionI* &pfi;
   //     double dEps = -1.0;
-      DomainCallType(const char* fn, const std::vector<Type>& prm,
-                    EnumReifType er, EnumConstrType ec, EnumCmpType ecmp, EnumVarType ev)
+      DCT(const char* fn, const std::vector<Type>& prm,
+                    EnumReifType er, EnumConstrType ec, EnumCmpType ecmp, EnumVarType ev,
+                    FunctionI* &pfi__
+         )
         : sFuncName(fn), aParams(prm), nReifType(er), nConstrType(ec), nCmpType(ecmp),
-          nVarType(ev)  { }
+          nVarType(ev), pfi(pfi__) { }
     };
     
-    typedef UNORDERED_NAMESPACE::unordered_map<FunctionI*, DomainCallType*> M__POSTCallTypes;
+    typedef UNORDERED_NAMESPACE::unordered_map<FunctionI*, DCT*> M__POSTCallTypes;
     M__POSTCallTypes mCallTypes;             // actually declared in the input
-    std::vector<DomainCallType> aCT;         // all possible
+    std::vector<DCT> aCT;         // all possible
     
     // Fails:
   //   DomainCallType a = { NULL, t_VII, RIT_Halfreif, CT_Comparison, CMPT_EQ, VT_Float };
@@ -141,12 +146,22 @@ namespace MiniZinc {
       double lb, ub;
       VarDecl* vd = 0;
       int nClique = -1;                 // clique number
-      boolShort fInt;
-      boolShort fPropagatedViews=0;
-      boolShort fPropagatedLargerEqns=0;
+      std::vector<Call*> aCalls;
+      boolShort fInt=0;
+      boolShort fHasEqEncode=0;
+      boolShort fDomainConstrProcessed=0;
+//       boolShort fPropagatedViews=0;
+//       boolShort fPropagatedLargerEqns=0;
     };
     
     std::vector<VarDescr> vVarDescr;
+    
+    FunctionI *int_le_reif__POST=0, *int_ge_reif__POST=0, *int_eq_reif__POST=0, *int_ne__POST=0,
+      *float_le_reif__POST=0, *float_ge_reif__POST=0, *aux_float_lt_zero_iff_1__POST=0, 
+        *float_eq_reif__POST=0, *float_ne__POST=0,
+      *aux_float_eq_zero_if_1__POST=0, *aux_int_le_zero_if_0__POST=0,
+        *aux_float_le_zero_if_0__POST=0, *aux_float_lt_zero_if_0__POST=0,
+      *equality_encoding__POST=0, *set_in__POST=0, *set_in_reif__POST=0;
     
     void register__POSTconstraintDecls()
     {
@@ -154,34 +169,41 @@ namespace MiniZinc {
       GCLock lock;
 
       aCT.clear();
-      aCT.push_back(DomainCallType("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int));
-      aCT.push_back(DomainCallType("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int));
-      aCT.push_back(DomainCallType("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int));
-      aCT.push_back(DomainCallType("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int));
+      aCT.push_back(DCT("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int, int_le_reif__POST));
+      aCT.push_back(DCT("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int, int_ge_reif__POST));
+      aCT.push_back(DCT("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int, int_eq_reif__POST));
+      aCT.push_back(DCT("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int, int_ne__POST));
 
-      aCT.push_back(DomainCallType("float_le_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float));
-      aCT.push_back(DomainCallType("float_ge_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float));
-      aCT.push_back(DomainCallType("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT, VT_Float));
-      aCT.push_back(DomainCallType("float_eq_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float));
-      aCT.push_back(DomainCallType("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float));
+      aCT.push_back(DCT("float_le_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float, float_le_reif__POST));
+      aCT.push_back(DCT("float_ge_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float, float_ge_reif__POST));
+      aCT.push_back(DCT("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT, VT_Float,
+                        aux_float_lt_zero_iff_1__POST));
+      aCT.push_back(DCT("float_eq_reif__POST", t_VFFVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float, float_eq_reif__POST));
+      aCT.push_back(DCT("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float, float_ne__POST));
 
-      aCT.push_back(DomainCallType("aux_float_eq_zero_if_1__POST", t_VFVI, RIT_Halfreif1, CT_Comparison, CMPT_EQ_0, VT_Float));
-      aCT.push_back(DomainCallType("aux_int_le_zero_if_0__POST", t_VIVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Int));
-      aCT.push_back(DomainCallType("aux_float_le_zero_if_0__POST", t_VFVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Float));
-      aCT.push_back(DomainCallType("aux_float_lt_zero_if_0__POST", t_VFVIF, RIT_Halfreif0, CT_Comparison, CMPT_LT_0, VT_Float));
-
-      aCT.push_back(DomainCallType("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int));
-      aCT.push_back(DomainCallType("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int));
-      aCT.push_back(DomainCallType("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int));
+      aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVI, RIT_Halfreif1, CT_Comparison, CMPT_EQ_0, VT_Float,
+                        aux_float_eq_zero_if_1__POST));
+      aCT.push_back(DCT("aux_int_le_zero_if_0__POST", t_VIVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Int,
+                        aux_int_le_zero_if_0__POST));
+      aCT.push_back(DCT("aux_float_le_zero_if_0__POST", t_VFVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Float,
+                        aux_float_le_zero_if_0__POST));
+      aCT.push_back(DCT("aux_float_lt_zero_if_0__POST", t_VFVIF, RIT_Halfreif0, CT_Comparison, CMPT_LT_0, VT_Float,
+                        aux_float_lt_zero_if_0__POST));
+      
+      aCT.push_back(DCT("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int, equality_encoding__POST));
+      aCT.push_back(DCT("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST));
+      aCT.push_back(DCT("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int, set_in_reif__POST));
       /// Registering all declared & compatible __POST constraints
       /// (First, cleanup FunctionIs' payload:  -- not doing now)
       for ( int i=0; i<aCT.size(); ++i ) {
         FunctionI* fi = env.orig->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams);
         if (fi) {
           mCallTypes[fi] = aCT.data() + i;
+          aCT[i].pfi = fi;
   //         fi->pPayload = (void*)this;
   //         std::cerr << "  FOund declaration: " << aCT[i].sFuncName << std::endl;
         } else {
+          aCT[i].pfi = 0;
           std::cerr << "  MIssing declaration: " << aCT[i].sFuncName << std::endl;
         }
       }
@@ -217,18 +239,28 @@ namespace MiniZinc {
             } else {
               std::cerr << " (already touched)";
             }
+            vVarDescr[ vd0->payload() ].aCalls.push_back(c);
+            if ( equality_encoding__POST == c->decl() ) {
+              vVarDescr[ vd0->payload() ].fHasEqEncode = true;
+              std::cerr << " Variable " << vd0->id()->str() << " has eq_encode." << std::endl;
+            }   // + if has aux_ constraints?
             std::cerr << std::endl;
           }
         }
       }
     }
     
-    struct LinEqData {
+    struct LinEq2Vars {
+      std::array<double, 2> coefs;
+      std::array<PVarDecl, 2> vd = { { 0, 0 } };
+      double rhs;
+    };
+    
+    struct LinEq {
       std::vector<double> coefs;
       std::vector<VarDecl*> vd;
       double rhs;
     };
-    
     // Should only be called on a newly added variable
     // OR when looking thru all non-touched vars
     /// Checks init expr of a variable
@@ -248,7 +280,7 @@ namespace MiniZinc {
         if ( not fCheckArg or ( id->decl()->payload()>=0 ) ) {
           std::cerr << "  Checking init expr  ";
           debugprint(vd);
-          LinEqData led;
+          LinEq2Vars led;
           // FAILS:
   //         led.vd = { vd, expr2VarDecl(id->decl()->e()) };
           led.vd = { vd, expr2VarDecl( vd->e() ) };
@@ -266,7 +298,7 @@ namespace MiniZinc {
           assert( al );
           assert( al->v().size() >= 1 );
           if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
-            LinEqData led;
+            LinEq2Vars led;
             led.vd = { vd, expr2VarDecl(al->v()[0]) };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
@@ -278,8 +310,9 @@ namespace MiniZinc {
 //               sCallLinEq2.insert(c);     // memorize this call
               std::cerr << "  REG call " << std::flush;
               debugprint(vd);
-              expr2Array(c->args()[0], led.coefs);
-              led.coefs = { -1.0, led.coefs[0] };
+              std::array<double, 1> coef0;
+              expr2Array(c->args()[0], coef0);
+              led.coefs = { -1.0, coef0[0] };
               led.rhs = -expr2Const(c->args()[2]);             // MINUS
               put2VarsConnection( led, false );
               return true;
@@ -344,7 +377,7 @@ namespace MiniZinc {
             assert( al );
             assert( al->v().size() >= 2 );
             if ( al->v().size() == 2 ) {   // 2-term eqn
-              LinEqData led;
+              LinEq2Vars led;
               expr2DeclArray(c->args()[1], led.vd);
               // At least 1 touched var:
               if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
@@ -367,8 +400,8 @@ namespace MiniZinc {
 //             std::cerr << "  NOTE call " << std::flush;
 //             debugprint(c);
             assert( c->args().size() == 2 );
-            LinEqData led;
-            led.vd.resize(2);
+            LinEq2Vars led;
+//             led.vd.resize(2);
             led.vd[0] = expr2VarDecl(c->args()[0]);
             led.vd[1] = expr2VarDecl(c->args()[1]);
             // At least 1 touched var:
@@ -398,29 +431,20 @@ namespace MiniZinc {
     /// Could be better to mark the calls instead:
     UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float;
     
-    class TClique : public std::vector<LinEqData> {       // need more info?
-    public:
-      VarDecl* varRef0=0;  // this is the first var to which all others are related
-      VarDecl* varRef1=0;  // this is the chosen main reference.
-         // it is a var with eq_encode, or
-         // an (integer if any) variable with the least rel. factor
-      bool fRef1HasEqEncode=false;
-      /// This map stores the relations y = ax+b of all the clique's vars to the main one
-      UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::pair<double, double> > mRef0, mRef1;
-      
+    class TClique : public std::vector<LinEq2Vars> {       // need more info?
     public:
       /// This function takes the 1st variable and relates all to it
       /// Return false if contrad / disconnected graph
-      bool findRelations0() {
-        
-        return true;
-      }
+//       bool findRelations0() {
+//         return true;
+//       }
     };
     typedef std::vector<TClique> TCLiqueList;
     TCLiqueList aCliques;
     
     /// register a 2-variable lin eq
-    void put2VarsConnection( LinEqData& led, bool fCheckinitExpr=true ) {
+    /// add it to the var clique, joining the participants' cliques if needed
+    void put2VarsConnection( LinEq2Vars& led, bool fCheckinitExpr=true ) {
       assert( led.coefs.size() == led.vd.size() );
       assert( led.vd.size() == 2 );
       std::cerr << "  Register 2-var connection: ( [";
@@ -434,7 +458,7 @@ namespace MiniZinc {
 //       std::vector<bool> fHaveClq(led.vd.size(), false);
       int nCliqueAvailable=-1;
       for ( auto vd : led.vd ) {
-        if ( vd->payload() == -1 ) {         // not yet visited
+        if ( vd->payload() < 0 ) {         // not yet visited
           vd->payload( vVarDescr.size() );
           vVarDescr.push_back( VarDescr( vd, vd->type().isint() ) );  // can use /prmTypes/ as well
           if ( fCheckinitExpr and vd->e() )
@@ -457,6 +481,12 @@ namespace MiniZinc {
         int& nMaybeClq = vVarDescr[vd->payload()].nClique;
         if ( nMaybeClq >= 0 and nMaybeClq != nCliqueAvailable ) {
           TClique& clqOld = aCliques[nMaybeClq];
+          assert( clqOld.size() );
+          for ( auto eq2 : clqOld ) {
+            for ( auto vd : eq2.vd ) {    // point all the variables to the new clique
+              vVarDescr[ vd->payload() ].nClique = nCliqueAvailable;
+            }
+          }
           clqNew.insert(clqNew.end(), clqOld.begin(), clqOld.end());
           clqOld.clear();                // Can use C++11 move      TODO
           std::cerr << "    +++ Joining cliques" << std::endl;
@@ -465,15 +495,148 @@ namespace MiniZinc {
       }
     }
     
+    /// Finds a clique variable to which all domain constr are related
+    class TCliqueSorter {
+      MIPD& mipd;
+      const int iVarStart;
+    public:
+      VarDecl* varRef0=0;  // this is the first var to which all others are related
+      VarDecl* varRef1=0;  // this is the chosen main reference.
+        // it is a var with eq_encode, or
+        // an (integer if any) variable with the least rel. factor
+      bool fRef1HasEqEncode=false;
+      /// This map stores the relations y = ax+b of all the clique's vars to y
+      typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::pair<double, double> >
+        TMapVars;
+      TMapVars mRef0, mRef1;   // to the main var 0, 1
+      typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*, TMapVars> TMatrixVars;
+      class LinEqGraph : public TMatrixVars {
+      public:
+        /// Stores the arc (x1, x2) as x1 = a*x2 + b
+        /// so that a constraint on x2, say x2<=c <-> f,
+        /// is equivalent to one for x1:  x1 <=/>= a*c+b <-> f
+        //// ( the other way involves division:
+        ////   so that a constraint on x1, say x1<=c <-> f,
+        ////   can easily be converted into one for x2 as a*x2 <= c-b <-> f
+        ////   <=> x2 (care for sign) (c-b)/a <-> f )
+
+        template <class ICoef, class IVarDecl>
+        void addArc(ICoef begC, IVarDecl begV, double rhs) {
+          assert( std::fabs( *begC ) >= 1e-10 );
+          // Transform Ax+By=C into x = -B/Ay+C/A
+          const double negBA = -(*(begC+1))/(*begC);
+          const double CA = rhs/(*begC);
+          checkExistingArc(begV, negBA, CA);
+          (*this)[*begV][*(begV+1)] = std::make_pair(negBA, CA);
+        }
+        void addEdge(LinEq2Vars& led) {
+          addArc( led.coefs.begin(), led.vd.begin(), led.rhs );
+          addArc( led.coefs.rbegin(), led.vd.rbegin(), led.rhs );
+        }
+        /// Check existing connection
+        template <class IVarDecl>
+        bool checkExistingArc(IVarDecl begV, double A, double B, bool fReportRepeat=true) {
+          auto it1 = this->find(*begV);
+          if ( this->end() != it1 ) {
+            auto it2 = it1->second.find(*(begV+1));
+            if ( it1->second.end() != it2 ) {
+              assert( std::fabs( it2->second.first - A )
+                < 1e-6 * std::max( std::fabs(it2->second.first), std::fabs(A) ) );
+              assert( std::fabs( it2->second.second - B )
+                < 1e-6 * std::max( std::fabs(it2->second.second), std::fabs(B) ) + 1e-6 );
+              if ( std::fabs( A ) < 1e-12  )
+                std::cerr << " Very small coef: "
+                  << (*begV)->id()->str() << " = "
+                  << A << " * " << (*(begV+1))->id()->str()
+                  << " + " << B << std::endl;
+              if ( fReportRepeat )
+                std::cerr << "LinEqGraph: eqn between "
+                  << (*begV)->id()->str() << " and " << (*(begV+1))->id()->str()
+                  << " is repeated. " << std::endl;
+              return true;
+            }
+          }
+          return false;
+        }
+        /// Propagate linear relations from the given variable
+        void propagate(iterator itStart) {
+          std::cerr << "Propagation started from "
+            << itStart->first->id()->str() << std::endl;
+          propagate2(itStart, itStart, std::make_pair(1.0, 0.0));
+        }
+        /// Propagate linear relations from it1 via it2
+        void propagate2(iterator itSrc, iterator itVia, std::pair<double, double> rel) {
+          for ( auto itDst=itVia->second.begin(); itDst!=itVia->second.end(); ++itDst ) {
+          // Transform x1=A1x2+B1, x2=A2x3+B2 into x1=A1A2x3+A1B2+B1
+            if ( itDst->first == itSrc->first )
+              continue;
+            const double A1A2 = rel.first * itDst->second.first;
+            const double A1B2plusB1 = rel.first*itDst->second.second + rel.second;
+            bool fDive=true;
+            if ( itSrc != itVia ) {
+              PVarDecl vd[2] = { itSrc->first, itDst->first };
+              if ( not checkExistingArc(vd, A1A2, A1B2plusB1, false) ) {
+                itSrc->second[vd[1]] = std::make_pair(A1A2, A1B2plusB1);
+                std::cerr << "   PROPAGATING: "
+                  << vd[0]->id()->str() << " = "
+                  << A1A2 << " * " << vd[1]->id()->str()
+                  << " + " << A1B2plusB1 << std::endl;
+              } else
+                fDive = false;
+            }
+            if ( fDive ) {
+              auto itDST = this->find(itDst->first);
+              assert( this->end() != itDST );
+              propagate2(itSrc, itDST, std::make_pair(A1A2, A1B2plusB1));
+            }
+          }
+        }        
+      };
+      LinEqGraph leg;
+      
+      TCliqueSorter(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv)  { }
+      void doRelate() {
+        assert( mipd.vVarDescr[iVarStart].nClique >= 0 );
+        const TClique& clq = mipd.aCliques[ mipd.vVarDescr[iVarStart].nClique ];
+        for ( auto eq2 : clq ) {
+          leg.addEdge(eq2);
+        }
+        std::cerr << " Clique " << mipd.vVarDescr[iVarStart].nClique
+          << ": " << leg.size() << " variables, "
+          << clq.size() << " connections." << std::endl;
+        for ( auto it1=leg.begin(); it1!=leg.end(); ++it1 )
+          mipd.vVarDescr[ it1->first->payload() ].fDomainConstrProcessed = true;
+        
+        // Propagate the 1st var's relations:
+        leg.propagate(leg.begin());
+      }
+    };  // class TCliqueSorter
+    
+    /// Build a domain decomposition for a clique
+    /// a clique can consist of just 1 var without a clique object
+    class DomainDecomp {
+    public:
+      MIPD& mipd;
+      const int iVarStart;
+      TCliqueSorter cls;
+      
+      DomainDecomp(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv), cls(pm, iv)  { }
+      void doProcess() {
+        if ( mipd.vVarDescr[iVarStart].nClique >= 0 ) {
+          cls.doRelate();
+        }
+      }
+    };  // class DomainDecomp
+    
     /// Vars without explicit clique still need a decomposition.
-    /// Notice all __POSTs, set_in's and eq_encode's to it
+    /// Have noticed all __POSTs, set_in's and eq_encode's to it BEFORE
     /// In each clique, relate all vars to one chosen
     /// Find all "smallest rel. factor" variables, integer if any
     /// Among them, prefer a one with eq_encode
-    /// Relate all vars to it
+    /// Re-relate all vars to it
     /// Refer all __POSTs and dom() to it
     /// build domain decomposition
-    /// Implement all domain constraints, incl. possible transfers of eq_encode's
+    /// Implement all domain constraints, incl. possible corresp, of eq_encode's
     bool decomposeDomains() {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -482,7 +645,16 @@ namespace MiniZinc {
 //         TClique& clq = aCliques[iClq];
 //       }
       for ( int iVar=0; iVar<vVarDescr.size(); ++iVar ) {
-        VarDescr& var = vVarDescr[iVar];
+//         VarDescr& var = vVarDescr[iVar];
+        if ( not vVarDescr[iVar].fDomainConstrProcessed ) {
+          try {
+            DomainDecomp dd(this, iVar);
+            dd.doProcess();
+            vVarDescr[iVar].fDomainConstrProcessed = true;
+          } catch ( ... ) {  // a contradiction
+            return false;
+          }
+        }
       }
       return true;
     }
@@ -498,9 +670,10 @@ namespace MiniZinc {
       return vd;
     }
       
-    void expr2DeclArray(Expression* arg, std::vector<VarDecl*>& aVD) {
+    template <class Array>
+    void expr2DeclArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      aVD.resize(al->v().size());
+      checkOrResize( aVD, al->v().size() );
       for (unsigned int i=0; i<al->v().size(); i++)
         aVD[i] = expr2VarDecl(al->v()[i]);
     }
@@ -519,9 +692,24 @@ namespace MiniZinc {
       return 0.0;
     }
     
-    void expr2Array(Expression* arg, std::vector<double>& vals) {
+    template <class Container, class Elem, size_t >
+    void checkOrResize(Container& cnt, size_t sz) {
+      cnt.resize(sz);
+    }
+    
+    template <class Elem, size_t N>
+    void checkOrResize(std::array<Elem, N>& cnt, size_t sz) {
+      assert( cnt.size() == sz );
+    }
+    
+    template <class Array>
+    void expr2Array(Expression* arg, Array& vals) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      vals.resize(al->v().size());
+//       if ( typeid(typename Array::pointer) == typeid(typename Array::iterator) )  // fixed array
+//         assert( vals.size() == al->v().size() );
+//       else
+//         vals.resize( al->v().size() );
+      checkOrResize(vals, al->v().size());
       for (unsigned int i=0; i<al->v().size(); i++) {
         vals[i] = expr2Const(al->v()[i]);
       }
