@@ -500,7 +500,7 @@ namespace MiniZinc {
       MIPD& mipd;
       const int iVarStart;
     public:
-      VarDecl* varRef0=0;  // this is the first var to which all others are related
+//       VarDecl* varRef0=0;  // this is the first var to which all others are related
       VarDecl* varRef1=0;  // this is the chosen main reference.
         // it is a var with eq_encode, or
         // an (integer if any) variable with the least rel. factor
@@ -559,13 +559,19 @@ namespace MiniZinc {
           return false;
         }
         /// Propagate linear relations from the given variable
-        void propagate(iterator itStart) {
+        void propagate(iterator itStart, TMapVars& mWhereStore) {
+          assert( this->end()!=itStart );
+          TMatrixVars mTemp;
+          mTemp[itStart->first] = itStart->second;       // init with existing
           std::cerr << "Propagation started from "
             << itStart->first->id()->str() << std::endl;
-          propagate2(itStart, itStart, std::make_pair(1.0, 0.0));
+          propagate2(itStart, itStart, std::make_pair(1.0, 0.0), mTemp);
+          mWhereStore = mTemp.begin()->second;
+          assert( mWhereStore.size() == this->size()-1 );     // connectedness
         }
         /// Propagate linear relations from it1 via it2
-        void propagate2(iterator itSrc, iterator itVia, std::pair<double, double> rel) {
+        void propagate2(iterator itSrc, iterator itVia,
+                        std::pair<double, double> rel, TMatrixVars& mWhereStore) {
           for ( auto itDst=itVia->second.begin(); itDst!=itVia->second.end(); ++itDst ) {
           // Transform x1=A1x2+B1, x2=A2x3+B2 into x1=A1A2x3+A1B2+B1
             if ( itDst->first == itSrc->first )
@@ -576,7 +582,7 @@ namespace MiniZinc {
             if ( itSrc != itVia ) {
               PVarDecl vd[2] = { itSrc->first, itDst->first };
               if ( not checkExistingArc(vd, A1A2, A1B2plusB1, false) ) {
-                itSrc->second[vd[1]] = std::make_pair(A1A2, A1B2plusB1);
+                mWhereStore[vd[0]][vd[1]] = std::make_pair(A1A2, A1B2plusB1);
                 std::cerr << "   PROPAGATING: "
                   << vd[0]->id()->str() << " = "
                   << A1A2 << " * " << vd[1]->id()->str()
@@ -587,7 +593,7 @@ namespace MiniZinc {
             if ( fDive ) {
               auto itDST = this->find(itDst->first);
               assert( this->end() != itDST );
-              propagate2(itSrc, itDST, std::make_pair(A1A2, A1B2plusB1));
+              propagate2(itSrc, itDST, std::make_pair(A1A2, A1B2plusB1), mWhereStore);
             }
           }
         }        
@@ -608,7 +614,23 @@ namespace MiniZinc {
           mipd.vVarDescr[ it1->first->payload() ].fDomainConstrProcessed = true;
         
         // Propagate the 1st var's relations:
-        leg.propagate(leg.begin());
+        leg.propagate(leg.begin(), mRef0);
+        
+        // Find a best main variable according to:
+        // 1. isInt 2. hasEqEncode 3. linFactor to ref0
+        varRef1 = leg.begin()->first;
+        std::array<double, 3> aCrit = { { (double)mipd.vVarDescr[varRef1->payload()].fInt,
+          (double)mipd.vVarDescr[varRef1->payload()].fHasEqEncode, 1.0 } };
+        for ( auto it2=mRef0.begin(); it2!=mRef0.end(); ++it2 ) {
+          VarDescr& vard = mipd.vVarDescr[ it2->first->payload() ];
+          std::array<double, 3> aCrit1 =
+            { { (double)vard.fInt, (double)vard.fHasEqEncode, std::fabs(it2->second.first) } };
+          if ( aCrit1 > aCrit ) {
+            varRef1 = it2->first;
+            aCrit = aCrit1;
+          }
+        }
+        leg.propagate(leg.find(varRef1), mRef1);
       }
     };  // class TCliqueSorter
     
@@ -622,8 +644,23 @@ namespace MiniZinc {
       
       DomainDecomp(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv), cls(pm, iv)  { }
       void doProcess() {
+        // Choose the main variable and relate all others to it
         if ( mipd.vVarDescr[iVarStart].nClique >= 0 ) {
           cls.doRelate();
+        } else
+          cls.varRef1 = mipd.vVarDescr[ iVarStart ].vd;
+        
+        int iVarRef1 = cls.varRef1->payload();
+        cls.fRef1HasEqEncode = mipd.vVarDescr[ iVarRef1 ].fHasEqEncode;
+        
+        // First, construct the domain decomposition in any case
+        
+        
+        // Then, use equality_encoding if available
+        if ( cls.fRef1HasEqEncode ) {
+          
+        } else {  // not cls.fRef1HasEqEncode
+          
         }
       }
     };  // class DomainDecomp
@@ -631,12 +668,13 @@ namespace MiniZinc {
     /// Vars without explicit clique still need a decomposition.
     /// Have noticed all __POSTs, set_in's and eq_encode's to it BEFORE
     /// In each clique, relate all vars to one chosen
-    /// Find all "smallest rel. factor" variables, integer if any
-    /// Among them, prefer a one with eq_encode
+    /// Find all "smallest rel. factor" variables, integer and with eq_encode if avail
     /// Re-relate all vars to it
     /// Refer all __POSTs and dom() to it
     /// build domain decomposition
     /// Implement all domain constraints, incl. possible corresp, of eq_encode's
+    /// Not impose effects of integrality scaling (e.g., int v = int k/3)
+    /// BUT when using k's eq_encode?
     bool decomposeDomains() {
       EnvI& env = getEnv()->envi();
       GCLock lock;
