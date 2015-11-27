@@ -34,6 +34,17 @@
 /// In case of only_range_domains we'd need to register inequalities
 ///   - so better turn that off TODO
 
+#define __MZN__DBGOUT__MIPDOMAINS__
+#ifdef __MZN__DBGOUT__MIPDOMAINS__
+  #define DBGOUT_MIPD(s) std::cerr << s << std::endl
+  #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
+  #define DBGOUT_MIPD_SELF(op) op
+#else
+  #define DBGOUT_MIPD(s) do { } while ( false )
+  #define DBGOUT_MIPD__(s) do { } while ( false )
+  #define DBGOUT_MIPD_SELF(op)  do { } while ( false )
+#endif
+
 namespace MiniZinc {
   class MIPD {  
   public:
@@ -73,7 +84,7 @@ namespace MiniZinc {
       GCLock lock;
       
       int_lin_eq = env.orig->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t);
-      std::cerr << "  int_lin_eq = " << int_lin_eq << std::endl;
+      DBGOUT_MIPD ( "  int_lin_eq = " << int_lin_eq );
 //       assert(fi);
 //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
       int_lin_le = env.orig->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t);
@@ -204,7 +215,7 @@ namespace MiniZinc {
   //         std::cerr << "  FOund declaration: " << aCT[i].sFuncName << std::endl;
         } else {
           aCT[i].pfi = 0;
-          std::cerr << "  MIssing declaration: " << aCT[i].sFuncName << std::endl;
+          DBGOUT_MIPD ( "  MIssing declaration: " << aCT[i].sFuncName );
         }
       }
     }
@@ -228,8 +239,8 @@ namespace MiniZinc {
                 != mCallTypes.end() ) {
             assert( c->args().size() > 1 );
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
-            std::cerr << "  Call " << c->id().str()
-              << " uses variable " << vd0->id()->str();
+            DBGOUT_MIPD__ ( "  Call " << c->id().str()
+              << " uses variable " << vd0->id()->str() );
             if ( vd0->payload() == -1 ) {         // not yet visited
               vd0->payload( vVarDescr.size() );
               vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
@@ -237,14 +248,14 @@ namespace MiniZinc {
               if (vd0->e())
                 checkInitExpr(vd0);
             } else {
-              std::cerr << " (already touched)";
+              DBGOUT_MIPD__ ( " (already touched)" );
             }
+            DBGOUT_MIPD ( "" );
             vVarDescr[ vd0->payload() ].aCalls.push_back(c);
             if ( equality_encoding__POST == c->decl() ) {
               vVarDescr[ vd0->payload() ].fHasEqEncode = true;
-              std::cerr << " Variable " << vd0->id()->str() << " has eq_encode." << std::endl;
+              DBGOUT_MIPD ( " Variable " << vd0->id()->str() << " has eq_encode." );
             }   // + if has aux_ constraints?
-            std::cerr << std::endl;
           }
         }
       }
@@ -278,7 +289,7 @@ namespace MiniZinc {
 //         const int f2 = ( id->decl()->payload()>=0 );
         assert( not id->decl()->e() );      // no initexpr for initexpr
         if ( not fCheckArg or ( id->decl()->payload()>=0 ) ) {
-          std::cerr << "  Checking init expr  ";
+          DBGOUT_MIPD__ ( "  Checking init expr  " );
           debugprint(vd);
           LinEq2Vars led;
           // FAILS:
@@ -308,8 +319,8 @@ namespace MiniZinc {
 //               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
 //                 continue;
 //               sCallLinEq2.insert(c);     // memorize this call
-              std::cerr << "  REG call " << std::flush;
-              debugprint(vd);
+              DBGOUT_MIPD__ ( "  REG call " );
+              DBGOUT_MIPD_SELF ( debugprint(vd) );
               std::array<double, 1> coef0;
               expr2Array(c->args()[0], coef0);
               led.coefs = { -1.0, coef0[0] };
@@ -350,7 +361,7 @@ namespace MiniZinc {
       // Iterate thru original 2-variable equalities to mark views:
       Model& mFlat = *getEnv()->flat();
       
-      std::cerr << "  Check all initexpr if they access a touched variable:" << std::endl;
+      DBGOUT_MIPD ( "  CHECK ALL INITEXPR if they access a touched variable:" );
       for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
         if ( ivd->removed() )
           continue;
@@ -360,7 +371,7 @@ namespace MiniZinc {
             fChanges = true;
       }
         
-      std::cerr << "  Check all constraints for 2-var equations:" << std::endl;
+      DBGOUT_MIPD ( "  CHECK ALL CONSTRAINTS for 2-var equations:" );
       for( ConstraintIterator ic=mFlat.begin_constraints();
               ic != mFlat.end_constraints(); ++ic ) {
 //         std::cerr << "  SEE constraint: " << "      ";
@@ -384,8 +395,8 @@ namespace MiniZinc {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
                   continue;
                 sCallLinEq2.insert(c);     // memorize this call
-                std::cerr << "  REG call " << std::flush;
-                debugprint(c);
+                DBGOUT_MIPD ( "  REG call " );
+                DBGOUT_MIPD_SELF ( debugprint(c) );
                 led.rhs = expr2Const(c->args()[2]);
                 expr2Array(c->args()[0], led.coefs);
                 assert( 2 == led.coefs.size() );
@@ -409,8 +420,8 @@ namespace MiniZinc {
               if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
                 continue;
               sCallInt2Float.insert(c);     // memorize this call
-              std::cerr << "  REG call " << std::flush;
-              debugprint(c);
+              DBGOUT_MIPD ( "  REG call " );
+              DBGOUT_MIPD_SELF ( debugprint(c) );
               led.rhs = 0.0;
               led.coefs = { 1.0, -1.0 };
               fChanges = true;
@@ -447,13 +458,13 @@ namespace MiniZinc {
     void put2VarsConnection( LinEq2Vars& led, bool fCheckinitExpr=true ) {
       assert( led.coefs.size() == led.vd.size() );
       assert( led.vd.size() == 2 );
-      std::cerr << "  Register 2-var connection: ( [";
+      DBGOUT_MIPD__ ( "  Register 2-var connection: ( [" );
       for (auto c : led.coefs)
-        std::cerr << c << ' ';
-      std::cerr << " ] * [ ";
+        DBGOUT_MIPD__ ( c << ' ' );
+      DBGOUT_MIPD__ ( " ] * [ " );
       for (auto v : led.vd)
-        std::cerr << v->id()->str() << ' ';
-      std::cerr << " ] ) == " << led.rhs << std::endl;
+        DBGOUT_MIPD__ ( v->id()->str() << ' ' );
+      DBGOUT_MIPD ( " ] ) == " << led.rhs );
       // register if new variables
 //       std::vector<bool> fHaveClq(led.vd.size(), false);
       int nCliqueAvailable=-1;
@@ -489,7 +500,7 @@ namespace MiniZinc {
           }
           clqNew.insert(clqNew.end(), clqOld.begin(), clqOld.end());
           clqOld.clear();                // Can use C++11 move      TODO
-          std::cerr << "    +++ Joining cliques" << std::endl;
+          DBGOUT_MIPD ( "    +++ Joining cliques" );
         }          
         nMaybeClq = nCliqueAvailable;  // Could mark as 'unused'  TODO
       }
@@ -545,14 +556,14 @@ namespace MiniZinc {
               assert( std::fabs( it2->second.second - B )
                 < 1e-6 * std::max( std::fabs(it2->second.second), std::fabs(B) ) + 1e-6 );
               if ( std::fabs( A ) < 1e-12  )
-                std::cerr << " Very small coef: "
+                DBGOUT_MIPD ( " Very small coef: "
                   << (*begV)->id()->str() << " = "
                   << A << " * " << (*(begV+1))->id()->str()
-                  << " + " << B << std::endl;
+                  << " + " << B );
               if ( fReportRepeat )
-                std::cerr << "LinEqGraph: eqn between "
+                DBGOUT_MIPD ( "LinEqGraph: eqn between "
                   << (*begV)->id()->str() << " and " << (*(begV+1))->id()->str()
-                  << " is repeated. " << std::endl;
+                  << " is repeated. " );
               return true;
             }
           }
@@ -563,8 +574,8 @@ namespace MiniZinc {
           assert( this->end()!=itStart );
           TMatrixVars mTemp;
           mTemp[itStart->first] = itStart->second;       // init with existing
-          std::cerr << "Propagation started from "
-            << itStart->first->id()->str() << std::endl;
+          DBGOUT_MIPD ( "Propagation started from "
+            << itStart->first->id()->str() );
           propagate2(itStart, itStart, std::make_pair(1.0, 0.0), mTemp);
           mWhereStore = mTemp.begin()->second;
           assert( mWhereStore.size() == this->size()-1 );     // connectedness
@@ -583,10 +594,10 @@ namespace MiniZinc {
               PVarDecl vd[2] = { itSrc->first, itDst->first };
               if ( not checkExistingArc(vd, A1A2, A1B2plusB1, false) ) {
                 mWhereStore[vd[0]][vd[1]] = std::make_pair(A1A2, A1B2plusB1);
-                std::cerr << "   PROPAGATING: "
+                DBGOUT_MIPD ( "   PROPAGATING: "
                   << vd[0]->id()->str() << " = "
                   << A1A2 << " * " << vd[1]->id()->str()
-                  << " + " << A1B2plusB1 << std::endl;
+                  << " + " << A1B2plusB1 );
               } else
                 fDive = false;
             }
@@ -607,9 +618,9 @@ namespace MiniZinc {
         for ( auto eq2 : clq ) {
           leg.addEdge(eq2);
         }
-        std::cerr << " Clique " << mipd.vVarDescr[iVarStart].nClique
+        DBGOUT_MIPD ( " Clique " << mipd.vVarDescr[iVarStart].nClique
           << ": " << leg.size() << " variables, "
-          << clq.size() << " connections." << std::endl;
+          << clq.size() << " connections." );
         for ( auto it1=leg.begin(); it1!=leg.end(); ++it1 )
           mipd.vVarDescr[ it1->first->payload() ].fDomainConstrProcessed = true;
         
