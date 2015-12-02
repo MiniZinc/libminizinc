@@ -224,7 +224,7 @@ predicate float_le_reif(var float: x, float: y, var bool: b) =
   elseif lb(x) > y then
     b == false
   elseif fPostprocessDomains then
-    float_le_reif__POST(x, y, b)
+    float_le_reif__POST(x, y, b, float_lt_EPS_coef__)
   else
     let { var int: p = bool2int(b) }
     in
@@ -242,7 +242,7 @@ predicate float_le_reif(float: x, var float: y, var bool: b) =
   elseif lb(x) > ub(y) then
     b == false
   elseif fPostprocessDomains then
-    float_ge_reif__POST(y, x, b)
+    float_ge_reif__POST(y, x, b, float_lt_EPS_coef__)
   else
     float_le_reif(-y, -x, b)
   endif;
@@ -285,7 +285,7 @@ predicate float_eq_reif(var float: x, var float: y, var bool: b) =
   elseif is_fixed(x) /\ is_fixed(y) then
     b == (fix(x) == fix(y))
   elseif fPostprocessDomains then
-    float_eq_reif__POST(x-y, 0, b)
+    float_eq_reif__POST(x-y, 0, b, float_lt_EPS_coef__)
   else
     aux_float_eq_iff_1(x, y, (bool2int(b)))
   endif;
@@ -388,16 +388,16 @@ predicate int_ne__POST(var int: x, int: y);
 %%%%%%%%%%%%%%%%%% predicate float_le_reif__POST(var float: x, var float: y, var int: b);
 %%%%%%%%%%%%%%%%%% predicate float_le_reif__POST(float: x, var float: y, var int: b);
 %% var, const
-predicate float_le_reif__POST(var float: x, float: y, var int: b);
+predicate float_le_reif__POST(var float: x, float: y, var int: b, float: epsRel);
 %% var, const
-predicate float_ge_reif__POST(var float: x, float: y, var int: b);
+predicate float_ge_reif__POST(var float: x, float: y, var int: b, float: epsRel);
 
 %% var, var
-predicate aux_float_lt_zero_iff_1__POST(var float: x, var int: b, float: eps_coef);
+predicate aux_float_lt_zero_iff_1__POST(var float: x, var int: b, float: epsRel);
 
 %% var, const
-predicate float_eq_reif__POST(var float: x, float: y, var int: b);
+predicate float_eq_reif__POST(var float: x, float: y, var int: b, float: epsRel);
 %% var, const
-predicate float_ne__POST(var float: x, float: y, float: eps_coef);
+predicate float_ne__POST(var float: x, float: y, float: epsRel);
 
 
