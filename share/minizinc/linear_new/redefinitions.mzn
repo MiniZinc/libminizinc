@@ -837,5 +837,5 @@ predicate array_float_maximum__IND(var float: m, array[int] of var float: x);
 predicate array_var_float_element__XBZ_lb__cutgen(array[int] of var float: x, array[int] of var int: b, var float: z);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Necessary for MIP: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mzn_opt_only_range_domains = true;
+mzn_opt_only_range_domains = not fPostprocessDomains;
 
