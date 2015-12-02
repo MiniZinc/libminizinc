@@ -42,8 +42,8 @@ namespace MiniZinc {
   
   class Flattener {
   private:
-    auto_ptr<Model> pModel;
-    auto_ptr<Env>   pEnv;
+    unique_ptr<Model> pModel;
+    unique_ptr<Env>   pEnv;
   public:
     Flattener(bool fOutputByDefault=true);
     virtual ~Flattener();

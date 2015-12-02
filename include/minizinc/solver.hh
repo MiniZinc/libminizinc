@@ -50,7 +50,7 @@ namespace MiniZinc {
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
     virtual SolverInstanceBase * doCreateSI(Env&) = 0;
     
-    typedef vector<auto_ptr<SolverInstanceBase> > SIStorage;
+    typedef vector<unique_ptr<SolverInstanceBase> > SIStorage;
     SIStorage sistorage;
 //   public:
     SolverFactory()            { getGlobalSolverRegistry()->addSolverFactory(this); }

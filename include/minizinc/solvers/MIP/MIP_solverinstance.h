@@ -32,7 +32,7 @@ namespace MiniZinc {
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
     protected:
       
-      const auto_ptr<MIP_wrapper> mip_wrap;
+      const unique_ptr<MIP_wrapper> mip_wrap;
       
       std::vector<VarDecl*> _varsWithOutput;
       UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
