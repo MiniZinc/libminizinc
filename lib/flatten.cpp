@@ -1726,9 +1726,12 @@ namespace MiniZinc {
     
     // Compute bounds of result as union bounds of all branches
     IntBounds r_bounds(IntVal::infinity(),-IntVal::infinity(),true);
-    if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r->id());
-    }
+    std::vector<IntBounds> r_bounds_int;
+    bool r_bounds_valid_int = true;
+    std::vector<IntSetVal*> r_bounds_set;
+    bool r_bounds_valid_set = true;
+    std::vector<FloatBounds> r_bounds_float;
+    bool r_bounds_valid_float = true;
     
     VarDecl* nr = r;
 
@@ -1847,14 +1850,23 @@ namespace MiniZinc {
         
       }
       // update bounds
-      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
-        IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
-        if (ib_then.valid) {
-          IntVal lb = std::min(r_bounds.l, ib_then.l);
-          IntVal ub = std::max(r_bounds.u, ib_then.u);
-          r_bounds = IntBounds(lb,ub,true);
-        } else {
-          r_bounds = IntBounds(0,0,false);
+      
+      if (cond) {
+        if (r_bounds_valid_int && ite->e_then(i)->type().isint()) {
+          IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
+          if (ib_then.valid)
+            r_bounds_int.push_back(ib_then);
+          r_bounds_valid_int = r_bounds_valid_int && ib_then.valid;
+        } else if (r_bounds_valid_set && ite->e_then(i)->type().isintset()) {
+          IntSetVal* isv = compute_intset_bounds(env, ite->e_then(i));
+          if (isv)
+            r_bounds_set.push_back(isv);
+          r_bounds_valid_set = r_bounds_valid_set && isv;
+        } else if (r_bounds_valid_float && ite->e_then(i)->type().isfloat()) {
+          FloatBounds fb_then = compute_float_bounds(env, ite->e_then(i));
+          if (fb_then.valid)
+            r_bounds_float.push_back(fb_then);
+          r_bounds_valid_float = r_bounds_valid_float && fb_then.valid;
         }
       }
       
@@ -1868,16 +1880,71 @@ namespace MiniZinc {
     }
 
     // update bounds of result with bounds of else branch
-    if (r_bounds.valid && ite->e_else()->type().isint()) {
+    
+    if (r_bounds_valid_int && ite->e_else()->type().isint()) {
       IntBounds ib_else = compute_int_bounds(env,ite->e_else());
       if (ib_else.valid) {
-        IntVal lb = std::min(r_bounds.l, ib_else.l);
-        IntVal ub = std::max(r_bounds.u, ib_else.u);
+        r_bounds_int.push_back(ib_else);
+        IntVal lb = IntVal::infinity();
+        IntVal ub = -IntVal::infinity();
+        for (unsigned int i=0; i<r_bounds_int.size(); i++) {
+          lb = std::min(lb, r_bounds_int[i].l);
+          ub = std::max(ub, r_bounds_int[i].u);
+        }
+        if (r) {
+          IntBounds orig_r_bounds = compute_int_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
         SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
         nr->ti()->domain(r_dom);
       }
+    } else if (r_bounds_valid_set && ite->e_else()->type().isintset()) {
+      IntSetVal* isv_else = compute_intset_bounds(env, ite->e_else());
+      if (isv_else) {
+        IntSetVal* isv = isv_else;
+        for (unsigned int i=0; i<r_bounds_set.size(); i++) {
+          IntSetRanges i0(isv);
+          IntSetRanges i1(r_bounds_set[i]);
+          Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
+          isv = IntSetVal::ai(u);
+        }
+        if (r) {
+          IntSetVal* orig_r_bounds = compute_intset_bounds(env,r->id());
+          if (orig_r_bounds) {
+            IntSetRanges i0(isv);
+            IntSetRanges i1(orig_r_bounds);
+            Ranges::Inter<IntSetRanges, IntSetRanges> inter(i0,i1);
+            isv = IntSetVal::ai(inter);
+          }
+        }
+        SetLit* r_dom = new SetLit(Location().introduce(),isv);
+        nr->ti()->domain(r_dom);
+      }
+    } else if (r_bounds_valid_float && ite->e_else()->type().isfloat()) {
+      FloatBounds fb_else = compute_float_bounds(env, ite->e_else());
+      if (fb_else.valid) {
+        FloatVal lb = fb_else.l;
+        FloatVal ub = fb_else.u;
+        for (unsigned int i=0; i<r_bounds_float.size(); i++) {
+          lb = std::min(lb, r_bounds_float[i].l);
+          ub = std::max(ub, r_bounds_float[i].u);
+        }
+        if (r) {
+          FloatBounds orig_r_bounds = compute_float_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
+        BinOp* r_dom = new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+        r_dom->type(Type::parfloat(1));
+        nr->ti()->domain(r_dom);
+      }
     }
-
+    
     // flatten else branch
     EE eelse = flat_exp(env, cmix, ite->e_else(), NULL, NULL);
     
