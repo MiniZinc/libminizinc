@@ -220,8 +220,10 @@ namespace MiniZinc {
                           std::vector<int>& vardeclQueue);
   
   void pushVarDecl(EnvI& env, VarDeclI* vdi, int vd_idx, std::vector<int>& q) {
-    if (!vdi->removed() && !vdi->flag())
+    if (!vdi->removed() && !vdi->flag()) {
+      vdi->flag(true);
       q.push_back(vd_idx);
+    }
   }
   void pushVarDecl(EnvI& env, int vd_idx, std::vector<int>& q) {
     pushVarDecl(env, (*env.flat())[vd_idx]->cast<VarDeclI>(), vd_idx, q);
