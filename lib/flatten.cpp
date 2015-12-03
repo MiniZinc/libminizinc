@@ -4507,7 +4507,7 @@ namespace MiniZinc {
           {
             GCLock lock;
             std::vector<Expression*> e_args = toExpVec(args);
-            Call* cr_c = new Call(Location().introduce(),cid,e_args);
+            Call* cr_c = new Call(c->loc().introduce(),cid,e_args);
             decl = env.orig->matchFn(env,cr_c);
             if (decl==NULL)
               throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
@@ -6230,6 +6230,10 @@ namespace MiniZinc {
                 args.push_back(vd->id());
                 Call * nc = new Call(c->loc().introduce(),cid,args);
                 nc->type(c->type());
+                nc->decl(env.orig->matchFn(env, nc));
+                if (nc->decl()==NULL) {
+                  throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+                }
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
