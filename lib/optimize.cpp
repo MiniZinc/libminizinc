@@ -784,6 +784,7 @@ namespace MiniZinc {
     }
     void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
       for (unsigned int i=0; i<removed.size(); i++) {
+        removed[i]->ann().remove(constants().ann.is_defined_var);
         if (env.vo.remove(removed[i], item) == 0) {
           if ( (removed[i]->e()==NULL || removed[i]->ti()->domain()==NULL || removed[i]->ti()->computedDomain())
                && !isOutput(removed[i]) ) {
