@@ -2779,12 +2779,12 @@ namespace MiniZinc {
       ret.r = bind(env,ctx,r,eval_par(env,e));
       return ret;
     }
-    CallStackItem _csi(env,e);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,Ctx(),r,e);
@@ -2792,6 +2792,7 @@ namespace MiniZinc {
       }
     case Expression::E_SETLIT:
       {
+        CallStackItem _csi(env,e);
         SetLit* sl = e->cast<SetLit>();
         assert(sl->isv()==NULL);
         std::vector<EE> elems_ee(sl->v().size());
@@ -2831,6 +2832,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BOOLLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,ctx,r,e);
@@ -2839,6 +2841,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
+        CallStackItem _csi(env,e);
         Id* id = e->cast<Id>();
         if (id->decl()==NULL) {
           if (id->type().isann()) {
@@ -3003,6 +3006,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ANON:
       {
+        CallStackItem _csi(env,e);
         AnonVar* av = e->cast<AnonVar>();
         if (av->type().isbot()) {
           throw InternalError("type of anonymous variable could not be inferred");
@@ -3015,6 +3019,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYLIT:
       {
+        CallStackItem _csi(env,e);
         ArrayLit* al = e->cast<ArrayLit>();
         if (al->flat()) {
           ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -3044,6 +3049,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYACCESS:
       {
+        CallStackItem _csi(env,e);
         ArrayAccess* aa = e->cast<ArrayAccess>();
         KeepAlive aa_ka = aa;
 
@@ -3308,6 +3314,7 @@ namespace MiniZinc {
       break;
     case Expression::E_COMP:
       {
+        CallStackItem _csi(env,e);
         Comprehension* c = e->cast<Comprehension>();
         KeepAlive c_ka(c);
         
@@ -3471,12 +3478,14 @@ namespace MiniZinc {
       break;
     case Expression::E_ITE:
       {
+        CallStackItem _csi(env,e);
         ITE* ite = e->cast<ITE>();
         ret = flat_ite(env,ctx,ite,r,b);
       }
       break;
     case Expression::E_BINOP:
       {
+        CallStackItem _csi(env,e);
         BinOp* bo = e->cast<BinOp>();
         if (isReverseMap(bo)) {
           CallArgItem cai(env);
@@ -4232,6 +4241,7 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
+        CallStackItem _csi(env,e);
         UnOp* uo = e->cast<UnOp>();
         switch (uo->op()) {
         case UOT_NOT:
@@ -4278,10 +4288,21 @@ namespace MiniZinc {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
         }
-
+        
+        if (decl->params().size()==1) {
+          if (Call* call_body = Expression::dyn_cast<Call>(decl->e())) {
+            if (call_body->args().size()==1 && Expression::equal(call_body->args()[0],decl->params()[0]->id())) {
+              c->id(call_body->id());
+              c->decl(call_body->decl());
+            }
+          }
+        }
+        
         Ctx nctx = ctx;
         nctx.neg = false;
         ASTString cid = c->id();
+        CallStackItem _csi(env,e);
+
         if (decl->e()==NULL) {
           if (cid == constants().ids.forall) {
             nctx.b = +nctx.b;
@@ -4730,6 +4751,7 @@ namespace MiniZinc {
       break;
     case Expression::E_VARDECL:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         if (ctx.b != C_ROOT)
           throw FlatteningError(env,e->loc(), "not in root context");
@@ -4771,6 +4793,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
+        CallStackItem _csi(env,e);
         Let* let = e->cast<Let>();
         GC::mark();
         std::vector<EE> cs;
