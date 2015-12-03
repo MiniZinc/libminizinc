@@ -24,8 +24,8 @@ namespace MiniZinc {
   
   enum EnumReifType { RIT_None, RIT_Static, RIT_Reif, RIT_Halfreif1, RIT_Halfreif0 };
   enum EnumConstrType { CT_None, CT_Comparison, CT_SetIn, CT_Encode };
-  enum EnumCmpType { CMPT_None, CMPT_LE, CMPT_GE, CMPT_EQ, CMPT_NE, CMPT_LT,
-                        CMPT_LE_0, CMPT_EQ_0, CMPT_LT_0 };
+  enum EnumCmpType { CMPT_None=0, CMPT_LE=-4, CMPT_GE=4, CMPT_EQ=1, CMPT_NE=3, CMPT_LT=-5, CMPT_GT=5,
+                        CMPT_LE_0=-6, CMPT_GE_0=6, CMPT_EQ_0=2, CMPT_LT_0=-7, CMPT_GT_0=7 };
   enum EnumVarType { VT_None, VT_Int, VT_Float };
 
   /// struct DomainCallType describes & characterizes a possible domain constr call
@@ -60,7 +60,10 @@ namespace MiniZinc {
       std::numeric_limits<N>::max();
     }
     N left = infMinus(), right = infPlus();
-    Interval(N a=infMinus(), N b=infPlus()) : left(a), right(b) { }
+    Interval(N a=infMinus(), N b=infPlus()) : left(a), right(b) {
+      if ( left > right )
+        throw std::string("Interval: lb>ub");
+    }
     bool operator<( const Interval& intv ) const {
       if ( left < intv.left ) {
 //         assert( right <= intv.left );              // assume disjoint
@@ -95,6 +98,9 @@ namespace MiniZinc {
     void cutOut(const Interval<N>& intv);
     typedef std::pair<iterator, iterator> SplitResult;
     SplitResult split(iterator& it, N pos);
+    bool checkFiniteBounds();
+    bool checkDisjunctStrict();
+    Interval<N> getBounds();
   };  // class SetOfIntervals
   typedef SetOfIntervals<double> SetOfIntvReal;
   

@@ -99,10 +99,11 @@ namespace MiniZinc {
 
 //       std::cerr << "  lin_exp_int=" << lin_exp_int << std::endl;
 //       std::cerr << "  lin_exp_float=" << lin_exp_float << std::endl;
+      // For this to work, need to define a function, see mzn_only_range_domains()
 //       {
 //         GCLock lock;
 //         Call* call_EPS_for_LT =
-//           new Call(Location(),"float_lt_EPS_coef__", std::vector<Expression*>());
+//           new Call(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
 //         call_EPS_for_LT->type(Type::parfloat());
 //         call_EPS_for_LT->decl(env.orig->matchFn(getEnv()->envi(), call_EPS_for_LT));
 //         float_lt_EPS_coef__ = eval_float(getEnv()->envi(), call_EPS_for_LT);
@@ -147,7 +148,7 @@ namespace MiniZinc {
       int nClique = -1;                 // clique number
       std::vector<Call*> aCalls;
       boolShort fInt=0;
-      boolShort fHasEqEncode=0;
+      Call* pEqEncoding=0;
       boolShort fDomainConstrProcessed=0;
 //       boolShort fPropagatedViews=0;
 //       boolShort fPropagatedLargerEqns=0;
@@ -239,11 +240,13 @@ namespace MiniZinc {
               DBGOUT_MIPD__ ( " (already touched)" );
             }
             DBGOUT_MIPD ( "" );
-            vVarDescr[ vd0->payload() ].aCalls.push_back(c);
             if ( equality_encoding__POST == c->decl() ) {
-              vVarDescr[ vd0->payload() ].fHasEqEncode = true;
+              assert( not vVarDescr[ vd0->payload() ].pEqEncoding );
+              vVarDescr[ vd0->payload() ].pEqEncoding = c;
               DBGOUT_MIPD ( " Variable " << vd0->id()->str() << " has eq_encode." );
             }   // + if has aux_ constraints?
+            else
+              vVarDescr[ vd0->payload() ].aCalls.push_back(c);
           }
         }
       }
@@ -624,11 +627,11 @@ namespace MiniZinc {
         // 1. isInt 2. hasEqEncode 3. abs linFactor to ref0
         varRef1 = leg.begin()->first;
         std::array<double, 3> aCrit = { { (double)mipd.vVarDescr[varRef1->payload()].fInt,
-          (double)mipd.vVarDescr[varRef1->payload()].fHasEqEncode, 1.0 } };
+          (double)(bool)mipd.vVarDescr[varRef1->payload()].pEqEncoding, 1.0 } };
         for ( auto it2=mRef0.begin(); it2!=mRef0.end(); ++it2 ) {
           VarDescr& vard = mipd.vVarDescr[ it2->first->payload() ];
           std::array<double, 3> aCrit1 =
-            { { (double)vard.fInt, (double)vard.fHasEqEncode, std::fabs(it2->second.first) } };
+            { { (double)vard.fInt, (double)(bool)vard.pEqEncoding, std::fabs(it2->second.first) } };
           if ( aCrit1 > aCrit ) {
             varRef1 = it2->first;
             aCrit = aCrit1;
@@ -655,17 +658,18 @@ namespace MiniZinc {
           cls.doRelate();
         } else
           cls.varRef1 = mipd.vVarDescr[ iVarStart ].vd;
+        // Adding itself:
+        cls.mRef1[ cls.varRef1 ] = std::make_pair( 1.0, 0.0 );
         
         int iVarRef1 = cls.varRef1->payload();
         assert ( nClique ==  mipd.vVarDescr[iVarRef1].nClique );
-        cls.fRef1HasEqEncode = mipd.vVarDescr[ iVarRef1 ].fHasEqEncode;
+        cls.fRef1HasEqEncode = mipd.vVarDescr[ iVarRef1 ].pEqEncoding;
         
         // First, construct the domain decomposition in any case
-        projectVariableConstr( cls.varRef1, std::make_pair(1.0, 0.0) );
-        if ( nClique >= 0 ) {
-          for ( auto& iRef1 : cls.mRef1 ) {
-            projectVariableConstr( iRef1.first, iRef1.second );
-          }
+//         projectVariableConstr( cls.varRef1, std::make_pair(1.0, 0.0) );
+//         if ( nClique >= 0 ) {
+        for ( auto& iRef1 : cls.mRef1 ) {
+          projectVariableConstr( iRef1.first, iRef1.second );
         }
         
         DBGOUT_MIPD( "Clique " << nClique
@@ -680,19 +684,27 @@ namespace MiniZinc {
           throw oss.str();
         }
         
+        assert( sDomain.checkFiniteBounds() );
+        assert( sDomain.checkDisjunctStrict() );
+        
+        makeRangeDomains();
+        
         // Then, use equality_encoding if available
         if ( cls.fRef1HasEqEncode ) {
-          
+          syncWithEqEncoding();
+          syncOtherEqEncodings();          
         } else {  // not cls.fRef1HasEqEncode
-          
+          createDomainFlags();
         }
-        
-        // Check there are no useless interval splittings?   TODO
+        implement__POSTs();
       }
       
       /// Project the domain-related constraints of a variable into the clique
       /// Deltas should be scaled but to a minimum of the target's discr
+      /// COmparison sense changes on negated vars
       void projectVariableConstr( VarDecl* vd, std::pair<double, double> eq1 ) {
+        DBGOUT_MIPD__( "  MIPD: projecting variable  " );
+        DBGOUT_MIPD_SELF( debugprint(vd) );
         // Always check if domain becomes empty.
         const double A = eq1.first;                     // vd = A*arg + B.  conversion
         const double B = eq1.second;
@@ -704,25 +716,40 @@ namespace MiniZinc {
             IntSetRanges domr(dom);
             SetOfIntvReal sD1;
             for (; domr(); ++domr) {
+              IntVal mmin = domr.min();
+              IntVal mmax = domr.max();
+              if ( A < 0.0 )
+                std:: swap( mmin, mmax );
               sD1.insert( IntvReal(                   // * A + B
-                domr.min().isFinite() ? (domr.min().toInt() * A + B) : IntvReal::infMinus(),
-                domr.max().isFinite() ? (domr.max().toInt() * A + B) : IntvReal::infPlus() )
+                mmin.isFinite() ?
+                  rndUpIfInt( cls.varRef1, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
+                mmax.isFinite() ?
+                  rndDownIfInt( cls.varRef1, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
               );
             }
             sDomain.intersect(sD1);
-            DBGOUT_MIPD( " Clique domain after proj of the domain of "
+            DBGOUT_MIPD( " Clique domain after proj of the init. domain "
+              << sD1 << " of "
               << A << " * " << vd->id()->str() << " + " << B
               << ":  " << sDomain );
-            lb = A * dom->min(0).toInt() + B;
-            ub = A * dom->max( dom->size()-1 ).toInt() + B;
+            auto bnds = sD1.getBounds();
+            lb = bnds.left;
+            ub = bnds.right;
           }
-          else if ( vd->ti()->domain() && vd->type().isfloat() ) {  // FLOAT VAR
+          else if ( vd->type().isfloat() ) {  // FLOAT VAR
             BinOp* bo = vd->ti()->domain()->cast<BinOp>();
-            FloatVal vmin = eval_float(mipd.getEnv()->envi(), bo->lhs());
-            FloatVal vmax = eval_float(mipd.getEnv()->envi(), bo->rhs());
-            sDomain.intersect( SetOfIntvReal({ { vmin*A + B, vmax*A + B } }) );               // *A + B
-            lb = A * vmin + B;
-            ub = A * vmax + B;
+            FloatVal vmin0 = eval_float(mipd.getEnv()->envi(), bo->lhs());
+            FloatVal vmax0 = eval_float(mipd.getEnv()->envi(), bo->rhs());
+            if ( A < 0.0 )
+              std::swap( vmin0, vmax0 );
+            lb = rndUpIfInt( cls.varRef1, A * vmin0 + B );
+            ub = rndDownIfInt( cls.varRef1, A * vmax0 + B );
+            SetOfIntvReal intv = { IntvReal( lb, ub ) };
+            sDomain.intersect( intv );               // *A + B
+            DBGOUT_MIPD( " Clique domain after proj of the init. domain "
+              << intv << " of "
+              << A << " * " << vd->id()->str() << " + " << B
+              << ":  " << sDomain );
           } else {
             std::ostringstream oss;
             oss << "Variable " << vd->id()->str()
@@ -730,16 +757,14 @@ namespace MiniZinc {
               << " has a domain.";
             throw oss.str();
           }          
-          /// Deleting var domain:
-          vd->ti()->domain( NULL );
+//           /// Deleting var domain:
+//           vd->ti()->domain( NULL );
         }
         else {
           if ( NULL==vd->ti()->domain() && not vd->type().isbool() ) {
             lb = IntvReal::infMinus();
             ub = IntvReal::infPlus();
           }
-          std::cerr << "  MIPdomains: var " << vd->id()->str()
-            << ":  type = " << vd->type().toString() << std::endl;
         }
         // process calls. Can use the constr type info.
         auto& aCalls = mipd.vVarDescr[ vd->payload() ].aCalls;
@@ -748,6 +773,11 @@ namespace MiniZinc {
           auto ipct = mipd.mCallTypes.find( pCall->decl() );
           assert( mipd.mCallTypes.end() != ipct );
           const DCT& dct = *ipct->second;
+          int nCmpType_ADAPTED = dct.nCmpType;
+          if ( A < 0.0 ) {                                       // negative factor
+            if ( std::abs( nCmpType_ADAPTED ) >= 4 )             // inequality
+              nCmpType_ADAPTED = -nCmpType_ADAPTED;
+          }
           switch ( dct.nConstrType ) {
             case CT_SetIn:
             {
@@ -755,15 +785,21 @@ namespace MiniZinc {
               IntSetRanges domr(S);
               SetOfIntvReal SS;
               for (; domr(); ++domr) {                          // * A + B
-                SS.insert( IntvReal(
-                  domr.min().isFinite() ? (domr.min().toInt() * A + B) : IntvReal::infMinus(),
-                  domr.max().isFinite() ? (domr.max().toInt() * A + B) : IntvReal::infPlus() )
+                IntVal mmin = domr.min();
+                IntVal mmax = domr.max();
+                if ( A < 0.0 )
+                  std:: swap( mmin, mmax );
+                SS.insert( IntvReal(                   // * A + B
+                  mmin.isFinite() ?
+                    rndUpIfInt( cls.varRef1, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
+                  mmax.isFinite() ?
+                    rndDownIfInt( cls.varRef1, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
                 );
               }
               if ( RIT_Static == dct.nReifType )
                 sDomain.intersect(SS);
               else
-                sDomain.cutDeltas(SS, A);                       // deltas to scale
+                sDomain.cutDeltas(SS, std::max( 1.0, std::fabs( A ) ) );      // deltas to scale
             }
               break;
             case CT_Comparison:
@@ -772,18 +808,32 @@ namespace MiniZinc {
                   ? B /* + A*0.0, relating to 0 */
                   // The 2nd argument is constant:
                   : A * mipd.expr2Const( pCall->args()[1] ) + B;
-                const double delta = vd->type().isfloat() ? 
+                const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
+                const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
+                const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                /// Strictly, for delta we should finish domain reductions first...   TODO?
+                double delta = vd->type().isfloat() ? 
                   mipd.expr2Const( pCall->args()[3] ) * std::max( std::fabs(lb), std::fabs(ub) )
                   : std::fabs( A ) ;           // delta should be scaled as well
-                switch ( dct.nCmpType ) {
+                if ( cls.varRef1->type().isint() )  // the projected-onto variable
+                  delta = std::max( 1.0, delta );
+                switch ( nCmpType_ADAPTED ) {
                   case CMPT_LE:
-                    sDomain.cutDeltas( { { IntvReal::infMinus(), rhs } }, delta );
+                    sDomain.cutDeltas( { { IntvReal::infMinus(), rhsDown } }, delta );
                     break;
                   case CMPT_GE:
-                    sDomain.cutDeltas( { { rhs, IntvReal::infPlus() } }, delta );
+                    sDomain.cutDeltas( { { rhsUp, IntvReal::infPlus() } }, delta );
+                    break;
+                  case CMPT_LT_0:
+                    sDomain.cutDeltas( { { IntvReal::infMinus(), rhsDown-delta } }, delta );
+                    break;
+                  case CMPT_GT_0:
+                    sDomain.cutDeltas( { { rhsUp+delta, IntvReal::infPlus() } }, delta );
                     break;
                   case CMPT_EQ:
-                    sDomain.cutDeltas( { { rhs, rhs } }, delta );         // leaving rhs inside... CHECK
+                    if ( not ( cls.varRef1->type().isint() &&    // skip if int target var
+                        std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // and fract value
+                      sDomain.cutDeltas( { { rhsRnd, rhsRnd } }, delta );
                     break;
                   default:
                     assert( ( " No other reified cmp type ", 0 ) );
@@ -792,10 +842,17 @@ namespace MiniZinc {
                   // _ne, later maybe static ineq                                 TODO
                 assert( CMPT_NE == dct.nCmpType );
                 const double rhs = A * mipd.expr2Const( pCall->args()[1] ) + B;
-                const double delta = vd->type().isfloat() ? 
-                  mipd.expr2Const( pCall->args()[2] ) * std::max( std::fabs(lb), std::fabs(ub) )
-                  : std::fabs( A ) ;           // delta should be scaled as well
-                sDomain.cutOut( { rhs-delta, rhs+delta } );
+                const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                bool fSkipNE = ( cls.varRef1->type().isint() &&
+                  std::fabs( rhs - rhsRnd ) > 1e-8 );
+                if ( not fSkipNE ) {
+                  double delta = vd->type().isfloat() ? 
+                    mipd.expr2Const( pCall->args()[2] ) * std::max( std::fabs(lb), std::fabs(ub) )
+                    : std::fabs( A ) ;           // delta should be scaled as well
+                  if ( cls.varRef1->type().isint() )  // the projected-onto variable
+                    delta = std::max( 1.0, delta );
+                  sDomain.cutOut( { rhsRnd-delta, rhsRnd+delta } );
+                }
               } else {  // aux_ relate to 0.0
                         // But we don't modify domain splitting for them currently
                 assert ( RIT_Halfreif0==dct.nReifType or RIT_Halfreif1==dct.nReifType );
@@ -814,6 +871,59 @@ namespace MiniZinc {
           << A << " * " << vd->id()->str() << " + " << B
           << ":  " << sDomain );
       }
+      
+      static double rndIfInt( VarDecl* vdTarget, double v ) {
+        return vdTarget->type().isint() ? std::round( v ) : v;
+      }
+      static double rndUpIfInt( VarDecl* vdTarget, double v ) {
+        return vdTarget->type().isint() ? std::ceil( v-1e-8 ) : v;
+      }
+      static double rndDownIfInt( VarDecl* vdTarget, double v ) {
+        return vdTarget->type().isint() ? std::floor( v+1e-8 ) : v;
+      }
+      
+      void makeRangeDomains() {
+        auto bnds = sDomain.getBounds();
+        for ( auto& iRef1 : cls.mRef1 ) {
+          VarDecl* vd = iRef1.first;
+          if ( vd->type().isint() ) {
+            // projecting the bounds back:
+            double lb0 = ( bnds.left - iRef1.second.second ) / iRef1.second.first;
+            double ub0 = ( bnds.right - iRef1.second.second ) / iRef1.second.first;
+            if ( lb0 > ub0 ) {
+              assert( iRef1.second.first < 0.0 );
+              std::swap( lb0, ub0 );
+            }
+            const double lb = rndUpIfInt( vd, lb0 );
+            const double ub = rndDownIfInt( vd, ub0 );
+            SetLit* newDom = new SetLit( Location().introduce(), IntSetVal::a( lb, ub ) );
+            TypeInst* nti = copy(mipd.getEnv()->envi(),vd->ti())->cast<TypeInst>();
+            nti->domain(newDom);
+            vd->ti(nti);
+          }
+        }
+      }
+      
+      /// tightens element bounds in the existing eq_encoding of varRef1
+      /// Can also back-check from there    TODO
+      /// And further checks                TODO
+      void syncWithEqEncoding() {
+      }
+      
+      /// sync varRef1's eq_encoding with those of other variables
+      void syncOtherEqEncodings() {
+        // TODO
+      }
+      
+      /// if not eq_encoding, creates a flag for each subinterval in the domain
+      /// and constrains sum(flags)==1
+      void createDomainFlags() {
+        for ( auto& intv : sDomain ) {
+        }
+      }
+      
+      void implement__POSTs() {
+      }
     };  // class DomainDecomp
     
     /// Vars without explicit clique still need a decomposition.
@@ -824,8 +934,11 @@ namespace MiniZinc {
     /// Refer all __POSTs and dom() to it
     /// build domain decomposition
     /// Implement all domain constraints, incl. possible corresp, of eq_encode's
+    ///
+    /// REMARKS.
     /// Not impose effects of integrality scaling (e.g., int v = int k/3)
     /// BUT when using k's eq_encode?
+    /// And when subdividing into intervals
     bool decomposeDomains() {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -999,13 +1112,43 @@ namespace MiniZinc {
     it = this->end();
     return std::make_pair( it_01, it_02 );
   }
-
+  template <class N>
+  Interval<N> SetOfIntervals<N>::getBounds() {
+    if ( this->empty() )
+      return Interval<N>( Interval<N>::infPlus(), Interval<N>::infMinus() );
+    iterator it2 = this->end();
+    --it2;
+    return Interval<N>( this->begin()->left, it2->right );
+  }
+  template <class N>
+  bool SetOfIntervals<N>::checkFiniteBounds() {
+    if ( this->empty() )
+      return false;
+    auto bnds = getBounds();
+    return bnds.left > Interval<N>::infMinus()
+      && bnds.right < Interval<N>::infPlus();      
+  }
+  /// Check there are no useless interval splittings
+  template <class N>
+  bool SetOfIntervals<N>::checkDisjunctStrict() {
+    for ( auto it=this->begin(); it!=this->end(); ++it ) {
+      if ( it->left > it->right )
+        return false;
+      if ( this->begin() != it ) {
+        auto it_1 = it;
+        --it_1;
+        if ( it_1->right >= it->left )
+          return false;
+      }
+    }
+    return true;
+  }
 
   void MIPdomains(Env& env) {
     MIPD mipd(&env);
     if ( not mipd.MIPdomains() ) {
-      GCLock lock;
-      env.flat()->fail(env.envi());
+//       GCLock lock;
+//       env.flat()->fail(env.envi());
     }
   }
   
