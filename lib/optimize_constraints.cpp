@@ -152,6 +152,10 @@ namespace MiniZinc {
         args[2] = IntLit::a(eval_int(env,c->args()[2])-d);
         Call* nc = new Call(Location(), c->id(), args);
         nc->type(Type::varbool());
+        for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+          nc->addAnnotation(*it);
+        }
+        
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
       }
@@ -198,6 +202,9 @@ namespace MiniZinc {
           args[2] = IntLit::a(d);
           Call* nc = new Call(Location(),c->id(),args);
           nc->type(c->type());
+          for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+            nc->addAnnotation(*it);
+          }
           rewrite = nc;
           return OptimizeRegistry::CS_REWRITE;
         }
