@@ -653,6 +653,7 @@ namespace MiniZinc {
         }
         if (compactedAl.size() < al->v().size()) {
           c->args()[j] = new ArrayLit(al->loc(), compactedAl);
+          c->args()[j]->type(Type::varbool(1));
         }
       }
       if (subsumed) {
