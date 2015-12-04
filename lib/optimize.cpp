@@ -42,17 +42,17 @@ namespace MiniZinc {
   }
   
   void VarOccurrences::add(VarDecl* v, Item* i) {
-    IdMap<Items>::iterator vi = _m.find(v->id());
+    IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     if (vi==_m.end()) {
       Items items; items.insert(i);
-      _m.insert(v->id(), items);
+      _m.insert(v->id()->decl()->id(), items);
     } else {
       vi->second.insert(i);
     }
   }
   
   int VarOccurrences::remove(VarDecl* v, Item* i) {
-    IdMap<Items>::iterator vi = _m.find(v->id());
+    IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     assert(vi!=_m.end());
     vi->second.erase(i);
     return vi->second.size();
@@ -80,6 +80,7 @@ namespace MiniZinc {
       } else {
         vi1->second.insert(vi0->second.begin(), vi0->second.end());
       }
+      _m.remove(v0->id());
     }
     
     id0->redirect(id1);
@@ -93,7 +94,7 @@ namespace MiniZinc {
   }
   
   int VarOccurrences::occurrences(VarDecl* v) {
-    IdMap<Items>::iterator vi = _m.find(v->id());
+    IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     return (vi==_m.end() ? 0 : vi->second.size());
   }
   
@@ -230,7 +231,7 @@ namespace MiniZinc {
   }
   
   void pushDependentConstraints(EnvI& env, Id* id, std::vector<Item*>& q) {
-    IdMap<VarOccurrences::Items>::iterator it = env.vo._m.find(id);
+    IdMap<VarOccurrences::Items>::iterator it = env.vo._m.find(id->decl()->id());
     if (it != env.vo._m.end()) {
       for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
         if (ConstraintI* ci = (*item)->dyn_cast<ConstraintI>()) {
@@ -541,14 +542,14 @@ namespace MiniZinc {
           }
           pushDependentConstraints(envi, vd->id(), constraintQueue);
           std::vector<Item*> toRemove;
-          IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id());
+          IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id()->decl()->id());
           if (it != envi.vo._m.end()) {
             for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
               if ((*item)->removed())
                 continue;
               if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
                 if (vdi->e()->e() && vdi->e()->e()->isa<ArrayLit>()) {
-                  IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id());
+                  IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id()->decl()->id());
                   if (ait != envi.vo._m.end()) {
                     for (VarOccurrences::Items::iterator aitem = ait->second.begin(); aitem != ait->second.end(); ++aitem) {
                       simplifyBoolConstraint(envi,*aitem,vd,remove,vardeclQueue,constraintQueue,toRemove,nonFixedLiteralCount);
@@ -986,11 +987,11 @@ namespace MiniZinc {
             } else if (eval_bool(env,ti->domain())!=b_val) {
               env.flat()->fail(env);
             }
-            pushDependentConstraints(env, ident, constraintQueue);
             CollectDecls cd(env.vo,deletedVarDecls,ii);
             topDown(cd,c);
             vdi->e()->e(IntLit::a(b_val));
             vdi->e()->ti()->setComputedDomain(true);
+            pushDependentConstraints(env, ident, constraintQueue);
             if (env.vo.occurrences(vdi->e())==0) {
               vdi->remove();
             }
