@@ -367,7 +367,8 @@ namespace MiniZinc {
   void EnvI::createErrorStack(void) {
     errorStack.clear();
     for (unsigned int i=callStack.size(); i--;) {
-      errorStack.push_back(callStack[i]);
+      KeepAlive ka(callStack[i]);
+      errorStack.push_back(ka);
     }
   }
   
@@ -385,9 +386,10 @@ namespace MiniZinc {
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
   CallStackItem::~CallStackItem(void) {
-    if (env.callStack.back()->isa<VarDecl>())
+    Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(env.callStack.back()) & ~static_cast<ptrdiff_t>(1));
+    if (e->isa<VarDecl>())
       env.idStack.pop_back();
-    if (env.callStack.back()->isa<Call>() && env.callStack.back()->cast<Call>()->id()=="redundant_constraint")
+    if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
       env.in_redundant_constraint--;
     env.callStack.pop_back();
   }
@@ -429,7 +431,14 @@ namespace MiniZinc {
   EnvI::dumpStack(std::ostream& os, bool errStack) {
     int lastError = 0;
     
-    std::vector<const Expression*>& stack = errStack ? errorStack : callStack;
+    std::vector<Expression*> errStackCopy;
+    if (errStack) {
+      errStackCopy.resize(errorStack.size());
+      for (unsigned int i=0; i<errorStack.size(); i++)
+        errStackCopy[i] = errorStack[i]();
+    }
+    
+    std::vector<Expression*>& stack = errStack ? errStackCopy : callStack;
     
     for (; lastError < stack.size(); lastError++) {
       Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[lastError]) & ~static_cast<ptrdiff_t>(1));
@@ -509,10 +518,10 @@ namespace MiniZinc {
           os << "if-then-else expression" << std::endl;
           break;
         case Expression::E_BINOP:
-          os << "binary '" << e->cast<BinOp>()->opToString() << "' operator expression" << std::endl;
+          os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
           break;
         case Expression::E_UNOP:
-          os << "unary '" << e->cast<UnOp>()->opToString() << "' operator expression" << std::endl;
+          os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
           break;
         case Expression::E_CALL:
           os << "call '" << e->cast<Call>()->id() << "'" << std::endl;
@@ -1218,7 +1227,7 @@ namespace MiniZinc {
                   nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
                 } else {
                   FloatVal d = c->args()[2]->cast<FloatLit>()->v();
-                  args.push_back(new FloatLit(Location().introduce(),-d));
+                  args.push_back(FloatLit::a(-d));
                   nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
                 }
               } else {
@@ -1662,6 +1671,23 @@ namespace MiniZinc {
     x.resize(ci);
     return false;
   }
+  bool contains_dups(std::vector<KeepAlive>& x, std::vector<KeepAlive>& y) {
+    if (x.size()==0 || y.size()==0)
+      return false;
+    unsigned int ix=0;
+    unsigned int iy=0;
+    for (;;) {
+      if (x[ix]()==y[iy]())
+        return true;
+      if (x[ix]() < y[iy]()) {
+        ix++;
+      } else {
+        iy++;
+      }
+      if (ix==x.size() || iy==y.size())
+        return false;
+    }
+  }
 
   /// Return a lin_exp or id if \a e is a lin_exp or id
   template<class Lit>
@@ -1700,9 +1726,12 @@ namespace MiniZinc {
     
     // Compute bounds of result as union bounds of all branches
     IntBounds r_bounds(IntVal::infinity(),-IntVal::infinity(),true);
-    if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r->id());
-    }
+    std::vector<IntBounds> r_bounds_int;
+    bool r_bounds_valid_int = true;
+    std::vector<IntSetVal*> r_bounds_set;
+    bool r_bounds_valid_set = true;
+    std::vector<FloatBounds> r_bounds_float;
+    bool r_bounds_valid_float = true;
     
     VarDecl* nr = r;
 
@@ -1821,14 +1850,23 @@ namespace MiniZinc {
         
       }
       // update bounds
-      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
-        IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
-        if (ib_then.valid) {
-          IntVal lb = std::min(r_bounds.l, ib_then.l);
-          IntVal ub = std::max(r_bounds.u, ib_then.u);
-          r_bounds = IntBounds(lb,ub,true);
-        } else {
-          r_bounds = IntBounds(0,0,false);
+      
+      if (cond) {
+        if (r_bounds_valid_int && ite->e_then(i)->type().isint()) {
+          IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
+          if (ib_then.valid)
+            r_bounds_int.push_back(ib_then);
+          r_bounds_valid_int = r_bounds_valid_int && ib_then.valid;
+        } else if (r_bounds_valid_set && ite->e_then(i)->type().isintset()) {
+          IntSetVal* isv = compute_intset_bounds(env, ite->e_then(i));
+          if (isv)
+            r_bounds_set.push_back(isv);
+          r_bounds_valid_set = r_bounds_valid_set && isv;
+        } else if (r_bounds_valid_float && ite->e_then(i)->type().isfloat()) {
+          FloatBounds fb_then = compute_float_bounds(env, ite->e_then(i));
+          if (fb_then.valid)
+            r_bounds_float.push_back(fb_then);
+          r_bounds_valid_float = r_bounds_valid_float && fb_then.valid;
         }
       }
       
@@ -1842,16 +1880,71 @@ namespace MiniZinc {
     }
 
     // update bounds of result with bounds of else branch
-    if (r_bounds.valid && ite->e_else()->type().isint()) {
+    
+    if (r_bounds_valid_int && ite->e_else()->type().isint()) {
       IntBounds ib_else = compute_int_bounds(env,ite->e_else());
       if (ib_else.valid) {
-        IntVal lb = std::min(r_bounds.l, ib_else.l);
-        IntVal ub = std::max(r_bounds.u, ib_else.u);
+        r_bounds_int.push_back(ib_else);
+        IntVal lb = IntVal::infinity();
+        IntVal ub = -IntVal::infinity();
+        for (unsigned int i=0; i<r_bounds_int.size(); i++) {
+          lb = std::min(lb, r_bounds_int[i].l);
+          ub = std::max(ub, r_bounds_int[i].u);
+        }
+        if (r) {
+          IntBounds orig_r_bounds = compute_int_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
         SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
         nr->ti()->domain(r_dom);
       }
+    } else if (r_bounds_valid_set && ite->e_else()->type().isintset()) {
+      IntSetVal* isv_else = compute_intset_bounds(env, ite->e_else());
+      if (isv_else) {
+        IntSetVal* isv = isv_else;
+        for (unsigned int i=0; i<r_bounds_set.size(); i++) {
+          IntSetRanges i0(isv);
+          IntSetRanges i1(r_bounds_set[i]);
+          Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
+          isv = IntSetVal::ai(u);
+        }
+        if (r) {
+          IntSetVal* orig_r_bounds = compute_intset_bounds(env,r->id());
+          if (orig_r_bounds) {
+            IntSetRanges i0(isv);
+            IntSetRanges i1(orig_r_bounds);
+            Ranges::Inter<IntSetRanges, IntSetRanges> inter(i0,i1);
+            isv = IntSetVal::ai(inter);
+          }
+        }
+        SetLit* r_dom = new SetLit(Location().introduce(),isv);
+        nr->ti()->domain(r_dom);
+      }
+    } else if (r_bounds_valid_float && ite->e_else()->type().isfloat()) {
+      FloatBounds fb_else = compute_float_bounds(env, ite->e_else());
+      if (fb_else.valid) {
+        FloatVal lb = fb_else.l;
+        FloatVal ub = fb_else.u;
+        for (unsigned int i=0; i<r_bounds_float.size(); i++) {
+          lb = std::min(lb, r_bounds_float[i].l);
+          ub = std::max(ub, r_bounds_float[i].u);
+        }
+        if (r) {
+          FloatBounds orig_r_bounds = compute_float_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
+        BinOp* r_dom = new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+        r_dom->type(Type::parfloat(1));
+        nr->ti()->domain(r_dom);
+      }
     }
-
+    
     // flatten else branch
     EE eelse = flat_exp(env, cmix, ite->e_else(), NULL, NULL);
     
@@ -2506,7 +2599,6 @@ namespace MiniZinc {
         public:
           Ctx ctx;
           EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
-          typedef Expression* Val;
           typedef Expression* ArrayVal;
           Expression* e(EnvI& env, Expression* e) {
             return flat_cv_exp(env,ctx,e)();
@@ -2687,12 +2779,12 @@ namespace MiniZinc {
       ret.r = bind(env,ctx,r,eval_par(env,e));
       return ret;
     }
-    CallStackItem _csi(env,e);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,Ctx(),r,e);
@@ -2700,6 +2792,7 @@ namespace MiniZinc {
       }
     case Expression::E_SETLIT:
       {
+        CallStackItem _csi(env,e);
         SetLit* sl = e->cast<SetLit>();
         assert(sl->isv()==NULL);
         std::vector<EE> elems_ee(sl->v().size());
@@ -2739,6 +2832,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BOOLLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,ctx,r,e);
@@ -2747,6 +2841,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
+        CallStackItem _csi(env,e);
         Id* id = e->cast<Id>();
         if (id->decl()==NULL) {
           if (id->type().isann()) {
@@ -2838,6 +2933,12 @@ namespace MiniZinc {
             Type tt = vd->ti()->type();
             tt.dim(0);
             
+            if (asize > Constants::max_array_size) {
+              std::ostringstream oss;
+              oss << "array size (" << asize << ") exceeds maximum allowed size (" << Constants::max_array_size << ")";
+              throw FlatteningError(env,vd->loc(),oss.str());
+            }
+            
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
@@ -2905,6 +3006,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ANON:
       {
+        CallStackItem _csi(env,e);
         AnonVar* av = e->cast<AnonVar>();
         if (av->type().isbot()) {
           throw InternalError("type of anonymous variable could not be inferred");
@@ -2917,6 +3019,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYLIT:
       {
+        CallStackItem _csi(env,e);
         ArrayLit* al = e->cast<ArrayLit>();
         if (al->flat()) {
           ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -2946,6 +3049,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYACCESS:
       {
+        CallStackItem _csi(env,e);
         ArrayAccess* aa = e->cast<ArrayAccess>();
         KeepAlive aa_ka = aa;
 
@@ -3210,6 +3314,7 @@ namespace MiniZinc {
       break;
     case Expression::E_COMP:
       {
+        CallStackItem _csi(env,e);
         Comprehension* c = e->cast<Comprehension>();
         KeepAlive c_ka(c);
         
@@ -3373,12 +3478,14 @@ namespace MiniZinc {
       break;
     case Expression::E_ITE:
       {
+        CallStackItem _csi(env,e);
         ITE* ite = e->cast<ITE>();
         ret = flat_ite(env,ctx,ite,r,b);
       }
       break;
     case Expression::E_BINOP:
       {
+        CallStackItem _csi(env,e);
         BinOp* bo = e->cast<BinOp>();
         if (isReverseMap(bo)) {
           CallArgItem cai(env);
@@ -3720,6 +3827,9 @@ namespace MiniZinc {
             ctx.neg = false;
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
+            if (c->decl()==NULL) {
+              throw FlatteningError(env,c->loc(), "cannot find matching declaration");
+            }
             c->type(c->decl()->rtype(env,args));
             KeepAlive ka(c);
             GC::unlock();
@@ -4131,6 +4241,7 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
+        CallStackItem _csi(env,e);
         UnOp* uo = e->cast<UnOp>();
         switch (uo->op()) {
         case UOT_NOT:
@@ -4157,7 +4268,7 @@ namespace MiniZinc {
             if (uo->e()->type().bt()==Type::BT_INT)
               zero = IntLit::a(0);
             else
-              zero = new FloatLit(Location().introduce(),0.0);
+              zero = FloatLit::a(0.0);
             BinOp* bo = new BinOp(Location().introduce(),zero,BOT_MINUS,uo->e());
             bo->type(uo->type());
             KeepAlive ka(bo);
@@ -4177,10 +4288,21 @@ namespace MiniZinc {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
         }
-
+        
+        if (decl->params().size()==1) {
+          if (Call* call_body = Expression::dyn_cast<Call>(decl->e())) {
+            if (call_body->args().size()==1 && Expression::equal(call_body->args()[0],decl->params()[0]->id())) {
+              c->id(call_body->id());
+              c->decl(call_body->decl());
+            }
+          }
+        }
+        
         Ctx nctx = ctx;
         nctx.neg = false;
         ASTString cid = c->id();
+        CallStackItem _csi(env,e);
+
         if (decl->e()==NULL) {
           if (cid == constants().ids.forall) {
             nctx.b = +nctx.b;
@@ -4280,7 +4402,84 @@ namespace MiniZinc {
           }
 
           std::vector<KeepAlive> args;
-          if (decl->e()==NULL && (cid == constants().ids.forall || cid == constants().ids.exists)) {
+          if (decl->e()==NULL && (cid == constants().ids.exists || cid == constants().ids.clause)) {
+
+            std::vector<KeepAlive> pos_alv;
+            std::vector<KeepAlive> neg_alv;
+            for (unsigned int i=0; i<args_ee.size(); i++) {
+              std::vector<KeepAlive>& local_pos = i==0 ? pos_alv : neg_alv;
+              std::vector<KeepAlive>& local_neg = i==1 ? pos_alv : neg_alv;
+              ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
+              std::vector<KeepAlive> alv;
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                if (Call* sc = same_call(al->v()[i],cid)) {
+                  GCLock lock;
+                  ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
+                  for (unsigned int j=0; j<sc_c->v().size(); j++) {
+                    alv.push_back(sc_c->v()[j]);
+                  }
+                } else {
+                  alv.push_back(al->v()[i]);
+                }
+              }
+
+              for (unsigned int j=0; j<alv.size(); j++) {
+                Call* neg_call = same_call(alv[j](),constants().ids.bool_eq);
+                if (neg_call &&
+                    Expression::equal(neg_call->args()[1],constants().lit_false)) {
+                  local_neg.push_back(neg_call->args()[0]);
+                } else {
+                  Call* clause = same_call(alv[j](),constants().ids.clause);
+                  if (clause) {
+                    ArrayLit* clause_pos = eval_array_lit(env,clause->args()[0]);
+                    for (unsigned int k=0; k<clause_pos->v().size(); k++) {
+                      local_pos.push_back(clause_pos->v()[k]);
+                    }
+                    ArrayLit* clause_neg = eval_array_lit(env,clause->args()[1]);
+                    for (unsigned int k=0; k<clause_neg->v().size(); k++) {
+                      local_neg.push_back(clause_neg->v()[k]);
+                    }
+                  } else {
+                    local_pos.push_back(alv[j]);
+                  }
+                }
+              }
+            }
+            bool subsumed = remove_dups(pos_alv,false);
+            subsumed = subsumed || remove_dups(neg_alv,true);
+            subsumed = subsumed || contains_dups(pos_alv, neg_alv);
+            if (subsumed) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              return ret;
+            }
+            if (neg_alv.empty()) {
+              if (pos_alv.size()==0) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,constants().lit_false);
+                return ret;
+              } else if (pos_alv.size()==1) {
+                ret.b = bind(env,Ctx(),b,constants().lit_true);
+                ret.r = bind(env,ctx,r,pos_alv[0]());
+                return ret;
+              }
+              GCLock lock;
+              ArrayLit* nal = new ArrayLit(Location().introduce(),toExpVec(pos_alv));
+              nal->type(Type::varbool(1));
+              args.push_back(nal);
+              cid = constants().ids.exists;
+            } else {
+              GCLock lock;
+              ArrayLit* pos_al = new ArrayLit(Location().introduce(),toExpVec(pos_alv));
+              pos_al->type(Type::varbool(1));
+              ArrayLit* neg_al = new ArrayLit(Location().introduce(),toExpVec(neg_alv));
+              neg_al->type(Type::varbool(1));
+              cid = constants().ids.clause;
+              args.push_back(pos_al);
+              args.push_back(neg_al);
+            }
+
+          } else if (decl->e()==NULL && cid == constants().ids.forall) {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->v().size(); i++) {
@@ -4294,82 +4493,25 @@ namespace MiniZinc {
                 alv.push_back(al->v()[i]);
               }
             }
-            if (cid == constants().ids.exists) {
-              std::vector<KeepAlive> pos_alv;
-              std::vector<KeepAlive> neg_alv;
-              for (unsigned int i=0; i<alv.size(); i++) {
-                Call* neg_call = same_call(alv[i](),constants().ids.bool_eq);
-                if (neg_call && 
-                    Expression::equal(neg_call->args()[1],constants().lit_false)) {
-                  neg_alv.push_back(neg_call->args()[0]);
-                } else {
-                  Call* clause = same_call(alv[i](),constants().ids.clause);
-                  if (clause) {
-                    ArrayLit* clause_pos = eval_array_lit(env,clause->args()[0]);
-                    for (unsigned int j=0; j<clause_pos->v().size(); j++) {
-                      pos_alv.push_back(clause_pos->v()[j]);
-                    }
-                    ArrayLit* clause_neg = eval_array_lit(env,clause->args()[1]);
-                    for (unsigned int j=0; j<clause_neg->v().size(); j++) {
-                      neg_alv.push_back(clause_neg->v()[j]);
-                    }
-                  } else {
-                    pos_alv.push_back(alv[i]);
-                  }
-                }
-              }
-              bool subsumed = remove_dups(pos_alv,false);
-              subsumed = subsumed || remove_dups(neg_alv,true);
-              if (subsumed) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_true);
-                return ret;
-              }
-              if (neg_alv.empty()) {
-                if (pos_alv.size()==0) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  ret.r = bind(env,ctx,r,constants().lit_false);
-                  return ret;
-                } else if (pos_alv.size()==1) {
-                  ret.b = bind(env,Ctx(),b,constants().lit_true);
-                  ret.r = bind(env,ctx,r,pos_alv[0]());
-                  return ret;
-                }
-                GCLock lock;
-                ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(pos_alv));
-                nal->type(al->type());
-                args.push_back(nal);
-              } else {
-                GCLock lock;
-                ArrayLit* pos_al = new ArrayLit(al->loc(),toExpVec(pos_alv));
-                pos_al->type(al->type());
-                ArrayLit* neg_al = new ArrayLit(al->loc(),toExpVec(neg_alv));
-                neg_al->type(al->type());
-                cid = constants().ids.clause;
-                args.push_back(pos_al);
-                args.push_back(neg_al);
-              }
-            } else /* cid=="forall" */ {
-              bool subsumed = remove_dups(alv,true);
-              if (subsumed) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_false);
-                return ret;
-              }
-              if (alv.size()==0) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,constants().lit_true);
-                return ret;
-              } else if (alv.size()==1) {
-                ret.b = bind(env,Ctx(),b,constants().lit_true);
-                ret.r = bind(env,ctx,r,alv[0]());
-                return ret;
-              }
-              GCLock lock;
-              ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(alv));
-              nal->type(al->type());
-              args.push_back(nal);
+            bool subsumed = remove_dups(alv,true);
+            if (subsumed) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_false);
+              return ret;
             }
+            if (alv.size()==0) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              return ret;
+            } else if (alv.size()==1) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,alv[0]());
+              return ret;
+            }
+            GCLock lock;
+            ArrayLit* nal = new ArrayLit(al->loc(),toExpVec(alv));
+            nal->type(al->type());
+            args.push_back(nal);
           } else if (decl->e()==NULL && (cid == constants().ids.lin_exp || cid==constants().ids.sum)) {
             if (e->type().isint()) {
               flatten_linexp_call<IntLit>(env,ctx,nctx,cid,c,ret,b,r,args_ee,args);
@@ -4386,7 +4528,7 @@ namespace MiniZinc {
           {
             GCLock lock;
             std::vector<Expression*> e_args = toExpVec(args);
-            Call* cr_c = new Call(Location().introduce(),cid,e_args);
+            Call* cr_c = new Call(c->loc().introduce(),cid,e_args);
             decl = env.orig->matchFn(env,cr_c);
             if (decl==NULL)
               throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
@@ -4484,7 +4626,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (cr()->type().isbool() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
+            if (cr()->type().isbool() &&  !cr()->type().ispar() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
               std::vector<Type> argtypes(args.size());
               for (unsigned int i=0; i<args.size(); i++)
                 argtypes[i] = args[i]()->type();
@@ -4532,7 +4674,7 @@ namespace MiniZinc {
               }
             }
           call_nonreif:
-            if (decl->e()==NULL) {
+            if ( (cr()->type().ispar() && !cr()->type().isann()) || decl->e()==NULL) {
               Call* cr_c = cr()->cast<Call>();
               /// All builtins are total
               std::vector<Type> argt(cr_c->args().size());
@@ -4551,12 +4693,12 @@ namespace MiniZinc {
                 args_ee.push_back(res);
                 ret.b = conj(env,b,Ctx(),args_ee);
                 ret.r = bind(env,ctx,r,res.r());
-                if (!ctx.neg)
+                if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
               } else {
                 ret.b = conj(env,b,Ctx(),args_ee);
                 ret.r = bind(env,ctx,r,cr_c);
-                if (!ctx.neg)
+                if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
               }
             } else {
@@ -4593,7 +4735,7 @@ namespace MiniZinc {
                 }
                 ret.b = conj(env,b,Ctx(),args_ee);
               }
-              if (!ctx.neg)
+              if (!ctx.neg && !cr()->type().isann())
                 env.map_insert(cr(),ret);
 
               // Restore previous mapping
@@ -4609,6 +4751,7 @@ namespace MiniZinc {
       break;
     case Expression::E_VARDECL:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         if (ctx.b != C_ROOT)
           throw FlatteningError(env,e->loc(), "not in root context");
@@ -4623,37 +4766,7 @@ namespace MiniZinc {
             nctx.b = C_MIX;
           if (v->e()) {
             (void) flat_exp(env,nctx,v->e(),vd,constants().var_true);
-            if (v->e()->type().bt()==Type::BT_INT && v->e()->type().dim()==0) {
-              IntSetVal* ibv = NULL;
-              if (v->e()->type().is_set()) {
-                ibv = compute_intset_bounds(env,v->e());
-              } else {
-                IntBounds ib = compute_int_bounds(env,v->e());
-                if (ib.valid)
-                  ibv = IntSetVal::a(ib.l,ib.u);
-              }
-              if (ibv) {
-                if (vd->ti()->domain()) {
-                  IntSetVal* domain = eval_intset(env,vd->ti()->domain());
-                  IntSetRanges dr(domain);
-                  IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntSetRanges,IntSetRanges> i(dr,ibr);
-                  IntSetVal* newibv = IntSetVal::ai(i);
-                  if (ibv->card() == newibv->card()) {
-                    vd->ti()->setComputedDomain(true);
-                  } else {
-                    ibv = newibv;
-                  }
-                } else {
-                  vd->ti()->setComputedDomain(true);
-                }
-                if (!v->e()->type().is_set() && ibv->card()==0) {
-                  env.flat()->fail(env);
-                } else {
-                  vd->ti()->domain(new SetLit(Location().introduce(),ibv));
-                }
-              }
-            } else if (v->e()->type().dim() > 0) {
+            if (v->e()->type().dim() > 0) {
               Expression* ee = follow_id_to_decl(vd->e());
               if (ee->isa<VarDecl>())
                 ee = ee->cast<VarDecl>()->e();
@@ -4680,6 +4793,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
+        CallStackItem _csi(env,e);
         Let* let = e->cast<Let>();
         GC::mark();
         std::vector<EE> cs;
@@ -4852,6 +4966,7 @@ namespace MiniZinc {
               env.output->registerFn(env, decl);
               env.output->addItem(decl);
               outputVarDecls(env,origdecl,decl->e());
+              outputVarDecls(env,origdecl,decl->ti());
             } else {
               decl = origdecl;
             }
@@ -5768,7 +5883,7 @@ namespace MiniZinc {
             vdi->e()->ti()->domain(NULL);
             std::vector<Expression*> args(2);
             args[0] = vdi->e()->id();
-            args[1] = new FloatLit(Location().introduce(), vmax);
+            args[1] = FloatLit::a(vmax);
             Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
             call->type(Type::varbool());
             call->decl(env.orig->matchFn(env, call));
@@ -5776,7 +5891,7 @@ namespace MiniZinc {
           } else if (vmax == std::numeric_limits<FloatVal>::infinity()) {
             vdi->e()->ti()->domain(NULL);
             std::vector<Expression*> args(2);
-            args[0] = new FloatLit(Location().introduce(), vmin);
+            args[0] = FloatLit::a(vmin);
             args[1] = vdi->e()->id();
             Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
             call->type(Type::varbool());
@@ -6138,6 +6253,10 @@ namespace MiniZinc {
                 args.push_back(vd->id());
                 Call * nc = new Call(c->loc().introduce(),cid,args);
                 nc->type(c->type());
+                nc->decl(env.orig->matchFn(env, nc));
+                if (nc->decl()==NULL) {
+                  throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+                }
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
@@ -6178,7 +6297,7 @@ namespace MiniZinc {
                 } else {
                   // float
                   cid = constants().ids.float_.lin_eq;
-                  nc.push_back(new FloatLit(Location().introduce(),-1.0));
+                  nc.push_back(FloatLit::a(-1.0));
                   args[0] = new ArrayLit(Location().introduce(),nc);
                   args[0]->type(Type::parfloat(1));
                   ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
@@ -6188,7 +6307,7 @@ namespace MiniZinc {
                   args[1] = new ArrayLit(Location().introduce(),nx);
                   args[1]->type(le_x->type());
                   FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
-                  args[2] = new FloatLit(Location().introduce(),-d);
+                  args[2] = FloatLit::a(-d);
                 }
               } else {
                 if (cc->id() == "card") {

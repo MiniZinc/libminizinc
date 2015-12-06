@@ -5,6 +5,52 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.9
+=============
+
+Bug fixes:
+
+ - Need to take return type into account when copying functions to output
+   model. Fixes #55.
+ - Evaluate calls that result in arrays using eval_arraylit. Fixes #57.
+ - Move inverse function to its own library file, so that it remains available
+   when a solver provides an alternative for the inverse predicate.
+ - Optimisation phase now recursively checks constraints when elements in an
+   array become fixed.
+ - Fix CMakeLists file to work for paths that contain spaces.
+ - Distinguish between infix operators and regular functions in the generated
+   html documentation. Fixes #61.
+ - Made parser more robust against incorrect code.
+ - Fix increment/decrement operators for IntVals and make all operations throw
+   correct overflow exceptions.
+ - Fix automatic type coercion for variables declared in let expressions.
+ - Fix a crash when printing some error messages.
+ - Fix compute_div_bounds builtin to return correct result for a division by
+   zero.
+ - Fix optimisation of Boolean constraints to use pointer equality instead of
+   structural equality (same expression can occur multiple times in the
+   FlatZinc).
+ - Only optimise constraints that have not been removed yet.
+ - Fix declaration of functional version of bin_packing_load. Fixes #64.
+ - Set type of arrays returned from polymorphic functions. Fixes #65.
+ - Fix parsing of quoted unary operator calls.
+ - Only compute set functions when bounds are valid. Fixes #66.
+ - Compute proper bounds for if-then-else expressions.
+ - Report error when no reified version of a constraint is available. Fixes #67.
+ - Fix type checking of annotations on binary operators.
+ - Keep annotations when rewriting linear constraints and remove is_defined_var
+   annotations from fixed variables. Fixes #69.
+
+Changes:
+
+ - Integer, Boolean and float literals are now cached to achieve better memory
+   performance for some models.
+ - Improve performance of parsing integer literals.
+ - Improve handling of clause constraints.
+ - Add source files of MiniZinc specification to the repository.
+ - Limit maximum array size to enable better error messages.
+ - Add implied_constraint predicate as a synonym for redundant_constraint.
+
 Version 2.0.8
 =============
 

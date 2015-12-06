@@ -40,15 +40,32 @@ namespace MiniZinc {
 
   inline IntLit*
   IntLit::a(MiniZinc::IntVal v) {
-    if (v >= -constants().maxConstInt && v <= constants().maxConstInt)
-      return constants().integers->v()[v.toInt()+constants().maxConstInt]->cast<IntLit>();
-    return new IntLit(Location().introduce(), v);
+    UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
+    if (it==constants().integerMap.end() || it->second()==NULL) {
+      IntLit* il = new IntLit(Location().introduce(), v);
+      constants().integerMap.insert(std::make_pair(v, il));
+      return il;
+    } else {
+      return it->second()->cast<IntLit>();
+    }
   }
   
   inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {
     rehash();
+  }
+
+  inline FloatLit*
+  FloatLit::a(MiniZinc::FloatVal v) {
+    UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
+    if (it==constants().floatMap.end() || it->second()==NULL) {
+      FloatLit* fl = new FloatLit(Location().introduce(), v);
+      constants().floatMap.insert(std::make_pair(v, fl));
+      return fl;
+    } else {
+      return it->second()->cast<FloatLit>();
+    }
   }
 
   inline

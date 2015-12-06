@@ -76,8 +76,8 @@ namespace MiniZinc {
     };
     typedef KeepAliveMap<WW> Map;
     bool ignorePartial;
-    std::vector<const Expression*> callStack;
-    std::vector<const Expression*> errorStack;
+    std::vector<Expression*> callStack;
+    std::vector<KeepAlive> errorStack;
     std::vector<int> idStack;
     unsigned int maxCallStack;
     std::vector<std::string> warnings;
@@ -290,12 +290,12 @@ namespace MiniZinc {
       return ret;
     }
     static Expression* new_domain(Val v) {
-      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
+      BinOp* ret = new BinOp(Location().introduce(),FloatLit::a(v),BOT_DOTDOT,FloatLit::a(v));
       ret->type(Type::parsetfloat());
       return ret;
     }
     static Expression* new_domain(Val v0, Val v1) {
-      BinOp* ret = new BinOp(Location().introduce(),new FloatLit(Location().introduce(),v0),BOT_DOTDOT,new FloatLit(Location().introduce(),v1));
+      BinOp* ret = new BinOp(Location().introduce(),FloatLit::a(v0),BOT_DOTDOT,FloatLit::a(v1));
       ret->type(Type::parsetfloat());
       return ret;
     }
@@ -327,12 +327,12 @@ namespace MiniZinc {
         Val nub = std::min(ub,v1);
         if (nlb==lb && nub==ub)
           return dom;
-        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),nlb),
-                             BOT_DOTDOT, new FloatLit(Location().introduce(),nub));
+        Domain d = new BinOp(Location().introduce(), FloatLit::a(nlb),
+                             BOT_DOTDOT, FloatLit::a(nub));
         d->type(Type::parsetfloat());
         return d;
       } else {
-        Domain d = new BinOp(Location().introduce(), new FloatLit(Location().introduce(),v0), BOT_DOTDOT, new FloatLit(Location().introduce(),v1));
+        Domain d = new BinOp(Location().introduce(), FloatLit::a(v0), BOT_DOTDOT, FloatLit::a(v1));
         d->type(Type::parsetfloat());
         return d;
       }
@@ -347,7 +347,7 @@ namespace MiniZinc {
             return NULL;
           case BOT_LQ:
             if (v < ub) {
-              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,new FloatLit(Location().introduce(),v));
+              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,FloatLit::a(v));
               d->type(Type::parsetfloat());
               return d;
             } else {
@@ -357,7 +357,7 @@ namespace MiniZinc {
             return NULL;
           case BOT_GQ:
             if (v > lb) {
-              Domain d = new BinOp(dom->loc(),new FloatLit(Location().introduce(),v),BOT_DOTDOT,dom->rhs());
+              Domain d = new BinOp(dom->loc(),FloatLit::a(v),BOT_DOTDOT,dom->rhs());
               d->type(Type::parsetfloat());
               return d;
             } else {
@@ -373,7 +373,7 @@ namespace MiniZinc {
     }
     static Val floor_div(Val v0, Val v1) { return v0 / v1; }
     static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
-    static FloatLit* newLit(Val v) { return new FloatLit(Location().introduce(),v); }
+    static FloatLit* newLit(Val v) { return FloatLit::a(v); }
   };
 
   template<class Lit>

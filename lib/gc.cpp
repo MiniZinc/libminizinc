@@ -483,10 +483,19 @@ namespace MiniZinc {
       Expression::mark(trail[i].v);
     }
     
+    bool fixPrev = false;
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+      if (fixPrev) {
+        fixPrev = false;
+        WeakRef* p = wr->_p;
+        removeWeakRef(p);
+        p->_n = p;
+        p->_p = p;
+      }
       if ((*wr)() && (*wr)()->_gc_mark==0) {
         wr->_e = NULL;
         wr->_valid = false;
+        fixPrev = true;
       }
     }
 
@@ -537,6 +546,9 @@ namespace MiniZinc {
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
             _free_mem += ns;
+#if defined(MINIZINC_GC_STATS)
+            gc_stats[fln->_id].second++;
+#endif
             assert(_alloced_mem >= _free_mem);
           } else {
             assert(off==0);

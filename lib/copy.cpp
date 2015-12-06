@@ -139,10 +139,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BOOLLIT:
       {
-        BoolLit* c = new BoolLit(copy_location(m,e),
-                                e->cast<BoolLit>()->v());
-        m.insert(e,c);
-        ret = c;
+        ret = e;
       }
       break;
     case Expression::E_STRINGLIT:
