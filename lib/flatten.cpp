@@ -5838,9 +5838,8 @@ namespace MiniZinc {
               }
             } else if (dom->size() > 1) {
               SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
-              TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
-              nti->domain(newDom);
-              vdi->e()->ti(nti);
+//               TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
+              vdi->e()->ti()->domain(newDom);
             }
             if (dom->size() > 1) {
               IntVal firstHole = dom->max(0)+1;
