@@ -146,9 +146,10 @@ namespace MiniZinc {
       double lb, ub;
       VarDecl* vd = 0;
       int nClique = -1;                 // clique number
-      std::vector<Call*> aCalls;
+//       std::vector<Call*> aCalls;
+      std::vector<ConstraintI*> aCalls;
       boolShort fInt=0;
-      Call* pEqEncoding=0;
+      ConstraintI* pEqEncoding=0;
       boolShort fDomainConstrProcessed=0;
 //       boolShort fPropagatedViews=0;
 //       boolShort fPropagatedLargerEqns=0;
@@ -159,8 +160,8 @@ namespace MiniZinc {
     FunctionI *int_le_reif__POST=0, *int_ge_reif__POST=0, *int_eq_reif__POST=0, *int_ne__POST=0,
       *float_le_reif__POST=0, *float_ge_reif__POST=0, *aux_float_lt_zero_iff_1__POST=0, 
         *float_eq_reif__POST=0, *float_ne__POST=0,
-      *aux_float_eq_zero_if_1__POST=0, *aux_int_le_zero_if_0__POST=0,
-        *aux_float_le_zero_if_0__POST=0, *aux_float_lt_zero_if_0__POST=0,
+      *aux_float_eq_zero_if_1__POST=0, *aux_int_le_zero_if_1__POST=0,
+        *aux_float_le_zero_if_1__POST=0, *aux_float_lt_zero_if_1__POST=0,
       *equality_encoding__POST=0, *set_in__POST=0, *set_in_reif__POST=0;
     
     void register__POSTconstraintDecls()
@@ -181,14 +182,14 @@ namespace MiniZinc {
       aCT.push_back(DCT("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float, float_eq_reif__POST));
       aCT.push_back(DCT("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float, float_ne__POST));
 
-      aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVI, RIT_Halfreif1, CT_Comparison, CMPT_EQ_0, VT_Float,
+      aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVI, RIT_Halfreif, CT_Comparison, CMPT_EQ_0, VT_Float,
                         aux_float_eq_zero_if_1__POST));
-      aCT.push_back(DCT("aux_int_le_zero_if_0__POST", t_VIVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Int,
-                        aux_int_le_zero_if_0__POST));
-      aCT.push_back(DCT("aux_float_le_zero_if_0__POST", t_VFVI, RIT_Halfreif0, CT_Comparison, CMPT_LE_0, VT_Float,
-                        aux_float_le_zero_if_0__POST));
-      aCT.push_back(DCT("aux_float_lt_zero_if_0__POST", t_VFVIF, RIT_Halfreif0, CT_Comparison, CMPT_LT_0, VT_Float,
-                        aux_float_lt_zero_if_0__POST));
+      aCT.push_back(DCT("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0, VT_Int,
+                        aux_int_le_zero_if_1__POST));
+      aCT.push_back(DCT("aux_float_le_zero_if_1__POST", t_VFVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0, VT_Float,
+                        aux_float_le_zero_if_1__POST));
+      aCT.push_back(DCT("aux_float_lt_zero_if_1__POST", t_VFVIF, RIT_Halfreif, CT_Comparison, CMPT_LT_0, VT_Float,
+                        aux_float_lt_zero_if_1__POST));
       
       aCT.push_back(DCT("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int, equality_encoding__POST));
       aCT.push_back(DCT("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST));
@@ -226,6 +227,8 @@ namespace MiniZinc {
         if ( Call* c = ic->e()->dyn_cast<Call>() ) {
           if ( auto ipct = mCallTypes.find(c->decl())
                 != mCallTypes.end() ) {
+            // No not here because might be deleted immediately in later versions.
+//             ic->remove();                              // mark removed at once
             assert( c->args().size() > 1 );
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
             DBGOUT_MIPD__ ( "  Call " << c->id().str()
@@ -242,11 +245,11 @@ namespace MiniZinc {
             DBGOUT_MIPD ( "" );
             if ( equality_encoding__POST == c->decl() ) {
               assert( not vVarDescr[ vd0->payload() ].pEqEncoding );
-              vVarDescr[ vd0->payload() ].pEqEncoding = c;
+              vVarDescr[ vd0->payload() ].pEqEncoding = &*ic;
               DBGOUT_MIPD ( " Variable " << vd0->id()->str() << " has eq_encode." );
             }   // + if has aux_ constraints?
             else
-              vVarDescr[ vd0->payload() ].aCalls.push_back(c);
+              vVarDescr[ vd0->payload() ].aCalls.push_back(&*ic);
           }
         }
       }
@@ -296,7 +299,8 @@ namespace MiniZinc {
 //             std::cerr << "  NOTE call " << std::flush;
 //             debugprint(c);
           assert( c->args().size() == 3 );
-          ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
+//           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
+          ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
           assert( al );
           assert( al->v().size() >= 1 );
           if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
@@ -375,7 +379,7 @@ namespace MiniZinc {
 //             std::cerr << "  NOTE call " << std::flush;
 //             debugprint(c);
             assert( c->args().size() == 3 );
-            ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
+            ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
             assert( al );
             assert( al->v().size() >= 2 );
             if ( al->v().size() == 2 ) {   // 2-term eqn
@@ -705,28 +709,15 @@ namespace MiniZinc {
       void projectVariableConstr( VarDecl* vd, std::pair<double, double> eq1 ) {
         DBGOUT_MIPD__( "  MIPD: projecting variable  " );
         DBGOUT_MIPD_SELF( debugprint(vd) );
-        // Always check if domain becomes empty.
+        // Always check if domain becomes empty?         TODO
         const double A = eq1.first;                     // vd = A*arg + B.  conversion
         const double B = eq1.second;
         // process domain info
         double lb=B, ub=A+B;  // projected bounds for bool
         if ( vd->ti()->domain() ) {
           if ( vd->type().isint() ) {         // INT VAR
-            IntSetVal* dom = eval_intset(mipd.getEnv()->envi(),vd->ti()->domain());
-            IntSetRanges domr(dom);
             SetOfIntvReal sD1;
-            for (; domr(); ++domr) {
-              IntVal mmin = domr.min();
-              IntVal mmax = domr.max();
-              if ( A < 0.0 )
-                std:: swap( mmin, mmax );
-              sD1.insert( IntvReal(                   // * A + B
-                mmin.isFinite() ?
-                  rndUpIfInt( cls.varRef1, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
-                mmax.isFinite() ?
-                  rndDownIfInt( cls.varRef1, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
-              );
-            }
+            convertIntSet( vd->ti()->domain(), sD1, cls.varRef1, A, B );
             sDomain.intersect(sD1);
             DBGOUT_MIPD( " Clique domain after proj of the init. domain "
               << sD1 << " of "
@@ -766,9 +757,14 @@ namespace MiniZinc {
             ub = IntvReal::infPlus();
           }
         }
+        auto bnds = sDomain.getBounds();              // can change    TODO
         // process calls. Can use the constr type info.
         auto& aCalls = mipd.vVarDescr[ vd->payload() ].aCalls;
-        for ( Call* pCall : aCalls ) {
+        for ( Item* pItem : aCalls ) {
+          ConstraintI* pCI = pItem->dyn_cast<ConstraintI>();
+          assert( pCI );
+          Call* pCall = pCI->e()->dyn_cast<Call>();
+          assert( pCall );
           // check the bounds for bool in reifs?                     TODO
           auto ipct = mipd.mCallTypes.find( pCall->decl() );
           assert( mipd.mCallTypes.end() != ipct );
@@ -781,21 +777,8 @@ namespace MiniZinc {
           switch ( dct.nConstrType ) {
             case CT_SetIn:
             {
-              IntSetVal* S = eval_intset( mipd.getEnv()->envi(), pCall->args()[1] );
-              IntSetRanges domr(S);
               SetOfIntvReal SS;
-              for (; domr(); ++domr) {                          // * A + B
-                IntVal mmin = domr.min();
-                IntVal mmax = domr.max();
-                if ( A < 0.0 )
-                  std:: swap( mmin, mmax );
-                SS.insert( IntvReal(                   // * A + B
-                  mmin.isFinite() ?
-                    rndUpIfInt( cls.varRef1, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
-                  mmax.isFinite() ?
-                    rndDownIfInt( cls.varRef1, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
-                );
-              }
+              convertIntSet( pCall->args()[1], SS, cls.varRef1, A, B );
               if ( RIT_Static == dct.nReifType )
                 sDomain.intersect(SS);
               else
@@ -812,11 +795,7 @@ namespace MiniZinc {
                 const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                 /// Strictly, for delta we should finish domain reductions first...   TODO?
-                double delta = vd->type().isfloat() ? 
-                  mipd.expr2Const( pCall->args()[3] ) * std::max( std::fabs(lb), std::fabs(ub) )
-                  : std::fabs( A ) ;           // delta should be scaled as well
-                if ( cls.varRef1->type().isint() )  // the projected-onto variable
-                  delta = std::max( 1.0, delta );
+                const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                 switch ( nCmpType_ADAPTED ) {
                   case CMPT_LE:
                     sDomain.cutDeltas( { { IntvReal::infMinus(), rhsDown } }, delta );
@@ -846,16 +825,12 @@ namespace MiniZinc {
                 bool fSkipNE = ( cls.varRef1->type().isint() &&
                   std::fabs( rhs - rhsRnd ) > 1e-8 );
                 if ( not fSkipNE ) {
-                  double delta = vd->type().isfloat() ? 
-                    mipd.expr2Const( pCall->args()[2] ) * std::max( std::fabs(lb), std::fabs(ub) )
-                    : std::fabs( A ) ;           // delta should be scaled as well
-                  if ( cls.varRef1->type().isint() )  // the projected-onto variable
-                    delta = std::max( 1.0, delta );
+                  const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
                   sDomain.cutOut( { rhsRnd-delta, rhsRnd+delta } );
                 }
               } else {  // aux_ relate to 0.0
                         // But we don't modify domain splitting for them currently
-                assert ( RIT_Halfreif0==dct.nReifType or RIT_Halfreif1==dct.nReifType );
+                assert ( RIT_Halfreif==dct.nReifType );
 //                 const double rhs = B;               // + A*0
 //                 const double delta = vd->type().isint() ? 1.0 : 1e-5;           // TODO : eps
               }
@@ -912,17 +887,345 @@ namespace MiniZinc {
       
       /// sync varRef1's eq_encoding with those of other variables
       void syncOtherEqEncodings() {
-        // TODO
+        // TODO  This could be in the var projection? No, need the final domain
       }
       
       /// if not eq_encoding, creates a flag for each subinterval in the domain
       /// and constrains sum(flags)==1
       void createDomainFlags() {
+        std::vector<VarDecl*> vVars( sDomain.size() );         // flags for each subinterval
+        std::vector<double> vIntvLB( sDomain.size() + 1 ), vIntvUB__( sDomain.size() + 1 );
+        int i=0;
         for ( auto& intv : sDomain ) {
+          intv.varFlag = vVars[i] = addIntVar( 0.0, 1.0 );
+          vIntvLB[i] = intv.left;
+          vIntvUB__[i] = -intv.right;
+          ++i;
+        }
+        // Sum of flags == 1
+        std::vector<double> ones( sDomain.size(), 1.0 );
+        addLinConstr( ones, vVars, CMPT_EQ, 1.0 );
+        // Domain decomp
+        vVars.push_back( cls.varRef1 );
+        vIntvLB[i] = -1.0;                                 // var1 >= sum(LBi*flagi)
+        vIntvUB__[i] = 1.0;                               // var1 <= sum(UBi*flagi)
+        addLinConstr( vIntvLB, vVars, CMPT_LE, 0.0 );
+        addLinConstr( vIntvUB__, vVars, CMPT_LE, 0.0 );
+      }
+      
+      /// deletes them as well
+      void implement__POSTs() {
+        auto bnds = sDomain.getBounds();
+        for ( auto& iRef1 : cls.mRef1 ) {
+//           DBGOUT_MIPD__( "  MIPD: implementing constraints of variable  " );
+//           DBGOUT_MIPD_SELF( debugprint(vd) );
+          VarDecl* vd = iRef1.first;
+          auto eq1 = iRef1.second;
+          const double A = eq1.first;                     // vd = A*arg + B.  conversion
+          const double B = eq1.second;
+          // process calls. Can use the constr type info.
+          auto& aCalls = mipd.vVarDescr[ vd->payload() ].aCalls;
+          for ( Item* pItem : aCalls ) {
+            ConstraintI* pCI = pItem->dyn_cast<ConstraintI>();
+            assert( pCI );
+            Call* pCall = pCI->e()->dyn_cast<Call>();
+            assert( pCall );
+            // check the bounds for bool in reifs?                     TODO
+            auto ipct = mipd.mCallTypes.find( pCall->decl() );
+            assert( mipd.mCallTypes.end() != ipct );
+            const DCT& dct = *ipct->second;
+            int nCmpType_ADAPTED = dct.nCmpType;
+            if ( A < 0.0 ) {                                       // negative factor
+              if ( std::abs( nCmpType_ADAPTED ) >= 4 )             // inequality
+                nCmpType_ADAPTED = -nCmpType_ADAPTED;
+            }
+            switch ( dct.nConstrType ) {
+              case CT_SetIn:
+                if ( RIT_Reif == dct.nReifType )
+                {
+                  SetOfIntvReal SS;
+                  convertIntSet( pCall->args()[1], SS, cls.varRef1, A, B );
+                  relateReifFlag( pCall->args()[2], SS );
+                }
+                break;
+              case CT_Comparison:
+                if ( RIT_Reif == dct.nReifType ) {
+                  const double rhs = ( mipd.aux_float_lt_zero_iff_1__POST == pCall->decl() )
+                    ? B /* + A*0.0, relating to 0 */
+                    // The 2nd argument is constant:
+                    : A * mipd.expr2Const( pCall->args()[1] ) + B;
+                  const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
+                  const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
+                  const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                  const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
+                  switch ( nCmpType_ADAPTED ) {
+                    case CMPT_LE:
+                      relateReifFlag( pCall->args()[2], { { IntvReal::infMinus(), rhsDown } } );
+                      break;
+                    case CMPT_GE:
+                      relateReifFlag( pCall->args()[2], { { rhsUp, IntvReal::infPlus() } } );
+                      break;
+                    case CMPT_LT_0:
+                      relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown-delta } });
+                      break;
+                    case CMPT_GT_0:
+                      relateReifFlag( pCall->args()[1],  { { rhsUp+delta, IntvReal::infPlus() } } );
+                      break;
+                    case CMPT_EQ:
+                      relateReifFlag( pCall->args()[2], { { rhs, rhs } } );
+                      break;
+                    default:
+                      break;
+                  }
+                } else if ( RIT_Static == dct.nReifType ) {
+                    // nothing here for NE
+                  assert( CMPT_NE == nCmpType_ADAPTED );
+                } else {  // aux_ relate to 0.0
+                          // But we don't modify domain splitting for them currently
+                  assert ( RIT_Halfreif==dct.nReifType );
+                  double rhs = B;               // + A*0
+                  const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
+                  const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
+                  const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                  double delta = 0.0;
+                  if ( mipd.aux_float_lt_zero_if_1__POST==pCall->decl() )  // only float and lt
+                    delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
+                  if ( nCmpType_ADAPTED < 0 )
+                    delta = -delta;
+                  if ( cls.varRef1->type().isint() && CMPT_EQ_0!=nCmpType_ADAPTED ) {
+                    if ( nCmpType_ADAPTED < 0 )
+                      rhs = rhsDown;
+                    else
+                      rhs = rhsUp;
+                  } else {
+                    rhs += delta;
+                  }
+                  // Now we need rhs not to be in the inner of the domain
+                  bool fUseDD = true;
+                  if ( not cls.fRef1HasEqEncode ) {
+                    auto itRhs = sDomain.lower_bound(rhs);
+                    switch ( nCmpType_ADAPTED ) {
+                      case CMPT_EQ_0:
+                        fUseDD = ( itRhs->left==rhs && itRhs->right==rhs );  // exactly
+                        break;
+                      case CMPT_GT_0:
+                      case CMPT_LT_0:
+                      case CMPT_GE_0:
+                      case CMPT_LE_0:
+                      {
+                        auto it2 = itRhs;
+                        const bool fBegin = ( sDomain.begin()==it2 );
+                        bool fInner = false;
+                        if ( not fBegin ) {
+                          --it2;
+                          if ( it2->right > rhs )
+                            fInner = true;
+                        }
+                        fUseDD = not fInner;
+                      }
+                        break;
+                      default:
+                        assert( ( "Unknown halfreif cmp type", 0 ) );
+                    }
+                  }
+                  if ( fUseDD ) {               // use sDomain
+                    if ( CMPT_EQ_0==nCmpType_ADAPTED ) {
+                      relateReifFlag( pCall->args()[1], { { rhs, rhs } }, RIT_Halfreif );
+                    } else if ( nCmpType_ADAPTED < 0 ) {
+                      relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
+                    } else {
+                      relateReifFlag( pCall->args()[1], { { rhsUp, IntvReal::infPlus() } }, RIT_Halfreif );
+                    }
+                  }  else {                         // use big-M
+                    const bool fLE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0>nCmpType_ADAPTED );
+                    const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
+                    if ( fLE && rhs <= bnds.right ) {
+                      if ( rhs > bnds.left ) {
+                        std::vector<double> coefs = { 1.0, bnds.right-rhs };
+                        std::vector<VarDecl*> vars = {
+                          mipd.expr2VarDecl( pCall->args()[0] ), mipd.expr2VarDecl( pCall->args()[1] ) };
+                        addLinConstr( coefs, vars, CMPT_LE, bnds.right );
+                      } else
+                        setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
+                    }
+                    if ( fGE && rhs >= bnds.left ) {
+                      if ( rhs < bnds.right ) {
+                        std::vector<double> coefs = { -1.0, rhs-bnds.left };
+                        std::vector<VarDecl*> vars = {
+                          mipd.expr2VarDecl( pCall->args()[0] ), mipd.expr2VarDecl( pCall->args()[1] ) };
+                        addLinConstr( coefs, vars, CMPT_LE, -bnds.left );
+                      } else
+                        setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
+                    }
+                  }
+                }
+                break;
+              case CT_Encode:
+                // See if any further constraints here?                             TODO
+                break;
+              default:
+                assert( ("Unknown constraint type", 0 ) );
+            }
+            pItem->remove();                                       // removing the call
+          }
+          // removing the eq_encoding call
+          if ( mipd.vVarDescr[ vd->payload() ].pEqEncoding ) 
+            mipd.vVarDescr[ vd->payload() ].pEqEncoding->remove();
+          DBGOUT_MIPD( " Clique domain after proj of "
+            << A << " * " << vd->id()->str() << " + " << B
+            << ":  " << sDomain );
         }
       }
       
-      void implement__POSTs() {
+      /// sets varFlag = sum( intv.varFlag : SS )
+      void relateReifFlag( Expression* expFlag, const SetOfIntvReal& SS, EnumReifType nRT=RIT_Reif ) {
+        assert( RIT_Reif==nRT or RIT_Halfreif==nRT );
+        VarDecl* varFlag = mipd.expr2VarDecl(expFlag);
+        std::vector<VarDecl*> vIntvFlags;
+        if ( cls.fRef1HasEqEncode ) {                  // use eq_encoding
+          assert( varFlag->type().isint() );
+          std::vector<VarDecl*> pp;
+          auto bnds = SS.getBounds();
+          assert( pp.size() >= bnds.right-bnds.left+1 );
+          const long long iMin = mipd.expr2DeclArray(
+            mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+          for ( auto& intv : SS ) {
+            for ( long long vv = (long long)intv.left;
+                  vv <= (long long)intv.right; ++vv ) {
+              if ( vv>=iMin && vv<pp.size()+iMin )
+                vIntvFlags.push_back( pp[vv-iMin] );
+            }
+          }
+        } else {
+          for ( auto& intv : SS ) {
+            auto it1 = sDomain.lower_bound( intv.left );
+            auto it2 = sDomain.lower_bound( intv.right );
+            auto it11 = it1;
+            if ( sDomain.begin() != it11 ) {
+              --it11;
+              assert( it11->right <= intv.left );
+            }
+            auto it12 = it2;
+            if ( sDomain.begin() != it12 ) {
+              --it12;
+              assert( it12->right <= intv.right );
+            }
+            for ( it12 = it1; it12 != it2; ++it12 ) {
+              assert( it12->varFlag );
+              vIntvFlags.push_back( it12->varFlag );
+            }
+          }
+        }
+        if ( vIntvFlags.size() ) {
+          std::vector<double> onesm( vIntvFlags.size(), -1.0 );
+          onesm.push_back( 1.0 );
+          vIntvFlags.push_back( varFlag );
+          EnumCmpType nCmpType = ( RIT_Reif==nRT ) ? CMPT_EQ : CMPT_LE;
+          addLinConstr( onesm, vIntvFlags, nCmpType, 0.0 );
+        } else {                                    // the reif is false
+          setVarDomain( varFlag, 0.0, 0.0 );
+        }
+      }
+      
+      void setVarDomain( VarDecl* vd, double lb, double ub ) {
+        // need to check if the new range is in the previous bounds...   TODO
+        assert( vd->type().isint() );                               // TODO
+        SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a( lb, ub ));
+//           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
+//           nti->domain(newDom);
+        vd->ti()->domain(newDom);
+      }
+      
+      VarDecl* addIntVar(double LB, double UB) {
+//         GCLock lock;
+        // Cache them? Only location can be different                    TODO
+        SetLit* newDom = new SetLit( Location().introduce(), IntSetVal::a( LB, UB ) );
+        TypeInst* ti = new TypeInst(Location().introduce(),Type::varint(),newDom);
+        VarDecl* newVar = new VarDecl(Location().introduce(),ti,mipd.getEnv()->envi().genId());
+        mipd.getEnv()->envi().flat_addItem(new VarDeclI(Location().introduce(),newVar));
+        return newVar;
+      }
+      
+      void addLinConstr( std::vector<double>& coefs, std::vector<VarDecl*>& vars,
+                         EnumCmpType nCmpType, double rhs ) {
+        std::vector<Expression*> args(3);
+        assert( vars.size() );
+        assert( coefs.size()==vars.size() );
+        assert( CMPT_EQ==nCmpType || CMPT_LE==nCmpType );
+        std::vector<Expression*> nc_c(coefs.size());
+        std::vector<Expression*> nx(coefs.size());
+        bool fFloat = not (*vars.begin())->type().isint();
+        const char* sName = "int_lin_eq";
+        FunctionI* fDecl = mipd.int_lin_eq;
+        if ( fFloat ) {
+          for ( int i=0; i<vars.size(); ++i ) {
+            nc_c[i] = FloatLit::a( coefs[i] );
+            nx[i] = vars[i]->id();
+          }
+          args[2] = FloatLit::a(rhs);
+          args[2]->type(Type::parfloat(0));
+          args[0] = new ArrayLit(Location().introduce(),nc_c);
+          args[0]->type(Type::parfloat(1));
+          args[1] = new ArrayLit(Location().introduce(),nx);
+          args[1]->type(Type::varfloat(1));
+          if ( CMPT_LE==nCmpType ) {
+            sName = "float_lin_le";
+            fDecl = mipd.float_lin_le;
+          }
+        } else {
+          for ( int i=0; i<vars.size(); ++i ) {
+            nc_c[i] = IntLit::a( coefs[i] );
+            nx[i] = vars[i]->id();
+          }
+          args[2] = IntLit::a(rhs);
+          args[2]->type(Type::parint(0));
+          args[0] = new ArrayLit(Location().introduce(),nc_c);
+          args[0]->type(Type::parint(1));
+          args[1] = new ArrayLit(Location().introduce(),nx);
+          args[1]->type(Type::varint(1));
+          if ( CMPT_LE==nCmpType ) {
+            sName = "int_lin_le";
+            fDecl = mipd.int_lin_le;
+          } else {
+            sName = "int_lin_eq";
+            fDecl = mipd.int_lin_eq;
+          }
+        }
+        auto nc = new Call(Location().introduce(),ASTString(sName),args);
+        nc->type(Type::varbool());
+        nc->decl(fDecl);
+        mipd.getEnv()->envi().flat_addItem(new ConstraintI(Location().introduce(), nc));
+      }
+      
+      /// domain / reif set of one variable into that for another
+      void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget, 
+                          double A, double B ) {
+        assert( A != 0.0 );
+        IntSetVal* S = eval_intset( mipd.getEnv()->envi(), e );
+        IntSetRanges domr(S);
+        for (; domr(); ++domr) {                          // * A + B
+          IntVal mmin = domr.min();
+          IntVal mmax = domr.max();
+          if ( A < 0.0 )
+            std:: swap( mmin, mmax );
+          s.insert( IntvReal(                   // * A + B
+            mmin.isFinite() ?
+              rndUpIfInt( varTarget, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
+            mmax.isFinite() ?
+              rndDownIfInt( varTarget, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
+          );
+        }
+      }
+      
+      /// compute the delta for float strict ineq
+      double computeDelta( VarDecl* var, VarDecl* varOrig, IntvReal bnds,
+                           double A, Call* pCall, int nArg ) {
+        double delta = varOrig->type().isfloat() ? 
+          mipd.expr2Const( pCall->args()[nArg] ) * ( bnds.right-bnds.left )
+          : std::fabs( A ) ;           // delta should be scaled as well
+        if ( var->type().isint() )  // the projected-onto variable
+          delta = std::max( 1.0, delta );
+        return delta;
       }
     };  // class DomainDecomp
     
@@ -975,12 +1278,14 @@ namespace MiniZinc {
       return vd;
     }
       
+    /// Fills the vector of vardecls and returns the least index of the array
     template <class Array>
-    void expr2DeclArray(Expression* arg, Array& aVD) {
+    long long expr2DeclArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
       checkOrResize( aVD, al->v().size() );
       for (unsigned int i=0; i<al->v().size(); i++)
         aVD[i] = expr2VarDecl(al->v()[i]);
+      return al->min(0);
     }
     
     double expr2Const(Expression* arg) {
@@ -997,7 +1302,7 @@ namespace MiniZinc {
       return 0.0;
     }
     
-    template <class Container, class Elem, size_t >
+    template <class Container, class Elem=int, size_t =0>
     void checkOrResize(Container& cnt, size_t sz) {
       cnt.resize(sz);
     }
@@ -1113,7 +1418,7 @@ namespace MiniZinc {
     return std::make_pair( it_01, it_02 );
   }
   template <class N>
-  Interval<N> SetOfIntervals<N>::getBounds() {
+  Interval<N> SetOfIntervals<N>::getBounds() const {
     if ( this->empty() )
       return Interval<N>( Interval<N>::infPlus(), Interval<N>::infMinus() );
     iterator it2 = this->end();

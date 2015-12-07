@@ -55,7 +55,7 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
-float: float_lt_EPS_coef__ = 1e-05;
+float: float_lt_EPS_coef__ = 1e-03;
 
 % Uncomment the following redefinition for FlatZinc MIP solver interfaces that
 % do not support strict inequality.  Note that it does not preserve equivalence

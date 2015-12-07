@@ -22,7 +22,7 @@ namespace MiniZinc {
   /// Linearize domain constraints in \a env
   void MIPdomains(Env& env);
   
-  enum EnumReifType { RIT_None, RIT_Static, RIT_Reif, RIT_Halfreif1, RIT_Halfreif0 };
+  enum EnumReifType { RIT_None, RIT_Static, RIT_Reif, RIT_Halfreif };
   enum EnumConstrType { CT_None, CT_Comparison, CT_SetIn, CT_Encode };
   enum EnumCmpType { CMPT_None=0, CMPT_LE=-4, CMPT_GE=4, CMPT_EQ=1, CMPT_NE=3, CMPT_LT=-5, CMPT_GT=5,
                         CMPT_LE_0=-6, CMPT_GE_0=6, CMPT_EQ_0=2, CMPT_LT_0=-7, CMPT_GT_0=7 };
@@ -49,6 +49,8 @@ namespace MiniZinc {
 
   template <class N>
   struct Interval {
+    N left = infMinus(), right = infPlus();
+    mutable VarDecl* varFlag;
     constexpr static N infMinus() {
       return ( std::numeric_limits<N>::has_infinity ) ?
         -std::numeric_limits<N>::infinity() :
@@ -59,7 +61,6 @@ namespace MiniZinc {
         std::numeric_limits<N>::infinity() :
       std::numeric_limits<N>::max();
     }
-    N left = infMinus(), right = infPlus();
     Interval(N a=infMinus(), N b=infPlus()) : left(a), right(b) {
       if ( left > right )
         throw std::string("Interval: lb>ub");
@@ -100,7 +101,7 @@ namespace MiniZinc {
     SplitResult split(iterator& it, N pos);
     bool checkFiniteBounds();
     bool checkDisjunctStrict();
-    Interval<N> getBounds();
+    Interval<N> getBounds() const;
   };  // class SetOfIntervals
   typedef SetOfIntervals<double> SetOfIntvReal;
   
