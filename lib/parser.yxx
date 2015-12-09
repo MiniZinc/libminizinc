@@ -247,7 +247,7 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
 
     string fileDirname; string fileBasename;
-    Model* model;
+    Model* model = NULL;
     if (filenames.empty()) {
       err << "Error: no model given" << std::endl;
       goto error;
