@@ -223,7 +223,9 @@ int main(int argc, char** argv) {
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "'" << std::endl;
-    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
+    std::vector<std::string> filenames;
+    filenames.push_back(filename);
+    if (Model* m = parse(filenames, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          flag_verbose, errstream)) {
       try {
         Env env(m);

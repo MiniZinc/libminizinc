@@ -1096,6 +1096,8 @@ namespace MiniZinc {
     OutputI(const Location& loc, Expression* e);
     /// Access expression
     Expression* e(void) const { return _e; }
+    /// Update expression
+    void e(Expression* e) { _e=e; }
   };
 
   class EnvI;
