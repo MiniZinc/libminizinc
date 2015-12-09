@@ -196,6 +196,8 @@ namespace MiniZinc {
           if (BinOp* e_bo = e->dyn_cast<BinOp>()) {
             todo.push_back(e_bo->lhs());
             todo.push_back(e_bo->rhs());
+            for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it)
+              run(env, *it);
           } else {
             run(env, e);
           }

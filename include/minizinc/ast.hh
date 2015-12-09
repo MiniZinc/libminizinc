@@ -1475,6 +1475,7 @@ namespace MiniZinc {
       BoolLit* boollit(bool b) {
         return b ? lit_true : lit_false;
       }
+      static const int max_array_size = INT_MAX / 2;
   };
     
   /// Return static instance

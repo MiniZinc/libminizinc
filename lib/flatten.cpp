@@ -1815,9 +1815,12 @@ namespace MiniZinc {
     
     // Compute bounds of result as union bounds of all branches
     IntBounds r_bounds(IntVal::infinity(),-IntVal::infinity(),true);
-    if (r && r->type().isint()) {
-      r_bounds = compute_int_bounds(env,r->id());
-    }
+    std::vector<IntBounds> r_bounds_int;
+    bool r_bounds_valid_int = true;
+    std::vector<IntSetVal*> r_bounds_set;
+    bool r_bounds_valid_set = true;
+    std::vector<FloatBounds> r_bounds_float;
+    bool r_bounds_valid_float = true;
     
     VarDecl* nr = r;
 
@@ -1936,14 +1939,23 @@ namespace MiniZinc {
         
       }
       // update bounds
-      if (cond && r_bounds.valid && ite->e_then(i)->type().isint()) {
-        IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
-        if (ib_then.valid) {
-          IntVal lb = std::min(r_bounds.l, ib_then.l);
-          IntVal ub = std::max(r_bounds.u, ib_then.u);
-          r_bounds = IntBounds(lb,ub,true);
-        } else {
-          r_bounds = IntBounds(0,0,false);
+      
+      if (cond) {
+        if (r_bounds_valid_int && ite->e_then(i)->type().isint()) {
+          IntBounds ib_then = compute_int_bounds(env,ite->e_then(i));
+          if (ib_then.valid)
+            r_bounds_int.push_back(ib_then);
+          r_bounds_valid_int = r_bounds_valid_int && ib_then.valid;
+        } else if (r_bounds_valid_set && ite->e_then(i)->type().isintset()) {
+          IntSetVal* isv = compute_intset_bounds(env, ite->e_then(i));
+          if (isv)
+            r_bounds_set.push_back(isv);
+          r_bounds_valid_set = r_bounds_valid_set && isv;
+        } else if (r_bounds_valid_float && ite->e_then(i)->type().isfloat()) {
+          FloatBounds fb_then = compute_float_bounds(env, ite->e_then(i));
+          if (fb_then.valid)
+            r_bounds_float.push_back(fb_then);
+          r_bounds_valid_float = r_bounds_valid_float && fb_then.valid;
         }
       }
       
@@ -1957,16 +1969,71 @@ namespace MiniZinc {
     }
 
     // update bounds of result with bounds of else branch
-    if (r_bounds.valid && ite->e_else()->type().isint()) {
+    
+    if (r_bounds_valid_int && ite->e_else()->type().isint()) {
       IntBounds ib_else = compute_int_bounds(env,ite->e_else());
       if (ib_else.valid) {
-        IntVal lb = std::min(r_bounds.l, ib_else.l);
-        IntVal ub = std::max(r_bounds.u, ib_else.u);
+        r_bounds_int.push_back(ib_else);
+        IntVal lb = IntVal::infinity();
+        IntVal ub = -IntVal::infinity();
+        for (unsigned int i=0; i<r_bounds_int.size(); i++) {
+          lb = std::min(lb, r_bounds_int[i].l);
+          ub = std::max(ub, r_bounds_int[i].u);
+        }
+        if (r) {
+          IntBounds orig_r_bounds = compute_int_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
         SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
         nr->ti()->domain(r_dom);
       }
+    } else if (r_bounds_valid_set && ite->e_else()->type().isintset()) {
+      IntSetVal* isv_else = compute_intset_bounds(env, ite->e_else());
+      if (isv_else) {
+        IntSetVal* isv = isv_else;
+        for (unsigned int i=0; i<r_bounds_set.size(); i++) {
+          IntSetRanges i0(isv);
+          IntSetRanges i1(r_bounds_set[i]);
+          Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
+          isv = IntSetVal::ai(u);
+        }
+        if (r) {
+          IntSetVal* orig_r_bounds = compute_intset_bounds(env,r->id());
+          if (orig_r_bounds) {
+            IntSetRanges i0(isv);
+            IntSetRanges i1(orig_r_bounds);
+            Ranges::Inter<IntSetRanges, IntSetRanges> inter(i0,i1);
+            isv = IntSetVal::ai(inter);
+          }
+        }
+        SetLit* r_dom = new SetLit(Location().introduce(),isv);
+        nr->ti()->domain(r_dom);
+      }
+    } else if (r_bounds_valid_float && ite->e_else()->type().isfloat()) {
+      FloatBounds fb_else = compute_float_bounds(env, ite->e_else());
+      if (fb_else.valid) {
+        FloatVal lb = fb_else.l;
+        FloatVal ub = fb_else.u;
+        for (unsigned int i=0; i<r_bounds_float.size(); i++) {
+          lb = std::min(lb, r_bounds_float[i].l);
+          ub = std::max(ub, r_bounds_float[i].u);
+        }
+        if (r) {
+          FloatBounds orig_r_bounds = compute_float_bounds(env,r->id());
+          if (orig_r_bounds.valid) {
+            lb = std::max(lb,orig_r_bounds.l);
+            ub = std::min(ub,orig_r_bounds.u);
+          }
+        }
+        BinOp* r_dom = new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+        r_dom->type(Type::parfloat(1));
+        nr->ti()->domain(r_dom);
+      }
     }
-
+    
     // flatten else branch
     EE eelse = flat_exp(env, cmix, ite->e_else(), NULL, NULL);
     
@@ -2801,12 +2868,12 @@ namespace MiniZinc {
       ret.r = bind(env,ctx,r,eval_par(env,e));
       return ret;
     }
-    CallStackItem _csi(env,e);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,Ctx(),r,e);
@@ -2814,6 +2881,7 @@ namespace MiniZinc {
       }
     case Expression::E_SETLIT:
       {
+        CallStackItem _csi(env,e);
         SetLit* sl = e->cast<SetLit>();
         assert(sl->isv()==NULL);
         std::vector<EE> elems_ee(sl->v().size());
@@ -2853,6 +2921,7 @@ namespace MiniZinc {
       break;
     case Expression::E_BOOLLIT:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         ret.b = bind(env,Ctx(),b,constants().lit_true);
         ret.r = bind(env,ctx,r,e);
@@ -2861,6 +2930,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
+        CallStackItem _csi(env,e);
         Id* id = e->cast<Id>();
         if (id->decl()==NULL) {
           if (id->type().isann()) {
@@ -2952,6 +3022,12 @@ namespace MiniZinc {
             Type tt = vd->ti()->type();
             tt.dim(0);
             
+            if (asize > Constants::max_array_size) {
+              std::ostringstream oss;
+              oss << "array size (" << asize << ") exceeds maximum allowed size (" << Constants::max_array_size << ")";
+              throw FlatteningError(env,vd->loc(),oss.str());
+            }
+            
             std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
@@ -3019,6 +3095,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ANON:
       {
+        CallStackItem _csi(env,e);
         AnonVar* av = e->cast<AnonVar>();
         if (av->type().isbot()) {
           throw InternalError("type of anonymous variable could not be inferred");
@@ -3031,6 +3108,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYLIT:
       {
+        CallStackItem _csi(env,e);
         ArrayLit* al = e->cast<ArrayLit>();
         if (al->flat()) {
           ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -3060,6 +3138,7 @@ namespace MiniZinc {
       break;
     case Expression::E_ARRAYACCESS:
       {
+        CallStackItem _csi(env,e);
         ArrayAccess* aa = e->cast<ArrayAccess>();
         KeepAlive aa_ka = aa;
 
@@ -3324,6 +3403,7 @@ namespace MiniZinc {
       break;
     case Expression::E_COMP:
       {
+        CallStackItem _csi(env,e);
         Comprehension* c = e->cast<Comprehension>();
         KeepAlive c_ka(c);
         
@@ -3487,12 +3567,14 @@ namespace MiniZinc {
       break;
     case Expression::E_ITE:
       {
+        CallStackItem _csi(env,e);
         ITE* ite = e->cast<ITE>();
         ret = flat_ite(env,ctx,ite,r,b);
       }
       break;
     case Expression::E_BINOP:
       {
+        CallStackItem _csi(env,e);
         BinOp* bo = e->cast<BinOp>();
         if (isReverseMap(bo)) {
           CallArgItem cai(env);
@@ -3834,6 +3916,9 @@ namespace MiniZinc {
             ctx.neg = false;
             Call* c = new Call(bo->loc().introduce(),id,args);
             c->decl(env.orig->matchFn(env,c));
+            if (c->decl()==NULL) {
+              throw FlatteningError(env,c->loc(), "cannot find matching declaration");
+            }
             c->type(c->decl()->rtype(env,args));
             KeepAlive ka(c);
             GC::unlock();
@@ -4245,6 +4330,7 @@ namespace MiniZinc {
       break;
     case Expression::E_UNOP:
       {
+        CallStackItem _csi(env,e);
         UnOp* uo = e->cast<UnOp>();
         switch (uo->op()) {
         case UOT_NOT:
@@ -4291,10 +4377,21 @@ namespace MiniZinc {
           throw InternalError("undeclared function or predicate "
                               +c->id().str());
         }
-
+        
+        if (decl->params().size()==1) {
+          if (Call* call_body = Expression::dyn_cast<Call>(decl->e())) {
+            if (call_body->args().size()==1 && Expression::equal(call_body->args()[0],decl->params()[0]->id())) {
+              c->id(call_body->id());
+              c->decl(call_body->decl());
+            }
+          }
+        }
+        
         Ctx nctx = ctx;
         nctx.neg = false;
         ASTString cid = c->id();
+        CallStackItem _csi(env,e);
+
         if (decl->e()==NULL) {
           if (cid == constants().ids.forall) {
             nctx.b = +nctx.b;
@@ -4520,7 +4617,7 @@ namespace MiniZinc {
           {
             GCLock lock;
             std::vector<Expression*> e_args = toExpVec(args);
-            Call* cr_c = new Call(Location().introduce(),cid,e_args);
+            Call* cr_c = new Call(c->loc().introduce(),cid,e_args);
             decl = env.orig->matchFn(env,cr_c);
             if (decl==NULL)
               throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
@@ -4618,7 +4715,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (cr()->type().isbool() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
+            if (cr()->type().isbool() &&  !cr()->type().ispar() && !cr()->type().isopt() && (ctx.b != C_ROOT || r != constants().var_true)) {
               std::vector<Type> argtypes(args.size());
               for (unsigned int i=0; i<args.size(); i++)
                 argtypes[i] = args[i]()->type();
@@ -4666,7 +4763,7 @@ namespace MiniZinc {
               }
             }
           call_nonreif:
-            if (decl->e()==NULL) {
+            if ( (cr()->type().ispar() && !cr()->type().isann()) || decl->e()==NULL) {
               Call* cr_c = cr()->cast<Call>();
               /// All builtins are total
               std::vector<Type> argt(cr_c->args().size());
@@ -4743,6 +4840,7 @@ namespace MiniZinc {
       break;
     case Expression::E_VARDECL:
       {
+        CallStackItem _csi(env,e);
         GCLock lock;
         if (ctx.b != C_ROOT)
           throw FlatteningError(env,e->loc(), "not in root context");
@@ -4784,6 +4882,7 @@ namespace MiniZinc {
       break;
     case Expression::E_LET:
       {
+        CallStackItem _csi(env,e);
         Let* let = e->cast<Let>();
         GC::mark();
         std::vector<EE> cs;
@@ -6243,6 +6342,10 @@ namespace MiniZinc {
                 args.push_back(vd->id());
                 Call * nc = new Call(c->loc().introduce(),cid,args);
                 nc->type(c->type());
+                nc->decl(env.orig->matchFn(env, nc));
+                if (nc->decl()==NULL) {
+                  throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+                }
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
