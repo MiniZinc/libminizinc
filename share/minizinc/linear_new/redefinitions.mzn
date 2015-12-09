@@ -67,8 +67,8 @@ float: float_lt_EPS_coef__ = 1e-03;
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:
 opt bool: mzn__my_trace_on
-   = false;
-   % = true;
+   %= false;
+    = true;
 test my_trace(string: msg) ::promise_total
   = if occurs(mzn__my_trace_on) /\ deopt(mzn__my_trace_on) then
       trace(msg)
@@ -576,6 +576,9 @@ predicate set_in(var int: x, set of int: s__) =
 
 % XXX  only for a fixed set
 predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
+  if is_fixed(b) then
+    if true==fix(b) then x in s__ else x in dom(x) diff s__ endif
+  else
     my_trace("  set_in_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
@@ -611,7 +614,8 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
             endif
 %           bool2int(b) == sum(e in s)(bool2int( x == e ))
         endif
-    );
+    )
+  endif;
 
     % Alternative
 predicate alt_set_in_reif(var int: x, set of int: s, var bool: b) =
@@ -676,14 +680,18 @@ predicate set_eq(var set of int: x, var set of int: y) =
   endif;
 
 predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
-  let {
-    array[int] of var bool: bx = set2bools(x);
-    array[int] of var bool: by = set2bools(y);
-  } in b <-> forall (i in index_set(bx) union index_set(by)) (
-    if not (i in index_set(bx)) then not by[i]
-    elseif not (i in index_set(by)) then not bx[i]
-    else bx[i]=by[i] endif
-  );
+  if is_fixed(b) then
+    if true==fix(b) then x==y else x!=y endif
+  else
+    let {
+      array[int] of var bool: bx = set2bools(x);
+      array[int] of var bool: by = set2bools(y);
+    } in b <-> forall (i in index_set(bx) union index_set(by)) (
+      if not (i in index_set(bx)) then not by[i]
+      elseif not (i in index_set(by)) then not bx[i]
+      else bx[i]=by[i] endif
+    )
+  endif;
 
 predicate set_subset(var set of int: x, var set of int: y) =
   let {
@@ -695,13 +703,16 @@ predicate set_subset(var set of int: x, var set of int: y) =
   );
 
 predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) =
-  let {
-    array[int] of var bool: bx = set2bools(x);
-    array[int] of var bool: by = set2bools(y);
-  } in b <-> forall (i in index_set(bx)) (
-    if not (i in index_set(by)) then not bx[i]
-    else bx[i] -> by[i] endif
-  );
+%  if is_fixed(b) then                           TODO
+%    if true==fix(b) then x subset y else x!=y endif
+%  else
+    let {
+      array[int] of var bool: bx = set2bools(x);
+      array[int] of var bool: by = set2bools(y);
+    } in b <-> forall (i in index_set(bx)) (
+      if not (i in index_set(by)) then not bx[i]
+      else bx[i] -> by[i] endif
+    );
 
 function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total =
   let {

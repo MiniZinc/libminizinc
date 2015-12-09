@@ -148,7 +148,8 @@ predicate array_bool_or(array[int] of var bool: a, var bool: b) =
     endif;
 
 predicate array_bool_and(array[int] of var bool: a, var bool: b) =
-    if false /*is_fixed(b)*/ then   % frequent case. Does not work -- BUG TODO
+%%    if false /*is_fixed(b)*/ then   % frequent case. Does not work -- BUG TODO
+    if is_fixed(b) then            % frequent case. Does not work -- BUG TODO
 %%        my_trace( "  array_bool_and: \(a), \(b) \n") /\   TODO
         my_trace( "  array_bool_and FIXED: " ++ show(index_set(a)) ++ ", val=" ++ show(fix(b)) ++ "\n") /\
         if fix(b) = false then

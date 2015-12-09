@@ -18,7 +18,9 @@
 
 %% var, var
 predicate int_le_reif(var int: x, var int: y, var bool: b) =
-  if ub(x)<=lb(y) then b==true
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
   elseif fPostprocessDomains then
     int_le_reif__POST(x-y, 0, b)
@@ -29,7 +31,9 @@ predicate int_le_reif(var int: x, var int: y, var bool: b) =
 
 %% const, var
 predicate int_le_reif(int: x, var int: y, var bool: b) =
-  if ub(x)<=lb(y) then b==true
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
   elseif fPostprocessDomains then
     int_ge_reif__POST(y, x, b)
@@ -40,7 +44,9 @@ predicate int_le_reif(int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_le_reif(var int: x, int: y, var bool: b) =
-  if ub(x)<=lb(y) then b==true
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
   elseif false then                       %% never use Concert's reif feature
       my_trace__DBG("  int_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
@@ -114,7 +120,9 @@ predicate int_ne__SIMPLE(var int: x, int: y) =
 predicate int_eq_reif(var int: x, var int: y, var bool: b) =
     my_trace("  int_eq_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif
       ++ ",  y: " ++ if has_bounds(y) then show(dom(y)) else "int" endif ++ " )\n" ) /\
-    if card(dom(x) intersect dom(y))>0 then
+    if is_fixed(b) then
+      if true==fix(b) then x==y else x!=y endif
+    elseif card(dom(x) intersect dom(y))>0 then
       if is_fixed(x) then
         if is_fixed(y) then
           b <-> fix(x)==fix(y)
@@ -133,7 +141,9 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_eq_reif(var int: x, int: y, var bool: b) =
-  if y in dom(x) then
+  if is_fixed(b) then
+    if true==fix(b) then x==y else x!=y endif
+  elseif y in dom(x) then
     my_trace("  int_eq_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif
       ++ ",  y=const: " ++ show(y) ++ " )\n") /\
     if y==lb(x) then
@@ -216,7 +226,9 @@ predicate int_lin_ne_reif(array[int] of int: c, array[int] of var int: x,
 
 %% var float, const
 predicate float_le_reif(var float: x, float: y, var bool: b) =
-  if false then
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif false then
     my_trace__DBG("  float_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
     float_lin_le_reif__IND( [1.0, -1.0], [x, y], 0.0, b)
   elseif ub(x) <= y then
@@ -234,7 +246,9 @@ predicate float_le_reif(var float: x, float: y, var bool: b) =
 
 %% const, var float
 predicate float_le_reif(float: x, var float: y, var bool: b) =
-  if false then
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif false then
     my_trace__DBG("  float_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
     float_lin_le_reif__IND( [1.0, -1.0], [x, y], 0.0, b)
   elseif ub(x) <= lb(y) then
@@ -253,7 +267,9 @@ predicate float_le_reif(var float: x, var float: y, var bool: b) =
 
 %% TODO
 predicate float_lt_reif(var float: x, var float: y, var bool: b) =
-  if fPostprocessDomains then
+  if is_fixed(b) then
+    if true==fix(b) then x<y else x>=y endif
+  elseif fPostprocessDomains then
     aux_float_lt_zero_iff_1__POST(x - y, b, float_lt_EPS_coef__)
   else
     let { var int: p = bool2int(b) }
@@ -280,7 +296,9 @@ predicate float_ne(var float: x, var float: y) = float_ne(x-y, 0.0);
     
 %% var, var? TODO
 predicate float_eq_reif(var float: x, var float: y, var bool: b) =
-  if ub(x)<lb(y) \/ lb(x)>ub(y) then
+  if is_fixed(b) then
+    if true==fix(b) then x==y else x!=y endif
+  elseif ub(x)<lb(y) \/ lb(x)>ub(y) then
     b == false
   elseif is_fixed(x) /\ is_fixed(y) then
     b == (fix(x) == fix(y))
@@ -318,7 +336,9 @@ predicate float_lin_lt_reif(array[int] of float: c, array[int] of var float: x,
 % Auxiliary: equality reified onto a 0/1 variable
 
 predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
-  if fPostprocessDomains then
+  if is_fixed(p) then
+    if 1==fix(p) then x==y else x!=y endif
+  elseif fPostprocessDomains then
     abort("  aux_int_eq_iff_1 should not be used with domain postprocessing")
   elseif false then
     my_trace__DBG("  aux_int_eq_iff_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
@@ -355,7 +375,9 @@ predicate alt_1_aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     sum(q) <= 1 + p;
 
 predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
-  if fPostprocessDomains then
+  if is_fixed(p) then
+    if 1==fix(p) then x==y else x!=y endif
+  elseif fPostprocessDomains then
     abort("  aux_float_eq_iff_1 should not be used with domain postprocessing")
   else
 %%  if fMZN__UseIndicators then   ??????

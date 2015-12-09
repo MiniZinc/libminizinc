@@ -12,6 +12,8 @@ predicate equality_encoding(var int: x, array[int] of var int: x_eq_d) =
     /\
     sum(d in dom(x))( d * x_eq_d[d] ) = x
     /\
+    my_trace( "eq_enc: \(x), index_set(pp)=" ++ show(index_set( x_eq_d )) ++ "\n" )
+    /\
     if fPostprocessDomains then
       equality_encoding__POST(x, x_eq_d)
     else true endif
