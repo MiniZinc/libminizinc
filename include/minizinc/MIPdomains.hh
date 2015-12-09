@@ -17,10 +17,23 @@
 #include <minizinc/stl_map_set.hh>
 #include <set>
 
+#define assert_soft( c, e ) \
+  do { static int nn=0; \
+ if ( !c ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
+
 namespace MiniZinc {
 
   /// Linearize domain constraints in \a env
   void MIPdomains(Env& env);
+  
+  enum EnumStatIdx__MIPD { N_POSTs__all, N_POSTs__intCmpReif, N_POSTs__floatCmpReif, 
+    N_POSTs__intNE, N_POSTs__floatNE, N_POSTs__setIn, N_POSTs__setInReif,
+    N_POSTs__intAux, N_POSTs__floatAux,
+    N_POSTs__varsDirect, N_POSTs__varsInvolved,
+    N_POSTs__domSizeMin, N_POSTs__domSizeSum, N_POSTs__domSizeMax,
+    N_POSTs__cliquesWithEqEncode,
+    N_POSTs__size };
+  extern std::vector<double> MIPD__stats;
   
   enum EnumReifType { RIT_None, RIT_Static, RIT_Reif, RIT_Halfreif };
   enum EnumConstrType { CT_None, CT_Comparison, CT_SetIn, CT_Encode };
@@ -114,6 +127,39 @@ namespace MiniZinc {
     return os;
   }
   
+  template <class Coefs, class Vars>
+  class LinEq__ {
+    public:
+      Coefs coefs;
+      Vars vd;
+      double rhs;
+  };
+  
+  template <class Coefs, class Vars>
+  static std::ostream& operator<<( std::ostream& os, LinEq__<Coefs, Vars>& led ) {
+    os << "( [";
+    for (auto c : led.coefs)
+      os << c << ' ';
+    os << " ] * [ ";
+    for (auto v : led.vd)
+      os << v->id()->str() << ' ';
+    os <<" ] ) == " << led.rhs;
+    return os;
+  }
+
+  typedef LinEq__<std::array<double, 2>, std::array<VarDecl*, 2> > LinEq2Vars;
+  typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
+//     struct LinEq2Vars {
+//       std::array<double, 2> coefs;
+//       std::array<PVarDecl, 2> vd = { { 0, 0 } };
+//       double rhs;
+//     };
+//     
+//     struct LinEq {
+//       std::vector<double> coefs;
+//       std::vector<VarDecl*> vd;
+//       double rhs;
+//     };
 }
 
 #endif
