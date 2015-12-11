@@ -4413,10 +4413,14 @@ namespace MiniZinc {
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->v().size(); i++) {
                 if (Call* sc = same_call(al->v()[i],cid)) {
-                  GCLock lock;
-                  ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
-                  for (unsigned int j=0; j<sc_c->v().size(); j++) {
-                    alv.push_back(sc_c->v()[j]);
+                  if (sc->id()==constants().ids.clause) {
+                    alv.push_back(sc);
+                  } else {
+                    GCLock lock;
+                    ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
+                    for (unsigned int j=0; j<sc_c->v().size(); j++) {
+                      alv.push_back(sc_c->v()[j]);
+                    }
                   }
                 } else {
                   alv.push_back(al->v()[i]);
