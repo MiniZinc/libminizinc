@@ -464,6 +464,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 
@@ -473,6 +474,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 

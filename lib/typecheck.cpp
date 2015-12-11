@@ -18,6 +18,8 @@
 #include <string>
 #include <sstream>
 
+#include <minizinc/prettyprinter.hh>
+
 namespace MiniZinc {
   
   struct VarDeclCmp {
@@ -51,8 +53,48 @@ namespace MiniZinc {
     }
   };
   
+  void createEnumMapper(EnvI& env, Model* m, Id* ident, SetLit* sl) {
+    GCLock lock;
+    std::vector<TypeInst*> ranges(1);
+    ranges[0] = new TypeInst(Location().introduce(),Type::parint());
+    TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
+    ti->setRanges(ranges);
+    std::string name = "_enum_to_string_"+ident->str().str();
+    std::vector<Expression*> al_args(sl->v().size());
+    for (unsigned int i=0; i<sl->v().size(); i++) {
+      al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
+    }
+    ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
+    VarDecl* vd = new VarDecl(Location().introduce(),ti,name,al);
+    m->addItem(new VarDeclI(Location().introduce(),vd));
+    
+    TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+    VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+    vd_aa->toplevel(false);
+    std::vector<Expression*> aa_args(1);
+    aa_args[0] = vd_aa->id();
+    ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd->id(),aa_args);
+    TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+    std::vector<VarDecl*> fi_params(1);
+    fi_params[0] = vd_aa;
+    FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,aa);
+    m->addItem(fi);
+  }
+  
   void
   TopoSorter::add(EnvI& env, VarDecl* vd, bool unique) {
+    if (vd->ti()->isEnum() && vd->e()) {
+      SetLit* sl = vd->e()->cast<SetLit>();
+      GCLock lock;
+      for (unsigned int i=0; i<sl->v().size(); i++) {
+        TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parint());
+        VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),IntLit::a(i+1));
+        model->addItem(new VarDeclI(vd_id->loc(),vd_id));
+      }
+      SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
+      createEnumMapper(env, model, vd->id(), sl);
+      vd->e(nsl);
+    }
     DeclMap::iterator vdi = idmap.find(vd->id());
     if (vdi == idmap.end()) {
       Decls nd; nd.push_back(vd);
@@ -820,7 +862,7 @@ namespace MiniZinc {
   };
   
   void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters) {
-    TopoSorter ts;
+    TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
@@ -854,8 +896,25 @@ namespace MiniZinc {
       VarDecl* vd = ts.get(env.envi(),ai->id(),ai->loc());
       if (vd->e())
         throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
+      
+      if (vd->ti()->isEnum()) {
+        if (SetLit* sl = ai->e()->dyn_cast<SetLit>()) {
+          GCLock lock;
+          for (unsigned int i=0; i<sl->v().size(); i++) {
+            TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parint());
+            VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),IntLit::a(i+1));
+            m->addItem(new VarDeclI(vd_id->loc(),vd_id));
+            ts.add(env.envi(),vd_id,true);
+          }
+          SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
+          vd->e(nsl);
+        } else {
+          throw TypeError(env.envi(),ai->loc(),"invalid assignment to enum");
+        }
+      } else {
+        vd->e(ai->e());
+      }
       ai->remove();
-      vd->e(ai->e());
     }
     
     class TSV1 : public ItemVisitor {

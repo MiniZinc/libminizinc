@@ -31,6 +31,10 @@ namespace MiniZinc {
     DeclMap idmap;
     /// Map from declarations to positions
     PosMap pos;
+    /// The model
+    Model* model;
+    
+    TopoSorter(Model* model0) : model(model0) {}
     
     /// Add a variable declaration
     void add(EnvI& env, VarDecl* vd, bool unique);

@@ -871,6 +871,10 @@ namespace MiniZinc {
     bool computedDomain(void) const { return _flag_1; }
     /// Set if domain is computed from right hand side of variable
     void setComputedDomain(bool b) { _flag_1=b; }
+    /// Check if this TypeInst represents an enum
+    bool isEnum(void) const { return _flag_2; }
+    /// Set if this TypeInst represents an enum
+    void setIsEnum(bool b) { _flag_2=b; }
   };
 
   /**
