@@ -541,6 +541,7 @@ namespace MiniZinc {
       
       class LinEqGraph : public TMatrixVars {
       public:
+        static double dCoefMin, dCoefMax;
         /// Stores the arc (x1, x2) as x1 = a*x2 + b
         /// so that a constraint on x2, say x2<=c <-> f,
         /// is equivalent to one for x1:  x1 <=/>= a*c+b <-> f
@@ -560,6 +561,11 @@ namespace MiniZinc {
           const double CA = rhs/(*begC);
           checkExistingArc(begV, negBA, CA);
           (*this)[*begV][*(begV+1)] = std::make_pair(negBA, CA);
+          const double dCoefAbs = std::fabs( negBA );
+          if ( dCoefAbs<dCoefMin )
+            dCoefMin = dCoefAbs;
+          if ( dCoefAbs>dCoefMax )
+            dCoefMax = dCoefAbs;
         }
         void addEdge(const LinEq2Vars& led) {
           addArc( led.coefs.begin(), led.vd.begin(), led.rhs );
@@ -771,6 +777,8 @@ namespace MiniZinc {
           assert( pCI );
           Call* pCall = pCI->e()->dyn_cast<Call>();
           assert( pCall );
+          DBGOUT_MIPD__( "PROPAG CALL  " );
+          DBGOUT_MIPD_SELF( debugprint( pCall ) );
           // check the bounds for bool in reifs?                     TODO
           auto ipct = mipd.mCallTypes.find( pCall->decl() );
           assert( mipd.mCallTypes.end() != ipct );
@@ -1057,7 +1065,7 @@ namespace MiniZinc {
                     if ( fLE && rhs <= bnds.right ) {
                       if ( rhs > bnds.left ) {
                         std::vector<double> coefs = { 1.0, bnds.right-rhs };
-                        std::vector<Expression*> vars = { pCall->args()[0], pCall->args()[1] };
+                        std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
                         addLinConstr( coefs, vars, CMPT_LE, bnds.right );
                       } else
                         setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
@@ -1065,7 +1073,7 @@ namespace MiniZinc {
                     if ( fGE && rhs >= bnds.left ) {
                       if ( rhs < bnds.right ) {
                         std::vector<double> coefs = { -1.0, rhs-bnds.left };
-                        std::vector<Expression*> vars = { pCall->args()[0], pCall->args()[1] };
+                        std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
                         addLinConstr( coefs, vars, CMPT_LE, -bnds.left );
                       } else
                         setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
@@ -1111,11 +1119,11 @@ namespace MiniZinc {
         } else {
           for ( auto& intv : SS ) {
             auto it1 = sDomain.lower_bound( intv.left );
-            auto it2 = sDomain.lower_bound( intv.right );
+            auto it2 = sDomain.upper_bound( intv.right );
             auto it11 = it1;
             if ( sDomain.begin() != it11 ) {
               --it11;
-              assert( it11->right <= intv.left );
+              assert( it11->right < intv.left );
             }
             auto it12 = it2;
             if ( sDomain.begin() != it12 ) {
@@ -1175,11 +1183,11 @@ namespace MiniZinc {
             if ( v->isa<Id>() )
               DBGOUT_MIPD__( v->dyn_cast<Id>()->str() << ',' );
             else if ( v->isa<VarDecl>() )
-              throw "addLinConstr: only id's as variables allowed";
+              throw std::string("addLinConstr: only id's as variables allowed");
             else 
               DBGOUT_MIPD__( mipd.expr2Const(v) << ',' );
           }
-          DBGOUT_MIPD( " ] " << ( CMPT_EQ == nCmpType ? "==" : "<=" ) << rhs );
+          DBGOUT_MIPD( " ] " << ( CMPT_EQ == nCmpType ? "== " : "<= " ) << rhs );
                         );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
@@ -1279,6 +1287,7 @@ namespace MiniZinc {
 //       for (int iClq=0; iClq<aCliques.size(); ++iClq ) {
 //         TClique& clq = aCliques[iClq];
 //       }
+      bool fRetTrue = true;
       for ( int iVar=0; iVar<vVarDescr.size(); ++iVar ) {
 //         VarDescr& var = vVarDescr[iVar];
         if ( not vVarDescr[iVar].fDomainConstrProcessed ) {
@@ -1289,13 +1298,25 @@ namespace MiniZinc {
             vVarDescr[iVar].fDomainConstrProcessed = true;
           } catch (const std::string& str) {
             std::cerr << "  ERROR: " << str << std::endl;
-            return false;
+            fRetTrue = false;
+            break;
+          } catch (const Exception& e) {
+            std::cerr << "ERROR: " << e.what() << ": " << e.msg() << std::endl;
+            fRetTrue = false;
+            break;
 //           } catch ( ... ) {  // a contradiction
 //             return false;
           }
         }
       }
-      return true;
+      // Clean up __POSTs:
+      for ( auto& vVar: vVarDescr ) {
+        for ( auto pCallI : vVar.aCalls )
+          pCallI->remove();
+        if ( vVar.pEqEncoding )
+          vVar.pEqEncoding->remove();
+      }
+      return fRetTrue;
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
@@ -1380,18 +1401,25 @@ namespace MiniZinc {
       assert( nc );
       double nPDomSizeAve = MIPD__stats[ N_POSTs__domSizeSum ] / nc;
       os
-      << MIPD__stats[ N_POSTs__all ] << " constr, "
+      << MIPD__stats[ N_POSTs__all ] << " constraints [ "
+      ;
+      for ( int i=N_POSTs__intCmpReif; i<=N_POSTs__floatAux; ++i )
+        os << MIPD__stats[ i ] << ',';
+      os << " ], "
       << MIPD__stats[ N_POSTs__varsDirect ] << " / "
       << MIPD__stats[ N_POSTs__varsInvolved ] << " vars, "
       << nc << " cliques, "
       << MIPD__stats[ N_POSTs__domSizeMin ] << " / "
       << nPDomSizeAve << " / "
       << MIPD__stats[ N_POSTs__domSizeMax ] << " dom size m/a/m, "
-      << MIPD__stats[ N_POSTs__cliquesWithEqEncode ] << " clq eq_encoded, det.constr. "
+      << MIPD__stats[ N_POSTs__cliquesWithEqEncode ] << " clq eq_encoded ";
 //       << std::flush
-      ;
-      for ( int i=N_POSTs__intCmpReif; i<=N_POSTs__floatAux; ++i )
-        os << MIPD__stats[ i ] << ',';
+      if ( TCliqueSorter::LinEqGraph::dCoefMax > 1.0 )
+        os 
+        << TCliqueSorter::LinEqGraph::dCoefMin
+        << "--"
+        << TCliqueSorter::LinEqGraph::dCoefMax
+        << " abs coefs";
       os << " ... ";
     }
 
@@ -1513,9 +1541,12 @@ namespace MiniZinc {
   void MIPdomains(Env& env) {
     MIPD mipd(&env);
     if ( not mipd.MIPdomains() ) {
-//       GCLock lock;
-//       env.flat()->fail(env.envi());
+      GCLock lock;
+      env.flat()->fail(env.envi());
     }
   }
+  
+  double MIPD::TCliqueSorter::LinEqGraph::dCoefMin = +1e100;
+  double MIPD::TCliqueSorter::LinEqGraph::dCoefMax = -1e100;
   
 }  // namespace MiniZinc

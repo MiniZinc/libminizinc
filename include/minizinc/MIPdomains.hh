@@ -20,6 +20,8 @@
 #define assert_soft( c, e ) \
   do { static int nn=0; \
  if ( !c ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
+#define assert_hard( c, e ) \
+   do { if ( !c ) { std::ostringstream oss; oss << e; throw InternalError(e); } while (0)
 
 namespace MiniZinc {
 
@@ -31,6 +33,7 @@ namespace MiniZinc {
     N_POSTs__intAux, N_POSTs__floatAux,
     N_POSTs__varsDirect, N_POSTs__varsInvolved,
     N_POSTs__domSizeMin, N_POSTs__domSizeSum, N_POSTs__domSizeMax,
+    N_POSTs__linCoefMin, N_POSTs__linCoefMax,
     N_POSTs__cliquesWithEqEncode,
     N_POSTs__size };
   extern std::vector<double> MIPD__stats;
