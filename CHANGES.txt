@@ -5,6 +5,14 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.10
+==============
+
+Bug fixes:
+
+ - Fix a bug in the optimiser that could lead to undefined variables in the
+   generated FlatZinc. Fixes #70.
+
 Version 2.0.9
 =============
 
