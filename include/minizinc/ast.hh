@@ -78,6 +78,9 @@ namespace MiniZinc {
     
     /// Return location with introduced flag set
     Location introduce(void) const;
+    
+    /// Location used for un-allocated expressions
+    static Location nonalloc;
   };
 
   /// Output operator for locations
@@ -118,6 +121,8 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
+    
+    static Annotation empty;
   };
   
   /// returns the Annotation specified by the string; returns NULL if not exists
@@ -150,21 +155,22 @@ namespace MiniZinc {
     };
 
     ExpressionId eid(void) const {
-      return static_cast<ExpressionId>(_id);
+      return isUnboxedInt() ? E_INTLIT : static_cast<ExpressionId>(_id);
     }
 
     const Location& loc(void) const {
-      return _loc;
+      return isUnboxedInt() ? Location::nonalloc : _loc;
     }
     void loc(const Location& l) {
-      _loc = l;
+      if (!isUnboxedInt())
+        _loc = l;
     }
     const Type& type(void) const {
-      return _type;
+      return isUnboxedInt() ? Type::unboxedint : _type;
     }
     void type(const Type& t);
     size_t hash(void) const {
-      return _hash;
+      return isUnboxedInt() ? unboxedIntToIntVal().hash() : _hash;
     }
   protected:
     /// Combination function for hash values
@@ -188,10 +194,44 @@ namespace MiniZinc {
       : ASTNode(eid), _loc(loc), _type(t) {}
 
   public:
+    bool isUnboxedInt(void) const {
+      // bit 1 is set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+    }
+    IntVal unboxedIntToIntVal(void) const {
+      assert(isUnboxedInt());
+      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
+      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+      if (pos) {
+        return i >> 2;
+      } else {
+        return -(static_cast<long long int>(i>>2));
+      }
+    }
+    static IntLit* intToUnboxedInt(long long int i) {
+      long long int j = i < 0 ? -i : i;
+      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+      if (i < 0)
+        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      return reinterpret_cast<IntLit*>(ubi_p);
+    }
+    bool isTagged(void) const {
+      // only bit 2 is set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    }
+    
+    Expression* tag(void) const {
+      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                           static_cast<ptrdiff_t>(2));
+    }
+    Expression* untag(void) const {
+      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                           ~static_cast<ptrdiff_t>(2));
+    }
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
-      return _id==T::eid;
+      return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> T* cast(void) {
@@ -236,12 +276,12 @@ namespace MiniZinc {
     /// Add annotation \a ann to the expression
     void addAnnotations(std::vector<Expression*> ann);
 
-    const Annotation& ann(void) const { return _ann; }
-    Annotation& ann(void) { return _ann; }
+    const Annotation& ann(void) const { return isUnboxedInt() ? Annotation::empty : _ann; }
+    Annotation& ann(void) { return isUnboxedInt() ? Annotation::empty : _ann; }
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
-      return e==NULL ? 0 : e->_hash;
+      return e==NULL ? 0 : e->hash();
     }
     
     /// Check if \a e0 and \a e1 are equal
@@ -256,18 +296,18 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     IntVal _v;
+    /// Constructor
+    IntLit(const Location& loc, IntVal v);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
-    /// Constructor
-    IntLit(const Location& loc, IntVal v);
     /// Access value
-    IntVal v(void) const { return _v; }
-    /// Set value
-    void v(IntVal val) { _v = val; }
+    IntVal v(void) const {
+      return isUnboxedInt() ? unboxedIntToIntVal() : _v;
+    }
     /// Recompute hash value
     void rehash(void);
-    /// Allocate new temporary literal (tries to avoid allocation)
+    /// Allocate literal
     static IntLit* a(IntVal v);
   };
   /// \brief Float literal expression

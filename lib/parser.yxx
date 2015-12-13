@@ -1090,8 +1090,7 @@ set_expr :
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
       { if ($2 && $2->isa<IntLit>()) {
-          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
-          $$ = $2;
+          $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
@@ -1193,8 +1192,7 @@ expr :
       }
     | MZN_MINUS expr %prec MZN_NOT
       { if ($2 && $2->isa<IntLit>()) {
-          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
-          $$ = $2;
+          $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
@@ -1221,9 +1219,9 @@ expr_atom_head :
     | MZN_BOOL_LITERAL
       { $$=constants().boollit(($1!=0)); }
     | MZN_INTEGER_LITERAL
-      { $$=new IntLit(@$, $1); }
+      { $$=IntLit::a($1); }
     | MZN_INFINITY
-      { $$=new IntLit(@$, IntVal::infinity()); }
+      { $$=IntLit::a(IntVal::infinity()); }
     | MZN_FLOAT_LITERAL
       { $$=new FloatLit(@$, $1); }
     | string_expr
@@ -1543,8 +1541,7 @@ quoted_op_call :
           if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
           } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
-            $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
-            $$ = $3;
+            $$ = IntLit::a(-$3->cast<IntLit>()->v());
           } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
             $$ = $3;
