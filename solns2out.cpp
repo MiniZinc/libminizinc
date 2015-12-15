@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
 
   vector<string> includePaths;
   string std_lib_dir;
+  std::vector<std::string> filenames;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
   }
@@ -163,9 +164,9 @@ int main(int argc, char** argv) {
   }
   
   includePaths.push_back(std_lib_dir+"/std/");
-  
+  filenames.push_back(filename);
   {
-    if (Model* outputm = parse(filename, std::vector<std::string>(), includePaths, false, false, false,
+    if (Model* outputm = parse(filenames, std::vector<std::string>(), includePaths, false, false, false,
                                std::cerr)) {
       try {
         std::vector<TypeError> typeErrors;

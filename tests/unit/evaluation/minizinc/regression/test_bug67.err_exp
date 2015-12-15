@@ -1,0 +1,2 @@
+test_bug67.mzn:6:
+MiniZinc: flattening error: 'foo' is used in a reified context but no reified version is available
