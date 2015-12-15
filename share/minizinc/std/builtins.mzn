@@ -1966,6 +1966,9 @@ predicate symmetry_breaking_constraint(var bool: b);
 /** @group builtins.special Mark \a b as a redundant constraint */
 predicate redundant_constraint(var bool: b);
 
+/** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
+predicate implied_constraint(var bool: b) = redundant_constraint(b);
+
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

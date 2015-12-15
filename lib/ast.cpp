@@ -19,6 +19,12 @@
 
 namespace MiniZinc {
 
+  Location Location::nonalloc;
+  
+  Type Type::unboxedint = Type::parint();
+  
+  Annotation Annotation::empty;
+  
   Location::Location(void)
   : first_line(0),
     first_column(0),
@@ -47,13 +53,15 @@ namespace MiniZinc {
 
   void
   Expression::addAnnotation(Expression* ann) {
-    _ann.add(ann);
+    if (!isUnboxedInt())
+      _ann.add(ann);
   }
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
-    for (unsigned int i=0; i<ann.size(); i++)
-      if (ann[i])
-        _ann.add(ann[i]);
+    if (!isUnboxedInt())
+      for (unsigned int i=0; i<ann.size(); i++)
+        if (ann[i])
+          _ann.add(ann[i]);
   }
 
 
@@ -62,12 +70,12 @@ namespace MiniZinc {
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
-    if (e==NULL) return;
+    if (e==NULL || e->isUnboxedInt()) return;
     std::vector<const Expression*> stack;
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
-      if (cur->_gc_mark==0) {
+      if (!cur->isUnboxedInt() && cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
         pushann(cur->ann());
@@ -1355,7 +1363,9 @@ namespace MiniZinc {
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
     m->addItem(var_redef);
   }
-    
+  
+  const int Constants::max_array_size;
+  
   Constants& constants(void) {
     static Constants _c;
     return _c;

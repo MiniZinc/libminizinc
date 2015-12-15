@@ -1279,7 +1279,7 @@ namespace MiniZinc {
           }
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
           Type t = al->type();
-          if (t.isbot() && ret->v().size() > 0) {
+          if ( (t.bt()==Type::BT_BOT || t.bt()==Type::BT_TOP) && ret->v().size() > 0) {
             t.bt(ret->v()[0]->type().bt());
           }
           ret->type(t);
@@ -1789,8 +1789,6 @@ namespace MiniZinc {
         if (e->type().isfloat()) {
           FloatVal v = eval_float(env,e);
           _bounds.push_back(FBounds(v,v));
-        } else {
-          valid = false;
         }
         return false;
       } else {
@@ -2234,14 +2232,14 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == "set_intersect" || c.id() == "set_union") {
+      if (valid && (c.id() == "set_intersect" || c.id() == "set_union")) {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
         IntSetRanges b1r(b1);
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
-      } else if (c.id() == "set_diff") {
+      } else if (valid && c.id() == "set_diff") {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);

@@ -873,7 +873,7 @@ namespace MiniZinc {
       switch (id->type().bt()) {
         case Type::BT_INT:
           assert(var.intVar(_solution).assigned());
-          return new IntLit(Location(), var.intVar(_solution).val());
+          return IntLit::a(var.intVar(_solution).val());
         case Type::BT_BOOL:
           assert(var.boolVar(_solution).assigned());
           return new BoolLit(Location(), var.boolVar(_solution).val());
@@ -1165,7 +1165,7 @@ namespace MiniZinc {
               } else {
                 nvd->type(Type::parint());
                 nvd->ti(new TypeInst(nvd->loc(), Type::parint()));
-                nvd->e(new IntLit(nvd->loc(), l));
+                nvd->e(IntLit::a(l));
               }
             } else if(!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)){
               if(_only_range_domains && !holes) {

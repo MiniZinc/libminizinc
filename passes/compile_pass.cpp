@@ -58,7 +58,8 @@ namespace MiniZinc {
     std::ifstream fi(full_filename.str());
     bool verbose = false;
     if(fi.is_open()) {
-        Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, verbose, std::cerr);
+        std::vector<std::string> filenames {full_filename.str()};
+        Model* inc_mod = parse(filenames, datafiles, includes, true, true, verbose, std::cerr);
         IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
         inc_mod->setParent(parent);
@@ -70,7 +71,8 @@ namespace MiniZinc {
         full_filename << path << '/' << filename;
         std::ifstream fi(full_filename.str());
         if(fi.is_open()) {
-          Model* inc_mod = parse(full_filename.str(), datafiles, includes, true, true, verbose, std::cerr);
+          std::vector<std::string> filenames {full_filename.str()};
+          Model* inc_mod = parse(filenames, datafiles, includes, true, true, verbose, std::cerr);
           IncludeI* new_inc = new IncludeI(inc->loc(), filename);
           new_inc->m(inc_mod);
           inc_mod->setParent(parent);

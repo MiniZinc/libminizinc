@@ -49,7 +49,7 @@ bool beginswith(string s, string t) {
 }
 
 int main(int argc, char** argv) {
-  string filename;
+  std::vector<std::string> filenames;
   vector<string> datafiles;
   vector<string> includePaths;  
   bool flag_ignoreStdlib = false;
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
       if(passes >= 0)
         flag_pre_passes = passes;
     } else if (string(argv[i])=="-" || string(argv[i])=="--input-from-stdin") {
-      if (datafiles.size() > 0 || filename != "")
+      if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
       flag_stdinInput = true;
     } else if (beginswith(string(argv[i]),"-d")) {
@@ -276,13 +276,8 @@ int main(int argc, char** argv) {
         goto error;
       }
       std::string extension = input_file.substr(input_file.length()-4,string::npos);
-      if (extension == ".mzn") {
-        if (filename=="") {
-          filename = input_file;
-        } else {
-          std::cerr << "Error: Multiple .mzn files given." << std::endl;
-          goto error;
-        }
+      if (extension == ".mzn" || extension == ".mzc") {
+        filenames.push_back(input_file);
       } else if (extension == ".dzn") {
         datafiles.push_back(input_file);
       } else {
@@ -292,7 +287,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (filename=="" && !flag_stdinInput) {
+  if (filenames.empty() && !flag_stdinInput) {
     std::cerr << "Error: no model file given." << std::endl;
     goto error;
   }
@@ -330,7 +325,7 @@ int main(int argc, char** argv) {
     if (flag_stdinInput) {
       flag_output_base = "mznout";
     } else {
-      flag_output_base = filename.substr(0,filename.length()-4);
+      flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
     }
   }
   if (flag_output_fzn == "") {
@@ -346,16 +341,15 @@ int main(int argc, char** argv) {
       if (flag_stdinInput) {
         std::cerr << "Parsing standard input" << std::endl;
       } else {
-        std::cerr << "Parsing '" << filename << "'" << std::endl;
+        std::cerr << "Parsing '" << filenames[0] << "'" << std::endl;
       }
     }
     Model* m;
     if (flag_stdinInput) {
-      filename = "stdin";
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
-      m = parseFromString(input, filename, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
     } else {
-      m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
     }
     
     if (m) {

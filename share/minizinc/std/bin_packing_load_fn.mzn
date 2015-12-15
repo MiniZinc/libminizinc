@@ -10,6 +10,6 @@ include "bin_packing_load.mzn";
 */
 function array[int] of var int: bin_packing_load(array[int] of var int: bin,
                                                  array[int] of int: w) :: promise_total =
-   let { array[index_set(bin)] of var 0..sum(w): load;
+   let { array[dom_bounds_array(bin)] of var 0..sum(w): load;
          constraint bin_packing_load(load,bin,w); }
    in load;

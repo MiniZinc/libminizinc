@@ -100,6 +100,8 @@ Please read the leading comments before using the class.
 
 #define NEEDS_INT_DEFINED
 
+#define IGNORE_UNUSED_TYPEDEF __attribute__((unused))
+
 #if !defined NULL
 #define NULL 0
 #endif
@@ -123,6 +125,10 @@ Please read the leading comments before using the class.
 #pragma clang diagnostic ignored "-Wc++11-long-long"
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #endif
+
+#else
+
+#define IGNORE_UNUSED_TYPEDEF
 
 #endif
 
@@ -150,7 +156,7 @@ Please read the leading comments before using the class.
 #endif
 
 #ifndef C_ASSERT
-#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1] __attribute__((unused))
+#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1] IGNORE_UNUSED_TYPEDEF
 #endif
 
 // Let's test some assumptions
