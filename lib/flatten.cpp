@@ -5696,7 +5696,11 @@ namespace MiniZinc {
   void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
 
-    bool onlyRangeDomains;
+    bool onlyRangeDomains = false;
+    if ( opt.onlyRangeDomains ) {
+      onlyRangeDomains = true;           // compulsory
+    }
+    else
     {
       GCLock lock;
       Call* check_only_range =

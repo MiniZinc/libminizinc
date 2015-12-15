@@ -73,10 +73,10 @@ namespace MiniZinc {
     bool flag_typecheck = true;
     bool flag_verbose = false;
     bool flag_newfzn = false;
-    bool flag_MIPdomains = true;
     bool flag_optimize = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
+    bool flag_noMIPdomains = false;
 
     string std_lib_dir;
     string globals_dir;
