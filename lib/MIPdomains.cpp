@@ -35,7 +35,7 @@
 ///   - so better turn that off TODO
 /// CSE for lineq coefs     TODO
 
-#define __MZN__DBGOUT__MIPDOMAINS__
+// #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -59,6 +59,8 @@ namespace MiniZinc {
       registerLinearConstraintDecls();
       register__POSTconstraintDecls();
       register__POSTvariables();
+      if ( vVarDescr.empty() )
+        return true;
       constructVarViewCliques();
       if ( not decomposeDomains() )
         return false;
@@ -280,7 +282,6 @@ namespace MiniZinc {
       if ( Id* id = vd->e()->dyn_cast<Id>() ) {
 //         const int f1 = ( vd->payload()>=0 );
 //         const int f2 = ( id->decl()->payload()>=0 );
-        assert( not id->decl()->e() );      // no initexpr for initexpr
         if ( not fCheckArg or ( id->decl()->payload()>=0 ) ) {
           DBGOUT_MIPD__ ( "  Checking init expr  " );
           DBGOUT_MIPD_SELF( debugprint(vd) );
@@ -291,7 +292,10 @@ namespace MiniZinc {
           led.coefs = { 1.0, -1.0 };
           led.rhs = 0.0;
           put2VarsConnection( led, false );
-          return true;
+          ++MIPD__stats[ N_POSTs__initexpr1id ];
+          if ( id->decl()->e() )      // no initexpr for initexpr  FAILS on cc-base.mzn
+            checkInitExpr( id->decl() );
+          return true;                               // in any case
         }
       } else if ( Call* c = vd->e()->dyn_cast<Call>() ) {
         if ( lin_exp_int==c->decl() || lin_exp_float==c->decl() ) {
@@ -307,23 +311,32 @@ namespace MiniZinc {
             led.vd = { vd, expr2VarDecl(al->v()[0]) };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
-            assert( not led.vd[1]->e() );      // no initexpr for initexpr
             if ( not fCheckArg or ( led.vd[1]->payload()>=0 ) ) {
               // Can use another map here:
 //               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
 //                 continue;
 //               sCallLinEq2.insert(c);     // memorize this call
-              DBGOUT_MIPD__ ( "  REG call " );
+              DBGOUT_MIPD__ ( "  REG 1-LINEXP " );
               DBGOUT_MIPD_SELF ( debugprint(vd) );
               std::array<double, 1> coef0;
               expr2Array(c->args()[0], coef0);
               led.coefs = { -1.0, coef0[0] };
               led.rhs = -expr2Const(c->args()[2]);             // MINUS
               put2VarsConnection( led, false );
-              return true;
+              ++MIPD__stats[ N_POSTs__initexpr1linexp ];
+              if ( led.vd[1]->e() )       // no initexpr for initexpr   FAILS  TODO
+                checkInitExpr( led.vd[1] );
+              return true;                // in any case 
             }
-          } else {                        // larger eqns
+          } else 
+            if ( true )  {                              // check larger views always. OK? TODO
+//             if ( vd->payload()>=0 )  {                      // larger views
             // TODO should be here?
+//             std::cerr << " LE_" << al->v().size() << ' ' << std::flush;
+              DBGOUT_MIPD ( "      REG N-LINEXP " );
+              DBGOUT_MIPD_SELF ( debugprint( vd ) );
+              // Checking all but adding only touched defined vars?
+              return findOrAddDefining( vd->id(), c );
           }
         }
       }
@@ -375,7 +388,9 @@ namespace MiniZinc {
         if ( ic->removed() )
           continue;
         if ( Call* c = ic->e()->dyn_cast<Call>() ) {
-          if ( int_lin_eq==c->decl() || float_lin_eq==c->decl() ) {
+          const bool fIntLinEq = int_lin_eq==c->decl();
+          const bool fFloatLinEq = float_lin_eq==c->decl();
+          if ( fIntLinEq || fFloatLinEq ) {
 //             std::cerr << "  NOTE call " << std::flush;
 //             debugprint(c);
             assert( c->args().size() == 3 );
@@ -390,41 +405,140 @@ namespace MiniZinc {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
                   continue;
                 sCallLinEq2.insert(c);     // memorize this call
-                DBGOUT_MIPD ( "  REG call " );
+                DBGOUT_MIPD ( "  REG 2-call " );
                 DBGOUT_MIPD_SELF ( debugprint(c) );
                 led.rhs = expr2Const(c->args()[2]);
                 expr2Array(c->args()[0], led.coefs);
                 assert( 2 == led.coefs.size() );
                 fChanges = true;
                 put2VarsConnection( led );
+                ++MIPD__stats[ fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq ];
               }
             } else {                        // larger eqns
               // TODO should be here?
+              auto eVD = getAnnotation( c->ann(), constants().ann.defines_var );
+              if ( eVD ) {
+                if ( sCallLinEqN.end() != sCallLinEqN.find(c) )
+                  continue;
+                sCallLinEqN.insert(c);     // memorize this call
+                DBGOUT_MIPD ( "       REG N-call " );
+                DBGOUT_MIPD_SELF ( debugprint(c) );
+                Call* pC = eVD->dyn_cast<Call>();
+                assert( pC );
+                assert( pC->args().size() );
+                // Checking all but adding only touched defined vars? Seems too long.
+                VarDecl* vd = expr2VarDecl( pC->args()[0] );
+                if ( vd->payload()>=0 )                    // only if touched
+                  if ( findOrAddDefining( pC->args()[0], c ) )
+                    fChanges = true;
+              }
             }
           }
-          else if ( int2float==c->decl() || constants().var_redef==c->decl() ) {
+          else 
+//             const bool fI2F = (int2float==c->decl());
+//             const bool fIVR = (constants().var_redef==c->decl());
+//             if ( fI2F || fIVR ) {
+            if ( int2float==c->decl() || constants().var_redef==c->decl() ) {
 //             std::cerr << "  NOTE call " << std::flush;
 //             debugprint(c);
-            assert( c->args().size() == 2 );
-            LinEq2Vars led;
-//             led.vd.resize(2);
-            led.vd[0] = expr2VarDecl(c->args()[0]);
-            led.vd[1] = expr2VarDecl(c->args()[1]);
-            // At least 1 touched var:
-            if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
-              if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
-                continue;
-              sCallInt2Float.insert(c);     // memorize this call
-              DBGOUT_MIPD ( "  REG call " );
-              DBGOUT_MIPD_SELF ( debugprint(c) );
-              led.rhs = 0.0;
-              led.coefs = { 1.0, -1.0 };
-              fChanges = true;
-              put2VarsConnection( led );
+              assert( c->args().size() == 2 );
+              LinEq2Vars led;
+  //             led.vd.resize(2);
+              led.vd[0] = expr2VarDecl(c->args()[0]);
+              led.vd[1] = expr2VarDecl(c->args()[1]);
+              // At least 1 touched var:
+              if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
+                if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
+                  continue;
+                sCallInt2Float.insert(c);     // memorize this call
+                DBGOUT_MIPD ( "  REG call " );
+                DBGOUT_MIPD_SELF ( debugprint(c) );
+                led.rhs = 0.0;
+                led.coefs = { 1.0, -1.0 };
+                fChanges = true;
+                put2VarsConnection( led );
+                ++MIPD__stats[ int2float==c->decl() ?
+                               N_POSTs__int2float : N_POSTs__internalvarredef ];
+              }
             }
-          }
+          
         }
       }
+    }
+    
+    /// This vector stores the linear part of a general view
+    /// x = <linear part> + rhs
+    typedef std::vector<std::pair<VarDecl*, double> > TLinExpLin;
+    /// This struct has data describing the rest of a general view
+    struct NViewData {
+      VarDecl* pVarDefined = 0;
+      double coef0 = 1.0;
+      double rhs;
+    };
+    typedef std::map<TLinExpLin, NViewData> NViewMap;
+    NViewMap mNViews;
+    
+    /// compare to an existing defining linexp, or just add it to the map
+    /// adds only touched defined vars
+    /// return true iff new linear connection
+    // linexp: z = a^T x+b
+    // _lin_eq: a^T x == b
+    bool findOrAddDefining( Expression* exp, Call* pC ) {
+      Id* pId = exp->dyn_cast<Id>();
+      assert( pId );
+      VarDecl* vd = pId->decl();
+      assert( vd );
+      assert( pC->args().size()==3 );
+      
+      TLinExpLin rhsLin;
+      NViewData nVRest;      
+      nVRest.pVarDefined = vd;
+      nVRest.rhs = expr2Const( pC->args()[2] );
+      
+      std::vector<VarDecl*> vars;
+      expr2DeclArray( pC->args()[1], vars );
+      std::vector<double> coefs;
+      expr2Array( pC->args()[0], coefs );
+      assert( vars.size()==coefs.size() );
+      
+      int nVD=0;
+      for ( int i=0; i<vars.size(); ++i ) {
+//         assert( 0.0!=std::fabs
+        if ( vd==vars[i] ) {                     // the defined var
+          nVRest.coef0 = -coefs[i];
+          nVRest.rhs = -nVRest.rhs;
+          ++nVD;
+        }
+        else
+          rhsLin.push_back( std::make_pair( vars[i], coefs[i] ) );
+      }
+      assert( 1>=nVD );
+      std::sort( rhsLin.begin(), rhsLin.end() );
+      
+      // Divide the equation by the 1st coef
+      const double coef1 = rhsLin.begin()->second;
+      assert( 0.0!=std::fabs( coef1 ) );
+      nVRest.coef0 /= coef1;
+      nVRest.rhs /= coef1;
+      for ( auto& rhsL : rhsLin )
+        rhsL.second /= coef1;
+      
+      auto it = mNViews.find( rhsLin );
+      if ( mNViews.end()!=it ) {
+        LinEq2Vars leq;
+        leq.vd = { nVRest.pVarDefined, it->second.pVarDefined };
+        leq.coefs = { nVRest.coef0, -it->second.coef0 };        // +, -
+        leq.rhs = nVRest.rhs - it->second.rhs;
+        put2VarsConnection( leq, false );
+        ++MIPD__stats[ nVD ? N_POSTs__eqNlineq : N_POSTs__initexprN ];
+        return true;
+      }
+      else {
+        if ( vd->payload()>=0 )                     // only touched
+          mNViews[ rhsLin ] = nVRest;
+      }
+      
+      return false;
     }
 
     void propagateImplViews(bool &fChanges) {
@@ -435,7 +549,7 @@ namespace MiniZinc {
     }
   
     /// Could be better to mark the calls instead:
-    UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float;
+    UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float, sCallLinEqN;
     
     class TClique : public std::vector<LinEq2Vars> {       // need more info?
     public:
@@ -523,6 +637,7 @@ namespace MiniZinc {
                 < 1e-6 * std::max( std::fabs(it2->second.first), std::fabs(A) ) );
               assert( std::fabs( it2->second.second - B )
                 < 1e-6 * std::max( std::fabs(it2->second.second), std::fabs(B) ) + 1e-6 );
+              assert( std::fabs( A ) != 0.0 );
               assert_soft ( std::fabs( A ) > 1e-12,
                 " Very small coef: "
                   << (*begV)->id()->str() << " = "
@@ -701,7 +816,8 @@ namespace MiniZinc {
           syncWithEqEncoding();
           syncOtherEqEncodings();          
         } else {  // not cls.fRef1HasEqEncode
-          createDomainFlags();
+          if ( sDomain.size()>=2 )
+            createDomainFlags();
         }
         implement__POSTs();
         
@@ -883,18 +999,18 @@ namespace MiniZinc {
         auto bnds = sDomain.getBounds();
         for ( auto& iRef1 : cls.mRef1 ) {
           VarDecl* vd = iRef1.first;
-          if ( vd->type().isint() ) {
-            // projecting the bounds back:
-            double lb0 = ( bnds.left - iRef1.second.second ) / iRef1.second.first;
-            double ub0 = ( bnds.right - iRef1.second.second ) / iRef1.second.first;
-            if ( lb0 > ub0 ) {
-              assert( iRef1.second.first < 0.0 );
-              std::swap( lb0, ub0 );
-            }
-            const double lb = rndUpIfInt( vd, lb0 );
-            const double ub = rndDownIfInt( vd, ub0 );
-            setVarDomain( vd, lb, ub);
+          // projecting the bounds back:
+          double lb0 = ( bnds.left - iRef1.second.second ) / iRef1.second.first;
+          double ub0 = ( bnds.right - iRef1.second.second ) / iRef1.second.first;
+          if ( lb0 > ub0 ) {
+            assert( iRef1.second.first < 0.0 );
+            std::swap( lb0, ub0 );
           }
+          if ( vd->type().isint() ) {
+            lb0 = rndUpIfInt( vd, lb0 );
+            ub0 = rndDownIfInt( vd, ub0 );
+          }
+          setVarDomain( vd, lb0, ub0);
         }
       }
       
@@ -1062,16 +1178,16 @@ namespace MiniZinc {
                     DBGOUT_MIPD( "   AUX BY BIG-Ms: " );
                     const bool fLE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0>nCmpType_ADAPTED );
                     const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
-                    if ( fLE && rhs <= bnds.right ) {
-                      if ( rhs > bnds.left ) {
+                    if ( fLE && rhs < bnds.right ) {
+                      if ( rhs >= bnds.left ) {
                         std::vector<double> coefs = { 1.0, bnds.right-rhs };
                         std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
                         addLinConstr( coefs, vars, CMPT_LE, bnds.right );
                       } else
                         setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
                     }
-                    if ( fGE && rhs >= bnds.left ) {
-                      if ( rhs < bnds.right ) {
+                    if ( fGE && rhs > bnds.left ) {
+                      if ( rhs <= bnds.right ) {
                         std::vector<double> coefs = { -1.0, rhs-bnds.left };
                         std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
                         addLinConstr( coefs, vars, CMPT_LE, -bnds.left );
@@ -1150,11 +1266,22 @@ namespace MiniZinc {
       
       void setVarDomain( VarDecl* vd, double lb, double ub ) {
         // need to check if the new range is in the previous bounds...   TODO
-        assert( vd->type().isint() );                               // TODO
-        SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a( lb, ub ));
-//           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
-//           nti->domain(newDom);
-        vd->ti()->domain(newDom);
+        if ( vd->type().isfloat() ) {
+//           if ( 0.0==lb and 0.0==ub ) {
+            BinOp* newDom = new BinOp(Location().introduce(),
+                                      FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+            vd->ti()->domain(newDom);
+            DBGOUT_MIPD( "  NULL OUT:  " << vd->id()->str() );
+//           }
+        }
+        else if ( vd->type().isint() or vd->type().isbool() )
+        {
+          SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a( lb, ub ));
+  //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
+  //           nti->domain(newDom);
+          vd->ti()->domain(newDom);
+        } else
+          assert( ( "Unknown var type ", 0 ) );
       }
       
       VarDecl* addIntVar(double LB, double UB) {
@@ -1390,20 +1517,29 @@ namespace MiniZinc {
     }
     
     void printStats(std::ostream& os) {
-      if ( aCliques.empty() )
+//       if ( aCliques.empty() )
+//         return;
+      if ( vVarDescr.empty() )
         return;
       int nc=0;
       for ( auto& cl : aCliques )
         if ( cl.size() )
           ++nc;
+      for ( auto& var : vVarDescr )
+        if ( 0>var.nClique )
+          ++nc;     // 1-var cliques
 //       os << "N cliques " << aCliques.size() << "  total, "
 //          << nc << " final" << std::endl;
       assert( nc );
+      MIPD__stats[ N_POSTs__eqNmapsize ] = mNViews.size();
       double nPDomSizeAve = MIPD__stats[ N_POSTs__domSizeSum ] / nc;
       os
-      << MIPD__stats[ N_POSTs__all ] << " constraints [ "
+      << MIPD__stats[ N_POSTs__all ] << " POSTs [ "
       ;
       for ( int i=N_POSTs__intCmpReif; i<=N_POSTs__floatAux; ++i )
+        os << MIPD__stats[ i ] << ',';
+      os << " ], LINEQ [ ";
+      for ( int i=N_POSTs__eq2intlineq; i<=N_POSTs__eqNmapsize; ++i )
         os << MIPD__stats[ i ] << ',';
       os << " ], "
       << MIPD__stats[ N_POSTs__varsDirect ] << " / "

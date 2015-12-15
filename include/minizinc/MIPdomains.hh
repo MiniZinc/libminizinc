@@ -28,9 +28,17 @@ namespace MiniZinc {
   /// Linearize domain constraints in \a env
   void MIPdomains(Env& env);
   
-  enum EnumStatIdx__MIPD { N_POSTs__all, N_POSTs__intCmpReif, N_POSTs__floatCmpReif, 
+  enum EnumStatIdx__MIPD { 
+    N_POSTs__all,                     // N all POSTs in the model
+    N_POSTs__intCmpReif, N_POSTs__floatCmpReif,     // in detail
     N_POSTs__intNE, N_POSTs__floatNE, N_POSTs__setIn, N_POSTs__setInReif,
     N_POSTs__intAux, N_POSTs__floatAux,
+    // Kind of equality connections between involved variables
+    N_POSTs__eq2intlineq, N_POSTs__eq2floatlineq,
+    N_POSTs__int2float, N_POSTs__internalvarredef,
+    N_POSTs__initexpr1id, N_POSTs__initexpr1linexp,
+    N_POSTs__initexprN, N_POSTs__eqNlineq, N_POSTs__eqNmapsize,
+    // other
     N_POSTs__varsDirect, N_POSTs__varsInvolved,
     N_POSTs__domSizeMin, N_POSTs__domSizeSum, N_POSTs__domSizeMax,
     N_POSTs__linCoefMin, N_POSTs__linCoefMax,
