@@ -200,8 +200,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     std::string extension = input_file.substr(input_file.length()-4,string::npos);
     if (extension == ".mzn" || extension == ".fzn") {
       is_flatzinc = extension == ".fzn";
-      if (filename=="") {
-        filename = input_file;
+      if (filenames.empty()) {
+        filenames.push_back(input_file);
       } else {
         std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
         goto error;
@@ -249,7 +249,7 @@ void Flattener::flatten()
       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
   }
 
-  if (filename=="") {
+  if (filenames.empty()) {
     throw runtime_error( "Error: no model file given." );
   }
 
@@ -286,14 +286,14 @@ void Flattener::flatten()
   }
 
   if (flag_output_base == "") {
-    flag_output_base = filename.substr(0,filename.length()-4);
+    flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
   }
   
-  if (flag_output_fzn == filename) {
+  if (flag_output_fzn == filenames[0]) {
     cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
     flag_output_fzn = "";
   }
-  if (flag_output_ozn == filename) {
+  if (flag_output_ozn == filenames[0]) {
     cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
     flag_output_ozn = "";
   }
@@ -311,9 +311,9 @@ void Flattener::flatten()
     std::stringstream errstream;
     bool parseDocComments = false;
     if (flag_verbose)
-      std::cerr << "Parsing '" << filename << "' ...";
+      std::cerr << "Parsing '" << filenames[0] << "' ...";
     try {
-      if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
+      if (Model* m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, 
           parseDocComments, flag_verbose, errstream)) {
         pModel.reset(m);
         if (flag_typecheck) {

@@ -382,7 +382,8 @@ int main(int argc, char** argv) {
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "' ...";
     try {
-    if (Model* m = parse(filename, datafiles, includePaths, flag_ignoreStdlib, 
+      vector<string> filenames {filename};
+    if (Model* m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, 
           parseDocComments, flag_verbose, errstream)) {
         if (flag_typecheck) {
           if (flag_verbose)
