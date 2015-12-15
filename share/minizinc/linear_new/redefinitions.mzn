@@ -18,8 +18,10 @@ ann: MIP_lazy; % = lazy_constraint;
 %  Parameters
 bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
     %% Reifs give wrong result on 2012/amaze, so using implications only
-bool: fPostprocessDomains=true;     %% True to pass all domain-related
-                                     %% constraints (...__POST) to FlatZinc
+opt bool: fMIPdomains;
+bool: fPostprocessDomains =      %% True to pass all domain-related
+           if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
+           else deopt( fMIPdomains ) endif;
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
@@ -67,8 +69,8 @@ float: float_lt_EPS_coef__ = 1e-03;
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:
 opt bool: mzn__my_trace_on
-   %= false;
-    = true;
+    = false;
+   %= true;
 test my_trace(string: msg) ::promise_total
   = if occurs(mzn__my_trace_on) /\ deopt(mzn__my_trace_on) then
       trace(msg)
