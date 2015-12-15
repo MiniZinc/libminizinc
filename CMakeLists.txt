@@ -6,7 +6,7 @@ project (libminizinc CXX C)
 set(HAS_CPLEX TRUE)
 set(HAS_GUROBI TRUE)
 set(HAS_SCIP TRUE)
-set(HAS_OSICBC FALSE)
+set(HAS_OSICBC TRUE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN    TRUE)
 

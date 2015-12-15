@@ -702,8 +702,8 @@ namespace MiniZinc {
     std::string sep = ";";
 
     for (int i=lastError-1; i>=0; i--) {
-      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
-      bool isCompIter = reinterpret_cast<ptrdiff_t>(callStack[i]) & static_cast<ptrdiff_t>(1);
+      Expression* e = callStack[i]->untag();
+      bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
