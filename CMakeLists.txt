@@ -23,12 +23,18 @@ if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
 endif()
 
+option (USE_ADDRESS_SANITIZER "Use GCC Address Sanitizer" OFF)
+if (USE_ADDRESS_SANITIZER)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+
 # -------------------------------------------------------------------------------------------------------------------
 option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)  ## does not work TODO
 if (BUILD_STATIC_EXECUTABLE)
 #  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 #  SET(BUILD_SHARED_LIBRARIES OFF)
-  SET(CMAKE_EXE_LINKER_FLAGS "-static")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -367,9 +373,9 @@ if(HAS_CPLEX)  # Version 12.6.2
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
   # if (BUILD_STATIC_EXECUTABLE)
-  SET_TARGET_PROPERTIES(mzn-cplex
-                               PROPERTIES LINK_FLAGS "-static"
-                               )
+  #SET_TARGET_PROPERTIES(mzn-cplex
+  #                             PROPERTIES LINK_FLAGS "-static"
+  #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
@@ -605,7 +611,7 @@ endif()
 option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
 
 if (BUILD_STATIC_EXECUTABLE)
-  set(CMAKE_EXE_LINKER_FLAGS -static)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
