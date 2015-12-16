@@ -50,7 +50,7 @@ void Flattener::printHelp(ostream& os)
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
   << "  --only-range-domains\n    All domains contiguous, holes replaced by inequalities" << std::endl
-  << "  -D \"fMIPdomains=false\"\n    No domain linearization for MIP" << std::endl
+  << "  -D \"fMIPdomains=true\"\n    Domain unification for MIP, replaces range domains" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
