@@ -281,14 +281,14 @@ namespace MiniZinc {
     // Guido: cannot be recursive in FZN
     bool checkInitExpr(VarDecl* vd, bool fCheckArg=false) {
       MZN_MIPD__assert_hard( vd->e() );
-      if ( not vd->type().isint() and not vd->type().isfloat() )
+      if ( not vd->type().isint() && not vd->type().isfloat() )
         return false;
       if ( not fCheckArg )
         MZN_MIPD__assert_hard( vd->payload() >= 0 );
       if ( Id* id = vd->e()->dyn_cast<Id>() ) {
 //         const int f1 = ( vd->payload()>=0 );
 //         const int f2 = ( id->decl()->payload()>=0 );
-        if ( not fCheckArg or ( id->decl()->payload()>=0 ) ) {
+        if ( not fCheckArg || ( id->decl()->payload()>=0 ) ) {
           DBGOUT_MIPD__ ( "  Checking init expr  " );
           DBGOUT_MIPD_SELF( debugprint(vd) );
           LinEq2Vars led;
@@ -317,7 +317,7 @@ namespace MiniZinc {
             led.vd = { vd, expr2VarDecl(al->v()[0]) };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
-            if ( not fCheckArg or ( led.vd[1]->payload()>=0 ) ) {
+            if ( not fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
               // Can use another map here:
 //               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
 //                 continue;
@@ -379,8 +379,8 @@ namespace MiniZinc {
       for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
         if ( ivd->removed() )
           continue;
-        if ( ivd->e()->e() and ivd->e()->payload()<0       // untouched
-          and ( ivd->e()->type().isint() or ivd->e()->type().isfloat() ) )   // scalars
+        if ( ivd->e()->e() && ivd->e()->payload()<0       // untouched
+          && ( ivd->e()->type().isint() || ivd->e()->type().isfloat() ) )   // scalars
           if ( checkInitExpr(ivd->e(), true) )
             fChanges = true;
       }
@@ -407,7 +407,7 @@ namespace MiniZinc {
               LinEq2Vars led;
               expr2DeclArray(c->args()[1], led.vd);
               // At least 1 touched var:
-              if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
+              if ( led.vd[0]->payload() >= 0 || led.vd[1]->payload()>=0 ) {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
                   continue;
                 sCallLinEq2.insert(c);     // memorize this call
@@ -453,7 +453,7 @@ namespace MiniZinc {
               led.vd[0] = expr2VarDecl(c->args()[0]);
               led.vd[1] = expr2VarDecl(c->args()[1]);
               // At least 1 touched var:
-              if ( led.vd[0]->payload() >= 0 or led.vd[1]->payload()>=0 ) {
+              if ( led.vd[0]->payload() >= 0 || led.vd[1]->payload()>=0 ) {
                 if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
                   continue;
                 sCallInt2Float.insert(c);     // memorize this call
@@ -484,7 +484,7 @@ namespace MiniZinc {
     typedef std::map<TLinExpLin, NViewData> NViewMap;
     NViewMap mNViews;
     
-    /// compare to an existing defining linexp, or just add it to the map
+    /// compare to an existing defining linexp, || just add it to the map
     /// adds only touched defined vars
     /// return true iff new linear connection
     // linexp: z = a^T x+b
@@ -559,7 +559,7 @@ namespace MiniZinc {
     
     class TClique : public std::vector<LinEq2Vars> {       // need more info?
     public:
-      /// This function takes the 1st variable and relates all to it
+      /// This function takes the 1st variable && relates all to it
       /// Return false if contrad / disconnected graph
 //       bool findRelations0() {
 //         return true;
@@ -581,7 +581,7 @@ namespace MiniZinc {
         if ( vd->payload() < 0 ) {         // not yet visited
           vd->payload( vVarDescr.size() );
           vVarDescr.push_back( VarDescr( vd, vd->type().isint() ) );  // can use /prmTypes/ as well
-          if ( fCheckinitExpr and vd->e() )
+          if ( fCheckinitExpr && vd->e() )
             checkInitExpr(vd);
         } else {
           int nMaybeClq = vVarDescr[vd->payload()].nClique;
@@ -599,7 +599,7 @@ namespace MiniZinc {
       clqNew.push_back( led );
       for ( auto vd : led.vd ) {       // merging cliques
         int& nMaybeClq = vVarDescr[vd->payload()].nClique;
-        if ( nMaybeClq >= 0 and nMaybeClq != nCliqueAvailable ) {
+        if ( nMaybeClq >= 0 && nMaybeClq != nCliqueAvailable ) {
           TClique& clqOld = aCliques[nMaybeClq];
           MZN_MIPD__assert_hard( clqOld.size() );
           for ( auto& eq2 : clqOld ) {
@@ -622,7 +622,7 @@ namespace MiniZinc {
     public:
 //       VarDecl* varRef0=0;  // this is the first var to which all others are related
       VarDecl* varRef1=0;  // this is the 2nd main reference.
-        // it is a var with eq_encode, or
+        // it is a var with eq_encode, ||
         // an (integer if any) variable with the least rel. factor
       bool fRef1HasEqEncode=false;
       /// This map stores the relations y = ax+b of all the clique's vars to y
@@ -651,7 +651,7 @@ namespace MiniZinc {
                   << " + " << B );
               if ( fReportRepeat )
                 MZN_MIPD__assert_soft ( 0, "LinEqGraph: eqn between "
-                  << (*begV)->id()->str() << " and " << (*(begV+1))->id()->str()
+                  << (*begV)->id()->str() << " && " << (*(begV+1))->id()->str()
                   << " is repeated. " );
               return true;
             }
@@ -780,7 +780,7 @@ namespace MiniZinc {
       
       DomainDecomp(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv), cls(pm, iv)  { }
       void doProcess() {
-        // Choose the main variable and relate all others to it
+        // Choose the main variable && relate all others to it
         const int nClique =  mipd.vVarDescr[iVarStart].nClique;
         if ( nClique >= 0 ) {
           cls.doRelate();
@@ -946,7 +946,7 @@ namespace MiniZinc {
                     break;
                   case CMPT_EQ:
                     if ( not ( cls.varRef1->type().isint() &&    // skip if int target var
-                        std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // and fract value
+                        std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // && fract value
                       sDomain.cutDeltas( { { rhsRnd, rhsRnd } }, delta );
                     break;
                   default:
@@ -1027,7 +1027,7 @@ namespace MiniZinc {
       }
       
       /// if not eq_encoding, creates a flag for each subinterval in the domain
-      /// and constrains sum(flags)==1
+      /// && constrains sum(flags)==1
       void createDomainFlags() {
         std::vector<Expression*> vVars( sDomain.size() );         // flags for each subinterval
         std::vector<double> vIntvLB( sDomain.size() + 1 ), vIntvUB__( sDomain.size() + 1 );
@@ -1127,7 +1127,7 @@ namespace MiniZinc {
                   const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
                   const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                   double delta = 0.0;
-                  if ( mipd.aux_float_lt_zero_if_1__POST==pCall->decl() )  // only float and lt
+                  if ( mipd.aux_float_lt_zero_if_1__POST==pCall->decl() )  // only float && lt
                     delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                   if ( nCmpType_ADAPTED < 0 )
                     delta = -delta;
@@ -1191,7 +1191,7 @@ namespace MiniZinc {
                     DBGOUT_MIPD( "   AUX BY BIG-Ms: " );
                     const bool fLE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0>nCmpType_ADAPTED );
                     const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
-                    // Take integer or float indicator version, depending on the constrained var:
+                    // Take integer || float indicator version, depending on the constrained var:
                     const int nIdxInd = // (VT_Int==dct.nVarType) ?
                       vd->ti()->type().isint() ? 1 : 2;
                     MZN_MIPD__assert_hard( nIdxInd<pCall->args().size() );
@@ -1232,9 +1232,9 @@ namespace MiniZinc {
         }
       }
       
-      /// sets varFlag = or <= sum( intv.varFlag : SS )
+      /// sets varFlag = || <= sum( intv.varFlag : SS )
       void relateReifFlag( Expression* expFlag, const SetOfIntvReal& SS, EnumReifType nRT=RIT_Reif ) {
-        MZN_MIPD__assert_hard( RIT_Reif==nRT or RIT_Halfreif==nRT );
+        MZN_MIPD__assert_hard( RIT_Reif==nRT || RIT_Halfreif==nRT );
 //         MZN_MIPD__assert_hard( sDomain.size()>=2 );
         VarDecl* varFlag = mipd.expr2VarDecl(expFlag);
         std::vector<Expression*> vIntvFlags;
@@ -1280,7 +1280,7 @@ namespace MiniZinc {
           }
         }
         if ( vIntvFlags.size() ) {
-          // Could find out if reif is true                  -- TODO and see above for 1 subinterval
+          // Could find out if reif is true                  -- TODO && see above for 1 subinterval
           std::vector<double> onesm( vIntvFlags.size(), -1.0 );
           onesm.push_back( 1.0 );
           vIntvFlags.push_back( varFlag->id() );
@@ -1294,14 +1294,14 @@ namespace MiniZinc {
       void setVarDomain( VarDecl* vd, double lb, double ub ) {
         // need to check if the new range is in the previous bounds...   TODO
         if ( vd->type().isfloat() ) {
-//           if ( 0.0==lb and 0.0==ub ) {
+//           if ( 0.0==lb && 0.0==ub ) {
             BinOp* newDom = new BinOp(Location().introduce(),
                                       FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
             vd->ti()->domain(newDom);
             DBGOUT_MIPD( "  NULL OUT:  " << vd->id()->str() );
 //           }
         }
-        else if ( vd->type().isint() or vd->type().isbool() )
+        else if ( vd->type().isint() || vd->type().isbool() )
         {
           SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a( lb, ub ));
   //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
@@ -1435,11 +1435,11 @@ namespace MiniZinc {
     };  // class DomainDecomp
     
     /// Vars without explicit clique still need a decomposition.
-    /// Have noticed all __POSTs, set_in's and eq_encode's to it BEFORE
+    /// Have noticed all __POSTs, set_in's && eq_encode's to it BEFORE
     /// In each clique, relate all vars to one chosen
-    /// Find all "smallest rel. factor" variables, integer and with eq_encode if avail
+    /// Find all "smallest rel. factor" variables, integer && with eq_encode if avail
     /// Re-relate all vars to it
-    /// Refer all __POSTs and dom() to it
+    /// Refer all __POSTs && dom() to it
     /// build domain decomposition
     /// Implement all domain constraints, incl. possible corresp, of eq_encode's
     ///
@@ -1494,7 +1494,7 @@ namespace MiniZinc {
       return vd;
     }
       
-    /// Fills the vector of vardecls and returns the least index of the array
+    /// Fills the vector of vardecls && returns the least index of the array
     template <class Array>
     long long expr2DeclArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
@@ -1504,7 +1504,7 @@ namespace MiniZinc {
       return al->min(0);
     }
     
-    /// Fills the vector of expressions and returns the least index of the array
+    /// Fills the vector of expressions && returns the least index of the array
     template <class Array>
     long long expr2ExprArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
