@@ -443,7 +443,7 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
     MIP_solver::Variable var = exprToVar(id);
     double val = getMIPWrapper()->getValues()[var];
     switch (id->type().bt()) {
-      case Type::BT_INT: return new IntLit(Location(), round_to_longlong(val));
+      case Type::BT_INT: return IntLit::a(round_to_longlong(val));
       case Type::BT_FLOAT: return new FloatLit(Location(), val);
       case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
       default: return NULL;

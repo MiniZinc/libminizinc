@@ -298,7 +298,7 @@ namespace MiniZinc {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
       bool allCalls = true;
       for (int i = callStack.size()-1; i >= prev; i--) {
-        Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+        Expression* ee = callStack[i]->untag();
         allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
           EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
@@ -327,7 +327,7 @@ namespace MiniZinc {
     if (vd->e() && vd->e()->isa<Call>()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
       for (int i = callStack.size()-1; i >= prev; i--) {
-        Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+        Expression* ee = callStack[i]->untag();
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
           EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
           vd->e()->addAnnotation(ee_ann.r());
@@ -387,12 +387,12 @@ namespace MiniZinc {
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
   CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : env(env0) {
-    Expression* ee = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(ident) | static_cast<ptrdiff_t>(1));
+    Expression* ee = ident->tag();
     env.callStack.push_back(ee);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
   CallStackItem::~CallStackItem(void) {
-    Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(env.callStack.back()) & ~static_cast<ptrdiff_t>(1));
+    Expression* e = env.callStack.back()->untag();
     if (e->isa<VarDecl>())
       env.idStack.pop_back();
     if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
@@ -453,8 +453,8 @@ namespace MiniZinc {
     std::vector<Expression*>& stack = errStack ? errStackCopy : callStack;
     
     for (; lastError < stack.size(); lastError++) {
-      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[lastError]) & ~static_cast<ptrdiff_t>(1));
-      bool isCompIter = reinterpret_cast<ptrdiff_t>(stack[lastError]) & static_cast<ptrdiff_t>(1);
+      Expression* e = stack[lastError]->untag();
+      bool isCompIter = stack[lastError]->isTagged();
       if (e->loc().is_introduced)
         continue;
       if (!isCompIter && e->isa<Id>()) {
@@ -466,8 +466,8 @@ namespace MiniZinc {
     int curloc_l = -1;
 
     for (int i=lastError-1; i>=0; i--) {
-      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(stack[i]) & ~static_cast<ptrdiff_t>(1));
-      bool isCompIter = reinterpret_cast<ptrdiff_t>(stack[i]) & static_cast<ptrdiff_t>(1);
+      Expression* e = stack[i]->untag();
+      bool isCompIter = stack[i]->isTagged();
       ASTString newloc_f = e->loc().filename;
       if (e->loc().is_introduced)
         continue;
@@ -2950,7 +2950,7 @@ namespace MiniZinc {
             GCLock lock;
             std::vector<VarDecl*> gen_id(1);
             gen_id[0] = new VarDecl(id->loc(), new TypeInst(id->loc(),Type::parint()),env.genId(),
-                                    new IntLit(id->loc(),0));
+                                    IntLit::a(0));
             
             /// TODO: support arbitrary dimensions
             std::vector<Expression*> idxsetargs(1);
@@ -4502,10 +4502,14 @@ namespace MiniZinc {
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->v().size(); i++) {
                 if (Call* sc = same_call(al->v()[i],cid)) {
-                  GCLock lock;
-                  ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
-                  for (unsigned int j=0; j<sc_c->v().size(); j++) {
-                    alv.push_back(sc_c->v()[j]);
+                  if (sc->id()==constants().ids.clause) {
+                    alv.push_back(sc);
+                  } else {
+                    GCLock lock;
+                    ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
+                    for (unsigned int j=0; j<sc_c->v().size(); j++) {
+                      alv.push_back(sc_c->v()[j]);
+                    }
                   }
                 } else {
                   alv.push_back(al->v()[i]);

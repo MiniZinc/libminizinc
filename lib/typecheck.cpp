@@ -566,7 +566,7 @@ namespace MiniZinc {
       for (int j=0; j<c.n_decls(gen_i); j++) {
         if (needIntLit) {
           GCLock lock;
-          c.decl(gen_i,j)->e(new IntLit(Location(),0));
+          c.decl(gen_i,j)->e(IntLit::a(0));
         }
         c.decl(gen_i,j)->type(ty_id);
         c.decl(gen_i,j)->ti()->type(ty_id);
@@ -831,11 +831,10 @@ namespace MiniZinc {
       TopoSorter& ts;
       Model* model;
       bool hadSolveItem;
-      bool hadOutputItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), hadOutputItem(false), fis(fis0), ais(ais0) {}
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i->e(), true); }
       void vFunctionI(FunctionI* i) {
@@ -846,11 +845,6 @@ namespace MiniZinc {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");
         hadSolveItem = true;
-      }
-      void vOutputI(OutputI* oi) {
-        if (hadOutputItem)
-          throw TypeError(env,oi->loc(),"Only one output item allowed");
-        hadOutputItem = true;
       }
     } _tsv0(env.envi(),ts,m,functionItems,assignItems);
     iterItems(_tsv0,m);
@@ -1014,9 +1008,21 @@ namespace MiniZinc {
     public:
       EnvI& env;
       Model* m;
-      TSV3(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+      OutputI* outputItem;
+      TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(NULL) {}
       void vAssignI(AssignI* i) {
         i->decl()->e(addCoercion(env, m, i->e(), i->decl()->type())());
+      }
+      void vOutputI(OutputI* oi) {
+        if (outputItem==NULL) {
+          outputItem = oi;
+        } else {
+          GCLock lock;
+          BinOp* bo = new BinOp(Location().introduce(),outputItem->e(),BOT_PLUSPLUS,oi->e());
+          bo->type(Type::parstring(1));
+          outputItem->e(bo);
+          oi->remove();
+        }
       }
     } _tsv3(env.envi(),m);
     if (typeErrors.empty()) {

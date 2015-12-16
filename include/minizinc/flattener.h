@@ -64,7 +64,7 @@ namespace MiniZinc {
   private:
     
     bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
-    string filename;
+    vector<string> filenames;
     vector<string> datafiles;
     vector<string> includePaths;
     bool is_flatzinc = false;

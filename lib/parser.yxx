@@ -226,12 +226,11 @@ namespace MiniZinc {
 
     return model;
   error:
-    for (unsigned int i=0; i<files.size(); i++)
-      delete files[i].second;
+    delete model;
     return NULL;
   }
 
-  Model* parse(const string& filename,
+  Model* parse(const vector<string>& filenames,
                const vector<string>& datafiles,
                const vector<string>& ip,
                bool ignoreStdlib,
@@ -239,17 +238,23 @@ namespace MiniZinc {
                bool verbose,
                ostream& err) {
     GCLock lock;
-    string fileDirname; string fileBasename;
-    filepath(filename, fileDirname, fileBasename);
 
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
-    
+
     vector<pair<string,Model*> > files;
     map<string,Model*> seenModels;
-    
-    Model* model = new Model();
+
+    string fileDirname; string fileBasename;
+    Model* model = NULL;
+    if (filenames.empty()) {
+      err << "Error: no model given" << std::endl;
+      goto error;
+    }
+    filepath(filenames[0], fileDirname, fileBasename);
+
+    model = new Model();
     model->setFilename(fileBasename);
 
     if (!ignoreStdlib) {
@@ -258,7 +263,7 @@ namespace MiniZinc {
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
-      stdlibloc.filename=ASTString(filename);
+      stdlibloc.filename=ASTString(filenames[0]);
       IncludeI* stdlibinc = 
         new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
@@ -266,7 +271,22 @@ namespace MiniZinc {
     }
     
     files.push_back(pair<string,Model*>("",model));
-        
+    
+    for (unsigned int i=1; i<filenames.size(); i++) {
+      string dirName, baseName;
+      filepath(filenames[i], dirName, baseName);
+
+      Model* includedModel = new Model;
+      includedModel->setFilename(baseName);
+      files.push_back(pair<string,Model*>(dirName,includedModel));
+      seenModels.insert(pair<string,Model*>(baseName,includedModel));
+      Location loc;
+      loc.filename=ASTString(filenames[0]);
+      IncludeI* inc = new IncludeI(loc,includedModel->filename());
+      inc->m(includedModel,true);
+      model->addItem(inc);
+    }
+
     while (!files.empty()) {
       pair<string,Model*>& np = files.back();
       string parentPath = np.first;
@@ -286,7 +306,7 @@ namespace MiniZinc {
       ifstream file;
       string fullname;
       if (parentPath=="") {
-        fullname = filename;
+        fullname = filenames[0];
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
         }
@@ -355,8 +375,7 @@ namespace MiniZinc {
     
     return model;
   error:
-    for (unsigned int i=0; i<files.size(); i++)
-      delete files[i].second;
+    delete model;
     return NULL;
   }
 
@@ -467,8 +486,7 @@ namespace MiniZinc {
   
   return model;
   error:
-  for (unsigned int i=0; i<files.size(); i++)
-  delete files[i].second;
+  delete model;
   return NULL;
 }
 
@@ -1072,8 +1090,7 @@ set_expr :
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
       { if ($2 && $2->isa<IntLit>()) {
-          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
-          $$ = $2;
+          $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
@@ -1175,8 +1192,7 @@ expr :
       }
     | MZN_MINUS expr %prec MZN_NOT
       { if ($2 && $2->isa<IntLit>()) {
-          $2->cast<IntLit>()->v(-$2->cast<IntLit>()->v());
-          $$ = $2;
+          $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
           $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
           $$ = $2;
@@ -1203,9 +1219,9 @@ expr_atom_head :
     | MZN_BOOL_LITERAL
       { $$=constants().boollit(($1!=0)); }
     | MZN_INTEGER_LITERAL
-      { $$=new IntLit(@$, $1); }
+      { $$=IntLit::a($1); }
     | MZN_INFINITY
-      { $$=new IntLit(@$, IntVal::infinity()); }
+      { $$=IntLit::a(IntVal::infinity()); }
     | MZN_FLOAT_LITERAL
       { $$=new FloatLit(@$, $1); }
     | string_expr
@@ -1525,8 +1541,7 @@ quoted_op_call :
           if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
           } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
-            $3->cast<IntLit>()->v(-$3->cast<IntLit>()->v());
-            $$ = $3;
+            $$ = IntLit::a(-$3->cast<IntLit>()->v());
           } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
             $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
             $$ = $3;

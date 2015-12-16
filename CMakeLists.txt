@@ -8,7 +8,7 @@ set(HAS_GUROBI TRUE)
 set(HAS_SCIP TRUE)
 set(HAS_OSICBC TRUE)
 set(HAS_GECODE TRUE)
-set(HAS_FZN    FALSE)
+set(HAS_FZN    TRUE)
 
 set(HAS_CPLEX_OLD FALSE)
 set(HAS_GUROBI_OLD FALSE)
@@ -498,7 +498,7 @@ if(HAS_OSICBC)  # Version release/2.9.7
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
   target_include_directories(minizinc_osicbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(minizinc_osicbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m
+  target_link_libraries(minizinc_osicbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m bz2 blas
     # Cgl OsiClp Osi Clp  lapacke lapack blas bz2 z -lpthread
     )
 
@@ -509,7 +509,7 @@ if(HAS_OSICBC)  # Version release/2.9.7
 #                                )
   # endif()
   target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  target_link_libraries(mzn-cbc minizinc ClpSolver Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m )
+  target_link_libraries(mzn-cbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m bz2 lapack blas)
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin

@@ -67,7 +67,7 @@ namespace MiniZinc {
   
   void Options::setIntParam(const std::string& name,   long long int e) {
     GCLock lock;
-    IntLit* il = new IntLit(Location(), e);
+    IntLit* il = IntLit::a(e);
     KeepAlive ka(il);
     
     setIntParam(name, ka);
