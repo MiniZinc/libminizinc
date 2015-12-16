@@ -69,7 +69,11 @@ MIP_solver::Variable MIP_solverinstance::exprToVar(Expression* arg) {
     return _variableMap.get(ident->decl()->id());
   }
 
-  throw InternalError("unknown expression type");
+  ostringstream oss;
+  oss << "unknown expression type: " << arg->eid() << " for arg=" << arg;
+  cerr << oss.str() << flush;
+  oss << (*arg);
+  throw InternalError( oss.str() );
 }
 
 void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {

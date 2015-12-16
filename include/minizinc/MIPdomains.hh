@@ -17,11 +17,22 @@
 #include <minizinc/stl_map_set.hh>
 #include <set>
 
-#define assert_soft( c, e ) \
+#define MZN_MIPD__assert_soft( c, e ) \
   do { static int nn=0; \
  if ( !c ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
-#define assert_hard( c, e ) \
-   do { if ( !c ) { std::ostringstream oss; oss << e; throw InternalError(e); } while (0)
+#define MZN_MIPD__assert_hard( c ) \
+   do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
+     << ":  not " << #c; throw InternalError( oss.str() ); } } while (0)
+#define MZN_MIPD__assert_hard_msg( c, e ) \
+   do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
+     << ":  " << e; throw InternalError( oss.str() ); } } while (0)
+struct MIPD_Infeasibility_Exception {
+  std::string msg;
+  MIPD_Infeasibility_Exception(const std::string& s) : msg(s) { }
+};
+#define MZN_MIPD__assert_for_feas( c, e ) \
+   do { if ( !(c) ) { std::ostringstream oss; oss << e; throw MIPD_Infeasibility_Exception(oss.str()); } } while (0)
+
 
 namespace MiniZinc {
 
@@ -74,7 +85,7 @@ namespace MiniZinc {
   template <class N>
   struct Interval {
     N left = infMinus(), right = infPlus();
-    mutable VarDecl* varFlag;
+    mutable VarDecl* varFlag=0;
     constexpr static N infMinus() {
       return ( std::numeric_limits<N>::has_infinity ) ?
         -std::numeric_limits<N>::infinity() :
@@ -132,8 +143,12 @@ namespace MiniZinc {
   template <class N>
   std::ostream& operator<< (std::ostream& os, const SetOfIntervals<N>& soi) {
     os << "[[ ";
-    for ( auto& ii : soi )
-      os << "[ " << ii.left << ", " << ii.right << " ] ";
+    for ( auto& ii : soi ) {
+      os << "[ " << ii.left << ", " << ii.right;
+      if ( ii.varFlag )
+        os << " @" << ii.varFlag;
+      os << " ] ";
+    }
     os << "]]";
     return os;
   }
