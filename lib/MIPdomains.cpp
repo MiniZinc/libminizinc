@@ -38,7 +38,7 @@
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//#define __MZN__DBGOUT__MIPDOMAINS__
+// #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -133,6 +133,9 @@ namespace MiniZinc {
     std::vector<Type> t_VFFVIF = { Type::varfloat(), Type::parfloat(), Type::varint(),
       Type::parfloat() } ;
     std::vector<Type> t_VFVIF = { Type::varfloat(), Type::varint(), Type::parfloat() };
+    std::vector<Type> t_VFVIVF = { Type::varfloat(), Type::varint(), Type::varfloat() };
+    std::vector<Type> t_VFVIVFF = { Type::varfloat(), Type::varint(), Type::varfloat(),
+                      Type::parfloat() };
     std::vector<Type> t_VFVFF = { Type::varfloat(), Type::varfloat(), Type::parfloat() };
     std::vector<Type> t_VFFF = { Type::varfloat(), Type::parfloat(), Type::parfloat() };
   //     std::vector<Type> t_VFVFVIF({ Type::varfloat(), Type::varfloat(), Type::varint(), Type::parfloat() });
@@ -195,13 +198,13 @@ namespace MiniZinc {
       aCT.push_back(DCT("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float, float_eq_reif__POST));
       aCT.push_back(DCT("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float, float_ne__POST));
 
-      aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVF, RIT_Halfreif, CT_Comparison, CMPT_EQ_0, VT_Float,
+      aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison, CMPT_EQ_0, VT_Float,
                         aux_float_eq_zero_if_1__POST));
       aCT.push_back(DCT("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0, VT_Int,
                         aux_int_le_zero_if_1__POST));
-      aCT.push_back(DCT("aux_float_le_zero_if_1__POST", t_VFVF, RIT_Halfreif, CT_Comparison, CMPT_LE_0, VT_Float,
+      aCT.push_back(DCT("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison, CMPT_LE_0, VT_Float,
                         aux_float_le_zero_if_1__POST));
-      aCT.push_back(DCT("aux_float_lt_zero_if_1__POST", t_VFVFF, RIT_Halfreif, CT_Comparison, CMPT_LT_0, VT_Float,
+      aCT.push_back(DCT("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison, CMPT_LT_0, VT_Float,
                         aux_float_lt_zero_if_1__POST));
       
       aCT.push_back(DCT("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int, equality_encoding__POST));
@@ -1125,7 +1128,7 @@ namespace MiniZinc {
                   const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                   double delta = 0.0;
                   if ( mipd.aux_float_lt_zero_if_1__POST==pCall->decl() )  // only float and lt
-                    delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
+                    delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                   if ( nCmpType_ADAPTED < 0 )
                     delta = -delta;
                   if ( cls.varRef1->type().isint() && CMPT_EQ_0!=nCmpType_ADAPTED ) {
@@ -1139,29 +1142,41 @@ namespace MiniZinc {
                   // Now we need rhs not to be in the inner of the domain
                   bool fUseDD = true;
                   if ( not cls.fRef1HasEqEncode ) {
-                    auto itRhs = sDomain.lower_bound(rhs);
                     switch ( nCmpType_ADAPTED ) {
                       case CMPT_EQ_0:
-                        fUseDD = ( itRhs->left==rhs && itRhs->right==rhs );  // exactly
+                      {
+                        auto itLB = sDomain.lower_bound(rhs);
+                        fUseDD = ( itLB->left==rhs && itLB->right==rhs );  // exactly
+                      }
                         break;
-                      case CMPT_GT_0:
                       case CMPT_LT_0:
-                      case CMPT_GE_0:
                       case CMPT_LE_0:
                       {
-                        auto it2 = itRhs;
-                        const bool fBegin = ( sDomain.begin()==it2 );
+                        auto itUB = sDomain.upper_bound(rhs);
                         bool fInner = false;
-                        if ( not fBegin ) {
-                          --it2;
-                          if ( it2->right > rhs )
+                        if ( sDomain.begin() != itUB ) {
+                          --itUB;
+                          if ( itUB->right > rhs )
+                            fInner = true;
+                        }
+                        fUseDD = not fInner;
+                      }
+                        break;
+                      case CMPT_GT_0:
+                      case CMPT_GE_0:
+                      {
+                        auto itLB = sDomain.lower_bound(rhs);
+                        bool fInner = false;
+                        if ( sDomain.begin() != itLB ) {
+                          --itLB;
+                          if ( itLB->right >= rhs )
                             fInner = true;
                         }
                         fUseDD = not fInner;
                       }
                         break;
                       default:
-                        MZN_MIPD__assert_hard( ( "Unknown halfreif cmp type", 0 ) );
+                        MZN_MIPD__assert_hard_msg( 0, "Unknown halfreif cmp type" );
                     }
                   }
                   if ( fUseDD ) {               // use sDomain
@@ -1176,21 +1191,27 @@ namespace MiniZinc {
                     DBGOUT_MIPD( "   AUX BY BIG-Ms: " );
                     const bool fLE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0>nCmpType_ADAPTED );
                     const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
+                    // Take integer or float indicator version, depending on the constrained var:
+                    const int nIdxInd = // (VT_Int==dct.nVarType) ?
+                      vd->ti()->type().isint() ? 1 : 2;
+                    MZN_MIPD__assert_hard( nIdxInd<pCall->args().size() );
+                    Expression* pInd = pCall->args()[ nIdxInd ];
                     if ( fLE && rhs < bnds.right ) {
                       if ( rhs >= bnds.left ) {
                         std::vector<double> coefs = { 1.0, bnds.right-rhs };
-                        std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
+                        // Use the float version of indicator:
+                        std::vector<Expression*> vars = { cls.varRef1->id(), pInd };
                         addLinConstr( coefs, vars, CMPT_LE, bnds.right );
                       } else
-                        setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
+                        setVarDomain( mipd.expr2VarDecl( pInd ), 0.0, 0.0 );
                     }
                     if ( fGE && rhs > bnds.left ) {
                       if ( rhs <= bnds.right ) {
                         std::vector<double> coefs = { -1.0, rhs-bnds.left };
-                        std::vector<Expression*> vars = { cls.varRef1->id(), pCall->args()[1] };
+                        std::vector<Expression*> vars = { cls.varRef1->id(), pInd };
                         addLinConstr( coefs, vars, CMPT_LE, -bnds.left );
                       } else
-                        setVarDomain( mipd.expr2VarDecl( pCall->args()[1] ), 0.0, 0.0 );
+                        setVarDomain( mipd.expr2VarDecl( pInd ), 0.0, 0.0 );
                     }
                   }
                   ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
@@ -1232,10 +1253,12 @@ namespace MiniZinc {
             }
           }
         } else {
+          MZN_MIPD__assert_hard( varFlag->type().isint() );
           for ( auto& intv : SS ) {
             auto it1 = sDomain.lower_bound( intv.left );
             auto it2 = sDomain.upper_bound( intv.right );
             auto it11 = it1;
+            // Check that we are looking not into a subinterval:
             if ( sDomain.begin() != it11 ) {
               --it11;
               MZN_MIPD__assert_hard( it11->right < intv.left );
@@ -1243,7 +1266,8 @@ namespace MiniZinc {
             auto it12 = it2;
             if ( sDomain.begin() != it12 ) {
               --it12;
-              MZN_MIPD__assert_hard( it12->right <= intv.right );
+              MZN_MIPD__assert_hard_msg( it12->right <= intv.right,
+                "  relateReifFlag for " << intv << " in " << sDomain );
             }
             for ( it12 = it1; it12 != it2; ++it12 ) {
               if ( it12->varFlag )
@@ -1315,20 +1339,20 @@ namespace MiniZinc {
         DBGOUT_MIPD_SELF( // LinEq leq; leq.coefs=coefs; leq.vd=vars; leq.rhs=rhs; 
           DBGOUT_MIPD__( " ADDING " << ( CMPT_EQ == nCmpType ? "LIN_EQ" : "LIN_LE" )
             << ": [ " );
-          for ( auto c : coefs )
-            DBGOUT_MIPD__( c << ',' );
-          DBGOUT_MIPD__( " ] * [ " );
-          for ( auto v : vars ) {
-            MZN_MIPD__assert_hard( v->isa<VarDecl>() );
-            if ( v->isa<Id>() )
-              DBGOUT_MIPD__( v->dyn_cast<Id>()->str() << ',' );
+        for ( auto c : coefs )
+          DBGOUT_MIPD__( c << ',' );
+        DBGOUT_MIPD__( " ] * [ " );
+        for ( auto v : vars ) {
+          MZN_MIPD__assert_hard( !v->isa<VarDecl>() );
+          if ( v->isa<Id>() )
+            DBGOUT_MIPD__( v->dyn_cast<Id>()->str() << ',' );
 //             else if ( v->isa<VarDecl>() )
 //               MZN_MIPD__assert_hard ("addLinConstr: only id's as variables allowed");
-            else 
-              DBGOUT_MIPD__( mipd.expr2Const(v) << ',' );
-          }
-          DBGOUT_MIPD( " ] " << ( CMPT_EQ == nCmpType ? "== " : "<= " ) << rhs );
-                        );
+          else 
+            DBGOUT_MIPD__( mipd.expr2Const(v) << ',' );
+        }
+        DBGOUT_MIPD( " ] " << ( CMPT_EQ == nCmpType ? "== " : "<= " ) << rhs );
+                      );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
         bool fFloat = not (*vars.begin())->type().isint();

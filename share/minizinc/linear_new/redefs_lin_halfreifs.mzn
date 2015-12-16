@@ -17,7 +17,7 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   if is_fixed(p) then
     if 1==fix(p) then x==y else true endif
   elseif fPostprocessDomains then
-    aux_float_eq_zero_if_1__POST(x - y, p)
+    aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
@@ -48,7 +48,7 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 1==fix(p) then x<=0.0 else true endif
   elseif fPostprocessDomains then
-    aux_float_le_zero_if_1__POST(x, 1-p)
+    aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
     aux_float_le_zero_if_0__IND(x, p)
@@ -60,7 +60,7 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 1==fix(p) then x<0.0 else true endif
   elseif fPostprocessDomains then
-    aux_float_lt_zero_if_1__POST(x, 1-p, float_lt_EPS_coef__)
+    aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
   else
     let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
     in
@@ -116,9 +116,10 @@ predicate aux_float_lt_if_1(var float: x, var float: y, var int: p) =
     
 % -------------------------- Domains postpro ---------------------------    
     %% To avoid looking if an original int var x-y exists and has eq_encode:
-predicate aux_float_eq_zero_if_1__POST(var float: x, var float: p);
+    %% Passing both int and float version of the indicator for flexibility:
+predicate aux_float_eq_zero_if_1__POST(var float: x, var int: pI, var float: p);
 
 predicate aux_int_le_zero_if_1__POST(var int: x, var int: p);
-predicate aux_float_le_zero_if_1__POST(var float: x, var float: p);
-predicate aux_float_lt_zero_if_1__POST(var float: x, var float: p, float: eps);
+predicate aux_float_le_zero_if_1__POST(var float: x, var int: pI, var float: p);
+predicate aux_float_lt_zero_if_1__POST(var float: x, var int: pI, var float: p, float: eps);
 
