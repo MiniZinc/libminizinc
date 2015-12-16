@@ -6,7 +6,7 @@ project (libminizinc CXX C)
 set(HAS_CPLEX TRUE)
 set(HAS_GUROBI TRUE)
 set(HAS_SCIP TRUE)
-set(HAS_OSICBC TRUE)
+set(HAS_OSICBC FALSE)
 set(HAS_GECODE TRUE)
 set(HAS_FZN    TRUE)
 
@@ -23,6 +23,7 @@ if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
 endif()
 
+# -------------------------------------------------------------------------------------------------------------------
 option (USE_ADDRESS_SANITIZER "Use GCC Address Sanitizer" OFF)
 if (USE_ADDRESS_SANITIZER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
