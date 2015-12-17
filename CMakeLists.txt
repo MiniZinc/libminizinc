@@ -3,12 +3,24 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_CPLEX TRUE)
-set(HAS_GUROBI TRUE)
-set(HAS_SCIP TRUE)
-set(HAS_OSICBC FALSE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    TRUE)
+# -- The below checks if certain solver paths are set in the config call (cmake -D GECODE_HOME=...) to be compiled --
+# -------------------------------------------------------------------------------------------------------------------
+set(HAS_FZN    TRUE)                 ### Always compile
+if (DEFINED GECODE_HOME)
+  set(HAS_GECODE TRUE)
+endif()
+if (DEFINED CPLEX_STUDIO_DIR)
+  set(HAS_CPLEX TRUE)
+endif()
+if(DEFINED GUROBI_HOME)
+  set(HAS_GUROBI TRUE)
+endif()
+if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR)
+  set(HAS_SCIP TRUE)                                       # Can use CSIP w/o ZIMPL too
+endif()
+if (DEFINED OSICBC_HOME)
+  set(HAS_OSICBC TRUE)
+endif()
 
 set(HAS_CPLEX_OLD FALSE)
 set(HAS_GUROBI_OLD FALSE)
@@ -434,9 +446,9 @@ endif()
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)
   # SCIP version tested: 3.2.0
-  set(SCIP_DIR $ENV{SCIP_DIR})
-  set(SOPLEX_DIR $ENV{SOPLEX_DIR})
-  set(ZIMPL_DIR $ENV{ZIMPL_DIR})
+  #set(SCIP_DIR $ENV{SCIP_DIR})
+  #set(SOPLEX_DIR $ENV{SOPLEX_DIR})
+  #set(ZIMPL_DIR $ENV{ZIMPL_DIR})
 
   link_directories("${SCIP_DIR}/lib"  )
   link_directories("${SOPLEX_DIR}/lib")
@@ -607,12 +619,6 @@ if (BUILD_PDF_DOCUMENTATION)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc/spec
     COMMAND latexmk -pdf -output-directory=${PROJECT_BINARY_DIR}/doc/pdf minizinc-spec
   )
-endif()
-
-option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
-
-if (BUILD_STATIC_EXECUTABLE)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)
