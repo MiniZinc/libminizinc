@@ -3,7 +3,8 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
-# -- The below checks if certain solver paths are set in the config call (cmake -D GECODE_HOME=...) to be compiled --
+# -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
+# -- For example, run "cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ." if you have that environment variable -
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile
 if (DEFINED GECODE_HOME)
@@ -504,7 +505,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_OSICBC)  # Version release/2.9.7
-  set(OSICBC_HOME $ENV{OSICBC_HOME})
+#  set(OSICBC_HOME $ENV{OSICBC_HOME})
   link_directories("${OSICBC_HOME}/lib")
 
   add_library(minizinc_osicbc
