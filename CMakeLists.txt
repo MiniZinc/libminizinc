@@ -6,7 +6,7 @@ project (libminizinc CXX C)
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
 # -- For example, run "cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ." if you have that environment variable -
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_FZN    TRUE)                 ### Always compile
+set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
 if (DEFINED GECODE_HOME)
   set(HAS_GECODE TRUE)
 endif()
