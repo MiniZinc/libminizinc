@@ -3,12 +3,25 @@ cmake_minimum_required (VERSION 2.8.7)
 project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_CPLEX TRUE)
-set(HAS_GUROBI TRUE)
-set(HAS_SCIP TRUE)
-set(HAS_OSICBC TRUE)
-set(HAS_GECODE TRUE)
-set(HAS_FZN    TRUE)
+# -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
+# -- For example, run "cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ." if you have that environment variable -
+# -------------------------------------------------------------------------------------------------------------------
+set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
+if (DEFINED GECODE_HOME)
+  set(HAS_GECODE TRUE)
+endif()
+if (DEFINED CPLEX_STUDIO_DIR)
+  set(HAS_CPLEX TRUE)
+endif()
+if(DEFINED GUROBI_HOME)
+  set(HAS_GUROBI TRUE)
+endif()
+if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR)
+  set(HAS_SCIP TRUE)                                       # Can use CSIP w/o ZIMPL too
+endif()
+if (DEFINED OSICBC_HOME)
+  set(HAS_OSICBC TRUE)
+endif()
 
 set(HAS_CPLEX_OLD FALSE)
 set(HAS_GUROBI_OLD FALSE)
@@ -24,11 +37,18 @@ if (ADDITIONAL_DATE_STRING)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
+option (USE_ADDRESS_SANITIZER "Use GCC Address Sanitizer" OFF)
+if (USE_ADDRESS_SANITIZER)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
 option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)  ## does not work TODO
 if (BUILD_STATIC_EXECUTABLE)
 #  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 #  SET(BUILD_SHARED_LIBRARIES OFF)
-  SET(CMAKE_EXE_LINKER_FLAGS "-static")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -228,6 +248,7 @@ lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
+lib/MIPdomains.cpp
 lib/optimize.cpp
 lib/options.cpp
 lib/optimize_constraints.cpp
@@ -373,9 +394,9 @@ if(HAS_CPLEX)  # Version 12.6.2
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
   # if (BUILD_STATIC_EXECUTABLE)
-  SET_TARGET_PROPERTIES(mzn-cplex
-                               PROPERTIES LINK_FLAGS "-static"
-                               )
+  #SET_TARGET_PROPERTIES(mzn-cplex
+  #                             PROPERTIES LINK_FLAGS "-static"
+  #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
   target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
@@ -433,9 +454,9 @@ endif()
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)
   # SCIP version tested: 3.2.0
-  set(SCIP_DIR $ENV{SCIP_DIR})
-  set(SOPLEX_DIR $ENV{SOPLEX_DIR})
-  set(ZIMPL_DIR $ENV{ZIMPL_DIR})
+  #set(SCIP_DIR $ENV{SCIP_DIR})
+  #set(SOPLEX_DIR $ENV{SOPLEX_DIR})
+  #set(ZIMPL_DIR $ENV{ZIMPL_DIR})
 
   link_directories("${SCIP_DIR}/lib"  )
   link_directories("${SOPLEX_DIR}/lib")
@@ -491,7 +512,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_OSICBC)  # Version release/2.9.7
-  set(OSICBC_HOME $ENV{OSICBC_HOME})
+#  set(OSICBC_HOME $ENV{OSICBC_HOME})
   link_directories("${OSICBC_HOME}/lib")
 
   add_library(minizinc_osicbc
@@ -609,12 +630,6 @@ if (BUILD_PDF_DOCUMENTATION)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doc/spec
     COMMAND latexmk -pdf -output-directory=${PROJECT_BINARY_DIR}/doc/pdf minizinc-spec
   )
-endif()
-
-option (BUILD_STATIC_EXECUTABLE "Build statically linked executables" OFF)
-
-if (BUILD_STATIC_EXECUTABLE)
-  set(CMAKE_EXE_LINKER_FLAGS -static)
 endif()
 
 INSTALL(DIRECTORY share/minizinc DESTINATION share)

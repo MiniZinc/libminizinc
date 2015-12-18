@@ -69,7 +69,11 @@ MIP_solver::Variable MIP_solverinstance::exprToVar(Expression* arg) {
     return _variableMap.get(ident->decl()->id());
   }
 
-  throw InternalError("unknown expression type");
+  ostringstream oss;
+  oss << "unknown expression type: " << arg->eid() << " for arg=" << arg;
+  cerr << oss.str() << flush;
+  oss << (*arg);
+  throw InternalError( oss.str() );
 }
 
 void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
@@ -384,6 +388,10 @@ void MIP_solverinstance::processFlatZinc(void) {
         ub = -lb;
       }
 
+//       IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
+//       if (dom->size() > 1)
+//         throw runtime_error("MIP_solverinstance: domains with holes not supported, use --MIPdomains");
+
       VarId res;
       Id* id = it->e()->id();
       id = id->decl()->id();
@@ -436,7 +444,7 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
     double val = getMIPWrapper()->getValues()[var];
     switch (id->type().bt()) {
       case Type::BT_INT: return IntLit::a(round_to_longlong(val));
-      case Type::BT_FLOAT: return new FloatLit(Location(), val);
+      case Type::BT_FLOAT: return FloatLit::a(val);
       case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
       default: return NULL;
     }

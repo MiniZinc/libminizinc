@@ -28,6 +28,7 @@ using namespace std;
 
 #include <minizinc/flatten.hh>
 #include <minizinc/flatten_internal.hh>  // temp., TODO
+#include <minizinc/MIPdomains.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/file_utils.hh>
@@ -41,8 +42,8 @@ namespace MiniZinc {
   
   class Flattener {
   private:
-    auto_ptr<Model> pModel;
-    auto_ptr<Env>   pEnv;
+    unique_ptr<Model> pModel;
+    unique_ptr<Env>   pEnv;
   public:
     Flattener(bool fOutputByDefault=true);
     virtual ~Flattener();
@@ -75,6 +76,7 @@ namespace MiniZinc {
     bool flag_optimize = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
+    bool flag_noMIPdomains = false;
 
     string std_lib_dir;
     string globals_dir;

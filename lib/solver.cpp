@@ -259,7 +259,8 @@ void MznSolver::solve()
 
 void MznSolver::printStatistics()
 { // from both flt and si?
-  getSI()->printStatisticsLine(cout, 1);
+  if (si)
+    getSI()->printStatisticsLine(cout, 1);
 }
 
 

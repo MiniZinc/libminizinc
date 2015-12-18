@@ -35,6 +35,8 @@ namespace MiniZinc {
     bool verbose;
     /// Only use paths for variables introduced by file 0 (the MiniZinc model)
     bool only_toplevel_paths;
+    /// Only range domains for old linearization. Set from redefs to true if not here
+    bool onlyRangeDomains = false;
     /// Default constructor
     FlatteningOptions(void) : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false) {}
   };

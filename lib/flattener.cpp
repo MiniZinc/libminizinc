@@ -49,6 +49,8 @@ void Flattener::printHelp(ostream& os)
   << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+  << "  --only-range-domains\n    All domains contiguous, holes replaced by inequalities" << std::endl
+  << "  -D \"fMIPdomains=true\"\n    Domain unification for MIP, replaces range domains" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -189,6 +191,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     globals_dir = argv[i];
   } else if (string(argv[i])=="--only-range-domains") {
     flag_only_range_domains = true;
+  } else if (string(argv[i])=="--no-MIPdomains") {
+    flag_noMIPdomains = true;
   } else if (string(argv[i])=="-Werror") {
     flag_werror = true;
   } else {
@@ -243,11 +247,12 @@ void Flattener::flatten()
   if (flag_verbose)
     printVersion(cerr);
 
-  if (beginswith(globals_dir, "linear")) {
-    flag_only_range_domains = true;
-    if (flag_verbose)
-      cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
-  }
+  // controlled from redefs and command line:
+//   if (beginswith(globals_dir, "linear")) {
+//     flag_only_range_domains = true;
+//     if (flag_verbose)
+//       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
+//   }
 
   if (filenames.empty()) {
     throw runtime_error( "Error: no model file given." );
@@ -348,6 +353,7 @@ void Flattener::flatten()
                 std::cerr << "Flattening ...";
 
               try {
+                fopts.onlyRangeDomains = flag_only_range_domains;
                 ::flatten(env,fopts);
               } catch (LocationException& e) {
                 if (flag_verbose)
@@ -366,6 +372,14 @@ void Flattener::flatten()
               //            Model* flat = env.flat();
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+
+              if ( not flag_noMIPdomains ) {
+                if (flag_verbose)
+                  std::cerr << "Looking for MIP domains ...";
+                MIPdomains(env);
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
 
               if (flag_optimize) {
                 if (flag_verbose)

@@ -15,34 +15,37 @@
 #include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
-  
+
   class FZNSolver {
-  public:
-    typedef Expression* Variable;
-    typedef MiniZinc::Statistics Statistics;
+    public:
+      typedef Expression* Variable;
+      typedef MiniZinc::Statistics Statistics;
   };
-  
+
   class FZNSolverInstance : public SolverInstanceImpl<FZNSolver> {
-  protected:
-    Model* _fzn;
-    Model* _ozn;
-  public:
-    FZNSolverInstance(Env& env, const Options& options);
-    
-    virtual ~FZNSolverInstance(void);
-    
-    virtual Status next(void);
-    
-    virtual Status solve(void);
-    
-    virtual void processFlatZinc(void);
-    
-    virtual void resetSolver(void);
-    
-  protected:
-    virtual Expression* getSolutionValue(Id* id);
+    private:
+      std::string _fzn_solver;
+
+    protected:
+      Model* _fzn;
+      Model* _ozn;
+    public:
+      FZNSolverInstance(Env& env, const Options& options);
+
+      virtual ~FZNSolverInstance(void);
+
+      virtual Status next(void);
+
+      virtual Status solve(void);
+
+      virtual void processFlatZinc(void);
+
+      virtual void resetSolver(void);
+
+    protected:
+      virtual Expression* getSolutionValue(Id* id);
   };
-  
+
 }
 
 #endif

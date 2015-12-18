@@ -42,8 +42,8 @@ namespace MiniZinc {
 
         std::string fznFile;
         if (!_canPipe) {
-          char tmpfile[] = "/tmp/fznfileXXXXXX";
-          mkstemp(tmpfile);
+          char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
+          mkstemps(tmpfile, 4);
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
@@ -135,10 +135,17 @@ namespace MiniZinc {
           close(pipes[1][1]);
           close(pipes[1][0]);
           close(pipes[0][1]);
-          char* argv[] = {strdup(_fzncmd.c_str()),strdup("-a"),strdup("-"),0};
-          if (!_canPipe) {
-            argv[2] = strdup(fznFile.c_str());
-          }
+
+          std::vector<char*> cmd_line;
+          cmd_line.push_back(strdup(_fzncmd.c_str()));
+          cmd_line.push_back(strdup("-a"));
+          cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
+
+          char** argv = new char*[cmd_line.size()+1];
+          for(unsigned int i=0; i< cmd_line.size(); i++)
+            argv[i] = cmd_line[i];
+          argv[cmd_line.size()] = 0;
+
           int status = execvp(argv[0],argv);          
           if(status == -1) {
             std::stringstream ssm;
@@ -192,12 +199,9 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
-    std:: string fzn_solver = "fzn-gecode";
-    if(_options.hasParam(constants().opts.solver.fzn_solver.str()))
-      fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str());
-    if(_options.hasParam(constants().opts.verbose.str())) {
-      if(_options.getBoolParam(constants().opts.verbose.str()))
-        std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
+    std::string fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc");
+    if(_options.getBoolParam(constants().opts.verbose.str(), false)) {
+      std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
     }
     FznProcess proc(fzn_solver,false,_fzn); 
     std::string r = proc.run();

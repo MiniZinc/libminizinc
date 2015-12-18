@@ -13,7 +13,8 @@
 #define __MIP_WRAPPER__
 
 #include <vector>
-#include <map>
+//#include <map>
+#include <unordered_map>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -148,7 +149,7 @@ class MIP_wrapper {
   public:
     /// debugging stuff
 //     set<double> sLitValues;
-    map<double, VarId> sLitValues;
+    std::unordered_map<double, VarId> sLitValues;
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
