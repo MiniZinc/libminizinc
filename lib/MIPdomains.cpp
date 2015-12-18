@@ -402,7 +402,6 @@ namespace MiniZinc {
             MZN_MIPD__assert_hard( c->args().size() == 3 );
             ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
             MZN_MIPD__assert_hard( al );
-            MZN_MIPD__assert_hard( al->v().size() >= 2 );
             if ( al->v().size() == 2 ) {   // 2-term eqn
               LinEq2Vars led;
               expr2DeclArray(c->args()[1], led.vd);
@@ -420,7 +419,15 @@ namespace MiniZinc {
                 put2VarsConnection( led );
                 ++MIPD__stats[ fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq ];
               }
-            } else {                        // larger eqns
+            } else if ( al->v().size() == 1 ) {
+              static int nn=0;
+              if ( ++nn <= 7 ) {
+                std::cerr << "  MIPD: LIN_EQ with 1 variable::: " << std::flush;
+                std::cerr << (*c) << std::endl;
+              }
+            }
+            else
+            {                        // larger eqns
               // TODO should be here?
               auto eVD = getAnnotation( c->ann(), constants().ann.defines_var );
               if ( eVD ) {
