@@ -49,8 +49,8 @@ void Flattener::printHelp(ostream& os)
   << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-  << "  --only-range-domains\n    All domains contiguous, holes replaced by inequalities" << std::endl
-  << "  -D \"fMIPdomains=true\"\n    Domain unification for MIP, replaces range domains" << std::endl
+  << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
+  << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl

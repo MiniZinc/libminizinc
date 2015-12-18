@@ -20,7 +20,7 @@ bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only
     %% Reifs give wrong result on 2012/amaze, so using implications only
 opt bool: fMIPdomains;
 bool: fPostprocessDomains =      %% True to pass all domain-related
-           if absent( fMIPdomains ) then false                         %% constraints (...__POST) to FlatZinc
+           if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
 
 bool: fMZN__IgnoreRedundantCumulative=false;
