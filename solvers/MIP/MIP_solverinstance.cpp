@@ -184,32 +184,39 @@ namespace SCIPConstraints {
     p_lin(si, call, MIP_wrapper::EQ);
   }
 
-   void p_eq(SolverInstanceBase& si, const Call* call) {
+  // The non-_lin constraints happen in a failed model or in a non-optimized one:
+   void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
       MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
       ASTExprVec<Expression> args = call->args();
       vector<MIP_solver::Variable> vars(2);
       vars[0] = gi.exprToVar(args[0]);
       vars[1] = gi.exprToVar(args[1]);
-      double coefs[2] = {-1.0, 1.0};
+      double coefs[2] = {1.0, -1.0};
 
       std::stringstream ss;
       ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-      gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
+      gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], nCmp, 0.0,
                                GetMaskConsType(call), ss.str());
     }
+   void p_eq(SolverInstanceBase& si, const Call* call) {
+     p_non_lin( si, call, MIP_wrapper::EQ );
+   }
+   void p_le(SolverInstanceBase& si, const Call* call) {
+     p_non_lin( si, call, MIP_wrapper::LQ );
+   }
 }
 
 void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("int2float"),    SCIPConstraints::p_eq);
   _constraintRegistry.add(ASTString("bool_eq"),      SCIPConstraints::p_eq);   // for inconsistency reported in fzn
-//   _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le);
+  _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq);
+  _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le);
   _constraintRegistry.add(ASTString("int_lin_eq"),   SCIPConstraints::p_int_lin_eq);
   _constraintRegistry.add(ASTString("int_lin_le"),   SCIPConstraints::p_int_lin_le);
 //   _constraintRegistry.add(ASTString("int_plus"),     SCIPConstraints::p_plus);
 //   _constraintRegistry.add(ASTString("bool2int"),     SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("float_eq"),     SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("float_le"),     SCIPConstraints::p_le);
+  _constraintRegistry.add(ASTString("float_eq"),     SCIPConstraints::p_eq);
+  _constraintRegistry.add(ASTString("float_le"),     SCIPConstraints::p_le);
   _constraintRegistry.add(ASTString("float_lin_eq"), SCIPConstraints::p_float_lin_eq);
   _constraintRegistry.add(ASTString("float_lin_le"), SCIPConstraints::p_float_lin_le);
 //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus);
