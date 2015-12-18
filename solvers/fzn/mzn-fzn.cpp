@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
   string flag_output_base;
   string flag_output_fzn;
   string flag_output_ozn;
+  string fzn_solver = "flatzinc";
   bool flag_output_fzn_stdout = false;
   bool flag_output_ozn_stdout = false;
   bool flag_instance_check_only = false;
@@ -189,6 +190,11 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       std_lib_dir = argv[i];
+    } else if (string(argv[i])=="--solver") {
+      i++;
+      if (i==argc)
+        goto error;
+      fzn_solver = argv[i];
     } else if (beginswith(string(argv[i]),"-G")) {
       string filename(argv[i]);
       if (filename.length() > 2) {
@@ -395,6 +401,7 @@ int main(int argc, char** argv) {
             {
               GCLock lock;
               Options options;
+              options.setStringParam(constants().opts.solver.fzn_solver.str(), fzn_solver);
               FZNSolverInstance flatzinc(env,options);
               flatzinc.processFlatZinc();
               SolverInstance::Status status = flatzinc.solve();
