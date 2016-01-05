@@ -33,9 +33,9 @@ To perform the build:
 > cmake --build .
 
 This will compile the mzn-fzn driver by default. To enable other solvers, 
-set their paths e.g. as cmake -DGECODE_HOME="___" .. in the 1st call of cmake,
-see CMakeLists.txt for available interfaces. In Windows, when using 64-bit
-versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
+set their paths e.g. as 'cmake -DGECODE_HOME="___" ..', see the example BUILD.*
+scripts and CMakeLists.txt for available interfaces. In Windows, when using
+64-bit versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
 
 To install MiniZinc:
 > cmake --build . --target install
