@@ -42,7 +42,7 @@ int main(int argc, const char** argv) {
   try {
     
     slv.addFlattener();
-    if (not slv.processOptions(argc, argv)) {
+    if (!slv.processOptions(argc, argv)) {
       slv.printHelp();
       exit(EXIT_FAILURE);
     }
@@ -87,7 +87,7 @@ int main(int argc, const char** argv) {
     std::cerr << "   Done (";
     cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
   }
-  return not fSuccess;
+  return !fSuccess;
 }   // int main()
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -113,7 +113,7 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF)
 /// Function createSI also adds each SI to the local storage
 SolverInstanceBase * SolverFactory::createSI(Env& env) {
   SolverInstanceBase *pSI = doCreateSI(env);
-  if (not pSI) {
+  if (!pSI) {
     cerr << "  SolverFactory: failed to initialize solver "
       << getVersion() << endl;
     throw InternalError("  SolverFactory: failed to initialize solver");
@@ -188,7 +188,7 @@ bool MznSolver::processOptions(int argc, const char** argv)
     if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
     }
-    if (not getFlt()->processOption(i, argc, argv)) {
+    if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
         if ((*it)->processOption(i, argc, argv))

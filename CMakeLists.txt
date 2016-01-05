@@ -7,6 +7,9 @@ project (libminizinc CXX C)
 # -- For example, run "cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ." if you have that environment variable -
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
+if (WIN32)
+  set(HAS_FZN    FALSE)                 ### Except on Win     TODO
+endif (WIN32)
 if (DEFINED GECODE_HOME)
   set(HAS_GECODE TRUE)
 endif()
@@ -357,18 +360,26 @@ if(HAS_GUROBI_OLD)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_CPLEX)  # Version 12.6.2
+if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G"Visual Studio 12 Win64")
   if(UNIX)
-    set(CPLEX_ARCH "linux")
+    set(CPLEX_ARCH "x86-64_linux/static_pic")
+	set(CPLEX_LIB "cplex")
   endif(UNIX)
 
   if(APPLE)
-     set(CPLEX_ARCH "osx")
+     set(CPLEX_ARCH "x86-64_osx/static_pic")
+	set(CPLEX_LIB "cplex")
   endif(APPLE)
-
+  
+  if(WIN32)
+     set(CPLEX_ARCH "x64_windows_vs2013/stat_mda")
+	set(CPLEX_LIB "cplex1262.lib")          # Here 12.6.2
+  endif(WIN32)
+  
+  
 #	add_definitions(-DIL_STD)
 	
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
 #  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
@@ -382,7 +393,7 @@ if(HAS_CPLEX)  # Version 12.6.2
   )
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-cplex
 	  lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
@@ -396,7 +407,7 @@ if(HAS_CPLEX)  # Version 12.6.2
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc cplex ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
