@@ -51,7 +51,8 @@ namespace MiniZinc {
     N_POSTs__initexprN, N_POSTs__eqNlineq, N_POSTs__eqNmapsize,
     // other
     N_POSTs__varsDirect, N_POSTs__varsInvolved,
-    N_POSTs__domSizeMin, N_POSTs__domSizeSum, N_POSTs__domSizeMax,
+    N_POSTs__NSubintvMin, N_POSTs__NSubintvSum, N_POSTs__NSubintvMax, // as N subintervals
+    N_POSTs__SubSizeMin, N_POSTs__SubSizeSum, N_POSTs__SubSizeMax, // subintv. size
     N_POSTs__linCoefMin, N_POSTs__linCoefMax,
     N_POSTs__cliquesWithEqEncode,
     N_POSTs__size };

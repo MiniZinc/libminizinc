@@ -57,7 +57,8 @@ namespace MiniZinc {
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
     bool MIPdomains() {
-      MIPD__stats[ N_POSTs__domSizeMin ] = 1e100;
+      MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
+      MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
       registerLinearConstraintDecls();
       register__POSTconstraintDecls();
@@ -831,11 +832,19 @@ namespace MiniZinc {
         implement__POSTs();
         
         // Statistics
-        if ( sDomain.size() < MIPD__stats[ N_POSTs__domSizeMin ] )
-          MIPD__stats[ N_POSTs__domSizeMin ] = sDomain.size();
-        MIPD__stats[ N_POSTs__domSizeSum ] += sDomain.size();
-        if ( sDomain.size() > MIPD__stats[ N_POSTs__domSizeMax ] )
-          MIPD__stats[ N_POSTs__domSizeMax ] = sDomain.size();
+        if ( sDomain.size() < MIPD__stats[ N_POSTs__NSubintvMin ] )
+          MIPD__stats[ N_POSTs__NSubintvMin ] = sDomain.size();
+        MIPD__stats[ N_POSTs__NSubintvSum ] += sDomain.size();
+        if ( sDomain.size() > MIPD__stats[ N_POSTs__NSubintvMax ] )
+          MIPD__stats[ N_POSTs__NSubintvMax ] = sDomain.size();
+        for ( auto& intv : sDomain ) {
+          const auto nSubSize = intv.right - intv.left;          
+          if ( nSubSize < MIPD__stats[ N_POSTs__SubSizeMin ] )
+            MIPD__stats[ N_POSTs__SubSizeMin ] = nSubSize;
+          MIPD__stats[ N_POSTs__SubSizeSum ] += nSubSize;
+          if ( nSubSize > MIPD__stats[ N_POSTs__SubSizeMax ] )
+            MIPD__stats[ N_POSTs__SubSizeMax ] = nSubSize;
+        }
         if ( cls.fRef1HasEqEncode )
           ++MIPD__stats[ N_POSTs__cliquesWithEqEncode ];
       }
@@ -1575,7 +1584,10 @@ namespace MiniZinc {
 //          << nc << " final" << std::endl;
       MZN_MIPD__assert_hard( nc );
       MIPD__stats[ N_POSTs__eqNmapsize ] = mNViews.size();
-      double nPDomSizeAve = MIPD__stats[ N_POSTs__domSizeSum ] / nc;
+      double nSubintvAve = MIPD__stats[ N_POSTs__NSubintvSum ] / nc;
+      MZN_MIPD__assert_hard( MIPD__stats[ N_POSTs__NSubintvSum ] );
+      double dSubSizeAve
+        = MIPD__stats[ N_POSTs__SubSizeSum ] / MIPD__stats[ N_POSTs__NSubintvSum ];
       os
       << MIPD__stats[ N_POSTs__all ] << " POSTs"
 #ifdef __MZN__MIPDOMAINS__PRINTMORESTATS
@@ -1592,9 +1604,12 @@ namespace MiniZinc {
       << MIPD__stats[ N_POSTs__varsDirect ] << " / "
       << MIPD__stats[ N_POSTs__varsInvolved ] << " vars, "
       << nc << " cliques, "
-      << MIPD__stats[ N_POSTs__domSizeMin ] << " / "
-      << nPDomSizeAve << " / "
-      << MIPD__stats[ N_POSTs__domSizeMax ] << " dom size m/a/m, "
+      << MIPD__stats[ N_POSTs__NSubintvMin ] << " / "
+      << nSubintvAve << " / "
+      << MIPD__stats[ N_POSTs__NSubintvMax ] << " NSubIntv m/a/m, "
+      << MIPD__stats[ N_POSTs__SubSizeMin ] << " / "
+      << dSubSizeAve << " / "
+      << MIPD__stats[ N_POSTs__SubSizeMax ] << " SubIntvSize m/a/m, "
       << MIPD__stats[ N_POSTs__cliquesWithEqEncode ] << " clq eq_encoded ";
 //       << std::flush
       if ( TCliqueSorter::LinEqGraph::dCoefMax > 1.0 )
