@@ -8,7 +8,7 @@ project (libminizinc CXX C)
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
 if (WIN32)
-  set(HAS_FZN    FALSE)                 ### Except on Win     TODO
+  set(HAS_FZN    FALSE)                 ### Except on Win    TODO
 endif (WIN32)
 if (DEFINED GECODE_HOME)
   set(HAS_GECODE TRUE)
