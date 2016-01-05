@@ -201,7 +201,9 @@ if(FLEX_EXEC)
 else(FLEX_EXEC)
   MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
   if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.")
+    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run."
+	  "\nIf you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then"
+	  "copy lexer.lxx's md5 md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
   endif()
   set(lexer_cpp ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
 endif(FLEX_EXEC)
@@ -219,7 +221,9 @@ if(BISON_EXEC)
 else(BISON_EXEC)
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
-    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.")
+    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run."
+	  "\nIf you are sure parser.tab.cpp and minizinc/parser.tab.hh in ${PROJECT_SOURCE_DIR}/lib/cached/ are correct then"
+	  "copy parser.yxx's md5 ${parser_yxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
   endif()
   include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
   set(parser_cpp ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp)
