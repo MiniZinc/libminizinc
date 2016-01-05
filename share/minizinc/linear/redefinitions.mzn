@@ -22,6 +22,7 @@ opt bool: fMIPdomains;
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
+bool: fPostproDom_AUX = fPostprocessDomains;   %% Specialized for aux_ constr
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
