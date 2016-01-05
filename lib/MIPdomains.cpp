@@ -6,7 +6,7 @@
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * License, v. 2.0. If a copy of the MPL was ! distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/flatten.hh>
@@ -28,7 +28,7 @@
 #include <map>
 
 /// TODOs
-/// set_in etc. are not propagated between views
+/// set_in etc. are ! propagated between views
 /// CLEANUP after work: ~destructor
 /// Also check initexpr of all vars?  DONE
 /// In case of only_range_domains we'd need to register inequalities
@@ -52,7 +52,26 @@
 namespace MiniZinc {
   
   std::vector<double> MIPD__stats( N_POSTs__size );
-  
+
+  template<class T>
+  static std::vector<T> make_vec(T t1, T t2) {
+	  T c_array[] = { t1, t2 };
+	  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
+	  return result;
+  }
+  template<class T>
+  static std::vector<T> make_vec(T t1, T t2, T t3) {
+	  T c_array[] = { t1, t2, t3 };
+	  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
+	  return result;
+  }
+  template<class T>
+	static std::vector<T> make_vec(T t1, T t2, T t3, T t4) {
+	  T c_array[] = { t1, t2, t3, t4 };
+	  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
+	  return result;
+  }
+
   class MIPD {  
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
@@ -66,7 +85,7 @@ namespace MiniZinc {
       if ( vVarDescr.empty() )
         return true;
       constructVarViewCliques();
-      if ( not decomposeDomains() )
+      if ( !decomposeDomains() )
         return false;
       printStats(std::cerr);
       return true;
@@ -86,9 +105,10 @@ namespace MiniZinc {
     FunctionI *int2float;
     FunctionI *lin_exp_int;
     FunctionI *lin_exp_float;
-    std::vector<Type> int_lin_eq_t = {Type::parint(1), Type::varint(1), Type::parint()};
-    std::vector<Type> float_lin_eq_t = {Type::parfloat(1), Type::varfloat(1), Type::parfloat()};
-    std::vector<Type> t_VIVF = { Type::varint(), Type::varfloat() };
+	
+  	std::vector<Type> int_lin_eq_t = make_vec(Type::parint(1), Type::varint(1), Type::parint());
+    std::vector<Type> float_lin_eq_t = make_vec(Type::parfloat(1), Type::varfloat(1), Type::parfloat());
+    std::vector<Type> t_VIVF = make_vec( Type::varint(), Type::varfloat() );
     
 //     double float_lt_EPS_coef__ = 1e-5;
       
@@ -125,25 +145,25 @@ namespace MiniZinc {
   //   std::set<FunctionI*> funcs;
 
     /// Possible function param sets
-    std::vector<Type> t_VII = { Type::varint(), Type::parint() };
-    std::vector<Type> t_VIVI = { Type::varint(), Type::varint() };
-    std::vector<Type> t_VIIVI = { Type::varint(), Type::parint(), Type::varint() };
-    std::vector<Type> t_VFVI = { Type::varfloat(), Type::varint() };
-    std::vector<Type> t_VFVF = { Type::varfloat(), Type::varfloat() };
-    std::vector<Type> t_VFFVI = { Type::varfloat(), Type::parfloat(), Type::varint() } ;
-    std::vector<Type> t_VFFVIF = { Type::varfloat(), Type::parfloat(), Type::varint(),
-      Type::parfloat() } ;
-    std::vector<Type> t_VFVIF = { Type::varfloat(), Type::varint(), Type::parfloat() };
-    std::vector<Type> t_VFVIVF = { Type::varfloat(), Type::varint(), Type::varfloat() };
-    std::vector<Type> t_VFVIVFF = { Type::varfloat(), Type::varint(), Type::varfloat(),
-                      Type::parfloat() };
-    std::vector<Type> t_VFVFF = { Type::varfloat(), Type::varfloat(), Type::parfloat() };
-    std::vector<Type> t_VFFF = { Type::varfloat(), Type::parfloat(), Type::parfloat() };
+    std::vector<Type> t_VII = make_vec( Type::varint(), Type::parint() );
+    std::vector<Type> t_VIVI = make_vec(Type::varint(), Type::varint());
+    std::vector<Type> t_VIIVI = make_vec(Type::varint(), Type::parint(), Type::varint());
+    std::vector<Type> t_VFVI = make_vec(Type::varfloat(), Type::varint());
+    std::vector<Type> t_VFVF = make_vec(Type::varfloat(), Type::varfloat());
+    std::vector<Type> t_VFFVI = make_vec(Type::varfloat(), Type::parfloat(), Type::varint());
+    std::vector<Type> t_VFFVIF = make_vec(Type::varfloat(), Type::parfloat(), Type::varint(),
+      Type::parfloat() );
+    std::vector<Type> t_VFVIF = make_vec(Type::varfloat(), Type::varint(), Type::parfloat());
+    std::vector<Type> t_VFVIVF = make_vec(Type::varfloat(), Type::varint(), Type::varfloat());
+    std::vector<Type> t_VFVIVFF = make_vec(Type::varfloat(), Type::varint(), Type::varfloat(),
+                      Type::parfloat() );
+    std::vector<Type> t_VFVFF = make_vec(Type::varfloat(), Type::varfloat(), Type::parfloat());
+    std::vector<Type> t_VFFF = make_vec(Type::varfloat(), Type::parfloat(), Type::parfloat());
   //     std::vector<Type> t_VFVFVIF({ Type::varfloat(), Type::varfloat(), Type::varint(), Type::parfloat() });
 
-    std::vector<Type> t_VIAVI = { Type::varint(), Type::varint(1) };
-    std::vector<Type> t_VISI = { Type::varint(), Type::parsetint() };
-    std::vector<Type> t_VISIVI = { Type::varint(), Type::parsetint(), Type::varint() };
+    std::vector<Type> t_VIAVI = make_vec(Type::varint(), Type::varint(1));
+    std::vector<Type> t_VISI = make_vec(Type::varint(), Type::parsetint());
+    std::vector<Type> t_VISIVI = make_vec(Type::varint(), Type::parsetint(), Type::varint());
     
   //     std::vector<Type> t_intarray(1);
   //     t_intarray[0] = Type::parint(-1);
@@ -212,7 +232,7 @@ namespace MiniZinc {
       aCT.push_back(DCT("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST));
       aCT.push_back(DCT("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int, set_in_reif__POST));
       /// Registering all declared & compatible __POST constraints
-      /// (First, cleanup FunctionIs' payload:  -- not doing now)
+      /// (First, cleanup FunctionIs' payload:  -- ! doing now)
       for ( int i=0; i<aCT.size(); ++i ) {
         FunctionI* fi = env.orig->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams);
         if (fi) {
@@ -244,14 +264,14 @@ namespace MiniZinc {
         if ( Call* c = ic->e()->dyn_cast<Call>() ) {
           if ( auto ipct = mCallTypes.find(c->decl())
                 != mCallTypes.end() ) {
-            // No not here because might be deleted immediately in later versions.
+            // No ! here because might be deleted immediately in later versions.
 //             ic->remove();                              // mark removed at once
             MZN_MIPD__assert_hard( c->args().size() > 1 );
             ++MIPD__stats[ N_POSTs__all ];
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
             DBGOUT_MIPD__ ( "  Call " << c->id().str()
               << " uses variable " << vd0->id()->str() );
-            if ( vd0->payload() == -1 ) {         // not yet visited
+            if ( vd0->payload() == -1 ) {         // ! yet visited
               vd0->payload( vVarDescr.size() );
               vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
               // bounds/domains later for each involved var TODO
@@ -262,7 +282,7 @@ namespace MiniZinc {
             }
             DBGOUT_MIPD ( "" );
             if ( equality_encoding__POST == c->decl() ) {
-              MZN_MIPD__assert_hard( not vVarDescr[ vd0->payload() ].pEqEncoding );
+              MZN_MIPD__assert_hard( ! vVarDescr[ vd0->payload() ].pEqEncoding );
               vVarDescr[ vd0->payload() ].pEqEncoding = &*ic;
               DBGOUT_MIPD ( " Variable " << vd0->id()->str() << " has eq_encode." );
             }   // + if has aux_ constraints?
@@ -279,17 +299,17 @@ namespace MiniZinc {
     /// Checks init expr of a variable
     /// Return true IFF new connection
     /// The bool param requires RHS to be POST-touched
-    // Guido: cannot be recursive in FZN
+    // Guido: can! be recursive in FZN
     bool checkInitExpr(VarDecl* vd, bool fCheckArg=false) {
       MZN_MIPD__assert_hard( vd->e() );
-      if ( not vd->type().isint() && not vd->type().isfloat() )
+      if ( ! vd->type().isint() && ! vd->type().isfloat() )
         return false;
-      if ( not fCheckArg )
+      if ( ! fCheckArg )
         MZN_MIPD__assert_hard( vd->payload() >= 0 );
       if ( Id* id = vd->e()->dyn_cast<Id>() ) {
 //         const int f1 = ( vd->payload()>=0 );
 //         const int f2 = ( id->decl()->payload()>=0 );
-        if ( not fCheckArg || ( id->decl()->payload()>=0 ) ) {
+        if ( ! fCheckArg || ( id->decl()->payload()>=0 ) ) {
           DBGOUT_MIPD__ ( "  Checking init expr  " );
           DBGOUT_MIPD_SELF( debugprint(vd) );
           LinEq2Vars led;
@@ -306,7 +326,7 @@ namespace MiniZinc {
         }
       } else if ( Call* c = vd->e()->dyn_cast<Call>() ) {
         if ( lin_exp_int==c->decl() || lin_exp_float==c->decl() ) {
-//             std::cerr << "  NOTE call " << std::flush;
+//             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
           MZN_MIPD__assert_hard( c->args().size() == 3 );
 //           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
@@ -318,8 +338,8 @@ namespace MiniZinc {
             led.vd = { vd, expr2VarDecl(al->v()[0]) };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
-            if ( not fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
-              // Can use another map here:
+            if ( ! fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
+              // Can use a!her map here:
 //               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
 //                 continue;
 //               sCallLinEq2.insert(c);     // memorize this call
@@ -398,7 +418,7 @@ namespace MiniZinc {
           const bool fIntLinEq = int_lin_eq==c->decl();
           const bool fFloatLinEq = float_lin_eq==c->decl();
           if ( fIntLinEq || fFloatLinEq ) {
-//             std::cerr << "  NOTE call " << std::flush;
+//             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
             MZN_MIPD__assert_hard( c->args().size() == 3 );
             ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
@@ -453,7 +473,7 @@ namespace MiniZinc {
 //             const bool fIVR = (constants().var_redef==c->decl());
 //             if ( fI2F || fIVR ) {
             if ( int2float==c->decl() || constants().var_redef==c->decl() ) {
-//             std::cerr << "  NOTE call " << std::flush;
+//             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
               MZN_MIPD__assert_hard( c->args().size() == 2 );
               LinEq2Vars led;
@@ -586,7 +606,7 @@ namespace MiniZinc {
 //       std::vector<bool> fHaveClq(led.vd.size(), false);
       int nCliqueAvailable = -1;
       for ( auto vd : led.vd ) {
-        if ( vd->payload() < 0 ) {         // not yet visited
+        if ( vd->payload() < 0 ) {         // ! yet visited
           vd->payload( vVarDescr.size() );
           vVarDescr.push_back( VarDescr( vd, vd->type().isint() ) );  // can use /prmTypes/ as well
           if ( fCheckinitExpr && vd->e() )
@@ -724,7 +744,7 @@ namespace MiniZinc {
             bool fDive=true;
             if ( itSrc != itVia ) {
               PVarDecl vd[2] = { itSrc->first, itDst->first };
-              if ( not mWhereStore.checkExistingArc(vd, A1A2, A1B2plusB1, false) ) {
+              if ( ! mWhereStore.checkExistingArc(vd, A1A2, A1B2plusB1, false) ) {
                 mWhereStore[vd[0]][vd[1]] = std::make_pair(A1A2, A1B2plusB1);
                 DBGOUT_MIPD ( "   PROPAGATING: "
                   << vd[0]->id()->str() << " = "
@@ -784,9 +804,11 @@ namespace MiniZinc {
       MIPD& mipd;
       const int iVarStart;
       TCliqueSorter cls;
-      SetOfIntvReal sDomain = { IntvReal() };   // the decomposed domain. Init to +-inf
+      SetOfIntvReal sDomain;
       
-      DomainDecomp(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv), cls(pm, iv)  { }
+      DomainDecomp(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv), cls(pm, iv)  {
+        sDomain.insert(IntvReal());   // the decomposed domain. Init to +-inf
+      }
       void doProcess() {
         // Choose the main variable && relate all others to it
         const int nClique =  mipd.vVarDescr[iVarStart].nClique;
@@ -825,7 +847,7 @@ namespace MiniZinc {
         if ( cls.fRef1HasEqEncode ) {
           syncWithEqEncoding();
           syncOtherEqEncodings();          
-        } else {  // not cls.fRef1HasEqEncode
+        } else {  // ! cls.fRef1HasEqEncode
           if ( sDomain.size()>=2 )              // need to simplify stuff otherwise
             createDomainFlags();
         }
@@ -897,7 +919,7 @@ namespace MiniZinc {
 //           vd->ti()->domain( NULL );
         }
         else {
-          if ( NULL==vd->ti()->domain() && not vd->type().isbool() ) {
+          if ( NULL==vd->ti()->domain() && ! vd->type().isbool() ) {
             lb = IntvReal::infMinus();
             ub = IntvReal::infPlus();
           }
@@ -949,21 +971,21 @@ namespace MiniZinc {
                 const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                 switch ( nCmpType_ADAPTED ) {
                   case CMPT_LE:
-                    sDomain.cutDeltas( { { IntvReal::infMinus(), rhsDown } }, delta );
+                    sDomain.cutDeltas( IntvReal::infMinus(), rhsDown, delta );
                     break;
                   case CMPT_GE:
-                    sDomain.cutDeltas( { { rhsUp, IntvReal::infPlus() } }, delta );
+                    sDomain.cutDeltas( rhsUp, IntvReal::infPlus(), delta );
                     break;
                   case CMPT_LT_0:
-                    sDomain.cutDeltas( { { IntvReal::infMinus(), rhsDown-delta } }, delta );
+                    sDomain.cutDeltas( IntvReal::infMinus(), rhsDown-delta, delta );
                     break;
                   case CMPT_GT_0:
-                    sDomain.cutDeltas( { { rhsUp+delta, IntvReal::infPlus() } }, delta );
+                    sDomain.cutDeltas( rhsUp+delta, IntvReal::infPlus(), delta );
                     break;
                   case CMPT_EQ:
-                    if ( not ( cls.varRef1->type().isint() &&    // skip if int target var
+                    if ( ! ( cls.varRef1->type().isint() &&    // skip if int target var
                         std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // && fract value
-                      sDomain.cutDeltas( { { rhsRnd, rhsRnd } }, delta );
+                      sDomain.cutDeltas( rhsRnd, rhsRnd, delta );
                     break;
                   default:
                     MZN_MIPD__assert_hard( ( " No other reified cmp type ", 0 ) );
@@ -977,7 +999,7 @@ namespace MiniZinc {
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                 bool fSkipNE = ( cls.varRef1->type().isint() &&
                   std::fabs( rhs - rhsRnd ) > 1e-8 );
-                if ( not fSkipNE ) {
+                if ( ! fSkipNE ) {
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
                   sDomain.cutOut( { rhsRnd-delta, rhsRnd+delta } );
                 }
@@ -1042,7 +1064,7 @@ namespace MiniZinc {
         // TODO  This could be in the var projection? No, need the final domain
       }
       
-      /// if not eq_encoding, creates a flag for each subinterval in the domain
+      /// if ! eq_encoding, creates a flag for each subinterval in the domain
       /// && constrains sum(flags)==1
       void createDomainFlags() {
         std::vector<Expression*> vVars( sDomain.size() );         // flags for each subinterval
@@ -1133,7 +1155,7 @@ namespace MiniZinc {
                       break;
                   }
                 } else if ( RIT_Static == dct.nReifType ) {
-                    // nothing here for NE
+                    // !hing here for NE
                   MZN_MIPD__assert_hard( CMPT_NE == nCmpType_ADAPTED );
                 } else {  // aux_ relate to 0.0
                           // But we don't modify domain splitting for them currently
@@ -1155,9 +1177,9 @@ namespace MiniZinc {
                   } else {
                     rhs += delta;
                   }
-                  // Now we need rhs not to be in the inner of the domain
+                  // Now we need rhs ! to be in the inner of the domain
                   bool fUseDD = true;
-                  if ( not cls.fRef1HasEqEncode ) {
+                  if ( ! cls.fRef1HasEqEncode ) {
                     switch ( nCmpType_ADAPTED ) {
                       case CMPT_EQ_0:
                       {
@@ -1175,7 +1197,7 @@ namespace MiniZinc {
                           if ( itUB->right > rhs )
                             fInner = true;
                         }
-                        fUseDD = not fInner;
+                        fUseDD = ! fInner;
                       }
                         break;
                       case CMPT_GT_0:
@@ -1188,7 +1210,7 @@ namespace MiniZinc {
                           if ( itLB->right >= rhs )
                             fInner = true;
                         }
-                        fUseDD = not fInner;
+                        fUseDD = ! fInner;
                       }
                         break;
                       default:
@@ -1274,7 +1296,7 @@ namespace MiniZinc {
             auto it1 = sDomain.lower_bound( intv.left );
             auto it2 = sDomain.upper_bound( intv.right );
             auto it11 = it1;
-            // Check that we are looking not into a subinterval:
+            // Check that we are looking ! into a subinterval:
             if ( sDomain.begin() != it11 ) {
               --it11;
               MZN_MIPD__assert_hard( it11->right < intv.left );
@@ -1371,7 +1393,7 @@ namespace MiniZinc {
                       );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
-        bool fFloat = not (*vars.begin())->type().isint();
+        bool fFloat = ! (*vars.begin())->type().isint();
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
@@ -1418,7 +1440,7 @@ namespace MiniZinc {
         mipd.getEnv()->envi().flat_addItem(new ConstraintI(Location().introduce(), nc));
       }
       
-      /// domain / reif set of one variable into that for another
+      /// domain / reif set of one variable into that for a!her
       void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget, 
                           double A, double B ) {
         MZN_MIPD__assert_hard( A != 0.0 );
@@ -1451,7 +1473,7 @@ namespace MiniZinc {
     };  // class DomainDecomp
     
     /// Vars without explicit clique still need a decomposition.
-    /// Have noticed all __POSTs, set_in's && eq_encode's to it BEFORE
+    /// Have !iced all __POSTs, set_in's && eq_encode's to it BEFORE
     /// In each clique, relate all vars to one chosen
     /// Find all "smallest rel. factor" variables, integer && with eq_encode if avail
     /// Re-relate all vars to it
@@ -1460,7 +1482,7 @@ namespace MiniZinc {
     /// Implement all domain constraints, incl. possible corresp, of eq_encode's
     ///
     /// REMARKS.
-    /// Not impose effects of integrality scaling (e.g., int v = int k/3)
+    /// ! impose effects of integrality scaling (e.g., int v = int k/3)
     /// BUT when using k's eq_encode?
     /// And when subdividing into intervals
     bool decomposeDomains() {
@@ -1470,7 +1492,7 @@ namespace MiniZinc {
       bool fRetTrue = true;
       for ( int iVar=0; iVar<vVarDescr.size(); ++iVar ) {
 //         VarDescr& var = vVarDescr[iVar];
-        if ( not vVarDescr[iVar].fDomainConstrProcessed ) {
+        if ( ! vVarDescr[iVar].fDomainConstrProcessed ) {
           try {
             GCLock lock;      
             DomainDecomp dd(this, iVar);
@@ -1500,9 +1522,9 @@ namespace MiniZinc {
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
-      MZN_MIPD__assert_hard( not arg->dyn_cast<IntLit>() );
-      MZN_MIPD__assert_hard( not arg->dyn_cast<FloatLit>() );
-      MZN_MIPD__assert_hard( not arg->dyn_cast<BoolLit>() );
+      MZN_MIPD__assert_hard( ! arg->dyn_cast<IntLit>() );
+      MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
+      MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
       Id* id = arg->dyn_cast<Id>();
       MZN_MIPD__assert_hard(id);
       VarDecl* vd = id->decl();
@@ -1761,7 +1783,7 @@ namespace MiniZinc {
 
   void MIPdomains(Env& env) {
     MIPD mipd(&env);
-    if ( not mipd.MIPdomains() ) {
+    if ( ! mipd.MIPdomains() ) {
       GCLock lock;
       env.flat()->fail(env.envi());
     }

@@ -20,7 +20,8 @@ Prerequisite software:
   clang, g++, and Microsoft Visual C++.
 - The bison and flex parser/lexer generators. These usually come packaged for
   Linux distributions, and they are part of the Xcode developer tools for Mac
-  OS. On Windows, you can e.g. install them via cygwin.
+  OS. On Windows, you can e.g. install them in cygwin and process+copy
+  the lexer/parser files manually, or use winFlexBison.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
@@ -33,7 +34,8 @@ To perform the build:
 
 This will compile the mzn-fzn driver by default. To enable other solvers, 
 set their paths e.g. as cmake -DGECODE_HOME="___" .. in the 1st call of cmake,
-see CMakeLists.txt for available interfaces.
+see CMakeLists.txt for available interfaces. In Windows, when using 64-bit
+versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
 
 To install MiniZinc:
 > cmake --build . --target install
