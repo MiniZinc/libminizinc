@@ -316,20 +316,20 @@ find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)  # Version 6.0.5
+if(HAS_GUROBI)  # Version 6.5
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi
     lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc gurobi60 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin

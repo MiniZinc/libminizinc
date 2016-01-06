@@ -21,8 +21,8 @@ Prerequisite software:
 - If you intend to change lexer/parser templates or checkout development
   snapshots, the bison and flex parser/lexer generators. These usually come
   packaged for Linux distributions, and they are part of the Xcode developer
-  tools for Mac OS. On Windows, you can e.g. install them in cygwin and
-  process+copy the lexer/parser files manually, or use winFlexBison.
+  tools for Mac OS. On Windows, simplest is to have MinGW(64) tools on the
+  path, or use winFlexBison.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
