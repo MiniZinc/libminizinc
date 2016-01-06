@@ -521,22 +521,28 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_OSICBC)  # Version release/2.9.7
 #  set(OSICBC_HOME $ENV{OSICBC_HOME})
-  link_directories("${OSICBC_HOME}/lib")
+
+  if (WIN32)
+    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
+    set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
+  else ()
+    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+    set(LNDIR "${OSICBC_HOME}/lib")
+    set(OSICBC_LIBS "Osi" "OsiClp" "OsiCbc" "Clp" "Cgl" "Cbc" "CbcSolver" "CoinUtils")
+  endif()
+  link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
-  target_include_directories(minizinc_osicbc PRIVATE "${OSICBC_HOME}/include/coin/")
-
   add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
-  target_include_directories(mzn-cbc PRIVATE "${OSICBC_HOME}/include/coin/")
-  if(DEFINED OSICBC_LINKEXTRAS)
-    target_link_libraries(minizinc_osicbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m bz2 blas)
-    target_link_libraries(mzn-cbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m bz2 lapack blas)
-  else()
-    target_link_libraries(minizinc_osicbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m)
-    target_link_libraries(mzn-cbc minizinc Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils z m)
-  endif()
+
+  target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
+  target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
+
+  target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
