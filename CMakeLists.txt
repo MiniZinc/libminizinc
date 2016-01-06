@@ -338,28 +338,6 @@ if(HAS_GUROBI)  # Version 6.5
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI_OLD)
-  link_directories("${GUROBI_HOME}/lib")
-
-  add_library(minizinc_gurobi_old
-    solvers/OLD/gurobi/gurobi_solverinstance.cpp
-  )
-  target_include_directories(minizinc_gurobi_old PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(minizinc_gurobi_old minizinc gurobi_c++ gurobi60 ${CMAKE_THREAD_LIBS_INIT})
-
-  add_executable(mzn-gurobi-old
-    solvers/OLD/gurobi/mzn-gurobi.cpp
-  )
-  target_include_directories(mzn-gurobi-old PRIVATE "${GUROBI_HOME}/include")
-  target_link_libraries(mzn-gurobi-old minizinc_gurobi_old)
-
-  INSTALL(TARGETS minizinc_gurobi_old mzn-gurobi-old
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-endif()
-
-# -------------------------------------------------------------------------------------------------------------------
 if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G"Visual Studio 12 Win64")
   if(UNIX)
     set(CPLEX_ARCH "x86-64_linux/static_pic")
@@ -415,66 +393,20 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
     ARCHIVE DESTINATION lib)
 endif()
 
-# -------------------------------------------------------------------------------------------------------------------
-if(HAS_CPLEX_OLD)
-  if(UNIX)
-    set(CPLEX_ARCH "linux")
-  endif(UNIX)
-
-  if(APPLE)
-     set(CPLEX_ARCH "osx")
-  endif(APPLE)
-
-# add_definitions(-DIL_STD)
-  
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/x86-64_${CPLEX_ARCH}/static_pic")
-  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
-
-  add_library(minizinc_cplex_old
-    solvers/OLD/cplex/cplex_solverinstance.cpp
-  )
-  SET_TARGET_PROPERTIES(minizinc_cplex_old
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
-                               )
-  target_include_directories(minizinc_cplex_old PRIVATE
-    "${CPLEX_STUDIO_DIR}/cplex/include"
-  )
-  target_include_directories(minizinc_cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  
-  target_link_libraries(minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
-
-  add_executable(mzn-cplex_old
-    solvers/OLD/cplex/mzn-cplex.cpp
-  )
-  SET_TARGET_PROPERTIES(mzn-cplex_old
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD"
-                               )
-  target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_include_directories(mzn-cplex_old PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  target_link_libraries(mzn-cplex_old minizinc_cplex_old minizinc ilocplex cplex concert ${CMAKE_THREAD_LIBS_INIT})
-
-  INSTALL(TARGETS minizinc_cplex_old mzn-cplex_old
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-endif()
-
 # ----------------------------------------------------------------------------------------------------------
-if(HAS_SCIP)
-  # SCIP version tested: 3.2.0
-
+if(HAS_SCIP)   # SCIP version tested: 3.2.0
   link_directories("${SCIP_DIR}/../lib"  )
 
   if(UNIX)
-    set(SCIP_OS "linux")
-    set(SCIP_ARCH "x86_64")
+#    set(SCIP_OS "linux")
+#    set(SCIP_ARCH "x86_64")
 	set(SCIP_LIBS "scipopt-3.2.0.linux.x86_64.gnu.opt")
 #    set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(UNIX)
   if(APPLE)
-    set(SCIP_OS "osx")
-    set(SCIP_ARCH "ppc")
+#   set(SCIP_OS "osx")
+#    set(SCIP_ARCH "ppc")
     set(SCIP_LIBS "scipopt-3.2.0.osx.ppc.gnu.opt")
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(APPLE)
@@ -482,37 +414,31 @@ if(HAS_SCIP)
     set(SCIP_LIBS "scip-3.2.0.win.x86_64.msvc.opt.spx.ld")
   endif()
   
-  add_library(minizinc_mip_scip
+  add_library(minizinc_scip
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
-  target_include_directories(minizinc_mip_scip PRIVATE
+  target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(minizinc_mip_scip minizinc
-#    scip 
-#    nlpi.cppad #objscip
-#    lpispx soplex
+  target_link_libraries(minizinc_scip minizinc
     ${SCIP_LIBS}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-mip-scip
+  add_executable(mzn-scip
       lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
-  target_include_directories(mzn-mip-scip PRIVATE
+  target_include_directories(mzn-scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-mip-scip minizinc
-#    scip 
-#    nlpi.cppad #objscip
-#    lpispx soplex
+  target_link_libraries(mzn-scip minizinc
     ${SCIP_LIBS}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-  INSTALL(TARGETS minizinc_mip_scip mzn-mip-scip
+  INSTALL(TARGETS minizinc_scip mzn-scip
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -521,9 +447,6 @@ endif()
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP_SEPLIBS)
   # SCIP version tested: 3.2.0
-  #set(SCIP_DIR $ENV{SCIP_DIR})
-  #set(SOPLEX_DIR $ENV{SOPLEX_DIR})
-  #set(ZIMPL_DIR $ENV{ZIMPL_DIR})
 
   link_directories("${SCIP_DIR}/lib"  )
   link_directories("${SOPLEX_DIR}/lib")
@@ -581,7 +504,7 @@ endif()
 if(HAS_OSICBC)  # Version release/2.9.7
 #  set(OSICBC_HOME $ENV{OSICBC_HOME})
 
-  if (WIN32)
+  if (WIN32 AND NOT UNIX)
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
     set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
