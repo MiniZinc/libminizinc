@@ -462,6 +462,67 @@ endif()
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)
   # SCIP version tested: 3.2.0
+
+  link_directories("${SCIP_DIR}/../lib"  )
+#  link_directories("${SCIP_DIR}/lib"  )
+#  link_directories("${SOPLEX_DIR}/lib")
+#  link_directories("${ZIMPL_DIR}/lib" )
+
+  if(UNIX)
+    set(SCIP_OS "linux")
+    set(SCIP_ARCH "x86_64")
+	set(SCIP_LIBS "libscipopt-3.2.0.linux.x86_64.gnu.opt")
+#    set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
+  endif(UNIX)
+  if(APPLE)
+    set(SCIP_OS "osx")
+    set(SCIP_ARCH "ppc")
+    set(SCIP_LIBS "libscipopt-3.2.0.osx.ppc.gnu.opt")
+#  set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
+  endif(APPLE)
+  if (WIN32 AND NOT UNIX)
+    set(SCIP_LIBS "scip-3.2.0.win.x86_64.msvc.opt.spx.ld")
+  endif()
+  
+  add_library(minizinc_mip_scip
+    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    )
+  target_include_directories(minizinc_mip_scip PRIVATE
+    "${SCIP_DIR}/src"
+    "${SOPLEX_DIR}/src"
+    "${ZIMPL_DIR}/src")
+  target_link_libraries(minizinc_mip_scip minizinc
+#    scip 
+#    nlpi.cppad #objscip
+#    lpispx soplex
+    ${SCIP_LIBS}
+    ${SCIP_LIB_EXTRAS}
+    ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(mzn-mip-scip
+      lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    )
+  target_include_directories(mzn-mip-scip PRIVATE
+    "${SCIP_DIR}/src"
+    "${SOPLEX_DIR}/src"
+    "${ZIMPL_DIR}/src")
+  target_link_libraries(mzn-mip-scip minizinc
+#    scip 
+#    nlpi.cppad #objscip
+#    lpispx soplex
+    ${SCIP_LIBS}
+    ${SCIP_LIB_EXTRAS}
+    ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_mip_scip mzn-mip-scip
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+endif()
+
+# ----------------------------------------------------------------------------------------------------------
+if(HAS_SCIP_SEPLIBS)
+  # SCIP version tested: 3.2.0
   #set(SCIP_DIR $ENV{SCIP_DIR})
   #set(SOPLEX_DIR $ENV{SOPLEX_DIR})
   #set(ZIMPL_DIR $ENV{ZIMPL_DIR})
