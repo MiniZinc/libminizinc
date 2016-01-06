@@ -18,10 +18,11 @@ Prerequisite software:
 - cmake
 - A recent C++ compiler, libminizinc has been tested with recent versions of
   clang, g++, and Microsoft Visual C++.
-- The bison and flex parser/lexer generators. These usually come packaged for
-  Linux distributions, and they are part of the Xcode developer tools for Mac
-  OS. On Windows, you can e.g. install them in cygwin and process+copy
-  the lexer/parser files manually, or use winFlexBison.
+- If you intend to change lexer/parser templates or checkout development
+  snapshots, the bison and flex parser/lexer generators. These usually come
+  packaged for Linux distributions, and they are part of the Xcode developer
+  tools for Mac OS. On Windows, you can e.g. install them in cygwin and
+  process+copy the lexer/parser files manually, or use winFlexBison.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
