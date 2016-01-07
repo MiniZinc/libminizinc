@@ -7,9 +7,6 @@ project (libminizinc CXX C)
 # ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
-if (WIN32)
-  set(HAS_FZN    FALSE)                 ### Except on Win    TODO
-endif (WIN32)
 if (DEFINED GECODE_HOME)
   set(HAS_GECODE TRUE)
 endif()

@@ -9,10 +9,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef _WIN32
+  #define NOMINMAX
+#endif
+
 #include "minizinc/solvers/fzn_solverinstance.hh"
 #include <cstdio>
-#include <sys/types.h>
-#include <signal.h>
 #include <fstream>
 
 #include <minizinc/timer.hh>
@@ -32,6 +34,8 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #endif
+#include <sys/types.h>
+#include <signal.h>
 
 
 namespace MiniZinc {
