@@ -15,6 +15,13 @@
 #include <signal.h>
 #include <fstream>
 
+#include <minizinc/timer.hh>
+#include <minizinc/prettyprinter.hh>
+#include <minizinc/parser.hh>
+#include <minizinc/typecheck.hh>
+#include <minizinc/builtins.hh>
+#include <minizinc/eval_par.hh>
+
 #ifdef _WIN32
 #define NOMINMAX
 #include <Windows.h>
@@ -26,12 +33,6 @@
 #include <sys/time.h>
 #endif
 
-#include <minizinc/timer.hh>
-#include <minizinc/prettyprinter.hh>
-#include <minizinc/parser.hh>
-#include <minizinc/typecheck.hh>
-#include <minizinc/builtins.hh>
-#include <minizinc/eval_par.hh>
 
 namespace MiniZinc {
   
@@ -311,9 +312,6 @@ namespace MiniZinc {
   : SolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
-  
-  SolverInstance::Status
-  FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
   namespace {
     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
