@@ -9,21 +9,34 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <unistd.h>
-#include <cstdio>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <fstream>
+#ifdef _WIN32
+  #define NOMINMAX
+#endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
+#include <cstdio>
+#include <fstream>
 
-#include <minizinc/parser.hh>
+#include <minizinc/timer.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/parser.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/builtins.hh>
 #include <minizinc/eval_par.hh>
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <Windows.h>
+#include <tchar.h>
+#include <atlstr.h>
+#else
+#include <unistd.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#endif
+#include <sys/types.h>
+#include <signal.h>
+
 
 namespace MiniZinc {
   
@@ -36,6 +49,146 @@ namespace MiniZinc {
     public:
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
       std::string run(void) {
+#ifdef _WIN32
+
+        SECURITY_ATTRIBUTES saAttr;
+        saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+        saAttr.bInheritHandle = TRUE;
+        saAttr.lpSecurityDescriptor = NULL;
+
+        HANDLE g_hChildStd_IN_Rd = NULL;
+        HANDLE g_hChildStd_IN_Wr = NULL;
+        HANDLE g_hChildStd_OUT_Rd = NULL;
+        HANDLE g_hChildStd_OUT_Wr = NULL;
+
+        // Create a pipe for the child process's STDOUT. 
+
+        if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Ensure the read handle to the pipe for STDOUT is not inherited.
+        if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Create a pipe for the child process's STDIN
+        if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        // Ensure the write handle to the pipe for STDIN is not inherited. 
+        if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
+          std::cerr << "Stdin SetHandleInformation" << std::endl;
+
+        std::string fznFile;
+        if (!_canPipe) {
+          TCHAR szTempFileName[MAX_PATH];
+          TCHAR lpTempPathBuffer[MAX_PATH];
+
+          GetTempPath(MAX_PATH, lpTempPathBuffer);
+          GetTempFileName(lpTempPathBuffer,
+            "tmp_fzn_", 0, szTempFileName);
+
+          fznFile = szTempFileName;
+          std::ofstream os(fznFile);
+          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
+            Item* item = *it;
+            os << *item;
+          }
+        }
+
+        PROCESS_INFORMATION piProcInfo;
+        STARTUPINFO siStartInfo;
+        BOOL bSuccess = FALSE;
+
+        // Set up members of the PROCESS_INFORMATION structure.
+        ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+        // Set up members of the STARTUPINFO structure. 
+        // This structure specifies the STDIN and STDOUT handles for redirection.
+        ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
+        siStartInfo.cb = sizeof(STARTUPINFO);
+        siStartInfo.hStdError = g_hChildStd_OUT_Wr;
+        siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
+        siStartInfo.hStdInput = g_hChildStd_IN_Rd;
+        siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+        std::stringstream cmdline;
+        cmdline << strdup(_fzncmd.c_str()) << " " << strdup("-a") << " ";
+        if (_canPipe) {
+          cmdline << strdup("-");
+        }
+        else {
+          cmdline << strdup(fznFile.c_str());
+        }
+
+        char* cmdstr = strdup(cmdline.str().c_str());
+
+        bool processStarted = CreateProcess(NULL,
+          cmdstr,        // command line 
+          NULL,          // process security attributes 
+          NULL,          // primary thread security attributes 
+          TRUE,          // handles are inherited 
+          0,             // creation flags 
+          NULL,          // use parent's environment 
+          NULL,          // use parent's current directory 
+          &siStartInfo,  // STARTUPINFO pointer 
+          &piProcInfo);  // receives PROCESS_INFORMATION 
+
+        if (!processStarted) {
+          std::stringstream ssm;
+          ssm << "Error occurred when executing FZN solver with command \"" << cmdstr << "\".";
+          throw InternalError(ssm.str());
+        }
+
+        CloseHandle(piProcInfo.hProcess);
+        CloseHandle(piProcInfo.hThread);
+        delete cmdstr;
+
+        if (_canPipe) {
+          DWORD dwRead, dwWritten;
+          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
+            std::stringstream ss;
+            Item* item = *it;
+            ss << *item;
+            std::string str = ss.str();
+            bSuccess = WriteFile(g_hChildStd_IN_Wr, str.c_str(),
+              dwRead, &dwWritten, NULL);
+          }
+        }
+
+        // Stop ReadFile from blocking
+        CloseHandle(g_hChildStd_OUT_Wr);
+
+        Timer starttime;
+        int timeout_sec = 10;
+
+        bool done = false;
+        std::stringstream result;
+        while (!done) {
+          char buffer[255];
+          DWORD count = 0;
+          bool bSuccess = ReadFile(g_hChildStd_OUT_Rd, buffer, sizeof(buffer) - 1, &count, NULL);
+
+          if (bSuccess && count > 0) {
+            buffer[count] = 0;
+            result << buffer;
+
+            double elapsed = starttime.ms();
+
+            if (elapsed > timeout_sec * 1000)
+              done = true;
+          }
+          else {
+            done = true;
+          }
+        }
+
+        if (!_canPipe) {
+          remove(fznFile.c_str());
+        }
+
+        return result.str();
+      }
+#else
         int pipes[2][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
@@ -155,6 +308,7 @@ namespace MiniZinc {
         }
         assert(false);
       }
+#endif
     };
   }
   
@@ -162,9 +316,6 @@ namespace MiniZinc {
   : SolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
   
   FZNSolverInstance::~FZNSolverInstance(void) {}
-  
-  SolverInstance::Status
-  FZNSolverInstance::next(void) { return SolverInstance::ERROR; }
 
   namespace {
     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
@@ -275,6 +426,7 @@ namespace MiniZinc {
   Expression*
   FZNSolverInstance::getSolutionValue(Id* id) {
     assert(false);
+    return NULL;
   }
   
   

@@ -6,7 +6,7 @@
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * License, v. 2.0. If a copy of the MPL was ! distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /* A basic mzn2fzn wrapper, can be used as a plugin
@@ -43,18 +43,18 @@ void Flattener::printHelp(ostream& os)
   << std::endl
   << "Flattener options:" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
-  << "  --no-optimize\n    Do not optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do !\n    convert to FlatZinc." << std::endl
+  << "  --no-optimize\n    Do ! optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-  << "  --only-range-domains\n    All domains contiguous, holes replaced by inequalities" << std::endl
-  << "  -D \"fMIPdomains=true\"\n    Domain unification for MIP, replaces range domains" << std::endl
+  << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
+  << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
-  << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+  << "  --no-output-ozn, -O-\n    Do ! output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
   << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
   << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
@@ -307,7 +307,7 @@ void Flattener::flatten()
     if (flag_output_fzn == "") {
       flag_output_fzn = flag_output_base+".fzn";
     }
-    if (flag_output_ozn == "" && not flag_no_output_ozn) {
+    if (flag_output_ozn == "" && ! flag_no_output_ozn) {
       flag_output_ozn = flag_output_base+".ozn";
     }
   }
@@ -373,7 +373,7 @@ void Flattener::flatten()
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
-              if ( not flag_noMIPdomains ) {
+              if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
                   std::cerr << "Looking for MIP domains ...";
                 MIPdomains(env);

@@ -15,6 +15,7 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/stl_map_set.hh>
+#include <array>
 #include <set>
 
 #define MZN_MIPD__assert_soft( c, e ) \
@@ -51,7 +52,8 @@ namespace MiniZinc {
     N_POSTs__initexprN, N_POSTs__eqNlineq, N_POSTs__eqNmapsize,
     // other
     N_POSTs__varsDirect, N_POSTs__varsInvolved,
-    N_POSTs__domSizeMin, N_POSTs__domSizeSum, N_POSTs__domSizeMax,
+    N_POSTs__NSubintvMin, N_POSTs__NSubintvSum, N_POSTs__NSubintvMax, // as N subintervals
+    N_POSTs__SubSizeMin, N_POSTs__SubSizeSum, N_POSTs__SubSizeMax, // subintv. size
     N_POSTs__linCoefMin, N_POSTs__linCoefMax,
     N_POSTs__cliquesWithEqEncode,
     N_POSTs__size };
@@ -86,12 +88,12 @@ namespace MiniZinc {
   struct Interval {
     N left = infMinus(), right = infPlus();
     mutable VarDecl* varFlag=0;
-    constexpr static N infMinus() {
+    /*constexpr*/ static N infMinus() {
       return ( std::numeric_limits<N>::has_infinity ) ?
         -std::numeric_limits<N>::infinity() :
       std::numeric_limits<N>::lowest();
     }
-    constexpr static N infPlus() {
+    /*constexpr*/ static N infPlus() {
       return ( std::numeric_limits<N>::has_infinity ) ?
         std::numeric_limits<N>::infinity() :
       std::numeric_limits<N>::max();
@@ -130,6 +132,12 @@ namespace MiniZinc {
     /// Assumes open intervals to cut out from closed
     template <class N1>
     void cutDeltas( const SetOfIntervals<N1>& s2, N1 delta );
+    template <class N1>
+    void cutDeltas(N1 left, N1 right, N1 delta) {
+      SetOfIntervals<N1> soi;
+      soi.insert(Interval<N1>(left, right));
+      cutDeltas(soi, delta);
+    }
     /// Cut out an open interval from a set of closed ones (except for infinities)
     void cutOut(const Interval<N>& intv);
     typedef std::pair<iterator, iterator> SplitResult;

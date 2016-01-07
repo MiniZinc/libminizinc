@@ -71,12 +71,14 @@ sort, arg_sort, arg_min, arg_max
  - A new tool, mzn2doc, can produce html output from the documentation
    comments. The MiniZinc distribution contains the documentation for global
    constraints and builtins generated directly from the library source code.
+ - Executable mzn-fzn is a replacement for the minizinc driver: option --solver
+   can define a different flatzinc interpreter (default: 'flatzinc')
    
 ** New MIP solver interfaces **
 
- - The executables mzn-cplex, mzn-gurobi, mzn-mip-scip and mzn-cbc use the
+ - The executables mzn-cplex, mzn-gurobi, mzn-scip and mzn-cbc use the
    corresponding MIP solver. They can interpret FlatZinc code compiled with
-   -Glinear(_old), as well as handle both phases (flattening and solving).
+   -Glinear, as well as handle original model files (by flattening + solving).
 
 ** Bugs **
 

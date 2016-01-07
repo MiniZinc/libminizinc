@@ -32,18 +32,18 @@ namespace MiniZinc {
     public:
       FZNSolverInstance(Env& env, const Options& options);
 
-      virtual ~FZNSolverInstance(void);
+      ~FZNSolverInstance(void);
 
-      virtual Status next(void);
+      Status next(void) {return SolverInstance::ERROR;};
 
-      virtual Status solve(void);
+      Status solve(void);
 
-      virtual void processFlatZinc(void);
+      void processFlatZinc(void);
 
-      virtual void resetSolver(void);
+      void resetSolver(void);
 
     protected:
-      virtual Expression* getSolutionValue(Id* id);
+      Expression* getSolutionValue(Id* id);
   };
 
 }

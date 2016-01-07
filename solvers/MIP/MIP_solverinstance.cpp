@@ -6,11 +6,11 @@
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * License, v. 2.0. If a copy of the MPL was ! distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /* This is the main file for a mzn-cplex solver using a unified
- * linearization module and a flexible flattener-to-solver interface
+ * linearization module && a flexible flattener-to-solver interface
  */
 
 #ifdef _MSC_VER 
@@ -184,32 +184,39 @@ namespace SCIPConstraints {
     p_lin(si, call, MIP_wrapper::EQ);
   }
 
-   void p_eq(SolverInstanceBase& si, const Call* call) {
+  // The non-_lin constraints happen in a failed model || in a non-optimized one:
+   void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
       MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
       ASTExprVec<Expression> args = call->args();
       vector<MIP_solver::Variable> vars(2);
       vars[0] = gi.exprToVar(args[0]);
       vars[1] = gi.exprToVar(args[1]);
-      double coefs[2] = {-1.0, 1.0};
+      double coefs[2] = {1.0, -1.0};
 
       std::stringstream ss;
       ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-      gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
+      gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], nCmp, 0.0,
                                GetMaskConsType(call), ss.str());
     }
+   void p_eq(SolverInstanceBase& si, const Call* call) {
+     p_non_lin( si, call, MIP_wrapper::EQ );
+   }
+   void p_le(SolverInstanceBase& si, const Call* call) {
+     p_non_lin( si, call, MIP_wrapper::LQ );
+   }
 }
 
 void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("int2float"),    SCIPConstraints::p_eq);
   _constraintRegistry.add(ASTString("bool_eq"),      SCIPConstraints::p_eq);   // for inconsistency reported in fzn
-//   _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le);
+  _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq);
+  _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le);
   _constraintRegistry.add(ASTString("int_lin_eq"),   SCIPConstraints::p_int_lin_eq);
   _constraintRegistry.add(ASTString("int_lin_le"),   SCIPConstraints::p_int_lin_le);
 //   _constraintRegistry.add(ASTString("int_plus"),     SCIPConstraints::p_plus);
 //   _constraintRegistry.add(ASTString("bool2int"),     SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("float_eq"),     SCIPConstraints::p_eq);
-//   _constraintRegistry.add(ASTString("float_le"),     SCIPConstraints::p_le);
+  _constraintRegistry.add(ASTString("float_eq"),     SCIPConstraints::p_eq);
+  _constraintRegistry.add(ASTString("float_le"),     SCIPConstraints::p_le);
   _constraintRegistry.add(ASTString("float_lin_eq"), SCIPConstraints::p_float_lin_eq);
   _constraintRegistry.add(ASTString("float_lin_le"), SCIPConstraints::p_float_lin_le);
 //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus);
@@ -353,14 +360,14 @@ void MIP_solverinstance::processFlatZinc(void) {
     if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
       MiniZinc::TypeInst* ti = it->e()->ti();
       MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;     // fInt = false;
-      if (ti->type().isvarint() or ti->type().isint())
+      if (ti->type().isvarint() || ti->type().isint())
         vType = MIP_wrapper::VarType::INT;
-      else if (ti->type().isvarbool() or ti->type().isbool()) {
+      else if (ti->type().isvarbool() || ti->type().isbool()) {
         vType = MIP_wrapper::VarType::BINARY;
-      } else if (ti->type().isvarfloat() or ti->type().isfloat()) {
+      } else if (ti->type().isvarfloat() || ti->type().isfloat()) {
       } else {
         std::stringstream ssm;
-        ssm << "This type of var is not handled by MIP: " << *it << std::endl;
+        ssm << "This type of var is ! handled by MIP: " << *it << std::endl;
         ssm << "  VarDecl flags (ti, bt, st, ot): "
           << ti->type().ti()
           << ti->type().bt()
@@ -390,7 +397,7 @@ void MIP_solverinstance::processFlatZinc(void) {
 
 //       IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
 //       if (dom->size() > 1)
-//         throw runtime_error("MIP_solverinstance: domains with holes not supported, use --MIPdomains");
+//         throw runtime_error("MIP_solverinstance: domains with holes ! supported, use --MIPdomains");
 
       VarId res;
       Id* id = it->e()->id();
@@ -416,7 +423,7 @@ void MIP_solverinstance::processFlatZinc(void) {
     cerr << "  MIP_solverinstance: during Phase 1,  "
       << mip_wrap->nLitVars << " literals with "
       << mip_wrap-> sLitValues.size() << " values used." << endl;
-  if (not getMIPWrapper()->fPhase1Over)
+  if (! getMIPWrapper()->fPhase1Over)
     getMIPWrapper()->addPhase1Vars(); 
 
   if (mip_wrap->fVerbose)
@@ -428,7 +435,7 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
   if (mip_wrap->fVerbose)
-    cerr << " done, " << mip_wrap->getNRows() << " rows and "
+    cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total." << endl;
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
     cerr << "  MIP_solverinstance: overall,  "
@@ -461,7 +468,7 @@ void MIP_solverinstance::assignSolutionToOutput() {
      }
   }
 
-  //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
+  //iterate over set of ids that have an output annotation && obtain their right hand side from the flat model
   for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
     VarDecl* vd = _varsWithOutput[i];
     //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
@@ -482,7 +489,7 @@ void MIP_solverinstance::assignSolutionToOutput() {
           } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
             array_elems.push_back(boolLit);
           } else {
-            std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
+            std::cerr << "Error: array element " << *array[j] << " is ! an id nor a literal" << std::endl;
             assert(false);
           }
         }

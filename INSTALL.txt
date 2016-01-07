@@ -18,9 +18,11 @@ Prerequisite software:
 - cmake
 - A recent C++ compiler, libminizinc has been tested with recent versions of
   clang, g++, and Microsoft Visual C++.
-- The bison and flex parser/lexer generators. These usually come packaged for
-  Linux distributions, and they are part of the Xcode developer tools for Mac
-  OS. On Windows, you can e.g. install them via cygwin.
+- If you intend to change lexer/parser templates or checkout development
+  snapshots, the bison and flex parser/lexer generators. These usually come
+  packaged for Linux distributions, and they are part of the Xcode developer
+  tools for Mac OS. On Windows, simplest is to have MinGW(64) tools on the
+  path, or use winFlexBison.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
@@ -32,8 +34,9 @@ To perform the build:
 > cmake --build .
 
 This will compile the mzn-fzn driver by default. To enable other solvers, 
-set their paths e.g. as cmake -DGECODE_HOME="___" .. in the 1st call of cmake,
-see CMakeLists.txt for available interfaces.
+set their paths e.g. as 'cmake -DGECODE_HOME="___" ..', see the example BUILD.*
+scripts and CMakeLists.txt for available interfaces. In Windows, when using
+64-bit versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
 
 To install MiniZinc:
 > cmake --build . --target install
