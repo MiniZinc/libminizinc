@@ -4,7 +4,7 @@ project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
-# -- For example, run "cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ." if you have that environment variable -
+# ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
 if (WIN32)
@@ -20,7 +20,7 @@ if(DEFINED GUROBI_HOME)
   set(HAS_GUROBI TRUE)
 endif()
 if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR)
-  set(HAS_SCIP TRUE)                                       # Can use CSIP w/o ZIMPL too
+  set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
 endif()
 if (DEFINED OSICBC_HOME)
   set(HAS_OSICBC TRUE)
@@ -395,7 +395,7 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)   # SCIP version tested: 3.2.0
-  link_directories("${SCIP_DIR}/../lib"  )
+  link_directories("${SCIP_DIR}/../lib"  )  # For the single library
 
   if(UNIX)
 #    set(SCIP_OS "linux")
@@ -501,10 +501,9 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  # Version release/2.9.7
-#  set(OSICBC_HOME $ENV{OSICBC_HOME})
+if(HAS_OSICBC)  # Tested version release/2.9.7. Use svn to get the latest stable snapshot
 
-  if (WIN32 AND NOT UNIX)
+  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
     set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
@@ -523,6 +522,7 @@ if(HAS_OSICBC)  # Version release/2.9.7
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
   target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
 
+                                       # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
   target_link_libraries(mzn-cbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
 
