@@ -88,11 +88,11 @@ namespace MiniZinc {
             "tmp_fzn_", 0, szTempFileName);
 
           fznFile = szTempFileName;
+		  MoveFile(fznFile.c_str(), (fznFile + ".fzn").c_str());
+		  fznFile += ".fzn";
           std::ofstream os(fznFile);
-          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            Item* item = *it;
-            os << *item;
-          }
+		  Printer p(os, 0, true);
+		  p.print(_flat);
         }
 
         PROCESS_INFORMATION piProcInfo;
