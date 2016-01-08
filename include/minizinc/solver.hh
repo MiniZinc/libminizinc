@@ -80,6 +80,7 @@ namespace MiniZinc {
     Flattener* flt=0;
     SolverInstanceBase* si=0;
     
+  public:
     /// global options
     bool flag_verbose=0;
     

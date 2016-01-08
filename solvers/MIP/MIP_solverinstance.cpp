@@ -233,8 +233,8 @@ void MIP_solverinstance::printSolution(ostream& os) {
   if(previousOutput.find(h) == previousOutput.end()) {
     previousOutput.insert(h);
     std::cout << output;
-//     if(fVerbose)
-    printStatistics(cout, 1);
+    if ( getOptions().getBoolParam("verbose") )
+      printStatistics(cout, 1);
     std::cout << "----------" << std::endl;
   }
 }
