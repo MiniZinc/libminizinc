@@ -5,12 +5,12 @@
  *     Guido Tack <guido.tack@monash.edu>
  */
 
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ /* This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifdef _WIN32
-  #define NOMINMAX
+#define NOMINMAX
 #endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
@@ -37,9 +37,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
-
 namespace MiniZinc {
-  
+
   namespace {
     class FznProcess {
     protected:
@@ -88,11 +87,11 @@ namespace MiniZinc {
             "tmp_fzn_", 0, szTempFileName);
 
           fznFile = szTempFileName;
+          MoveFile(fznFile.c_str(), (fznFile + ".fzn").c_str());
+          fznFile += ".fzn";
           std::ofstream os(fznFile);
-          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            Item* item = *it;
-            os << *item;
-          }
+          Printer p(os, 0, true);
+          p.print(_flat);
         }
 
         PROCESS_INFORMATION piProcInfo;
@@ -204,7 +203,7 @@ namespace MiniZinc {
             os << *item;
           }
         }
-        
+
         if (int childPID = fork()) {
           close(pipes[0][0]);
           close(pipes[1][1]);
@@ -219,67 +218,69 @@ namespace MiniZinc {
           }
           close(pipes[0][1]);
           std::stringstream result;
-          
+
           fd_set fdset;
           struct timeval timeout;
           FD_ZERO(&fdset);
           FD_SET(pipes[1][0], &fdset);
-          
+
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
-          
+
           int timeout_sec = 10;
-          
+
           timeout.tv_sec = timeout_sec;
           timeout.tv_usec = 0;
-          
+
           bool done = false;
           while (!done) {
             switch (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout)) {
-              case 0:
-              {
-                kill(childPID, SIGKILL);
+            case 0:
+            {
+              kill(childPID, SIGKILL);
+              done = true;
+            }
+            break;
+            case 1:
+            {
+              char buffer[100];
+              int count = read(pipes[1][0], buffer, sizeof(buffer) - 1);
+              if (count > 0) {
+                buffer[count] = 0;
+                result << buffer;
+                timeval currentTime, elapsed;
+                gettimeofday(&currentTime, NULL);
+                elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+                elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+                if (elapsed.tv_usec < 0) {
+                  elapsed.tv_sec--;
+                  elapsed.tv_usec += 1000000;
+                }
+                timeout.tv_sec = timeout_sec - elapsed.tv_sec;
+                if (elapsed.tv_usec > 0)
+                  timeout.tv_sec--;
+                timeout.tv_usec = 1000000 - elapsed.tv_usec;
+                if (timeout.tv_sec <= 0 && timeout.tv_usec <= 0)
+                  done = true;
+              }
+              else {
                 done = true;
               }
-                break;
-              case 1:
-              {
-                char buffer[100];
-                int count = read(pipes[1][0], buffer, sizeof(buffer)-1);
-                if (count > 0) {
-                  buffer[count] = 0;
-                  result << buffer;
-                  timeval currentTime, elapsed;
-                  gettimeofday(&currentTime, NULL);
-                  elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
-                  elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-                  if (elapsed.tv_usec < 0) {
-                    elapsed.tv_sec--;
-                    elapsed.tv_usec += 1000000;
-                  }
-                  timeout.tv_sec = timeout_sec - elapsed.tv_sec;
-                  if (elapsed.tv_usec > 0)
-                    timeout.tv_sec--;
-                  timeout.tv_usec = 1000000 - elapsed.tv_usec;
-                  if (timeout.tv_sec <= 0 && timeout.tv_usec <=0)
-                    done = true;
-                } else {
-                  done = true;
-                }
-              }
-                break;
-              case -1:
-              {
-              }
-                break;
+            }
+            break;
+            case -1:
+            {
+            }
+            break;
             }
           }
-          
+
           if (!_canPipe) {
             remove(fznFile.c_str());
           }
           return result.str();
-        } else {
+        }
+        else {
           close(STDOUT_FILENO);
           close(STDIN_FILENO);
           dup2(pipes[0][0], STDIN_FILENO);
@@ -294,46 +295,48 @@ namespace MiniZinc {
           cmd_line.push_back(strdup("-a"));
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
-          char** argv = new char*[cmd_line.size()+1];
-          for(unsigned int i=0; i< cmd_line.size(); i++)
+          char** argv = new char*[cmd_line.size() + 1];
+          for (unsigned int i = 0; i < cmd_line.size(); i++)
             argv[i] = cmd_line[i];
           argv[cmd_line.size()] = 0;
 
-          int status = execvp(argv[0],argv);          
-          if(status == -1) {
+          int status = execvp(argv[0], argv);
+          if (status == -1) {
             std::stringstream ssm;
             ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
             throw InternalError(ssm.str());
           }
         }
         assert(false);
-      }
+    }
 #endif
     };
   }
-  
+
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-  : SolverInstanceImpl<FZNSolver>(env,options), _fzn(env.flat()), _ozn(env.output()) {}
-  
+    : SolverInstanceImpl<FZNSolver>(env, options), _fzn(env.flat()), _ozn(env.output()) {}
+
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
   namespace {
     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env.envi(), args[d]);
-      std::vector<std::pair<int,int> > dims(d);
+      std::vector<std::pair<int, int> > dims(d);
       unsigned int dim1d = 1;
-      for (int i=0; i<d; i++) {
+      for (int i = 0; i < d; i++) {
         IntSetVal* di = eval_intset(env.envi(), args[i]);
-        if (di->size()==0) {
-          dims[i] = std::pair<int,int>(1,0);
+        if (di->size() == 0) {
+          dims[i] = std::pair<int, int>(1, 0);
           dim1d = 0;
-        } else if (di->size() != 1) {
+        }
+        else if (di->size() != 1) {
           throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
-        } else {
-          dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
-                                       static_cast<int>(di->max(0).toInt()));
-          dim1d *= dims[i].second-dims[i].first+1;
+        }
+        else {
+          dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
+            static_cast<int>(di->max(0).toInt()));
+          dim1d *= dims[i].second - dims[i].first + 1;
         }
       }
       if (dim1d != al->v().size())
@@ -346,25 +349,29 @@ namespace MiniZinc {
       return ret;
     }
   }
-  
+
+  inline bool beginswith(std::string s, std::string t) {
+    return s.compare(0, t.length(), t) == 0;
+  }
+
   SolverInstance::Status
-  FZNSolverInstance::solve(void) {
+    FZNSolverInstance::solve(void) {
     std::vector<std::string> includePaths;
     std::string fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc");
-    if(_options.getBoolParam(constants().opts.verbose.str(), false)) {
+    if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
       std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
     }
-    FznProcess proc(fzn_solver,false,_fzn); 
+    FznProcess proc(fzn_solver, false, _fzn);
     std::string r = proc.run();
     std::stringstream result;
     result << r;
     std::string solution;
-    
-    typedef std::pair<VarDecl*,Expression*> DE;
+
+    typedef std::pair<VarDecl*, Expression*> DE;
     ASTStringMap<DE>::t declmap;
-    for (unsigned int i=0; i<_ozn->size(); i++) {
+    for (unsigned int i = 0; i < _ozn->size(); i++) {
       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
-        declmap.insert(std::make_pair(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
+        declmap.insert(std::make_pair(vdi->e()->id()->v(), DE(vdi->e(), vdi->e()->e())));
       }
     }
 
@@ -372,63 +379,72 @@ namespace MiniZinc {
     while (result.good()) {
       std::string line;
       getline(result, line);
-      if (line=="----------") {
+
+      if (beginswith(line, "----------")) {
         if (hadSolution) {
-          for (ASTStringMap<DE>::t::iterator it=declmap.begin(); it != declmap.end(); ++it) {
+          for (ASTStringMap<DE>::t::iterator it = declmap.begin(); it != declmap.end(); ++it) {
             it->second.first->e(it->second.second);
           }
         }
         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
-          if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
-            ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
-            if (it==declmap.end()) {
-              std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
-              exit(EXIT_FAILURE);
-            }
-            if (Call* c = ai->e()->dyn_cast<Call>()) {
-              // This is an arrayXd call, make sure we get the right builtin
-              assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
-              for (unsigned int i=0; i<c->args().size(); i++)
-                c->args()[i]->type(Type::parsetint());
-              c->args()[c->args().size()-1]->type(it->second.first->type());
-              ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size()-1);
-              it->second.first->e(al);
-            } else {
-              it->second.first->e(ai->e());
+        if (sm) {
+          for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
+            if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
+              ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
+              if (it == declmap.end()) {
+                std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
+                exit(EXIT_FAILURE);
+              }
+              if (Call* c = ai->e()->dyn_cast<Call>()) {
+                // This is an arrayXd call, make sure we get the right builtin
+                assert(c->args()[c->args().size() - 1]->isa<ArrayLit>());
+                for (unsigned int i = 0; i < c->args().size(); i++)
+                  c->args()[i]->type(Type::parsetint());
+                c->args()[c->args().size() - 1]->type(it->second.first->type());
+                ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size() - 1);
+                it->second.first->e(al);
+              }
+              else {
+                it->second.first->e(ai->e());
+              }
             }
           }
+          delete sm;
+          hadSolution = true;
+        } else {
+          std::cerr << "Error: solver output malformed\n";
+          exit(EXIT_FAILURE);
         }
-        delete sm;
-        hadSolution = true;
-      } else if (line=="==========") {
+      }
+      else if (beginswith(line, "==========")) {
         return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
-      } else if(line=="=====UNSATISFIABLE=====") {
+      }
+      else if (beginswith(line, "=====UNSATISFIABLE=====")) {
         return SolverInstance::UNSAT;
-      } else if(line=="=====UNBOUNDED=====") {
+      }
+      else if (beginswith(line, "=====UNBOUNDED=====")) {
         return SolverInstance::UNKNOWN;
-      } else if(line=="=====UNKNOWN=====") {
+      }
+      else if (beginswith(line, "=====UNKNOWN=====")) {
         return SolverInstance::UNKNOWN;
-      } else {
+      }
+      else {
         solution += line;
       }
     }
-    
+
     return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
   }
-  
+
   void
-  FZNSolverInstance::processFlatZinc(void) {}
-  
+    FZNSolverInstance::processFlatZinc(void) {}
+
   void
-  FZNSolverInstance::resetSolver(void) {}
-  
+    FZNSolverInstance::resetSolver(void) {}
+
   Expression*
-  FZNSolverInstance::getSolutionValue(Id* id) {
+    FZNSolverInstance::getSolutionValue(Id* id) {
     assert(false);
     return NULL;
   }
-  
-  
-  
 }
