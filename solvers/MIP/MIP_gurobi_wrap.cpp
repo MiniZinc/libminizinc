@@ -51,7 +51,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
-  << "-p <N>              use N threads, default: 1" << std::endl
+  << "-p <N>              use N threads, default: 1. DOES NOT WORK IN GUROBI" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
@@ -178,7 +178,10 @@ void MIP_gurobi_wrapper::openGUROBI()
    /* Initialize the GUROBI environment */
    error = GRBloadenv (&env, "mzn-gurobi.log");
    wrap_assert ( !error, "Could not open GUROBI environment." );
-   /* Create the problem. */
+   error = GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
+//    error = GRBsetintparam(env, "LogToConsole", 
+//                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+  /* Create the problem. */
    error = GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
    wrap_assert ( model, "Failed to create LP." );
 }
@@ -189,7 +192,7 @@ void MIP_gurobi_wrapper::closeGUROBI()
      /* Free up the problem as allocated by GRB_createprob, if necessary */
   /* Free model */
 
-//   GRBfreemodel(model);
+  GRBfreemodel(model);      
   model = 0;
 
   /* Free environment */
@@ -356,13 +359,17 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
-  error = GRBupdatemodel(model);                  // for model export
-  wrap_assert( !error,  "Failed to update model." );
+   error = GRBupdatemodel(model);                  // for model export
+   wrap_assert( !error,  "Failed to update model." );
 
   /////////////// Last-minute solver options //////////////////
+  /* Turn on output to file */
+   error = GRBsetstrparam(GRBgetenv(model), "LogFile", "");  // FAILS to switch off in Ubuntu 15.04
   /* Turn on output to the screen */
-   error = GRBsetintparam(env, "OutputFlag", 
-                            fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+   error = GRBsetintparam(GRBgetenv(model), "OutputFlag", 
+                             fVerbose ? 1 : 0);  // FAILS to switch off in Ubuntu 15.04
+//    error = GRBsetintparam(GRBgetenv(model), "LogToConsole", 
+//                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!error, "  GUROBI Warning: Failure to switch screen indicator.", false);
 //    error =  GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
 //    error =  GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF);    // Access original model
@@ -378,7 +385,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       // Turn off GUROBI logging
 
    if (nThreads>0) {
-     error = GRBsetintparam(env, GRB_INT_PAR_THREADS, nThreads);
+     error = GRBsetintparam(GRBgetenv(model), GRB_INT_PAR_THREADS, nThreads);
 //      int nn;    // THE SETTING FAILS TO WORK IN 6.0.5.
 //      error = GRBgetintparam(env, GRB_INT_PAR_THREADS, &nn);
 //      cerr << "Set " << nThreads << " threads, reported " << nn << endl;
@@ -386,7 +393,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    }
 
     if (nTimeout>0) {
-     error = GRBsetdblparam(env, GRB_DBL_PAR_TIMELIMIT, nTimeout);
+     error = GRBsetdblparam(GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, nTimeout);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -396,12 +403,12 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //     }
     
     if (sReadParams.size()) {
-     error = GRBreadparams (env, sReadParams.c_str());
+     error = GRBreadparams (GRBgetenv(model), sReadParams.c_str());
      wrap_assert(!error, "Failed to read GUROBI parameters.", false);
     }
     
     if (sWriteParams.size()) {
-     error = GRBwriteparams (env, sWriteParams.c_str());
+     error = GRBwriteparams (GRBgetenv(model), sWriteParams.c_str());
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
 
