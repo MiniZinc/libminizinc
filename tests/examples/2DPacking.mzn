@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %------------------------------------------------------------------------------%
 % 2DPacking.mzn
 % Jakob Puchinger
@@ -76,7 +77,7 @@ predicate is_feasible_packing(var 0..1: s_bin,
         /\
             % for all items associate item on bin with item on level.
         forall(j in 1..N) (
-            s_item[1] = sum( i in 1..j ) ( x[i, j] )
+            s_item[j] = sum( i in 1..j ) ( x[i, j] )
         )
     )
 );
