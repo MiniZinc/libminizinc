@@ -28,7 +28,7 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <tchar.h>
-#include <atlstr.h>
+//#include <atlstr.h>
 #else
 #include <unistd.h>
 #include <sys/select.h>
