@@ -43,6 +43,8 @@
 #include <minizinc/solver_instance.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
+#include <minizinc/MIPdomains.hh>
+
 using namespace MiniZinc;
 using namespace std;
 
@@ -339,6 +341,7 @@ int main(int argc, char** argv) {
             
             try {
               flatten(env,fopts);
+			  MIPdomains(env);
             } catch (LocationException& e) {
               if (flag_verbose)
                 std::cerr << std::endl;

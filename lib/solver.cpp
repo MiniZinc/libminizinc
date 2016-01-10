@@ -58,7 +58,8 @@ int main(int argc, const char** argv) {
     } else {
       cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
     }   // TODO  Move evalOutput() here
-    slv.printStatistics();
+    if ( slv.flag_verbose )
+      slv.printStatistics();
 
     fSuccess = true;
   } catch (const LocationException& e) {
@@ -258,7 +259,7 @@ void MznSolver::solve()
 }
 
 void MznSolver::printStatistics()
-{ // from both flt and si?
+{ // from flattener too?   TODO
   if (si)
     getSI()->printStatisticsLine(cout, 1);
 }

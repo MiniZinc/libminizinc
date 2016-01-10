@@ -51,7 +51,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read SCIP parameters from file
   //               << "--writeParam <file> write SCIP parameters to file
   //               << "--tuneParam         instruct SCIP to tune parameters instead of solving
-  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
+  << "--writeModel <file> write model to <file> (.lp, .mps, ...?)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
@@ -451,8 +451,10 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
   /* Turn on output to the screen */
-    if(!fVerbose)
-      SCIP_CALL(SCIPsetMessagehdlr(scip, NULL));
+    if(!fVerbose) {
+//       SCIP_CALL(SCIPsetMessagehdlr(scip, NULL));  No LP export then
+      SCIPsetMessagehdlrQuiet(scip, true);
+    }
 
     if (nThreads>0)
       SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", nThreads) );
@@ -467,6 +469,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //    wrap_assert(!retcode, "  SCIP Warning: Failure to measure CPU time.", false);
 
     if (!sExportModel.empty()) {
+//       std::cout <<"  Exporting LP model to "  << sExportModel << " ..." << std::endl;
       SCIP_CALL( SCIPwriteOrigProblem(scip, sExportModel.c_str(), 0, 0) );
     }
 
