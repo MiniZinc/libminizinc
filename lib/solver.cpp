@@ -50,15 +50,17 @@ int main(int argc, const char** argv) {
     
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
-      GCLock lock;
-      slv.addSolverInterface();
-      slv.solve();
+      if ( slv.getNSolvers() ) {          // only then
+        GCLock lock;
+        slv.addSolverInterface();
+        slv.solve();
+      }
     } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else {
       cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
     }   // TODO  Move evalOutput() here
-    if ( slv.flag_verbose )
+    if ( slv.get_flag_verbose() || slv.get_flag_statistics() )    // it's summary in fact
       slv.printStatistics();
 
     fSuccess = true;
@@ -83,10 +85,12 @@ int main(int argc, const char** argv) {
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
   }
 
-  endTime = clock();
-  if (slv.get_flag_verbose()) {
-    std::cerr << "   Done (";
-    cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+  if ( slv.getNSolvers() ) {
+    endTime = clock();
+    if (slv.get_flag_verbose()) {
+      std::cerr << "   Done (";
+      cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+    }
   }
   return !fSuccess;
 }   // int main()
@@ -152,7 +156,7 @@ MznSolver::~MznSolver()
 
 void MznSolver::addFlattener()
 {
-  flt = getGlobalFlattener(false);
+  flt = getGlobalFlattener(0==getNSolvers());
   assert(flt);
 }
 
@@ -188,8 +192,12 @@ bool MznSolver::processOptions(int argc, const char** argv)
     //  moving --verbose here:
     if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
-    }
-    if (!getFlt()->processOption(i, argc, argv)) {
+    } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
+      flag_statistics = true;                  // is this Flattener's option?
+    } else if ( string(argv[i])=="-c"
+      || string(argv[i])=="--canonicalize" || string(argv[i])=="--canonicalise" ) {
+      flag_canonicalize = true;   // TODO
+    } else if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
         if ((*it)->processOption(i, argc, argv))
@@ -206,14 +214,27 @@ NotFound:
 
 void MznSolver::printHelp()
 {
+  if ( getNSolvers() )
   cout
-    << "MiniZinc driver.\n"
+    << "NICTA MiniZinc driver.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
+  else
+  cout
+    << "NICTA MiniZinc to FlatZinc converter.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+  cout
     << "Options:" << std::endl
-    << "  --help, -h\n     Print this help message" << std::endl
-    << "  --version\n     Print version information" << std::endl
-    << "  -v, --verbose\n     Print progress statements" << std::endl
-    << std::endl;
-  ;
+    << "  --help, -h\n    Print this help message" << std::endl
+    << "  --version\n    Print version information" << std::endl
+    << "  -v, --verbose\n    Print progress statements" << std::endl
+    << "  -s, --statistics\n    Print statistics" << std::endl;
+  if ( getNSolvers() )
+  cout
+    << "  -c, --canonicalize\n    Canonicalize the FlatZinc solution stream.   [NOT IMPL]\n"
+       "    Note that this option prevents incremental printing of solutions." << std::endl;
+  
   getFlt()->printHelp(cout);
   cout << endl;
   for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
@@ -226,6 +247,7 @@ void MznSolver::printHelp()
 void MznSolver::flatten()
 {
   getFlt()->set_flag_verbose(get_flag_verbose());
+  getFlt()->set_flag_statistics(get_flag_statistics());
   clock_t tm01 = clock();
   getFlt()->flatten();
   if (get_flag_verbose())
@@ -237,6 +259,7 @@ void MznSolver::solve()
 {
   GCLock lock;
   getSI()->getOptions().setBoolParam  ("verbose",  get_flag_verbose());
+  getSI()->getOptions().setBoolParam  ("statistics",  get_flag_statistics());
   getSI()->processFlatZinc();
   SolverInstance::Status status = getSI()->solve();
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {

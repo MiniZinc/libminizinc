@@ -300,7 +300,7 @@ ${parser_hh}
 )
 
 # add the executable
-add_executable(mzn2fzn mzn2fzn.cpp)
+add_executable(mzn2fzn lib/flattener.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)

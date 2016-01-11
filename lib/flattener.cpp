@@ -38,23 +38,22 @@ void Flattener::printVersion(ostream& os)
 void Flattener::printHelp(ostream& os)
 {
   os
-  << "Usage: <executable>"  //<< argv[0]
-  << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl
   << std::endl
-  << "Flattener options:" << std::endl
+  << "Flattener input options:" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
   << "  --instance-check-only\n    Check the model instance (including data) for errors, but do !\n    convert to FlatZinc." << std::endl
-  << "  --no-optimize\n    Do ! optimize the FlatZinc\n    Currently does nothing (only available for compatibility with 1.6)" << std::endl
+  << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
+  // \n    Currently does nothing (only available for compatibility with 1.6)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
-  << "  -D <data>, --cmdline-data <data>\n    Include the given data in the model." << std::endl
+  << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
-  << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
+  << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
-  << "  --no-output-ozn, -O-\n    Do ! output ozn file" << std::endl
+  << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
   << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
   << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
@@ -124,7 +123,13 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     flag_output_fzn_stdout = true;
   } else if (string(argv[i])=="--output-ozn-to-stdout") {
     flag_output_ozn_stdout = true;
+    } else if (string(argv[i])=="-" || string(argv[i])=="--input-from-stdin") {
+      if (datafiles.size() > 0 || filenames.size() > 0)
+        goto error;
+      flag_stdinInput = true;
   } else if (beginswith(string(argv[i]),"-d")) {
+    if (flag_stdinInput)
+      goto error;
     string filename(argv[i]);
     string datafile;
     if (filename.length() > 2) {
@@ -141,6 +146,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
       goto error;
     datafiles.push_back(datafile);
   } else if (string(argv[i])=="--data") {
+    if (flag_stdinInput)
+      goto error;
     i++;
     if (i==argc) {
       goto error;
@@ -167,6 +174,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
       globals_dir = argv[i];
     }
   } else if (beginswith(string(argv[i]),"-D")) {
+    if (flag_stdinInput)
+      goto error;
     string cmddata(argv[i]);
     if (cmddata.length() > 2) {
       datafiles.push_back("cmd:/"+cmddata.substr(2));
@@ -178,6 +187,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
       datafiles.push_back("cmd:/"+string(argv[i]));
     }
   } else if (string(argv[i])=="--cmdline-data") {
+    if (flag_stdinInput)
+      goto error;
     i++;
     if (i==argc) {
       goto error;
@@ -191,29 +202,35 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     globals_dir = argv[i];
   } else if (string(argv[i])=="--only-range-domains") {
     flag_only_range_domains = true;
-  } else if (string(argv[i])=="--no-MIPdomains") {
+  } else if (string(argv[i])=="--no-MIPdomains") {   // internal
     flag_noMIPdomains = true;
   } else if (string(argv[i])=="-Werror") {
     flag_werror = true;
   } else {
+    if (flag_stdinInput)
+      goto error;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
 //       std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
       goto error;
     }
     std::string extension = input_file.substr(input_file.length()-4,string::npos);
-    if (extension == ".mzn" || extension == ".fzn") {
-      is_flatzinc = extension == ".fzn";
-      if (filenames.empty()) {
-        filenames.push_back(input_file);
-      } else {
-        std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
-        goto error;
+    if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn") {
+      if ( extension == ".fzn" ) {
+        is_flatzinc = true;
+        if ( fOutputByDefault )        // mzn2fzn mode
+          goto error;
       }
+//       if (filenames.empty()) {
+        filenames.push_back(input_file);
+//       } else {
+//         std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
+//         goto error;
+//       }
     } else if (extension == ".dzn") {
       datafiles.push_back(input_file);
     } else {
-//       std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+      std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
       goto error;
     }
   }
@@ -254,7 +271,7 @@ void Flattener::flatten()
 //       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
 //   }
 
-  if (filenames.empty()) {
+  if ( filenames.empty() && !flag_stdinInput ) {
     throw runtime_error( "Error: no model file given." );
   }
 
@@ -291,7 +308,11 @@ void Flattener::flatten()
   }
 
   if (flag_output_base == "") {
-    flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
+    if (flag_stdinInput) {
+      flag_output_base = "mznout";
+    } else {
+      flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
+    }
   }
   
   if (flag_output_fzn == filenames[0]) {
@@ -314,16 +335,23 @@ void Flattener::flatten()
 
   {
     std::stringstream errstream;
-    bool parseDocComments = false;
-    if (flag_verbose)
-      std::cerr << "Parsing '" << filenames[0] << "' ...";
     try {
-      if (Model* m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, 
-          parseDocComments, flag_verbose, errstream)) {
+      Model* m;
+      if (flag_stdinInput) {
+        if (flag_verbose)
+          std::cerr << "Parsing standard input ..." << endl;
+        std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
+        m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      } else {
+        if (flag_verbose)
+          std::cerr << "Parsing '" << filenames[0] << "' ...";
+        m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      }
+      if (m) {
         pModel.reset(m);
         if (flag_typecheck) {
           if (flag_verbose)
-            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
           pEnv.reset(new Env(m));
@@ -369,14 +397,16 @@ void Flattener::flatten()
               if (flag_werror && env.warnings().size() > 0) {
                 exit(EXIT_FAILURE);
               }
+              env.clearWarnings();
               //            Model* flat = env.flat();
               if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+                std::cerr << " done (" << stoptime(lasttime)
+                << "), max stack depth " << env.maxCallStack() << std::endl;
 
               if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
-                  std::cerr << "Looking for MIP domains ...";
-                MIPdomains(env, flag_verbose);
+                  std::cerr << "MIP domains ...";
+                MIPdomains(env, flag_statistics);
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
@@ -385,6 +415,12 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << "Optimizing ...";
                 optimize(env);
+                for (unsigned int i=0; i<env.warnings().size(); i++) {
+                  std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env.warnings()[i];
+                }
+                if (flag_werror && env.warnings().size() > 0) {
+                  exit(EXIT_FAILURE);
+                }
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
@@ -397,55 +433,107 @@ void Flattener::flatten()
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               } else {
                 env.flat()->compact();
+                env.output()->compact();
               }
 
-              if (flag_output_fzn_stdout) {
-                if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to stdout\n";
-                Printer p(std::cout,0);
-                p.print(env.flat());
-              } else if(flag_output_fzn != "") {
-                if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to '" << flag_output_fzn << "' ... ";
-                std::ofstream os;
-                os.open(flag_output_fzn.c_str(), std::ios::out);
-                Printer p(os,0);
-                p.print(env.flat());
-                os.close();
+              if (flag_statistics) {
+                FlatModelStatistics stats = statistics(env);
+                std::cerr << "Generated FlatZinc statistics:\n";
+                std::cerr << "Variables: ";
+                bool had_one = false;
+                if (stats.n_bool_vars) {
+                  had_one = true;
+                  std::cerr << stats.n_bool_vars << " bool";
+                }
+                if (stats.n_int_vars) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_int_vars << " int";
+                }
+                if (stats.n_float_vars) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_float_vars << " float";
+                }
+                if (stats.n_set_vars) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_set_vars << " int";
+                }
+                if (!had_one)
+                  std::cerr << "none";
+                std::cerr << "\n";
+                std::cerr << "Constraints: ";
+                had_one = false;
+                if (stats.n_bool_ct) {
+                  had_one = true;
+                  std::cerr << stats.n_bool_ct << " bool";
+                }
+                if (stats.n_int_ct) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_int_ct << " int";
+                }
+                if (stats.n_float_ct) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_float_ct << " float";
+                }
+                if (stats.n_set_ct) {
+                  if (had_one) std::cerr << ", ";
+                  had_one = true;
+                  std::cerr << stats.n_set_ct << " int";
+                }
+                if (!had_one)
+                  std::cerr << "none";
+                std::cerr << "\n";
               }
               
+              if (flag_output_fzn_stdout) {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
+                Printer p(std::cout,0);
+                p.print(env.flat());
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              } else if(flag_output_fzn != "") {
+                if (flag_verbose)
+                  std::cerr << "Printing FlatZinc to '"
+                  << flag_output_fzn << "' ..." << std::flush;
+                std::ofstream os;
+                os.open(flag_output_fzn.c_str(), ios::out);
+                checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+                Printer p(os,0);
+                p.print(env.flat());
+                checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+                os.close();
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
               if (!flag_no_output_ozn) {
                 if (flag_output_ozn_stdout) {
                   if (flag_verbose)
-                    std::cerr << "Printing .ozn ...";
+                    std::cerr << "Printing .ozn to stdout ..." << std::endl;
                   Printer p(std::cout,0);
                   p.print(env.output());
-                } else if (flag_output_ozn != "") {
-                  std::ofstream os;
                   if (flag_verbose)
-                    std::cerr << "Printing '" << flag_output_ozn << "' ...";
+                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+                } else if (flag_output_ozn != "") {
+                  if (flag_verbose)
+                    std::cerr << "Printing .ozn to '"
+                    << flag_output_ozn << "' ..." << std::flush;
+                  std::ofstream os;
                   os.open(flag_output_ozn.c_str(), std::ios::out);
-                  if (!os.good()) {
-                    if (flag_verbose)
-                      std::cerr << std::endl;
-                    std::cerr << "I/O error: cannot open ozn output file. " << strerror(errno) << "." << std::endl;
-                    exit(EXIT_FAILURE);
-                  }
+                  checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
                   Printer p(os,0);
                   p.print(env.output());
+                  checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
                   os.close();
+                  if (flag_verbose)
+                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
                 }
-//                 if (flag_verbose)
-//                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-
             }
-
-            /// To cout:
-//             if(flag_verbose) {
-//               std::cout << "\n   %-------------------  FLATTENING COMPLETE  --------------------------------" << std::endl;
-//               std::cout << "% Flattening time  : " << double(lasttime-starttime01)/CLOCKS_PER_SEC << " sec\n" << std::endl;
-//             }
 
             /// To cout:
             //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
@@ -485,7 +573,18 @@ void Flattener::flatten()
   }
   
 //   if (flag_verbose)
-//     std::cerr << " done (" << stoptime(lasttime) << "), flattening finished." << std::endl;
+  if (flag_verbose) {
+//     std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
+//      std::cerr << " done (" << stoptime(lasttime) << "), flattening finished. ";
+    size_t mem = GC::maxMem();
+    if (mem < 1024)
+      std::cerr << "Maximum memory " << mem << " bytes";
+    else if (mem < 1024*1024)
+      std::cerr << "Maximum memory " << mem/1024 << " Kbytes";
+    else
+      std::cerr << "Maximum memory " << mem/(1024*1024) << " Mbytes";
+    std::cerr << "." << std::endl;    
+  }
 }
 
 void Flattener::printStatistics(ostream&)

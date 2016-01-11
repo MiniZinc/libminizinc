@@ -56,6 +56,8 @@ namespace MiniZinc {
     
     virtual void set_flag_verbose(bool f) { flag_verbose = f; }
     virtual bool get_flag_verbose() const { return flag_verbose; }
+    virtual void set_flag_statistics(bool f) { flag_statistics = f; }
+    virtual bool get_flag_statistics() const { return flag_statistics; }
     virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
     virtual Model* getModel() const { assert(pModel.get()); return pModel.get(); }
     
@@ -77,6 +79,8 @@ namespace MiniZinc {
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_noMIPdomains = false;
+    bool flag_statistics = false;
+    bool flag_stdinInput = false;
 
     string std_lib_dir;
     string globals_dir;
@@ -113,6 +117,13 @@ namespace MiniZinc {
     return s.compare(0, t.length(), t)==0;
   }
 
+  inline void checkIOStatus( bool fOk, string msg )
+  {
+    if ( !fOk ) {
+      std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
 }
 
 #endif  // __MINIZINC_FLATTENER_H__
