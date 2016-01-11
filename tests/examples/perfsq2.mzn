@@ -1,5 +1,5 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 % perfsq2.mzn
 % vim: ft=zinc ts=4 sw=4 et
 %

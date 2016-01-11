@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test for a bug in mzn2fzn version 1.2 (and up to
 % r13389 on the trunk).  The following model used to result in

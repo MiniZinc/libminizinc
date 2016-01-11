@@ -1,5 +1,5 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test.
 % The bounds inferred for absolute values expressions where incorrect in r13710

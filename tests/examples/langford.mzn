@@ -1,6 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON minizinc_cpx
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %-----------------------------------------------------------------------------%
 % Langford's Problem  (CSPlib problem 24)
 %

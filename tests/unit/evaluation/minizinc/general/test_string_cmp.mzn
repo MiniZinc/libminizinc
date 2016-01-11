@@ -2,6 +2,7 @@
 %
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 array [1..6] of var 1..3: xs;
 

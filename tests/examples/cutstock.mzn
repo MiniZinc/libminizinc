@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %------------------------------------------------------------------------------%
 % cutstock.mzn
 % Jakob Puchinger <jakobp@cs.mu.oz.au>

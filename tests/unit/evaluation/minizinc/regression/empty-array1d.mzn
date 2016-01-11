@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % mzn2fzn and soln2out aborted when evaluating this model in
 % r14647 and before.

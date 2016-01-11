@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %------------------------------------------------------------------------%
 % Golomb rulers
 % prob006 in csplib

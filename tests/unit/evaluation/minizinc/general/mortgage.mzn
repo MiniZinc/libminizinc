@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fdlp
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %
 % Constraint Programming: Mortgage
 %
