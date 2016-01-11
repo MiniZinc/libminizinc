@@ -75,7 +75,7 @@ namespace MiniZinc {
   class MIPD {  
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
-    bool MIPdomains() {
+    bool MIPdomains(bool fVerbose=false) {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
@@ -87,7 +87,8 @@ namespace MiniZinc {
       constructVarViewCliques();
       if ( !decomposeDomains() )
         return false;
-      printStats(std::cerr);
+      if ( fVerbose )
+       printStats(std::cerr);
       return true;
     }
     
@@ -1781,9 +1782,9 @@ namespace MiniZinc {
     return true;
   }
 
-  void MIPdomains(Env& env) {
+  void MIPdomains(Env& env, bool fVerbose) {
     MIPD mipd(&env);
-    if ( ! mipd.MIPdomains() ) {
+    if ( ! mipd.MIPdomains( fVerbose ) ) {
       GCLock lock;
       env.flat()->fail(env.envi());
     }

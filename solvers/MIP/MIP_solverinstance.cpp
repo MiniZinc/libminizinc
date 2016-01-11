@@ -309,8 +309,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   SolverInstance::Status s = SolverInstance::UNKNOWN;
   switch(sw) {
     case MIP_wrapper::Status::OPT:
-      s = SolverInstance::OPT;
-      break;
+      if ( SolveI::SolveType::ST_SAT != getEnv()->flat()->solveItem()->st() ) {
+        s = SolverInstance::OPT;
+        break;
+      }    // else: for SAT problems just say SAT
     case MIP_wrapper::Status::SAT:
       s = SolverInstance::SAT;
       break;

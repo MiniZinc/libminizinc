@@ -376,7 +376,7 @@ void Flattener::flatten()
               if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
                   std::cerr << "Looking for MIP domains ...";
-                MIPdomains(env);
+                MIPdomains(env, flag_verbose);
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
