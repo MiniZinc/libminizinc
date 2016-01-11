@@ -2,4 +2,4 @@
 
 MINIZINC_EXEC=${MINIZINC-minizinc}
 
-$MINIZINC_EXEC -G linear -b fd $*
+$MINIZINC_EXEC -G linear -D "fMIPdomains=false" -b fd $*

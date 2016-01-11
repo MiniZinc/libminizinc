@@ -75,8 +75,8 @@
 
 # Set default time and memory limits (seconds and megabytes respectively).
 #
-TIMELIMIT=${TIMELIMIT:-300}
-MEMLIMIT=${MEMLIMIT:-8000}000
+TIMELIMIT=${TIMELIMIT:-30}
+MEMLIMIT=${MEMLIMIT:-8000}
 
 # The name of this program as invoked.
 #
@@ -242,11 +242,9 @@ esac
 # Run the solver and generate the .out and .err files.
 #
 echo -n "$THIS: $CMD"
-### This fails on XUbuntu 15.04:
-#time-and-mem-limit $TIMELIMIT $MEMLIMIT 
-### SO just ulimit:
-ulimit -d $MEMLIMIT -m $MEMLIMIT -v $MEMLIMIT -t $TIMELIMIT
-$CMD >$OUT 2>$ERR
+time-and-mem-limit $TIMELIMIT $MEMLIMIT $CMD >$OUT 2>$ERR
+#ulimit -d $MEMLIMITKB -m $MEMLIMITKB -v $MEMLIMITKB -t $TIMELIMIT
+#$CMD >$OUT 2>$ERR
 
 # Compare the solver output against the expected output.
 #
