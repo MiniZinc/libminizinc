@@ -258,8 +258,8 @@ void MznSolver::flatten()
 void MznSolver::solve()
 {
   GCLock lock;
-  getSI()->getOptions().setBoolParam  ("verbose",  get_flag_verbose());
-  getSI()->getOptions().setBoolParam  ("statistics",  get_flag_statistics());
+  getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
+  getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
   getSI()->processFlatZinc();
   SolverInstance::Status status = getSI()->solve();
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {

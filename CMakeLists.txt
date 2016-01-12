@@ -247,7 +247,7 @@ ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
-lib/solver.cpp
+#lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/typecheck.cpp
@@ -300,7 +300,7 @@ ${parser_hh}
 )
 
 # add the executable
-add_executable(mzn2fzn lib/flattener.cpp)    #mzn2fzn.cpp)
+add_executable(mzn2fzn lib/solver.cpp lib/flattener.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
@@ -569,13 +569,13 @@ target_link_libraries(mzn2doc minizinc)
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_FZN)
 	add_library(minizinc_fzn
-		solvers/fzn/fzn_solverinstance.cpp
+		solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn solvers/fzn/mzn-fzn.cpp)
-	target_link_libraries(mzn-fzn minizinc_fzn minizinc)
-        add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp)
-	target_link_libraries(mzn-fzn-test minizinc_fzn minizinc)
+	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	target_link_libraries(mzn-fzn minizinc_fzn)
+  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp)#
+  target_link_libraries(mzn-fzn-test minizinc)
 	INSTALL(TARGETS minizinc_fzn mzn-fzn mzn-fzn-test
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib

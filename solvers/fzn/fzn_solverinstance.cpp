@@ -10,7 +10,7 @@
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifdef _WIN32
-#define NOMINMAX
+#define NOMINMAX     // Need this before all (implicit) include's of Windows.h
 #endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
@@ -38,6 +38,49 @@
 #include <signal.h>
 
 namespace MiniZinc {
+
+  class FZN_SolverFactory: public SolverFactory {
+    Options _options;
+  public:
+    SolverInstanceBase* doCreateSI(Env& env) {
+      return new FZNSolverInstance(env, _options);
+    }
+    string getVersion( );
+    bool processOption(int& i, int argc, const char** argv);
+    void printHelp(std::ostream& os);
+  };
+// #define __NO_EXPORT_FZN_SOLVERINSTANCE__  // define this to avoid exporting
+#ifndef __NO_EXPORT_FZN_SOLVERINSTANCE__
+  FZN_SolverFactory fzn_solverfactory;
+#endif
+
+  string FZN_SolverFactory::getVersion()
+  {
+    string v = "NICTA FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
+    return v;
+  }
+
+  bool FZN_SolverFactory::processOption(int& i, int argc, const char** argv)
+  {
+    if (string(argv[i])=="--solver") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      _options.setStringParam(constants().opts.solver.fzn_solver.str(), argv[i]);
+    }
+    return true;
+  error:
+    return false;
+  }
+  
+  void FZN_SolverFactory::printHelp(ostream& os)
+  {
+    os
+    << "FZN solver plugin options:" << std::endl
+    << "--solver         the backend solver"
+    << std::endl;
+  }
 
   namespace {
     class FznProcess {
@@ -348,10 +391,6 @@ namespace MiniZinc {
       ret->flat(al->flat());
       return ret;
     }
-  }
-
-  inline bool beginswith(std::string s, std::string t) {
-    return s.compare(0, t.length(), t) == 0;
   }
 
   SolverInstance::Status

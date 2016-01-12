@@ -233,7 +233,7 @@ void MIP_solverinstance::printSolution(ostream& os) {
   if(previousOutput.find(h) == previousOutput.end()) {
     previousOutput.insert(h);
     std::cout << output;
-    if ( getOptions().getBoolParam("verbose") )
+    if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
       printStatistics(cout, 1);
     std::cout << "----------" << std::endl;
   }
@@ -336,7 +336,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 
 void MIP_solverinstance::processFlatZinc(void) {
   /// last-minute solver params
-  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
+  mip_wrap->fVerbose = (getOptions().getBoolParam(constants().opts.verbose.str()));
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;
