@@ -1232,7 +1232,8 @@ namespace MiniZinc {
                     const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
                     // Take integer || float indicator version, depending on the constrained var:
                     const int nIdxInd = // (VT_Int==dct.nVarType) ?
-                      vd->ti()->type().isint() ? 1 : 2;
+//          No:             vd->ti()->type().isint() ? 1 : 2;
+                      cls.varRef1->ti()->type().isint() ? 1 : 2;   // need the type of the variable to be constr
                     MZN_MIPD__assert_hard( nIdxInd<pCall->args().size() );
                     Expression* pInd = pCall->args()[ nIdxInd ];
                     if ( fLE && rhs < bnds.right ) {
@@ -1394,7 +1395,16 @@ namespace MiniZinc {
                       );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
-        bool fFloat = ! (*vars.begin())->type().isint();
+        bool fFloat = !((*vars.begin())->type().isint());
+        for ( auto v: vars ) {
+          if ( fFloat == v->type().isint() ) {     // mixed types not allowed...
+            std::ostringstream oss;
+            oss << "addLinConstr: mixed var types: ";
+            for ( auto v: vars )
+              oss << v->type().isint();
+            throw std::runtime_error(oss.str());
+          }
+        }
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
