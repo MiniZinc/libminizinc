@@ -27,6 +27,7 @@ namespace MiniZinc {
   class FZNSolverInstance : public SolverInstanceImpl<FZNSolver> {
     private:
       std::string _fzn_solver;
+      bool hadSolution;
 
     protected:
       Model* _fzn;
@@ -43,6 +44,8 @@ namespace MiniZinc {
       void processFlatZinc(void);
 
       void resetSolver(void);
+
+      void printSolution(ostream& );
 
     protected:
       Expression* getSolutionValue(Id* id);
