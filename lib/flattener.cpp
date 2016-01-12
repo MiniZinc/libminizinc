@@ -230,7 +230,8 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     } else if (extension == ".dzn") {
       datafiles.push_back(input_file);
     } else {
-      std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+      if ( fOutputByDefault )
+        std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
       goto error;
     }
   }
