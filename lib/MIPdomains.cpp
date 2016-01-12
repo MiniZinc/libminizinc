@@ -1523,7 +1523,12 @@ namespace MiniZinc {
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
-      MZN_MIPD__assert_hard( ! arg->dyn_cast<IntLit>() );
+      
+      // The requirement to have actual variable objects
+      // might be a limitation if more optimizations are done before...
+      // Might need to flexibilize this                       TODO
+      MZN_MIPD__assert_hard_msg( ! arg->dyn_cast<IntLit>(),
+                                 "Expression " << *arg << " is an IntLit!" );
       MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
       Id* id = arg->dyn_cast<Id>();
