@@ -601,6 +601,9 @@ namespace MiniZinc {
   void
   FZNSolverInstance::setSolution(Id* id, Expression* e) {
     IdMap<Expression*>::iterator it = _solution.find(id);
+    if (e->type().isunknown()) {
+      e->type(id->decl()->type());
+    }
     if (it == _solution.end()) {
       _solution.insert(id,e);
     } else {
