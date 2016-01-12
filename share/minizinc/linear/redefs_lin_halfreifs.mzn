@@ -18,6 +18,8 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
     if 1==fix(p) then x==y else true endif
   elseif is_fixed(x) /\ is_fixed(y) then         %%% Needed to avoid constant domain var
     if fix(x)!=fix(y) then p==0 else true endif
+  elseif is_fixed(x-y) then                      %%% Hypothetically possible to land here
+    if 0!=fix(x-y) then p==0 else true endif
   elseif fPostproDom_AUX then
     aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
