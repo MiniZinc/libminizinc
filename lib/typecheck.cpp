@@ -197,6 +197,8 @@ namespace MiniZinc {
           if (BinOp* e_bo = e->dyn_cast<BinOp>()) {
             todo.push_back(e_bo->lhs());
             todo.push_back(e_bo->rhs());
+            for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it)
+              run(env, *it);
           } else {
             run(env, e);
           }
@@ -725,6 +727,11 @@ namespace MiniZinc {
         Expression* li = let.let()[i];
         cv = cv || li->type().cv();
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
+          if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
+              vdi->ti()->domain()==NULL) {
+            _typeErrors.push_back(TypeError(_env,vdi->loc(),
+                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
+          }
           if (vdi->type().ispar() && vdi->e() == NULL)
             throw TypeError(_env,vdi->loc(),
               "let variable `"+vdi->id()->v().str()+"' must be initialised");
@@ -732,6 +739,7 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(_env,vdi->loc(),
                                             "type-inst variables not allowed in type-inst for let variable `"+vdi->id()->str().str()+"'"));
           }
+          let.let_orig()[i] = vdi->e();
         }
       }
       Type ty = let.in()->type();
@@ -950,6 +958,12 @@ namespace MiniZinc {
           if (i->e()->ti()->hasTiVariable()) {
             _typeErrors.push_back(TypeError(env, i->e()->loc(),
                                             "type-inst variables not allowed in type-inst for `"+i->e()->id()->str().str()+"'"));
+          }
+          VarDecl* vdi = i->e();
+          if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
+              vdi->ti()->domain()==NULL) {
+            _typeErrors.push_back(TypeError(env,vdi->loc(),
+                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
           }
         }
         void vAssignI(AssignI* i) {

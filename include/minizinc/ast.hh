@@ -289,6 +289,8 @@ namespace MiniZinc {
     void v(FloatVal val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
+    /// Allocate new temporary literal (tries to avoid allocation)
+    static FloatLit* a(FloatVal v);
   };
   /// \brief Set literal expression
   class SetLit : public Expression {
@@ -329,8 +331,6 @@ namespace MiniZinc {
     BoolLit(const Location& loc, bool v);
     /// Access value
     bool v(void) const { return _v; }
-    /// Set value
-    void v(bool val) { _v = val; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -1399,6 +1399,7 @@ namespace MiniZinc {
         ASTString is_introduced;
         ASTString combinator;
       } ann;
+
       /// combinators lite
       struct {
         ASTString and_;
@@ -1528,15 +1529,17 @@ namespace MiniZinc {
         ASTString translation;
       } cli_cat;
       
-      static const int maxConstInt = 1000;
-      /// Constant integers in the range -maxConstInt..maxConstInt
-      ArrayLit* integers;
+      /// Keep track of allocated integer literals
+      UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
+      /// Keep track of allocated float literals
+      UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef> floatMap;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit
       BoolLit* boollit(bool b) {
         return b ? lit_true : lit_false;
       }
+      static const int max_array_size = INT_MAX / 2;
   };
     
   /// Return static instance

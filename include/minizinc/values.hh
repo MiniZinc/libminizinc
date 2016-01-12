@@ -91,55 +91,61 @@ namespace MiniZinc {
     IntVal& operator +=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v += x._v;
+      _v = toSafeInt() + x.toSafeInt();
       return *this;
     }
     IntVal& operator -=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v -= x._v;
+      _v = toSafeInt() - x.toSafeInt();
       return *this;
     }
     IntVal& operator *=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v *= x._v;
+      _v = toSafeInt() * x.toSafeInt();
       return *this;
     }
     IntVal& operator /=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v /= x._v;
+      _v = toSafeInt() / x.toSafeInt();
       return *this;
     }
     IntVal operator -() const {
       IntVal r = *this;
-      r._v = -r._v;
+      r._v = -r.toSafeInt();
       return r;
     }
-    void operator ++() {
+    IntVal& operator ++() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      ++_v;
+      _v = toSafeInt() + 1;
+      return *this;
     }
-    void operator ++(int) {
+    IntVal operator ++(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      ++_v;
+      IntVal ret = *this;
+      _v = toSafeInt() + 1;
+      return ret;
     }
-    void operator --() {
+    IntVal& operator --() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      --_v;
+      _v = toSafeInt() - 1;
+      return *this;
     }
-    void operator --(int) {
+    IntVal operator --(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      --_v;
+      IntVal ret = *this;
+      _v = toSafeInt() - 1;
+      return ret;
     }
-    static const IntVal minint;
-    static const IntVal maxint;
-    static const IntVal infinity;
+    static const IntVal minint(void);
+    static const IntVal maxint(void);
+    static const IntVal infinity(void);
     
     /// Infinity-safe addition
     IntVal plus(int x) {
@@ -155,11 +161,17 @@ namespace MiniZinc {
       else
         return *this;
     }
+    
+    size_t hash(void) const {
+      HASH_NAMESPACE::hash<long long int> longhash;
+      return longhash(_v);
+    }
+    
   };
 
   inline
   bool operator ==(const IntVal& x, const IntVal& y) {
-    return x.isFinite()==y.isFinite() && x._v == y._v;
+    return x._infinity==y._infinity && x._v == y._v;
   }
   inline
   bool operator <=(const IntVal& x, const IntVal& y) {
@@ -230,7 +242,7 @@ namespace MiniZinc {
 namespace std {
   inline
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-    if (!x.isFinite()) return MiniZinc::IntVal::infinity;
+    if (!x.isFinite()) return MiniZinc::IntVal::infinity();
     MiniZinc::IntVal::SI y(x.toInt());
     return y < 0 ? MiniZinc::IntVal(static_cast<long long int>(-y)) : x;
   }
@@ -259,17 +271,7 @@ OPEN_HASH_NAMESPACE {
   struct hash<MiniZinc::IntVal> {
   public:
     size_t operator()(const MiniZinc::IntVal& s) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
-      size_t h;
-      if (s.isPlusInfinity())
-        h = longhash(LONG_MAX);
-      else if (s.isMinusInfinity())
-        h = longhash(LONG_MIN);
-      else
-        h = longhash(s.toInt());
-      HASH_NAMESPACE::hash<bool> boolhash;
-      h ^= boolhash(s.isFinite()) + 0x9e3779b9 + (h << 6) + (h >> 2);
-      return h;
+      return s.hash();
     }
   };
 CLOSE_HASH_NAMESPACE }
@@ -306,10 +308,7 @@ namespace MiniZinc {
     /// Construct empty set
     IntSetVal(void) : ASTChunk(0) {}
     /// Construct set of single range
-    IntSetVal(IntVal m, IntVal n) : ASTChunk(sizeof(Range)) {
-      get(0).min = m;
-      get(0).max = n;
-    }
+    IntSetVal(IntVal m, IntVal n);
     /// Construct set from \a s
     IntSetVal(const std::vector<Range>& s)
       : ASTChunk(sizeof(Range)*s.size()) {
@@ -325,9 +324,9 @@ namespace MiniZinc {
     /// Return number of ranges
     int size(void) const { return _size / sizeof(Range); }
     /// Return minimum, or infinity if set is empty
-    IntVal min(void) const { return size()==0 ? IntVal::infinity : get(0).min; }
+    IntVal min(void) const { return size()==0 ? IntVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty
-    IntVal max(void) const { return size()==0 ? -IntVal::infinity : get(size()-1).max; }
+    IntVal max(void) const { return size()==0 ? -IntVal::infinity() : get(size()-1).max; }
     /// Return minimum of range \a i
     IntVal min(int i) const { assert(i<size()); return get(i).min; }
     /// Return maximum of range \a i
@@ -338,7 +337,7 @@ namespace MiniZinc {
       if (min(i).isFinite() && max(i).isFinite())
         return max(i)-min(i)+1;
       else
-        return IntVal::infinity;
+        return IntVal::infinity();
     }
     /// Return cardinality
     IntVal card(void) const {
@@ -347,7 +346,7 @@ namespace MiniZinc {
         if (width(i).isFinite())
           c += width(i);
         else
-          return IntVal::infinity;
+          return IntVal::infinity();
       }
       return c;
     }

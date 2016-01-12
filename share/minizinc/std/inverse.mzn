@@ -10,12 +10,3 @@ predicate inverse(array[int] of var int: f,
         invf[j] in index_set(f   ) /\
         (j == f[i] <-> i == invf[j])
     );
-
-/** @group globals.channeling
-  Given a function \a f represented as an array, return the inverse function.
-*/
-function array[int] of var int: inverse(array[int] of var int: f) =
-    let {
-      array[lb_array(f)..ub_array(f)] of var index_set(f): invf;
-      constraint inverse(f,invf);
-    } in f;

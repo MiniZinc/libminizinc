@@ -68,14 +68,14 @@ namespace MiniZinc {
     static FloatVal e(EnvI& env, Expression* e) {
       return eval_float(env, e);
     }
-    static Expression* exp(FloatVal e) { return new FloatLit(Location(),e); }
+    static Expression* exp(FloatVal e) { return FloatLit::a(e); }
   };
   class EvalFloatLit {
   public:
     typedef FloatLit* Val;
     typedef Expression* ArrayVal;
     static FloatLit* e(EnvI& env, Expression* e, bool om = false) {
-      return new FloatLit(Location(),eval_float(env, e, om));
+      return FloatLit::a(eval_float(env, e, om));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -120,6 +120,15 @@ namespace MiniZinc {
     typedef Expression* ArrayVal;
     static ArrayLit* e(EnvI& env, Expression* e, bool om = false) {
       return eval_array_lit(env, e, om);
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
+  class EvalArrayLitCopy {
+  public:
+    typedef ArrayLit* Val;
+    typedef Expression* ArrayVal;
+    static ArrayLit* e(EnvI& env, Expression* e) {
+      return copy(env,eval_array_lit(env, e),true)->cast<ArrayLit>();
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -343,7 +352,7 @@ namespace MiniZinc {
         if (ce->decl()->e()==NULL)
           throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_array_lit(env,eval_call<EvalCopy>(env,ce,om), om);
+        return eval_call<EvalArrayLitCopy>(env,ce,om);
       }
     case Expression::E_LET:
       {
@@ -378,7 +387,7 @@ namespace MiniZinc {
         if (t.isbool())
           return constants().lit_false;
         if (t.isfloat())
-          return new FloatLit(Location(),0.0);
+          return FloatLit::a(0.0);
         if (t.st() == Type::ST_SET || t.isbot()) {
           SetLit* ret = new SetLit(Location(),std::vector<Expression*>());
           ret->type(t);
@@ -412,13 +421,15 @@ namespace MiniZinc {
   }
   
   IntSetVal* eval_intset(EnvI& env, Expression* e, bool om) {
+    if (SetLit* sl = e->dyn_cast<SetLit>()) {
+      if (sl->isv())
+        return sl->isv();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        if (sl->isv())
-          return sl->isv();
         std::vector<IntVal> vals(sl->v().size());
         for (unsigned int i=0; i<sl->v().size(); i++)
           vals[i] = eval_int(env,sl->v()[i],om);
@@ -550,10 +561,12 @@ namespace MiniZinc {
   }
 
   bool eval_bool(EnvI& env, Expression* e, bool om) {
+    if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+      return bl->v();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
-    case Expression::E_BOOLLIT: return e->cast<BoolLit>()->v();
-    case Expression::E_INTLIT: 
+    case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_STRINGLIT:
     case Expression::E_ANON:
@@ -888,10 +901,12 @@ namespace MiniZinc {
     if (e->type().isbool()) {
       return eval_bool(env,e,om);
     }
+    if (IntLit* il = e->dyn_cast<IntLit>()) {
+      return il->v();
+    }
     CallStackItem csi(env,e);
     try {
       switch (e->eid()) {
-        case Expression::E_INTLIT: return e->cast<IntLit>()->v();
         case Expression::E_FLOATLIT:
         case Expression::E_BOOLLIT:
         case Expression::E_STRINGLIT:
@@ -997,9 +1012,11 @@ namespace MiniZinc {
     } else if (e->type().isbool()) {
       return eval_bool(env,e,om);
     }
+    if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+      return fl->v();
+    }
     CallStackItem csi(env,e);
     switch (e->eid()) {
-      case Expression::E_FLOATLIT: return e->cast<FloatLit>()->v();
       case Expression::E_INTLIT:
       case Expression::E_BOOLLIT:
       case Expression::E_STRINGLIT:
@@ -1272,7 +1289,7 @@ namespace MiniZinc {
           }
           ArrayLit* ret = new ArrayLit(al->loc(),args,dims);
           Type t = al->type();
-          if (t.isbot() && ret->v().size() > 0) {
+          if ( (t.bt()==Type::BT_BOT || t.bt()==Type::BT_TOP) && ret->v().size() > 0) {
             t.bt(ret->v()[0]->type().bt());
           }
           ret->type(t);
@@ -1399,7 +1416,7 @@ namespace MiniZinc {
         return false;
       }
       if (ITE* ite = e->dyn_cast<ITE>()) {
-        Bounds itebounds(IntVal::infinity, -IntVal::infinity);
+        Bounds itebounds(IntVal::infinity(), -IntVal::infinity());
         for (unsigned int i=0; i<ite->size(); i++) {
           if (ite->e_if(i)->type().ispar() && ite->e_if(i)->type().cv()==Type::CV_NO) {
             if (eval_bool(env, ite->e_if(i))) {
@@ -1471,7 +1488,7 @@ namespace MiniZinc {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(vd->e());
         } else {
-          _bounds.push_back(Bounds(-IntVal::infinity,IntVal::infinity));
+          _bounds.push_back(Bounds(-IntVal::infinity(),IntVal::infinity()));
         }
       }
     }
@@ -1782,6 +1799,8 @@ namespace MiniZinc {
         if (e->type().isfloat()) {
           FloatVal v = eval_float(env,e);
           _bounds.push_back(FBounds(v,v));
+        } else {
+          valid = false;
         }
         return false;
       } else {
@@ -2225,14 +2244,14 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& c) {
-      if (c.id() == "set_intersect" || c.id() == "set_union") {
+      if (valid && (c.id() == "set_intersect" || c.id() == "set_union")) {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
         IntSetRanges b1r(b1);
         Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
-      } else if (c.id() == "set_diff") {
+      } else if (valid && c.id() == "set_diff") {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);

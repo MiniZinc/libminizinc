@@ -1997,6 +1997,10 @@ function $T: sol(var opt $T: x);
 
 /** @group builtins.combinators Returns true if solution is bound to a solution to the problem */
 function bool: hasSol();
+
+/** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
+predicate implied_constraint(var bool: b) = redundant_constraint(b);
+
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

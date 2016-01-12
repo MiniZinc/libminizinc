@@ -37,7 +37,7 @@ namespace MiniZinc {
   
   namespace Optimizers {
     
-    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+    OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expression*& rewrite) {
       ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
       std::vector<IntVal> coeffs(al_c->v().size());
       for (unsigned int i=0; i<al_c->v().size(); i++) {
@@ -64,7 +64,7 @@ namespace MiniZinc {
         } else {
           return OptimizeRegistry::CS_ENTAILED;
         }
-      } else if (coeffs.size()==1 && (i->isa<ConstraintI>() || i->cast<VarDeclI>()->e()->ti()->domain()==constants().lit_true)) {
+      } else if (coeffs.size()==1 && (ii->isa<ConstraintI>() || ii->cast<VarDeclI>()->e()->ti()->domain()==constants().lit_true)) {
         VarDecl* vd = x[0]()->cast<Id>()->decl();
         IntSetVal* domain = vd->ti()->domain() ? eval_intset(env,vd->ti()->domain()) : NULL;
         if (c->id()==constants().ids.int_.lin_eq) {
@@ -92,13 +92,13 @@ namespace MiniZinc {
           } else {
             double nd_d = static_cast<double>(ad.toInt()) / static_cast<double>(ac.toInt());
             if (coeffs[0] >= 0 && rd >= 0) {
-              nd = std::floor(nd_d);
+              nd = static_cast<long long int>(std::floor(nd_d));
             } else if (rd >= 0) {
-              nd = -std::floor(nd_d);
+              nd = -static_cast<long long int>(std::floor(nd_d));
             } else if (coeffs[0] >= 0) {
-              nd = -std::ceil(nd_d);
+              nd = -static_cast<long long int>(std::ceil(nd_d));
             } else {
-              nd = std::ceil(nd_d);
+              nd = static_cast<long long int>(std::ceil(nd_d));
             }
           }
           bool swapSign = coeffs[0] < 0;
@@ -145,11 +145,19 @@ namespace MiniZinc {
         al_c_new->type(Type::parint(1));
         ArrayLit* al_x_new = new ArrayLit(al_x->loc(),x_e);
         al_x_new->type(al_x->type());
-        c->args()[0] = al_c_new;
-        c->args()[1] = al_x_new;
-        if (d != 0) {
-          c->args()[2] = IntLit::a(eval_int(env,c->args()[2])-d);
+        
+        std::vector<Expression*> args(3);
+        args[0] = al_c_new;
+        args[1] = al_x_new;
+        args[2] = IntLit::a(eval_int(env,c->args()[2])-d);
+        Call* nc = new Call(Location(), c->id(), args);
+        nc->type(Type::varbool());
+        for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+          nc->addAnnotation(*it);
         }
+        
+        rewrite = nc;
+        return OptimizeRegistry::CS_REWRITE;
       }
       return OptimizeRegistry::CS_OK;
     }
@@ -187,9 +195,18 @@ namespace MiniZinc {
           al_c_new->type(Type::parint(1));
           ArrayLit* al_x_new = new ArrayLit(al_x->loc(),x_e);
           al_x_new->type(al_x->type());
-          c->args()[0] = al_c_new;
-          c->args()[1] = al_x_new;
-          c->args()[2] = IntLit::a(d);
+          
+          std::vector<Expression*> args(3);
+          args[0] = al_c_new;
+          args[1] = al_x_new;
+          args[2] = IntLit::a(d);
+          Call* nc = new Call(Location(),c->id(),args);
+          nc->type(c->type());
+          for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+            nc->addAnnotation(*it);
+          }
+          rewrite = nc;
+          return OptimizeRegistry::CS_REWRITE;
         }
       }
       return OptimizeRegistry::CS_OK;
@@ -213,7 +230,51 @@ namespace MiniZinc {
       }
       return OptimizeRegistry::CS_OK;
     }
-
+ 
+    OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      std::vector<VarDecl*> pos;
+      std::vector<VarDecl*> neg;
+      ArrayLit* al_pos = eval_array_lit(env, c->args()[0]);
+      for (unsigned int i=0; i<al_pos->v().size(); i++) {
+        if (Id* ident = al_pos->v()[i]->dyn_cast<Id>()) {
+          if (ident->decl()->ti()->domain()==NULL)
+            pos.push_back(ident->decl());
+        }
+      }
+      ArrayLit* al_neg = eval_array_lit(env, c->args()[1]);
+      for (unsigned int i=0; i<al_neg->v().size(); i++) {
+        if (Id* ident = al_neg->v()[i]->dyn_cast<Id>()) {
+          if (ident->decl()->ti()->domain()==NULL)
+            neg.push_back(ident->decl());
+        }
+      }
+      bool subsumed = false;
+      if (pos.size() > 0 && neg.size() > 0) {
+        std::sort(pos.begin(),pos.end());
+        std::sort(neg.begin(), neg.end());
+        unsigned int ix=0;
+        unsigned int iy=0;
+        for (;;) {
+          if (pos[ix]==neg[iy]) {
+            subsumed = true;
+            break;
+          }
+          if (pos[ix] < neg[iy]) {
+            ix++;
+          } else {
+            iy++;
+          }
+          if (ix==pos.size() || iy==neg.size())
+            break;
+        }
+      }
+      if (subsumed) {
+        return OptimizeRegistry::CS_ENTAILED;
+      } else {
+        return OptimizeRegistry::CS_OK;
+      }
+    }
+    
     class Register {
     public:
       Register(void) {
@@ -231,6 +292,8 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(id_element, o_element);
         OptimizeRegistry::registry().reg(constants().ids.lin_exp, o_lin_exp);
         OptimizeRegistry::registry().reg(id_var_element, o_element);
+        OptimizeRegistry::registry().reg(constants().ids.clause, o_clause);
+        OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
       }
     } _r;
     
