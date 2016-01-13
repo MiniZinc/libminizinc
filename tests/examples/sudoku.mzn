@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %
 %-----------------------------------------------------------------------------%
 % Sudoku for squares of arbitrary size N = (S x S)

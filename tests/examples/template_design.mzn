@@ -1,5 +1,5 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %-----------------------------------------------------------------------------%
 % Template design
 % Problem 002 in CSPLib

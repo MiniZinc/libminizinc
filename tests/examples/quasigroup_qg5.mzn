@@ -1,5 +1,5 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 %% Bennett quasigroup existence problem (QG5).
 %%
 %% A quasigroup is just a groupoid whose "multiplication table" is a

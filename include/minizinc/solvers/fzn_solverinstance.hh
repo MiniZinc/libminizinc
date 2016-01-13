@@ -12,7 +12,9 @@
 #ifndef __MINIZINC_FZN_SOLVER_INSTANCE_HH__
 #define __MINIZINC_FZN_SOLVER_INSTANCE_HH__
 
-#include <minizinc/solver_instance_base.hh>
+#include <minizinc/flattener.h>
+#include <minizinc/solver.hh>
+//#include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
 
@@ -25,6 +27,7 @@ namespace MiniZinc {
   class FZNSolverInstance : public SolverInstanceImpl<FZNSolver> {
     private:
       std::string _fzn_solver;
+      bool hadSolution;
 
     protected:
       Model* _fzn;
@@ -41,6 +44,8 @@ namespace MiniZinc {
       void processFlatZinc(void);
 
       void resetSolver(void);
+
+      void printSolution(ostream& );
 
     protected:
       Expression* getSolutionValue(Id* id);

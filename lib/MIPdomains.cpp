@@ -75,7 +75,7 @@ namespace MiniZinc {
   class MIPD {  
   public:
     MIPD(Env* env) : __env(env) { getEnv(); }
-    bool MIPdomains() {
+    bool MIPdomains(bool fVerbose=false) {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
@@ -87,7 +87,8 @@ namespace MiniZinc {
       constructVarViewCliques();
       if ( !decomposeDomains() )
         return false;
-      printStats(std::cerr);
+      if ( fVerbose )
+       printStats(std::cerr);
       return true;
     }
     
@@ -1231,7 +1232,8 @@ namespace MiniZinc {
                     const bool fGE = ( CMPT_EQ_0==nCmpType_ADAPTED || 0<nCmpType_ADAPTED );
                     // Take integer || float indicator version, depending on the constrained var:
                     const int nIdxInd = // (VT_Int==dct.nVarType) ?
-                      vd->ti()->type().isint() ? 1 : 2;
+//          No:             vd->ti()->type().isint() ? 1 : 2;
+                      cls.varRef1->ti()->type().isint() ? 1 : 2;   // need the type of the variable to be constr
                     MZN_MIPD__assert_hard( nIdxInd<pCall->args().size() );
                     Expression* pInd = pCall->args()[ nIdxInd ];
                     if ( fLE && rhs < bnds.right ) {
@@ -1393,7 +1395,16 @@ namespace MiniZinc {
                       );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
-        bool fFloat = ! (*vars.begin())->type().isint();
+        bool fFloat = !((*vars.begin())->type().isint());
+        for ( auto v: vars ) {
+          if ( fFloat == v->type().isint() ) {     // mixed types not allowed...
+            std::ostringstream oss;
+            oss << "addLinConstr: mixed var types: ";
+            for ( auto v: vars )
+              oss << v->type().isint();
+            throw std::runtime_error(oss.str());
+          }
+        }
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
@@ -1522,7 +1533,12 @@ namespace MiniZinc {
     }
       
     VarDecl* expr2VarDecl(Expression* arg) {
-      MZN_MIPD__assert_hard( ! arg->dyn_cast<IntLit>() );
+      
+      // The requirement to have actual variable objects
+      // might be a limitation if more optimizations are done before...
+      // Might need to flexibilize this                       TODO
+      MZN_MIPD__assert_hard_msg( ! arg->dyn_cast<IntLit>(),
+                                 "Expression " << *arg << " is an IntLit!" );
       MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
       Id* id = arg->dyn_cast<Id>();
@@ -1781,9 +1797,9 @@ namespace MiniZinc {
     return true;
   }
 
-  void MIPdomains(Env& env) {
+  void MIPdomains(Env& env, bool fVerbose) {
     MIPD mipd(&env);
-    if ( ! mipd.MIPdomains() ) {
+    if ( ! mipd.MIPdomains( fVerbose ) ) {
       GCLock lock;
       env.flat()->fail(env.envi());
     }

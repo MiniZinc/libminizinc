@@ -1,5 +1,5 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test for bug #335.
 % Previous versions of CPX found this model to be unsatisfiable.

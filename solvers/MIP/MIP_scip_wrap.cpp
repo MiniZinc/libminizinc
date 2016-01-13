@@ -78,7 +78,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
-  if (string(argv[i])=="-a") {
+  if ( string(argv[i])=="-a"
+      || string(argv[i])=="--all"
+      || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;

@@ -83,6 +83,8 @@ namespace MiniZinc {
   public:
     /// global options
     bool flag_verbose=0;
+    bool flag_statistics=0;
+    bool flag_canonicalize=0;
     
     /// solver options, not used    TODO
     Options options_solver;          // currently can create solver object only after flattening
@@ -93,6 +95,7 @@ namespace MiniZinc {
     virtual bool processOptions(int argc, const char** argv);
     virtual void printHelp();
     virtual void flatten();
+    virtual size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     virtual void addSolverInterface();
     virtual void solve();
     virtual void printStatistics();
@@ -100,6 +103,7 @@ namespace MiniZinc {
     virtual Flattener* getFlt() { assert(flt); return flt; }
     virtual SolverInstanceBase* getSI() { assert(si); return si; }
     virtual bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+    virtual bool get_flag_statistics() { return flag_statistics; }
     
   private:
   };

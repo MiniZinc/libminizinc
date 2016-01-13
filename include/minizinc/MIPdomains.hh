@@ -38,7 +38,7 @@ struct MIPD_Infeasibility_Exception {
 namespace MiniZinc {
 
   /// Linearize domain constraints in \a env
-  void MIPdomains(Env& env);
+  void MIPdomains(Env& env, bool fVerbose = false);
   
   enum EnumStatIdx__MIPD { 
     N_POSTs__all,                     // N all POSTs in the model

@@ -81,7 +81,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
-   if (string(argv[i])=="-a") {
+  if ( string(argv[i])=="-a"
+      || string(argv[i])=="--all"
+      || string(argv[i])=="--all-solutions" ) {
      cerr << "\n  WARNING: -a: No solution callbacks implemented for coin-cbc.\n"
        "However, kill -SIGINT <pid> should work like Ctrl-C and produce final output" << endl;
 //     flag_all_solutions = true;

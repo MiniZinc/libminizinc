@@ -233,7 +233,7 @@ void MIP_solverinstance::printSolution(ostream& os) {
   if(previousOutput.find(h) == previousOutput.end()) {
     previousOutput.insert(h);
     std::cout << output;
-    if ( getOptions().getBoolParam("verbose") )
+    if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
       printStatistics(cout, 1);
     std::cout << "----------" << std::endl;
   }
@@ -309,8 +309,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   SolverInstance::Status s = SolverInstance::UNKNOWN;
   switch(sw) {
     case MIP_wrapper::Status::OPT:
-      s = SolverInstance::OPT;
-      break;
+      if ( SolveI::SolveType::ST_SAT != getEnv()->flat()->solveItem()->st() ) {
+        s = SolverInstance::OPT;
+        break;
+      }    // else: for SAT problems just say SAT
     case MIP_wrapper::Status::SAT:
       s = SolverInstance::SAT;
       break;
@@ -334,7 +336,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 
 void MIP_solverinstance::processFlatZinc(void) {
   /// last-minute solver params
-  mip_wrap->fVerbose = (getOptions().getBoolParam("verbose"));
+  mip_wrap->fVerbose = (getOptions().getBoolParam(constants().opts.verbose.str()));
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;

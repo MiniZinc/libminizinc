@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test for bug #256: this model caused solns2out
 % to abort with the following message:
