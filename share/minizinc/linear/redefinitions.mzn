@@ -653,7 +653,7 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   } in b
   endif;
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
-  if is_fixed(x) then set2bools(fix(x) intersect ubx) else
+  if is_fixed(x) then set2bools(fix(x), ubx) else
   let {
     array[min(ubx)..max(ubx)] of var bool: b;
     constraint forall (i in index_set(b) where not (i in ubx)) (b[i]=false);
@@ -664,7 +664,7 @@ array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_
 array[int] of bool: set2bools(set of int: x) ::promise_total =
   array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]);
 array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
-  set2bools(x intersect ubx);
+  array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]);
 
 predicate set_eq(var set of int: x, var set of int: y) =
   if not has_ub_set(x) /\ not has_ub_set(y) then
