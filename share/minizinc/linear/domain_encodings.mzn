@@ -88,7 +88,7 @@ function array[int, int] of var int: eq_encode(var int: x, var int: y) ::promise
 function array[int, int] of int: eq_encode(int: x, int: y) ::promise_total =
   let {
     constraint       if card(dom(x))*card(dom(y))>200 then
-      trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ", dom(\(y)) = " ++ show(dom(y)) ++ "\n")
+      my_trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ", dom(\(y)) = " ++ show(dom(y)) ++ "\n")
       else true endif;
   } in
     array2d(lb(x)..ub(x), lb(y)..ub(y),

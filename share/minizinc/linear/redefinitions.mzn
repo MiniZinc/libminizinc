@@ -648,8 +648,8 @@ function set of int: reverse_map(array[int] of bool: b) ::promise_total =
 array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   if is_fixed(x) then set2bools(fix(x)) else
   let {
-    array[min(ub(x))..max(ub(x))] of var bool: b;
-    constraint forall (i in index_set(b) where not (i in ub(x))) (b[i]=false);
+    array[min(ub(x))..max(ub(x))] of var bool: b =
+      [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ];
     constraint (x = reverse_map(b)) :: is_reverse_map;
     constraint   my_trace("  set2bools(\(x)) = \(b) \n")
   } in b
@@ -657,9 +657,11 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
   if is_fixed(x) then set2bools(fix(x), ubx) else
   let {
-    array[min(ubx)..max(ubx)] of var bool: b;
-    constraint forall (i in index_set(b) where not (i in ubx)) (b[i]=false);
-    constraint (x = reverse_map(b)) :: is_reverse_map;
+    array[int] of var bool: b0 = set2bools( x );       %% Call in any case ?? TODO
+    array[min(ubx)..max(ubx)] of var bool: b =
+      [ if i in ubx then set2bools_bit( x, i ) else false endif
+        | i in min(ubx)..max(ubx) ];
+%% Not again:    constraint (x = reverse_map(b)) :: is_reverse_map;
     constraint   my_trace("  set2bools(\(x), \(ubx)) = \(b) \n")
   } in b
   endif;
@@ -667,7 +669,14 @@ array[int] of bool: set2bools(set of int: x) ::promise_total =
   array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]);
 array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
   array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]);
-
+function var bool: set2bools_bit( var set of int: x, int: i ) ::promise_total =
+  if i in ub(x) then
+  let {
+    var bool: bi;
+  } in bi
+  else false endif;
+  
+  
 predicate set_eq(var set of int: x, var set of int: y) =
   if not has_ub_set(x) /\ not has_ub_set(y) then
     assert(false, "Cannot determine bounds of set variables")
@@ -708,7 +717,7 @@ predicate set_le(var set of int: x, var set of int: y) ::promise_total =
     array[int] of var bool: by = set2bools(y, ubxy);
   } in
 %%    trace( show(ub(x)) ++ ", " ++ show(ub(y)) ++ " = " ++ show(ubxy) ++ "\n") /\
-    lex_lesseq(bx, by)
+    lex_lesseq(by, bx)              %% Swap order
   endif;
 
 predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
@@ -720,7 +729,7 @@ predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promi
     array[int] of var bool: bx = set2bools(x, ubxy);
     array[int] of var bool: by = set2bools(y, ubxy);
   } in
-    lex_lesseq_bool_reif(bx, by, p)
+    lex_lesseq_bool_reif(by, bx, p)
   endif;
 
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
@@ -732,7 +741,7 @@ predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
     array[int] of var bool: bx = set2bools(x, ubxy);
     array[int] of var bool: by = set2bools(y, ubxy);
   } in
-    lex_less(bx, by)
+    lex_less(by, bx)
   endif;
 
 predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
@@ -744,7 +753,7 @@ predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promi
     array[int] of var bool: bx = set2bools(x, ubxy);
     array[int] of var bool: by = set2bools(y, ubxy);
   } in
-    lex_less_bool_reif(bx, by, p)
+    lex_less_bool_reif(by, bx, p)
   endif;
 
 predicate set_subset(var set of int: x, var set of int: y) =

@@ -189,7 +189,7 @@ predicate bool_clause(array[int] of var bool: p, array[int] of var bool: n) =
     + length(n)
     >= 1;
 
-predicate bool_lin_eq(array[int] of int: c, array[int] of var bool: x, var int: d) =
+predicate bool_lin_eq(array[int] of int: c, array[int] of var bool: x, var int: d) :: promise_total =
   sum(i in index_set(x))( c[i]*bool2int(x[i]) ) == d;
 
 predicate bool_lin_eq_reif(array[int] of int: c, array[int] of var bool: x,
