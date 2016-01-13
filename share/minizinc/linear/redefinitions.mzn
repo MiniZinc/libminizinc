@@ -105,7 +105,9 @@ include "redefs_bool_reifs.mzn";
 include "domain_encodings.mzn";
 include "redefs_lin_reifs.mzn";
 include "redefs_lin_halfreifs.mzn";
-    
+
+include "lex_less.mzn";         %% For set_le, set_lt ...
+include "lex_lesseq.mzn";    
     
 %-----------------------------------------------------------------------------%
 % Minimum, maximum, absolute value
@@ -653,7 +655,7 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   } in b
   endif;
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
-  if is_fixed(x) then set2bools(fix(x) intersect ubx) else
+  if is_fixed(x) then set2bools(fix(x), ubx) else
   let {
     array[min(ubx)..max(ubx)] of var bool: b;
     constraint forall (i in index_set(b) where not (i in ubx)) (b[i]=false);
@@ -664,7 +666,7 @@ array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_
 array[int] of bool: set2bools(set of int: x) ::promise_total =
   array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]);
 array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
-  set2bools(x intersect ubx);
+  array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]);
 
 predicate set_eq(var set of int: x, var set of int: y) =
   if not has_ub_set(x) /\ not has_ub_set(y) then
@@ -694,6 +696,55 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
       elseif not (i in index_set(by)) then not bx[i]
       else bx[i]=by[i] endif
     )
+  endif;
+
+predicate set_le(var set of int: x, var set of int: y) ::promise_total =
+  if not has_ub_set(x) \/ not has_ub_set(y) then
+    assert(false, "set_le: cannot determine bounds of set variables")
+  else
+  let {
+    set of int: ubxy = ub(x) union ub(y);
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+%%    trace( show(ub(x)) ++ ", " ++ show(ub(y)) ++ " = " ++ show(ubxy) ++ "\n") /\
+    lex_lesseq(bx, by)
+  endif;
+
+predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
+  if not has_ub_set(x) \/ not has_ub_set(y) then
+    assert(false, "set_le_REIF: cannot determine bounds of set variables")
+  else
+  let {
+    set of int: ubxy = ub(x) union ub(y);
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_lesseq_bool_reif(bx, by, p)
+  endif;
+
+predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
+  if not has_ub_set(x) \/ not has_ub_set(y) then
+    assert(false, "set_lt: cannot determine bounds of set variables")
+  else
+  let {
+    set of int: ubxy = ub(x) union ub(y);
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_less(bx, by)
+  endif;
+
+predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
+  if not has_ub_set(x) \/ not has_ub_set(y) then
+    assert(false, "set_lt_reif: cannot determine bounds of set variables")
+  else
+  let {
+    set of int: ubxy = ub(x) union ub(y);
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_less_bool_reif(bx, by, p)
   endif;
 
 predicate set_subset(var set of int: x, var set of int: y) =
@@ -727,12 +778,6 @@ function var set of int: set_intersect(var set of int: x, var set of int: y) ::p
       bz[i] = (bx[i] /\ by[i])
     );
   } in z;
-  
-%predicate set_le(var set of int: x, var set of int: y) ::promise_total =
-%  let {
-%    array[int] of var bool: bx = set2bools(x);
-%    array[int] of var bool: by = set2bools(y);
-%  } in 
 
 function var set of int: set_union(var set of int: x, var set of int: y) ::promise_total =
   let {

@@ -9,6 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was ! distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <minizinc/flatten.hh>
 #include <minizinc/MIPdomains.hh>
 #include <minizinc/eval_par.hh>
