@@ -21,9 +21,6 @@
 
 #include <minizinc/flatten_internal.hh>
 
-// temporary
-#include <minizinc/prettyprinter.hh>
-
 namespace MiniZinc {
 
   /// Output operator for contexts
@@ -3849,6 +3846,12 @@ namespace MiniZinc {
               ctx0.b = ctx1.b = C_MIX;
               goto flatten_bool_op;
             } else {
+              if (istrue(env, boe0)) {
+                return flat_exp(env, ctx, boe1, r, b);
+              }
+              if (istrue(env, boe1)) {
+                return flat_exp(env, ctx, boe0, r, b);
+              }
               if (r && r==constants().var_true) {
                 if (boe1->type().ispar() || boe1->isa<Id>())
                   std::swap(boe0,boe1);
