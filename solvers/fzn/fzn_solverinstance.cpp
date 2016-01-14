@@ -251,6 +251,9 @@ namespace MiniZinc {
           }
         }
 
+        // Make sure to reap child processes to avoid creating zombies
+        signal(SIGCHLD, SIG_IGN);
+            
         if (int childPID = fork()) {
           close(pipes[0][0]);
           close(pipes[1][1]);
