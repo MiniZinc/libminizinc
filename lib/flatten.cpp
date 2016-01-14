@@ -21,9 +21,6 @@
 
 #include <minizinc/flatten_internal.hh>
 
-// temporary
-#include <minizinc/prettyprinter.hh>
-
 namespace MiniZinc {
 
   /// Output operator for contexts
@@ -3403,6 +3400,7 @@ namespace MiniZinc {
             r_eq_e->type(Type::varbool());
             let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
             let_exprs[1]->type(Type::varbool());
+            let_exprs[1]->addAnnotation(constants().ann.promise_total);
             std::vector<Expression*> absent_r_args(1);
             absent_r_args[0] = r->id();
             Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
@@ -3410,6 +3408,7 @@ namespace MiniZinc {
             absent_r->decl(env.orig->matchFn(env, absent_r));
             let_exprs[2] = new BinOp(Location().introduce(),cond,BOT_OR,absent_r);
             let_exprs[2]->type(Type::varbool());
+            let_exprs[2]->addAnnotation(constants().ann.promise_total);
             Let* let = new Let(Location().introduce(), let_exprs, r->id());
             let->type(r->type());
             Comprehension* nc = new Comprehension(c->loc(),let,gs,c->set());
@@ -3847,6 +3846,12 @@ namespace MiniZinc {
               ctx0.b = ctx1.b = C_MIX;
               goto flatten_bool_op;
             } else {
+              if (istrue(env, boe0)) {
+                return flat_exp(env, ctx, boe1, r, b);
+              }
+              if (istrue(env, boe1)) {
+                return flat_exp(env, ctx, boe0, r, b);
+              }
               if (r && r==constants().var_true) {
                 if (boe1->type().ispar() || boe1->isa<Id>())
                   std::swap(boe0,boe1);
@@ -4413,10 +4418,14 @@ namespace MiniZinc {
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->v().size(); i++) {
                 if (Call* sc = same_call(al->v()[i],cid)) {
-                  GCLock lock;
-                  ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
-                  for (unsigned int j=0; j<sc_c->v().size(); j++) {
-                    alv.push_back(sc_c->v()[j]);
+                  if (sc->id()==constants().ids.clause) {
+                    alv.push_back(sc);
+                  } else {
+                    GCLock lock;
+                    ArrayLit* sc_c = eval_array_lit(env,sc->args()[0]);
+                    for (unsigned int j=0; j<sc_c->v().size(); j++) {
+                      alv.push_back(sc_c->v()[j]);
+                    }
                   }
                 } else {
                   alv.push_back(al->v()[i]);
