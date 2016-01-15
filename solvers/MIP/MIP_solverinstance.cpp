@@ -299,13 +299,17 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   
   
   lastIncumbent = 1e200;                  // for callbacks
-  getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
-
-  getMIPWrapper()->solve();
-  
-//   printStatistics(cout, 1);   MznSolver does this (if it wants)
-
-  MIP_wrapper::Status sw = getMIPWrapper()->getStatus();
+  MIP_wrapper::Status sw;
+  if ( getMIPWrapper()->getNRows() ) {
+    getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
+    getMIPWrapper()->solve();
+  //   printStatistics(cout, 1);   MznSolver does this (if it wants)
+    sw = getMIPWrapper()->getStatus();
+  } else {
+    if ( mip_wrap->fVerbose )
+      cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase." << endl;
+    sw = MIP_wrapper::Status::OPT;
+  }
   SolverInstance::Status s = SolverInstance::UNKNOWN;
   switch(sw) {
     case MIP_wrapper::Status::OPT:

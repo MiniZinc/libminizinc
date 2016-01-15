@@ -83,9 +83,9 @@ class MIP_wrapper {
       double bestBound = 1e308;
       int nCols;
       const double *x = 0;
-      int nNodes;
-      int nOpenNodes;
-      double dCPUTime;
+      int nNodes=0;
+      int nOpenNodes=0;
+      double dCPUTime = 0;
     };      
   protected:
     Output output;
