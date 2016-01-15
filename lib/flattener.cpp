@@ -353,7 +353,7 @@ void Flattener::flatten()
         m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       }
       if (m) {
-        pModel.reset(m);
+//         pModel.reset(m);   // seems to be unnec
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
@@ -565,11 +565,13 @@ void Flattener::flatten()
       std::cerr << e.loc() << ":" << std::endl;
       std::cerr << e.what() << ": " << e.msg() << std::endl;
       exit(EXIT_FAILURE);
+//       throw;
     } catch (Exception& e) {
       if (flag_verbose)
         std::cerr << std::endl;
       std::cerr << e.what() << ": " << e.msg() << std::endl;
       exit(EXIT_FAILURE);
+//       throw;
     }
   }
   
