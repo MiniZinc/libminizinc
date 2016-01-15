@@ -466,7 +466,13 @@ namespace MiniZinc {
         return SolverInstance::UNSAT;
       }
       else if (beginswith(line, "=====UNBOUNDED=====")) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::UNBND;
+      }
+      else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
+        return SolverInstance::UNSATorUNBND;
+      }
+      else if (beginswith(line, "=====ERROR=====")) {
+        return SolverInstance::ERROR;
       }
       else if (beginswith(line, "=====UNKNOWN=====")) {
         return SolverInstance::UNKNOWN;
