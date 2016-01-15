@@ -50,39 +50,46 @@ int main(int argc, const char** argv) {
     
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
+      fSuccess = true;
       if ( slv.getNSolvers() ) {          // only then
         GCLock lock;
         slv.addSolverInterface();
         slv.solve();
       }
     } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
+      fSuccess = true;
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
+    } else if (SolverInstance::ERROR == slv.getFlt()->status) {
+      std::cout << "=====ERROR=====" << std::endl;
     } else {
+      fSuccess = true;
       cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
     }   // TODO  Move evalOutput() here
     if ( slv.get_flag_verbose() || slv.get_flag_statistics() )    // it's summary in fact
       slv.printStatistics();
-
-    fSuccess = true;
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.loc() << ":" << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
+    std::cout << "=====ERROR=====" << std::endl;
   } catch (const Exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
+    std::cout << "=====ERROR=====" << std::endl;
   }
   catch (const exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << std::endl;
+    std::cout << "=====ERROR=====" << std::endl;
   }
   catch (...) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
+    std::cout << "=====ERROR=====" << std::endl;
   }
 
   if ( slv.getNSolvers() ) {

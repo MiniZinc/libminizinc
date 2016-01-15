@@ -11,6 +11,7 @@ predicate lex_lesseq_bool(array[int] of var bool: x,
 %       sum(i in 0..size-1)(pow(2, (size-1-i)) * bool2int(x[i+min(index_set(x))]))
 %         <= sum(i in 0..size-1)(pow(2, (size-1-i)) * bool2int(y[i+min(index_set(y))]))
 %   else
+    my_trace ("lex_lesseq_bool(\(x), \(y))") /\
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),

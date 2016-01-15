@@ -5,6 +5,16 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.11
+==============
+
+Bug fixes:
+
+ - Fix parsing of hex and octal literals. Fixes #71.
+ - Fix compilation of extended comprehensions. Fixes #72.
+ - Fix computation of float array access bounds.
+ - Fix aggregation of clauses (could sometimes ignore the negative literals).
+
 Version 2.0.10
 ==============
 

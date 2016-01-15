@@ -1,6 +1,6 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
-% RUNS ON mzn20_mip
+% TOO LONG mzn20_fd_linear
+% TOO LONG mzn20_mip
 %-----------------------------------------------------------------------------
 % Packing squares into a rectangle
 %

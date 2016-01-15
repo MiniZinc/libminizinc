@@ -204,9 +204,6 @@ namespace MiniZinc {
         // Stop ReadFile from blocking
         CloseHandle(g_hChildStd_OUT_Wr);
 
-        Timer starttime;
-        int timeout_sec = 10;
-
         bool done = false;
         std::stringstream result;
         while (!done) {
@@ -217,11 +214,6 @@ namespace MiniZinc {
           if (bSuccess && count > 0) {
             buffer[count] = 0;
             result << buffer;
-
-            double elapsed = starttime.ms();
-
-            if (elapsed > timeout_sec * 1000)
-              done = true;
           }
           else {
             done = true;
@@ -251,6 +243,9 @@ namespace MiniZinc {
           }
         }
 
+        // Make sure to reap child processes to avoid creating zombies
+        signal(SIGCHLD, SIG_IGN);
+            
         if (int childPID = fork()) {
           close(pipes[0][0]);
           close(pipes[1][1]);
@@ -267,21 +262,12 @@ namespace MiniZinc {
           std::stringstream result;
 
           fd_set fdset;
-          struct timeval timeout;
           FD_ZERO(&fdset);
           FD_SET(pipes[1][0], &fdset);
 
-          struct timeval starttime;
-          gettimeofday(&starttime, NULL);
-
-          int timeout_sec = 10;
-
-          timeout.tv_sec = timeout_sec;
-          timeout.tv_usec = 0;
-
           bool done = false;
           while (!done) {
-            switch (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout)) {
+            switch (select(FD_SETSIZE, &fdset, NULL, NULL, NULL)) {
             case 0:
             {
               kill(childPID, SIGKILL);
@@ -295,20 +281,6 @@ namespace MiniZinc {
               if (count > 0) {
                 buffer[count] = 0;
                 result << buffer;
-                timeval currentTime, elapsed;
-                gettimeofday(&currentTime, NULL);
-                elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
-                elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-                if (elapsed.tv_usec < 0) {
-                  elapsed.tv_sec--;
-                  elapsed.tv_usec += 1000000;
-                }
-                timeout.tv_sec = timeout_sec - elapsed.tv_sec;
-                if (elapsed.tv_usec > 0)
-                  timeout.tv_sec--;
-                timeout.tv_usec = 1000000 - elapsed.tv_usec;
-                if (timeout.tv_sec <= 0 && timeout.tv_usec <= 0)
-                  done = true;
               }
               else {
                 done = true;
@@ -466,7 +438,13 @@ namespace MiniZinc {
         return SolverInstance::UNSAT;
       }
       else if (beginswith(line, "=====UNBOUNDED=====")) {
-        return SolverInstance::UNKNOWN;
+        return SolverInstance::UNBND;
+      }
+      else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
+        return SolverInstance::UNSATorUNBND;
+      }
+      else if (beginswith(line, "=====ERROR=====")) {
+        return SolverInstance::ERROR;
       }
       else if (beginswith(line, "=====UNKNOWN=====")) {
         return SolverInstance::UNKNOWN;
