@@ -701,7 +701,7 @@ namespace MiniZinc {
     int curloc_l = -1;
     std::string sep = ";";
 
-    for (int i=lastError-1; i>=0; i--) {
+    for (int i=0; i<lastError; i++) {
       Expression* e = callStack[i]->untag();
       bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();
