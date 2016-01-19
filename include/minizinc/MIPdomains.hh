@@ -43,7 +43,8 @@ namespace MiniZinc {
   enum EnumStatIdx__MIPD { 
     N_POSTs__all,                     // N all POSTs in the model
     N_POSTs__intCmpReif, N_POSTs__floatCmpReif,     // in detail
-    N_POSTs__intNE, N_POSTs__floatNE, N_POSTs__setIn, N_POSTs__setInReif,
+    N_POSTs__intNE, N_POSTs__floatNE,
+    N_POSTs__setIn, N_POSTs__domain, N_POSTs__setInReif,
     N_POSTs__intAux, N_POSTs__floatAux,
     // Kind of equality connections between involved variables
     N_POSTs__eq2intlineq, N_POSTs__eq2floatlineq,
