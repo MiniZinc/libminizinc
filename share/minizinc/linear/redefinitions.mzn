@@ -6,6 +6,7 @@
 % Gleb Belov (2015)
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
 % TODO McCormick envelopes
+% TODO Avoid creating new integer vars when possible
 */
 %-----------------------------------------------------------------------------%
 ann: user_cut;
@@ -22,8 +23,8 @@ opt bool: fMIPdomains;
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
-bool: fPostproDom_AUX = true;   %% Specialized for aux_ constr
-bool: fPostproDom_DIFF = true;   %% Specialized for differences: x<y <-> z=x-y<0
+bool: fPostproDom_AUX = false;   %% Specialized for aux_ constr
+bool: fPostproDom_DIFF = false;   %% Specialized for differences: x<y <-> z=x-y<0
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
