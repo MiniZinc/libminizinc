@@ -22,7 +22,8 @@ opt bool: fMIPdomains;
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
-bool: fPostproDom_AUX = fPostprocessDomains;   %% Specialized for aux_ constr
+bool: fPostproDom_AUX = true;   %% Specialized for aux_ constr
+bool: fPostproDom_DIFF = true;   %% Specialized for differences: x<y <-> z=x-y<0
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
@@ -556,7 +557,7 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
 % Normally not called because all plugged into the domain.
 % Might be called instead of set_in(x, var set of int s) if s gets fixed?
 predicate set_in(var int: x, set of int: s__) =
-    trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
+    my_trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
       constraint  min(s) <= x /\ x <= max(s);
