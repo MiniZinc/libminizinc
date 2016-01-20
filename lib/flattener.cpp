@@ -359,51 +359,21 @@ void Flattener::flatten()
                 FlatModelStatistics stats = statistics(env);
                 std::cerr << "Generated FlatZinc statistics:\n";
                 std::cerr << "Variables: ";
-                bool had_one = false;
-                if (stats.n_bool_vars) {
-                  had_one = true;
-                  std::cerr << stats.n_bool_vars << " bool";
-                }
-                if (stats.n_int_vars) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_int_vars << " int";
-                }
-                if (stats.n_float_vars) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_float_vars << " float";
-                }
-                if (stats.n_set_vars) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_set_vars << " int";
-                }
-                if (!had_one)
+                HadOne ho;
+                std::cerr << ho(stats.n_bool_vars, " bool");
+                std::cerr << ho(stats.n_int_vars, " int");
+                std::cerr << ho(stats.n_float_vars, " float");
+                std::cerr << ho(stats.n_set_vars, " set");
+                if (!ho)
                   std::cerr << "none";
                 std::cerr << "\n";
+                ho.reset();
                 std::cerr << "Constraints: ";
-                had_one = false;
-                if (stats.n_bool_ct) {
-                  had_one = true;
-                  std::cerr << stats.n_bool_ct << " bool";
-                }
-                if (stats.n_int_ct) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_int_ct << " int";
-                }
-                if (stats.n_float_ct) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_float_ct << " float";
-                }
-                if (stats.n_set_ct) {
-                  if (had_one) std::cerr << ", ";
-                  had_one = true;
-                  std::cerr << stats.n_set_ct << " int";
-                }
-                if (!had_one)
+                std::cerr << ho(stats.n_bool_ct, " bool");
+                std::cerr << ho(stats.n_int_ct, " int");
+                std::cerr << ho(stats.n_float_ct, " float");
+                std::cerr << ho(stats.n_set_ct, " set");
+                if (!ho)
                   std::cerr << "none";
                 std::cerr << "\n";
               }

@@ -109,6 +109,28 @@ namespace MiniZinc {
       return false;
     }
   };  // class CLOParser
+  
+  /// This class prints a value if non-0 and adds comma if not 1st time
+  class HadOne {
+    bool fHadOne=false;
+  public:
+    template <class N>
+    string operator()(const N& val, const char* descr=0) {
+      ostringstream oss;
+      if ( val ) {
+        if ( fHadOne )
+          oss << ", ";
+        fHadOne=true;
+        oss << val;
+        if ( descr )
+          oss << descr;
+      }
+      return oss.str();
+    }
+    void reset() { fHadOne=false; }
+    operator bool() const { return fHadOne; }
+    bool operator!() const { return !fHadOne; }
+  };
 
 }
 
