@@ -66,7 +66,7 @@ namespace MiniZinc {
       : i(ii), argc(ac), argv(av) { }
     template <class Value=int>
     inline bool getOption(  const char* names, // space-separated option list
-                            Value* pResult=(int*)0, // pointer to value storage
+                            Value* pResult=nullptr, // pointer to value storage
                             bool fValueOptional=false // if pResult, for non-string values
                 ) {
       if( i>=argc )
