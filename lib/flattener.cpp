@@ -51,7 +51,8 @@ void Flattener::printHelp(ostream& os)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-  << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
+  << "  -G --globals-dir --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
+  << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << std::endl;
@@ -59,156 +60,69 @@ void Flattener::printHelp(ostream& os)
   << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
-  << "  -o <file>, --output-to-file <file>, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
-  << "  --output-ozn-to-file <file>\n    Filename for model output specification" << std::endl
+  << "  -o, --fzn, --output-to-file, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+  << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
 
-bool Flattener::processOption(int& i, int argc, const char** argv)
+bool Flattener::processOption(int& i, const int argc, const char** argv)
 {
-  if (beginswith(string(argv[i]),"-I")) {
-    string include(argv[i]);
-    if (include.length() > 2) {
-      includePaths.push_back(include.substr(2)+string("/"));
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      includePaths.push_back(argv[i]+string("/"));
-    }
-  } else if (string(argv[i])==string("--ignore-stdlib")) {
+  CLOParser cop( i, argc, argv );
+  string buffer;
+  
+  if ( cop.getOption( "-I --search-dir", &buffer ) ) {
+    includePaths.push_back(buffer+string("/"));
+  } else if ( cop.getOption( "--ignore-stdlib" ) ) {
     flag_ignoreStdlib = true;
-  } else if (string(argv[i])==string("--no-typecheck")) {
+  } else if ( cop.getOption( "--no-typecheck") ) {
     flag_typecheck = false;
-  } else if (string(argv[i])==string("--instance-check-only")) {
+  } else if ( cop.getOption( "--instance-check-only") ) {
     flag_instance_check_only = true;
-  } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
+  } else if ( cop.getOption( "-v --verbose") ) {
     flag_verbose = true;
   } else if (string(argv[i])==string("--newfzn")) {
     flag_newfzn = true;
-  } else if (string(argv[i])==string("--no-optimize") || string(argv[i])==string("--no-optimise")) {
+  } else if ( cop.getOption( "--no-optimize --no-optimise") ) {
     flag_optimize = false;
-  } else if (string(argv[i])==string("--no-output-ozn") ||
-      string(argv[i])==string("-O-")) {
+  } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
-  } else if (string(argv[i])=="--output-base") {
-    i++;
-    if (i==argc)
-      goto error;
-    flag_output_base = argv[i];
-  } else if (beginswith(string(argv[i]),"-o")) {
-    string filename(argv[i]);
-    if (filename.length() > 2) {
-      flag_output_fzn = filename.substr(2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      flag_output_fzn = argv[i];
-    }
-  } else if (string(argv[i])=="--output-to-file" ||
-      string(argv[i])=="--output-fzn-to-file") {
-    i++;
-    if (i==argc)
-      goto error;
-    flag_output_fzn = argv[i];
-  } else if (string(argv[i])=="--output-ozn-to-file") {
-    i++;
-    if (i==argc)
-      goto error;
-    flag_output_ozn = argv[i];
-  } else if (string(argv[i])=="--output-to-stdout" ||
-      string(argv[i])=="--output-fzn-to-stdout") {
+  } else if ( cop.getOption( "--output-base", &buffer ) ) {
+    flag_output_base = buffer;
+  } else if ( cop.getOption( "-o --fzn --output-to-file --output-fzn-to-file", &buffer) ) {
+    flag_output_fzn = buffer;
+  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &buffer) ) {
+    flag_output_ozn = buffer;
+  } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
-  } else if (string(argv[i])=="--output-ozn-to-stdout") {
+  } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
-    } else if (string(argv[i])=="-" || string(argv[i])=="--input-from-stdin") {
+  } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
       flag_stdinInput = true;
-  } else if (beginswith(string(argv[i]),"-d")) {
+  } else if ( cop.getOption( "-d --data", &buffer ) ) {
     if (flag_stdinInput)
       goto error;
-    string filename(argv[i]);
-    string datafile;
-    if (filename.length() > 2) {
-      datafile = filename.substr(2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      datafile = argv[i];
-    }
-    if (datafile.length()<=4 ||
-        datafile.substr(datafile.length()-4,string::npos) != ".dzn")
+    if ( buffer.length()<=4 ||
+         buffer.substr(buffer.length()-4,string::npos) != ".dzn")
       goto error;
-    datafiles.push_back(datafile);
-  } else if (string(argv[i])=="--data") {
+    datafiles.push_back(buffer);
+  } else if ( cop.getOption( "--stdlib-dir", &buffer ) ) {
+    std_lib_dir = buffer;
+  } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &buffer ) ) {
+      globals_dir = buffer;
+  } else if ( cop.getOption( "-D, --cmdline-data", &buffer)) {
     if (flag_stdinInput)
       goto error;
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    string datafile = argv[i];
-    if (datafile.length()<=4 ||
-        datafile.substr(datafile.length()-4,string::npos) != ".dzn")
-      goto error;
-    datafiles.push_back(datafile);
-  } else if (string(argv[i])=="--stdlib-dir") {
-    i++;
-    if (i==argc)
-      goto error;
-    std_lib_dir = argv[i];
-  } else if (beginswith(string(argv[i]),"-G")) {
-    string filename(argv[i]);
-    if (filename.length() > 2) {
-      globals_dir = filename.substr(2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      globals_dir = argv[i];
-    }
-  } else if (beginswith(string(argv[i]),"-D")) {
-    if (flag_stdinInput)
-      goto error;
-    string cmddata(argv[i]);
-    if (cmddata.length() > 2) {
-      datafiles.push_back("cmd:/"+cmddata.substr(2));
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      datafiles.push_back("cmd:/"+string(argv[i]));
-    }
-  } else if (string(argv[i])=="--cmdline-data") {
-    if (flag_stdinInput)
-      goto error;
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    datafiles.push_back("cmd:/"+string(argv[i]));
-  } else if (string(argv[i])=="--globals-dir" ||
-      string(argv[i])=="--mzn-globals-dir") {
-    i++;
-    if (i==argc)
-      goto error;
-    globals_dir = argv[i];
-  } else if (string(argv[i])=="--only-range-domains") {
+    datafiles.push_back("cmd:/"+buffer);
+  } else if ( cop.getOption( "--only-range-domains" ) ) {
     flag_only_range_domains = true;
-  } else if (string(argv[i])=="--no-MIPdomains") {   // internal
+  } else if ( cop.getOption( "--no-MIPdomains" ) ) {   // internal
     flag_noMIPdomains = true;
-  } else if (string(argv[i])=="-Werror") {
+  } else if ( cop.getOption( "-Werror" ) ) {
     flag_werror = true;
   } else {
     if (flag_stdinInput)
