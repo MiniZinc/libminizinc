@@ -84,7 +84,8 @@ namespace MiniZinc {
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
       registerLinearConstraintDecls();
-      register__POSTconstraintDecls();
+	  if (!register__POSTconstraintDecls())    // not declared => no conversions
+		  return true;
       register__POSTvariables();
       if ( vVarDescr.empty() )
         return true;
@@ -206,7 +207,7 @@ namespace MiniZinc {
         *aux_float_le_zero_if_1__POST=0, *aux_float_lt_zero_if_1__POST=0,
       *equality_encoding__POST=0, *set_in__POST=0, *set_in_reif__POST=0;
     
-    void register__POSTconstraintDecls()
+    bool register__POSTconstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -248,8 +249,10 @@ namespace MiniZinc {
         } else {
           aCT[i].pfi = 0;
           DBGOUT_MIPD ( "  MIssing declaration: " << aCT[i].sFuncName );
+		  return false;
         }
       }
+	  return true;
     }
     
     
