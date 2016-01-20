@@ -83,9 +83,10 @@ namespace MiniZinc {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
-      registerLinearConstraintDecls();
-	  if (!register__POSTconstraintDecls())    // not declared => no conversions
-		  return true;
+      if (!registerLinearConstraintDecls())
+        return true;
+      if (!register__POSTconstraintDecls())    // not declared => no conversions
+        return true;
       register__POSTvariables();
       if ( vVarDescr.empty() )
         return true;
@@ -93,7 +94,7 @@ namespace MiniZinc {
       if ( !decomposeDomains() )
         return false;
       if ( fVerbose )
-       printStats(std::cerr);
+        printStats(std::cerr);
       return true;
     }
     
@@ -118,7 +119,7 @@ namespace MiniZinc {
     
 //     double float_lt_EPS_coef__ = 1e-5;
       
-    void registerLinearConstraintDecls()
+    bool registerLinearConstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -134,6 +135,12 @@ namespace MiniZinc {
 
       lin_exp_int = env.orig->matchFn(env, constants().ids.lin_exp, int_lin_eq_t);
       lin_exp_float = env.orig->matchFn(env, constants().ids.lin_exp, float_lin_eq_t);
+      
+      if ( !(int_lin_eq&&int_lin_le&&float_lin_eq&&float_lin_le) ) {
+        // say something...
+        return false;
+      }
+      return true;
 
 //       std::cerr << "  lin_exp_int=" << lin_exp_int << std::endl;
 //       std::cerr << "  lin_exp_float=" << lin_exp_float << std::endl;

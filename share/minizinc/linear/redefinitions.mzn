@@ -19,12 +19,22 @@ ann: MIP_lazy; % = lazy_constraint;
 %  Parameters
 bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
     %% Reifs give wrong result on 2012/amaze, so using implications only
-opt bool: fMIPdomains;
+    
+  %%% The below option enables translation of domain constraints into the ...POST predicates.
+  %%% The code in MIPdomains.cpp processes them and also non-contiguous domains
+  %%% (only-range-domains is then standardly off). MIPdomains.cpp needs all the required
+  %%% __POST predicates to be declared to kick in.
+opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains=false"
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
-bool: fPostproDom_AUX = false;   %% Specialized for aux_ constr
-bool: fPostproDom_DIFF = false;   %% Specialized for differences: x<y <-> z=x-y<0
+opt bool: fMIPdomAuxDiff;
+bool: fPostproDom_AUX =          %% Specialized for aux_ constr
+           if absent( fMIPdomAuxDiff ) then false
+           else deopt( fMIPdomAuxDiff ) endif;
+bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
+           if absent( fMIPdomAuxDiff ) then false
+           else deopt( fMIPdomAuxDiff ) endif;
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
