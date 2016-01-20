@@ -20,7 +20,7 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
     if fix(x)!=fix(y) then p==0 else true endif
   elseif is_fixed(x-y) then                      %%% Hypothetically possible to land here
     if 0!=fix(x-y) then p==0 else true endif
-  elseif fPostproDom_AUX then
+  elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
     aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
@@ -38,10 +38,10 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
 %       sum ( i in dom(x) where i<=0 ) ( pp[i] ) == p
 %     else
   if is_fixed(p) then
-    if 1==fix(p) then x<=0 else true endif
+    if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
     if fix(x)>0 then p==1 else true endif
-  elseif fPostproDom_AUX then
+  elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_int_le_zero_if_0  INDIC: \(x) \\/ \(p) \n") /\
@@ -52,10 +52,10 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
-    if 1==fix(p) then x<=0.0 else true endif
+    if 0==fix(p) then x<=0.0 else true endif
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
     if fix(x)>0.0 then p==1 else true endif
-  elseif fPostproDom_AUX then
+  elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
     my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
@@ -66,10 +66,10 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
 
 predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
-    if 1==fix(p) then x<0.0 else true endif
+    if 0==fix(p) then x<0.0 else true endif
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
     if fix(x)>=0.0 then p==1 else true endif
-  elseif fPostproDom_AUX then
+  elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
   else
     let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
@@ -79,27 +79,28 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
 
 
 % Derived cases
+%% int: switching differences to float to avoid creating integer vars
 
-predicate aux_int_le_if_0(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(x - y, p);
+predicate aux_int_le_if_0(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(x - y, p);
 
-predicate aux_int_ge_if_0(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(y - x, p);
+predicate aux_int_ge_if_0(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(y - x, p);
 
-predicate aux_int_le_if_1(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(x - y, 1 - p);
+predicate aux_int_le_if_1(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(x - y, 1 - p);
 
-predicate aux_int_ge_if_1(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(y - x, 1 - p);
+predicate aux_int_ge_if_1(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(y - x, 1 - p);
 
-predicate aux_int_lt_if_0(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(x - y + 1, p);
+predicate aux_int_lt_if_0(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(x - y + 1.0, p);
 
-predicate aux_int_gt_if_0(var int: x, var int: y, var int: p) =
-    aux_int_le_zero_if_0(y - x + 1, p);
+predicate aux_int_gt_if_0(var float: x, var float: y, var int: p) =
+    aux_float_le_zero_if_0(y - x + 1.0, p);
 
-predicate aux_int_lt_if_1(var int: x, int: y, var int: p) =
-    aux_int_le_zero_if_0(x - y + 1, 1 - p);
+predicate aux_int_lt_if_1(var float: x, float: y, var int: p) =
+    aux_float_le_zero_if_0(x - y + 1.0, 1 - p);
 
 
 predicate aux_float_le_if_0(var float: x, var float: y, var int: p) =

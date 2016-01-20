@@ -5774,6 +5774,7 @@ namespace MiniZinc {
     } else {
       // Create new output model
       OutputI* outputItem = NULL;
+      GCLock lock;
 
       class OV1 : public ItemVisitor {
       public:
@@ -5783,7 +5784,6 @@ namespace MiniZinc {
         OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
         : env(env0), vo(vo0), outputItem(outputItem0) {}
         void vOutputI(OutputI* oi) {
-          GCLock lock;
           outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
           makePar(env,outputItem->e());
           env.output->addItem(outputItem);
@@ -5793,7 +5793,6 @@ namespace MiniZinc {
       
       if (outputItem==NULL) {
         // Create output item for all variables defined at toplevel in the MiniZinc source
-        GCLock lock;
         std::vector<Expression*> outputVars;
         for (unsigned int i=0; i<e.orig->size(); i++) {
           if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
@@ -5858,7 +5857,6 @@ namespace MiniZinc {
               throw FlatteningError(env,c.loc(),"function is used in output, par version needed");
             }
             if (!isBuiltin(origdecl)) {
-              GCLock lock;
               decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
               CollectOccurrencesE ce(env.output_vo,decl);
               topDown(ce, decl->e());
@@ -5887,7 +5885,6 @@ namespace MiniZinc {
             return;
           if (Expression* vd_e = env.cmap.find(vdi->e())) {
             VarDecl* vd = vd_e->cast<VarDecl>();
-            GCLock lock;
             VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);

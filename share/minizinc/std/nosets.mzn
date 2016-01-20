@@ -51,6 +51,16 @@ predicate set_eq(var set of int: x, var set of int: y) =
   )
   endif;
 
+predicate set_ne(var set of int: x, var set of int: y) =
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in exists (i in index_set(bx) union index_set(by)) (
+    if not (i in index_set(bx)) then by[i]
+    elseif not (i in index_set(by)) then bx[i]
+    else bx[i]!=by[i] endif
+  );
+
 predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif

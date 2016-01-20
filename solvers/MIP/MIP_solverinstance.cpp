@@ -300,7 +300,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   
   lastIncumbent = 1e200;                  // for callbacks
   MIP_wrapper::Status sw;
-  if ( getMIPWrapper()->getNRows() ) {
+  if ( getMIPWrapper()->getNCols() ) {
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
     getMIPWrapper()->solve();
   //   printStatistics(cout, 1);   MznSolver does this (if it wants)

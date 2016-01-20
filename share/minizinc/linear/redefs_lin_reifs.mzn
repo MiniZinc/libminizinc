@@ -22,10 +22,10 @@ predicate int_le_reif(var int: x, var int: y, var bool: b) =
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
-  elseif fPostprocessDomains then
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
     int_le_reif__POST(x-y, 0, b)
   else
-    int_le_reif(x-y, 0, b)
+    int_le_reif__NOPOST(x, y, b)
   endif
 ;
 
@@ -55,15 +55,16 @@ predicate int_le_reif(var int: x, int: y, var bool: b) =
     if fPostprocessDomains then
       int_le_reif__POST(x, y, b)
     else
-      let {
-        var 0..1: p = bool2int(b)
-      }
-      in            %% No big difference using the binary decomposition...??
-        aux_int_le_if_1(x, y, p) /\
-        aux_int_gt_if_0(x, y, p)
+      int_le_reif__NOPOST(x, y, b)
     endif
   endif
 ;
+
+%% var int, var int
+predicate int_le_reif__NOPOST(var int: x, var int: y, var bool: b) =
+        aux_int_le_if_1(x, y, b) /\            %% This can call POSTs...  TODO
+        aux_int_gt_if_0(x, y, b)
+      ;
 
 %% var, var
 predicate int_lt_reif(var int: x, var int: y, var bool: b) =
@@ -73,7 +74,11 @@ predicate int_lt_reif(var int: x, var int: y, var bool: b) =
 predicate int_ne(var int: x, var int: y) =
     my_trace("  int_ne(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
             ++ ", var " ++ show(lb(y)) ++ " .. " ++ show(ub(y)) ++ ")\n") /\
-    int_ne(x-y, 0);
+    if fPostproDom_DIFF then
+      int_ne(x-y, 0)
+    else
+      int_ne__SIMPLE(x-y, 0)
+    endif;
 %    let { var 0..1: p }       in
 %    aux_int_lt_if_1(x, y, p) /\
 %    aux_int_gt_if_0(x, y, p);
@@ -131,9 +136,10 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
         endif
       elseif is_fixed(y) then
         int_eq_reif(x, fix(y), b)
-      else
+      elseif fPostprocessDomains /\ fPostproDom_DIFF then
         int_eq_reif(x-y, 0, b)
-%%%        aux_int_eq_iff_1(x, y, bool2int(b))
+      else
+        aux_int_eq_iff_1(x, y, b)
       endif
     else
       not b
@@ -180,7 +186,11 @@ predicate int_lin_le_reif(array[int] of int: c, array[int] of var int: x,
 %    my_trace("  int_lin_le_reif: coefs = " ++ show(c) ) /\
 %    my_trace("  int_lin_le_reif: lb's  = " ++ show([lb(x[i]) | i in index_set(x)]) ) /\
 %    my_trace("  int_lin_le_reif: ub's  = " ++ show([ub(x[i]) | i in index_set(x)]) ++ "\n" ) /\
-    int_le_reif(sum(i in index_set(x))( c[i] * x[i] ), d, b);
+  if fPostprocessDomains /\ fPostproDom_DIFF then
+    int_le_reif(sum(i in index_set(x))( c[i] * x[i] ), d, b)
+  else
+    int_le_reif__NOPOST(sum(i in index_set(x))( c[i] * x[i] ), d, b)
+  endif;
 %    let { var 0..1: p = bool2int(b) }    in
 %    aux_int_le_if_1(sum(i in index_set(x))( c[i] * x[i] ), d, p) /\
 %    aux_int_gt_if_0(sum(i in index_set(x))( c[i] * x[i] ), d, p);
@@ -198,8 +208,11 @@ predicate int_lin_lt_reif(array[int] of int: c, array[int] of var int: x,
 predicate int_lin_eq_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
     my_trace("  int_lin_eq_reif: \(c), \(x), \(d), \(b) \n" ) /\
-    int_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b);
-    %% aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, bool2int(b));
+    if fPostprocessDomains /\ fPostproDom_DIFF then
+      int_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+    else
+      aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+    endif;
     %% -- use eq_encode as well? TODO
 
 %% lin_expr, const
@@ -210,16 +223,21 @@ predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
 %      fEq = false    %% -- this is how CPLEX 12.6.2 needs it, not in the BOUNDS section   TODO?
       my_trace__DBG("  int_lin_ne  INDIC: " ++ show(length(c)) ++ "  elements. \n") /\
       int_lin_ne__IND( c, x, d )
-  else
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
     int_ne(sum(i in index_set(x))( c[i]*x[i] ),d)
+  else
+    int_ne__SIMPLE(sum(i in index_set(x))( c[i]*x[i] ),d)
   endif;
 
 %% lin_expr, const
 predicate int_lin_ne_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
     my_trace("  int_lin_ne_reif: \(c), \(x), \(d), \(b) \n") /\
-    int_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b);
-%    aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, 1 - bool2int(b));
+    if fPostprocessDomains /\ fPostproDom_DIFF then
+      int_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+    else
+      aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, 1 - bool2int(b))
+    endif;
 
 
 %-----------------------------------------------------------------------------%
@@ -238,10 +256,7 @@ predicate float_le_reif(var float: x, float: y, var bool: b) =
   elseif fPostprocessDomains then
     float_le_reif__POST(x, y, b, float_lt_EPS_coef__)
   else
-    let { var int: p = bool2int(b) }
-    in
-    aux_float_le_if_1(x, y, (p)) /\
-    aux_float_gt_if_0(x, y, (p))
+    float_le_reif__NOPOST(x, y, b)
   endif;
 
 %% const, var float
@@ -263,19 +278,33 @@ predicate float_le_reif(float: x, var float: y, var bool: b) =
 
 %% var float, var float
 predicate float_le_reif(var float: x, var float: y, var bool: b) =
-  float_le_reif(x-y, 0.0, b);
+  if is_fixed(b) then
+    if true==fix(b) then x<=y else x>y endif
+  elseif ub(x)<=lb(y) then b==true
+  elseif lb(x)>ub(y) then b==false
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
+    float_le_reif(x-y, 0.0, b)
+  else
+    float_le_reif__NOPOST(x-y, 0, b)
+  endif
+;
+
+%% var float, var float
+predicate float_le_reif__NOPOST(var float: x, var float: y, var bool: b) =
+    aux_float_le_if_1(x, y, (b)) /\      %% Can call __POSTs     TODO
+    aux_float_gt_if_0(x, y, (b))
+    ;
 
 %% TODO
 predicate float_lt_reif(var float: x, var float: y, var bool: b) =
+  %% Actually = float_le_reif(x, y-eps, b).
   if is_fixed(b) then
     if true==fix(b) then x<y else x>=y endif
-  elseif fPostprocessDomains then
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
     aux_float_lt_zero_iff_1__POST(x - y, b, float_lt_EPS_coef__)
   else
-    let { var int: p = bool2int(b) }
-    in
-    aux_float_lt_if_1(x, y, (p)) /\
-    aux_float_ge_if_0(x, y, (p))
+    aux_float_lt_if_1(x, y, (b)) /\
+    aux_float_ge_if_0(x, y, (b))
   endif;
 
 %% var, const
@@ -283,14 +312,23 @@ predicate float_ne(var float: x, float: y) =
   if fPostprocessDomains then
     float_ne__POST(x, y, float_lt_EPS_coef__)
   else
+    float_ne__SIMPLE(x, y)
+  endif;
+
+predicate float_ne__SIMPLE(var float: x, var float: y) =
     let { var 0..1: p }
     in
     aux_float_lt_if_1(x, y, (p)) /\
     aux_float_gt_if_0(x, y, (p))
-  endif;
+    ;
 
 %% var, var
-predicate float_ne(var float: x, var float: y) = float_ne(x-y, 0.0);
+predicate float_ne(var float: x, var float: y) =
+  if fPostprocessDomains /\ fPostproDom_DIFF then
+    float_ne(x-y, 0.0)
+  else
+    float_ne__SIMPLE(x-y, 0.0)
+  endif;
 
 %% TODO Why is disequality with EPS but equality not??
     
@@ -302,7 +340,7 @@ predicate float_eq_reif(var float: x, var float: y, var bool: b) =
     b == false
   elseif is_fixed(x) /\ is_fixed(y) then
     b == (fix(x) == fix(y))
-  elseif fPostprocessDomains then
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
     float_eq_reif__POST(x-y, 0, b, float_lt_EPS_coef__)
   else
     aux_float_eq_iff_1(x, y, (bool2int(b)))
@@ -315,31 +353,41 @@ predicate float_ne_reif(var float: x, var float: y, var bool: b) =
 
 predicate float_lin_eq_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-    float_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b);
+  if fPostprocessDomains /\ fPostproDom_DIFF then
+    float_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+  else
+    aux_float_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+  endif;
 
 predicate float_lin_ne_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-    float_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b);
-
+  if fPostprocessDomains /\ fPostproDom_DIFF then
+    float_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+  else
+    aux_float_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+  endif;
 
 predicate float_lin_le_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-    float_le_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b);
+  if fPostprocessDomains /\ fPostproDom_DIFF then
+    float_le_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+  else
+    float_le_reif__NOPOST(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+  endif;
 
 predicate float_lin_lt_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
     float_lt_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b);
 
-    
-    
+
 %-----------------------------------------------------------------------------%
 % Auxiliary: equality reified onto a 0/1 variable
 
 predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
   if is_fixed(p) then
     if 1==fix(p) then x==y else x!=y endif
-  elseif fPostprocessDomains then
-    abort("  aux_int_eq_iff_1 should not be used with domain postprocessing")
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
+    abort("  aux_int_eq_iff_1 should not be used with full domain postprocessing")
   elseif false then
     my_trace__DBG("  aux_int_eq_iff_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     int_lin_eq_reif__IND([1, -1], [x, y], 0, (p==1))
@@ -377,8 +425,8 @@ predicate alt_1_aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
 predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
   if is_fixed(p) then
     if 1==fix(p) then x==y else x!=y endif
-  elseif fPostprocessDomains then
-    abort("  aux_float_eq_iff_1 should not be used with domain postprocessing")
+  elseif fPostprocessDomains /\ fPostproDom_DIFF then
+    abort("  aux_float_eq_iff_1 should not be used with full domain postprocessing")
   else
 %%  if fMZN__UseIndicators then   ??????
     let { array[1..2] of var 0..1: q }

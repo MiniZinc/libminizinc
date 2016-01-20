@@ -6,6 +6,7 @@
 % Gleb Belov (2015)
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
 % TODO McCormick envelopes
+% TODO Avoid creating new integer vars when possible
 */
 %-----------------------------------------------------------------------------%
 ann: user_cut;
@@ -22,7 +23,8 @@ opt bool: fMIPdomains;
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
-bool: fPostproDom_AUX = fPostprocessDomains;   %% Specialized for aux_ constr
+bool: fPostproDom_AUX = false;   %% Specialized for aux_ constr
+bool: fPostproDom_DIFF = false;   %% Specialized for differences: x<y <-> z=x-y<0
 
 bool: fMZN__IgnoreRedundantCumulative=false;
 %% NOT WORKING NOW, use redefs_2.0.2.mzn: 
@@ -116,18 +118,22 @@ include "lex_lesseq.mzn";
 predicate int_abs(var int: x, var int: z) =
 %% The simplifications seem worse on   league.mzn	model90-18-20.dzn:
 %% but the .lp seem to differ just by order...?? TODO
+  my_trace("  int_abs: dom(x)=\(dom(x))\n") /\
   if lb(x)>=0 then z==x
   elseif ub(x)<=0 then z==-x
   else
-    let { var 0..1: p }
+    let { var bool: p }
     in
-    % z <= x \/ z <= -x
-    aux_int_le_if_1(z,  x, p) /\
-    aux_int_le_if_0(z, -x, p) /\
     z >=  x /\
     z >= -x /\
     z >= 0 /\                         % This is just for preprocessor
-    z <= max([ub(x), -lb(x)])        % And this
+    z <= max([ub(x), -lb(x)]) /\      % And this
+    % z <= x \/ z <= -x      %% simple
+    aux_int_le_if_1(z,  x, p) /\    %% even simpler
+    aux_int_le_if_0(z, -x, p) /\
+    int_le_reif(0, x, p)   % with reifs
+    %int_eq_reif(z, x, p) /\
+    %int_eq_reif(z, -x, not p)
   endif
   ;
 
@@ -138,15 +144,22 @@ predicate int_max(var int: x, var int: y, var int: z) =
     array_int_maximum(z, [x, y]);
 
 predicate float_abs(var float: x, var float: z) =
-    let { var 0..1: p }
+  if lb(x)>=0 then z==x
+  elseif ub(x)<=0 then z==-x
+  else
+    let { var bool: p }
     in
-    % z <= x \/ z <= -x
-    aux_float_le_if_1(z,  x, (p)) /\
-    aux_float_le_if_0(z, -x, (p)) /\
     z >=  x /\
     z >= -x /\
     z >= 0.0 /\                       % This is just for preprocessor
-    z <= max([ub(x), -lb(x)]);        % And this
+    z <= max([ub(x), -lb(x)]) /\      % And this
+    % z <= x \/ z <= -x
+    aux_float_le_if_1(z,  x, (p)) /\
+    aux_float_le_if_0(z, -x, (p)) /\
+    float_le_reif(0.0, x, p)            % with reifs
+    % float_eq_reif(z, x, p) /\
+    % float_eq_reif(z, -x, not p)
+  endif;
 
 predicate float_min(var float: x, var float: y, var float: z) =
     array_float_minimum(z, [x, y]);
@@ -541,8 +554,9 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
   );
 
 %% ----------------------------------------------- (NO) SETS ----------------------------------------------
-% XXX  only for a fixed set here,  general see below:
-
+% XXX  only for a fixed set here,  general see below.
+% Normally not called because all plugged into the domain.
+% Might be called instead of set_in(x, var set of int s) if s gets fixed?
 predicate set_in(var int: x, set of int: s__) =
     my_trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
@@ -706,6 +720,16 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
       else bx[i]=by[i] endif
     )
   endif;
+
+predicate set_ne(var set of int: x, var set of int: y) =
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in exists (i in index_set(bx) union index_set(by)) (
+    if not (i in index_set(bx)) then by[i]
+    elseif not (i in index_set(by)) then bx[i]
+    else bx[i]!=by[i] endif
+  );
 
 predicate set_le(var set of int: x, var set of int: y) ::promise_total =
   if not has_ub_set(x) \/ not has_ub_set(y) then

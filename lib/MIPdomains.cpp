@@ -42,7 +42,7 @@
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-// #define __MZN__DBGOUT__MIPDOMAINS__
+//  #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -257,10 +257,31 @@ namespace MiniZinc {
     void register__POSTvariables() {
       EnvI& env = getEnv()->envi();
       GCLock lock;
-      // First, cleanup VarDecls' payload which stores index in vVarDescr
       Model& mFlat = *getEnv()->flat();
-      for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd )
-        ivd->e()->payload(-1);
+      // First, cleanup VarDecls' payload which stores index in vVarDescr
+      // but already add variables with non-contiguous domain
+      for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
+        VarDecl* vd0 = ivd->e();
+        bool fNonCtg = 0;
+        if ( vd0->type().isint() ) {  // currently only for int vars   TODO
+          if ( Expression* eDom = vd0->ti()->domain() ) {
+            IntSetVal* dom = eval_intset( env, eDom );
+            fNonCtg = ( dom->size() > 1 );
+          }
+        }
+        if ( fNonCtg ) {
+          DBGOUT_MIPD ( " Variable " << vd0->id()->str()
+            << ": non-contiguous domain " << (*(vd0->ti()->domain())) );
+          vd0->payload( vVarDescr.size() );
+          vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
+          // bounds/domains later for each involved var TODO
+          ++MIPD__stats[ N_POSTs__domain ];
+          ++MIPD__stats[ N_POSTs__all ];
+          if (vd0->e())
+            checkInitExpr(vd0);
+        } else
+          ivd->e()->payload(-1);
+      }
       // Iterate thru original __POST constraints to mark constrained vars:
       for( ConstraintIterator ic=mFlat.begin_constraints();
               ic != mFlat.end_constraints(); ++ic ) {
@@ -606,7 +627,7 @@ namespace MiniZinc {
     void put2VarsConnection( LinEq2Vars& led, bool fCheckinitExpr=true ) {
       MZN_MIPD__assert_hard( led.coefs.size() == led.vd.size() );
       MZN_MIPD__assert_hard( led.vd.size() == 2 );
-      DBGOUT_MIPD ( "  Register 2-var connection: " << led );
+      DBGOUT_MIPD__ ( "  Register 2-var connection: " << led );
       // register if new variables
 //       std::vector<bool> fHaveClq(led.vd.size(), false);
       int nCliqueAvailable = -1;
@@ -628,6 +649,8 @@ namespace MiniZinc {
         nCliqueAvailable = aCliques.size();
         aCliques.resize(aCliques.size() + 1);
       }
+      DBGOUT_MIPD ( " ...adding to clique " << nCliqueAvailable
+        << " of size " << aCliques[nCliqueAvailable].size() );
       TClique& clqNew = aCliques[nCliqueAvailable];
       clqNew.push_back( led );
       for ( auto vd : led.vd ) {       // merging cliques
@@ -735,7 +758,11 @@ namespace MiniZinc {
             << "  having " << itStart->second.size() << " connections" );
           propagate2(itStart, itStart, std::make_pair(1.0, 0.0), mTemp);
           mWhereStore = mTemp.begin()->second;
-          MZN_MIPD__assert_hard( mWhereStore.size() == this->size()-1 );     // connectedness
+          MZN_MIPD__assert_hard_msg( mWhereStore.size() == this->size()-1,
+            "Variable " << (*(mTemp.begin()->first))
+            << " should be connected to all others in the clique, but "
+            << "|edges|==" << mWhereStore.size()
+            << ", |all nodes|==" << this->size() );     // connectedness
         }
         /// Propagate linear relations from it1 via it2
         void propagate2(iterator itSrc, iterator itVia,
