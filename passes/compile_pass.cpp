@@ -25,6 +25,8 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/timer.hh>
 
+#include <minizinc/MIPdomains.hh>
+
 #include <iomanip>
 
 // temporary
@@ -41,7 +43,7 @@ namespace MiniZinc {
     return oss.str();
   }
   
-  IncludeI* update_include(Model* parent, IncludeI* inc, std::vector<std::string>& includes) {
+  IncludeI* update_include(Model* parent, IncludeI* inc, std::vector<std::string>& includes, bool verbose=false) {
     std::string filename = inc->f().str();
     std::vector<std::string> datafiles;
 
@@ -56,7 +58,6 @@ namespace MiniZinc {
       full_filename << parentPath << "/" << filename;
 
     std::ifstream fi(full_filename.str());
-    bool verbose = false;
     if(fi.is_open()) {
         std::vector<std::string> filenames {full_filename.str()};
         Model* inc_mod = parse(filenames, datafiles, includes, true, true, verbose, std::cerr);
@@ -83,7 +84,7 @@ namespace MiniZinc {
     return NULL;
   }
 
-  Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir) {
+  Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir, bool verbose=false) {
     GC::lock();
     CopyMap cm;
     Model* m = e.model();
@@ -99,7 +100,7 @@ namespace MiniZinc {
 
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        IncludeI* ninc = update_include(new_mod, inc, new_includePaths);
+        IncludeI* ninc = update_include(new_mod, inc, new_includePaths, verbose);
         if(ninc) new_mod->addItem(ninc);
       } else {
         new_mod->addItem(copy(e.envi(),cm,item));
@@ -145,11 +146,11 @@ namespace MiniZinc {
   Env* CompilePass::run(Env* store) {
     Timer lasttime;
     if(fopts.verbose)
-      std::cerr << "\tFlatten with \'" << library << "\' library ...";
+      std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
 
     Env* new_env;
     if(change_library) {
-      new_env = changeLibrary(*env, includePaths, library);
+      new_env = changeLibrary(*env, includePaths, library, fopts.verbose);
 
       new_env->envi().passes = store->envi().passes;
       new_env->envi().maxPathDepth = store->envi().maxPathDepth;
@@ -162,6 +163,7 @@ namespace MiniZinc {
     flatten(*new_env, fopts);
     optimize(*new_env);
     oldflatzinc(*new_env);
+    MIPdomains(*new_env, fopts.verbose);
 
     if(fopts.verbose)
       std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;

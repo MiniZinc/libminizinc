@@ -210,6 +210,34 @@ bool Flattener::processOption(int& i, int argc, const char** argv)
     flag_noMIPdomains = true;
   } else if (string(argv[i])=="-Werror") {
     flag_werror = true;
+  } else if (string(argv[i])=="--use-gecode") {
+#ifdef HAS_GECODE
+    flag_gecode = true;
+#else
+    std::cerr << "warning: Gecode not available.\n";
+#endif
+  } else if (string(argv[i])=="--npass") {
+    i++;
+    if (i==argc) {
+      goto error;
+    }
+    int passes = atoi(argv[i]);
+    if(passes > 0)
+      flag_npasses = passes;
+  } else if (string(argv[i])=="--sac") {
+    flag_sac = true;
+  } else if (string(argv[i])=="--shave") {
+    flag_shave = true;
+  } else if (string(argv[i])=="--only-toplevel-presolve") {
+    fopts.only_toplevel_paths = true;
+  } else if (string(argv[i])=="--pre-passes") {
+    i++;
+    if (i==argc) {
+      goto error;
+    }
+    int passes = atoi(argv[i]);
+    if(passes >= 0)
+      flag_pre_passes = passes;
   } else {
     if (flag_stdinInput)
       goto error;
@@ -300,9 +328,6 @@ void Flattener::flatten()
     std::exit(EXIT_FAILURE);
   }
 
-  if (globals_dir!="") {
-    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
-  }
   includePaths.push_back(std_lib_dir+"/std/");
 
   for (unsigned int i=0; i<includePaths.size(); i++) {
@@ -361,18 +386,18 @@ void Flattener::flatten()
             std::cerr << "Typechecking ...";
           pEnv.reset(new Env(m));
           Env& env = *getEnv();
-          vector<TypeError> typeErrors;
-          MiniZinc::typecheck(env, m, typeErrors, false);
-          if (typeErrors.size() > 0) {
-            for (unsigned int i=0; i<typeErrors.size(); i++) {
-              if (flag_verbose)
-                std::cerr << std::endl;
-              std::cerr << typeErrors[i].loc() << ":" << std::endl;
-              std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-            }
-            exit(EXIT_FAILURE);
-          }
-          MiniZinc::registerBuiltins(env, m);
+          //vector<TypeError> typeErrors;
+          //MiniZinc::typecheck(env, m, typeErrors, false);
+          //if (typeErrors.size() > 0) {
+          //  for (unsigned int i=0; i<typeErrors.size(); i++) {
+          //    if (flag_verbose)
+          //      std::cerr << std::endl;
+          //    std::cerr << typeErrors[i].loc() << ":" << std::endl;
+          //    std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+          //  }
+          //  exit(EXIT_FAILURE);
+          //}
+          //MiniZinc::registerBuiltins(env, m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
@@ -386,8 +411,32 @@ void Flattener::flatten()
                 std::cerr << "Flattening ...";
 
               try {
+                std::vector<Pass*> passes;
                 fopts.onlyRangeDomains = flag_only_range_domains;
-                ::flatten(env,fopts);
+                fopts.verbose = flag_verbose;
+#ifdef HAS_GECODE
+                Options gopts;
+                gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
+                gopts.setBoolParam(std::string("sac"),       flag_sac);
+                gopts.setBoolParam(std::string("shave"),     flag_shave);
+                gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
+                gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
+#endif
+                FlatteningOptions pass_opts = fopts;
+
+                for(unsigned int i=1; i<flag_npasses; i++) {
+                  if(flag_gecode) {
+#ifdef HAS_GECODE
+                    passes.push_back(new CompilePass(&env, pass_opts, std_lib_dir+"/gecode/", includePaths, true));
+                    passes.push_back(new GecodePass(gopts));
+#endif
+                  } else {
+                    passes.push_back(new CompilePass(&env, pass_opts, std_lib_dir+"/std/", includePaths,  true));
+                  }
+                }
+                passes.push_back(new CompilePass(&env, fopts, std_lib_dir+"/"+globals_dir+"/", includePaths, true));
+
+                env = *multiPassFlatten(env, passes);
               } catch (LocationException& e) {
                 if (flag_verbose)
                   std::cerr << std::endl;

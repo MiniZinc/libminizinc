@@ -34,6 +34,11 @@ using namespace std;
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
 
+#include <minizinc/passes/compile_pass.hh>
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode/gecode_pass.hh>
+#endif
+
 namespace MiniZinc {
   
   class Flattener;
@@ -81,6 +86,12 @@ namespace MiniZinc {
     bool flag_noMIPdomains = false;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
+
+    bool flag_gecode = false;
+    unsigned int flag_npasses = 1;
+    bool flag_sac = false;
+    bool flag_shave = false;
+    unsigned int flag_pre_passes = 1;
 
     string std_lib_dir;
     string globals_dir;
