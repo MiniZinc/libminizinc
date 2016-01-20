@@ -89,7 +89,7 @@ namespace MiniZinc {
             return true;
           i++;
           if( i>=argc )
-            return false;
+            return fValueOptional;
           arg = argv[i];
         }
         assert( pResult );
