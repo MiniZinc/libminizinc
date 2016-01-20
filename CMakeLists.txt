@@ -300,14 +300,21 @@ include/minizinc/thirdparty/SafeInt3.hpp
 ${parser_hh}
 )
 
-# add the executable
-add_executable(mzn2fzn lib/solver.cpp lib/flattener.cpp)
 if(HAS_GECODE)
   set(GECODE_INTERFACE "minizinc_gecode")
   set(GECODE_LIBS gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
-endif()
 
-target_link_libraries(mzn2fzn ${GECODE_INTERFACE} minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+# Create flattener
+add_library(flattener STATIC
+  lib/flattener.cpp
+  )
+target_link_libraries(flattener ${GECODE_INTERFACE} minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+
+
+# add the executable
+add_executable(mzn2fzn lib/solver.cpp)
+target_link_libraries(mzn2fzn flattener)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
@@ -324,16 +331,16 @@ if(HAS_GUROBI)  # Version 6.5
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
-    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi
-    lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi flattener minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
@@ -365,7 +372,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 #  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
 	add_library(minizinc_cplex
-		lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+		solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
@@ -377,8 +384,8 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   
 	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
-	add_executable(mzn-cplex
-	  lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+	add_executable(mzn-cplex 
+	  lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
   SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
@@ -389,7 +396,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex flattener minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -419,7 +426,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.0
   endif()
   
   add_library(minizinc_scip
-    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -431,13 +438,13 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.0
     ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-scip
-      lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+      lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(mzn-scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-scip minizinc
+  target_link_libraries(mzn-scip minizinc flattener 
     ${SCIP_LIBS}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
@@ -471,7 +478,7 @@ if(HAS_SCIP_SEPLIBS)
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
-    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(minizinc_mip_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -485,13 +492,13 @@ if(HAS_SCIP_SEPLIBS)
     ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-mip-scip
-      lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+      lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(mzn-mip-scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-mip-scip minizinc
+  target_link_libraries(mzn-mip-scip flattener minizinc
     scip 
     nlpi.cppad #objscip
     lpispx soplex
@@ -519,16 +526,16 @@ if(HAS_OSICBC)  # Tested version release/2.9.7. Use svn to get the latest stable
   link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
-    lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
-  add_executable(mzn-cbc lib/solver.cpp lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  add_executable(mzn-cbc lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
   target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc flattener ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
@@ -543,10 +550,10 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
-          solvers/gecode/fzn_space.cpp
-	  solvers/gecode/gecode_solverinstance.cpp
-		solvers/gecode/gecode_constraints.cpp
-          passes/gecode_pass.cpp
+    solvers/gecode/fzn_space.cpp
+    solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_constraints.cpp
+    passes/gecode_pass.cpp
     solvers/gecode/aux_brancher.hh)
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
@@ -579,11 +586,11 @@ target_link_libraries(mzn2doc minizinc)
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_FZN)
 	add_library(minizinc_fzn
-		solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp
+		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
-	target_link_libraries(mzn-fzn minizinc_fzn)
+	add_executable(mzn-fzn lib/solver.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	target_link_libraries(mzn-fzn flattener minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)
 	INSTALL(TARGETS minizinc_fzn mzn-fzn #mzn-fzn-test
