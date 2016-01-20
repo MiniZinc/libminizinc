@@ -18,6 +18,7 @@
 #endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
+const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before windows.h
 #include <cstdio>
 #include <fstream>
 
@@ -444,7 +445,7 @@ namespace MiniZinc {
         return SolverInstance::UNSATorUNBND;
       }
       else if (beginswith(line, "=====ERROR=====")) {
-        return SolverInstance::ERROR;
+        return SolverInstance__ERROR;
       }
       else if (beginswith(line, "=====UNKNOWN=====")) {
         return SolverInstance::UNKNOWN;
