@@ -20,13 +20,13 @@
 
 #define MZN_MIPD__assert_soft( c, e ) \
   do { static int nn=0; \
- if ( !c ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
+ if ( !(c) ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
 #define MZN_MIPD__assert_hard( c ) \
    do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  not " << #c; throw InternalError( oss.str() ); } } while (0)
+     << ":  not " << #c; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
 #define MZN_MIPD__assert_hard_msg( c, e ) \
    do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  " << e; throw InternalError( oss.str() ); } } while (0)
+     << ":  " << e; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
 struct MIPD_Infeasibility_Exception {
   std::string msg;
   MIPD_Infeasibility_Exception(const std::string& s) : msg(s) { }

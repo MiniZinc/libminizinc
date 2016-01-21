@@ -215,7 +215,7 @@ Found: { }
   }
   return true;
 NotFound:
-  cerr << "  Unrecognized option:  " << argv[i] << endl;
+  cerr << "  Unrecognized option: '" << argv[i] << "'" << endl;
   return false;
 }
 

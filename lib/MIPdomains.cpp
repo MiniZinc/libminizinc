@@ -78,8 +78,9 @@ namespace MiniZinc {
 
   class MIPD {  
   public:
-    MIPD(Env* env) : __env(env) { getEnv(); }
-    bool MIPdomains(bool fVerbose=false) {
+    MIPD(Env* env, bool fV=false) : __env(env) { getEnv(); fVerbose=fV; }
+    static bool fVerbose;
+    bool MIPdomains() {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
@@ -715,13 +716,13 @@ namespace MiniZinc {
               MZN_MIPD__assert_hard( std::fabs( it2->second.second - B )
                 < 1e-6 * std::max( std::fabs(it2->second.second), std::fabs(B) ) + 1e-6 );
               MZN_MIPD__assert_hard( std::fabs( A ) != 0.0 );
-              MZN_MIPD__assert_soft ( std::fabs( A ) > 1e-12,
+              MZN_MIPD__assert_soft ( !fVerbose || std::fabs( A ) > 1e-12,
                 " Very small coef: "
                   << (*begV)->id()->str() << " = "
                   << A << " * " << (*(begV+1))->id()->str()
                   << " + " << B );
               if ( fReportRepeat )
-                MZN_MIPD__assert_soft ( 0, "LinEqGraph: eqn between "
+                MZN_MIPD__assert_soft ( !fVerbose, "LinEqGraph: eqn between "
                   << (*begV)->id()->str() << " && " << (*(begV+1))->id()->str()
                   << " is repeated. " );
               return true;
@@ -744,7 +745,7 @@ namespace MiniZinc {
 
         template <class ICoef, class IVarDecl>
         void addArc(ICoef begC, IVarDecl begV, double rhs) {
-          MZN_MIPD__assert_soft( std::fabs( *begC ) >= 1e-10,
+          MZN_MIPD__assert_soft( !fVerbose || std::fabs( *begC ) >= 1e-10,
             "  Vars " << (*begV)->id()->str() <<
             "  to " << (*(begV+1))->id()->str() <<
             ": coef=" << (*begC) );
@@ -773,12 +774,11 @@ namespace MiniZinc {
             << "  having " << itStart->second.size() << " connections" );
           propagate2(itStart, itStart, std::make_pair(1.0, 0.0), mTemp);
           mWhereStore = mTemp.begin()->second;
-          std::cerr <<             "Variable " << (*(mTemp.begin()->first))
+          MZN_MIPD__assert_hard_msg( mWhereStore.size() == this->size()-1,
+            "Variable " << (*(mTemp.begin()->first))
             << " should be connected to all others in the clique, but "
             << "|edges|==" << mWhereStore.size()
-            << ", |all nodes|==" << this->size() 
-            << std::endl;
-          MZN_MIPD__assert_hard( mWhereStore.size() == this->size()-1 );     // connectedness
+            << ", |all nodes|==" << this->size() );
         }
         /// Propagate linear relations from it1 via it2
         void propagate2(iterator itSrc, iterator itVia,
@@ -1843,10 +1843,12 @@ namespace MiniZinc {
     }
     return true;
   }
+  
+  bool MIPD::fVerbose = false;
 
   void MIPdomains(Env& env, bool fVerbose) {
-    MIPD mipd(&env);
-    if ( ! mipd.MIPdomains( fVerbose ) ) {
+    MIPD mipd( &env, fVerbose );
+    if ( ! mipd.MIPdomains() ) {
       GCLock lock;
       env.flat()->fail(env.envi());
     }

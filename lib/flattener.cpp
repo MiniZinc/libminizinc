@@ -114,7 +114,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     std_lib_dir = buffer;
   } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &buffer ) ) {
       globals_dir = buffer;
-  } else if ( cop.getOption( "-D, --cmdline-data", &buffer)) {
+  } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
     if (flag_stdinInput)
       goto error;
     datafiles.push_back("cmd:/"+buffer);
