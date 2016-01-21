@@ -5668,6 +5668,11 @@ namespace MiniZinc {
                 outputVarDecls(env,vdi_copy,flate);
                 vd->e(flate);
               } else {
+            	if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+					// need to copy generated variables of an array as well
+					outputVarDecls(env,vdi_copy,follow_id(reallyFlat->id()));
+				}
+
                 vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
                 VarDecl* reallyFlat = vd->flat();
               
