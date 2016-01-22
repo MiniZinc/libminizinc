@@ -5669,8 +5669,10 @@ namespace MiniZinc {
                 vd->e(flate);
               } else {
             	if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
-					// need to copy generated variables of an array as well
-					outputVarDecls(env,vdi_copy,follow_id(reallyFlat->id()));
+				// need to copy generated variables of an array as well
+         		  Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
+	        	  outputVarDecls(env,vdi_copy,flate);
+				  vd->e(flate);
 				}
 
                 vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
