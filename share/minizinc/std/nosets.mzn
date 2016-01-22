@@ -1,5 +1,7 @@
-include "lex_less.mzn";         %% For set_le, set_lt ...
-include "lex_lesseq.mzn";    
+%%% Inclusion of this file eliminates set variables by converting them into arrays of var bool.
+% AUTHORS
+% Guido Tack <guido.tack@monash.edu>
+% Gleb Belov <gleb.belov@monash.edu>
 
 function var set of int: reverse_map(array[int] of var bool: b);
 function set of int: reverse_map(array[int] of bool: b) ::promise_total =
@@ -51,16 +53,6 @@ predicate set_eq(var set of int: x, var set of int: y) =
   )
   endif;
 
-predicate set_ne(var set of int: x, var set of int: y) =
-  let {
-    array[int] of var bool: bx = set2bools(x);
-    array[int] of var bool: by = set2bools(y);
-  } in exists (i in index_set(bx) union index_set(by)) (
-    if not (i in index_set(bx)) then by[i]
-    elseif not (i in index_set(by)) then bx[i]
-    else bx[i]!=by[i] endif
-  );
-
 predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
@@ -75,54 +67,92 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
     )
   endif;
 
-predicate set_le(var set of int: x, var set of int: y) ::promise_total =
+predicate set_ne(var set of int: x, var set of int: y) =
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in exists (i in index_set(bx) union index_set(by)) (
+    if not (i in index_set(bx)) then by[i]
+    elseif not (i in index_set(by)) then bx[i]
+    else bx[i]!=by[i] endif
+  );
+
+predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) =
+  set_eq_reif( x, y, not b );
+
+  %%% lex cmp of the sparse vectors
+predicate set_le_lt_base__(var set of int: x, var set of int: y,
+                         var bool: fValReif, bool: fStrict) ::promise_total =
+%  let {            DOES NOT HELP in globals_alldiff_set_nosets.mzn ....
+%    array[int] of var bool: bx0 = set2bools(x);   %% just to call reverse_map
+%    array[int] of var bool: by0 = set2bools(y);
+%  } in
   if not has_ub_set(x) \/ not has_ub_set(y) then
-    assert(false, "set_le: cannot determine bounds of set variables")
+    assert(false, "set_le_lt_base__: cannot determine bounds of set variables")
+  elseif {}==ub(x) /\ {}==ub(y) then
+    fValReif==not fStrict
+  elseif {}!=ub(x) /\ {}!=ub(y) /\ max(ub(x))<min(ub(y)) /\ not fStrict then
+    fValReif
+  elseif {}!=ub(x) /\ {}!=ub(y) /\ min(ub(x))>max(ub(y)) /\ fStrict then
+    not fValReif
   else
   let {
     set of int: ubxy = ub(x) union ub(y);
     array[int] of var bool: bx = set2bools(x, ubxy);
     array[int] of var bool: by = set2bools(y, ubxy);
+    int: i0 = min( ubxy );
+    array[i0..i0+length(bx)] of var bool: bOkFrom;
+    array[int] of var bool: bXMaxFrom = getMaxRearBools( set2bools( x ), i0+1..max(ubxy)+1 );
+    array[int] of var bool: bYMaxFrom = getMaxRearBools( set2bools( y ), i0+1..max(ubxy)+1 );
   } in
 %%    trace( show(ub(x)) ++ ", " ++ show(ub(y)) ++ " = " ++ show(ubxy) ++ "\n") /\
-    lex_lesseq(by, bx)              %% Swap order
+    (bOkFrom[i0] == fValReif)
+    /\
+    (bOkFrom[i0+length(bx)] == not fStrict)
+    /\
+    forall(i in ubxy) (                %% Can linearize stronger?    TODO
+        bOkFrom[i] <-> (
+              ( (bx[i] == by[i]) /\ bOkFrom[i+1] )
+              \/
+              ( (bx[i] <  by[i]) /\ not bXMaxFrom[i+1] )
+              \/
+              ( (bx[i] >  by[i]) /\ bYMaxFrom[i+1] )
+        )
+    )
   endif;
+
+function var bool: getMaxRearBools_bit( array[int] of var bool: b, int: i ) =
+  if {}==index_set( b ) \/ i>max( index_set( b ) ) then 
+    false
+  elseif i in index_set( b ) then
+    b[i] \/ getMaxRearBools_bit( b, i+1 )
+  else
+    getMaxRearBools_bit( b, min( index_set( b ) ) )
+  endif;
+
+%% Returns an array of bools each is the max of b[i] and the later elements
+function array[int] of var bool: getMaxRearBools( array[int] of var bool: b ) =
+  array1d( index_set(b), [ getMaxRearBools_bit( b, i )
+    | i in index_set( b ) ] );
+  
+%% Generalizes getMaxRearBools to a sub/superset of the array's indexes
+function array[int] of var bool: getMaxRearBools(
+                                 array[int] of var bool: b, set of int: ubb ) =
+  array1d( min(ubb)..max(ubb), [ getMaxRearBools_bit( b, i )
+             | i in min(ubb)..max(ubb) ] );
+
+  
+predicate set_le(var set of int: x, var set of int: y) ::promise_total =
+  set_le_lt_base__(x, y, true, false);
 
 predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  if not has_ub_set(x) \/ not has_ub_set(y) then
-    assert(false, "set_le_REIF: cannot determine bounds of set variables")
-  else
-  let {
-    set of int: ubxy = ub(x) union ub(y);
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_lesseq_bool_reif(by, bx, p)
-  endif;
+  set_le_lt_base__(x, y, p, false);
 
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
-  if not has_ub_set(x) \/ not has_ub_set(y) then
-    assert(false, "set_lt: cannot determine bounds of set variables")
-  else
-  let {
-    set of int: ubxy = ub(x) union ub(y);
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_less(by, bx)
-  endif;
+  set_le_lt_base__(x, y, true, true);
 
 predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  if not has_ub_set(x) \/ not has_ub_set(y) then
-    assert(false, "set_lt_reif: cannot determine bounds of set variables")
-  else
-  let {
-    set of int: ubxy = ub(x) union ub(y);
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_less_bool_reif(by, bx, p)
-  endif;
+  set_le_lt_base__(x, y, p, true);
 
 predicate set_subset(var set of int: x, var set of int: y) =
   let {
@@ -183,6 +213,17 @@ function var set of int: set_diff(var set of int: x, var set of int: y) ::promis
     );
   } in z;
 
+function var set of int: set_symdiff(var set of int: x, var set of int: y) ::promise_total =
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+    var set of (index_set(bx) diff index_set(by)): z;
+    array[int] of var bool: bz = set2bools(z);
+    constraint forall (i in index_set(bz)) (
+      bz[i] = (bx[i] xor by[i])
+    );
+  } in z;
+
 function var int: card(var set of int: x) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
@@ -204,6 +245,7 @@ function array[int] of var bool: setarray2bools(array[int] of var set of int: x)
   if length(x)=0 then [] else
   set2bools(x[1])++setarray2bools([x[i]|i in 2..length(x)])
   endif;
-
+%% Par version no sense
+  
 annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
   bool_search(setarray2bools(x),a1,a2,a3);
