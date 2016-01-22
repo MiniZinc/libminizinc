@@ -2,6 +2,10 @@
 % AUTHORS
 % Guido Tack <guido.tack@monash.edu>
 % Gleb Belov <gleb.belov@monash.edu>
+%
+% Set comparisons are often used just to avoid symmetries. For that, lex cmp of direct set2bools
+% would be much cheaper than the actual set_le++ below                    TODO
+
 
 function var set of int: reverse_map(array[int] of var bool: b);
 function set of int: reverse_map(array[int] of bool: b) ::promise_total =
@@ -83,10 +87,10 @@ predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) =
   %%% lex cmp of the sparse vectors
 predicate set_le_lt_base__(var set of int: x, var set of int: y,
                          var bool: fValReif, bool: fStrict) ::promise_total =
-%  let {            DOES NOT HELP in globals_alldiff_set_nosets.mzn ....
-%    array[int] of var bool: bx0 = set2bools(x);   %% just to call reverse_map
-%    array[int] of var bool: by0 = set2bools(y);
-%  } in
+  let {         %%   DOES NOT HELP in -Glinear globals_alldiff_set_nosets.mzn ....
+    array[int] of var bool: bx0 = set2bools(x);   %% just to call reverse_map
+    array[int] of var bool: by0 = set2bools(y);
+  } in
   if not has_ub_set(x) \/ not has_ub_set(y) then
     assert(false, "set_le_lt_base__: cannot determine bounds of set variables")
   elseif {}==ub(x) /\ {}==ub(y) then
@@ -105,7 +109,7 @@ predicate set_le_lt_base__(var set of int: x, var set of int: y,
     array[int] of var bool: bXMaxFrom = getMaxRearBools( set2bools( x ), i0+1..max(ubxy)+1 );
     array[int] of var bool: bYMaxFrom = getMaxRearBools( set2bools( y ), i0+1..max(ubxy)+1 );
   } in
-%%    trace( show(ub(x)) ++ ", " ++ show(ub(y)) ++ " = " ++ show(ubxy) ++ "\n") /\
+    trace( "set_le_lt_base__: " ++  show(ub(x)) ++ ", " ++ show(ub(y)) ++ "\n") /\
     (bOkFrom[i0] == fValReif)
     /\
     (bOkFrom[i0+length(bx)] == not fStrict)

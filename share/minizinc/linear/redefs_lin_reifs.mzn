@@ -179,6 +179,14 @@ predicate int_ne_reif(var int: x, int: y, var bool: b) =
 
 %-----------------------------------------------------------------------------%
 
+%% To avoid creating a new int var = sum...
+function var float: sum2float( array[int] of int: c, array[int] of var int: x ) =
+  let {
+    array[int] of float: cF = c;
+    array[int] of var float: xF = x;
+  } in
+    sum(i in index_set(xF))( cF[i]*xF[i] );
+
 %% lin_expr, const
 predicate int_lin_le_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
@@ -188,12 +196,12 @@ predicate int_lin_le_reif(array[int] of int: c, array[int] of var int: x,
 %    my_trace("  int_lin_le_reif: ub's  = " ++ show([ub(x[i]) | i in index_set(x)]) ++ "\n" ) /\
   if fPostprocessDomains /\ fPostproDom_DIFF then
     int_le_reif(sum(i in index_set(x))( c[i] * x[i] ), d, b)
+  elseif fAvoidNI then
+    aux_float_le_if_1(sum2float( c, x ), d, b) /\
+    aux_float_ge_if_0(sum2float( c, x ), d+1, b)
   else
     int_le_reif__NOPOST(sum(i in index_set(x))( c[i] * x[i] ), d, b)
   endif;
-%    let { var 0..1: p = bool2int(b) }    in
-%    aux_int_le_if_1(sum(i in index_set(x))( c[i] * x[i] ), d, p) /\
-%    aux_int_gt_if_0(sum(i in index_set(x))( c[i] * x[i] ), d, p);
 
 
 predicate int_lin_lt_reif(array[int] of int: c, array[int] of var int: x,
@@ -210,6 +218,8 @@ predicate int_lin_eq_reif(array[int] of int: c, array[int] of var int: x,
     my_trace("  int_lin_eq_reif: \(c), \(x), \(d), \(b) \n" ) /\
     if fPostprocessDomains /\ fPostproDom_DIFF then
       int_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
+    elseif fAvoidNI then
+      aux_int_eq_iff_1__float(sum2float( c, x ), d, b)
     else
       aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, b)
     endif;
@@ -225,6 +235,8 @@ predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
       int_lin_ne__IND( c, x, d )
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     int_ne(sum(i in index_set(x))( c[i]*x[i] ),d)
+  elseif fAvoidNI then
+    int_lin_eq_reif(c, x, d, false)
   else
     int_ne__SIMPLE(sum(i in index_set(x))( c[i]*x[i] ),d)
   endif;
@@ -236,7 +248,7 @@ predicate int_lin_ne_reif(array[int] of int: c, array[int] of var int: x,
     if fPostprocessDomains /\ fPostproDom_DIFF then
       int_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
     else
-      aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, 1 - bool2int(b))
+      int_lin_eq_reif(c, x, d, not (b))
     endif;
 
 
@@ -402,6 +414,16 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     aux_int_gt_if_0(x, y, q[2]) /\
     sum(q) == p + 1
   endif;
+
+predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
+    let { array[1..2] of var 0..1: q }
+    in
+    aux_int_le_if_1(x, y, p) /\
+    aux_int_ge_if_1(x, y, p) /\
+    aux_int_lt_if_0(x, y, q[1]) /\
+    aux_int_gt_if_0(x, y, q[2]) /\
+    sum(q) == p + 1
+    ;
 
     % Alternative 2
 predicate aux_int_eq_iff_1__WEAK1(var int: x, var int: y, var int: p) =
