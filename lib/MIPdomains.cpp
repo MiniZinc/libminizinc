@@ -257,7 +257,7 @@ namespace MiniZinc {
         } else {
           aCT[i].pfi = 0;
           DBGOUT_MIPD ( "  MIssing declaration: " << aCT[i].sFuncName );
-		  return false;
+          return false;
         }
       }
 	  return true;
@@ -1055,6 +1055,8 @@ namespace MiniZinc {
                   N_POSTs__intNE : N_POSTs__floatNE ];
               } else {  // aux_ relate to 0.0
                         // But we don't modify domain splitting for them currently
+                ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
+                  N_POSTs__intAux : N_POSTs__floatAux ];
                 MZN_MIPD__assert_hard ( RIT_Halfreif==dct.nReifType );
 //                 const double rhs = B;               // + A*0
 //                 const double delta = vd->type().isint() ? 1.0 : 1e-5;           // TODO : eps
@@ -1062,6 +1064,7 @@ namespace MiniZinc {
               break;
             case CT_Encode:
               // See if any further constraints here?                             TODO
+              ++MIPD__stats[ N_POSTs__eq_encode ];
               break;
             default:
               MZN_MIPD__assert_hard( ("Unknown constraint type", 0 ) );
@@ -1301,8 +1304,6 @@ namespace MiniZinc {
                         setVarDomain( mipd.expr2VarDecl( pInd ), 0.0, 0.0 );
                     }
                   }
-                  ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
-                    N_POSTs__intAux : N_POSTs__floatAux ];
                 }
                 break;
               case CT_Encode:
