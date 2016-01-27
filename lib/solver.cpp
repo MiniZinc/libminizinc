@@ -65,9 +65,7 @@ int main(int argc, const char** argv) {
     } else {
       fSuccess = true;
       cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
-    }   // TODO  Move evalOutput() here
-    if ( slv.get_flag_verbose() || slv.get_flag_statistics() )    // it's summary in fact
-      slv.printStatistics();
+    }   // TODO  Move evalOutput() here?
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
@@ -275,24 +273,28 @@ void MznSolver::solve()
     if (status==SolverInstance::OPT)
       std::cout << "==========" << std::endl;
   }
-  else if (status==SolverInstance::UNSAT)
+  else {
+    if (status == SolverInstance::UNSAT)
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
-  else if (status==SolverInstance::UNBND)
+    else if (status == SolverInstance::UNBND)
       std::cout << "=====UNBOUNDED=====" << std::endl;
-  else if (status==SolverInstance::UNSATorUNBND)
+    else if (status == SolverInstance::UNSATorUNBND)
       std::cout << "=====UNSATorUNBOUNDED=====" << std::endl;
-  else if (status==SolverInstance::UNKNOWN)
+    else if (status == SolverInstance::UNKNOWN)
       std::cout << "=====UNKNOWN=====" << std::endl;
-  else if (status==SolverInstance::ERROR)
+    else if (status == SolverInstance::ERROR)
       std::cout << "=====ERROR=====" << std::endl;
-  else
-    std::cout << "=====UNKNOWN_STATUS=====" << std::endl;
+    else
+      std::cout << "=====UNKNOWN_STATUS=====" << std::endl;
+    if (get_flag_verbose() || get_flag_statistics())    // it's summary in fact
+      printStatistics();
+  }
 }
 
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(cout, 1);
+    getSI()->printStatisticsLine(cerr, 1);
 }
 
 

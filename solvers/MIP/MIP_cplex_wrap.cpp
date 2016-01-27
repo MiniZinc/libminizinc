@@ -405,14 +405,25 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
    return s;
 }
 
+void msgfunction(void *handle, const char *msg_string)
+{
+  cerr << msg_string << flush;
+}
 
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
   /* Turn on output to the screen */
-   status = CPXsetintparam (env, CPXPARAM_ScreenOutput,
-                            fVerbose ? CPX_ON : CPX_OFF);  // also when flag_all_solutions?  TODO
-   wrap_assert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
+   if (fVerbose) {
+     CPXCHANNELptr chnl[4];
+     CPXgetchannels(env, &chnl[0], &chnl[1], &chnl[2], &chnl[3]);
+     for (int i = 0; i < 3; ++i) {
+       status = CPXaddfuncdest(env, chnl[i], nullptr, msgfunction);
+     }
+//     status = CPXsetintparam(env, CPXPARAM_ScreenOutput,
+//       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_all_solutions?  TODO
+//     wrap_assert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
+   }
    status = CPXsetintparam (env, CPXPARAM_MIP_Display,
                             fVerbose ? 2 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
