@@ -257,9 +257,10 @@ namespace MiniZinc {
         return result.str();
       }
 #else
-        int pipes[2][2];
+        int pipes[3][2];
         pipe(pipes[0]);
         pipe(pipes[1]);
+        pipe(pipes[2]);
 
         std::string fznFile;
         if (!_canPipe) {
@@ -279,6 +280,7 @@ namespace MiniZinc {
         if (int childPID = fork()) {
           close(pipes[0][0]);
           close(pipes[1][1]);
+          close(pipes[2][1]);
           if (_canPipe) {
             for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
               std::stringstream ss;
@@ -293,35 +295,34 @@ namespace MiniZinc {
 
           fd_set fdset;
           FD_ZERO(&fdset);
-          FD_SET(pipes[1][0], &fdset);
 
           bool done = false;
           while (!done) {
-            switch (select(FD_SETSIZE, &fdset, NULL, NULL, NULL)) {
-            case 0:
+            FD_SET(pipes[1][0], &fdset);
+            FD_SET(pipes[2][0], &fdset);
+            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, NULL) )
             {
               kill(childPID, SIGKILL);
               done = true;
-            }
-            break;
-            case 1:
-            {
-              char buffer[100];
-              int count = read(pipes[1][0], buffer, sizeof(buffer) - 1);
-              if (count > 0) {
-                buffer[count] = 0;
-                result << buffer;
-                cout << buffer << flush;
-              }
-              else {
-                done = true;
-              }
-            }
-            break;
-            case -1:
-            {
-            }
-            break;
+            } else {
+              for ( int i=1; i<=2; ++i )
+                if ( FD_ISSET( pipes[i][0], &fdset ) )
+                {
+                  char buffer[1000];
+                  int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
+                  if (count > 0) {
+                    buffer[count] = 0;
+                    if ( 1==i ) {
+                      result << buffer;
+                      cout << buffer << flush;
+                    }
+                    else
+                      cerr << buffer << flush;
+                  }
+                  else {
+                    done = true;
+                  }
+                }
             }
           }
 
@@ -332,13 +333,17 @@ namespace MiniZinc {
         }
         else {
           close(STDOUT_FILENO);
+          close(STDERR_FILENO);
           close(STDIN_FILENO);
           dup2(pipes[0][0], STDIN_FILENO);
           dup2(pipes[1][1], STDOUT_FILENO);
+          dup2(pipes[2][1], STDERR_FILENO);
           close(pipes[0][0]);
+          close(pipes[0][1]);
           close(pipes[1][1]);
           close(pipes[1][0]);
-          close(pipes[0][1]);
+          close(pipes[2][1]);
+          close(pipes[2][0]);
 
           std::vector<char*> cmd_line;
           cmd_line.push_back(strdup(_fzncmd.c_str()));
