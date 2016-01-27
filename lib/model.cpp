@@ -18,7 +18,7 @@
 
 namespace MiniZinc {
   
-  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL), _failed(false) {
+  Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {
     GC::add(this);
   }
 
@@ -309,20 +309,4 @@ namespace MiniZinc {
                  _items.end());
   }
   
-  void
-  Model::fail(EnvI& env) {
-    if (!_failed) {
-      env.addWarning("model inconsistency detected");
-      _failed = true;
-      for (unsigned int i=0; i<_items.size(); i++)
-        if (ConstraintI* ci = _items[i]->dyn_cast<ConstraintI>())
-          ci->remove();
-      ConstraintI* failedConstraint = new ConstraintI(Location().introduce(),constants().lit_false);
-      _items.push_back(failedConstraint);
-    }
-  }
-
-  bool Model::failed() const {
-    return _failed;
-  }
 }

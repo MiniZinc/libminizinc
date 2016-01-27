@@ -50,6 +50,16 @@ namespace MiniZinc {
     }
   };
 
+  class ModelInconsistent : public LocationException {
+  public:
+    ModelInconsistent(EnvI& env, const Location& loc)
+      : LocationException(env,loc,"model inconsistency detected") {}
+    ~ModelInconsistent(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: warning";
+    }
+  };
+  
 }
 
 #endif
