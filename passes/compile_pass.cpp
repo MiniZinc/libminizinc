@@ -161,9 +161,9 @@ namespace MiniZinc {
     }
 
     flatten(*new_env, fopts);
+    MIPdomains(*new_env, fopts.verbose);
     optimize(*new_env);
     oldflatzinc(*new_env);
-    MIPdomains(*new_env, fopts.verbose);
 
     if(fopts.verbose)
       std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
