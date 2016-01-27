@@ -41,6 +41,8 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #endif
 #include <sys/types.h>
 #include <signal.h>
+#include <thread>
+#include <mutex>
 
 namespace MiniZinc {
 
@@ -88,6 +90,31 @@ namespace MiniZinc {
   }
 
   namespace {
+
+#ifdef _WIN32
+    mutex mtx;
+    void ReadPipePrint(HANDLE g_hCh, ostream& os, ostream* pResult = nullptr) {
+      bool done = false;
+      while (!done) {
+        char buffer[5255];
+        DWORD count = 0;
+        bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
+        if (bSuccess && count > 0) {
+          buffer[count] = 0;
+          lock_guard<mutex> lck(mtx);
+          do {
+            if (pResult)
+              (*pResult) << buffer;
+            os << buffer << flush;
+          } while (0);
+        }
+        else {
+          done = true;
+        }
+      }
+    }
+#endif
+
     class FznProcess {
     protected:
       std::string _fzncmd;
@@ -97,6 +124,7 @@ namespace MiniZinc {
       FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
       std::string run(void) {
 #ifdef _WIN32
+        std::stringstream result;
 
         SECURITY_ATTRIBUTES saAttr;
         saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -107,20 +135,26 @@ namespace MiniZinc {
         HANDLE g_hChildStd_IN_Wr = NULL;
         HANDLE g_hChildStd_OUT_Rd = NULL;
         HANDLE g_hChildStd_OUT_Wr = NULL;
+        HANDLE g_hChildStd_ERR_Rd = NULL;
+        HANDLE g_hChildStd_ERR_Wr = NULL;
 
         // Create a pipe for the child process's STDOUT. 
-
         if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
-          std::cerr << "Stdin SetHandleInformation" << std::endl;
-
+          std::cerr << "Stdout CreatePipe" << std::endl;
         // Ensure the read handle to the pipe for STDOUT is not inherited.
         if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
-          std::cerr << "Stdin SetHandleInformation" << std::endl;
+          std::cerr << "Stdout SetHandleInformation" << std::endl;
+
+        // Create a pipe for the child process's STDERR. 
+        if (!CreatePipe(&g_hChildStd_ERR_Rd, &g_hChildStd_ERR_Wr, &saAttr, 0))
+          std::cerr << "Stderr CreatePipe" << std::endl;
+        // Ensure the read handle to the pipe for STDERR is not inherited.
+        if (!SetHandleInformation(g_hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0))
+          std::cerr << "Stderr SetHandleInformation" << std::endl;
 
         // Create a pipe for the child process's STDIN
         if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
-          std::cerr << "Stdin SetHandleInformation" << std::endl;
-
+          std::cerr << "Stdin CreatePipe" << std::endl;
         // Ensure the write handle to the pipe for STDIN is not inherited. 
         if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
           std::cerr << "Stdin SetHandleInformation" << std::endl;
@@ -153,13 +187,13 @@ namespace MiniZinc {
         // This structure specifies the STDIN and STDOUT handles for redirection.
         ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
         siStartInfo.cb = sizeof(STARTUPINFO);
-        siStartInfo.hStdError = g_hChildStd_OUT_Wr;
+        siStartInfo.hStdError = g_hChildStd_ERR_Wr;
         siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
         siStartInfo.hStdInput = g_hChildStd_IN_Rd;
         siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
         std::stringstream cmdline;
-        cmdline << strdup(_fzncmd.c_str()) << " " << strdup("-a") << " ";
+        cmdline << strdup(_fzncmd.c_str()) << " " << strdup("-v") << " ";
         if (_canPipe) {
           cmdline << strdup("-");
         }
@@ -191,35 +225,30 @@ namespace MiniZinc {
         delete cmdstr;
 
         if (_canPipe) {
-          DWORD dwRead, dwWritten;
+          DWORD dwWritten;
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             std::stringstream ss;
             Item* item = *it;
             ss << *item;
             std::string str = ss.str();
             bSuccess = WriteFile(g_hChildStd_IN_Wr, str.c_str(),
-              dwRead, &dwWritten, NULL);
+              str.size(), &dwWritten, NULL);
           }
         }
 
         // Stop ReadFile from blocking
         CloseHandle(g_hChildStd_OUT_Wr);
+        CloseHandle(g_hChildStd_ERR_Wr);
+        // Just close the child's in pipe here
+        CloseHandle(g_hChildStd_IN_Rd);
 
-        bool done = false;
-        std::stringstream result;
-        while (!done) {
-          char buffer[255];
-          DWORD count = 0;
-          bool bSuccess = ReadFile(g_hChildStd_OUT_Rd, buffer, sizeof(buffer) - 1, &count, NULL);
+        // Threaded solution seems simpler than asyncronous pipe reading
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, ref(cout), &(result));
+        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, ref(cerr), nullptr);
+        thrStdout.join();
+        thrStderr.join();
 
-          if (bSuccess && count > 0) {
-            buffer[count] = 0;
-            result << buffer;
-          }
-          else {
-            done = true;
-          }
-        }
+        // Hard timeout: GenerateConsoleCtrlEvent()
 
         if (!_canPipe) {
           remove(fznFile.c_str());
@@ -429,7 +458,9 @@ namespace MiniZinc {
           delete sm;
           hadSolution = true;
         } else {
-          std::cerr << "Error: solver output malformed\n";
+          std::cerr << "\n\n\nError: solver output malformed; DUMPING: ---------------------\n\n\n";
+          cerr << result.str() << endl;
+          std::cerr << "\n\nError: solver output malformed (END DUMPING) ---------------------" << endl;
           exit(EXIT_FAILURE);
         }
       }
