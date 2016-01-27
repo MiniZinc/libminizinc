@@ -282,6 +282,7 @@ namespace MiniZinc {
               if (count > 0) {
                 buffer[count] = 0;
                 result << buffer;
+                cout << buffer << flush;
               }
               else {
                 done = true;
@@ -312,7 +313,7 @@ namespace MiniZinc {
 
           std::vector<char*> cmd_line;
           cmd_line.push_back(strdup(_fzncmd.c_str()));
-          cmd_line.push_back(strdup("-a"));
+          cmd_line.push_back(strdup("-v"));
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
           char** argv = new char*[cmd_line.size() + 1];
