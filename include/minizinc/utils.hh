@@ -77,7 +77,8 @@ namespace MiniZinc {
       string keyword;
       istringstream iss( names );
       while ( iss >> keyword ) {
-        if ( 0!=arg.compare( 0, keyword.size(), keyword ) )
+        if ( ((2<keyword.size() || 0==pResult) && arg!=keyword) ||  // exact cmp
+          (0!=arg.compare( 0, keyword.size(), keyword )) )           // truncated cmp
           continue;
         /// Process it
         if ( keyword.size() < arg.size() ) {
@@ -101,7 +102,8 @@ namespace MiniZinc {
             --i;
             return true;
           }
-          cerr << "\nBad value for " << keyword << ": " << arg << endl;
+          // Not print because another agent can handle this option
+//           cerr << "\nBad value for " << keyword << ": " << arg << endl;
           return false;
         }
         return true;
