@@ -462,7 +462,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //        osi.getRealSolverPtr()->messageHandler()->setLogLevel(0);
       // DOES NOT WORK:                                                     TODO
 //        model.passInMessageHandler( &stderrHandler );
-       model.setLogLevel(1);
+       msgStderr.setLogLevel( 0, 1 );
+       model.passInMessageHandler( &msgStderr );
+//        model.setLogLevel(1);
 //        model.solver()->messageHandler()->setLogLevel(0);
     } else {
       model.passInMessageHandler(&nullHandler);

@@ -465,8 +465,9 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //       SCIP_DECL_MESSAGEDIALOG((*messagedialog)), SCIP_DECL_MESSAGEINFO((*messageinfo)),
 //       SCIP_DECL_MESSAGEHDLRFREE((*messagehdlrfree)), SCIP_MESSAGEHDLRDATA *messagehdlrdata) );
       /// THIS IS INTENDED TO PRINT TO STDERR which it does not in 3.2.0                         TODO
-//       SCIP_MESSAGEHDLR* pHndl=0;
-//       SCIP_CALL ( SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
+      SCIP_MESSAGEHDLR* pHndl=0;
+      SCIP_CALL ( SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
+      SCIP_CALL ( SCIPsetMessagehdlr(scip, pHndl) );      
     }
 
     if (nThreads>0)
