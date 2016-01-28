@@ -10,7 +10,7 @@
 
 /***
  @groupdef annotations Annotations
- 
+
  These annotations control evaluation and solving behaviour.
 */
 
@@ -88,7 +88,7 @@ annotation bool_search(
     ann: explore
 );
 
-/** @group annotations.search Specify search on variables \a x, 
+/** @group annotations.search Specify search on variables \a x,
   with precision \a prec, variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
@@ -164,7 +164,7 @@ annotation indomain_split;
 annotation indomain_split_random;
 /** @group annotations.search.choice Bisect the domain, excluding the lower half first */
 annotation indomain_reverse_split;
-/** @group annotations.search.choice 
+/** @group annotations.search.choice
   If the domain consists of several contiguous intervals, reduce the
   domain to the first interval. Otherwise bisect the domain.
  */
@@ -185,15 +185,38 @@ annotation outdomain_random;
 /** @group annotations.search.explore Perform a complete search */
 annotation complete;
 
+/***
+ @groupdef annotations.presolve Predicate presolve annotations
+*/
+
+/** @group annotations.presolve Presolve every use of the predicate at compile time */
+annotation presolve(
+    ann: strategy,
+    bool: save
+);
+
+/***
+ @groupdef annotations.presolve.strategy Presolve strategy Annotations
+*/
+
+/** @group annotations.presolve.strategy Presolve for every instance */
+annotation instance;
+
+/** @group annotations.presolve.strategy Presolve for all instances */
+annotation all;
+
+/** @group annotations.presolve.strategy Presolve for all possible input */
+annotation input;
+
 
 /***
   @groupdef optiontypes Option type support
-  
+
   These functions and predicates implement the standard library for working
   with option types. Note that option type support is still incomplete.
 */
 
-/** @group optiontypes Return value of \a x if \a x is not absent. Aborts 
+/** @group optiontypes Return value of \a x if \a x is not absent. Aborts
   when evaluated on absent value. */
 function $T: deopt(opt $T: x);
 
@@ -221,7 +244,7 @@ function var bool : occurs(var opt bool: x) ::promise_total =
     var bool : dx = deopt_internal(x);
     constraint (x = reverse_map(b,dx)) :: is_reverse_map;
   } in b;
-  
+
 /** @group optiontypes.bool Return value of \a x (assumes that \a x is not absent) */
 function var bool : deopt(var opt bool : x) ::promise_total =
   let {
@@ -374,10 +397,10 @@ function var opt int: max(array[int] of var opt int: x) ::promise_total =
 /** @group optiontypes.int Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
-    let { 
+    let {
     int: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
     int: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
-    var opt l..u: result; 
+    var opt l..u: result;
     constraint absent(x) \/ absent(y) -> result = <>;
     constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
     } in result;
@@ -385,10 +408,10 @@ function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
 /** @group optiontypes.int Weak subtraction. Return difference of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
-    let { 
+    let {
     int: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
     int: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
-    var opt l..u: result; 
+    var opt l..u: result;
     constraint absent(x) \/ absent(y) -> result = <>;
     constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
     } in result;
