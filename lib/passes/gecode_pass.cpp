@@ -16,10 +16,6 @@ namespace MiniZinc {
 
   GecodePass::GecodePass(Options& g_opts) : gopts(g_opts) {}
 
-  bool GecodePass::pre(Env* env) {
-    return env->flat()->size() > 0;
-  }
-
   Env* GecodePass::run(Env* env) {
     try {
       GecodeSolverInstance gecode(*env,gopts);

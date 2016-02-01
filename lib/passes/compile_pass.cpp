@@ -139,10 +139,6 @@ namespace MiniZinc {
     change_library(change_lib) {
   }
 
-  bool CompilePass::pre(Env* env) {
-    return change_library || env->flat()->size() == 0;
-  }
-
   Env* CompilePass::run(Env* store) {
     Timer lasttime;
     if(fopts.verbose)
@@ -183,13 +179,10 @@ namespace MiniZinc {
       if(verbose)
         std::cerr << "Start pass " << i << ":\n";
 
-      if(passes[i]->pre(pre_env)) {
+      pre_env = passes[i]->run(pre_env);
 
-        pre_env = passes[i]->run(pre_env);
-
-        if(verbose)
-          std::cerr << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
-      }
+      if(verbose)
+        std::cerr << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
     }
 
     return pre_env;

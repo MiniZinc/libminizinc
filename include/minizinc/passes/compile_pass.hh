@@ -32,7 +32,6 @@ namespace MiniZinc {
                   std::vector<std::string> include_paths,
                   bool change_lib);
 
-      bool pre(Env* env);
       Env* run(Env* env);
       ~CompilePass();
   };

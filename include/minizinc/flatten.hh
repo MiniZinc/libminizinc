@@ -44,7 +44,6 @@ namespace MiniZinc {
   class Pass {
     public:
       Pass() {};
-      virtual bool pre(Env* env) = 0;
       virtual Env* run(Env* env) = 0;
       virtual ~Pass() {};
   };

@@ -23,7 +23,6 @@ namespace MiniZinc {
     public:
     GecodePass(Options& gopts);
 
-    bool pre(Env* e);
     Env* run(Env* e);
   };
 
