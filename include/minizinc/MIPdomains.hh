@@ -20,13 +20,13 @@
 
 #define MZN_MIPD__assert_soft( c, e ) \
   do { static int nn=0; \
- if ( !c ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
+ if ( !(c) ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
 #define MZN_MIPD__assert_hard( c ) \
    do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  not " << #c; throw InternalError( oss.str() ); } } while (0)
+     << ":  not " << #c; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
 #define MZN_MIPD__assert_hard_msg( c, e ) \
    do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  " << e; throw InternalError( oss.str() ); } } while (0)
+     << ":  " << e; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
 struct MIPD_Infeasibility_Exception {
   std::string msg;
   MIPD_Infeasibility_Exception(const std::string& s) : msg(s) { }
@@ -45,6 +45,7 @@ namespace MiniZinc {
     N_POSTs__intCmpReif, N_POSTs__floatCmpReif,     // in detail
     N_POSTs__intNE, N_POSTs__floatNE,
     N_POSTs__setIn, N_POSTs__domain, N_POSTs__setInReif,
+    N_POSTs__eq_encode,
     N_POSTs__intAux, N_POSTs__floatAux,
     // Kind of equality connections between involved variables
     N_POSTs__eq2intlineq, N_POSTs__eq2floatlineq,

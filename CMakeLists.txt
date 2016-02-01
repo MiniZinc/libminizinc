@@ -362,7 +362,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   
   if(WIN32)
      set(CPLEX_ARCH "x64_windows_vs2013/stat_mda")
-	set(CPLEX_LIB "cplex1262.lib")          # Here 12.6.2
+	set(CPLEX_LIB "cplex1263.lib")          # Here 12.6.3
   endif(WIN32)
   
   

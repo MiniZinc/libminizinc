@@ -448,6 +448,9 @@ MIP_scip_wrapper::Status MIP_scip_wrapper::convertStatus(SCIP_STATUS scipStatus)
    return s;
 }
 
+SCIP_DECL_MESSAGEWARNING(printMsg) {
+  cerr << msg << flush;
+}
 
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
@@ -456,6 +459,15 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
     if(!fVerbose) {
 //       SCIP_CALL(SCIPsetMessagehdlr(scip, NULL));  No LP export then
       SCIPsetMessagehdlrQuiet(scip, true);
+    } else {
+//       SCIP_CALL ( SCIPmessagehdlrCreate (SCIP_MESSAGEHDLR **messagehdlr, SCIP_Bool bufferedoutput,
+//       const char *filename, SCIP_Bool quiet, SCIP_DECL_MESSAGEWARNING((*messagewarning)),
+//       SCIP_DECL_MESSAGEDIALOG((*messagedialog)), SCIP_DECL_MESSAGEINFO((*messageinfo)),
+//       SCIP_DECL_MESSAGEHDLRFREE((*messagehdlrfree)), SCIP_MESSAGEHDLRDATA *messagehdlrdata) );
+      /// THIS IS INTENDED TO PRINT TO STDERR which it does not in 3.2.0                         TODO
+      SCIP_MESSAGEHDLR* pHndl=0;
+      SCIP_CALL ( SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
+      SCIP_CALL ( SCIPsetMessagehdlr(scip, pHndl) );      
     }
 
     if (nThreads>0)

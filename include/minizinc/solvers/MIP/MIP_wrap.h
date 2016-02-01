@@ -95,6 +95,7 @@ class MIP_wrapper {
     typedef void (*SolCallbackFn)(const Output& , void* );
     struct CBUserInfo {
       MIP_wrapper::Output* pOutput=0;
+      bool fVerb = false;              // used in Gurobi
       void *ppp=0;  // external info
       SolCallbackFn solcbfn=0;
     };

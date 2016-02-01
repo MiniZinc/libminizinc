@@ -31,6 +31,7 @@ using namespace std;
 #include <minizinc/MIPdomains.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/builtins.hh>
+#include <minizinc/utils.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
 
@@ -52,7 +53,7 @@ namespace MiniZinc {
   public:
     Flattener(bool fOutputByDefault=true);
     virtual ~Flattener();
-    virtual bool processOption(int& i, int argc, const char** argv);
+    virtual bool processOption(int& i, const int argc, const char** argv);
     virtual void printVersion(ostream& );
     virtual void printHelp(ostream& );
 
@@ -110,31 +111,6 @@ namespace MiniZinc {
 
   };
 
-  inline std::string stoptime(clock_t& start) {
-    std::ostringstream oss;
-    clock_t now = clock();
-    oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
-    start = now;
-    return oss.str();
-  }
-
-  inline std::string timeDiff(clock_t t2, clock_t t1) {
-    std::ostringstream oss;
-    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t2-t1) / CLOCKS_PER_SEC)) << " s";
-    return oss.str();
-  }
-
-  inline bool beginswith(string s, string t) {
-    return s.compare(0, t.length(), t)==0;
-  }
-
-  inline void checkIOStatus( bool fOk, string msg )
-  {
-    if ( !fOk ) {
-      std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
-      exit(EXIT_FAILURE);
-    }
-  }
 }
 
 #endif  // __MINIZINC_FLATTENER_H__

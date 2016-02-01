@@ -234,7 +234,7 @@ void MIP_solverinstance::printSolution(ostream& os) {
     previousOutput.insert(h);
     std::cout << output;
     if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
-      printStatistics(cout, 1);
+      printStatistics(cerr, 1);
     std::cout << "----------" << std::endl;
   }
 }
@@ -242,25 +242,25 @@ void MIP_solverinstance::printSolution(ostream& os) {
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
     {
-      int nPrec = cout.precision(12);
-      cout << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
+      int nPrec = os.precision(12);
+      os << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
       if (fLegend)
-        cout << "  % obj, bound, CPU_time, nodes (left): ";
-      cout << mip_wrap->getObjValue() << ",  ";
-      cout << mip_wrap->getBestBound() << ",  ";
-      cout << mip_wrap->getCPUTime() << ",  ";
-      cout << mip_wrap->getNNodes();
+        os << "  % obj, bound, CPU_time, nodes (left): ";
+      os << mip_wrap->getObjValue() << ",  ";
+      os << mip_wrap->getBestBound() << ",  ";
+      os << mip_wrap->getCPUTime() << ",  ";
+      os << mip_wrap->getNNodes();
       if (mip_wrap->getNOpen())
-        cout << " ( " << mip_wrap->getNOpen() << " )";
-      cout << endl;
-      cout.precision(nPrec);
-//       std::cout << "% MIP_Objective_ : " << mip_wrap->getObjValue() << std::endl;
-// //         std::cout << "% MIP_AbsGap__   : "
+        os << " ( " << mip_wrap->getNOpen() << " )";
+      os << endl;
+      os.precision(nPrec);
+//       std::os << "% MIP_Objective_ : " << mip_wrap->getObjValue() << std::endl;
+// //         std::os << "% MIP_AbsGap__   : "
 // //           << std::fabs(_ilocplex->getBestObjValue()-_ilocplex->getObjValue()) << std::endl;
-// //         std::cout << "% MIP_RelGap__   : " << _ilocplex->getMIPRelativeGap() << std::endl;
-//       std::cout   << "% MIP_BestBound_ : " << mip_wrap->getBestBound() << std::endl;
-//       std::cout   << "% Real/CPU Time_ : " << mip_wrap->getCPUTime() << " sec\n" << std::endl;
-//       std::cout << "%------------------------------------------------------------------------\n"<< std::endl;
+// //         std::os << "% MIP_RelGap__   : " << _ilocplex->getMIPRelativeGap() << std::endl;
+//       std::os   << "% MIP_BestBound_ : " << mip_wrap->getBestBound() << std::endl;
+//       std::os   << "% Real/CPU Time_ : " << mip_wrap->getCPUTime() << " sec\n" << std::endl;
+//       std::os << "%------------------------------------------------------------------------\n"<< std::endl;
     }
 }
 

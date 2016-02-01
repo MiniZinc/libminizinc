@@ -42,7 +42,7 @@
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//  #define __MZN__DBGOUT__MIPDOMAINS__
+//   #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -78,13 +78,16 @@ namespace MiniZinc {
 
   class MIPD {  
   public:
-    MIPD(Env* env) : __env(env) { getEnv(); }
-    bool MIPdomains(bool fVerbose=false) {
+    MIPD(Env* env, bool fV=false) : __env(env) { getEnv(); fVerbose=fV; }
+    static bool fVerbose;
+    bool MIPdomains() {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
       
-      registerLinearConstraintDecls();
-      register__POSTconstraintDecls();
+      if (!registerLinearConstraintDecls())
+        return true;
+      if (!register__POSTconstraintDecls())    // not declared => no conversions
+        return true;
       register__POSTvariables();
       if ( vVarDescr.empty() )
         return true;
@@ -92,7 +95,7 @@ namespace MiniZinc {
       if ( !decomposeDomains() )
         return false;
       if ( fVerbose )
-       printStats(std::cerr);
+        printStats(std::cerr);
       return true;
     }
     
@@ -117,7 +120,7 @@ namespace MiniZinc {
     
 //     double float_lt_EPS_coef__ = 1e-5;
       
-    void registerLinearConstraintDecls()
+    bool registerLinearConstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -133,6 +136,12 @@ namespace MiniZinc {
 
       lin_exp_int = env.orig->matchFn(env, constants().ids.lin_exp, int_lin_eq_t);
       lin_exp_float = env.orig->matchFn(env, constants().ids.lin_exp, float_lin_eq_t);
+      
+      if ( !(int_lin_eq&&int_lin_le&&float_lin_eq&&float_lin_le) ) {
+        // say something...
+        return false;
+      }
+      return true;
 
 //       std::cerr << "  lin_exp_int=" << lin_exp_int << std::endl;
 //       std::cerr << "  lin_exp_float=" << lin_exp_float << std::endl;
@@ -206,7 +215,7 @@ namespace MiniZinc {
         *aux_float_le_zero_if_1__POST=0, *aux_float_lt_zero_if_1__POST=0,
       *equality_encoding__POST=0, *set_in__POST=0, *set_in_reif__POST=0;
     
-    void register__POSTconstraintDecls()
+    bool register__POSTconstraintDecls()
     {
       EnvI& env = getEnv()->envi();
       GCLock lock;
@@ -248,8 +257,10 @@ namespace MiniZinc {
         } else {
           aCT[i].pfi = 0;
           DBGOUT_MIPD ( "  MIssing declaration: " << aCT[i].sFuncName );
+          return false;
         }
       }
+	  return true;
     }
     
     
@@ -259,7 +270,10 @@ namespace MiniZinc {
       GCLock lock;
       Model& mFlat = *getEnv()->flat();
       // First, cleanup VarDecls' payload which stores index in vVarDescr
-      // but already add variables with non-contiguous domain
+      for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
+        ivd->e()->payload(-1);
+      }
+      // Now add variables with non-contiguous domain
       for( VarDeclIterator ivd=mFlat.begin_vardecls(); ivd!=mFlat.end_vardecls(); ++ivd ) {
         VarDecl* vd0 = ivd->e();
         bool fNonCtg = 0;
@@ -272,15 +286,17 @@ namespace MiniZinc {
         if ( fNonCtg ) {
           DBGOUT_MIPD ( " Variable " << vd0->id()->str()
             << ": non-contiguous domain " << (*(vd0->ti()->domain())) );
-          vd0->payload( vVarDescr.size() );
-          vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
-          // bounds/domains later for each involved var TODO
+          if ( vd0->payload() == -1 ) {         // ! yet visited
+            vd0->payload( vVarDescr.size() );
+            vVarDescr.push_back( VarDescr( vd0, vd0->type().isint() ) );  // can use /prmTypes/ as well
+            if (vd0->e())
+              checkInitExpr(vd0);
+          } else {
+            DBGOUT_MIPD__ ( " (already touched)" );
+          }
           ++MIPD__stats[ N_POSTs__domain ];
           ++MIPD__stats[ N_POSTs__all ];
-          if (vd0->e())
-            checkInitExpr(vd0);
-        } else
-          ivd->e()->payload(-1);
+        }
       }
       // Iterate thru original __POST constraints to mark constrained vars:
       for( ConstraintIterator ic=mFlat.begin_constraints();
@@ -700,13 +716,13 @@ namespace MiniZinc {
               MZN_MIPD__assert_hard( std::fabs( it2->second.second - B )
                 < 1e-6 * std::max( std::fabs(it2->second.second), std::fabs(B) ) + 1e-6 );
               MZN_MIPD__assert_hard( std::fabs( A ) != 0.0 );
-              MZN_MIPD__assert_soft ( std::fabs( A ) > 1e-12,
+              MZN_MIPD__assert_soft ( !fVerbose || std::fabs( A ) > 1e-12,
                 " Very small coef: "
                   << (*begV)->id()->str() << " = "
                   << A << " * " << (*(begV+1))->id()->str()
                   << " + " << B );
               if ( fReportRepeat )
-                MZN_MIPD__assert_soft ( 0, "LinEqGraph: eqn between "
+                MZN_MIPD__assert_soft ( !fVerbose, "LinEqGraph: eqn between "
                   << (*begV)->id()->str() << " && " << (*(begV+1))->id()->str()
                   << " is repeated. " );
               return true;
@@ -729,7 +745,7 @@ namespace MiniZinc {
 
         template <class ICoef, class IVarDecl>
         void addArc(ICoef begC, IVarDecl begV, double rhs) {
-          MZN_MIPD__assert_soft( std::fabs( *begC ) >= 1e-10,
+          MZN_MIPD__assert_soft( !fVerbose || std::fabs( *begC ) >= 1e-10,
             "  Vars " << (*begV)->id()->str() <<
             "  to " << (*(begV+1))->id()->str() <<
             ": coef=" << (*begC) );
@@ -762,7 +778,7 @@ namespace MiniZinc {
             "Variable " << (*(mTemp.begin()->first))
             << " should be connected to all others in the clique, but "
             << "|edges|==" << mWhereStore.size()
-            << ", |all nodes|==" << this->size() );     // connectedness
+            << ", |all nodes|==" << this->size() );
         }
         /// Propagate linear relations from it1 via it2
         void propagate2(iterator itSrc, iterator itVia,
@@ -1039,6 +1055,8 @@ namespace MiniZinc {
                   N_POSTs__intNE : N_POSTs__floatNE ];
               } else {  // aux_ relate to 0.0
                         // But we don't modify domain splitting for them currently
+                ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
+                  N_POSTs__intAux : N_POSTs__floatAux ];
                 MZN_MIPD__assert_hard ( RIT_Halfreif==dct.nReifType );
 //                 const double rhs = B;               // + A*0
 //                 const double delta = vd->type().isint() ? 1.0 : 1e-5;           // TODO : eps
@@ -1046,6 +1064,7 @@ namespace MiniZinc {
               break;
             case CT_Encode:
               // See if any further constraints here?                             TODO
+              ++MIPD__stats[ N_POSTs__eq_encode ];
               break;
             default:
               MZN_MIPD__assert_hard( ("Unknown constraint type", 0 ) );
@@ -1285,8 +1304,6 @@ namespace MiniZinc {
                         setVarDomain( mipd.expr2VarDecl( pInd ), 0.0, 0.0 );
                     }
                   }
-                  ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
-                    N_POSTs__intAux : N_POSTs__floatAux ];
                 }
                 break;
               case CT_Encode:
@@ -1827,10 +1844,12 @@ namespace MiniZinc {
     }
     return true;
   }
+  
+  bool MIPD::fVerbose = false;
 
   void MIPdomains(Env& env, bool fVerbose) {
-    MIPD mipd(&env);
-    if ( ! mipd.MIPdomains( fVerbose ) ) {
+    MIPD mipd( &env, fVerbose );
+    if ( ! mipd.MIPdomains() ) {
       GCLock lock;
       env.flat()->fail(env.envi());
     }

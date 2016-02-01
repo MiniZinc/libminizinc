@@ -264,7 +264,7 @@ void MIP_gurobi_wrapper::addRow
 }
 
 /// SolutionCallback ------------------------------------------------------------------------
-/// CPLEX ensures thread-safety
+/// Who ensures thread-safety?
 static int __stdcall
 solcallback(GRBmodel *model,
            void     *cbdata,
@@ -281,7 +281,14 @@ solcallback(GRBmodel *model,
         GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
           GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
        info->pOutput->nOpenNodes = actnodes;
-    }
+    } else if (where == GRB_CB_MESSAGE) {
+      /* Message callback */
+      if ( info->fVerb ) {
+        char *msg;
+        GRBcbget(cbdata, where, GRB_CB_MSG_STRING, &msg);
+        cerr << msg << flush;
+      }
+    } else
     if (where != GRB_CB_MIPSOL)
       return 0;
     
@@ -292,7 +299,7 @@ solcallback(GRBmodel *model,
     GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
     GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-   if ( solcnt ) {
+    if ( solcnt ) {
       
       if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
          newincumbent = 1;
@@ -300,7 +307,7 @@ solcallback(GRBmodel *model,
         info->pOutput->status = MIP_wrapper::SAT;
         info->pOutput->statusName = "feasible from a callback";
       }
-   }
+    }
 
 //    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
 //       double walltime;
@@ -369,7 +376,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    error = GRBsetstrparam(GRBgetenv(model), "LogFile", "");  // FAILS to switch off in Ubuntu 15.04
   /* Turn on output to the screen */
    error = GRBsetintparam(GRBgetenv(model), "OutputFlag", 
-                             fVerbose ? 1 : 0);  // FAILS to switch off in Ubuntu 15.04
+                             /*fVerbose ? 1 :*/ 0);  // switch off, redirect in callback
 //    error = GRBsetintparam(GRBgetenv(model), "LogToConsole", 
 //                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!error, "  GUROBI Warning: Failure to switch screen indicator.", false);
@@ -418,9 +425,12 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (flag_all_solutions && cbui.solcbfn) {
+   if (true) {                 // Need for logging
+      cbui.fVerb = fVerbose;
+      if ( !flag_all_solutions )
+        cbui.solcbfn = 0;
       error = GRBsetcallbackfunc(model, solcallback, (void *) &cbui);
-      wrap_assert(!error, "Failed to set solution callback", false);
+      wrap_assert(!error, "Failed to set callback", false);
    }
 
    output.dCPUTime = std::clock();

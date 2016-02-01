@@ -18,6 +18,7 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <cstdio>
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
@@ -426,13 +427,13 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
         colN[j] = colNames[j].c_str();
       osi.writeMpsNative(sExportModel.c_str(), 0, colN.data());
     }
-  /* Turn on output to the screen */
-     class NullCoinMessageHandler : public CoinMessageHandler {
+    
+  /* switch on/off output to the screen */
+    class NullCoinMessageHandler : public CoinMessageHandler {
       int print() {
         return 0;
       }
       void checkSeverity() {
-
       }
     } nullHandler;
 
@@ -440,18 +441,35 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //     // initialize   ???????
 //     control.fillValuesInSolver();  
 //     CbcModel * pModel = control.model();
+    if ( fVerbose )
+      cerr << " Model creation..." << endl;
     
     CbcModel model(osi);
+    
+    CoinMessageHandler msgStderr(stderr);
+
+    class StderrCoinMessageHandler : public CoinMessageHandler {
+      int print() {
+        cerr << messageBuffer_ << endl;
+      }
+      void checkSeverity() {
+      }
+    } stderrHandler;
     
     if(fVerbose) {
 //        osi.messageHandler()->setLogLevel(1);
 //        osi.getModelPtr()->setLogLevel(1);
 //        osi.getRealSolverPtr()->messageHandler()->setLogLevel(0);
-       model.setLogLevel(1);
-       model.solver()->messageHandler()->setLogLevel(0);
+      // DOES NOT WORK:                                                     TODO
+//        model.passInMessageHandler( &stderrHandler );
+       msgStderr.setLogLevel( 0, 1 );
+       model.passInMessageHandler( &msgStderr );
+//        model.setLogLevel(1);
+//        model.solver()->messageHandler()->setLogLevel(0);
     } else {
       model.passInMessageHandler(&nullHandler);
       model.messageHandler()->setLogLevel(0);
+      model.setLogLevel(0);
       model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
 //       osi.passInMessageHandler(&nullHandler);
 //       osi.messageHandler()->setLogLevel(0);
@@ -493,8 +511,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
     cbc_cmdOptions += " -solve";
     cbc_cmdOptions += " -quit";
-//       if (fVerbose)
-//         cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
+       if (fVerbose)
+         cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
     callCbc(cbc_cmdOptions, model);
     
 
