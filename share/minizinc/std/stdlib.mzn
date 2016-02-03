@@ -23,6 +23,9 @@
   any constraints on its arguments. */
 annotation promise_total;
 
+/** @group annotations.general Declare that expression may have undefined result (to avoid warnings) */
+annotation maybe_partial;
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;

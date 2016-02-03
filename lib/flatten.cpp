@@ -168,7 +168,7 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), _failed(false), ids(0) {
+  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), in_maybe_partial(0), _flat(new Model), _failed(false), ids(0) {
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -400,6 +400,8 @@ namespace MiniZinc {
       env.idStack.push_back(env.callStack.size());
     if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
       env.in_redundant_constraint++;
+    if (e->ann().contains(constants().ann.maybe_partial))
+      env.in_maybe_partial++;
     env.callStack.push_back(e);
     env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
   }
@@ -414,6 +416,8 @@ namespace MiniZinc {
       env.idStack.pop_back();
     if (e->isa<Call>() && e->cast<Call>()->id()=="redundant_constraint")
       env.in_redundant_constraint--;
+    if (e->ann().contains(constants().ann.maybe_partial))
+      env.in_maybe_partial--;
     env.callStack.pop_back();
   }
   
@@ -2738,10 +2742,10 @@ namespace MiniZinc {
     assert(!e->type().isunknown());
     if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
       
-      ret.b = bind(env,Ctx(),b,constants().lit_true);
       if (e->type().cv()) {
         KeepAlive ka = flat_cv_exp(env,ctx,e);
         ret.r = bind(env,ctx,r,ka());
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
         return ret;
       }
       if (e->type().dim() > 0) {
@@ -2758,13 +2762,16 @@ namespace MiniZinc {
                 ret.r = al;
               else
                 ret.r = bind(env,ctx,r,al);
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
               return ret;
             }
           }
           ret.r = bind(env,ctx,r,e->cast<Id>()->decl()->flat()->id());
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           return ret;
         } else if ( (it = env.map_find(e)) != env.map_end()) {
           ret.r = bind(env,ctx,r,it->second.r()->cast<VarDecl>()->id());
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           return ret;
         } else {
           GCLock lock;
@@ -2774,10 +2781,12 @@ namespace MiniZinc {
               ret.r = al;
             else
               ret.r = bind(env,ctx,r,al);
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
             return ret;
           }
           if ( (it = env.map_find(al)) != env.map_end()) {
             ret.r = bind(env,ctx,r,it->second.r()->cast<VarDecl>()->id());
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
             return ret;
           }
           std::vector<TypeInst*> ranges(al->dims());
@@ -2795,11 +2804,16 @@ namespace MiniZinc {
           env.map_insert(vd->e(),ee);
           
           ret.r = bind(env,ctx,r,vd->id());
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
           return ret;
         }
       }
       GCLock lock;
-      ret.r = bind(env,ctx,r,eval_par(env,e));
+      try {
+        ret.r = bind(env,ctx,r,eval_par(env,e));
+      } catch (ResultUndefinedError&) {
+        ret.b = bind(env,Ctx(),b,constants().lit_false);
+      }
       return ret;
     }
     switch (e->eid()) {
@@ -3129,8 +3143,8 @@ namespace MiniZinc {
               {
                 GCLock lock;
                 ka = eval_arrayaccess(env, al, idx, success);
-                if (!success && ctx.b==C_ROOT && b==constants().var_true) {
-                  throw FlatteningError(env,e->loc(),"array access out of bounds");
+                if (!success && env.in_maybe_partial==0) {
+                  ResultUndefinedError e(env,al->loc(),"array access out of bounds");
                 }
               }
               ees.push_back(EE(NULL,constants().boollit(success)));
@@ -3155,8 +3169,8 @@ namespace MiniZinc {
                   GCLock lock;
                   Expression* al_idx = eval_arrayaccess(env, al, idx, success);
                   if (!success) {
-                    if (ctx.b==C_ROOT && b==constants().var_true) {
-                      throw FlatteningError(env,e->loc(),"array access out of bounds");
+                    if (env.in_maybe_partial==0) {
+                      ResultUndefinedError e(env,al->loc(),"array access out of bounds");
                     }
                     ees.push_back(EE(NULL,constants().lit_false));
                     ees.push_back(EE(NULL,eev.b()));
@@ -3288,8 +3302,8 @@ namespace MiniZinc {
               dims[i] = eval_int(env,ees[i].r());
             ka = eval_arrayaccess(env,al,dims,success);
           }
-          if (!success && ctx.b==C_ROOT && b==constants().var_true) {
-            throw FlatteningError(env,e->loc(),"array access out of bounds");
+          if (!success && env.in_maybe_partial==0) {
+            ResultUndefinedError e(env,al->loc(),"array access out of bounds");
           }
           ees.push_back(EE(NULL,constants().boollit(success)));
           if (aa->type().isbool() && !aa->type().isopt()) {

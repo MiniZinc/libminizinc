@@ -59,6 +59,15 @@ namespace MiniZinc {
       return "MiniZinc: warning";
     }
   };
+
+  class ResultUndefinedError : public LocationException {
+  public:
+    ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
+    ~ResultUndefinedError(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: result of evaluation is undefined";
+    }
+  };
   
 }
 
