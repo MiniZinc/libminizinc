@@ -1113,7 +1113,8 @@ namespace MiniZinc {
                 unify(env, deletedVarDecls, vdi->e()->id(), id1);
                 pushDependentConstraints(env, id1, constraintQueue);
               }
-              pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+              if (vdi->e()->ti()->type()!=Type::varbool() || vdi->e()->ti()->domain()==NULL)
+                pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
             }
             return true;
           }

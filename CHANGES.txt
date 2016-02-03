@@ -10,6 +10,8 @@ Version 2.0.12
 
 Bug fixes:
 
+ - Fix a bug in the optimisation phase related to repeated simplification of
+   some Boolean expressions.
  - Handle errors in output produced by solver without solns2out crashing.
    Fixes #80.
  - Fix a bug in the integer bounds computation that caused bool2int with an
