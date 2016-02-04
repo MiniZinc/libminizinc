@@ -107,7 +107,7 @@ if (NOT HAS_CPP11)
     message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
   endif()
 endif()
-   
+
 CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
 
 if (NOT HAS_ATTR_THREAD)
@@ -126,7 +126,7 @@ CHECK_CXX_SOURCE_COMPILES("
 
 int main (int argc, char* argv[])
 {
-    pid_t pid = getpid(); 
+    pid_t pid = getpid();
     char path[PROC_PIDPATHINFO_MAXSIZE];
     (void) proc_pidpath (pid, path, sizeof(path));
     return 0;
@@ -258,6 +258,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
+lib/presolve.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -346,15 +347,15 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
      set(CPLEX_ARCH "x86-64_osx/static_pic")
 	set(CPLEX_LIB "cplex")
   endif(APPLE)
-  
+
   if(WIN32)
      set(CPLEX_ARCH "x64_windows_vs2013/stat_mda")
 	set(CPLEX_LIB "cplex1263.lib")          # Here 12.6.3
   endif(WIN32)
-  
-  
+
+
 #	add_definitions(-DIL_STD)
-	
+
   link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
 #  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
@@ -368,7 +369,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
     "${CPLEX_STUDIO_DIR}/cplex/include"
   )
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  
+
 	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-cplex
@@ -411,7 +412,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.0
   if (WIN32 AND NOT UNIX)
     set(SCIP_LIBS "scip-3.2.0.win.x86_64.msvc.opt.spx.ld")
   endif()
-  
+
   add_library(minizinc_scip
     lib/flattener.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
@@ -459,7 +460,7 @@ if(HAS_SCIP_SEPLIBS)
      set(SCIP_OS "osx")
      set(SCIP_ARCH "ppc")
   endif(APPLE)
-  
+
   set(SCIP_LIB_EXTRAS
     readline
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
@@ -472,7 +473,7 @@ if(HAS_SCIP_SEPLIBS)
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
   target_link_libraries(minizinc_mip_scip minizinc
-    scip 
+    scip
     nlpi.cppad #objscip
     lpispx soplex
     ${SCIP_LIB_EXTRAS}
@@ -486,7 +487,7 @@ if(HAS_SCIP_SEPLIBS)
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
   target_link_libraries(mzn-mip-scip minizinc
-    scip 
+    scip
     nlpi.cppad #objscip
     lpispx soplex
     ${SCIP_LIB_EXTRAS}

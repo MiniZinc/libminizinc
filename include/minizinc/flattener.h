@@ -35,6 +35,7 @@ using namespace std;
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
 #include <minizinc/options.hh>
+#include <minizinc/presolve.hh>
 
 namespace MiniZinc {
 
@@ -60,7 +61,7 @@ namespace MiniZinc {
     virtual void set_flag_statistics(bool f) { flag_statistics = f; }
     virtual bool get_flag_statistics() const { return flag_statistics; }
     virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
-    
+
     SolverInstance::Status status = SolverInstance::UNKNOWN;
 
   private:

@@ -301,6 +301,8 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << "Presolving ...";
 
+                MiniZinc::presolve(env, m);
+
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
