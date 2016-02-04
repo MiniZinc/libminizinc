@@ -37,11 +37,11 @@ using namespace std;
 #include <minizinc/options.hh>
 
 namespace MiniZinc {
-  
+
   class Flattener;
   Flattener* getGlobalFlattener(bool fOutputByDefault=true);
   void cleanupGlobalFlattener(Flattener*);
-  
+
   class Flattener {
   private:
     unique_ptr<Env>   pEnv;
@@ -54,7 +54,7 @@ namespace MiniZinc {
 
     virtual void flatten();
     virtual void printStatistics(ostream& );
-    
+
     virtual void set_flag_verbose(bool f) { flag_verbose = f; }
     virtual bool get_flag_verbose() const { return flag_verbose; }
     virtual void set_flag_statistics(bool f) { flag_statistics = f; }
@@ -62,9 +62,9 @@ namespace MiniZinc {
     virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
-    
+
   private:
-    
+
     bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
     vector<string> filenames;
     vector<string> datafiles;
@@ -79,6 +79,7 @@ namespace MiniZinc {
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_noMIPdomains = false;
+    bool flag_no_presolve = false;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
 
@@ -102,4 +103,3 @@ namespace MiniZinc {
 }
 
 #endif  // __MINIZINC_FLATTENER_H__
-

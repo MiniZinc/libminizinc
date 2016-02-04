@@ -75,7 +75,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 {
   CLOParser cop( i, argc, argv );
   string buffer;
-  
+
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
     includePaths.push_back(buffer+string("/"));
   } else if ( cop.getOption( "--ignore-stdlib" ) ) {
@@ -180,7 +180,7 @@ void Flattener::flatten()
 {
   starttime01 = std::clock();
   lasttime = starttime01;
-  
+
   if (flag_verbose)
     printVersion(cerr);
 
@@ -234,7 +234,7 @@ void Flattener::flatten()
       flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
     }
   }
-  
+
   if (flag_output_fzn == filenames[0]) {
     cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
     flag_output_fzn = "";
@@ -243,7 +243,7 @@ void Flattener::flatten()
     cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
     flag_output_ozn = "";
   }
-  
+
   if (fOutputByDefault) {
     if (flag_output_fzn == "") {
       flag_output_fzn = flag_output_base+".fzn";
@@ -297,6 +297,14 @@ void Flattener::flatten()
               env.swap();
               populateOutput(env);
             } else {
+              if (!flag_no_presolve){
+                if (flag_verbose)
+                  std::cerr << "Presolving ...";
+
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+
               if (flag_verbose)
                 std::cerr << "Flattening ...";
 
@@ -454,11 +462,11 @@ void Flattener::flatten()
 //       throw;
     }
   }
-  
+
   if (getEnv()->envi().failed()) {
     status = SolverInstance::UNSAT;
   }
-  
+
 //   if (flag_verbose)
   if (flag_verbose) {
 //     std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
@@ -470,7 +478,7 @@ void Flattener::flatten()
       std::cerr << "Maximum memory " << mem/1024 << " Kbytes";
     else
       std::cerr << "Maximum memory " << mem/(1024*1024) << " Mbytes";
-    std::cerr << "." << std::endl;    
+    std::cerr << "." << std::endl;
   }
 }
 
