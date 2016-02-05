@@ -36,7 +36,8 @@ void Flattener::printVersion(ostream& os)
 {
   os << "NICTA MiniZinc to FlatZinc converter, version "
      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-  os << "Copyright (C) " __DATE__ "  " __TIME__ "   Monash University and NICTA" << std::endl;
+  os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
+     << "   Monash University and NICTA" << std::endl;
 }
 
 void Flattener::printHelp(ostream& os)
@@ -89,12 +90,9 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_optimize = false;
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
-  } else if ( cop.getOption( "--output-base", &buffer ) ) {
-    flag_output_base = buffer;
-  } else if ( cop.getOption( "-o --fzn --output-to-file --output-fzn-to-file", &buffer) ) {
-    flag_output_fzn = buffer;
-  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &buffer) ) {
-    flag_output_ozn = buffer;
+  } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
+  } else if ( cop.getOption( "-o --fzn --output-to-file --output-fzn-to-file", &flag_output_fzn) ) {
+  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
@@ -110,10 +108,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
          buffer.substr(buffer.length()-4,string::npos) != ".dzn")
       goto error;
     datafiles.push_back(buffer);
-  } else if ( cop.getOption( "--stdlib-dir", &buffer ) ) {
-    std_lib_dir = buffer;
-  } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &buffer ) ) {
-      globals_dir = buffer;
+  } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
+  } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &globals_dir ) ) {
   } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
     if (flag_stdinInput)
       goto error;
