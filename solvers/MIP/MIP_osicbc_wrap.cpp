@@ -451,6 +451,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     class StderrCoinMessageHandler : public CoinMessageHandler {
       int print() {
         cerr << messageBuffer_ << endl;
+		return 0;
       }
       void checkSeverity() {
       }

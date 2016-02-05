@@ -185,7 +185,7 @@ class MIP_wrapper {
     /// adding all local variables upfront. Makes sure it's called only once
     virtual void addPhase1Vars() {
       assert(0 == getNCols());
-      assert(not fPhase1Over);
+      assert(! fPhase1Over);
       if (fVerbose)
         cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << flush;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
