@@ -79,8 +79,6 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
 
 bool Solns2Out::parseOzn(string& fileOzn)
 {
-  starttime01 = std::clock();
-  lasttime = starttime01;
   std::vector<string> filenames( 1, fileOzn );
   // If set before:
   
@@ -165,8 +163,9 @@ void Solns2Out::restoreDefaults() {
 
 void Solns2Out::parseAssignments(string& solution) {
   unique_ptr<Model> sm(
-    parseFromString(solution, "solution.szn", includePaths, true, false, false, cerr) );
+    parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr) );
   MZN_ASSERT_HARD_MSG( sm.get(), "Solns2Out: could not parse solution" );
+  solution = "";
   for (unsigned int i=0; i<sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
       auto& de = findOutputVar(ai->id());
@@ -200,6 +199,8 @@ bool Solns2Out::evalOutput() {
         ofs_non_canon.flush();
     }
   } else {
+    if ( _opt.solution_comma.size() && sSolsCanon.size()>1 )
+      getOutput() << _opt.solution_comma << '\n';
     getOutput() << oss.str();
     if ( _opt.flag_output_flush )
       getOutput().flush();
@@ -210,28 +211,29 @@ bool Solns2Out::evalOutput() {
 
 bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
   if ( 0!=outputExpr ) {
-    GCLock lock;
-    ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
-    std::string os;
-    for (unsigned int i=0; i<al->v().size(); i++) {
-      std::string s = eval_string(pEnv->envi(),al->v()[i]);
-      if (!s.empty()) {
-        os = s;
-        fout << os;
-        if (flag_output_flush)
-          fout.flush();
-      }
-    }
-    if (!os.empty() && os[os.size()-1] != '\n')
-      fout << '\n';
-      if (flag_output_flush)
-        fout.flush();
+//     GCLock lock;
+//     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
+//     std::string os;
+//     for (unsigned int i=0; i<al->v().size(); i++) {
+//       std::string s = eval_string(pEnv->envi(),al->v()[i]);
+//       if (!s.empty()) {
+//         os = s;
+//         fout << os;
+//         if (flag_output_flush)
+//           fout.flush();
+//       }
+//     }
+//     if (!os.empty() && os[os.size()-1] != '\n') {
+//       fout << '\n';
+//       if (flag_output_flush)
+//         fout.flush();
+//     }
+    pEnv->envi().evalOutput( fout );
   }
   fout << comments;
   fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
     fout.flush();
-  solution = "";
   comments = "";
   return true;
 }
@@ -240,12 +242,16 @@ bool Solns2Out::evalStatus( SolverInstance::Status status ) {
   if ( _opt.flag_canonicalize )
     __evalOutputFinal( _opt.flag_output_flush );
   __evalStatusMsg( status );
+  fStatusPrinted = 1;
 }
 
 bool Solns2Out::__evalOutputFinal( bool ) {
   /// Print the canonical list
-  for ( auto& sol : sSolsCanon )
+  for ( auto& sol : sSolsCanon ) {
+    if ( _opt.solution_comma.size() && &sol != &*sSolsCanon.begin() )
+      getOutput() << _opt.solution_comma << '\n';
     getOutput() << sol;
+  }
   return true;
 }
 
@@ -260,11 +266,20 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
     getOutput() << it->second << '\n';
+    getOutput() << comments;
+    if ( _opt.flag_output_flush )
+      getOutput().flush();
+    Solns2Out::status = status;
   }
   else {
+    getOutput() << comments;
+    if ( _opt.flag_output_flush )
+      getOutput().flush();
     MZN_ASSERT_HARD_MSG( SolverInstance::SAT==status,    // which is ignored
-                         "Solns2Out: undefined solution status " << status );
+                         "Solns2Out: undefined solution status code " << status );
+    Solns2Out::status = SolverInstance::SAT;
   }
+  comments = "";
 }
 
 void Solns2Out::init() {
@@ -284,16 +299,56 @@ void Solns2Out::init() {
     ofs_non_canon.open( _opt.flag_output_noncanonical );
     checkIOStatus( ofs_non_canon.good(), _opt.flag_output_file, 0);
   }
+  /// Assume all options are set before
+  nLinesIgnore = _opt.flag_ignore_lines;
 }
 
 ostream& Solns2Out::getOutput() {
   return ( 0!=pOut && pOut->good() ) ? *pOut : cout;
 }
 
-bool Solns2Out::feedRawDataChunk(string& data) {
+bool Solns2Out::feedRawDataChunk(const char* data) {
+  istringstream solstream( data );
+  while (solstream.good()) {
+    string line;
+    getline(solstream, line);
+    if ( nLinesIgnore > 0 ) {
+      --nLinesIgnore;
+      continue;
+    }
+    if ( mapInputStatus.empty() )
+      createInputMap();
+    auto it = mapInputStatus.find( line );
+    if ( mapInputStatus.end()!=it ) {
+      if ( SolverInstance::SAT==it->second ) {
+        parseAssignments( solution );
+        evalOutput();
+      } else {
+        evalStatus( it->second );
+      }
+      if (_opt.flag_output_time)
+        getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+    } else {
+      solution += line + '\n';
+      size_t comment_pos = line.find('%');
+      if (comment_pos != string::npos) {
+        comments += line.substr(comment_pos);
+        comments += "\n";
+      }
+    }
+  }
   return true;
 }
 
+void Solns2Out::createInputMap() {
+  mapInputStatus[ _opt.search_complete_msg_00 ] = SolverInstance::OPT;
+  mapInputStatus[ _opt.solution_separator_00 ] = SolverInstance::SAT;
+  mapInputStatus[ _opt.unsatisfiable_msg_00 ] = SolverInstance::UNSAT;
+  mapInputStatus[ _opt.unbounded_msg_00 ] = SolverInstance::UNBND;
+  mapInputStatus[ _opt.unsatorunbnd_msg_00 ] = SolverInstance::UNSATorUNBND;
+  mapInputStatus[ _opt.unknown_msg_00 ] = SolverInstance::UNKNOWN;
+  mapInputStatus[ _opt.error_msg ] = SolverInstance::ERROR;
+}
 
 void Solns2Out::printStatistics(ostream&)
 {

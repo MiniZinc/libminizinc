@@ -18,6 +18,8 @@
 #include <limits>
 #include <iomanip>
 
+#include <minizinc/timer.hh>
+
 
 using namespace std;
 
@@ -39,6 +41,11 @@ namespace MiniZinc {
      ostringstream oss; oss << "not " << #c << ":  " << e; \
      throw InternalError( oss.str() ); } } while (0)
 
+  inline std::string stoptime(Timer& timer) {
+    std::ostringstream oss;
+    oss << std::setprecision(0) << std::fixed << timer.ms() << " ms";
+    return oss.str();
+  }
   
   inline std::string stoptime(clock_t& start) {
     std::ostringstream oss;

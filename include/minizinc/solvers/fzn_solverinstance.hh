@@ -18,16 +18,15 @@
 
 namespace MiniZinc {
 
-  class FZNSolver {
-    public:
-      typedef Expression* Variable;
-      typedef MiniZinc::Statistics Statistics;
-  };
+//   class FZNSolver {
+//     public:
+//       typedef Expression* Variable;
+//       typedef MiniZinc::Statistics Statistics;
+//   };
 
-  class FZNSolverInstance : public SolverInstanceImpl<FZNSolver> {
+  class FZNSolverInstance : public SolverInstanceBase {
     private:
       std::string _fzn_solver;
-      bool hadSolution;
 
     protected:
       Model* _fzn;
@@ -37,15 +36,13 @@ namespace MiniZinc {
 
       ~FZNSolverInstance(void);
 
-      Status next(void) {return SolverInstance::ERROR;};
+      Status next(void) {return SolverInstance::ERROR;}
 
       Status solve(void);
 
       void processFlatZinc(void);
 
       void resetSolver(void);
-
-      void printSolution(ostream& );
 
     protected:
       Expression* getSolutionValue(Id* id);

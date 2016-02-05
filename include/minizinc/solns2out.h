@@ -49,11 +49,10 @@ namespace MiniZinc {
     ASTStringMap<DE>::t declmap;
     Expression* outputExpr = NULL;
    
-    SolverInstance::Status status = SolverInstance::UNKNOWN;
-
   public:
     string solution;
     string comments;
+    int nLinesIgnore = 0;
     
     struct Options {
       string std_lib_dir;
@@ -100,7 +99,10 @@ namespace MiniZinc {
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
     /// In the 1st case, (part of) the assignment text is passed as follows
-    virtual bool feedRawDataChunk(string& data);
+    virtual bool feedRawDataChunk( const char* );
+    
+    SolverInstance::Status status = SolverInstance::UNKNOWN;
+    bool fStatusPrinted = false;
 
     /// This can be used by assignSolutionToOutput()    
     DE& findOutputVar( ASTString );
@@ -123,8 +125,7 @@ namespace MiniZinc {
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
     
   private:
-    clock_t starttime01;
-    clock_t lasttime;
+    Timer starttime;
 
     std::vector<string> includePaths;
     
@@ -138,6 +139,8 @@ namespace MiniZinc {
     // Basically open output
     virtual void init();
     void createOutputMap();
+    std::map<string, SolverInstance::Status> mapInputStatus;
+    void createInputMap();
     void restoreDefaults();
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( string& );

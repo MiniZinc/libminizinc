@@ -93,7 +93,7 @@ namespace MiniZinc {
 
 #ifdef _WIN32
     mutex mtx;
-    void ReadPipePrint(HANDLE g_hCh, ostream& os, ostream* pResult = nullptr) {
+    void ReadPipePrint(HANDLE g_hCh, ostream& os, Solns2Out* pso = nullptr) {
       bool done = false;
       while (!done) {
         char buffer[5255];
@@ -101,12 +101,10 @@ namespace MiniZinc {
         bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
         if (bSuccess && count > 0) {
           buffer[count] = 0;
+          if (pso)
+            pso->feedRawDataChunk( buffer );
           lock_guard<mutex> lck(mtx);
-          do {
-            if (pResult)
-              (*pResult) << buffer;
-            os << buffer << flush;
-          } while (0);
+          os << buffer << flush;
         }
         else {
           done = true;
@@ -119,9 +117,14 @@ namespace MiniZinc {
     protected:
       std::string _fzncmd;
       bool _canPipe;
-      Model* _flat;
+      Model* _flat=0;
+      Solns2Out* pS2Out=0;
     public:
-      FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
+      FznProcess(const std::string& fzncmd, bool pipe, Model* flat, Solns2Out* pso)
+        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso) {
+        assert( 0!=_flat );
+        assert( 0!=pS2Out );
+      }
       std::string run(void) {
 #ifdef _WIN32
         std::stringstream result;
@@ -243,7 +246,7 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_IN_Rd);
 
         // Threaded solution seems simpler than asyncronous pipe reading
-        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, ref(cout), &(result));
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, ref(cerr), pS2Out);
         thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, ref(cerr), nullptr);
         thrStdout.join();
         thrStderr.join();
@@ -313,8 +316,8 @@ namespace MiniZinc {
                   if (count > 0) {
                     buffer[count] = 0;
                     if ( 1==i ) {
-                      result << buffer;
-                      cout << buffer << flush;
+                      cerr << buffer << flush;
+                      pS2Out->feedRawDataChunk( buffer );
                     }
                     else
                       cerr << buffer << flush;
@@ -369,7 +372,7 @@ namespace MiniZinc {
   }
 
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-    : SolverInstanceImpl<FZNSolver>(env, options), _fzn(env.flat()), _ozn(env.output()), hadSolution(false) {}
+    : SolverInstanceBase(env, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
@@ -407,98 +410,99 @@ namespace MiniZinc {
 
   SolverInstance::Status
     FZNSolverInstance::solve(void) {
-    std::vector<std::string> includePaths;
     std::string fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc");
     if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
       std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
     }
-    FznProcess proc(fzn_solver, false, _fzn);
-    std::string r = proc.run();
-    std::stringstream result;
-    result << r;
-    std::string solution;
+    FznProcess proc(fzn_solver, false, _fzn, getSolns2Out());
+    proc.run();
 
-    typedef std::pair<VarDecl*, Expression*> DE;
-    ASTStringMap<DE>::t declmap;
-    for (unsigned int i = 0; i < _ozn->size(); i++) {
-      if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
-        declmap.insert(std::make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
-      }
-    }
-
-    hadSolution = false;
-    while (result.good()) {
-      std::string line;
-      getline(result, line);
-
-      if (beginswith(line, "----------")) {
-        if (hadSolution) {
-          for (ASTStringMap<DE>::t::iterator it = declmap.begin(); it != declmap.end(); ++it) {
-            it->second.first->e(it->second.second);
-          }
-        }
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        if (sm) {
-          for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
-            if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
-              ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
-              if (it == declmap.end()) {
-                std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
-                exit(EXIT_FAILURE);
-              }
-              if (Call* c = ai->e()->dyn_cast<Call>()) {
-                // This is an arrayXd call, make sure we get the right builtin
-                assert(c->args()[c->args().size() - 1]->isa<ArrayLit>());
-                for (unsigned int i = 0; i < c->args().size(); i++)
-                  c->args()[i]->type(Type::parsetint());
-                c->args()[c->args().size() - 1]->type(it->second.first->type());
-                ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size() - 1);
-                it->second.first->e(al);
-              }
-              else {
-                it->second.first->e(ai->e());
-              }
-            }
-          }
-          delete sm;
-          hadSolution = true;
-        } else {
-          std::cerr << "\n\n\nError: solver output malformed; DUMPING: ---------------------\n\n\n";
-          cerr << result.str() << endl;
-          std::cerr << "\n\nError: solver output malformed (END DUMPING) ---------------------" << endl;
-          exit(EXIT_FAILURE);
-        }
-      }
-      else if (beginswith(line, "==========")) {
-        return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
-      }
-      else if (beginswith(line, "=====UNSATISFIABLE=====")) {
-        return SolverInstance::UNSAT;
-      }
-      else if (beginswith(line, "=====UNBOUNDED=====")) {
-        return SolverInstance::UNBND;
-      }
-      else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
-        return SolverInstance::UNSATorUNBND;
-      }
-      else if (beginswith(line, "=====ERROR=====")) {
-        return SolverInstance__ERROR;
-      }
-      else if (beginswith(line, "=====UNKNOWN=====")) {
-        return SolverInstance::UNKNOWN;
-      }
-      else {
-        solution += line;
-      }
-    }
-
-    return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+//     std::stringstream result;
+//     result << r;
+//     std::string solution;
+// 
+//     typedef std::pair<VarDecl*, Expression*> DE;
+//     ASTStringMap<DE>::t declmap;
+//     for (unsigned int i = 0; i < _ozn->size(); i++) {
+//       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
+//         declmap.insert(std::make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
+//       }
+//     }
+// 
+//     hadSolution = false;
+//     while (result.good()) {
+//       std::string line;
+//       getline(result, line);
+// 
+//       if (beginswith(line, "----------")) {
+//         if (hadSolution) {
+//           for (ASTStringMap<DE>::t::iterator it = declmap.begin(); it != declmap.end(); ++it) {
+//             it->second.first->e(it->second.second);
+//           }
+//         }
+//         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
+//         if (sm) {
+//           for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
+//             if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
+//               ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
+//               if (it == declmap.end()) {
+//                 std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
+//                 exit(EXIT_FAILURE);
+//               }
+//               if (Call* c = ai->e()->dyn_cast<Call>()) {
+//                 // This is an arrayXd call, make sure we get the right builtin
+//                 assert(c->args()[c->args().size() - 1]->isa<ArrayLit>());
+//                 for (unsigned int i = 0; i < c->args().size(); i++)
+//                   c->args()[i]->type(Type::parsetint());
+//                 c->args()[c->args().size() - 1]->type(it->second.first->type());
+//                 ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size() - 1);
+//                 it->second.first->e(al);
+//               }
+//               else {
+//                 it->second.first->e(ai->e());
+//               }
+//             }
+//           }
+//           delete sm;
+//           hadSolution = true;
+//         } else {
+//           std::cerr << "\n\n\nError: solver output malformed; DUMPING: ---------------------\n\n\n";
+//           cerr << result.str() << endl;
+//           std::cerr << "\n\nError: solver output malformed (END DUMPING) ---------------------" << endl;
+//           exit(EXIT_FAILURE);
+//         }
+//       }
+//       else if (beginswith(line, "==========")) {
+//         return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
+//       }
+//       else if (beginswith(line, "=====UNSATISFIABLE=====")) {
+//         return SolverInstance::UNSAT;
+//       }
+//       else if (beginswith(line, "=====UNBOUNDED=====")) {
+//         return SolverInstance::UNBND;
+//       }
+//       else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
+//         return SolverInstance::UNSATorUNBND;
+//       }
+//       else if (beginswith(line, "=====ERROR=====")) {
+//         return SolverInstance__ERROR;
+//       }
+//       else if (beginswith(line, "=====UNKNOWN=====")) {
+//         return SolverInstance::UNKNOWN;
+//       }
+//       else {
+//         solution += line;
+//       }
+//     }
+// 
+//     return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+    return getSolns2Out()->status;
   }
 
-  void FZNSolverInstance::printSolution(ostream& os) {
-    assert(hadSolution);
-    _env.evalOutput(os);
-  }
+//   void FZNSolverInstance::printSolution(ostream& os) {
+//     assert(hadSolution);
+//     _env.evalOutput(os);
+//   }
 
   void
     FZNSolverInstance::processFlatZinc(void) {}

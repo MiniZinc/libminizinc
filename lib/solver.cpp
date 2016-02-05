@@ -268,10 +268,12 @@ void MznSolver::solve()
   SolverInstance::Status status = getSI()->solve();
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
     getSI()->printSolution();             // What if it's already printed?  TODO
-    getSI()->getSolns2Out()->evalStatus( status );
+    if ( !getSI()->getSolns2Out()->fStatusPrinted )
+      getSI()->getSolns2Out()->evalStatus( status );
   }
   else {
-    getSI()->getSolns2Out()->evalStatus( status );
+    if ( !getSI()->getSolns2Out()->fStatusPrinted )
+      getSI()->getSolns2Out()->evalStatus( status );
     if (get_flag_verbose() || get_flag_statistics())    // it's summary in fact
       printStatistics();
   }
