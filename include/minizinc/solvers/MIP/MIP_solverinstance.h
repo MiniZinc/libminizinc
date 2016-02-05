@@ -34,10 +34,9 @@ namespace MiniZinc {
       
       const unique_ptr<MIP_wrapper> mip_wrap;
       
-      std::vector<VarDecl*> _varsWithOutput;
-      UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
+//       UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
       
-      UNORDERED_NAMESPACE::unordered_map<string, VarDecl*> mOutputDecls;
+//       UNORDERED_NAMESPACE::unordered_map<string, VarDecl*> mOutputDecls;
       
     public:
       double lastIncumbent;
@@ -67,8 +66,7 @@ namespace MiniZinc {
       virtual Status solve(void);
       virtual void resetSolver(void) { }
 
-      void assignSolutionToOutput();   // needs to be public for the callback?
-      void printSolution(ostream& );
+//       void assignSolutionToOutput();   // needs to be public for the callback?
       virtual void printStatistics(std::ostream&, bool fLegend=0);
       virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
 
