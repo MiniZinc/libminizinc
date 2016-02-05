@@ -16,3 +16,6 @@ cmake_install.cmake
 install_manifest.txt
 libminizinc.build
 libminizinc.xcodeproj
+*.bak
+*.out
+*.err
