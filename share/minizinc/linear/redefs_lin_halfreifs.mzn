@@ -79,6 +79,27 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
 
 
 % Derived cases
+predicate aux_int_le_if_0(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(x - y, p);
+
+predicate aux_int_ge_if_0(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(y - x, p);
+
+predicate aux_int_le_if_1(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(x - y, 1 - p);
+
+predicate aux_int_ge_if_1(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(y - x, 1 - p);
+
+predicate aux_int_lt_if_0(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(x - y + 1, p);
+
+predicate aux_int_gt_if_0(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(y - x + 1, p);
+
+predicate aux_int_lt_if_1(var int: x, int: y, var int: p) =
+    aux_int_le_zero_if_0(x - y + 1, 1 - p);
+
 %% int: switching differences to float to avoid creating integer vars
 
 predicate aux_int_le_if_0(var float: x, var float: y, var int: p) =
