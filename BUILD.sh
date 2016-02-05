@@ -4,6 +4,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON \
            -DGUROBI_HOME=$GUROBI_HOME \
            -DOSICBC_HOME=$OSICBC_HOME -DOSICBC_LINKEXTRAS="" '# bz2 lapack blas  necessary on ArchLinux' \
            -DSCIP_DIR=$SCIP_DIR -DSOPLEX_DIR=$SOPLEX_DIR -DZIMPL_DIR=$ZIMPL_DIR \
+           -DGECODE_HOME=/home/bg/Documents/prj/gecode-4.4.0 \
            ..
 #cmake -DCMAKE_BUILD_TYPE=debug  -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 ..
 cmake --build . -- -j3
