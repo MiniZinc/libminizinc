@@ -286,6 +286,7 @@ include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/parser.hh
+include/minizinc/presolve.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
