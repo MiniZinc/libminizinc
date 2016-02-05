@@ -20,11 +20,11 @@
 namespace MiniZinc {
 
   Location Location::nonalloc;
-  
+
   Type Type::unboxedint = Type::parint();
-  
+
   Annotation Annotation::empty;
-  
+
   Location::Location(void)
   : first_line(0),
     first_column(0),
@@ -43,7 +43,7 @@ namespace MiniZinc {
   Location::mark(void) const {
     filename.mark();
   }
-  
+
   Location
   Location::introduce() const {
     Location l = *this;
@@ -220,7 +220,7 @@ namespace MiniZinc {
     oss << "X_INTRODUCED_" << idn();
     return oss.str();
   }
-  
+
   void
   TIId::rehash(void) {
     init_hash();
@@ -378,7 +378,7 @@ namespace MiniZinc {
   }
 
   namespace {
-    
+
     class OpToString {
     protected:
       Model* rootSetModel;
@@ -411,7 +411,7 @@ namespace MiniZinc {
       Id* sBOT_XOR;
       Id* sBOT_DOTDOT;
       Id* sBOT_NOT;
-      
+
       OpToString(void) {
         GCLock lock;
         rootSetModel = new Model();
@@ -474,12 +474,12 @@ namespace MiniZinc {
         rootSet.push_back(sBOT_NOT);
         rootSetModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(),rootSet)));
       }
-            
+
       static OpToString& o(void) {
         static OpToString _o;
         return _o;
       }
-      
+
     };
   }
 
@@ -558,8 +558,8 @@ namespace MiniZinc {
     cmb_hash(_id->hash());
     cmb_hash(Expression::hash(_e));
   }
-  
-  
+
+
   void
   Let::rehash(void) {
     init_hash();
@@ -587,7 +587,7 @@ namespace MiniZinc {
     rehash();
   }
 
-  
+
   void
   Let::pushbindings(void) {
     GC::mark();
@@ -657,7 +657,7 @@ namespace MiniZinc {
       if (fi->ti()->ranges().size()==1 &&
           fi->ti()->ranges()[0]->domain() && fi->ti()->ranges()[0]->domain()->isa<TIId>())
         rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
-      
+
       ASTStringMap<Type>::t tmap;
       for (unsigned int i=0; i<ta.size(); i++) {
         TypeInst* tii = fi->params()[i]->ti();
@@ -743,7 +743,7 @@ namespace MiniZinc {
       return ret;
     }
   }
-  
+
   Type
   FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
     return return_type(env, this, ta);
@@ -788,7 +788,7 @@ namespace MiniZinc {
       return tii->type();
     }
   }
-  
+
   bool
   Expression::equal_internal(const Expression* e0, const Expression* e1) {
     switch (e0->eid()) {
@@ -960,7 +960,7 @@ namespace MiniZinc {
         return false;
     }
   }
-  
+
   Constants::Constants(void) {
     GCLock lock;
     TypeInst* ti = new TypeInst(Location(), Type::parbool());
@@ -975,10 +975,10 @@ namespace MiniZinc {
     absent_t.st(Type::ST_PLAIN);
     absent_t.ot(Type::OT_OPTIONAL);
     absent->type(absent_t);
-    
+
     IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
     infinity = new SetLit(Location(), isv_infty);
-    
+
     ids.forall = ASTString("forall");
     ids.forall_reif = ASTString("forall_reif");
     ids.exists = ASTString("exists");
@@ -992,11 +992,11 @@ namespace MiniZinc {
     ids.sum = ASTString("sum");
     ids.lin_exp = ASTString("lin_exp");
     ids.element = ASTString("element");
-    
+
     ids.show = ASTString("show");
     ids.output = ASTString("output");
     ids.fix = ASTString("fix");
-    
+
     ids.int_.lin_eq = ASTString("int_lin_eq");
     ids.int_.lin_le = ASTString("int_lin_le");
     ids.int_.lin_ne = ASTString("int_lin_ne");
@@ -1069,7 +1069,7 @@ namespace MiniZinc {
     ids.set_eq = ASTString("set_eq");
     ids.set_in = ASTString("set_in");
     ids.set_card = ASTString("set_card");
-    
+
     ids.introduced_var = ASTString("__INTRODUCED");
 
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
@@ -1080,7 +1080,7 @@ namespace MiniZinc {
     ctx.neg->type(Type::ann());
     ctx.mix = new Id(Location(),ASTString("ctx_mix"),NULL);
     ctx.mix->type(Type::ann());
-    
+
     ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
     ann.output_var->type(Type::ann());
     ann.output_array = ASTString("output_array");
@@ -1099,10 +1099,18 @@ namespace MiniZinc {
     ann.user_cut->type(Type::ann());
     ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
     ann.lazy_constraint->type(Type::ann());
-    
+
+    presolve.presolve = ASTString("presolve");
+    presolve.instance = new Id(Location(), ASTString("instance"), NULL);
+    presolve.instance->type(Type::ann());
+    presolve.model = new Id(Location(), ASTString("model"), NULL);
+    presolve.model->type(Type::ann());
+    presolve.global = new Id(Location(), ASTString("global"), NULL);
+    presolve.global->type(Type::ann());
+
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
-    
+
     cli.cmdlineData_short_str = ASTString("-D");
     cli.cmdlineData_str = ASTString("--cmdline-data");
     cli.datafile_str = ASTString("--data");
@@ -1121,7 +1129,7 @@ namespace MiniZinc {
     cli.no_optimize_alt_str = ASTString("--no-optimise");
     cli.no_outputOzn_str = ASTString("--no-output-ozn");
     cli.no_outputOzn_short_str = ASTString("-O-");
-    cli.no_typecheck_str = ASTString("--no-typecheck");    
+    cli.no_typecheck_str = ASTString("--no-typecheck");
     cli.outputBase_str = ASTString("--output-base");
     cli.outputFznToStdout_str = ASTString("--output-to-stdout");
     cli.outputFznToStdout_alt_str = ASTString("--output-fzn-to-stdout");
@@ -1129,7 +1137,7 @@ namespace MiniZinc {
     cli.outputOznToStdout_str = ASTString("--output-ozn-to-stdout");
     cli.outputFznToFile_alt_str = ASTString("--output-fzn-to-file");
     cli.outputFznToFile_short_str = ASTString("-o");
-    cli.outputFznToFile_str = ASTString("--output-to-file"); 
+    cli.outputFznToFile_str = ASTString("--output-to-file");
     cli.rangeDomainsOnly_str = ASTString("--only-range-domains");
     cli.statistics_str = ASTString("--statistics");
     cli.statistics_short_str = ASTString("-s");
@@ -1138,10 +1146,10 @@ namespace MiniZinc {
     cli.verbose_short_str = ASTString("-v");
     cli.version_str = ASTString("--version");
     cli.werror_str = ASTString("-Werror");
-    
+
     cli.solver.all_sols_str = ASTString("-a");
     cli.solver.fzn_solver_str = ASTString("--solver");
-    
+
     opts.cmdlineData = ASTString("cmdlineData");
     opts.datafile = ASTString("datafile");
     opts.datafiles = ASTString("datafiles");
@@ -1166,19 +1174,19 @@ namespace MiniZinc {
     opts.typecheck = ASTString("typecheck");
     opts.verbose = ASTString("verbose");
     opts.werror = ASTString("werror");
-    
+
     opts.solver.allSols = ASTString("allSols");
     opts.solver.numSols = ASTString("numSols");
     opts.solver.threads = ASTString("threads");
     opts.solver.fzn_solver = ASTString("fznsolver");
     opts.solver.fzn_flags = ASTString("fzn_flags");
     opts.solver.fzn_flag = ASTString("fzn_flag");
-    
+
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
     cli_cat.solver = ASTString("Solver Options");
     cli_cat.translation = ASTString("Translation Options");
-    
+
     std::vector<Expression*> v;
     v.push_back(ti);
     v.push_back(lit_true);
@@ -1199,7 +1207,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.show));
     v.push_back(new StringLit(Location(),ids.output));
     v.push_back(new StringLit(Location(),ids.fix));
-    
+
     v.push_back(new StringLit(Location(),ids.int_.lin_eq));
     v.push_back(new StringLit(Location(),ids.int_.lin_le));
     v.push_back(new StringLit(Location(),ids.int_.lin_ne));
@@ -1291,7 +1299,12 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);
-    
+
+    v.push_back(new StringLit(Location(),presolve.presolve));
+    v.push_back(presolve.instance);
+    v.push_back(presolve.model);
+    v.push_back(presolve.global);
+
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
     v.push_back(new StringLit(Location(),cli.datafile_short_str));
@@ -1310,7 +1323,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.no_optimize_str));
     v.push_back(new StringLit(Location(),cli.no_outputOzn_short_str));
     v.push_back(new StringLit(Location(),cli.no_outputOzn_str));
-    v.push_back(new StringLit(Location(),cli.no_typecheck_str));    
+    v.push_back(new StringLit(Location(),cli.no_typecheck_str));
     v.push_back(new StringLit(Location(),cli.outputBase_str));
     v.push_back(new StringLit(Location(),cli.outputFznToStdout_alt_str));
     v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
@@ -1326,11 +1339,11 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),cli.verbose_short_str));
     v.push_back(new StringLit(Location(),cli.verbose_str));
     v.push_back(new StringLit(Location(),cli.version_str));
-    v.push_back(new StringLit(Location(),cli.werror_str)); 
-    
+    v.push_back(new StringLit(Location(),cli.werror_str));
+
     v.push_back(new StringLit(Location(),cli.solver.all_sols_str));
     v.push_back(new StringLit(Location(),cli.solver.fzn_solver_str));
-    
+
     v.push_back(new StringLit(Location(),opts.cmdlineData));
     v.push_back(new StringLit(Location(),opts.datafile));
     v.push_back(new StringLit(Location(),opts.datafiles));
@@ -1355,26 +1368,26 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.typecheck));
     v.push_back(new StringLit(Location(),opts.verbose));
     v.push_back(new StringLit(Location(),opts.werror));
-    
+
     v.push_back(new StringLit(Location(),opts.solver.allSols));
     v.push_back(new StringLit(Location(),opts.solver.numSols));
     v.push_back(new StringLit(Location(),opts.solver.threads));
     v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
     v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
     v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
-    
+
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));
     v.push_back(new StringLit(Location(),cli_cat.solver));
     v.push_back(new StringLit(Location(),cli_cat.translation));
-    
+
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
     m->addItem(var_redef);
   }
-  
+
   const int Constants::max_array_size;
-  
+
   Constants& constants(void) {
     static Constants _c;
     return _c;
@@ -1384,7 +1397,7 @@ namespace MiniZinc {
   Annotation::~Annotation(void) {
     delete _s;
   }
-  
+
   bool
   Annotation::contains(Expression* e) const {
     return _s && _s->contains(e);
@@ -1394,12 +1407,12 @@ namespace MiniZinc {
   Annotation::isEmpty(void) const {
     return _s == NULL || _s->isEmpty();
   }
-  
+
   ExpressionSetIter
   Annotation::begin(void) const {
     return _s == NULL ? ExpressionSetIter(true) : _s->begin();
   }
-  
+
   ExpressionSetIter
   Annotation::end(void) const {
     return _s == NULL ? ExpressionSetIter(true) : _s->end();
@@ -1412,7 +1425,7 @@ namespace MiniZinc {
     if (e)
       _s->insert(e);
   }
-  
+
   void
   Annotation::add(std::vector<Expression*> e) {
     if (_s == NULL)
@@ -1421,7 +1434,7 @@ namespace MiniZinc {
       if (e[i])
         _s->insert(e[i]);
   }
-  
+
   void
   Annotation::remove(Expression* e) {
     if (_s && e) {
@@ -1443,7 +1456,7 @@ namespace MiniZinc {
     for (unsigned int i=toRemove.size(); i--;)
       _s->remove(toRemove[i]);
   }
-  
+
   bool
   Annotation::containsCall(const MiniZinc::ASTString& id) {
     if (_s==NULL)
@@ -1456,14 +1469,14 @@ namespace MiniZinc {
     }
     return false;
   }
-  
+
   void
   Annotation::clear(void) {
     if (_s) {
       _s->clear();
     }
   }
-  
+
   void
   Annotation::merge(const Annotation& ann) {
     if (ann._s == NULL)
@@ -1475,11 +1488,11 @@ namespace MiniZinc {
       _s->insert(*it);
     }
   }
-  
+
   Expression* getAnnotation(const Annotation& ann, std::string str) {
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
         Expression* e = *i;
-        if((e->isa<Id>() && e->cast<Id>()->str().str() == str) || 
+        if((e->isa<Id>() && e->cast<Id>()->str().str() == str) ||
                 (e->isa<Call>() && e->cast<Call>()->id().str() == str))
             return e;
     }

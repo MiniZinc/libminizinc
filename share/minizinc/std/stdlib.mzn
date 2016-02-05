@@ -203,10 +203,10 @@ annotation presolve(
 annotation instance;
 
 /** @group annotations.presolve.strategy Presolve for all instances */
-annotation all;
+annotation model;
 
 /** @group annotations.presolve.strategy Presolve for all possible input */
-annotation input;
+annotation global;
 
 
 /***

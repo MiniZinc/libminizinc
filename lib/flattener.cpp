@@ -297,12 +297,11 @@ void Flattener::flatten()
               env.swap();
               populateOutput(env);
             } else {
+              
               if (!flag_no_presolve){
                 if (flag_verbose)
                   std::cerr << "Presolving ...";
-
                 MiniZinc::presolve(env, m);
-
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
