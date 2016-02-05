@@ -243,6 +243,7 @@ bool Solns2Out::evalStatus( SolverInstance::Status status ) {
     __evalOutputFinal( _opt.flag_output_flush );
   __evalStatusMsg( status );
   fStatusPrinted = 1;
+  return true;
 }
 
 bool Solns2Out::__evalOutputFinal( bool ) {

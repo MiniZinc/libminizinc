@@ -16,6 +16,9 @@ namespace MiniZinc {
 
   class SolverInstanceBase;
   
+#ifdef ERROR    // MICROsoft.
+#undef ERROR
+#endif
   class SolverInstance {
   protected:
     SolverInstanceBase* _si;
@@ -23,6 +26,8 @@ namespace MiniZinc {
     enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
     enum StatusReason { SR_OK=-5, SR_TIME, SR_MEMORY, SR_LIMIT, SR_ERROR };
   };
+
+  const SolverInstance::Status SolverInstance__ERROR = SolverInstance::ERROR;  // just in case...
   
 }
 

@@ -12,10 +12,17 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/eval_par.hh>
 
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#undef ERROR    // MICROsoft.
+#undef min
+#undef max
+#endif
+
 namespace MiniZinc {
 
   SolverInstanceBase::Status
-  SolverInstanceBase::solve(void) { return SolverInstance::ERROR; }
+  SolverInstanceBase::solve(void) { return SolverInstance__ERROR; }
   
   void
   SolverInstanceBase::reset(void) { assert(false); }
