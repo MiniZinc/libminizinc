@@ -109,6 +109,7 @@ namespace MiniZinc {
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
   };

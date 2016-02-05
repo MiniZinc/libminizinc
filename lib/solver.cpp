@@ -57,38 +57,35 @@ int main(int argc, const char** argv) {
         slv.addSolverInterface();
         slv.solve();
       }
-    } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
-      fSuccess = true;
-      std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else if (SolverInstance::ERROR == slv.getFlt()->status) {
-      std::cout << "=====ERROR=====" << std::endl;
+      slv.s2out.evalStatus( slv.getFlt()->status );
     } else {
       fSuccess = true;
-      cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
+      slv.s2out.evalStatus( slv.getFlt()->status );
     }   // TODO  Move evalOutput() here?
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.loc() << ":" << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   } catch (const Exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   catch (const exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   catch (...) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
 
   if ( slv.getNSolvers() ) {
@@ -171,6 +168,8 @@ void MznSolver::addSolverInterface()
   assert(getGlobalSolverRegistry()->getSolverFactories().size());
   si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
   assert(si);
+  s2out.initFromEnv( flt->getEnv() );
+  si->setSolns2Out( &s2out );
   if (get_flag_verbose())
     cerr
 //     << "  ---------------------------------------------------------------------------\n"
@@ -203,6 +202,7 @@ bool MznSolver::processOptions(int argc, const char** argv)
     } else if ( string(argv[i])=="-c"
       || string(argv[i])=="--canonicalize" || string(argv[i])=="--canonicalise" ) {
       flag_canonicalize = true;   // TODO
+    } else if ( s2out.processOption( i, argc, argv ) ) {
     } else if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
@@ -236,10 +236,7 @@ void MznSolver::printHelp()
     << "  --version\n    Print version information" << std::endl
     << "  -v, --verbose\n    Print progress statements" << std::endl
     << "  -s, --statistics\n    Print statistics" << std::endl;
-  if ( getNSolvers() )
-  cout
-    << "  -c, --canonicalize\n    Canonicalize the FlatZinc solution stream.   [NOT IMPL]\n"
-       "    Note that this option prevents incremental printing of solutions." << std::endl;
+//   if ( getNSolvers() )
   
   getFlt()->printHelp(cout);
   cout << endl;
@@ -248,6 +245,7 @@ void MznSolver::printHelp()
        (*it)->printHelp(cout);
       cout << endl;
   }
+  s2out.printHelp(cout);
 }
 
 void MznSolver::flatten()
@@ -269,23 +267,11 @@ void MznSolver::solve()
   getSI()->processFlatZinc();
   SolverInstance::Status status = getSI()->solve();
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-    getSI()->printSolution(cout);             // What if it's already printed?  TODO
-    if (status==SolverInstance::OPT)
-      std::cout << "==========" << std::endl;
+    getSI()->printSolution();             // What if it's already printed?  TODO
+    getSI()->getSolns2Out()->evalStatus( status );
   }
   else {
-    if (status == SolverInstance::UNSAT)
-      std::cout << "=====UNSATISFIABLE=====" << std::endl;
-    else if (status == SolverInstance::UNBND)
-      std::cout << "=====UNBOUNDED=====" << std::endl;
-    else if (status == SolverInstance::UNSATorUNBND)
-      std::cout << "=====UNSATorUNBOUNDED=====" << std::endl;
-    else if (status == SolverInstance::UNKNOWN)
-      std::cout << "=====UNKNOWN=====" << std::endl;
-    else if (status == SolverInstance::ERROR)
-      std::cout << "=====ERROR=====" << std::endl;
-    else
-      std::cout << "=====UNKNOWN_STATUS=====" << std::endl;
+    getSI()->getSolns2Out()->evalStatus( status );
     if (get_flag_verbose() || get_flag_statistics())    // it's summary in fact
       printStatistics();
   }

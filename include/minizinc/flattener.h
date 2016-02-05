@@ -3,6 +3,7 @@
 /*
  *  Main authors:
  *     Guido Tack <guido.tack@monash.edu>
+ *     Gleb Belov <gleb.belov@monash.edu>
  */
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,7 +23,6 @@ using namespace std;
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
-#include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/astexception.hh>
 
@@ -34,6 +34,7 @@ using namespace std;
 #include <minizinc/utils.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
+#include <minizinc/options.hh>
 
 namespace MiniZinc {
   
@@ -43,7 +44,6 @@ namespace MiniZinc {
   
   class Flattener {
   private:
-    unique_ptr<Model> pModel;
     unique_ptr<Env>   pEnv;
   public:
     Flattener(bool fOutputByDefault=true);
@@ -60,7 +60,6 @@ namespace MiniZinc {
     virtual void set_flag_statistics(bool f) { flag_statistics = f; }
     virtual bool get_flag_statistics() const { return flag_statistics; }
     virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
-    virtual Model* getModel() const { assert(pModel.get()); return pModel.get(); }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     

@@ -79,8 +79,10 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
-    
+
   public:
+    Solns2Out s2out;
+    
     /// global options
     bool flag_verbose=0;
     bool flag_statistics=0;
