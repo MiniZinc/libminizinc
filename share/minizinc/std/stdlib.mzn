@@ -199,8 +199,8 @@ annotation presolve(
  @groupdef annotations.presolve.strategy Presolve strategy Annotations
 */
 
-/** @group annotations.presolve.strategy Presolve for every instance */
-annotation instance;
+/** @group annotations.presolve.strategy Presolve for every call */
+annotation calls;
 
 /** @group annotations.presolve.strategy Presolve for all instances */
 annotation model;

@@ -38,8 +38,8 @@ void MiniZinc::find_presolve_annotations(Env &env, Model *m, std::vector<SubMode
         bool save = args[1]->cast<BoolLit>()->v();
 
         SubModel::Strategy strategy;
-        if (s_id->v() == constants().presolve.instance->v())
-          strategy = SubModel::INSTANCE;
+        if (s_id->v() == constants().presolve.calls->v())
+          strategy = SubModel::CALLS;
         else if (s_id->v() == constants().presolve.model->v())
           strategy = SubModel::MODEL;
         else if (s_id->v() == constants().presolve.global->v())
@@ -56,14 +56,14 @@ void MiniZinc::find_presolve_annotations(Env &env, Model *m, std::vector<SubMode
 }
 
 void MiniZinc::find_presolved_calls(Env& env, Model* m, std::vector<SubModel>& submodels) {
-  CallFinder cf = CallFinder(env.envi(), m, submodels);
-  TopDownIterator<CallFinder> cf_it(cf);
+  CallProcessor cf = CallProcessor(env.envi(), m, submodels);
+  TopDownIterator<CallProcessor> cf_it(cf);
 
   class CallSeeker : public ItemVisitor {
   public:
     EnvI& env;
-    TopDownIterator<CallFinder>& cf;
-    CallSeeker(EnvI& env0, TopDownIterator<CallFinder>& cf0) : env(env0), cf(cf0) {};
+    TopDownIterator<CallProcessor>& cf;
+    CallSeeker(EnvI& env0, TopDownIterator<CallProcessor>& cf0) : env(env0), cf(cf0) {};
     void vConstraintI(ConstraintI* i) {
       cf.run(i->e());
     }
@@ -71,7 +71,7 @@ void MiniZinc::find_presolved_calls(Env& env, Model* m, std::vector<SubModel>& s
   iterItems(cs, m);
 }
 
-void MiniZinc::CallFinder::vCall(Call &call) {
+void MiniZinc::CallProcessor::vCall(Call &call) {
   for (size_t i = 0; i < submodels.size(); ++i) {
     if (submodels[i].p() == m->matchFn(env, &call)) {
       submodels[i].addCall(&call);

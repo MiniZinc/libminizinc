@@ -18,7 +18,7 @@ namespace MiniZinc {
 
   class SubModel {
   public:
-    enum Strategy {INSTANCE, MODEL, GLOBAL};
+    enum Strategy {CALLS, MODEL, GLOBAL};
   protected:
     // predicate around which the submodel revolves
     FunctionI * _predicate;
@@ -49,12 +49,12 @@ namespace MiniZinc {
   void find_presolved_calls(Env& env, Model* m, std::vector<SubModel>& submodels);
 
 //  TODO: Make Expression visitors more like ItemVisitors, so we don't need all the function definitions.
-  class CallFinder {
+  class CallProcessor {
   public:
     EnvI& env;
     Model* m;
     std::vector<SubModel>& submodels;
-    CallFinder(EnvI& env0, Model* m0, std::vector<SubModel>& submodels0) : env(env0), m(m0), submodels(submodels0) {};
+    CallProcessor(EnvI& env0, Model* m0, std::vector<SubModel>& submodels0) : env(env0), m(m0), submodels(submodels0) {};
     /// Check annotations when expression is finished
     void exit(Expression* e) {}
     bool enter(Expression*) { return true; }

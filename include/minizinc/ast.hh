@@ -1432,7 +1432,7 @@ namespace MiniZinc {
       /// Presolve annotations
       struct {
         ASTString presolve;
-        Id* instance;
+        Id* calls;
         Id* model;
         Id* global;
       } presolve;

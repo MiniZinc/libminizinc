@@ -1101,8 +1101,8 @@ namespace MiniZinc {
     ann.lazy_constraint->type(Type::ann());
 
     presolve.presolve = ASTString("presolve");
-    presolve.instance = new Id(Location(), ASTString("instance"), NULL);
-    presolve.instance->type(Type::ann());
+    presolve.calls = new Id(Location(), ASTString("call"), NULL);
+    presolve.calls->type(Type::ann());
     presolve.model = new Id(Location(), ASTString("model"), NULL);
     presolve.model->type(Type::ann());
     presolve.global = new Id(Location(), ASTString("global"), NULL);
@@ -1301,7 +1301,7 @@ namespace MiniZinc {
     v.push_back(ann.lazy_constraint);
 
     v.push_back(new StringLit(Location(),presolve.presolve));
-    v.push_back(presolve.instance);
+    v.push_back(presolve.calls);
     v.push_back(presolve.model);
     v.push_back(presolve.global);
 
