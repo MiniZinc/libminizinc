@@ -1316,6 +1316,15 @@ function var opt $T: trace(string: msg, var opt $T: x);
 /** @group builtins.debug Return true, and print message \a msg. */
 function bool: trace(string: msg);
 
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function $T: trace_stdout(string: msg, $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function var $T: trace_stdout(string: msg, var $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg. */
+function var opt $T: trace_stdout(string: msg, var opt $T: x);
+/** @group builtins.debug Return true, and print message \a msg. */
+function bool: trace_stdout(string: msg);
+
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
 
