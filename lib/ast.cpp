@@ -1166,7 +1166,11 @@ namespace MiniZinc {
     opts.werror = ASTString("werror");
     
     opts.solver.allSols = ASTString("allSols");
+    opts.solver.numSols = ASTString("numSols");
+    opts.solver.threads = ASTString("threads");
     opts.solver.fzn_solver = ASTString("fznsolver");
+    opts.solver.fzn_flags = ASTString("fzn_flags");
+    opts.solver.fzn_flag = ASTString("fzn_flag");
     
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
@@ -1350,7 +1354,11 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.werror));
     
     v.push_back(new StringLit(Location(),opts.solver.allSols));
+    v.push_back(new StringLit(Location(),opts.solver.numSols));
+    v.push_back(new StringLit(Location(),opts.solver.threads));
     v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
     
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));
