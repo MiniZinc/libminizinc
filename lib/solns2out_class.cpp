@@ -166,6 +166,7 @@ void Solns2Out::createOutputMap() {
 }
 
 Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
+  declNewOutput();
   if ( declmap.empty() )
     createOutputMap();
   auto it = declmap.find( id );
@@ -182,6 +183,7 @@ void Solns2Out::restoreDefaults() {
       vdi->e()->evaluated(false);
     }
   }
+  fNewSol2Print = false;
 }
 
 void Solns2Out::parseAssignments(string& solution) {
@@ -206,10 +208,17 @@ void Solns2Out::parseAssignments(string& solution) {
       de.first->e(ai->e());
     }
   }
+  declNewOutput();
+}
+
+void Solns2Out::declNewOutput() {
+  fNewSol2Print=true;
+  status = SolverInstance::SAT;
 }
 
 bool Solns2Out::evalOutput() {
-  status = SolverInstance::SAT;
+  if ( !fNewSol2Print )
+    return true;
   ostringstream oss;
   if (!__evalOutput( oss, false ))
     return false;
@@ -229,7 +238,7 @@ bool Solns2Out::evalOutput() {
     if ( _opt.flag_output_flush )
       getOutput().flush();
   }
-  restoreDefaults();
+  restoreDefaults();     // cleans data. evalOutput() should not be called again w/o assigning new data.
   return true;
 }
 
@@ -254,7 +263,7 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
 //     }
     pEnv->envi().evalOutput( fout );
   }
-  fout << comments;
+  fout << comments;      // should not be sorted ??    TODO
   fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
     fout.flush();

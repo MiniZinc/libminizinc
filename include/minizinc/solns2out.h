@@ -47,7 +47,8 @@ namespace MiniZinc {
     typedef pair<VarDecl*, KeepAlive> DE;
     ASTStringMap<DE>::t declmap;
     Expression* outputExpr = NULL;
-   
+    bool fNewSol2Print = false;     // should be set for evalOutput to work
+    
   public:
     string solution;
     string comments;
@@ -102,6 +103,9 @@ namespace MiniZinc {
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     bool fStatusPrinted = false;
+    /// Should be called when entering new solution into the output model.
+    /// Default assignSolutionToOutput() does it by using find findOutputVar().
+    void declNewOutput();
 
     /// This can be used by assignSolutionToOutput()    
     DE& findOutputVar( ASTString );

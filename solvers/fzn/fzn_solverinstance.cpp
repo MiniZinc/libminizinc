@@ -93,7 +93,8 @@ namespace MiniZinc {
 
 #ifdef _WIN32
     mutex mtx;
-    void ReadPipePrint(HANDLE g_hCh, ostream& os, Solns2Out* pso = nullptr) {
+    void ReadPipePrint(HANDLE g_hCh, ostream* pOs, Solns2Out* pSo = nullptr) {
+      assert( pOs!=0 || pSo!=0 );
       bool done = false;
       while (!done) {
         char buffer[5255];
@@ -101,10 +102,11 @@ namespace MiniZinc {
         bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
         if (bSuccess && count > 0) {
           buffer[count] = 0;
-          if (pso)
-            pso->feedRawDataChunk( buffer );
           lock_guard<mutex> lck(mtx);
-          os << buffer << flush;
+          if (pSo)
+            pSo->feedRawDataChunk( buffer );
+          if (pOs)
+            (*pOs) << buffer << flush;
         }
         else {
           done = true;
@@ -246,8 +248,8 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_IN_Rd);
 
         // Threaded solution seems simpler than asyncronous pipe reading
-        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, ref(cerr), pS2Out);
-        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, ref(cerr), nullptr);
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, nullptr, pS2Out);
+        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &cerr, nullptr);
         thrStdout.join();
         thrStderr.join();
 
@@ -316,11 +318,13 @@ namespace MiniZinc {
                   if (count > 0) {
                     buffer[count] = 0;
                     if ( 1==i ) {
-                      cerr << buffer << flush;
+//                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
+//                       cerr << buffer << flush;
                       pS2Out->feedRawDataChunk( buffer );
                     }
-                    else
+                    else {
                       cerr << buffer << flush;
+                    }
                   }
                   else {
                     done = true;
@@ -376,37 +380,37 @@ namespace MiniZinc {
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
-  namespace {
-    ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
-      GCLock lock;
-      ArrayLit* al = eval_array_lit(env.envi(), args[d]);
-      std::vector<std::pair<int, int> > dims(d);
-      unsigned int dim1d = 1;
-      for (int i = 0; i < d; i++) {
-        IntSetVal* di = eval_intset(env.envi(), args[i]);
-        if (di->size() == 0) {
-          dims[i] = std::pair<int, int>(1, 0);
-          dim1d = 0;
-        }
-        else if (di->size() != 1) {
-          throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
-        }
-        else {
-          dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
-            static_cast<int>(di->max(0).toInt()));
-          dim1d *= dims[i].second - dims[i].first + 1;
-        }
-      }
-      if (dim1d != al->v().size())
-        throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
-      ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
-      Type t = al->type();
-      t.dim(d);
-      ret->type(t);
-      ret->flat(al->flat());
-      return ret;
-    }
-  }
+//   namespace {
+//     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
+//       GCLock lock;
+//       ArrayLit* al = eval_array_lit(env.envi(), args[d]);
+//       std::vector<std::pair<int, int> > dims(d);
+//       unsigned int dim1d = 1;
+//       for (int i = 0; i < d; i++) {
+//         IntSetVal* di = eval_intset(env.envi(), args[i]);
+//         if (di->size() == 0) {
+//           dims[i] = std::pair<int, int>(1, 0);
+//           dim1d = 0;
+//         }
+//         else if (di->size() != 1) {
+//           throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
+//         }
+//         else {
+//           dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
+//             static_cast<int>(di->max(0).toInt()));
+//           dim1d *= dims[i].second - dims[i].first + 1;
+//         }
+//       }
+//       if (dim1d != al->v().size())
+//         throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
+//       ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
+//       Type t = al->type();
+//       t.dim(d);
+//       ret->type(t);
+//       ret->flat(al->flat());
+//       return ret;
+//     }
+//   }
 
   SolverInstance::Status
     FZNSolverInstance::solve(void) {
