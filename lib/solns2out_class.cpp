@@ -39,7 +39,8 @@ void Solns2Out::printHelp(ostream& os)
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
   << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
-  << "  --number-output <n>\n    Maximal number of different solutions printed." << std::endl
+  // Unclear how to exit then:
+//   << "  --number-output <n>\n    Maximal number of different solutions printed." << std::endl
   << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
   << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
   << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
@@ -70,7 +71,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
     _opt.flag_canonicalize, true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
-  } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
+//   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
   } else {
     return false;
   }
@@ -377,10 +378,12 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       }
     } else {
       solution += line + '\n';
-      size_t comment_pos = line.find('%');
-      if (comment_pos != string::npos) {
-        comments += line.substr(comment_pos);
-        comments += "\n";
+      if ( _opt.flag_output_comments ) {
+        size_t comment_pos = line.find('%');
+        if (comment_pos != string::npos) {
+          comments += line.substr(comment_pos);
+          comments += "\n";
+        }
       }
     }
   }

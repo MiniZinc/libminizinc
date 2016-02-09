@@ -71,19 +71,22 @@ namespace MiniZinc {
   {
     os
     << "MZN-FZN plugin options:" << std::endl
-    << "  -f, --solver, --flatzinc-cmd\n     the backend solver filename. The default: flatzinc."
+    << "  -f, --solver, --flatzinc-cmd\n     the backend solver filename. The default: flatzinc.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for options that need to be quoted.\n"
-    << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output.     The default should be 1.\n"
+    << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  -a, --all-solns, --all-solutions\n     Print all solutions.\n"
-    << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent."
-    << std::endl;
+    << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
+    << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn.\n"
+    << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
+    ;
   }
 
   bool FZN_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
     CLOParser cop( i, argc, argv );
     string buffer;
+    double dd;
     int nn=-1;
     
     if ( cop.getOption( "-f --solver --flatzinc-cmd", &buffer) ) {
@@ -98,6 +101,8 @@ namespace MiniZinc {
       _options.setBoolParam(constants().opts.solver.allSols.str(), true);
     } else if ( cop.getOption( "-p --parallel", &nn) ) {
       _options.setIntParam(constants().opts.solver.fzn_flag.str(), nn);
+    } else if ( cop.getOption( "-k --keep-files" ) ) {
+    } else if ( cop.getOption( "-r --seed --random-seed", &dd) ) {
     }
 
     return true;
@@ -434,9 +439,9 @@ namespace MiniZinc {
     /// Passing options to solver
     vector<string> cmd_line;
     cmd_line.push_back( _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc") );
-    string sFlag = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
-    if ( sFlag.size() )
-      cmd_line.push_back( sFlag );
+    string sFlags = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
+    if ( sFlags.size() )
+      cmd_line.push_back( sFlags );
     string sFlagQuoted = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
     if ( sFlagQuoted.size() )
       cmd_line.push_back( '"'+sFlagQuoted+'"' );
@@ -453,12 +458,16 @@ namespace MiniZinc {
       oss << _options.getIntParam(constants().opts.solver.threads.str());
       cmd_line.push_back( "-p "+oss.str() );
     }
-    if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
-      cmd_line.push_back( "-v" );
-      std::cerr << "Using FZN solver " << cmd_line[0] << " for solving." << std::endl;
-    }
     if (_options.getBoolParam(constants().opts.statistics.str(), false)) {
       cmd_line.push_back( "-s" );
+    }
+    if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
+      cmd_line.push_back( "-v" );
+      std::cerr << "Using FZN solver " << cmd_line[0]
+        << " for solving, parameters: ";
+      for ( int i=1; i<cmd_line.size(); ++i )
+        cerr << cmd_line[i] << ' ';
+      cerr << std::endl;
     }
     
     FznProcess proc(cmd_line, false, _fzn, getSolns2Out());

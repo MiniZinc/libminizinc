@@ -39,6 +39,7 @@ namespace MiniZinc {
       std::string getStringParam(const std::string& name) const;
       std::string getStringParam(const std::string& name, std::string def) const;
       bool hasParam(const std::string& name) const;
+      std::ostream& dump(std::ostream& os);
   };
 }
 

@@ -186,6 +186,39 @@ void MznSolver::addSolverInterface()
     << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
 }
 
+void MznSolver::printHelp()
+{
+  if ( !ifMzn2Fzn() )
+  cout
+    << "NICTA MiniZinc driver.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
+  else
+  cout
+    << "NICTA MiniZinc to FlatZinc converter.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+  cout
+    << "Options:" << std::endl
+    << "  --help, -h\n    Print this help message." << std::endl
+    << "  --version\n    Print version information." << std::endl
+    << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
+    << "  -s, --statistics\n    Print statistics." << std::endl;
+//   if ( getNSolvers() )
+  
+  getFlt()->printHelp(cout);
+  cout << endl;
+  if ( !ifMzn2Fzn() ) {
+    s2out.printHelp(cout);
+    cout << endl;
+  }
+  for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
+        it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
+       (*it)->printHelp(cout);
+      cout << endl;
+  }
+}
+
 bool MznSolver::processOptions(int argc, const char** argv)
 {
   int i=1;
@@ -222,39 +255,6 @@ Found: { }
 NotFound:
   cerr << "  Unrecognized option: '" << argv[i] << "'" << endl;
   return false;
-}
-
-void MznSolver::printHelp()
-{
-  if ( !ifMzn2Fzn() )
-  cout
-    << "NICTA MiniZinc driver.\n"
-    << "Usage: <executable>"  //<< argv[0]
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
-  else
-  cout
-    << "NICTA MiniZinc to FlatZinc converter.\n"
-    << "Usage: <executable>"  //<< argv[0]
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
-  cout
-    << "Options:" << std::endl
-    << "  --help, -h\n    Print this help message." << std::endl
-    << "  --version\n    Print version information." << std::endl
-    << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
-    << "  -s, --statistics\n    Print statistics (to stdout, as comments)." << std::endl;
-//   if ( getNSolvers() )
-  
-  getFlt()->printHelp(cout);
-  cout << endl;
-  if ( !ifMzn2Fzn() ) {
-    s2out.printHelp(cout);
-    cout << endl;
-  }
-  for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-        it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-       (*it)->printHelp(cout);
-      cout << endl;
-  }
 }
 
 void MznSolver::flatten()
