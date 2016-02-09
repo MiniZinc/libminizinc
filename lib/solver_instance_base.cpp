@@ -59,7 +59,7 @@ namespace MiniZinc {
     else
       getSolns2Out()->evalOutput();
     if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
-      printStatistics(cerr, 1);
+      printStatistics(cout, 1);
   }
 
   void SolverInstanceBase2::printSolution() {

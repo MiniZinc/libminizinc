@@ -85,7 +85,7 @@ namespace MiniZinc {
     } _opt;
     
   public:
-    virtual ~Solns2Out() { }
+    virtual ~Solns2Out();
     
     virtual bool processOption(int& i, const int argc, const char** argv);
     virtual void printHelp(ostream& );

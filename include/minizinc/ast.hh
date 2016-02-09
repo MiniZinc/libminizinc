@@ -1494,7 +1494,11 @@ namespace MiniZinc {
         
         struct {
           ASTString allSols;
+          ASTString numSols;
+          ASTString threads;
           ASTString fzn_solver;
+          ASTString fzn_flags;
+          ASTString fzn_flag;
         } solver;
         
       } opts;

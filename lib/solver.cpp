@@ -204,7 +204,7 @@ bool MznSolver::processOptions(int argc, const char** argv)
       std::exit(EXIT_SUCCESS);
     }
     //  moving --verbose here:
-    if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
+    if ((argv[i])==string("-v") || (argv[i])==string("--verbose") || (argv[i])==string("-l")) {
       flag_verbose = true;
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;                  // is this Flattener's option?
@@ -238,10 +238,10 @@ void MznSolver::printHelp()
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
   cout
     << "Options:" << std::endl
-    << "  --help, -h\n    Print this help message" << std::endl
-    << "  --version\n    Print version information" << std::endl
-    << "  -v, --verbose\n    Print progress statements" << std::endl
-    << "  -s, --statistics\n    Print statistics" << std::endl;
+    << "  --help, -h\n    Print this help message." << std::endl
+    << "  --version\n    Print version information." << std::endl
+    << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
+    << "  -s, --statistics\n    Print statistics (to stdout, as comments)." << std::endl;
 //   if ( getNSolvers() )
   
   getFlt()->printHelp(cout);
@@ -291,7 +291,7 @@ void MznSolver::solve()
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(cerr, 1);
+    getSI()->printStatisticsLine(cout, 1);
 }
 
 

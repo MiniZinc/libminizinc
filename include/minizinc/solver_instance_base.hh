@@ -53,6 +53,7 @@ namespace MiniZinc {
 
     virtual void printSolution();
 //     virtual void printSolution(ostream& );  // deprecated
+    /// print statistics in form of comments
     virtual void printStatistics(std::ostream&, bool fLegend=0) { }
     virtual void printStatisticsLine(std::ostream&, bool fLegend=0) { }
 

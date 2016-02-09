@@ -270,10 +270,10 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
     pEnv->envi().evalOutput( fout );
   }
   fout << comments;      // should not be sorted ??    TODO
+  comments = "";
   fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
     fout.flush();
-  comments = "";
   return true;
 }
 
@@ -344,6 +344,12 @@ void Solns2Out::init() {
   }
   /// Assume all options are set before
   nLinesIgnore = _opt.flag_ignore_lines;
+}
+
+Solns2Out::~Solns2Out() {
+  getOutput() << comments;
+  if ( _opt.flag_output_flush )
+    getOutput() << flush;
 }
 
 ostream& Solns2Out::getOutput() {
