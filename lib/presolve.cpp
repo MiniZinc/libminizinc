@@ -13,68 +13,99 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 
-void MiniZinc::presolve(Env& env, Model* m) {
-  std::vector<SubModel> submodels;
+namespace MiniZinc {
 
-  find_presolve_annotations(env, m, submodels);
-  if (submodels.size() < 1) return;
+  void Presolver::presolve() {
+    find_presolve_annotations();
+    if (submodels.size() < 1) return;
 
-  find_presolved_calls(env, m, submodels);
+    find_presolved_calls();
 
-  m->compact();
-}
-
-void MiniZinc::find_presolve_annotations(Env &env, Model *m, std::vector<SubModel> &submodels) {
-  class GoalSeeker : public ItemVisitor {
-  public:
-    EnvI& env;
-    std::vector<SubModel>& submodels;
-    GoalSeeker(EnvI& env0, std::vector<SubModel>& submodels0) : env(env0), submodels(submodels0) {};
-    void vFunctionI(FunctionI* i) {
-      Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
-      if (ann) {
-        ASTExprVec<Expression> args = ann->cast<Call>()->args();
-        Id* s_id = args[0]->cast<Id>();
-        bool save = args[1]->cast<BoolLit>()->v();
-
-        SubModel::Strategy strategy;
-        if (s_id->v() == constants().presolve.calls->v())
-          strategy = SubModel::CALLS;
-        else if (s_id->v() == constants().presolve.model->v())
-          strategy = SubModel::MODEL;
-        else if (s_id->v() == constants().presolve.global->v())
-          strategy = SubModel::GLOBAL;
-        else
-          throw TypeError(this->env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
-
-        submodels.push_back(SubModel(i, strategy, save));
-        i->remove();
+    for (auto it = submodels.begin(); it != submodels.end(); ++it) {
+      switch (it->strategy) {
+        case SubModel::GLOBAL:
+          presolve_predicate_global(*it);
+          break;
+        default:
+          throw EvalError(env.envi(), Location(), "Presolve strategy not supported yet.");
       }
     }
-  } goals(env.envi(),submodels);
-  iterItems(goals,m);
-}
+  }
 
-void MiniZinc::find_presolved_calls(Env& env, Model* m, std::vector<SubModel>& submodels) {
-  CallProcessor cf = CallProcessor(env.envi(), m, submodels);
-  TopDownIterator<CallProcessor> cf_it(cf);
+  void Presolver::find_presolve_annotations() {
+    class PresolveVisitor : public ItemVisitor {
+    public:
+      std::vector<SubModel>& submodels;
+      EnvI& env;
+      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels) : env(env), submodels(submodels) { };
+      void vFunctionI(FunctionI* i) {
+        Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
+        if (ann) {
+          ASTExprVec<Expression> args = ann->cast<Call>()->args();
+          Id* s_id = args[0]->cast<Id>();
+          bool save = args[1]->cast<BoolLit>()->v();
 
-  class CallSeeker : public ItemVisitor {
-  public:
-    EnvI& env;
-    TopDownIterator<CallProcessor>& cf;
-    CallSeeker(EnvI& env0, TopDownIterator<CallProcessor>& cf0) : env(env0), cf(cf0) {};
-    void vConstraintI(ConstraintI* i) {
-      cf.run(i->e());
+          SubModel::Strategy strategy;
+          if (s_id->v() == constants().presolve.calls->v())
+            strategy = SubModel::CALLS;
+          else if (s_id->v() == constants().presolve.model->v())
+            strategy = SubModel::MODEL;
+          else if (s_id->v() == constants().presolve.global->v())
+            strategy = SubModel::GLOBAL;
+          else
+            throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
+
+          submodels.push_back(SubModel(i, strategy, save));
+        }
+      }
+    } pv(env.envi(), submodels);
+    iterItems(pv, model);
+  }
+
+  void Presolver::find_presolved_calls() {
+    class CallSeeker : public ExprVisitor {
+    public:
+      std::vector<SubModel>& submodels;
+      EnvI& env;
+      Model* m;
+
+      CallSeeker(std::vector<SubModel>& submodels, EnvI& env, Model* m) : submodels(submodels), env(env), m(m) { }
+      virtual void vCall(Call &call) {
+        for (size_t i = 0; i < submodels.size(); ++i) {
+          if (submodels[i].predicate == m->matchFn(env, &call)) {
+            submodels[i].addCall(&call);
+          }
+        }
+      }
+    } cf(submodels, env.envi(), model);
+    TopDownIterator<CallSeeker> cf_it(cf);
+
+    for (ConstraintIterator it = model->begin_constraints(); it != model->end_constraints(); ++it) {
+      cf_it.run(it->e());
     }
-  } cs(env.envi(), cf_it);
-  iterItems(cs, m);
-}
+  }
 
-void MiniZinc::CallProcessor::vCall(Call &call) {
-  for (size_t i = 0; i < submodels.size(); ++i) {
-    if (submodels[i].p() == m->matchFn(env, &call)) {
-      submodels[i].addCall(&call);
+  void Presolver::presolve_predicate_global(SubModel& submodel) {
+    assert(submodel.strategy == SubModel::Strategy::GLOBAL);
+
+    GCLock lock;
+    Model* m = new Model();
+    CopyMap cm;
+    m->addItem( copy(env.envi(), cm, submodel.predicate, true, true) );
+
+    std::vector<Expression*> args;
+    for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
+      //TODO: Deal with non-variable parameters
+      VarDecl* vd = copy( env.envi(), cm, (Expression*) *it, false, false, false )->cast<VarDecl>();
+      m->addItem( new VarDeclI(Location(), vd) );
+      args.push_back( new Id(Location(), vd->id()->v(),vd) );
     }
+    ConstraintI* constraint = new ConstraintI(Location(),
+                                              new Call(Location(), submodel.predicate->id(), args)
+    );
+    m->addItem(constraint);
+    m->addItem(SolveI::sat(Location()));
+
+    delete m;
   }
 }
