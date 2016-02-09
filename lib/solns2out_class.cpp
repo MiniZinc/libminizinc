@@ -27,9 +27,6 @@ void Solns2Out::printHelp(ostream& os)
   os
   << "Solution output options:" << std::endl
   << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
-  << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
-  << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
-  << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
   << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc, \"----------\"." << std::endl
   << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate solutions.\n    The default is the empty string." << std::endl
@@ -40,8 +37,12 @@ void Solns2Out::printHelp(ostream& os)
   << "  --error-msg <msg>\n    Specify the message to print if error occurs.\n    The default is to print \"=====ERROR=====\"." << std::endl
   << "  --search-complete-msg <msg>\n    Specify the message to print if search terminates having\n    explored the entire search space.\n    The default is to print \"==========\"." << std::endl
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
-  << "  --output-non-canonical <file>\n    Immediate solution output file in case of canonicalization.\n"
+  << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
+  << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
   << "  --number-output <n>\n    Maximal number of different solutions printed." << std::endl
+  << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
+  << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
+  << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
   ;
 }
 
@@ -68,6 +69,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "-c, --canonicalize") ) {
     _opt.flag_canonicalize, true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
+  } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
   } else {
     return false;
@@ -228,6 +230,8 @@ bool Solns2Out::evalOutput() {
   if ( _opt.flag_canonicalize && pOfs_non_canon.get() ) {
     if ( pOfs_non_canon->good() && dynamic_cast<ofstream*>(pOfs_non_canon.get())->is_open() ) {
       (*pOfs_non_canon) << oss.str();
+      if (_opt.flag_output_time)
+        getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
       if ( _opt.flag_output_flush )
         pOfs_non_canon->flush();
     }
@@ -235,6 +239,8 @@ bool Solns2Out::evalOutput() {
     if ( _opt.solution_comma.size() && sSolsCanon.size()>1 )
       getOutput() << _opt.solution_comma << '\n';
     getOutput() << oss.str();
+    if (_opt.flag_output_time)
+      getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
     if ( _opt.flag_output_flush )
       getOutput().flush();
   }
@@ -331,6 +337,11 @@ void Solns2Out::init() {
     pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
     checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_file, 0);
   }
+  /// Raw output
+  if ( _opt.flag_output_raw.size() ) {
+    pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
+    checkIOStatus( pOfs_raw->good(), _opt.flag_output_file, 0);
+  }
   /// Assume all options are set before
   nLinesIgnore = _opt.flag_ignore_lines;
 }
@@ -358,8 +369,6 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       } else {
         evalStatus( it->second );
       }
-      if (_opt.flag_output_time)
-        getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
     } else {
       solution += line + '\n';
       size_t comment_pos = line.find('%');
@@ -368,6 +377,11 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         comments += "\n";
       }
     }
+  }
+  if ( pOfs_raw.get() ) {
+    (*pOfs_raw.get()) << data;
+    if (_opt.flag_output_flush)
+      pOfs_raw->flush();
   }
   return true;
 }

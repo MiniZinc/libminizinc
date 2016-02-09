@@ -63,6 +63,7 @@ namespace MiniZinc {
       int flag_ignore_lines = 0;
       bool flag_canonicalize = 0;
       string flag_output_noncanonical;
+      string flag_output_raw;
       int flag_number_output = -1;
       /// Default values, also used for input
       const char* const solution_separator_00 = "----------";
@@ -134,6 +135,7 @@ namespace MiniZinc {
     
     unique_ptr<ostream> pOut;  // file output
     unique_ptr<ostream> pOfs_non_canon;
+    unique_ptr<ostream> pOfs_raw;
     set<string> sSolsCanon;
 
   protected:
