@@ -58,10 +58,10 @@ int main(int argc, const char** argv) {
         slv.solve();
       }
     } else if (SolverInstance::ERROR == slv.getFlt()->status) {
-      slv.s2out.evalStatus( slv.getFlt()->status );
+//       slv.s2out.evalStatus( slv.getFlt()->status );
     } else {
       fSuccess = true;
-      slv.s2out.evalStatus( slv.getFlt()->status );
+//       slv.s2out.evalStatus( slv.getFlt()->status );
     }   // TODO  Move evalOutput() here?
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
@@ -157,6 +157,15 @@ MznSolver::~MznSolver()
   flt=0;
 }
 
+bool MznSolver::ifMzn2Fzn() {
+#ifdef FLATTEN_ONLY
+  return true;
+#else
+  return 0==getNSolvers();
+#endif
+}
+
+
 void MznSolver::addFlattener()
 {
   flt = getGlobalFlattener(0==getNSolvers());
@@ -199,10 +208,7 @@ bool MznSolver::processOptions(int argc, const char** argv)
       flag_verbose = true;
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;                  // is this Flattener's option?
-    } else if ( string(argv[i])=="-c"
-      || string(argv[i])=="--canonicalize" || string(argv[i])=="--canonicalise" ) {
-      flag_canonicalize = true;   // TODO
-    } else if ( s2out.processOption( i, argc, argv ) ) {
+    } else if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
     } else if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
@@ -220,7 +226,7 @@ NotFound:
 
 void MznSolver::printHelp()
 {
-  if ( getNSolvers() )
+  if ( !ifMzn2Fzn() )
   cout
     << "NICTA MiniZinc driver.\n"
     << "Usage: <executable>"  //<< argv[0]
@@ -240,12 +246,15 @@ void MznSolver::printHelp()
   
   getFlt()->printHelp(cout);
   cout << endl;
+  if ( !ifMzn2Fzn() ) {
+    s2out.printHelp(cout);
+    cout << endl;
+  }
   for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
         it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
        (*it)->printHelp(cout);
       cout << endl;
   }
-  s2out.printHelp(cout);
 }
 
 void MznSolver::flatten()

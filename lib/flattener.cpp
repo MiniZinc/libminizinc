@@ -61,7 +61,9 @@ void Flattener::printHelp(ostream& os)
   << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
-  << "  -o, --fzn, --output-to-file, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+  << ( fOutputByDefault ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
+       : "  --fzn <file>, --output-fzn-to-file <file>\n" )
+  << "    Filename for generated FlatZinc output" << std::endl
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
@@ -91,7 +93,10 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
   } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
-  } else if ( cop.getOption( "-o --fzn --output-to-file --output-fzn-to-file", &flag_output_fzn) ) {
+  } else if ( cop.getOption(
+    fOutputByDefault ?
+      "-o --fzn --output-to-file --output-fzn-to-file"
+      : "--fzn --output-fzn-to-file", &flag_output_fzn) ) {
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;

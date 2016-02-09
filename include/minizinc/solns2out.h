@@ -18,7 +18,6 @@
 #include <set>
 #include <ctime>
 #include <memory>
-#include <fstream>
 #include <iomanip>
 
 using namespace std;
@@ -91,9 +90,9 @@ namespace MiniZinc {
     
     /// The output model (~.ozn) can be passed in 2 ways:
     /// 1. Parsing an .ozn
-    virtual bool initFromOzn(string& fo) { init(); return parseOzn(fo); }
+    virtual bool initFromOzn(string& fo);
     /// 2. or passing Env* containing output()
-    virtual bool initFromEnv(Env* pE) { assert(pE); pEnv=pE; init(); return true; }
+    virtual bool initFromEnv(Env* pE);
     
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
@@ -129,9 +128,8 @@ namespace MiniZinc {
 
     std::vector<string> includePaths;
     
-    ofstream ofs;     // file output if any
-    ostream* pOut=0;
-    ofstream ofs_non_canon;
+    unique_ptr<ostream> pOut;  // file output
+    unique_ptr<ostream> pOfs_non_canon;
     set<string> sSolsCanon;
 
   protected:

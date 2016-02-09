@@ -25,14 +25,13 @@ using namespace MiniZinc;
 void Solns2Out::printHelp(ostream& os)
 {
   os
-  << std::endl
   << "Solution output options:" << std::endl
   << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
   << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream." << std::endl
   << "  --output-time\n    Print timing information in the FlatZinc solution stream." << std::endl
   << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl
   << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
-  << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc,\n    \"----------\"." << std::endl
+  << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc, \"----------\"." << std::endl
   << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate solutions.\n    The default is the empty string." << std::endl
   << "  --unsat-msg <msg>, --unsatisfiable-msg <msg>\n    Specify the message to print if the model instance is\n    unsatisfiable.\n    The default is to print \"=====UNSATISFIABLE=====\"." << std::endl
   << "  --unbounded-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unbounded.\n    The default is to print \"=====UNBOUNDED=====\"." << std::endl
@@ -40,8 +39,7 @@ void Solns2Out::printHelp(ostream& os)
   << "  --unknown-msg <msg>\n    Specify the message to print if search terminates without\n    any result.  The default is to print \"=====UNKNOWN=====\"." << std::endl
   << "  --error-msg <msg>\n    Specify the message to print if error occurs.\n    The default is to print \"=====ERROR=====\"." << std::endl
   << "  --search-complete-msg <msg>\n    Specify the message to print if search terminates having\n    explored the entire search space.\n    The default is to print \"==========\"." << std::endl
-  << "  -c, --canonicalize\n    Canonicalize the output solution stream.\n"
-     "         Note that this option prevents incremental printing of solutions."
+  << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Immediate solution output file in case of canonicalization.\n"
   << "  --number-output <n>\n    Maximal number of different solutions printed." << std::endl
   ;
@@ -76,6 +74,31 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   }
   return true;
 }
+
+bool Solns2Out::initFromOzn( string& fo ) {
+  init();
+  return parseOzn(fo);
+}
+
+bool Solns2Out::initFromEnv(Env* pE) {
+  assert(pE); pEnv=pE;
+  init();
+  /// Trying to register array1d. Also opt elements?
+      std::vector<Type> t_arrayXd(2);
+      t_arrayXd[0] = Type::parsetint();
+      t_arrayXd[1] = Type::top(-1);
+  FunctionI* pfi = pE->flat()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
+  if ( !pfi ) {
+    assert( pE->model() );
+    pfi = pE->model()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
+  }
+  assert( pfi );
+  getModel()->registerFn(pE->envi(), pfi);
+//   getModel()->fnmap = pE->flat()->fnmap;
+//   MiniZinc::registerBuiltins(*pEnv, pEnv->output());
+  return true;
+}
+
 
 bool Solns2Out::parseOzn(string& fileOzn)
 {
@@ -186,17 +209,18 @@ void Solns2Out::parseAssignments(string& solution) {
 }
 
 bool Solns2Out::evalOutput() {
+  status = SolverInstance::SAT;
   ostringstream oss;
   if (!__evalOutput( oss, false ))
     return false;
   auto res = sSolsCanon.insert( oss.str() );
   if ( !res.second )            // repeated solution
     return true;
-  if ( _opt.flag_canonicalize ) {
-    if ( ofs_non_canon.good() && ofs_non_canon.is_open() ) {
-      ofs_non_canon << oss.str();
+  if ( _opt.flag_canonicalize && pOfs_non_canon.get() ) {
+    if ( pOfs_non_canon->good() && dynamic_cast<ofstream*>(pOfs_non_canon.get())->is_open() ) {
+      (*pOfs_non_canon) << oss.str();
       if ( _opt.flag_output_flush )
-        ofs_non_canon.flush();
+        pOfs_non_canon->flush();
     }
   } else {
     if ( _opt.solution_comma.size() && sSolsCanon.size()>1 )
@@ -287,25 +311,23 @@ void Solns2Out::init() {
   /// Main output file
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
-      ofs.open( _opt.flag_output_file );
-      if ( ofs ) {
-        pOut=&ofs;
-      } else
+      pOut.reset( new ofstream( _opt.flag_output_file ) );
+      if ( !pOut->good() ) {
         checkIOStatus( false, _opt.flag_output_file, 0);
+      }
     }
-    pOut = &cout;
   }
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
-    ofs_non_canon.open( _opt.flag_output_noncanonical );
-    checkIOStatus( ofs_non_canon.good(), _opt.flag_output_file, 0);
+    pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
+    checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_file, 0);
   }
   /// Assume all options are set before
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
 ostream& Solns2Out::getOutput() {
-  return ( 0!=pOut && pOut->good() ) ? *pOut : cout;
+  return ( pOut.get() && pOut->good() ) ? *pOut : cout;
 }
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
