@@ -106,6 +106,8 @@ namespace MiniZinc {
     FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
     /// Return function declaration matching call \a c
     FunctionI* matchFn(EnvI& env, Call* c) const;
+    /// Merge all builtin functions into \a m
+    void mergeStdLib(EnvI& env, Model* m) const;
 
     /// Return item \a i
     Item*& operator[] (int i);

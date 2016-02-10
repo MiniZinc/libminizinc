@@ -139,6 +139,17 @@ namespace MiniZinc {
     return NULL;
   }
 
+  void
+  Model::mergeStdLib(EnvI &env, Model *m) const {
+    for (FnMap::const_iterator it=fnmap.begin(); it != fnmap.end(); ++it) {
+      for (std::vector<FunctionI*>::const_iterator cit = it->second.begin(); cit != it->second.end(); ++cit) {
+        if ((*cit)->from_stdlib()) {
+          m->registerFn(env, *cit);
+        }
+      }
+    }
+  }
+  
   namespace {
     class FunSort {
     public:

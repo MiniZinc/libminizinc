@@ -553,6 +553,12 @@ namespace MiniZinc {
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
+    _from_stdlib = (loc.filename == "builtins.mzn" ||
+              loc.filename.endsWith("/builtins.mzn") ||
+              loc.filename == "stdlib.mzn" ||
+              loc.filename.endsWith("/stdlib.mzn") ||
+              loc.filename == "flatzinc_builtins.mzn" ||
+              loc.filename.endsWith("/flatzinc_builtins.mzn"));
   }
 
 }
