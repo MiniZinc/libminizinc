@@ -58,7 +58,7 @@ namespace MiniZinc {
     }
     else
       getSolns2Out()->evalOutput();
-    if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
+    if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
       printStatistics(cout, 1);
   }
 

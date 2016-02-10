@@ -283,7 +283,7 @@ void MznSolver::solve()
   else {
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
       getSI()->getSolns2Out()->evalStatus( status );
-    if (get_flag_verbose() || get_flag_statistics())    // it's summary in fact
+    if (get_flag_statistics())    // it's summary in fact
       printStatistics();
   }
 }
