@@ -52,7 +52,7 @@ int main(int argc, const char** argv) {
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       fSuccess = true;
-      if ( slv.getNSolvers() ) {          // only then
+      if ( !slv.ifMzn2Fzn() ) {          // only then
         GCLock lock;
         slv.addSolverInterface();
         slv.solve();
@@ -88,7 +88,7 @@ int main(int argc, const char** argv) {
     slv.s2out.evalStatus( SolverInstance::ERROR );
   }
 
-  if ( slv.getNSolvers() ) {
+  if ( !slv.ifMzn2Fzn() ) {
     endTime = clock();
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
@@ -165,10 +165,9 @@ bool MznSolver::ifMzn2Fzn() {
 #endif
 }
 
-
 void MznSolver::addFlattener()
 {
-  flt = getGlobalFlattener(0==getNSolvers());
+  flt = getGlobalFlattener(ifMzn2Fzn());
   assert(flt);
 }
 

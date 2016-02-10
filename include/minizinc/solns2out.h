@@ -40,8 +40,9 @@ namespace MiniZinc {
   /// Class handling fzn solver's output
   /// could facilitate exhange of raw/final outputs in a portfolio
   class Solns2Out {
-    Env* pEnv=0;
+  protected:
     unique_ptr<Env> pEnv_guard;
+    Env* pEnv=0;
     Model* pOutput=0;
 
     typedef pair<VarDecl*, KeepAlive> DE;
@@ -55,7 +56,6 @@ namespace MiniZinc {
     int nLinesIgnore = 0;
     
     struct Options {
-      string std_lib_dir;
       string flag_output_file;
       bool flag_output_comments = true;
       bool flag_output_flush = true;
@@ -90,10 +90,8 @@ namespace MiniZinc {
     virtual bool processOption(int& i, const int argc, const char** argv);
     virtual void printHelp(ostream& );
     
-    /// The output model (~.ozn) can be passed in 2 ways:
-    /// 1. Parsing an .ozn
-    virtual bool initFromOzn(string& fo);
-    /// 2. or passing Env* containing output()
+    /// The output model (~.ozn) can be passed in 1 way in this base class:
+    /// passing Env* containing output()
     virtual bool initFromEnv(Env* pE);
     
     /// Then, variable assignments can be passed either as text
@@ -131,15 +129,14 @@ namespace MiniZinc {
   private:
     Timer starttime;
 
-    std::vector<string> includePaths;
-    
     unique_ptr<ostream> pOut;  // file output
     unique_ptr<ostream> pOfs_non_canon;
     unique_ptr<ostream> pOfs_raw;
     set<string> sSolsCanon;
 
   protected:
-    virtual bool parseOzn(string& fileOzn);
+    std::vector<string> includePaths;
+    
     // Basically open output
     virtual void init();
     void createOutputMap();

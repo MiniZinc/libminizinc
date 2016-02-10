@@ -78,85 +78,26 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   return true;
 }
 
-bool Solns2Out::initFromOzn( string& fo ) {
-  init();
-  return parseOzn(fo);
-}
-
 bool Solns2Out::initFromEnv(Env* pE) {
   assert(pE); pEnv=pE;
   init();
   /// Trying to register array1d. Also opt elements?
-      std::vector<Type> t_arrayXd(2);
-      t_arrayXd[0] = Type::parsetint();
-      t_arrayXd[1] = Type::top(-1);
-  FunctionI* pfi = pE->flat()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
-  if ( !pfi ) {
-    assert( pE->model() );
-    pfi = pE->model()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
-  }
-  assert( pfi );
-  getModel()->registerFn(pE->envi(), pfi);
+//       std::vector<Type> t_arrayXd(2);
+//       t_arrayXd[0] = Type::parsetint();
+//       t_arrayXd[1] = Type::top(-1);
+//   FunctionI* pfi = pE->flat()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
+//   if ( !pfi ) {
+//     assert( pE->model() );
+//     pfi = pE->model()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
+//   }
+// //   assert( pfi );
+//   if (pfi)    // else, continue w/o array1d??  TODO
+//     getModel()->registerFn(pE->envi(), pfi);
 //   getModel()->fnmap = pE->flat()->fnmap;
 //   MiniZinc::registerBuiltins(*pEnv, pEnv->output());
   return true;
 }
 
-
-bool Solns2Out::parseOzn(string& fileOzn)
-{
-  std::vector<string> filenames( 1, fileOzn );
-  // If set before:
-  
-  if (_opt.std_lib_dir.empty())
-    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-      _opt.std_lib_dir = string(MZNSTDLIBDIR);
-    }
-
-  if (_opt.std_lib_dir.empty()) {
-    std::string mypath = FileUtils::progpath();
-    if (!mypath.empty()) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-        _opt.std_lib_dir = mypath+"/share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-        _opt.std_lib_dir = mypath+"/../share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-        _opt.std_lib_dir = mypath+"/../../share/minizinc";
-      }
-    }
-  }
-
-  if (_opt.std_lib_dir.empty()) {
-    std::cerr << "Error: Solns2Out: unknown minizinc standard library directory.\n"
-      << "Specify --stdlib-dir on the command line or set the\n"
-      << "MZN_STDLIB_DIR environment variable.\n";
-    std::exit(EXIT_FAILURE);
-  }
-
-  includePaths.push_back(_opt.std_lib_dir+"/std/");
-
-  for (unsigned int i=0; i<includePaths.size(); i++) {
-    if (!FileUtils::directory_exists(includePaths[i])) {
-      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
-      std::exit(EXIT_FAILURE);
-    }
-  }
-
-  {
-    if (pOutput = parse(filenames, std::vector<std::string>(), includePaths, false, false, false,
-                               std::cerr)) {
-      std::vector<TypeError> typeErrors;
-      pEnv = new Env(pOutput);
-      MZN_ASSERT_HARD_MSG( pEnv, "Solns2Out: could not allocate Env" );
-      pEnv_guard.reset( pEnv );
-      MiniZinc::typecheck(*pEnv,pOutput,typeErrors);
-      MiniZinc::registerBuiltins(*pEnv,pOutput);
-      return true;
-    }
-  }
-  
-  return false;
-}
 
 void Solns2Out::createOutputMap() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
@@ -348,6 +289,8 @@ void Solns2Out::init() {
 }
 
 Solns2Out::~Solns2Out() {
+  if ( SolverInstance::UNKNOWN!=status && !fStatusPrinted )
+    evalStatus( status );
   getOutput() << comments;
   if ( _opt.flag_output_flush )
     getOutput() << flush;

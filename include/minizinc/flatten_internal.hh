@@ -105,6 +105,7 @@ namespace MiniZinc {
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
     void swap();
+    void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
