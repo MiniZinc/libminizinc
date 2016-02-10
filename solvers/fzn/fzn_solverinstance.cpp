@@ -77,7 +77,8 @@ namespace MiniZinc {
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  -a, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
-    << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn.\n"
+    << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
+                           "     or <this_exe> --fzn ..., --ozn ...\n"
     << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
     ;
   }

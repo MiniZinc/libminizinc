@@ -378,60 +378,55 @@ void Flattener::flatten()
                   std::cerr << "none";
                 std::cerr << "\n";
               }
-              
-              if (flag_output_fzn_stdout) {
+            }
+
+            if (flag_output_fzn_stdout) {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
+              Printer p(std::cout,0);
+              p.print(env.flat());
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            } else if(flag_output_fzn != "") {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to '"
+                << flag_output_fzn << "' ..." << std::flush;
+              std::ofstream os;
+              os.open(flag_output_fzn.c_str(), ios::out);
+              checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+              Printer p(os,0);
+              p.print(env.flat());
+              checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+              os.close();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+            if (!flag_no_output_ozn) {
+              if (flag_output_ozn_stdout) {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
+                  std::cerr << "Printing .ozn to stdout ..." << std::endl;
                 Printer p(std::cout,0);
-                p.print(env.flat());
+                p.print(env.output());
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              } else if(flag_output_fzn != "") {
+              } else if (flag_output_ozn != "") {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to '"
-                  << flag_output_fzn << "' ..." << std::flush;
+                  std::cerr << "Printing .ozn to '"
+                  << flag_output_ozn << "' ..." << std::flush;
                 std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
-                checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+                os.open(flag_output_ozn.c_str(), std::ios::out);
+                checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
                 Printer p(os,0);
-                p.print(env.flat());
-                checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+                p.print(env.output());
+                checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
                 os.close();
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-              if (!flag_no_output_ozn) {
-                if (flag_output_ozn_stdout) {
-                  if (flag_verbose)
-                    std::cerr << "Printing .ozn to stdout ..." << std::endl;
-                  Printer p(std::cout,0);
-                  p.print(env.output());
-                  if (flag_verbose)
-                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-                } else if (flag_output_ozn != "") {
-                  if (flag_verbose)
-                    std::cerr << "Printing .ozn to '"
-                    << flag_output_ozn << "' ..." << std::flush;
-                  std::ofstream os;
-                  os.open(flag_output_ozn.c_str(), std::ios::out);
-                  checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
-                  Printer p(os,0);
-                  p.print(env.output());
-                  checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
-                  os.close();
-                  if (flag_verbose)
-                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-                }
-              }
             }
-
             /// To cout:
             //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
             //             env.envi().dump();
-/// Putting this to destructor?  TODO
-//             if(is_flatzinc) {
-//               env.swap();
-//             }
           }
         } else { // !flag_typecheck
           Printer p(std::cout);
