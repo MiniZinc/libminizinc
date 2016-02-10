@@ -184,7 +184,7 @@ class MIP_wrapper {
     }
     /// adding all local variables upfront. Makes sure it's called only once
     virtual void addPhase1Vars() {
-      assert(0 == getNCols());
+      assert(0 == getNColsModel());
       assert(! fPhase1Over);
       if (fVerbose)
         cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << flush;
@@ -207,6 +207,7 @@ class MIP_wrapper {
     virtual double getInfBound() = 0;
                         
     virtual int getNCols() = 0;
+    virtual int getNColsModel() { return getNCols(); }  // from the solver
     virtual int getNRows() = 0;
                         
 //     void setObjUB(double ub) { objUB = ub; }
