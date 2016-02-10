@@ -133,6 +133,7 @@ namespace MiniZinc {
     unique_ptr<ostream> pOfs_non_canon;
     unique_ptr<ostream> pOfs_raw;
     set<string> sSolsCanon;
+    string line_part;   // non-finished line from last chunk
 
   protected:
     std::vector<string> includePaths;

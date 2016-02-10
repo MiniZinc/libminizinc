@@ -131,6 +131,8 @@ namespace MiniZinc {
             (*pOs) << buffer << flush;
         }
         else {
+          if (pSo)
+            pSo->feedRawDataChunk( "\n" );   // in case the last chunk had none
           done = true;
         }
       }
@@ -331,6 +333,7 @@ namespace MiniZinc {
             if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, NULL) )
             {
               kill(childPID, SIGKILL);
+              pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
               done = true;
             } else {
               for ( int i=1; i<=2; ++i )
@@ -350,6 +353,7 @@ namespace MiniZinc {
                     }
                   }
                   else {
+                    pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
                     done = true;
                   }
                 }

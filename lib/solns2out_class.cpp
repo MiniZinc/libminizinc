@@ -302,9 +302,20 @@ ostream& Solns2Out::getOutput() {
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
   istringstream solstream( data );
-  while (solstream.good()) {
+  while (!solstream.fail()) {
     string line;
     getline(solstream, line);
+    if (line_part.size()) {
+      line = line_part + line;
+      line_part.clear();
+    }
+    if (solstream.eof()) {  // wait next chunk
+      line_part = line;
+      return true;
+    }
+    if (line.size())
+      if ('\r' == line.back())
+        line.pop_back();       // For WIN files
     if ( nLinesIgnore > 0 ) {
       --nLinesIgnore;
       continue;
