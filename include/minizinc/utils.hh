@@ -94,6 +94,8 @@ namespace MiniZinc {
                             Value* pResult=nullptr, // pointer to value storage
                             bool fValueOptional=false // if pResult, for non-string values
                 ) {
+      assert(0 == strchr(names, ','));
+      assert(0 == strchr(names, ';'));
       if( i>=argc )
         return false;
       assert( argv[i] );

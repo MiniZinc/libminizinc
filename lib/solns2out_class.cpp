@@ -67,7 +67,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--unknown-msg", &_opt.unknown_msg ) ) {
   } else if ( cop.getOption( "--error-msg", &_opt.error_msg ) ) {
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
-  } else if ( cop.getOption( "-c, --canonicalize") ) {
+  } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize, true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
@@ -289,8 +289,6 @@ void Solns2Out::init() {
 }
 
 Solns2Out::~Solns2Out() {
-  if ( SolverInstance::UNKNOWN!=status && !fStatusPrinted )
-    evalStatus( status );
   getOutput() << comments;
   if ( _opt.flag_output_flush )
     getOutput() << flush;
