@@ -169,11 +169,13 @@ bool Solns2Out::evalOutput() {
   auto res = sSolsCanon.insert( oss.str() );
   if ( !res.second )            // repeated solution
     return true;
+  if (_opt.flag_output_time)
+    getOutput() << "% time elapsed: " << stoptime(starttime) << endl;
   if ( _opt.flag_canonicalize && pOfs_non_canon.get() ) {
-    if ( pOfs_non_canon->good() && dynamic_cast<ofstream*>(pOfs_non_canon.get())->is_open() ) {
+    if ( pOfs_non_canon->good() ) {
       (*pOfs_non_canon) << oss.str();
       if (_opt.flag_output_time)
-        getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+        (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
       if ( _opt.flag_output_flush )
         pOfs_non_canon->flush();
     }
@@ -277,12 +279,12 @@ void Solns2Out::init() {
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
     pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
-    checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_file, 0);
+    checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_noncanonical, 0);
   }
   /// Raw output
   if ( _opt.flag_output_raw.size() ) {
     pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
-    checkIOStatus( pOfs_raw->good(), _opt.flag_output_file, 0);
+    checkIOStatus( pOfs_raw->good(), _opt.flag_output_raw, 0);
   }
   /// Assume all options are set before
   nLinesIgnore = _opt.flag_ignore_lines;
