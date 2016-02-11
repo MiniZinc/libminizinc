@@ -8,10 +8,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 #include <minizinc/presolve.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/flatten.hh>
+#include <minizinc/model.hh>
+#include <minizinc/prettyprinter.hh>
+#include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
 
@@ -22,6 +25,7 @@ namespace MiniZinc {
     find_presolved_calls();
 
     for (auto it = submodels.begin(); it != submodels.end(); ++it) {
+//      TODO: Only when submodel has calls.
       switch (it->strategy) {
         case SubModel::GLOBAL:
           presolve_predicate_global(*it);
@@ -39,6 +43,7 @@ namespace MiniZinc {
       EnvI& env;
       PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels) : env(env), submodels(submodels) { };
       void vFunctionI(FunctionI* i) {
+//        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
         if (ann) {
           ASTExprVec<Expression> args = ann->cast<Call>()->args();
@@ -88,23 +93,45 @@ namespace MiniZinc {
   void Presolver::presolve_predicate_global(SubModel& submodel) {
     assert(submodel.strategy == SubModel::Strategy::GLOBAL);
 
+    submodel.predicate->ann().clear();
+
     GCLock lock;
     Model* m = new Model();
+    Env e = Env(m);
     CopyMap cm;
-    m->addItem( copy(env.envi(), cm, submodel.predicate, true, true) );
 
+    FunctionI* pred = copy(e.envi(), cm, submodel.predicate, true, true)->cast<FunctionI>();
+    m->addItem(pred);
+    m->registerFn(e.envi(),pred);
     std::vector<Expression*> args;
     for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
       //TODO: Deal with non-variable parameters
-      VarDecl* vd = copy( env.envi(), cm, (Expression*) *it, false, false, false )->cast<VarDecl>();
-      m->addItem( new VarDeclI(Location(), vd) );
-      args.push_back( new Id(Location(), vd->id()->v(),vd) );
+      VarDecl* vd = new VarDecl(Location(),
+                                copy(e.envi(), cm, (*it)->ti(), true, true, false)->cast<TypeInst>(),
+                                (*it)->id()->str().str(), NULL);
+      m->addItem(new VarDeclI(Location(), vd));
+      Id* arg = new Id(Location(), vd->id()->v(), vd);
+      arg->type(vd->type());
+      args.push_back(arg);
     }
-    ConstraintI* constraint = new ConstraintI(Location(),
-                                              new Call(Location(), submodel.predicate->id(), args)
-    );
+    Call* pred_call = new Call(Location(), pred->id(), args);
+    pred_call->type(Type::varbool());
+    pred_call->decl(pred);
+    ConstraintI* constraint = new ConstraintI(Location(), pred_call);
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
+
+    model->mergeStdLib(e.envi(),m);
+
+    FlatteningOptions fops = FlatteningOptions();
+    // TODO: match main model.
+    fops.onlyRangeDomains = false;
+    flatten(e, fops);
+//    Printer p = Printer(std::cerr);
+//    std::cerr << std::endl << std::endl;
+//    p.print(e.flat());
+//    std::cerr << std::endl;
+
 
     delete m;
   }
