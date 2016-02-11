@@ -100,23 +100,20 @@ namespace MiniZinc {
     Env e = Env(m);
     CopyMap cm;
 
-    FunctionI* pred = copy(e.envi(), cm, submodel.predicate, true, true)->cast<FunctionI>();
+    FunctionI* pred = copy(e.envi(), cm, submodel.predicate, false, true)->cast<FunctionI>();
     m->addItem(pred);
-    m->registerFn(e.envi(),pred);
+    m->registerFn(e.envi(), pred);
     std::vector<Expression*> args;
-    for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
+    for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
       //TODO: Deal with non-variable parameters
-      VarDecl* vd = new VarDecl(Location(),
-                                copy(e.envi(), cm, (*it)->ti(), true, true, false)->cast<TypeInst>(),
-                                (*it)->id()->str().str(), NULL);
+      VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
-      Id* arg = new Id(Location(), vd->id()->v(), vd);
+      Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
       args.push_back(arg);
     }
-    Call* pred_call = new Call(Location(), pred->id(), args);
+    Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
     pred_call->type(Type::varbool());
-    pred_call->decl(pred);
     ConstraintI* constraint = new ConstraintI(Location(), pred_call);
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
@@ -127,6 +124,7 @@ namespace MiniZinc {
     // TODO: match main model.
     fops.onlyRangeDomains = false;
     flatten(e, fops);
+
 //    Printer p = Printer(std::cerr);
 //    std::cerr << std::endl << std::endl;
 //    p.print(e.flat());
