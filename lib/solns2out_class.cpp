@@ -302,7 +302,7 @@ ostream& Solns2Out::getOutput() {
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
   istringstream solstream( data );
-  while (!solstream.fail()) {
+  while (solstream.good()) {
     string line;
     getline(solstream, line);
     if (line_part.size()) {
