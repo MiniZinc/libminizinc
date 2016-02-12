@@ -41,6 +41,10 @@ namespace MiniZinc {
     Model* model;
     std::vector<SubModel> submodels;
 
+    bool flag_verbose;
+    bool flag_optimize;
+    bool flag_only_range_domains;
+
     void find_presolve_annotations();
 
     void find_presolved_calls();
@@ -48,7 +52,9 @@ namespace MiniZinc {
     void presolve_predicate_global(SubModel& submodel);
 
   public:
-    Presolver(Env& env, Model* m) : env(env), model(m) {}
+    Presolver(Env& env, Model* m, bool verbose=false, bool optimize=true, bool only_range_domains=false)
+            : env(env), model(m), flag_verbose(verbose),
+              flag_optimize(optimize), flag_only_range_domains(only_range_domains) {}
 
     void presolve();
   };

@@ -300,8 +300,8 @@ void Flattener::flatten()
               
               if (!flag_no_presolve){
                 if (flag_verbose)
-                  std::cerr << "Presolving ...";
-                Presolver(env, m).presolve();
+                  std::cerr << "Presolving ..." << std::endl;
+                Presolver(env, m, flag_verbose, flag_optimize, flag_only_range_domains).presolve();
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }

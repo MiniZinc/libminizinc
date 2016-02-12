@@ -28,6 +28,8 @@ namespace MiniZinc {
     for (auto it = submodels.begin(); it != submodels.end(); ++it) {
       if (it->calls.empty())
         continue;
+      if (flag_verbose)
+        std::cerr << "\tPresolving `" + it->predicate->id().str() + "'" << std::endl;
       switch (it->strategy) {
         case SubModel::GLOBAL:
           presolve_predicate_global(*it);
@@ -120,20 +122,20 @@ namespace MiniZinc {
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
 
+//    TODO: Merg STD or RegisterBuiltins?
     model->mergeStdLib(e.envi(),m);
 
     FlatteningOptions fops = FlatteningOptions();
-    // TODO: match main model.
-    fops.onlyRangeDomains = false;
+    fops.onlyRangeDomains = flag_only_range_domains;
     flatten(e, fops);
 
-    optimize(e);
+    if(flag_optimize)
+      optimize(e);
 
 //    Printer p = Printer(std::cerr);
 //    std::cerr << std::endl << std::endl;
 //    p.print(e.flat());
 //    std::cerr << std::endl;
-
 
     delete m;
   }
