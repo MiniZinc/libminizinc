@@ -26,7 +26,8 @@ namespace MiniZinc {
     find_presolved_calls();
 
     for (auto it = submodels.begin(); it != submodels.end(); ++it) {
-//      TODO: Only when submodel has calls.
+      if (it->calls.empty())
+        continue;
       switch (it->strategy) {
         case SubModel::GLOBAL:
           presolve_predicate_global(*it);
