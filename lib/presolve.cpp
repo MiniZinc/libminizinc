@@ -15,6 +15,7 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/optimize.hh>
 
 namespace MiniZinc {
 
@@ -124,6 +125,8 @@ namespace MiniZinc {
     // TODO: match main model.
     fops.onlyRangeDomains = false;
     flatten(e, fops);
+
+    optimize(e);
 
 //    Printer p = Printer(std::cerr);
 //    std::cerr << std::endl << std::endl;
