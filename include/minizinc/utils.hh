@@ -18,10 +18,34 @@
 #include <limits>
 #include <iomanip>
 
+#include <minizinc/timer.hh>
+
 
 using namespace std;
 
 namespace MiniZinc {
+  
+// #define __MZN_PRINTATONCE__
+#ifdef __MZN_PRINTATONCE__
+  #define __MZN_PRINT_SRCLOC(e1, e2) \
+    std::cerr << '\n' << __FILE__ << ": " << __LINE__ << " (" << __func__ \
+     << "): not " << e1 << ":  " << std::flush; \
+     std::cerr << e2 << std::endl
+#else
+  #define __MZN_PRINT_SRCLOC(e1, e2)
+#endif
+#define MZN_ASSERT_HARD( c ) \
+   do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, "" ); throw InternalError( #c ); } } while (0)
+#define MZN_ASSERT_HARD_MSG( c, e ) \
+   do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, e ); \
+     ostringstream oss; oss << "not " << #c << ":  " << e; \
+     throw InternalError( oss.str() ); } } while (0)
+
+  inline std::string stoptime(Timer& timer) {
+    std::ostringstream oss;
+    oss << std::setprecision(0) << std::fixed << timer.ms() << " ms";
+    return oss.str();
+  }
   
   inline std::string stoptime(clock_t& start) {
     std::ostringstream oss;
@@ -41,11 +65,11 @@ namespace MiniZinc {
     return s.compare(0, t.length(), t)==0;
   }
 
-  inline void checkIOStatus( bool fOk, string msg )
+  inline void checkIOStatus( bool fOk, string msg, bool fHard=1 )
   {
     if ( !fOk ) {
       std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
-      exit(EXIT_FAILURE);
+      MZN_ASSERT_HARD_MSG ( !fHard, msg << strerror(errno) );
     }
   }
   
@@ -69,6 +93,8 @@ namespace MiniZinc {
                             Value* pResult=nullptr, // pointer to value storage
                             bool fValueOptional=false // if pResult, for non-string values
                 ) {
+      assert(0 == strchr(names, ','));
+      assert(0 == strchr(names, ';'));
       if( i>=argc )
         return false;
       assert( argv[i] );
@@ -97,7 +123,8 @@ namespace MiniZinc {
         if ( assignStr( pResult, arg ) ) 
           return true;
         istringstream iss( arg );
-        if ( !( iss >> (*pResult) ) ) {
+        Value tmp;
+        if ( !( iss >> tmp ) ) {
           if ( fValueOptional ) {
             --i;
             return true;
@@ -106,6 +133,7 @@ namespace MiniZinc {
 //           cerr << "\nBad value for " << keyword << ": " << arg << endl;
           return false;
         }
+        *pResult = tmp;
         return true;
       }
       return false;

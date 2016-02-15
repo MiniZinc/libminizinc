@@ -27,7 +27,7 @@ namespace MiniZinc {
   void Options::setIntParam(const std::string& name,   KeepAlive ka) {
     Expression* e = ka();
     if(e && e->type().ispar() && e->type().isint()) {
-      _options[name] = e;
+      _options[name] = ka;
     } else {
       std::stringstream ss;
       ss << "For option: " << name << " expected Par Int, received " << e->type().toString() << std::endl;
@@ -37,7 +37,7 @@ namespace MiniZinc {
   void Options::setFloatParam(const std::string& name, KeepAlive ka) {
     Expression* e = ka();
     if(e && e->type().ispar() && e->type().isfloat()) {
-      _options[name] = e;
+      _options[name] = ka;
     } else {
       std::stringstream ss;
       ss << "For option: " << name << " expected Par Float, received " << e->type().toString() << std::endl;
@@ -47,7 +47,7 @@ namespace MiniZinc {
   void Options::setBoolParam(const std::string& name,  KeepAlive ka) {
     Expression* e = ka();
     if(e && e->type().ispar() && e->type().isbool()) {
-      _options[name] = e;
+      _options[name] = ka;
     } else {
       std::stringstream ss;
       ss << "For option: " << name << " expected Par Bool, received " << e->type().toString() << std::endl;
@@ -57,7 +57,7 @@ namespace MiniZinc {
   void Options::setStringParam(const std::string& name,  KeepAlive ka) {
     Expression* e = ka();
     if(e && e->type().ispar() && e->type().isstring()) {
-      _options[name] = e;
+      _options[name] = ka;
     } else {
       std::stringstream ss;
       ss << "For option: " << name << " expected Par String, received " << e->type().toString() << std::endl;
@@ -164,5 +164,10 @@ namespace MiniZinc {
   }
   bool Options::hasParam(const std::string& name) const {
     return _options.find(name) != _options.end();
+  }
+  std::ostream& Options::dump(std::ostream& os) {
+    for ( auto& it: _options )
+      os << it.first << ':' << it.second() << ' ';
+    return os;
   }
 }

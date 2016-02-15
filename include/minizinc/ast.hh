@@ -1158,6 +1158,8 @@ namespace MiniZinc {
     Annotation _ann;
     /// Function body (or NULL)
     Expression* _e;
+    /// Whether function is defined in the standard library
+    bool _from_stdlib;
   public:
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
@@ -1216,6 +1218,9 @@ namespace MiniZinc {
      */
     Type argtype(const std::vector<Expression*>& ta, int n);
 
+    /// Return whether function is defined in the standard library
+    bool from_stdlib(void) const { return _from_stdlib; };
+    
     /// Mark for GC
     void mark(void) {
       _gc_mark = 1;
@@ -1495,7 +1500,11 @@ namespace MiniZinc {
         
         struct {
           ASTString allSols;
+          ASTString numSols;
+          ASTString threads;
           ASTString fzn_solver;
+          ASTString fzn_flags;
+          ASTString fzn_flag;
         } solver;
         
       } opts;

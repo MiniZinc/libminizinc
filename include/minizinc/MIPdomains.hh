@@ -15,18 +15,22 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/stl_map_set.hh>
+#include <minizinc/utils.hh>
 #include <array>
 #include <set>
+
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#undef ERROR    // MICROsoft.
+#undef min
+#undef max
+#endif
 
 #define MZN_MIPD__assert_soft( c, e ) \
   do { static int nn=0; \
  if ( !(c) ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
-#define MZN_MIPD__assert_hard( c ) \
-   do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  not " << #c; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
-#define MZN_MIPD__assert_hard_msg( c, e ) \
-   do { if ( !(c) ) { std::ostringstream oss; oss << __FILE__ << ": line " << __LINE__ \
-     << ":  " << e; std::cerr << oss.str() << std::endl; throw InternalError( oss.str() ); } } while (0)
+#define MZN_MIPD__assert_hard( c ) MZN_ASSERT_HARD(	c )
+#define MZN_MIPD__assert_hard_msg( c, e ) MZN_ASSERT_HARD_MSG( c, e )
 struct MIPD_Infeasibility_Exception {
   std::string msg;
   MIPD_Infeasibility_Exception(const std::string& s) : msg(s) { }

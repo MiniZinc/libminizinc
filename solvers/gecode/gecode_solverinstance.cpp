@@ -9,7 +9,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <minizinc/solver_instance_base.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
@@ -22,6 +21,63 @@
 using namespace Gecode;
 
 namespace MiniZinc {
+
+  class Gecode_SolverFactory: public SolverFactory {
+    Options _options;
+  public:
+    SolverInstanceBase* doCreateSI(Env& env) {
+      return new GecodeSolverInstance(env, _options);
+    }
+    string getVersion( );
+    bool processOption(int& i, int argc, const char** argv);
+    void printHelp(std::ostream& os);
+  };
+// #define __NO_EXPORT_GECODE_SOLVERINSTANCE__  // define this to avoid exporting
+#ifndef __NO_EXPORT_GECODE_SOLVERINSTANCE__
+  Gecode_SolverFactory gecode_solverfactory;
+#endif
+
+  string Gecode_SolverFactory::getVersion()
+  {
+    string v = "Gecode solver plugin, compiled  " __DATE__ "  " __TIME__;
+    return v;
+  }
+
+  bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
+  {
+    if (string(argv[i])=="-s") {
+      _options.setBoolParam(std::string("print_stats"), true);
+    } else if (string(argv[i])=="--only-range-domains") {
+      _options.setBoolParam(std::string("only-range-domains"), true);
+    } else if (string(argv[i])=="--sac") {
+      _options.setBoolParam(std::string("sac"), true);
+    } else if (string(argv[i])=="--shave") {
+      _options.setBoolParam(std::string("shave"), true);
+    } else if (string(argv[i])=="--pre-passes") {
+      i++;
+      if (i==argc) {
+        goto error;
+      }
+      int passes = atoi(argv[i]);
+      if(passes >= 0)
+        _options.setIntParam(std::string("pre_passes"), passes);
+    }
+    return true;
+  error:
+    return false;
+  }
+  
+  void Gecode_SolverFactory::printHelp(ostream& os)
+  {
+    os
+    << "Gecode solver plugin options:" << std::endl
+    << "-s                    print solve statistics"
+    << "--only-range-domains  only tighten bounds"
+    << "--sac                 singleton arc consistency"
+    << "--shave               shave domains"
+    << "--pre-passes <n>      n passes of sac/shaving, 0 for fixed point"
+    << std::endl;
+  }
 
   class GecodeEngine {
   public:
@@ -1869,71 +1925,4 @@ namespace MiniZinc {
         return FLOAT_VAL_SPLIT_MIN();
     }
 #endif
-
-
-  void
-  GecodeSolverInstance::assignSolutionToOutput(void) {
-    //iterate over set of ids that have an output annotation and obtain their right hand side from the flat model
-    for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
-      VarDecl* vd = _varsWithOutput[i];
-      //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-      if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
-        assert(vd->e());
-
-        if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-          std::vector<Expression*> array_elems;
-          ASTExprVec<Expression> array = al->v();
-          for(unsigned int j=0; j<array.size(); j++) {
-            if(Id* id = array[j]->dyn_cast<Id>()) {
-              //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
-              array_elems.push_back(getSolutionValue(id));
-            } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
-              array_elems.push_back(floatLit);
-            } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
-              array_elems.push_back(intLit);
-            } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
-              array_elems.push_back(boolLit);
-            } else {
-              std::cerr << "Error: array element " << *array[j] << " is not an id nor a literal" << std::endl;
-              assert(false);
-            }
-          }
-          GCLock lock;
-          ArrayLit* dims;
-          Expression* e = output_array_ann->args()[0];
-          if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
-            dims = al;
-          } else if(Id* id = e->dyn_cast<Id>()) {
-            dims = id->decl()->e()->cast<ArrayLit>();
-          } else {
-            throw -1;
-          }
-          std::vector<std::pair<int,int> > dims_v;
-          for(unsigned int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(_env.envi(), dims->v()[i]);
-            dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
-          }
-          ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
-          KeepAlive ka(array_solution);
-          // add solution to the output
-          for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
-            if(it->e()->id()->str() == vd->id()->str()) {
-              //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-              it->e()->e(array_solution); // set the solution
-            }
-          }
-        }
-      } else if(vd->ann().contains(constants().ann.output_var)) {
-        Expression* sol = getSolutionValue(vd->id());
-        for (VarDeclIterator it = _env.output()->begin_vardecls(); it != _env.output()->end_vardecls(); ++it) {
-          if(it->e()->id()->str() == vd->id()->str()) {
-            //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-            it->e()->e(sol); // set the solution
-          }
-        }
-      }
-    }
-
-  }
-
   }

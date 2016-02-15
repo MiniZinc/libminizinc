@@ -9,8 +9,11 @@
  * License, v. 2.0. If a copy of the MPL was ! distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER 
 #define _CRT_SECURE_NO_WARNINGS
+#undef ERROR    // MICROsoft.
+#undef min
+#undef max
 #endif
 
 #include <minizinc/flatten.hh>
@@ -30,6 +33,7 @@
 //#include <ostream>
 
 #include <map>
+
 
 /// TODOs
 /// set_in etc. are ! propagated between views

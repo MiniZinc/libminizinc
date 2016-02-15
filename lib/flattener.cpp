@@ -36,7 +36,8 @@ void Flattener::printVersion(ostream& os)
 {
   os << "NICTA MiniZinc to FlatZinc converter, version "
      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-  os << "Copyright (C) " __DATE__ "  " __TIME__ "   Monash University and NICTA" << std::endl;
+  os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
+     << "   Monash University and NICTA" << std::endl;
 }
 
 void Flattener::printHelp(ostream& os)
@@ -60,7 +61,9 @@ void Flattener::printHelp(ostream& os)
   << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
-  << "  -o, --fzn, --output-to-file, --output-fzn-to-file <file>\n    Filename for generated FlatZinc output" << std::endl
+  << ( fOutputByDefault ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
+       : "  --fzn <file>, --output-fzn-to-file <file>\n" )
+  << "    Filename for generated FlatZinc output" << std::endl
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
@@ -89,12 +92,12 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_optimize = false;
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
-  } else if ( cop.getOption( "--output-base", &buffer ) ) {
-    flag_output_base = buffer;
-  } else if ( cop.getOption( "-o --fzn --output-to-file --output-fzn-to-file", &buffer) ) {
-    flag_output_fzn = buffer;
-  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &buffer) ) {
-    flag_output_ozn = buffer;
+  } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
+  } else if ( cop.getOption(
+    fOutputByDefault ?
+      "-o --fzn --output-to-file --output-fzn-to-file"
+      : "--fzn --output-fzn-to-file", &flag_output_fzn) ) {
+  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
@@ -110,10 +113,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
          buffer.substr(buffer.length()-4,string::npos) != ".dzn")
       goto error;
     datafiles.push_back(buffer);
-  } else if ( cop.getOption( "--stdlib-dir", &buffer ) ) {
-    std_lib_dir = buffer;
-  } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &buffer ) ) {
-      globals_dir = buffer;
+  } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
+  } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &globals_dir ) ) {
   } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
     if (flag_stdinInput)
       goto error;
@@ -426,60 +427,55 @@ void Flattener::flatten()
                   std::cerr << "none";
                 std::cerr << "\n";
               }
-              
-              if (flag_output_fzn_stdout) {
+            }
+
+            if (flag_output_fzn_stdout) {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
+              Printer p(std::cout,0);
+              p.print(env.flat());
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            } else if(flag_output_fzn != "") {
+              if (flag_verbose)
+                std::cerr << "Printing FlatZinc to '"
+                << flag_output_fzn << "' ..." << std::flush;
+              std::ofstream os;
+              os.open(flag_output_fzn.c_str(), ios::out);
+              checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+              Printer p(os,0);
+              p.print(env.flat());
+              checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+              os.close();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+            if (!flag_no_output_ozn) {
+              if (flag_output_ozn_stdout) {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
+                  std::cerr << "Printing .ozn to stdout ..." << std::endl;
                 Printer p(std::cout,0);
-                p.print(env.flat());
+                p.print(env.output());
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              } else if(flag_output_fzn != "") {
+              } else if (flag_output_ozn != "") {
                 if (flag_verbose)
-                  std::cerr << "Printing FlatZinc to '"
-                  << flag_output_fzn << "' ..." << std::flush;
+                  std::cerr << "Printing .ozn to '"
+                  << flag_output_ozn << "' ..." << std::flush;
                 std::ofstream os;
-                os.open(flag_output_fzn.c_str(), ios::out);
-                checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+                os.open(flag_output_ozn.c_str(), std::ios::out);
+                checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
                 Printer p(os,0);
-                p.print(env.flat());
-                checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+                p.print(env.output());
+                checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
                 os.close();
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-              if (!flag_no_output_ozn) {
-                if (flag_output_ozn_stdout) {
-                  if (flag_verbose)
-                    std::cerr << "Printing .ozn to stdout ..." << std::endl;
-                  Printer p(std::cout,0);
-                  p.print(env.output());
-                  if (flag_verbose)
-                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-                } else if (flag_output_ozn != "") {
-                  if (flag_verbose)
-                    std::cerr << "Printing .ozn to '"
-                    << flag_output_ozn << "' ..." << std::flush;
-                  std::ofstream os;
-                  os.open(flag_output_ozn.c_str(), std::ios::out);
-                  checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
-                  Printer p(os,0);
-                  p.print(env.output());
-                  checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
-                  os.close();
-                  if (flag_verbose)
-                    std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-                }
-              }
             }
-
             /// To cout:
             //             std::cout << "\n\n\n   -------------------  DUMPING env  --------------------------------" << std::endl;
             //             env.envi().dump();
-/// Putting this to destructor?  TODO
-//             if(is_flatzinc) {
-//               env.swap();
-//             }
           }
         } else { // !flag_typecheck
           Printer p(std::cout);

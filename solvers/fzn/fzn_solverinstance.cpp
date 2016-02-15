@@ -67,33 +67,56 @@ namespace MiniZinc {
     return v;
   }
 
+  void FZN_SolverFactory::printHelp(ostream& os)
+  {
+    os
+    << "MZN-FZN plugin options:" << std::endl
+    << "  -f, --solver, --flatzinc-cmd\n     the backend solver filename. The default: flatzinc.\n"
+    << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
+    << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for options that need to be quoted.\n"
+    << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
+    << "  -a, --all-solns, --all-solutions\n     Print all solutions.\n"
+    << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
+    << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
+                           "     or <this_exe> --fzn ..., --ozn ...\n"
+    << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
+    ;
+  }
+
   bool FZN_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
-    if (string(argv[i])=="--solver") {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      _options.setStringParam(constants().opts.solver.fzn_solver.str(), argv[i]);
+    CLOParser cop( i, argc, argv );
+    string buffer;
+    double dd;
+    int nn=-1;
+    
+    if ( cop.getOption( "-f --solver --flatzinc-cmd", &buffer) ) {
+      _options.setStringParam(constants().opts.solver.fzn_solver.str(), buffer);
+    } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
+      _options.setStringParam(constants().opts.solver.fzn_flags.str(), buffer);
+    } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
+      _options.setStringParam(constants().opts.solver.fzn_flag.str(), buffer);
+    } else if ( cop.getOption( "-n --num-solutions", &nn) ) {
+      _options.setIntParam(constants().opts.solver.numSols.str(), nn);
+    } else if ( cop.getOption( "-a --all-solns --all-solutions") ) {
+      _options.setBoolParam(constants().opts.solver.allSols.str(), true);
+    } else if ( cop.getOption( "-p --parallel", &nn) ) {
+      _options.setIntParam(constants().opts.solver.fzn_flag.str(), nn);
+    } else if ( cop.getOption( "-k --keep-files" ) ) {
+    } else if ( cop.getOption( "-r --seed --random-seed", &dd) ) {
     }
+
     return true;
   error:
     return false;
   }
   
-  void FZN_SolverFactory::printHelp(ostream& os)
-  {
-    os
-    << "FZN solver plugin options:" << std::endl
-    << "--solver         the backend solver"
-    << std::endl;
-  }
-
   namespace {
 
 #ifdef _WIN32
     mutex mtx;
-    void ReadPipePrint(HANDLE g_hCh, ostream& os, ostream* pResult = nullptr) {
+    void ReadPipePrint(HANDLE g_hCh, ostream* pOs, Solns2Out* pSo = nullptr) {
+      assert( pOs!=0 || pSo!=0 );
       bool done = false;
       while (!done) {
         char buffer[5255];
@@ -102,13 +125,14 @@ namespace MiniZinc {
         if (bSuccess && count > 0) {
           buffer[count] = 0;
           lock_guard<mutex> lck(mtx);
-          do {
-            if (pResult)
-              (*pResult) << buffer;
-            os << buffer << flush;
-          } while (0);
+          if (pSo)
+            pSo->feedRawDataChunk( buffer );
+          if (pOs)
+            (*pOs) << buffer << flush;
         }
         else {
+          if (pSo)
+            pSo->feedRawDataChunk( "\n" );   // in case the last chunk had none
           done = true;
         }
       }
@@ -117,11 +141,16 @@ namespace MiniZinc {
 
     class FznProcess {
     protected:
-      std::string _fzncmd;
+      vector<string> _fzncmd;
       bool _canPipe;
-      Model* _flat;
+      Model* _flat=0;
+      Solns2Out* pS2Out=0;
     public:
-      FznProcess(const std::string& fzncmd, bool pipe, Model* flat) : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat) {}
+      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso)
+        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso) {
+        assert( 0!=_flat );
+        assert( 0!=pS2Out );
+      }
       std::string run(void) {
 #ifdef _WIN32
         std::stringstream result;
@@ -193,7 +222,8 @@ namespace MiniZinc {
         siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
         std::stringstream cmdline;
-        cmdline << strdup(_fzncmd.c_str()) << " " << strdup("-v") << " ";
+        for (auto& iCmdl: _fzncmd)
+          cmdline << iCmdl << " ";
         if (_canPipe) {
           cmdline << strdup("-");
         }
@@ -243,8 +273,8 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_IN_Rd);
 
         // Threaded solution seems simpler than asyncronous pipe reading
-        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, ref(cout), &(result));
-        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, ref(cerr), nullptr);
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, nullptr, pS2Out);
+        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &cerr, nullptr);
         thrStdout.join();
         thrStderr.join();
 
@@ -303,6 +333,7 @@ namespace MiniZinc {
             if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, NULL) )
             {
               kill(childPID, SIGKILL);
+              pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
               done = true;
             } else {
               for ( int i=1; i<=2; ++i )
@@ -313,13 +344,16 @@ namespace MiniZinc {
                   if (count > 0) {
                     buffer[count] = 0;
                     if ( 1==i ) {
-                      result << buffer;
-                      cout << buffer << flush;
+//                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
+//                       cerr << buffer << flush;
+                      pS2Out->feedRawDataChunk( buffer );
                     }
-                    else
+                    else {
                       cerr << buffer << flush;
+                    }
                   }
-                  else {
+                  else if ( 1==i ) {
+                    pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
                     done = true;
                   }
                 }
@@ -346,8 +380,8 @@ namespace MiniZinc {
           close(pipes[2][0]);
 
           std::vector<char*> cmd_line;
-          cmd_line.push_back(strdup(_fzncmd.c_str()));
-          cmd_line.push_back(strdup("-v"));
+          for (auto& iCmdl: _fzncmd)
+            cmd_line.push_back( strdup(iCmdl.c_str()) );
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
           char** argv = new char*[cmd_line.size() + 1];
@@ -369,136 +403,167 @@ namespace MiniZinc {
   }
 
   FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-    : SolverInstanceImpl<FZNSolver>(env, options), _fzn(env.flat()), _ozn(env.output()), hadSolution(false) {}
+    : SolverInstanceBase(env, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
-  namespace {
-    ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
-      GCLock lock;
-      ArrayLit* al = eval_array_lit(env.envi(), args[d]);
-      std::vector<std::pair<int, int> > dims(d);
-      unsigned int dim1d = 1;
-      for (int i = 0; i < d; i++) {
-        IntSetVal* di = eval_intset(env.envi(), args[i]);
-        if (di->size() == 0) {
-          dims[i] = std::pair<int, int>(1, 0);
-          dim1d = 0;
-        }
-        else if (di->size() != 1) {
-          throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
-        }
-        else {
-          dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
-            static_cast<int>(di->max(0).toInt()));
-          dim1d *= dims[i].second - dims[i].first + 1;
-        }
-      }
-      if (dim1d != al->v().size())
-        throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
-      ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
-      Type t = al->type();
-      t.dim(d);
-      ret->type(t);
-      ret->flat(al->flat());
-      return ret;
-    }
-  }
+//   namespace {
+//     ArrayLit* b_arrayXd(Env& env, ASTExprVec<Expression> args, int d) {
+//       GCLock lock;
+//       ArrayLit* al = eval_array_lit(env.envi(), args[d]);
+//       std::vector<std::pair<int, int> > dims(d);
+//       unsigned int dim1d = 1;
+//       for (int i = 0; i < d; i++) {
+//         IntSetVal* di = eval_intset(env.envi(), args[i]);
+//         if (di->size() == 0) {
+//           dims[i] = std::pair<int, int>(1, 0);
+//           dim1d = 0;
+//         }
+//         else if (di->size() != 1) {
+//           throw EvalError(env.envi(), args[i]->loc(), "arrayXd only defined for ranges");
+//         }
+//         else {
+//           dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
+//             static_cast<int>(di->max(0).toInt()));
+//           dim1d *= dims[i].second - dims[i].first + 1;
+//         }
+//       }
+//       if (dim1d != al->v().size())
+//         throw EvalError(env.envi(), al->loc(), "mismatch in array dimensions");
+//       ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
+//       Type t = al->type();
+//       t.dim(d);
+//       ret->type(t);
+//       ret->flat(al->flat());
+//       return ret;
+//     }
+//   }
 
   SolverInstance::Status
-    FZNSolverInstance::solve(void) {
-    std::vector<std::string> includePaths;
-    std::string fzn_solver = _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc");
+  FZNSolverInstance::solve(void) {
+    /// Passing options to solver
+    vector<string> cmd_line;
+    cmd_line.push_back( _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc") );
+    string sFlags = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
+    if ( sFlags.size() )
+      cmd_line.push_back( sFlags );
+    string sFlagQuoted = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
+    if ( sFlagQuoted.size() )
+      cmd_line.push_back( '"'+sFlagQuoted+'"' );
+    if ( _options.hasParam(constants().opts.solver.numSols.str()) ) {
+      ostringstream oss;
+      oss << _options.getIntParam(constants().opts.solver.numSols.str());
+      cmd_line.push_back( "-n "+oss.str() );
+    }
+    if ( _options.getBoolParam(constants().opts.solver.allSols.str(), false) ) {
+      cmd_line.push_back( "-a" );
+    }
+    if ( _options.hasParam(constants().opts.solver.threads.str()) ) {
+      ostringstream oss;
+      oss << _options.getIntParam(constants().opts.solver.threads.str());
+      cmd_line.push_back( "-p "+oss.str() );
+    }
+    if (_options.getBoolParam(constants().opts.statistics.str(), false)) {
+      cmd_line.push_back( "-s" );
+    }
     if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
-      std::cerr << "Using FZN solver " << fzn_solver << " for solving." << std::endl;
+      cmd_line.push_back( "-v" );
+      std::cerr << "Using FZN solver " << cmd_line[0]
+        << " for solving, parameters: ";
+      for ( int i=1; i<cmd_line.size(); ++i )
+        cerr << cmd_line[i] << ' ';
+      cerr << std::endl;
     }
-    FznProcess proc(fzn_solver, false, _fzn);
-    std::string r = proc.run();
-    std::stringstream result;
-    result << r;
-    std::string solution;
+    
+    FznProcess proc(cmd_line, false, _fzn, getSolns2Out());
+    proc.run();
 
-    typedef std::pair<VarDecl*, Expression*> DE;
-    ASTStringMap<DE>::t declmap;
-    for (unsigned int i = 0; i < _ozn->size(); i++) {
-      if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
-        declmap.insert(std::make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
-      }
-    }
-
-    hadSolution = false;
-    while (result.good()) {
-      std::string line;
-      getline(result, line);
-
-      if (beginswith(line, "----------")) {
-        if (hadSolution) {
-          for (ASTStringMap<DE>::t::iterator it = declmap.begin(); it != declmap.end(); ++it) {
-            it->second.first->e(it->second.second);
-          }
-        }
-        Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
-        if (sm) {
-          for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
-            if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
-              ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
-              if (it == declmap.end()) {
-                std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
-                exit(EXIT_FAILURE);
-              }
-              if (Call* c = ai->e()->dyn_cast<Call>()) {
-                // This is an arrayXd call, make sure we get the right builtin
-                assert(c->args()[c->args().size() - 1]->isa<ArrayLit>());
-                for (unsigned int i = 0; i < c->args().size(); i++)
-                  c->args()[i]->type(Type::parsetint());
-                c->args()[c->args().size() - 1]->type(it->second.first->type());
-                ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size() - 1);
-                it->second.first->e(al);
-              }
-              else {
-                it->second.first->e(ai->e());
-              }
-            }
-          }
-          delete sm;
-          hadSolution = true;
-        } else {
-          std::cerr << "\n\n\nError: solver output malformed; DUMPING: ---------------------\n\n\n";
-          cerr << result.str() << endl;
-          std::cerr << "\n\nError: solver output malformed (END DUMPING) ---------------------" << endl;
-          exit(EXIT_FAILURE);
-        }
-      }
-      else if (beginswith(line, "==========")) {
-        return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
-      }
-      else if (beginswith(line, "=====UNSATISFIABLE=====")) {
-        return SolverInstance::UNSAT;
-      }
-      else if (beginswith(line, "=====UNBOUNDED=====")) {
-        return SolverInstance::UNBND;
-      }
-      else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
-        return SolverInstance::UNSATorUNBND;
-      }
-      else if (beginswith(line, "=====ERROR=====")) {
-        return SolverInstance__ERROR;
-      }
-      else if (beginswith(line, "=====UNKNOWN=====")) {
-        return SolverInstance::UNKNOWN;
-      }
-      else {
-        solution += line;
-      }
-    }
-
-    return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+//     std::stringstream result;
+//     result << r;
+//     std::string solution;
+// 
+//     typedef std::pair<VarDecl*, Expression*> DE;
+//     ASTStringMap<DE>::t declmap;
+//     for (unsigned int i = 0; i < _ozn->size(); i++) {
+//       if (VarDeclI* vdi = (*_ozn)[i]->dyn_cast<VarDeclI>()) {
+//         declmap.insert(std::make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
+//       }
+//     }
+// 
+//     hadSolution = false;
+//     while (result.good()) {
+//       std::string line;
+//       getline(result, line);
+// 
+//       if (beginswith(line, "----------")) {
+//         if (hadSolution) {
+//           for (ASTStringMap<DE>::t::iterator it = declmap.begin(); it != declmap.end(); ++it) {
+//             it->second.first->e(it->second.second);
+//           }
+//         }
+//         Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, std::cerr);
+//         if (sm) {
+//           for (Model::iterator it = sm->begin(); it != sm->end(); ++it) {
+//             if (AssignI* ai = (*it)->dyn_cast<AssignI>()) {
+//               ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
+//               if (it == declmap.end()) {
+//                 std::cerr << "Error: unexpected identifier " << ai->id() << " in output\n";
+//                 exit(EXIT_FAILURE);
+//               }
+//               if (Call* c = ai->e()->dyn_cast<Call>()) {
+//                 // This is an arrayXd call, make sure we get the right builtin
+//                 assert(c->args()[c->args().size() - 1]->isa<ArrayLit>());
+//                 for (unsigned int i = 0; i < c->args().size(); i++)
+//                   c->args()[i]->type(Type::parsetint());
+//                 c->args()[c->args().size() - 1]->type(it->second.first->type());
+//                 ArrayLit* al = b_arrayXd(_env, c->args(), c->args().size() - 1);
+//                 it->second.first->e(al);
+//               }
+//               else {
+//                 it->second.first->e(ai->e());
+//               }
+//             }
+//           }
+//           delete sm;
+//           hadSolution = true;
+//         } else {
+//           std::cerr << "\n\n\nError: solver output malformed; DUMPING: ---------------------\n\n\n";
+//           cerr << result.str() << endl;
+//           std::cerr << "\n\nError: solver output malformed (END DUMPING) ---------------------" << endl;
+//           exit(EXIT_FAILURE);
+//         }
+//       }
+//       else if (beginswith(line, "==========")) {
+//         return hadSolution ? SolverInstance::OPT : SolverInstance::UNSAT;
+//       }
+//       else if (beginswith(line, "=====UNSATISFIABLE=====")) {
+//         return SolverInstance::UNSAT;
+//       }
+//       else if (beginswith(line, "=====UNBOUNDED=====")) {
+//         return SolverInstance::UNBND;
+//       }
+//       else if (beginswith(line, "=====UNSATorUNBOUNDED=====")) {
+//         return SolverInstance::UNSATorUNBND;
+//       }
+//       else if (beginswith(line, "=====ERROR=====")) {
+//         return SolverInstance__ERROR;
+//       }
+//       else if (beginswith(line, "=====UNKNOWN=====")) {
+//         return SolverInstance::UNKNOWN;
+//       }
+//       else {
+//         solution += line;
+//       }
+//     }
+// 
+//     return hadSolution ? SolverInstance::SAT : SolverInstance::UNSAT;
+    return getSolns2Out()->status;
   }
 
-  void FZNSolverInstance::printSolution(ostream& os) {
-    assert(hadSolution);
-    _env.evalOutput(os);
-  }
+//   void FZNSolverInstance::printSolution(ostream& os) {
+//     assert(hadSolution);
+//     _env.evalOutput(os);
+//   }
 
   void
     FZNSolverInstance::processFlatZinc(void) {}

@@ -52,46 +52,43 @@ int main(int argc, const char** argv) {
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       fSuccess = true;
-      if ( slv.getNSolvers() ) {          // only then
+      if ( !slv.ifMzn2Fzn() ) {          // only then
         GCLock lock;
         slv.addSolverInterface();
         slv.solve();
       }
-    } else if (SolverInstance::UNSAT == slv.getFlt()->status) {
-      fSuccess = true;
-      std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else if (SolverInstance::ERROR == slv.getFlt()->status) {
-      std::cout << "=====ERROR=====" << std::endl;
+//       slv.s2out.evalStatus( slv.getFlt()->status );
     } else {
       fSuccess = true;
-      cout << "  Flattening produced status " << slv.getFlt()->status << "  TODO" << endl;
+//       slv.s2out.evalStatus( slv.getFlt()->status );
     }   // TODO  Move evalOutput() here?
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.loc() << ":" << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   } catch (const Exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   catch (const exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   catch (...) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-    std::cout << "=====ERROR=====" << std::endl;
+    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
 
-  if ( slv.getNSolvers() ) {
+  if ( !slv.ifMzn2Fzn() ) {
     endTime = clock();
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
@@ -160,9 +157,17 @@ MznSolver::~MznSolver()
   flt=0;
 }
 
+bool MznSolver::ifMzn2Fzn() {
+#ifdef FLATTEN_ONLY
+  return true;
+#else
+  return 0==getNSolvers();
+#endif
+}
+
 void MznSolver::addFlattener()
 {
-  flt = getGlobalFlattener(0==getNSolvers());
+  flt = getGlobalFlattener(ifMzn2Fzn());
   assert(flt);
 }
 
@@ -171,11 +176,46 @@ void MznSolver::addSolverInterface()
   assert(getGlobalSolverRegistry()->getSolverFactories().size());
   si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
   assert(si);
+  s2out.initFromEnv( flt->getEnv() );
+  si->setSolns2Out( &s2out );
   if (get_flag_verbose())
     cerr
 //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
     << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
+}
+
+void MznSolver::printHelp()
+{
+  if ( !ifMzn2Fzn() )
+  cout
+    << "NICTA MiniZinc driver.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
+  else
+  cout
+    << "NICTA MiniZinc to FlatZinc converter.\n"
+    << "Usage: <executable>"  //<< argv[0]
+    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+  cout
+    << "Options:" << std::endl
+    << "  --help, -h\n    Print this help message." << std::endl
+    << "  --version\n    Print version information." << std::endl
+    << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
+    << "  -s, --statistics\n    Print statistics." << std::endl;
+//   if ( getNSolvers() )
+  
+  getFlt()->printHelp(cout);
+  cout << endl;
+  if ( !ifMzn2Fzn() ) {
+    s2out.printHelp(cout);
+    cout << endl;
+  }
+  for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
+        it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
+       (*it)->printHelp(cout);
+      cout << endl;
+  }
 }
 
 bool MznSolver::processOptions(int argc, const char** argv)
@@ -196,13 +236,11 @@ bool MznSolver::processOptions(int argc, const char** argv)
       std::exit(EXIT_SUCCESS);
     }
     //  moving --verbose here:
-    if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
+    if ((argv[i])==string("-v") || (argv[i])==string("--verbose") || (argv[i])==string("-l")) {
       flag_verbose = true;
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;                  // is this Flattener's option?
-    } else if ( string(argv[i])=="-c"
-      || string(argv[i])=="--canonicalize" || string(argv[i])=="--canonicalise" ) {
-      flag_canonicalize = true;   // TODO
+    } else if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
     } else if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
@@ -216,38 +254,6 @@ Found: { }
 NotFound:
   cerr << "  Unrecognized option: '" << argv[i] << "'" << endl;
   return false;
-}
-
-void MznSolver::printHelp()
-{
-  if ( getNSolvers() )
-  cout
-    << "NICTA MiniZinc driver.\n"
-    << "Usage: <executable>"  //<< argv[0]
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
-  else
-  cout
-    << "NICTA MiniZinc to FlatZinc converter.\n"
-    << "Usage: <executable>"  //<< argv[0]
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
-  cout
-    << "Options:" << std::endl
-    << "  --help, -h\n    Print this help message" << std::endl
-    << "  --version\n    Print version information" << std::endl
-    << "  -v, --verbose\n    Print progress statements" << std::endl
-    << "  -s, --statistics\n    Print statistics" << std::endl;
-  if ( getNSolvers() )
-  cout
-    << "  -c, --canonicalize\n    Canonicalize the FlatZinc solution stream.   [NOT IMPL]\n"
-       "    Note that this option prevents incremental printing of solutions." << std::endl;
-  
-  getFlt()->printHelp(cout);
-  cout << endl;
-  for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-        it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-       (*it)->printHelp(cout);
-      cout << endl;
-  }
 }
 
 void MznSolver::flatten()
@@ -269,24 +275,14 @@ void MznSolver::solve()
   getSI()->processFlatZinc();
   SolverInstance::Status status = getSI()->solve();
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-    getSI()->printSolution(cout);             // What if it's already printed?  TODO
-    if (status==SolverInstance::OPT)
-      std::cout << "==========" << std::endl;
+    getSI()->printSolution();             // What if it's already printed?  TODO
+    if ( !getSI()->getSolns2Out()->fStatusPrinted )
+      getSI()->getSolns2Out()->evalStatus( status );
   }
   else {
-    if (status == SolverInstance::UNSAT)
-      std::cout << "=====UNSATISFIABLE=====" << std::endl;
-    else if (status == SolverInstance::UNBND)
-      std::cout << "=====UNBOUNDED=====" << std::endl;
-    else if (status == SolverInstance::UNSATorUNBND)
-      std::cout << "=====UNSATorUNBOUNDED=====" << std::endl;
-    else if (status == SolverInstance::UNKNOWN)
-      std::cout << "=====UNKNOWN=====" << std::endl;
-    else if (status == SolverInstance::ERROR)
-      std::cout << "=====ERROR=====" << std::endl;
-    else
-      std::cout << "=====UNKNOWN_STATUS=====" << std::endl;
-    if (get_flag_verbose() || get_flag_statistics())    // it's summary in fact
+    if ( !getSI()->getSolns2Out()->fStatusPrinted )
+      getSI()->getSolns2Out()->evalStatus( status );
+    if (get_flag_statistics())    // it's summary in fact
       printStatistics();
   }
 }
@@ -294,7 +290,7 @@ void MznSolver::solve()
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(cerr, 1);
+    getSI()->printStatisticsLine(cout, 1);
 }
 
 

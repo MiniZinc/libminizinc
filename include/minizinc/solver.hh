@@ -79,12 +79,13 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
-    
+
   public:
+    Solns2Out s2out;
+    
     /// global options
     bool flag_verbose=0;
     bool flag_statistics=0;
-    bool flag_canonicalize=0;
     
     /// solver options, not used    TODO
     Options options_solver;          // currently can create solver object only after flattening
@@ -96,6 +97,8 @@ namespace MiniZinc {
     virtual void printHelp();
     virtual void flatten();
     virtual size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
+    /// If building a flattening exe only.
+    virtual bool ifMzn2Fzn();
     virtual void addSolverInterface();
     virtual void solve();
     virtual void printStatistics();

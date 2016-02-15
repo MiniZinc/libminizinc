@@ -24,13 +24,14 @@ opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
            else deopt( fMIPdomains ) endif;
-opt bool: fMIPdomAuxDiff;
+opt bool: fMIPdomAux;
 bool: fPostproDom_AUX =          %% Specialized for aux_ constr
-           if absent( fMIPdomAuxDiff ) then false
-           else deopt( fMIPdomAuxDiff ) endif;
+           if absent( fMIPdomAux ) then false
+           else deopt( fMIPdomAux ) endif;
+opt bool: fMIPdomDiff;
 bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
-           if absent( fMIPdomAuxDiff ) then false
-           else deopt( fMIPdomAuxDiff ) endif;
+           if absent( fMIPdomDiff ) then true
+           else deopt( fMIPdomDiff ) endif;
 
 mzn_opt_only_range_domains = not fPostprocessDomains;
 

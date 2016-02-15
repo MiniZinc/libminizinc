@@ -120,6 +120,7 @@ namespace MiniZinc {
     void vo_add_exp(VarDecl* vd);
     Model* flat(void);
     void swap();
+    void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     bool dumpPath(std::ostream& os, bool force);
@@ -131,6 +132,8 @@ namespace MiniZinc {
     FilenameMap& getFilenameMap() { return filenameMap; }
 
     void setMaps(EnvI& env);
+
+    /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
   };

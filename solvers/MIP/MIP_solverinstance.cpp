@@ -25,7 +25,6 @@
 using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_solverinstance.h>
-#include <minizinc/eval_par.hh>
 
 using namespace MiniZinc;
 
@@ -35,8 +34,7 @@ using namespace MiniZinc;
 
 string MIP_SolverFactory::getVersion()
 {
-  string v = "  MIP solver plugin, compiled  " __DATE__ "  " __TIME__
-    ", using: "
+  string v = "  MIP solver plugin, compiled  " __DATE__ ", using: "
     + MIP_WrapperFactory::getVersion();
   return v;
 }
@@ -54,18 +52,6 @@ MIP_solver::Variable MIP_solverinstance::exprToVar(Expression* arg) {
     var = mip_wrap->addLitVar(bl->v());
     return var;
   } else if (Id* ident = arg->dyn_cast<Id>()) {
-//      cerr << "  Looking for variable '" << ident->decl()->id()->str().c_str() <<"'. "
-//        "  id == " << (ident) << ",  id->decl() == " << ident->decl() << endl;
-//     ofstream ofs("IdMap.txt", ios::app);
-//     static int nnn=0;
-//     ++ nnn;
-//     ofs << "\n\n\n LOOKUP No. " << nnn
-//       << "  Looking for variable '" << ident->decl()->id()->str().c_str() <<"'. "
-//       "  id == " << (ident) << ",  id->decl() == " << ident->decl() << endl;
-//     for (auto ivi=_variableMap.begin(); ivi!=_variableMap.end(); ++ivi)
-//       ofs << ivi->first->str().c_str() << " : " << ivi->second << '\n';
-//     ofs.close();
-//     cerr << "  ... VarId == " << (_variableMap.get(ident->decl()->id())) << endl;
     return _variableMap.get(ident->decl()->id());
   }
 
@@ -222,23 +208,6 @@ void MIP_solverinstance::registerConstraints() {
 //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus);
 }
 
-void MIP_solverinstance::printSolution(ostream& os) {
-  assignSolutionToOutput();
-  std::stringstream ss;
-  getEnv()->evalOutput(ss);
-  std::string output = ss.str();
-
-  std::hash<std::string> str_hash;
-  size_t h = str_hash(output);
-  if(previousOutput.find(h) == previousOutput.end()) {
-    previousOutput.insert(h);
-    std::cout << output;
-    if ( getOptions().getBoolParam(constants().opts.verbose.str()) )
-      printStatistics(cerr, 1);
-    std::cout << "----------" << std::endl;
-  }
-}
-
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
     {
@@ -269,10 +238,11 @@ void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   // multi-threading? TODO
   MIP_solverinstance* pSI = (MIP_solverinstance*)( pp );
   assert(pSI);
-  if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
+  /// Not for -a:
+//   if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
     pSI->lastIncumbent = out.objVal;
-    pSI->printSolution(std::cout);
-  }
+    pSI->printSolution();
+//   }
 }
 
 
@@ -467,80 +437,4 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 }
 
 
-void MIP_solverinstance::assignSolutionToOutput() {
-  if (mOutputDecls.empty()) {   // fill output decls map
-     for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
-        mOutputDecls[it->e()->id()->str().str()] = it->e();
-     }
-  }
-
-  //iterate over set of ids that have an output annotation && obtain their right hand side from the flat model
-  for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
-    VarDecl* vd = _varsWithOutput[i];
-    //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-    if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
-      assert(vd->e());
-
-      if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-        std::vector<Expression*> array_elems;
-        ASTExprVec<Expression> array = al->v();
-        for(unsigned int j=0; j<array.size(); j++) {
-          if(Id* id = array[j]->dyn_cast<Id>()) {
-            //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
-            array_elems.push_back(getSolutionValue(id));
-          } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
-            array_elems.push_back(floatLit);
-          } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
-            array_elems.push_back(intLit);
-          } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
-            array_elems.push_back(boolLit);
-          } else {
-            std::cerr << "Error: array element " << *array[j] << " is ! an id nor a literal" << std::endl;
-            assert(false);
-          }
-        }
-        GCLock lock;
-        ArrayLit* dims;
-        Expression* e = output_array_ann->args()[0];
-        if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
-          dims = al;
-        } else if(Id* id = e->dyn_cast<Id>()) {
-          dims = id->decl()->e()->cast<ArrayLit>();
-        } else {
-          throw -1;
-        }
-        std::vector<std::pair<int,int> > dims_v;
-        for( int i=0;i<dims->length();i++) {
-          IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
-          dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
-        }
-        ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
-        KeepAlive ka(array_solution);
-        // add solution to the output
-//         for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
-//           if(it->e()->id()->str() == vd->id()->str()) {
-//             //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-//             it->e()->e(array_solution); // set the solution
-//           }
-//         }
-        auto it = mOutputDecls.find(vd->id()->str().str());
-        if (mOutputDecls.end() != it)
-          it->second->e(array_solution);
-      }
-    } else if(vd->ann().contains(constants().ann.output_var)) {
-      Expression* sol = getSolutionValue(vd->id());
-      vd->e(sol);
-//       for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it != getEnv()->output()->end_vardecls(); ++it) {
-//         if(it->e()->id()->str() == vd->id()->str()) {
-//           //std::cout << "DEBUG: Assigning array solution to " << it->e()->id()->str() << std::endl;
-//           it->e()->e(sol); // set the solution
-//         }
-//       }
-      auto it = mOutputDecls.find(vd->id()->str().str());
-      if (mOutputDecls.end() != it)
-        it->second->e(sol);
-    }
-  }
-
-}
 
