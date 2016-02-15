@@ -352,7 +352,7 @@ namespace MiniZinc {
                       cerr << buffer << flush;
                     }
                   }
-                  else {
+                  else if ( 1==i ) {
                     pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
                     done = true;
                   }

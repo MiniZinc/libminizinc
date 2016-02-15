@@ -350,7 +350,6 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
   }
   if ( pOfs_raw.get() ) {
-    cerr << "  RAW: '" << data << '\'' << endl;
     (*pOfs_raw.get()) << data;
     if (_opt.flag_output_flush)
       pOfs_raw->flush();
