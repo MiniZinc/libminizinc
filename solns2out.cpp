@@ -36,12 +36,12 @@ using namespace std;
 namespace MiniZinc {
   class Solns2OutFull : public Solns2Out {
     const int argc;
-    const char* const* argv;
+    const char** argv;
     string std_lib_dir;
     istream& solstream = cin;
   public:
     string filename;
-    Solns2OutFull( const int ac, const char* const* av )
+    Solns2OutFull( const int ac, const char** av )
       : argc(ac), argv(av) { }
     void printVersion(ostream& os) {
       os << "NICTA MiniZinc solution printing tool, version "
@@ -65,7 +65,9 @@ namespace MiniZinc {
       int i=1;
       if (argc < 2)
         return false;
+      string avi;
       for (i=1; i<argc; ++i) {
+        avi = argv[i];
         CLOParser cop( i, argc, argv );
         if (string(argv[i])=="-h" || string(argv[i])=="--help") {
           printHelp(cout);
@@ -74,9 +76,10 @@ namespace MiniZinc {
         if (string(argv[i])=="--version") {
           printVersion(cout);
           std::exit(EXIT_SUCCESS);
-        } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
+        } else if (cop.getOption("--stdlib-dir", &std_lib_dir)) {
+        } else if ( Solns2Out::processOption(i, argc, argv)) {
         } else {
-          filename = argv[i++];
+          filename = argv[i];
           if (filename.length()<=4 ||
               filename.substr(filename.length()-4,string::npos) != ".ozn") {
             std::cerr << "Invalid .ozn file " << filename << "." << std::endl;
@@ -87,7 +90,7 @@ namespace MiniZinc {
       }
       return true;
     NotFound:
-      cerr << " solns2out: unrecognized option: '" << argv[i] << "'" << endl;
+      cerr << "  solns2out: unrecognized option: '" << avi << "'" << endl;
       return false;
     }
     void run() {
@@ -95,6 +98,7 @@ namespace MiniZinc {
       while ( solstream.good() ) {
         string line;
         getline( solstream, line );
+        line += '\n';                // need eols as in t=raw stream
         feedRawDataChunk( line.c_str() );
       }
     }
@@ -103,6 +107,7 @@ namespace MiniZinc {
       if ( !parseOzn(fo) )
         return false;
       init();
+      return true;
     }
     bool parseOzn(string& fileOzn)
     {
@@ -162,7 +167,7 @@ namespace MiniZinc {
   };
 }
 
-int main(int argc, char** argv) {
+int main(int argc, const char** argv) {
   
   Solns2OutFull s2out( argc, argv );
   

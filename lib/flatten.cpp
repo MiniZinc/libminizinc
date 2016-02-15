@@ -624,16 +624,16 @@ namespace MiniZinc {
     GCLock lock;
 
     ArrayLit* al = eval_array_lit(*this,output->outputItem()->e());
-    std::string output;
+    bool fLastEOL = true;
     for (int i=0; i<al->v().size(); i++) {
       std::string s = eval_string(*this, al->v()[i]);
       if (!s.empty()) {
-        output = s;
-        os << output;
+        os << s;
+        fLastEOL = ( '\n'==s.back() );
       }
     }
-    if (output.empty() || output[output.size()-1] != '\n')
-      os << std::endl;
+    if ( !fLastEOL )
+      os << '\n';
     return os;
   }
   

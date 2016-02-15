@@ -66,7 +66,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--unknown-msg", &_opt.unknown_msg ) ) {
   } else if ( cop.getOption( "--error-msg", &_opt.error_msg ) ) {
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
-  } else if ( cop.getOption( "-c, --canonicalize") ) {
+  } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize, true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
@@ -168,11 +168,13 @@ bool Solns2Out::evalOutput() {
   auto res = sSolsCanon.insert( oss.str() );
   if ( !res.second )            // repeated solution
     return true;
+  if (_opt.flag_output_time)
+    getOutput() << "% time elapsed: " << stoptime(starttime) << endl;
   if ( _opt.flag_canonicalize && pOfs_non_canon.get() ) {
-    if ( pOfs_non_canon->good() && dynamic_cast<ofstream*>(pOfs_non_canon.get())->is_open() ) {
+    if ( pOfs_non_canon->good() ) {
       (*pOfs_non_canon) << oss.str();
       if (_opt.flag_output_time)
-        getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+        (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
       if ( _opt.flag_output_flush )
         pOfs_non_canon->flush();
     }
@@ -265,7 +267,13 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
 }
 
 void Solns2Out::init() {
-  outputExpr = getModel()->outputItem()->e();
+//   outputExpr = getModel()->outputItem()->e(); 
+  for (unsigned int i=0; i<getModel()->size(); i++) {
+    if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
+      outputExpr = oi->e();
+    }
+  }
+
   /// Main output file
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
@@ -278,20 +286,18 @@ void Solns2Out::init() {
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
     pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
-    checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_file, 0);
+    checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_noncanonical, 0);
   }
   /// Raw output
   if ( _opt.flag_output_raw.size() ) {
     pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
-    checkIOStatus( pOfs_raw->good(), _opt.flag_output_file, 0);
+    checkIOStatus( pOfs_raw->good(), _opt.flag_output_raw, 0);
   }
   /// Assume all options are set before
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
 Solns2Out::~Solns2Out() {
-  if ( SolverInstance::UNKNOWN!=status && !fStatusPrinted )
-    evalStatus( status );
   getOutput() << comments;
   if ( _opt.flag_output_flush )
     getOutput() << flush;
@@ -306,6 +312,17 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
   while (solstream.good()) {
     string line;
     getline(solstream, line);
+    if (line_part.size()) {
+      line = line_part + line;
+      line_part.clear();
+    }
+    if (solstream.eof()) {  // wait next chunk
+      line_part = line;
+      return true;
+    }
+    if (line.size())
+      if ('\r' == line.back())
+        line.pop_back();       // For WIN files
     if ( nLinesIgnore > 0 ) {
       --nLinesIgnore;
       continue;
