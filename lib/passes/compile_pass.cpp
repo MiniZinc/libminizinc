@@ -36,13 +36,6 @@
 
 namespace MiniZinc {
 
-  std::string stoptime(Timer& start) {
-    std::ostringstream oss;
-    oss << std::setprecision(0) << std::fixed << start.ms() << " ms";
-    start.reset();
-    return oss.str();
-  }
-  
   IncludeI* update_include(Model* parent, IncludeI* inc, std::vector<std::string>& includes, bool verbose=false) {
     std::string filename = inc->f().str();
     std::vector<std::string> datafiles;
