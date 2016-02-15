@@ -28,14 +28,13 @@ void Solns2Out::printHelp(ostream& os)
   << "Solution output options:" << std::endl
   << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
   << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
-  << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution.\n    The default is to use the same as FlatZinc, \"----------\"." << std::endl
+  << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution (as a separate line).\n    The default is to use the same as FlatZinc, \"----------\"." << std::endl
   << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate solutions.\n    The default is the empty string." << std::endl
-  << "  --unsat-msg <msg>, --unsatisfiable-msg <msg>\n    Specify the message to print if the model instance is\n    unsatisfiable.\n    The default is to print \"=====UNSATISFIABLE=====\"." << std::endl
-  << "  --unbounded-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unbounded.\n    The default is to print \"=====UNBOUNDED=====\"." << std::endl
-  << "  --unsatorunbnd-msg <msg>\n    Specify the message to print if the objective of the\n    model instance is unsat or unbounded.\n    The default is to print \"=====UNSATorUNBOUNDED=====\"." << std::endl
-  << "  --unknown-msg <msg>\n    Specify the message to print if search terminates without\n    any result.  The default is to print \"=====UNKNOWN=====\"." << std::endl
-  << "  --error-msg <msg>\n    Specify the message to print if error occurs.\n    The default is to print \"=====ERROR=====\"." << std::endl
-  << "  --search-complete-msg <msg>\n    Specify the message to print if search terminates having\n    explored the entire search space.\n    The default is to print \"==========\"." << std::endl
+  << "  --unsat-msg (--unsatisfiable-msg), --unbounded-msg, --unsatorunbnd-msg,\n"
+  "        --unknown-msg, --error-msg, --search-complete-msg <msg>\n"
+  "    Specify solution status messages. The defaults:\n"
+  "    \"=====UNSATISFIABLE=====\", \"=====UNSATorUNBOUNDED=====\", \"=====UNBOUNDED=====\",\n"
+  "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively." << std::endl
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
   << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
@@ -104,7 +103,7 @@ void Solns2Out::createOutputMap() {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
       declmap.insert(pair<ASTString,DE>(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
     } else if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
-      outputExpr = oi->e();
+      MZN_ASSERT_HARD( outputExpr == oi->e() );
     }
   }
 }
@@ -195,17 +194,18 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
 //     GCLock lock;
 //     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
 //     std::string os;
+//     cerr << " al->size() == " << al->v().size() << endl;
 //     for (unsigned int i=0; i<al->v().size(); i++) {
 //       std::string s = eval_string(pEnv->envi(),al->v()[i]);
 //       if (!s.empty()) {
 //         os = s;
-//         fout << os;
+//         cerr << os;
 //         if (flag_output_flush)
 //           fout.flush();
 //       }
 //     }
 //     if (!os.empty() && os[os.size()-1] != '\n') {
-//       fout << '\n';
+//       cerr << '\n';
 //       if (flag_output_flush)
 //         fout.flush();
 //     }
@@ -265,6 +265,7 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
 }
 
 void Solns2Out::init() {
+  outputExpr = getModel()->outputItem()->e();
   /// Main output file
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {

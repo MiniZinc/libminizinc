@@ -87,7 +87,7 @@ namespace MiniZinc {
       }
       return true;
     NotFound:
-      cerr << "  Unrecognized option: '" << argv[i] << "'" << endl;
+      cerr << " solns2out: unrecognized option: '" << argv[i] << "'" << endl;
       return false;
     }
     void run() {
@@ -100,8 +100,9 @@ namespace MiniZinc {
     }
   private:
     bool initFromOzn( string& fo ) {
+      if ( !parseOzn(fo) )
+        return false;
       init();
-      return parseOzn(fo);
     }
     bool parseOzn(string& fileOzn)
     {

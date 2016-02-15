@@ -97,7 +97,8 @@ namespace MiniZinc {
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
-    /// In the 1st case, (part of) the assignment text is passed as follows
+    /// In the 1st case, (part of) the assignment text is passed as follows,
+    /// original end-of-lines need to be there as well
     virtual bool feedRawDataChunk( const char* );
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
