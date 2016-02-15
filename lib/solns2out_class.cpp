@@ -67,7 +67,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--error-msg", &_opt.error_msg ) ) {
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
   } else if ( cop.getOption( "-c --canonicalize") ) {
-    _opt.flag_canonicalize, true;
+    _opt.flag_canonicalize = true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
 //   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
@@ -168,16 +168,15 @@ bool Solns2Out::evalOutput() {
   auto res = sSolsCanon.insert( oss.str() );
   if ( !res.second )            // repeated solution
     return true;
-  if (_opt.flag_output_time)
-    getOutput() << "% time elapsed: " << stoptime(starttime) << endl;
-  if ( _opt.flag_canonicalize && pOfs_non_canon.get() ) {
-    if ( pOfs_non_canon->good() ) {
-      (*pOfs_non_canon) << oss.str();
-      if (_opt.flag_output_time)
-        (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
-      if ( _opt.flag_output_flush )
-        pOfs_non_canon->flush();
-    }
+  if ( _opt.flag_canonicalize ) {
+    if ( pOfs_non_canon.get() )
+      if ( pOfs_non_canon->good() ) {
+        (*pOfs_non_canon) << oss.str();
+        if (_opt.flag_output_time)
+          (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
+        if ( _opt.flag_output_flush )
+          pOfs_non_canon->flush();
+      }
   } else {
     if ( _opt.solution_comma.size() && sSolsCanon.size()>1 )
       getOutput() << _opt.solution_comma << '\n';
@@ -286,11 +285,13 @@ void Solns2Out::init() {
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
     pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
+    MZN_ASSERT_HARD_MSG( pOfs_non_canon.get(), "Could not allocate stream object for non-canon output" );
     checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_noncanonical, 0);
   }
   /// Raw output
   if ( _opt.flag_output_raw.size() ) {
     pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
+    MZN_ASSERT_HARD_MSG( pOfs_raw.get(), "Could not allocate stream object for raw output" );
     checkIOStatus( pOfs_raw->good(), _opt.flag_output_raw, 0);
   }
   /// Assume all options are set before
@@ -318,7 +319,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
     if (solstream.eof()) {  // wait next chunk
       line_part = line;
-      return true;
+      break;  // to get to raw output
     }
     if (line.size())
       if ('\r' == line.back())
@@ -349,6 +350,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
   }
   if ( pOfs_raw.get() ) {
+    cerr << "  RAW: '" << data << '\'' << endl;
     (*pOfs_raw.get()) << data;
     if (_opt.flag_output_flush)
       pOfs_raw->flush();

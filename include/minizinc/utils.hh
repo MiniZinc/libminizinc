@@ -69,8 +69,7 @@ namespace MiniZinc {
   {
     if ( !fOk ) {
       std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
-      if ( fHard )
-        exit(EXIT_FAILURE);
+      MZN_ASSERT_HARD_MSG ( !fHard, msg << strerror(errno) );
     }
   }
   
