@@ -254,7 +254,9 @@ if [ -n "$EXPS" ]
 then
     for EXP in $EXPS
     do
-        if diff --brief --ignore-all-space $OUT $EXP >/dev/null 2>&1
+        if diff --brief --ignore-all-space \
+          -I 'minizinc.exe: flattening killed by signal 1' \
+          $OUT $EXP >/dev/null 2>&1
         then
             PASSFAIL=pass
             break
