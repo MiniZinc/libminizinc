@@ -301,24 +301,24 @@ void Flattener::flatten()
             std::cerr << "Typechecking ...";
           pEnv.reset(new Env(m));
           Env& env = *getEnv();
-          //vector<TypeError> typeErrors;
-          //MiniZinc::typecheck(env, m, typeErrors, false);
-          //if (typeErrors.size() > 0) {
-          //  for (unsigned int i=0; i<typeErrors.size(); i++) {
-          //    if (flag_verbose)
-          //      std::cerr << std::endl;
-          //    std::cerr << typeErrors[i].loc() << ":" << std::endl;
-          //    std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-          //  }
-          //  exit(EXIT_FAILURE);
-          //}
-          //MiniZinc::registerBuiltins(env, m);
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (!flag_instance_check_only) {
             if (is_flatzinc) {
               GCLock lock;
+              vector<TypeError> typeErrors;
+              MiniZinc::typecheck(env, m, typeErrors, false);
+              if (typeErrors.size() > 0) {
+                for (unsigned int i=0; i<typeErrors.size(); i++) {
+                  if (flag_verbose)
+                    std::cerr << std::endl;
+                  std::cerr << typeErrors[i].loc() << ":" << std::endl;
+                  std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+                }
+                exit(EXIT_FAILURE);
+              }
+              MiniZinc::registerBuiltins(env, m);
               env.swap();
               populateOutput(env);
             } else {
