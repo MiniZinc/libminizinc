@@ -71,11 +71,12 @@ namespace MiniZinc {
   {
     os
     << "MZN-FZN plugin options:" << std::endl
-    << "  -f, --solver, --flatzinc-cmd\n     the backend solver filename. The default: flatzinc.\n"
+    << "  -f, --solver, --flatzinc-cmd <exe>\n     the backend solver filename. The default: flatzinc.\n"
+    << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for options that need to be quoted.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
-    << "  -a, --all-solns, --all-solutions\n     Print all solutions.\n"
+    << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
                            "     or <this_exe> --fzn ..., --ozn ...\n"
@@ -92,23 +93,31 @@ namespace MiniZinc {
     
     if ( cop.getOption( "-f --solver --flatzinc-cmd", &buffer) ) {
       _options.setStringParam(constants().opts.solver.fzn_solver.str(), buffer);
+    } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
+      _options.setStringParam( "backend", buffer );
     } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
-      _options.setStringParam(constants().opts.solver.fzn_flags.str(), buffer);
+      string old = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
+      old += ' ';
+      old += buffer;
+      _options.setStringParam(constants().opts.solver.fzn_flags.str(), old);
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
+      string old = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
+      old += " \"";
+      old += buffer;
+      old += " \"";
       _options.setStringParam(constants().opts.solver.fzn_flag.str(), buffer);
     } else if ( cop.getOption( "-n --num-solutions", &nn) ) {
       _options.setIntParam(constants().opts.solver.numSols.str(), nn);
-    } else if ( cop.getOption( "-a --all-solns --all-solutions") ) {
+    } else if ( cop.getOption( "-a --all --all-solns --all-solutions") ) {
       _options.setBoolParam(constants().opts.solver.allSols.str(), true);
     } else if ( cop.getOption( "-p --parallel", &nn) ) {
       _options.setIntParam(constants().opts.solver.fzn_flag.str(), nn);
     } else if ( cop.getOption( "-k --keep-files" ) ) {
     } else if ( cop.getOption( "-r --seed --random-seed", &dd) ) {
+    } else {
+      return false;
     }
-
     return true;
-  error:
-    return false;
   }
   
   namespace {
@@ -444,12 +453,17 @@ namespace MiniZinc {
     /// Passing options to solver
     vector<string> cmd_line;
     cmd_line.push_back( _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc") );
+    string sBE = _options.getStringParam("backend", "");
+    if ( sBE.size() ) {
+      cmd_line.push_back( "-b" );
+      cmd_line.push_back( sBE );
+    }
     string sFlags = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
     if ( sFlags.size() )
       cmd_line.push_back( sFlags );
     string sFlagQuoted = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
     if ( sFlagQuoted.size() )
-      cmd_line.push_back( '"'+sFlagQuoted+'"' );
+      cmd_line.push_back( sFlagQuoted );
     if ( _options.hasParam(constants().opts.solver.numSols.str()) ) {
       ostringstream oss;
       oss << _options.getIntParam(constants().opts.solver.numSols.str());

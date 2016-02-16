@@ -133,7 +133,7 @@ namespace MiniZinc {
       }
 
       if (std_lib_dir.empty()) {
-        std::cerr << "Error: Solns2Out: unknown minizinc standard library directory.\n"
+        std::cerr << "Error: solns2out: unknown minizinc standard library directory.\n"
           << "Specify --stdlib-dir on the command line or set the\n"
           << "MZN_STDLIB_DIR environment variable.\n";
         std::exit(EXIT_FAILURE);
@@ -153,7 +153,7 @@ namespace MiniZinc {
                                   std::cerr)) {
           std::vector<TypeError> typeErrors;
           pEnv = new Env(pOutput);
-          MZN_ASSERT_HARD_MSG( pEnv, "Solns2Out: could not allocate Env" );
+          MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
           pEnv_guard.reset( pEnv );
           MiniZinc::typecheck(*pEnv,pOutput,typeErrors);
           MiniZinc::registerBuiltins(*pEnv,pOutput);
