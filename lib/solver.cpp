@@ -58,10 +58,10 @@ int main(int argc, const char** argv) {
         slv.solve();
       }
     } else if (SolverInstance::ERROR == slv.getFlt()->status) {
-//       slv.s2out.evalStatus( slv.getFlt()->status );
+      slv.s2out.evalStatus( slv.getFlt()->status );
     } else {
       fSuccess = true;
-//       slv.s2out.evalStatus( slv.getFlt()->status );
+      slv.s2out.evalStatus( slv.getFlt()->status );
     }   // TODO  Move evalOutput() here?
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
@@ -252,7 +252,7 @@ Found: { }
   }
   return true;
 NotFound:
-  cerr << "  Unrecognized option: '" << argv[i] << "'" << endl;
+  cerr << "  Unrecognized option or bad format: '" << argv[i] << "'" << endl;
   return false;
 }
 
