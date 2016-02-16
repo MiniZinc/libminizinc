@@ -45,9 +45,7 @@ namespace MiniZinc {
 
   bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
-    if (string(argv[i])=="-s") {
-      _options.setBoolParam(std::string("print_stats"), true);
-    } else if (string(argv[i])=="--only-range-domains") {
+    if (string(argv[i])=="--only-range-domains") {
       _options.setBoolParam(std::string("only-range-domains"), true);
     } else if (string(argv[i])=="--sac") {
       _options.setBoolParam(std::string("sac"), true);
@@ -71,7 +69,7 @@ namespace MiniZinc {
   {
     os
     << "Gecode solver plugin options:" << std::endl
-    << "-s                    print solve statistics"
+    //<< "-s                    print solve statistics"
     << "--only-range-domains  only tighten bounds"
     << "--sac                 singleton arc consistency"
     << "--shave               shave domains"
@@ -102,11 +100,6 @@ namespace MiniZinc {
        : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
-       _only_range_domains = options.getBoolParam(std::string("only-range-domains"), false);
-       _run_sac = options.getBoolParam(std::string("sac"), false);
-       _run_shave = options.getBoolParam(std::string("shave"), false);
-       _pre_passes = options.getIntParam(std::string("pre_passes"), 1);
-       _print_stats = options.getBoolParam(std::string("print_stats"), false);
        _flat = env.flat();
      }
 
@@ -337,6 +330,11 @@ namespace MiniZinc {
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
+    _only_range_domains = _options.getBoolParam(std::string("only-range-domains"), false);
+    _run_sac = _options.getBoolParam(std::string("sac"), false);
+    _run_shave = _options.getBoolParam(std::string("shave"), false);
+    _pre_passes = _options.getIntParam(std::string("pre_passes"), 1);
+    _print_stats = _options.getBoolParam(std::string("statistics"), false);
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
