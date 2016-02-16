@@ -12,10 +12,10 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/model.hh>
-#include <minizinc/prettyprinter.hh>
-#include <minizinc/typecheck.hh>
 #include <minizinc/optimize.hh>
+#include <minizinc/solver.hh>
+#include <minizinc/solvers/fzn_solverinstance.hh>
+#include <minizinc/ast.hh>
 
 namespace MiniZinc {
 
@@ -100,18 +100,18 @@ namespace MiniZinc {
     submodel.predicate->ann().clear();
 
     GCLock lock;
-    Model* m = new Model();
-    Env e = Env(m);
+    Model m;
+    Env e(&m);
     CopyMap cm;
 
     FunctionI* pred = copy(e.envi(), cm, submodel.predicate, false, true)->cast<FunctionI>();
-    m->addItem(pred);
-    m->registerFn(e.envi(), pred);
+    m.addItem(pred);
+    m.registerFn(e.envi(), pred);
     std::vector<Expression*> args;
     for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
       //TODO: Deal with non-variable parameters
       VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
-      m->addItem(new VarDeclI(Location(), vd));
+      m.addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
       args.push_back(arg);
@@ -119,11 +119,11 @@ namespace MiniZinc {
     Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
     pred_call->type(Type::varbool());
     ConstraintI* constraint = new ConstraintI(Location(), pred_call);
-    m->addItem(constraint);
-    m->addItem(SolveI::sat(Location()));
+    m.addItem(constraint);
+    m.addItem(SolveI::sat(Location()));
 
 //    TODO: Merg STD or RegisterBuiltins?
-    model->mergeStdLib(e.envi(),m);
+    model->mergeStdLib(e.envi(), &m);
 
     FlatteningOptions fops = FlatteningOptions();
     fops.onlyRangeDomains = flag_only_range_domains;
@@ -132,11 +132,26 @@ namespace MiniZinc {
     if(flag_optimize)
       optimize(e);
 
+    e.flat()->compact();
+    e.output()->compact();
+
+    Options ops = Options();
+    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
+//    ops.setIntParam(constants().opts.solver.numSols.str(), 0);
+    ops.setBoolParam(constants().opts.statistics.str(), false);
+
+    Solns2Out s2o;
+    s2o.initFromEnv(&e);
+    FZNSolverInstance si(e, ops);
+    si.setSolns2Out(&s2o);
+
+    si.solve();
+
+//    si.printSolution();
+
 //    Printer p = Printer(std::cerr);
 //    std::cerr << std::endl << std::endl;
 //    p.print(e.flat());
 //    std::cerr << std::endl;
-
-    delete m;
   }
 }
