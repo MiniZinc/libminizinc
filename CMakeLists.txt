@@ -316,6 +316,7 @@ target_link_libraries(flattener ${GECODE_INTERFACE} minizinc ${GECODE_LIBS} ${CM
 # add the executable
 add_executable(mzn2fzn lib/solver.cpp)
 target_link_libraries(mzn2fzn flattener)
+set_target_properties(mzn2fzn PROPERTIES COMPILE_DEFINITIONS "FLATTEN_ONLY")
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
