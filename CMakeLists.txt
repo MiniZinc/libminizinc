@@ -548,7 +548,9 @@ if(HAS_GECODE)
     gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-gecode
-    solvers/gecode/mzn-gecode.cpp
+    lib/solver.cpp
+    lib/flattener.cpp
+    solvers/gecode/gecode_solverinstance.cpp
   )
   target_link_libraries(mzn-gecode minizinc_gecode)
 

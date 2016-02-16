@@ -26,7 +26,8 @@
 #include <gecode/float.hh>
 #endif
 
-#include <minizinc/solver_instance_base.hh>
+#include <minizinc/flattener.h>
+#include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
 
 namespace MiniZinc {
@@ -298,8 +299,6 @@ namespace MiniZinc {
 
     /// Inserts variable gv into _variableMap with key id
     void insertVar(Id* id, GecodeVariable gv);
-
-    void assignSolutionToOutput(void);
 
   protected:
     /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
