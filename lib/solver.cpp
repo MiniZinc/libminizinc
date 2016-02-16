@@ -57,12 +57,11 @@ int main(int argc, const char** argv) {
         slv.addSolverInterface();
         slv.solve();
       }
-    } else if (SolverInstance::ERROR == slv.getFlt()->status) {
-      slv.s2out.evalStatus( slv.getFlt()->status );
     } else {
-      fSuccess = true;
-      slv.s2out.evalStatus( slv.getFlt()->status );
-    }   // TODO  Move evalOutput() here?
+      fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
+      if ( !slv.ifMzn2Fzn() )
+        slv.s2out.evalStatus( slv.getFlt()->status );
+    }                                   //  Add evalOutput() here?   TODO
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;

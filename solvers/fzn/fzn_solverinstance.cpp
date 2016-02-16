@@ -104,7 +104,7 @@ namespace MiniZinc {
       string old = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
       old += " \"";
       old += buffer;
-      old += " \"";
+      old += "\" ";
       _options.setStringParam(constants().opts.solver.fzn_flag.str(), buffer);
     } else if ( cop.getOption( "-n --num-solutions", &nn) ) {
       _options.setIntParam(constants().opts.solver.numSols.str(), nn);
