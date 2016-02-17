@@ -3,7 +3,7 @@
 MZNFZN_EXEC=${MZNFZN-mzn-fzn}
 if [ -z "`which $MZNFZN_EXEC`" ]; then
   NAME_ONE="$(dirname `which mzn2fzn`)/Release/$MZNFZN_EXEC"
-  if [ -e -x "$NAME_ONE" ]; then
+  if [ -e "$NAME_ONE" ]; then
     MZNFZN_EXEC=$NAME_ONE
   else
     NAME_TWO="$(dirname `which mzn2fzn`)/Debug/$MZNFZN_EXEC"
