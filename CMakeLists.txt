@@ -259,6 +259,8 @@ lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
 lib/presolve.cpp
+solvers/fzn/fzn_solverinstance.cpp
+solvers/fzn_presolver/fzn_presolverinstance.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -287,6 +289,7 @@ include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/parser.hh
 include/minizinc/presolve.hh
+include/minizinc/solvers/fzn_presolverinstance.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
@@ -299,8 +302,7 @@ include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
-${parser_hh}
-)
+${parser_hh})
 
 # add the executable
 add_executable(mzn2fzn lib/solver.cpp lib/flattener.cpp)    #mzn2fzn.cpp)
@@ -578,7 +580,7 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp)  # solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)

@@ -40,6 +40,7 @@ namespace MiniZinc {
     Env& env;
     Model* model;
     std::vector<SubModel> submodels;
+    FunctionI* table_constraint = nullptr;
 
     bool flag_verbose;
     bool flag_optimize;

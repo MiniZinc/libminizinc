@@ -14,8 +14,7 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/solver.hh>
-#include <minizinc/solvers/fzn_solverinstance.hh>
-#include <minizinc/ast.hh>
+#include <minizinc/solvers/fzn_presolverinstance.hh>
 
 namespace MiniZinc {
 
@@ -45,7 +44,9 @@ namespace MiniZinc {
     public:
       std::vector<SubModel>& submodels;
       EnvI& env;
-      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels) : env(env), submodels(submodels) { };
+      FunctionI*& table_constraint;
+      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels, FunctionI*& table_constraint)
+              : env(env), submodels(submodels), table_constraint(table_constraint) { };
       void vFunctionI(FunctionI* i) {
 //        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
@@ -66,8 +67,11 @@ namespace MiniZinc {
 
           submodels.push_back(SubModel(i, strategy, save));
         }
+        if (i->id().str() == "table") {
+          table_constraint = i;
+        }
       }
-    } pv(env.envi(), submodels);
+    } pv(env.envi(), submodels, table_constraint);
     iterItems(pv, model);
   }
 
@@ -135,23 +139,52 @@ namespace MiniZinc {
     e.flat()->compact();
     e.output()->compact();
 
-    Options ops = Options();
-    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
-//    ops.setIntParam(constants().opts.solver.numSols.str(), 0);
-    ops.setBoolParam(constants().opts.statistics.str(), false);
-
-    Solns2Out s2o;
-    s2o.initFromEnv(&e);
-    FZNSolverInstance si(e, ops);
-    si.setSolns2Out(&s2o);
-
-    si.solve();
-
-//    si.printSolution();
-
 //    Printer p = Printer(std::cerr);
 //    std::cerr << std::endl << std::endl;
 //    p.print(e.flat());
 //    std::cerr << std::endl;
+
+    Options ops = Options();
+    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
+    ops.setBoolParam(constants().opts.statistics.str(), false);
+
+    FZNPreSolverInstance si(e, ops);
+
+    auto status = si.solve();
+
+    if (status != SolverInstance::OPT && status != SolverInstance::SAT )
+      throw InternalError("Unable to solve submodel for the `" + submodel.predicate->id().str() + "' predicate");
+
+    vector<Expression*> tableVars;
+    for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
+      tableVars.push_back((*it)->id());
+    }
+
+    vector< vector<Expression*> > tableData;
+    do {
+      vector<Expression*> data;
+      for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
+        Expression* e = copy( env.envi(), si.getSolution().at( (*it)->cast<Id>()->str() ).first->e() );
+        e->type( (*it)->type() );
+        data.push_back(e);
+      }
+      tableData.push_back(data);
+    } while (si.next() != SolverInstance::ERROR);
+
+
+    ArrayLit* x = new ArrayLit(Location(), tableVars);
+    ArrayLit* t = new ArrayLit(Location(), tableData);
+//    x->type(Type::varint(1));
+//    t->type(Type::parint(2));
+    vector<Expression*> table_args;
+    table_args.push_back(x);
+    table_args.push_back(t);
+
+
+//    TODO: Include Table constraint definition.
+    Call* table_call = new Call(Location(), "table", table_args, table_constraint);
+    table_call->type(Type::varbool());
+
+    submodel.predicate->e(table_call);
   }
 }
