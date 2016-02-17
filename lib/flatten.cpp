@@ -410,7 +410,20 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* orig0) : orig(orig0), output(new Model), ignorePartial(false), maxCallStack(0), collect_vardecls(false), in_redundant_constraint(0), _flat(new Model), ids(0), pathUse(0), maxPathDepth(0), pass(0), passes(1) {
+  EnvI::EnvI(Model* orig0) :
+    orig(orig0),
+    output(new Model),
+    pass(0),
+    passes(1),
+    maxPathDepth(0),
+    ignorePartial(false),
+    maxCallStack(0),
+    collect_vardecls(false),
+    in_redundant_constraint(0),
+    pathUse(0),
+    _flat(new Model),
+    ids(0) {
+
     MZN_FILL_REIFY_MAP(int_,lin_eq);
     MZN_FILL_REIFY_MAP(int_,lin_le);
     MZN_FILL_REIFY_MAP(int_,lin_ne);
@@ -696,12 +709,10 @@ namespace MiniZinc {
       maxPathDepth = callStack.size();
     }
 
-    int lastError = callStack.size();
+    unsigned int lastError = callStack.size();
 
-    int curloc_l = -1;
     std::string sep = ";";
-
-    for (int i=0; i<lastError; i++) {
+    for (unsigned int i=0; i<lastError; i++) {
       Expression* e = callStack[i]->untag();
       bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();

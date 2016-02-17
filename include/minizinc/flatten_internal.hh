@@ -68,7 +68,7 @@ namespace MiniZinc {
     VarOccurrences vo;
     VarOccurrences output_vo;
     unsigned int pass;
-    int passes;
+    unsigned int passes;
     unsigned int maxPathDepth;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
