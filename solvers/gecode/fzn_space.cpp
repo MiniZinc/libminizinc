@@ -20,11 +20,11 @@ namespace MiniZinc {
   FznSpace::FznSpace(bool share, FznSpace& f) : Space(share, f) {
     // integer variables
     iv.resize(f.iv.size());
-    for(int i=0; i<iv.size(); i++)
+    for(unsigned int i=0; i<iv.size(); i++)
       iv[i].update(*this, share, f.iv[i]);
-    for(int i=0; i<f.iv_introduced.size(); i++)
+    for(unsigned int i=0; i<f.iv_introduced.size(); i++)
       iv_introduced.push_back(f.iv_introduced[i]);
-    for(int i=0; i<f.iv_defined.size(); i++)
+    for(unsigned int i=0; i<f.iv_defined.size(); i++)
       iv_defined.push_back(f.iv_defined[i]);
     if(f._copyAuxVars) {
       IntVarArgs iva;
@@ -39,7 +39,7 @@ namespace MiniZinc {
 
     // boolean variables
     bv.resize(f.bv.size());
-    for(int i=0; i<bv.size(); i++)
+    for(unsigned int i=0; i<bv.size(); i++)
       bv[i].update(*this, share, f.bv[i]);
     if (f._copyAuxVars) {
       BoolVarArgs bva;
@@ -51,13 +51,13 @@ namespace MiniZinc {
       }
       bv_aux = BoolVarArray(*this, bva);
     }
-    for(int i=0; i<f.bv_introduced.size(); i++)
+    for(unsigned int i=0; i<f.bv_introduced.size(); i++)
       bv_introduced.push_back(f.bv_introduced[i]);
 
 
 #ifdef GECODE_HAS_SET_VARS
     sv.resize(f.sv.size());
-    for(int i=0; i<sv.size(); i++)
+    for(unsigned int i=0; i<sv.size(); i++)
       sv[i].update(*this, share, f.sv[i]);
     if (f._copyAuxVars) {
       SetVarArgs sva;
@@ -69,13 +69,13 @@ namespace MiniZinc {
       }
       sv_aux = SetVarArray(*this, sva);
     }
-    for(int i=0; i<f.sv_introduced.size(); i++)
+    for(unsigned int i=0; i<f.sv_introduced.size(); i++)
       sv_introduced.push_back(f.sv_introduced[i]);
 #endif
 
 #ifdef GECODE_HAS_FLOAT_VARS
     fv.resize(f.fv.size());
-    for(int i=0; i<fv.size(); i++)
+    for(unsigned int i=0; i<fv.size(); i++)
       fv[i].update(*this, share, f.fv[i]);
     if (f._copyAuxVars) {
       FloatVarArgs fva;
