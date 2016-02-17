@@ -125,8 +125,8 @@ namespace MiniZinc {
         istringstream iss( arg );
         Value tmp;
         if ( !( iss >> tmp ) ) {
+          --i;
           if ( fValueOptional ) {
-            --i;
             return true;
           }
           // Not print because another agent can handle this option

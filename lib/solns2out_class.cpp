@@ -103,7 +103,8 @@ void Solns2Out::createOutputMap() {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
       declmap.insert(pair<ASTString,DE>(vdi->e()->id()->v(),DE(vdi->e(),vdi->e()->e())));
     } else if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
-      MZN_ASSERT_HARD( outputExpr == oi->e() );
+      MZN_ASSERT_HARD_MSG( outputExpr == oi->e(),
+        "solns2out_base: <=1 output items allowed currently  TODO?" );
     }
   }
 }
@@ -114,7 +115,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
     createOutputMap();
   auto it = declmap.find( id );
   MZN_ASSERT_HARD_MSG( declmap.end()!=it,
-                       "Error: unexpected id in output: " << id );
+                       "solns2out_base: unexpected id in output: " << id );
   return it->second;
 }
 
@@ -132,7 +133,7 @@ void Solns2Out::restoreDefaults() {
 void Solns2Out::parseAssignments(string& solution) {
   unique_ptr<Model> sm(
     parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr) );
-  MZN_ASSERT_HARD_MSG( sm.get(), "Solns2Out: could not parse solution" );
+  MZN_ASSERT_HARD_MSG( sm.get(), "solns2out_base: could not parse solution" );
   solution = "";
   for (unsigned int i=0; i<sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
@@ -259,7 +260,7 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
     if ( _opt.flag_output_flush )
       getOutput().flush();
     MZN_ASSERT_HARD_MSG( SolverInstance::SAT==status,    // which is ignored
-                         "Solns2Out: undefined solution status code " << status );
+                         "solns2out_base: undefined solution status code " << status );
     Solns2Out::status = SolverInstance::SAT;
   }
   comments = "";
@@ -277,21 +278,23 @@ void Solns2Out::init() {
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
       pOut.reset( new ofstream( _opt.flag_output_file ) );
-      if ( !pOut->good() ) {
-        checkIOStatus( false, _opt.flag_output_file, 0);
-      }
+      MZN_ASSERT_HARD_MSG( pOfs_raw.get(),
+                          "solns2out_base: could not allocate stream object for file output" );
+      checkIOStatus( pOut->good(), _opt.flag_output_file);
     }
   }
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
     pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
-    MZN_ASSERT_HARD_MSG( pOfs_non_canon.get(), "Could not allocate stream object for non-canon output" );
+    MZN_ASSERT_HARD_MSG( pOfs_non_canon.get(),
+                         "solns2out_base: could not allocate stream object for non-canon output" );
     checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_noncanonical, 0);
   }
   /// Raw output
   if ( _opt.flag_output_raw.size() ) {
     pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
-    MZN_ASSERT_HARD_MSG( pOfs_raw.get(), "Could not allocate stream object for raw output" );
+    MZN_ASSERT_HARD_MSG( pOfs_raw.get(),
+                         "solns2out_base: could not allocate stream object for raw output" );
     checkIOStatus( pOfs_raw->good(), _opt.flag_output_raw, 0);
   }
   /// Assume all options are set before
