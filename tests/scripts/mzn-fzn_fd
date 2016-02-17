@@ -1,5 +1,14 @@
 #!/bin/sh
 
-MINIZINC_EXEC=${MINIZINC-mzn-fzn}
+MZNFZN_EXEC=${MZNFZN-mzn-fzn}
+if [ -z "`which $MZNFZN_EXEC`" ]; then
+  NAME_ONE="$(dirname `which mzn2fzn`)/Release/$MZNFZN_EXEC"
+  if [ -e -x "$NAME_ONE" ]; then
+    MZNFZN_EXEC=$NAME_ONE
+  else
+    NAME_TWO="$(dirname `which mzn2fzn`)/Debug/$MZNFZN_EXEC"
+    MZNFZN_EXEC=$NAME_TWO
+  fi
+fi
 
-$MINIZINC_EXEC -G g12_fd -b fd $*
+$MZNFZN_EXEC -G g12_fd -b fd $*
