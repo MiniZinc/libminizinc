@@ -496,7 +496,7 @@ namespace MiniZinc {
         GecodeVariable var = resolveVar(id->decl());
         if(_current_space->_optVarIsInt) {
           IntVar intVar = var.intVar(_current_space);
-          for(int i=0; i<_current_space->iv.size(); i++) {
+          for(unsigned int i=0; i<_current_space->iv.size(); i++) {
             if(_current_space->iv[i].same(intVar)) {
               _current_space->_optVarIdx = i;
               break;
@@ -505,7 +505,7 @@ namespace MiniZinc {
           assert(_current_space->_optVarIdx >= 0);
         } else {
           FloatVar floatVar = var.floatVar(_current_space);
-          for(int i=0; i<_current_space->fv.size(); i++) {
+          for(unsigned int i=0; i<_current_space->fv.size(); i++) {
             if(_current_space->fv[i].same(floatVar)) {
               _current_space->_optVarIdx = i;
               break;
@@ -614,7 +614,6 @@ namespace MiniZinc {
         ia[i] = IntVar(*this->_current_space, 0, 0);
     for (int i=a->v().size(); i--;) {
         Expression* e = a->v()[i];
-        int idx;
         if (e->type().isvar()) {
             //ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
             GecodeSolver::Variable var = resolveVar(getVarDecl(e));
@@ -1105,7 +1104,7 @@ namespace MiniZinc {
       for (unsigned int idx = 0; idx < _current_space->bv.size(); idx++) {
         BoolVar bvar = _current_space->bv[idx];
         if(!bvar.assigned()) {
-          for (unsigned int val = bvar.min(); val <= bvar.max(); ++val) {
+          for (int val = bvar.min(); val <= bvar.max(); ++val) {
             FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
             rel(*f, f->bv[idx], IRT_EQ, val);
             if(f->status() == SS_FAILED) {
@@ -1318,13 +1317,14 @@ namespace MiniZinc {
           names.push_back(getVarDecl(vars->v()[i])->id()->str().str());          
         }        
         std::string r0, r1;
-        BrancherHandle bh = branch(*_current_space, va,
-        ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
-                    ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
-                    NULL
-                    //,&varValPrint<IntVar>
-                                  );
-                    //branchInfo.add(bh,r0,r1,names);
+        //BrancherHandle bh = 
+        branch(*_current_space, va,
+            ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
+            ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
+            NULL
+            //,&varValPrint<IntVar>
+            );
+        //branchInfo.add(bh,r0,r1,names);
       } // end int_search
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_assign") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
@@ -1366,12 +1366,13 @@ namespace MiniZinc {
         }
 
         std::string r0, r1;
-        BrancherHandle bh = branch(*_current_space, va, 
-              ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
-              ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
-              //&varValPrint<BoolVar>
-                                  );
-          //branchInfo.add(bh,r0,r1,names);
+        //BrancherHandle bh = 
+        branch(*_current_space, va, 
+            ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
+            ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
+            //&varValPrint<BoolVar>
+            );
+        //branchInfo.add(bh,r0,r1,names);
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_default_search") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
@@ -1405,12 +1406,13 @@ namespace MiniZinc {
           names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
         }
         std::string r0, r1;
-        BrancherHandle bh = branch(*_current_space, va, 
-                ann2svarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay), 
-                ann2svalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
-                NULL//,
-                //&varValPrint<SetVar>
-                                  );
+        //BrancherHandle bh =
+        branch(*_current_space, va, 
+            ann2svarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay), 
+            ann2svalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
+            NULL//,
+            //&varValPrint<SetVar>
+            );
         //branchInfo.add(bh,r0,r1,names);
 #else
         if (!ignoreUnknown) {
@@ -1465,13 +1467,14 @@ namespace MiniZinc {
             names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
         }
         std::string r0, r1;
-        BrancherHandle bh = branch(*_current_space, va,
-                ann2fvarsel(call->args()[2]->cast<Id>()->str().str(),rnd,decay), 
-                ann2fvalsel(call->args()[3]->cast<Id>()->str().str(),r0,r1),
-                NULL//,
-                //&varValPrintF
-                                  );
-                //branchInfo.add(bh,r0,r1,names);
+        //BrancherHandle bh =
+        branch(*_current_space, va,
+            ann2fvarsel(call->args()[2]->cast<Id>()->str().str(),rnd,decay), 
+            ann2fvalsel(call->args()[3]->cast<Id>()->str().str(),r0,r1),
+            NULL//,
+            //&varValPrintF
+            );
+        //branchInfo.add(bh,r0,r1,names);
 #else
         if (!ignoreUnknown) {
             err << "Warning, ignored search annotation: float_search" << std::endl;
@@ -1558,7 +1561,7 @@ namespace MiniZinc {
     }
     IntVarArgs iv_sol(_current_space->iv.size()-(introduced+funcdep+searched));
     IntVarArgs iv_tmp(introduced);
-    for (int i=_current_space->iv.size(), j=0, k=0; i--;) {
+    for (unsigned int i=_current_space->iv.size(), j=0, k=0; i--;) {
       if (iv_searched[i])
         continue;
       if(_current_space->iv_introduced[i]) {
