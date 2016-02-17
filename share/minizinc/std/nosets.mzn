@@ -109,7 +109,7 @@ predicate set_le_lt_base__(var set of int: x, var set of int: y,
     array[int] of var bool: bXMaxFrom = getMaxRearBools( set2bools( x ), i0+1..max(ubxy)+1 );
     array[int] of var bool: bYMaxFrom = getMaxRearBools( set2bools( y ), i0+1..max(ubxy)+1 );
   } in
-    trace( "set_le_lt_base__: " ++  show(ub(x)) ++ ", " ++ show(ub(y)) ++ "\n") /\
+    % trace( "set_le_lt_base__: " ++  show(ub(x)) ++ ", " ++ show(ub(y)) ++ "\n") /\
     (bOkFrom[i0] == fValReif)
     /\
     (bOkFrom[i0+length(bx)] == not fStrict)

@@ -703,7 +703,6 @@ namespace MiniZinc {
     }
 
     void p_int_in(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
@@ -722,7 +721,6 @@ namespace MiniZinc {
       }
     }
     void p_int_in_reif(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
@@ -744,7 +742,6 @@ namespace MiniZinc {
       }
     }
     void p_int_in_imp(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntSet d = gi.arg2intset(s.env().envi(), call->args()[1]);
       if (call->args()[0]->type().isvarbool()) {
@@ -859,14 +856,10 @@ namespace MiniZinc {
     }
 
     void p_at_most(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
-      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       count_rel(IRT_LQ, s, call);
     }
 
     void p_at_least(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
-      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       count_rel(IRT_GQ, s, call);
     }
 
@@ -1045,7 +1038,6 @@ namespace MiniZinc {
       IntSetVal* isv = eval_intset(s.env().envi(), call->args()[5]);
       IntSetRanges isr(isv);
 
-      int size = isv->card().toInt();
       int *f = static_cast<int*>(malloc(sizeof(int)*(isv->card().toInt())+1));
       int i=0;
       for(Ranges::ToValues<IntSetRanges> val_iter(isr); val_iter(); ++val_iter, ++i) {
@@ -1077,7 +1069,6 @@ namespace MiniZinc {
     }
 
     void p_inverse_offsets(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       int xoff = call->args()[1]->cast<IntLit>()->v().toInt();
@@ -1252,7 +1243,6 @@ namespace MiniZinc {
     }
 
     void p_schedule_unary(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann =call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
@@ -1260,7 +1250,6 @@ namespace MiniZinc {
     }
 
     void p_schedule_unary_optional(SolverInstanceBase& s, const Call* call) {
-      const Annotation& ann = call->ann();
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
