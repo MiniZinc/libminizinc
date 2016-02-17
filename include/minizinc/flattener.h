@@ -44,6 +44,7 @@ namespace MiniZinc {
   void cleanupGlobalFlattener(Flattener*);
 
   class Flattener {
+    friend class Presolver;
   private:
     unique_ptr<Env>   pEnv;
   public:

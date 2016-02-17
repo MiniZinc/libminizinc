@@ -27,7 +27,7 @@ namespace MiniZinc {
     for (auto it = submodels.begin(); it != submodels.end(); ++it) {
       if (it->calls.empty())
         continue;
-      if (flag_verbose)
+      if (options->flag_verbose)
         std::cerr << "\tPresolving `" + it->predicate->id().str() + "'" << std::endl;
       switch (it->strategy) {
         case SubModel::GLOBAL:
@@ -44,9 +44,8 @@ namespace MiniZinc {
     public:
       std::vector<SubModel>& submodels;
       EnvI& env;
-      FunctionI*& table_constraint;
-      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels, FunctionI*& table_constraint)
-              : env(env), submodels(submodels), table_constraint(table_constraint) { };
+      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels)
+              : env(env), submodels(submodels) { };
       void vFunctionI(FunctionI* i) {
 //        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
@@ -67,11 +66,8 @@ namespace MiniZinc {
 
           submodels.push_back(SubModel(i, strategy, save));
         }
-        if (i->id().str() == "table") {
-          table_constraint = i;
-        }
       }
-    } pv(env.envi(), submodels, table_constraint);
+    } pv(env.envi(), submodels);
     iterItems(pv, model);
   }
 
@@ -106,6 +102,8 @@ namespace MiniZinc {
     GCLock lock;
     Model m;
     Env e(&m);
+//  TODO: MergeSTD or RegisterBuiltins?
+    model->mergeStdLib(e.envi(), &m);
     CopyMap cm;
 
     FunctionI* pred = copy(e.envi(), cm, submodel.predicate, false, true)->cast<FunctionI>();
@@ -126,23 +124,23 @@ namespace MiniZinc {
     m.addItem(constraint);
     m.addItem(SolveI::sat(Location()));
 
-//    TODO: Merg STD or RegisterBuiltins?
-    model->mergeStdLib(e.envi(), &m);
+    options->fopts.onlyRangeDomains = options->flag_only_range_domains;
+    flatten(e, options->fopts);
 
-    FlatteningOptions fops = FlatteningOptions();
-    fops.onlyRangeDomains = flag_only_range_domains;
-    flatten(e, fops);
-
-    if(flag_optimize)
+    if(options->flag_optimize)
       optimize(e);
 
-    e.flat()->compact();
-    e.output()->compact();
+    if (!options->flag_newfzn) {
+      oldflatzinc(e);
+    } else {
+      e.flat()->compact();
+      e.output()->compact();
+    }
 
-//    Printer p = Printer(std::cerr);
-//    std::cerr << std::endl << std::endl;
-//    p.print(e.flat());
-//    std::cerr << std::endl;
+    Printer p = Printer(std::cout);
+    std::cerr << std::endl << std::endl;
+    p.print(e.flat());
+    std::cerr << std::endl;
 
     Options ops = Options();
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
@@ -166,7 +164,7 @@ namespace MiniZinc {
       for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
         Expression* e = copy( env.envi(), si.getSolution().at( (*it)->cast<Id>()->str() ).first->e() );
         e->type( (*it)->type() );
-        data.push_back(e);
+        data.push_back(e->cast<BoolLit>());
       }
       tableData.push_back(data);
     } while (si.next() != SolverInstance::ERROR);
@@ -174,15 +172,32 @@ namespace MiniZinc {
 
     ArrayLit* x = new ArrayLit(Location(), tableVars);
     ArrayLit* t = new ArrayLit(Location(), tableData);
-//    x->type(Type::varint(1));
-//    t->type(Type::parint(2));
+    x->type(Type::varint(1));
+    t->type(Type::parint(2));
     vector<Expression*> table_args;
     table_args.push_back(x);
     table_args.push_back(t);
 
 
-//    TODO: Include Table constraint definition.
-    Call* table_call = new Call(Location(), "table", table_args, table_constraint);
+    Model* table_model = parse(vector<string>(1, options->std_lib_dir + "/std/table.mzn"),vector<string>(), options->includePaths, true, false, false, std::cerr);
+    IncludeI* table_incl = new IncludeI(Location(), table_model->filename());
+    table_incl->m(table_model);
+    model->addItem(table_incl);
+
+    class RegisterFunctions : public ItemVisitor {
+    public:
+      Model* model;
+      EnvI& env;
+      RegisterFunctions(Model* model, EnvI& env) : model(model), env(env) { }
+
+      void vFunctionI(FunctionI* i) {
+        model->registerFn(env, i);
+      }
+    } rf(model,env.envi());
+    iterItems(rf, table_model);
+
+    Call* table_call = new Call(Location(), "table", table_args);
+    table_call->decl(model->matchFn(env.envi(), table_call));
     table_call->type(Type::varbool());
 
     submodel.predicate->e(table_call);

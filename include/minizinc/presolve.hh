@@ -14,8 +14,10 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/copy.hh>
+#include <minizinc/flattener.h>
 
 namespace MiniZinc {
+  class Flattener;
 
   class Presolver {
   public:
@@ -40,11 +42,8 @@ namespace MiniZinc {
     Env& env;
     Model* model;
     std::vector<SubModel> submodels;
-    FunctionI* table_constraint = nullptr;
 
-    bool flag_verbose;
-    bool flag_optimize;
-    bool flag_only_range_domains;
+    Flattener* options;
 
     void find_presolve_annotations();
 
@@ -53,9 +52,8 @@ namespace MiniZinc {
     void presolve_predicate_global(SubModel& submodel);
 
   public:
-    Presolver(Env& env, Model* m, bool verbose=false, bool optimize=true, bool only_range_domains=false)
-            : env(env), model(m), flag_verbose(verbose),
-              flag_optimize(optimize), flag_only_range_domains(only_range_domains) {}
+    Presolver(Env& env, Model* m, Flattener* options)
+            : env(env), model(m), options(options) {}
 
     void presolve();
   };

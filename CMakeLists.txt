@@ -259,7 +259,6 @@ lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
 lib/presolve.cpp
-solvers/fzn/fzn_solverinstance.cpp
 solvers/fzn_presolver/fzn_presolverinstance.cpp
 lib/statistics.cpp
 lib/lexer.lxx
@@ -580,7 +579,8 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	add_executable(mzn-fzn lib/solver.cpp lib/flattener.cpp
+            solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp lib/flattener.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)
