@@ -259,6 +259,7 @@ lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
 lib/presolve.cpp
+solvers/fzn/fzn_solverinstance.cpp
 solvers/fzn_presolver/fzn_presolverinstance.cpp
 lib/statistics.cpp
 lib/lexer.lxx
@@ -306,6 +307,7 @@ ${parser_hh})
 # add the executable
 add_executable(mzn2fzn lib/solver.cpp lib/flattener.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
+target_compile_definitions(mzn2fzn PUBLIC FLATTEN_ONLY)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
