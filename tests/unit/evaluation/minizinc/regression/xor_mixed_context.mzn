@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 array[1..3] of var 0..1: x; % 0 = Knight, 1 = Knave
 

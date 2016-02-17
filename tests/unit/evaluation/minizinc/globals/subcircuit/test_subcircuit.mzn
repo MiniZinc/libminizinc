@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "subcircuit.mzn";
 
 array[1..4] of var int: x;

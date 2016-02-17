@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 % RUNS slowly? ON mzn_cd_fd
 % The following is a regression test for a flattening bug with predicate

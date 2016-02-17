@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
 % RUNS ON mzn20_mip
 array [1..4] of int : xs = [1,2,3,4];

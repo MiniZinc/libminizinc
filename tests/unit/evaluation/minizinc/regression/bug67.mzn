@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 % Regression test for bug #67.  The version of mzn2fzn from 2009
 % would abort because the wrong type-inst was inferred for the

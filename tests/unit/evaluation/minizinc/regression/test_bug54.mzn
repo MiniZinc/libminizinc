@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 function var int:mydiv(var int: x, var int: y) = 
          let {constraint y != 0 } in 

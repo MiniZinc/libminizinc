@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 array [1..3] of set of int: a = [{1}, {1, 2}, {1, 2, 3}];
 var 1..2: x;

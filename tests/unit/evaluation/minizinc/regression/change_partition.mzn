@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 
 % Regression test for the bug descibed in var_self_assign_bug.mzn.

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+MINIZINC_EXEC=${MINIZINC-mzn-fzn}
+
+$MINIZINC_EXEC -G g12_fd -b fd $*

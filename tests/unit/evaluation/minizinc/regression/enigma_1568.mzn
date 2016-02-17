@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 
 % Regression test for a bug in mzn2fzn 1.2.  The optimisation pass was leaving

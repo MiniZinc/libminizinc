@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 % Regression test extracted from examples/zinc/sonet.zinc.
 % (as processed by zinc2mzn).

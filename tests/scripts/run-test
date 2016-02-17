@@ -269,6 +269,7 @@ then
     for ERREXP in $ERREXPS
     do
         if diff -I "^\(IBM \)\?ILOG.*CPLEX.*" --brief --ignore-all-space \
+           -I 'minizinc.exe: flattening killed by signal 1' \
                 $ERR $ERREXP >/dev/null 2>&1
         then
             PASSFAIL=pass
