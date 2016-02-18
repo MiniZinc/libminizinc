@@ -15,7 +15,7 @@
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
 namespace MiniZinc {
-
+//    TODO: Make sure there is no presolving in here.
   class FZNPreSolverInstance : public FZNSolverInstance {
   protected:
     class Solns2Vector : public Solns2Out {

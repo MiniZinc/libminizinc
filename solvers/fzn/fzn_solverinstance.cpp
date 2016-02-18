@@ -18,6 +18,9 @@
 #endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
+#include <minizinc/flattener.h>
+#include <minizinc/solver.hh>
+
 const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before windows.h
 #include <cstdio>
 #include <fstream>

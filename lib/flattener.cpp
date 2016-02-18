@@ -187,7 +187,7 @@ void Flattener::flatten()
   // controlled from redefs and command line:
 //   if (beginswith(globals_dir, "linear")) {
 //     flag_only_range_domains = true;
-//     if (flag_verbose)
+//     if (verbose)
 //       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
 //   }
 
@@ -300,8 +300,19 @@ void Flattener::flatten()
               
               if (!flag_no_presolve){
                 if (flag_verbose)
-                  std::cerr << "Presolving ..." << std::endl;
-                Presolver(env, m, this).presolve();
+                  std::cerr << "Presolving ...";
+
+                Presolver::Options preOpts;
+                preOpts.includePaths = includePaths;
+                preOpts.stdLibDir = std_lib_dir;
+                preOpts.globalsDir = globals_dir;
+                preOpts.verbose = flag_verbose;
+                preOpts.newfzn = flag_newfzn;
+                preOpts.optimize = flag_optimize;
+                preOpts.onlyRangeDomains = flag_only_range_domains;
+
+                Presolver(env, m, preOpts).presolve();
+
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
@@ -468,7 +479,7 @@ void Flattener::flatten()
     status = SolverInstance::UNSAT;
   }
 
-//   if (flag_verbose)
+//   if (verbose)
   if (flag_verbose) {
 //     std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
 //      std::cerr << " done (" << stoptime(lasttime) << "), flattening finished. ";

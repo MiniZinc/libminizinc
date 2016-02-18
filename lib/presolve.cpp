@@ -10,8 +10,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <minizinc/presolve.hh>
 #include <minizinc/astiterator.hh>
-#include <minizinc/solver.hh>
-#include <minizinc/solvers/fzn_presolverinstance.hh>
 
 namespace MiniZinc {
 
@@ -21,29 +19,28 @@ namespace MiniZinc {
   }
 
   void Presolver::presolve() {
-    find_presolve_annotations();
+    findPresolveAnnotations();
     if (subproblems.size() < 1) return;
 
-    find_presolved_calls();
+    findPresolvedCalls();
 
 //    TODO: Deal with circular presolving.
+//    TODO: Handle errors of individual solving here.
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
       if ((*it)->calls.empty())
         continue;
-      if (options->flag_verbose)
-        std::cerr << "\tPresolving `" + (*it)->predicate->id().str() + "'" << std::endl;
       (*it)->solve();
     }
   }
 
-  void Presolver::find_presolve_annotations() {
+  void Presolver::findPresolveAnnotations() {
     class PresolveVisitor : public ItemVisitor {
     public:
       std::vector<Subproblem*>& subproblems;
       EnvI& env;
       Model* model;
-      Flattener* options;
-      PresolveVisitor(vector<Subproblem*>& subproblems, EnvI& env, Model* model, Flattener* options) : subproblems(
+      Options& options;
+      PresolveVisitor(vector<Subproblem*>& subproblems, EnvI& env, Model* model, Options& options) : subproblems(
               subproblems), env(env), model(model), options(options) { }
       void vFunctionI(FunctionI* i) {
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
@@ -68,7 +65,7 @@ namespace MiniZinc {
     iterItems(pv, model);
   }
 
-  void Presolver::find_presolved_calls() {
+  void Presolver::findPresolvedCalls() {
     class CallSeeker : public ExprVisitor {
     public:
       std::vector<Subproblem*>& subproblems;
@@ -92,25 +89,66 @@ namespace MiniZinc {
     }
   }
 
-  void Presolver::GlobalSubproblem::solve() {
+  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options,
+                                    bool save)
+          : origin(origin), origin_env(origin_env), predicate(predicate), options(options), save(save) {
+    GCLock lock;
+    m = new Model();
+    e = new Env(m);
+//  TODO: MergeSTD or RegisterBuiltins?
+    origin->mergeStdLib(e->envi(), m);
+  }
+
+  Presolver::Subproblem::~Subproblem() {
+    if(m) delete m;
+    if(e) delete e;
+    if(si) delete si;
+  }
+
+  void Presolver::Subproblem::solve() {
+    clock_t startTime = std::clock();
+    clock_t lastTime = startTime;
+
     predicate->ann().clear();
 
+    if (options.verbose)
+      std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
+
+    if(options.verbose)
+      std::cerr << "\t\tConstructing predicate model ...";
+    constructModel();
+    if(options.verbose)
+      std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+
+    if(options.verbose)
+      std::cerr << "\t\tPresolving problem ...";
+    solveModel();
+    if(options.verbose)
+      std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+
+    if(options.verbose)
+      std::cerr << "\t\tInserting solutions ...";
+    replaceUsage();
+    if(options.verbose)
+      std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+
+    if (options.verbose)
+      std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;;
+  }
+
+  void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
-    Model m;
-    Env e(&m);
-//  TODO: MergeSTD or RegisterBuiltins?
-    origin->mergeStdLib(e.envi(), &m);
     CopyMap cm;
 
 //  TODO: make sure this actually works for everything that's called in the predicate.
-    FunctionI* pred = copy(e.envi(), cm, predicate, false, true)->cast<FunctionI>();
-    m.addItem(pred);
-    m.registerFn(e.envi(), pred);
+    FunctionI* pred = copy(e->envi(), cm, predicate, false, true)->cast<FunctionI>();
+    m->addItem(pred);
+    m->registerFn(e->envi(), pred);
     std::vector<Expression*> args;
     for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
       //TODO: Deal with non-variable parameters
       VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
-      m.addItem(new VarDeclI(Location(), vd));
+      m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
       args.push_back(arg);
@@ -118,37 +156,44 @@ namespace MiniZinc {
     Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
     pred_call->type(Type::varbool());
     ConstraintI* constraint = new ConstraintI(Location(), pred_call);
-    m.addItem(constraint);
-    m.addItem(SolveI::sat(Location()));
+    m->addItem(constraint);
+    m->addItem(SolveI::sat(Location()));
 
-    options->fopts.onlyRangeDomains = options->flag_only_range_domains;
-    flatten(e, options->fopts);
+    FlatteningOptions fopts;
+    fopts.onlyRangeDomains = options.onlyRangeDomains;
+    flatten(*e, fopts);
 
-    if(options->flag_optimize)
-      optimize(e);
+    if(options.optimize)
+      optimize(*e);
 
-    if (!options->flag_newfzn) {
-      oldflatzinc(e);
+    if (!options.newfzn) {
+      oldflatzinc(*e);
     } else {
-      e.flat()->compact();
-      e.output()->compact();
+      e->flat()->compact();
+      e->output()->compact();
     }
 
 //    Printer p = Printer(std::cout);
 //    std::cerr << std::endl << std::endl;
 //    p.print(e.flat());
 //    std::cerr << std::endl;
+  }
 
-    Options ops = Options();
+  void Presolver::GlobalSubproblem::solveModel() {
+    MiniZinc::Options ops = MiniZinc::Options();
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
     ops.setBoolParam(constants().opts.statistics.str(), false);
 
-    FZNPreSolverInstance si(e, ops);
+    si = new FZNPreSolverInstance(*e, ops);
 
-    auto status = si.solve();
+    auto status = si->solve();
 
     if (status != SolverInstance::OPT && status != SolverInstance::SAT )
       throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
+  }
+
+  void Presolver::GlobalSubproblem::replaceUsage() {
+    GCLock lock;
 
     std::vector< Expression* > tableVars;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
@@ -160,14 +205,14 @@ namespace MiniZinc {
     std::vector< std::vector<Expression*> > tableData;
     do {
       std::vector< Expression* > data;
-      auto sol = si.getSolution();
+      auto sol = si->getSolution();
       for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
-        Expression* exp = copy( e.envi(), sol[ (*it)->cast<Id>()->str() ], false, false, true);
+        Expression* exp = copy(e->envi(), sol[ (*it)->cast<Id>()->str() ], false, false, true);
         exp->type( Type::parbool() );
         data.push_back(exp);
       }
       tableData.push_back(data);
-    } while (si.next() != SolverInstance::ERROR);
+    } while (si->next() != SolverInstance::ERROR);
 
 
     ArrayLit* x = new ArrayLit(Location(), tableVars);
@@ -178,8 +223,8 @@ namespace MiniZinc {
     table_args.push_back(x);
     table_args.push_back(t);
 
-
-    Model* table_model = parse(std::vector< std::string >(1, options->std_lib_dir + "/std/table.mzn"), std::vector< std::string >(), options->includePaths, false, false, false, std::cerr);
+//  TODO: Make sure of the location of table.mzn
+    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"), std::vector< std::string >(), options.includePaths, false, false, false, std::cerr);
     Env table_env(table_model);
 
     std::vector<TypeError> typeErrors;

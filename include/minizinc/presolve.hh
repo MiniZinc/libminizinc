@@ -14,12 +14,12 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/copy.hh>
-#include <minizinc/flattener.h>
+#include <minizinc/solvers/fzn_presolverinstance.hh>
 
 namespace MiniZinc {
-  class Flattener;
-
   class Presolver {
+  public:
+    struct Options;
   protected:
     class Subproblem;
     class GlobalSubproblem;
@@ -30,21 +30,30 @@ namespace MiniZinc {
     Model* model;
     std::vector<Subproblem*> subproblems;
 
-    Flattener* options;
+    Options& options;
 
-    void find_presolve_annotations();
+    void findPresolveAnnotations();
 
-    void find_presolved_calls();
-
-//    void presolve_predicate_global(Subproblem& subproblem);
+    void findPresolvedCalls();
 
   public:
-    Presolver(Env& env, Model* m, Flattener* options)
+    Presolver(Env& env, Model* m, Options& options)
             : env(env), model(m), options(options) {}
 
     virtual ~Presolver();
 
     void presolve();
+  };
+
+  struct Presolver::Options {
+    vector<string> includePaths;
+    string stdLibDir;
+    string globalsDir;
+
+    bool verbose = false;
+    bool newfzn = false;
+    bool optimize = true;
+    bool onlyRangeDomains = false;
   };
 
 
@@ -57,43 +66,74 @@ namespace MiniZinc {
     // calls to the predicate in the model
     std::vector<Call*> calls;
     // Flattener for compiling flag access.
-    Flattener* options;
+    Options& options;
     // save/load result from file?
     bool save;
 
+    // Constructed Model & Env to solve subproblem.
+    Model* m;
+    Env* e;
+    //
+    FZNPreSolverInstance* si;
 
-    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save=true)
-            : origin(origin), origin_env(origin_env), predicate(predicate), options(options),save(save) { }
+    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=true);
+    virtual ~Subproblem();
 
     void addCall(Call* c) { calls.push_back(c); }
 
-    virtual void solve() = 0;
+    virtual void solve();
+
+    virtual void constructModel() = 0;
+
+    virtual void solveModel() = 0;
+
+    virtual void replaceUsage() = 0;
   };
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
   public:
-    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
-    virtual void solve();
+    virtual void constructModel();
+
+    virtual void solveModel();
+
+    virtual void replaceUsage();
   };
 
   class Presolver::ModelSubproblem : public Presolver::Subproblem {
   public:
-    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
-    virtual void solve() {
+    virtual void constructModel(){
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
+
+    virtual void solveModel(){
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
+
+    virtual void replaceUsage(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
   };
 
   class Presolver::CallsSubproblem : public Presolver::Subproblem {
   public:
-    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
-    virtual void solve() {
+    virtual void constructModel(){
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
+
+    virtual void solveModel(){
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
+
+    virtual void replaceUsage(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
   };
