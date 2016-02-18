@@ -12,7 +12,6 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/fzn_presolverinstance.hh>
-#include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
 
@@ -27,6 +26,7 @@ namespace MiniZinc {
 
     find_presolved_calls();
 
+//    TODO: Deal with circular presolving.
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
       if ((*it)->calls.empty())
         continue;
@@ -46,9 +46,10 @@ namespace MiniZinc {
       PresolveVisitor(vector<Subproblem*>& subproblems, EnvI& env, Model* model, Flattener* options) : subproblems(
               subproblems), env(env), model(model), options(options) { }
       void vFunctionI(FunctionI* i) {
-//        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
         if (ann) {
+          if (! i->e()->type().isvarbool())
+            throw TypeError(env, i->loc(), "Presolve annotation on non-predicate `" + i->id().str() + "'");
           ASTExprVec<Expression> args = ann->cast<Call>()->args();
           Id* s_id = args[0]->cast<Id>();
           bool save = args[1]->cast<BoolLit>()->v();
@@ -101,6 +102,7 @@ namespace MiniZinc {
     origin->mergeStdLib(e.envi(), &m);
     CopyMap cm;
 
+//  TODO: make sure this actually works for everything that's called in the predicate.
     FunctionI* pred = copy(e.envi(), cm, predicate, false, true)->cast<FunctionI>();
     m.addItem(pred);
     m.registerFn(e.envi(), pred);
