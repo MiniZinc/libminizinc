@@ -9,12 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <minizinc/presolve.hh>
-#include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
-#include <minizinc/flatten.hh>
-#include <minizinc/optimize.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/fzn_presolverinstance.hh>
+#include "typecheck.cpp"
 
 namespace MiniZinc {
 
@@ -89,6 +87,7 @@ namespace MiniZinc {
     } cf(submodels, env.envi(), model);
     TopDownIterator<CallSeeker> cf_it(cf);
 
+//    TODO: Replace with an ItemVisitor to support split models
     for (ConstraintIterator it = model->begin_constraints(); it != model->end_constraints(); ++it) {
       cf_it.run(it->e());
     }
@@ -137,10 +136,10 @@ namespace MiniZinc {
       e.output()->compact();
     }
 
-    Printer p = Printer(std::cout);
-    std::cerr << std::endl << std::endl;
-    p.print(e.flat());
-    std::cerr << std::endl;
+//    Printer p = Printer(std::cout);
+//    std::cerr << std::endl << std::endl;
+//    p.print(e.flat());
+//    std::cerr << std::endl;
 
     Options ops = Options();
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
@@ -153,18 +152,21 @@ namespace MiniZinc {
     if (status != SolverInstance::OPT && status != SolverInstance::SAT )
       throw InternalError("Unable to solve submodel for the `" + submodel.predicate->id().str() + "' predicate");
 
-    vector<Expression*> tableVars;
+    std::vector< Expression* > tableVars;
     for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
-      tableVars.push_back((*it)->id());
+      Id* id = (*it)->id();
+      id->type( (*it)->type() );
+      tableVars.push_back(id);
     }
 
-    vector< vector<Expression*> > tableData;
+    std::vector< std::vector<Expression*> > tableData;
     do {
-      vector<Expression*> data;
+      std::vector< Expression* > data;
+      auto sol = si.getSolution();
       for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
-        Expression* e = copy( env.envi(), si.getSolution().at( (*it)->cast<Id>()->str() ).first->e() );
-        e->type( (*it)->type() );
-        data.push_back(e->cast<BoolLit>());
+        Expression* exp = copy( e.envi(), sol[ (*it)->cast<Id>()->str() ], false, false, true);
+        exp->type( Type::parbool() );
+        data.push_back(exp);
       }
       tableData.push_back(data);
     } while (si.next() != SolverInstance::ERROR);
@@ -172,34 +174,60 @@ namespace MiniZinc {
 
     ArrayLit* x = new ArrayLit(Location(), tableVars);
     ArrayLit* t = new ArrayLit(Location(), tableData);
-    x->type(Type::varint(1));
-    t->type(Type::parint(2));
-    vector<Expression*> table_args;
+    x->type(Type::varbool(x->dims()));
+    t->type(Type::parbool(t->dims()));
+    std::vector< Expression* > table_args;
     table_args.push_back(x);
     table_args.push_back(t);
 
 
-    Model* table_model = parse(vector<string>(1, options->std_lib_dir + "/std/table.mzn"),vector<string>(), options->includePaths, true, false, false, std::cerr);
-    IncludeI* table_incl = new IncludeI(Location(), table_model->filename());
-    table_incl->m(table_model);
-    model->addItem(table_incl);
+    Model* table_model = parse(std::vector< std::string >(1, options->std_lib_dir + "/std/table.mzn"), std::vector< std::string >(), options->includePaths, false, false, false, std::cerr);
+    Env table_env(table_model);
 
-    class RegisterFunctions : public ItemVisitor {
+    std::vector<TypeError> typeErrors;
+    typecheck(table_env, table_model, typeErrors, false);
+    assert(typeErrors.size() == 0);
+
+    registerBuiltins(table_env, table_model);
+
+    class RegisterTable : public ItemVisitor {
     public:
-      Model* model;
       EnvI& env;
-      RegisterFunctions(Model* model, EnvI& env) : model(model), env(env) { }
-
+      Model* model;
+      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
+      class CallRegister : public ExprVisitor {
+      public:
+        EnvI& env;
+        Model* model;
+        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
+        virtual void vCall(Call &call) {
+          model->addItem(call.decl());
+          model->registerFn(env, call.decl());
+        }
+      } cr;
+      TopDownIterator<CallRegister> cr_it;
       void vFunctionI(FunctionI* i) {
-        model->registerFn(env, i);
+        if (i->id().str() == "table") {
+          FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
+          model->addItem(ci);
+          model->registerFn(env, ci);
+          cr_it.run(ci->e());
+        }
       }
-    } rf(model,env.envi());
-    iterItems(rf, table_model);
+    } rt(env.envi(), model);
+    iterItems(rt, table_model);
 
     Call* table_call = new Call(Location(), "table", table_args);
     table_call->decl(model->matchFn(env.envi(), table_call));
     table_call->type(Type::varbool());
 
     submodel.predicate->e(table_call);
+
+    submodel.predicate->e()->type(Type::varbool());
+
+//    Printer p = Printer(std::cout);
+//    std::cerr << std::endl << std::endl;
+//    p.print(env.model());
+//    std::cerr << std::endl;
   }
 }

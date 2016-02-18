@@ -36,6 +36,10 @@ namespace MiniZinc {
 
   bool FZNPreSolverInstance::Solns2Vector::evalOutput() {
     createOutputMap();
-    solutions.push_back(declmap);
+    ASTStringMap<Expression*>::t output;
+    for (auto it = declmap.begin(); it != declmap.end(); ++it) {
+      output[it->first] = copy(pEnv->envi(), it->second.first->e());
+    }
+    solutions.push_back(output);
   }
 }

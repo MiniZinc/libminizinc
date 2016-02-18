@@ -20,18 +20,18 @@ namespace MiniZinc {
   protected:
     class Solns2Vector : public Solns2Out {
     public:
-      std::vector<ASTStringMap<DE>::t> solutions;
+      std::vector< ASTStringMap<Expression*>::t > solutions;
 
       Solns2Vector(Env* e ) { this->initFromEnv(e); }
 
     protected:
       virtual bool evalOutput();
-      virtual bool evalStatus(SolverInstance::Status status) {}
+      virtual bool evalStatus(SolverInstance::Status status) {return true;}
     };
     Solns2Vector solns2Vector;
 
     typedef pair<VarDecl*, KeepAlive> DE;
-    ASTStringMap<DE>::t solution;
+    ASTStringMap<Expression*>::t solution;
 
   public:
     FZNPreSolverInstance(Env& env, const Options& options);
@@ -40,7 +40,7 @@ namespace MiniZinc {
 
     Status next(void);
 
-    ASTStringMap<std::pair<MiniZinc::VarDecl*, MiniZinc::KeepAlive>>::t& getSolution() {
+    ASTStringMap<Expression*>::t& getSolution() {
       return solution;
     }
   };
