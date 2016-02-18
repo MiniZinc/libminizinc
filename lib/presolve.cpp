@@ -18,17 +18,17 @@ namespace MiniZinc {
 
   void Presolver::presolve() {
     find_presolve_annotations();
-    if (submodels.size() < 1) return;
+    if (subproblems.size() < 1) return;
 
     find_presolved_calls();
 
-    for (auto it = submodels.begin(); it != submodels.end(); ++it) {
+    for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
       if (it->calls.empty())
         continue;
       if (options->flag_verbose)
         std::cerr << "\tPresolving `" + it->predicate->id().str() + "'" << std::endl;
       switch (it->strategy) {
-        case SubModel::GLOBAL:
+        case Subproblem::GLOBAL:
           presolve_predicate_global(*it);
           break;
         default:
@@ -40,10 +40,10 @@ namespace MiniZinc {
   void Presolver::find_presolve_annotations() {
     class PresolveVisitor : public ItemVisitor {
     public:
-      std::vector<SubModel>& submodels;
+      std::vector<Subproblem>& subproblems;
       EnvI& env;
-      PresolveVisitor(EnvI& env, std::vector<SubModel>& submodels)
-              : env(env), submodels(submodels) { };
+      PresolveVisitor(EnvI& env, std::vector<Subproblem>& subprobroblems)
+              : env(env), subproblems(subprobroblems) { };
       void vFunctionI(FunctionI* i) {
 //        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
@@ -52,39 +52,39 @@ namespace MiniZinc {
           Id* s_id = args[0]->cast<Id>();
           bool save = args[1]->cast<BoolLit>()->v();
 
-          SubModel::Strategy strategy;
+          Subproblem::Strategy strategy;
           if (s_id->v() == constants().presolve.calls->v())
-            strategy = SubModel::CALLS;
+            strategy = Subproblem::CALLS;
           else if (s_id->v() == constants().presolve.model->v())
-            strategy = SubModel::MODEL;
+            strategy = Subproblem::MODEL;
           else if (s_id->v() == constants().presolve.global->v())
-            strategy = SubModel::GLOBAL;
+            strategy = Subproblem::GLOBAL;
           else
             throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
 
-          submodels.push_back(SubModel(i, strategy, save));
+          subproblems.push_back(Subproblem(i, strategy, save));
         }
       }
-    } pv(env.envi(), submodels);
+    } pv(env.envi(), subproblems);
     iterItems(pv, model);
   }
 
   void Presolver::find_presolved_calls() {
     class CallSeeker : public ExprVisitor {
     public:
-      std::vector<SubModel>& submodels;
+      std::vector<Subproblem>& subproblems;
       EnvI& env;
       Model* m;
 
-      CallSeeker(std::vector<SubModel>& submodels, EnvI& env, Model* m) : submodels(submodels), env(env), m(m) { }
+      CallSeeker(std::vector<Subproblem>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
       virtual void vCall(Call &call) {
-        for (size_t i = 0; i < submodels.size(); ++i) {
-          if (submodels[i].predicate == m->matchFn(env, &call)) {
-            submodels[i].addCall(&call);
+        for (size_t i = 0; i < subproblems.size(); ++i) {
+          if (subproblems[i].predicate == m->matchFn(env, &call)) {
+            subproblems[i].addCall(&call);
           }
         }
       }
-    } cf(submodels, env.envi(), model);
+    } cf(subproblems, env.envi(), model);
     TopDownIterator<CallSeeker> cf_it(cf);
 
 //    TODO: Replace with an ItemVisitor to support split models
@@ -93,10 +93,10 @@ namespace MiniZinc {
     }
   }
 
-  void Presolver::presolve_predicate_global(SubModel& submodel) {
-    assert(submodel.strategy == SubModel::Strategy::GLOBAL);
+  void Presolver::presolve_predicate_global(Subproblem& subproblem) {
+    assert(subproblem.strategy == Subproblem::Strategy::GLOBAL);
 
-    submodel.predicate->ann().clear();
+    subproblem.predicate->ann().clear();
 
     GCLock lock;
     Model m;
@@ -105,7 +105,7 @@ namespace MiniZinc {
     model->mergeStdLib(e.envi(), &m);
     CopyMap cm;
 
-    FunctionI* pred = copy(e.envi(), cm, submodel.predicate, false, true)->cast<FunctionI>();
+    FunctionI* pred = copy(e.envi(), cm, subproblem.predicate, false, true)->cast<FunctionI>();
     m.addItem(pred);
     m.registerFn(e.envi(), pred);
     std::vector<Expression*> args;
@@ -150,10 +150,10 @@ namespace MiniZinc {
     auto status = si.solve();
 
     if (status != SolverInstance::OPT && status != SolverInstance::SAT )
-      throw InternalError("Unable to solve submodel for the `" + submodel.predicate->id().str() + "' predicate");
+      throw InternalError("Unable to solve subproblem for the `" + subproblem.predicate->id().str() + "' predicate");
 
     std::vector< Expression* > tableVars;
-    for (auto it = submodel.predicate->params().begin(); it != submodel.predicate->params().end(); ++it) {
+    for (auto it = subproblem.predicate->params().begin(); it != subproblem.predicate->params().end(); ++it) {
       Id* id = (*it)->id();
       id->type( (*it)->type() );
       tableVars.push_back(id);
@@ -221,9 +221,9 @@ namespace MiniZinc {
     table_call->decl(model->matchFn(env.envi(), table_call));
     table_call->type(Type::varbool());
 
-    submodel.predicate->e(table_call);
+    subproblem.predicate->e(table_call);
 
-    submodel.predicate->e()->type(Type::varbool());
+    subproblem.predicate->e()->type(Type::varbool());
 
 //    Printer p = Printer(std::cout);
 //    std::cerr << std::endl << std::endl;

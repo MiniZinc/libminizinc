@@ -20,28 +20,12 @@ namespace MiniZinc {
   class Flattener;
 
   class Presolver {
-  public:
-    class SubModel {
-    public:
-      enum Strategy {CALLS, MODEL, GLOBAL};
-      // predicate around which the submodel revolves
-      FunctionI* predicate;
-      // calls to the predicate in the model
-      std::vector<Call*> calls;
-      // submodel presolve strategy
-      Strategy strategy;
-      // save/load result from file?
-      bool save;
-
-      SubModel(FunctionI* pred, Strategy strategy, bool save) : predicate(pred), save(save), strategy(strategy) {};
-
-      void addCall(Call* c) { calls.push_back(c); }
-    };
-
   protected:
+    class Subproblem;
+
     Env& env;
     Model* model;
-    std::vector<SubModel> submodels;
+    std::vector<Subproblem> subproblems;
 
     Flattener* options;
 
@@ -49,7 +33,7 @@ namespace MiniZinc {
 
     void find_presolved_calls();
 
-    void presolve_predicate_global(SubModel& submodel);
+    void presolve_predicate_global(Subproblem& subproblem);
 
   public:
     Presolver(Env& env, Model* m, Flattener* options)
@@ -58,6 +42,23 @@ namespace MiniZinc {
     void presolve();
   };
 
+
+  class Presolver::Subproblem{
+  public:
+    enum Strategy {CALLS, MODEL, GLOBAL};
+    // predicate around which the submodel revolves
+    FunctionI* predicate;
+    // calls to the predicate in the model
+    std::vector<Call*> calls;
+    // submodel presolve strategy
+    Strategy strategy;
+    // save/load result from file?
+    bool save;
+
+    Subproblem(FunctionI* pred, Strategy strategy, bool save) : predicate(pred), save(save), strategy(strategy) {};
+
+    void addCall(Call* c) { calls.push_back(c); }
+  };
 //  TODO: Move to where this makes more sense
   class ExprVisitor {
   public:
@@ -103,4 +104,5 @@ namespace MiniZinc {
     virtual void vTIId(TIId& id) {}
   };
 }
+
 #endif
