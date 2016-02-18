@@ -12,9 +12,14 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/fzn_presolverinstance.hh>
-#include "typecheck.cpp"
+#include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
+
+  Presolver::~Presolver() {
+    for (auto it = subproblems.begin(); it != subproblems.end(); ++it)
+      delete (*it);
+  }
 
   void Presolver::presolve() {
     find_presolve_annotations();
@@ -23,27 +28,23 @@ namespace MiniZinc {
     find_presolved_calls();
 
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
-      if (it->calls.empty())
+      if ((*it)->calls.empty())
         continue;
       if (options->flag_verbose)
-        std::cerr << "\tPresolving `" + it->predicate->id().str() + "'" << std::endl;
-      switch (it->strategy) {
-        case Subproblem::GLOBAL:
-          presolve_predicate_global(*it);
-          break;
-        default:
-          throw EvalError(env.envi(), Location(), "Presolve strategy not supported yet.");
-      }
+        std::cerr << "\tPresolving `" + (*it)->predicate->id().str() + "'" << std::endl;
+      (*it)->solve();
     }
   }
 
   void Presolver::find_presolve_annotations() {
     class PresolveVisitor : public ItemVisitor {
     public:
-      std::vector<Subproblem>& subproblems;
+      std::vector<Subproblem*>& subproblems;
       EnvI& env;
-      PresolveVisitor(EnvI& env, std::vector<Subproblem>& subprobroblems)
-              : env(env), subproblems(subprobroblems) { };
+      Model* model;
+      Flattener* options;
+      PresolveVisitor(vector<Subproblem*>& subproblems, EnvI& env, Model* model, Flattener* options) : subproblems(
+              subproblems), env(env), model(model), options(options) { }
       void vFunctionI(FunctionI* i) {
 //        TODO: Check function type.
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
@@ -52,35 +53,32 @@ namespace MiniZinc {
           Id* s_id = args[0]->cast<Id>();
           bool save = args[1]->cast<BoolLit>()->v();
 
-          Subproblem::Strategy strategy;
           if (s_id->v() == constants().presolve.calls->v())
-            strategy = Subproblem::CALLS;
+            subproblems.push_back(new CallsSubproblem(model, env, i, options, save));
           else if (s_id->v() == constants().presolve.model->v())
-            strategy = Subproblem::MODEL;
+            subproblems.push_back(new ModelSubproblem(model, env, i, options, save));
           else if (s_id->v() == constants().presolve.global->v())
-            strategy = Subproblem::GLOBAL;
+            subproblems.push_back(new GlobalSubproblem(model, env, i, options, save));
           else
             throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
-
-          subproblems.push_back(Subproblem(i, strategy, save));
         }
       }
-    } pv(env.envi(), subproblems);
+    } pv(subproblems, env.envi(), model, options);
     iterItems(pv, model);
   }
 
   void Presolver::find_presolved_calls() {
     class CallSeeker : public ExprVisitor {
     public:
-      std::vector<Subproblem>& subproblems;
+      std::vector<Subproblem*>& subproblems;
       EnvI& env;
       Model* m;
 
-      CallSeeker(std::vector<Subproblem>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
+      CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
       virtual void vCall(Call &call) {
         for (size_t i = 0; i < subproblems.size(); ++i) {
-          if (subproblems[i].predicate == m->matchFn(env, &call)) {
-            subproblems[i].addCall(&call);
+          if (subproblems[i]->predicate == m->matchFn(env, &call)) {
+            subproblems[i]->addCall(&call);
           }
         }
       }
@@ -93,19 +91,17 @@ namespace MiniZinc {
     }
   }
 
-  void Presolver::presolve_predicate_global(Subproblem& subproblem) {
-    assert(subproblem.strategy == Subproblem::Strategy::GLOBAL);
-
-    subproblem.predicate->ann().clear();
+  void Presolver::GlobalSubproblem::solve() {
+    predicate->ann().clear();
 
     GCLock lock;
     Model m;
     Env e(&m);
 //  TODO: MergeSTD or RegisterBuiltins?
-    model->mergeStdLib(e.envi(), &m);
+    origin->mergeStdLib(e.envi(), &m);
     CopyMap cm;
 
-    FunctionI* pred = copy(e.envi(), cm, subproblem.predicate, false, true)->cast<FunctionI>();
+    FunctionI* pred = copy(e.envi(), cm, predicate, false, true)->cast<FunctionI>();
     m.addItem(pred);
     m.registerFn(e.envi(), pred);
     std::vector<Expression*> args;
@@ -150,10 +146,10 @@ namespace MiniZinc {
     auto status = si.solve();
 
     if (status != SolverInstance::OPT && status != SolverInstance::SAT )
-      throw InternalError("Unable to solve subproblem for the `" + subproblem.predicate->id().str() + "' predicate");
+      throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
 
     std::vector< Expression* > tableVars;
-    for (auto it = subproblem.predicate->params().begin(); it != subproblem.predicate->params().end(); ++it) {
+    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
       Id* id = (*it)->id();
       id->type( (*it)->type() );
       tableVars.push_back(id);
@@ -214,16 +210,16 @@ namespace MiniZinc {
           cr_it.run(ci->e());
         }
       }
-    } rt(env.envi(), model);
+    } rt(origin_env, origin);
     iterItems(rt, table_model);
 
     Call* table_call = new Call(Location(), "table", table_args);
-    table_call->decl(model->matchFn(env.envi(), table_call));
+    table_call->decl(origin->matchFn(origin_env, table_call));
     table_call->type(Type::varbool());
 
-    subproblem.predicate->e(table_call);
+    predicate->e(table_call);
 
-    subproblem.predicate->e()->type(Type::varbool());
+    predicate->e()->type(Type::varbool());
 
 //    Printer p = Printer(std::cout);
 //    std::cerr << std::endl << std::endl;

@@ -22,10 +22,13 @@ namespace MiniZinc {
   class Presolver {
   protected:
     class Subproblem;
+    class GlobalSubproblem;
+    class ModelSubproblem;
+    class CallsSubproblem;
 
     Env& env;
     Model* model;
-    std::vector<Subproblem> subproblems;
+    std::vector<Subproblem*> subproblems;
 
     Flattener* options;
 
@@ -33,11 +36,13 @@ namespace MiniZinc {
 
     void find_presolved_calls();
 
-    void presolve_predicate_global(Subproblem& subproblem);
+//    void presolve_predicate_global(Subproblem& subproblem);
 
   public:
     Presolver(Env& env, Model* m, Flattener* options)
             : env(env), model(m), options(options) {}
+
+    virtual ~Presolver();
 
     void presolve();
   };
@@ -45,19 +50,52 @@ namespace MiniZinc {
 
   class Presolver::Subproblem{
   public:
-    enum Strategy {CALLS, MODEL, GLOBAL};
+    Model* origin;
+    EnvI& origin_env;
     // predicate around which the submodel revolves
     FunctionI* predicate;
     // calls to the predicate in the model
     std::vector<Call*> calls;
-    // submodel presolve strategy
-    Strategy strategy;
+    // Flattener for compiling flag access.
+    Flattener* options;
     // save/load result from file?
     bool save;
 
-    Subproblem(FunctionI* pred, Strategy strategy, bool save) : predicate(pred), save(save), strategy(strategy) {};
+
+    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save=true)
+            : origin(origin), origin_env(origin_env), predicate(predicate), options(options),save(save) { }
 
     void addCall(Call* c) { calls.push_back(c); }
+
+    virtual void solve() = 0;
+  };
+
+  class Presolver::GlobalSubproblem : public Presolver::Subproblem {
+  public:
+    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+            origin, origin_env, predicate, options, save) { }
+
+    virtual void solve();
+  };
+
+  class Presolver::ModelSubproblem : public Presolver::Subproblem {
+  public:
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+            origin, origin_env, predicate, options, save) { }
+
+    virtual void solve() {
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
+  };
+
+  class Presolver::CallsSubproblem : public Presolver::Subproblem {
+  public:
+    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* options, bool save) : Subproblem(
+            origin, origin_env, predicate, options, save) { }
+
+    virtual void solve() {
+      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
+    };
   };
 //  TODO: Move to where this makes more sense
   class ExprVisitor {
