@@ -20,15 +20,16 @@ namespace MiniZinc {
 
   void Presolver::presolve() {
     findPresolveAnnotations();
-    if (subproblems.size() < 1) return;
+    if (subproblems.size() < 1){
+
+      return;
+    }
 
     findPresolvedCalls();
 
 //    TODO: Deal with circular presolving.
 //    TODO: Handle errors of individual solving here.
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
-      if ((*it)->calls.empty())
-        continue;
       (*it)->solve();
     }
   }
@@ -75,7 +76,7 @@ namespace MiniZinc {
       CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
       virtual void vCall(Call &call) {
         for (size_t i = 0; i < subproblems.size(); ++i) {
-          if (subproblems[i]->predicate == m->matchFn(env, &call)) {
+          if (subproblems[i]->getPredicate() == m->matchFn(env, &call)) {
             subproblems[i]->addCall(&call);
           }
         }
@@ -106,6 +107,8 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::solve() {
+    if (calls.empty())
+      return;
     clock_t startTime = std::clock();
     clock_t lastTime = startTime;
 
@@ -134,6 +137,60 @@ namespace MiniZinc {
 
     if (options.verbose)
       std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;;
+  }
+
+  void Presolver::Subproblem::solveModel() {
+    MiniZinc::Options ops = MiniZinc::Options();
+    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
+    ops.setBoolParam(constants().opts.statistics.str(), false);
+
+    si = new FZNPreSolverInstance(*e, ops);
+
+    auto status = si->solve();
+
+    if (status != SolverInstance::OPT && status != SolverInstance::SAT )
+      throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
+  }
+
+  void Presolver::Subproblem::registerTableConstraint() {
+    //  TODO: Make sure of the location of table.mzn
+    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
+                               std::vector< std::string >(), options.includePaths, false, false,
+                               false, std::cerr);
+    Env table_env(table_model);
+
+    std::vector<TypeError> typeErrors;
+    typecheck(table_env, table_model, typeErrors, false);
+    assert(typeErrors.size() == 0);
+
+    registerBuiltins(table_env, table_model);
+
+    class RegisterTable : public ItemVisitor {
+    public:
+      EnvI& env;
+      Model* model;
+      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
+      class CallRegister : public ExprVisitor {
+      public:
+        EnvI& env;
+        Model* model;
+        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
+        virtual void vCall(Call &call) {
+          model->addItem(call.decl());
+          model->registerFn(env, call.decl());
+        }
+      } cr;
+      TopDownIterator<CallRegister> cr_it;
+      void vFunctionI(FunctionI* i) {
+        if (i->id().str() == "table") {
+          FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
+          model->addItem(ci);
+          model->registerFn(env, ci);
+          cr_it.run(ci->e());
+        }
+      }
+    } rt(origin_env, origin);
+    iterItems(rt, table_model);
   }
 
   void Presolver::GlobalSubproblem::constructModel() {
@@ -179,19 +236,6 @@ namespace MiniZinc {
 //    std::cerr << std::endl;
   }
 
-  void Presolver::GlobalSubproblem::solveModel() {
-    MiniZinc::Options ops = MiniZinc::Options();
-    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
-    ops.setBoolParam(constants().opts.statistics.str(), false);
-
-    si = new FZNPreSolverInstance(*e, ops);
-
-    auto status = si->solve();
-
-    if (status != SolverInstance::OPT && status != SolverInstance::SAT )
-      throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
-  }
-
   void Presolver::GlobalSubproblem::replaceUsage() {
     GCLock lock;
 
@@ -207,7 +251,7 @@ namespace MiniZinc {
       std::vector< Expression* > data;
       auto sol = si->getSolution();
       for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
-        Expression* exp = copy(e->envi(), sol[ (*it)->cast<Id>()->str() ], false, false, true);
+        Expression* exp = copy(origin_env, sol[ (*it)->cast<Id>()->str() ], false, false, true);
         exp->type( Type::parbool() );
         data.push_back(exp);
       }
@@ -223,45 +267,14 @@ namespace MiniZinc {
     table_args.push_back(x);
     table_args.push_back(t);
 
-//  TODO: Make sure of the location of table.mzn
-    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"), std::vector< std::string >(), options.includePaths, false, false, false, std::cerr);
-    Env table_env(table_model);
-
-    std::vector<TypeError> typeErrors;
-    typecheck(table_env, table_model, typeErrors, false);
-    assert(typeErrors.size() == 0);
-
-    registerBuiltins(table_env, table_model);
-
-    class RegisterTable : public ItemVisitor {
-    public:
-      EnvI& env;
-      Model* model;
-      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
-      class CallRegister : public ExprVisitor {
-      public:
-        EnvI& env;
-        Model* model;
-        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
-        virtual void vCall(Call &call) {
-          model->addItem(call.decl());
-          model->registerFn(env, call.decl());
-        }
-      } cr;
-      TopDownIterator<CallRegister> cr_it;
-      void vFunctionI(FunctionI* i) {
-        if (i->id().str() == "table") {
-          FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
-          model->addItem(ci);
-          model->registerFn(env, ci);
-          cr_it.run(ci->e());
-        }
-      }
-    } rt(origin_env, origin);
-    iterItems(rt, table_model);
-
     Call* table_call = new Call(Location(), "table", table_args);
-    table_call->decl(origin->matchFn(origin_env, table_call));
+    FunctionI* table_decl = origin->matchFn(origin_env, table_call);
+    if(table_decl == nullptr) {
+      registerTableConstraint();
+      table_decl = origin->matchFn(origin_env, table_call);
+      assert(table_decl != nullptr);
+    }
+    table_call->decl(table_decl);
     table_call->type(Type::varbool());
 
     predicate->e(table_call);

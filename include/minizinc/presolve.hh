@@ -58,7 +58,7 @@ namespace MiniZinc {
 
 
   class Presolver::Subproblem{
-  public:
+  protected:
     Model* origin;
     EnvI& origin_env;
     // predicate around which the submodel revolves
@@ -75,17 +75,23 @@ namespace MiniZinc {
     Env* e;
     //
     FZNPreSolverInstance* si;
+  public:
 
     Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=true);
     virtual ~Subproblem();
 
     void addCall(Call* c) { calls.push_back(c); }
 
+    FunctionI* getPredicate() const { return predicate; }
+
     virtual void solve();
+
+  protected:
+    virtual void registerTableConstraint();
 
     virtual void constructModel() = 0;
 
-    virtual void solveModel() = 0;
+    virtual void solveModel();
 
     virtual void replaceUsage() = 0;
   };
@@ -95,9 +101,8 @@ namespace MiniZinc {
     GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
+  protected:
     virtual void constructModel();
-
-    virtual void solveModel();
 
     virtual void replaceUsage();
   };
@@ -107,11 +112,8 @@ namespace MiniZinc {
     ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
+  protected:
     virtual void constructModel(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
-
-    virtual void solveModel(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
 
@@ -125,11 +127,8 @@ namespace MiniZinc {
     CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
+  protected:
     virtual void constructModel(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
-
-    virtual void solveModel(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
 
