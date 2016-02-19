@@ -73,8 +73,11 @@ namespace MiniZinc {
     // Constructed Model & Env to solve subproblem.
     Model* m;
     Env* e;
-    //
+    // Solver used to solve constructed model.
     FZNPreSolverInstance* si;
+
+    enum Constraint { BoolTable, IntTable, Element };
+
   public:
 
     Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=true);
@@ -135,50 +138,6 @@ namespace MiniZinc {
     virtual void replaceUsage(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
-  };
-//  TODO: Move to where this makes more sense
-  class ExprVisitor {
-  public:
-    /// Check annotations when expression is finished
-    virtual void exit(Expression* e) {}
-    virtual bool enter(Expression*) { return true; }
-    /// Visit integer literal
-    virtual void vIntLit(const IntLit&) {}
-    /// Visit floating point literal
-    virtual void vFloatLit(const FloatLit&) {}
-    /// Visit Boolean literal
-    virtual void vBoolLit(const BoolLit&) {}
-    /// Visit set literal
-    virtual void vSetLit(SetLit& sl) {}
-    /// Visit string literal
-    virtual void vStringLit(const StringLit&) {}
-    /// Visit identifier
-    virtual void vId(Id& id) {}
-    /// Visit anonymous variable
-    virtual void vAnonVar(const AnonVar&) {}
-    /// Visit array literal
-    virtual void vArrayLit(ArrayLit& al) {}
-    /// Visit array access
-    virtual void vArrayAccess(ArrayAccess& aa) {}
-    /// Visit array comprehension
-    virtual void vComprehension(Comprehension& c) {}
-    /// Visit array comprehension generator
-    virtual void vComprehensionGenerator(Comprehension& c, int gen_i) {}
-    /// Visit if-then-else
-    virtual void vITE(ITE& ite) {}
-    /// Visit binary operator
-    virtual void vBinOp(BinOp& bop) {}
-    /// Visit unary operator
-    virtual void vUnOp(UnOp& uop) {}
-    /// Visit call
-    virtual void vCall(Call& call) {}
-    /// Visit let
-    virtual void vLet(Let& let) {}
-    /// Visit variable declaration
-    virtual void vVarDecl(VarDecl& vd) {}
-    /// Visit type inst
-    virtual void vTypeInst(TypeInst& ti) {}
-    virtual void vTIId(TIId& id) {}
   };
 }
 

@@ -67,7 +67,7 @@ namespace MiniZinc {
   }
 
   void Presolver::findPresolvedCalls() {
-    class CallSeeker : public ExprVisitor {
+    class CallSeeker : public EVisitor {
     public:
       std::vector<Subproblem*>& subproblems;
       EnvI& env;
@@ -111,6 +111,7 @@ namespace MiniZinc {
       return;
     clock_t startTime = std::clock();
     clock_t lastTime = startTime;
+    registerTableConstraint();
 
     predicate->ann().clear();
 
@@ -153,6 +154,8 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::registerTableConstraint() {
+    GCLock lock;
+
     //  TODO: Make sure of the location of table.mzn
     Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
                                std::vector< std::string >(), options.includePaths, false, false,
@@ -170,7 +173,7 @@ namespace MiniZinc {
       EnvI& env;
       Model* model;
       RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
-      class CallRegister : public ExprVisitor {
+      class CallRegister : public EVisitor {
       public:
         EnvI& env;
         Model* model;
@@ -232,27 +235,59 @@ namespace MiniZinc {
 
 //    Printer p = Printer(std::cout);
 //    std::cerr << std::endl << std::endl;
-//    p.print(e.flat());
+//    p.print(e->model());
 //    std::cerr << std::endl;
   }
 
   void Presolver::GlobalSubproblem::replaceUsage() {
     GCLock lock;
 
-    std::vector< Expression* > tableVars;
+    Constraint constraint = BoolTable;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      Id* id = (*it)->id();
-      id->type( (*it)->type() );
-      tableVars.push_back(id);
+      if (constraint == BoolTable && ((*it)->type().isint() || (*it)->type().isintarray()))
+        constraint = IntTable;
+      else if (constraint != Element && ((*it)->type().is_set()))
+        constraint = Element;
     }
+
+    std::vector< Expression* > tableVars;
+//    TODO: Deal with arrays
+    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
+      Id* id = new Id(Location(), (*it)->id()->str(), (*it));
+      id->type((*it)->type());
+      if (id->type().isbool() && constraint == IntTable) {
+        Call* c = new Call(Location(), "bool2int", std::vector< Expression* >(1, id));
+        c->decl( origin->matchFn(origin_env, c) );
+        c->type( Type::varint() );
+        tableVars.push_back(c);
+      } else {
+        tableVars.push_back(id);
+      }
+    }
+
+//    TODO: Add set support
+    if(constraint == Element)
+      throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
     std::vector< std::vector<Expression*> > tableData;
     do {
       std::vector< Expression* > data;
       auto sol = si->getSolution();
-      for (auto it = tableVars.begin(); it != tableVars.end(); ++it){
-        Expression* exp = copy(origin_env, sol[ (*it)->cast<Id>()->str() ], false, false, true);
-        exp->type( Type::parbool() );
+      for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it){
+        Expression* exp;
+        if ( (*it)->type().isint() ){
+          exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);
+          exp->type( Type::parint() );
+        } else if ( (*it)->type().isbool()) {
+          if (constraint == IntTable) {
+            exp = IntLit::a( IntVal( sol[ (*it)->id()->str() ]->cast<BoolLit>()->v() ) );
+            exp->type( Type::parint() );
+          } else {
+            exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);
+            exp->type( Type::parbool() );
+          }
+        }
+
         data.push_back(exp);
       }
       tableData.push_back(data);
@@ -261,8 +296,18 @@ namespace MiniZinc {
 
     ArrayLit* x = new ArrayLit(Location(), tableVars);
     ArrayLit* t = new ArrayLit(Location(), tableData);
-    x->type(Type::varbool(x->dims()));
-    t->type(Type::parbool(t->dims()));
+    switch (constraint) {
+      case BoolTable:
+        x->type(Type::varbool(x->dims()));
+        t->type(Type::parbool(t->dims()));
+        break;
+      case IntTable:
+        x->type(Type::varint(x->dims()));
+        t->type(Type::parint(t->dims()));
+        break;
+      case Element:
+        break;
+    }
     std::vector< Expression* > table_args;
     table_args.push_back(x);
     table_args.push_back(t);
@@ -281,9 +326,9 @@ namespace MiniZinc {
 
     predicate->e()->type(Type::varbool());
 
-//    Printer p = Printer(std::cout);
-//    std::cerr << std::endl << std::endl;
-//    p.print(env.model());
-//    std::cerr << std::endl;
+    Printer p = Printer(std::cout,0);
+    std::cerr << std::endl << std::endl;
+    p.print(origin_env.orig);
+    std::cerr << std::endl;
   }
 }
