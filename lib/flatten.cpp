@@ -1826,6 +1826,7 @@ namespace MiniZinc {
           
           // add another condition and definedness variable
           conditions.push_back(constants().lit_true);
+          assert(ethen.b());
           defined.push_back(ethen.b());
         }
       } else {
@@ -1873,6 +1874,7 @@ namespace MiniZinc {
         
         // add current condition and definedness variable
         conditions.push_back(ite->e_if(i));
+        assert(ethen.b());
         defined.push_back(ethen.b());
         
       }
@@ -2008,6 +2010,7 @@ namespace MiniZinc {
     }
     
     conditions.push_back(constants().lit_true);
+    assert(eelse.b());
     defined.push_back(eelse.b());
     
     // If all branches are defined, then the result is also defined
@@ -2811,6 +2814,7 @@ namespace MiniZinc {
       GCLock lock;
       try {
         ret.r = bind(env,ctx,r,eval_par(env,e));
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
       } catch (ResultUndefinedError&) {
         ret.b = bind(env,Ctx(),b,constants().lit_false);
       }
