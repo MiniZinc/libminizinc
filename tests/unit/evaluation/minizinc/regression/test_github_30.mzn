@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 set of int: smallset = 0..10;
 array[1..2, 1..4] of var smallset: X;

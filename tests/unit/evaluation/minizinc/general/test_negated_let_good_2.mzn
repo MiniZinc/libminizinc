@@ -1,4 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
+% RUNS ON mzn-fzn_fd
+
 % RUNS ON mzn20_mip
 array[1..1] of var 0..2: x;
 constraint not (let { var int: y = x[x[1]] } in y > 0);

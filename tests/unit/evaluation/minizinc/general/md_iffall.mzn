@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % Test iffall with multi-dimensional arrays.
 
 bool: b = iffall([|true, false | true /\ false, false|]);

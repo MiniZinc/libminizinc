@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "lex_lesseq.mzn";
 
 array[1..2] of var bool: x;

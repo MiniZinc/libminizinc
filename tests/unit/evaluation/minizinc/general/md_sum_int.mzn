@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % Test sum/1 for integers with multi-dimensional arrays.
 
 int: a = sum([|1, 2, 3, 4, 5 | 6, 7, 8, 9, 10|]);

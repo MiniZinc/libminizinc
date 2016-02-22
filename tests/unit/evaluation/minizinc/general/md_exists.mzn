@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 % Test exists/1 with multi-dimensional arrays.
 

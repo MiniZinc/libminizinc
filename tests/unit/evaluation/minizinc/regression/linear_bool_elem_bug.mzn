@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_mip
 
 % Regression test for a problem with the "linear" MiniZinc redefinitions.

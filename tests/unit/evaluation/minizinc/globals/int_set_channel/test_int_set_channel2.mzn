@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "int_set_channel.mzn";
 
 % Check that the domains of x and y are being restricted

@@ -255,7 +255,7 @@ then
     for EXP in $EXPS
     do
         if diff --brief --ignore-all-space \
-          -I 'minizinc.exe: flattening killed by signal 1' \
+          -I 'minizinc.exe: flattening killed by signal.*' \
           $OUT $EXP >/dev/null 2>&1
         then
             PASSFAIL=pass
@@ -269,6 +269,7 @@ then
     for ERREXP in $ERREXPS
     do
         if diff -I "^\(IBM \)\?ILOG.*CPLEX.*" --brief --ignore-all-space \
+           -I 'minizinc.exe: flattening killed by signal.*' \
                 $ERR $ERREXP >/dev/null 2>&1
         then
             PASSFAIL=pass

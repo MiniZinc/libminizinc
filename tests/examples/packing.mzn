@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % TOO LONG mzn20_fd_linear
 % TOO LONG mzn20_mip
 %-----------------------------------------------------------------------------

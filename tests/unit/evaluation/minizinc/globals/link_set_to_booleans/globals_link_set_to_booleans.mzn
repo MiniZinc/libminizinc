@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "link_set_to_booleans.mzn";
 
 %-----------------------------------------------------------------------------%

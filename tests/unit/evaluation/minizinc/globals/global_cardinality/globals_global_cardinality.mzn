@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "global_cardinality.mzn";
 
 % The example from the GCC.

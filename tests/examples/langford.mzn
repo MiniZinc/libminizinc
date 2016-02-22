@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON minizinc_cpx
 % RUNS ON mzn20_mip
 %-----------------------------------------------------------------------------%

@@ -52,17 +52,27 @@ namespace MiniZinc {
     } else if (string(argv[i])=="--shave") {
       _options.setBoolParam(std::string("shave"), true);
     } else if (string(argv[i])=="--pre-passes") {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
+      if (++i==argc) return false;
       int passes = atoi(argv[i]);
       if(passes >= 0)
         _options.setIntParam(std::string("pre_passes"), passes);
+    } else if (string(argv[i])=="--node") {
+      if (++i==argc) return false;
+      int nodes = atoi(argv[i]);
+      if(nodes >= 0)
+        _options.setIntParam(std::string("nodes"), nodes);
+    } else if (string(argv[i])=="--fail") {
+      if (++i==argc) return false;
+      int fails = atoi(argv[i]);
+      if(fails >= 0)
+        _options.setIntParam(std::string("fails"), fails);
+    } else if (string(argv[i])=="--time") {
+      if (++i==argc) return false;
+      int time = atoi(argv[i]);
+      if(time >= 0)
+        _options.setIntParam(std::string("time"), time);
     }
     return true;
-  error:
-    return false;
   }
   
   void Gecode_SolverFactory::printHelp(ostream& os)
@@ -74,6 +84,9 @@ namespace MiniZinc {
     << "--sac                 singleton arc consistency"
     << "--shave               shave domains"
     << "--pre-passes <n>      n passes of sac/shaving, 0 for fixed point"
+    << "--node                node cutoff (0 = none, solution mode)"
+    << "--fail                failure cutoff (0 = none, solution mode)"
+    << "--time                 time (in ms) cutoff (0 = none, solution mode)"
     << std::endl;
   }
 
@@ -1042,7 +1055,8 @@ namespace MiniZinc {
       } else {
         if (engine->stopped()) {
           Gecode::Search::Statistics stat = engine->statistics();
-          int r = static_cast<Driver::CombinedStop*>(engine_options.stop)->reason(stat, engine_options);
+          Driver::CombinedStop* cs = static_cast<Driver::CombinedStop*>(engine_options.stop);
+          int r = cs->reason(stat, engine_options);
           if (r & Driver::CombinedStop::SR_INT)
             std::cerr << "user interrupt " << std::endl;
           else {

@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % A test for the integer version of value_precede/3.
 
 include "value_precede.mzn";

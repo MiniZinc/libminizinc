@@ -6,8 +6,8 @@ language and tool chain. Compared to the previous version 1.6,
 it is a complete re-write of the MiniZinc-to-FlatZinc
 compiler, based on the new libminizinc C++ library.
 
-For installation and compilation instructions please refer to the file
-INSTALL.txt.
+For installation and compilation instructions, as well as a small
+start-up guide, please refer to the file INSTALL.txt.
 
 Changes from version 1.6
 ------------------------
