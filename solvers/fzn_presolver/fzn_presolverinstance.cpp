@@ -20,7 +20,8 @@ namespace MiniZinc {
 
   SolverInstance::Status FZNPreSolverInstance::solve(void) {
     auto status = FZNSolverInstance::solve();
-    if(solns2Vector.solutions.size() > 1)
+    nr_solutions = solns2Vector.solutions.size();
+    if(nr_solutions >= 1)
       status = next();
     return status;
   }
@@ -35,6 +36,7 @@ namespace MiniZinc {
   }
 
   bool FZNPreSolverInstance::Solns2Vector::evalOutput() {
+    GCLock lock;
     createOutputMap();
     ASTStringMap<Expression*>::t output;
     for (auto it = declmap.begin(); it != declmap.end(); ++it) {

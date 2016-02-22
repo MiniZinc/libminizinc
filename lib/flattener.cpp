@@ -312,7 +312,6 @@ void Flattener::flatten()
                 preOpts.onlyRangeDomains = flag_only_range_domains;
 
                 Presolver(env, m, preOpts).presolve();
-
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }

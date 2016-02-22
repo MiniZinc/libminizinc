@@ -29,6 +29,7 @@ namespace MiniZinc {
       virtual bool evalStatus(SolverInstance::Status status) {return true;}
     };
     Solns2Vector solns2Vector;
+    long long int nr_solutions = 0;
 
     typedef pair<VarDecl*, KeepAlive> DE;
     ASTStringMap<Expression*>::t solution;
@@ -42,6 +43,10 @@ namespace MiniZinc {
 
     ASTStringMap<Expression*>::t& getSolution() {
       return solution;
+    }
+
+    long long int getNr_solutions() const {
+      return nr_solutions;
     }
   };
 
