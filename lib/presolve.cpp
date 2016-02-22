@@ -29,7 +29,6 @@ namespace MiniZinc {
 
 //    TODO: Deal with circular presolving.
 //    TODO: Handle errors of individual solving here.
-    registerBuiltins(env, model);
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
       (*it)->solve();
     }
@@ -97,7 +96,8 @@ namespace MiniZinc {
     GCLock lock;
     m = new Model();
     e = new Env(m);
-//  TODO: MergeSTD or RegisterBuiltins?
+
+//  TODO: RegisterBuiltins?
     origin->mergeStdLib(e->envi(), m);
   }
 
@@ -269,7 +269,7 @@ namespace MiniZinc {
       } else if( id->type().dim() > 0 ) {
 
         if (x == nullptr) {
-//          TODO: What if empty?
+//          TODO: This results in empty arrayliteral when empty. Might want to change that.
           x = new ArrayLit(Location(), tableVars);
           x->type( constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
         } else {
@@ -379,9 +379,9 @@ namespace MiniZinc {
 
     predicate->e()->type(Type::varbool());
 
-    Printer p = Printer(std::cout,0);
-    std::cerr << std::endl << std::endl;
-    p.print(origin_env.orig);
-    std::cerr << std::endl;
+//    Printer p = Printer(std::cout,0);
+//    std::cerr << std::endl << std::endl;
+//    p.print(origin_env.orig);
+//    std::cerr << std::endl;
   }
 }
