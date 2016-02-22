@@ -255,7 +255,7 @@ namespace MiniZinc {
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
       Id* id = new Id(Location(), (*it)->id()->str(), (*it));
       id->type((*it)->type());
-      if (id->type().isbool() && constraint == IntTable) {
+      if (id->type().isvarbool() && constraint == IntTable) {
         Call* c = new Call(Location(), "bool2int", std::vector< Expression* >(1, id));
         c->decl( origin->matchFn(origin_env, c) );
         c->type( Type::varint() );
@@ -274,20 +274,12 @@ namespace MiniZinc {
       std::vector< Expression* > data;
       auto sol = si->getSolution();
       for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it){
-        Expression* exp;
+        Expression* exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);;
         if ( (*it)->type().isint() ){
-          exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);
           exp->type( Type::parint() );
         } else if ( (*it)->type().isbool()) {
-          if (constraint == IntTable) {
-            exp = IntLit::a( IntVal( sol[ (*it)->id()->str() ]->cast<BoolLit>()->v() ) );
-            exp->type( Type::parint() );
-          } else {
-            exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);
-            exp->type( Type::parbool() );
-          }
+          exp->type( Type::parbool() );
         }
-
         data.push_back(exp);
       }
       tableData.push_back(data);
