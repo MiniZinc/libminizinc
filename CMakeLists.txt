@@ -499,7 +499,7 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  # Tested version 2.9.7. Use svn to get the latest /stable snapshot however rev2265 fails to link
+if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapshot however rev2265 fails to link
 
   if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
@@ -507,8 +507,8 @@ if(HAS_OSICBC)  # Tested version 2.9.7. Use svn to get the latest /stable snapsh
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
   else ()
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib")
-    set(OSICBC_LIBS "Osi" "OsiClp" "Clp" "Cgl" "Cbc" "CbcSolver" "CoinUtils") #  "OsiCbc" "ClpSolver" 
+    set(LNDIR "${OSICBC_HOME}/lib") # The order below is important for static versions of cbc libs to link:
+    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp" "ClpSolver" "Clp" "Osi"  "CoinUtils") #  "OsiCbc" 
 #    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
   endif()
   link_directories(${LNDIR})
