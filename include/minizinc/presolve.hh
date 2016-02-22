@@ -71,10 +71,10 @@ namespace MiniZinc {
     bool save;
 
     // Constructed Model & Env to solve subproblem.
-    Model* m;
-    Env* e;
+    Model* m = nullptr;
+    Env* e = nullptr;
     // Solver used to solve constructed model.
-    FZNPreSolverInstance* si;
+    FZNPreSolverInstance* si = nullptr;
 
     enum Constraint { BoolTable, IntTable, Element };
 

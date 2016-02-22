@@ -112,7 +112,6 @@ namespace MiniZinc {
       return;
     clock_t startTime = std::clock();
     clock_t lastTime = startTime;
-    registerTableConstraint();
 
     predicate->ann().clear();
 
