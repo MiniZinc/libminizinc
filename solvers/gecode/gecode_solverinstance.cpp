@@ -79,14 +79,20 @@ namespace MiniZinc {
   {
     os
     << "Gecode solver plugin options:" << std::endl
-    //<< "-s                    print solve statistics"
-    << "--only-range-domains  only tighten bounds"
-    << "--sac                 singleton arc consistency"
-    << "--shave               shave domains"
-    << "--pre-passes <n>      n passes of sac/shaving, 0 for fixed point"
-    << "--node                node cutoff (0 = none, solution mode)"
-    << "--fail                failure cutoff (0 = none, solution mode)"
-    << "--time                 time (in ms) cutoff (0 = none, solution mode)"
+    << "  --only-range-domains" << std::endl
+    << "    only tighten bounds" << std::endl
+    << "  --sac" << std ::endl
+    << "    singleton arc consistency" << std::endl
+    << "  --shave" << std::endl
+    << "    shave domains" << std::endl
+    << "  --pre-passes <n>" << std::endl
+    << "    n passes of sac/shaving, 0 for fixed point" << std::endl
+    << "  --node <n>" << std::endl
+    << "    node cutoff (0 = none, solution mode)" << std::endl
+    << "  --fail <f>" << std::endl
+    << "    failure cutoff (0 = none, solution mode)" << std::endl
+    << "  --time <ms>" << std::endl
+    << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
     << std::endl;
   }
 
