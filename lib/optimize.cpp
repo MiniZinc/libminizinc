@@ -83,9 +83,8 @@ namespace MiniZinc {
       _m.remove(v0->id());
     }
     
-    id0->redirect(id1);
-    
     remove(v0);
+    id0->redirect(id1);    
   }
   
   void VarOccurrences::clear(void) {
