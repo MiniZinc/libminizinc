@@ -79,6 +79,7 @@ namespace MiniZinc {
     enum Constraint { BoolTable, IntTable, Element };
 
   public:
+    class TableExpressionBuilder;
 
     Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=true);
     virtual ~Subproblem();
@@ -90,8 +91,6 @@ namespace MiniZinc {
     virtual void solve();
 
   protected:
-    virtual void registerTableConstraint();
-
     virtual void constructModel() = 0;
 
     virtual void solveModel();
@@ -138,6 +137,42 @@ namespace MiniZinc {
     virtual void replaceUsage(){
       throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
     };
+  };
+
+  class Presolver::Subproblem::TableExpressionBuilder {
+  protected:
+    bool boolTable = false;
+    long long int rows;
+
+    Expression* variables = nullptr;
+    Expression* data = nullptr;
+
+    std::vector<Expression*> vVariables;
+    std::vector<Expression*> vData;
+
+    EnvI& env;
+    Model* m;
+    Options& options;
+  public:
+    TableExpressionBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
+            : env(env), m(m), options(options), boolTable(boolTable) { };
+
+    void buildFromSolver(FunctionI* f, FZNPreSolverInstance* si);
+
+    void addVariable(Expression* var);
+
+    void addData(Expression* dat);
+
+    Expression* getExpression();
+
+    void setRows(long long int rows) { rows = rows; }
+
+  protected:
+    void storeVars();
+
+    void storeData();
+
+    void registerTableConstraint();
   };
 }
 

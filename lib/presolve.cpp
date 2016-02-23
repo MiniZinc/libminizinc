@@ -153,49 +153,6 @@ namespace MiniZinc {
       throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
   }
 
-  void Presolver::Subproblem::registerTableConstraint() {
-    GCLock lock;
-
-    //  TODO: Make sure of the location of table.mzn
-    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
-                               std::vector< std::string >(), options.includePaths, false, false,
-                               false, std::cerr);
-    Env table_env(table_model);
-
-    std::vector<TypeError> typeErrors;
-    typecheck(table_env, table_model, typeErrors, false);
-    assert(typeErrors.size() == 0);
-
-    registerBuiltins(table_env, table_model);
-
-    class RegisterTable : public ItemVisitor {
-    public:
-      EnvI& env;
-      Model* model;
-      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
-      class CallRegister : public EVisitor {
-      public:
-        EnvI& env;
-        Model* model;
-        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
-        virtual void vCall(Call &call) {
-          model->addItem(call.decl());
-          model->registerFn(env, call.decl());
-        }
-      } cr;
-      TopDownIterator<CallRegister> cr_it;
-      void vFunctionI(FunctionI* i) {
-        if (i->id().str() == "table") {
-          FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
-          model->addItem(ci);
-          model->registerFn(env, ci);
-          cr_it.run(ci->e());
-        }
-      }
-    } rt(origin_env, origin);
-    iterItems(rt, table_model);
-  }
-
   void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
     CopyMap cm;
@@ -242,7 +199,6 @@ namespace MiniZinc {
   void Presolver::GlobalSubproblem::replaceUsage() {
     GCLock lock;
 
-    //TODO: Split into TableConstraintBuilder/ElementConstraintBuilder.
     Constraint constraint = BoolTable;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
       if (constraint == BoolTable && ((*it)->type().isint() || (*it)->type().isintarray()))
@@ -255,145 +211,195 @@ namespace MiniZinc {
     if(constraint == Element)
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
-    Expression* x = nullptr;
-    std::vector< Expression* > tableVars;
-    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      Expression* id = new Id(Location(), (*it)->id()->str(), (*it));
-      id->type((*it)->type());
-      if (id->type().isvarbool() && constraint == IntTable) {
-        Call* c = new Call( Location(), "bool2int", std::vector< Expression* >(1, id) );
-        c->decl( origin->matchFn(origin_env, c) );
-        c->type( Type::varint() );
-        tableVars.push_back(c);
-      } else if( id->type().dim() > 0 ) {
+    auto builder = TableExpressionBuilder(origin_env, origin, options, constraint == BoolTable);
+    builder.buildFromSolver(predicate, si);
+    Expression* tableCall = builder.getExpression();
 
-        if (x == nullptr) {
-//          TODO: This results in empty arrayliteral when empty. Might want to change that.
-          x = new ArrayLit(Location(), tableVars);
-          x->type( constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-        } else {
-          Expression* arr = new ArrayLit(Location(), tableVars);
-          arr->type(constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-          x = new BinOp(Location(), x, BOT_PLUSPLUS, arr);
-          x->type( constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-        }
-        tableVars.clear();
-
-        if ((*it)->type().dim() > 1) {
-          Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, id) );
-          c->type( id->type().bt() == Type::BT_BOOL ? Type::varbool(1) : Type::varint(1) );
-          c->decl( origin->matchFn(origin_env, c) );
-          id = c;
-        }
-        if (id->type().bt() == Type::BT_BOOL && constraint == IntTable) {
-          Call* c = new Call( Location(), "bool2int", std::vector< Expression* >(1, id) );
-          c->type( Type::varint(1) );
-          c->decl( origin->matchFn(origin_env, c) );
-          x = new BinOp(Location(), x, BOT_PLUSPLUS, c);
-        } else {
-          x = new BinOp(Location(), x, BOT_PLUSPLUS, id);
-        }
-        x->type( constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-
-      } else {
-        tableVars.push_back(id);
-      }
-    }
-
-    Expression* t = nullptr;
-    std::vector< Expression* > tableData;
-    do {
-      auto sol = si->getSolution();
-      for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it){
-        Expression* exp = copy(origin_env, sol[ (*it)->id()->str() ], false, false, true);;
-        if ((*it)->type().dim() > 0){
-
-          if (t == nullptr) {
-            t = new ArrayLit(Location(), tableData);
-            t->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-          } else {
-            Expression* arr = new ArrayLit(Location(), tableData);
-            arr->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-            t = new BinOp(Location(), t, BOT_PLUSPLUS, arr);
-            t->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-          }
-          tableData.clear();
-
-
-          exp->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool( (*it)->type().dim() ) : Type::parint( (*it)->type().dim() ) );
-          if ((*it)->type().dim() > 1) {
-            Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, exp) );
-            c->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool(1) : Type::parint(1) );
-            c->decl( origin->matchFn(origin_env, c) );
-            exp = c;
-          }
-          t = new BinOp(Location(), t, BOT_PLUSPLUS, exp);
-          t->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-
-        } else if ( (*it)->type().isint() ){
-          exp->type( Type::parint() );
-          tableData.push_back(exp);
-        } else if ( (*it)->type().isbool()) {
-          exp->type( Type::parbool() );
-          tableData.push_back(exp);
-        }
-      }
-    } while (si->next() != SolverInstance::ERROR);
-
-    if (x == nullptr)
-      x = new ArrayLit(Location(), tableVars);
-    else if ( !tableVars.empty() ) {
-      Expression* arr = new ArrayLit(Location(), tableVars);
-      arr->type(constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-      x = new BinOp(Location(), x, BOT_PLUSPLUS, arr);
-    }
-    x->type( constraint == BoolTable ? Type::varbool(1) : Type::varint(1) );
-
-    if(t == nullptr)
-      t = new ArrayLit(Location(), tableData);
-    else if( !tableData.empty() ) {
-      Expression* arr = new ArrayLit(Location(), tableData);
-      arr->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-      t = new BinOp(Location(), t, BOT_PLUSPLUS, arr);
-    }
-    t->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
-    std::vector<Expression*> dataArgs;
-    SetLit* dataIndex1 = new SetLit(Location(),
-               IntSetVal::a(
-                       std::vector<IntSetVal::Range>( 1, IntSetVal::Range(IntVal(1), IntVal(si->getNr_solutions()) ))
-               ) );
-    dataIndex1->type( Type::parsetint() );
-    dataArgs.push_back(dataIndex1);
-    Call* dataIndex2 = new Call(Location(), "index_set", std::vector<Expression*>(1, x));
-    dataIndex2->type(Type::parsetint());
-    dataIndex2->decl( origin->matchFn(origin_env, dataIndex2) );
-    dataArgs.push_back(dataIndex2);
-    dataArgs.push_back(t);
-    t = new Call(Location(), "array2d", dataArgs);
-    t->type( constraint == BoolTable ? Type::parbool(2) : Type::parint(2) );
-    t->cast<Call>()->decl( origin->matchFn(origin_env, t->cast<Call>()) );
-
-    std::vector< Expression* > table_args;
-    table_args.push_back(x);
-    table_args.push_back(t);
-
-    Call* table_call = new Call(Location(), "table", table_args);
-    FunctionI* table_decl = origin->matchFn(origin_env, table_call);
-    if(table_decl == nullptr) {
-      registerTableConstraint();
-      table_decl = origin->matchFn(origin_env, table_call);
-      assert(table_decl != nullptr);
-    }
-    table_call->decl(table_decl);
-    table_call->type(Type::varbool());
-
-    predicate->e(table_call);
-
-    predicate->e()->type(Type::varbool());
+    predicate->e(tableCall);
 
 //    Printer p = Printer(std::cout,0);
 //    std::cerr << std::endl << std::endl;
 //    p.print(origin_env.orig);
 //    std::cerr << std::endl;
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, FZNPreSolverInstance* si) {
+    rows = si->getNr_solutions();
+
+    for (auto it = f->params().begin(); it != f->params().end(); ++it) {
+      Expression* id = new Id( Location(), (*it)->id()->str(), (*it) );
+      id->type((*it)->type());
+      addVariable(id);
+    }
+
+    do {
+      auto sol = si->getSolution();
+      for (auto it = f->params().begin(); it != f->params().end(); ++it) {
+        Expression* exp = copy(env, sol[ (*it)->id()->str() ], false, false, true);
+        exp->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool( (*it)->type().dim() ) : Type::parint( (*it)->type().dim() ) );
+        addData(exp);
+      }
+    } while (si->next() != SolverInstance::ERROR);
+
+  }
+
+  Expression* Presolver::Subproblem::TableExpressionBuilder::getExpression() {
+    storeVars(); storeData();
+
+    std::vector<Expression*> conversionArgs;
+    SetLit* index1 = new SetLit(Location(),
+                                IntSetVal::a(
+                                            std::vector<IntSetVal::Range>( 1, IntSetVal::Range(IntVal(1), IntVal(rows) ) )
+                                ) );
+    index1->type(Type::parsetint() );
+    conversionArgs.push_back(index1);
+    Call* index2 = new Call(Location(), "index_set", std::vector<Expression*>(1, variables));
+    index2->type(Type::parsetint());
+    index2->decl(m->matchFn(env, index2) );
+    conversionArgs.push_back(index2);
+    conversionArgs.push_back(data);
+    Call* tableData = new Call(Location(), "array2d", conversionArgs);
+    tableData->type(boolTable ? Type::parbool(2) : Type::parint(2) );
+    tableData->decl(m->matchFn(env, tableData) );
+
+    std::vector< Expression* > tableArgs;
+    tableArgs.push_back(variables);
+    tableArgs.push_back(tableData);
+
+    Call* tableCall = new Call(Location(), "table", tableArgs);
+    FunctionI* tableDecl = m->matchFn(env, tableCall);
+    if(tableDecl == nullptr) {
+      registerTableConstraint();
+      tableDecl = m->matchFn(env, tableCall);
+      assert(tableDecl != nullptr);
+    }
+    tableCall->decl(tableDecl);
+    tableCall->type(Type::varbool());
+
+    return tableCall;
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::addVariable(Expression* var) {
+    if (var->type().dim() > 1) {
+      Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, var) );
+      c->type( var->type().bt() == Type::BT_BOOL ? Type::varbool(1) : Type::varint(1) );
+      c->decl( m->matchFn(env, c) );
+      var = c;
+    }
+
+    if (var->type().bt() == Type::BT_BOOL && !boolTable) {
+      Call* c = new Call( Location(), "bool2int", std::vector< Expression* >(1, var) );
+      c->type( Type::varint( var->type().dim() ) );
+      c->decl( m->matchFn(env, c) );
+      var = c;
+    }
+
+    if (var->type().dim() > 0) {
+      storeVars();
+      if (variables == nullptr) {
+        variables = var;
+      } else {
+        variables = new BinOp(Location(), variables, BOT_PLUSPLUS, var);
+        variables->type( boolTable ? Type::varbool(1) : Type::varint(1) );
+      }
+    } else {
+      vVariables.push_back(var);
+    }
+
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::addData(Expression* dat) {
+    if (dat->type().dim() > 1) {
+      Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, dat) );
+      c->type(dat->type().bt() == Type::BT_BOOL ? Type::parbool(1) : Type::parint(1) );
+      c->decl( m->matchFn(env, c) );
+      dat = c;
+    }
+
+    if (dat->type().dim() > 0 ) {
+      storeData();
+      if (data == nullptr) {
+        data = dat;
+      } else {
+        data = new BinOp(Location(), data, BOT_PLUSPLUS, dat);
+        data->type( boolTable ? Type::parbool(1) : Type::parint(1) );
+      }
+    } else {
+      vData.push_back(dat);
+    }
+
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::storeVars() {
+    if ( vVariables.empty() )
+      return;
+
+    if (variables == nullptr) {
+      variables = new ArrayLit(Location(), vVariables);
+    } else {
+      Expression* arr = new ArrayLit(Location(), vVariables);
+      arr->type( boolTable ? Type::varbool(1) : Type::varint(1) );
+      variables = new BinOp(Location(), variables, BOT_PLUSPLUS, arr);
+    }
+    variables->type( boolTable ? Type::varbool(1) : Type::varint(1) );
+    vVariables.clear();
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::storeData() {
+    if ( vData.empty() )
+      return;
+
+    if (data == nullptr) {
+      data = new ArrayLit(Location(), vData);
+    } else {
+      Expression* arr = new ArrayLit(Location(), vData);
+      arr->type( boolTable ? Type::parbool(1) : Type::parint(1) );
+      data = new BinOp(Location(), data, BOT_PLUSPLUS, arr);
+    }
+    data->type( boolTable ? Type::parbool(1) : Type::parint(1) );
+    vData.clear();
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::registerTableConstraint() {
+    GCLock lock;
+
+    //  TODO: Make sure of the location of table.mzn
+    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
+                               std::vector< std::string >(), options.includePaths, false, false,
+                               false, std::cerr);
+    Env table_env(table_model);
+
+    std::vector<TypeError> typeErrors;
+    typecheck(table_env, table_model, typeErrors, false);
+    assert(typeErrors.size() == 0);
+
+    registerBuiltins(table_env, table_model);
+
+    class RegisterTable : public ItemVisitor {
+    public:
+      EnvI& env;
+      Model* model;
+      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
+      class CallRegister : public EVisitor {
+      public:
+        EnvI& env;
+        Model* model;
+        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
+        virtual void vCall(Call &call) {
+          model->addItem(call.decl());
+          model->registerFn(env, call.decl());
+        }
+      } cr;
+      TopDownIterator<CallRegister> cr_it;
+      void vFunctionI(FunctionI* i) {
+        if (i->id().str() == "table") {
+          FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
+          model->addItem(ci);
+          model->registerFn(env, ci);
+          cr_it.run(ci->e());
+        }
+      }
+    } rt(env, m);
+    iterItems(rt, table_model);
   }
 }
