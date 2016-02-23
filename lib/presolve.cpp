@@ -97,8 +97,8 @@ namespace MiniZinc {
     m = new Model();
     e = new Env(m);
 
-//  TODO: RegisterBuiltins?
     origin->mergeStdLib(e->envi(), m);
+    registerBuiltins(*e, m);
   }
 
   Presolver::Subproblem::~Subproblem() {
@@ -206,7 +206,7 @@ namespace MiniZinc {
     m->registerFn(e->envi(), pred);
     std::vector<Expression*> args;
     for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
-      //TODO: Deal with non-variable parameters
+      // TODO: Deal with non-variable parameters
       VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
@@ -242,6 +242,7 @@ namespace MiniZinc {
   void Presolver::GlobalSubproblem::replaceUsage() {
     GCLock lock;
 
+    //TODO: Split into TableConstraintBuilder/ElementConstraintBuilder.
     Constraint constraint = BoolTable;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
       if (constraint == BoolTable && ((*it)->type().isint() || (*it)->type().isintarray()))
@@ -251,14 +252,13 @@ namespace MiniZinc {
     }
 
 //    TODO: Add set support
-//    TODO: deal with multidimentional arrays
     if(constraint == Element)
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
     Expression* x = nullptr;
     std::vector< Expression* > tableVars;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      Id* id = new Id(Location(), (*it)->id()->str(), (*it));
+      Expression* id = new Id(Location(), (*it)->id()->str(), (*it));
       id->type((*it)->type());
       if (id->type().isvarbool() && constraint == IntTable) {
         Call* c = new Call( Location(), "bool2int", std::vector< Expression* >(1, id) );
@@ -279,7 +279,13 @@ namespace MiniZinc {
         }
         tableVars.clear();
 
-        if (id->type().isboolarray() && constraint == IntTable) {
+        if ((*it)->type().dim() > 1) {
+          Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, id) );
+          c->type( id->type().bt() == Type::BT_BOOL ? Type::varbool(1) : Type::varint(1) );
+          c->decl( origin->matchFn(origin_env, c) );
+          id = c;
+        }
+        if (id->type().bt() == Type::BT_BOOL && constraint == IntTable) {
           Call* c = new Call( Location(), "bool2int", std::vector< Expression* >(1, id) );
           c->type( Type::varint(1) );
           c->decl( origin->matchFn(origin_env, c) );
@@ -313,7 +319,14 @@ namespace MiniZinc {
           }
           tableData.clear();
 
-          exp->type( exp->type().isboolarray() ? Type::parbool(1) : Type::parint(1) );
+
+          exp->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool( (*it)->type().dim() ) : Type::parint( (*it)->type().dim() ) );
+          if ((*it)->type().dim() > 1) {
+            Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, exp) );
+            c->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool(1) : Type::parint(1) );
+            c->decl( origin->matchFn(origin_env, c) );
+            exp = c;
+          }
           t = new BinOp(Location(), t, BOT_PLUSPLUS, exp);
           t->type( constraint == BoolTable ? Type::parbool(1) : Type::parint(1) );
 

@@ -74,7 +74,7 @@ namespace MiniZinc {
     Model* m = nullptr;
     Env* e = nullptr;
     // Solver used to solve constructed model.
-    FZNPreSolverInstance* si = nullptr;
+    FZNPreSolverInstance* si = nullptr; //TODO: More resonable default when using one of the specific solvers
 
     enum Constraint { BoolTable, IntTable, Element };
 
