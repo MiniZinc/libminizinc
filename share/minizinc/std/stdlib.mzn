@@ -417,13 +417,13 @@ function var opt int: bool2int(var opt bool: x) ::promise_total =
   both are present and have the same value. */
 predicate int_eq(var opt int: x, var opt int: y) =
      (absent(x) /\ absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
 
 /** @group optiontypes.int True iff only one of \a x and \a y is absent or
   both are present and have different values. */
 predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ deopt(x)!=deopt(y));
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
 /** @group optiontypes.int Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =

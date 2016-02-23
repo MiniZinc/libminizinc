@@ -595,40 +595,33 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
-        Expression* lhs = NULL;
-        Expression* rhs = NULL;
-        if (bo->type()==Type::parbool()) {
-          try {
-            lhs = eval_par(env, bo->lhs());
-            rhs = eval_par(env, bo->rhs());
-          } catch (ResultUndefinedError& e) {
-            return false;
-          }
-        } else {
-          lhs = eval_par(env, bo->lhs());
-          rhs = eval_par(env, bo->rhs());
-        }
+        Expression* lhs = bo->lhs();
+        Expression* rhs = bo->rhs();
         if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
           if (lhs == constants().absent || rhs==constants().absent)
             return lhs==rhs;
         }
         if (lhs->type().isbool() && rhs->type().isbool()) {
-          switch (bo->op()) {
-          case BOT_LE: return eval_bool(env,lhs)<eval_bool(env,rhs);
-          case BOT_LQ: return eval_bool(env,lhs)<=eval_bool(env,rhs);
-          case BOT_GR: return eval_bool(env,lhs)>eval_bool(env,rhs);
-          case BOT_GQ: return eval_bool(env,lhs)>=eval_bool(env,rhs);
-          case BOT_EQ: return eval_bool(env,lhs)==eval_bool(env,rhs);
-          case BOT_NQ: return eval_bool(env,lhs)!=eval_bool(env,rhs);
-          case BOT_EQUIV: return eval_bool(env,lhs)==eval_bool(env,rhs);
-          case BOT_IMPL: return (!eval_bool(env,lhs))||eval_bool(env,rhs);
-          case BOT_RIMPL: return (!eval_bool(env,rhs))||eval_bool(env,lhs);
-          case BOT_OR: return eval_bool(env,lhs)||eval_bool(env,rhs);
-          case BOT_AND: return eval_bool(env,lhs)&&eval_bool(env,rhs);
-          case BOT_XOR: return eval_bool(env,lhs)^eval_bool(env,rhs);
-          default:
-            assert(false);
-            throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+          try {
+            switch (bo->op()) {
+            case BOT_LE: return eval_bool(env,lhs)<eval_bool(env,rhs);
+            case BOT_LQ: return eval_bool(env,lhs)<=eval_bool(env,rhs);
+            case BOT_GR: return eval_bool(env,lhs)>eval_bool(env,rhs);
+            case BOT_GQ: return eval_bool(env,lhs)>=eval_bool(env,rhs);
+            case BOT_EQ: return eval_bool(env,lhs)==eval_bool(env,rhs);
+            case BOT_NQ: return eval_bool(env,lhs)!=eval_bool(env,rhs);
+            case BOT_EQUIV: return eval_bool(env,lhs)==eval_bool(env,rhs);
+            case BOT_IMPL: return (!eval_bool(env,lhs))||eval_bool(env,rhs);
+            case BOT_RIMPL: return (!eval_bool(env,rhs))||eval_bool(env,lhs);
+            case BOT_OR: return eval_bool(env,lhs)||eval_bool(env,rhs);
+            case BOT_AND: return eval_bool(env,lhs)&&eval_bool(env,rhs);
+            case BOT_XOR: return eval_bool(env,lhs)^eval_bool(env,rhs);
+            default:
+              assert(false);
+              throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+            }
+          } catch (ResultUndefinedError&) {
+            return false;
           }
         } else if (lhs->type().isint() && rhs->type().isint()) {
           try {
@@ -1370,8 +1363,11 @@ namespace MiniZinc {
               if (c->decl()->_builtins.e) {
                 return eval_par(env,c->decl()->_builtins.e(env,c));
               } else {
-                if (c->decl()->e()==NULL)
+                if (c->decl()->e()==NULL) {
+                  if (c->id()=="deopt" && Expression::equal(c->args()[0],constants().absent))
+                    throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
                   return c;
+                }
                 return eval_call<EvalPar>(env,c);
               }
             } else {

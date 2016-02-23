@@ -4736,8 +4736,13 @@ namespace MiniZinc {
               Type callt = decl->rtype(env,argt);
               if (callt.ispar() && callt.bt()!=Type::BT_ANN) {
                 GCLock lock;
-                ret.b = conj(env,b,Ctx(),args_ee);
-                ret.r = bind(env,ctx,r,eval_par(env,cr_c));
+                try {
+                  ret.r = bind(env,ctx,r,eval_par(env,cr_c));
+                  ret.b = conj(env,b,Ctx(),args_ee);
+                } catch (ResultUndefinedError&) {
+                  ret.b = bind(env,Ctx(),b,constants().lit_false);
+                  return ret;
+                }
                 // Do not insert into map, since par results will quickly become
                 // garbage anyway and then disappear from the map
               } else if (decl->_builtins.e) {
