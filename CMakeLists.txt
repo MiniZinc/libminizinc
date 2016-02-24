@@ -507,8 +507,8 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
   else ()
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib") # The order below is important for static versions of cbc libs to link:
-    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp" "ClpSolver" "Clp" "Osi"  "CoinUtils") #  "OsiCbc" 
+    set(LNDIR "${OSICBC_HOME}/lib") # The order below is important for static versions of cbc libs to link. "z" needed for static
+    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc" 
 #    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
   endif()
   link_directories(${LNDIR})

@@ -52,7 +52,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read OSICBC parameters from file
   //               << "--writeParam <file> write OSICBC parameters to file
   //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
-  << "--cbcArgs \"args\"      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\". \"-preprocess off\" recommended in 2.9.6" << std::endl
+  << "--cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
+     "      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\". \"-preprocess off\" recommended in 2.9.6" << std::endl
   << "--writeModel <file>   write model to <file> (.mps)" << std::endl
 //   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
 //   << "-p <N>              use N threads, default: 1" << std::endl
@@ -97,7 +98,8 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       goto error;
     }
     sExportModel = argv[i];
-  } else if (string(argv[i])=="--cbcArgs") {
+  } else if (string(argv[i])=="--cbcArgs" || string(argv[i])=="--cbcFlags"
+      || string(argv[i])=="--cbc-flags") {
     i++;
     if (i==argc) {
       goto error;
