@@ -294,7 +294,9 @@ namespace MiniZinc {
   }
 
   Expression* Presolver::Subproblem::TableExpressionBuilder::getExpression() {
-    storeVars(); storeData();
+    storeVars();
+    ArrayLit* dataExpr = new ArrayLit(Location(), data);
+    dataExpr->type( boolTable ? Type::parbool(1) : Type::parint(1) );
 
     std::vector<Expression*> conversionArgs;
     SetLit* index1 = new SetLit(Location(),
@@ -307,7 +309,7 @@ namespace MiniZinc {
     index2->type(Type::parsetint());
     index2->decl(m->matchFn(env, index2) );
     conversionArgs.push_back(index2);
-    conversionArgs.push_back(data);
+    conversionArgs.push_back(dataExpr);
     Call* tableData = new Call(Location(), "array2d", conversionArgs);
     tableData->type(boolTable ? Type::parbool(2) : Type::parint(2) );
     tableData->decl(m->matchFn(env, tableData) );
@@ -359,25 +361,26 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::TableExpressionBuilder::addData(Expression* dat) {
-    if (dat->type().dim() > 1) {
-      Call* c = new Call( Location(), "array1d", std::vector<Expression*>(1, dat) );
-      c->type(dat->type().bt() == Type::BT_BOOL ? Type::parbool(1) : Type::parint(1) );
-      c->decl( m->matchFn(env, c) );
-      dat = c;
-    }
+    if (dat->type().dim() > 0) {
+      ArrayLit* arr = nullptr;
+      if (dat->eid() == Expression::E_CALL) {
+        Call* c = dat->cast<Call>();
+        if ( c->id().str() == "array1d" ) {
+          arr = c->args()[0]->cast<ArrayLit>();
+        } else {
+          arr = c->args()[2]->cast<ArrayLit>();
+        }
+      } else if(dat->eid() == Expression::E_ARRAYLIT) {
+        ArrayLit* arr = dat->cast<ArrayLit>();
+      }
+      assert(arr != nullptr);
 
-    if (dat->type().dim() > 0 ) {
-      storeData();
-      if (data == nullptr) {
-        data = dat;
-      } else {
-        data = new BinOp(Location(), data, BOT_PLUSPLUS, dat);
-        data->type( boolTable ? Type::parbool(1) : Type::parint(1) );
+      for (auto it = arr->v().begin(); it != arr->v().end(); ++it) {
+        data.push_back(*it);
       }
     } else {
-      vData.push_back(dat);
+      data.push_back(dat);
     }
-
   }
 
   void Presolver::Subproblem::TableExpressionBuilder::storeVars() {
@@ -393,21 +396,6 @@ namespace MiniZinc {
     }
     variables->type( boolTable ? Type::varbool(1) : Type::varint(1) );
     vVariables.clear();
-  }
-
-  void Presolver::Subproblem::TableExpressionBuilder::storeData() {
-    if ( vData.empty() )
-      return;
-
-    if (data == nullptr) {
-      data = new ArrayLit(Location(), vData);
-    } else {
-      Expression* arr = new ArrayLit(Location(), vData);
-      arr->type( boolTable ? Type::parbool(1) : Type::parint(1) );
-      data = new BinOp(Location(), data, BOT_PLUSPLUS, arr);
-    }
-    data->type( boolTable ? Type::parbool(1) : Type::parint(1) );
-    vData.clear();
   }
 
   void Presolver::Subproblem::TableExpressionBuilder::registerTableConstraint() {

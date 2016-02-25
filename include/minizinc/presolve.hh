@@ -139,10 +139,9 @@ namespace MiniZinc {
     long long int rows;
 
     Expression* variables = nullptr;
-    Expression* data = nullptr;
 
     std::vector<Expression*> vVariables;
-    std::vector<Expression*> vData;
+    std::vector<Expression*> data;
 
     EnvI& env;
     Model* m;
@@ -163,8 +162,6 @@ namespace MiniZinc {
 
   protected:
     void storeVars();
-
-    void storeData();
 
     void registerTableConstraint();
   };
