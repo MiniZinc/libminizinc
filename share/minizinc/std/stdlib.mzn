@@ -195,6 +195,9 @@ annotation presolve(
     bool: save
 );
 
+/** @group annotations.presolve Presolve using standard arguments (model, false) */
+annotation presolve;
+
 /***
  @groupdef annotations.presolve.strategy Presolve strategy Annotations
 */

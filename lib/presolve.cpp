@@ -48,18 +48,22 @@ namespace MiniZinc {
         if (ann) {
           if (! i->e()->type().isvarbool())
             throw TypeError(env, i->loc(), "Presolve annotation on non-predicate `" + i->id().str() + "'");
-          ASTExprVec<Expression> args = ann->cast<Call>()->args();
-          Id* s_id = args[0]->cast<Id>();
-          bool save = args[1]->cast<BoolLit>()->v();
+          if(ann->eid() == Expression::E_CALL) {
+            ASTExprVec<Expression> args = ann->cast<Call>()->args();
+            Id* s_id = args[0]->cast<Id>();
+            bool save = args[1]->cast<BoolLit>()->v();
 
-          if (s_id->v() == constants().presolve.calls->v())
-            subproblems.push_back(new CallsSubproblem(model, env, i, options, save));
-          else if (s_id->v() == constants().presolve.model->v())
-            subproblems.push_back(new ModelSubproblem(model, env, i, options, save));
-          else if (s_id->v() == constants().presolve.global->v())
-            subproblems.push_back(new GlobalSubproblem(model, env, i, options, save));
-          else
-            throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
+            if ( s_id->v() == constants().presolve.calls->v() )
+              subproblems.push_back( new CallsSubproblem(model, env, i, options, save) );
+            else if ( s_id->v() == constants().presolve.model->v() )
+              subproblems.push_back( new ModelSubproblem(model, env, i, options, save) );
+            else if ( s_id->v() == constants().presolve.global->v() )
+              subproblems.push_back( new GlobalSubproblem(model, env, i, options, save) );
+            else
+              throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
+          } else {
+            subproblems.push_back( new ModelSubproblem(model, env, i, options, false) );
+          }
         }
       }
     } pv(subproblems, env.envi(), model, options);
