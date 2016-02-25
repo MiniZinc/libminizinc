@@ -16,10 +16,13 @@ Changes:
    array access out of bounds), and it is used in a constraint expression,
    this now results in a warning instead of an
    error. Warnings can be turned off using the ::maybe_partial annotation.
-
+   Fixes #43 and #74.
 
 Bug fixes:
 
+ - Fix a bug in the optimisation phase related to unification of aliased
+   variables.
+ - Fix short-circuit evaluation of Boolean expressions.
  - Fix a bug in the optimisation phase related to repeated simplification of
    some Boolean expressions.
  - Handle errors in output produced by solver without solns2out crashing.
