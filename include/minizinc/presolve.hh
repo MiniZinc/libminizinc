@@ -109,19 +109,13 @@ namespace MiniZinc {
     virtual void replaceUsage();
   };
 
-  class Presolver::ModelSubproblem : public Presolver::Subproblem {
+  class Presolver::ModelSubproblem : public Presolver::GlobalSubproblem {
   public:
-    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : GlobalSubproblem(
             origin, origin_env, predicate, options, save) { }
 
   protected:
-    virtual void constructModel(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
-
-    virtual void replaceUsage(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
+    virtual void constructModel();
   };
 
   class Presolver::CallsSubproblem : public Presolver::Subproblem {

@@ -223,6 +223,52 @@ namespace MiniZinc {
 //    std::cerr << std::endl;
   }
 
+  void Presolver::ModelSubproblem::constructModel() {
+    assert(calls.size() > 0);
+    GCLock lock;
+
+    std::vector<Expression*> domains;
+    for (auto it = calls[0]->args().begin(); it != calls[0]->args().end(); ++it) {
+      switch ( (*it)->eid() ) {
+//        TODO: See if we can get domain information for other expression types.
+        case Expression::E_ID:
+          domains.push_back( (*it)->cast<Id>()->decl()->ti()->domain() );
+          break;
+        default:
+          domains.push_back(nullptr);
+      }
+    }
+
+    auto it = calls.begin();
+    ++it;
+    while (it != calls.end()) {
+      for (unsigned int i = 0; i < (*it)->args().size(); ++i) {
+        if (domains[i] != nullptr) {
+          switch ((*it)->args()[i]->eid()) {
+            case Expression::E_ID: {
+              Expression* type = (*it)->args()[i]->cast<Id>()->decl()->ti()->domain();
+              Expression* expr = new BinOp(Location(), domains[i], BOT_UNION, type);
+//              TODO: Do we have to deal with bool sets?
+              expr->type(Type::parsetint());
+              domains[i] = expr;
+              break;
+            }
+            default: {
+              domains[i] = nullptr;
+            }
+          }
+        }
+      }
+      ++it;
+    }
+
+    for (unsigned int i = 0; i < predicate->params().size(); ++i) {
+      predicate->params()[i]->ti()->domain(domains[i]);
+    }
+
+    GlobalSubproblem::constructModel();
+  }
+
   void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, FZNPreSolverInstance* si) {
     rows = si->getNr_solutions();
 
