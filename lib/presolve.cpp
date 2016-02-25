@@ -414,6 +414,7 @@ namespace MiniZinc {
     GCLock lock;
 
     //  TODO: Make sure of the location of table.mzn
+    std::string loc = boolTable ? "/std/table_bool.mzn" : "/std/table_int.mzn";
     Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
                                std::vector< std::string >(), options.includePaths, false, false,
                                false, std::cerr);
