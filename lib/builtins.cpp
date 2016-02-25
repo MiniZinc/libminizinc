@@ -90,7 +90,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(env, al->loc(), "Array is empty");
+          throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(env,al->v()[i]));
@@ -115,7 +115,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(env, al->loc(), "Array is empty");
+          throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(env,al->v()[i]));
@@ -135,7 +135,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -152,7 +152,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -169,7 +169,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -186,7 +186,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {

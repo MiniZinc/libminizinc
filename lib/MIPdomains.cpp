@@ -1855,7 +1855,7 @@ namespace MiniZinc {
     MIPD mipd( &env, fVerbose );
     if ( ! mipd.MIPdomains() ) {
       GCLock lock;
-      env.flat()->fail(env.envi());
+      env.envi().fail();
     }
   }
   
