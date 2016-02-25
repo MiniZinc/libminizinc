@@ -218,7 +218,10 @@ int main(int argc, char** argv) {
                     vdi->e()->evaluated(false);
                   }
                 }
-                Model* sm = parseFromString(solution, "solution.szn", includePaths, true, false, false, cerr);
+                Model* sm = parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr);
+                if (!sm) {
+                  exit(EXIT_FAILURE);
+                }
                 for (unsigned int i=0; i<sm->size(); i++) {
                   if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
                     ASTStringMap<DE>::t::iterator it = declmap.find(ai->id());
