@@ -372,7 +372,7 @@ void Flattener::flatten()
                 std::cerr << " done (" << stoptime(lasttime)
                 << "), max stack depth " << env.maxCallStack() << std::endl;
 
-              if ( ! flag_noMIPdomains ) {
+              /*if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
                   std::cerr << "MIP domains ...";
                 MIPdomains(env, flag_statistics);
@@ -403,7 +403,7 @@ void Flattener::flatten()
               } else {
                 env.flat()->compact();
                 env.output()->compact();
-              }
+              }*/
 
               if (flag_statistics) {
                 FlatModelStatistics stats = statistics(env);
