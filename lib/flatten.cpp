@@ -594,7 +594,6 @@ namespace MiniZinc {
     Model* _flat = envi.flat();
     Model* _output = envi.output;
     std::vector<Expression*> outputVars;
-    int idx=0;
     for (VarDeclIterator it = _flat->begin_vardecls();
          it != _flat->end_vardecls(); ++it) {
       VarDecl* vd = it->e();

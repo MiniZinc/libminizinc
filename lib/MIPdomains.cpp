@@ -197,7 +197,7 @@ namespace MiniZinc {
     struct VarDescr {
       typedef unsigned char boolShort;
       VarDescr(VarDecl* vd_, boolShort fi, double l_=0.0, double u_=0.0)
-        : vd(vd_), fInt(fi), lb(l_), ub(u_)  { }
+        : lb(l_), ub(u_), vd(vd_), fInt(fi) { }
       double lb, ub;
       VarDecl* vd = 0;
       int nClique = -1;                 // clique number
@@ -361,8 +361,8 @@ namespace MiniZinc {
           LinEq2Vars led;
           // FAILS:
   //         led.vd = { vd, expr2VarDecl(id->decl()->e()) };
-          led.vd = { vd, expr2VarDecl( vd->e() ) };
-          led.coefs = { 1.0, -1.0 };
+          led.vd = { {vd, expr2VarDecl( vd->e() )} };
+          led.coefs = { {1.0, -1.0} };
           led.rhs = 0.0;
           put2VarsConnection( led, false );
           ++MIPD__stats[ N_POSTs__initexpr1id ];
@@ -381,7 +381,7 @@ namespace MiniZinc {
           MZN_MIPD__assert_hard( al->v().size() >= 1 );
           if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
             LinEq2Vars led;
-            led.vd = { vd, expr2VarDecl(al->v()[0]) };
+            led.vd = { {vd, expr2VarDecl(al->v()[0])} };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
             if ( ! fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
@@ -393,7 +393,7 @@ namespace MiniZinc {
               DBGOUT_MIPD_SELF ( debugprint(vd) );
               std::array<double, 1> coef0;
               expr2Array(c->args()[0], coef0);
-              led.coefs = { -1.0, coef0[0] };
+              led.coefs = { {-1.0, coef0[0]} };
               led.rhs = -expr2Const(c->args()[2]);             // MINUS
               put2VarsConnection( led, false );
               ++MIPD__stats[ N_POSTs__initexpr1linexp ];
@@ -436,7 +436,7 @@ namespace MiniZinc {
     }
     
     void propagateViews(bool &fChanges) {
-      EnvI& env = getEnv()->envi();
+//      EnvI& env = getEnv()->envi();
       GCLock lock;
       
       // Iterate thru original 2-variable equalities to mark views:
@@ -534,7 +534,7 @@ namespace MiniZinc {
                 DBGOUT_MIPD ( "  REG call " );
                 DBGOUT_MIPD_SELF ( debugprint(c) );
                 led.rhs = 0.0;
-                led.coefs = { 1.0, -1.0 };
+                led.coefs = { {1.0, -1.0} };
                 fChanges = true;
                 put2VarsConnection( led );
                 ++MIPD__stats[ int2float==c->decl() ?
@@ -606,8 +606,8 @@ namespace MiniZinc {
       auto it = mNViews.find( rhsLin );
       if ( mNViews.end()!=it ) {
         LinEq2Vars leq;
-        leq.vd = { nVRest.pVarDefined, it->second.pVarDefined };
-        leq.coefs = { nVRest.coef0, -it->second.coef0 };        // +, -
+        leq.vd = { {nVRest.pVarDefined, it->second.pVarDefined} };
+        leq.coefs = { {nVRest.coef0, -it->second.coef0} };        // +, -
         leq.rhs = nVRest.rhs - it->second.rhs;
         put2VarsConnection( leq, false );
         ++MIPD__stats[ nVD ? N_POSTs__eqNlineq : N_POSTs__initexprN ];
@@ -622,7 +622,7 @@ namespace MiniZinc {
     }
 
     void propagateImplViews(bool &fChanges) {
-      EnvI& env = getEnv()->envi();
+//      EnvI& env = getEnv()->envi();
       GCLock lock;
       
       // TODO
@@ -1040,7 +1040,7 @@ namespace MiniZinc {
                       sDomain.cutDeltas( rhsRnd, rhsRnd, delta );
                     break;
                   default:
-                    MZN_MIPD__assert_hard( ( " No other reified cmp type ", 0 ) );
+                    MZN_MIPD__assert_hard_msg( 0, " No other reified cmp type " );
                 }
                 ++MIPD__stats[ ( vd->ti()->type().isint() ) ?
                   N_POSTs__intCmpReif : N_POSTs__floatCmpReif ];
@@ -1071,7 +1071,7 @@ namespace MiniZinc {
               ++MIPD__stats[ N_POSTs__eq_encode ];
               break;
             default:
-              MZN_MIPD__assert_hard( ("Unknown constraint type", 0 ) );
+              MZN_MIPD__assert_hard_msg( 0, "Unknown constraint type" );
           }
         }
         DBGOUT_MIPD( " Clique domain after proj of "
@@ -1314,7 +1314,7 @@ namespace MiniZinc {
                 // See if any further constraints here?                             TODO
                 break;
               default:
-                MZN_MIPD__assert_hard( ("Unknown constraint type", 0 ) );
+                MZN_MIPD__assert_hard_msg( 0, "Unknown constraint type" );
             }
             pItem->remove();                                       // removing the call
           }
@@ -1400,7 +1400,7 @@ namespace MiniZinc {
   //           nti->domain(newDom);
           vd->ti()->domain(newDom);
         } else
-          MZN_MIPD__assert_hard( ( "Unknown var type ", 0 ) );
+          MZN_MIPD__assert_hard_msg( 0, "Unknown var type " );
       }
       
       VarDecl* addIntVar(double LB, double UB) {
