@@ -50,7 +50,7 @@ namespace MiniZinc {
 
   class ExpressionSet;
   class ExpressionSetIter;
-  
+
   /// %Location of an expression in the source code
   class Location {
   public:
@@ -66,19 +66,19 @@ namespace MiniZinc {
     unsigned int last_column : 30;
     /// Whether the location was introduced during compilation
     unsigned int is_introduced : 1;
-    
+
     /// Construct empty location
     Location(void);
-    
+
     /// Return string representation
     std::string toString(void) const;
-    
+
     /// Mark as alive for garbage collection
     void mark(void) const;
-    
+
     /// Return location with introduced flag set
     Location introduce(void) const;
-    
+
     /// Location used for un-allocated expressions
     static Location nonalloc;
   };
@@ -122,10 +122,10 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
-    
+
     static Annotation empty;
   };
-  
+
   /// returns the Annotation specified by the string; returns NULL if not exists
   Expression* getAnnotation(const Annotation& ann, std::string str);
 
@@ -220,7 +220,7 @@ namespace MiniZinc {
       // only bit 2 is set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
     }
-    
+
     Expression* tag(void) const {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                            static_cast<ptrdiff_t>(2));
@@ -235,6 +235,7 @@ namespace MiniZinc {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
       if (nullptr==this)
+#pragma clang diagnostic pop
         throw InternalError("isa: nullptr");
 #pragma clang diagnostic pop
       return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
@@ -274,8 +275,8 @@ namespace MiniZinc {
     template<class T> static const T* dyn_cast(const Expression* e) {
       return e==NULL ? NULL : e->dyn_cast<T>();
     }
-    
-    
+
+
     /// Add annotation \a ann to the expression
     void addAnnotation(Expression* ann);
 
@@ -284,15 +285,15 @@ namespace MiniZinc {
 
     const Annotation& ann(void) const { return isUnboxedInt() ? Annotation::empty : _ann; }
     Annotation& ann(void) { return isUnboxedInt() ? Annotation::empty : _ann; }
-    
+
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
       return e==NULL ? 0 : e->hash();
     }
-    
+
     /// Check if \a e0 and \a e1 are equal
     static bool equal(const Expression* e0, const Expression* e1);
-    
+
     /// Mark \a e as alive for garbage collection
     static void mark(Expression* e);
   };
@@ -501,7 +502,7 @@ namespace MiniZinc {
              const std::vector<std::vector<Expression*> >& v);
     /// Recompute hash value
     void rehash(void);
-    
+
     /// Access value
     ASTExprVec<Expression> v(void) const { return _v; }
     /// Set value
@@ -579,7 +580,7 @@ namespace MiniZinc {
     /// Allocate
     Generator(const std::vector<VarDecl*>& v,
               Expression* in);
-    
+
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
@@ -612,7 +613,7 @@ namespace MiniZinc {
     void rehash(void);
     /// Whether comprehension is a set
     bool set(void) const;
-    
+
     /// Return number of generators
     int n_generators(void) const;
     /// Return "in" expression for generator \a i
@@ -738,7 +739,7 @@ namespace MiniZinc {
     /// Return operator type
     UnOpType op(void) const;
   };
-  
+
   /// \brief A predicate or function call expression
   class Call : public Expression {
     friend class Expression;
@@ -822,7 +823,7 @@ namespace MiniZinc {
     VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
     /// Set flattened version
     void flat(VarDecl* vd);
-    
+
     /// Recompute hash value
     void rehash(void);
     /// Whether variable is toplevel
@@ -842,10 +843,10 @@ namespace MiniZinc {
     /// Set payload
     void payload(int i) { _payload = i; }
   };
-  
+
   class EnvI;
   class CopyMap;
-  
+
   /// \brief %Let expression
   class Let : public Expression {
     friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls, bool isFlatModel);
@@ -872,12 +873,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> let_orig(void) const { return _let_orig; }
     /// Access body
     Expression* in(void) const { return _in; }
-    
+
     /// Remember current let bindings
     void pushbindings(void);
     /// Restore previous let bindings
     void popbindings(void);
-    
+
   };
 
   /// \brief Type-inst expression
@@ -899,14 +900,14 @@ namespace MiniZinc {
     TypeInst(const Location& loc,
              const Type& t,
              Expression* domain=NULL);
-    
+
     /// Access ranges
     ASTExprVec<TypeInst> ranges(void) const { return _ranges; }
     /// Access domain
     Expression* domain(void) const { return _domain; }
     //// Set domain
     void domain(Expression* d) { _domain = d; }
-    
+
     /// Set ranges to \a ranges
     void setRanges(const std::vector<TypeInst*>& ranges);
     bool isarray(void) const { return _ranges.size()>0; }
@@ -935,7 +936,7 @@ namespace MiniZinc {
     ItemId iid(void) const {
       return static_cast<ItemId>(_id);
     }
-    
+
     const Location& loc(void) const {
       return _loc;
     }
@@ -985,7 +986,7 @@ namespace MiniZinc {
     template<class T> static const T* dyn_cast(const Item* i) {
       return i==NULL ? NULL : i->dyn_cast<T>();
     }
-    
+
     /// Check if item should be removed
     bool removed(void) const { return _flag_1; }
     /// Set flag to remove item
@@ -1147,7 +1148,7 @@ namespace MiniZinc {
   };
 
   class EnvI;
-  
+
   /// \brief Function declaration item
   class FunctionI : public Item {
   protected:
@@ -1166,7 +1167,7 @@ namespace MiniZinc {
   public:
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
-    
+
     /// Type of builtin expression-valued functions
     typedef Expression* (*builtin_e) (EnvI&, Call*);
     /// Type of builtin int-valued functions
@@ -1210,7 +1211,7 @@ namespace MiniZinc {
     Expression* e(void) const { return _e; }
     /// Set body
     void e(Expression* b) { _e = b; }
-    
+
     /** \brief Compute return type given argument types \a ta
      */
     Type rtype(EnvI& env, const std::vector<Expression*>& ta);
@@ -1318,7 +1319,7 @@ namespace MiniZinc {
         ASTString sum;
         ASTString lin_exp;
         ASTString element;
-	
+
         ASTString show;
         ASTString fix;
         ASTString output;
@@ -1403,10 +1404,10 @@ namespace MiniZinc {
         ASTString set_eq;
         ASTString set_in;
         ASTString set_card;
-        
+
         ASTString introduced_var;
       } ids;
-    
+
       /// Identifiers for Boolean contexts
       struct {
         Id* root;
@@ -1432,7 +1433,7 @@ namespace MiniZinc {
       /// Command line options
       struct { /// basic MiniZinc command line options
         ASTString cmdlineData_str;
-        ASTString cmdlineData_short_str;        
+        ASTString cmdlineData_short_str;
         ASTString datafile_str;
         ASTString datafile_short_str;
         ASTString globalsDir_str;
@@ -1448,8 +1449,8 @@ namespace MiniZinc {
         ASTString no_optimize_alt_str;
         ASTString no_outputOzn_str;
         ASTString no_outputOzn_short_str;
-        ASTString no_typecheck_str;       
-        ASTString newfzn_str;        
+        ASTString no_typecheck_str;
+        ASTString newfzn_str;
         ASTString outputBase_str;
         ASTString outputFznToStdout_str;
         ASTString outputFznToStdout_alt_str;
@@ -1465,15 +1466,15 @@ namespace MiniZinc {
         ASTString verbose_str;
         ASTString verbose_short_str;
         ASTString version_str;
-        ASTString werror_str; 
-        
+        ASTString werror_str;
+
         struct {
           ASTString all_sols_str;
           ASTString fzn_solver_str;
         } solver;
-        
+
       } cli;
-      
+
       /// options strings to find setting in Options map
       struct {
         ASTString cmdlineData;
@@ -1488,7 +1489,7 @@ namespace MiniZinc {
         ASTString instanceCheckOnly;
         ASTString inputFromStdin;
         ASTString model;
-        ASTString newfzn;  
+        ASTString newfzn;
         ASTString noOznOutput;
         ASTString optimize;
         ASTString outputBase;
@@ -1500,7 +1501,7 @@ namespace MiniZinc {
         ASTString typecheck;
         ASTString verbose;
         ASTString werror;
-        
+
         struct {
           ASTString allSols;
           ASTString numSols;
@@ -1509,17 +1510,17 @@ namespace MiniZinc {
           ASTString fzn_flags;
           ASTString fzn_flag;
         } solver;
-        
+
       } opts;
-      
+
       /// categories of the command line interface options
       struct {
         ASTString general;
-        ASTString io;        
+        ASTString io;
         ASTString solver;
         ASTString translation;
       } cli_cat;
-      
+
       /// Keep track of allocated integer literals
       UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
       /// Keep track of allocated float literals
@@ -1532,7 +1533,7 @@ namespace MiniZinc {
       }
       static const int max_array_size = INT_MAX / 2;
   };
-    
+
   /// Return static instance
   Constants& constants(void);
 
