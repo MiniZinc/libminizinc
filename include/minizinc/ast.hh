@@ -1419,6 +1419,7 @@ namespace MiniZinc {
         ASTString defines_var;
         Id* is_reverse_map;
         Id* promise_total;
+        Id* maybe_partial;
         ASTString doc_comment;
         ASTString mzn_path;
         ASTString is_introduced;

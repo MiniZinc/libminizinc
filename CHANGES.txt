@@ -5,6 +5,35 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.12
+==============
+
+Changes:
+
+ - Partial functions are now always evaluated in their Boolean context,
+   independent of whether they are par or var. If the result of a partial
+   function is statically known to be undefined (such as division by zero or
+   array access out of bounds), and it is used in a constraint expression,
+   this now results in a warning instead of an
+   error. Warnings can be turned off using the ::maybe_partial annotation.
+   Fixes #43 and #74.
+
+Bug fixes:
+
+ - Fix a bug in the optimisation phase related to unification of aliased
+   variables.
+ - Fix short-circuit evaluation of Boolean expressions.
+ - Fix a bug in the optimisation phase related to repeated simplification of
+   some Boolean expressions.
+ - Handle errors in output produced by solver without solns2out crashing.
+   Fixes #80.
+ - Fix a bug in the integer bounds computation that caused bool2int with an
+   embedded conditional to crash.
+ - Fix a problem with short-circuit compilation of == expressions when one
+   side was a var opt bool.
+ - Stop compilation when model is failed. Fixes a bug where mzn2fzn would
+   sometimes not clean up the FlatZinc enough for the solver.
+
 Version 2.0.11
 ==============
 

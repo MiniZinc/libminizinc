@@ -93,17 +93,16 @@ namespace MiniZinc {
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, std::pair<WeakRef, unsigned int> > PathMap;
     typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
-
+    int in_maybe_partial;
   protected:
     Map map;
     Model* _flat;
+    bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
-
     PathMap pathMap;
     ReversePathMap reversePathMap;
     FilenameMap filenameMap;
-
   public:
     EnvI(Model* orig0);
     ~EnvI(void);
@@ -118,6 +117,8 @@ namespace MiniZinc {
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
+    void fail(void);
+    bool failed(void) const;
     Model* flat(void);
     void swap();
     void swap_output() { std::swap( orig, output ); }
@@ -126,13 +127,11 @@ namespace MiniZinc {
     bool dumpPath(std::ostream& os, bool force);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
-
     PathMap& getPathMap() { return pathMap; }
     ReversePathMap& getReversePathMap() { return reversePathMap; }
     FilenameMap& getFilenameMap() { return filenameMap; }
 
     void setMaps(EnvI& env);
-
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);

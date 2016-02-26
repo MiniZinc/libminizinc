@@ -56,8 +56,6 @@ namespace MiniZinc {
     OutputI* _outputItem;
     /// File-level documentation comment
     std::string _docComment;
-    /// Flag whether model is failed
-    bool _failed;
   public:
     
     /// Construct empty model
@@ -146,12 +144,6 @@ namespace MiniZinc {
     
     /// Remove all items marked as removed
     void compact(void);
-    
-    /// Make model failed
-    void fail(EnvI& env);
-
-    /// Return whether model is known to be failed
-    bool failed(void) const;
   };
 
   class VarDeclIterator {

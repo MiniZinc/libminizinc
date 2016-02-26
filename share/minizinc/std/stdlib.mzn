@@ -23,6 +23,9 @@
   any constraints on its arguments. */
 annotation promise_total;
 
+/** @group annotations.general Declare that expression may have undefined result (to avoid warnings) */
+annotation maybe_partial;
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
@@ -415,13 +418,13 @@ function var opt int: bool2int(var opt bool: x) ::promise_total =
   both are present and have the same value. */
 predicate int_eq(var opt int: x, var opt int: y) =
      (absent(x) /\ absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ deopt(x)=deopt(y));
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
 
 /** @group optiontypes.int True iff only one of \a x and \a y is absent or
   both are present and have different values. */
 predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ deopt(x)!=deopt(y));
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
 /** @group optiontypes.int Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =

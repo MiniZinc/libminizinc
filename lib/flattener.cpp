@@ -504,7 +504,7 @@ void Flattener::flatten()
     }
   }
   
-  if (getEnv()->flat()->failed()) {
+  if (getEnv()->envi().failed()) {
     status = SolverInstance::UNSAT;
   }
   
