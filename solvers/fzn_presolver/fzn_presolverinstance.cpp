@@ -43,5 +43,6 @@ namespace MiniZinc {
       output[it->first] = copy(pEnv->envi(), it->second.first->e());
     }
     solutions.push_back(output);
+    return true;
   }
 }
