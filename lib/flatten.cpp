@@ -636,9 +636,6 @@ namespace MiniZinc {
     }
   }
  
-
-  static int stackCounter = 0;
-
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
