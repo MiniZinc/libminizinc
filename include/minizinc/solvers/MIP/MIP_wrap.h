@@ -82,12 +82,12 @@ class MIP_wrapper {
       double objVal = 1e308;
       double bestBound = 1e308;
       int nCols;
+      int nObjVarIndex=-1;
       const double *x = 0;
       int nNodes=0;
       int nOpenNodes=0;
       double dCPUTime = 0;
     };      
-  protected:
     Output output;
 
   public:
