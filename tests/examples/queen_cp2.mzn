@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % n-queens example in Zinc using CP techniques
 % By Reza Rafeh July 2005
@@ -17,6 +19,9 @@ constraint
     alldifferent(i in 1..n)(q[i] + i-1)     % diagonals
     /\
     alldifferent(i in 1..n)(q[i] + n-i);
+
+constraint q[1] = 2;
+%constraint q[2] = 1;
 
 include "alldifferent.mzn";
 

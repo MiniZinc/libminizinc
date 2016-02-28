@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn-fzn_fd
+% RUNS ON mzn20_mip
 int: n = 8;
 
 array [1..n] of var 1..n: q;

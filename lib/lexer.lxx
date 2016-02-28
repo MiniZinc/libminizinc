@@ -41,9 +41,15 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
     yylloc->first_line = yylloc->last_line = parm->lineno; \
   }
 
-bool strtointval(const char* s, long long int& v) {
+bool hexstrtointval(const char* s, long long int& v) {
   std::istringstream iss(s);
-  iss >> v;
+  iss >> std::hex >> v;
+  return !iss.fail();
+}
+
+bool octstrtointval(const char* s, long long int& v) {
+  std::istringstream iss(s);
+  iss >> std::oct >> v;
   return !iss.fail();
 }
 
@@ -186,12 +192,6 @@ char* bufferData(void* parm) {
                     yylval->iValue = 1; return MZN_BOOL_LITERAL; }
 "false"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->iValue = 0; return MZN_BOOL_LITERAL; }
-[0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    if (fast_strtointval(yytext, yylval->iValue))
-                      return MZN_INTEGER_LITERAL;
-                    else
-                      return MZN_INVALID_INTEGER_LITERAL;
-                }
 
 0[xX]([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.)([pP][+-]?[0-9]+)|(0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   if (strtofloatval(yytext, yylval->dValue))
@@ -201,17 +201,24 @@ char* bufferData(void* parm) {
                 }
 
 0[xX][0-9A-Fa-f]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    if (strtointval(yytext, yylval->iValue))
+                    if (hexstrtointval(yytext+2, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
                 }
 0o[0-7]+        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                  if (strtointval(yytext, yylval->iValue))
+                  if (octstrtointval(yytext+2, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
+[0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+                  if (fast_strtointval(yytext, yylval->iValue))
+                    return MZN_INTEGER_LITERAL;
+                  else
+                    return MZN_INVALID_INTEGER_LITERAL;
+                }
+
 [0-9]+\.[0-9]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
                   if (strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;

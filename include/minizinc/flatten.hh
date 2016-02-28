@@ -31,6 +31,8 @@ namespace MiniZinc {
   struct FlatteningOptions {
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
+    /// Only range domains for old linearization. Set from redefs to true if not here
+    bool onlyRangeDomains = false;
     /// Default constructor
     FlatteningOptions(void) : keepOutputInFzn(false) {}
   };
@@ -40,6 +42,9 @@ namespace MiniZinc {
 
   /// Translate \a m into old FlatZinc syntax
   void oldflatzinc(Env& m);
+
+  /// Populate FlatZinc output model
+  void populateOutput(Env& e);
   
   /// Statistics on flat models
   struct FlatModelStatistics {

@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 % WHO OWNS THE ZEBRA?
 % 
 % This is a puzzle which has been circulating the net. There are a couple

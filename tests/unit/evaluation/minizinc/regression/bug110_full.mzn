@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test for MiniZinc bug 110.
 % mzn2fzn 1.1 was generating out of range array indicies in reified contexts,

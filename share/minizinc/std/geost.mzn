@@ -52,7 +52,7 @@ predicate geost(
                         [ rect_offset[ r1, j] | j in DIMS ],
                         [ rect_size[   r1, j] | j in DIMS ],
                         [ rect_offset[ r2, j] | j in DIMS ],
-                        [ rect_offset[ r2, j] | j in DIMS ]
+                        [ rect_size[   r2, j] | j in DIMS ]
                     ),
                     "geost: rectangles " ++ show(r1) ++ " and " ++ show(r2) ++
                     " in shape " ++ show(s) ++ " overlap!"

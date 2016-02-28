@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 var 1..3: a;
 
 predicate test_pred(array[int] of 1..10: x, var int: y) = y = 3;

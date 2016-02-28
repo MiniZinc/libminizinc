@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 
 % A test for value_precede_chain for integer variables.
 

@@ -1,2 +1,0 @@
-Assertion failed: (fi), function flat_exp, file /Users/tack/MiniZinc/libmzn/lib/flatten.cpp, line 1288.
-minizinc: flattening killed by signal 6

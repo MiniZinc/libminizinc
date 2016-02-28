@@ -90,7 +90,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(env, al->loc(), "Array is empty");
+          throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::min(m, eval_int(env,al->v()[i]));
@@ -115,7 +115,7 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
         if (al->v().size()==0)
-          throw EvalError(env, al->loc(), "Array is empty");
+          throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
         IntVal m = eval_int(env,al->v()[0]);
         for (unsigned int i=1; i<al->v().size(); i++)
           m = std::max(m, eval_int(env,al->v()[i]));
@@ -135,7 +135,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -152,7 +152,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     IntVal m = eval_int(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -169,7 +169,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -186,7 +186,7 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     if (al->v().size()==0)
-      throw EvalError(env, al->loc(), "Array is empty");
+      throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     FloatVal m = eval_float(env,al->v()[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->v().size(); i++) {
@@ -1294,6 +1294,14 @@ namespace MiniZinc {
     std::cerr << msg->v();
     return args.size()==1 ? constants().lit_true : args[1];
   }
+
+  Expression* b_trace_stdout(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    StringLit* msg = eval_par(env,args[0])->cast<StringLit>();
+    std::cout << msg->v();
+    return args.size()==1 ? constants().lit_true : args[1];
+  }
   
   bool b_in_redundant_constraint(EnvI& env, Call*) {
     return env.in_redundant_constraint > 0;
@@ -2196,16 +2204,20 @@ namespace MiniZinc {
       t[0] = Type::parstring();
       rb(env, m, ASTString("abort"), t, b_abort);
       rb(env, m, constants().ids.trace, t, b_trace);
+      rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::parstring();
       t[1] = Type::top();
       rb(env, m, constants().ids.trace, t, b_trace);
+      rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
       t[1] = Type::vartop();
       rb(env, m, constants().ids.trace, t, b_trace);
+      rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
       t[1] = Type::optvartop();
       rb(env, m, constants().ids.trace, t, b_trace);
+      rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     }
     {
       rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(), b_in_redundant_constraint);

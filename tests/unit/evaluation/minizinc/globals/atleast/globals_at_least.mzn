@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "at_least.mzn";
 include "at_most.mzn";
 include "exactly.mzn";

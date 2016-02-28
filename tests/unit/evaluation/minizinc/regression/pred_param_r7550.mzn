@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn-fzn_fd
+% RUNS ON mzn20_mip
 % RUNS slowly? ON mzn_cd_fd
 % The following is a regression test for a flattening bug with predicate
 % parameter expansion.  See the log message for r7550.

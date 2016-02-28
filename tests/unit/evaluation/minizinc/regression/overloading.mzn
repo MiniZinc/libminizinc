@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 % RUNS ON mzn_mer_lp
 % bug #1:  the overloading was being handled wrongly, giving the wrong output
 % "b = true".

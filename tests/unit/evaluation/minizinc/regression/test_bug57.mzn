@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 set of int: X = {1,2};
 function array[int] of int: foo(set of X: x) =
   if card(x)==0 then []

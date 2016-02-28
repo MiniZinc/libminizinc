@@ -6,8 +6,8 @@ language and tool chain. Compared to the previous version 1.6,
 it is a complete re-write of the MiniZinc-to-FlatZinc
 compiler, based on the new libminizinc C++ library.
 
-For installation and compilation instructions please refer to the file
-INSTALL.txt.
+For installation and compilation instructions, as well as a small
+start-up guide, please refer to the file INSTALL.txt.
 
 Changes from version 1.6
 ------------------------
@@ -71,6 +71,14 @@ sort, arg_sort, arg_min, arg_max
  - A new tool, mzn2doc, can produce html output from the documentation
    comments. The MiniZinc distribution contains the documentation for global
    constraints and builtins generated directly from the library source code.
+ - Executable mzn-fzn is a replacement for the minizinc driver: option --solver
+   can define a different flatzinc interpreter (default: 'flatzinc')
+   
+** New MIP solver interfaces **
+
+ - The executables mzn-cplex, mzn-gurobi, mzn-scip and mzn-cbc use the
+   corresponding MIP solver. They can interpret FlatZinc code compiled with
+   -Glinear, as well as handle original model files (by flattening + solving).
 
 ** Bugs **
 

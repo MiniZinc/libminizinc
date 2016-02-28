@@ -84,9 +84,11 @@ namespace MiniZinc {
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
+    int in_maybe_partial;
   protected:
     Map map;
     Model* _flat;
+    bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
   public:
@@ -103,11 +105,17 @@ namespace MiniZinc {
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
+    void fail(void);
+    bool failed(void) const;
     Model* flat(void);
+    void swap();
+    void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    /// deprecated, use Solns2Out
+    std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
   };
 

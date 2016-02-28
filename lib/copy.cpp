@@ -93,8 +93,7 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_INTLIT:
       {
-        IntLit* c = new IntLit(copy_location(m,e),
-                              e->cast<IntLit>()->v());
+        IntLit* c = IntLit::a(e->cast<IntLit>()->v());
         m.insert(e,c);
         ret = c;
       }

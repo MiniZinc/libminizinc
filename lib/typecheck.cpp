@@ -608,7 +608,7 @@ namespace MiniZinc {
       for (int j=0; j<c.n_decls(gen_i); j++) {
         if (needIntLit) {
           GCLock lock;
-          c.decl(gen_i,j)->e(new IntLit(Location(),0));
+          c.decl(gen_i,j)->e(IntLit::a(0));
         }
         c.decl(gen_i,j)->type(ty_id);
         c.decl(gen_i,j)->ti()->type(ty_id);

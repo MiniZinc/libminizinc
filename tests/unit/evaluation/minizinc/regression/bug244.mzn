@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn-fzn_fd
+% RUNS ON mzn20_mip
 
 % Regression test for bug #244: when asked for all solutions (with G12/FD)
 % this model did not produce the solution (i = 0, b = false).  The problem

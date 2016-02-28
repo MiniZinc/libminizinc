@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % mzn2fzn r14673 and before aborted on this model due to the test predicate
 % having a string argument.

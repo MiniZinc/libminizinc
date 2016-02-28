@@ -141,6 +141,8 @@ namespace MiniZinc {
       return t;
     }
 
+    static Type unboxedint;
+    
     bool isunknown(void) const { return _bt==BT_UNKNOWN; }
     bool isplain(void) const {
       return _dim==0 && _st==ST_PLAIN && _ot==OT_PRESENT;

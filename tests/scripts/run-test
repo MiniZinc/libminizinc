@@ -75,8 +75,8 @@
 
 # Set default time and memory limits (seconds and megabytes respectively).
 #
-TIMELIMIT=${TIMELIMIT:-300}
-MEMLIMIT=${MEMLIMIT:-1000}
+TIMELIMIT=${TIMELIMIT:-30}
+MEMLIMIT=${MEMLIMIT:-8000}
 
 # The name of this program as invoked.
 #
@@ -243,6 +243,8 @@ esac
 #
 echo -n "$THIS: $CMD"
 time-and-mem-limit $TIMELIMIT $MEMLIMIT $CMD >$OUT 2>$ERR
+#ulimit -d $MEMLIMITKB -m $MEMLIMITKB -v $MEMLIMITKB -t $TIMELIMIT
+#$CMD >$OUT 2>$ERR
 
 # Compare the solver output against the expected output.
 #
@@ -252,7 +254,9 @@ if [ -n "$EXPS" ]
 then
     for EXP in $EXPS
     do
-        if diff --brief --ignore-all-space $OUT $EXP >/dev/null 2>&1
+        if diff --brief --ignore-all-space \
+          -I 'minizinc.exe: flattening killed by signal.*' \
+          $OUT $EXP >/dev/null 2>&1
         then
             PASSFAIL=pass
             break
@@ -265,6 +269,7 @@ then
     for ERREXP in $ERREXPS
     do
         if diff -I "^\(IBM \)\?ILOG.*CPLEX.*" --brief --ignore-all-space \
+           -I 'minizinc.exe: flattening killed by signal.*' \
                 $ERR $ERREXP >/dev/null 2>&1
         then
             PASSFAIL=pass

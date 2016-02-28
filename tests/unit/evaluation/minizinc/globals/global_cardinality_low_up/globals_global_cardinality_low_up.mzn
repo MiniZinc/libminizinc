@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "global_cardinality_low_up.mzn";
 
 array[1..4] of var 0..8: x;

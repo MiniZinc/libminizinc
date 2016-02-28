@@ -56,8 +56,6 @@ namespace MiniZinc {
     OutputI* _outputItem;
     /// File-level documentation comment
     std::string _docComment;
-    /// Flag whether model is failed
-    bool _failed;
   public:
     
     /// Construct empty model
@@ -106,6 +104,8 @@ namespace MiniZinc {
     FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
     /// Return function declaration matching call \a c
     FunctionI* matchFn(EnvI& env, Call* c) const;
+    /// Merge all builtin functions into \a m
+    void mergeStdLib(EnvI& env, Model* m) const;
 
     /// Return item \a i
     Item*& operator[] (int i);
@@ -144,12 +144,6 @@ namespace MiniZinc {
     
     /// Remove all items marked as removed
     void compact(void);
-    
-    /// Make model failed
-    void fail(EnvI& env);
-
-    /// Return whether model is known to be failed
-    bool failed(void) const;
   };
 
   class VarDeclIterator {
@@ -241,14 +235,15 @@ namespace MiniZinc {
     
     Model* model(void);
     Model* flat(void);
+    void swap();
     Model* output(void);
     EnvI& envi(void);
     const EnvI& envi(void) const;
     std::ostream& dumpErrorStack(std::ostream& os);
     const std::vector<std::string>& warnings(void);
     void clearWarnings(void);
-    
     unsigned int maxCallStack(void) const;
+    std::ostream& evalOutput(std::ostream& os);
   };
 
   class CallStackItem {

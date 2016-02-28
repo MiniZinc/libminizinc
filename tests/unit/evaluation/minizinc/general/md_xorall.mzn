@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % Test xorall with multi-dimensional arrays.
 
 bool: b = xorall([|true, false | true \/ false, false|]);

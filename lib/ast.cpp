@@ -19,6 +19,12 @@
 
 namespace MiniZinc {
 
+  Location Location::nonalloc;
+  
+  Type Type::unboxedint = Type::parint();
+  
+  Annotation Annotation::empty;
+  
   Location::Location(void)
   : first_line(0),
     first_column(0),
@@ -47,13 +53,15 @@ namespace MiniZinc {
 
   void
   Expression::addAnnotation(Expression* ann) {
-    _ann.add(ann);
+    if (!isUnboxedInt())
+      _ann.add(ann);
   }
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
-    for (unsigned int i=0; i<ann.size(); i++)
-      if (ann[i])
-        _ann.add(ann[i]);
+    if (!isUnboxedInt())
+      for (unsigned int i=0; i<ann.size(); i++)
+        if (ann[i])
+          _ann.add(ann[i]);
   }
 
 
@@ -62,12 +70,12 @@ namespace MiniZinc {
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
-    if (e==NULL) return;
+    if (e==NULL || e->isUnboxedInt()) return;
     std::vector<const Expression*> stack;
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
-      if (cur->_gc_mark==0) {
+      if (!cur->isUnboxedInt() && cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
         pushann(cur->ann());
@@ -1083,11 +1091,93 @@ namespace MiniZinc {
     ann.is_reverse_map->type(Type::ann());
     ann.promise_total = new Id(Location(), ASTString("promise_total"), NULL);
     ann.promise_total->type(Type::ann());
+    ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), NULL);
+    ann.maybe_partial->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
     ann.is_introduced = ASTString("is_introduced");
+    ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
+    ann.user_cut->type(Type::ann());
+    ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
+    ann.lazy_constraint->type(Type::ann());
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
+    
+    cli.cmdlineData_short_str = ASTString("-D");
+    cli.cmdlineData_str = ASTString("--cmdline-data");
+    cli.datafile_str = ASTString("--data");
+    cli.datafile_short_str = ASTString("-d");
+    cli.globalsDir_str = ASTString("--globals-dir");
+    cli.globalsDir_alt_str = ASTString("--mzn-globals-dir");
+    cli.globalsDir_short_str = ASTString("-G");
+    cli.help_str = ASTString("--help");
+    cli.help_short_str = ASTString("-h");
+    cli.ignoreStdlib_str = ASTString("--ignore-stdlib");
+    cli.include_str = ASTString("-I");
+    cli.inputFromStdin_str = ASTString("--input-from-stdin");
+    cli.instanceCheckOnly_str = ASTString("--instance-check-only");
+    cli.newfzn_str = ASTString("--newfzn");
+    cli.no_optimize_str = ASTString("--no-optimize");
+    cli.no_optimize_alt_str = ASTString("--no-optimise");
+    cli.no_outputOzn_str = ASTString("--no-output-ozn");
+    cli.no_outputOzn_short_str = ASTString("-O-");
+    cli.no_typecheck_str = ASTString("--no-typecheck");    
+    cli.outputBase_str = ASTString("--output-base");
+    cli.outputFznToStdout_str = ASTString("--output-to-stdout");
+    cli.outputFznToStdout_alt_str = ASTString("--output-fzn-to-stdout");
+    cli.outputOznToFile_str = ASTString("--output-ozn-to-file");
+    cli.outputOznToStdout_str = ASTString("--output-ozn-to-stdout");
+    cli.outputFznToFile_alt_str = ASTString("--output-fzn-to-file");
+    cli.outputFznToFile_short_str = ASTString("-o");
+    cli.outputFznToFile_str = ASTString("--output-to-file"); 
+    cli.rangeDomainsOnly_str = ASTString("--only-range-domains");
+    cli.statistics_str = ASTString("--statistics");
+    cli.statistics_short_str = ASTString("-s");
+    cli.stdlib_str = ASTString("--stdlib-dir");
+    cli.verbose_str = ASTString("--verbose");
+    cli.verbose_short_str = ASTString("-v");
+    cli.version_str = ASTString("--version");
+    cli.werror_str = ASTString("-Werror");
+    
+    cli.solver.all_sols_str = ASTString("-a");
+    cli.solver.fzn_solver_str = ASTString("--solver");
+    
+    opts.cmdlineData = ASTString("cmdlineData");
+    opts.datafile = ASTString("datafile");
+    opts.datafiles = ASTString("datafiles");
+    opts.fznToFile = ASTString("fznToFile");
+    opts.fznToStdout = ASTString("fznToStdout");
+    opts.globalsDir = ASTString("globalsDir");
+    opts.ignoreStdlib = ASTString("ignoreStdlib");
+    opts.includeDir = ASTString("includeDir");
+    opts.includePaths = ASTString("includePaths");
+    opts.inputFromStdin = ASTString("inputStdin");
+    opts.instanceCheckOnly = ASTString("instanceCheckOnly");
+    opts.model = ASTString("model");
+    opts.newfzn = ASTString("newfzn");
+    opts.noOznOutput = ASTString("noOznOutput");
+    opts.optimize = ASTString("optimize");
+    opts.outputBase = ASTString("outputBase");
+    opts.oznToFile = ASTString("oznToFile");
+    opts.oznToStdout = ASTString("oznToStdout");
+    opts.rangeDomainsOnly = ASTString("rangeDomainsOnly");
+    opts.statistics = ASTString("statistics");
+    opts.stdlib = ASTString("stdlib");
+    opts.typecheck = ASTString("typecheck");
+    opts.verbose = ASTString("verbose");
+    opts.werror = ASTString("werror");
+    
+    opts.solver.allSols = ASTString("allSols");
+    opts.solver.numSols = ASTString("numSols");
+    opts.solver.threads = ASTString("threads");
+    opts.solver.fzn_solver = ASTString("fznsolver");
+    opts.solver.fzn_flags = ASTString("fzn_flags");
+    opts.solver.fzn_flag = ASTString("fzn_flag");
+    
+    cli_cat.general = ASTString("General Options");
+    cli_cat.io = ASTString("Input/Output Options");
+    cli_cat.solver = ASTString("Solver Options");
+    cli_cat.translation = ASTString("Translation Options");
     
     std::vector<Expression*> v;
     v.push_back(ti);
@@ -1196,8 +1286,87 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ann.defines_var));
     v.push_back(ann.is_reverse_map);
     v.push_back(ann.promise_total);
+    v.push_back(ann.maybe_partial);
     v.push_back(new StringLit(Location(),ann.doc_comment));
     v.push_back(new StringLit(Location(), ann.is_introduced));
+    v.push_back(ann.user_cut);
+    v.push_back(ann.lazy_constraint);
+    
+    v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
+    v.push_back(new StringLit(Location(),cli.cmdlineData_str));
+    v.push_back(new StringLit(Location(),cli.datafile_short_str));
+    v.push_back(new StringLit(Location(),cli.datafile_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_alt_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_short_str));
+    v.push_back(new StringLit(Location(),cli.globalsDir_str));
+    v.push_back(new StringLit(Location(),cli.help_short_str));
+    v.push_back(new StringLit(Location(),cli.help_str));
+    v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
+    v.push_back(new StringLit(Location(),cli.include_str));
+    v.push_back(new StringLit(Location(),cli.inputFromStdin_str));
+    v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
+    v.push_back(new StringLit(Location(),cli.newfzn_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
+    v.push_back(new StringLit(Location(),cli.no_optimize_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_short_str));
+    v.push_back(new StringLit(Location(),cli.no_outputOzn_str));
+    v.push_back(new StringLit(Location(),cli.no_typecheck_str));    
+    v.push_back(new StringLit(Location(),cli.outputBase_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToFile_str));
+    v.push_back(new StringLit(Location(),cli.outputOznToStdout_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_alt_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_short_str));
+    v.push_back(new StringLit(Location(),cli.outputFznToFile_str));
+    v.push_back(new StringLit(Location(),cli.rangeDomainsOnly_str));
+    v.push_back(new StringLit(Location(),cli.statistics_short_str));
+    v.push_back(new StringLit(Location(),cli.statistics_str));
+    v.push_back(new StringLit(Location(),cli.stdlib_str));
+    v.push_back(new StringLit(Location(),cli.verbose_short_str));
+    v.push_back(new StringLit(Location(),cli.verbose_str));
+    v.push_back(new StringLit(Location(),cli.version_str));
+    v.push_back(new StringLit(Location(),cli.werror_str)); 
+    
+    v.push_back(new StringLit(Location(),cli.solver.all_sols_str));
+    v.push_back(new StringLit(Location(),cli.solver.fzn_solver_str));
+    
+    v.push_back(new StringLit(Location(),opts.cmdlineData));
+    v.push_back(new StringLit(Location(),opts.datafile));
+    v.push_back(new StringLit(Location(),opts.datafiles));
+    v.push_back(new StringLit(Location(),opts.fznToFile));
+    v.push_back(new StringLit(Location(),opts.fznToStdout));
+    v.push_back(new StringLit(Location(),opts.globalsDir));
+    v.push_back(new StringLit(Location(),opts.ignoreStdlib));
+    v.push_back(new StringLit(Location(),opts.includePaths));
+    v.push_back(new StringLit(Location(),opts.includeDir));
+    v.push_back(new StringLit(Location(),opts.inputFromStdin));
+    v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
+    v.push_back(new StringLit(Location(),opts.model));
+    v.push_back(new StringLit(Location(),opts.newfzn));
+    v.push_back(new StringLit(Location(),opts.noOznOutput));
+    v.push_back(new StringLit(Location(),opts.optimize));
+    v.push_back(new StringLit(Location(),opts.outputBase));
+    v.push_back(new StringLit(Location(),opts.oznToFile));
+    v.push_back(new StringLit(Location(),opts.oznToStdout));
+    v.push_back(new StringLit(Location(),opts.rangeDomainsOnly));
+    v.push_back(new StringLit(Location(),opts.statistics));
+    v.push_back(new StringLit(Location(),opts.stdlib));
+    v.push_back(new StringLit(Location(),opts.typecheck));
+    v.push_back(new StringLit(Location(),opts.verbose));
+    v.push_back(new StringLit(Location(),opts.werror));
+    
+    v.push_back(new StringLit(Location(),opts.solver.allSols));
+    v.push_back(new StringLit(Location(),opts.solver.numSols));
+    v.push_back(new StringLit(Location(),opts.solver.threads));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
+    
+    v.push_back(new StringLit(Location(),cli_cat.general));
+    v.push_back(new StringLit(Location(),cli_cat.io));
+    v.push_back(new StringLit(Location(),cli_cat.solver));
+    v.push_back(new StringLit(Location(),cli_cat.translation));
     
     m = new Model();
     m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
@@ -1273,6 +1442,19 @@ namespace MiniZinc {
     }
     for (unsigned int i=toRemove.size(); i--;)
       _s->remove(toRemove[i]);
+  }
+  
+  bool
+  Annotation::containsCall(const MiniZinc::ASTString& id) {
+    if (_s==NULL)
+      return false;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          return true;
+      }
+    }
+    return false;
   }
   
   void
