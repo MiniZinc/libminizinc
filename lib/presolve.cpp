@@ -234,7 +234,7 @@ namespace MiniZinc {
 
     Constraint constraint = BoolTable;
     for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      if (constraint == BoolTable && ((*it)->type().isint() || (*it)->type().isintarray()))
+      if (constraint == BoolTable && (*it)->type().bt() == Type::BT_INT )
         constraint = IntTable;
       else if (constraint != Element && ((*it)->type().is_set()))
         constraint = Element;
@@ -334,7 +334,7 @@ namespace MiniZinc {
     tableArgs.push_back(variables);
     tableArgs.push_back(tableData);
 
-    Call* tableCall = new Call(Location(), "table", tableArgs);
+    Call* tableCall = new Call(Location(), boolTable ? "table_bool" : "table_int", tableArgs);
     FunctionI* tableDecl = m->matchFn(env, tableCall);
     if(tableDecl == nullptr) {
       registerTableConstraint();
@@ -419,7 +419,7 @@ namespace MiniZinc {
 
     //  TODO: Make sure of the location of table.mzn
     std::string loc = boolTable ? "/std/table_bool.mzn" : "/std/table_int.mzn";
-    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + "/std/table.mzn"),
+    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + loc),
                                std::vector< std::string >(), options.includePaths, false, false,
                                false, std::cerr);
     Env table_env(table_model);
@@ -434,24 +434,12 @@ namespace MiniZinc {
     public:
       EnvI& env;
       Model* model;
-      RegisterTable(EnvI& env, Model* model) :env(env), model(model), cr(env, model), cr_it(cr){}
-      class CallRegister : public EVisitor {
-      public:
-        EnvI& env;
-        Model* model;
-        CallRegister(EnvI& env, Model* model) : env(env), model(model) { }
-        virtual void vCall(Call &call) {
-          model->addItem(call.decl());
-          model->registerFn(env, call.decl());
-        }
-      } cr;
-      TopDownIterator<CallRegister> cr_it;
+      RegisterTable(EnvI& env, Model* model) :env(env), model(model) {}
       void vFunctionI(FunctionI* i) {
-        if (i->id().str() == "table") {
+        if (i->id().str() == "table_int" || i->id().str() == "table_bool") {
           FunctionI* ci = copy(env, i, false, true, false)->cast<FunctionI>();
           model->addItem(ci);
           model->registerFn(env, ci);
-          cr_it.run(ci->e());
         }
       }
     } rt(env, m);
