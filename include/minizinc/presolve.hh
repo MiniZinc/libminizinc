@@ -96,6 +96,8 @@ namespace MiniZinc {
     virtual void solveModel();
 
     virtual void replaceUsage() = 0;
+
+    Expression* computeBounds(Expression* exp);
   };
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {

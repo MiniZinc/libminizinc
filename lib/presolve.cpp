@@ -157,6 +157,35 @@ namespace MiniZinc {
       throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
   }
 
+  Expression* Presolver::Subproblem::computeBounds(Expression* exp) {
+    if (exp->eid() == Expression::E_ID )
+      return exp->cast<Id>()->decl()->ti()->domain();
+//    TODO: How about booleans?
+    switch (exp->type().bt()) {
+      case Type::BT_INT: {
+        IntBounds ib = compute_int_bounds(origin_env, exp);
+        if (ib.valid) {
+          Expression* type = new SetLit( Location(), IntSetVal::a(ib.l, ib.u) );
+          type->type(Type::parsetint());
+          return type;
+        }
+        break;
+      }
+      case Type::BT_FLOAT: {
+        FloatBounds ib = compute_float_bounds(origin_env, exp);
+        if (ib.valid) {
+          Expression* type = new SetLit(Location(), IntSetVal::a(ib.l, ib.u));
+          type->type(Type::parsetfloat());
+          return type;
+        }
+        break;
+      }
+      default:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
   void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
     CopyMap cm;
@@ -233,33 +262,20 @@ namespace MiniZinc {
 
     std::vector<Expression*> domains;
     for (auto it = calls[0]->args().begin(); it != calls[0]->args().end(); ++it) {
-      switch ( (*it)->eid() ) {
-//        TODO: See if we can get domain information for other expression types.
-        case Expression::E_ID:
-          domains.push_back( (*it)->cast<Id>()->decl()->ti()->domain() );
-          break;
-        default:
-          domains.push_back(nullptr);
-      }
+      domains.push_back( computeBounds(*it) );
     }
 
-    auto it = calls.begin();
-    ++it;
+    auto it = ++calls.begin();
     while (it != calls.end()) {
       for (unsigned int i = 0; i < (*it)->args().size(); ++i) {
         if (domains[i] != nullptr) {
-          switch ((*it)->args()[i]->eid()) {
-            case Expression::E_ID: {
-              Expression* type = (*it)->args()[i]->cast<Id>()->decl()->ti()->domain();
-              Expression* expr = new BinOp(Location(), domains[i], BOT_UNION, type);
-//              TODO: Do we have to deal with bool sets?
-              expr->type(Type::parsetint());
-              domains[i] = expr;
-              break;
-            }
-            default: {
-              domains[i] = nullptr;
-            }
+          Expression* type = computeBounds( (*it)->args()[i] );
+          if (type != nullptr) {
+            Expression* expr = new BinOp(Location(), domains[i], BOT_UNION, type);
+            expr->type( type->type() );
+            domains[i] = expr;
+          } else {
+            domains[i] = nullptr;
           }
         }
       }
