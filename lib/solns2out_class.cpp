@@ -35,6 +35,7 @@ void Solns2Out::printHelp(ostream& os)
   "    Specify solution status messages. The defaults:\n"
   "    \"=====UNSATISFIABLE=====\", \"=====UNSATorUNBOUNDED=====\", \"=====UNBOUNDED=====\",\n"
   "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively." << std::endl
+  << "  --unique\n    Avoid duplicate solutions.\n"
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
   << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
@@ -66,6 +67,8 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--unknown-msg", &_opt.unknown_msg ) ) {
   } else if ( cop.getOption( "--error-msg", &_opt.error_msg ) ) {
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
+  } else if ( cop.getOption( "--unique") ) {
+    _opt.flag_unique = true;
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
@@ -166,27 +169,33 @@ bool Solns2Out::evalOutput() {
   ostringstream oss;
   if (!__evalOutput( oss, false ))
     return false;
-  auto res = sSolsCanon.insert( oss.str() );
-  if ( !res.second )            // repeated solution
-    return true;
+  if ( _opt.flag_unique || _opt.flag_canonicalize ) {
+    auto res = sSolsCanon.insert( oss.str() );
+    if ( !res.second )            // repeated solution
+      return true;
+  }
+  ++nSolns;
   if ( _opt.flag_canonicalize ) {
     if ( pOfs_non_canon.get() )
       if ( pOfs_non_canon->good() ) {
         (*pOfs_non_canon) << oss.str();
+        (*pOfs_non_canon) << comments;
         if (_opt.flag_output_time)
           (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
         if ( _opt.flag_output_flush )
           pOfs_non_canon->flush();
       }
   } else {
-    if ( _opt.solution_comma.size() && sSolsCanon.size()>1 )
+    if ( _opt.solution_comma.size() && nSolns>1 )
       getOutput() << _opt.solution_comma << '\n';
     getOutput() << oss.str();
-    if (_opt.flag_output_time)
-      getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
     if ( _opt.flag_output_flush )
       getOutput().flush();
   }
+  getOutput() << comments;      // should not be sorted
+  comments = "";
+  if (_opt.flag_output_time)
+    getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
   restoreDefaults();     // cleans data. evalOutput() should not be called again w/o assigning new data.
   return true;
 }
@@ -213,8 +222,6 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
 //     }
     pEnv->envi().evalOutput( fout );
   }
-  fout << comments;      // should not be sorted ??    TODO
-  comments = "";
   fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
     fout.flush();
@@ -264,6 +271,7 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
     Solns2Out::status = SolverInstance::SAT;
   }
   comments = "";
+  return true;
 }
 
 void Solns2Out::init() {
