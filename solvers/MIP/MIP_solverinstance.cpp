@@ -332,6 +332,9 @@ void MIP_solverinstance::processFlatZinc(void) {
   }
 
   for (VarDeclIterator it = getEnv()->flat()->begin_vardecls(); it != getEnv()->flat()->end_vardecls(); ++it) {
+    if (it->removed()) {
+      continue;
+    }
     VarDecl* vd = it->e();
     if(!vd->ann().isEmpty()) {
       if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
@@ -416,10 +419,13 @@ void MIP_solverinstance::processFlatZinc(void) {
     cerr << "  MIP_solverinstance: adding constraints..." << flush;
   
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
-    if (Call* c = it->e()->dyn_cast<Call>()) {
-      _constraintRegistry.post(c);
+    if (!it->removed()) {
+      if (Call* c = it->e()->dyn_cast<Call>()) {
+        _constraintRegistry.post(c);
+      }
     }
   }
+
   if (mip_wrap->fVerbose)
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total." << endl;

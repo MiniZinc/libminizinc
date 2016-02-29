@@ -82,12 +82,14 @@ namespace MiniZinc {
     
     if ( _varsWithOutput.empty() ) {
       for (VarDeclIterator it = getEnv()->flat()->begin_vardecls(); it != getEnv()->flat()->end_vardecls(); ++it) {
-        VarDecl* vd = it->e();
-        if(!vd->ann().isEmpty()) {
-          if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-              vd->ann().contains(constants().ann.output_var)
-            ) {
-            _varsWithOutput.push_back(vd);
+        if(!it->removed()) {
+          VarDecl* vd = it->e();
+          if(!vd->ann().isEmpty()) {
+            if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+                vd->ann().contains(constants().ann.output_var)
+              ) {
+              _varsWithOutput.push_back(vd);
+            }
           }
         }
       }
