@@ -123,8 +123,8 @@ namespace MiniZinc {
        */  
     CLIOption(std::vector<std::string> names, bool def, const std::string& optMapString, std::string description, 
               std::string category, CLIOption::func_no_args f) : 
-      _names(names), _bdef(def), _optMapString(optMapString),
-      _nbArgs(0), _beginsWith(false), _description(description), _category(category)
+      _names(names), _nbArgs(0), _beginsWith(false), _bdef(def), _optMapString(optMapString),
+      _description(description), _category(category)
       { func.int_arg = NULL; func.no_args = f; func.str_arg = NULL; func.opts_arg = NULL; }   
     
     /**
@@ -138,7 +138,7 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names , bool def, std::string description, std::string category, CLIOption::func_no_args f) : 
-      _names(names), _bdef(def), _nbArgs(0), _beginsWith(false), _description(description), _category(category)
+      _names(names), _nbArgs(0), _beginsWith(false), _bdef(def), _description(description), _category(category)
        { func.no_args = f; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = NULL; }
        
     /**
@@ -152,7 +152,7 @@ namespace MiniZinc {
        * @param f the function to be executed when this option is given in the command line
        */  
     CLIOption(std::vector<std::string> names, std::string description, std::string category, CLIOption::func_known_opts f) : 
-      _names(names), _bdef(false), _nbArgs(0), _beginsWith(false), _description(description), _category(category)
+      _names(names), _nbArgs(0), _beginsWith(false), _bdef(false), _description(description), _category(category)
        { func.no_args = NULL; func.int_arg = NULL; func.str_arg = NULL; func.opts_arg = f; }       
         
     /** 
@@ -170,7 +170,7 @@ namespace MiniZinc {
        */      
     CLIOption(std::vector<std::string> names, bool beginsWith, const std::string& optMapString, std::string description, 
               std::string category, CLIOption::func_str_arg f) : 
-     _names(names), _beginsWith(beginsWith), _optMapString(optMapString), _nbArgs(1), _description(description), _category(category)
+     _names(names), _nbArgs(1), _beginsWith(beginsWith), _optMapString(optMapString), _description(description), _category(category)
       { func.str_arg = f; _nbArgs = 1; func.no_args = NULL; func.opts_arg = NULL; }      
       
     // The int constructor is currently not used (there are no int options I know of)

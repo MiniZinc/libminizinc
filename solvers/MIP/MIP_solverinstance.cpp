@@ -211,18 +211,25 @@ void MIP_solverinstance::registerConstraints() {
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
     {
-      int nPrec = os.precision(12);
+//       int nPrec = 
+      std::ios oldState(nullptr);
+      oldState.copyfmt(std::cout);
+      os.precision(12);
       os << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
       if (fLegend)
         os << "  % obj, bound, CPU_time, nodes (left): ";
       os << mip_wrap->getObjValue() << ",  ";
       os << mip_wrap->getBestBound() << ",  ";
+      os.setf( ios::fixed );
+      os.precision( 3 );
       os << mip_wrap->getCPUTime() << ",  ";
       os << mip_wrap->getNNodes();
       if (mip_wrap->getNOpen())
         os << " ( " << mip_wrap->getNOpen() << " )";
       os << endl;
-      os.precision(nPrec);
+      os.copyfmt( oldState );
+//       os.precision(nPrec);
+//       os.setf( flgSave );
 //       std::os << "% MIP_Objective_ : " << mip_wrap->getObjValue() << std::endl;
 // //         std::os << "% MIP_AbsGap__   : "
 // //           << std::fabs(_ilocplex->getBestObjValue()-_ilocplex->getObjValue()) << std::endl;
@@ -386,6 +393,9 @@ void MIP_solverinstance::processFlatZinc(void) {
         if (vd==objVd) {
           dObjVarLB = lb;
           dObjVarUB = ub;
+          getMIPWrapper()->output.nObjVarIndex = res;
+          if ( getMIPWrapper()->fVerbose )
+            cerr << "  MIP: objective variable index (0-based): " << res << endl;
         }
       }
 //       if ("X_INTRODUCED_108" == string(id->str().c_str()))

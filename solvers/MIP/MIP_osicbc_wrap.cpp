@@ -26,10 +26,15 @@
 using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.h>
+#include <minizinc/utils.hh>
 #include <CbcSolver.hpp>
 #include <CbcConfig.h>
 #include <ClpConfig.h>
+#include <CbcEventHandler.hpp>
+#include <CglPreProcess.hpp>
+#include <CoinSignal.hpp>
 
+// #define WANT_SOLUTION  -- does nto work in rev2274
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
@@ -55,7 +60,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
      "      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\". \"-preprocess off\" recommended in 2.9.6" << std::endl
   << "--writeModel <file>   write model to <file> (.mps)" << std::endl
-//   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
+//   << "-a                  print intermediate solutions (can be slow. Works for optimization problems only   TODO)" << std::endl
 //   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>         stop search after N seconds" << std::endl
@@ -86,9 +91,9 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
-     cerr << "\n  WARNING: -a: No solution callbacks implemented for coin-cbc.\n"
-       "However, kill -SIGINT <pid> should work like Ctrl-C and produce final output" << endl;
-//     flag_all_solutions = true;
+//      cerr << "\n  WARNING: -a: No solution callbacks implemented for coin-cbc.\n"
+//        "However, kill -SIGINT <pid> should work like Ctrl-C and produce final output" << endl;
+     flag_all_solutions = true;
    } else
     if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
@@ -107,7 +112,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
     cbc_cmdOptions += argv[i];
   }
   else if (beginswith(string(argv[i]),"-p")) {
-    cerr << "\n  WARNING: -p: No multi-threading in coin-cbc." << endl;
+    cerr << "\n  WARNING: -p: No multi-threading interface for coin-cbc, use --cbcArgs." << endl;
     string nP(argv[i]);
     if (nP.length() > 2) {
       nP.erase(0, 2);
@@ -249,77 +254,377 @@ void MIP_osicbc_wrapper::addRow
 
 /// SolutionCallback ------------------------------------------------------------------------
 /// OSICBC ensures thread-safety?? TODO
-// static int CBCPUBLIC
-// solcallback (CBCCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
-// {
-//    int status = 0;
-// 
-//    MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) cbhandle;
-//    int        hasincumbent = 0;
-//    int        newincumbent = 0;
-//    double objVal;
-// 
-//    status = CBCgetcallbackinfo (env, cbdata, wherefrom,
-//                                 CBC_CALLBACK_INFO_NODE_COUNT, &info->pOutput->nNodes);
-//    if ( status )  goto TERMINATE;
-// 
-//    status = CBCgetcallbackinfo (env, cbdata, wherefrom,
-//                                 CBC_CALLBACK_INFO_NODES_LEFT, &info->pOutput->nOpenNodes);
-//    if ( status )  goto TERMINATE;
-// 
-//    status = CBCgetcallbackinfo (env, cbdata, wherefrom,
-//                                 CBC_CALLBACK_INFO_MIP_FEAS, &hasincumbent);
-//    if ( status )  goto TERMINATE;
-// 
-//    if ( hasincumbent ) {
-//       status = CBCgetcallbackinfo (env, cbdata, wherefrom,
-//                                    CBC_CALLBACK_INFO_BEST_INTEGER, &objVal);
-//       if ( status )  goto TERMINATE;
-//       
-//       if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
-//          newincumbent = 1;
-//          info->pOutput->objVal = objVal;
-//         info->pOutput->status = MIP_wrapper::SAT;
-//         info->pOutput->statusName = "feasible from a callback";
-// 
+/// Event handling copied from examples/interrupt.cpp, Cbc 2.9.8 rev 2272
+
+/************************************************************************
+
+This main program shows how to take advantage of the standalone cbc in your program,
+while still making major modifications.
+This is very like driver4 but allows interrupts in clp for faster stopping
+It would be up to user to clean up output as stopping in Clp seems to
+give correct results but can think it is stopping in an odd way.
+To make cleaner would need more events defined (in Cbc AND Clp)
+First it reads in an integer model from an mps file
+Then it initializes the integer model with cbc defaults
+Then it calls CbcMain1 passing all parameters apart from first but with callBack to modify stuff
+Finally it prints solution
+
+************************************************************************/
+/* Meaning of whereFrom:
+   1 after initial solve by dualsimplex etc
+   2 after preprocessing
+   3 just before branchAndBound (so user can override)
+   4 just after branchAndBound (before postprocessing)
+   5 after postprocessing
+*/
+/* Meaning of model status is as normal
+   status
+      -1 before branchAndBound
+      0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+      (or check value of best solution)
+      1 stopped - on maxnodes, maxsols, maxtime
+      2 difficulties so run was abandoned
+      (5 event user programmed event occurred) 
+
+      cbc secondary status of problem
+        -1 unset (status_ will also be -1)
+  0 search completed with solution
+  1 linear relaxation not feasible (or worse than cutoff)
+  2 stopped on gap
+  3 stopped on nodes
+  4 stopped on time
+  5 stopped on user event
+  6 stopped on solutions
+  7 linear relaxation unbounded
+
+   but initially check if status is 0 and secondary status is 1 -> infeasible
+   or you can check solver status.
+*/
+/* Return non-zero to return quickly */   
+static int callBack(CbcModel * model, int whereFrom)
+{
+  int returnCode=0;
+  switch (whereFrom) {
+  case 1:
+  case 2:
+    if (!model->status()&&model->secondaryStatus())
+      returnCode=1;
+    break;
+  case 3:
+    {
+      //CbcCompareUser compare;
+      //model->setNodeComparison(compare);
+    }
+    break;
+  case 4:
+    // If not good enough could skip postprocessing
+    break;
+  case 5:
+    break;
+  default:
+    abort();
+  }
+  return returnCode;
+}
+static int cancelAsap=0;
+/*
+  0 - not yet in Cbc
+  1 - in Cbc with new signal handler
+  2 - ending Cbc
+*/
+static int statusOfCbc=0;
+static CoinSighandler_t saveSignal = static_cast<CoinSighandler_t> (0);
+
+extern "C" {
+     static void
+#if defined(_MSC_VER)
+     __cdecl
+#endif // _MSC_VER
+     signal_handler(int /*whichSignal*/)
+     {
+       cancelAsap=3;
+       return;
+     }
+}
+/** This is so user can trap events and do useful stuff.  
+
+    CbcModel model_ is available as well as anything else you care 
+    to pass in
+*/
+
+struct EventUserInfo {
+  MIP_wrapper::CBUserInfo* pCbui=0;
+  CglPreProcess* pPP=0; 
+};
+
+extern CglPreProcess * cbcPreProcessPointer;
+class MyEventHandler3 : public CbcEventHandler {
+  
+public:
+  /**@name Overrides */
+  //@{
+  virtual CbcAction event(CbcEvent whichEvent);
+  //@}
+
+  /**@name Constructors, destructor etc*/
+  //@{
+  /** Default constructor. */
+  MyEventHandler3(EventUserInfo& u_);
+  /// Constructor with pointer to model (redundant as setEventHandler does)
+  MyEventHandler3(CbcModel * model, EventUserInfo& u_);
+  /** Destructor */
+  virtual ~MyEventHandler3();
+  /** The copy constructor. */
+  MyEventHandler3(const MyEventHandler3 & rhs);
+  /// Assignment
+  MyEventHandler3& operator=(const MyEventHandler3 & rhs);
+  /// Clone
+  virtual CbcEventHandler * clone() const ;
+  //@}
+   
+    
+protected:
+  // data goes here
+  EventUserInfo ui;
+};
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+MyEventHandler3::MyEventHandler3 (EventUserInfo& u_) 
+  : CbcEventHandler(), ui(u_)
+{
+  assert(0);
+}
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+MyEventHandler3::MyEventHandler3 (const MyEventHandler3 & rhs) 
+: CbcEventHandler(rhs)
+{  
+  ui = rhs.ui;
+}
+
+// Constructor with pointer to model
+MyEventHandler3::MyEventHandler3(CbcModel * model, EventUserInfo& u_)
+  : CbcEventHandler(model), ui(u_)
+{
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+MyEventHandler3::~MyEventHandler3 ()
+{
+}
+
+//----------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+MyEventHandler3 &
+MyEventHandler3::operator=(const MyEventHandler3& rhs)
+{
+  if (this != &rhs) {
+    CbcEventHandler::operator=(rhs);
+  }
+  ui = rhs.ui;
+  return *this;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+CbcEventHandler * MyEventHandler3::clone() const
+{
+  return new MyEventHandler3(*this);
+}
+
+CbcEventHandler::CbcAction 
+MyEventHandler3::event(CbcEvent whichEvent)
+{
+  if(!statusOfCbc) {
+    // override signal handler
+    // register signal handler
+    saveSignal = signal(SIGINT, signal_handler);
+    statusOfCbc=1;
+  }
+  if ( (cancelAsap&2)!=0 ) {
+//     printf("Cbc got cancel\n");
+    // switch off Clp cancel
+    cancelAsap &= 2;
+    return stop;
+  }
+  // If in sub tree carry on
+  if (!model_->parentModel()) {
+    if (whichEvent==endSearch&&statusOfCbc==1) {
+      // switch off cancel
+      cancelAsap=0;
+      // restore signal handler
+      signal(SIGINT, saveSignal);
+      statusOfCbc=2;
+    }
+    if (whichEvent==solution||whichEvent==heuristicSolution) {
+#ifdef STOP_EARLY
+      return stop; // say finished
+#else
+#ifdef WANT_SOLUTION
+//       // If preprocessing was done solution will be to processed model
+//       int numberColumns = model_->getNumCols();
+//       const double * bestSolution = model_->bestSolution();
+//       assert (bestSolution);
+//       printf("VALUE of solution is %g\n",model_->getObjValue());
+//       for (int i=0;i<numberColumns;i++) {
+//   if (fabs(bestSolution[i])>1.0e-8)
+//     printf("%d %g\n",i,bestSolution[i]);
 //       }
-//    }
-// 
-// //    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
-// //       double walltime;
-// //       double dettime;
-// 
-//       status = CBCgetcallbackinfo (env, cbdata, wherefrom,
-//                                    CBC_CALLBACK_INFO_BEST_REMAINING, &info->pOutput->bestBound);
-// //       if ( status )  goto TERMINATE;
-// 
-// //       status = CBCgettime (env, &walltime);
-// //       if ( status )  goto TERMINATE;
-// // 
-// //       status = CBCgetdettime (env, &dettime);
-// //       if ( status )  goto TERMINATE;
-// // 
-// //    }
-// 
-//    if ( newincumbent ) {
-//       assert(info->pOutput->x);
-//       status = CBCgetcallbackincumbent (env, cbdata, wherefrom,
-//                                         info->pOutput->x,
-//                                         0, info->pOutput->nCols-1);
-//       if ( status )  goto TERMINATE;
-// 
-//       info->pOutput->dCPUTime = -1;
-// 
-//       /// Call the user function:
-//       if (info->solcbfn)
-//           (*info->solcbfn)(*info->pOutput, info->ppp);
-//    }
-//    
-// 
-// TERMINATE:
-//    return (status);
-// 
-// } /* END logcallback */
+      assert( model_ && model_->solver() );
+      double objOffset=0;
+      model_->solver()->getDblParam(OsiObjOffset, objOffset);
+      const double objVal =
+        (model_->getObjValue() - objOffset)*
+        model_->getObjSense()*     // ???
+        -1;
+      const double bestBnd =
+        (model_->getBestPossibleObjValue() - objOffset)*
+        model_->getObjSense()*     // ???
+        -1;
+      cerr 
+        << " % OBJ VAL RAW: " << model_->getObjValue()
+        << "  OBJ VAL ORIG(?): " << objVal
+        << " % BND RAW: " << model_->getBestPossibleObjValue()
+        << "  BND ORIG(?): " << bestBnd
+//         << "  &prepro: " << cbcPreProcessPointer
+//         << "  &model_._solver(): " << model_->solver()
+        << "  orig NCols: " << ui.pCbui->pOutput->nCols
+        << "  prepro NCols:  " << model_->getNumCols()
+        ;
+      OsiSolverInterface* origModel=0;
+      if ( 0!=cbcPreProcessPointer && 0!=model_->solver() ) {
+        cbcPreProcessPointer->postProcess( *model_->solver(), false );
+        origModel = cbcPreProcessPointer->originalModel();
+      } else {
+        origModel = model_->solver();
+      }
+//         assert( ui.pCbui->pOutput->x);
+      assert( origModel->getNumCols() == ui.pCbui->pOutput->nCols );
+      ui.pCbui->pOutput->x = origModel->getColSolution();
+      if ( ui.pCbui->pOutput->nObjVarIndex>=0 )
+        cerr
+          << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
+      cerr << endl;
+      ui.pCbui->pOutput->objVal = objVal;
+//         origModel->getObjValue();
+      ui.pCbui->pOutput->status = MIP_wrapper::SAT;
+      ui.pCbui->pOutput->statusName = "feasible from a callback";
+      ui.pCbui->pOutput->bestBound = bestBnd;
+      ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
+      ui.pCbui->pOutput->nNodes = model_->getNodeCount();
+      ui.pCbui->pOutput->nOpenNodes = -1; // model_->getNodeCount2();
+
+      /// Call the user function:
+      if (ui.pCbui->solcbfn)
+          (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->ppp);
+#endif
+      return noAction; // carry on
+#endif
+    } else {
+      return noAction; // carry on
+    }
+  } else {
+      return noAction; // carry on
+  }
+}
+/** This is so user can trap events and do useful stuff.  
+
+    ClpSimplex model_ is available as well as anything else you care 
+    to pass in
+*/
+
+class MyEventHandler4 : public ClpEventHandler {
+  
+public:
+  /**@name Overrides */
+  //@{
+  virtual int event(Event whichEvent);
+  //@}
+
+  /**@name Constructors, destructor etc*/
+  //@{
+  /** Default constructor. */
+  MyEventHandler4();
+  /// Constructor with pointer to model (redundant as setEventHandler does)
+  MyEventHandler4(ClpSimplex * model);
+  /** Destructor */
+  virtual ~MyEventHandler4();
+  /** The copy constructor. */
+  MyEventHandler4(const MyEventHandler4 & rhs);
+  /// Assignment
+  MyEventHandler4& operator=(const MyEventHandler4 & rhs);
+  /// Clone
+  virtual ClpEventHandler * clone() const ;
+  //@}
+   
+    
+protected:
+  // data goes here
+};
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+MyEventHandler4::MyEventHandler4 () 
+  : ClpEventHandler()
+{
+}
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+MyEventHandler4::MyEventHandler4 (const MyEventHandler4 & rhs) 
+: ClpEventHandler(rhs)
+{  
+}
+
+// Constructor with pointer to model
+MyEventHandler4::MyEventHandler4(ClpSimplex * model)
+  : ClpEventHandler(model)
+{
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+MyEventHandler4::~MyEventHandler4 ()
+{
+}
+
+//----------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+MyEventHandler4 &
+MyEventHandler4::operator=(const MyEventHandler4& rhs)
+{
+  if (this != &rhs) {
+    ClpEventHandler::operator=(rhs);
+  }
+  return *this;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+ClpEventHandler * MyEventHandler4::clone() const
+{
+  return new MyEventHandler4(*this);
+}
+
+int
+MyEventHandler4::event(Event whichEvent)
+{
+  if ( (cancelAsap&1)!=0 ) {
+//     printf("Clp got cancel\n");
+    return 5;
+  } else {
+    return -1;
+  }
+}
 // end SolutionCallback ---------------------------------------------------------------------
 
 MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel *pModel)
@@ -430,6 +735,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       osi.writeMpsNative(sExportModel.c_str(), 0, colN.data());
     }
     
+    // Tell solver to return fast if presolve or initial solve infeasible
+    osi.getModelPtr()->setMoreSpecialOptions(3);
+    // allow Clp to handle interrupts
+    MyEventHandler4 clpEventHandler;
+    osi.getModelPtr()->passInEventHandler(&clpEventHandler);
+
   /* switch on/off output to the screen */
     class NullCoinMessageHandler : public CoinMessageHandler {
       int print() {
@@ -446,7 +757,18 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     if ( fVerbose )
       cerr << " Model creation..." << endl;
     
+// #define __USE_CbcSolver__  -- not linked rev2274
+#ifdef __USE_CbcSolver__
+    CbcSolver control(osi);
+    // initialize
+    control.fillValuesInSolver();
+    CbcModel& model = *control.model();
+#else
     CbcModel model(osi);
+#endif
+//     CbcSolver control(osi);
+//     control.solve();
+    
     
     CoinMessageHandler msgStderr(stderr);
 
@@ -492,18 +814,27 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 
     
    /// Solution callback
-//    output.nCols = colObj.size();
+   output.nCols = colObj.size();
 //    x.resize(output.nCols);
 //    output.x = &x[0];
 
-//    if (flag_all_solutions && cbui.solcbfn) {
-//       status = CBCsetinfocallbackfunc (env, solcallback, &cbui);
-//       wrap_assert(!status, "Failed to set solution callback", false);
-//    }
+#ifdef WANT_SOLUTION
+   if (flag_all_solutions && cbui.solcbfn) {
+     // Event handler. Should be after CbcMain0()?
+     EventUserInfo ui;
+     ui.pCbui = &cbui;
+//      ui.pPP = 0;
+     MyEventHandler3 eventHandler(&model, ui);
+     model.passInEventHandler(&eventHandler);
+   }
+#endif
+
+   cbc_cmdOptions += " -solve";
+   cbc_cmdOptions += " -quit";
 
    output.dCPUTime = clock();
 
-   /* Optimize the problem and obtain solution. */
+   /* OLD: Optimize the problem and obtain solution. */
 //       model.branchAndBound();
 //       osi.branchAndBound();
 
@@ -512,13 +843,39 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //      CbcCbcParamUtils::setCbcModelDefaults(model) ;
 //       const char * argv2[]={"mzn-cbc","-solve","-quit"};
 //        CbcMain1(3,argv2,model);
-    cbc_cmdOptions += " -solve";
-    cbc_cmdOptions += " -quit";
-       if (fVerbose)
-         cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
+#ifdef __USE_CbcSolver__
+  if (fVerbose)
+    cerr << "  Calling control.solve() with options '" << cbc_cmdOptions << "'..." << endl;
+  control.solve (cbc_cmdOptions.c_str(), 1);
+#else
+#define __USE_callCbc1__
+#ifdef __USE_callCbc1__
+    if (fVerbose)
+      cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
     callCbc(cbc_cmdOptions, model);
-    
-
+//     callCbc1(cbc_cmdOptions, model, callBack);
+    // What is callBack() for?    TODO
+#else
+  CbcMain0(model);
+  // should be here?
+//   // Event handler
+//    EventUserInfo ui;
+//    MyEventHandler3 eventHandler( &model, ui );
+//    model.passInEventHandler(&eventHandler);
+  /* Now go into code for standalone solver
+     Could copy arguments and add -quit at end to be safe
+     but this will do
+  */
+  vector<string> argvS;
+  MiniZinc::split(cbc_cmdOptions, argvS);
+  vector<const char*> argv;
+  MiniZinc::vecString2vecPChar(argvS, argv);
+  if (fVerbose)
+    cerr << "  Calling CbcMain1 with options '" << cbc_cmdOptions << "'..." << endl;
+  CbcMain1(argv.size(),argv.data(),model,callBack);
+#endif
+#endif
+  
     output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
     output.status = convertStatus(&model);

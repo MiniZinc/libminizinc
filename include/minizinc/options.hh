@@ -19,7 +19,7 @@ namespace MiniZinc {
     protected:
       UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive> _options;
 
-      inline Expression* getParam(const std::string& name) const;
+      Expression* getParam(const std::string& name) const;
 
     public:
       void setIntParam(const std::string& name,   KeepAlive e);

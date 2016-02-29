@@ -232,8 +232,11 @@ namespace MiniZinc {
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
       if (nullptr==this)
         throw InternalError("isa: nullptr");
+#pragma clang diagnostic pop
       return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*

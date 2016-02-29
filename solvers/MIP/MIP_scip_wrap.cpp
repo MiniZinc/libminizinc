@@ -182,7 +182,7 @@ SCIP_RETCODE MIP_scip_wrapper::openSCIP()
    SCIP_CALL( SCIPincludeDefaultPlugins(scip) );
 
    /* create empty problem */
-   SCIP_CALL( SCIPcreateProbBasic(scip, "mzn_mip_scip") );
+   SCIP_CALL( SCIPcreateProbBasic(scip, "mzn_scip") );
    return SCIP_OKAY;
 }
 
@@ -455,20 +455,6 @@ SCIP_DECL_MESSAGEWARNING(printMsg) {
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  /* Turn on output to the screen */
-    if(!fVerbose) {
-//       SCIP_CALL(SCIPsetMessagehdlr(scip, NULL));  No LP export then
-      SCIPsetMessagehdlrQuiet(scip, true);
-    } else {
-//       SCIP_CALL ( SCIPmessagehdlrCreate (SCIP_MESSAGEHDLR **messagehdlr, SCIP_Bool bufferedoutput,
-//       const char *filename, SCIP_Bool quiet, SCIP_DECL_MESSAGEWARNING((*messagewarning)),
-//       SCIP_DECL_MESSAGEDIALOG((*messagedialog)), SCIP_DECL_MESSAGEINFO((*messageinfo)),
-//       SCIP_DECL_MESSAGEHDLRFREE((*messagehdlrfree)), SCIP_MESSAGEHDLRDATA *messagehdlrdata) );
-      /// THIS IS INTENDED TO PRINT TO STDERR which it does not in 3.2.0                         TODO
-      SCIP_MESSAGEHDLR* pHndl=0;
-      SCIP_CALL ( SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
-      SCIP_CALL ( SCIPsetMessagehdlr(scip, pHndl) );      
-    }
 
     if (nThreads>0)
       SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", nThreads) );
@@ -483,10 +469,19 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //    wrap_assert(!retcode, "  SCIP Warning: Failure to measure CPU time.", false);
 
     if (!sExportModel.empty()) {
-//       std::cout <<"  Exporting LP model to "  << sExportModel << " ..." << std::endl;
+//       std::cerr <<"  Exporting LP model to "  << sExportModel << " ..." << std::endl;
       SCIP_CALL( SCIPwriteOrigProblem(scip, sExportModel.c_str(), 0, 0) );
     }
 
+  /* Turn on output to the screen  - after model export */
+    if(!fVerbose) {
+//       SCIP_CALL(SCIPsetMessagehdlr(scip, NULL));  No LP export then
+      SCIPsetMessagehdlrQuiet(scip, true);
+    } else {
+      SCIP_MESSAGEHDLR* pHndl=0;
+      SCIP_CALL ( SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
+      SCIP_CALL ( SCIPsetMessagehdlr(scip, pHndl) );      
+    }
     
     if (sReadParams.size()) {
      SCIP_CALL( SCIPreadParams (scip, sReadParams.c_str()) );

@@ -13,12 +13,14 @@
 #define __MINIZINC_UTILS_H__
 
 #include <string>
+#include <vector>
 #include <sstream>
 #include <ctime>
 #include <limits>
 #include <iomanip>
 
 #include <minizinc/timer.hh>
+#include <minizinc/exception.hh>
 
 
 using namespace std;
@@ -161,6 +163,26 @@ namespace MiniZinc {
     operator bool() const { return fHadOne; }
     bool operator!() const { return !fHadOne; }
   };
+  
+  /// Split a string into words
+  /// Add the words into the given vector
+  inline void split(const string& str, std::vector<string>& words) {
+    istringstream iss(str);
+    string buf;
+    while (iss) {
+      iss >> buf;
+      words.push_back(buf);
+    }
+  }
+  
+  /// Puts the strings' c_str()s into the 2nd argument.
+  /// The latter is only valid as long as the former isn't changed.
+  inline void vecString2vecPChar(const vector<string>& vS, vector<const char*>& vPC) {
+    vPC.resize(vS.size());
+    for ( size_t i=0; i<vS.size(); ++i ) {
+      vPC[i] = vS[i].c_str();
+    }
+  }
 
 }
 
