@@ -470,83 +470,74 @@ MyEventHandler3::event(CbcEvent whichEvent)
       return stop; // say finished
 #else
 #ifdef WANT_SOLUTION
-//       // If preprocessing was done solution will be to processed model
-//       int numberColumns = model_->getNumCols();
-//       const double * bestSolution = model_->bestSolution();
-//       assert (bestSolution);
-//       printf("VALUE of solution is %g\n",model_->getObjValue());
-//       for (int i=0;i<numberColumns;i++) {
-//   if (fabs(bestSolution[i])>1.0e-8)
-//     printf("%d %g\n",i,bestSolution[i]);
-//       }
   // John Forrest  27.2.16:
       // check not duplicate
       if (model_->getObjValue()<bestSolutionValue_) {
-  bestSolutionValue_ = model_->getObjValue();
-  // If preprocessing was done solution will be to processed model
-  //       int numberColumns = model_->getNumCols();
-  const double * bestSolution = model_->bestSolution();
-  assert (bestSolution);
-  //       printf("value of solution is %g\n",model_->getObjValue());
-  
-  // Trying to obtain solution for the original model:
-  assert( model_ && model_->solver() );
-  double objOffset=0;
-  model_->solver()->getDblParam(OsiObjOffset, objOffset);
-  double objVal = (model_->getObjValue() - objOffset);
-  double bestBnd = (model_->getBestPossibleObjValue() - objOffset);
-  if ( 0!=cbcPreProcessPointer )
-    if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
-      objVal *= cbcPreOrig->getObjSense();
-      bestBnd *= cbcPreOrig->getObjSense();
-    }
-  OsiSolverInterface* origModel=0;
-  if ( 0!=cbcPreProcessPointer && 0!=model_->continuousSolver() ) {
-#if 1
-    OsiSolverInterface * solver = (model_->continuousSolver()->clone());
-//       ? model_->continuousSolver()->clone()
-//       : model_->continuousSolver()->clone();
-    int numberColumns = solver->getNumCols();
-    for (int i=0;i<numberColumns;i++) {
-      if (solver->isInteger(i)) {
-        solver->setColLower(i,bestSolution[i]);
-        solver->setColUpper(i,bestSolution[i]);
+      bestSolutionValue_ = model_->getObjValue();
+      // If preprocessing was done solution will be to processed model
+      //       int numberColumns = model_->getNumCols();
+      const double * bestSolution = model_->bestSolution();
+      assert (bestSolution);
+      //       printf("value of solution is %g\n",model_->getObjValue());
+      
+      // Trying to obtain solution for the original model:
+      assert( model_ && model_->solver() );
+      double objOffset=0;
+      model_->solver()->getDblParam(OsiObjOffset, objOffset);
+      double objVal = (model_->getObjValue() - objOffset);
+      double bestBnd = (model_->getBestPossibleObjValue() - objOffset);
+      if ( 0!=cbcPreProcessPointer ) {
+        if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
+          objVal *= cbcPreOrig->getObjSense();
+          bestBnd *= cbcPreOrig->getObjSense();
+        }
+      } else {
+        objVal *= model_->getObjSense();
+        bestBnd *= model_->getObjSense();
       }
-    }
-    solver->resolve();
-    cbcPreProcessPointer->postProcess( *solver, false );
-    delete solver;
-#else
-    cbcPreProcessPointer->postProcess( *model_->solver(), false );
-#endif
-    origModel = cbcPreProcessPointer->originalModel();
-  } else {
-    origModel = model_->solver();
-  }
-      cerr 
-        << " % OBJ VAL RAW: " << model_->getObjValue()
-        << "  OBJ VAL ORIG(?): " << objVal
-        << " % BND RAW: " << model_->getBestPossibleObjValue()
-        << "  BND ORIG(?): " << bestBnd
-//         << "  &prepro: " << cbcPreProcessPointer
-//         << "  &model_._solver(): " << model_->solver()
-        << "  orig NCols: " << ui.pCbui->pOutput->nCols
-        << "  prepro NCols:  " << model_->getNumCols()
-        ;
-//       OsiSolverInterface* origModel=0;
-//       if ( 0!=cbcPreProcessPointer && 0!=model_->solver() ) {
-//         cbcPreProcessPointer->postProcess( *model_->solver(), false );
-//         origModel = cbcPreProcessPointer->originalModel();
-//       } else {
-//         origModel = model_->solver();
-//       }
-//         assert( ui.pCbui->pOutput->x);
+      OsiSolverInterface* origModel=0;
+      if ( 0!=cbcPreProcessPointer && 0!=model_->continuousSolver() ) {
+    #if 1
+        OsiSolverInterface * solver = (model_->continuousSolver()->clone());
+    //       ? model_->continuousSolver()->clone()
+    //       : model_->continuousSolver()->clone();
+        int numberColumns = solver->getNumCols();
+        for (int i=0;i<numberColumns;i++) {
+          if (solver->isInteger(i)) {
+            solver->setColLower(i,bestSolution[i]);
+            solver->setColUpper(i,bestSolution[i]);
+          }
+        }
+        solver->resolve();
+        cbcPreProcessPointer->postProcess( *solver, false );
+        delete solver;
+    #else
+        cbcPreProcessPointer->postProcess( *model_->solver(), false );
+    #endif
+        origModel = cbcPreProcessPointer->originalModel();
+        ui.pCbui->pOutput->x = origModel->getColSolution();
+      } else {
+        origModel = model_->solver();
+        ui.pCbui->pOutput->x = bestSolution;
+      }
+      if ( ui.pCbui->fVerb )
+        cerr 
+          << " % OBJ VAL RAW: " << model_->getObjValue()
+          << "  OBJ VAL ORIG(?): " << objVal
+          << " % BND RAW: " << model_->getBestPossibleObjValue()
+          << "  BND ORIG(?): " << bestBnd
+  //         << "  &prepro: " << cbcPreProcessPointer
+  //         << "  &model_._solver(): " << model_->solver()
+          << "  orig NCols: " << ui.pCbui->pOutput->nCols
+          << "  prepro NCols:  " << model_->getNumCols()
+          ;
       assert( origModel->getNumCols() == ui.pCbui->pOutput->nCols );
-      ui.pCbui->pOutput->x = origModel->getColSolution();
-      if ( ui.pCbui->pOutput->nObjVarIndex>=0 )
-        cerr
-          << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
-      cerr << endl;
+      if ( ui.pCbui->fVerb ) {
+        if ( ui.pCbui->pOutput->nObjVarIndex>=0 )
+          cerr
+            << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
+        cerr << endl;
+      }
       ui.pCbui->pOutput->objVal = objVal;
 //         origModel->getObjValue();
       ui.pCbui->pOutput->status = MIP_wrapper::SAT;
@@ -570,12 +561,12 @@ MyEventHandler3::event(CbcEvent whichEvent)
       return noAction; // carry on
   }
 }
+
 /** This is so user can trap events and do useful stuff.  
 
     ClpSimplex model_ is available as well as anything else you care 
     to pass in
 */
-
 class MyEventHandler4 : public ClpEventHandler {
   
 public:
