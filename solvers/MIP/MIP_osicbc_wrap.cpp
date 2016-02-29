@@ -34,7 +34,7 @@ using namespace std;
 #include <CglPreProcess.hpp>
 #include <CoinSignal.hpp>
 
-// #define WANT_SOLUTION  -- does nto work in rev2274
+#define WANT_SOLUTION
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
@@ -58,9 +58,11 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //               << "--writeParam <file> write OSICBC parameters to file
   //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
   << "--cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
-     "      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\". \"-preprocess off\" recommended in 2.9.6" << std::endl
+     "      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"." << std::endl
+     //  \"-preprocess off\" recommended in 2.9.6
   << "--writeModel <file>   write model to <file> (.mps)" << std::endl
-//   << "-a                  print intermediate solutions (can be slow. Works for optimization problems only   TODO)" << std::endl
+  << "-a, --all             print intermediate solutions for optimization problems\n"
+     "      (not from FeasPump. Can be slow.)" << std::endl
 //   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>         stop search after N seconds" << std::endl
@@ -386,6 +388,7 @@ public:
 protected:
   // data goes here
   EventUserInfo ui;
+  double bestSolutionValue_ = DBL_MAX;  // always min
 };
 //-------------------------------------------------------------------
 // Default Constructor 
@@ -476,17 +479,50 @@ MyEventHandler3::event(CbcEvent whichEvent)
 //   if (fabs(bestSolution[i])>1.0e-8)
 //     printf("%d %g\n",i,bestSolution[i]);
 //       }
-      assert( model_ && model_->solver() );
-      double objOffset=0;
-      model_->solver()->getDblParam(OsiObjOffset, objOffset);
-      const double objVal =
-        (model_->getObjValue() - objOffset)*
-        model_->getObjSense()*     // ???
-        -1;
-      const double bestBnd =
-        (model_->getBestPossibleObjValue() - objOffset)*
-        model_->getObjSense()*     // ???
-        -1;
+  // John Forrest  27.2.16:
+      // check not duplicate
+      if (model_->getObjValue()<bestSolutionValue_) {
+  bestSolutionValue_ = model_->getObjValue();
+  // If preprocessing was done solution will be to processed model
+  //       int numberColumns = model_->getNumCols();
+  const double * bestSolution = model_->bestSolution();
+  assert (bestSolution);
+  //       printf("value of solution is %g\n",model_->getObjValue());
+  
+  // Trying to obtain solution for the original model:
+  assert( model_ && model_->solver() );
+  double objOffset=0;
+  model_->solver()->getDblParam(OsiObjOffset, objOffset);
+  double objVal = (model_->getObjValue() - objOffset);
+  double bestBnd = (model_->getBestPossibleObjValue() - objOffset);
+  if ( 0!=cbcPreProcessPointer )
+    if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
+      objVal *= cbcPreOrig->getObjSense();
+      bestBnd *= cbcPreOrig->getObjSense();
+    }
+  OsiSolverInterface* origModel=0;
+  if ( 0!=cbcPreProcessPointer && 0!=model_->continuousSolver() ) {
+#if 1
+    OsiSolverInterface * solver = (model_->continuousSolver()->clone());
+//       ? model_->continuousSolver()->clone()
+//       : model_->continuousSolver()->clone();
+    int numberColumns = solver->getNumCols();
+    for (int i=0;i<numberColumns;i++) {
+      if (solver->isInteger(i)) {
+        solver->setColLower(i,bestSolution[i]);
+        solver->setColUpper(i,bestSolution[i]);
+      }
+    }
+    solver->resolve();
+    cbcPreProcessPointer->postProcess( *solver, false );
+    delete solver;
+#else
+    cbcPreProcessPointer->postProcess( *model_->solver(), false );
+#endif
+    origModel = cbcPreProcessPointer->originalModel();
+  } else {
+    origModel = model_->solver();
+  }
       cerr 
         << " % OBJ VAL RAW: " << model_->getObjValue()
         << "  OBJ VAL ORIG(?): " << objVal
@@ -497,13 +533,13 @@ MyEventHandler3::event(CbcEvent whichEvent)
         << "  orig NCols: " << ui.pCbui->pOutput->nCols
         << "  prepro NCols:  " << model_->getNumCols()
         ;
-      OsiSolverInterface* origModel=0;
-      if ( 0!=cbcPreProcessPointer && 0!=model_->solver() ) {
-        cbcPreProcessPointer->postProcess( *model_->solver(), false );
-        origModel = cbcPreProcessPointer->originalModel();
-      } else {
-        origModel = model_->solver();
-      }
+//       OsiSolverInterface* origModel=0;
+//       if ( 0!=cbcPreProcessPointer && 0!=model_->solver() ) {
+//         cbcPreProcessPointer->postProcess( *model_->solver(), false );
+//         origModel = cbcPreProcessPointer->originalModel();
+//       } else {
+//         origModel = model_->solver();
+//       }
 //         assert( ui.pCbui->pOutput->x);
       assert( origModel->getNumCols() == ui.pCbui->pOutput->nCols );
       ui.pCbui->pOutput->x = origModel->getColSolution();
@@ -528,6 +564,7 @@ MyEventHandler3::event(CbcEvent whichEvent)
 #endif
     } else {
       return noAction; // carry on
+    }
     }
   } else {
       return noAction; // carry on
