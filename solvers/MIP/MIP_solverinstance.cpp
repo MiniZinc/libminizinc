@@ -317,7 +317,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
 
 void MIP_solverinstance::processFlatZinc(void) {
   /// last-minute solver params
-  mip_wrap->fVerbose = (getOptions().getBoolParam(constants().opts.verbose.str()));
+  mip_wrap->fVerbose = (getOptions().getBoolParam(constants().opts.verbose.str(), false));
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = NULL;
