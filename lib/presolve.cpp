@@ -8,8 +8,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #include <minizinc/presolve.hh>
 #include <minizinc/astiterator.hh>
+#include <fstream>
 
 namespace MiniZinc {
 
@@ -417,11 +419,22 @@ namespace MiniZinc {
   void Presolver::Subproblem::TableExpressionBuilder::registerTableConstraint() {
     GCLock lock;
 
-    //  TODO: Make sure of the location of table.mzn
-    std::string loc = boolTable ? "/std/table_bool.mzn" : "/std/table_int.mzn";
-    Model* table_model = parse(std::vector< std::string >(1, options.stdLibDir + loc),
-                               std::vector< std::string >(), options.includePaths, false, false,
-                               false, std::cerr);
+    std::string loc = boolTable ? "/table_bool.mzn" : "/table_int.mzn";
+    ifstream file(options.stdLibDir + "/" + options.globalsDir + loc);
+    bool exists = file.is_open();
+    file.close();
+
+    Model* table_model = nullptr;
+    if (exists) {
+      table_model = parse(std::vector<std::string>(1, options.stdLibDir + "/" + options.globalsDir + loc),
+                          std::vector<std::string>(), options.includePaths, false, false,
+                          false, std::cerr);
+    } else {
+      table_model = parse(std::vector<std::string>(1, options.stdLibDir + "/std" + loc),
+                          std::vector<std::string>(), options.includePaths, false, false,
+                          false, std::cerr);
+    }
+
     Env table_env(table_model);
 
     std::vector<TypeError> typeErrors;
