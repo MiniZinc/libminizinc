@@ -1978,6 +1978,7 @@ predicate redundant_constraint(var bool: b);
 /** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
+function set of int: anon_enum(int: n) = 1..n;
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

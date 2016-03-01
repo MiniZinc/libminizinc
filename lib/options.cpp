@@ -30,7 +30,7 @@ namespace MiniZinc {
       _options[name] = ka;
     } else {
       std::stringstream ss;
-      ss << "For option: " << name << " expected Par Int, received " << e->type().toString() << std::endl;
+      ss << "For option: " << name << " expected Par Int, received " << e->type().nonEnumToString() << std::endl;
       throw InternalError(ss.str());
     }
   }
@@ -40,7 +40,7 @@ namespace MiniZinc {
       _options[name] = ka;
     } else {
       std::stringstream ss;
-      ss << "For option: " << name << " expected Par Float, received " << e->type().toString() << std::endl;
+      ss << "For option: " << name << " expected Par Float, received " << e->type().nonEnumToString() << std::endl;
       throw InternalError(ss.str());
     }
   }
@@ -50,7 +50,7 @@ namespace MiniZinc {
       _options[name] = ka;
     } else {
       std::stringstream ss;
-      ss << "For option: " << name << " expected Par Bool, received " << e->type().toString() << std::endl;
+      ss << "For option: " << name << " expected Par Bool, received " << e->type().nonEnumToString() << std::endl;
       throw InternalError(ss.str());
     }
   }
@@ -60,7 +60,7 @@ namespace MiniZinc {
       _options[name] = ka;
     } else {
       std::stringstream ss;
-      ss << "For option: " << name << " expected Par String, received " << e->type().toString() << std::endl;
+      ss << "For option: " << name << " expected Par String, received " << e->type().nonEnumToString() << std::endl;
       throw InternalError(ss.str());
     }
   }

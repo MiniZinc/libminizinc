@@ -250,6 +250,7 @@ lib/prettyprinter.cpp
 #lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
+lib/type.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/MIPdomains.cpp
