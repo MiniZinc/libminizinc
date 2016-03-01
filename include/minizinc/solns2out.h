@@ -61,6 +61,7 @@ namespace MiniZinc {
       bool flag_output_flush = true;
       bool flag_output_time = false;
       int flag_ignore_lines = 0;
+      bool flag_unique = 0;
       bool flag_canonicalize = 0;
       string flag_output_noncanonical;
       string flag_output_raw;
@@ -133,6 +134,7 @@ namespace MiniZinc {
     unique_ptr<ostream> pOut;  // file output
     unique_ptr<ostream> pOfs_non_canon;
     unique_ptr<ostream> pOfs_raw;
+    int nSolns = 0;
     set<string> sSolsCanon;
     string line_part;   // non-finished line from last chunk
 
