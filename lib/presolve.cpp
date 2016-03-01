@@ -143,7 +143,7 @@ namespace MiniZinc {
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
     if (options.verbose)
-      std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;;
+      std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;
   }
 
   void Presolver::Subproblem::solveModel() {
@@ -151,7 +151,8 @@ namespace MiniZinc {
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
     ops.setBoolParam(constants().opts.statistics.str(), false);
 
-    si = new FZNPreSolverInstance(*e, ops);
+    if (si == nullptr)
+      si = new FZNPreSolverInstance(*e, ops);
 
     auto status = si->solve();
 
@@ -291,13 +292,149 @@ namespace MiniZinc {
     GlobalSubproblem::constructModel();
   }
 
-  void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, FZNPreSolverInstance* si) {
+  void Presolver::CallsSubproblem::solve() {
+    if (calls.empty())
+      return;
+    clock_t startTime = std::clock();
+    clock_t lastTime = startTime;
+
+    predicate->ann().clear();
+
+    if (options.verbose)
+      std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
+
+    for (int i = 0; i < calls.size(); ++i) {
+      currentCall = calls[i];
+      if(options.verbose)
+        std::cerr << "\t\tConstructing model for call " << i+1 << " ...";
+      constructModel();
+      if(options.verbose)
+        std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+
+//      TODO: check if the current range has already been solved.
+      if(options.verbose)
+        std::cerr << "\t\tPresolving call " << i+1 << "  ...";
+      solveModel();
+      if(options.verbose)
+        std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+
+      if(options.verbose)
+        std::cerr << "\t\tInserting solutions ...";
+      replaceUsage();
+      if(options.verbose)
+        std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
+    }
+
+    if (options.verbose)
+      std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;
+  }
+
+  void Presolver::CallsSubproblem::constructModel() {
+    assert(currentCall != nullptr);
+    GCLock lock;
+
+    bool construction = m->size() == 0;
+    if (construction) {
+      FunctionI* pred = copy(e->envi(), predicate, false, true)->cast<FunctionI>();
+      m->addItem(pred);
+      m->registerFn(e->envi(), pred);
+      std::vector<Expression*> args;
+      for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
+        // TODO: Deal with non-variable parameters
+        VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
+        m->addItem(new VarDeclI(Location(), vd));
+
+        modelArgs.push_back(vd);
+
+        Id* arg = new Id(Location(), vd->id()->str().str(), vd);
+        arg->type(vd->type());
+        args.push_back(arg);
+      }
+      Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
+      pred_call->type(Type::varbool());
+      ConstraintI* constraint = new ConstraintI(Location(), pred_call);
+      m->addItem(constraint);
+      m->addItem(SolveI::sat(Location()));
+    } else {
+//      TODO: Consider just making a new model, this turns out to be rather slow.
+      delete si;
+      si = nullptr;
+      e->envi().flat_removeItem( e->flat()->solveItem() );
+    }
+
+    assert( modelArgs.size() == currentCall->args().size() );
+    for (int i = 0; i < modelArgs.size(); ++i) {
+      Expression* bounds = computeBounds( currentCall->args()[i] );
+      modelArgs[i]->ti()->domain( bounds );
+      if (!construction)
+        modelArgs[i]->flat()->ti()->domain( bounds );
+    }
+
+//    Printer p = Printer(std::cout);
+//    std::cerr << std::endl << std::endl;
+//    p.print(e->model());
+//    std::cerr << std::endl;
+
+    FlatteningOptions fopts;
+    fopts.onlyRangeDomains = options.onlyRangeDomains;
+    flatten(*e, fopts);
+
+    if (construction) {
+      if (options.optimize)
+        optimize(*e);
+
+      if (!options.newfzn) {
+        oldflatzinc(*e);
+      } else {
+        e->flat()->compact();
+        e->output()->compact();
+      }
+    }
+  }
+
+  void Presolver::CallsSubproblem::replaceUsage() {
+    GCLock lock;
+
+    Constraint constraint = BoolTable;
+    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
+      if (constraint == BoolTable && (*it)->type().bt() == Type::BT_INT )
+        constraint = IntTable;
+      else if (constraint != Element && ((*it)->type().is_set()))
+        constraint = Element;
+    }
+
+//    TODO: Add set support
+    if(constraint == Element)
+      throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
+
+    auto builder = TableExpressionBuilder(origin_env, origin, options, constraint == BoolTable);
+    builder.buildFromSolver(predicate, si, currentCall->args());
+    Call* tableCall = builder.getExpression();
+
+    currentCall->id( tableCall->id() );
+    currentCall->args( tableCall->args() );
+    currentCall->decl( tableCall->decl() );
+
+//    Printer p = Printer(std::cout,0);
+//    std::cerr << std::endl << std::endl;
+//    p.print(origin_env.orig);
+//    std::cerr << std::endl;
+
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, FZNPreSolverInstance* si, ASTExprVec<Expression> variables) {
     rows = si->getNr_solutions();
 
-    for (auto it = f->params().begin(); it != f->params().end(); ++it) {
-      Expression* id = new Id( Location(), (*it)->id()->str(), (*it) );
-      id->type((*it)->type());
-      addVariable(id);
+    if (variables.size() == 0) {
+      for (auto it = f->params().begin(); it != f->params().end(); ++it) {
+        Expression* id = new Id(Location(), (*it)->id()->str(), (*it));
+        id->type((*it)->type());
+        addVariable(id);
+      }
+    } else {
+      for (auto it = variables.begin(); it != variables.end(); ++it) {
+        addVariable(*it);
+      }
     }
 
     do {
@@ -311,7 +448,7 @@ namespace MiniZinc {
 
   }
 
-  Expression* Presolver::Subproblem::TableExpressionBuilder::getExpression() {
+  Call* Presolver::Subproblem::TableExpressionBuilder::getExpression() {
     storeVars();
     ArrayLit* dataExpr = new ArrayLit(Location(), data);
     dataExpr->type( boolTable ? Type::parbool(1) : Type::parint(1) );

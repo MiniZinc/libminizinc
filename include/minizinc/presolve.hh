@@ -121,18 +121,22 @@ namespace MiniZinc {
   };
 
   class Presolver::CallsSubproblem : public Presolver::Subproblem {
+  protected:
+    Call* currentCall = nullptr;
+    std::vector<VarDecl*> modelArgs;
+
   public:
     CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
             origin, origin_env, predicate, options, save) { }
 
-  protected:
-    virtual void constructModel(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
+    virtual void solve();
 
-    virtual void replaceUsage(){
-      throw EvalError(origin_env, Location(), "Presolve strategy not supported yet.");
-    };
+  protected:
+    virtual void constructModel();
+
+    virtual void replaceUsage();
+
+
   };
 
   class Presolver::Subproblem::TableExpressionBuilder {
@@ -152,13 +156,13 @@ namespace MiniZinc {
     TableExpressionBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
             : env(env), m(m), options(options), boolTable(boolTable) { };
 
-    void buildFromSolver(FunctionI* f, FZNPreSolverInstance* si);
+    void buildFromSolver(FunctionI* f, FZNPreSolverInstance* si, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
 
     void addVariable(Expression* var);
 
     void addData(Expression* dat);
 
-    Expression* getExpression();
+    Call* getExpression();
 
     void setRows(long long int rows) { rows = rows; }
 
