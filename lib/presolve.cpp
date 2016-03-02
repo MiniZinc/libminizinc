@@ -12,6 +12,8 @@
 #include <minizinc/presolve.hh>
 #include <minizinc/astiterator.hh>
 #include <fstream>
+#include <minizinc/options.hh>
+#include <minizinc/solvers/fzn_solverinstance.hh>
 
 namespace MiniZinc {
 
@@ -147,12 +149,15 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::solveModel() {
-    MiniZinc::Options ops = MiniZinc::Options();
-    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
-    ops.setBoolParam(constants().opts.statistics.str(), false);
+    if (si == nullptr) {
+      MiniZinc::Options ops = MiniZinc::Options();
+      ops.setBoolParam(constants().opts.solver.allSols.str(), true);
+      ops.setBoolParam(constants().opts.statistics.str(), false);
 
-    if (si == nullptr)
-      si = new FZNPreSolverInstance(*e, ops);
+      si = new FZNSolverInstance(*e, ops);
+      solns = new Solns2Vector(e, origin_env);
+      si->setSolns2Out(solns);
+    }
 
     auto status = si->solve();
 
@@ -248,7 +253,7 @@ namespace MiniZinc {
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
     auto builder = TableExpressionBuilder(origin_env, origin, options, constraint == BoolTable);
-    builder.buildFromSolver(predicate, si);
+    builder.buildFromSolver(predicate, solns);
     Expression* tableCall = builder.getExpression();
 
     predicate->e(tableCall);
@@ -358,7 +363,9 @@ namespace MiniZinc {
     } else {
 //      TODO: Consider just making a new model, this turns out to be rather slow.
       delete si;
+      delete solns;
       si = nullptr;
+      solns = nullptr;
       e->envi().flat_removeItem( e->flat()->solveItem() );
     }
 
@@ -408,7 +415,7 @@ namespace MiniZinc {
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
     auto builder = TableExpressionBuilder(origin_env, origin, options, constraint == BoolTable);
-    builder.buildFromSolver(predicate, si, currentCall->args());
+    builder.buildFromSolver(predicate, solns, currentCall->args());
     Call* tableCall = builder.getExpression();
 
     currentCall->id( tableCall->id() );
@@ -422,8 +429,23 @@ namespace MiniZinc {
 
   }
 
-  void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, FZNPreSolverInstance* si, ASTExprVec<Expression> variables) {
-    rows = si->getNr_solutions();
+  bool Presolver::Subproblem::Solns2Vector::evalOutput() {
+    GCLock lock;
+
+    std::unordered_map<std::string, Expression*>* solution = new std::unordered_map<std::string, Expression*>();
+    for (unsigned int i=0; i<getModel()->size(); i++) {
+      if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+        Expression* cpi = copy(copyEnv, vdi->e()->e());
+        solution->insert(pair<std::string, Expression*>(vdi->e()->id()->str().str(),cpi));
+        GCProhibitors.emplace_back(cpi);
+      }
+    }
+    solutions.push_back(solution);
+    return true;
+  }
+
+  void Presolver::Subproblem::TableExpressionBuilder::buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables) {
+    rows = static_cast<long long int>( solns->getSolutions().size() );
 
     if (variables.size() == 0) {
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
@@ -437,15 +459,14 @@ namespace MiniZinc {
       }
     }
 
-    do {
-      auto sol = si->getSolution();
+    for (int i = 0; i < solns->getSolutions().size(); ++i) {
+      auto sol = solns->getSolutions()[i];
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
-        Expression* exp = copy(env, sol[ (*it)->id()->str() ], false, false, true);
+        Expression* exp =  sol->at( (*it)->id()->str().str() );
         exp->type( exp->type().bt() == Type::BT_BOOL ? Type::parbool( (*it)->type().dim() ) : Type::parint( (*it)->type().dim() ) );
         addData(exp);
       }
-    } while (si->next() != SolverInstance::ERROR);
-
+    }
   }
 
   Call* Presolver::Subproblem::TableExpressionBuilder::getExpression() {

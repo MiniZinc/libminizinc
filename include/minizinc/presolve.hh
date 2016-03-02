@@ -14,7 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/copy.hh>
-#include <minizinc/solvers/fzn_presolverinstance.hh>
+#include <minizinc/solns2out.h>
 
 namespace MiniZinc {
   class Presolver {
@@ -58,6 +58,9 @@ namespace MiniZinc {
 
 
   class Presolver::Subproblem{
+  public:
+    class Solns2Vector;
+    class TableExpressionBuilder;
   protected:
     Model* origin;
     EnvI& origin_env;
@@ -74,14 +77,14 @@ namespace MiniZinc {
     Model* m = nullptr;
     Env* e = nullptr;
     // Solver used to solve constructed model.
-    FZNPreSolverInstance* si = nullptr; //TODO: More resonable default when using one of the specific solvers
+    SolverInstanceBase* si = nullptr; //TODO: More resonable default when using one of the specific solvers
+    Solns2Vector* solns = nullptr;
 
     enum Constraint { BoolTable, IntTable, Element };
 
   public:
-    class TableExpressionBuilder;
 
-    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=true);
+    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=false);
     virtual ~Subproblem();
 
     void addCall(Call* c) { calls.push_back(c); }
@@ -98,6 +101,8 @@ namespace MiniZinc {
     virtual void replaceUsage() = 0;
 
     Expression* computeBounds(Expression* exp);
+
+
   };
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
@@ -139,6 +144,26 @@ namespace MiniZinc {
 
   };
 
+  class Presolver::Subproblem::Solns2Vector : public Solns2Out {
+  protected:
+    EnvI& copyEnv;
+
+//    TODO: using ASTStringMap don't work, ASTStrings don't compare correctly
+    std::vector< std::unordered_map<std::string, Expression*>* > solutions;
+
+    std::vector<KeepAlive> GCProhibitors;
+  public:
+    Solns2Vector(Env* e, EnvI& forEnv) : copyEnv(forEnv) { this->initFromEnv(e); }
+
+    virtual ~Solns2Vector() { for (int i = 0; i < solutions.size(); ++i) delete solutions[i]; }
+
+    const std::vector< std::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
+
+  protected:
+    virtual bool evalOutput();
+    virtual bool evalStatus(SolverInstance::Status status) {return true;}
+  };
+
   class Presolver::Subproblem::TableExpressionBuilder {
   protected:
     bool boolTable = false;
@@ -156,7 +181,7 @@ namespace MiniZinc {
     TableExpressionBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
             : env(env), m(m), options(options), boolTable(boolTable) { };
 
-    void buildFromSolver(FunctionI* f, FZNPreSolverInstance* si, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
+    void buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
 
     void addVariable(Expression* var);
 

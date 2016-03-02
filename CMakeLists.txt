@@ -260,7 +260,6 @@ lib/parser.yxx
 lib/solns2out_class.cpp
 lib/presolve.cpp
 solvers/fzn/fzn_solverinstance.cpp
-solvers/fzn_presolver/fzn_presolverinstance.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -289,7 +288,6 @@ include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/parser.hh
 include/minizinc/presolve.hh
-include/minizinc/solvers/fzn_presolverinstance.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
