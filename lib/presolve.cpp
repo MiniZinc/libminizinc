@@ -34,7 +34,18 @@ namespace MiniZinc {
 //    TODO: Deal with circular presolving.
 //    TODO: Handle errors of individual solving here.
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
-      (*it)->solve();
+      try {
+        (*it)->solve();
+      } catch(std::exception& e) {
+        Exception* m = dynamic_cast<Exception*>(&e);
+        std::cout << "% warning: An error occured while presolving `" << (*it)->getPredicate()->id().str() << "': ";
+        if(m) {
+          std::cout << m->msg();
+        } else {
+          std::cout << e.what();
+        }
+        std::cout << "." << std::endl;
+      }
     }
   }
 
