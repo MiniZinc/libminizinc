@@ -267,7 +267,6 @@ namespace MiniZinc {
     FunctionI* pred = copy(e->envi(), cm, predicate, false, true)->cast<FunctionI>();
     m->addItem(pred);
     registerFns(m, e->envi(), pred);
-//    TODO: Add recursive registering of functions called in the predicate
     std::vector<Expression*> args;
     for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
       // TODO: Deal with non-variable parameters
@@ -608,7 +607,7 @@ namespace MiniZinc {
       if (dat->eid() == Expression::E_CALL) {
         Call* c = dat->cast<Call>();
         if ( c->id().str() == "array1d" ) {
-          arr = c->args()[0]->cast<ArrayLit>();
+          arr = c->args()[c->args().size() == 1 ? 0 : 1]->cast<ArrayLit>();
         } else {
           arr = c->args()[2]->cast<ArrayLit>();
         }
