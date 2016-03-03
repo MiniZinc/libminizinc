@@ -168,12 +168,60 @@ namespace MiniZinc {
   Expression* Presolver::Subproblem::computeBounds(Expression* exp) {
     if (exp->eid() == Expression::E_ID )
       return exp->cast<Id>()->decl()->ti()->domain();
+    Expression* type = nullptr;
+    if(exp->type().dim() > 0) {
+      switch (exp->eid()) {
+        case Expression::E_ARRAYLIT: {
+          ArrayLit* arr = exp->cast<ArrayLit>();
+          if (arr->length() > 0) {
+            type = computeBounds(arr->v()[0]);
+            if (!type) return nullptr;
+            for (int i = 1; i < arr->length(); ++i) {
+              Expression* type2 = computeBounds(arr->v()[i]);
+              if(!type2) return nullptr;
+              type = new BinOp(Location(), type, BOT_UNION, type2);
+              type->type( type2->type() );
+            }
+          }
+          return type;
+        }
+        case Expression::E_CALL: {
+          Call* c = exp->cast<Call>();
+          if ( c->id().str().find("array")  ) {
+            return c->args()[c->args().size() == 1 ? 0 : 1]->cast<ArrayLit>();
+          } else {
+//            TODO: Find more cases in which we can compute this.
+            return nullptr;
+          }
+        }
+        case Expression::E_BINOP: {
+          BinOp* op = exp->cast<BinOp>();
+          if (op->op() == BinOpType::BOT_PLUSPLUS) {
+            Expression* left = computeBounds(op->lhs());
+            Expression* right = computeBounds(op->rhs());
+            if (!left || !right) return nullptr;
+            type = new BinOp(Location(), left, BOT_UNION, right);
+            type->type( left->type() );
+          } else {
+            return nullptr;
+          }
+        }
+        case Expression::E_COMP: {
+          Comprehension* comp = exp->cast<Comprehension>();
+          return computeBounds(comp->e());
+        }
+        default: {
+//          TODO: Print expression for error
+          throw InternalError("Presolver couldn't determine counds of expression");
+        }
+      }
+    }
 //    TODO: How about booleans?
     switch (exp->type().bt()) {
       case Type::BT_INT: {
         IntBounds ib = compute_int_bounds(origin_env, exp);
         if (ib.valid) {
-          Expression* type = new SetLit( Location(), IntSetVal::a(ib.l, ib.u) );
+          type = new SetLit( Location(), IntSetVal::a(ib.l, ib.u) );
           type->type(Type::parsetint());
           return type;
         }
@@ -182,7 +230,7 @@ namespace MiniZinc {
       case Type::BT_FLOAT: {
         FloatBounds ib = compute_float_bounds(origin_env, exp);
         if (ib.valid) {
-          Expression* type = new SetLit(Location(), IntSetVal::a(ib.l, ib.u));
+          type = new SetLit(Location(), IntSetVal::a(ib.l, ib.u));
           type->type(Type::parsetfloat());
           return type;
         }
@@ -606,11 +654,7 @@ namespace MiniZinc {
       ArrayLit* arr = nullptr;
       if (dat->eid() == Expression::E_CALL) {
         Call* c = dat->cast<Call>();
-        if ( c->id().str() == "array1d" ) {
-          arr = c->args()[c->args().size() == 1 ? 0 : 1]->cast<ArrayLit>();
-        } else {
-          arr = c->args()[2]->cast<ArrayLit>();
-        }
+        arr = c->args()[c->args().size()-1]->cast<ArrayLit>();
       } else if(dat->eid() == Expression::E_ARRAYLIT) {
         ArrayLit* arr = dat->cast<ArrayLit>();
       }
