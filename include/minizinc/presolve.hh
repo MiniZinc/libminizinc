@@ -16,10 +16,13 @@
 #include <minizinc/copy.hh>
 #include <minizinc/solns2out.h>
 
+
 namespace MiniZinc {
   class Presolver {
   public:
     struct Options;
+    class Solns2Vector;
+    class TableBuilder;
   protected:
     class Subproblem;
     class GlobalSubproblem;
@@ -59,9 +62,6 @@ namespace MiniZinc {
 
 
   class Presolver::Subproblem{
-  public:
-    class Solns2Vector;
-    class TableExpressionBuilder;
   protected:
     Model* origin;
     EnvI& origin_env;
@@ -94,18 +94,12 @@ namespace MiniZinc {
 
     virtual void solve();
 
-    static void registerFns(Model*, EnvI&, FunctionI*);
-
   protected:
     virtual void constructModel() = 0;
 
     virtual void solveModel();
 
     virtual void replaceUsage() = 0;
-
-    Expression* computeBounds(Expression* exp);
-
-
   };
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
@@ -143,62 +137,8 @@ namespace MiniZinc {
     virtual void constructModel();
 
     virtual void replaceUsage();
-
-
   };
 
-  class Presolver::Subproblem::Solns2Vector : public Solns2Out {
-  protected:
-    EnvI& copyEnv;
-
-//    TODO: using ASTStringMap don't work, ASTStrings don't compare correctly
-    std::vector< std::unordered_map<std::string, Expression*>* > solutions;
-
-    std::vector<KeepAlive> GCProhibitors;
-  public:
-    Solns2Vector(Env* e, EnvI& forEnv) : copyEnv(forEnv) { this->initFromEnv(e); }
-
-    virtual ~Solns2Vector() { for (int i = 0; i < solutions.size(); ++i) delete solutions[i]; }
-
-    const std::vector< std::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
-
-  protected:
-    virtual bool evalOutput();
-    virtual bool evalStatus(SolverInstance::Status status) {return true;}
-  };
-
-  class Presolver::Subproblem::TableExpressionBuilder {
-  protected:
-    bool boolTable = false;
-    long long int rows;
-
-    Expression* variables = nullptr;
-
-    std::vector<Expression*> vVariables;
-    std::vector<Expression*> data;
-
-    EnvI& env;
-    Model* m;
-    Options& options;
-  public:
-    TableExpressionBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
-            : env(env), m(m), options(options), boolTable(boolTable) { };
-
-    void buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
-
-    void addVariable(Expression* var);
-
-    void addData(Expression* dat);
-
-    Call* getExpression();
-
-    void setRows(long long int rows) { rows = rows; }
-
-  protected:
-    void storeVars();
-
-    void registerTableConstraint();
-  };
 }
 
 #endif
