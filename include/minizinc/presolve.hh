@@ -45,6 +45,7 @@ namespace MiniZinc {
     void presolve();
   };
 
+//  TODO: Group Flattener options and use those, to avoid copying.
   struct Presolver::Options {
     vector<string> includePaths;
     string stdLibDir;
@@ -92,6 +93,8 @@ namespace MiniZinc {
     FunctionI* getPredicate() const { return predicate; }
 
     virtual void solve();
+
+    static void registerFns(Model*, EnvI&, FunctionI*);
 
   protected:
     virtual void constructModel() = 0;

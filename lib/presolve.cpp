@@ -194,6 +194,71 @@ namespace MiniZinc {
     return nullptr;
   }
 
+  void Presolver::Subproblem::registerFns(Model* model, EnvI& env, FunctionI* fn) {
+//    TODO: Can't use Evisitor because of const in parameter.
+    class RegisterCalls {
+    public:
+      Model* model1;
+      EnvI& env1;
+
+      RegisterCalls(Model* _model, EnvI& _env) : model1(_model), env1(_env) { }
+
+      /// Visit integer literal
+      void vIntLit(const IntLit&) {}
+      /// Visit floating point literal
+      void vFloatLit(const FloatLit&) {}
+      /// Visit Boolean literal
+      void vBoolLit(const BoolLit&) {}
+      /// Visit set literal
+      void vSetLit(const SetLit&) {}
+      /// Visit string literal
+      void vStringLit(const StringLit&) {}
+      /// Visit identifier
+      void vId(const Id&) {}
+      /// Visit anonymous variable
+      void vAnonVar(const AnonVar&) {}
+      /// Visit array literal
+      void vArrayLit(const ArrayLit&) {}
+      /// Visit array access
+      void vArrayAccess(const ArrayAccess&) {}
+      /// Visit array comprehension
+      void vComprehension(const Comprehension&) {}
+      /// Visit array comprehension (only generator \a gen_i)
+      void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
+      /// Visit if-then-else
+      void vITE(const ITE&) {}
+      /// Visit binary operator
+      void vBinOp(const BinOp&) {}
+      /// Visit unary operator
+      void vUnOp(const UnOp&) {}
+      /// Visit call
+      void vCall(Call& call) {
+        if (call.decl() && (model1->matchFn(env1, &call) == nullptr) ) {
+          model1->registerFn(env1, call.decl());
+          RegisterCalls rc(model1, env1);
+          TopDownIterator<RegisterCalls> tdi(rc);
+          tdi.run(call.decl()->e());
+        }
+      }
+      /// Visit let
+      void vLet(const Let&) {}
+      /// Visit variable declaration
+      void vVarDecl(const VarDecl&) {}
+      /// Visit type inst
+      void vTypeInst(const TypeInst&) {}
+      /// Visit TIId
+      void vTIId(const TIId&) {}
+      /// Determine whether to enter node
+      bool enter(Expression* e) { return true; }
+      /// Exit node after processing has finished
+      void exit(Expression* e) {}
+    } rc(model, env);
+
+    model->registerFn(env, fn);
+    TopDownIterator<RegisterCalls> tdi(rc);
+    tdi.run(fn->e());
+  }
+
   void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
     CopyMap cm;
@@ -201,7 +266,8 @@ namespace MiniZinc {
 //  TODO: make sure this actually works for everything that's called in the predicate.
     FunctionI* pred = copy(e->envi(), cm, predicate, false, true)->cast<FunctionI>();
     m->addItem(pred);
-    m->registerFn(e->envi(), pred);
+    registerFns(m, e->envi(), pred);
+//    TODO: Add recursive registering of functions called in the predicate
     std::vector<Expression*> args;
     for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
       // TODO: Deal with non-variable parameters
@@ -377,10 +443,10 @@ namespace MiniZinc {
         modelArgs[i]->flat()->ti()->domain( bounds );
     }
 
-//    Printer p = Printer(std::cout);
-//    std::cerr << std::endl << std::endl;
-//    p.print(e->model());
-//    std::cerr << std::endl;
+    Printer p = Printer(std::cout);
+    std::cerr << std::endl << std::endl;
+    p.print(e->model());
+    std::cerr << std::endl;
 
     FlatteningOptions fopts;
     fopts.onlyRangeDomains = options.onlyRangeDomains;
