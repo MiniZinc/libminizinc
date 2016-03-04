@@ -44,6 +44,8 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <thread>
 #include <mutex>
 
+using namespace std;
+
 namespace MiniZinc {
 
   class FZN_SolverFactory: public SolverFactory {
@@ -266,12 +268,14 @@ namespace MiniZinc {
         if (_canPipe) {
           DWORD dwWritten;
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            std::stringstream ss;
-            Item* item = *it;
-            ss << *item;
-            std::string str = ss.str();
-            bSuccess = WriteFile(g_hChildStd_IN_Wr, str.c_str(),
-              str.size(), &dwWritten, NULL);
+            if(!(*it)->removed()) {
+              std::stringstream ss;
+              Item* item = *it;
+              ss << *item;
+              std::string str = ss.str();
+              bSuccess = WriteFile(g_hChildStd_IN_Wr, str.c_str(),
+                  str.size(), &dwWritten, NULL);
+            }
           }
         }
 
@@ -308,8 +312,10 @@ namespace MiniZinc {
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            Item* item = *it;
-            os << *item;
+            if(!(*it)->removed()) {
+              Item* item = *it;
+              os << *item;
+            }
           }
         }
 
@@ -322,11 +328,13 @@ namespace MiniZinc {
           close(pipes[2][1]);
           if (_canPipe) {
             for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-              std::stringstream ss;
-              Item* item = *it;
-              ss << *item;
-              std::string str = ss.str();
-              write(pipes[0][1], str.c_str(), str.size());
+              if(!(*it)->removed()) {
+                std::stringstream ss;
+                Item* item = *it;
+                ss << *item;
+                std::string str = ss.str();
+                write(pipes[0][1], str.c_str(), str.size());
+              }
             }
           }
           close(pipes[0][1]);
@@ -370,7 +378,7 @@ namespace MiniZinc {
           }
 
           if (!_canPipe) {
-            remove(fznFile.c_str());
+            //remove(fznFile.c_str());
           }
           return result.str();
         }

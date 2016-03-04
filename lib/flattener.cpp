@@ -16,7 +16,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <fstream>
 
 using namespace std;

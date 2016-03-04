@@ -19,8 +19,6 @@
 #include <memory>
 #include <iomanip>
 
-using namespace std;
-
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/typecheck.hh>
@@ -49,16 +47,16 @@ namespace MiniZinc {
   
   class Flattener {
   private:
-    unique_ptr<Env>   pEnv;
+    std::unique_ptr<Env>   pEnv;
   public:
     Flattener(bool fOutputByDefault=true);
     virtual ~Flattener();
     virtual bool processOption(int& i, const int argc, const char** argv);
-    virtual void printVersion(ostream& );
-    virtual void printHelp(ostream& );
+    virtual void printVersion(std::ostream& );
+    virtual void printHelp(std::ostream& );
 
     virtual void flatten();
-    virtual void printStatistics(ostream& );
+    virtual void printStatistics(std::ostream& );
     
     virtual void set_flag_verbose(bool f) { flag_verbose = f; }
     virtual bool get_flag_verbose() const { return flag_verbose; }
@@ -71,9 +69,9 @@ namespace MiniZinc {
   private:
     
     bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
-    vector<string> filenames;
-    vector<string> datafiles;
-    vector<string> includePaths;
+    std::vector<std::string> filenames;
+    std::vector<std::string> datafiles;
+    std::vector<std::string> includePaths;
     bool is_flatzinc = false;
 
     bool flag_ignoreStdlib = false;
@@ -93,13 +91,13 @@ namespace MiniZinc {
     bool flag_shave = false;
     unsigned int flag_pre_passes = 1;
 
-    string std_lib_dir;
-    string globals_dir;
+    std::string std_lib_dir;
+    std::string globals_dir;
 
     bool flag_no_output_ozn = false;
-    string flag_output_base;
-    string flag_output_fzn;
-    string flag_output_ozn;
+    std::string flag_output_base;
+    std::string flag_output_fzn;
+    std::string flag_output_ozn;
     bool flag_output_fzn_stdout = false;
     bool flag_output_ozn_stdout = false;
     bool flag_instance_check_only = false;

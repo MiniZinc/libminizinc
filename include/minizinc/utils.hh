@@ -22,9 +22,6 @@
 #include <minizinc/timer.hh>
 #include <minizinc/exception.hh>
 
-
-using namespace std;
-
 namespace MiniZinc {
   
 // #define __MZN_PRINTATONCE__
@@ -40,7 +37,7 @@ namespace MiniZinc {
    do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, "" ); throw InternalError( #c ); } } while (0)
 #define MZN_ASSERT_HARD_MSG( c, e ) \
    do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, e ); \
-     ostringstream oss; oss << "not " << #c << ":  " << e; \
+     std::ostringstream oss; oss << "not " << #c << ":  " << e; \
      throw InternalError( oss.str() ); } } while (0)
 
   inline std::string stoptime(Timer& timer) {
@@ -63,11 +60,11 @@ namespace MiniZinc {
     return oss.str();
   }
 
-  inline bool beginswith(string s, string t) {
+  inline bool beginswith(std::string s, std::string t) {
     return s.compare(0, t.length(), t)==0;
   }
 
-  inline void checkIOStatus( bool fOk, string msg, bool fHard=1 )
+  inline void checkIOStatus( bool fOk, std::string msg, bool fHard=1 )
   {
     if ( !fOk ) {
       std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
@@ -75,8 +72,8 @@ namespace MiniZinc {
     }
   }
   
-  template <class T> inline bool assignStr(T*, const string ) { return false; }
-  template<> inline bool assignStr(string* pS, const string s ) {
+  template <class T> inline bool assignStr(T*, const std::string ) { return false; }
+  template<> inline bool assignStr(std::string* pS, const std::string s ) {
     *pS = s;
     return true;
   }
@@ -100,10 +97,10 @@ namespace MiniZinc {
       if( i>=argc )
         return false;
       assert( argv[i] );
-      string arg( argv[i] );
+      std::string arg( argv[i] );
       /// Separate keywords
-      string keyword;
-      istringstream iss( names );
+      std::string keyword;
+      std::istringstream iss( names );
       while ( iss >> keyword ) {
         if ( ((2<keyword.size() || 0==pResult) && arg!=keyword) ||  // exact cmp
           (0!=arg.compare( 0, keyword.size(), keyword )) )           // truncated cmp
@@ -124,7 +121,7 @@ namespace MiniZinc {
         assert( pResult );
         if ( assignStr( pResult, arg ) ) 
           return true;
-        istringstream iss( arg );
+        std::istringstream iss( arg );
         Value tmp;
         if ( !( iss >> tmp ) ) {
           --i;
@@ -147,8 +144,8 @@ namespace MiniZinc {
     bool fHadOne=false;
   public:
     template <class N>
-    string operator()(const N& val, const char* descr=0) {
-      ostringstream oss;
+    std::string operator()(const N& val, const char* descr=0) {
+      std::ostringstream oss;
       if ( val ) {
         if ( fHadOne )
           oss << ", ";
@@ -166,9 +163,9 @@ namespace MiniZinc {
   
   /// Split a string into words
   /// Add the words into the given vector
-  inline void split(const string& str, std::vector<string>& words) {
-    istringstream iss(str);
-    string buf;
+  inline void split(const std::string& str, std::vector<std::string>& words) {
+    std::istringstream iss(str);
+    std::string buf;
     while (iss) {
       iss >> buf;
       words.push_back(buf);
@@ -177,7 +174,7 @@ namespace MiniZinc {
   
   /// Puts the strings' c_str()s into the 2nd argument.
   /// The latter is only valid as long as the former isn't changed.
-  inline void vecString2vecPChar(const vector<string>& vS, vector<const char*>& vPC) {
+  inline void vecString2vecPChar(const std::vector<std::string>& vS, std::vector<const char*>& vPC) {
     vPC.resize(vS.size());
     for ( size_t i=0; i<vS.size(); ++i ) {
       vPC[i] = vS[i].c_str();

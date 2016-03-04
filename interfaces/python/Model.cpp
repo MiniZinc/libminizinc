@@ -94,7 +94,9 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
         return -1;
       }
     }
-    _m = parse(string(py_string), data, *includePaths, false, false, false, errorStream);
+    vector<string> models {py_string};
+    _m = parse(models, data, *includePaths, false, false, false, errorStream);
+    _e = new Env(_m);
   } else {
     char *kwlist[] = {"string","error","options"};
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|ss", kwlist, &py_string, &errorFile, &options)) {
@@ -102,6 +104,7 @@ MznModel::load(PyObject *args, PyObject *keywds, bool fromFile)
       return -1;
     }
     _m = parseFromString(string(py_string), errorFile, *includePaths, false, false, false, errorStream);
+    _e = new Env(_m);
   }
   if (_m) {
     delete saveModel;
@@ -151,7 +154,7 @@ PyObject* MznModel::solve(PyObject* args, PyObject* kwds)
   Model* saveModel;
   {
     GCLock lock;
-    saveModel = copy(_m);
+    saveModel = copy(_e->envi(), _m);
     Py_ssize_t pos = 0;
     PyObject* key;
     PyObject* value;
@@ -177,13 +180,14 @@ PyObject* MznModel::solve(PyObject* args, PyObject* kwds)
     SOLVE__ERROR_HANDLING:
     delete _m;
     _m = saveModel;
+    _e = new Env(_m);
     return NULL;
   }
 
   SOLVE__NO_ERROR:
   vector<TypeError> typeErrors;
   try {
-    MiniZinc::typecheck(_m, typeErrors);
+    MiniZinc::typecheck(*_e, _m, typeErrors, false);
   } catch (LocationException& e) {
     MZN_PYERR_SET_STRING(PyExc_RuntimeError, "MiniZinc: Model.solve:   %s: %s", e.what(), e.msg().c_str());
     return NULL;
@@ -199,8 +203,9 @@ PyObject* MznModel::solve(PyObject* args, PyObject* kwds)
     PyErr_SetString(PyExc_TypeError, cstr);
     return NULL;
   }
-  MiniZinc::registerBuiltins(_m);
-  Env* env = new Env(_m);
+  MiniZinc::registerBuiltins(*_e, _m);
+
+  Env* env = _e;
   try {
     FlatteningOptions fopts;
     flatten(*env,fopts);
@@ -233,7 +238,8 @@ PyObject* MznModel::solve(PyObject* args, PyObject* kwds)
     options.setIntParam("time", timeLimit);
   delete _m;
   _m = saveModel;
-  MznSolver* ret = reinterpret_cast<MznSolver*>(MznSolver_new(&MznSolver_Type, NULL, NULL));
+  _e = new Env(_m);
+  PyMznSolver* ret = reinterpret_cast<PyMznSolver*>(PyMznSolver_new(&PyMznSolver_Type, NULL, NULL));
   switch (sc) {
     case SC_UNKNOWN:
       delete env;
@@ -372,6 +378,7 @@ MznModel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   }
   self->includePaths = NULL;
   self->_m = NULL;
+  self->_e = NULL;
   return reinterpret_cast<PyObject*>(self);
 }
 
@@ -438,6 +445,7 @@ MznModel_init(MznModel* self, PyObject* args = NULL)
   self->sc = MznModel::default_solver;
   stringstream errorStream;
   self->_m = parseFromString(libNamesStr,"error.txt",*(self->includePaths),false,false,false, errorStream);
+  self->_e = new Env(self->_m);
   if (!(self->_m)) {
     const std::string& tmp = errorStream.str();
     const char* cstr = tmp.c_str();
@@ -480,7 +488,7 @@ MznModel_copy(MznModel* self)
 {
   MznModel* ret = reinterpret_cast<MznModel*>(MznModel_new(&MznModel_Type, NULL, NULL));
   GCLock lock;
-  ret->_m = copy(self->_m);
+  ret->_m = copy(self->_e->envi(), self->_m);
   ret->includePaths = new vector<string>(*(self->includePaths));
 
   ret->timeLimit = self->timeLimit;

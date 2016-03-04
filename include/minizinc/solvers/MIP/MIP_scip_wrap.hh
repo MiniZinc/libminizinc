@@ -13,7 +13,7 @@
 #ifndef __MIP_SCIP_WRAPPER_H__
 #define __MIP_SCIP_WRAPPER_H__
 
-#include <minizinc/solvers/MIP/MIP_wrap.h>
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
   #include <scip/scip.h>
   #include <scip/scipdefplugins.h>
 

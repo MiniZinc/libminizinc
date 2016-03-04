@@ -149,7 +149,7 @@ namespace MiniZinc {
         s = std::max(s,pageSize);
       HeapPage* newPage =
         static_cast<HeapPage*>(::malloc(sizeof(HeapPage)+s-1));
-#ifndef NDEBUG
+#if 1 //ndef NDEBUG
         memset(newPage,255,sizeof(HeapPage)+s-1);
 #endif
       _alloced_mem += s;
@@ -565,7 +565,7 @@ namespace MiniZinc {
         off += ns;
       }
       if (wholepage) {
-#ifndef NDEBUG
+#if 1 //ndef NDEBUG
         memset(p->data,42,p->size);
 #endif
         if (prev) {

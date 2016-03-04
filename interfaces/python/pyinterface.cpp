@@ -93,7 +93,7 @@ static PyObject* Mzn_at(PyObject* self, PyObject* args)
 #if PY_MAJOR_VERSION < 3
     if (PyInt_Check(obj)) {
       long index = PyInt_AS_LONG(obj);
-      idx[i] = new IntLit(Location(), IntVal(index));
+      idx[i] = IntLit::a(IntVal(index));
     } else
 #endif
     if (PyLong_Check(obj)) {
@@ -103,7 +103,7 @@ static PyObject* Mzn_at(PyObject* self, PyObject* args)
         MZN_PYERR_SET_STRING(PyExc_OverflowError, "MiniZinc: at:  Index at pos %li overflowed", i);
         return NULL;
       }
-      idx[i] = new IntLit(Location(), IntVal(index));
+      idx[i] = IntLit::a(IntVal(index));
     } else if (PyObject_TypeCheck(obj,&MznExpression_Type)) {
       idx[i] = reinterpret_cast<MznExpression*>(obj)->e;
     } else {
@@ -141,7 +141,7 @@ Mzn_UnOp(PyObject* self, PyObject* args)
   } else
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(r)) {
-    rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(r)));
+    rhs = IntLit::a(IntVal(PyInt_AS_LONG(r)));
   } else
 #endif
   if (PyLong_Check(r)) {
@@ -151,7 +151,7 @@ Mzn_UnOp(PyObject* self, PyObject* args)
       PyErr_SetString(PyExc_OverflowError, "MiniZinc: Mzn_UnOp:  Object is overflowed");
       return NULL;
     }
-    rhs = new IntLit(Location(), IntVal(c_val));
+    rhs = IntLit::a(IntVal(c_val));
   } else if (PyFloat_Check(r)) {
     rhs = new FloatLit(Location(), PyFloat_AS_DOUBLE(r));
   } else if (PyUnicode_Check(r)) {
@@ -225,7 +225,7 @@ Mzn_BinOp(PyObject* self, PyObject* args)
 
 #if PY_MAJOR_VERSION < 3
     if (PyInt_Check(PyPre[i])) {
-      pre[i] = new IntLit(Location(), IntVal(PyInt_AS_LONG(PyPre[i])));
+      pre[i] = IntLit::a(IntVal(PyInt_AS_LONG(PyPre[i])));
     } else
 #endif
 
@@ -236,7 +236,7 @@ Mzn_BinOp(PyObject* self, PyObject* args)
         PyErr_SetString(PyExc_OverflowError, "MiniZinc: Mzn_UnOp:  Object is overflowed");
         return NULL;
       }
-      pre[i] = new IntLit(Location(), IntVal(c_val));
+      pre[i] = IntLit::a(IntVal(c_val));
     } else if (PyFloat_Check(PyPre[i])) {
       pre[i] = new FloatLit(Location(), PyFloat_AS_DOUBLE(PyPre[i]));
     } else if (PyUnicode_Check(PyPre[i])) {
@@ -390,10 +390,10 @@ initminizinc_internal(void)
   Py_INCREF(&MznModel_Type);
   PyModule_AddObject(module, "Model", reinterpret_cast<PyObject*>(&MznModel_Type));
 
-  if (PyType_Ready(&MznSolver_Type) < 0)
+  if (PyType_Ready(&PyMznSolver_Type) < 0)
     INITERROR;
-  Py_INCREF(&MznSolver_Type);
-  PyModule_AddObject(module, "Solver", reinterpret_cast<PyObject*>(&MznSolver_Type));
+  Py_INCREF(&PyMznSolver_Type);
+  PyModule_AddObject(module, "Solver", reinterpret_cast<PyObject*>(&PyMznSolver_Type));
 
 #if PY_MAJOR_VERSION >= 3
   return module;
