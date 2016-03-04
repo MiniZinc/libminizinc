@@ -18,6 +18,7 @@
 #include "aux_brancher.hh"
 #include <minizinc/solvers/gecode/fzn_space.hh>
 
+using namespace std;
 using namespace Gecode;
 
 namespace MiniZinc {

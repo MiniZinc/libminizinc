@@ -56,7 +56,7 @@ namespace MiniZinc {
       EnvI& env;
       Model* model;
       Options& options;
-      PresolveVisitor(vector<Subproblem*>& subproblems, EnvI& env, Model* model, Options& options) : subproblems(
+      PresolveVisitor(std::vector<Subproblem*>& subproblems, EnvI& env, Model* model, Options& options) : subproblems(
               subproblems), env(env), model(model), options(options) { }
       void vFunctionI(FunctionI* i) {
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);

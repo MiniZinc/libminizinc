@@ -15,7 +15,7 @@
 
 #include <minizinc/presolve.hh>
 #include <minizinc/model.hh>
-#include <minizinc/solns2out.h>
+#include <minizinc/solns2out.hh>
 
 namespace MiniZinc{
 
@@ -28,15 +28,15 @@ namespace MiniZinc{
     EnvI& copyEnv;
 
 //    TODO: using ASTStringMap don't work, ASTStrings don't compare correctly
-    vector< unordered_map<string, Expression*>* > solutions;
+    std::vector< std::unordered_map<std::string, Expression*>* > solutions;
 
-    vector<KeepAlive> GCProhibitors;
+    std::vector<KeepAlive> GCProhibitors;
   public:
     Solns2Vector(Env* e, EnvI& forEnv) : copyEnv(forEnv) { this->initFromEnv(e); }
 
     virtual ~Solns2Vector() { for (int i = 0; i < solutions.size(); ++i) delete solutions[i]; }
 
-    const vector< unordered_map<string, Expression*>* >& getSolutions() const { return solutions; }
+    const std::vector< std::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
 
   protected:
     virtual bool evalOutput();

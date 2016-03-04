@@ -165,7 +165,7 @@ namespace MiniZinc{
     for (unsigned int i = 0; i < getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         Expression* cpi = copy(copyEnv, vdi->e()->e());
-        solution->insert(pair<std::string, Expression*>(vdi->e()->id()->str().str(), cpi));
+        solution->insert(std::pair<std::string, Expression*>(vdi->e()->id()->str().str(), cpi));
         GCProhibitors.emplace_back(cpi);
       }
     }
@@ -305,7 +305,7 @@ namespace MiniZinc{
     GCLock lock;
 
     std::string loc = boolTable ? "/table_bool.mzn" : "/table_int.mzn";
-    ifstream file(options.stdLibDir + "/" + options.globalsDir + loc);
+    std::ifstream file(options.stdLibDir + "/" + options.globalsDir + loc);
     bool exists = file.is_open();
     file.close();
 

@@ -14,8 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/copy.hh>
-#include <minizinc/solns2out.h>
-
+#include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
   class Presolver {
@@ -50,9 +49,9 @@ namespace MiniZinc {
 
 //  TODO: Group Flattener options and use those, to avoid copying.
   struct Presolver::Options {
-    vector<string> includePaths;
-    string stdLibDir;
-    string globalsDir;
+    std::vector<std::string> includePaths;
+    std::string stdLibDir;
+    std::string globalsDir;
 
     bool verbose = false;
     bool newfzn = false;

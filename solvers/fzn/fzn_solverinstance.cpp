@@ -18,7 +18,7 @@
 #endif
 
 #include "minizinc/solvers/fzn_solverinstance.hh"
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 
 const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before windows.h
@@ -46,6 +46,8 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <signal.h>
 #include <thread>
 #include <mutex>
+
+using namespace std;
 
 namespace MiniZinc {
 

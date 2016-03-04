@@ -20,7 +20,7 @@
 #include <minizinc/options.hh>
 #include <minizinc/statistics.hh>
 #include <minizinc/solver_instance.hh>
-#include <minizinc/solns2out.h>
+#include <minizinc/solns2out.hh>
 
 namespace MiniZinc {
 
