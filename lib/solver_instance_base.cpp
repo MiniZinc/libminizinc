@@ -53,13 +53,13 @@ namespace MiniZinc {
 
   void SolverInstanceBase::printSolution() {
     if ( 0==pS2Out ) {
-      getEnv()->evalOutput(cout);               // deprecated
+      getEnv()->evalOutput(std::cout);               // deprecated
       std::cout << "----------" << std::endl;
     }
     else
       getSolns2Out()->evalOutput();
     if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
-      printStatistics(cout, 1);
+      printStatistics(std::cout, 1);
   }
 
   void SolverInstanceBase2::printSolution() {

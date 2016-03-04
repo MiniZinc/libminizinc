@@ -22,9 +22,9 @@
 #include <cmath>
 #include <stdexcept>
 
-using namespace std;
+#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
 
-#include <minizinc/solvers/MIP/MIP_cplex_wrap.h>
+using namespace std;
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {

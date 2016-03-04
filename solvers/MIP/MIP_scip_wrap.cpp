@@ -24,7 +24,7 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_scip_wrap.h>
+#include <minizinc/solvers/MIP/MIP_scip_wrap.hh>
 
 #include "scip/scipshell.h"
 

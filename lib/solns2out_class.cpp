@@ -15,7 +15,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <minizinc/solns2out.h>
+#include <minizinc/solns2out.hh>
 #include <fstream>
 
 using namespace std;

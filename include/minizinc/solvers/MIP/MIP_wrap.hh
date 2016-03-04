@@ -20,8 +20,6 @@
 #include <sstream>
 #include <cassert>
 
-using namespace std;
-
 class MIP_wrapper;
 /// Namespace MIP_WrapperFactory providing static service functions
 /// The implementation of a MIP wrapper should define these
@@ -35,7 +33,7 @@ namespace MIP_WrapperFactory {
 //     Wrap_MIP* GetCplexMIQP();
 
     bool processOption(int& i, int argc, const char** argv);
-    string getVersion( );
+    std::string getVersion( );
     void printHelp(std::ostream& );
 };
 
@@ -62,9 +60,9 @@ class MIP_wrapper {
     enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
   protected:
     /// Columns for SCIP upfront and with obj coefs:
-    vector<double> colObj, colLB, colUB;
-    vector<VarType> colTypes;
-    vector<string> colNames;
+    std::vector<double> colObj, colLB, colUB;
+    std::vector<VarType> colTypes;
+    std::vector<std::string> colNames;
 //     , rowLB, rowUB, elements;
 //     veci whichInt
 //     , starts, column;
@@ -78,7 +76,7 @@ class MIP_wrapper {
   public:
     struct Output {
       Status status;
-      string statusName="Untouched";
+      std::string statusName="Untouched";
       double objVal = 1e308;
       double bestBound = 1e308;
       int nCols;
@@ -122,7 +120,7 @@ class MIP_wrapper {
   private:
     /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
     virtual VarId addVarLocal(double obj, double lb, double ub, 
-                             VarType vt, string name="") {
+                             VarType vt, std::string name="") {
 //       cerr << "  addVarLocal: colObj.size() == " << colObj.size()
 //         << " obj == " <<obj
 //         << " lb == " << lb
@@ -145,7 +143,7 @@ class MIP_wrapper {
     }
     /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi). No direct use
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names) = 0;
+      VarType *vt, std::string *names) = 0;
 
   public:
     /// debugging stuff
@@ -154,7 +152,7 @@ class MIP_wrapper {
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
-                             VarType vt, string name=0) {
+                             VarType vt, std::string name=0) {
 //       cerr << "  AddVar: " << lb << ":   ";
       VarId res = addVarLocal(obj, lb, ub, vt, name);
       if (fPhase1Over)
@@ -169,11 +167,11 @@ class MIP_wrapper {
 //       auto itFound = sLitValues.find(v);
 //       if (sLitValues.end() != itFound)
 //         return itFound->second;
-      ostringstream oss;
+      std::ostringstream oss;
       oss << "lit_" << v << "__" << (nLitVars++);
-      string name = oss.str();
+      std::string name = oss.str();
       size_t pos = name.find('.');
-      if (string::npos != pos)
+      if (std::string::npos != pos)
         name.replace(pos, 1, "p");
       VarId res = addVarLocal(0.0, v, v, REAL, name);
       if (fPhase1Over)
@@ -187,10 +185,10 @@ class MIP_wrapper {
       assert(0 == getNColsModel());
       assert(! fPhase1Over);
       if (fVerbose)
-        cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << flush;
+        std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << std::flush;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
       if (fVerbose)
-        cerr << " done." << endl;
+        std::cerr << " done." << std::endl;
       fPhase1Over = true;    // SCIP needs after adding
     }
 
@@ -198,7 +196,7 @@ class MIP_wrapper {
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "") = 0;
+                        std::string rowName = "") = 0;
     int nAddedRows = 0;   // for name counting
     /// adding an implication
 //     virtual void addImpl() = 0;
@@ -230,7 +228,7 @@ class MIP_wrapper {
     virtual double getCPUTime() = 0;
     
     virtual Status getStatus() = 0;
-    virtual string getStatusName() = 0;
+    virtual std::string getStatusName() = 0;
 
      virtual int getNNodes() = 0;
      virtual int getNOpen() = 0;

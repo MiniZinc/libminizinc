@@ -12,9 +12,9 @@
 #ifndef __MINIZINC_MIP_SOLVER_INSTANCE_H__
 #define __MINIZINC_MIP_SOLVER_INSTANCE_H__
 
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
-#include <minizinc/solvers/MIP/MIP_wrap.h>
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
 
 namespace MiniZinc {
   
