@@ -11,6 +11,7 @@
 
 struct MznModel {
   PyObject_HEAD
+  Env* _e;
   Model* _m;
   vector<string>* includePaths;
 

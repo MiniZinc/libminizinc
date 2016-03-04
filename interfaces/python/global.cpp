@@ -199,7 +199,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
 #if PY_MAJOR_VERSION < 3
       if (PyInt_Check(pvalue)) {
         BT_INTEGER_PROCESS_2X_VERSION:
-        Expression* rhs = new IntLit(Location(), IntVal(PyInt_AS_LONG(pvalue)));
+        Expression* rhs = IntLit::a(IntVal(PyInt_AS_LONG(pvalue)));
         code = Type::BT_INT;
         return rhs;
       } else
@@ -207,7 +207,7 @@ one_dim_python_to_minizinc(PyObject* pvalue, Type::BaseType& code)
       if (PyLong_Check(pvalue)) {
         BT_INTEGER_PROCESS:
         int overflow;
-        Expression* rhs = new IntLit(Location(), IntVal(PyLong_AsLongLongAndOverflow(pvalue, &overflow)));
+        Expression* rhs = IntLit::a(IntVal(PyLong_AsLongLongAndOverflow(pvalue, &overflow)));
         if (overflow) {
           if (overflow > 0)
             PyErr_SetString(PyExc_OverflowError, "MiniZinc: Python integer value is larger than 2^63-1");
@@ -296,8 +296,8 @@ python_to_minizinc(PyObject* pvalue, const ASTExprVec<TypeInst>& ranges)
     for (int i=0; i!=dimensions.size(); ++i) {
       Expression* domain = ranges[i]->domain();
       if (domain == NULL) {
-        Expression* e0 = new IntLit(Location(), IntVal(1));
-        Expression* e1 = new IntLit(Location(), IntVal(dimensions[i]));
+        Expression* e0 = IntLit::a(IntVal(1));
+        Expression* e1 = IntLit::a(IntVal(dimensions[i]));
         callArgument[i] = new BinOp(Location(), e0, BOT_DOTDOT, e1);
       } else {
         callArgument[i] = domain;
@@ -444,8 +444,8 @@ pydim_to_minizinc_ranges(PyObject* pydim, int& errorOccurred)
     }
     if (c_bound[0] > c_bound[1])
       swap(c_bound[0], c_bound[1]);
-    Expression* e0 = new IntLit(Location(), IntVal(c_bound[0]));
-    Expression* e1 = new IntLit(Location(), IntVal(c_bound[1]));
+    Expression* e0 = IntLit::a(IntVal(c_bound[0]));
+    Expression* e1 = IntLit::a(IntVal(c_bound[1]));
     Expression* domain = new BinOp(Location(), e0, BOT_DOTDOT, e1);
     ranges[i] = new TypeInst(Location(), Type(), domain);
   }
