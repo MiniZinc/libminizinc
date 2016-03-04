@@ -247,7 +247,7 @@ ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
-#lib/solver.cpp
+lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/typecheck.cpp
@@ -303,7 +303,7 @@ ${parser_hh}
 )
 
 # add the executable
-add_executable(mzn2fzn lib/solver.cpp)    #mzn2fzn.cpp)
+add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
@@ -326,7 +326,7 @@ if(HAS_GUROBI)  # Version 6.5
 	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi
-    lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(mzn-gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
@@ -374,7 +374,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-cplex
-	  lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+	  minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
 	)
   SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
@@ -427,7 +427,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.0
     ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-scip
-      lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+      minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(mzn-scip PRIVATE
     "${SCIP_DIR}/src"
@@ -481,7 +481,7 @@ if(HAS_SCIP_SEPLIBS)
     ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-mip-scip
-      lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+      minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     )
   target_include_directories(mzn-mip-scip PRIVATE
     "${SCIP_DIR}/src"
@@ -518,7 +518,7 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
-  add_executable(mzn-cbc lib/solver.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  add_executable(mzn-cbc minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
   target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
@@ -551,7 +551,7 @@ if(HAS_GECODE)
     gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(mzn-gecode
-    lib/solver.cpp
+    minizinc.cpp
     solvers/gecode/gecode_solverinstance.cpp
   )
   target_link_libraries(mzn-gecode minizinc_gecode)
@@ -577,7 +577,7 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn lib/solver.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	add_executable(mzn-fzn minizinc.cpp solvers/fzn/fzn_solverinstance.cpp)  # solvers/fzn/mzn-fzn.cpp)
 	target_link_libraries(mzn-fzn minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)
