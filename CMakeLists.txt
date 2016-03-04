@@ -311,7 +311,7 @@ endif()
 # add the executable
 add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
-set_target_properties(mzn2fzn PROPERTIES COMPILE_DEFINITIONS "FLATTEN_ONLY")
+target_compile_definitions(mzn2fzn PRIVATE FLATTEN_ONLY)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)

@@ -45,11 +45,13 @@ int main(int argc, const char** argv) {
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       fSuccess = true;
+#ifndef FLATTEN_ONLY
       if ( !slv.ifMzn2Fzn() ) {          // only then
         GCLock lock;
         slv.addSolverInterface();
         slv.solve();
       }
+#endif
     } else {
       fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
       if ( !slv.ifMzn2Fzn() )
