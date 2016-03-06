@@ -158,6 +158,23 @@ namespace MiniZinc{
     return nullptr;
   }
 
+  void generateFlatZinc(Env& env, bool rangeDomains, bool optimizeFZN, bool newFZN) {
+//    TODO: Should this be integrated in Flattener?
+    FlatteningOptions fopts;
+    fopts.onlyRangeDomains = rangeDomains;
+    flatten(env, fopts);
+
+    if(optimizeFZN)
+      optimize(env);
+
+    if (!newFZN) {
+      oldflatzinc(env);
+    } else {
+      env.flat()->compact();
+      env.output()->compact();
+    }
+  }
+
   bool Presolver::Solns2Vector::evalOutput() {
     GCLock lock;
 
@@ -345,5 +362,4 @@ namespace MiniZinc{
     } rt(env, m);
     iterItems(rt, table_model);
   }
-
 }

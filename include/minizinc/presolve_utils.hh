@@ -23,6 +23,8 @@ namespace MiniZinc{
 
   Expression* computeDomainExpr(EnvI& env, Expression* exp);
 
+  void generateFlatZinc(Env& env, bool rangeDomains, bool optimizeFZN, bool newFZN);
+
   class Presolver::Solns2Vector : public Solns2Out {
   protected:
     EnvI& copyEnv;

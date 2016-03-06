@@ -12,7 +12,6 @@
 #include <minizinc/presolve.hh>
 #include <minizinc/presolve_utils.hh>
 #include <minizinc/astiterator.hh>
-#include <minizinc/options.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 
 namespace MiniZinc {
@@ -199,24 +198,7 @@ namespace MiniZinc {
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
 
-    FlatteningOptions fopts;
-    fopts.onlyRangeDomains = options.onlyRangeDomains;
-    flatten(*e, fopts);
-
-    if(options.optimize)
-      optimize(*e);
-
-    if (!options.newfzn) {
-      oldflatzinc(*e);
-    } else {
-      e->flat()->compact();
-      e->output()->compact();
-    }
-
-//    Printer p = Printer(std::cout);
-//    std::cerr << std::endl << std::endl;
-//    p.print(e->model());
-//    std::cerr << std::endl;
+    generateFlatZinc(*e, options.onlyRangeDomains, options.optimize, options.newfzn);
   }
 
   void Presolver::GlobalSubproblem::replaceUsage() {
@@ -359,26 +341,7 @@ namespace MiniZinc {
         modelArgs[i]->flat()->ti()->domain(dom);
     }
 
-    Printer p = Printer(std::cout);
-    std::cerr << std::endl << std::endl;
-    p.print(e->model());
-    std::cerr << std::endl;
-
-    FlatteningOptions fopts;
-    fopts.onlyRangeDomains = options.onlyRangeDomains;
-    flatten(*e, fopts);
-
-    if (construction) {
-      if (options.optimize)
-        optimize(*e);
-
-      if (!options.newfzn) {
-        oldflatzinc(*e);
-      } else {
-        e->flat()->compact();
-        e->output()->compact();
-      }
-    }
+    generateFlatZinc(*e, options.onlyRangeDomains, options.optimize, options.newfzn);
   }
 
   void Presolver::CallsSubproblem::replaceUsage() {
