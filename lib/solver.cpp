@@ -82,6 +82,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
+MznSolver::MznSolver(bool ism2f = false) : is_mzn2fzn(ism2f) {}
 
 MznSolver::~MznSolver()
 {
@@ -95,11 +96,7 @@ MznSolver::~MznSolver()
 }
 
 bool MznSolver::ifMzn2Fzn() {
-#ifdef FLATTEN_ONLY
-  return true;
-#else
-  return 0==getNSolvers();
-#endif
+  return is_mzn2fzn;
 }
 
 void MznSolver::addFlattener()

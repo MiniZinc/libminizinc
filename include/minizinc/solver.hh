@@ -77,6 +77,7 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
+    bool is_mzn2fzn;
 
   public:
     Solns2Out s2out;
@@ -89,6 +90,7 @@ namespace MiniZinc {
     Options options_solver;          // currently can create solver object only after flattening
                                      // so unflexible with solver cmdline options  TODO
   public:
+    MznSolver(bool);
     virtual ~MznSolver();
     virtual void addFlattener();
     virtual bool processOptions(int argc, const char** argv);

@@ -305,6 +305,7 @@ ${parser_hh}
 # add the executable
 add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
+target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
