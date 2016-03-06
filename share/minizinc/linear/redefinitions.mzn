@@ -447,12 +447,8 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
     (z <= sum(i in index_set(x))(x[i] + lb(x[i]) * (b[i]-1))) %:: MIP_cut
     /\
     if fUseXBZCutGen then
-%           my_trace__DBG("  % array_float_minimum_I: calling array_var_float_element__XBZ_lb: lb(-x), ub(-x), lb(b), ub(b):\n  % "
-%             ++ show(lb([ -x[i] | i in sActive ])) ++ "\n  % "
-%             ++ show(ub([ -x[i] | i in sActive ])) ++ "\n  % "
-%             ++ show(lb([ p[i] | i in sActive ])) ++ "\n  % "
-%             ++ show(ub([ p[i] | i in sActive ])) ++ "\n  %  --------------------------------------\n"
-%          ) /\
+           my_trace("  % array_var_float_element__XBZ_lb: calling array_var_float_element__XBZ_lb__cutgen: "
+             ++ " \(x), \(b), \(z)\n  % "  ) /\
       array_var_float_element__XBZ_lb__cutgen(x, b, z)   :: MIP_cut
     else true
     endif;

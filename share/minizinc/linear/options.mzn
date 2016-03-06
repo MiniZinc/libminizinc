@@ -48,11 +48,13 @@ bool: fMZN__IgnoreRedundantCumulative=false;
 %%%%% bool: fMZN__IgnoreAllUserRedundant=false;   %% ignore all user-spec redundant constr
 
 %%%%%%%%%%%%%%%%%%%%% Element, minimuum convex hull --------------------------------------- %
+opt bool: fXBZCuts01;  %% orders 0, 1
+opt bool: fXBZCutGen;  %% only works if Cuts01
 bool: fElementCutsXZ=false;       %% Use simple XZ & XZB cuts for element
-bool: fElementCutsXZB=false;       %% Use simple XZ & XZB cuts for element
+bool: fElementCutsXZB = if absent(fXBZCuts01) then false else deopt(fXBZCuts01) endif;
 bool: fMinimumCutsXZ=false;       %% Use simple XZ & XZB cuts for minimum
-bool: fMinimumCutsXZB=false;       %% Use simple XZ & XZB cuts for minimum
-bool: fUseXBZCutGen=false;      %% Use XZB cut generator for element & minimum
+bool: fMinimumCutsXZB = if absent(fXBZCuts01) then false else deopt(fXBZCuts01) endif;
+bool: fUseXBZCutGen = if absent(fXBZCutGen) then false else deopt(fXBZCutGen) endif;
 
 % ----------------------------------------------------------------------------------------- %
 bool: fIntTimesBool=true;       %% Special handling of multiplication with a boolean(*const)
