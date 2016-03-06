@@ -539,9 +539,9 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
-          solvers/gecode/fzn_space.cpp
-	  solvers/gecode/gecode_solverinstance.cpp
-		solvers/gecode/gecode_constraints.cpp
+    solvers/gecode/fzn_space.cpp
+    solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
@@ -553,7 +553,8 @@ if(HAS_GECODE)
 
   add_executable(mzn-gecode
     minizinc.cpp
-  )
+    solvers/gecode/gecode_solverinstance.cpp
+    )
   target_link_libraries(mzn-gecode minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
@@ -562,8 +563,8 @@ if(HAS_GECODE)
     ARCHIVE DESTINATION lib)
 
   INSTALL(DIRECTORY solvers/gecode
-          DESTINATION include/minizinc/solvers
-  )
+    DESTINATION include/minizinc/solvers
+    )
 
 endif()
 
