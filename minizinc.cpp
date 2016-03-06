@@ -25,6 +25,12 @@
 
 #include <minizinc/solver.hh>
 
+#ifdef FLATTEN_ONLY
+#define IS_MZN2FZN true
+#else
+#define IS_MZN2FZN false
+#endif
+
 using namespace std;
 using namespace MiniZinc;
 
@@ -32,7 +38,7 @@ int main(int argc, const char** argv) {
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
   
-  MznSolver slv;
+  MznSolver slv(IS_MZN2FZN);
   try {
     
     slv.addFlattener();
@@ -45,13 +51,11 @@ int main(int argc, const char** argv) {
     if (SolverInstance::UNKNOWN == slv.getFlt()->status)
     {
       fSuccess = true;
-#ifndef FLATTEN_ONLY
       if ( !slv.ifMzn2Fzn() ) {          // only then
         GCLock lock;
         slv.addSolverInterface();
         slv.solve();
       }
-#endif
     } else {
       fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
       if ( !slv.ifMzn2Fzn() )
