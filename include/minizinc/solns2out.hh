@@ -20,8 +20,6 @@
 #include <memory>
 #include <iomanip>
 
-using namespace std;
-
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/typecheck.hh>
@@ -41,30 +39,30 @@ namespace MiniZinc {
   /// could facilitate exhange of raw/final outputs in a portfolio
   class Solns2Out {
   protected:
-    unique_ptr<Env> pEnv_guard;
+    std::unique_ptr<Env> pEnv_guard;
     Env* pEnv=0;
     Model* pOutput=0;
 
-    typedef pair<VarDecl*, KeepAlive> DE;
+    typedef std::pair<VarDecl*, KeepAlive> DE;
     ASTStringMap<DE>::t declmap;
     Expression* outputExpr = NULL;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     
   public:
-    string solution;
-    string comments;
+    std::string solution;
+    std::string comments;
     int nLinesIgnore = 0;
     
     struct Options {
-      string flag_output_file;
+      std::string flag_output_file;
       bool flag_output_comments = true;
       bool flag_output_flush = true;
       bool flag_output_time = false;
       int flag_ignore_lines = 0;
       bool flag_unique = 0;
       bool flag_canonicalize = 0;
-      string flag_output_noncanonical;
-      string flag_output_raw;
+      std::string flag_output_noncanonical;
+      std::string flag_output_raw;
       int flag_number_output = -1;
       /// Default values, also used for input
       const char* const solution_separator_00 = "----------";
@@ -75,21 +73,21 @@ namespace MiniZinc {
       const char* const error_msg_00          = "=====ERROR=====";
       const char* const search_complete_msg_00= "==========";
       /// Output values
-      string solution_separator = solution_separator_00;
-      string solution_comma     = "";
-      string unsatisfiable_msg  = unsatisfiable_msg_00;
-      string unbounded_msg      = unbounded_msg_00;
-      string unsatorunbnd_msg   = unsatorunbnd_msg_00;
-      string unknown_msg        = unknown_msg_00;
-      string error_msg          = error_msg_00;
-      string search_complete_msg= search_complete_msg_00;
+      std::string solution_separator = solution_separator_00;
+      std::string solution_comma     = "";
+      std::string unsatisfiable_msg  = unsatisfiable_msg_00;
+      std::string unbounded_msg      = unbounded_msg_00;
+      std::string unsatorunbnd_msg   = unsatorunbnd_msg_00;
+      std::string unknown_msg        = unknown_msg_00;
+      std::string error_msg          = error_msg_00;
+      std::string search_complete_msg= search_complete_msg_00;
     } _opt;
     
   public:
     virtual ~Solns2Out();
     
     virtual bool processOption(int& i, const int argc, const char** argv);
-    virtual void printHelp(ostream& );
+    virtual void printHelp(std::ostream& );
     
     /// The output model (~.ozn) can be passed in 1 way in this base class:
     /// passing Env* containing output()
@@ -123,7 +121,7 @@ namespace MiniZinc {
     /// This means the solver exits
     virtual bool evalStatus(SolverInstance::Status status);
 
-    virtual void printStatistics(ostream& );
+    virtual void printStatistics(std::ostream& );
     
     virtual Env* getEnv() const { assert(pEnv); return pEnv; }
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
@@ -131,30 +129,30 @@ namespace MiniZinc {
   private:
     Timer starttime;
 
-    unique_ptr<ostream> pOut;  // file output
-    unique_ptr<ostream> pOfs_non_canon;
-    unique_ptr<ostream> pOfs_raw;
+    std::unique_ptr<std::ostream> pOut;  // file output
+    std::unique_ptr<std::ostream> pOfs_non_canon;
+    std::unique_ptr<std::ostream> pOfs_raw;
     int nSolns = 0;
-    set<string> sSolsCanon;
-    string line_part;   // non-finished line from last chunk
+    std::set<std::string> sSolsCanon;
+    std::string line_part;   // non-finished line from last chunk
 
   protected:
-    std::vector<string> includePaths;
+    std::vector<std::string> includePaths;
     
     // Basically open output
     virtual void init();
     void createOutputMap();
-    std::map<string, SolverInstance::Status> mapInputStatus;
+    std::map<std::string, SolverInstance::Status> mapInputStatus;
     void createInputMap();
     void restoreDefaults();
     /// Parsing fznsolver's complete raw text output
-    void parseAssignments( string& );
+    void parseAssignments( std::string& );
     
-    virtual bool __evalOutput(ostream& os, bool flag_flush);
+    virtual bool __evalOutput(std::ostream& os, bool flag_flush);
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     
-    virtual ostream& getOutput();
+    virtual std::ostream& getOutput();
   };
 
 }

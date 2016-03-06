@@ -3,19 +3,21 @@ import sys
 
 EXTRA_COMPILE_ARGS = [
     '-O3',
-    '-Wno-unused-label',
-    '-Wno-unused-function',
+    #'-Wno-unused-label',
+    #'-Wno-unused-function',
+    '-I', '../../include'
 ]
 EXTRA_LINK_ARGS = []
 
 if sys.platform == 'darwin':
     EXTRA_COMPILE_ARGS.extend([
         '-stdlib=libc++',
-        '-arch', 'x86_64',
+        '-arch', 'x86_64'
         '-mmacosx-version-min=10.8',
     ])
     EXTRA_LINK_ARGS.extend(['-arch', 'x86_64', '-stdlib=libc++', '-mmacosx-version-min=10.8'])
 elif sys.platform.startswith('linux'):
+    EXTRA_COMPILE_ARGS.extend(['-std=c++11'])
     pass
 
 module1 = Extension('minizinc_internal',

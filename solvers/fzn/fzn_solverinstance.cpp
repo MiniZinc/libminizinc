@@ -44,6 +44,8 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <thread>
 #include <mutex>
 
+using namespace std;
+
 namespace MiniZinc {
 
   class FZN_SolverFactory: public SolverFactory {

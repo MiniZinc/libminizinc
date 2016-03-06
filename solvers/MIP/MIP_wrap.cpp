@@ -22,5 +22,5 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_wrap.h>
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
 

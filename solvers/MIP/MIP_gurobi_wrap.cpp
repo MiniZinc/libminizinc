@@ -25,7 +25,7 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_gurobi_wrap.h>
+#include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {

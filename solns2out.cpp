@@ -28,7 +28,7 @@
 // #include <minizinc/file_utils.hh>
 // #include <minizinc/timer.hh>
 
-#include <minizinc/solns2out.h>
+#include <minizinc/solns2out.hh>
 
 using namespace MiniZinc;
 using namespace std;

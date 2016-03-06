@@ -25,7 +25,7 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_osicbc_wrap.h>
+#include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
 #include <minizinc/utils.hh>
 #include <CbcSolver.hpp>
 #include <CbcConfig.h>

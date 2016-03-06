@@ -17,9 +17,7 @@
 #include <vector>
 #include <memory>
 
-using namespace std;
-
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/exception.hh>
 
@@ -33,7 +31,7 @@ namespace MiniZinc {
   public:
     void addSolverFactory(SolverFactory * );
     void removeSolverFactory(SolverFactory * );
-    typedef vector<SolverFactory*> SFStorage;
+    typedef std::vector<SolverFactory*> SFStorage;
     const SFStorage& getSolverFactories() const { return sfstorage; }
   private:
     SFStorage sfstorage;
@@ -50,7 +48,7 @@ namespace MiniZinc {
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
     virtual SolverInstanceBase * doCreateSI(Env&) = 0;
     
-    typedef vector<unique_ptr<SolverInstanceBase> > SIStorage;
+    typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
     SIStorage sistorage;
 //   public:
     SolverFactory()            { getGlobalSolverRegistry()->addSolverFactory(this); }
@@ -70,7 +68,7 @@ namespace MiniZinc {
     /// and it only needs 1 format
     virtual bool processOption(int& i, int argc, const char** argv) { return false; }
 
-    virtual string getVersion( ) { return "Abstract solver v0.-1"; }
+    virtual std::string getVersion( ) { return "Abstract solver v0.-1"; }
     virtual void printHelp(std::ostream& ) { }
   };  // SolverFactory
   
@@ -79,6 +77,7 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
+    bool is_mzn2fzn;
 
   public:
     Solns2Out s2out;
@@ -91,6 +90,7 @@ namespace MiniZinc {
     Options options_solver;          // currently can create solver object only after flattening
                                      // so unflexible with solver cmdline options  TODO
   public:
+    MznSolver(bool);
     virtual ~MznSolver();
     virtual void addFlattener();
     virtual bool processOptions(int argc, const char** argv);

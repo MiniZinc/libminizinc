@@ -12,7 +12,7 @@
 #ifndef __MINIZINC_FZN_SOLVER_INSTANCE_HH__
 #define __MINIZINC_FZN_SOLVER_INSTANCE_HH__
 
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 //#include <minizinc/solver_instance_base.hh>
 

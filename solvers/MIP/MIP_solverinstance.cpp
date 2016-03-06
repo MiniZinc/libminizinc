@@ -25,7 +25,7 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_solverinstance.h>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 
 using namespace MiniZinc;
 
