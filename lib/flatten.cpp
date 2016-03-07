@@ -5540,6 +5540,7 @@ namespace MiniZinc {
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e,e.cmap, newOutputItem)->cast<OutputI>();
+        makePar(e,outputItem->e());
         e.output->addItem(outputItem);
       }
       
