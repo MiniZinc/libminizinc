@@ -431,26 +431,25 @@ predicate array_var_float_element__ROOF(array[int] of var float: a,
     ;
 
 predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int] of var int: b, var float: z) =
-   %% Adding some cuts a priori, also to make solver extract the variables
-    let {
-      int: i1 = min(index_set(x))
-    } in
-    (z <= sum(i in index_set(x))(ub(x[i]) * b[i])) %:: MIP_cut   -- does not work to put them here TODO
-    /\
-    forall(i in index_set(x) intersect i1..(i1+19))   %% otherwise too many on amaze2
-      ( assert(lb(x[i]) == -ub(-x[i]) /\ ub(x[i]) == -lb(-x[i]), " negated var's bounds should swap " ) /\
-        z <= x[i] + sum(j in index_set(x) where i!=j)((ub(x[j])-lb(x[i]))*b[j])) %:: MIP_cut   %% (ub_j-lb_i) * b_j
-    /\
-    forall(i in index_set(x) intersect i1..(i1+19))
-      ( z <= ub(x[i])*b[i] + sum(j in index_set(x) where i!=j)(x[j]+lb(x[j])*(b[j]-1)) ) %:: MIP_cut
-    /\
-    (z <= sum(i in index_set(x))(x[i] + lb(x[i]) * (b[i]-1))) %:: MIP_cut
-    /\
     if fUseXBZCutGen then
            my_trace("  % array_var_float_element__XBZ_lb: calling array_var_float_element__XBZ_lb__cutgen: "
              ++ " \(x), \(b), \(z)\n  % "  ) /\
       array_var_float_element__XBZ_lb__cutgen(x, b, z)   :: MIP_cut
-    else true
+    else
+      %% Adding some cuts a priori, also to make solver extract the variables
+      let {
+        int: i1 = min(index_set(x))
+      } in
+      (z <= sum(i in index_set(x))(ub(x[i]) * b[i])) %:: MIP_cut   -- does not work to put them here TODO
+      /\
+      forall(i in index_set(x) intersect i1..(i1+19))   %% otherwise too many on amaze2
+        ( assert(lb(x[i]) == -ub(-x[i]) /\ ub(x[i]) == -lb(-x[i]), " negated var's bounds should swap " ) /\
+          z <= x[i] + sum(j in index_set(x) where i!=j)((ub(x[j])-lb(x[i]))*b[j])) %:: MIP_cut   %% (ub_j-lb_i) * b_j
+      /\
+      forall(i in index_set(x) intersect i1..(i1+19))
+        ( z <= ub(x[i])*b[i] + sum(j in index_set(x) where i!=j)(x[j]+lb(x[j])*(b[j]-1)) ) %:: MIP_cut
+      /\
+      (z <= sum(i in index_set(x))(x[i] + lb(x[i]) * (b[i]-1))) %:: MIP_cut
     endif;
 
 %-----------------------------------------------------------------------------%
