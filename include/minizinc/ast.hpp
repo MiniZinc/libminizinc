@@ -558,7 +558,13 @@ namespace MiniZinc {
               loc.filename == "stdlib.mzn" ||
               loc.filename.endsWith("/stdlib.mzn") ||
               loc.filename == "flatzinc_builtins.mzn" ||
-              loc.filename.endsWith("/flatzinc_builtins.mzn"));
+              loc.filename.endsWith("/flatzinc_builtins.mzn") ||
+              loc.filename == "redefinitions.mzn" ||
+              loc.filename.endsWith("/redefinitions.mzn") ||
+              loc.filename == "redefinitions-2.0.mzn" ||
+              loc.filename.endsWith("/redefinitions-2.0.mzn") ||
+              loc.filename == "redefinitions-2.0.2.mzn" ||
+              loc.filename.endsWith("/redefinitions-2.0.2.mzn"));
   }
 
 }
