@@ -297,7 +297,7 @@ void Flattener::flatten()
               env.swap();
               populateOutput(env);
             } else {
-              
+#ifdef PRESOLVE
               if (!flag_no_presolve){
                 if (flag_verbose)
                   std::cerr << "Presolving ...";
@@ -315,7 +315,7 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-
+#endif
               if (flag_verbose)
                 std::cerr << "Flattening ...";
 

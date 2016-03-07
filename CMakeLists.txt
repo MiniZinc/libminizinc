@@ -22,6 +22,10 @@ endif()
 if (DEFINED OSICBC_HOME)
   set(HAS_OSICBC TRUE)
 endif()
+if (PRESOLVE)
+  set(presolve_cpp lib/presolve.cpp lib/presolve_utils.cpp solvers/fzn/fzn_solverinstance.cpp)
+  set(presolve_hh include/minizinc/presolve.hh include/minizinc/presolve_utils.hh)
+endif()
 
 set(HAS_CPLEX_OLD FALSE)
 set(HAS_GUROBI_OLD FALSE)
@@ -259,9 +263,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
-lib/presolve.cpp
-lib/presolve_utils.cpp
-solvers/fzn/fzn_solverinstance.cpp
+${presolve_cpp}
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -290,8 +292,7 @@ include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/parser.hh
-include/minizinc/presolve.hh
-include/minizinc/presolve_utils.hh
+${presolve_hh}
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
@@ -306,6 +307,9 @@ include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
 ${parser_hh}
 )
+if(PRESOLVE)
+  target_compile_definitions(minizinc PRIVATE PRESOLVE)
+endif()
 
 # add the executable
 add_executable(mzn2fzn minizinc.cpp lib/solver.cpp)    #mzn2fzn.cpp)
