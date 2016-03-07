@@ -264,7 +264,7 @@ void MIP_gurobi_wrapper::addRow
 }
 
 /// SolutionCallback ------------------------------------------------------------------------
-/// Who ensures thread-safety?
+/// Gurobi ensures thread-safety
 static int __stdcall
 solcallback(GRBmodel *model,
            void     *cbdata,

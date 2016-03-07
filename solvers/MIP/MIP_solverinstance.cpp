@@ -522,7 +522,7 @@ void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     }
   }
   double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
-  if ( dViol > 0.0 ) {
+  if ( dViol > 1e-2 ) {   // ?? PARAM?  TODO
     cutsIn.push_back( cut );
     cerr << dViol << ' ';
   }
