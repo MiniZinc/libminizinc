@@ -272,7 +272,9 @@ namespace MiniZinc {
     }
 
     for (unsigned int i = 0; i < predicate->params().size(); ++i) {
-      predicate->params()[i]->ti()->domain(domains[i]);
+      if(domains[i] != nullptr) {
+        predicate->params()[i]->ti()->domain(domains[i]);
+      }
     }
 
     GlobalSubproblem::constructModel();
