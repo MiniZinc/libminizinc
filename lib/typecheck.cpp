@@ -130,75 +130,128 @@ namespace MiniZinc {
       enumItems.push_back(fi);
     }
     
-    /*
-     
-     function _toString_ENUM(array[$U] of ENUM: x) =
-       let {
-         array[int] of ENUM: xx = array1d(x)
-       } in "[" ++ join(", ", [ _toString_ENUM(xx[i]) | i in index_set(xx) ]) ++ "]";
-     
-     */
+    {
+      /*
+       
+       function _toString_ENUM(array[$U] of ENUM: x) =
+         let {
+           array[int] of ENUM: xx = array1d(x)
+         } in "[" ++ join(", ", [ _toString_ENUM(xx[i]) | i in index_set(xx) ]) ++ "]";
+       
+       */
 
-    Type argType = Type::parenum(ident->type().enumId());
+      Type argType = Type::parenum(ident->type().enumId());
 
-    TIId* tiid = new TIId(Location().introduce(),"U");
-    TypeInst* ti_range = new TypeInst(Location().introduce(),argType,tiid);
-    std::vector<TypeInst*> ranges(1);
-    ranges[0] = ti_range;
+      TIId* tiid = new TIId(Location().introduce(),"U");
+      TypeInst* ti_range = new TypeInst(Location().introduce(),argType,tiid);
+      std::vector<TypeInst*> ranges(1);
+      ranges[0] = ti_range;
 
-    TypeInst* x_ti = new TypeInst(Location().introduce(),Type::parint(-1),ranges,ident);
-    VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
-    vd_x->toplevel(false);
+      TypeInst* x_ti = new TypeInst(Location().introduce(),Type::parint(-1),ranges,ident);
+      VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
+      vd_x->toplevel(false);
 
-    TypeInst* xx_range = new TypeInst(Location().introduce(),argType,NULL);
-    std::vector<TypeInst*> xx_ranges(1);
-    xx_ranges[0] = xx_range;
-    TypeInst* xx_ti = new TypeInst(Location().introduce(),argType,xx_ranges);
-    
-    std::vector<Expression*> array1dArgs(1);
-    array1dArgs[0] = vd_x->id();
-    Call* array1dCall = new Call(Location().introduce(),"array1d",array1dArgs);
-    
-    VarDecl* vd_xx = new VarDecl(Location().introduce(),xx_ti,"xx",array1dCall);
-    vd_xx->toplevel(false);
+      TypeInst* xx_range = new TypeInst(Location().introduce(),argType,NULL);
+      std::vector<TypeInst*> xx_ranges(1);
+      xx_ranges[0] = xx_range;
+      TypeInst* xx_ti = new TypeInst(Location().introduce(),argType,xx_ranges);
+      
+      std::vector<Expression*> array1dArgs(1);
+      array1dArgs[0] = vd_x->id();
+      Call* array1dCall = new Call(Location().introduce(),"array1d",array1dArgs);
+      
+      VarDecl* vd_xx = new VarDecl(Location().introduce(),xx_ti,"xx",array1dCall);
+      vd_xx->toplevel(false);
 
-    TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
-    VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
-    idx_i->toplevel(false);
+      TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
+      idx_i->toplevel(false);
+      
+      std::vector<Expression*> aa_xxi_idx(1);
+      aa_xxi_idx[0] = idx_i->id();
+      ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(),vd_xx->id(),aa_xxi_idx);
+      
+      std::vector<Expression*> _toString_ENUMArgs(1);
+      _toString_ENUMArgs[0] = aa_xxi;
+      Call* _toString_ENUM = new Call(Location().introduce(),"_toString_"+ident->str().str(),_toString_ENUMArgs);
+      
+      std::vector<Expression*> index_set_xx_args(1);
+      index_set_xx_args[0] = vd_xx->id();
+      Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
+      std::vector<VarDecl*> gen_exps(1);
+      gen_exps[0] = idx_i;
+      Generator gen(gen_exps,index_set_xx);
+      
+      Generators generators;
+      generators._g.push_back(gen);
+      Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
+      
+      std::vector<Expression*> join_args(2);
+      join_args[0] = new StringLit(Location().introduce(),", ");
+      join_args[1] = comp;
+      Call* join = new Call(Location().introduce(),"join",join_args);
+      
+      StringLit* sl_open = new StringLit(Location().introduce(),"[");
+      BinOp* bopp0 = new BinOp(Location().introduce(),sl_open,BOT_PLUSPLUS,join);
+      StringLit* sl_close = new StringLit(Location().introduce(),"]");
+      BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
+
+      std::vector<Expression*> let_args(1);
+      let_args[0] = vd_xx;
+      Let* let = new Let(Location().introduce(),let_args,bopp1);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_x;
+      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,let);
+      enumItems.push_back(fi);
+    }
     
-    std::vector<Expression*> aa_xxi_idx(1);
-    aa_xxi_idx[0] = idx_i->id();
-    ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(),vd_xx->id(),aa_xxi_idx);
-    
-    std::vector<Expression*> _toString_ENUMArgs(1);
-    _toString_ENUMArgs[0] = aa_xxi;
-    Call* _toString_ENUM = new Call(Location().introduce(),"_toString_"+ident->str().str(),_toString_ENUMArgs);
-    
-    std::vector<Expression*> index_set_xx_args(1);
-    index_set_xx_args[0] = vd_xx->id();
-    Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
-    std::vector<VarDecl*> gen_exps(1);
-    gen_exps[0] = idx_i;
-    Generator gen(gen_exps,index_set_xx);
-    
-    Generators generators;
-    generators._g.push_back(gen);
-    Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
-    
-    std::vector<Expression*> join_args(2);
-    join_args[0] = new StringLit(Location().introduce(),", ");
-    join_args[1] = comp;
-    Call* join = new Call(Location().introduce(),"join",join_args);
-    
-    std::vector<Expression*> let_args(1);
-    let_args[0] = vd_xx;
-    Let* let = new Let(Location().introduce(),let_args,join);
-    
-    TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-    std::vector<VarDecl*> fi_params(1);
-    fi_params[0] = vd_x;
-    FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,let);
-    enumItems.push_back(fi);
+    {
+      /*
+       
+       function _toString_ENUM(set of ENUM: x) =
+         "{" ++ join(", ", [ _toString_ENUM(i) | i in x ]) ++ "}";
+       
+       */
+      
+      Type argType = Type::parsetenum(ident->type().enumId());
+      TypeInst* x_ti = new TypeInst(Location().introduce(),argType,ident);
+      VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
+      vd_x->toplevel(false);
+      
+      TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
+      idx_i->toplevel(false);
+      
+      std::vector<Expression*> _toString_ENUMArgs(1);
+      _toString_ENUMArgs[0] = idx_i->id();
+      Call* _toString_ENUM = new Call(Location().introduce(),"_toString_"+ident->str().str(),_toString_ENUMArgs);
+      
+      std::vector<VarDecl*> gen_exps(1);
+      gen_exps[0] = idx_i;
+      Generator gen(gen_exps,vd_x->id());
+      
+      Generators generators;
+      generators._g.push_back(gen);
+      Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
+      
+      std::vector<Expression*> join_args(2);
+      join_args[0] = new StringLit(Location().introduce(),", ");
+      join_args[1] = comp;
+      Call* join = new Call(Location().introduce(),"join",join_args);
+      
+      StringLit* sl_open = new StringLit(Location().introduce(),"{");
+      BinOp* bopp0 = new BinOp(Location().introduce(),sl_open,BOT_PLUSPLUS,join);
+      StringLit* sl_close = new StringLit(Location().introduce(),"}");
+      BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_x;
+      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,bopp1);
+      enumItems.push_back(fi);
+    }
     
     return ret;
   }
