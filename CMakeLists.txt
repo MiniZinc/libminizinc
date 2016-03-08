@@ -308,7 +308,7 @@ include/minizinc/thirdparty/SafeInt3.hpp
 ${parser_hh}
 )
 if(PRESOLVE)
-  target_compile_definitions(minizinc PRIVATE PRESOLVE)
+  target_compile_definitions(minizinc PRIVATE PRESOLVE PRIVATE __NO_EXPORT_FZN_SOLVERINSTANCE__)
 endif()
 
 # add the executable

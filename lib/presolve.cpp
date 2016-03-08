@@ -13,6 +13,7 @@
 #include <minizinc/presolve_utils.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
+#include <minizinc/solver.hh>
 
 namespace MiniZinc {
 
@@ -122,7 +123,14 @@ namespace MiniZinc {
   Presolver::Subproblem::~Subproblem() {
     if(m) delete m;
     if(e) delete e;
-    if(si) delete si;
+    if(si){
+      if (getGlobalSolverRegistry()->getSolverFactories().size() > 0) {
+        getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
+      } else {
+        delete si;
+      }
+    }
+    if(solns) delete solns;
   }
 
   void Presolver::Subproblem::solve() {
@@ -164,7 +172,12 @@ namespace MiniZinc {
       ops.setBoolParam(constants().opts.solver.allSols.str(), true);
       ops.setBoolParam(constants().opts.statistics.str(), false);
 
-      si = new FZNSolverInstance(*e, ops);
+      if (getGlobalSolverRegistry()->getSolverFactories().size() > 0) {
+        si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
+        si->setOptions(ops);
+      } else {
+        si = new FZNSolverInstance(*e, ops);
+      }
       solns = new Solns2Vector(e, origin_env);
       si->setSolns2Out(solns);
     }
