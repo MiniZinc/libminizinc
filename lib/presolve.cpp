@@ -383,12 +383,6 @@ namespace MiniZinc {
     currentCall->id( tableCall->id() );
     currentCall->args( tableCall->args() );
     currentCall->decl( tableCall->decl() );
-
-//    Printer p = Printer(std::cout,0);
-//    std::cerr << std::endl << std::endl;
-//    p.print(origin_env.orig);
-//    std::cerr << std::endl;
-
   }
 
 }
