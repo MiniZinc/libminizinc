@@ -103,10 +103,19 @@ namespace MiniZinc {
     } cf(subproblems, env.envi(), model);
     TopDownIterator<CallSeeker> cf_it(cf);
 
-//    TODO: Replace with an ItemVisitor to support split models
-    for (ConstraintIterator it = model->begin_constraints(); it != model->end_constraints(); ++it) {
-      cf_it.run(it->e());
-    }
+    class CallItems : public ItemVisitor {
+    public:
+      TopDownIterator<CallSeeker>& cf_it;
+      CallItems(TopDownIterator<CallSeeker>& cf_it) : cf_it(cf_it) { }
+
+      virtual void vVarDeclI(VarDeclI* i) {cf_it.run(i->e());}
+      virtual void vAssignI(AssignI* i) {cf_it.run(i->e());}
+      virtual void vConstraintI(ConstraintI* i) {cf_it.run(i->e());}
+      virtual void vSolveI(SolveI* i) {cf_it.run(i->e());}
+      virtual void vOutputI(OutputI* i) {cf_it.run(i->e());}
+      virtual void vFunctionI(FunctionI* i) {cf_it.run(i->e());}
+    } ci(cf_it);
+    iterItems(ci, model);
   }
 
   Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options,
@@ -234,11 +243,6 @@ namespace MiniZinc {
     Expression* tableCall = builder.getExpression();
 
     predicate->e(tableCall);
-
-//    Printer p = Printer(std::cout,0);
-//    std::cerr << std::endl << std::endl;
-//    p.print(origin_env.orig);
-//    std::cerr << std::endl;
   }
 
   void Presolver::ModelSubproblem::constructModel() {
