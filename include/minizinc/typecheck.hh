@@ -39,7 +39,7 @@ namespace MiniZinc {
     /// Add a variable declaration
     void add(EnvI& env, VarDecl* vd, bool unique);
     /// Add a variable declaration item
-    void add(EnvI& env, VarDeclI* vd, bool unique);
+    void add(EnvI& env, VarDeclI* vd, bool unique, bool handleEnums, std::vector<Item*>& enumItems);
     /// Remove a variable declaration
     void remove(EnvI& env, VarDecl* vd);
     /// Get variable declaration from identifier \a id
