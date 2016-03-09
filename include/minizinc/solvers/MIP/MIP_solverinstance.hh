@@ -38,6 +38,7 @@ namespace MiniZinc {
     virtual int getMask() { return MIP_wrapper::MaskConsType_Usercut; }
     /// Adds new cuts to the 2nd parameter
     virtual void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&) = 0;
+    virtual void print( std::ostream& ) { }
   };
 
   /// XBZ cut generator
@@ -49,6 +50,7 @@ namespace MiniZinc {
     vector<MIP_wrapper::VarId> varX, varB;
     MIP_wrapper::VarId varZ;
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
+    void print( std::ostream& );
   };
 
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {

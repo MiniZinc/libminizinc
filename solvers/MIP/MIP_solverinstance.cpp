@@ -206,6 +206,8 @@ namespace SCIPConstraints {
     gi.exprToVarArray(args[1], pCG->varB);
     assert(pCG->varX.size() == pCG->varB.size());
     pCG->varZ = gi.exprToVar(args[2]);
+//     cout << "  NEXT_CUTGEN" << endl;
+//     pCG->print( cout );
     
     gi.registerCutGenerator( move( pCG ) );
   }
@@ -522,9 +524,29 @@ void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     }
   }
   double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
-  if ( dViol > 1e-2 ) {   // ?? PARAM?  TODO
+  if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
     cutsIn.push_back( cut );
-    cerr << dViol << ' ';
+    cerr << " vi" << dViol << flush;
+//     cout << cut.rmatind.size() << ' '
+//       << cut.rhs << "  cutlen, rhs. (Sense fixed to GQ) " << endl;
+//     for ( int i=0; i<cut.rmatind.size(); ++i )
+//       cout << cut.rmatind[i] << ' ';
+//     cout << endl;
+//     for ( int i=0; i<cut.rmatind.size(); ++i )
+//       cout << cut.rmatval[i] << ' ';
+//     cout << endl;
   }
 }
 
+void XBZCutGen::print( ostream& os )
+{
+  os
+    << varZ << '\n'
+    << varX.size() << '\n';
+  for ( int i=0; i<varX.size(); ++i )
+    os << varX[i] << ' ';
+  os << endl;
+  for ( int i=0; i<varB.size(); ++i )
+    os << varB[i] << ' ';
+  os << endl;
+}

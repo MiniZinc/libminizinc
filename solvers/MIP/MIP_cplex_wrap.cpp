@@ -642,15 +642,6 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
     }
     
-    if (sReadParams.size()) {
-     status = CPXreadcopyparam (env, sReadParams.c_str());
-     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
-    }
-    
-    if (sWriteParams.size()) {
-     status = CPXwriteparam (env, sWriteParams.c_str());
-     wrap_assert(!status, "Failed to write CPLEX parameters.", false);
-    }
     
    /// Solution callback
    output.nCols = colObj.size();
@@ -675,9 +666,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
       wrap_assert ( !status, "CPLEX: setting prepro_linear" );
       /* Turn on traditional search for use with control callbacks */
-//       status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
-//                                 CPX_MIPSEARCH_TRADITIONAL);
-//       wrap_assert ( !status, "CPLEX: setting traditional search" );
+      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+                                CPX_MIPSEARCH_TRADITIONAL);
+      wrap_assert ( !status, "CPLEX: setting traditional search" );
       /* Let MIP callbacks work on the original model */
       status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
                                 CPX_OFF);
@@ -719,6 +710,17 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     }
   }
 
+  /// after all modifs
+    if (sReadParams.size()) {
+     status = CPXreadcopyparam (env, sReadParams.c_str());
+     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
+    }
+    
+    if (sWriteParams.size()) {
+     status = CPXwriteparam (env, sWriteParams.c_str());
+     wrap_assert(!status, "Failed to write CPLEX parameters.", false);
+    }
+    
    status = CPXgettime (env, &output.dCPUTime);
    wrap_assert(!status, "Failed to get time stamp.", false);
 

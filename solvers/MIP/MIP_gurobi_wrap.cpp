@@ -330,7 +330,9 @@ solcallback(GRBmodel *model,
       }
     }
   } else if ( GRB_CB_MIPNODE==where  ) {
-    if ( info->cutcbfn ) {    // if cut handler given
+    int status;
+    GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &status);
+    if ( status == GRB_OPTIMAL && info->cutcbfn ) {    // if cut handler given
       MIP_wrapper::Output outpRlx;
       outpRlx.x = info->pOutput->x;  // using the sol output storage  TODO?
       outpRlx.nCols = info->pOutput->nCols;
@@ -339,10 +341,10 @@ solcallback(GRBmodel *model,
       GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, (void*)outpRlx.x);
       MIP_wrapper::CutInput cutInput;
       info->cutcbfn( outpRlx, cutInput, info->ppp, false );
-      static int nCuts=0;
-      nCuts += cutInput.size();
-      if ( cutInput.size() )
-        cerr << "\n   N CUTS:  " << nCuts << endl;
+//       static int nCuts=0;
+//       nCuts += cutInput.size();
+//       if ( cutInput.size() )
+//         cerr << "\n   N CUTS:  " << nCuts << endl;
       for ( auto& cd : cutInput ) {
         assert( cd.mask &
           (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
@@ -442,16 +444,6 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //      wrap_assert(!error, "Failed to set GRB_PARAM_MIP_Limits_TreeMemory.", false);
 //     }
     
-    if (sReadParams.size()) {
-     error = GRBreadparams (GRBgetenv(model), sReadParams.c_str());
-     wrap_assert(!error, "Failed to read GUROBI parameters.", false);
-    }
-    
-    if (sWriteParams.size()) {
-     error = GRBwriteparams (GRBgetenv(model), sWriteParams.c_str());
-     wrap_assert(!error, "Failed to write GUROBI parameters.", false);
-    }
-
        /// Solution callback
    output.nCols = colObj.size();
    x.resize(output.nCols);
@@ -480,6 +472,17 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       error = GRBsetcallbackfunc(model, solcallback, (void *) &cbui);
       wrap_assert(!error, "Failed to set callback", false);
    }
+
+   /// after all modifs
+    if (sReadParams.size()) {
+     error = GRBreadparams (GRBgetenv(model), sReadParams.c_str());
+     wrap_assert(!error, "Failed to read GUROBI parameters.", false);
+    }
+    
+    if (sWriteParams.size()) {
+     error = GRBwriteparams (GRBgetenv(model), sWriteParams.c_str());
+     wrap_assert(!error, "Failed to write GUROBI parameters.", false);
+    }
 
    output.dCPUTime = std::clock();
 
