@@ -731,6 +731,7 @@ namespace MiniZinc {
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
         ret.bt(it->second.bt());
+        ret.enumId(it->second.enumId());
         if (ret.st()==Type::ST_PLAIN)
           ret.st(it->second.st());
       }
