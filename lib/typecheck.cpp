@@ -1046,14 +1046,20 @@ namespace MiniZinc {
       }
       if (ti.domain() && ti.domain()->type().cv())
         tt.cv(true);
-      if (ti.domain() && !ti.domain()->isa<TIId>()) {
-        if (ti.domain()->type().ti() != Type::TI_PAR ||
-            ti.domain()->type().st() != Type::ST_SET)
-          throw TypeError(_env,ti.domain()->loc(),
-            "type-inst must be par set");
-        if (ti.domain()->type().dim() != 0)
-          throw TypeError(_env,ti.domain()->loc(),
-            "type-inst cannot be an array");
+      if (ti.domain()) {
+        if (TIId* tiid = ti.domain()->dyn_cast<TIId>()) {
+          if (tiid->isEnum()) {
+            tt.bt(Type::BT_INT);
+          }
+        } else {
+          if (ti.domain()->type().ti() != Type::TI_PAR ||
+              ti.domain()->type().st() != Type::ST_SET)
+            throw TypeError(_env,ti.domain()->loc(),
+                            "type-inst must be par set");
+          if (ti.domain()->type().dim() != 0)
+            throw TypeError(_env,ti.domain()->loc(),
+                            "type-inst cannot be an array");
+        }
       }
       if (tt.isunknown()) {
         assert(ti.domain());

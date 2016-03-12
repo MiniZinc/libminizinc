@@ -458,6 +458,8 @@ namespace MiniZinc {
     ASTString v(void) const { return _v; }
     /// Set identifier
     void v(const ASTString& val) { _v = val; }
+    /// Check whether it is an enum identifier (starting with two $ signs)
+    bool isEnum(void) const { return _v.c_str()[0]=='$'; }
     /// Recompute hash value
     void rehash(void);
   };

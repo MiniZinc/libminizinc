@@ -2018,6 +2018,37 @@ namespace MiniZinc {
     return std::tan(f); 
   }
   
+  IntVal b_to_enum(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    assert(args.size()==2);
+    IntSetVal* isv = eval_intset(env, args[0]);
+    IntVal v = eval_int(env, args[1]);
+    if (!isv->contains(v))
+      throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    return v;
+  }
+  
+  IntVal b_enum_next(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    IntVal v = eval_int(env, args[0]);
+    return v+1;
+  }
+
+  IntVal b_enum_prev(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    IntVal v = eval_int(env, args[0]);
+    return v-1;
+  }
+
+  IntSetVal* b_enum_base_set(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    if (args[0]->type().enumId() != 0) {
+      VarDeclI* enumDecl = env.getEnum(args[0]->type().enumId());
+      return eval_intset(env, enumDecl->e()->e());
+    }
+    return IntSetVal::a(-IntVal::infinity(),IntVal::infinity());
+  }
+  
   void registerBuiltins(Env& e, Model* m) {
     EnvI& env = e.envi();
     
@@ -2677,7 +2708,24 @@ namespace MiniZinc {
       t[0] = Type::parint(); 
       t[1] = Type::parfloat(); 
       rb(env, m, ASTString("binomial"),t,b_binomial);  
-    }    
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::parsetint();
+      t[1] = Type::parint();
+      rb(env, m, ASTString("to_enum"),t,b_to_enum);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint();
+      rb(env, m, ASTString("enum_next"),t,b_enum_next);
+      rb(env, m, ASTString("enum_prev"),t,b_enum_prev);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varint();
+      rb(env, m, ASTString("enum_base_set"),t,b_enum_base_set);
+    }
   }
   
 }
