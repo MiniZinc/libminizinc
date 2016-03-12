@@ -64,7 +64,7 @@ namespace MiniZinc {
     GCLock lock;
     if (Call* c = vd->e()->dyn_cast<Call>()) {
       if (c->id()!="anon_enum") {
-        throw TypeError(env, vd->loc(), "invalid initialisation for enum");
+        throw TypeError(env, c->loc(), "invalid initialisation for enum");
       }
     } else {
       sl = vd->e()->cast<SetLit>();
