@@ -4954,7 +4954,8 @@ namespace MiniZinc {
         VarDecl* it = v->flat();
         if (it==NULL) {
           TypeInst* ti = eval_typeinst(env,v);
-          VarDecl* vd = newVarDecl(env, ctx, ti, v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
+          bool reuseVarId = v->type().isann() || ( v->toplevel() && v->id()->idn()==-1 && v->id()->v().c_str()[0]!='\'' );
+          VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : NULL, v, NULL);
           v->flat(vd);
           Ctx nctx;
           if (v->e() && v->e()->type().bt() == Type::BT_BOOL)
@@ -5228,6 +5229,16 @@ namespace MiniZinc {
     topDown(_decls, e);
   }
   
+  void checkRenameVar(EnvI& e, VarDecl* vd) {
+    if (vd->id()->idn() != vd->flat()->id()->idn()) {
+      TypeInst* vd_rename_ti = copy(e,e.cmap,vd->ti())->cast<TypeInst>();
+      VarDecl* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), NULL);
+      vd_rename->flat(vd->flat());
+      vd->e(vd_rename->id());
+      e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
+    }
+  }
+  
   void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
     public:
@@ -5314,6 +5325,7 @@ namespace MiniZinc {
               args[0] = al;
               reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
             }
+            checkRenameVar(env, nvi->e());
           } else {
             outputVarDecls(env, nvi, nvi->e()->e());
           }
@@ -5463,6 +5475,7 @@ namespace MiniZinc {
                       args[0] = al;
                       vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
                     }
+                    checkRenameVar(e, vd);
                   }
                 }
               }
@@ -5669,6 +5682,7 @@ namespace MiniZinc {
                   assert(vd->flat());
                   if (vd->type().dim() == 0) {
                     vd->flat()->addAnnotation(constants().ann.output_var);
+                    checkRenameVar(env, vd);
                   } else {
                     bool needOutputAnn = true;
                     if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
@@ -5699,6 +5713,7 @@ namespace MiniZinc {
                       args.resize(1);
                       args[0] = al;
                       vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                      checkRenameVar(env, vd);
                     }
                   }
                 }
