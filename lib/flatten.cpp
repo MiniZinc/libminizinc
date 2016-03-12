@@ -5497,11 +5497,20 @@ namespace MiniZinc {
       OutputI* outputItem = NULL;
       GCLock lock;
 
-      if (e.orig->outputItem()) {
-        outputItem = copy(e,e.cmap, e.orig->outputItem())->cast<OutputI>();
-        makePar(e,outputItem->e());
-        e.output->addItem(outputItem);
-      }
+      class OV1 : public ItemVisitor {
+      public:
+        EnvI& env;
+        VarOccurrences& vo;
+        OutputI*& outputItem;
+        OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
+        : env(env0), vo(vo0), outputItem(outputItem0) {}
+        void vOutputI(OutputI* oi) {
+          outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
+          makePar(env,outputItem->e());
+          env.output->addItem(outputItem);
+        }
+      } _ov1(e,e.output_vo,outputItem);
+      iterItems(_ov1,e.orig);
       
       if (outputItem==NULL) {
         // Create output item for all variables defined at toplevel in the MiniZinc source
