@@ -113,6 +113,11 @@ namespace MiniZinc {
       FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,aa);
       enumItems.push_back(fi);
     } else {
+      if (vd_enumToString) {
+        /// TODO: find a better solution (don't introduce the vd_enumToString until we
+        ///       know it's a non-anonymous enum)
+        vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
+      }
       TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
       VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
       vd_aa->toplevel(false);
@@ -1141,8 +1146,10 @@ namespace MiniZinc {
         if (vd_enum->e())
           throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
         AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems);
-        vd_enum->e(ai_enum->e());
-        ai_enum->remove();
+        if (ai_enum) {
+          vd_enum->e(ai_enum->e());
+          ai_enum->remove();
+        }
       }
       ai->remove();
     }
