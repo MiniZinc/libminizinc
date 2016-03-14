@@ -53,6 +53,7 @@ void Flattener::printHelp(ostream& os)
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
+  << "  - --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
@@ -235,11 +236,11 @@ void Flattener::flatten()
     }
   }
   
-  if (flag_output_fzn == filenames[0]) {
+  if (!filenames.empty() && flag_output_fzn == filenames[0]) {
     cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
     flag_output_fzn = "";
   }
-  if (flag_output_ozn == filenames[0]) {
+  if (!filenames.empty() && flag_output_ozn == filenames[0]) {
     cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
     flag_output_ozn = "";
   }
