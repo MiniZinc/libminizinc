@@ -54,6 +54,16 @@ namespace MiniZinc {
     }
   };
   
+  std::string createEnumToStringName(Id* ident, std::string prefix) {
+    std::string name = ident->str().str();
+    if (name[0]=='\'') {
+      name = "'"+prefix+name.substr(1);
+    } else {
+      name = prefix+name;
+    }
+    return name;
+  }
+  
   AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, std::vector<Item*>& enumItems) {
 
     Id* ident = vd->id();
@@ -82,7 +92,7 @@ namespace MiniZinc {
 
     
     if (sl) {
-      std::string name = "_enum_to_string_"+ident->str().str();
+      std::string name = createEnumToStringName(ident,"_enum_to_string_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i=0; i<sl->v().size(); i++) {
         al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
@@ -110,7 +120,9 @@ namespace MiniZinc {
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(1);
       fi_params[0] = vd_aa;
-      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,aa);
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,aa);
       enumItems.push_back(fi);
     } else {
       if (vd_enumToString) {
@@ -131,7 +143,9 @@ namespace MiniZinc {
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(1);
       fi_params[0] = vd_aa;
-      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,construct_string);
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,construct_string);
       enumItems.push_back(fi);
     }
     
@@ -178,7 +192,9 @@ namespace MiniZinc {
       
       std::vector<Expression*> _toString_ENUMArgs(1);
       _toString_ENUMArgs[0] = aa_xxi;
-      Call* _toString_ENUM = new Call(Location().introduce(),"_toString_"+ident->str().str(),_toString_ENUMArgs);
+      Call* _toString_ENUM = new Call(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      _toString_ENUMArgs);
       
       std::vector<Expression*> index_set_xx_args(1);
       index_set_xx_args[0] = vd_xx->id();
@@ -208,7 +224,9 @@ namespace MiniZinc {
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(1);
       fi_params[0] = vd_x;
-      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,let);
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,let);
       enumItems.push_back(fi);
     }
     
@@ -231,7 +249,9 @@ namespace MiniZinc {
       
       std::vector<Expression*> _toString_ENUMArgs(1);
       _toString_ENUMArgs[0] = idx_i->id();
-      Call* _toString_ENUM = new Call(Location().introduce(),"_toString_"+ident->str().str(),_toString_ENUMArgs);
+      Call* _toString_ENUM = new Call(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      _toString_ENUMArgs);
       
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
@@ -254,7 +274,9 @@ namespace MiniZinc {
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(1);
       fi_params[0] = vd_x;
-      FunctionI* fi = new FunctionI(Location().introduce(),"_toString_"+ident->str().str(),ti_fi,fi_params,bopp1);
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,bopp1);
       enumItems.push_back(fi);
     }
     
@@ -275,7 +297,7 @@ namespace MiniZinc {
         (void) createEnumMapper(env, model, enumId, vd, NULL, enumItems);
       } else {
         GCLock lock;
-        std::string name = "_enum_to_string_"+vd->id()->str().str();
+        std::string name = createEnumToStringName(vd->id(),"_enum_to_string_");
         std::vector<TypeInst*> ranges(1);
         ranges[0] = new TypeInst(Location().introduce(),Type::parint());
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
@@ -1147,7 +1169,7 @@ namespace MiniZinc {
       
       if (vd->ti()->isEnum()) {
         GCLock lock;
-        ASTString name("_enum_to_string_"+vd->id()->str().str());
+        ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
         VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
         if (vd_enum->e())
           throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");

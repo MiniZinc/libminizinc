@@ -5207,6 +5207,17 @@ namespace MiniZinc {
     } _par;
     topDown(_par, e);
     class Decls : public EVisitor {
+    protected:
+      static std::string createEnumToStringName(Id* ident, std::string prefix) {
+        std::string name = ident->str().str();
+        if (name[0]=='\'') {
+          name = "'"+prefix+name.substr(1);
+        } else {
+          name = prefix+name;
+        }
+        return name;
+      }
+      
     public:
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
@@ -5217,7 +5228,7 @@ namespace MiniZinc {
             GCLock lock;
             std::vector<Expression*> args(1);
             args[0] = c.args()[c.args().size()-1];
-            std::string enumName = "_toString_"+ti_id->str().str();
+            std::string enumName = createEnumToStringName(ti_id, "_toString_");
             Call* convertEnum = new Call(Location().introduce(),enumName,args);
             convertEnum->type(Type::parstring());
             c.args()[c.args().size()-1] = convertEnum;
