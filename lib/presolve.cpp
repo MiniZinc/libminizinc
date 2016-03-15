@@ -185,16 +185,17 @@ namespace MiniZinc {
         si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
         si->setOptions(ops);
       } else {
+        // TODO: Handle when GlobalsDir doesn't work for standard solver.
         si = new FZNSolverInstance(*e, ops);
       }
       solns = new Solns2Vector(e, origin_env);
       si->setSolns2Out(solns);
     }
+    si->processFlatZinc();
+    SolverInstance::Status status = si->solve();
 
-    auto status = si->solve();
-
-    if (status != SolverInstance::OPT && status != SolverInstance::SAT )
-      throw InternalError("Unable to solve subproblem for the `" + predicate->id().str() + "' predicate");
+    if ( (status != SolverInstance::OPT && status != SolverInstance::SAT) || solns->getSolutions().empty())
+      throw InternalError("Unable to solve subproblem");
   }
 
   void Presolver::GlobalSubproblem::constructModel() {

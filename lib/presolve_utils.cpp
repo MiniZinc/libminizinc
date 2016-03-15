@@ -82,6 +82,7 @@ namespace MiniZinc{
   }
 
   Expression* computeDomainExpr(EnvI& env, Expression* exp) {
+//    TODO: Should we compute the unions manually?
     if (exp->eid() == Expression::E_ID )
       return exp->cast<Id>()->decl()->ti()->domain();
     Expression* type = nullptr;
@@ -106,7 +107,7 @@ namespace MiniZinc{
           if ( c->id().str().find("array")  ) {
             return c->args()[c->args().size() == 1 ? 0 : 1]->cast<ArrayLit>();
           } else {
-//            TODO: Find more cases in which we can compute this.
+//            TODO: Are there more cases in which we can compute this?
             return nullptr;
           }
         }
