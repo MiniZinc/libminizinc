@@ -555,6 +555,7 @@ if(HAS_GECODE)
     minizinc.cpp
     solvers/gecode/gecode_solverinstance.cpp
     )
+  target_include_directories(mzn-gecode PRIVATE "${GECODE_HOME}/include")
   target_link_libraries(mzn-gecode minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
