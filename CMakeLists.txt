@@ -553,7 +553,6 @@ if(HAS_GECODE)
 
   add_executable(mzn-gecode
     minizinc.cpp
-    solvers/gecode/gecode_solverinstance.cpp
     )
   target_link_libraries(mzn-gecode minizinc_gecode)
 
