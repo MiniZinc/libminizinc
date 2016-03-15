@@ -312,9 +312,9 @@ if(PRESOLVE)
 endif()
 
 # add the executable
-add_executable(mzn2fzn minizinc.cpp lib/solver.cpp)    #mzn2fzn.cpp)
+add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
-target_compile_definitions(mzn2fzn PUBLIC FLATTEN_ONLY)
+target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
 
 add_executable(mzn2fzn_test mzn2fzn_test.cpp)
 target_link_libraries(mzn2fzn_test minizinc)
@@ -548,9 +548,9 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
-          solvers/gecode/fzn_space.cpp
-	  solvers/gecode/gecode_solverinstance.cpp
-		solvers/gecode/gecode_constraints.cpp
+    solvers/gecode/fzn_space.cpp
+    solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
@@ -562,7 +562,8 @@ if(HAS_GECODE)
 
   add_executable(mzn-gecode
     minizinc.cpp
-  )
+    solvers/gecode/gecode_solverinstance.cpp
+    )
   target_link_libraries(mzn-gecode minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
@@ -571,8 +572,8 @@ if(HAS_GECODE)
     ARCHIVE DESTINATION lib)
 
   INSTALL(DIRECTORY solvers/gecode
-          DESTINATION include/minizinc/solvers
-  )
+    DESTINATION include/minizinc/solvers
+    )
 
 endif()
 
@@ -586,7 +587,10 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn minizinc.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	add_executable(mzn-fzn
+	  minizinc.cpp
+    solvers/fzn/fzn_solverinstance.cpp
+  )
 	target_link_libraries(mzn-fzn minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)

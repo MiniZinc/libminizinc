@@ -21,6 +21,7 @@
 #include <fstream>
 #include <iomanip>
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -125,8 +126,8 @@ namespace SCIPConstraints {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
     Env& _env = gi.env();
     ASTExprVec<Expression> args = call->args();
-    ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
-    int nvars = al->v().size();
+//     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
+//     int nvars = al->v().size();
     vector<double> coefs;
     gi.exprToArray(args[0], coefs);
     vector<MIP_solverinstance::VarId> vars;
@@ -153,7 +154,7 @@ namespace SCIPConstraints {
 //     for (size_t i=0; i<coefs.size(); ++i)
 //       cerr << coefs[i] << ", ";
 //     cerr << endl;
-    gi.getMIPWrapper()->addRow(nvars, &vars[0], &coefs[0], lt, rhs,
+    gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
                                GetMaskConsType(call), ss.str());
   }
 
@@ -190,6 +191,26 @@ namespace SCIPConstraints {
    void p_le(SolverInstanceBase& si, const Call* call) {
      p_non_lin( si, call, MIP_wrapper::LQ );
    }
+   
+  /// The XBZ cut generator
+  void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    Env& _env = gi.env();
+    
+//     auto pCG = make_unique<XBZCutGen>();
+    unique_ptr<XBZCutGen> pCG( new XBZCutGen( gi.getMIPWrapper() ) );
+    
+    ASTExprVec<Expression> args = call->args();
+    assert( args.size()==3 );
+    gi.exprToVarArray(args[0], pCG->varX);
+    gi.exprToVarArray(args[1], pCG->varB);
+    assert(pCG->varX.size() == pCG->varB.size());
+    pCG->varZ = gi.exprToVar(args[2]);
+//     cout << "  NEXT_CUTGEN" << endl;
+//     pCG->print( cout );
+    
+    gi.registerCutGenerator( move( pCG ) );
+  }
 }
 
 void MIP_solverinstance::registerConstraints() {
@@ -206,6 +227,10 @@ void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("float_lin_eq"), SCIPConstraints::p_float_lin_eq);
   _constraintRegistry.add(ASTString("float_lin_le"), SCIPConstraints::p_float_lin_le);
 //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus);
+  
+  _constraintRegistry.add(ASTString("array_var_float_element__XBZ_lb__cutgen"),
+                          SCIPConstraints::p_XBZ_cutgen);
+  
 }
 
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
@@ -248,9 +273,20 @@ void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   /// Not for -a:
 //   if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
     pSI->lastIncumbent = out.objVal;
-    pSI->printSolution();
+    pSI->printSolution();            // The solution in [out] is not used  TODO 
 //   }
 }
+
+void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in,
+                       void* pp, bool fMIPSol) {
+  // multi-threading? TODO
+  MIP_solverinstance* pSI = (MIP_solverinstance*)( pp );
+  assert(pSI);
+  assert(&out);
+  assert(&in);
+  pSI->genCuts( out, in, fMIPSol );
+}
+
 
 
 SolverInstance::Status MIP_solverinstance::solve(void) {
@@ -279,6 +315,8 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   MIP_wrapper::Status sw;
   if ( getMIPWrapper()->getNCols() ) {
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
+    if ( cutGenerators.size() )  // only then, can modify presolve
+      getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
     getMIPWrapper()->solve();
   //   printStatistics(cout, 1);   MznSolver does this (if it wants)
     sw = getMIPWrapper()->getStatus();
@@ -452,5 +490,63 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
   }
 }
 
+void MIP_solverinstance::genCuts(const MIP_wrapper::Output& slvOut,
+                                 MIP_wrapper::CutInput& cutsIn, bool fMIPSol) {
+  for ( auto& pCG : cutGenerators ) {
+    if ( !fMIPSol || pCG->getMask()&MIP_wrapper::MaskConsType_Lazy )
+      pCG->generate( slvOut, cutsIn );
+  }
+  /// Select some most violated? TODO
+}
 
+void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
+  assert( pMIP );
+  const int n = varX.size();
+  assert( n==varB.size() );
+  MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Usercut );
+  cut.addVar( varZ, -1.0 );
+  for ( int i=0; i<n; ++i ) {
+    const int ix = varX[ i ];
+    const int ib = varB[ i ];
+    assert( ix>=0 && ix<slvOut.nCols );
+    assert( ib>=0 && ib<slvOut.nCols );
+    const double theXi = slvOut.x[ ix ];
+    const double theBi = slvOut.x[ ib ];
+    const double LBXi = pMIP->colLB[ ix ];
+    const double UBXi = pMIP->colUB[ ix ];  // tighter bounds from presolve?  TODO
+    bool fi = ( theXi + LBXi * ( theBi - 1.0 ) - UBXi * theBi < 0.0 );
+    if ( fi ) {
+      cut.addVar( ix, 1.0 );
+      cut.addVar( ib, LBXi );
+      cut.rhs += LBXi;
+    } else {
+      cut.addVar( ib, UBXi );
+    }
+  }
+  double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
+  if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
+    cutsIn.push_back( cut );
+    cerr << " vi" << dViol << flush;
+//     cout << cut.rmatind.size() << ' '
+//       << cut.rhs << "  cutlen, rhs. (Sense fixed to GQ) " << endl;
+//     for ( int i=0; i<cut.rmatind.size(); ++i )
+//       cout << cut.rmatind[i] << ' ';
+//     cout << endl;
+//     for ( int i=0; i<cut.rmatind.size(); ++i )
+//       cout << cut.rmatval[i] << ' ';
+//     cout << endl;
+  }
+}
 
+void XBZCutGen::print( ostream& os )
+{
+  os
+    << varZ << '\n'
+    << varX.size() << '\n';
+  for ( int i=0; i<varX.size(); ++i )
+    os << varX[i] << ' ';
+  os << endl;
+  for ( int i=0; i<varB.size(); ++i )
+    os << varB[i] << ' ';
+  os << endl;
+}

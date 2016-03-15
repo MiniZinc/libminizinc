@@ -82,6 +82,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
+MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f) {}
 
 MznSolver::~MznSolver()
 {
@@ -95,11 +96,7 @@ MznSolver::~MznSolver()
 }
 
 bool MznSolver::ifMzn2Fzn() {
-#ifdef FLATTEN_ONLY
-  return true;
-#else
-  return 0==getNSolvers();
-#endif
+  return is_mzn2fzn;
 }
 
 void MznSolver::addFlattener()
@@ -110,7 +107,10 @@ void MznSolver::addFlattener()
 
 void MznSolver::addSolverInterface()
 {
-  assert(getGlobalSolverRegistry()->getSolverFactories().size());
+  if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
+    cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
+    assert( 0 );
+  }
   si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
   assert(si);
   s2out.initFromEnv( flt->getEnv() );

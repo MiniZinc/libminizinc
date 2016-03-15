@@ -53,6 +53,7 @@ void Flattener::printHelp(ostream& os)
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
+  << "  - --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
@@ -75,7 +76,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 {
   CLOParser cop( i, argc, argv );
   string buffer;
-
+  
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
     includePaths.push_back(buffer+string("/"));
   } else if ( cop.getOption( "--ignore-stdlib" ) ) {
@@ -180,14 +181,14 @@ void Flattener::flatten()
 {
   starttime01 = std::clock();
   lasttime = starttime01;
-
+  
   if (flag_verbose)
     printVersion(cerr);
 
   // controlled from redefs and command line:
 //   if (beginswith(globals_dir, "linear")) {
 //     flag_only_range_domains = true;
-//     if (verbose)
+//     if (flag_verbose)
 //       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
 //   }
 
@@ -234,16 +235,16 @@ void Flattener::flatten()
       flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
     }
   }
-
-  if (flag_output_fzn == filenames[0]) {
+  
+  if (!filenames.empty() && flag_output_fzn == filenames[0]) {
     cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
     flag_output_fzn = "";
   }
-  if (flag_output_ozn == filenames[0]) {
+  if (!filenames.empty() && flag_output_ozn == filenames[0]) {
     cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
     flag_output_ozn = "";
   }
-
+  
   if (fOutputByDefault) {
     if (flag_output_fzn == "") {
       flag_output_fzn = flag_output_base+".fzn";
@@ -473,12 +474,12 @@ void Flattener::flatten()
 //       throw;
     }
   }
-
+  
   if (getEnv()->envi().failed()) {
     status = SolverInstance::UNSAT;
   }
-
-//   if (verbose)
+  
+//   if (flag_verbose)
   if (flag_verbose) {
 //     std::cerr << "Done (overall time " << stoptime(starttime) << ", ";
 //      std::cerr << " done (" << stoptime(lasttime) << "), flattening finished. ";
@@ -489,7 +490,7 @@ void Flattener::flatten()
       std::cerr << "Maximum memory " << mem/1024 << " Kbytes";
     else
       std::cerr << "Maximum memory " << mem/(1024*1024) << " Mbytes";
-    std::cerr << "." << std::endl;
+    std::cerr << "." << std::endl;    
   }
 }
 

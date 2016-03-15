@@ -20,6 +20,20 @@
 #include <sstream>
 #include <cassert>
 
+
+/// Facilitate lhs computation of a cut
+inline
+double computeSparse( int n, const int* ind, const double* coef, const double* dense, int nVarsDense ) {
+  assert( ind && coef && dense );
+  double val=0.0;
+  for ( int i=0; i<n; ++i ) {
+    assert( ind[i]>=0 );
+    assert( ind[i]<nVarsDense );
+    val += coef[i] * dense[ ind [ i ] ];
+  }
+  return val;
+}
+
 class MIP_wrapper;
 /// Namespace MIP_WrapperFactory providing static service functions
 /// The implementation of a MIP wrapper should define these
@@ -54,11 +68,15 @@ class MIP_wrapper {
       GQ = 1
     };
     
+    // CPLEX 12.6.2 advises anti-symmetry constraints to be user+lazy
     static const int MaskConsType_Normal = 1;
+    /// User cut. Only cuts off fractional points, no integer feasible points
     static const int MaskConsType_Usercut = 2;
+    /// Lazy cut. Can cut off otherwise feasible integer solutions.
+    /// Callback should be able to produce previously generated cuts again if needed [Gurobi]
     static const int MaskConsType_Lazy = 4;
     enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
-  protected:
+  public:
     /// Columns for SCIP upfront and with obj coefs:
     std::vector<double> colObj, colLB, colUB;
     std::vector<VarType> colTypes;
@@ -79,7 +97,7 @@ class MIP_wrapper {
       std::string statusName="Untouched";
       double objVal = 1e308;
       double bestBound = 1e308;
-      int nCols;
+      int nCols = 0;
       int nObjVarIndex=-1;
       const double *x = 0;
       int nNodes=0;
@@ -88,16 +106,54 @@ class MIP_wrapper {
     };      
     Output output;
 
+    /// General cut definition, could be used for addRow() too
+    class CutDef {
+      CutDef() { }
+    public:
+      CutDef( LinConType s, int m ) : sense( s ), mask( m ) { }
+      std::vector<int> rmatind;
+      std::vector<double> rmatval;
+      LinConType sense=LQ;
+      double rhs=0.0;
+      int mask = 0; // need to know what type of cuts are registered before solve()  TODO
+      std::string rowName = "";
+      void addVar( int i, double c ) {
+        rmatind.push_back( i );
+        rmatval.push_back( c );
+      }
+      double computeViol( const double* x, int nCols ) {
+        double lhs = computeSparse( rmatind.size(), rmatind.data(), rmatval.data(), x, nCols );
+        if ( LQ==sense ) {
+          return lhs-rhs;
+        } else if ( GQ==sense ) {
+          return rhs-lhs;
+        } else
+          assert( 0 );
+        return 0.0;
+      }
+    };
+    /// Cut callback fills one
+    typedef std::vector<CutDef> CutInput;
+    
   public:
     /// solution callback handler, the wrapper might not have these callbacks implemented
     typedef void (*SolCallbackFn)(const Output& , void* );
+    /// cut callback handler, the wrapper might not have these callbacks implemented
+    typedef void (*CutCallbackFn)(const Output& , CutInput& , void* ,
+                  bool fMIPSol  // if with a MIP feas sol - lazy cuts only
+                                 );
     struct CBUserInfo {
       MIP_wrapper::Output* pOutput=0;
+      MIP_wrapper::Output* pCutOutput=0;
       bool fVerb = false;              // used in Gurobi
-      void *ppp=0;  // external info
+      void *ppp=0;  // external info. Intended to keep MIP_solverinstance
       SolCallbackFn solcbfn=0;
+      CutCallbackFn cutcbfn=0;
+      /// Union of all flags used for the registered callback cuts
+      /// See MaskConstrType_..
+      /// Solvers need to know this
+      int cutMask = 0; // can be any combination of User/Lazy
     };
-  protected:
     CBUserInfo cbui;
 
   public:
@@ -219,6 +275,14 @@ class MIP_wrapper {
       cbui.ppp = info;
       cbui.solcbfn = cbfn;
     }
+    /// solution callback handler, the wrapper might not have these callbacks implemented
+    virtual void provideCutCallback(CutCallbackFn cbfn, void* info) {
+      assert(cbfn);
+      cbui.pCutOutput = 0;  // &outpCuts;   thread-safety: caller has to provide this
+      cbui.ppp = info;
+      cbui.cutcbfn = cbfn;
+    }
+
     virtual void solve() = 0; 
     
     /// OUTPUT, should also work in a callback

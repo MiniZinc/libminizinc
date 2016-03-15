@@ -483,14 +483,6 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       SCIP_CALL ( SCIPsetMessagehdlr(scip, pHndl) );      
     }
     
-    if (sReadParams.size()) {
-     SCIP_CALL( SCIPreadParams (scip, sReadParams.c_str()) );
-    }
-    
-    if (sWriteParams.size()) {
-     SCIP_CALL( SCIPwriteParams (scip, sReadParams.c_str(), TRUE, FALSE) );
-    }
-
 //     assert(scipVars.size() == colObj.size());
     int cur_numcols = getNCols();
     assert(cur_numcols == colObj.size());
@@ -508,6 +500,14 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //       retcode = SCIP_setinfocallbackfunc (env, solcallback, &cbui);
 //       wrap_assert(!retcode, "Failed to set solution callback", false);
    }
+
+    if (sReadParams.size()) {
+     SCIP_CALL( SCIPreadParams (scip, sReadParams.c_str()) );
+    }
+    
+    if (sWriteParams.size()) {
+     SCIP_CALL( SCIPwriteParams (scip, sReadParams.c_str(), TRUE, FALSE) );
+    }
 
    output.dCPUTime = clock();
 
