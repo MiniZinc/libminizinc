@@ -192,10 +192,17 @@ annotation complete;
 /** @group annotations.presolve Presolve every use of the predicate at compile time */
 annotation presolve(
     ann: strategy,
+    string: fzn_solver,
     bool: save
 );
 
-/** @group annotations.presolve Presolve using standard arguments (model, false) */
+/** @group annotations.presolve Presolve using the default solver  */
+annotation presolve(
+    ann: strategy,
+    bool: save
+);
+
+/** @group annotations.presolve Presolve using the default solver and standard arguments (model, false) */
 annotation presolve;
 
 /***
@@ -205,7 +212,7 @@ annotation presolve;
 /** @group annotations.presolve.strategy Presolve for every call */
 annotation calls;
 
-/** @group annotations.presolve.strategy Presolve for all instances */
+/** @group annotations.presolve.strategy Presolve for all instances in the model */
 annotation model;
 
 /** @group annotations.presolve.strategy Presolve for all possible input */

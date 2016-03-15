@@ -72,6 +72,8 @@ namespace MiniZinc {
     Options& options;
     // save/load result from file?
     bool save;
+    // FZN solver to be used.
+    std::string solver;
 
     // Constructed Model & Env to solve subproblem.
     Model* m = nullptr;
@@ -84,7 +86,7 @@ namespace MiniZinc {
 
   public:
 
-    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save=false);
+    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="", bool save=false);
     virtual ~Subproblem();
 
     void addCall(Call* c) { calls.push_back(c); }
@@ -103,8 +105,8 @@ namespace MiniZinc {
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
   public:
-    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
-            origin, origin_env, predicate, options, save) { }
+    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="", bool save=false) : Subproblem(
+            origin, origin_env, predicate, options, solver, save) { }
 
   protected:
     virtual void constructModel();
@@ -114,8 +116,8 @@ namespace MiniZinc {
 
   class Presolver::ModelSubproblem : public Presolver::GlobalSubproblem {
   public:
-    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : GlobalSubproblem(
-            origin, origin_env, predicate, options, save) { }
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="", bool save=false) : GlobalSubproblem(
+            origin, origin_env, predicate, options, solver, save) { }
 
   protected:
     virtual void constructModel();
@@ -127,8 +129,8 @@ namespace MiniZinc {
     std::vector<VarDecl*> modelArgs;
 
   public:
-    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, bool save) : Subproblem(
-            origin, origin_env, predicate, options, save) { }
+    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="", bool save=false) : Subproblem(
+            origin, origin_env, predicate, options, solver, save) { }
 
     virtual void solve();
 
