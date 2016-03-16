@@ -32,13 +32,12 @@ namespace MiniZinc {
     findPresolvedCalls();
 
 //    TODO: Deal with circular presolving.
-//    TODO: Handle errors of individual solving here.
     for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
       try {
         (*it)->solve();
       } catch(std::exception& e) {
         Exception* m = dynamic_cast<Exception*>(&e);
-        std::cout << "% warning: An error occured while presolving `" << (*it)->getPredicate()->id().str() << "': ";
+        std::cout << "% warning: Presolving `" << (*it)->getPredicate()->id().str() << "' failed: ";
         if(m) {
           std::cout << m->msg();
         } else {
@@ -140,7 +139,7 @@ namespace MiniZinc {
     if(m) delete m;
     if(e) delete e;
     if(si){
-      if (solver == "" && getGlobalSolverRegistry()->getSolverFactories().size() > 0) {
+      if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
         getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
       } else {
         delete si;
@@ -188,7 +187,7 @@ namespace MiniZinc {
       ops.setBoolParam(constants().opts.solver.allSols.str(), true);
       ops.setBoolParam(constants().opts.statistics.str(), false);
 
-      if (solver == "" && getGlobalSolverRegistry()->getSolverFactories().size() > 0) {
+      if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
         si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
         si->setOptions(ops);
       } else {
@@ -204,8 +203,11 @@ namespace MiniZinc {
     si->processFlatZinc();
     SolverInstance::Status status = si->solve();
 
-    if ( (status != SolverInstance::OPT && status != SolverInstance::SAT) || solns->getSolutions().empty())
+    if (status != SolverInstance::OPT && status != SolverInstance::SAT)
       throw InternalError("Unable to solve subproblem");
+    if ( solns->getSolutions().empty() )
+//      TODO: This should not happen, but the GecodeSolverInstance doesn't work with -a yet.
+      throw InternalError("Solver returned with solved status but did not return any solutions");
   }
 
   void Presolver::GlobalSubproblem::constructModel() {
