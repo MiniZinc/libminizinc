@@ -33,10 +33,10 @@ namespace MiniZinc {
     bool processOption(int& i, int argc, const char** argv);
     void printHelp(std::ostream& os);
   };
-// #define __NO_EXPORT_GECODE_SOLVERINSTANCE__  // define this to avoid exporting
-#ifndef __NO_EXPORT_GECODE_SOLVERINSTANCE__
-  Gecode_SolverFactory gecode_solverfactory;
-#endif
+  
+  SolverFactory* SolverFactory::createF_GECODE() {
+    return new Gecode_SolverFactory;
+  }
 
   string Gecode_SolverFactory::getVersion()
   {
