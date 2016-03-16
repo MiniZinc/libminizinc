@@ -18,8 +18,8 @@
 namespace MiniZinc {
 
   Presolver::~Presolver() {
-    for (auto it = subproblems.begin(); it != subproblems.end(); ++it)
-      delete (*it);
+    for (Subproblem* it : subproblems)
+      delete it;
   }
 
   void Presolver::presolve() {
@@ -32,12 +32,12 @@ namespace MiniZinc {
     findPresolvedCalls();
 
 //    TODO: Deal with circular presolving.
-    for (auto it = subproblems.begin(); it != subproblems.end(); ++it) {
+    for (Subproblem* it : subproblems) {
       try {
-        (*it)->solve();
+        it->solve();
       } catch(std::exception& e) {
         Exception* m = dynamic_cast<Exception*>(&e);
-        std::cout << "% warning: Presolving `" << (*it)->getPredicate()->id().str() << "' failed: ";
+        std::cout << "% warning: Presolving `" << it->getPredicate()->id().str() << "' failed: ";
         if(m) {
           std::cout << m->msg();
         } else {
@@ -219,9 +219,9 @@ namespace MiniZinc {
     m->addItem(pred);
     recursiveRegisterFns(m, e->envi(), pred);
     std::vector<Expression*> args;
-    for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
+    for ( VarDecl* it : pred->params() ) {
       // TODO: Deal with non-variable parameters
-      VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
+      VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
@@ -240,10 +240,10 @@ namespace MiniZinc {
     GCLock lock;
 
     Constraint constraint = BoolTable;
-    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      if (constraint == BoolTable && (*it)->type().bt() == Type::BT_INT )
+    for ( VarDecl* it : predicate->params() ) {
+      if (constraint == BoolTable && it->type().bt() == Type::BT_INT)
         constraint = IntTable;
-      else if (constraint != Element && ((*it)->type().is_set()))
+      else if ( constraint != Element && it->type().is_set() )
         constraint = Element;
     }
 
@@ -263,8 +263,8 @@ namespace MiniZinc {
     GCLock lock;
 
     std::vector<Expression*> domains;
-    for (auto it = calls[0]->args().begin(); it != calls[0]->args().end(); ++it) {
-      domains.push_back( computeDomainExpr(origin_env, *it) );
+    for (Expression* it : calls[0]->args()) {
+      domains.push_back( computeDomainExpr(origin_env, it) );
     }
 
     auto it = ++calls.begin();
@@ -380,10 +380,10 @@ namespace MiniZinc {
     GCLock lock;
 
     Constraint constraint = BoolTable;
-    for (auto it = predicate->params().begin(); it != predicate->params().end(); ++it) {
-      if (constraint == BoolTable && (*it)->type().bt() == Type::BT_INT )
+    for ( VarDecl* it : predicate->params() ) {
+      if (constraint == BoolTable && it->type().bt() == Type::BT_INT)
         constraint = IntTable;
-      else if (constraint != Element && ((*it)->type().is_set()))
+      else if ( constraint != Element && it->type().is_set() )
         constraint = Element;
     }
 

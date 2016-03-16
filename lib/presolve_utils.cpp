@@ -87,6 +87,7 @@ namespace MiniZinc{
       return exp->cast<Id>()->decl()->ti()->domain();
     Expression* type = nullptr;
     if(exp->type().dim() > 0) {
+//      TODO: Use eval_array_lit instead?
       switch (exp->eid()) {
         case Expression::E_ARRAYLIT: {
           ArrayLit* arr = exp->cast<ArrayLit>();
