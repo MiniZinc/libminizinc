@@ -1,5 +1,12 @@
 # This shell script is to run from the build subdirectory
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON \
+# Usage: optional arg 1 for build type
+if [[ -z "$1" ]]; then
+  BLD_TYPE=Release
+else
+  BLD_TYPE=$1
+fi
+echo $BLD_TYPE
+cmake -DCMAKE_BUILD_TYPE=$BLD_TYPE -DCMAKE_VERBOSE_MAKEFILE=ON \
            -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1263 \
            -DGUROBI_HOME=$GUROBI_HOME \
            -DOSICBC_HOME=$OSICBC_HOME -DOSICBC_LINKEXTRAS="" '# bz2 lapack blas  necessary on ArchLinux' \

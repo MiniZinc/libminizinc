@@ -51,7 +51,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
-  << "-p <N>              use N threads, default: 1. DOES NOT WORK IN GUROBI" << std::endl
+  << "-p <N>              use N threads, default: 1." << std::endl
   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl

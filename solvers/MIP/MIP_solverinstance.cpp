@@ -29,9 +29,9 @@ using namespace std;
 
 using namespace MiniZinc;
 
-#ifndef __NO_EXPORT_MIP_SOLVERINSTANCE__  // define this to avoid exporting
-  MIP_SolverFactory mip_solverfactory;
-#endif  // __NO_EXPORT_MIP_SOLVERINSTANCE__
+SolverFactory* MiniZinc::SolverFactory::createF_MIP() {
+  return new MIP_SolverFactory;
+}
 
 string MIP_SolverFactory::getVersion()
 {

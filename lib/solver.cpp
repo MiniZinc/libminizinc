@@ -82,7 +82,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
-MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f) {}
+MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f) { }
 
 MznSolver::~MznSolver()
 {

@@ -34,7 +34,27 @@
 using namespace std;
 using namespace MiniZinc;
 
+
 int main(int argc, const char** argv) {
+
+  /// Initializing specified solver factories
+#ifdef HAS_FZN
+  static unique_ptr<SolverFactory>
+    pFactoryFZN( SolverFactory::createF_FZN() );
+#endif
+#ifdef HAS_GECODE
+  static unique_ptr<SolverFactory>
+    pFactoryGECODE( SolverFactory::createF_GECODE() );
+#endif
+#ifdef HAS_CHUFFED
+  static unique_ptr<SolverFactory>
+    pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
+#endif
+#ifdef HAS_MIP
+  static unique_ptr<SolverFactory>
+    pFactoryMIP( SolverFactory::createF_MIP() );
+#endif
+
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
   
