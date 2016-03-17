@@ -169,7 +169,6 @@ namespace MiniZinc{
       }
     } else {
       ArrayLit* al = eval_array_lit(env, exp);
-      std::vector<TypeInst*> ranges;
       for (int j = 0; j < al->dims(); ++j) {
         TypeInst* ti = new TypeInst(Location(), Type::parsetint(),
                                     new SetLit(Location(), IntSetVal::a(IntVal(al->min(j)), IntVal(al->max(j)))
