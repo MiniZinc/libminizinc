@@ -356,28 +356,41 @@ void Flattener::flatten()
                 env.flat()->compact();
                 env.output()->compact();
               }
+            }
 
-              if (flag_statistics) {
-                FlatModelStatistics stats = statistics(env);
-                std::cerr << "Generated FlatZinc statistics:\n";
-                std::cerr << "Variables: ";
-                HadOne ho;
-                std::cerr << ho(stats.n_bool_vars, " bool");
-                std::cerr << ho(stats.n_int_vars, " int");
-                std::cerr << ho(stats.n_float_vars, " float");
-                std::cerr << ho(stats.n_set_vars, " set");
-                if (!ho)
-                  std::cerr << "none";
-                std::cerr << "\n";
-                ho.reset();
-                std::cerr << "Constraints: ";
-                std::cerr << ho(stats.n_bool_ct, " bool");
-                std::cerr << ho(stats.n_int_ct, " int");
-                std::cerr << ho(stats.n_float_ct, " float");
-                std::cerr << ho(stats.n_set_ct, " set");
-                if (!ho)
-                  std::cerr << "none";
-                std::cerr << "\n";
+            if (flag_statistics) {
+              FlatModelStatistics stats = statistics(env);
+              std::cerr << "Generated FlatZinc statistics:\n";
+              std::cerr << "Variables: ";
+              HadOne ho;
+              std::cerr << ho(stats.n_bool_vars, " bool");
+              std::cerr << ho(stats.n_int_vars, " int");
+              std::cerr << ho(stats.n_float_vars, " float");
+              std::cerr << ho(stats.n_set_vars, " set");
+              if (!ho)
+                std::cerr << "none";
+              std::cerr << "\n";
+              ho.reset();
+              std::cerr << "Constraints: ";
+              std::cerr << ho(stats.n_bool_ct, " bool");
+              std::cerr << ho(stats.n_int_ct, " int");
+              std::cerr << ho(stats.n_float_ct, " float");
+              std::cerr << ho(stats.n_set_ct, " set");
+              if (!ho)
+                std::cerr << "none";
+              std::cerr << "\n";
+              /// Objective+bounds / SAT
+              SolveI* solveItem = env.flat()->solveItem();
+              if (solveItem->st() != SolveI::SolveType::ST_SAT) {
+                if (solveItem->st() == SolveI::SolveType::ST_MAX) {
+                  cerr << "    This is a maximization problem." << endl;
+                } else {
+                  cerr << "    This is a minimization problem." << endl;
+                }
+//                 cerr << "    Bounds for the objective function: "
+//                   << dObjVarLB << ", " << dObjVarUB << endl;
+              } else {
+                cerr << "    This is a satisfiability problem." << endl;
               }
             }
 
