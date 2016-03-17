@@ -285,6 +285,13 @@ namespace MiniZinc {
     }
 
     for (unsigned int i = 0; i < predicate->params().size(); ++i) {
+      if(predicate->params()[i]->type().dim() > 0) {
+//        TODO: Throw error when array ranges do not match between calls
+//        TODO: Or even better, split off submodels, grouping them by array ranges
+        std::vector<TypeInst*> ranges;
+        computeRanges(origin_env, calls[0]->args()[0], ranges);
+        predicate->params()[i]->ti()->setRanges(ranges);
+      }
       if(domains[i] != nullptr) {
         predicate->params()[i]->ti()->domain(domains[i]);
       }
@@ -340,9 +347,9 @@ namespace MiniZinc {
       m->addItem(pred);
       m->registerFn(e->envi(), pred);
       std::vector<Expression*> args;
-      for (auto it = pred->params().begin(); it != pred->params().end(); ++it) {
+      for (VarDecl* it : pred->params()) {
         // TODO: Deal with non-variable parameters
-        VarDecl* vd = new VarDecl(Location(), (*it)->ti(), (*it)->id(), NULL);
+        VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
         m->addItem(new VarDeclI(Location(), vd));
 
         modelArgs.push_back(vd);
@@ -369,8 +376,17 @@ namespace MiniZinc {
     for (int i = 0; i < modelArgs.size(); ++i) {
       Expression* dom = computeDomainExpr(origin_env, currentCall->args()[i]);
       modelArgs[i]->ti()->domain(dom);
-      if (!construction)
+      if (!construction) {
         modelArgs[i]->flat()->ti()->domain(dom);
+      }
+      if (currentCall->args()[i]->type().dim() > 0) {
+        std::vector<TypeInst*> ranges;
+        computeRanges(origin_env, currentCall->args()[i], ranges);
+        modelArgs[i]->ti()->setRanges(ranges);
+        if (!construction) {
+          modelArgs[i]->flat()->ti()->setRanges(ranges);
+        }
+      }
     }
 
     generateFlatZinc(*e, options.onlyRangeDomains, options.optimize, options.newfzn);

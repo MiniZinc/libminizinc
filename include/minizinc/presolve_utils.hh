@@ -23,6 +23,8 @@ namespace MiniZinc{
 
   Expression* computeDomainExpr(EnvI& env, Expression* exp);
 
+  void computeRanges(EnvI& env, Expression* exp, std::vector<TypeInst*>& ranges);
+
   void generateFlatZinc(Env& env, bool rangeDomains, bool optimizeFZN, bool newFZN);
 
   class Presolver::Solns2Vector : public Solns2Out {
