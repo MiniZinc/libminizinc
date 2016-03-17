@@ -182,24 +182,32 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::solveModel() {
-    if (si == nullptr) {
-      MiniZinc::Options ops = MiniZinc::Options();
-      ops.setBoolParam(constants().opts.solver.allSols.str(), true);
-      ops.setBoolParam(constants().opts.statistics.str(), false);
-
+    if (si != nullptr) {
       if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
-        si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
-        si->setOptions(ops);
+        getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
       } else {
-        // TODO: Handle when GlobalsDir doesn't work for standard solver.
-        if (solver != "") {
-          ops.setStringParam(constants().opts.solver.fzn_solver.str(), solver);
-        }
-        si = new FZNSolverInstance(*e, ops);
+        delete si;
       }
-      solns = new Solns2Vector(e, origin_env);
-      si->setSolns2Out(solns);
+      delete solns;
     }
+
+    MiniZinc::Options ops = MiniZinc::Options();
+    ops.setBoolParam(constants().opts.solver.allSols.str(), true);
+    ops.setBoolParam(constants().opts.statistics.str(), false);
+
+    if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
+      si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
+      si->setOptions(ops);
+    } else {
+      // TODO: Handle when GlobalsDir doesn't work for standard solver.
+      if (solver != "") {
+        ops.setStringParam(constants().opts.solver.fzn_solver.str(), solver);
+      }
+      si = new FZNSolverInstance(*e, ops);
+    }
+    solns = new Solns2Vector(e, origin_env);
+    si->setSolns2Out(solns);
+
     si->processFlatZinc();
     SolverInstance::Status status = si->solve();
 
@@ -341,51 +349,46 @@ namespace MiniZinc {
     assert(currentCall != nullptr);
     GCLock lock;
 
-    bool construction = m->size() == 0;
-    if (construction) {
-      FunctionI* pred = copy(e->envi(), predicate, false, true)->cast<FunctionI>();
-      m->addItem(pred);
-      m->registerFn(e->envi(), pred);
-      std::vector<Expression*> args;
-      for (VarDecl* it : pred->params()) {
-        // TODO: Deal with non-variable parameters
-        VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
-        m->addItem(new VarDeclI(Location(), vd));
-
-        modelArgs.push_back(vd);
-
-        Id* arg = new Id(Location(), vd->id()->str().str(), vd);
-        arg->type(vd->type());
-        args.push_back(arg);
-      }
-      Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
-      pred_call->type(Type::varbool());
-      ConstraintI* constraint = new ConstraintI(Location(), pred_call);
-      m->addItem(constraint);
-      m->addItem(SolveI::sat(Location()));
-    } else {
-//      TODO: Consider just making a new model, this turns out to be rather slow.
-      delete si;
-      delete solns;
-      si = nullptr;
-      solns = nullptr;
-      e->envi().flat_removeItem( e->flat()->solveItem() );
+    if(m->size() != 0) {
+      delete m;
+      delete e;
+      m = new Model();
+      e = new Env(m);
+      origin->mergeStdLib(e->envi(), m);
+      registerBuiltins(*e, m);
     }
 
-    assert( modelArgs.size() == currentCall->args().size() );
-    for (int i = 0; i < modelArgs.size(); ++i) {
+    FunctionI* pred = copy(e->envi(), predicate, false, true)->cast<FunctionI>();
+    m->addItem(pred);
+    recursiveRegisterFns(m, e->envi(), pred);
+    std::vector<Expression*> args;
+    std::vector<VarDecl*> decls;
+    for (VarDecl* it : pred->params()) {
+      // TODO: Deal with non-variable parameters
+      VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
+      m->addItem(new VarDeclI(Location(), vd));
+
+      decls.push_back(vd);
+
+      Id* arg = new Id(Location(), vd->id()->str().str(), vd);
+      arg->type(vd->type());
+      args.push_back(arg);
+    }
+    Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
+    pred_call->type(Type::varbool());
+    ConstraintI* constraint = new ConstraintI(Location(), pred_call);
+    m->addItem(constraint);
+    m->addItem(SolveI::sat(Location()));
+
+
+    assert( decls.size() == currentCall->args().size() );
+    for (int i = 0; i < decls.size(); ++i) {
       Expression* dom = computeDomainExpr(origin_env, currentCall->args()[i]);
-      modelArgs[i]->ti()->domain(dom);
-      if (!construction) {
-        modelArgs[i]->flat()->ti()->domain(dom);
-      }
+      decls[i]->ti()->domain(dom);
       if (currentCall->args()[i]->type().dim() > 0) {
         std::vector<TypeInst*> ranges;
         computeRanges(origin_env, currentCall->args()[i], ranges);
-        modelArgs[i]->ti()->setRanges(ranges);
-        if (!construction) {
-          modelArgs[i]->flat()->ti()->setRanges(ranges);
-        }
+        decls[i]->ti()->setRanges(ranges);
       }
     }
 

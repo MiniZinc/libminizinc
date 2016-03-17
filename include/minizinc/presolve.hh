@@ -126,7 +126,6 @@ namespace MiniZinc {
   class Presolver::CallsSubproblem : public Presolver::Subproblem {
   protected:
     Call* currentCall = nullptr;
-    std::vector<VarDecl*> modelArgs;
 
   public:
     CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="", bool save=false) : Subproblem(
