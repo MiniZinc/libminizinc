@@ -5271,6 +5271,7 @@ namespace MiniZinc {
               reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
             }
           } else {
+            outputVarDecls(env, nvi, nvi->e()->ti());
             outputVarDecls(env, nvi, nvi->e()->e());
           }
           CollectOccurrencesE ce(env.output_vo,nvi);
