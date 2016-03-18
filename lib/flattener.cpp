@@ -236,12 +236,20 @@ void Flattener::flatten()
     }
   }
   
-  if (!filenames.empty() && flag_output_fzn == filenames[0]) {
-    cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
+  if ( filenames.end() !=
+      find( filenames.begin(), filenames.end(), flag_output_fzn ) ||
+       datafiles.end() !=
+      find( datafiles.begin(), datafiles.end(), flag_output_fzn ) ) {
+    cerr << "  WARNING: fzn filename '" << flag_output_fzn
+      << "' matches an input file, ignoring." << endl;
     flag_output_fzn = "";
   }
-  if (!filenames.empty() && flag_output_ozn == filenames[0]) {
-    cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
+  if ( filenames.end() !=
+      find( filenames.begin(), filenames.end(), flag_output_ozn ) ||
+       datafiles.end() !=
+      find( datafiles.begin(), datafiles.end(), flag_output_ozn ) ) {
+    cerr << "  WARNING: ozn filename '" << flag_output_ozn
+      << "' matches an input file, ignoring." << endl;
     flag_output_ozn = "";
   }
   
