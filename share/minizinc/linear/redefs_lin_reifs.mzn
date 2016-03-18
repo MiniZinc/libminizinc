@@ -73,7 +73,7 @@ predicate int_lt_reif(var int: x, var int: y, var bool: b) =
 %% var, var
 predicate int_ne(var int: x, var int: y) =
     my_trace("  int_ne(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-            ++ ", var " ++ show(lb(y)) ++ " .. " ++ show(ub(y)) ++ ")\n") /\
+            ++ ": \(x), var " ++ show(lb(y)) ++ " .. " ++ show(ub(y)) ++ ": \(y))\n") /\
     if fPostproDom_DIFF then
       int_ne(x-y, 0)
     else
@@ -87,7 +87,7 @@ predicate int_ne(var int: x, var int: y) =
 predicate int_ne(var int: x, int: y) =
   %%     int_eq_reif(x, y, false);
      my_trace("  int_ne(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-            ++ ", int " ++ show(y) ++ ")\n") /\
+            ++ ": \(x),  int " ++ show(y) ++ ")\n") /\
      if y in dom(x) then 
        if y==ub(x) then
          x <= y-1
@@ -147,6 +147,8 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_eq_reif(var int: x, int: y, var bool: b) =
+  my_trace("  int_eq_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
+       ++ ": \(x),  int " ++ show(y) ++ ", bool: \(b))\n") /\
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
@@ -172,9 +174,13 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
     
 
 predicate int_ne_reif(var int: x, var int: y, var bool: b) =
+  my_trace("  int_ne_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
+       ++ ": \(x),  var int \(y), bool: \(b))\n") /\
     int_eq_reif(x, y, not b);
 
 predicate int_ne_reif(var int: x, int: y, var bool: b) =
+  my_trace("  int_ne_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
+       ++ ": \(x),  int " ++ show(y) ++ ", bool: \(b))\n") /\
     int_eq_reif(x, y, not b);
 
 %-----------------------------------------------------------------------------%

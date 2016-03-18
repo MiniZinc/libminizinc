@@ -20,6 +20,7 @@ function var int: bool2int(var bool: x) :: promise_total =
       b2i;
 
 predicate bool_eq(var bool: x, var bool: y) =
+  my_trace(" bool_eq: \(x), \(y) \n") /\
   bool2int(x)==bool2int(y);
 
 %---------------------------- BASIC (HALF)REIFS -----------------------------%
