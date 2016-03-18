@@ -396,8 +396,8 @@ namespace MiniZinc {
   void EnvI::createErrorStack(void) {
     errorStack.clear();
     for (unsigned int i=callStack.size(); i--;) {
-      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
-      bool isCompIter = reinterpret_cast<ptrdiff_t>(callStack[i]) & static_cast<ptrdiff_t>(1);
+      Expression* e = callStack[i]->untag();
+      bool isCompIter = callStack[i]->isTagged();
       KeepAlive ka(e);
       errorStack.push_back(std::make_pair(ka,isCompIter));
     }
@@ -478,7 +478,7 @@ namespace MiniZinc {
       for (unsigned int i=0; i<errorStack.size(); i++) {
         Expression* e = errorStack[i].first();
         if (errorStack[i].second) {
-          e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(e) | static_cast<ptrdiff_t>(1));
+          e = e->tag();
         }
         errStackCopy[i] = e;
       }
