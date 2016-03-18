@@ -36,7 +36,7 @@
 
 #include <minizinc/passes/compile_pass.hh>
 #ifdef HAS_GECODE
-#include <minizinc/solvers/gecode/gecode_pass.hh>
+#include <minizinc/passes/gecode_pass.hh>
 #endif
 
 namespace MiniZinc {
