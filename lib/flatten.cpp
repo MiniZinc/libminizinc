@@ -390,8 +390,10 @@ namespace MiniZinc {
   void EnvI::createErrorStack(void) {
     errorStack.clear();
     for (unsigned int i=callStack.size(); i--;) {
-      KeepAlive ka(callStack[i]);
-      errorStack.push_back(ka);
+      Expression* e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(callStack[i]) & ~static_cast<ptrdiff_t>(1));
+      bool isCompIter = reinterpret_cast<ptrdiff_t>(callStack[i]) & static_cast<ptrdiff_t>(1);
+      KeepAlive ka(e);
+      errorStack.push_back(std::make_pair(ka,isCompIter));
     }
   }
   
@@ -461,8 +463,13 @@ namespace MiniZinc {
     std::vector<Expression*> errStackCopy;
     if (errStack) {
       errStackCopy.resize(errorStack.size());
-      for (unsigned int i=0; i<errorStack.size(); i++)
-        errStackCopy[i] = errorStack[i]();
+      for (unsigned int i=0; i<errorStack.size(); i++) {
+        Expression* e = errorStack[i].first();
+        if (errorStack[i].second) {
+          e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(e) | static_cast<ptrdiff_t>(1));
+        }
+        errStackCopy[i] = e;
+      }
     }
     
     std::vector<Expression*>& stack = errStack ? errStackCopy : callStack;
@@ -5175,6 +5182,7 @@ namespace MiniZinc {
               reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
             }
           } else {
+            outputVarDecls(env, nvi, nvi->e()->ti());
             outputVarDecls(env, nvi, nvi->e()->e());
           }
           CollectOccurrencesE ce(env.output_vo,nvi);
@@ -6042,6 +6050,7 @@ namespace MiniZinc {
                     }
                   } else {
                     FunctionI* decl = env.orig->matchFn(env,c);
+                    env.map_remove(c);
                     if (decl->e()) {
                       c->decl(decl);
                       nc = c;
