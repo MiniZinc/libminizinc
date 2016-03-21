@@ -6142,6 +6142,7 @@ namespace MiniZinc {
                     }
                   } else {
                     FunctionI* decl = env.orig->matchFn(env,c);
+                    env.map_remove(c);
                     if (decl->e()) {
                       c->decl(decl);
                       nc = c;
