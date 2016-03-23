@@ -27,10 +27,10 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
     assert(F subset 1..Q,
         "regular: final states in 'F' contain states outside 1..Q",
 
-          my_trace("  regular: index_set(x)=" ++ show(index_set(x))
-            ++ ",  dom_array(x)=" ++ show(dom_array(x))
-            ++ ",  dom_array(a)=" ++ show(1..Q)
-            ++ "\n") /\
+%          my_trace("  regular: index_set(x)=" ++ show(index_set(x))
+%            ++ ",  dom_array(x)=" ++ show(dom_array(x))
+%            ++ ",  dom_array(a)=" ++ show(1..Q)
+%            ++ "\n") /\
         let {
             % If x has index set m..n-1, then a[m] holds the initial state
             % (q0), and a[i+1] holds the state we're in after  processing
@@ -68,23 +68,23 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
             let {
               set of int: va_R = { d[va, vx] | va in dom(a[i]), vx in dom(x[i]) } diff { 0 }     %% Bug in MZN 2.0.4
             } in
-              my_trace("   S" ++ show(i)
-                ++ ": dom(a[i])=" ++ show(dom(a[i]))
-                ++ ", va_R="++show(va_R)
-                ++ ", index_set_2of2(eq_a) diff va_R=" ++ show(index_set_2of2(eq_a) diff va_R)
-                ++ ", dom(a[i+1])=" ++ show(dom(a[i+1]))
-              ) /\
+%              my_trace("   S" ++ show(i)
+%                ++ ": dom(a[i])=" ++ show(dom(a[i]))
+%                ++ ", va_R="++show(va_R)
+%                ++ ", index_set_2of2(eq_a) diff va_R=" ++ show(index_set_2of2(eq_a) diff va_R)
+%                ++ ", dom(a[i+1])=" ++ show(dom(a[i+1]))
+%              ) /\
               a[i+1] in va_R
               /\
               forall (va in index_set_2of2(eq_a) diff va_R)
                 (eq_a[i+1, va] == 0)
               %/\ a[i+1] in min(va_R)..max(va_R)
         )
-         /\ my_trace("  regular -- domains after prop: index_set(x)=" ++ show(index_set(x))
-            ++ ",  dom_array(x)=" ++ show(dom_array(x))
-            ++ ",  dom_array(a)=" ++ show(dom_array(a))
-            ++ "\n")
-        /\ my_trace("\n")
+%         /\ my_trace("  regular -- domains after prop: index_set(x)=" ++ show(index_set(x))
+%            ++ ",  dom_array(x)=" ++ show(dom_array(x))
+%            ++ ",  dom_array(a)=" ++ show(dom_array(a))
+%            ++ "\n")
+%        /\ my_trace("\n")
         /\
         forall(i in index_set(x)) (
    %         a[i+1] = d[a[i], x[i]]      % Determine a[i+1].

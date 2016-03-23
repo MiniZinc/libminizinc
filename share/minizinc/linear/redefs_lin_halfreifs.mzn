@@ -23,7 +23,7 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
     aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
-    my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
+%    my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
   else
     aux_float_le_if_1(x, y, p) /\
@@ -44,7 +44,7 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
-    my_trace__DBG("  aux_int_le_zero_if_0  INDIC: \(x) \\/ \(p) \n") /\
+%    my_trace__DBG("  aux_int_le_zero_if_0  INDIC: \(x) \\/ \(p) \n") /\
     aux_int_le_zero_if_0__IND(x, p)
   else
       x <= ub(x) * p
@@ -58,7 +58,7 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
-    my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
+%    my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
     aux_float_le_zero_if_0__IND(x, p)
   else
     x <= ub(x) * p

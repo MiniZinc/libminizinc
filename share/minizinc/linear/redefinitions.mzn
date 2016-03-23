@@ -20,7 +20,7 @@ function var int: bool2int(var bool: x) :: promise_total =
       b2i;
 
 predicate bool_eq(var bool: x, var bool: y) =
-  my_trace(" bool_eq: \(x), \(y) \n") /\
+%  my_trace(" bool_eq: \(x), \(y) \n") /\
   bool2int(x)==bool2int(y);
 
 %---------------------------- BASIC (HALF)REIFS -----------------------------%
@@ -52,7 +52,7 @@ predicate float_lt(var float: x, var float: y) =
 predicate int_abs(var int: x, var int: z) =
 %% The simplifications seem worse on   league.mzn	model90-18-20.dzn:
 %% but the .lp seem to differ just by order...?? TODO
-  my_trace("  int_abs: dom(x)=\(dom(x))\n") /\
+%  my_trace("  int_abs: dom(x)=\(dom(x))\n") /\
   if lb(x)>=0 then z==x
   elseif ub(x)<=0 then z==-x
   else
@@ -127,14 +127,14 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
         } in
 %    assert(index_set(x) == index_set(AL),
 %    "array_float_minimum_I: second argument must have index set 1..length()") /\
-       my_trace("array_float_minimum_I: " ++ show(lb(m)) ++ " <= m <= " ++ show(ub(m)) 
-        ++ "\n AL = " ++ show(AL)
-        ++ "\n srt_lb = " ++ show(srt)
-        ++ "\n AL_srt = " ++ show(AL_srt)
-        ++ "\n AU_srt = " ++ show(AU_srt)
-        ++ "\n MinUB = " ++ show(MinUB)
-        ++ "\n sActive = " ++ show(sActive)
-        ++ "\n" ) /\
+%       my_trace("array_float_minimum_I: " ++ show(lb(m)) ++ " <= m <= " ++ show(ub(m)) 
+%        ++ "\n AL = " ++ show(AL)
+%        ++ "\n srt_lb = " ++ show(srt)
+%        ++ "\n AL_srt = " ++ show(AL_srt)
+%        ++ "\n AU_srt = " ++ show(AU_srt)
+%        ++ "\n MinUB = " ++ show(MinUB)
+%        ++ "\n sActive = " ++ show(sActive)
+%        ++ "\n" ) /\
       1 == sum(p) /\
       forall (i in index_set(x))
         ( 
@@ -239,8 +239,8 @@ elseif is_fixed(y) then
       ( card(dom(x))==card(dom(y)) /\ 0 in dom(y) /\ not (0 in dom(x)) )
       then int_times(y,x,z)
     else
-       my_trace ( " int_times(x,y,z): dom(x) = " ++ show(dom(x))
-         ++ ", dom(y) = " ++ show(dom(y)) ++ "\n" ) /\
+%       my_trace ( " int_times(x,y,z): dom(x) = " ++ show(dom(x))
+%         ++ ", dom(y) = " ++ show(dom(y)) ++ "\n" ) /\
       let {
           set of int: s = lb(x)..ub(x),
           set of int: r = {lb(x)*lb(y), lb(x)*ub(y), ub(x)*lb(y), ub(x)*ub(y)},
@@ -260,11 +260,11 @@ predicate int_times_unary(var int: x, set of int: domx__, var int: y, var int: z
     %% set of int: domx = if card(domx__)>0 then domx__ else dom(x) endif,
     array[int, int] of var int: pp=eq_encode(x, y)
   } in
-  my_trace ( " int_times_unary(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
+%  my_trace ( " int_times_unary(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
     %  my_trace ( ", domx = " ++ show(domx) ++ "  " ) /\
-    my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
+    %  my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
     z>=min(r) /\ z<=max(r) /\
-    my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
+%    my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
     z==sum(i in index_set_1of2(pp), j in index_set_2of2(pp))
          (i * j * pp[i, j]) /\
     forall(i in index_set_1of2(pp), j in index_set_2of2(pp)
@@ -286,11 +286,11 @@ predicate int_times_unary__NOFN(var int: x, set of int: domx__, var int: y, var 
     if is_fixed(x) \/ is_fixed(y) then
       z==x*y
     else
-     my_trace ( " int_times_unary__NOFN(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
+%     my_trace ( " int_times_unary__NOFN(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
      %  my_trace ( ", domx = " ++ show(domx) ++ "  " ) /\
-     my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
+%     my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
         z>=min(r) /\ z<=max(r) /\
-     my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
+%     my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
         sum(pp)==1 /\
         z==sum(i in index_set(valX), j in index_set(valY))
              (valX[i] * valY[j] * pp[i, j]) /\
@@ -345,12 +345,12 @@ predicate array_float_element(var int: i00, array[int] of float: a,
           array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
         }
         in
-        my_trace("  array_float_element(i00, a[], z:  dom(i00) = " ++ show(dom(i00))
-        ++ "\n     z in: " ++ show(lb(z)) ++ " .. " ++ show(ub(z))
-        ++ "\n     elements of a in: " ++ show(min(i in dom(i00))(a[i])) ++ " .. " ++ show(max(i in dom(i00))(a[i]))
-        ++ "\n     index_set(a) = " ++ show(index_set(a))
-        ++ "\n     index_set(p) = " ++ show(index_set(p))
-        ++ "\n") /\
+%        my_trace("  array_float_element(i00, a[], z:  dom(i00) = " ++ show(dom(i00))
+%        ++ "\n     z in: " ++ show(lb(z)) ++ " .. " ++ show(ub(z))
+%        ++ "\n     elements of a in: " ++ show(min(i in dom(i00))(a[i])) ++ " .. " ++ show(max(i in dom(i00))(a[i]))
+%        ++ "\n     index_set(a) = " ++ show(index_set(a))
+%        ++ "\n     index_set(p) = " ++ show(index_set(p))
+%        ++ "\n") /\
         assert(dom(i00) subset index_set(p), "", true) /\
         sum(i in dom(i00))( a[i] * int2float(p[i]) ) == z        %% add more hull?
       endif
@@ -371,13 +371,13 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
       let {
         array[int] of var int: p = eq_encode(i00),
       } in
-      my_trace (
-          "  array_var_float_element: i in "
-                ++ show(dom(i00))
+%      my_trace (
+%          "  array_var_float_element: i in "
+%                ++ show(dom(i00))
             % "\n  LB(a) = " ++ show([lb(a[i]) | i in ix]) 
             % "\n  UB(a) = " ++ show([ub(a[i]) | i in ix])
             % ",  z in " ++ show(lb(z)) ++ ".." ++ show(ub(z))
-            ++ "\n") /\
+%           ++ "\n") /\
       assert(dom(i00) subset index_set(p), "", true) /\
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
   %    sum(i in dom(i01))( lb(a[i]) * int2float(p[i]) ) <= z /\    %% convexify lower bounds
@@ -433,8 +433,8 @@ predicate array_var_float_element__ROOF(array[int] of var float: a,
 
 predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int] of var int: b, var float: z) =
     if fUseXBZCutGen then
-           my_trace("  % array_var_float_element__XBZ_lb: calling array_var_float_element__XBZ_lb__cutgen: "
-             ++ " \(x), \(b), \(z)\n  % "  ) /\
+%           my_trace("  % array_var_float_element__XBZ_lb: calling array_var_float_element__XBZ_lb__cutgen: "
+%             ++ " \(x), \(b), \(z)\n  % "  ) /\
       array_var_float_element__XBZ_lb__cutgen(x, b, z)   :: MIP_cut
     else
       %% Adding some cuts a priori, also to make solver extract the variables
@@ -487,7 +487,7 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
 % Normally not called because all plugged into the domain.
 % Might be called instead of set_in(x, var set of int s) if s gets fixed?
 predicate set_in(var int: x, set of int: s__) =
-    my_trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
+%    my_trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
       constraint  min(s) <= x /\ x <= max(s);
@@ -527,7 +527,7 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x in s__ else x in dom(x) diff s__ endif
   else
-    my_trace("  set_in_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
+%    my_trace("  set_in_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
     } in
