@@ -27,6 +27,7 @@ using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
 #include <minizinc/utils.hh>
+
 #include <CbcSolver.hpp>
 #include <CbcConfig.h>
 #include <ClpConfig.h>
@@ -70,6 +71,12 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
 //   << "--tuneParam         instruct OSICBC to tune parameters instead of solving   NOT IMPL"
+
+  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+
   << std::endl;
 }
 
@@ -88,101 +95,32 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  
  static   string cbc_cmdOptions;
 
+ static   double absGap=0.99;
+ static   double relGap=1e-8;
+ static   double intTol=1e-6;
+ static   double objDiff=1.0;
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
+  MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
-//      cerr << "\n  WARNING: -a: No solution callbacks implemented for coin-cbc.\n"
-//        "However, kill -SIGINT <pid> should work like Ctrl-C and produce final output" << endl;
-     flag_all_solutions = true;
-   } else
-    if (string(argv[i])=="-f") {
+    flag_all_solutions = true;
+  } else if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (string(argv[i])=="--writeModel") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sExportModel = argv[i];
-  } else if (string(argv[i])=="--cbcArgs" || string(argv[i])=="--cbcFlags"
-      || string(argv[i])=="--cbc-flags") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    cbc_cmdOptions += argv[i];
-  }
-  else if (beginswith(string(argv[i]),"-p")) {
-    cerr << "\n  WARNING: -p: No multi-threading interface for coin-cbc, use --cbcArgs." << endl;
-    string nP(argv[i]);
-    if (nP.length() > 2) {
-      nP.erase(0, 2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nThreads;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for -p: " << nP << endl;
-      goto error;
-    }
-  }
-  else if (beginswith(string(argv[i]),"--timeout")) {
-    string nP(argv[i]);
-    if (nP.length() > 9) {
-      nP.erase(0, 9);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nTimeout;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for --timeout: " << nP << endl;
-      goto error;
-    }
-  }
-   else if (beginswith(string(argv[i]),"--workmem")) {
-      cerr << "  WARNING: --workmem: not supported in coin-cbc" << endl;
-      string nP(argv[i]);
-      if (nP.length() > 9) {
-        nP.erase(0, 9);
-      } else {
-        i++;
-        if (i==argc) {
-          goto error;
-        }
-        nP = argv[i];
-      }
-      istringstream iss(nP);
-      iss >> nWorkMemLimit;
-      if (!iss && !iss.eof()) {
-        cerr << "\nBad value for --workmem: " << nP << endl;
-        goto error;
-      }
-   }
-//   else if (string(argv[i])=="--readParam") {
-//     i++;
-//     if (i==argc) {
-//       goto error;
-//     }
-//     sReadParams = argv[i];
-//   } else if (string(argv[i])=="--writeParam") {
-//     i++;
-//     if (i==argc) {
-//       goto error;
-//     }
-//     sWriteParams = argv[i];
-//   }
-  else
+  } else if ( cop.get( "--writeModel", &sExportModel ) ) {
+  } else if ( cop.get( "-p", &nThreads ) ) {
+  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--readParam", &sReadParams ) ) {
+  } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
+  } else if ( cop.get( "--cbcArgs --cbcFlags --cbc-flags --solver-flags",
+    &cbc_cmdOptions ) ) {
+  } else if ( cop.get( "--absGap", &absGap ) ) {
+  } else if ( cop.get( "--relGap", &relGap ) ) {
+  } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--objDiff", &objDiff ) ) {
+  } else
     return false;
   return true;
 error:
@@ -797,6 +735,10 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //     CbcSolver control(osi);
 //     control.solve();
     
+    model.setAllowableGap( absGap );
+    model.setAllowableFractionGap( relGap );
+    model.setIntegerTolerance( intTol );
+    model.setCutoffIncrement( objDiff );
     
     CoinMessageHandler msgStderr(stderr);
 
