@@ -614,7 +614,7 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel *pModel)
        s = Status::SAT;
        output.statusName = "Feasible";
    } else if (pModel->isAbandoned()) {     // AFTER feas-ty
-       s = Status::ERROR;
+       s = Status::__ERROR;
        output.statusName = "Abandoned";
    } else {
      s = Status::UNKNOWN;
@@ -639,7 +639,7 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
        output.statusName = "Dual infeasible";
 //        s = Status::UNSATorUNBND;
    } else if (osi.isAbandoned()) {
-       s = Status::ERROR;
+       s = Status::__ERROR;
        output.statusName = "Abandoned";
    } else if   // wrong: (pModel->getColSolution())
      (fabs(osi.getObjValue()) < osi.getInfinity())
