@@ -16,8 +16,13 @@ Bug fixes:
  - The output model sometimes did not include all required definitions,
    in particular when array declarations used identifiers to specify the
    dimensions.
+ - The generated FlatZinc sometimes still contained bool variables that were
+   not connected to the rest of the model, which could produce incorrect
+   solutions being printed.
  - Fix a bug where warnings (e.g. about partial functions) could lead to
    crashes.
+ - Fix the bounds computation for integer and float variables, which could
+   produce incorrect bounds for linear expressions. Fixes #94.
 
 Version 2.0.12
 ==============
