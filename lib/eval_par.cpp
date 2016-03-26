@@ -1680,6 +1680,10 @@ namespace MiniZinc {
           return;
         }
         ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
+        if (le) {
+          _bounds.pop_back(); // remove constant (third arg) from stack
+        }
+          
         IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
         for (unsigned int i=al->v().size(); i--;) {
@@ -1801,7 +1805,7 @@ namespace MiniZinc {
     BottomUpIterator<ComputeIntBounds> cbi(cb);
     cbi.run(e);
     if (cb.valid) {
-      assert(cb._bounds.size() > 0);
+      assert(cb._bounds.size() == 1);
       return IntBounds(cb._bounds.back().first,cb._bounds.back().second,true);
     } else {
       return IntBounds(0,0,false);
@@ -1995,6 +1999,9 @@ namespace MiniZinc {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
         ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        if (le) {
+          _bounds.pop_back(); // remove constant (third arg) from stack
+        }
         if (c.args()[le ? 1 : 0]->type().isopt()) {
           valid = false;
           _bounds.push_back(FBounds(0.0,0.0));
