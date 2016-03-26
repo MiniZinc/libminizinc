@@ -103,7 +103,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
-  } else if ( cop.get( "--objDiff", &objDiff ) ) {
+//   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
   return true;

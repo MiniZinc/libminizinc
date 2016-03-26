@@ -75,7 +75,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
   << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
-  << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+//   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
 }
@@ -119,7 +119,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
-  } else if ( cop.get( "--objDiff", &objDiff ) ) {
+//   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
   return true;
@@ -738,7 +738,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     model.setAllowableGap( absGap );
     model.setAllowableFractionGap( relGap );
     model.setIntegerTolerance( intTol );
-    model.setCutoffIncrement( objDiff );
+//     model.setCutoffIncrement( objDiff );
     
     CoinMessageHandler msgStderr(stderr);
 
