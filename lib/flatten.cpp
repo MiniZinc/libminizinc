@@ -2514,6 +2514,18 @@ namespace MiniZinc {
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->v().size(); i++) {
       if (Call* sc = same_call(al->v()[i],cid)) {
+        if (VarDecl* alvi_decl = follow_id_to_decl(al->v()[i])->dyn_cast<VarDecl>()) {
+          if (alvi_decl->ti()->domain()) {
+            typename LinearTraits<Lit>::Domain sc_dom = LinearTraits<Lit>::eval_domain(env,alvi_decl->ti()->domain());
+            typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::compute_bounds(env,sc);
+            if (LinearTraits<Lit>::domain_tighter(sc_dom, sc_bounds)) {
+              coeffv.push_back(c_coeff[i]);
+              alv.push_back(al->v()[i]);
+              continue;
+            }
+          }
+        }
+        
         Val cd = c_coeff[i];
         GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->args()[0]);
