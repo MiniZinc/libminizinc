@@ -67,19 +67,16 @@ namespace MiniZinc {
             Id* s_id = args[0]->cast<Id>();
             std::string solver = "";
             bool save;
-            if (args.size() > 2){
+            if (args.size() > 1){
               solver = args[1]->cast<StringLit>()->v().str();
-              save = args[2]->cast<BoolLit>()->v();
-            } else {
-              save = args[1]->cast<BoolLit>()->v();
             }
 
             if ( s_id->v() == constants().presolve.calls->v() )
-              subproblems.push_back( new CallsSubproblem(model, env, i, options, solver, save) );
+              subproblems.push_back( new CallsSubproblem(model, env, i, options, solver) );
             else if ( s_id->v() == constants().presolve.model->v() )
-              subproblems.push_back( new ModelSubproblem(model, env, i, options, solver, save) );
+              subproblems.push_back( new ModelSubproblem(model, env, i, options, solver) );
             else if ( s_id->v() == constants().presolve.global->v() )
-              subproblems.push_back( new GlobalSubproblem(model, env, i, options, solver, save) );
+              subproblems.push_back( new GlobalSubproblem(model, env, i, options, solver) );
             else
               throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
           } else {
@@ -125,8 +122,8 @@ namespace MiniZinc {
   }
 
   Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options,
-                                    std::string solver, bool save)
-          : origin(origin), origin_env(origin_env), predicate(predicate), options(options), solver(solver), save(save) {
+                                    std::string solver)
+          : origin(origin), origin_env(origin_env), predicate(predicate), options(options), solver(solver) {
     GCLock lock;
     m = new Model();
     e = new Env(m);
