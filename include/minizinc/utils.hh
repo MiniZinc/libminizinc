@@ -88,6 +88,13 @@ namespace MiniZinc {
     CLOParser( int& ii, const int ac, const char* const* av )
       : i(ii), argc(ac), argv(av) { }
     template <class Value=int>
+    inline bool get(  const char* names, // space-separated option list
+                      Value* pResult=nullptr, // pointer to value storage
+                      bool fValueOptional=false // if pResult, for non-string values
+                ) {
+      return getOption( names, pResult, fValueOptional );
+    }
+    template <class Value=int>
     inline bool getOption(  const char* names, // space-separated option list
                             Value* pResult=nullptr, // pointer to value storage
                             bool fValueOptional=false // if pResult, for non-string values

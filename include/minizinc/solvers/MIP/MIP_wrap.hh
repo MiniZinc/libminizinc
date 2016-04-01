@@ -75,7 +75,7 @@ class MIP_wrapper {
     /// Lazy cut. Can cut off otherwise feasible integer solutions.
     /// Callback should be able to produce previously generated cuts again if needed [Gurobi]
     static const int MaskConsType_Lazy = 4;
-    enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
+    enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, __ERROR };
   public:
     /// Columns for SCIP upfront and with obj coefs:
     std::vector<double> colObj, colLB, colUB;

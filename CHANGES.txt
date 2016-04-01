@@ -5,6 +5,25 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.13
+==============
+
+Bug fixes:
+
+ - Fix a bug in the Common Subexpression Elimination table of the compiler,
+   which could lead to some constraints being dropped (especially when using
+   linear redefinitions).
+ - The output model sometimes did not include all required definitions,
+   in particular when array declarations used identifiers to specify the
+   dimensions.
+ - The generated FlatZinc sometimes still contained bool variables that were
+   not connected to the rest of the model, which could produce incorrect
+   solutions being printed.
+ - Fix a bug where warnings (e.g. about partial functions) could lead to
+   crashes.
+ - Fix the bounds computation for integer and float variables, which could
+   produce incorrect bounds for linear expressions. Fixes #94.
+
 Version 2.0.12
 ==============
 

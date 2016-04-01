@@ -12,8 +12,7 @@ predicate equality_encoding(var int: x, array[int] of var int: x_eq_d) =
     /\
     sum(d in dom(x))( d * x_eq_d[d] ) = x
     /\
-    my_trace( "eq_enc: \(x), index_set(pp)=" ++ show(index_set( x_eq_d )) ++ "\n" )
-    /\
+%    my_trace( "eq_enc: \(x), index_set(pp)=" ++ show(index_set( x_eq_d )) ++ "\n" ) /\
     if fPostprocessDomains then
       equality_encoding__POST(x, x_eq_d)
     else true endif
@@ -58,10 +57,10 @@ function array[int] of var int: eq_encode(var int: x) ::promise_total =
   let {
     array[int] of var int: y = array1d(lb(x)..ub(x),[eq_new_var(x,i) | i in lb(x)..ub(x)]);
     constraint equality_encoding(x,y);
-    constraint
-      if card(dom(x))>0 then
-        my_trace__DBG("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ",  card( dom(\(x)) ) = " ++ show(card(dom(x))) ++ "\n")
-      else true endif;
+%    constraint
+%      if card(dom(x))>0 then
+%        my_trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ",  card( dom(\(x)) ) = " ++ show(card(dom(x))) ++ "\n")
+%      else true endif;
  %%   constraint assert(card(dom(x))>1, "  eq_encode: card(dom(\(x))) == " ++ show(card(dom(x))));
   } in  y;
 
@@ -86,11 +85,11 @@ function array[int, int] of var int: eq_encode(var int: x, var int: y) ::promise
   } in pp;
 
 function array[int, int] of int: eq_encode(int: x, int: y) ::promise_total =
-  let {
-    constraint       if card(dom(x))*card(dom(y))>200 then
-      my_trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ", dom(\(y)) = " ++ show(dom(y)) ++ "\n")
-      else true endif;
-  } in
+%  let {
+%    constraint       if card(dom(x))*card(dom(y))>200 then
+%      my_trace("  eq_encode: dom(\(x)) = " ++ show(dom(x)) ++ ", dom(\(y)) = " ++ show(dom(y)) ++ "\n")
+%      else true endif;
+%  } in
     array2d(lb(x)..ub(x), lb(y)..ub(y),
       [if i==x /\ j==y then 1 else 0 endif | i in lb(x)..ub(x), j in lb(y)..ub(y)]);
 

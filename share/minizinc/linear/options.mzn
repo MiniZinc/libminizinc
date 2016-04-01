@@ -85,19 +85,23 @@ float: float_lt_EPS_coef__ = 1e-03;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:
-opt bool: mzn__my_trace_on
-    = false;
-   %= true;
+opt bool: fMIPTrace;
+bool: mzn__my_trace_on =
+    if absent( fMIPTrace ) then false else deopt( fMIPTrace ) endif;
 test my_trace(string: msg) ::promise_total
-  = if occurs(mzn__my_trace_on) /\ deopt(mzn__my_trace_on) then
-      trace(msg)
+  = if mzn__my_trace_on then trace(msg)
     else true endif;
+test my_trace(string: msg, bool: bb) ::promise_total
+  = if mzn__my_trace_on then trace(msg, bb)
+    else bb endif;
+function var bool: my_trace(string: msg, var bool: bb) ::promise_total
+  = if mzn__my_trace_on then trace(msg, bb)
+    else bb endif;
 %%% Set =true to PRINT TRACING messages for the currently debugged constraints:
-opt bool: mzn__my_trace__DBG_on
-   = false;
-   %= true;
+opt bool: fMIPTraceDBG;
+bool: mzn__my_trace__DBG_on =
+    if absent( fMIPTraceDBG ) then false else deopt( fMIPTraceDBG ) endif;
 test my_trace__DBG(string: msg) ::promise_total
-  = if occurs(mzn__my_trace__DBG_on) /\ deopt(mzn__my_trace__DBG_on) then
-      trace(msg)
+  = if mzn__my_trace__DBG_on then trace(msg)
     else true endif;
 

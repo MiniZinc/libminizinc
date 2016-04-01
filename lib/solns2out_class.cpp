@@ -286,8 +286,9 @@ void Solns2Out::init() {
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
       pOut.reset( new ofstream( _opt.flag_output_file ) );
-      MZN_ASSERT_HARD_MSG( pOfs_raw.get(),
-                          "solns2out_base: could not allocate stream object for file output" );
+      MZN_ASSERT_HARD_MSG( pOut.get(),
+        "solns2out_base: could not allocate stream object for file output into "
+        << _opt.flag_output_file );
       checkIOStatus( pOut->good(), _opt.flag_output_file);
     }
   }
