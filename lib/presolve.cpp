@@ -14,6 +14,7 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solver.hh>
+#include <fstream>
 
 namespace MiniZinc {
 
@@ -45,6 +46,22 @@ namespace MiniZinc {
         }
         std::cout << "." << std::endl;
       }
+    }
+
+    if (options.modelOutput != "") {
+      if (options.verbose)
+        std::cerr << "\tPrinting presolved model to '" << options.modelOutput << "' ..." << std::flush;
+
+      std::ofstream os;
+      os.open(options.modelOutput.c_str(), std::ios::out);
+      checkIOStatus (os.good(), " I/O error: cannot open presolved model output file. ");
+      Printer p(os);
+      p.print(env.model());
+      checkIOStatus (os.good(), " I/O error: cannot write presolved model output file. ");
+      os.close();
+
+      if (options.verbose)
+        std::cerr << "done." << std::endl;
     }
   }
 

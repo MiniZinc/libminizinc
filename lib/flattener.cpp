@@ -68,6 +68,9 @@ void Flattener::printHelp(ostream& os)
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+#ifdef PRESOLVE
+  << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved model output" << std::endl
+#endif
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -103,6 +106,9 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
+#ifdef PRESOLVE
+  } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
+#endif
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
@@ -315,6 +321,7 @@ void Flattener::flatten()
                 preOpts.includePaths = includePaths;
                 preOpts.stdLibDir = std_lib_dir;
                 preOpts.globalsDir = globals_dir;
+                preOpts.modelOutput = flag_output_presolved;
                 preOpts.verbose = flag_verbose;
                 preOpts.newfzn = flag_newfzn;
                 preOpts.optimize = flag_optimize;

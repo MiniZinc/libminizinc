@@ -52,6 +52,7 @@ namespace MiniZinc {
     std::vector<std::string> includePaths;
     std::string stdLibDir;
     std::string globalsDir;
+    std::string modelOutput;
 
     bool verbose = false;
     bool newfzn = false;

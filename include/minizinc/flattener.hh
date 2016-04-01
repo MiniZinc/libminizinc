@@ -78,7 +78,6 @@ namespace MiniZinc {
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_noMIPdomains = false;
-    bool flag_no_presolve = false;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
 
@@ -96,6 +95,11 @@ namespace MiniZinc {
 
     clock_t starttime01;
     clock_t lasttime;
+
+#ifdef PRESOLVE
+    bool flag_no_presolve = false;
+    std::string flag_output_presolved;
+#endif
 
   };
 
