@@ -3562,6 +3562,7 @@ namespace MiniZinc {
             let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
             let_exprs[1]->type(Type::varbool());
             let_exprs[1]->addAnnotation(constants().ann.promise_total);
+            let_exprs[1]->addAnnotation(constants().ann.maybe_partial);
             std::vector<Expression*> absent_r_args(1);
             absent_r_args[0] = r->id();
             Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
