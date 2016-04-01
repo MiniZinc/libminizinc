@@ -57,6 +57,9 @@ void Flattener::printHelp(ostream& os)
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
+ #ifdef PRESOLVE
+ << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
+ #endif
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -108,6 +111,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_output_ozn_stdout = true;
 #ifdef PRESOLVE
   } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
+  } else if ( cop.getOption( "--no-presolve" ) ) {
+    flag_no_presolve = true;
 #endif
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
