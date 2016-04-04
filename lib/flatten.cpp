@@ -5228,6 +5228,13 @@ namespace MiniZinc {
             GCLock lock;
             std::vector<Expression*> args(1);
             args[0] = c.args()[c.args().size()-1];
+            if (args[0]->type().dim() > 1) {
+              Call* array1d = new Call(Location().introduce(),ASTString("array1d"),args);
+              Type array1dt = args[0]->type();
+              array1dt.dim(1);
+              array1d->type(array1dt);
+              args[0] = array1d;
+            }
             std::string enumName = createEnumToStringName(ti_id, "_toString_");
             Call* convertEnum = new Call(Location().introduce(),enumName,args);
             convertEnum->type(Type::parstring());
