@@ -379,6 +379,10 @@ void MIP_solverinstance::processFlatZinc(void) {
           vd->ann().contains(constants().ann.output_var)
         ) {
         _varsWithOutput.push_back(vd);
+//         std::cerr << (*vd);
+//         if ( vd->e() )
+//           cerr << " = " << (*vd->e());
+//         cerr << endl;
       }
     }
     if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
@@ -439,9 +443,8 @@ void MIP_solverinstance::processFlatZinc(void) {
             cerr << "  MIP: objective variable index (0-based): " << res << endl;
         }
       }
-//       if ("X_INTRODUCED_108" == string(id->str().c_str()))
-//        std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
-//            << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
+//       if ("X_INTRODUCED_137" == string(id->str().c_str())) {
+//       }
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }
