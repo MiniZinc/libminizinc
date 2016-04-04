@@ -10,24 +10,41 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_CPLEX_WRAPPER_H__
-#define __MIP_CPLEX_WRAPPER_H__
+#ifndef __MIP_OSICBC_WRAPPER_H__
+#define __MIP_OSICBC_WRAPPER_H__
 
-#include <minizinc/solvers/MIP/MIP_wrap.h>
-#include <ilcplex/cplex.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
+                    // CMakeLists.txt needs OSICBC_HOME defined
+// #include <CoinPackedVector.hpp>
+// #include <CoinPackedMatrix.hpp>
+// #include <CoinShallowPackedVector.hpp>
+// #include <CoinTime.hpp>
+// #include <OsiSolverInterface.hpp>
+//  #include <OsiCbcSolverInterface.hpp>
+#include <OsiClpSolverInterface.hpp>
+#include <CbcModel.hpp>
+// #include <CbcSolver.hpp>
 
-class MIP_cplex_wrapper : public MIP_wrapper {
-    CPXENVptr     env = 0;
-    CPXLPptr      lp = 0;
-    int           status;
-    char          cplex_buffer[CPXMESSAGEBUFSIZE];
-    char          cplex_status_buffer[CPXMESSAGEBUFSIZE];
+
+class MIP_osicbc_wrapper : public MIP_wrapper {
+//     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
+    OsiClpSolverInterface osi;
+//     CoinPackedMatrix* matrix = 0;
+    int             error;
+    string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
+//     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
     
     vector<double> x;
+    
+    // To add constraints:
+//     vector<int> rowStarts, columns;
+    vector<CoinPackedVector> rows;
+    vector<double> //element,
+      rowlb, rowub;
 
   public:
-    MIP_cplex_wrapper() { openCPLEX(); }
-    virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
+    MIP_osicbc_wrapper() { openOSICBC(); }
+    virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
     
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(ostream& );
@@ -38,12 +55,17 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 
     /// derived should overload and call the ancestor
 //     virtual void cleanup();
-    void openCPLEX();
-    void closeCPLEX();
+    void openOSICBC() { }
+    void closeOSICBC() { }
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, string *names);
+    
+    void addPhase1Vars() {
+      if (fVerbose)
+        cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << endl;
+    }
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
@@ -54,10 +76,20 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min
     
-    virtual double getInfBound() { return CPX_INFBOUND; }
+    virtual double getInfBound() { return osi.getInfinity(); }
                         
-    virtual int getNCols() { return CPXgetnumcols (env, lp); }
-    virtual int getNRows() { return CPXgetnumrows (env, lp); }
+    virtual int getNCols() {
+      int nc = osi.getNumCols();
+      return nc ? nc : colLB.size();
+    }
+    virtual int getNColsModel() {
+      return osi.getNumCols();
+    }
+    virtual int getNRows() {
+      if (rowlb.size())
+        return rowlb.size();
+      return osi.getNumRows();
+    }
                         
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
@@ -80,10 +112,13 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
+//     OsiSolverInterface& getOsiSolver(void) { return osi; }
+
     void wrap_assert(bool , string , bool fTerm=true);
     
-    /// Need to consider the 100 status codes in CPLEX and change with every version? TODO
-    Status convertStatus(int cplexStatus);
+    /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
+    Status convertStatus(CbcModel *pModel);
+    Status convertStatus();
 };
 
-#endif  // __MIP_CPLEX_WRAPPER_H__
+#endif  // __MIP_OSICBC_WRAPPER_H__

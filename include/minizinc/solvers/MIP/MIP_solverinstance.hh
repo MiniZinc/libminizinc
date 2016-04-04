@@ -12,9 +12,9 @@
 #ifndef __MINIZINC_MIP_SOLVER_INSTANCE_H__
 #define __MINIZINC_MIP_SOLVER_INSTANCE_H__
 
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
-#include <minizinc/solvers/MIP/MIP_wrap.h>
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
 
 namespace MiniZinc {
   
@@ -28,15 +28,42 @@ namespace MiniZinc {
       typedef MIP_wrapper::VarId Variable;
       typedef MiniZinc::Statistics Statistics;
   };
+  
+  /// Generic cut generator
+  /// Callback should be able to produce previously generated cuts again if needed [Gurobi]
+  class CutGen {
+  public:
+    virtual ~CutGen() { }
+    /// Say what type of cuts
+    virtual int getMask() { return MIP_wrapper::MaskConsType_Usercut; }
+    /// Adds new cuts to the 2nd parameter
+    virtual void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&) = 0;
+    virtual void print( std::ostream& ) { }
+  };
+
+  /// XBZ cut generator
+  class XBZCutGen : public CutGen {
+    XBZCutGen() { }
+    MIP_wrapper* pMIP=0;
+  public:
+    XBZCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
+    vector<MIP_wrapper::VarId> varX, varB;
+    MIP_wrapper::VarId varZ;
+    void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
+    void print( std::ostream& );
+  };
 
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
     protected:
       
       const unique_ptr<MIP_wrapper> mip_wrap;
+      vector< unique_ptr<CutGen> > cutGenerators;
       
-//       UNORDERED_NAMESPACE::unordered_set<size_t> previousOutput;
-      
-//       UNORDERED_NAMESPACE::unordered_map<string, VarDecl*> mOutputDecls;
+    public:
+      void registerCutGenerator( unique_ptr<CutGen>&& pCG ) {
+        getMIPWrapper()->cbui.cutMask |= pCG->getMask();
+        cutGenerators.push_back( move( pCG ) );
+      }
       
     public:
       double lastIncumbent;
@@ -50,37 +77,21 @@ namespace MiniZinc {
         assert(mip_wrap.get()); 
         registerConstraints();
       }
-//       void setEnv(Env* pE) {
-//         SolverInstanceBase::setEnv(pE);
-//         registerConstraints();
-//       }
       virtual MIP_wrapper* getMIPWrapper() const { return mip_wrap.get(); }
-//       virtual void cleanup() {
-//         mip_wrap->cleanup();
-//         _varsWithOutput.clear();
-//         SolverInstanceImpl<MIP_solver>::cleanup();
-//       }
 
       virtual Status next(void) { assert(0); return SolverInstance::UNKNOWN; }
       virtual void processFlatZinc(void);
       virtual Status solve(void);
       virtual void resetSolver(void) { }
+      
+      virtual void genCuts
+        ( const MIP_wrapper::Output& , MIP_wrapper::CutInput& , bool fMIPSol);
 
 //       void assignSolutionToOutput();   // needs to be public for the callback?
       virtual void printStatistics(std::ostream&, bool fLegend=0);
       virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
 
-//       /// PARAMS
-//       int nThreads;
-//       bool fVerbose;
-//       std::string sExportModel, sReadParam, sWriteParam;
-//       double nTimeout;
-//       double nWorkMemLimit;
-//       bool all_solutions;
-
     public:
-//       double exprToDbl(Expression* e);
-//       IloNumExpr exprToIloExpr(Expression* e);
       VarId exprToVar(Expression* e);
       void exprToArray(Expression* e, vector<double> &vals);
       void exprToVarArray(Expression* e, vector<VarId> &vars);

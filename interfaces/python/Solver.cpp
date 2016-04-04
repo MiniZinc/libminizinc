@@ -8,7 +8,7 @@
 #include "Solver.h"
 
 static PyObject*
-MznSolver_get_value_helper(MznSolver* self, const char* const name)
+PyMznSolver_get_value_helper(PyMznSolver* self, const char* const name)
 {
   for (unsigned int i=0; i<self->_m->size(); ++i) {
     if (VarDeclI* vdi = (*(self->_m))[i]->dyn_cast<VarDeclI>()) {
@@ -32,7 +32,7 @@ MznSolver_get_value_helper(MznSolver* self, const char* const name)
 }
 
 static PyObject* 
-MznSolver_get_value(MznSolver* self, PyObject* args) {
+PyMznSolver_get_value(PyMznSolver* self, PyObject* args) {
   const char* name;
   PyObject* obj;
   if (!(self->_m)) {
@@ -45,7 +45,7 @@ MznSolver_get_value(MznSolver* self, PyObject* args) {
   }
   if (PyUnicode_Check(obj)) {
     name = PyUnicode_AsUTF8(obj);
-    return MznSolver_get_value_helper(self, name);;
+    return PyMznSolver_get_value_helper(self, name);;
   } else 
   // XXX: INEFFICIENT function to retrieve values, consider optimize it later
   // Python Dictionary would be good
@@ -60,7 +60,7 @@ MznSolver_get_value(MznSolver* self, PyObject* args) {
           return NULL;
         }
         name = PyUnicode_AsUTF8(item);
-        PyObject* value = MznSolver_get_value_helper(self, name);
+        PyObject* value = PyMznSolver_get_value_helper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
           return NULL;
@@ -79,7 +79,7 @@ MznSolver_get_value(MznSolver* self, PyObject* args) {
           return NULL;
         }
         name = PyUnicode_AsUTF8(item);
-        PyObject* value = MznSolver_get_value_helper(self, name);
+        PyObject* value = PyMznSolver_get_value_helper(self, name);
         if (value == NULL) {
           Py_DECREF(ret);
           return NULL;
@@ -95,7 +95,7 @@ MznSolver_get_value(MznSolver* self, PyObject* args) {
 
 
 PyObject*
-MznSolver::next()
+PyMznSolver::next()
 {
   if (solver==NULL)
     throw runtime_error("Solver Object not found");
@@ -113,7 +113,7 @@ MznSolver::next()
 
 
 static void
-MznSolver_dealloc(MznSolver* self)
+PyMznSolver_dealloc(PyMznSolver* self)
 {
   if (self->env)
     delete self->env;
@@ -123,9 +123,9 @@ MznSolver_dealloc(MznSolver* self)
 }
 
 static PyObject*
-MznSolver_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
+PyMznSolver_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
-  MznSolver* self = reinterpret_cast<MznSolver*>(type->tp_alloc(type,0));
+  PyMznSolver* self = reinterpret_cast<PyMznSolver*>(type->tp_alloc(type,0));
   self->solver = NULL;
   self->_m = NULL;
   self->env = NULL;
@@ -133,13 +133,13 @@ MznSolver_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 }
 
 static int
-MznSolver_init(MznSolver* self, PyObject* args)
+PyMznSolver_init(PyMznSolver* self, PyObject* args)
 {
   return 0;
 }
 
 static PyObject*
-MznSolver_next(MznSolver *self)
+PyMznSolver_next(PyMznSolver *self)
 {
   return self->next();
 }

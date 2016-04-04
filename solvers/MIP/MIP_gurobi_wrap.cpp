@@ -25,7 +25,8 @@
 
 using namespace std;
 
-#include <minizinc/solvers/MIP/MIP_gurobi_wrap.h>
+#include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
+#include <minizinc/utils.hh>
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
@@ -51,13 +52,19 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
-  << "-p <N>              use N threads, default: 1. DOES NOT WORK IN GUROBI" << std::endl
-  << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+  << "-p <N>              use N threads, default: 1." << std::endl
+//   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
   << "--readParam <file>  read GUROBI parameters from file" << std::endl
   << "--writeParam <file> write GUROBI parameters to file" << std::endl
-  << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
+//   << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
+
+  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+//   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+
   << std::endl;
 }
 
@@ -74,84 +81,29 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
 
+ static   double absGap=0.99;
+ static   double relGap=1e-8;
+ static   double intTol=1e-6;
+ static   double objDiff=1.0;
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
+  MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (string(argv[i])=="--writeModel") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sExportModel = argv[i];
-  } else if (beginswith(string(argv[i]),"-p")) {
-    string nP(argv[i]);
-    if (nP.length() > 2) {
-      nP.erase(0, 2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nThreads;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for -p: " << nP << endl;
-      goto error;
-    }
-  } else if (beginswith(string(argv[i]),"--timeout")) {
-    string nP(argv[i]);
-    if (nP.length() > 9) {
-      nP.erase(0, 9);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nTimeout;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for --timeout: " << nP << endl;
-      goto error;
-    }
-  } else if (beginswith(string(argv[i]),"--workmem")) {
-    cerr << "  WARNING: --workmem: not supported in coin-cbc" << endl;
-    string nP(argv[i]);
-    if (nP.length() > 9) {
-      nP.erase(0, 9);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nWorkMemLimit;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for --workmem: " << nP << endl;
-      goto error;
-    }
-  } else if (string(argv[i])=="--readParam") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sReadParams = argv[i];
-  } else if (string(argv[i])=="--writeParam") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sWriteParams = argv[i];
+  } else if ( cop.get( "--writeModel", &sExportModel ) ) {
+  } else if ( cop.get( "-p", &nThreads ) ) {
+  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--readParam", &sReadParams ) ) {
+  } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
+  } else if ( cop.get( "--absGap", &absGap ) ) {
+  } else if ( cop.get( "--relGap", &relGap ) ) {
+  } else if ( cop.get( "--intTol", &intTol ) ) {
+//   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
   return true;
@@ -233,25 +185,25 @@ void MIP_gurobi_wrapper::doAddVars
   wrap_assert( !error,  "Failed to update model." );
 }
 
+static char getGRBSense( MIP_wrapper::LinConType s ) {
+    switch (s) {
+      case MIP_wrapper::LQ:
+        return GRB_LESS_EQUAL;
+      case MIP_wrapper::EQ:
+        return GRB_EQUAL;
+      case MIP_wrapper::GQ:
+        return GRB_GREATER_EQUAL;
+      default:
+        throw runtime_error("  MIP_gurobi_wrapper: unknown constraint sense");
+    }
+}
+
 void MIP_gurobi_wrapper::addRow
   (int nnz, int* rmatind, double* rmatval, MIP_wrapper::LinConType sense,
    double rhs, int mask, string rowName)
 {
   /// Convert var types:
-  char ssense=0;
-    switch (sense) {
-      case LQ:
-        ssense = GRB_LESS_EQUAL;
-        break;
-      case EQ:
-        ssense = GRB_EQUAL;
-        break;
-      case GQ:
-        ssense = GRB_GREATER_EQUAL;
-        break;
-      default:
-        throw runtime_error("  MIP_wrapper: unknown constraint type");
-    }
+  char ssense=getGRBSense(sense);
   const int ccnt=0;
   const int rcnt=1;
   const int rmatbeg[] = { 0 };
@@ -264,75 +216,108 @@ void MIP_gurobi_wrapper::addRow
 }
 
 /// SolutionCallback ------------------------------------------------------------------------
-/// Who ensures thread-safety?
+/// Gurobi ensures thread-safety
 static int __stdcall
 solcallback(GRBmodel *model,
            void     *cbdata,
            int       where,
            void     *usrdata)
 {
-    MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) usrdata;
-    double nodecnt, actnodes, objVal;
-    int    solcnt;
-    int    newincumbent=0;
+  MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) usrdata;
+  double nodecnt=0.0, actnodes=0.0, objVal=0.0;
+  int    solcnt=0;
+  int    newincumbent=0;
 
-    if (where == GRB_CB_MIP) {
-        /* General MIP callback */
-        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
-          GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
-       info->pOutput->nOpenNodes = actnodes;
-    } else if (where == GRB_CB_MESSAGE) {
-      /* Message callback */
-      if ( info->fVerb ) {
-        char *msg;
-        GRBcbget(cbdata, where, GRB_CB_MSG_STRING, &msg);
-        cerr << msg << flush;
+  if ( GRB_CB_MIP==where ) {
+      /* General MIP callback */
+      GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
+        GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
+      info->pOutput->nOpenNodes = actnodes;
+  } else if ( GRB_CB_MESSAGE==where ) {
+    /* Message callback */
+    if ( info->fVerb ) {
+      char *msg;
+      GRBcbget(cbdata, where, GRB_CB_MSG_STRING, &msg);
+      cerr << msg << flush;
+    }
+  } else if ( GRB_CB_MIPSOL==where ) {
+      /* MIP solution callback */
+      GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
+      info->pOutput->nNodes = nodecnt;
+      GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
+      GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+
+      if ( solcnt ) {
+        
+        if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+          newincumbent = 1;
+          info->pOutput->objVal = objVal;
+          info->pOutput->status = MIP_wrapper::SAT;
+          info->pOutput->statusName = "feasible from a callback";
+        }
       }
-    } else
-    if (where != GRB_CB_MIPSOL)
-      return 0;
-    
-    /* MIP solution callback */
- 
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
-    info->pOutput->nNodes = nodecnt;
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+    if ( newincumbent ) {
+        assert(info->pOutput->x);
+        GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
+        
+        info->pOutput->dCPUTime = -1;
 
-    if ( solcnt ) {
-      
-      if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
-         newincumbent = 1;
-         info->pOutput->objVal = objVal;
-        info->pOutput->status = MIP_wrapper::SAT;
-        info->pOutput->statusName = "feasible from a callback";
+        /// Call the user function:
+        if (info->solcbfn)
+            (*info->solcbfn)(*info->pOutput, info->ppp);
+    }
+    /// Callback for lazy cuts
+    if ( info->cutcbfn && info->cutMask&MIP_wrapper::MaskConsType_Lazy ) {
+      MIP_wrapper::CutInput cutInput;
+      info->cutcbfn( *info->pOutput, cutInput, info->ppp, true );
+      for ( auto& cd : cutInput ) {
+//         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
+        if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {
+          int error = GRBcblazy(cbdata, cd.rmatind.size(),
+                  cd.rmatind.data(), cd.rmatval.data(), 
+                  getGRBSense(cd.sense), cd.rhs);
+          if (error)
+            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+        }
       }
     }
-
-//    if ( nodecnt >= info->lastlog + 100  ||  newincumbent ) {
-//       double walltime;
-//       double dettime;
-
-//       status = CPXgettime (env, &walltime);
-//       if ( status )  goto TERMINATE;
-// 
-//       status = CPXgetdettime (env, &dettime);
-//       if ( status )  goto TERMINATE;
-// 
-//    }
-
-   if ( newincumbent ) {
-      assert(info->pOutput->x);
-      GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
-      
-      info->pOutput->dCPUTime = -1;
-
-      /// Call the user function:
-      if (info->solcbfn)
-          (*info->solcbfn)(*info->pOutput, info->ppp);
-   }
-   
-   return 0;
+  } else if ( GRB_CB_MIPNODE==where  ) {
+    int status;
+    GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &status);
+    if ( status == GRB_OPTIMAL && info->cutcbfn ) {    // if cut handler given
+      MIP_wrapper::Output outpRlx;
+      outpRlx.x = info->pOutput->x;  // using the sol output storage  TODO?
+      outpRlx.nCols = info->pOutput->nCols;
+      assert( outpRlx.x && outpRlx.nCols );
+//       GRBcbget(cbdata, where, GRB_CB_MIPNODE_RELOBJ, outpRlx.objVal);
+      GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, (void*)outpRlx.x);
+      MIP_wrapper::CutInput cutInput;
+      info->cutcbfn( outpRlx, cutInput, info->ppp, false );
+//       static int nCuts=0;
+//       nCuts += cutInput.size();
+//       if ( cutInput.size() )
+//         cerr << "\n   N CUTS:  " << nCuts << endl;
+      for ( auto& cd : cutInput ) {
+        assert( cd.mask &
+          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
+        if ( cd.mask & MIP_wrapper::MaskConsType_Usercut ) {
+          int error = GRBcbcut(cbdata, cd.rmatind.size(),
+                  cd.rmatind.data(), cd.rmatval.data(), 
+                  getGRBSense(cd.sense), cd.rhs);
+          if (error)
+            cerr << "  GRB_wrapper: failed to add user cut. " << endl;
+        }
+        if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {
+          int error = GRBcblazy(cbdata, cd.rmatind.size(),
+                  cd.rmatind.data(), cd.rmatval.data(), 
+                  getGRBSense(cd.sense), cd.rhs);
+          if (error)
+            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+        }
+      }
+    }
+  }  
+  return 0;
 } /* END logcallback */
 // end SolutionCallback ---------------------------------------------------------------------
 
@@ -410,7 +395,51 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //      error =  GRB_setdblparam (env, GRB_PARAM_MIP_Limits_TreeMemory, nWorkMemLimit);
 //      wrap_assert(!error, "Failed to set GRB_PARAM_MIP_Limits_TreeMemory.", false);
 //     }
+
+   if ( true ) {
+     error = GRBsetdblparam( GRBgetenv(model),  "MIPGapAbs", absGap );
+     wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
+   }
+   if ( true ) {
+     error = GRBsetdblparam( GRBgetenv(model),  "MIPGap", relGap );
+     wrap_assert(!error, "Failed to set  MIPGap.", false);
+   }
+   if ( true ) {
+     error = GRBsetdblparam( GRBgetenv(model),  "IntFeasTol", intTol );
+     wrap_assert(!error, "Failed to set   IntFeasTol.", false);
+   }
+
     
+       /// Solution callback
+   output.nCols = colObj.size();
+   x.resize(output.nCols);
+   output.x = &x[0];
+   if (true) {                 // Need for logging
+      cbui.fVerb = fVerbose;
+      if ( !flag_all_solutions )
+        cbui.solcbfn = 0;
+      if ( cbui.cutcbfn ) {
+        assert( cbui.cutMask & (MaskConsType_Usercut|MaskConsType_Lazy) );
+        if ( cbui.cutMask & MaskConsType_Usercut ) {
+          // For user cuts, needs to keep some info after presolve
+          if ( fVerbose )
+            cerr << "  MIP_gurobi_wrapper: user cut callback enabled, setting PreCrush=1" << endl;
+          error = GRBsetintparam(GRBgetenv(model), GRB_INT_PAR_PRECRUSH, 1);
+          wrap_assert(!error, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
+        }
+        if ( cbui.cutMask & MaskConsType_Lazy ) {
+          // For lazy cuts, Gurobi disables some presolves
+          if ( fVerbose )
+            cerr << "  MIP_gurobi_wrapper: lazy cut callback enabled, setting LazyConstraints=1" << endl;
+          error = GRBsetintparam(GRBgetenv(model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
+          wrap_assert(!error, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);
+        }
+      }
+      error = GRBsetcallbackfunc(model, solcallback, (void *) &cbui);
+      wrap_assert(!error, "Failed to set callback", false);
+   }
+
+   /// after all modifs
     if (sReadParams.size()) {
      error = GRBreadparams (GRBgetenv(model), sReadParams.c_str());
      wrap_assert(!error, "Failed to read GUROBI parameters.", false);
@@ -420,18 +449,6 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      error = GRBwriteparams (GRBgetenv(model), sWriteParams.c_str());
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
-
-       /// Solution callback
-   output.nCols = colObj.size();
-   x.resize(output.nCols);
-   output.x = &x[0];
-   if (true) {                 // Need for logging
-      cbui.fVerb = fVerbose;
-      if ( !flag_all_solutions )
-        cbui.solcbfn = 0;
-      error = GRBsetcallbackfunc(model, solcallback, (void *) &cbui);
-      wrap_assert(!error, "Failed to set callback", false);
-   }
 
    output.dCPUTime = std::clock();
 

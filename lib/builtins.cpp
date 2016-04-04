@@ -759,12 +759,13 @@ namespace MiniZinc {
     Expression* cur = e;
     for (;;) {
       if (cur==NULL) {
-        if (lastid==NULL) {
-          throw EvalError(env, e->loc(),"invalid argument to dom");
+        if (lastid==NULL || lastid->decl()->ti()->domain()==NULL) {
+          IntBounds b = compute_int_bounds(env,e);
+          if (b.valid)
+            return IntSetVal::a(b.l,b.u);
+          else
+            return IntSetVal::a(-IntVal::infinity(),IntVal::infinity());
         } else {
-          if (lastid->decl()->ti()->domain()==NULL) {
-            throw EvalError(env, e->loc(),"invalid argument to dom");
-          }
           return eval_intset(env,lastid->decl()->ti()->domain());
         }
       }

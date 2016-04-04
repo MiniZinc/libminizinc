@@ -20,7 +20,19 @@
 #include <sstream>
 #include <cassert>
 
-using namespace std;
+
+/// Facilitate lhs computation of a cut
+inline
+double computeSparse( int n, const int* ind, const double* coef, const double* dense, int nVarsDense ) {
+  assert( ind && coef && dense );
+  double val=0.0;
+  for ( int i=0; i<n; ++i ) {
+    assert( ind[i]>=0 );
+    assert( ind[i]<nVarsDense );
+    val += coef[i] * dense[ ind [ i ] ];
+  }
+  return val;
+}
 
 class MIP_wrapper;
 /// Namespace MIP_WrapperFactory providing static service functions
@@ -35,7 +47,7 @@ namespace MIP_WrapperFactory {
 //     Wrap_MIP* GetCplexMIQP();
 
     bool processOption(int& i, int argc, const char** argv);
-    string getVersion( );
+    std::string getVersion( );
     void printHelp(std::ostream& );
 };
 
@@ -56,15 +68,19 @@ class MIP_wrapper {
       GQ = 1
     };
     
+    // CPLEX 12.6.2 advises anti-symmetry constraints to be user+lazy
     static const int MaskConsType_Normal = 1;
+    /// User cut. Only cuts off fractional points, no integer feasible points
     static const int MaskConsType_Usercut = 2;
+    /// Lazy cut. Can cut off otherwise feasible integer solutions.
+    /// Callback should be able to produce previously generated cuts again if needed [Gurobi]
     static const int MaskConsType_Lazy = 4;
-    enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR };
-  protected:
+    enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, __ERROR };
+  public:
     /// Columns for SCIP upfront and with obj coefs:
-    vector<double> colObj, colLB, colUB;
-    vector<VarType> colTypes;
-    vector<string> colNames;
+    std::vector<double> colObj, colLB, colUB;
+    std::vector<VarType> colTypes;
+    std::vector<std::string> colNames;
 //     , rowLB, rowUB, elements;
 //     veci whichInt
 //     , starts, column;
@@ -78,10 +94,10 @@ class MIP_wrapper {
   public:
     struct Output {
       Status status;
-      string statusName="Untouched";
+      std::string statusName="Untouched";
       double objVal = 1e308;
       double bestBound = 1e308;
-      int nCols;
+      int nCols = 0;
       int nObjVarIndex=-1;
       const double *x = 0;
       int nNodes=0;
@@ -90,16 +106,54 @@ class MIP_wrapper {
     };      
     Output output;
 
+    /// General cut definition, could be used for addRow() too
+    class CutDef {
+      CutDef() { }
+    public:
+      CutDef( LinConType s, int m ) : sense( s ), mask( m ) { }
+      std::vector<int> rmatind;
+      std::vector<double> rmatval;
+      LinConType sense=LQ;
+      double rhs=0.0;
+      int mask = 0; // need to know what type of cuts are registered before solve()  TODO
+      std::string rowName = "";
+      void addVar( int i, double c ) {
+        rmatind.push_back( i );
+        rmatval.push_back( c );
+      }
+      double computeViol( const double* x, int nCols ) {
+        double lhs = computeSparse( rmatind.size(), rmatind.data(), rmatval.data(), x, nCols );
+        if ( LQ==sense ) {
+          return lhs-rhs;
+        } else if ( GQ==sense ) {
+          return rhs-lhs;
+        } else
+          assert( 0 );
+        return 0.0;
+      }
+    };
+    /// Cut callback fills one
+    typedef std::vector<CutDef> CutInput;
+    
   public:
     /// solution callback handler, the wrapper might not have these callbacks implemented
     typedef void (*SolCallbackFn)(const Output& , void* );
+    /// cut callback handler, the wrapper might not have these callbacks implemented
+    typedef void (*CutCallbackFn)(const Output& , CutInput& , void* ,
+                  bool fMIPSol  // if with a MIP feas sol - lazy cuts only
+                                 );
     struct CBUserInfo {
       MIP_wrapper::Output* pOutput=0;
+      MIP_wrapper::Output* pCutOutput=0;
       bool fVerb = false;              // used in Gurobi
-      void *ppp=0;  // external info
+      void *ppp=0;  // external info. Intended to keep MIP_solverinstance
       SolCallbackFn solcbfn=0;
+      CutCallbackFn cutcbfn=0;
+      /// Union of all flags used for the registered callback cuts
+      /// See MaskConstrType_..
+      /// Solvers need to know this
+      int cutMask = 0; // can be any combination of User/Lazy
     };
-  protected:
     CBUserInfo cbui;
 
   public:
@@ -122,7 +176,7 @@ class MIP_wrapper {
   private:
     /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
     virtual VarId addVarLocal(double obj, double lb, double ub, 
-                             VarType vt, string name="") {
+                             VarType vt, std::string name="") {
 //       cerr << "  addVarLocal: colObj.size() == " << colObj.size()
 //         << " obj == " <<obj
 //         << " lb == " << lb
@@ -145,7 +199,7 @@ class MIP_wrapper {
     }
     /// actual adding new variables to the solver. "Updates" the model (e.g., Gurobi). No direct use
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names) = 0;
+      VarType *vt, std::string *names) = 0;
 
   public:
     /// debugging stuff
@@ -154,7 +208,7 @@ class MIP_wrapper {
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
-                             VarType vt, string name=0) {
+                             VarType vt, std::string name=0) {
 //       cerr << "  AddVar: " << lb << ":   ";
       VarId res = addVarLocal(obj, lb, ub, vt, name);
       if (fPhase1Over)
@@ -169,11 +223,11 @@ class MIP_wrapper {
 //       auto itFound = sLitValues.find(v);
 //       if (sLitValues.end() != itFound)
 //         return itFound->second;
-      ostringstream oss;
+      std::ostringstream oss;
       oss << "lit_" << v << "__" << (nLitVars++);
-      string name = oss.str();
+      std::string name = oss.str();
       size_t pos = name.find('.');
-      if (string::npos != pos)
+      if (std::string::npos != pos)
         name.replace(pos, 1, "p");
       VarId res = addVarLocal(0.0, v, v, REAL, name);
       if (fPhase1Over)
@@ -187,10 +241,10 @@ class MIP_wrapper {
       assert(0 == getNColsModel());
       assert(! fPhase1Over);
       if (fVerbose)
-        cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << flush;
+        std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << std::flush;
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
       if (fVerbose)
-        cerr << " done." << endl;
+        std::cerr << " done." << std::endl;
       fPhase1Over = true;    // SCIP needs after adding
     }
 
@@ -198,7 +252,7 @@ class MIP_wrapper {
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "") = 0;
+                        std::string rowName = "") = 0;
     int nAddedRows = 0;   // for name counting
     /// adding an implication
 //     virtual void addImpl() = 0;
@@ -221,6 +275,14 @@ class MIP_wrapper {
       cbui.ppp = info;
       cbui.solcbfn = cbfn;
     }
+    /// solution callback handler, the wrapper might not have these callbacks implemented
+    virtual void provideCutCallback(CutCallbackFn cbfn, void* info) {
+      assert(cbfn);
+      cbui.pCutOutput = 0;  // &outpCuts;   thread-safety: caller has to provide this
+      cbui.ppp = info;
+      cbui.cutcbfn = cbfn;
+    }
+
     virtual void solve() = 0; 
     
     /// OUTPUT, should also work in a callback
@@ -230,7 +292,7 @@ class MIP_wrapper {
     virtual double getCPUTime() = 0;
     
     virtual Status getStatus() = 0;
-    virtual string getStatusName() = 0;
+    virtual std::string getStatusName() = 0;
 
      virtual int getNNodes() = 0;
      virtual int getNOpen() = 0;

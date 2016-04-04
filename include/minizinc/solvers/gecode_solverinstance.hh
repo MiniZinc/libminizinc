@@ -26,7 +26,7 @@
 #include <gecode/float.hh>
 #endif
 
-#include <minizinc/flattener.h>
+#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
 

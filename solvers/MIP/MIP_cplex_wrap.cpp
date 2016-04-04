@@ -22,9 +22,10 @@
 #include <cmath>
 #include <stdexcept>
 
-using namespace std;
+#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+#include <minizinc/utils.hh>
 
-#include <minizinc/solvers/MIP/MIP_cplex_wrap.h>
+using namespace std;
 
 /// Linking this module provides these functions:
 MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
@@ -54,12 +55,18 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
-  << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+//   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
   << "--readParam <file>  read CPLEX parameters from file" << std::endl
   << "--writeParam <file> write CPLEX parameters to file" << std::endl
-  << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
+//   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
+
+  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+//   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+
   << std::endl;
 }
 
@@ -76,83 +83,29 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
 
+ static   double absGap=0.99;
+ static   double relGap=1e-8;
+ static   double intTol=1e-6;
+ static   double objDiff=1.0;
 
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
+  MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (string(argv[i])=="--writeModel") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sExportModel = argv[i];
-  } else if (beginswith(string(argv[i]),"-p")) {
-    string nP(argv[i]);
-    if (nP.length() > 2) {
-      nP.erase(0, 2);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nThreads;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for -p: " << nP << endl;
-      goto error;
-    }
-  } else if (beginswith(string(argv[i]),"--timeout")) {
-    string nP(argv[i]);
-    if (nP.length() > 9) {
-      nP.erase(0, 9);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nTimeout;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for --timeout: " << nP << endl;
-      goto error;
-    }
-  } else if (beginswith(string(argv[i]),"--workmem")) {
-    string nP(argv[i]);
-    if (nP.length() > 9) {
-      nP.erase(0, 9);
-    } else {
-      i++;
-      if (i==argc) {
-        goto error;
-      }
-      nP = argv[i];
-    }
-    istringstream iss(nP);
-    iss >> nWorkMemLimit;
-    if (!iss && !iss.eof()) {
-      cerr << "\nBad value for --workmem: " << nP << endl;
-      goto error;
-    }
-  } else if (string(argv[i])=="--readParam") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sReadParams = argv[i];
-  } else if (string(argv[i])=="--writeParam") {
-    i++;
-    if (i==argc) {
-      goto error;
-    }
-    sWriteParams = argv[i];
+  } else if ( cop.get( "--writeModel", &sExportModel ) ) {
+  } else if ( cop.get( "-p", &nThreads ) ) {
+  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--readParam", &sReadParams ) ) {
+  } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
+  } else if ( cop.get( "--absGap", &absGap ) ) {
+  } else if ( cop.get( "--relGap", &relGap ) ) {
+  } else if ( cop.get( "--intTol", &intTol ) ) {
+//   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
   return true;
@@ -242,25 +195,25 @@ void MIP_cplex_wrapper::doAddVars
   wrap_assert( !status,  "Failed to declare variables." );
 }
 
+static char getCPLEXConstrSense(MIP_wrapper::LinConType sense) {
+    switch (sense) {
+      case MIP_wrapper::LQ:
+        return 'L';
+      case MIP_wrapper::EQ:
+        return 'E';
+      case MIP_wrapper::GQ:
+        return 'G';
+      default:
+        throw runtime_error("  MIP_cplex_wrapper: unknown constraint type");
+    }
+}
+
 void MIP_cplex_wrapper::addRow
   (int nnz, int* rmatind, double* rmatval, MIP_wrapper::LinConType sense,
    double rhs, int mask, string rowName)
 {
   /// Convert var types:
-  char ssense=0;
-    switch (sense) {
-      case LQ:
-        ssense = 'L';
-        break;
-      case EQ:
-        ssense = 'E';
-        break;
-      case GQ:
-        ssense = 'G';
-        break;
-      default:
-        throw runtime_error("  MIP_wrapper: unknown constraint type");
-    }
+  char ssense=getCPLEXConstrSense(sense);
   const int ccnt=0;
   const int rcnt=1;
   const int rmatbeg[] = { 0 };
@@ -361,6 +314,191 @@ TERMINATE:
 } /* END logcallback */
 // end SolutionCallback ---------------------------------------------------------------------
 
+/// Cut callbacks, mostly copied from admipex5.c, CPLEX 12.6.3
+/* The following macro defines the smallest improvement 
+   on the value of the objective function that is required
+   when adding user cuts from within a callback.
+   If the improvement on the value of the ojective function
+   is not large enough, the callback will abort the cut loop. */
+
+#define EPSOBJ 0.1
+
+/* The following structure will hold the information we need to 
+   pass to the cut callback function */
+
+struct cutinfo {
+   CPXLPptr lp;
+   int      numcols;
+   int      num;
+   double   *x;
+   int      *beg;
+   int      *ind; 
+   double   *val;
+   double   *rhs;
+   int      nodeid;
+   double   nodeobjval;
+   int      objsen;
+   MIP_wrapper::CBUserInfo *info=0;
+};
+typedef struct cutinfo CUTINFO, *CUTINFOptr;
+
+/* Init information on the node objval for the user cut callback */
+
+static void 
+initnodeobjvalinfo (CPXENVptr env, CPXLPptr lp, CUTINFOptr cutinfo)
+{
+   cutinfo->nodeid = -1;
+   cutinfo->nodeobjval = 0.0;
+   cutinfo->objsen = CPXgetobjsen (env, lp);
+   if ( cutinfo->objsen == CPX_MIN )
+      cutinfo->objsen = 1;
+   else
+      cutinfo->objsen = -1;
+} /* END initnodeobjvalinfo */
+
+
+
+static int CPXPUBLIC 
+myusercutcallback (CPXCENVptr env,
+               void       *cbdata,
+               int        wherefrom,
+               void       *cbhandle,
+               int        *useraction_p)
+{
+   int status = 0;
+
+   CUTINFOptr cutinfo = (CUTINFOptr) cbhandle;
+
+   int      numcols  = cutinfo->numcols;
+   int      numcuts  = cutinfo->num;
+//    double   *x       = cutinfo->x;
+//    int      *beg     = cutinfo->beg;
+//    int      *ind     = cutinfo->ind;
+//    double   *val     = cutinfo->val;
+//    double   *rhs     = cutinfo->rhs;
+//    int      *cutind  = NULL;
+//    double   *cutval  = NULL;
+   double   cutvio;
+   int      addedcuts = 0;
+   int      i, j, k, cutnz;
+   MIP_wrapper::CBUserInfo *info = cutinfo->info;
+//    double   *x       = info->pCutOutput->x;
+
+   *useraction_p = CPX_CALLBACK_DEFAULT; 
+
+   /* If we are called as a user cut callback, decide
+      first if we want to add cuts or abort the cut loop.
+      When adding user cuts with purgeable flag set to 
+      CPX_USECUT_PURGE or CPX_USECUT_FILTER, it is important 
+      to avoid the possibility of an infinite cut loop, where 
+      the same cuts are added to the LP and then immediately 
+      purged at every cut pass. Such a situation can be avoided,
+      for instance, by applying a tailing off criterion and aborting 
+      the cut loop where no progress in the objval is observed.
+      Note, however, that the same approach must not be applied
+      with lazy constraints. In this case, if lazy constraints are
+      added with purgeable flag set to CPX_USECUT_PURGE, adding
+      the same lazy constraint more than once could be required
+      to ensure the correctness of the final result. */
+
+   bool fMIPSol=true;
+   if ( wherefrom == CPX_CALLBACK_MIP_CUT_LOOP ||
+        wherefrom == CPX_CALLBACK_MIP_CUT_LAST   ) {
+      int    oldnodeid     = cutinfo->nodeid;
+      double oldnodeobjval = cutinfo->nodeobjval;
+
+      fMIPSol = false;
+   
+      /* Retrieve nodeid and node objval of the current node */
+
+      status = CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
+                                       CPX_CALLBACK_INFO_NODE_SEQNUM,
+                                       &cutinfo->nodeid);
+      if ( status ) {
+         fprintf(stderr, "Failed to get node id.\n");
+         goto TERMINATE;
+      }
+
+      status = CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
+                                       CPX_CALLBACK_INFO_NODE_OBJVAL,
+                                       &cutinfo->nodeobjval);
+      if ( status ) {
+         fprintf(stderr, "Failed to get node objval.\n");
+         goto TERMINATE;
+      }
+
+      /* Abort the cut loop if we are stuck at the same node
+         as before and there is no progress in the node objval */
+
+      if ( oldnodeid == cutinfo->nodeid ) {
+         double objchg = (cutinfo->nodeobjval - oldnodeobjval);
+         /* Multiply objchg by objsen to normalize 
+            the change in the objective function to 
+            the case of a minimization problem */
+         objchg *= cutinfo->objsen;
+         if ( objchg <= EPSOBJ ) {
+            *useraction_p = CPX_CALLBACK_ABORT_CUT_LOOP;
+            goto TERMINATE;
+         }
+      }
+   }
+
+   /* If we reached this point, we are 
+      .. in a lazyconstraint callback, or 
+      .. in a user cut callback, and cuts seem to help 
+         improving the node objval. 
+      In both cases, we retrieve the x solution and 
+      look for violated cuts. */
+
+    if ( info->cutcbfn ) {    // if cut handler given
+      MIP_wrapper::Output outpRlx;
+      outpRlx.x = info->pOutput->x;  // using the sol output storage  TODO?
+      outpRlx.nCols = info->pOutput->nCols;
+      assert( outpRlx.x && outpRlx.nCols );
+      status = CPXgetcallbacknodex (env, cbdata, wherefrom, (double*)outpRlx.x,
+                                    0, outpRlx.nCols-1); 
+      if ( status ) {
+          fprintf(stderr, "Cut callback: failed to get node solution.\n");
+          goto TERMINATE;
+      }
+      MIP_wrapper::CutInput cutInput;
+      info->cutcbfn( outpRlx, cutInput, info->ppp, fMIPSol );
+      static int nCuts=0;
+      nCuts += cutInput.size();
+      if ( cutInput.size() )
+        cerr << "\n   N CUTS:  " << nCuts << endl;
+      for ( auto& cd : cutInput ) {
+        assert( cd.mask &
+          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
+        /* Use a cut violation tolerance of 0.01 */
+        if ( true ) {  //cutvio > 0.01 ) { 
+          status = CPXcutcallbackadd (env, cbdata, wherefrom,
+                       cd.rmatind.size(), cd.rhs, getCPLEXConstrSense(cd.sense),
+                                      cd.rmatind.data(), cd.rmatval.data(),
+                                      CPX_USECUT_PURGE);
+          if ( status ) {
+              fprintf (stderr, "CPLEX callback: failed to add cut.\n");
+              goto TERMINATE;
+          }
+          addedcuts++;
+        }
+      }
+   }
+
+   /* Tell CPLEX that cuts have been created */ 
+   if ( addedcuts > 0 ) {
+      *useraction_p = CPX_CALLBACK_SET; 
+   }
+
+TERMINATE:
+
+   return (status);
+
+} /* END myusercutcallback */
+
+// ----------------- END Cut callbacks ------------------
+
+
 MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
 {
   Status s = Status::UNKNOWN;
@@ -392,7 +530,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
        break;
 //      case CPXMIP_ABORT_INFEAS:
      case CPXMIP_FAIL_INFEAS:
-       s = Status::ERROR;
+       s = Status::__ERROR;
        break;
      default:
 //      case CPXMIP_OPTIMAL_TOL:
@@ -456,7 +594,85 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      status =  CPXsetdblparam (env, CPXPARAM_MIP_Limits_TreeMemory, nWorkMemLimit);
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
     }
+
+   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, absGap);
+   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
+
+   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, relGap);
+   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
+
+   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, intTol);
+   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
+
+//    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_ObjDifference, objDiff);
+//    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_ObjDifference.", false);
+
     
+   /// Solution callback
+   output.nCols = colObj.size();
+   x.resize(output.nCols);
+   output.x = &x[0];
+   if (flag_all_solutions && cbui.solcbfn) {
+      status = CPXsetinfocallbackfunc (env, solcallback, &cbui);
+      wrap_assert(!status, "Failed to set solution callback", false);
+   }
+  if ( cbui.cutcbfn ) {
+    assert( cbui.cutMask & (MaskConsType_Usercut|MaskConsType_Lazy) );
+    if ( cbui.cutMask & MaskConsType_Usercut ) {
+      // For user cuts, needs to keep some info after presolve
+      if ( fVerbose )
+        cerr << "  MIP_cplex_wrapper: user cut callback enabled, setting params" << endl;
+      CUTINFO usercutinfo;  // THREADS?  TODO
+      usercutinfo.info = &cbui;
+      /* Init information on the node objval for the user cut callback */
+      initnodeobjvalinfo (env, lp, &usercutinfo);
+      /* Assure linear mappings between the presolved and original
+          models */
+      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      wrap_assert ( !status, "CPLEX: setting prepro_linear" );
+      /* Turn on traditional search for use with control callbacks */
+      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+                                CPX_MIPSEARCH_TRADITIONAL);
+      wrap_assert ( !status, "CPLEX: setting traditional search" );
+      /* Let MIP callbacks work on the original model */
+      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+                                CPX_OFF);
+      wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
+      /// And
+      /* Set up to use MIP usercut callback */
+
+      status = CPXsetusercutcallbackfunc (env, myusercutcallback, &usercutinfo);
+      wrap_assert ( !status, "CPLEX: setting user cut callback" );
+    }
+    if ( cbui.cutMask & MaskConsType_Lazy ) {
+      CUTINFO lazyconinfo;
+      lazyconinfo.info = &cbui;
+      /* Init information on the node objval for the user cut callback.
+          No need to initialize the information on the node objval,
+          for the lazy constraint callback, because those information are
+          used only in the user cut callback. */
+      initnodeobjvalinfo (env, lp, &lazyconinfo);
+      /* Assure linear mappings between the presolved and original
+          models */
+      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      wrap_assert ( !status, "CPLEX: setting prepro_linear" );
+      /* Turn on traditional search for use with control callbacks */
+//       status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+//                                 CPX_MIPSEARCH_TRADITIONAL);
+//       wrap_assert ( !status, "CPLEX: setting traditional search" );
+      /* Let MIP callbacks work on the original model */
+      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+                                CPX_OFF);
+      wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
+      /* Set up to use MIP lazyconstraint callback. The callback funtion
+        * registered is the same, but the data will be different. */
+
+      status = CPXsetlazyconstraintcallbackfunc (env, myusercutcallback, &lazyconinfo);
+      wrap_assert ( !status, "CPLEX: setting lazy cut callback" );
+    }
+  }
+
+  /// after all modifs
     if (sReadParams.size()) {
      status = CPXreadcopyparam (env, sReadParams.c_str());
      wrap_assert(!status, "Failed to read CPLEX parameters.", false);
@@ -467,15 +683,6 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
     
-   /// Solution callback
-   output.nCols = colObj.size();
-   x.resize(output.nCols);
-   output.x = &x[0];
-   if (flag_all_solutions && cbui.solcbfn) {
-      status = CPXsetinfocallbackfunc (env, solcallback, &cbui);
-      wrap_assert(!status, "Failed to set solution callback", false);
-   }
-
    status = CPXgettime (env, &output.dCPUTime);
    wrap_assert(!status, "Failed to get time stamp.", false);
 

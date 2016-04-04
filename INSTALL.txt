@@ -60,13 +60,7 @@ If you have both MiniZinc 1.6 and 2 installed (and MiniZinc 2.0
 occurs on the PATH before 1.6), you can use the old minizinc driver
 with the new versions of mzn2fzn and solns2out.
 
-'mzn-fzn' is the new driver replacing the old 'minizinc' executable. Similarly, by default it tries
-to use 'flatzinc' as the backend so that should be on the path. 'flatzinc' is available as binary
-in the old MiniZinc 1.6 distribution. Otherwise configure compilation of other specialized drivers
-such as mzn-gecode, mzn-cbc, etc., see above. They currently require specification of solver
-globals library as '-G gecode', '-G linear', etc.
-
-For configuration, consult --help. Useful options might be -v to print progress log and -s for
+Useful options: -v to print progress log and -s for
 solution statistics. Alternatively, most targets support -a for continuous printing of new
 solutions. Note that the solver backends are expected to print solutions on stdout
 and other messages either on stderr or as comments (%...\n).

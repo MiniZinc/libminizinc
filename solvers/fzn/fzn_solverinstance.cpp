@@ -44,6 +44,8 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <thread>
 #include <mutex>
 
+using namespace std;
+
 namespace MiniZinc {
 
   class FZN_SolverFactory: public SolverFactory {
@@ -56,10 +58,10 @@ namespace MiniZinc {
     bool processOption(int& i, int argc, const char** argv);
     void printHelp(std::ostream& os);
   };
-// #define __NO_EXPORT_FZN_SOLVERINSTANCE__  // define this to avoid exporting
-#ifndef __NO_EXPORT_FZN_SOLVERINSTANCE__
-  FZN_SolverFactory fzn_solverfactory;
-#endif
+  
+  SolverFactory* SolverFactory::createF_FZN() {
+    return new FZN_SolverFactory;
+  }
 
   string FZN_SolverFactory::getVersion()
   {

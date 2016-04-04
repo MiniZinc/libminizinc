@@ -13,7 +13,7 @@
 #ifndef __MIP_GUROBI_WRAPPER_H__
 #define __MIP_GUROBI_WRAPPER_H__
 
-#include <minizinc/solvers/MIP/MIP_wrap.h>
+#include <minizinc/solvers/MIP/MIP_wrap.hh>
 extern "C" {
   #include <gurobi_c.h>     // need GUROBI_HOME defined
 }
