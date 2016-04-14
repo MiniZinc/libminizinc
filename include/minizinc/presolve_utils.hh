@@ -17,16 +17,21 @@
 #include <minizinc/model.hh>
 #include <minizinc/solns2out.hh>
 
-namespace MiniZinc{
+namespace MiniZinc {
 
+  /// Registers function and all dependencies to model
   void recursiveRegisterFns(Model*, EnvI&, FunctionI*);
 
+  /// Computes decision variable domain for a given variable expression
   Expression* computeDomainExpr(EnvI& env, Expression* exp);
 
+  /// Computes the array ranges for an given array expression and add these ranges to the given vector
   void computeRanges(EnvI& env, Expression* exp, std::vector<TypeInst*>& ranges);
 
+  /// Generates the flatzinc model given the environment and given flags
   void generateFlatZinc(Env& env, bool rangeDomains, bool optimizeFZN, bool newFZN);
 
+  /// Extension to Solns2Out that stores all results in a vector to be for a different environment
   class Presolver::Solns2Vector : public Solns2Out {
   protected:
     EnvI& copyEnv;
@@ -36,17 +41,20 @@ namespace MiniZinc{
 
     std::vector<KeepAlive> GCProhibitors;
   public:
+    /// Default constructor
     Solns2Vector(Env* e, EnvI& forEnv) : copyEnv(forEnv) { this->initFromEnv(e); }
-
+    /// Destructor
     virtual ~Solns2Vector() { for (int i = 0; i < solutions.size(); ++i) delete solutions[i]; }
-
+    /// Getter for all gathered solutions
     const std::vector< std::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
 
   protected:
+    /// Override of evalOutput, which stores a result in the solutions vector
     virtual bool evalOutput();
     virtual bool evalStatus(SolverInstance::Status status) {return true;}
   };
 
+  /// Helper class to construct a table constraint
   class Presolver::TableBuilder {
   protected:
     bool boolTable = false;
@@ -61,22 +69,25 @@ namespace MiniZinc{
     Model* m;
     Options& options;
   public:
+    /// Default constructor
     TableBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
             : env(env), m(m), options(options), boolTable(boolTable) { };
-
+    /// Constructs full table constraint from function item, solution, and optionally given table variable arguments
     void buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
-
+    /// Adds variable to the table constraint
     void addVariable(Expression* var);
-
+    /// Adds a data point to the table constraint
+    /// (this function must be called alternating the variables)
     void addData(Expression* dat);
-
+    /// Returns a call to the generated table constraint
     Call* getExpression();
-
+    /// Sets the number of number of points of data for every variable
     void setRows(long long int rows) { rows = rows; }
 
   protected:
+    /// Adds all currently gathered variable to the variables expression
     void storeVars();
-
+    /// Registers the table predicate in the model
     void registerTableConstraint();
   };
 

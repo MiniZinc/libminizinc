@@ -20,34 +20,39 @@ namespace MiniZinc {
   class Presolver {
   public:
     struct Options;
-    class Solns2Vector;
-    class TableBuilder;
+    class Solns2Vector; // presolve_utils.hh
+    class TableBuilder; // presolve_utils.hh
   protected:
     class Subproblem;
     class GlobalSubproblem;
     class ModelSubproblem;
     class CallsSubproblem;
 
+    /// Model & Env in which the presolver is active
     Env& env;
     Model* model;
+    /// Contains problems to be solved to presolve marked predicates
     std::vector<Subproblem*> subproblems;
-
+    /// Option flags for flatzinc compilation
     Options& options;
 
+    /// Searches the model's predicate for presolve annotations
     void findPresolveAnnotations();
-
+    /// Searches the model's expressions for expressions that call a predicate to be presolved
     void findPresolvedCalls();
 
   public:
+    /// Constructor
     Presolver(Env& env, Model* m, Options& options)
             : env(env), model(m), options(options) {}
-
+    /// Destructor
     virtual ~Presolver();
-
+    /// Presolves all marked predicates in the model
     void presolve();
   };
 
 //  TODO: Group Flattener options and use those, to avoid copying.
+  /// Options provides the flags from the Flattener to the Presolver
   struct Presolver::Options {
     std::vector<std::string> includePaths;
     std::string stdLibDir;
@@ -63,62 +68,69 @@ namespace MiniZinc {
 
   class Presolver::Subproblem{
   protected:
+    /// Model & Env in which the presolve statement occured
     Model* origin;
     EnvI& origin_env;
-    // predicate around which the submodel revolves
+    /// predicate around which the submodel revolves
     FunctionI* predicate;
-    // calls to the predicate in the model
+    /// calls to the predicate in the model
     std::vector<Call*> calls;
-    // Flattener for compiling flag access.
+    /// Flattener for compiling flag access.
     Options& options;
-    // FZN solver to be used.
+    /// FZN solver to be used.
     std::string solver;
 
-    // Constructed Model & Env to solve subproblem.
+    /// Constructed Model & Env to solve subproblem.
     Model* m = nullptr;
     Env* e = nullptr;
-    // Solver used to solve constructed model.
+    /// Solver used to solve constructed model.
     SolverInstanceBase* si = nullptr;
     Solns2Vector* solns = nullptr;
 
     enum Constraint { BoolTable, IntTable, Element };
 
   public:
-
+    /// Constructor
     Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="");
+    /// Destructor
     virtual ~Subproblem();
-
+    /// Adds a reference to a call for the predicate to be presolved
     void addCall(Call* c) { calls.push_back(c); }
-
+    /// Getter for the function item of the predicate to be presolved
     FunctionI* getPredicate() const { return predicate; }
-
+    /// Solves subproblem
     virtual void solve();
 
   protected:
+    /// Constructs MiniZinc model from subproblem
     virtual void constructModel() = 0;
-
+    /// Solves MiniZinc model for subproblem
     virtual void solveModel();
-
+    /// Replaces the usage of the predicate by solutions to the subproblem
     virtual void replaceUsage() = 0;
   };
 
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
   public:
+    /// Constructor
     GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="") : Subproblem(
             origin, origin_env, predicate, options, solver) { }
 
   protected:
+    /// Implements Subproblem pure virtual
     virtual void constructModel();
-
+    /// Implements Subproblem pure virtual
     virtual void replaceUsage();
   };
 
   class Presolver::ModelSubproblem : public Presolver::GlobalSubproblem {
   public:
+    /// Constructor
     ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="") : GlobalSubproblem(
             origin, origin_env, predicate, options, solver) { }
 
   protected:
+    /// Implements Subproblem pure virtual
     virtual void constructModel();
   };
 
@@ -127,14 +139,16 @@ namespace MiniZinc {
     Call* currentCall = nullptr;
 
   public:
+    /// Constructor
     CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options, std::string solver="") : Subproblem(
             origin, origin_env, predicate, options, solver) { }
-
+    /// Override Subproblem solve
     virtual void solve();
 
   protected:
+    /// Implements Subproblem pure virtual
     virtual void constructModel();
-
+    /// Implements Subproblem pure virtual
     virtual void replaceUsage();
   };
 
