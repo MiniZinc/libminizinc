@@ -265,10 +265,28 @@ namespace MiniZinc {
     Map::iterator it = map.find(ka);
     if (it != map.end()) {
       if (it->second.r()) {
-        if (it->second.r()->isa<VarDecl>()) {
-          int idx = vo.find(it->second.r()->cast<VarDecl>());
+
+        if (it->second.r()->isa<Id>()) {
+          int idx = vo.find(it->second.r()->cast<Id>()->decl());
           if (idx == -1 || (*_flat)[idx]->removed())
             return map.end();
+        } else if (it->second.r()->isa<ArrayLit>()) {
+          ArrayLit* al = it->second.r()->cast<ArrayLit>();
+          for (unsigned int i=0; i<al->v().size(); i++) {
+            if (Id* ident = al->v()[i]->dyn_cast<Id>()) {
+              int idx = vo.find(ident->decl());
+              if (idx == -1 || (*_flat)[idx]->removed())
+                return map.end();
+            }
+          }
+        }
+        
+        if (it->second.b()) {
+          if (it->second.b()->isa<VarDecl>()) {
+            int idx = vo.find(it->second.b()->cast<VarDecl>());
+            if (idx == -1 || (*_flat)[idx]->removed())
+              return map.end();
+          }
         }
       } else {
         return map.end();
