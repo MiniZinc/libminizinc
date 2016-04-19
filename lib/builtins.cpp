@@ -448,7 +448,7 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
         assert(bo->op() == BOT_DOTDOT);
         array_lb = eval_float(env,bo->lhs());
         foundMin = true;
@@ -499,7 +499,7 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
         assert(bo->op() == BOT_DOTDOT);
         array_ub = eval_float(env,bo->rhs());
         foundMax = true;

@@ -119,10 +119,6 @@ namespace MiniZinc {
     void createErrorStack(void);
   };
 
-  Expression* follow_id(Expression* e);
-  Expression* follow_id_to_decl(Expression* e);
-  Expression* follow_id_to_value(Expression* e);
-
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
   class CmpExpIdx {
@@ -196,6 +192,9 @@ namespace MiniZinc {
       IntSetRanges d1(dom1);
       IntSetRanges d2(dom2);
       return Ranges::equal(d1,d2);
+    }
+    static bool domain_tighter(Domain dom, Bounds b) {
+      return !b.valid || dom->min() > b.l || dom->max() < b.u;
     }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
       return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1));
@@ -289,7 +288,7 @@ namespace MiniZinc {
     static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef BinOp* Domain;
     static Domain eval_domain(EnvI& env, Expression* e) {
-      BinOp* bo = e->cast<BinOp>();
+      BinOp* bo = follow_id_to_value(e)->cast<BinOp>();
       assert(bo->op() == BOT_DOTDOT);
       if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
         return bo;
@@ -310,6 +309,10 @@ namespace MiniZinc {
     static Expression* new_domain(Domain d) { return d; }
     static bool domain_contains(Domain dom, Val v) {
       return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
+    }
+    static bool domain_tighter(Domain dom, Bounds b) {
+      return dom != NULL && (!b.valid || dom->lhs()->cast<FloatLit>()->v() > b.l ||
+                             dom->rhs()->cast<FloatLit>()->v() < b.u);
     }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
       return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v1 && dom->rhs()->cast<FloatLit>()->v() >= v0);
