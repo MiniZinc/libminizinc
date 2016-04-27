@@ -247,7 +247,8 @@ namespace MiniZinc {
             }
           }
         }
-
+        
+        signal(SIGCHLD, SIG_IGN); // avoid defunkt processes
         if (int childPID = fork()) {
           //std::cout << "DEBUG: if childpid = fork(). Processing timeouts etc. " << std::endl;
           close(pipes[0][0]);
