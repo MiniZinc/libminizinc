@@ -1771,11 +1771,6 @@ namespace MiniZinc {
     
     VarDecl* nr = r;
 
-    if (b==NULL) {
-      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-    }
-    
-
     Ctx cmix;
     cmix.b = C_MIX;
     cmix.i = C_MIX;
@@ -1855,7 +1850,11 @@ namespace MiniZinc {
           eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ethen.r());
           eq_then->type(Type::varbool());
         }
-        
+
+        if (b==NULL) {
+          b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+        }
+
         {
           // Create a clause with all the previous conditions negated, the
           // current condition, and the then branch.
