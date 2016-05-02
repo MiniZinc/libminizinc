@@ -781,6 +781,8 @@ namespace MiniZinc {
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
+    if (vd==constants().var_ignore)
+      return e;
     if (Id* ident = e->dyn_cast<Id>()) {
       if (ident->decl()) {
         VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
@@ -4424,7 +4426,7 @@ namespace MiniZinc {
         if (ctx.b==C_ROOT && decl->e()==NULL &&
             cid == constants().ids.forall && r==constants().var_true) {
           ret.b = bind(env,ctx,b,constants().lit_true);
-          EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().var_true);
+          EE flat_al = flat_exp(env,Ctx(),c->args()[0],constants().var_ignore,constants().var_true);
           ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->v().size(); i++)
