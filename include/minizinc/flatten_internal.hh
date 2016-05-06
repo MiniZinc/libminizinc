@@ -12,6 +12,8 @@
 #ifndef __MINIZINC_FLATTEN_INTERNAL_HH__
 #define __MINIZINC_FLATTEN_INTERNAL_HH__
 
+#include <cmath>
+
 #include <minizinc/copy.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
