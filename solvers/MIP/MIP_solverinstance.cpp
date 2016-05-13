@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <string>
 #include <memory>
+#include <chrono>
 
 using namespace std;
 
@@ -235,6 +236,8 @@ void MIP_solverinstance::registerConstraints() {
 
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
+  auto nn = std::chrono::system_clock::now();
+  auto n_c = std::chrono::system_clock::to_time_t( nn );
     {
 //       int nPrec = 
       std::ios oldState(nullptr);
@@ -251,6 +254,7 @@ void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
       os << mip_wrap->getNNodes();
       if (mip_wrap->getNOpen())
         os << " ( " << mip_wrap->getNOpen() << " )";
+      os << "    " << std::ctime( &n_c );
       os << endl;
       os.copyfmt( oldState );
 //       os.precision(nPrec);
