@@ -693,51 +693,6 @@ namespace MiniZinc {
     return e->ann().contains(constants().ann.is_reverse_map);
   }
 
-  Expression* follow_id(Expression* e) {
-    for (;;) {
-      if (e==NULL)
-        return NULL;
-      if (e->eid()==Expression::E_ID && e != constants().absent) {
-        e = e->cast<Id>()->decl()->e();
-      } else {
-        return e;
-      }
-    }
-  }
-  
-  Expression* follow_id_to_decl(Expression* e) {
-    for (;;) {
-      if (e==NULL)
-        return NULL;
-      if (e==constants().absent)
-        return e;
-      switch (e->eid()) {
-        case Expression::E_ID:
-          e = e->cast<Id>()->decl();
-          break;
-        case Expression::E_VARDECL:
-          if (e->cast<VarDecl>()->e() && e->cast<VarDecl>()->e()->isa<Id>())
-            e = e->cast<VarDecl>()->e();
-          else
-            return e;
-          break;
-        default:
-          return e;
-      }
-    }
-  }
-
-  Expression* follow_id_to_value(Expression* e) {
-    Expression* decl = follow_id_to_decl(e);
-    if (VarDecl* vd = decl->dyn_cast<VarDecl>()) {
-      if (vd->e() && vd->e()->type().ispar())
-        return vd->e();
-      return vd->id();
-    } else {
-      return decl;
-    }
-  }
-
   void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e) {
     ASTExprVec<TypeInst> tis = vd->ti()->ranges();
     std::vector<TypeInst*> newtis(tis.size());
@@ -870,6 +825,8 @@ namespace MiniZinc {
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
+    if (vd==constants().var_ignore)
+      return e;
     if (Id* ident = e->dyn_cast<Id>()) {
       if (ident->decl()) {
         VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
@@ -1162,15 +1119,17 @@ namespace MiniZinc {
                     }
                   }
                 } else if (e->type().bt()==Type::BT_FLOAT) {
-                  FloatVal f_min = eval_float(env, vd->ti()->domain()->cast<BinOp>()->lhs());
-                  FloatVal f_max = eval_float(env, vd->ti()->domain()->cast<BinOp>()->rhs());
+                  Expression* floatDomain = follow_id_to_value(vd->ti()->domain());
+                  FloatVal f_min = eval_float(env, floatDomain->cast<BinOp>()->lhs());
+                  FloatVal f_max = eval_float(env, floatDomain->cast<BinOp>()->rhs());
                   for (unsigned int i=0; i<al->v().size(); i++) {
                     if (Id* id = al->v()[i]->dyn_cast<Id>()) {
                       VarDecl* vdi = id->decl();
                       if (vdi->ti()->domain()==NULL) {
                         vdi->ti()->domain(vd->ti()->domain());
                       } else {
-                        BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(vdi->ti()->domain()->cast<BinOp>(), f_min, f_max);
+                        BinOp* vdidomain = follow_id_to_value(vdi->ti()->domain())->cast<BinOp>();
+                        BinOp* ndomain = LinearTraits<FloatLit>::intersect_domain(vdidomain, f_min, f_max);
                         if (ndomain != vdi->ti()->domain()) {
                           vdi->ti()->domain(ndomain);
                         }
@@ -1867,11 +1826,6 @@ namespace MiniZinc {
     
     VarDecl* nr = r;
 
-    if (b==NULL) {
-      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-    }
-    
-
     Ctx cmix;
     cmix.b = C_MIX;
     cmix.i = C_MIX;
@@ -1951,7 +1905,11 @@ namespace MiniZinc {
           eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ethen.r());
           eq_then->type(Type::varbool());
         }
-        
+
+        if (b==NULL) {
+          b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+        }
+
         {
           // Create a clause with all the previous conditions negated, the
           // current condition, and the then branch.
@@ -4522,7 +4480,7 @@ namespace MiniZinc {
         if (ctx.b==C_ROOT && decl->e()==NULL &&
             cid == constants().ids.forall && r==constants().var_true) {
           ret.b = bind(env,ctx,b,constants().lit_true);
-          EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().var_true);
+          EE flat_al = flat_exp(env,Ctx(),c->args()[0],constants().var_ignore,constants().var_true);
           ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->v().size(); i++)
@@ -4759,7 +4717,7 @@ namespace MiniZinc {
                     }
                   } else if (args[i]()->type().bt() == Type::BT_FLOAT) {
                     GCLock lock;
-                    BinOp* bo = dom->cast<BinOp>();
+                    BinOp* bo = follow_id_to_value(dom)->cast<BinOp>();
                     FloatVal dom_min = eval_float(env,bo->lhs());
                     FloatVal dom_max = eval_float(env,bo->rhs());
                     bool needToConstrain;
@@ -4993,7 +4951,7 @@ namespace MiniZinc {
                 std::vector<Expression*> domargs(2);
                 domargs[0] = ee.r();
                 if (vd->ti()->type().isfloat()) {
-                  BinOp* bo_dom = vd->ti()->domain()->cast<BinOp>();
+                  BinOp* bo_dom = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
                   domargs[1] = bo_dom->lhs();
                   domargs.push_back(bo_dom->rhs());
                 } else {
@@ -5752,7 +5710,7 @@ namespace MiniZinc {
       if (!isv->contains(eval_int(env,e)))
         return false;
     } else if (e->type()==Type::parfloat()) {
-      BinOp* bo = domain->cast<BinOp>();
+      BinOp* bo = follow_id_to_value(domain)->cast<BinOp>();
       assert(bo->op()==BOT_DOTDOT);
       FloatVal d_min = eval_float(env,bo->lhs());
       FloatVal d_max = eval_float(env,bo->rhs());
@@ -6049,7 +6007,7 @@ namespace MiniZinc {
               vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
               vdi->e()->ti()->domain() != NULL) {
             GCLock lock;
-            BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
+            BinOp* bo = follow_id_to_value(vdi->e()->ti()->domain())->cast<BinOp>();
             FloatVal vmin = eval_float(env, bo->lhs());
             FloatVal vmax = eval_float(env, bo->rhs());
             if (vmin == -std::numeric_limits<FloatVal>::infinity() && vmax == std::numeric_limits<FloatVal>::infinity()) {
