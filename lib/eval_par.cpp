@@ -237,7 +237,7 @@ namespace MiniZinc {
               }
             } else if (vd->e()->type().bt()==Type::BT_FLOAT) {
               GCLock lock;
-              BinOp* bo = dom->cast<BinOp>();
+              BinOp* bo = follow_id_to_value(dom)->cast<BinOp>();
               FloatVal dom_min = eval_float(env,bo->lhs());
               FloatVal dom_max = eval_float(env,bo->rhs());
               checkDom(env, vd->id(), dom_min, dom_max, vd->e());
@@ -1867,7 +1867,7 @@ namespace MiniZinc {
       while (vd->flat() && vd->flat() != vd)
         vd = vd->flat();
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
         assert(bo->op() == BOT_DOTDOT);
         _bounds.push_back(FBounds(eval_float(env,bo->lhs()),eval_float(env,bo->rhs())));
       } else {
@@ -1910,7 +1910,7 @@ namespace MiniZinc {
           }
         }
         if (id->decl()->ti()->domain()) {
-          BinOp* bo = id->decl()->ti()->domain()->cast<BinOp>();
+          BinOp* bo = follow_id_to_value(id->decl()->ti()->domain())->cast<BinOp>();
           assert(bo->op() == BOT_DOTDOT);
           FBounds b(eval_float(env,bo->lhs()),eval_float(env,bo->rhs()));
           _bounds.push_back(b);
@@ -2330,4 +2330,49 @@ namespace MiniZinc {
       return NULL;  
   }
 
+  Expression* follow_id(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e->eid()==Expression::E_ID && e != constants().absent) {
+        e = e->cast<Id>()->decl()->e();
+      } else {
+        return e;
+      }
+    }
+  }
+  
+  Expression* follow_id_to_decl(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e==constants().absent)
+        return e;
+      switch (e->eid()) {
+        case Expression::E_ID:
+          e = e->cast<Id>()->decl();
+          break;
+        case Expression::E_VARDECL:
+          if (e->cast<VarDecl>()->e() && e->cast<VarDecl>()->e()->isa<Id>())
+            e = e->cast<VarDecl>()->e();
+          else
+            return e;
+          break;
+        default:
+          return e;
+      }
+    }
+  }
+  
+  Expression* follow_id_to_value(Expression* e) {
+    Expression* decl = follow_id_to_decl(e);
+    if (VarDecl* vd = decl->dyn_cast<VarDecl>()) {
+      if (vd->e() && vd->e()->type().ispar())
+        return vd->e();
+      return vd->id();
+    } else {
+      return decl;
+    }
+  }
+  
 }

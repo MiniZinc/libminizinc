@@ -177,8 +177,8 @@ namespace MiniZinc {
             }
           } else {
             // float
-            BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
-            BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
+            BinOp* dom0 = follow_id_to_value(id0->decl()->ti()->domain())->cast<BinOp>();
+            BinOp* dom1 = follow_id_to_value(id1->decl()->ti()->domain())->cast<BinOp>();
             FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
             FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
             FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
@@ -938,7 +938,7 @@ namespace MiniZinc {
                 canRemove = true;
               } else {
                 FloatVal value = eval_float(env,arg);
-                if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
+                if (LinearTraits<FloatLit>::domain_contains(follow_id_to_value(ti->domain())->cast<BinOp>(), value)) {
                   ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
                   ti->setComputedDomain(false);
                   canRemove = true;

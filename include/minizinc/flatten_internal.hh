@@ -130,10 +130,6 @@ namespace MiniZinc {
     void createErrorStack(void);
   };
 
-  Expression* follow_id(Expression* e);
-  Expression* follow_id_to_decl(Expression* e);
-  Expression* follow_id_to_value(Expression* e);
-
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
   class CmpExpIdx {
@@ -303,7 +299,7 @@ namespace MiniZinc {
     static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef BinOp* Domain;
     static Domain eval_domain(EnvI& env, Expression* e) {
-      BinOp* bo = e->cast<BinOp>();
+      BinOp* bo = follow_id_to_value(e)->cast<BinOp>();
       assert(bo->op() == BOT_DOTDOT);
       if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
         return bo;

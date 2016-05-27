@@ -648,13 +648,36 @@ function var int: card(var set of int: x);
 /** @group builtins.set Return the union of the sets in array \a x */
 function     set of $U:  array_union(array[$T] of     set of $U: x);
 /** @group builtins.set Return the union of the sets in array \a x */
-function var set of int: array_union(array[$T] of var set of int: x) =
-  array_union_rec(array1d(x));
+function var set of int: array_union(array[int] of var set of int: x) ::promise_total =
+    if length(x)=0 then {}
+    elseif length(x)=1 then x[min(index_set(x))]
+    else
+      let {
+        int: l=min(index_set(x));
+        int: u=max(index_set(x));
+        array[l..u-1] of var set of ub_array(x): y;
+        constraint y[l]=x[l] union x[l+1];
+        constraint forall (i in l+2..u) (y[i-1]=y[i-2] union x[i]);
+      } in y[u-1]
+    endif;
+
 
 /** @group builtins.set Return the intersection of the sets in array \a x */
 function     set of $U:  array_intersect(array[$T] of     set of $U: x);
-function var set of int: array_intersect(array[$T] of var set of int: x) =
-  array_intersect_rec(array1d(x));
+
+/** @group builtins.set Return the intersection of the sets in array \a x */
+function var set of int: array_intersect(array[int] of var set of int: x) ::promise_total =
+    if length(x)=0 then assert(false,"can't be!",-infinity..infinity)
+    elseif length(x)=1 then x[min(index_set(x))]
+    else
+      let {
+        int: l=min(index_set(x));
+        int: u=max(index_set(x));
+        array[l..u-1] of var set of ub_array(x): y;
+        constraint y[l]=x[l] intersect x[l+1];
+        constraint forall (i in l+2..u) (y[i-1]=y[i-2] intersect x[i]);
+      } in y[u-1]
+    endif;
 
 /***
   @groupdef builtins.array Array operations
@@ -1888,21 +1911,6 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
     constraint array_float_minimum(m,x);
   } in m
   endif;
-
-function var set of int: array_union_rec(array[int] of var set of int: x) =
-  if length(x)=0 then {}
-  elseif length(x)=1 then x[min(index_set(x))]
-  else x[min(index_set(x))] union
-       array_union_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
-  endif;
-
-function var set of int: array_intersect_rec(array[int] of var set of int: x) =
-  if length(x)=0 then {}
-  elseif length(x)=1 then x[min(index_set(x))]
-  else x[min(index_set(x))] intersect
-       array_intersect_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
-  endif;
-
   
 /***
   @groupdef builtins.random Random Number Generator builtins

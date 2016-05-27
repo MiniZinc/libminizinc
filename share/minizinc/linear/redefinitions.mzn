@@ -5,8 +5,7 @@
 % Sebastian Brand
 % Gleb Belov (2015)
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
-% TODO McCormick envelopes
-% TODO Avoid creating new integer vars when possible
+%  AIMS: generality, flexibility, extensibility
 */
 
 %----------------------------- BOOL2INT --------------------------------%

@@ -62,6 +62,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     pp->err << "^";
   pp->err << std::endl << "Error: " << str << std::endl << std::endl;
   pp->hadError = true;
+  pp->syntaxErrors.push_back(SyntaxError(*location, str));
 }
 
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
@@ -124,7 +125,8 @@ namespace MiniZinc {
                          bool ignoreStdlib,
                          bool parseDocComments,
                          bool verbose,
-                         ostream& err) {
+                         ostream& err,
+                         std::vector<SyntaxError>& syntaxErrors) {
     GCLock lock;
 
     vector<string> includePaths;
@@ -226,6 +228,8 @@ namespace MiniZinc {
 
     return model;
   error:
+    for (unsigned int i=0; i<pp.syntaxErrors.size(); i++)
+      syntaxErrors.push_back(pp.syntaxErrors[i]);
     delete model;
     return NULL;
   }
