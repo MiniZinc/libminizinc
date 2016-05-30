@@ -34,6 +34,7 @@ extern "C" int isatty(int);
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.tab.hh>
+#include <minizinc/astexception.hh>
 
 #include <string>
 #include <vector>
@@ -79,6 +80,7 @@ namespace MiniZinc {
     bool isFlatZinc;
     bool parseDocComments;
     bool hadError;
+    std::vector<SyntaxError> syntaxErrors;
     std::ostream& err;
     
     std::string stringBuffer;
@@ -114,7 +116,8 @@ namespace MiniZinc {
                          const std::string& filename,
                          const std::vector<std::string>& includePaths,
                          bool ignoreStdlib, bool parseDocComments, bool verbose,
-                         std::ostream& err);
+                         std::ostream& err,
+                         std::vector<SyntaxError>& syntaxErrors);
 
   Model* parseData(Model* m,
                    const std::vector<std::string>& datafiles,
