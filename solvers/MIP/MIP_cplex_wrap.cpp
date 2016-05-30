@@ -551,6 +551,12 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+  // Before all manual params ???
+    if (sReadParams.size()) {
+     status = CPXreadcopyparam (env, sReadParams.c_str());
+     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
+    }
+    
   /* Turn on output to the screen */
    if (fVerbose) {
      CPXCHANNELptr chnl[4];
@@ -673,11 +679,6 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   }
 
   /// after all modifs
-    if (sReadParams.size()) {
-     status = CPXreadcopyparam (env, sReadParams.c_str());
-     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
-    }
-    
     if (sWriteParams.size()) {
      status = CPXwriteparam (env, sWriteParams.c_str());
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
