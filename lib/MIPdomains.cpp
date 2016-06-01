@@ -948,7 +948,7 @@ namespace MiniZinc {
             ub = bnds.right;
           }
           else if ( vd->type().isfloat() ) {  // FLOAT VAR
-            BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+            BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
             FloatVal vmin0 = eval_float(mipd.getEnv()->envi(), bo->lhs());
             FloatVal vmax0 = eval_float(mipd.getEnv()->envi(), bo->rhs());
             if ( A < 0.0 )

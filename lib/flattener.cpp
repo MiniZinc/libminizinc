@@ -53,6 +53,7 @@ void Flattener::printHelp(ostream& os)
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G --globals-dir --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
+  << "  - --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
@@ -260,12 +261,20 @@ void Flattener::flatten()
     }
   }
   
-  if (flag_output_fzn == filenames[0]) {
-    cerr << "  WARNING: fzn filename matches input file, ignoring." << endl;
+  if ( filenames.end() !=
+      find( filenames.begin(), filenames.end(), flag_output_fzn ) ||
+       datafiles.end() !=
+      find( datafiles.begin(), datafiles.end(), flag_output_fzn ) ) {
+    cerr << "  WARNING: fzn filename '" << flag_output_fzn
+      << "' matches an input file, ignoring." << endl;
     flag_output_fzn = "";
   }
-  if (flag_output_ozn == filenames[0]) {
-    cerr << "  WARNING: ozn filename matches input file, ignoring." << endl;
+  if ( filenames.end() !=
+      find( filenames.begin(), filenames.end(), flag_output_ozn ) ||
+       datafiles.end() !=
+      find( datafiles.begin(), datafiles.end(), flag_output_ozn ) ) {
+    cerr << "  WARNING: ozn filename '" << flag_output_ozn
+      << "' matches an input file, ignoring." << endl;
     flag_output_ozn = "";
   }
   
@@ -286,7 +295,8 @@ void Flattener::flatten()
         if (flag_verbose)
           std::cerr << "Parsing standard input ..." << endl;
         std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
-        m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        std::vector<SyntaxError> se;
+        m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
       } else {
         if (flag_verbose)
           std::cerr << "Parsing '" << filenames[0] << "' ...";
@@ -372,7 +382,8 @@ void Flattener::flatten()
                 std::cerr << " done (" << stoptime(lasttime)
                 << "), max stack depth " << env.maxCallStack() << std::endl;
 
-              /*if ( ! flag_noMIPdomains ) {
+              /*
+              if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
                   std::cerr << "MIP domains ...";
                 MIPdomains(env, flag_statistics);
@@ -403,29 +414,43 @@ void Flattener::flatten()
               } else {
                 env.flat()->compact();
                 env.output()->compact();
-              }*/
-
-              if (flag_statistics) {
-                FlatModelStatistics stats = statistics(env);
-                std::cerr << "Generated FlatZinc statistics:\n";
-                std::cerr << "Variables: ";
-                HadOne ho;
-                std::cerr << ho(stats.n_bool_vars, " bool");
-                std::cerr << ho(stats.n_int_vars, " int");
-                std::cerr << ho(stats.n_float_vars, " float");
-                std::cerr << ho(stats.n_set_vars, " set");
-                if (!ho)
-                  std::cerr << "none";
-                std::cerr << "\n";
-                ho.reset();
-                std::cerr << "Constraints: ";
-                std::cerr << ho(stats.n_bool_ct, " bool");
-                std::cerr << ho(stats.n_int_ct, " int");
-                std::cerr << ho(stats.n_float_ct, " float");
-                std::cerr << ho(stats.n_set_ct, " set");
-                if (!ho)
-                  std::cerr << "none";
-                std::cerr << "\n";
+              }
+              */
+            }
+            
+            if (flag_statistics) {
+              FlatModelStatistics stats = statistics(env);
+              std::cerr << "Generated FlatZinc statistics:\n";
+              std::cerr << "Variables: ";
+              HadOne ho;
+              std::cerr << ho(stats.n_bool_vars, " bool");
+              std::cerr << ho(stats.n_int_vars, " int");
+              std::cerr << ho(stats.n_float_vars, " float");
+              std::cerr << ho(stats.n_set_vars, " set");
+              if (!ho)
+                std::cerr << "none";
+              std::cerr << "\n";
+              ho.reset();
+              std::cerr << "Constraints: ";
+              std::cerr << ho(stats.n_bool_ct, " bool");
+              std::cerr << ho(stats.n_int_ct, " int");
+              std::cerr << ho(stats.n_float_ct, " float");
+              std::cerr << ho(stats.n_set_ct, " set");
+              if (!ho)
+                std::cerr << "none";
+              std::cerr << "\n";
+              /// Objective+bounds / SAT
+              SolveI* solveItem = env.flat()->solveItem();
+              if (solveItem->st() != SolveI::SolveType::ST_SAT) {
+                if (solveItem->st() == SolveI::SolveType::ST_MAX) {
+                  cerr << "    This is a maximization problem." << endl;
+                } else {
+                  cerr << "    This is a minimization problem." << endl;
+                }
+//                 cerr << "    Bounds for the objective function: "
+//                   << dObjVarLB << ", " << dObjVarUB << endl;
+              } else {
+                cerr << "    This is a satisfiability problem." << endl;
               }
             }
 

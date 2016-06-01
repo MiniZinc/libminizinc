@@ -23,14 +23,11 @@ if (DEFINED OSICBC_HOME)
   set(HAS_OSICBC TRUE)
 endif()
 
-set(HAS_CPLEX_OLD FALSE)
-set(HAS_GUROBI_OLD FALSE)
-
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 12)
+set (libminizinc_VERSION_PATCH 13)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -306,6 +303,7 @@ ${parser_hh}
 if(HAS_GECODE)
   set(GECODE_LIBS minizinc_gecode gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
   target_link_libraries(minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  link_directories("${GECODE_HOME}/lib")
 endif()
 
 # add the executable
@@ -333,11 +331,10 @@ if(HAS_GUROBI)  # Version 6.5
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
-	add_executable(mzn-gurobi
-    minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
-	)
+	add_executable(mzn-gurobi minizinc.cpp)
+  target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
@@ -381,9 +378,8 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   
 	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
-	add_executable(mzn-cplex
-	  minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
-	)
+	add_executable(mzn-cplex minizinc.cpp)
+  target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
   SET_TARGET_PROPERTIES(mzn-cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
                                )
@@ -393,7 +389,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -402,24 +398,24 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 endif()
 
 # ----------------------------------------------------------------------------------------------------------
-if(HAS_SCIP)   # SCIP version tested: 3.2.0
+if(HAS_SCIP)   # SCIP version tested: 3.2.1
   link_directories("${SCIP_DIR}/../lib"  )  # For the single library
 
   if(UNIX)
 #    set(SCIP_OS "linux")
 #    set(SCIP_ARCH "x86_64")
-	set(SCIP_LIBS "scipopt-3.2.0.linux.x86_64.gnu.opt")
+	set(SCIP_LIBS "scipopt-3.2.1.linux.x86_64.gnu.opt")
 #    set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(UNIX)
   if(APPLE)
 #   set(SCIP_OS "osx")
 #    set(SCIP_ARCH "ppc")
-    set(SCIP_LIBS "scipopt-3.2.0.osx.ppc.gnu.opt")
+    set(SCIP_LIBS "scipopt-3.2.1.osx.ppc.gnu.opt")
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(APPLE)
   if (WIN32 AND NOT UNIX)
-    set(SCIP_LIBS "scip-3.2.0.win.x86_64.msvc.opt.spx.ld")
+    set(SCIP_LIBS "scip-3.2.1.win.x86_64.msvc.opt.spx.ld")
   endif()
   
   add_library(minizinc_scip
@@ -434,14 +430,13 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.0
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-scip
-      minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
-    )
+  add_executable(mzn-scip minizinc.cpp)
+  target_compile_definitions( mzn-scip PRIVATE HAS_MIP )
   target_include_directories(mzn-scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-scip minizinc 
+  target_link_libraries(mzn-scip minizinc_scip
     ${SCIP_LIBS}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
@@ -488,14 +483,13 @@ if(HAS_SCIP_SEPLIBS)
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-mip-scip
-      minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
-    )
+  add_executable(mzn-mip-scip minizinc.cpp)
+  target_compile_definitions( mzn-mip-scip PRIVATE HAS_MIP )
   target_include_directories(mzn-mip-scip PRIVATE
     "${SCIP_DIR}/src"
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-mip-scip minizinc
+  target_link_libraries(mzn-mip-scip minizinc_mip_scip
     scip 
     nlpi.cppad #objscip
     lpispx soplex
@@ -526,14 +520,15 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
   )
-  add_executable(mzn-cbc minizinc.cpp solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp)
+  add_executable(mzn-cbc minizinc.cpp)
+  target_compile_definitions( mzn-cbc PRIVATE HAS_MIP )
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
   target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
@@ -561,10 +556,8 @@ if(HAS_GECODE)
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-gecode
-    minizinc.cpp
-    solvers/gecode/gecode_solverinstance.cpp
-    )
+  add_executable(mzn-gecode minizinc.cpp )
+  target_compile_definitions( mzn-gecode PRIVATE HAS_GECODE )
   target_link_libraries(mzn-gecode minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode mzn-gecode
@@ -588,7 +581,8 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable(mzn-fzn minizinc.cpp)  # solvers/fzn/mzn-fzn.cpp)
+	add_executable( mzn-fzn minizinc.cpp )
+  target_compile_definitions( mzn-fzn PRIVATE HAS_FZN )
 	target_link_libraries(mzn-fzn minizinc_fzn)
 #  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp)#
 # target_link_libraries(mzn-fzn-test minizinc)

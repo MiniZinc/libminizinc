@@ -67,8 +67,9 @@ namespace MiniZinc {
   inline void checkIOStatus( bool fOk, std::string msg, bool fHard=1 )
   {
     if ( !fOk ) {
-      std::cerr << "\n  " << msg << strerror(errno) << "." << std::endl;
-      MZN_ASSERT_HARD_MSG ( !fHard, msg << strerror(errno) );
+      std::cerr << "\n  " << msg
+        << ":   " << strerror(errno) << "." << std::endl;
+      MZN_ASSERT_HARD_MSG ( !fHard, msg << ": " << strerror(errno) );
     }
   }
   
@@ -87,6 +88,13 @@ namespace MiniZinc {
   public:
     CLOParser( int& ii, const int ac, const char* const* av )
       : i(ii), argc(ac), argv(av) { }
+    template <class Value=int>
+    inline bool get(  const char* names, // space-separated option list
+                      Value* pResult=nullptr, // pointer to value storage
+                      bool fValueOptional=false // if pResult, for non-string values
+                ) {
+      return getOption( names, pResult, fValueOptional );
+    }
     template <class Value=int>
     inline bool getOption(  const char* names, // space-separated option list
                             Value* pResult=nullptr, // pointer to value storage

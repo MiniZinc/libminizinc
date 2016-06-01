@@ -134,8 +134,9 @@ void Solns2Out::restoreDefaults() {
 }
 
 void Solns2Out::parseAssignments(string& solution) {
+  std::vector<SyntaxError> se;
   unique_ptr<Model> sm(
-    parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr) );
+    parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr, se) );
   MZN_ASSERT_HARD_MSG( sm.get(), "solns2out_base: could not parse solution" );
   solution = "";
   for (unsigned int i=0; i<sm->size(); i++) {
@@ -286,8 +287,9 @@ void Solns2Out::init() {
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
       pOut.reset( new ofstream( _opt.flag_output_file ) );
-      MZN_ASSERT_HARD_MSG( pOfs_raw.get(),
-                          "solns2out_base: could not allocate stream object for file output" );
+      MZN_ASSERT_HARD_MSG( pOut.get(),
+        "solns2out_base: could not allocate stream object for file output into "
+        << _opt.flag_output_file );
       checkIOStatus( pOut->good(), _opt.flag_output_file);
     }
   }

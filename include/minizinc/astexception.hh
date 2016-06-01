@@ -19,6 +19,19 @@
 
 namespace MiniZinc {
   
+  class SyntaxError : public Exception {
+  protected:
+    Location _loc;
+  public:
+    SyntaxError(const Location& loc, const std::string& msg)
+    : Exception(msg), _loc(loc) {}
+    virtual ~SyntaxError(void) throw() {}
+    virtual const char* what(void) const throw() {
+      return "MiniZinc: syntax error";
+    }
+    const Location& loc(void) const { return _loc; }
+  };
+
   class LocationException : public Exception {
   protected:
     Location _loc;

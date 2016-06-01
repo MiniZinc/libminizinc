@@ -448,7 +448,7 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
         assert(bo->op() == BOT_DOTDOT);
         array_lb = eval_float(env,bo->lhs());
         foundMin = true;
@@ -499,7 +499,7 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
+        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
         assert(bo->op() == BOT_DOTDOT);
         array_ub = eval_float(env,bo->rhs());
         foundMax = true;
@@ -759,12 +759,13 @@ namespace MiniZinc {
     Expression* cur = e;
     for (;;) {
       if (cur==NULL) {
-        if (lastid==NULL) {
-          throw EvalError(env, e->loc(),"invalid argument to dom");
+        if (lastid==NULL || lastid->decl()->ti()->domain()==NULL) {
+          IntBounds b = compute_int_bounds(env,e);
+          if (b.valid)
+            return IntSetVal::a(b.l,b.u);
+          else
+            return IntSetVal::a(-IntVal::infinity(),IntVal::infinity());
         } else {
-          if (lastid->decl()->ti()->domain()==NULL) {
-            throw EvalError(env, e->loc(),"invalid argument to dom");
-          }
           return eval_intset(env,lastid->decl()->ti()->domain());
         }
       }

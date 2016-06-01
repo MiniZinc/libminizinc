@@ -968,6 +968,7 @@ namespace MiniZinc {
     var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
     lit_false = new BoolLit(Location(), false);
     var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
+    var_ignore = new VarDecl(Location(), ti, "_bool_ignore");
     absent = new Id(Location(),"_absent",NULL);
     Type absent_t;
     absent_t.bt(Type::BT_BOT);
@@ -1186,6 +1187,7 @@ namespace MiniZinc {
     v.push_back(var_true);
     v.push_back(lit_false);
     v.push_back(var_false);
+    v.push_back(var_ignore);
     v.push_back(absent);
     v.push_back(infinity);
     v.push_back(new StringLit(Location(),ids.forall));

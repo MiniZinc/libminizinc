@@ -256,6 +256,10 @@ namespace MiniZinc {
     return eval_comp(env, eval,e);
   }  
   
+  Expression* follow_id(Expression* e);
+  Expression* follow_id_to_decl(Expression* e);
+  Expression* follow_id_to_value(Expression* e);
+  
 }
 
 #endif

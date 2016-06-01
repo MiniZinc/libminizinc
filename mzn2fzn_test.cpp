@@ -96,7 +96,8 @@ int main(int argc, char** argv) {
     if (flag_stdinInput) {
       filename = "stdin";
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
-      m = parseFromString(input, filename, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      std::vector<SyntaxError> se;
+      m = parseFromString(input, filename, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
     } else {
       vector<string> filenames {filename};
       m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);

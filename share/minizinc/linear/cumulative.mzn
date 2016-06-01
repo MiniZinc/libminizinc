@@ -24,7 +24,7 @@ predicate cumulative(array[int] of var int: s,
                     {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
                 set of int: times = dom_array( [ s[i] | i in tasks ] )
                 } in
-        my_trace("  cumul: times = " ++ show(times)) /\
+%        my_trace("  cumul: times = " ++ show(times)) /\
         if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
             cumulative_time_decomp(s, d, r, b, times) 
         else 
@@ -68,7 +68,7 @@ let {
       max([ ub(s[i]) + ub(d[i]) | i in tasks ]) where i in TIMES01 } 
 }  
 in 
-  my_trace("  cumul_time: " ++ show(card(tasks)) ++ " tasks, " ++ show(card(times)) ++ " times\n") /\
+%  my_trace("  cumul_time: " ++ show(card(tasks)) ++ " tasks, " ++ show(card(times)) ++ " times\n") /\
   forall( t in times ) ( 
     b >= sum( i in tasks ) ( 
       if false then            %%          is_fixed(d[i]) then     -- mem overflow on mspsp
@@ -91,7 +91,7 @@ let {
   {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 } 
 }  
 in 
-  my_trace("  cumul_tasks: " ++ show(card(tasks)) ++ " tasks\n") /\
+%  my_trace("  cumul_tasks: " ++ show(card(tasks)) ++ " tasks\n") /\
   forall( j in tasks) (
     b-r[j] >= sum( i in tasks where i != j
         /\ lb(s[i])<=ub(s[j]) /\ lb(s[j])<ub(s[i]+d[i])   %% -- seems slower on mspsp ???
