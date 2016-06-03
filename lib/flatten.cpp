@@ -4905,6 +4905,37 @@ namespace MiniZinc {
                 } else {
                   ret = flat_exp(env,ctx,decl->e(),r,NULL);
                   args_ee.push_back(ret);
+                  if (decl->ti()->domain() && !decl->ti()->domain()->isa<TIId>()) {
+                    BinOpType bot;
+                    if (ret.r()->type().st() == Type::ST_SET) {
+                      bot = BOT_SUBSET;
+                    } else {
+                      bot = BOT_IN;
+                    }
+                    
+                    KeepAlive domconstraint;
+                    if (decl->e()->type().dim() > 0) {
+                      GCLock lock;
+                      std::vector<Expression*> domargs(2);
+                      domargs[0] = ret.r();
+                      domargs[1] = decl->ti()->domain();
+                      Call* c = new Call(Location().introduce(),"var_dom",domargs);
+                      c->type(Type::varbool());
+                      c->decl(env.orig->matchFn(env,c));
+                      domconstraint = c;
+                    } else {
+                      GCLock lock;
+                      domconstraint = new BinOp(Location().introduce(),ret.r(),bot,decl->ti()->domain());
+                    }
+                    domconstraint()->type(ret.r()->type().ispar() ? Type::parbool() : Type::varbool());
+                    if (ctx.b == C_ROOT) {
+                      (void) flat_exp(env, Ctx(), domconstraint(), constants().var_true, constants().var_true);
+                    } else {
+                      EE ee = flat_exp(env, Ctx(), domconstraint(), NULL, constants().var_true);
+                      ee.b = ee.r;
+                      args_ee.push_back(ee);
+                    }
+                  }
                 }
                 ret.b = conj(env,b,Ctx(),args_ee);
               }
