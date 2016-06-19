@@ -2281,6 +2281,7 @@ namespace MiniZinc {
         }
 
         if (b==NULL) {
+          CallStackItem _csi(env, new StringLit(Location().introduce(), "b"));
           b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
         }
 
