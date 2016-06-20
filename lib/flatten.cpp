@@ -1257,15 +1257,18 @@ namespace MiniZinc {
                 nx.push_back(vd->id());
                 args.push_back(new ArrayLit(Location().introduce(),nx));
                 args[1]->type(le_x->type());
-                if (c->type().bt()==Type::BT_INT) {
-                  IntVal d = c->args()[2]->cast<IntLit>()->v();
-                  args.push_back(IntLit::a(-d));
-                  nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
-                } else {
-                  FloatVal d = c->args()[2]->cast<FloatLit>()->v();
-                  args.push_back(FloatLit::a(-d));
-                  nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
+                args.push_back(c->args()[2]);
+                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+                nc->decl(env.orig->matchFn(env,nc));
+                if (nc->decl() == NULL) {
+                  throw InternalError("undeclared function or predicate "
+                                      +nc->id().str());
                 }
+                nc->type(nc->decl()->rtype(env,args));
+                BinOp* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
+                bop->type(Type::varbool());
+                flat_exp(env, Ctx(), bop, constants().var_true, constants().var_true);
+                return vd->id();
               } else {
                 args.resize(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
