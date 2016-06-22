@@ -17,20 +17,31 @@
 
 namespace MiniZinc {
 
+  struct CompilePassFlags {
+    bool flag_noMIPdomains;
+    bool flag_verbose;
+    bool flag_statistics;
+    bool flag_optimize;
+    bool flag_newfzn;
+    bool flag_werror;
+  };
+
   class CompilePass : public Pass {
     private:
       Env* env;
       FlatteningOptions fopts;
+      CompilePassFlags compflags;
       std::string library;
       std::vector<std::string> includePaths;
       bool change_library;
 
     public:
       CompilePass(Env* e,
-                  FlatteningOptions& opts,
-                  std::string globals_library,
-                  std::vector<std::string> include_paths,
-                  bool change_lib);
+          FlatteningOptions& opts,
+          CompilePassFlags& cflags,
+          std::string globals_library,
+          std::vector<std::string> include_paths,
+          bool change_lib);
 
       Env* run(Env* env);
       ~CompilePass();

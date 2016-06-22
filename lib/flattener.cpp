@@ -348,18 +348,25 @@ void Flattener::flatten()
                 gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
 #endif
                 FlatteningOptions pass_opts = fopts;
+                CompilePassFlags cfs;
+                cfs.flag_noMIPdomains = flag_noMIPdomains;
+                cfs.flag_verbose      = flag_verbose;
+                cfs.flag_statistics   = flag_statistics;
+                cfs.flag_optimize     = flag_optimize;
+                cfs.flag_newfzn       = flag_newfzn;
+                cfs.flag_werror       = flag_werror;
 
                 for(unsigned int i=1; i<flag_npasses; i++) {
                   if(flag_gecode) {
 #ifdef HAS_GECODE
-                    passes.push_back(new CompilePass(&env, pass_opts, std_lib_dir+"/gecode/", includePaths, true));
+                    passes.push_back(new CompilePass(&env, pass_opts, cfs, std_lib_dir+"/gecode/", includePaths, true));
                     passes.push_back(new GecodePass(gopts));
 #endif
                   } else {
-                    passes.push_back(new CompilePass(&env, pass_opts, std_lib_dir+"/std/", includePaths,  true));
+                    passes.push_back(new CompilePass(&env, pass_opts, cfs, std_lib_dir+"/std/", includePaths,  true));
                   }
                 }
-                passes.push_back(new CompilePass(&env, fopts, std_lib_dir+"/"+globals_dir+"/", includePaths, true));
+                passes.push_back(new CompilePass(&env, fopts, cfs, std_lib_dir+"/"+globals_dir+"/", includePaths, true));
 
                 env = *multiPassFlatten(env, passes);
               } catch (LocationException& e) {
@@ -381,43 +388,8 @@ void Flattener::flatten()
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime)
                 << "), max stack depth " << env.maxCallStack() << std::endl;
-
-              /*
-              if ( ! flag_noMIPdomains ) {
-                if (flag_verbose)
-                  std::cerr << "MIP domains ...";
-                MIPdomains(env, flag_statistics);
-                if (flag_verbose)
-                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              }
-
-              if (flag_optimize) {
-                if (flag_verbose)
-                  std::cerr << "Optimizing ...";
-                optimize(env);
-                for (unsigned int i=0; i<env.warnings().size(); i++) {
-                  std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env.warnings()[i];
-                }
-                if (flag_werror && env.warnings().size() > 0) {
-                  exit(EXIT_FAILURE);
-                }
-                if (flag_verbose)
-                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              }
-
-              if (!flag_newfzn) {
-                if (flag_verbose)
-                  std::cerr << "Converting to old FlatZinc ...";
-                oldflatzinc(env);
-                if (flag_verbose)
-                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
-              } else {
-                env.flat()->compact();
-                env.output()->compact();
-              }
-              */
             }
-            
+
             if (flag_statistics) {
               FlatModelStatistics stats = statistics(env);
               std::cerr << "Generated FlatZinc statistics:\n";

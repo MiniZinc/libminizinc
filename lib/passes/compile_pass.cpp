@@ -122,11 +122,13 @@ namespace MiniZinc {
 
   CompilePass::CompilePass(Env* e,
                            FlatteningOptions& opts,
+                           CompilePassFlags& cflags,
                            std::string globals_library,
                            std::vector<std::string> include_paths,
                            bool change_lib = true) :
     env(e),
     fopts(opts),
+    compflags(cflags),
     library(globals_library),
     includePaths(include_paths),
     change_library(change_lib) {
@@ -134,12 +136,12 @@ namespace MiniZinc {
 
   Env* CompilePass::run(Env* store) {
     Timer lasttime;
-    if(fopts.verbose)
+    if(compflags.flag_verbose)
       std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
 
     Env* new_env;
     if(change_library) {
-      new_env = changeLibrary(*env, includePaths, library, fopts.verbose);
+      new_env = changeLibrary(*env, includePaths, library, compflags.flag_verbose);
 
       new_env->envi().passes = store->envi().passes;
       new_env->envi().maxPathDepth = store->envi().maxPathDepth;
@@ -150,11 +152,44 @@ namespace MiniZinc {
     }
 
     flatten(*new_env, fopts);
-    MIPdomains(*new_env, fopts.verbose);
-    optimize(*new_env);
-    oldflatzinc(*new_env);
 
-    if(fopts.verbose)
+    if ( ! compflags.flag_noMIPdomains ) {
+      if (compflags.flag_verbose)
+        std::cerr << "MIP domains ...";
+      MIPdomains(*new_env, compflags.flag_statistics);
+      if (compflags.flag_verbose)
+        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+    }
+
+    //if(new_env->envi().pass == 0) compflags.flag_optimize = true;
+    //else compflags.flag_optimize = false;
+
+    if (compflags.flag_optimize) {
+      if (compflags.flag_verbose)
+        std::cerr << "Optimizing ...";
+      optimize(*new_env);
+      for (unsigned int i=0; i<new_env->warnings().size(); i++) {
+        std::cerr << (compflags.flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
+      }
+      if (compflags.flag_werror && new_env->warnings().size() > 0) {
+        exit(EXIT_FAILURE);
+      }
+      if (compflags.flag_verbose)
+        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+    }
+
+    if (!compflags.flag_newfzn) {
+      if (compflags.flag_verbose)
+        std::cerr << "Converting to old FlatZinc ...";
+      oldflatzinc(*new_env);
+      if (compflags.flag_verbose)
+        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+    } else {
+      new_env->flat()->compact();
+      new_env->output()->compact();
+    }
+
+    if(compflags.flag_verbose)
       std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
     return new_env;
