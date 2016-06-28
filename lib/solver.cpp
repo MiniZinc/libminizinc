@@ -111,7 +111,7 @@ void MznSolver::addSolverInterface()
     cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
     assert( 0 );
   }
-  si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
+  si = getGlobalSolverRegistry()->getSolverFactories().back()->createSI(*flt->getEnv());
   assert(si);
   s2out.initFromEnv( flt->getEnv() );
   si->setSolns2Out( &s2out );
@@ -119,7 +119,7 @@ void MznSolver::addSolverInterface()
     cerr
 //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
-    << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
+    << getGlobalSolverRegistry()->getSolverFactories().back()->getVersion() << endl;  
 }
 
 void MznSolver::printHelp()
