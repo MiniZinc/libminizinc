@@ -93,7 +93,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
-    std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
+//     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
