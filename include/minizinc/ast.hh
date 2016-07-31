@@ -1244,6 +1244,8 @@ namespace MiniZinc {
       BoolLit* lit_false;
       /// Variable bound to false
       VarDecl* var_false;
+      /// Special variable to signal compiler to ignore result
+      VarDecl* var_ignore;
       /// Infinite set
       SetLit* infinity;
       /// Function item used to keep track of redefined variables

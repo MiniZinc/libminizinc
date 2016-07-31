@@ -781,6 +781,8 @@ namespace MiniZinc {
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
+    if (vd==constants().var_ignore)
+      return e;
     if (Id* ident = e->dyn_cast<Id>()) {
       if (ident->decl()) {
         VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
@@ -1255,15 +1257,18 @@ namespace MiniZinc {
                 nx.push_back(vd->id());
                 args.push_back(new ArrayLit(Location().introduce(),nx));
                 args[1]->type(le_x->type());
-                if (c->type().bt()==Type::BT_INT) {
-                  IntVal d = c->args()[2]->cast<IntLit>()->v();
-                  args.push_back(IntLit::a(-d));
-                  nc = new Call(c->loc().introduce(), constants().ids.int_.lin_eq, args);
-                } else {
-                  FloatVal d = c->args()[2]->cast<FloatLit>()->v();
-                  args.push_back(FloatLit::a(-d));
-                  nc = new Call(c->loc().introduce(), constants().ids.float_.lin_eq, args);
+                args.push_back(c->args()[2]);
+                nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+                nc->decl(env.orig->matchFn(env,nc));
+                if (nc->decl() == NULL) {
+                  throw InternalError("undeclared function or predicate "
+                                      +nc->id().str());
                 }
+                nc->type(nc->decl()->rtype(env,args));
+                BinOp* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
+                bop->type(Type::varbool());
+                flat_exp(env, Ctx(), bop, constants().var_true, constants().var_true);
+                return vd->id();
               } else {
                 args.resize(c->args().size());
                 std::copy(c->args().begin(),c->args().end(),args.begin());
@@ -1769,11 +1774,6 @@ namespace MiniZinc {
     
     VarDecl* nr = r;
 
-    if (b==NULL) {
-      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
-    }
-    
-
     Ctx cmix;
     cmix.b = C_MIX;
     cmix.i = C_MIX;
@@ -1853,7 +1853,11 @@ namespace MiniZinc {
           eq_then = new BinOp(Location().introduce(),nr->id(),BOT_EQ,ethen.r());
           eq_then->type(Type::varbool());
         }
-        
+
+        if (b==NULL) {
+          b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+        }
+
         {
           // Create a clause with all the previous conditions negated, the
           // current condition, and the then branch.
@@ -2416,6 +2420,18 @@ namespace MiniZinc {
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->v().size(); i++) {
       if (Call* sc = same_call(al->v()[i],cid)) {
+        if (VarDecl* alvi_decl = follow_id_to_decl(al->v()[i])->dyn_cast<VarDecl>()) {
+          if (alvi_decl->ti()->domain()) {
+            typename LinearTraits<Lit>::Domain sc_dom = LinearTraits<Lit>::eval_domain(env,alvi_decl->ti()->domain());
+            typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::compute_bounds(env,sc);
+            if (LinearTraits<Lit>::domain_tighter(sc_dom, sc_bounds)) {
+              coeffv.push_back(c_coeff[i]);
+              alv.push_back(al->v()[i]);
+              continue;
+            }
+          }
+        }
+        
         Val cd = c_coeff[i];
         GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->args()[0]);
@@ -3452,6 +3468,7 @@ namespace MiniZinc {
             let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
             let_exprs[1]->type(Type::varbool());
             let_exprs[1]->addAnnotation(constants().ann.promise_total);
+            let_exprs[1]->addAnnotation(constants().ann.maybe_partial);
             std::vector<Expression*> absent_r_args(1);
             absent_r_args[0] = r->id();
             Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
@@ -4411,7 +4428,7 @@ namespace MiniZinc {
         if (ctx.b==C_ROOT && decl->e()==NULL &&
             cid == constants().ids.forall && r==constants().var_true) {
           ret.b = bind(env,ctx,b,constants().lit_true);
-          EE flat_al = flat_exp(env,Ctx(),c->args()[0],NULL,constants().var_true);
+          EE flat_al = flat_exp(env,Ctx(),c->args()[0],constants().var_ignore,constants().var_true);
           ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->v().size(); i++)
@@ -4797,6 +4814,37 @@ namespace MiniZinc {
                 } else {
                   ret = flat_exp(env,ctx,decl->e(),r,NULL);
                   args_ee.push_back(ret);
+                  if (decl->ti()->domain() && !decl->ti()->domain()->isa<TIId>()) {
+                    BinOpType bot;
+                    if (ret.r()->type().st() == Type::ST_SET) {
+                      bot = BOT_SUBSET;
+                    } else {
+                      bot = BOT_IN;
+                    }
+                    
+                    KeepAlive domconstraint;
+                    if (decl->e()->type().dim() > 0) {
+                      GCLock lock;
+                      std::vector<Expression*> domargs(2);
+                      domargs[0] = ret.r();
+                      domargs[1] = decl->ti()->domain();
+                      Call* c = new Call(Location().introduce(),"var_dom",domargs);
+                      c->type(Type::varbool());
+                      c->decl(env.orig->matchFn(env,c));
+                      domconstraint = c;
+                    } else {
+                      GCLock lock;
+                      domconstraint = new BinOp(Location().introduce(),ret.r(),bot,decl->ti()->domain());
+                    }
+                    domconstraint()->type(ret.r()->type().ispar() ? Type::parbool() : Type::varbool());
+                    if (ctx.b == C_ROOT) {
+                      (void) flat_exp(env, Ctx(), domconstraint(), constants().var_true, constants().var_true);
+                    } else {
+                      EE ee = flat_exp(env, Ctx(), domconstraint(), NULL, constants().var_true);
+                      ee.b = ee.r;
+                      args_ee.push_back(ee);
+                    }
+                  }
                 }
                 ret.b = conj(env,b,Ctx(),args_ee);
               }

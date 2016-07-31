@@ -12,6 +12,8 @@
 #ifndef __MINIZINC_FLATTEN_INTERNAL_HH__
 #define __MINIZINC_FLATTEN_INTERNAL_HH__
 
+#include <cmath>
+
 #include <minizinc/copy.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
@@ -193,6 +195,9 @@ namespace MiniZinc {
       IntSetRanges d2(dom2);
       return Ranges::equal(d1,d2);
     }
+    static bool domain_tighter(Domain dom, Bounds b) {
+      return !b.valid || dom->min() > b.l || dom->max() < b.u;
+    }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
       return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1));
     }
@@ -306,6 +311,10 @@ namespace MiniZinc {
     static Expression* new_domain(Domain d) { return d; }
     static bool domain_contains(Domain dom, Val v) {
       return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
+    }
+    static bool domain_tighter(Domain dom, Bounds b) {
+      return dom != NULL && (!b.valid || dom->lhs()->cast<FloatLit>()->v() > b.l ||
+                             dom->rhs()->cast<FloatLit>()->v() < b.u);
     }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
       return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v1 && dom->rhs()->cast<FloatLit>()->v() >= v0);
