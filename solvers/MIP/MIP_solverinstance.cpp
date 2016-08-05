@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <string>
 #include <memory>
+#include <chrono>
 
 using namespace std;
 
@@ -42,25 +43,10 @@ string MIP_SolverFactory::getVersion()
 
 
 MIP_solver::Variable MIP_solverinstance::exprToVar(Expression* arg) {
-  MIP_solver::Variable var;
-  if (IntLit* il = arg->dyn_cast<IntLit>()) {
-    var = mip_wrap->addLitVar(il->v().toInt());
-    return var;
-  } else if (FloatLit* fl = arg->dyn_cast<FloatLit>()) {
-    var = mip_wrap->addLitVar(fl->v());        // can we avoid creating constant variables?  TODO
-    return var;
-  } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
-    var = mip_wrap->addLitVar(bl->v());
-    return var;
-  } else if (Id* ident = arg->dyn_cast<Id>()) {
+  if (Id* ident = arg->dyn_cast<Id>()) {
     return _variableMap.get(ident->decl()->id());
-  }
-
-  ostringstream oss;
-  oss << "unknown expression type: " << arg->eid() << " for arg=" << arg;
-  cerr << oss.str() << flush;
-  oss << (*arg);
-  throw InternalError( oss.str() );
+  } else
+    return mip_wrap->addLitVar( exprToConst( arg ) );
 }
 
 void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
@@ -71,20 +57,24 @@ void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
     vars.push_back(exprToVar(al->v()[i]));
 }
 
+double MIP_solverinstance::exprToConst(Expression* e) {
+    if (IntLit* il = e->dyn_cast<IntLit>()) {
+      return ( il->v().toInt() );
+    } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+      return ( fl->v() );
+    } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+      return ( bl->v() );
+    } else {
+      throw InternalError("unexpected expression");
+    }
+}
+
 void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
   ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
   vals.clear();
   vals.reserve(al->v().size());
   for (unsigned int i=0; i<al->v().size(); i++) {
-    if (IntLit* il = al->v()[i]->dyn_cast<IntLit>()) {
-      vals.push_back( il->v().toInt() );
-    } else if (FloatLit* fl = al->v()[i]->dyn_cast<FloatLit>()) {
-      vals.push_back( fl->v() );
-    } else if (BoolLit* bl = al->v()[i]->dyn_cast<BoolLit>()) {
-      vals.push_back( bl->v() );
-    } else {
-      throw InternalError("unexpected expression");
-    }
+    vals.push_back( exprToConst( al->v()[i] ) );
   }
 }
 
@@ -129,10 +119,9 @@ namespace SCIPConstraints {
 //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
 //     int nvars = al->v().size();
     vector<double> coefs;
-    gi.exprToArray(args[0], coefs);
+//     gi.exprToArray(args[0], coefs);
     vector<MIP_solverinstance::VarId> vars;
-    gi.exprToVarArray(args[1], vars);
-    assert(coefs.size() == vars.size());
+//     gi.exprToVarArray(args[1], vars);
     IntVal ires;
     FloatVal fres;
 
@@ -146,6 +135,21 @@ namespace SCIPConstraints {
     } else {
       throw InternalError("p_lin: rhs unknown type");
     }
+
+    /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
+    ArrayLit* alC = eval_array_lit(_env.envi(), args[0]);
+    coefs.reserve(alC->v().size());
+    ArrayLit* alV = eval_array_lit(_env.envi(), args[1]);
+    vars.reserve(alV->v().size());
+    for (unsigned int i=0; i<alV->v().size(); i++) {
+      const double dCoef = gi.exprToConst( alC->v()[i] );
+      if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+        coefs.push_back( dCoef );
+        vars.push_back( gi.exprToVar( ident ) );
+      } else
+        rhs -= dCoef*gi.exprToConst( alV->v()[i] );
+    }
+    assert(coefs.size() == vars.size());
 
     // See if the solver adds indexation itself: no.
     std::stringstream ss;
@@ -175,14 +179,24 @@ namespace SCIPConstraints {
    void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
       MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
       ASTExprVec<Expression> args = call->args();
-      vector<MIP_solver::Variable> vars(2);
-      vars[0] = gi.exprToVar(args[0]);
-      vars[1] = gi.exprToVar(args[1]);
-      double coefs[2] = {1.0, -1.0};
+      vector<double> coefs;
+      vector<MIP_solver::Variable> vars;
+      double rhs = 0.0;
+      if ( args[0]->isa<Id>() ) {
+        coefs.push_back( 1.0 );
+        vars.push_back( gi.exprToVar(args[0]) );
+      } else
+        rhs -= gi.exprToConst(args[0]);
+      if ( args[1]->isa<Id>() ) {
+        coefs.push_back( -1.0 );
+        vars.push_back( gi.exprToVar(args[1]) );
+      } else
+        rhs += gi.exprToConst(args[1]);
+      // Check feas-ty?    TODO
 
       std::stringstream ss;
       ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-      gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], nCmp, 0.0,
+      gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
                                GetMaskConsType(call), ss.str());
     }
    void p_eq(SolverInstanceBase& si, const Call* call) {
@@ -235,6 +249,8 @@ void MIP_solverinstance::registerConstraints() {
 
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
 {
+  auto nn = std::chrono::system_clock::now();
+  auto n_c = std::chrono::system_clock::to_time_t( nn );
     {
 //       int nPrec = 
       std::ios oldState(nullptr);
@@ -251,6 +267,7 @@ void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
       os << mip_wrap->getNNodes();
       if (mip_wrap->getNOpen())
         os << " ( " << mip_wrap->getNOpen() << " )";
+      os << "    " << std::ctime( &n_c );
       os << endl;
       os.copyfmt( oldState );
 //       os.precision(nPrec);
@@ -379,6 +396,10 @@ void MIP_solverinstance::processFlatZinc(void) {
           vd->ann().contains(constants().ann.output_var)
         ) {
         _varsWithOutput.push_back(vd);
+//         std::cerr << (*vd);
+//         if ( vd->e() )
+//           cerr << " = " << (*vd->e());
+//         cerr << endl;
       }
     }
     if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
@@ -439,9 +460,8 @@ void MIP_solverinstance::processFlatZinc(void) {
             cerr << "  MIP: objective variable index (0-based): " << res << endl;
         }
       }
-//       if ("X_INTRODUCED_108" == string(id->str().c_str()))
-//        std::cerr << "  VarMap: Inserting '" << id->str().c_str() << "' as " << res
-//            << ", id == " << (id) << ", id->decl() == " << (id->decl()) << endl;
+//       if ("X_INTRODUCED_137" == string(id->str().c_str())) {
+//       }
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }

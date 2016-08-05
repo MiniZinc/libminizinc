@@ -281,7 +281,8 @@ void Flattener::flatten()
         if (flag_verbose)
           std::cerr << "Parsing standard input ..." << endl;
         std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
-        m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        std::vector<SyntaxError> se;
+        m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
       } else {
         if (flag_verbose)
           std::cerr << "Parsing '" << filenames[0] << "' ...";

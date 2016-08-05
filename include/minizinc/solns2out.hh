@@ -103,7 +103,7 @@ namespace MiniZinc {
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     bool fStatusPrinted = false;
     /// Should be called when entering new solution into the output model.
-    /// Default assignSolutionToOutput() does it by using find findOutputVar().
+    /// Default assignSolutionToOutput() does it by using findOutputVar().
     void declNewOutput();
 
     /// This can be used by assignSolutionToOutput()    

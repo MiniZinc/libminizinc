@@ -5,6 +5,29 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.0.14
+==============
+
+Changes:
+
+ - Less aggressive aggregation of linear expressions in cases where it
+   leads to much less efficient FlatZinc.
+ - Don't create temporary variable for an array literal if it is discarded
+   immediately anyway.
+ - Only create new partiality variable for if-then-else expression if there's
+   at least one var condition.
+ - Replace recursive definitions of array_intersect and array_union with
+   iterative ones.
+
+Bug fixes:
+ - Don't report warnings about partiality when using extended generator
+   expressions.
+ - Include cmath to enable building with some versions of gcc.
+ - Constrain result of function call based on function return type if necessary.
+ - Make sure linear expressions generated during binding of variables are
+   properly flattened (including simplification of the linear expression)
+
+
 Version 2.0.13
 ==============
 
