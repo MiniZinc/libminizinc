@@ -111,7 +111,7 @@ void MznSolver::addSolverInterface()
     cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
     assert( 0 );
   }
-  si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*flt->getEnv());
+  si = getGlobalSolverRegistry()->getSolverFactories().back()->createSI(*flt->getEnv());
   assert(si);
   s2out.initFromEnv( flt->getEnv() );
   si->setSolns2Out( &s2out );
@@ -119,7 +119,7 @@ void MznSolver::addSolverInterface()
     cerr
 //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
-    << getGlobalSolverRegistry()->getSolverFactories().front()->getVersion() << endl;  
+    << getGlobalSolverRegistry()->getSolverFactories().back()->getVersion() << endl;  
 }
 
 void MznSolver::printHelp()
@@ -148,8 +148,8 @@ void MznSolver::printHelp()
     s2out.printHelp(cout);
     cout << endl;
   }
-  for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-        it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
+  for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
+        it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
        (*it)->printHelp(cout);
       cout << endl;
   }
@@ -167,8 +167,8 @@ bool MznSolver::processOptions(int argc, const char** argv)
     }
     if (string(argv[i])=="--version") {
       getFlt()->printVersion(cout);
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-           it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
+      for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
+           it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
         cout << (*it)->getVersion() << endl;
       std::exit(EXIT_SUCCESS);
     }
@@ -179,8 +179,8 @@ bool MznSolver::processOptions(int argc, const char** argv)
       flag_statistics = true;                  // is this Flattener's option?
     } else if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
     } else if (!getFlt()->processOption(i, argc, argv)) {
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-           it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it)
+      for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
+           it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
         if ((*it)->processOption(i, argc, argv))
           goto Found;
       goto NotFound;

@@ -59,11 +59,11 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual double getInfBound() { return GRB_INFINITY; }
                         
     virtual int getNCols() {
-      assert(not GRBupdatemodel(model));
+      GRBupdatemodel(model);
       int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
     }
     virtual int getNRows() {
-      assert(not GRBupdatemodel(model));
+      GRBupdatemodel(model);
       int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
     }
                         

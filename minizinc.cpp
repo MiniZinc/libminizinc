@@ -38,13 +38,14 @@ using namespace MiniZinc;
 int main(int argc, const char** argv) {
 
   /// Initializing specified solver factories
-#ifdef HAS_FZN
-  static unique_ptr<SolverFactory>
-    pFactoryFZN( SolverFactory::createF_FZN() );
-#endif
+  /// Gecode has to be 1st for multi-pass
 #ifdef HAS_GECODE
   static unique_ptr<SolverFactory>
     pFactoryGECODE( SolverFactory::createF_GECODE() );
+#endif
+#ifdef HAS_FZN
+  static unique_ptr<SolverFactory>
+    pFactoryFZN( SolverFactory::createF_FZN() );
 #endif
 #ifdef HAS_CHUFFED
   static unique_ptr<SolverFactory>
