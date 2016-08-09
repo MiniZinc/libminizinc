@@ -947,6 +947,11 @@ namespace MiniZinc {
             if (al->type().bt()==Type::BT_ANN || al->v().size() <= 10)
               return e;
 
+            EnvI::Map::iterator it = env.map_find(al);
+            if (it != env.map_end()) {
+              return it->second.r()->cast<VarDecl>()->id();
+            }
+
             std::vector<TypeInst*> ranges(al->dims());
             for (unsigned int i=0; i<ranges.size(); i++) {
               ranges[i] = new TypeInst(e->loc(),
