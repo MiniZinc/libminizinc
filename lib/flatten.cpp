@@ -250,11 +250,12 @@ namespace MiniZinc {
     return tighter;
   }
 
-  std::string getPath(EnvI& env, bool force = false) {
+  std::string getPath(EnvI& env) {
     std::string path;
     std::stringstream ss;
-    if(env.dumpPath(ss, force))
+    if(env.dumpPath(ss))
       path = ss.str();
+
     return path;
   }
 
@@ -303,13 +304,23 @@ namespace MiniZinc {
       Annotation& ann = e->ann();
       ann.removeCall(constants().ann.mzn_path);
 
+
+      EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+
       std::vector<Expression*> path_args(1);
-      std::string p = getPath(env);
+      std::string p;
+      EnvI::ReversePathMap::iterator it = reversePathMap.find(e);
+      if(it == reversePathMap.end()) {
+        p = getPath(env);
+      } else {
+        p = it->second;
+      }
+
       if(p.size() != 0) {
         path_args[0] = new StringLit(Location(), p);
-      Call* path_call = new Call(e->loc(), constants().ann.mzn_path, path_args);
-      path_call->type(Type::ann());
-      e->addAnnotation(path_call);
+        Call* path_call = new Call(e->loc(), constants().ann.mzn_path, path_args);
+        path_call->type(Type::ann());
+        e->addAnnotation(path_call);
       }
     }
   }
@@ -327,6 +338,7 @@ namespace MiniZinc {
         EnvI::PathMap& pathMap = env.getPathMap();
         EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
         EnvI::PathMap::iterator it = pathMap.find(path);
+
         if(it != pathMap.end()) {
           VarDecl* ovd = Expression::cast<VarDecl>(it->second.first());
           unsigned int ovd_pass = it->second.second;
@@ -372,7 +384,7 @@ namespace MiniZinc {
     // If vd has an e() use bind to turn rhs into a constraint
     if (vd->e()) {
       if(rhs) {
-      bind(env, ctx, vd, rhs);
+        bind(env, ctx, vd, rhs);
       }
     } else {
       vd->e(rhs);
@@ -383,7 +395,7 @@ namespace MiniZinc {
     } else {
       vd->introduced(true);
     }
-    
+
     vd->flat(vd);
 
     // Copy annotations from origVd
@@ -393,15 +405,15 @@ namespace MiniZinc {
         vd->addAnnotation(ee_ann.r());
       }
     }
-    
+
     if (!hasBeenAdded) {
-    VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-    env.flat_addItem(ni);
+      VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
+      env.flat_addItem(ni);
       //TODO: What should we do with the map?
-    EE ee(vd,NULL);
-    env.map_insert(vd->id(),ee);
+      EE ee(vd,NULL);
+      env.map_insert(vd->id(),ee);
     }
-    
+
     return vd;
   }
 
@@ -507,12 +519,14 @@ namespace MiniZinc {
     if (_failed)
       return;
     _flat->addItem(i);
+
     Expression* toAnnotate = NULL;
     Expression* toAdd = NULL;
     switch (i->iid()) {
       case Item::II_VD:
       {
         VarDeclI* vd = i->cast<VarDeclI>();
+        addPathAnnotation(*this, vd->e());
         toAnnotate = vd->e()->e();
         vo.add(vd, _flat->size()-1);
         toAdd = vd->e();
@@ -526,6 +540,7 @@ namespace MiniZinc {
           fail();
         } else {
           toAnnotate = ci->e();
+          addPathAnnotation(*this, ci->e());
           toAdd = ci->e();
         }
         break;
@@ -729,7 +744,8 @@ namespace MiniZinc {
   }
  
   bool
-  EnvI::dumpPath(std::ostream& os, bool force = false) {
+  EnvI::dumpPath(std::ostream& os, bool force) {
+    force = force ? force : fopts.keep_mzn_paths;
     if (callStack.size() > maxPathDepth) {
       if(!force && pass >= passes-1) {
         return false;
@@ -758,7 +774,9 @@ namespace MiniZinc {
       if(fopts.only_toplevel_paths && filenameId != 0)
         return false;
 
-      os << filenameId << '.' << loc.first_line << '.' << loc.first_column << '.' << loc.last_line << '.' << loc.last_column;
+      // If this call is not a dummy StringLit with empty Location (so that deferred compilation doesn't drop the paths)
+      if(e->eid() != Expression::E_STRINGLIT || loc.first_line || loc.first_column || loc.last_line || loc.last_column) {
+        os << loc.filename.str() << ':' << loc.first_line << ':' << loc.first_column << ':' << loc.last_line << ':' << loc.last_column << ':';
       switch (e->eid()) {
         case Expression::E_INTLIT:
           os << "il:" << *e;
@@ -833,6 +851,9 @@ namespace MiniZinc {
           break;
       }
       os << sep;
+      } else {
+        os << e->cast<StringLit>()->v() << sep;
+      }
     }
     return true;
   }
@@ -1345,7 +1366,7 @@ namespace MiniZinc {
             TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,domain);
             if (domain)
               ti->setComputedDomain(true);
-            
+
             VarDecl* vd = newVarDecl(env, ctx, ti, NULL, NULL, al);
             EE ee(vd,NULL);
             env.map_insert(al,ee);
@@ -1360,7 +1381,6 @@ namespace MiniZinc {
             /// TODO: handle array types
             TypeInst* ti = new TypeInst(Location().introduce(),e->type());
             VarDecl* vd = newVarDecl(env, ctx, ti, NULL, NULL, e);
-            
             if (vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
               if (vd->e()->type().is_set()) {
@@ -2269,6 +2289,7 @@ namespace MiniZinc {
         if (nr==NULL) {
           // need to introduce new result variable
           TypeInst* ti = new TypeInst(Location().introduce(),ite->type(),NULL);
+          
           nr = newVarDecl(env, Ctx(), ti, NULL, NULL, NULL);
         }
         
@@ -6731,19 +6752,22 @@ namespace MiniZinc {
     for (unsigned int i=0; i<m->size(); i++) {
       Item* item = (*m)[i];
       if(VarDeclI* vdi = item->dyn_cast<VarDeclI>()) {
-        if(vdi->e()->e())
-          vdi->e()->e()->ann().removeCall(constants().ann.mzn_path);
         if(item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
             item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
-            e.envi().flat_removeItem(i);
+          e.envi().flat_removeItem(i);
         }
+        if(!e.envi().fopts.keep_mzn_paths && vdi->e()->e())
+          vdi->e()->e()->ann().removeCall(constants().ann.mzn_path);
       } else if(ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
-        ci->e()->ann().removeCall(constants().ann.mzn_path);
+        if(!e.envi().fopts.keep_mzn_paths)
+          ci->e()->ann().removeCall(constants().ann.mzn_path);
       } else if(SolveI* si = item->dyn_cast<SolveI>()) {
-        si->ann().removeCall(constants().ann.mzn_path);
-        if(si->e())
-          si->e()->ann().removeCall(constants().ann.mzn_path);
-          }
+        if(!e.envi().fopts.keep_mzn_paths) {
+          si->ann().removeCall(constants().ann.mzn_path);
+          if(si->e())
+            si->e()->ann().removeCall(constants().ann.mzn_path);
+        }
+      }
     }
 
     // Remove items marked for removal
@@ -6850,7 +6874,13 @@ namespace MiniZinc {
               }
               // Post new constraint
               if (ve != constants().lit_true) {
+                StringLit* sl = getLongestMznPathAnnotation(e.envi(), vd);
+                CallStackItem* csi=NULL;
+                if(sl)
+                  csi = new CallStackItem(env, sl);
+
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),ve));
+               if(csi) delete csi;
               }
             }
           } else {
@@ -6886,7 +6916,12 @@ namespace MiniZinc {
                 }
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
+                StringLit* sl = getLongestMznPathAnnotation(e.envi(), vd);
+                CallStackItem* csi=NULL;
+                if(sl)
+                  csi = new CallStackItem(env, sl);
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
+                if(csi) delete csi;
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
                        vd->e()->eid() == Expression::E_BOOLLIT);
@@ -6954,7 +6989,12 @@ namespace MiniZinc {
               nc->type(cc->type());
               nc->addAnnotation(definesVarAnn(vd->id()));
               nc->ann().merge(cc->ann());
+              StringLit* sl = getLongestMznPathAnnotation(e.envi(), vd);
+              CallStackItem* csi=NULL;
+              if(sl)
+                csi = new CallStackItem(env, sl);
               e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
+              if(csi) delete csi;
             } else {
               // RHS must be literal or Id
               assert(vd->e()->eid() == Expression::E_ID ||

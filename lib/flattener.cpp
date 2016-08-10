@@ -140,6 +140,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     int passes = atoi(argv[i]);
     if(passes > 0)
       flag_npasses = passes;
+  } else if (string(argv[i])=="--keep-paths") {
+    fopts.keep_mzn_paths = true;
   } else if (string(argv[i])=="--sac") {
     flag_sac = true;
   } else if (string(argv[i])=="--shave") {

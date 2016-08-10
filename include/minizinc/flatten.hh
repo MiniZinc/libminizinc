@@ -35,10 +35,12 @@ namespace MiniZinc {
     bool verbose;
     /// Only use paths for variables introduced by file 0 (the MiniZinc model)
     bool only_toplevel_paths;
+    /// Keep mzn_path annotations in FlatZinc
+    bool keep_mzn_paths;
     /// Only range domains for old linearization. Set from redefs to true if not here
-    bool onlyRangeDomains = false;
+    bool onlyRangeDomains;
     /// Default constructor
-    FlatteningOptions(void) : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false) {}
+    FlatteningOptions(void) : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), keep_mzn_paths(false), onlyRangeDomains(false) {}
   };
 
   class Pass {
