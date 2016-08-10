@@ -126,7 +126,7 @@ namespace MiniZinc {
     void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
-    bool dumpPath(std::ostream& os, bool force);
+    bool dumpPath(std::ostream& os, bool force = false);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
     PathMap& getPathMap() { return pathMap; }
