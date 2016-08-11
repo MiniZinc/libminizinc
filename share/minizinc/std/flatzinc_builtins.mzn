@@ -229,7 +229,7 @@ predicate array_float_minimum(var int: m, array[int] of var int: x);
 predicate bool2int(var bool: a, var int: b);
 /** @group flatzinc Constrains \a r &harr; \a a &and; \a b */
 predicate bool_and(var bool: a, var bool: b, var bool: r);
-/** @group flatzinc Constrains \( \bigvee_i \a as[i] \land \bigvee_j \lnot \a bs[j] \) */
+/** @group flatzinc Constrains \( \bigvee_i \a as[i] \lor \bigvee_j \lnot \a bs[j] \) */
 predicate bool_clause(array[int] of var bool: as, array[int] of var bool: bs);
 
 /** @group flatzinc Constrains \a a = \a b */

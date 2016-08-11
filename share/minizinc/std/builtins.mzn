@@ -1328,6 +1328,14 @@ function $T: assert(bool: b, string: msg, $T: x);
 function var $T: assert(bool: b, string: msg, var $T: x);
 /** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
 function var opt $T: assert(bool: b, string: msg, var opt $T: x);
+
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of $T: assert(bool: b, string: msg, array[$U] of $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of var $T: assert(bool: b, string: msg, array[$U] of var $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of var opt $T: assert(bool: b, string: msg, array[$U] of var opt $T: x);
+
 /** @group builtins.debug If \a b is true, return true, otherwise abort with message \a msg. */
 function bool: assert(bool: b, string: msg);
 /** @group builtins.debug Return \a x, and print message \a msg. */

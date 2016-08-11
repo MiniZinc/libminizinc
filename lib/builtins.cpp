@@ -2230,6 +2230,12 @@ namespace MiniZinc {
       rb(env, m, constants().ids.assert, t, b_assert);
       t[2] = Type::optvartop();
       rb(env, m, constants().ids.assert, t, b_assert);
+      t[2] = Type::top(-1);
+      rb(env, m, constants().ids.assert, t, b_assert);
+      t[2] = Type::vartop(-1);
+      rb(env, m, constants().ids.assert, t, b_assert);
+      t[2] = Type::optvartop(-1);
+      rb(env, m, constants().ids.assert, t, b_assert);
     }
     {
       std::vector<Type> t(1);
