@@ -1180,7 +1180,14 @@ namespace MiniZinc {
               env.vo_add_exp(vd);
               ret = vd->id();
             }
-            if (vd->e() && vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
+            Id* vde_id = Expression::dyn_cast<Id>(vd->e());
+            if (vde_id && vde_id->decl()->ti()->domain()==NULL) {
+              if (vd->ti()->domain()) {
+                GCLock lock;
+                Expression* vd_dom = eval_par(env, vd->ti()->domain());
+                vde_id->decl()->ti()->domain(vd_dom);
+              }
+            } else if (vd->e() && vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
               GCLock lock;
               IntSetVal* ibv = NULL;
               if (vd->e()->type().is_set()) {
