@@ -6312,11 +6312,13 @@ namespace MiniZinc {
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            env.flat_removeItem(cur_idx->second);
+          if (CollectDecls::varIsFree(cur)) {
+            IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+            if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+              CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+              topDown(cd,cur->e());
+              env.flat_removeItem(cur_idx->second);
+            }
           }
         }
       }
