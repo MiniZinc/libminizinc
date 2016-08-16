@@ -46,7 +46,7 @@
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//   #define __MZN__DBGOUT__MIPDOMAINS__
+//    #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -1109,9 +1109,38 @@ namespace MiniZinc {
       }
       
       /// tightens element bounds in the existing eq_encoding of varRef1
-      /// Can also back-check from there    TODO
+      /// necessary because if one exists, int_ne is not translated into it
+      /// Can also back-check from there?   TODO
       /// And further checks                TODO
       void syncWithEqEncoding() {
+        std::vector<Expression*> pp;
+        auto bnds = sDomain.getBounds();
+        const long long iMin = mipd.expr2ExprArray(
+          mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+        MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
+        MZN_MIPD__assert_hard( iMin<=bnds.left );
+        long long vEE = iMin;
+        DBGOUT_MIPD__( "   SYNC EQ_ENCODE( " << (*cls.varRef1) << " ):  SETTING 0 FLAGS FOR VALUES: " );
+        for ( auto& intv : sDomain ) {
+          for ( ; vEE < intv.left; ++vEE ) {
+            if ( vEE >= (iMin+pp.size()) )
+              return;
+            if ( pp[ vEE-iMin ]->isa<Id>() )
+              if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+                DBGOUT_MIPD__( vEE << ", " );
+                setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+              }
+          }
+          vEE = intv.right+1;
+        }
+        for ( ; vEE < (iMin+pp.size()); ++vEE ) {
+          if ( pp[ vEE-iMin ]->isa<Id>() )
+            if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+              DBGOUT_MIPD__( vEE << ", " );
+              setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+            }
+        }
+        DBGOUT_MIPD( "" );
       }
       
       /// sync varRef1's eq_encoding with those of other variables
