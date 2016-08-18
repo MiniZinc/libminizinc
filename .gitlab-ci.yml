@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
 
 build:osx:
   stage: build
