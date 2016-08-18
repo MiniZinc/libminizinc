@@ -10,11 +10,11 @@ build:osx:
      - cmake --build . --config Debug
      - cp Debug/mzn2fzn Debug/mzn-fzn Debug/solns2out ../
   artifacts:
-     path:
+     paths:
        - mzn2fzn
        - mzn-fzn
        - solns2out
-     expire-in: 2h
+     expire_in: 2h
   only:
      - develop
   tags:
