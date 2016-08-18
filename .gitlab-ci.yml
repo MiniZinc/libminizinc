@@ -21,11 +21,25 @@ build:osx:
   tags:
      - mac
 
-test:osx:
+test:mzn20_fd:osx:
   stage: test
   script:
      - cd tests
-     - bash run-all.sh
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn20_fd .mzn unit examples
+  dependencies:
+     - build:osx
+  only:
+     - develop
+  tags:
+     - mac
+
+test:mzn-fzn_fd:osx:
+  stage: test
+  script:
+     - cd tests
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn-fzn_fd .mzn unit examples
   dependencies:
      - build:osx
   only:
