@@ -21,34 +21,6 @@ build:osx:
   tags:
      - mac
 
-test:mzn20_fd:osx:
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn20_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
-  tags:
-     - mac
-     - linux
-
-test:mzn-fzn_fd:osx:
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn-fzn_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
-  tags:
-     - mac
-     - linux
-
 build:linux:
   image: guidotack/build-minizinc:1.0
   stage: build
@@ -68,3 +40,57 @@ build:linux:
      - develop
   tags:
      - linux
+
+test:mzn20_fd:osx:
+  stage: test
+  script:
+     - cd tests
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn20_fd .mzn unit examples
+  dependencies:
+     - build:osx
+  only:
+     - develop
+  tags:
+     - mac
+
+test:mzn-fzn_fd:osx:
+  stage: test
+  script:
+     - cd tests
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn-fzn_fd .mzn unit examples
+  dependencies:
+     - build:osx
+  only:
+     - develop
+  tags:
+     - mac
+
+
+test:mzn20_fd:linux:
+  stage: test
+  script:
+     - cd tests
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn20_fd .mzn unit examples
+  dependencies:
+     - build:linux
+  only:
+     - develop
+  tags:
+     - linux
+
+test:mzn-fzn_fd:linux:
+  stage: test
+  script:
+     - cd tests
+     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
+     - bash run-tests mzn-fzn_fd .mzn unit examples
+  dependencies:
+     - build:linux
+  only:
+     - develop
+  tags:
+     - linux
+
