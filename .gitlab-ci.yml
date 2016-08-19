@@ -69,6 +69,7 @@ test:mzn-fzn_fd:osx:
 
 
 test:mzn20_fd:linux:
+  image: guidotack/build-minizinc:1.0
   stage: test
   script:
      - cd tests
@@ -82,6 +83,7 @@ test:mzn20_fd:linux:
      - linux
 
 test:mzn-fzn_fd:linux:
+  image: guidotack/build-minizinc:1.0
   stage: test
   script:
      - cd tests
