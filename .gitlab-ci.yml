@@ -48,7 +48,7 @@ test:mzn-fzn_fd:osx:
      - mac
 
 build:linux:
-  image: buildc
+  image: guidotack/build-minizinc:1.0
   stage: build
   script:
     - mkdir build
