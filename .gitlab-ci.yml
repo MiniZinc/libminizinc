@@ -33,6 +33,7 @@ test:mzn20_fd:osx:
      - develop
   tags:
      - mac
+     - linux
 
 test:mzn-fzn_fd:osx:
   stage: test
@@ -46,6 +47,7 @@ test:mzn-fzn_fd:osx:
      - develop
   tags:
      - mac
+     - linux
 
 build:linux:
   image: guidotack/build-minizinc:1.0
