@@ -1,16 +1,33 @@
 stages:
   - build
+  - test
 
-minizinc:
+build:osx:
   stage: build
   script:
      - mkdir build
      - cd build
      - cmake -GXcode ..
      - cmake --build . --config Debug
-     - cp Debug/mzn2fzn Debug/solns2out ../
-     - cd ../tests
+     - cp Debug/mzn2fzn Debug/mzn-fzn Debug/solns2out ../
+  artifacts:
+     paths:
+       - mzn2fzn
+       - mzn-fzn
+       - solns2out
+     expire_in: 2h
+  only:
+     - develop
+  tags:
+     - mac
+
+test:osx:
+  stage: test
+  script:
+     - cd tests
      - bash run-all.sh
+  dependencies:
+     - build:osx
   only:
      - develop
   tags:
