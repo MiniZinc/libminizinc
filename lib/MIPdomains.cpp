@@ -1120,7 +1120,9 @@ namespace MiniZinc {
         MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
         MZN_MIPD__assert_hard( iMin<=bnds.left );
         long long vEE = iMin;
-        DBGOUT_MIPD__( "   SYNC EQ_ENCODE( " << (*cls.varRef1) << " ):  SETTING 0 FLAGS FOR VALUES: " );
+        DBGOUT_MIPD__( "   SYNC EQ_ENCODE( " << (*cls.varRef1)
+          << ",   bitflags: " << *(mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1])
+          << " ):  SETTING 0 FLAGS FOR VALUES: " );
         for ( auto& intv : sDomain ) {
           for ( ; vEE < intv.left; ++vEE ) {
             if ( vEE >= (iMin+pp.size()) )
@@ -1233,7 +1235,7 @@ namespace MiniZinc {
                       relateReifFlag( pCall->args()[1],  { { rhsUp+delta, IntvReal::infPlus() } } );
                       break;
                     case CMPT_EQ:
-                      relateReifFlag( pCall->args()[2], { { rhs, rhs } } );
+                      relateReifFlag( pCall->args()[2], { { rhsRnd, rhsRnd } } );
                       break;
                     default:
                       break;
@@ -1267,14 +1269,14 @@ namespace MiniZinc {
                     switch ( nCmpType_ADAPTED ) {
                       case CMPT_EQ_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
-                        fUseDD = ( itLB->left==rhs && itLB->right==rhs );  // exactly
+                        auto itLB = sDomain.lower_bound(rhsRnd);
+                        fUseDD = ( itLB->left==rhsRnd && itLB->right==rhsRnd );  // exactly
                       }
                         break;
                       case CMPT_LT_0:
                       case CMPT_LE_0:
                       {
-                        auto itUB = sDomain.upper_bound(rhs);
+                        auto itUB = sDomain.upper_bound(rhsUp);
                         bool fInner = false;
                         if ( sDomain.begin() != itUB ) {
                           --itUB;
@@ -1287,7 +1289,7 @@ namespace MiniZinc {
                       case CMPT_GT_0:
                       case CMPT_GE_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
+                        auto itLB = sDomain.lower_bound(rhsDown);
                         bool fInner = false;
                         if ( sDomain.begin() != itLB ) {
                           --itLB;
@@ -1303,7 +1305,7 @@ namespace MiniZinc {
                   }
                   if ( fUseDD ) {               // use sDomain
                     if ( CMPT_EQ_0==nCmpType_ADAPTED ) {
-                      relateReifFlag( pCall->args()[1], { { rhs, rhs } }, RIT_Halfreif );
+                      relateReifFlag( pCall->args()[1], { { rhsRnd, rhsRnd } }, RIT_Halfreif );
                     } else if ( nCmpType_ADAPTED < 0 ) {
                       relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
                     } else {
