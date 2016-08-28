@@ -32,7 +32,7 @@ namespace MiniZinc {
 
     findPresolvedCalls();
 
-//    TODO: Deal with circular presolving.
+//    TODO: More intelligent presolving in case of circular presolving
     for (Subproblem* it : subproblems) {
       try {
         it->solve();
@@ -236,13 +236,16 @@ namespace MiniZinc {
     GCLock lock;
     CopyMap cm;
 
-//  TODO: make sure this actually works for everything that's called in the predicate.
     FunctionI* pred = copy(e->envi(), cm, predicate, false, true)->cast<FunctionI>();
     m->addItem(pred);
     recursiveRegisterFns(m, e->envi(), pred);
     std::vector<Expression*> args;
     for ( VarDecl* it : pred->params() ) {
-      // TODO: Deal with non-variable parameters
+      // TODO: Decide on strategy on parameter arguments
+      if (it->type().ti() == Type::TypeInst::TI_PAR) {
+        throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
+                "arguments");
+      }
       VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
@@ -378,7 +381,11 @@ namespace MiniZinc {
     std::vector<Expression*> args;
     std::vector<VarDecl*> decls;
     for (VarDecl* it : pred->params()) {
-      // TODO: Deal with non-variable parameters
+      // TODO: Decide on strategy on parameter arguments
+      if (it->type().ti() == Type::TypeInst::TI_PAR) {
+        throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
+                "arguments");
+      }
       VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
 
