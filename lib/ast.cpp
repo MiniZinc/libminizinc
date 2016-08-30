@@ -695,8 +695,8 @@ namespace MiniZinc {
               } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                                 tiid.str()+" instantiated with different types ("+
-                                tiit.toString()+" vs "+
-                                it->second.toString()+")");
+                                tiit.toString(env)+" vs "+
+                                it->second.toString(env)+")");
               }
             }
           }
@@ -720,8 +720,8 @@ namespace MiniZinc {
             } else if (it->second!=tiit) {
               throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" instantiated with different types ("+
-                              tiit.toString()+" vs "+
-                              it->second.toString()+")");
+                              tiit.toString(env)+" vs "+
+                              it->second.toString(env)+")");
             }
           }
         }
@@ -731,6 +731,7 @@ namespace MiniZinc {
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
         ret.bt(it->second.bt());
+        ret.enumId(it->second.enumId());
         if (ret.st()==Type::ST_PLAIN)
           ret.st(it->second.st());
       }

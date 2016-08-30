@@ -968,7 +968,7 @@ namespace MiniZinc {
           } else {
             MZN_MIPD__assert_for_feas( 0, 
               "Variable " << vd->id()->str()
-              << " of type " << vd->type().toString()
+              << " of type " << vd->type().toString(mipd.__env->envi())
               << " has a domain." );
           }          
 //           /// Deleting var domain:

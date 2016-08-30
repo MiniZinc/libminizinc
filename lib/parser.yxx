@@ -644,7 +644,7 @@ namespace MiniZinc {
 %type <expression> set_expr string_expr string_quote_rest
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list
+%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list enum_id_list
 %type <expression_vv> simple_array_literal_2d_list array_access_tail
 %type <expression_vvv> simple_array_literal_3d_list
 
@@ -793,6 +793,45 @@ vardecl_item :
           $$ = new VarDeclI(@$,$1);
         delete $2;
       }
+    | MZN_ENUM MZN_IDENTIFIER
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        VarDecl* vd = new VarDecl(@$,ti,$2);
+        free($2);
+        $$ = new VarDeclI(@$,vd);
+      }
+    | MZN_ENUM MZN_IDENTIFIER MZN_EQ '{' enum_id_list '}'
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        SetLit* sl = new SetLit(@$, *$5);
+        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        free($2);
+        delete $5;
+        $$ = new VarDeclI(@$,vd);
+      }
+    | MZN_ENUM MZN_IDENTIFIER MZN_EQ MZN_IDENTIFIER '(' expr ')'
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        vector<Expression*> args;
+        args.push_back($6);
+        Call* sl = new Call(@$, ASTString($4), args);
+        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        free($2);
+        $$ = new VarDeclI(@$,vd);
+      }
+
+enum_id_list :
+      // empty
+      { $$ = new std::vector<Expression*>(); }
+    | MZN_IDENTIFIER
+      { $$ = new std::vector<Expression*>();
+        $$->push_back(new Id(@$,$1,NULL)); free($1);
+      }
+    | enum_id_list ',' MZN_IDENTIFIER
+      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,NULL)); free($3); }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr

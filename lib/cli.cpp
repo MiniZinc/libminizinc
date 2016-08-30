@@ -26,7 +26,7 @@ namespace MiniZinc {
       }
     }
     std::stringstream ss;
-    ss << "For option: " << name << " expected Par String vector, received " << e->type().toString() << std::endl;
+    ss << "For option: " << name << " expected Par String vector, received " << e->type().nonEnumToString() << std::endl;
     throw InternalError(ss.str());
   }
   

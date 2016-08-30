@@ -124,8 +124,8 @@ namespace MiniZinc {
         for (unsigned int j=0; j<t.size(); j++) {
           if (!t[j].isSubtypeOf(fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << t[j].toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << t[j].toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
 #endif
             match=false;
             break;
@@ -205,8 +205,8 @@ namespace MiniZinc {
         for (unsigned int j=0; j<args.size(); j++) {
           if (!args[j]->type().isSubtypeOf(fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << args[j]->type().toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << args[j]->type().toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
 #endif
             match=false;
             break;
@@ -260,8 +260,8 @@ namespace MiniZinc {
         for (unsigned int j=0; j<c->args().size(); j++) {
           if (!c->args()[j]->type().isSubtypeOf(fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << c->args()[j]->type().toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << c->args()[j]->type().toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
             std::cerr << "Wrong argument is " << *c->args()[j];
 #endif
             match=false;

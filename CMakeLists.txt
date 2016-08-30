@@ -27,7 +27,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 13)
+set (libminizinc_VERSION_PATCH 13_enum2)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -247,6 +247,7 @@ lib/prettyprinter.cpp
 lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
+lib/type.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/flattener.cpp

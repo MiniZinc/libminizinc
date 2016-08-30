@@ -342,6 +342,45 @@ namespace MiniZinc {
     return _failed;
   }
   
+  
+  unsigned int EnvI::registerEnum(VarDeclI* vdi) {
+    EnumMap::iterator it = enumMap.find(vdi);
+    unsigned int ret;
+    if (it == enumMap.end()) {
+      ret = enumVarDecls.size();
+      enumVarDecls.push_back(vdi);
+      enumMap.insert(std::make_pair(vdi, ret));
+    } else {
+      ret = it->second;
+    }
+    return ret+1;
+  }
+  VarDeclI* EnvI::getEnum(unsigned int i) const {
+    assert(i > 0 && i <= enumVarDecls.size());
+    return enumVarDecls[i-1];
+  }
+  unsigned int EnvI::registerArrayEnum(const std::vector<unsigned int>& arrayEnum) {
+    std::ostringstream oss;
+    for (unsigned int i=0; i<arrayEnum.size(); i++) {
+      oss << arrayEnum[i] << ".";
+    }
+    ArrayEnumMap::iterator it = arrayEnumMap.find(oss.str());
+    unsigned int ret;
+    if (it == arrayEnumMap.end()) {
+      ret = arrayEnumDecls.size();
+      arrayEnumDecls.push_back(arrayEnum);
+      arrayEnumMap.insert(std::make_pair(oss.str(), ret));
+    } else {
+      ret = it->second;
+    }
+    return ret+1;
+  }
+  const std::vector<unsigned int>& EnvI::getArrayEnum(unsigned int i) const {
+    assert(i > 0 && i <= arrayEnumDecls.size());
+    return arrayEnumDecls[i-1];
+  }
+
+  
   void EnvI::collectVarDecls(bool b) {
     collect_vardecls = b;
   }
@@ -4939,7 +4978,8 @@ namespace MiniZinc {
         VarDecl* it = v->flat();
         if (it==NULL) {
           TypeInst* ti = eval_typeinst(env,v);
-          VarDecl* vd = newVarDecl(env, ctx, ti, v->id()->idn()==-1 && !v->toplevel() ? NULL : v->id(), v, NULL);
+          bool reuseVarId = v->type().isann() || ( v->toplevel() && v->id()->idn()==-1 && v->id()->v().c_str()[0]!='\'' );
+          VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : NULL, v, NULL);
           v->flat(vd);
           Ctx nctx;
           if (v->e() && v->e()->type().bt() == Type::BT_BOOL)
@@ -5121,7 +5161,7 @@ namespace MiniZinc {
         if (decl==NULL) {
           FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
           if (origdecl == NULL) {
-            throw FlatteningError(env,c.loc(),"function is used in output, par version needed");
+            throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
 
           if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
@@ -5191,14 +5231,54 @@ namespace MiniZinc {
     } _par;
     topDown(_par, e);
     class Decls : public EVisitor {
+    protected:
+      static std::string createEnumToStringName(Id* ident, std::string prefix) {
+        std::string name = ident->str().str();
+        if (name[0]=='\'') {
+          name = "'"+prefix+name.substr(1);
+        } else {
+          name = prefix+name;
+        }
+        return name;
+      }
+      
     public:
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
+        if (c.id()=="format" || c.id()=="show") {
+          if (c.args()[c.args().size()-1]->type().enumId() > 0) {
+            Id* ti_id = env.getEnum(c.args()[c.args().size()-1]->type().enumId())->e()->id();
+            GCLock lock;
+            std::vector<Expression*> args(1);
+            args[0] = c.args()[c.args().size()-1];
+            if (args[0]->type().dim() > 1) {
+              Call* array1d = new Call(Location().introduce(),ASTString("array1d"),args);
+              Type array1dt = args[0]->type();
+              array1dt.dim(1);
+              array1d->type(array1dt);
+              args[0] = array1d;
+            }
+            std::string enumName = createEnumToStringName(ti_id, "_toString_");
+            Call* convertEnum = new Call(Location().introduce(),enumName,args);
+            convertEnum->type(Type::parstring());
+            c.args()[c.args().size()-1] = convertEnum;
+          }
+        }
         c.decl(env.orig->matchFn(env,&c));
       }
     } _decls(env);
     topDown(_decls, e);
+  }
+  
+  void checkRenameVar(EnvI& e, VarDecl* vd) {
+    if (vd->id()->idn() != vd->flat()->id()->idn()) {
+      TypeInst* vd_rename_ti = copy(e,e.cmap,vd->ti())->cast<TypeInst>();
+      VarDecl* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), NULL);
+      vd_rename->flat(vd->flat());
+      vd->e(vd_rename->id());
+      e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
+    }
   }
   
   void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool fCopy) {
@@ -5251,7 +5331,7 @@ namespace MiniZinc {
               if (decl==NULL) {
                 FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
                 if (origdecl == NULL) {
-                  throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
+                  throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                 }
                 if (!origdecl->from_stdlib()) {
                   decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -5289,6 +5369,7 @@ namespace MiniZinc {
               args[0] = al;
               reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
             }
+            checkRenameVar(env, nvi->e());
           } else {
             outputVarDecls(env, nvi, nvi->e()->ti());
             outputVarDecls(env, nvi, nvi->e()->e());
@@ -5321,15 +5402,13 @@ namespace MiniZinc {
         }
       }
     };
-    for (unsigned int i=e.orig->size(); i--;) {
-      if (OutputI* oi = (*e.orig)[i]->dyn_cast<OutputI>()) {
-        GCLock lock;
-        OutputI* noi = copy(e,oi)->cast<OutputI>();
-        CopyOutput co(e);
-        topDown(co, noi->e());
-        e.flat_addItem(noi);
-        break;
-      }
+    
+    if (OutputI* oi = e.orig->outputItem()) {
+      GCLock lock;
+      OutputI* noi = copy(e,oi)->cast<OutputI>();
+      CopyOutput co(e);
+      topDown(co, noi->e());
+      e.flat_addItem(noi);
     }
   }
   
@@ -5371,7 +5450,7 @@ namespace MiniZinc {
                 if (decl==NULL) {
                   FunctionI* origdecl = e.orig->matchFn(e, rhs->id(), tv);
                   if (origdecl == NULL) {
-                    throw FlatteningError(e,rhs->loc(),"function is used in output, par version needed");
+                    throw FlatteningError(e,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                   }
                   if (!origdecl->from_stdlib()) {
                     decl = copy(e,e.cmap,origdecl)->cast<FunctionI>();
@@ -5441,6 +5520,7 @@ namespace MiniZinc {
                       args[0] = al;
                       vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
                     }
+                    checkRenameVar(e, vd);
                   }
                 }
               }
@@ -5527,6 +5607,7 @@ namespace MiniZinc {
         OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
         e.orig->addItem(newOutputItem);
         outputItem = copy(e,e.cmap, newOutputItem)->cast<OutputI>();
+        makePar(e,outputItem->e());
         e.output->addItem(outputItem);
       }
       
@@ -5553,7 +5634,7 @@ namespace MiniZinc {
           if (decl==NULL) {
             FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
             if (origdecl == NULL || !origdecl->rtype(env, tv).ispar()) {
-              throw FlatteningError(env,c.loc(),"function is used in output, par version needed");
+              throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
             }
             if (!origdecl->from_stdlib()) {
               decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -5586,6 +5667,7 @@ namespace MiniZinc {
           if (Expression* vd_e = env.cmap.find(vdi->e())) {
             VarDecl* vd = vd_e->cast<VarDecl>();
             VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
+            
             Type t = vdi_copy->e()->ti()->type();
             t.ti(Type::TI_PAR);
             vdi_copy->e()->ti()->domain(NULL);
@@ -5620,7 +5702,7 @@ namespace MiniZinc {
                     if (decl==NULL) {
                       FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
                       if (origdecl == NULL) {
-                        throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
+                        throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                       }
                       if (!origdecl->from_stdlib()) {
                         decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -5646,6 +5728,7 @@ namespace MiniZinc {
                   assert(vd->flat());
                   if (vd->type().dim() == 0) {
                     vd->flat()->addAnnotation(constants().ann.output_var);
+                    checkRenameVar(env, vd);
                   } else {
                     bool needOutputAnn = true;
                     if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
@@ -5676,6 +5759,7 @@ namespace MiniZinc {
                       args.resize(1);
                       args[0] = al;
                       vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                      checkRenameVar(env, vd);
                     }
                   }
                 }
@@ -6274,7 +6358,7 @@ namespace MiniZinc {
             if (decl==NULL) {
               FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
               if (origdecl == NULL) {
-                throw FlatteningError(env,rhs->loc(),"function is used in output, par version needed");
+                throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
               }
               if (!isBuiltin(origdecl)) {
                 decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();

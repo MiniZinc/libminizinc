@@ -93,6 +93,12 @@ namespace MiniZinc {
     bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
+    EnumMap enumMap;
+    std::vector<VarDeclI*> enumVarDecls;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,unsigned int> ArrayEnumMap;
+    ArrayEnumMap arrayEnumMap;
+    std::vector<std::vector<unsigned int> > arrayEnumDecls;
   public:
     EnvI(Model* orig0);
     ~EnvI(void);
@@ -102,6 +108,11 @@ namespace MiniZinc {
     void map_remove(Expression* e);
     Map::iterator map_end(void);
     void dump(void);
+    
+    unsigned int registerEnum(VarDeclI* vdi);
+    VarDeclI* getEnum(unsigned int i) const;
+    unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
+    const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
     
     void flat_addItem(Item* i);
     void flat_removeItem(int i);

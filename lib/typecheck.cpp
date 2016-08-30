@@ -14,9 +14,12 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/flatten_internal.hh>
 
 #include <string>
 #include <sstream>
+
+#include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
   
@@ -51,8 +54,277 @@ namespace MiniZinc {
     }
   };
   
+  std::string createEnumToStringName(Id* ident, std::string prefix) {
+    std::string name = ident->str().str();
+    if (name[0]=='\'') {
+      name = "'"+prefix+name.substr(1);
+    } else {
+      name = prefix+name;
+    }
+    return name;
+  }
+  
+  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, std::vector<Item*>& enumItems) {
+
+    Id* ident = vd->id();
+    SetLit* sl = NULL;
+    
+    AssignI* ret = NULL;
+    
+    GCLock lock;
+    if (Call* c = vd->e()->dyn_cast<Call>()) {
+      if (c->id()!="anon_enum") {
+        throw TypeError(env, c->loc(), "invalid initialisation for enum");
+      }
+    } else {
+      sl = vd->e()->cast<SetLit>();
+      for (unsigned int i=0; i<sl->v().size(); i++) {
+        TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
+        VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),IntLit::a(i+1));
+        enumItems.push_back(new VarDeclI(vd_id->loc(),vd_id));
+      }
+      SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
+      Type nslt = nsl->type();
+      nslt.enumId(enumId);
+      nsl->type(nslt);
+      vd->e(nsl);
+    }
+
+    
+    if (sl) {
+      std::string name = createEnumToStringName(ident,"_enum_to_string_");
+      std::vector<Expression*> al_args(sl->v().size());
+      for (unsigned int i=0; i<sl->v().size(); i++) {
+        al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
+      }
+      ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
+      
+      if (vd_enumToString) {
+        ret = new AssignI(Location().introduce(),name,al);
+        ret->decl(vd_enumToString);
+      } else {
+        std::vector<TypeInst*> ranges(1);
+        ranges[0] = new TypeInst(Location().introduce(),Type::parint());
+        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
+        ti->setRanges(ranges);
+        vd_enumToString = new VarDecl(Location().introduce(),ti,name,al);
+        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+      }
+      
+      TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+      vd_aa->toplevel(false);
+      std::vector<Expression*> aa_args(1);
+      aa_args[0] = vd_aa->id();
+      ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_aa;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,aa);
+      enumItems.push_back(fi);
+    } else {
+      if (vd_enumToString) {
+        /// TODO: find a better solution (don't introduce the vd_enumToString until we
+        ///       know it's a non-anonymous enum)
+        vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
+      }
+      TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+      vd_aa->toplevel(false);
+      
+      StringLit* sl = new StringLit(Location().introduce(), ASTString(ident->str().str()+"_"));
+      std::vector<Expression*> showIntArgs(1);
+      showIntArgs[0] = vd_aa->id();
+      Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+      BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_aa;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,construct_string);
+      enumItems.push_back(fi);
+    }
+    
+    {
+      /*
+       
+       function _toString_ENUM(array[$U] of ENUM: x) =
+         let {
+           array[int] of ENUM: xx = array1d(x)
+         } in "[" ++ join(", ", [ _toString_ENUM(xx[i]) | i in index_set(xx) ]) ++ "]";
+       
+       */
+
+      Type argType = Type::parenum(ident->type().enumId());
+
+      TIId* tiid = new TIId(Location().introduce(),"U");
+      TypeInst* ti_range = new TypeInst(Location().introduce(),argType,tiid);
+      std::vector<TypeInst*> ranges(1);
+      ranges[0] = ti_range;
+
+      TypeInst* x_ti = new TypeInst(Location().introduce(),Type::parint(-1),ranges,ident);
+      VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
+      vd_x->toplevel(false);
+
+      TypeInst* xx_range = new TypeInst(Location().introduce(),argType,NULL);
+      std::vector<TypeInst*> xx_ranges(1);
+      xx_ranges[0] = xx_range;
+      TypeInst* xx_ti = new TypeInst(Location().introduce(),argType,xx_ranges);
+      
+      std::vector<Expression*> array1dArgs(1);
+      array1dArgs[0] = vd_x->id();
+      Call* array1dCall = new Call(Location().introduce(),"array1d",array1dArgs);
+      
+      VarDecl* vd_xx = new VarDecl(Location().introduce(),xx_ti,"xx",array1dCall);
+      vd_xx->toplevel(false);
+
+      TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
+      idx_i->toplevel(false);
+      
+      std::vector<Expression*> aa_xxi_idx(1);
+      aa_xxi_idx[0] = idx_i->id();
+      ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(),vd_xx->id(),aa_xxi_idx);
+      
+      std::vector<Expression*> _toString_ENUMArgs(1);
+      _toString_ENUMArgs[0] = aa_xxi;
+      Call* _toString_ENUM = new Call(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      _toString_ENUMArgs);
+      
+      std::vector<Expression*> index_set_xx_args(1);
+      index_set_xx_args[0] = vd_xx->id();
+      Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
+      std::vector<VarDecl*> gen_exps(1);
+      gen_exps[0] = idx_i;
+      Generator gen(gen_exps,index_set_xx);
+      
+      Generators generators;
+      generators._g.push_back(gen);
+      Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
+      
+      std::vector<Expression*> join_args(2);
+      join_args[0] = new StringLit(Location().introduce(),", ");
+      join_args[1] = comp;
+      Call* join = new Call(Location().introduce(),"join",join_args);
+      
+      StringLit* sl_open = new StringLit(Location().introduce(),"[");
+      BinOp* bopp0 = new BinOp(Location().introduce(),sl_open,BOT_PLUSPLUS,join);
+      StringLit* sl_close = new StringLit(Location().introduce(),"]");
+      BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
+
+      std::vector<Expression*> let_args(1);
+      let_args[0] = vd_xx;
+      Let* let = new Let(Location().introduce(),let_args,bopp1);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_x;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,let);
+      enumItems.push_back(fi);
+    }
+    
+    {
+      /*
+       
+       function _toString_ENUM(set of ENUM: x) =
+         "{" ++ join(", ", [ _toString_ENUM(i) | i in x ]) ++ "}";
+       
+       */
+      
+      Type argType = Type::parsetenum(ident->type().enumId());
+      TypeInst* x_ti = new TypeInst(Location().introduce(),argType,ident);
+      VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
+      vd_x->toplevel(false);
+      
+      TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
+      idx_i->toplevel(false);
+      
+      std::vector<Expression*> _toString_ENUMArgs(1);
+      _toString_ENUMArgs[0] = idx_i->id();
+      Call* _toString_ENUM = new Call(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      _toString_ENUMArgs);
+      
+      std::vector<VarDecl*> gen_exps(1);
+      gen_exps[0] = idx_i;
+      Generator gen(gen_exps,vd_x->id());
+      
+      Generators generators;
+      generators._g.push_back(gen);
+      Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
+      
+      std::vector<Expression*> join_args(2);
+      join_args[0] = new StringLit(Location().introduce(),", ");
+      join_args[1] = comp;
+      Call* join = new Call(Location().introduce(),"join",join_args);
+      
+      StringLit* sl_open = new StringLit(Location().introduce(),"{");
+      BinOp* bopp0 = new BinOp(Location().introduce(),sl_open,BOT_PLUSPLUS,join);
+      StringLit* sl_close = new StringLit(Location().introduce(),"}");
+      BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(1);
+      fi_params[0] = vd_x;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,bopp1);
+      enumItems.push_back(fi);
+    }
+    
+    return ret;
+  }
+  
+  void
+  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, std::vector<Item*>& enumItems) {
+    VarDecl* vd = vdi->e();
+    if (handleEnums && vd->ti()->isEnum()) {
+      unsigned int enumId = env.registerEnum(vdi);
+      Type vdt = vd->type();
+      vdt.enumId(enumId);
+      vd->ti()->type(vdt);
+      vd->type(vdt);
+
+      if (vd->e()) {
+        (void) createEnumMapper(env, model, enumId, vd, NULL, enumItems);
+      } else {
+        GCLock lock;
+        std::string name = createEnumToStringName(vd->id(),"_enum_to_string_");
+        std::vector<TypeInst*> ranges(1);
+        ranges[0] = new TypeInst(Location().introduce(),Type::parint());
+        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
+        ti->setRanges(ranges);
+        VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,NULL);
+        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+      }
+
+    }
+    DeclMap::iterator vd_id = idmap.find(vd->id());
+    if (vd_id == idmap.end()) {
+      Decls nd; nd.push_back(vd);
+      idmap.insert(vd->id(),nd);
+    } else {
+      if (unique) {
+        GCLock lock;
+        throw TypeError(env, vd->loc(),"identifier `"+vd->id()->str().str()+
+                        "' already defined");
+      }
+      vd_id->second.push_back(vd);
+    }
+  }
   void
   TopoSorter::add(EnvI& env, VarDecl* vd, bool unique) {
+    if (vd->ti()->isEnum() && vd->e()) {
+      throw TypeError(env, vd->loc(), "enums are only allowed at top level");
+    }
     DeclMap::iterator vdi = idmap.find(vd->id());
     if (vdi == idmap.end()) {
       Decls nd; nd.push_back(vd);
@@ -318,7 +590,7 @@ namespace MiniZinc {
       KeepAlive ka(c);
       return ka;
     }
-    throw TypeError(env, e->loc(),"cannot determine coercion from type "+e->type().toString()+" to type "+funarg_t.toString());
+    throw TypeError(env, e->loc(),"cannot determine coercion from type "+e->type().toString(env)+" to type "+funarg_t.toString(env));
   }
   KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, Expression* funarg) {
     return addCoercion(env, m, e, funarg->type());
@@ -335,7 +607,7 @@ namespace MiniZinc {
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
         if (!(*it)->type().isann())
-          throw TypeError(_env,(*it)->loc(),"expected annotation, got `"+(*it)->type().toString()+"'");
+          throw TypeError(_env,(*it)->loc(),"expected annotation, got `"+(*it)->type().toString(_env)+"'");
     }
     bool enter(Expression*) { return true; }
     /// Visit integer literal
@@ -359,8 +631,8 @@ namespace MiniZinc {
           ty.ti(Type::TI_VAR);
         if (sl.v()[i]->type().cv())
           ty.cv(true);
-        if (!Type::bt_subtype(sl.v()[i]->type().bt(), ty.bt())) {
-          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty.bt(), sl.v()[i]->type().bt())) {
+        if (!Type::bt_subtype(sl.v()[i]->type(), ty)) {
+          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty, sl.v()[i]->type())) {
             ty.bt(sl.v()[i]->type().bt());
           } else {
             throw TypeError(_env,sl.loc(),"non-uniform set literal");
@@ -422,9 +694,13 @@ namespace MiniZinc {
               if (ty.st() != vi->type().st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
+              if (ty.enumId() != vi->type().enumId()) {
+                ty.enumId(0);
+              }
             } else {
               haveInferredType = true;
               ty.st(vi->type().st());
+              ty.enumId(vi->type().enumId());
             }
             if (vi->type().bt() != Type::BT_BOT) {
               ty.bt(vi->type().bt());
@@ -436,11 +712,18 @@ namespace MiniZinc {
               if (vi->type().st() != ty.st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
+              if (ty.enumId() != vi->type().enumId()) {
+                ty.enumId(0);
+              }
             } else {
-              if (Type::bt_subtype(ty.bt(), vi->type().bt())) {
+              unsigned int tyEnumId = ty.enumId();
+              ty.enumId(vi->type().enumId());
+              if (Type::bt_subtype(ty, vi->type())) {
                 ty.bt(vi->type().bt());
               }
-              if (!Type::bt_subtype(vi->type().bt(),ty.bt()) || ty.st() != vi->type().st()) {
+              if (tyEnumId != vi->type().enumId())
+                ty.enumId(0);
+              if (!Type::bt_subtype(vi->type(),ty) || ty.st() != vi->type().st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
             }
@@ -493,7 +776,7 @@ namespace MiniZinc {
           aai->type(Type::varint());
         }
         if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
-          throw TypeError(_env,aai->loc(),"array index must be `int', but is `"+aai->type().toString()+"'");
+          throw TypeError(_env,aai->loc(),"array index must be `int', but is `"+aai->type().toString(_env)+"'");
         }
         aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
         if (aai->type().isopt()) {
@@ -527,7 +810,7 @@ namespace MiniZinc {
         } else if (c.where()->type() != Type::parbool()) {
           throw TypeError(_env,c.where()->loc(),
                           "where clause must be bool, but is `"+
-                          c.where()->type().toString()+"'");
+                          c.where()->type().toString(_env)+"'");
         }
         if (c.where()->type().cv())
           tt.cv(true);
@@ -536,7 +819,7 @@ namespace MiniZinc {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(_env,c.e()->loc(),
               "set comprehension expression must be scalar, but is `"
-              +c.e()->type().toString()+"'");
+              +c.e()->type().toString(_env)+"'");
         tt.st(Type::ST_SET);
       } else {
         if (c.e()->type().dim() != 0)
@@ -552,12 +835,14 @@ namespace MiniZinc {
       const Type& ty_in = g_in->type();
       if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
         throw TypeError(_env,g_in->loc(),
-                        "generator expression must be (par or var) set of int or one-dimensional array, but is `"+ty_in.toString()+"'");
+                        "generator expression must be (par or var) set of int or one-dimensional array, but is `"
+                        +ty_in.toString(_env)+"'");
       }
       Type ty_id;
       bool needIntLit = false;
       if (ty_in.dim()==0) {
         ty_id = Type::parint();
+        ty_id.enumId(ty_in.enumId());
         needIntLit = true;
       } else {
         ty_id = ty_in;
@@ -594,7 +879,7 @@ namespace MiniZinc {
         if (eif->type() != Type::parbool() && eif->type() != Type::varbool())
           throw TypeError(_env,eif->loc(),
             "expected bool conditional expression, got `"+
-            eif->type().toString()+"'");
+            eif->type().toString(_env)+"'");
         if (eif->type().cv())
           tret.cv(true);
         if (ethen->type().isunknown()) {
@@ -607,15 +892,15 @@ namespace MiniZinc {
         } else {
           if (tret.isbot() || tret.isunknown())
             tret.bt(ethen->type().bt());
-          if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type().bt(), tret.bt()) && !Type::bt_subtype(tret.bt(), ethen->type().bt())) ||
+          if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret) && !Type::bt_subtype(tret, ethen->type())) ||
               ethen->type().st() != tret.st() ||
               ethen->type().dim() != tret.dim()) {
             throw TypeError(_env,ethen->loc(),
                             "type mismatch in branches of conditional. Then-branch has type `"+
-                            ethen->type().toString()+"', but else branch has type `"+
-                            tret.toString()+"'");
+                            ethen->type().toString(_env)+"', but else branch has type `"+
+                            tret.toString(_env)+"'");
           }
-          if (Type::bt_subtype(tret.bt(), ethen->type().bt())) {
+          if (Type::bt_subtype(tret, ethen->type())) {
             tret.bt(ethen->type().bt());
           }
           if (ethen->type().isvar()) allpar=false;
@@ -661,8 +946,9 @@ namespace MiniZinc {
       } else {
         throw TypeError(_env,bop.loc(),
           std::string("type error in operator application for `")+
-          bop.opToString().str()+"'. No matching operator found with left-hand side type `"+bop.lhs()->type().toString()+
-                        "' and right-hand side type `"+bop.rhs()->type().toString()+"'");
+          bop.opToString().str()+"'. No matching operator found with left-hand side type `"
+                        +bop.lhs()->type().toString(_env)+
+                        "' and right-hand side type `"+bop.rhs()->type().toString(_env)+"'");
       }
     }
     /// Visit unary operator
@@ -680,7 +966,7 @@ namespace MiniZinc {
       } else {
         throw TypeError(_env,uop.loc(),
           std::string("type error in operator application for `")+
-          uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString()+"'");
+          uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString(_env)+"'");
       }
     }
     /// Visit call
@@ -703,7 +989,7 @@ namespace MiniZinc {
         oss << "no function or predicate with this signature found: `";
         oss << call.id() << "(";
         for (unsigned int i=0; i<call.args().size(); i++) {
-          oss << call.args()[i]->type().toString();
+          oss << call.args()[i]->type().toString(_env);
           if (i<call.args().size()-1) oss << ",";
         }
         oss << ")'";
@@ -744,7 +1030,7 @@ namespace MiniZinc {
           if (! vd.e()->type().isSubtypeOf(vd.ti()->type())) {
             _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
-                                            vd.ti()->type().toString()+"', actual `"+vd.e()->type().toString()+"'"));
+                                            vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
           }
@@ -765,31 +1051,37 @@ namespace MiniZinc {
           if (ri->type().cv())
             tt.cv(true);
           if (ri->type() == Type::top()) {
-            if (foundTIId) {
-              throw TypeError(_env,ri->loc(),
-                "only one type-inst variable allowed in array index");
-            } else {
+//            if (foundTIId) {
+//              throw TypeError(_env,ri->loc(),
+//                "only one type-inst variable allowed in array index");
+//            } else {
               foundTIId = true;
-            }
+//            }
           } else if (ri->type() != Type::parint()) {
             assert(ri->isa<TypeInst>());
             throw TypeError(_env,ri->loc(),
               "invalid type in array index, expected `set of int', actual `"+
-              ri->type().toString()+"'");
+              ri->type().toString(_env)+"'");
           }
         }
         tt.dim(foundTIId ? -1 : ti.ranges().size());
       }
       if (ti.domain() && ti.domain()->type().cv())
         tt.cv(true);
-      if (ti.domain() && !ti.domain()->isa<TIId>()) {
-        if (ti.domain()->type().ti() != Type::TI_PAR ||
-            ti.domain()->type().st() != Type::ST_SET)
-          throw TypeError(_env,ti.domain()->loc(),
-            "type-inst must be par set");
-        if (ti.domain()->type().dim() != 0)
-          throw TypeError(_env,ti.domain()->loc(),
-            "type-inst cannot be an array");
+      if (ti.domain()) {
+        if (TIId* tiid = ti.domain()->dyn_cast<TIId>()) {
+          if (tiid->isEnum()) {
+            tt.bt(Type::BT_INT);
+          }
+        } else {
+          if (ti.domain()->type().ti() != Type::TI_PAR ||
+              ti.domain()->type().st() != Type::ST_SET)
+            throw TypeError(_env,ti.domain()->loc(),
+                            "type-inst must be par set");
+          if (ti.domain()->type().dim() != 0)
+            throw TypeError(_env,ti.domain()->loc(),
+                            "type-inst cannot be an array");
+        }
       }
       if (tt.isunknown()) {
         assert(ti.domain());
@@ -809,6 +1101,7 @@ namespace MiniZinc {
             "type-inst must be int or float");
         }
         tt.bt(ti.domain()->type().bt());
+        tt.enumId(ti.domain()->type().enumId());
       } else {
 //        assert(ti.domain()==NULL || ti.domain()->isa<TIId>());
       }
@@ -820,10 +1113,11 @@ namespace MiniZinc {
   };
   
   void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters) {
-    TopoSorter ts;
+    TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
+    std::vector<Item*> enumItems;
     
     class TSV0 : public ItemVisitor {
     public:
@@ -833,10 +1127,12 @@ namespace MiniZinc {
       bool hadSolveItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
-      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0) {}
+      std::vector<Item*>& enumis;
+      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
+           std::vector<Item*>& enumis0)
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
-      void vVarDeclI(VarDeclI* i) { ts.add(env, i->e(), true); }
+      void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, true, enumis); }
       void vFunctionI(FunctionI* i) {
         model->registerFn(env, i);
         fis.push_back(i);
@@ -846,16 +1142,56 @@ namespace MiniZinc {
           throw TypeError(env,si->loc(),"Only one solve item allowed");
         hadSolveItem = true;
       }
-    } _tsv0(env.envi(),ts,m,functionItems,assignItems);
+    } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
     iterItems(_tsv0,m);
 
+    for (unsigned int i=0; i<enumItems.size(); i++) {
+      if (AssignI* ai = enumItems[i]->dyn_cast<AssignI>()) {
+        assignItems.push_back(ai);
+      } else if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+        m->addItem(vdi);
+        ts.add(env.envi(), vdi, true, false, enumItems);
+      } else {
+        FunctionI* fi = enumItems[i]->dyn_cast<FunctionI>();
+        m->addItem(fi);
+        m->registerFn(env.envi(),fi);
+        functionItems.push_back(fi);
+      }
+    }
+    enumItems.clear();
+    
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
       VarDecl* vd = ts.get(env.envi(),ai->id(),ai->loc());
       if (vd->e())
         throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-      ai->remove();
       vd->e(ai->e());
+      
+      if (vd->ti()->isEnum()) {
+        GCLock lock;
+        ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
+        VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
+        if (vd_enum->e())
+          throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
+        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems);
+        if (ai_enum) {
+          vd_enum->e(ai_enum->e());
+          ai_enum->remove();
+        }
+      }
+      ai->remove();
+    }
+    
+    for (unsigned int i=0; i<enumItems.size(); i++) {
+      if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+        m->addItem(vdi);
+        ts.add(env.envi(), vdi, true, false, enumItems);
+      } else {
+        FunctionI* fi = enumItems[i]->cast<FunctionI>();
+        m->addItem(fi);
+        m->registerFn(env.envi(),fi);
+        functionItems.push_back(fi);
+      }
     }
     
     class TSV1 : public ItemVisitor {
@@ -955,7 +1291,7 @@ namespace MiniZinc {
           if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
             _typeErrors.push_back(TypeError(env, i->e()->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
-                                           i->decl()->ti()->type().toString()+"', actual `"+i->e()->type().toString()+"'"));
+                                           i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
             // Assign to "true" constant to avoid generating further errors that the parameter
             // is undefined
             i->decl()->e(constants().lit_true);
@@ -964,13 +1300,14 @@ namespace MiniZinc {
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
           if (!i->e()->type().isSubtypeOf(Type::varbool()))
-            throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"+Type::varbool().toString()+"', actual `"+i->e()->type().toString()+"'");
+            throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"
+                            +Type::varbool().toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
         void vSolveI(SolveI* i) {
           for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
             bu_ty.run(*it);
             if (!(*it)->type().isann())
-              throw TypeError(env, (*it)->loc(), "expected annotation, got `"+(*it)->type().toString()+"'");
+              throw TypeError(env, (*it)->loc(), "expected annotation, got `"+(*it)->type().toString(env)+"'");
           }
           bu_ty.run(i->e());
           if (i->e()) {
@@ -978,25 +1315,27 @@ namespace MiniZinc {
             if (! (et.isSubtypeOf(Type::varint()) || 
                    et.isSubtypeOf(Type::varfloat())))
               throw TypeError(env, i->e()->loc(),
-                "objective has invalid type, expected int or float, actual `"+et.toString()+"'");
+                "objective has invalid type, expected int or float, actual `"+et.toString(env)+"'");
           }
         }
         void vOutputI(OutputI* i) {
           bu_ty.run(i->e());
           if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1))
-            throw TypeError(env, i->e()->loc(), "invalid type in output item, expected `"+Type::parstring(1).toString()+"', actual `"+i->e()->type().toString()+"'");
+            throw TypeError(env, i->e()->loc(), "invalid type in output item, expected `"
+                            +Type::parstring(1).toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
         void vFunctionI(FunctionI* i) {
           for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
             bu_ty.run(*it);
             if (!(*it)->type().isann())
-              throw TypeError(env, (*it)->loc(), "expected annotation, got `"+(*it)->type().toString()+"'");
+              throw TypeError(env, (*it)->loc(), "expected annotation, got `"+(*it)->type().toString(env)+"'");
           }
           bu_ty.run(i->ti());
           bu_ty.run(i->e());
           if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))
-            throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"+i->ti()->type().toString()+
-                            "', body type is `"+i->e()->type().toString()+"'");
+            throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"
+                            +i->ti()->type().toString(env)+
+                            "', body type is `"+i->e()->type().toString(env)+"'");
           if (i->e())
             i->e(addCoercion(env, m, i->e(), i->ti()->type())());
         }
@@ -1055,7 +1394,7 @@ namespace MiniZinc {
     if (!ai->e()->type().isSubtypeOf(ai->decl()->ti()->type())) {
       throw TypeError(env.envi(), ai->e()->loc(),
                       "assignment value for `"+ai->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
-                      ai->decl()->ti()->type().toString()+"', actual `"+ai->e()->type().toString()+"'");
+                      ai->decl()->ti()->type().toString(env.envi())+"', actual `"+ai->e()->type().toString(env.envi())+"'");
     }
     
   }

@@ -412,6 +412,7 @@ namespace MiniZinc {
         }
         TypeInst* c = new TypeInst(copy_location(m,e),t->type(),
           ASTExprVec<TypeInst>(r),copy(env,m,t->domain(),followIds,copyFundecls,isFlatModel));
+        c->setIsEnum(t->isEnum());
         m.insert(e,c);
         ret = c;
       }

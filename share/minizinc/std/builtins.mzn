@@ -1359,6 +1359,35 @@ function bool: trace_stdout(string: msg);
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
 
+/***
+  @groupdef builtins.enum Functions for enums
+  
+*/
+
+/** @group builtins.enum Return set of values in enum of \a x  */
+function set of $$E: enum_base_set(var $$E: x);
+
+/** @group builtins.enum Return next greater enum value of \a x */
+function $$E: enum_next($$E: x);
+/** @group builtins.enum Return next greater enum value of \a x */
+function var $$E: enum_next(var $$E: x) =
+  let { constraint x < max(enum_base_set(x)) } in x+1;
+
+/** @group builtins.enum Return next smaller enum value of \a x */
+function $$E: enum_prev($$E: x);
+/** @group builtins.enum Return next smaller enum value of \a x */
+function var $$E: enum_prev(var $$E: x) =
+  let { constraint x > min(enum_base_set(x)) } in x-1;
+
+/** @group builtins.enum Convert \a x to enum type \a X */
+function $$E: to_enum(set of $$E: X, int: x);
+/** @group builtins.enum Convert \a x to enum type \a X */
+function var $$E: to_enum(set of $$E: X, var int: x) =
+  let { constraint x in X } in x;
+
+
+
+
 %-----------------------------------------------------------------------------%
 %
 % Internal compiler functions
@@ -1994,6 +2023,7 @@ predicate redundant_constraint(var bool: b);
 /** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
+function set of int: anon_enum(int: n) = 1..n;
   
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
