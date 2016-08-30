@@ -240,6 +240,10 @@ namespace MiniZinc {
     m->addItem(pred);
     recursiveRegisterFns(m, e->envi(), pred);
     std::vector<Expression*> args;
+    if (pred->params().size() < 1) {
+      throw EvalError(origin_env, pred->loc(), "Presolving requires a predicate which includes parameters as targeted "
+              "variables for presolving");
+    }
     for ( VarDecl* it : pred->params() ) {
       // TODO: Decide on strategy on parameter arguments
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
