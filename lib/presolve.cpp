@@ -243,8 +243,8 @@ namespace MiniZinc {
     for ( VarDecl* it : pred->params() ) {
       // TODO: Decide on strategy on parameter arguments
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
-        throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
-                " arguments");
+        throw EvalError(origin_env, it->loc(), "Presolving is currently only supported for predicates using variable "
+                "parameters");
       }
       VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
