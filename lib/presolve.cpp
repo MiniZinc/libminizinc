@@ -250,6 +250,7 @@ namespace MiniZinc {
       m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
+      std::cout << arg->type().dim() << " == " << vd->type().dim() << std::endl;
       args.push_back(arg);
     }
     Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
@@ -314,7 +315,7 @@ namespace MiniZinc {
 //        TODO: Throw error when array ranges do not match between calls
 //        TODO: Or even better, split off submodels, grouping them by array ranges
         std::vector<TypeInst*> ranges;
-        computeRanges(origin_env, calls[0]->args()[0], ranges);
+        computeRanges(origin_env, calls[0]->args()[i], ranges);
         predicate->params()[i]->ti()->setRanges(ranges);
       }
       if(domains[i] != nullptr) {
