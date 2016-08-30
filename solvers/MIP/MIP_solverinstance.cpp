@@ -290,7 +290,21 @@ void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   /// Not for -a:
 //   if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
     pSI->lastIncumbent = out.objVal;
+  
+  try {     /// Sometimes the intermediate output is wrong, especially in SCIP
     pSI->printSolution();            // The solution in [out] is not used  TODO 
+  } catch (const Exception& e) {
+    std::cerr << std::endl;
+    std::cerr << "  Error when evaluating an intermediate solution:  " << e.what() << ": " << e.msg() << std::endl;
+  }
+  catch (const exception& e) {
+    std::cerr << std::endl;
+    std::cerr << "  Error when evaluating an intermediate solution:  " << e.what() << std::endl;
+  }
+  catch (...) {
+    std::cerr << std::endl;
+    std::cerr << "  Error when evaluating an intermediate solution:  " << "  UNKNOWN EXCEPTION." << std::endl;
+  }
 //   }
 }
 

@@ -36,6 +36,7 @@
 
 
 /// TODOs
+/// TODO  Not going to work for float vars because of round-offs in the domain interval sorting...
 /// set_in etc. are ! propagated between views
 /// CLEANUP after work: ~destructor
 /// Also check initexpr of all vars?  DONE
@@ -43,10 +44,13 @@
 ///   - so better turn that off TODO
 /// CSE for lineq coefs     TODO
 
+#define INT_EPS 1e-5    // the absolute epsilon for integrality of integer vars.
+
+
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//   #define __MZN__DBGOUT__MIPDOMAINS__
+//    #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -1036,7 +1040,7 @@ namespace MiniZinc {
                     break;
                   case CMPT_EQ:
                     if ( ! ( cls.varRef1->type().isint() &&    // skip if int target var
-                        std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // && fract value
+                        std::fabs( rhs - rhsRnd ) > INT_EPS ) )     // && fract value
                       sDomain.cutDeltas( rhsRnd, rhsRnd, delta );
                     break;
                   default:
@@ -1050,7 +1054,7 @@ namespace MiniZinc {
                 const double rhs = A * mipd.expr2Const( pCall->args()[1] ) + B;
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                 bool fSkipNE = ( cls.varRef1->type().isint() &&
-                  std::fabs( rhs - rhsRnd ) > 1e-8 );
+                  std::fabs( rhs - rhsRnd ) > INT_EPS );
                 if ( ! fSkipNE ) {
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
                   sDomain.cutOut( { rhsRnd-delta, rhsRnd+delta } );
@@ -1082,11 +1086,17 @@ namespace MiniZinc {
       static double rndIfInt( VarDecl* vdTarget, double v ) {
         return vdTarget->type().isint() ? std::round( v ) : v;
       }
+      static double rndIfBothInt( VarDecl* vdTarget, double v ) {
+        if ( !vdTarget->type().isint() )
+          return v;
+        const double vRnd = std::round( v );
+        return (fabs( v-vRnd )<INT_EPS) ? vRnd : v;
+      }
       static double rndUpIfInt( VarDecl* vdTarget, double v ) {
-        return vdTarget->type().isint() ? std::ceil( v-1e-8 ) : v;
+        return vdTarget->type().isint() ? std::ceil( v-INT_EPS ) : v;
       }
       static double rndDownIfInt( VarDecl* vdTarget, double v ) {
-        return vdTarget->type().isint() ? std::floor( v+1e-8 ) : v;
+        return vdTarget->type().isint() ? std::floor( v+INT_EPS ) : v;
       }
       
       void makeRangeDomains() {
@@ -1109,9 +1119,40 @@ namespace MiniZinc {
       }
       
       /// tightens element bounds in the existing eq_encoding of varRef1
-      /// Can also back-check from there    TODO
+      /// necessary because if one exists, int_ne is not translated into it
+      /// Can also back-check from there?   TODO
       /// And further checks                TODO
       void syncWithEqEncoding() {
+        std::vector<Expression*> pp;
+        auto bnds = sDomain.getBounds();
+        const long long iMin = mipd.expr2ExprArray(
+          mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+        MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
+        MZN_MIPD__assert_hard( iMin<=bnds.left );
+        long long vEE = iMin;
+        DBGOUT_MIPD__( "   SYNC EQ_ENCODE( " << (*cls.varRef1)
+          << ",   bitflags: " << *(mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1])
+          << " ):  SETTING 0 FLAGS FOR VALUES: " );
+        for ( auto& intv : sDomain ) {
+          for ( ; vEE < intv.left; ++vEE ) {
+            if ( vEE >= (iMin+pp.size()) )
+              return;
+            if ( pp[ vEE-iMin ]->isa<Id>() )
+              if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+                DBGOUT_MIPD__( vEE << ", " );
+                setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+              }
+          }
+          vEE = intv.right+1;
+        }
+        for ( ; vEE < (iMin+pp.size()); ++vEE ) {
+          if ( pp[ vEE-iMin ]->isa<Id>() )
+            if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+              DBGOUT_MIPD__( vEE << ", " );
+              setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+            }
+        }
+        DBGOUT_MIPD( "" );
       }
       
       /// sync varRef1's eq_encoding with those of other variables
@@ -1188,7 +1229,7 @@ namespace MiniZinc {
                     : A * mipd.expr2Const( pCall->args()[1] ) + B;
                   const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
                   const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
-                  const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                  const double rhsRnd = rndIfBothInt( cls.varRef1, rhs );  // if the ref var is int, need to round almost-int values
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                   switch ( nCmpType_ADAPTED ) {
                     case CMPT_LE:
@@ -1204,8 +1245,8 @@ namespace MiniZinc {
                       relateReifFlag( pCall->args()[1],  { { rhsUp+delta, IntvReal::infPlus() } } );
                       break;
                     case CMPT_EQ:
-                      relateReifFlag( pCall->args()[2], { { rhs, rhs } } );
-                      break;
+                      relateReifFlag( pCall->args()[2], { { rhsRnd, rhsRnd } } );
+                      break;  // ... but if the value is sign. fractional for an int var, the flag is set=0
                     default:
                       break;
                   }
@@ -1238,14 +1279,14 @@ namespace MiniZinc {
                     switch ( nCmpType_ADAPTED ) {
                       case CMPT_EQ_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
-                        fUseDD = ( itLB->left==rhs && itLB->right==rhs );  // exactly
+                        auto itLB = sDomain.lower_bound(rhsRnd);
+                        fUseDD = ( itLB->left==rhsRnd && itLB->right==rhsRnd );  // exactly
                       }
                         break;
                       case CMPT_LT_0:
                       case CMPT_LE_0:
                       {
-                        auto itUB = sDomain.upper_bound(rhs);
+                        auto itUB = sDomain.upper_bound(rhsUp);
                         bool fInner = false;
                         if ( sDomain.begin() != itUB ) {
                           --itUB;
@@ -1258,7 +1299,7 @@ namespace MiniZinc {
                       case CMPT_GT_0:
                       case CMPT_GE_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
+                        auto itLB = sDomain.lower_bound(rhsDown);
                         bool fInner = false;
                         if ( sDomain.begin() != itLB ) {
                           --itLB;
@@ -1274,7 +1315,7 @@ namespace MiniZinc {
                   }
                   if ( fUseDD ) {               // use sDomain
                     if ( CMPT_EQ_0==nCmpType_ADAPTED ) {
-                      relateReifFlag( pCall->args()[1], { { rhs, rhs } }, RIT_Halfreif );
+                      relateReifFlag( pCall->args()[1], { { rhsRnd, rhsRnd } }, RIT_Halfreif );
                     } else if ( nCmpType_ADAPTED < 0 ) {
                       relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
                     } else {
@@ -1339,8 +1380,8 @@ namespace MiniZinc {
           MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
           MZN_MIPD__assert_hard( iMin<=bnds.left );
           for ( auto& intv : SS ) {
-            for ( long long vv = (long long)std::max( double(iMin), intv.left );
-                  vv <= (long long)std::min( double(iMin)+pp.size()-1, intv.right ); ++vv ) {
+            for ( long long vv = (long long)std::max( double(iMin), ceil(intv.left) );
+                  vv <= (long long)std::min( double(iMin)+pp.size()-1, floor(intv.right) ); ++vv ) {
               vIntvFlags.push_back( pp[vv-iMin] );
             }
           }

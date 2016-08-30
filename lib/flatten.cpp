@@ -6173,6 +6173,7 @@ namespace MiniZinc {
           if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
             VarDecl* vd = vdi->e();
             if (!vdi->removed() && vd->e()) {
+              bool isTrueVar = vd->type().isbool() && Expression::equal(vd->ti()->domain(), constants().lit_true);
               if (Call* c = vd->e()->dyn_cast<Call>()) {
                 GCLock lock;
                 Call* nc = NULL;
@@ -6207,7 +6208,7 @@ namespace MiniZinc {
                     nc->type(Type::varbool());
                     nc->decl(array_bool_or);
                   }
-                } else if (c->id() == constants().ids.forall) {
+                } else if (!isTrueVar && c->id() == constants().ids.forall) {
                   if (array_bool_and) {
                     std::vector<Expression*> args(2);
                     args[0] = c->args()[0];
@@ -6225,7 +6226,14 @@ namespace MiniZinc {
                   nc->type(Type::varbool());
                   nc->decl(array_bool_clause_reif);
                 } else {
-                  if ( (!vd->type().isbool()) || (!Expression::equal(vd->ti()->domain(), constants().lit_true))) {
+                  if (isTrueVar) {
+                    FunctionI* decl = env.orig->matchFn(env,c);
+                    env.map_remove(c);
+                    if (decl->e() || c->id() == constants().ids.forall) {
+                      c->decl(decl);
+                      nc = c;
+                    }
+                  } else {
                     std::vector<Expression*> args(c->args().size());
                     std::copy(c->args().begin(),c->args().end(),args.begin());
                     args.push_back(vd->id());
@@ -6244,13 +6252,6 @@ namespace MiniZinc {
                         nc->type(Type::varbool());
                         nc->decl(decl);
                       }
-                    }
-                  } else {
-                    FunctionI* decl = env.orig->matchFn(env,c);
-                    env.map_remove(c);
-                    if (decl->e()) {
-                      c->decl(decl);
-                      nc = c;
                     }
                   }
                 }
@@ -6396,11 +6397,13 @@ namespace MiniZinc {
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            env.flat_removeItem(cur_idx->second);
+          if (CollectDecls::varIsFree(cur)) {
+            IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+            if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+              CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+              topDown(cd,cur->e());
+              env.flat_removeItem(cur_idx->second);
+            }
           }
         }
       }
@@ -6412,11 +6415,13 @@ namespace MiniZinc {
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-          if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-            CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-            topDown(cd,cur->e());
-            env.flat_removeItem(cur_idx->second);
+          if (CollectDecls::varIsFree(cur)) {
+            IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+            if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+              CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
+              topDown(cd,cur->e());
+              env.flat_removeItem(cur_idx->second);
+            }
           }
         }
       }

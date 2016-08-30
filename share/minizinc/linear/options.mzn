@@ -20,17 +20,20 @@ bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only
   %%% The code in MIPdomains.cpp processes them and also non-contiguous domains
   %%% (only-range-domains is then standardly off). MIPdomains.cpp needs all the required
   %%% __POST predicates to be declared to kick in.
+opt bool: fMIPDomains;           %% unary decomposition constraints (...__POST) to FlatZinc
 opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains=false"
 bool: fPostprocessDomains =      %% True to pass all domain-related
-           if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
-           else deopt( fMIPdomains ) endif;
+           if absent( fMIPdomains ) /\ absent( fMIPDomains ) then true     %% seems best for Gurobi & CBC
+           elseif not absent( fMIPdomains ) then deopt( fMIPdomains )
+           else deopt( fMIPDomains )
+           endif;
 opt bool: fMIPdomAux;
 bool: fPostproDom_AUX =          %% Specialized for aux_ constr
            if absent( fMIPdomAux ) then false
            else deopt( fMIPdomAux ) endif;
 opt bool: fMIPdomDiff;
 bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
-           if absent( fMIPdomDiff ) then true
+           if absent( fMIPdomDiff ) then false                             %% seems best for Gurobi, worse for CBC
            else deopt( fMIPdomDiff ) endif;
 
 mzn_opt_only_range_domains = not fPostprocessDomains;
