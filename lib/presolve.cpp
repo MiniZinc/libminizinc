@@ -196,6 +196,7 @@ namespace MiniZinc {
   }
 
   void Presolver::Subproblem::solveModel() {
+    GCLock lock;
     if (si != nullptr) {
       if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
         getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
