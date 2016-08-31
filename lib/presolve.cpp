@@ -254,7 +254,6 @@ namespace MiniZinc {
       m->addItem(new VarDeclI(Location(), vd));
       Id* arg = new Id(Location(), vd->id()->str().str(), vd);
       arg->type(vd->type());
-      std::cout << arg->type().dim() << " == " << vd->type().dim() << std::endl;
       args.push_back(arg);
     }
     Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
