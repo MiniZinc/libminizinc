@@ -797,6 +797,10 @@ namespace MiniZinc {
           IntSetVal* domain = eval_intset(env,id->decl()->ti()->domain());
           if (domain->min() >= lb)
             return false;
+          if (domain->max() < lb) {
+            env.fail();
+            return false;
+          }
           IntSetRanges dr(domain);
           Ranges::Const cr(lb,IntVal::infinity());
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
@@ -815,6 +819,10 @@ namespace MiniZinc {
           IntSetVal* domain = eval_intset(env,id->decl()->ti()->domain());
           if (domain->max() <= ub)
             return false;
+          if (domain->min() > ub) {
+            env.fail();
+            return false;
+          }
           IntSetRanges dr(domain);
           Ranges::Const cr(-IntVal::infinity(), ub);
           Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
@@ -846,6 +854,10 @@ namespace MiniZinc {
             IntSetVal* domain = eval_intset(env,id->decl()->ti()->domain());
             if (domain->max() <= ub && domain->min() >= lb)
               return false;
+            if (domain->min() > ub || domain->max() < lb) {
+              env.fail();
+              return false;
+            }
             IntSetRanges dr(domain);
             Ranges::Const cr(lb, ub);
             Ranges::Inter<IntSetRanges,Ranges::Const> i(dr,cr);
