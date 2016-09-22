@@ -5571,19 +5571,40 @@ namespace MiniZinc {
       iterItems(_ov1,e.orig);
       
       if (outputItem==NULL) {
-        // Create output item for all variables defined at toplevel in the MiniZinc source
+        // Create output item for all variables defined at toplevel in the MiniZinc source,
+        // or those that are annotated with add_to_output
         std::vector<Expression*> outputVars;
+        bool had_add_to_output = false;
         for (unsigned int i=0; i<e.orig->size(); i++) {
           if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
             VarDecl* vd = vdi->e();
-            if (vd->type().isvar() && vd->e()==NULL) {
+            bool process_var = false;
+            if (vd->ann().contains(constants().ann.add_to_output)) {
+              if (!had_add_to_output) {
+                outputVars.clear();
+              }
+              had_add_to_output = true;
+              process_var = true;
+            } else {
+              if (!had_add_to_output) {
+                process_var = vd->type().isvar() && vd->e()==NULL;
+              }
+            }
+            if (process_var) {
               std::ostringstream s;
               s << vd->id()->str().str() << " = ";
               if (vd->type().dim() > 0) {
                 s << "array" << vd->type().dim() << "d(";
-                for (unsigned int i=0; i<vd->type().dim(); i++) {
-                  IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
-                  s << *idxset << ",";
+                if (vd->e() != NULL) {
+                  ArrayLit* al = eval_array_lit(e, vd->e());
+                  for (unsigned int i=0; i<al->dims(); i++) {
+                    s << al->min(i) << ".." << al->max(i) << ",";
+                  }
+                } else {
+                  for (unsigned int i=0; i<vd->type().dim(); i++) {
+                    IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
+                    s << *idxset << ",";
+                  }
                 }
               }
               StringLit* sl = new StringLit(Location().introduce(),s.str());
