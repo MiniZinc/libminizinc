@@ -680,7 +680,7 @@ namespace MiniZinc {
             else {
               std::stringstream ssm;
               ssm << "expected bool-var or alias int var instead of " << *e
-                  << " with type " << e->type().toString() ;
+                  << " with type " << e->type().toString(env().envi()) ;
               throw InternalError(ssm.str());
             }
         } else {
