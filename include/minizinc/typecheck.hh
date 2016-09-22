@@ -60,6 +60,9 @@ namespace MiniZinc {
 
   /// Typecheck FlatZinc variable declarations
   void typecheck_fzn(Env& env, Model* m);
+
+  /// Output description of parameters and output variables to \a os
+  void output_model_interface(Env& env, Model* m, std::ostream& os);
   
 }
 

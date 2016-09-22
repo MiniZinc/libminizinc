@@ -46,7 +46,9 @@ void Flattener::printHelp(ostream& os)
   << std::endl
   << "Flattener input options:" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do !\n    convert to FlatZinc." << std::endl
+  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+  << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do not\n    convert to FlatZinc." << std::endl
+  << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
   // \n    Currently does nothing (only available for compatibility with 1.6)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
@@ -85,6 +87,10 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_typecheck = false;
   } else if ( cop.getOption( "--instance-check-only") ) {
     flag_instance_check_only = true;
+  } else if ( cop.getOption( "-e --model-check-only") ) {
+    flag_model_check_only = true;
+  } else if ( cop.getOption( "--model-interface-only") ) {
+    flag_model_interface_only = true;
   } else if ( cop.getOption( "-v --verbose") ) {
     flag_verbose = true;
   } else if (string(argv[i])==string("--newfzn")) {
@@ -287,7 +293,7 @@ void Flattener::flatten()
           pEnv.reset(new Env(m));
           Env& env = *getEnv();
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(env, m, typeErrors, false);
+          MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -301,7 +307,11 @@ void Flattener::flatten()
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
-          if (!flag_instance_check_only) {
+          if (flag_model_interface_only) {
+            MiniZinc::output_model_interface(env, m, std::cout);
+          }
+          
+          if (!flag_instance_check_only && !flag_model_check_only && !flag_model_interface_only) {
             if (is_flatzinc) {
               GCLock lock;
               env.swap();

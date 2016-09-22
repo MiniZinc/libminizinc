@@ -1086,6 +1086,8 @@ namespace MiniZinc {
     ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
     ann.output_var->type(Type::ann());
     ann.output_array = ASTString("output_array");
+    ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
+    ann.add_to_output->type(Type::ann());
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1284,6 +1286,7 @@ namespace MiniZinc {
     v.push_back(ctx.neg);
     v.push_back(ctx.mix);
     v.push_back(ann.output_var);
+    v.push_back(ann.add_to_output);
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));

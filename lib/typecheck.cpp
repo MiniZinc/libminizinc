@@ -1443,5 +1443,47 @@ namespace MiniZinc {
       }
     }
   }
+
+  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os) {
+    os << "    \"" << *vd->id() << "\" : {";
+    os << "\"type\" : ";
+    switch (vd->type().bt()) {
+      case Type::BT_INT: os << "\"int\""; break;
+      case Type::BT_BOOL: os << "\"bool\""; break;
+      case Type::BT_FLOAT: os << "\"float\""; break;
+      case Type::BT_STRING: os << "\"string\""; break;
+      case Type::BT_ANN: os << "\"ann\""; break;
+      default: os << "\"?\""; break;
+    }
+    if (vd->type().ot()==Type::OT_OPTIONAL) {
+      os << ", \"optional\" : true";
+    }
+    if (vd->type().st()==Type::ST_SET) {
+      os << ", \"set\" : true";
+    }
+    if (vd->type().dim() > 0) {
+      os << ", \"dim\" : " << vd->type().dim();
+    }
+    os << "}";
+  }
+  
+  void output_model_interface(Env& env, Model* m, std::ostream& os) {
+    std::ostringstream oss_input;
+    std::ostringstream oss_output;
+    bool had_input = false;
+    bool had_output = false;
+    for (VarDeclIterator vds = m->begin_vardecls(); vds != m->end_vardecls(); ++vds) {
+      if (vds->e()->type().ispar() && (vds->e()->e()==NULL || vds->e()->e()==constants().absent)) {
+        if (had_input) oss_input << ",\n";
+        output_var_desc_json(env, vds->e(), oss_input);
+        had_input = true;
+      } else if (vds->e()->type().isvar() && (vds->e()->e()==NULL || vds->e()->ann().contains(constants().ann.add_to_output))) {
+        if (had_output) oss_output << ",\n";
+        output_var_desc_json(env, vds->e(), oss_output);
+        had_output = true;
+      }
+    }
+    os << "{\n  \"input\" : {\n" << oss_input.str() << "\n  },\n  \"output\" : {\n" << oss_output.str() << "\n  }\n}\n";
+  }
   
 }
