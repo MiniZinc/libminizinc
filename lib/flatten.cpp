@@ -5139,7 +5139,7 @@ namespace MiniZinc {
     return ret;
   }
   
-  void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool fCopy=true);
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e);
 
   bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
     if (e==NULL)
@@ -5296,13 +5296,12 @@ namespace MiniZinc {
     }
   }
   
-  void outputVarDecls(EnvI& env, Item* ci, Expression* e, bool fCopy) {
+  void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
     public:
       EnvI& env;
       Item* ci;
-      const bool fCopy;  // whether to copy the vd before putting to output
-      O(EnvI& env0, Item* ci0, bool fC=1) : env(env0), ci(ci0), fCopy(fC) {}
+      O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
       void vId(Id& id) {
         if (&id==constants().absent)
           return;
@@ -5315,8 +5314,7 @@ namespace MiniZinc {
         IdMap<int>::iterator idx = reallyFlat ? env.output_vo.idx.find(reallyFlat->id()) : env.output_vo.idx.end();
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
         if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
-          VarDeclI* nvi = new VarDeclI(Location().introduce(), fCopy ?
-                                       copy(env,env.cmap,vd)->cast<VarDecl>() : vd);
+          VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env,env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
           if (t.ti() != Type::TI_PAR) {
             t.ti(Type::TI_PAR);
@@ -5393,7 +5391,7 @@ namespace MiniZinc {
           topDown(ce, nvi->e());
         }
       }
-    } _o(env,ci,fCopy);
+    } _o(env,ci);
     topDown(_o, e);
   }
 
@@ -5755,7 +5753,7 @@ namespace MiniZinc {
                     }
                     rhs->decl(decl);
                   }
-                  outputVarDecls(env,vdi_copy,rhs,0);
+                  outputVarDecls(env,vdi_copy,rhs);
                   vd->e(rhs);
                 } else if (cannotUseRHSForOutput(env,vd->e())) {
                   // If the VarDecl does not have a usable right hand side, it needs to be
