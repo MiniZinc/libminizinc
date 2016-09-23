@@ -141,6 +141,9 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
       goto error;
     }
     size_t last_dot = input_file.find_last_of('.');
+    if (last_dot == string::npos) {
+      goto error;
+    }
     std::string extension = input_file.substr(last_dot,string::npos);
     if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn") {
       if ( extension == ".fzn" ) {
