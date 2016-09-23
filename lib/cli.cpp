@@ -353,7 +353,8 @@ namespace MiniZinc {
       }      
       else { 
         if(arg.length() > 4) {
-          std::string extension = arg.substr(arg.length()-4,std::string::npos);
+          size_t last_dot = arg.find_last_of('.');
+          std::string extension = arg.substr(last_dot,std::string::npos);
           if (extension == ".mzn") {
             if(model != "") {
               std::cerr << "Error: Multiple .mzn files given." << std::endl;
@@ -362,7 +363,7 @@ namespace MiniZinc {
             model = arg;
             continue;
           }
-          else if(extension == ".dzn") {
+          else if(extension == ".dzn" || extension==".json") {
             datafiles.push_back(arg);                 
             continue;
           }

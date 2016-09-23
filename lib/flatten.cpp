@@ -482,6 +482,7 @@ namespace MiniZinc {
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
   
+  Env::Env(void) : e(new EnvI(NULL)) {}
   Env::Env(Model* m) : e(new EnvI(m)) {}
   Env::~Env(void) {
     delete e;
@@ -489,6 +490,8 @@ namespace MiniZinc {
   
   Model*
   Env::model(void) { return e->orig; }
+  void
+  Env::model(Model* m) { e->orig = m; }
   Model*
   Env::flat(void) { return e->flat(); }
   void

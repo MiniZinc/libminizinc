@@ -140,7 +140,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 //       std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
       goto error;
     }
-    std::string extension = input_file.substr(input_file.length()-4,string::npos);
+    size_t last_dot = input_file.find_last_of('.');
+    std::string extension = input_file.substr(last_dot,string::npos);
     if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn") {
       if ( extension == ".fzn" ) {
         is_flatzinc = true;
@@ -153,7 +154,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 //         std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
 //         goto error;
 //       }
-    } else if (extension == ".dzn") {
+    } else if (extension == ".dzn" || extension == ".json") {
       datafiles.push_back(input_file);
     } else {
       if ( fOutputByDefault )
@@ -272,6 +273,8 @@ void Flattener::flatten()
     std::stringstream errstream;
     try {
       Model* m;
+      pEnv.reset(new Env());
+      Env& env = *getEnv();
       if (flag_stdinInput) {
         if (flag_verbose)
           std::cerr << "Parsing standard input ..." << endl;
@@ -281,17 +284,16 @@ void Flattener::flatten()
       } else {
         if (flag_verbose)
           std::cerr << "Parsing '" << filenames[0] << "' ...";
-        m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       }
       if (m) {
+        env.model(m);
 //         pModel.reset(m);   // seems to be unnec
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
-          pEnv.reset(new Env(m));
-          Env& env = *getEnv();
           vector<TypeError> typeErrors;
           MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only);
           if (typeErrors.size() > 0) {

@@ -240,6 +240,7 @@ lib/eval_par.cpp
 lib/file_utils.cpp
 lib/gc.cpp
 lib/htmlprinter.cpp
+lib/json_parser.cpp
 ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
@@ -280,6 +281,7 @@ include/minizinc/gc.hh
 include/minizinc/hash.hh
 include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
+include/minizinc/json_parser.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh

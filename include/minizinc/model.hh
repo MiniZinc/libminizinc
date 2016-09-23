@@ -230,10 +230,12 @@ namespace MiniZinc {
   private:
     EnvI* e;
   public:
+    Env(void);
     Env(Model* m);
     ~Env(void);
     
     Model* model(void);
+    void model(Model* m);
     Model* flat(void);
     void swap();
     Model* output(void);
