@@ -318,10 +318,17 @@ function var int: abs(var int: x) :: promise_total =
 function float: abs(float: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var float: abs(var float: x) :: promise_total =
-  if has_bounds(x) /\ lb(x)>=0.0 then x else
-  let { var 0.0..max(-lb(x),ub(x)): m;
-        constraint float_abs(x,m);
-  } in m
+  if has_bounds(x) then
+    if lb(x) >= 0.0 then x else
+    let { var 0.0..max(-lb(x),ub(x)): m;
+          constraint float_abs(x,m);
+    } in m
+    endif
+  else
+    let { var float: m;
+          constraint m >= 0.0;
+          constraint float_abs(x,m);
+    } in m
   endif;
 
 /** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
