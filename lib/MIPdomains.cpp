@@ -957,8 +957,8 @@ namespace MiniZinc {
             FloatVal vmax0 = eval_float(mipd.getEnv()->envi(), bo->rhs());
             if ( A < 0.0 )
               std::swap( vmin0, vmax0 );
-            lb = rndUpIfInt( cls.varRef1, A * vmin0 + B );
-            ub = rndDownIfInt( cls.varRef1, A * vmax0 + B );
+            lb = rndUpIfInt( cls.varRef1, A * vmin0.toDouble() + B );
+            ub = rndDownIfInt( cls.varRef1, A * vmax0.toDouble() + B );
             SetOfIntvReal intv = { IntvReal( lb, ub ) };
             sDomain.intersect( intv );               // *A + B
             DBGOUT_MIPD( " Clique domain after proj of the init. domain "
@@ -1665,7 +1665,7 @@ namespace MiniZinc {
       if (IntLit* il = arg->dyn_cast<IntLit>()) {
         return ( il->v().toInt() );
       } else if (FloatLit* fl = arg->dyn_cast<FloatLit>()) {
-        return ( fl->v() );
+        return ( fl->v().toDouble() );
       } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
         return ( bl->v() );
       } else {

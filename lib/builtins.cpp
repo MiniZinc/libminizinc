@@ -1201,50 +1201,43 @@ namespace MiniZinc {
 
   FloatVal b_int2float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    IntVal iv = eval_int(env,args[0]);
-    if (iv.isFinite()) {
-      long long int i = iv.toInt();
-      return static_cast<FloatVal>(i);
-    }
-    if (iv.isPlusInfinity())
-      return std::numeric_limits<FloatVal>::infinity();
-    return -std::numeric_limits<FloatVal>::infinity();
+    return eval_int(env,args[0]);
   }
   IntVal b_ceil(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return static_cast<long long int>(std::ceil(eval_float(env,args[0])));
+    return static_cast<IntVal>(std::ceil(eval_float(env,args[0])));
   }
   IntVal b_floor(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return static_cast<long long int>(std::floor(eval_float(env,args[0])));
+    return static_cast<IntVal>(std::floor(eval_float(env,args[0])));
   }
   IntVal b_round(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return static_cast<long long int>(eval_float(env,args[0])+0.5);
+    return static_cast<IntVal>(eval_float(env,args[0])+0.5);
   }
   FloatVal b_log10(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::log10(eval_float(env,args[0]));
+    return std::log10(eval_float(env,args[0]).toDouble());
   }
   FloatVal b_log2(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::log(eval_float(env,args[0])) / std::log(2.0);
+    return std::log(eval_float(env,args[0]).toDouble()) / std::log(2.0);
   }
   FloatVal b_ln(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::log(eval_float(env,args[0]));
+    return std::log(eval_float(env,args[0]).toDouble());
   }
   FloatVal b_log(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::log(eval_float(env,args[1])) / std::log(eval_float(env,args[0]));
+    return std::log(eval_float(env,args[1]).toDouble()) / std::log(eval_float(env,args[0]).toDouble());
   }
   FloatVal b_exp(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::exp(eval_float(env,args[0]));
+    return std::exp(eval_float(env,args[0]).toDouble());
   }
   FloatVal b_pow(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::pow(eval_float(env,args[0]),eval_float(env,args[1]));
+    return std::pow(eval_float(env,args[0]).toDouble(),eval_float(env,args[1]).toDouble());
   }
   IntVal b_pow_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -1259,7 +1252,7 @@ namespace MiniZinc {
   }
   FloatVal b_sqrt(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    return std::sqrt(eval_float(env,args[0]));
+    return std::sqrt(eval_float(env,args[0]).toDouble());
   }
   
   bool b_assert_bool(EnvI& env, Call* call) {
@@ -1670,8 +1663,8 @@ namespace MiniZinc {
   FloatVal b_normal_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]);
-    const double stdv = eval_float(env,args[1]);
+    const double mean = eval_float(env,args[0]).toDouble();
+    const double stdv = eval_float(env,args[1]).toDouble();
     std::normal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -1680,7 +1673,7 @@ namespace MiniZinc {
   FloatVal b_normal_int_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]);
+    const double mean = eval_float(env,args[0]).toDouble();
     const double stdv = double(eval_int(env,args[1]).toInt());
     std::normal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
@@ -1690,8 +1683,8 @@ namespace MiniZinc {
   FloatVal b_uniform_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 2);
-    const double lb = eval_float(env,args[0]);
-    const double ub = eval_float(env,args[1]);
+    const double lb = eval_float(env,args[0]).toDouble();
+    const double ub = eval_float(env,args[1]).toDouble();
     if(lb > ub) {
       std::stringstream ssm; ssm << "lowerbound of uniform distribution \"" 
       << lb << "\" is higher than its upperbound: " << ub;
@@ -1729,7 +1722,7 @@ namespace MiniZinc {
   IntVal b_poisson_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    double mean = eval_float(env,args[0]);
+    double mean = eval_float(env,args[0]).toDouble();
     std::poisson_distribution<long long int> distribution(mean);
     // return a sample from the distribution
     return IntVal(distribution(rnd_generator())); 
@@ -1738,8 +1731,8 @@ namespace MiniZinc {
   FloatVal b_gamma_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 2);
-    const double alpha = eval_float(env,args[0]);
-    const double beta = eval_float(env,args[1]);
+    const double alpha = eval_float(env,args[0]).toDouble();
+    const double beta = eval_float(env,args[1]).toDouble();
     std::gamma_distribution<double> distribution(alpha,beta);
     // return a sample from the distribution
     return distribution(rnd_generator());     
@@ -1748,8 +1741,8 @@ namespace MiniZinc {
   FloatVal b_gamma_int_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 2);
-    const double alpha = eval_float(env,args[0]);
-    const double beta = eval_float(env,args[1]);
+    const double alpha = eval_float(env,args[0]).toDouble();
+    const double beta = eval_float(env,args[1]).toDouble();
     std::gamma_distribution<double> distribution(alpha,beta);
     // return a sample from the distribution
     return distribution(rnd_generator());   
@@ -1765,7 +1758,7 @@ namespace MiniZinc {
           << shape << "\" has to be greater than zero.";
       throw EvalError(env, args[0]->loc(),ssm.str());
     }
-    const double scale = eval_float(env,args[1]);
+    const double scale = eval_float(env,args[1]).toDouble();
     if(scale < 0) {
       std::stringstream ssm; 
       ssm << "The scale factor for the weibull distribution \"" 
@@ -1780,14 +1773,14 @@ namespace MiniZinc {
   FloatVal b_weibull_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 2);
-    const double shape = eval_float(env,args[0]);
+    const double shape = eval_float(env,args[0]).toDouble();
     if(shape < 0) {
       std::stringstream ssm; 
       ssm << "The shape factor for the weibull distribution \"" 
           << shape << "\" has to be greater than zero.";
       throw EvalError(env, args[0]->loc(),ssm.str());
     }
-    const double scale = eval_float(env,args[1]);
+    const double scale = eval_float(env,args[1]).toDouble();
     if(scale < 0) {
       std::stringstream ssm; 
       ssm << "The scale factor for the weibull distribution \"" 
@@ -1802,7 +1795,7 @@ namespace MiniZinc {
   FloatVal b_exponential_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    const double lambda = eval_float(env,args[0]);
+    const double lambda = eval_float(env,args[0]).toDouble();
     if(lambda < 0) {
       std::stringstream ssm; 
       ssm << "The lambda-parameter for the exponential distribution function \"" 
@@ -1832,8 +1825,8 @@ namespace MiniZinc {
   FloatVal b_lognormal_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]);
-    const double stdv = eval_float(env,args[1]);
+    const double mean = eval_float(env,args[0]).toDouble();
+    const double stdv = eval_float(env,args[1]).toDouble();
     std::lognormal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
     return distribution(rnd_generator()); 
@@ -1843,7 +1836,7 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
     const double mean = double(eval_int(env,args[0]).toInt());
-    const double stdv = eval_float(env,args[1]);
+    const double stdv = eval_float(env,args[1]).toDouble();
     std::lognormal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -1852,7 +1845,7 @@ namespace MiniZinc {
   FloatVal b_chisquared_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    const double lambda = eval_float(env,args[0]);
+    const double lambda = eval_float(env,args[0]).toDouble();
     std::exponential_distribution<double> distribution(lambda);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -1870,8 +1863,8 @@ namespace MiniZinc {
   FloatVal b_cauchy_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]);
-    const double scale = eval_float(env,args[1]);
+    const double mean = eval_float(env,args[0]).toDouble();
+    const double scale = eval_float(env,args[1]).toDouble();
     std::cauchy_distribution<double> distribution(mean,scale);
     // return a sample from the distribution
     return distribution(rnd_generator());   
@@ -1881,7 +1874,7 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
     const double mean = double(eval_int(env,args[0]).toInt());
-    const double scale = eval_float(env,args[1]);
+    const double scale = eval_float(env,args[1]).toDouble();
     std::cauchy_distribution<double> distribution(mean,scale);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -1890,8 +1883,8 @@ namespace MiniZinc {
   FloatVal b_fdistribution_float_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double d1 = eval_float(env,args[0]);
-    const double d2 = eval_float(env,args[1]);
+    const double d1 = eval_float(env,args[0]).toDouble();
+    const double d2 = eval_float(env,args[1]).toDouble();
     std::fisher_f_distribution<double> distribution(d1,d2);
     // return a sample from the distribution
     return distribution(rnd_generator());    
@@ -1910,7 +1903,7 @@ namespace MiniZinc {
   FloatVal b_tdistribution_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    const double sampleSize = eval_float(env,args[0]);
+    const double sampleSize = eval_float(env,args[0]).toDouble();
     std::student_t_distribution<double> distribution(sampleSize);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -1955,7 +1948,7 @@ namespace MiniZinc {
   bool b_bernoulli(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 1);
-    const double p = eval_float(env,args[0]);
+    const double p = eval_float(env,args[0]).toDouble();
     std::bernoulli_distribution distribution(p);
     // return a sample from the distribution
     return distribution(rnd_generator());         
@@ -1965,7 +1958,7 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() == 2);
     double t = double(eval_int(env,args[0]).toInt());
-    double p = eval_float(env,args[1]);
+    double p = eval_float(env,args[1]).toDouble();
     std::binomial_distribution<long long int> distribution(t,p);
     // return a sample from the distribution
     return IntVal(distribution(rnd_generator()));    
@@ -1976,7 +1969,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::atan(f);   
+    return std::atan(f.toDouble());
   }
   
   FloatVal b_cos(EnvI& env, Call* call) {
@@ -1984,7 +1977,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::cos(f); 
+    return std::cos(f.toDouble());
   }
   
   FloatVal b_sin(EnvI& env, Call* call) {
@@ -1992,7 +1985,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::sin(f); 
+    return std::sin(f.toDouble());
   }
   
   FloatVal b_asin(EnvI& env, Call* call) {
@@ -2000,7 +1993,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::asin(f); 
+    return std::asin(f.toDouble());
   }
   
   FloatVal b_acos(EnvI& env, Call* call) {
@@ -2008,7 +2001,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::acos(f); 
+    return std::acos(f.toDouble());
   }
   
   FloatVal b_tan(EnvI& env, Call* call) {
@@ -2016,7 +2009,7 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     FloatVal f = eval_float(env,args[0]);
-    return std::tan(f); 
+    return std::tan(f.toDouble());
   }
   
   IntVal b_to_enum(EnvI& env, Call* call) {

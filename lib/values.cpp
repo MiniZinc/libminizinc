@@ -23,4 +23,6 @@ namespace MiniZinc {
     get(0).max = n;
   }
 
+  const FloatVal FloatVal::infinity(void) { return FloatVal(1.0,true); }
+  
 }

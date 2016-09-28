@@ -113,7 +113,7 @@ namespace MiniZinc {
   }
   double Options::getFloatParam(const std::string& name) const {
     if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
-      return fl->v();
+      return fl->v().toDouble();
     } else {
       std::stringstream ss;
       ss << "Option: \"" << name << "\" is not Par Float" << std::endl;
@@ -123,7 +123,7 @@ namespace MiniZinc {
   double Options::getFloatParam(const std::string& name, double def) const {
     if (hasParam(name)) {
       if(FloatLit* fl = getParam(name)->dyn_cast<FloatLit>()) {
-        return fl->v();
+        return fl->v().toDouble();
       }
     }
     return def;

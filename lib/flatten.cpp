@@ -6177,9 +6177,9 @@ namespace MiniZinc {
             BinOp* bo = follow_id_to_value(vdi->e()->ti()->domain())->cast<BinOp>();
             FloatVal vmin = eval_float(env, bo->lhs());
             FloatVal vmax = eval_float(env, bo->rhs());
-            if (vmin == -std::numeric_limits<FloatVal>::infinity() && vmax == std::numeric_limits<FloatVal>::infinity()) {
+            if (vmin == -FloatVal::infinity() && vmax == FloatVal::infinity()) {
               vdi->e()->ti()->domain(NULL);
-            } else if (vmin == -std::numeric_limits<FloatVal>::infinity()) {
+            } else if (vmin == -FloatVal::infinity()) {
               vdi->e()->ti()->domain(NULL);
               std::vector<Expression*> args(2);
               args[0] = vdi->e()->id();
@@ -6188,7 +6188,7 @@ namespace MiniZinc {
               call->type(Type::varbool());
               call->decl(env.orig->matchFn(env, call));
               env.flat_addItem(new ConstraintI(Location().introduce(), call));
-            } else if (vmax == std::numeric_limits<FloatVal>::infinity()) {
+            } else if (vmax == FloatVal::infinity()) {
               vdi->e()->ti()->domain(NULL);
               std::vector<Expression*> args(2);
               args[0] = FloatLit::a(vmin);

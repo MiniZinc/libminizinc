@@ -59,6 +59,8 @@ namespace MiniZinc {
 
 namespace MiniZinc {
   
+  class FloatVal;
+  
   class IntVal {
     friend IntVal operator +(const IntVal& x, const IntVal& y);
     friend IntVal operator -(const IntVal& x, const IntVal& y);
@@ -67,6 +69,7 @@ namespace MiniZinc {
     friend IntVal operator %(const IntVal& x, const IntVal& y);
     friend IntVal std::abs(const MiniZinc::IntVal& x);
     friend bool operator ==(const IntVal& x, const IntVal& y);
+    friend class FloatVal;
   private:
     long long int _v;
     bool _infinity;
@@ -77,6 +80,7 @@ namespace MiniZinc {
   public:
     IntVal(void) : _v(0), _infinity(false) {}
     IntVal(long long int v) : _v(v), _infinity(false) {}
+    IntVal(const FloatVal& v);
     
     long long int toInt(void) const {
       if (!isFinite())
@@ -236,6 +240,7 @@ namespace MiniZinc {
     else
       return os << s.toInt();
   }
+  
 }
 
 
@@ -264,6 +269,8 @@ namespace std {
       return s0==s1;
     }
   };
+
+  inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal&);
 }
 
 OPEN_HASH_NAMESPACE {
@@ -277,10 +284,234 @@ OPEN_HASH_NAMESPACE {
 CLOSE_HASH_NAMESPACE }
 
 namespace MiniZinc {
+  
+  class FloatVal {
+    friend FloatVal operator +(const FloatVal& x, const FloatVal& y);
+    friend FloatVal operator -(const FloatVal& x, const FloatVal& y);
+    friend FloatVal operator *(const FloatVal& x, const FloatVal& y);
+    friend FloatVal operator /(const FloatVal& x, const FloatVal& y);
+    friend FloatVal std::abs(const MiniZinc::FloatVal& x);
+    friend bool operator ==(const FloatVal& x, const FloatVal& y);
+    friend class IntVal;
+  private:
+    double _v;
+    bool _infinity;
+    FloatVal(double v, bool infinity) : _v(v), _infinity(infinity) {}
+  public:
+    FloatVal(void) : _v(0.0), _infinity(false) {}
+    FloatVal(double v) : _v(v), _infinity(false) {}
+    FloatVal(const IntVal& v) : _v(v._v), _infinity(!v.isFinite()) {}
+    
+    double toDouble(void) const {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      return _v;
+    }
+    
+    bool isFinite(void) const { return !_infinity; }
+    bool isPlusInfinity(void) const { return _infinity && _v==1.0; }
+    bool isMinusInfinity(void) const { return _infinity && _v==-1.0; }
+    
+    FloatVal& operator +=(const FloatVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v += x._v;
+      return *this;
+    }
+    FloatVal& operator -=(const FloatVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v -= x._v;
+      return *this;
+    }
+    FloatVal& operator *=(const FloatVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v *= x._v;
+      return *this;
+    }
+    FloatVal& operator /=(const FloatVal& x) {
+      if (! (isFinite() && x.isFinite()))
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v = _v / x._v;
+      return *this;
+    }
+    FloatVal operator -() const {
+      FloatVal r = *this;
+      r._v = -r._v;
+      return r;
+    }
+    FloatVal& operator ++() {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v = _v + 1;
+      return *this;
+    }
+    FloatVal operator ++(int) {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      FloatVal ret = *this;
+      _v = _v + 1;
+      return ret;
+    }
+    FloatVal& operator --() {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      _v = _v - 1;
+      return *this;
+    }
+    FloatVal operator --(int) {
+      if (!isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      FloatVal ret = *this;
+      _v = _v - 1;
+      return ret;
+    }
+
+    static const FloatVal infinity(void);
+    
+    /// Infinity-safe addition
+    FloatVal plus(int x) {
+      if (isFinite())
+        return (*this)+x;
+      else
+        return *this;
+    }
+    /// Infinity-safe subtraction
+    FloatVal minus(int x) {
+      if (isFinite())
+        return (*this)-x;
+      else
+        return *this;
+    }
+    
+    size_t hash(void) const {
+      HASH_NAMESPACE::hash<long long int> longhash;
+      return longhash(_v);
+    }
+    
+  };
+  
+  inline
+  bool operator ==(const FloatVal& x, const FloatVal& y) {
+    return x._infinity==y._infinity && x._v == y._v;
+  }
+  inline
+  bool operator <=(const FloatVal& x, const FloatVal& y) {
+    return y.isPlusInfinity() || x.isMinusInfinity() || (x.isFinite() && y.isFinite() && x.toDouble() <= y.toDouble());
+  }
+  inline
+  bool operator <(const FloatVal& x, const FloatVal& y) {
+    return
+    (y.isPlusInfinity() && !x.isPlusInfinity()) ||
+    (x.isMinusInfinity() && !y.isMinusInfinity()) ||
+    (x.isFinite() && y.isFinite() && x.toDouble() < y.toDouble());
+  }
+  inline
+  bool operator >=(const FloatVal& x, const FloatVal& y) {
+    return y <= x;
+  }
+  inline
+  bool operator >(const FloatVal& x, const FloatVal& y) {
+    return y < x;
+  }
+  inline
+  bool operator !=(const FloatVal& x, const FloatVal& y) {
+    return !(x==y);
+  }
+  inline
+  FloatVal operator +(const FloatVal& x, const FloatVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticError("arithmetic operation on infinite value");
+    return x.toDouble()+y.toDouble();
+  }
+  inline
+  FloatVal operator -(const FloatVal& x, const FloatVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticError("arithmetic operation on infinite value");
+    return x.toDouble()-y.toDouble();
+  }
+  inline
+  FloatVal operator *(const FloatVal& x, const FloatVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticError("arithmetic operation on infinite value");
+    return x.toDouble()*y.toDouble();
+  }
+  inline
+  FloatVal operator /(const FloatVal& x, const FloatVal& y) {
+    if (! (x.isFinite() && y.isFinite()))
+      throw ArithmeticError("arithmetic operation on infinite value");
+    return x.toDouble()/y.toDouble();
+  }
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const FloatVal& s) {
+    if (s.isMinusInfinity())
+      return os << "-infinity";
+    else if (s.isPlusInfinity())
+      return os << "infinity";
+    else
+      return os << s.toDouble();
+  }
+  
+  inline
+  IntVal::IntVal(const FloatVal& v)
+    : _v(static_cast<long long int>(v._v)), _infinity(!v.isFinite()) {}
+  
+}
+
+
+namespace std {
+  inline
+  MiniZinc::FloatVal abs(const MiniZinc::FloatVal& x) {
+    if (!x.isFinite()) return MiniZinc::FloatVal::infinity();
+    return x.toDouble() < 0 ? MiniZinc::FloatVal(-x.toDouble()) : x;
+  }
+  
+  inline
+  MiniZinc::FloatVal min(const MiniZinc::FloatVal& x, const MiniZinc::FloatVal& y) {
+    return x <= y ? x : y;
+  }
+  inline
+  MiniZinc::FloatVal max(const MiniZinc::FloatVal& x, const MiniZinc::FloatVal& y) {
+    return x >= y ? x : y;
+  }
+  
+  inline
+  MiniZinc::FloatVal floor(const MiniZinc::FloatVal& x) {
+    if (!x.isFinite()) return x;
+    return floor(x.toDouble());
+  }
+  inline
+  MiniZinc::FloatVal ceil(const MiniZinc::FloatVal& x) {
+    if (!x.isFinite()) return x;
+    return ceil(x.toDouble());
+  }
+
+  template<>
+  struct equal_to<MiniZinc::FloatVal> {
+  public:
+    bool operator()(const MiniZinc::FloatVal& s0,
+                    const MiniZinc::FloatVal& s1) const {
+      return s0==s1;
+    }
+  };
+}
+
+OPEN_HASH_NAMESPACE {
+  template<>
+  struct hash<MiniZinc::FloatVal> {
+  public:
+    size_t operator()(const MiniZinc::FloatVal& s) const {
+      return s.hash();
+    }
+  };
+CLOSE_HASH_NAMESPACE }
+
+
+namespace MiniZinc {
 
   typedef unsigned long long int UIntVal;
-
-  typedef double FloatVal;
 
   /// An integer set value
   class IntSetVal : public ASTChunk {
