@@ -57,7 +57,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(APPLE)
-   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
+   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.9")
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
 endif(APPLE)
