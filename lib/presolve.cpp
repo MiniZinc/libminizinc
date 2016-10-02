@@ -55,8 +55,12 @@ namespace MiniZinc {
       std::ofstream os;
       os.open(options.modelOutput.c_str(), std::ios::out);
       checkIOStatus (os.good(), " I/O error: cannot open presolved model output file. ");
+      os << "include \"table.mzn\";" << std::endl << std::endl;
       Printer p(os);
-      p.print(env.model());
+      for (Subproblem* it : subproblems){
+        p.print(it->getPredicate());
+        os << std::endl;
+      }
       checkIOStatus (os.good(), " I/O error: cannot write presolved model output file. ");
       os.close();
 

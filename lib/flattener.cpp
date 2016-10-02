@@ -72,7 +72,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
 #ifdef PRESOLVE
-  << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved model output" << std::endl
+  << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
 #endif
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
