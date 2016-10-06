@@ -244,7 +244,6 @@ namespace MiniZinc {
              bool parseDocComments,
              bool verbose,
              ostream& err) {
-    GCLock lock;
     
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
@@ -254,6 +253,7 @@ namespace MiniZinc {
     map<string,Model*> seenModels;
     
     if (filenames.size() > 0) {
+      GCLock lock;
       string fileDirname; string fileBasename;
       filepath(filenames[0], fileDirname, fileBasename);
       model->setFilename(fileBasename);
@@ -261,6 +261,7 @@ namespace MiniZinc {
       files.push_back(pair<string,Model*>("",model));
       
       for (unsigned int i=1; i<filenames.size(); i++) {
+        GCLock lock;
         string dirName, baseName;
         filepath(filenames[i], dirName, baseName);
         
@@ -277,6 +278,7 @@ namespace MiniZinc {
     }
     
     if (!ignoreStdlib) {
+      GCLock lock;
       Model* stdlib = new Model;
       stdlib->setFilename("stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
@@ -290,6 +292,7 @@ namespace MiniZinc {
     }
     
     while (!files.empty()) {
+      GCLock lock;
       pair<string,Model*>& np = files.back();
       string parentPath = np.first;
       Model* m = np.second;
@@ -352,6 +355,7 @@ namespace MiniZinc {
     }
     
     for (unsigned int i=0; i<datafiles.size(); i++) {
+      GCLock lock;
       string f = datafiles[i];
       if (f.size()>6 && f.substr(f.size()-5,string::npos)==".json") {
         JSONParser jp(env.envi());
@@ -404,8 +408,11 @@ namespace MiniZinc {
       return NULL;
     }
 
-    GCLock lock;
-    Model* model = new Model();
+    Model* model;
+    {
+      GCLock lock;
+      model = new Model();
+    }
     parse(env, model, filenames, datafiles,
           ip, ignoreStdlib, parseDocComments, verbose, err);
     return model;
@@ -612,22 +619,38 @@ item_list_head:
       item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($1) pp->model->addItem($1);
+        if ($1) {
+          pp->model->addItem($1);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($2) pp->model->addItem($2);
+        if ($2) {
+          pp->model->addItem($2);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | item_list_head ';' item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($3) pp->model->addItem($3);
+        if ($3) {
+          pp->model->addItem($3);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | item_list_head ';' doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($4) pp->model->addItem($4);
+        if ($4) {
+          pp->model->addItem($4);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | error ';' item
 
