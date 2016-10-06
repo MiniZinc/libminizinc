@@ -1700,7 +1700,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
@@ -2058,7 +2058,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
@@ -2343,7 +2343,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
