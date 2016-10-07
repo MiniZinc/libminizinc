@@ -256,6 +256,7 @@ lib/MIPdomains.cpp
 lib/optimize.cpp
 lib/options.cpp
 lib/optimize_constraints.cpp
+lib/output.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
 lib/statistics.cpp
@@ -286,6 +287,7 @@ include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
+include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
