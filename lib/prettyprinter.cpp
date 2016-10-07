@@ -159,6 +159,28 @@ namespace MiniZinc {
     return ret;
   }
   
+  void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat=false) {
+    std::ostringstream oss;
+    if (fv.isFinite()) {
+      if (hexFloat) {
+        std::hexfloat(oss);
+        oss << fv.toDouble();
+        os << oss.str();
+      } else {
+        oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+        oss << fv;
+        if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+          oss << ".0";
+        os << oss.str();
+      }
+    } else {
+      if (fv.isPlusInfinity())
+        os << "infinity";
+      else
+        os << "-infinity";
+    }
+  }
+  
   class PlainPrinter {
   public:
     std::ostream& os;
@@ -206,12 +228,7 @@ namespace MiniZinc {
         break;
       case Expression::E_FLOATLIT:
         {
-          std::ostringstream oss;
-          oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-          oss << e->cast<FloatLit>()->v();
-          if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-            oss << ".0";
-          os << oss.str();
+          ppFloatVal(os, e->cast<FloatLit>()->v());
         }
         break;
       case Expression::E_SETLIT:
@@ -262,12 +279,7 @@ namespace MiniZinc {
                   if (!first)
                     os << ",";
                   first = false;
-                  std::ostringstream oss;
-                  oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-                  oss << isr.min();
-                  if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-                    oss << ".0";
-                  os << oss.str();
+                  ppFloatVal(os, isr.min());
                 }
                 os << "}";
               } else {
@@ -276,23 +288,9 @@ namespace MiniZinc {
                   if (!first)
                     os << "++";
                   first = false;
-                  {
-                    std::ostringstream oss;
-                    oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-                    oss << isr.min();
-                    if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-                      oss << ".0";
-                    os << oss.str();
-                  }
+                  ppFloatVal(os, isr.min());
                   os << "..";
-                  {
-                    std::ostringstream oss;
-                    oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-                    oss << isr.max();
-                    if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-                      oss << ".0";
-                    os << oss.str();
-                  }
+                  ppFloatVal(os, isr.max());
                 }
               }
             }
@@ -1099,10 +1097,7 @@ namespace MiniZinc {
     }
     ret mapFloatLit(const FloatLit& fl) {
       std::ostringstream oss;
-      oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-      oss << fl.v();
-      if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-        oss << ".0";
+      ppFloatVal(oss, fl.v());
       return new StringDocument(oss.str());
     }
     ret mapSetLit(const SetLit& sl) {
@@ -1138,18 +1133,12 @@ namespace MiniZinc {
           dl = new DocumentList("", "..", "");
           {
             std::ostringstream oss;
-            oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-            oss << sl.fsv()->min(0);
-            if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-              oss << ".0";
+            ppFloatVal(oss, sl.fsv()->min(0));
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
           {
             std::ostringstream oss;
-            oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-            oss << sl.fsv()->max(0);
-            if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-              oss << ".0";
+            ppFloatVal(oss, sl.fsv()->max(0));
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         } else {
@@ -1157,20 +1146,9 @@ namespace MiniZinc {
           FloatSetRanges fsr(sl.fsv());
           for (; fsr(); ++fsr) {
             std::ostringstream oss;
-            {
-              oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-              oss << sl.fsv()->min(0);
-              if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-                oss << ".0";
-            }
+            ppFloatVal(oss, fsr.min());
             oss << "..";
-            {
-              std::ostringstream oss;
-              oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-              oss << sl.fsv()->max(0);
-              if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-                oss << ".0";
-            }
+            ppFloatVal(oss, fsr.max());
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         }
