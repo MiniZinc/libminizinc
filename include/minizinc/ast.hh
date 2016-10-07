@@ -340,8 +340,12 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     ASTExprVec<Expression> _v;
-    /// A range-list based representation for an integer set, or NULL
-    IntSetVal* _isv;
+    union {
+      /// A range-list based representation for an integer set, or NULL
+      IntSetVal* isv;
+      /// A range-list based representation for an float set, or NULL
+      FloatSetVal* fsv;
+    } _u;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
@@ -351,14 +355,20 @@ namespace MiniZinc {
     SetLit(const Location& loc, ASTExprVec<Expression> v);
     /// Construct set
     SetLit(const Location& loc, IntSetVal* isv);
+    /// Construct set
+    SetLit(const Location& loc, FloatSetVal* fsv);
     /// Access value
     ASTExprVec<Expression> v(void) const { return _v; }
     /// Set value
     void v(const ASTExprVec<Expression>& val) { _v = val; }
-    /// Access value
-    IntSetVal* isv(void) const { return _isv; }
-    /// Set value
-    void isv(IntSetVal* val) { _isv = val; }
+    /// Access integer set value if present
+    IntSetVal* isv(void) const { return type().bt()==Type::BT_INT ? _u.isv : NULL; }
+    /// Set integer set value
+    void isv(IntSetVal* val) { _u.isv = val; }
+    /// Access float set value if present
+    FloatSetVal* fsv(void) const { return type().bt()==Type::BT_FLOAT ? _u.fsv : NULL; }
+    /// Set integer set value
+    void fsv(FloatSetVal* val) { _u.fsv = val; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -1381,6 +1391,8 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
+          ASTString dom;
         } float_;
 
         struct {
@@ -1399,6 +1411,7 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
         } float_reif;
 
         ASTString bool_eq;

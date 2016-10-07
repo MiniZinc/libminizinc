@@ -22,7 +22,6 @@
 #include <string>
 #include <limits.h>
 
-
 namespace MiniZinc {
   class IntVal;
 }
@@ -152,14 +151,14 @@ namespace MiniZinc {
     static const IntVal infinity(void);
     
     /// Infinity-safe addition
-    IntVal plus(int x) {
+    IntVal plus(int x) const {
       if (isFinite())
         return toSafeInt()+x;
       else
         return *this;
     }
     /// Infinity-safe subtraction
-    IntVal minus(int x) {
+    IntVal minus(int x) const {
       if (isFinite())
         return toSafeInt()-x;
       else
@@ -698,6 +697,188 @@ namespace MiniZinc {
     return os;
   }
   
+  /// An integer set value
+  class FloatSetVal : public ASTChunk {
+  public:
+    /// Contiguous range
+    struct Range {
+      /// Range minimum
+      FloatVal min;
+      /// Range maximum
+      FloatVal max;
+      /// Construct range from \a m to \a n
+      Range(FloatVal m, FloatVal n) : min(m), max(n) {}
+      /// Default constructor
+      Range(void) {}
+    };
+  private:
+    /// Return range at position \a i
+    Range& get(int i) {
+      return reinterpret_cast<Range*>(_data)[i];
+    }
+    /// Return range at position \a i
+    const Range& get(int i) const {
+      return reinterpret_cast<const Range*>(_data)[i];
+    }
+    /// Construct empty set
+    FloatSetVal(void) : ASTChunk(0) {}
+    /// Construct set of single range
+    FloatSetVal(FloatVal m, FloatVal n);
+    /// Construct set from \a s
+    FloatSetVal(const std::vector<Range>& s)
+    : ASTChunk(sizeof(Range)*s.size()) {
+      for (unsigned int i=s.size(); i--;)
+        get(i) = s[i];
+    }
+    
+    /// Disabled
+    FloatSetVal(const FloatSetVal& r);
+    /// Disabled
+    FloatSetVal& operator =(const FloatSetVal& r);
+  public:
+    /// Return number of ranges
+    int size(void) const { return _size / sizeof(Range); }
+    /// Return minimum, or infinity if set is empty
+    FloatVal min(void) const { return size()==0 ? FloatVal::infinity() : get(0).min; }
+    /// Return maximum, or minus infinity if set is empty
+    FloatVal max(void) const { return size()==0 ? -FloatVal::infinity() : get(size()-1).max; }
+    /// Return minimum of range \a i
+    FloatVal min(int i) const { assert(i<size()); return get(i).min; }
+    /// Return maximum of range \a i
+    FloatVal max(int i) const { assert(i<size()); return get(i).max; }
+    /// Return width of range \a i
+    FloatVal width(int i) const {
+      assert(i<size());
+      if (min(i).isFinite() && max(i).isFinite() && min(i)==max(i))
+        return max(i)-min(i)+1;
+      else
+        return IntVal::infinity();
+    }
+    /// Return cardinality
+    FloatVal card(void) const {
+      IntVal c = 0;
+      for (unsigned int i=size(); i--;) {
+        if (width(i).isFinite())
+          c += width(i);
+        else
+          return IntVal::infinity();
+      }
+      return c;
+    }
+    
+    /// Allocate empty set from context
+    static FloatSetVal* a(void) {
+      FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(0));
+      new (r) FloatSetVal();
+      return r;
+    }
+    
+    /// Allocate set \f$\{m,n\}\f$ from context
+    static FloatSetVal* a(FloatVal m, FloatVal n) {
+      if (m>n) {
+        return a();
+      } else {
+        FloatSetVal* r =
+          static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)));
+        new (r) FloatSetVal(m,n);
+        return r;
+      }
+    }
+    
+    /// Allocate set using iterator \a i
+    template<class I>
+    static FloatSetVal* ai(I& i) {
+      std::vector<Range> s;
+      for (; i(); ++i)
+        s.push_back(Range(i.min(),i.max()));
+      FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)*s.size()));
+      new (r) FloatSetVal(s);
+      return r;
+    }
+    
+    /// Allocate set from vector \a s0 (may contain duplicates)
+    static FloatSetVal* a(const std::vector<FloatVal>& s0) {
+      if (s0.size()==0)
+        return a();
+      std::vector<FloatVal> s=s0;
+      std::sort(s.begin(),s.end());
+      std::vector<Range> ranges;
+      FloatVal min=s[0];
+      FloatVal max=min;
+      for (unsigned int i=1; i<s.size(); i++) {
+        if (s[i]>max) {
+          ranges.push_back(Range(min,max));
+          min=s[i]; max=min;
+        } else {
+          max=s[i];
+        }
+      }
+      ranges.push_back(Range(min,max));
+      FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)*ranges.size()));
+      new (r) FloatSetVal(ranges);
+      return r;
+    }
+    static FloatSetVal* a(const std::vector<Range>& ranges) {
+      FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)*ranges.size()));
+      new (r) FloatSetVal(ranges);
+      return r;
+    }
+    
+    /// Check if set contains \a v
+    bool contains(const FloatVal& v) {
+      for (int i=0; i<size(); i++) {
+        if (v < min(i))
+          return false;
+        if (v <= max(i))
+          return true;
+      }
+      return false;
+    }
+    
+    /// Check if it is equal to \a s
+    bool equal(const FloatSetVal* s) {
+      if (size()!=s->size())
+        return false;
+      for (int i=0; i<size(); i++)
+        if (min(i)!=s->min(i) || max(i)!=s->max(i))
+          return false;
+      return true;
+    }
+    
+    /// Mark for garbage collection
+    void mark(void) {
+      _gc_mark = 1;
+    }
+  };
+  
+  /// Iterator over an IntSetVal
+  class FloatSetRanges {
+    /// The set value
+    const FloatSetVal* rs;
+    /// The current range
+    int n;
+  public:
+    /// Constructor
+    FloatSetRanges(const FloatSetVal* r) : rs(r), n(0) {}
+    /// Check if iterator is still valid
+    bool operator()(void) const { return n<rs->size(); }
+    /// Move to next range
+    void operator++(void) { ++n; }
+    /// Return minimum of current range
+    FloatVal min(void) const { return rs->min(n); }
+    /// Return maximum of current range
+    FloatVal max(void) const { return rs->max(n); }
+    /// Return width of current range
+    FloatVal width(void) const { return rs->width(n); }
+  };
+  
+  template<class Char, class Traits>
+  std::basic_ostream<Char,Traits>&
+  operator <<(std::basic_ostream<Char,Traits>& os, const FloatSetVal& s) {
+    for (FloatSetRanges isr(&s); isr(); ++isr)
+      os << isr.min() << ".." << isr.max() << " ";
+    return os;
+  }
 }
 
 #endif

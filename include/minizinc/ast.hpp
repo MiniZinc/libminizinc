@@ -80,20 +80,31 @@ namespace MiniZinc {
   inline
   SetLit::SetLit(const Location& loc,
                  const std::vector<Expression*>& v)
-  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)) {
+    _u.isv = NULL;
     rehash();
   }
   
   inline
   SetLit::SetLit(const Location& loc, ASTExprVec<Expression> v)
-  : Expression(loc,E_SETLIT,Type()), _v(v), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(v) {
+    _u.isv = NULL;
     rehash();
   }
 
   inline
   SetLit::SetLit(const Location& loc, IntSetVal* isv)
-  : Expression(loc,E_SETLIT,Type()), _isv(isv) {
+  : Expression(loc,E_SETLIT,Type()) {
     _type = Type::parsetint();
+    _u.isv = isv;
+    rehash();
+  }
+
+  inline
+  SetLit::SetLit(const Location& loc, FloatSetVal* fsv)
+  : Expression(loc,E_SETLIT,Type()) {
+    _type = Type::parsetfloat();
+    _u.fsv = fsv;
     rehash();
   }
 

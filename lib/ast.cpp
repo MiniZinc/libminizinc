@@ -86,10 +86,13 @@ namespace MiniZinc {
         case Expression::E_ANON:
           break;
         case Expression::E_SETLIT:
-          if (cur->cast<SetLit>()->isv())
+          if (cur->cast<SetLit>()->isv()) {
             cur->cast<SetLit>()->isv()->mark();
-          else
+          } else if (cur->cast<SetLit>()->fsv()) {
+              cur->cast<SetLit>()->fsv()->mark();
+          } else {
             pushall(cur->cast<SetLit>()->v());
+          }
           break;
         case Expression::E_STRINGLIT:
           cur->cast<StringLit>()->v().mark();
@@ -180,6 +183,12 @@ namespace MiniZinc {
     if (isv()) {
       HASH_NAMESPACE::hash<IntVal> h;
       for (IntSetRanges r0(isv()); r0(); ++r0) {
+        cmb_hash(h(r0.min()));
+        cmb_hash(h(r0.max()));
+      }
+    } else if (fsv()) {
+      HASH_NAMESPACE::hash<FloatVal> h;
+      for (FloatSetRanges r0(fsv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
@@ -809,8 +818,16 @@ namespace MiniZinc {
           } else {
             return false;
           }
+        } else if (s0->fsv()) {
+          if (s1->fsv()) {
+            FloatSetRanges r0(s0->fsv());
+            FloatSetRanges r1(s1->fsv());
+            return Ranges::equal(r0,r1);
+          } else {
+            return false;
+          }
         } else {
-          if (s1->isv()) return false;
+          if (s1->isv() || s1->fsv()) return false;
           if (s0->v().size() != s1->v().size()) return false;
           for (unsigned int i=0; i<s0->v().size(); i++)
             if (!Expression::equal( s0->v()[i], s1->v()[i] ))
@@ -1044,6 +1061,8 @@ namespace MiniZinc {
     ids.float_.ge = ASTString("float_ge");
     ids.float_.eq = ASTString("float_eq");
     ids.float_.ne = ASTString("float_ne");
+    ids.float_.in = ASTString("float_in");
+    ids.float_.dom = ASTString("float_dom");
 
     ids.float_reif.lin_eq = ASTString("float_lin_eq_reif");
     ids.float_reif.lin_le = ASTString("float_lin_le_reif");
@@ -1060,6 +1079,7 @@ namespace MiniZinc {
     ids.float_reif.ge = ASTString("float_ge_reif");
     ids.float_reif.eq = ASTString("float_eq_reif");
     ids.float_reif.ne = ASTString("float_ne_reif");
+    ids.float_reif.in = ASTString("float_in_reif");
 
     ids.bool_eq = ASTString("bool_eq");
     ids.bool_eq_reif = ASTString("bool_eq_reif");
@@ -1250,6 +1270,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_.ge));
     v.push_back(new StringLit(Location(),ids.float_.eq));
     v.push_back(new StringLit(Location(),ids.float_.ne));
+    v.push_back(new StringLit(Location(),ids.float_.in));
+    v.push_back(new StringLit(Location(),ids.float_.dom));
 
     v.push_back(new StringLit(Location(),ids.float_reif.lin_eq));
     v.push_back(new StringLit(Location(),ids.float_reif.lin_le));
@@ -1266,6 +1288,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_reif.ge));
     v.push_back(new StringLit(Location(),ids.float_reif.eq));
     v.push_back(new StringLit(Location(),ids.float_reif.ne));
+    v.push_back(new StringLit(Location(),ids.float_reif.in));
 
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.bool_eq_reif));

@@ -242,6 +242,60 @@ namespace MiniZinc {
               if (!sl.isv()->max(sl.isv()->size()-1).isFinite())
                 os << "++" << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
             }
+          } else if (sl.fsv()) {
+            if (sl.fsv()->size()==0) {
+              os << (_flatZinc ? "1.0..0.0" : "{}");
+            } else if (sl.fsv()->size()==1) {
+              os << sl.fsv()->min(0) << ".." << sl.fsv()->max(0);
+            } else {
+              bool allSingleton = true;
+              for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                if (isr.min() != isr.max()) {
+                  allSingleton = false;
+                  break;
+                }
+              }
+              if (allSingleton) {
+                os << "{";
+                bool first = true;
+                for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                  if (!first)
+                    os << ",";
+                  first = false;
+                  std::ostringstream oss;
+                  oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+                  oss << isr.min();
+                  if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+                    oss << ".0";
+                  os << oss.str();
+                }
+                os << "}";
+              } else {
+                bool first = true;
+                for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                  if (!first)
+                    os << "++";
+                  first = false;
+                  {
+                    std::ostringstream oss;
+                    oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+                    oss << isr.min();
+                    if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+                      oss << ".0";
+                    os << oss.str();
+                  }
+                  os << "..";
+                  {
+                    std::ostringstream oss;
+                    oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+                    oss << isr.max();
+                    if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+                      oss << ".0";
+                    os << oss.str();
+                  }
+                }
+              }
+            }
           } else {
             os << "{";
             for (unsigned int i = 0; i < sl.v().size(); i++) {
@@ -1077,6 +1131,50 @@ namespace MiniZinc {
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         }
+      } else if (sl.fsv()) {
+        if (sl.fsv()->size()==0) {
+          dl = new DocumentList("1.0..0.0","","");
+        } else if (sl.fsv()->size()==1) {
+          dl = new DocumentList("", "..", "");
+          {
+            std::ostringstream oss;
+            oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+            oss << sl.fsv()->min(0);
+            if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+              oss << ".0";
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+          {
+            std::ostringstream oss;
+            oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+            oss << sl.fsv()->max(0);
+            if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+              oss << ".0";
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        } else {
+          dl = new DocumentList("", "++", "", true);
+          FloatSetRanges fsr(sl.fsv());
+          for (; fsr(); ++fsr) {
+            std::ostringstream oss;
+            {
+              oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+              oss << sl.fsv()->min(0);
+              if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+                oss << ".0";
+            }
+            oss << "..";
+            {
+              std::ostringstream oss;
+              oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+              oss << sl.fsv()->max(0);
+              if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+                oss << ".0";
+            }
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        }
+
       } else {
         dl = new DocumentList("{", ", ", "}", true);
         for (unsigned int i = 0; i < sl.v().size(); i++) {

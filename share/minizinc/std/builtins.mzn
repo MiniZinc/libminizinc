@@ -2040,6 +2040,7 @@ function set of int: anon_enum(int: n) = 1..n;
 include "redefinitions.mzn";
 include "redefinitions-2.0.mzn";
 include "redefinitions-2.0.2.mzn";
+include "redefinitions-2.1.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

@@ -448,9 +448,8 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
-        assert(bo->op() == BOT_DOTDOT);
-        array_lb = eval_float(env,bo->lhs());
+        FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+        array_lb = fsv->min();
         foundMin = true;
       }
       e = vd->e();
@@ -499,9 +498,8 @@ namespace MiniZinc {
     
     if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
       if (vd->ti()->domain()) {
-        BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
-        assert(bo->op() == BOT_DOTDOT);
-        array_ub = eval_float(env,bo->rhs());
+        FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+        array_ub = fsv->max();
         foundMax = true;
       }
       e = vd->e();
@@ -748,7 +746,7 @@ namespace MiniZinc {
     for (unsigned int i=1; i<al->v().size(); i++) {
       IntSetRanges isr(ub);
       IntSetRanges r(b_ub_set(env,al->v()[i]));
-      Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
+      Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
       ub = IntSetVal::ai(u);
     }
     return ub;
@@ -888,7 +886,7 @@ namespace MiniZinc {
     for (unsigned int i=1; i<al->v().size(); i++) {
       IntSetRanges isr(isv);
       IntSetRanges r(b_dom_varint(env,al->v()[i]));
-      Ranges::Union<IntSetRanges,IntSetRanges> u(isr,r);
+      Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
       isv = IntSetVal::ai(u);
     }
     return isv;
@@ -907,9 +905,9 @@ namespace MiniZinc {
       throw EvalError(env, args[1]->loc(),"cannot determine bounds");
     if (!by.l.isFinite() || !by.u.isFinite())
       return constants().infinity->isv();
-    Ranges::Const byr(by.l,by.u);
-    Ranges::Const by0(0,0);
-    Ranges::Diff<Ranges::Const, Ranges::Const> byr0(byr,by0);
+    Ranges::Const<IntVal> byr(by.l,by.u);
+    Ranges::Const<IntVal> by0(0,0);
+    Ranges::Diff<IntVal,Ranges::Const<IntVal>, Ranges::Const<IntVal> > byr0(byr,by0);
 
 
     IntVal min=IntVal::maxint();
@@ -1110,7 +1108,7 @@ namespace MiniZinc {
       throw EvalError(env, Location(), "card needs exactly one argument");
     IntSetVal* isv = eval_intset(env,args[0]);
     IntSetRanges isr(isv);
-    return Ranges::size(isr);
+    return Ranges::cardinality(isr);
   }
   
   Expression* exp_is_fixed(EnvI& env, Expression* e) {
@@ -1522,7 +1520,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<al->v().size(); i++) {
       IntSetRanges i0(isv);
       IntSetRanges i1(eval_intset(env,al->v()[i]));
-      Ranges::Union<IntSetRanges, IntSetRanges> u(i0,i1);
+      Ranges::Union<IntVal,IntSetRanges, IntSetRanges> u(i0,i1);
       isv = IntSetVal::ai(u);
     }
     return isv;

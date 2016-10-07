@@ -191,6 +191,9 @@ namespace MiniZinc {
     bool isboolset(void) const {
       return is_set() && (_bt==BT_BOOL || _bt==BT_BOT);
     }
+    bool isfloatset(void) const {
+      return is_set() && (_bt==BT_FLOAT || _bt==BT_BOT);
+    }
     bool isann(void) const { return isplain() && _bt==BT_ANN; }
     bool isintarray(void) const {
       return _dim==1 && _st==ST_PLAIN && _ot==OT_PRESENT && _bt==BT_INT;

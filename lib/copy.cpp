@@ -54,6 +54,14 @@ namespace MiniZinc {
     if (it==m.end()) return NULL;
     return static_cast<IntSetVal*>(it->second);
   }
+  void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  FloatSetVal* CopyMap::find(FloatSetVal* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<FloatSetVal*>(it->second);
+  }
 
   Location copy_location(CopyMap& m, const Location& _loc) {
     Location loc;
@@ -108,7 +116,7 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* s = e->cast<SetLit>();
-        SetLit* c = new SetLit(copy_location(m,e),NULL);
+        SetLit* c = new SetLit(copy_location(m,e),static_cast<IntSetVal*>(NULL));
         m.insert(e,c);
         if (s->isv()) {
           IntSetVal* isv;
@@ -120,7 +128,17 @@ namespace MiniZinc {
             m.insert(s->isv(),isv);
           }
           c->isv(isv);
-        } else {          
+        } else if (s->fsv()) {
+          FloatSetVal* fsv;
+          if (FloatSetVal* fsvc = m.find(s->fsv())) {
+            fsv = fsvc;
+          } else {
+            FloatSetRanges r(s->fsv());
+            fsv = FloatSetVal::ai(r);
+            m.insert(s->fsv(),fsv);
+          }
+          c->fsv(fsv);
+        } else {
           if (ASTExprVecO<Expression*>* ve = m.find(s->v())) {
             c->v(ASTExprVec<Expression>(ve));
           } else {

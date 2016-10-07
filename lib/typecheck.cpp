@@ -401,7 +401,7 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        if(sl->isv()==NULL)
+        if(sl->isv()==NULL && sl->fsv()==NULL)
           for (unsigned int i=0; i<sl->v().size(); i++)
             run(env,sl->v()[i]);
       }
