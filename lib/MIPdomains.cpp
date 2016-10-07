@@ -939,32 +939,17 @@ namespace MiniZinc {
         // process domain info
         double lb=B, ub=A+B;  // projected bounds for bool
         if ( vd->ti()->domain() ) {
-          if ( vd->type().isint() ) {         // INT VAR
+          if ( vd->type().isint() || vd->type().isfloat() ) {         // INT VAR OR FLOAT VAR
             SetOfIntvReal sD1;
             convertIntSet( vd->ti()->domain(), sD1, cls.varRef1, A, B );
             sDomain.intersect(sD1);
             DBGOUT_MIPD( " Clique domain after proj of the init. domain "
-              << sD1 << " of varint "
+              << sD1 << " of " << (vd->type().isint() ? "varint" : "varfloat")
               << A << " * " << vd->id()->str() << " + " << B
               << ":  " << sDomain );
             auto bnds = sD1.getBounds();
             lb = bnds.left;
             ub = bnds.right;
-          }
-          else if ( vd->type().isfloat() ) {  // FLOAT VAR
-            BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
-            FloatVal vmin0 = eval_float(mipd.getEnv()->envi(), bo->lhs());
-            FloatVal vmax0 = eval_float(mipd.getEnv()->envi(), bo->rhs());
-            if ( A < 0.0 )
-              std::swap( vmin0, vmax0 );
-            lb = rndUpIfInt( cls.varRef1, A * vmin0.toDouble() + B );
-            ub = rndDownIfInt( cls.varRef1, A * vmax0.toDouble() + B );
-            SetOfIntvReal intv = { IntvReal( lb, ub ) };
-            sDomain.intersect( intv );               // *A + B
-            DBGOUT_MIPD( " Clique domain after proj of the init. domain "
-              << intv << " of varfloat "
-              << A << " * " << vd->id()->str() << " + " << B
-              << ":  " << sDomain );
           } else {
             MZN_MIPD__assert_for_feas( 0, 
               "Variable " << vd->id()->str()
@@ -1545,22 +1530,40 @@ namespace MiniZinc {
       }
       
       /// domain / reif set of one variable into that for a!her
-      void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget, 
+      void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget,
                           double A, double B ) {
         MZN_MIPD__assert_hard( A != 0.0 );
-        IntSetVal* S = eval_intset( mipd.getEnv()->envi(), e );
-        IntSetRanges domr(S);
-        for (; domr(); ++domr) {                          // * A + B
-          IntVal mmin = domr.min();
-          IntVal mmax = domr.max();
-          if ( A < 0.0 )
-            std:: swap( mmin, mmax );
-          s.insert( IntvReal(                   // * A + B
-            mmin.isFinite() ?
-              rndUpIfInt( varTarget, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
-            mmax.isFinite() ?
-              rndDownIfInt( varTarget, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
-          );
+        if (e->type().isintset()) {
+          IntSetVal* S = eval_intset( mipd.getEnv()->envi(), e );
+          IntSetRanges domr(S);
+          for (; domr(); ++domr) {                          // * A + B
+            IntVal mmin = domr.min();
+            IntVal mmax = domr.max();
+            if ( A < 0.0 )
+              std:: swap( mmin, mmax );
+            s.insert( IntvReal(                   // * A + B
+              mmin.isFinite() ?
+                rndUpIfInt( varTarget, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
+              mmax.isFinite() ?
+                rndDownIfInt( varTarget, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
+            );
+          }
+        } else {
+          assert(e->type().isfloatset());
+          FloatSetVal* S = eval_floatset( mipd.getEnv()->envi(), e );
+          FloatSetRanges domr(S);
+          for (; domr(); ++domr) {                          // * A + B
+            FloatVal mmin = domr.min();
+            FloatVal mmax = domr.max();
+            if ( A < 0.0 )
+              std:: swap( mmin, mmax );
+            s.insert( IntvReal(                   // * A + B
+                               mmin.isFinite() ?
+                               rndUpIfInt( varTarget, (mmin.toDouble() * A + B) ) : IntvReal::infMinus(),
+                               mmax.isFinite() ?
+                               rndDownIfInt( varTarget, (mmax.toDouble() * A + B) ) : IntvReal::infPlus() )
+                     );
+          }
         }
       }
       
