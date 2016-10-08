@@ -104,6 +104,43 @@ namespace MiniZinc {
     vd->ann().removeCall(constants().ann.output_array);
   }
   
+  void copyOutput(EnvI& e) {
+    struct CopyOutput : public EVisitor {
+      EnvI& env;
+      CopyOutput(EnvI& env0) : env(env0) {}
+      void vId(Id& _id) {
+        _id.decl(_id.decl()->flat());
+      }
+      void vCall(Call& c) {
+        std::vector<Type> tv(c.args().size());
+        for (unsigned int i=c.args().size(); i--;) {
+          tv[i] = c.args()[i]->type();
+          tv[i].ti(Type::TI_PAR);
+        }
+        FunctionI* decl = c.decl();
+        if (!decl->from_stdlib()) {
+          env.flat_addItem(decl);
+        }
+      }
+    };
+    
+    if (OutputI* oi = e.orig->outputItem()) {
+      GCLock lock;
+      OutputI* noi = copy(e,oi)->cast<OutputI>();
+      CopyOutput co(e);
+      topDown(co, noi->e());
+      e.flat_addItem(noi);
+    }
+  }
+  
+  void cleanupOutput(EnvI& env) {
+    for (unsigned int i=0; i<env.output->size(); i++) {
+      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+        vdi->e()->flat(NULL);
+      }
+    }
+  }
+  
   void makePar(EnvI& env, Expression* e) {
     class Par : public EVisitor {
     public:
@@ -270,7 +307,311 @@ namespace MiniZinc {
     topDown(_o, e);
   }
 
+  void processDeletions(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls) {
+    std::vector<VarDecl*> deletedVarDecls;
+    for (unsigned int i=0; i<e.output->size(); i++) {
+      if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
+        if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0) {
+          CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
+          topDown(cd, vdi->e()->e());
+          removeIsOutput(vdi->e()->flat());
+          if (e.output_vo.find(vdi->e())!=-1)
+            e.output_vo.remove(vdi->e());
+          vdi->remove();
+        }
+      }
+    }
+    while (!deletedVarDecls.empty()) {
+      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
+      if (e.output_vo.occurrences(cur) == 0) {
+        IdMap<int>::iterator cur_idx = e.output_vo.idx.find(cur->id());
+        if (cur_idx != e.output_vo.idx.end()) {
+          VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
+          if (!vdi->removed()) {
+            CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
+            topDown(cd,cur->e());
+            removeIsOutput(vdi->e()->flat());
+            if (e.output_vo.find(vdi->e())!=-1)
+              e.output_vo.remove(vdi->e());
+            vdi->remove();
+          }
+        }
+      }
+    }
+    
+    for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
+         it != e.output_vo._m.end(); ++it) {
+      std::vector<Item*> toRemove;
+      for (VarOccurrences::Items::iterator iit = it->second.begin();
+           iit != it->second.end(); ++iit) {
+        if ((*iit)->removed()) {
+          toRemove.push_back(*iit);
+        }
+      }
+      for (unsigned int i=0; i<toRemove.size(); i++) {
+        it->second.erase(toRemove[i]);
+      }
+    }
+  }
+  
+  void createDznOutput(EnvI& e) {
+    std::vector<Expression*> outputVars;
+    bool had_add_to_output = false;
+    for (unsigned int i=0; i<e.orig->size(); i++) {
+      if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
+        VarDecl* vd = vdi->e();
+        bool process_var = false;
+        if (vd->ann().contains(constants().ann.add_to_output)) {
+          if (!had_add_to_output) {
+            outputVars.clear();
+          }
+          had_add_to_output = true;
+          process_var = true;
+        } else {
+          if (!had_add_to_output) {
+            process_var = vd->type().isvar() && vd->e()==NULL;
+          }
+        }
+        if (process_var) {
+          std::ostringstream s;
+          s << vd->id()->str().str() << " = ";
+          if (vd->type().dim() > 0) {
+            s << "array" << vd->type().dim() << "d(";
+            if (vd->e() != NULL) {
+              ArrayLit* al = eval_array_lit(e, vd->e());
+              for (unsigned int i=0; i<al->dims(); i++) {
+                s << al->min(i) << ".." << al->max(i) << ",";
+              }
+            } else {
+              for (unsigned int i=0; i<vd->type().dim(); i++) {
+                IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
+                s << *idxset << ",";
+              }
+            }
+          }
+          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          outputVars.push_back(sl);
+          
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = vd->id();
+          Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = e.orig->matchFn(e, show);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+          std::string ends = vd->type().dim() > 0 ? ")" : "";
+          ends += ";\n";
+          StringLit* eol = new StringLit(Location().introduce(),ends);
+          outputVars.push_back(eol);
+        }
+      }
+    }
+    OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    e.orig->addItem(newOutputItem);
+  }
+  
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls) {
+    // Create new output model
+    OutputI* outputItem = NULL;
+    GCLock lock;
+    
+    if (e.orig->outputItem()==NULL) {
+      // If model does not have an output item, create output item for all variables defined
+      // at toplevel in the MiniZinc source, or those that are annotated with add_to_output
+      createDznOutput(e);
+    }
+    // Copy output item from model into output model
+    outputItem = copy(e,e.cmap, e.orig->outputItem())->cast<OutputI>();
+    makePar(e,outputItem->e());
+    e.output->addItem(outputItem);
+    
+    // Copy all function definitions that are required for output into the output model
+    class CollectFunctions : public EVisitor {
+    public:
+      EnvI& env;
+      CollectFunctions(EnvI& env0) : env(env0) {}
+      bool enter(Expression* e) {
+        if (e->type().isvar()) {
+          Type t = e->type();
+          t.ti(Type::TI_PAR);
+          e->type(t);
+        }
+        return true;
+      }
+      void vCall(Call& c) {
+        std::vector<Type> tv(c.args().size());
+        for (unsigned int i=c.args().size(); i--;) {
+          tv[i] = c.args()[i]->type();
+          tv[i].ti(Type::TI_PAR);
+        }
+        FunctionI* decl = env.output->matchFn(env, c.id(), tv);
+        Type t;
+        if (decl==NULL) {
+          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
+          if (origdecl == NULL || !origdecl->rtype(env, tv).ispar()) {
+            throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
+          }
+          if (!origdecl->from_stdlib()) {
+            decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
+            CollectOccurrencesE ce(env.output_vo,decl);
+            topDown(ce, decl->e());
+            topDown(ce, decl->ti());
+            for (unsigned int i = decl->params().size(); i--;)
+              topDown(ce, decl->params()[i]);
+            env.output->registerFn(env, decl);
+            env.output->addItem(decl);
+            if (decl->e())
+              topDown(*this, decl->e());
+          } else {
+            decl = origdecl;
+          }
+        }
+        c.decl(decl);
+      }
+    } _cf(e);
+    topDown(_cf, outputItem->e());
+
+    // Copying the output item and the functions it depends on has created copies
+    // of all dependent VarDecls. However the output model does not contain VarDeclIs for
+    // these VarDecls yet. This iterator processes all variable declarations of the
+    // original model, and if they were copied (i.e., if the output model depends on them),
+    // the corresponding VarDeclI is created in the output model.
+    class OV2 : public ItemVisitor {
+    public:
+      EnvI& env;
+      OV2(EnvI& env0) : env(env0) {}
+      void vVarDeclI(VarDeclI* vdi) {
+        IdMap<int>::iterator idx = env.output_vo.idx.find(vdi->e()->id());
+        if (idx!=env.output_vo.idx.end())
+          return;
+        if (Expression* vd_e = env.cmap.find(vdi->e())) {
+          // We found a copied VarDecl, now need to create a VarDeclI
+          VarDecl* vd = vd_e->cast<VarDecl>();
+          VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
+          
+          Type t = vdi_copy->e()->ti()->type();
+          t.ti(Type::TI_PAR);
+          vdi_copy->e()->ti()->domain(NULL);
+          vdi_copy->e()->flat(vdi->e()->flat());
+          vdi_copy->e()->ann().clear();
+          vdi_copy->e()->introduced(false);
+          IdMap<KeepAlive>::iterator it;
+          if (!vdi->e()->type().ispar()) {
+            if (vd->flat() == NULL && vdi->e()->e()!=NULL && vdi->e()->e()->type().ispar()) {
+              // Don't have a flat version of this variable, but the original has a right hand
+              // side that is par, so we can use that.
+              Expression* flate = eval_par(env, vdi->e()->e());
+              outputVarDecls(env,vdi_copy,flate);
+              vd->e(flate);
+            } else {
+              vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
+              VarDecl* reallyFlat = vd->flat();
+              
+              while (reallyFlat!=reallyFlat->flat())
+                reallyFlat=reallyFlat->flat();
+              if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+                // We can use the right hand side of the flat version of this variable
+                Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
+                outputVarDecls(env,vdi_copy,flate);
+                vd->e(flate);
+              } else if ( (it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
+                // Found a reverse mapper, so we need to add the mapping function to the
+                // output model to map the FlatZinc value back to the model variable.
+                Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
+                {
+                  std::vector<Type> tv(rhs->args().size());
+                  for (unsigned int i=rhs->args().size(); i--;) {
+                    tv[i] = rhs->args()[i]->type();
+                    tv[i].ti(Type::TI_PAR);
+                  }
+                  FunctionI* decl = env.output->matchFn(env, rhs->id(), tv);
+                  if (decl==NULL) {
+                    FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
+                    if (origdecl == NULL) {
+                      throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
+                    }
+                    if (!origdecl->from_stdlib()) {
+                      decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
+                      CollectOccurrencesE ce(env.output_vo,decl);
+                      topDown(ce, decl->e());
+                      topDown(ce, decl->ti());
+                      for (unsigned int i = decl->params().size(); i--;)
+                        topDown(ce, decl->params()[i]);
+                      env.output->registerFn(env, decl);
+                      env.output->addItem(decl);
+                    } else {
+                      decl = origdecl;
+                    }
+                  }
+                  rhs->decl(decl);
+                }
+                outputVarDecls(env,vdi_copy,rhs);
+                vd->e(rhs);
+              } else if (cannotUseRHSForOutput(env,vd->e())) {
+                // If the VarDecl does not have a usable right hand side, it needs to be
+                // marked as output in the FlatZinc
+                vd->e(NULL);
+                assert(vd->flat());
+                if (vd->type().dim() == 0) {
+                  vd->flat()->addAnnotation(constants().ann.output_var);
+                  checkRenameVar(env, vd);
+                } else {
+                  bool needOutputAnn = true;
+                  if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+                    ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
+                    for (unsigned int i=0; i<al->v().size(); i++) {
+                      if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                        if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
+                          needOutputAnn = false;
+                          break;
+                        }
+                      }
+                    }
+                    if (!needOutputAnn) {
+                      outputVarDecls(env, vdi_copy, al);
+                      vd->e(copy(env,env.cmap,al));
+                    }
+                  }
+                  if (needOutputAnn) {
+                    std::vector<Expression*> args(vdi->e()->type().dim());
+                    for (unsigned int i=0; i<args.size(); i++) {
+                      if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
+                        args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->flat()->ti()->ranges()[i]->domain()));
+                      } else {
+                        args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->ti()->ranges()[i]->domain()));
+                      }
+                    }
+                    ArrayLit* al = new ArrayLit(Location().introduce(), args);
+                    args.resize(1);
+                    args[0] = al;
+                    vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                    checkRenameVar(env, vd);
+                  }
+                }
+              }
+              if (env.output_vo.find(reallyFlat) == -1)
+                env.output_vo.add(reallyFlat, env.output->size());
+            }
+          }
+          makePar(env,vdi_copy->e());
+          env.output_vo.add(vdi_copy, env.output->size());
+          CollectOccurrencesE ce(env.output_vo,vdi_copy);
+          topDown(ce, vdi_copy->e());
+          env.output->addItem(vdi_copy);
+        }
+      }
+    } _ov2(e);
+    iterItems(_ov2,e.orig);
+    
+    CollectOccurrencesE ce(e.output_vo,outputItem);
+    topDown(ce, outputItem->e());
+  
+    e.orig->mergeStdLib(e, e.output);
+    processDeletions(e, deletedFlatVarDecls);
+  }
+
+  void finaliseOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls) {
     if (e.output->size() > 0) {
       // Adapt existing output model
       // (generated by repeated flattening)
@@ -408,304 +749,7 @@ namespace MiniZinc {
             throw FlatteningError(e,item->loc(), "invalid item in output model");
         }
       }
-    } else {
-      // Create new output model
-      OutputI* outputItem = NULL;
-      GCLock lock;
-      
-      class OV1 : public ItemVisitor {
-      public:
-        EnvI& env;
-        VarOccurrences& vo;
-        OutputI*& outputItem;
-        OV1(EnvI& env0, VarOccurrences& vo0, OutputI*& outputItem0)
-        : env(env0), vo(vo0), outputItem(outputItem0) {}
-        void vOutputI(OutputI* oi) {
-          outputItem = copy(env,env.cmap, oi)->cast<OutputI>();
-          makePar(env,outputItem->e());
-          env.output->addItem(outputItem);
-        }
-      } _ov1(e,e.output_vo,outputItem);
-      iterItems(_ov1,e.orig);
-      
-      if (outputItem==NULL) {
-        // Create output item for all variables defined at toplevel in the MiniZinc source,
-        // or those that are annotated with add_to_output
-        std::vector<Expression*> outputVars;
-        bool had_add_to_output = false;
-        for (unsigned int i=0; i<e.orig->size(); i++) {
-          if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
-            VarDecl* vd = vdi->e();
-            bool process_var = false;
-            if (vd->ann().contains(constants().ann.add_to_output)) {
-              if (!had_add_to_output) {
-                outputVars.clear();
-              }
-              had_add_to_output = true;
-              process_var = true;
-            } else {
-              if (!had_add_to_output) {
-                process_var = vd->type().isvar() && vd->e()==NULL;
-              }
-            }
-            if (process_var) {
-              std::ostringstream s;
-              s << vd->id()->str().str() << " = ";
-              if (vd->type().dim() > 0) {
-                s << "array" << vd->type().dim() << "d(";
-                if (vd->e() != NULL) {
-                  ArrayLit* al = eval_array_lit(e, vd->e());
-                  for (unsigned int i=0; i<al->dims(); i++) {
-                    s << al->min(i) << ".." << al->max(i) << ",";
-                  }
-                } else {
-                  for (unsigned int i=0; i<vd->type().dim(); i++) {
-                    IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
-                    s << *idxset << ",";
-                  }
-                }
-              }
-              StringLit* sl = new StringLit(Location().introduce(),s.str());
-              outputVars.push_back(sl);
-              
-              std::vector<Expression*> showArgs(1);
-              showArgs[0] = vd->id();
-              Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
-              show->type(Type::parstring());
-              FunctionI* fi = e.orig->matchFn(e, show);
-              assert(fi);
-              show->decl(fi);
-              outputVars.push_back(show);
-              std::string ends = vd->type().dim() > 0 ? ")" : "";
-              ends += ";\n";
-              StringLit* eol = new StringLit(Location().introduce(),ends);
-              outputVars.push_back(eol);
-            }
-          }
-        }
-        OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
-        e.orig->addItem(newOutputItem);
-        outputItem = copy(e,e.cmap, newOutputItem)->cast<OutputI>();
-        makePar(e,outputItem->e());
-        e.output->addItem(outputItem);
-      }
-      
-      class CollectFunctions : public EVisitor {
-      public:
-        EnvI& env;
-        CollectFunctions(EnvI& env0) : env(env0) {}
-        bool enter(Expression* e) {
-          if (e->type().isvar()) {
-            Type t = e->type();
-            t.ti(Type::TI_PAR);
-            e->type(t);
-          }
-          return true;
-        }
-        void vCall(Call& c) {
-          std::vector<Type> tv(c.args().size());
-          for (unsigned int i=c.args().size(); i--;) {
-            tv[i] = c.args()[i]->type();
-            tv[i].ti(Type::TI_PAR);
-          }
-          FunctionI* decl = env.output->matchFn(env, c.id(), tv);
-          Type t;
-          if (decl==NULL) {
-            FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
-            if (origdecl == NULL || !origdecl->rtype(env, tv).ispar()) {
-              throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
-            }
-            if (!origdecl->from_stdlib()) {
-              decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-              CollectOccurrencesE ce(env.output_vo,decl);
-              topDown(ce, decl->e());
-              topDown(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); i--;)
-                topDown(ce, decl->params()[i]);
-              env.output->registerFn(env, decl);
-              env.output->addItem(decl);
-              if (decl->e())
-                topDown(*this, decl->e());
-            } else {
-              decl = origdecl;
-            }
-          }
-          c.decl(decl);
-        }
-      } _cf(e);
-      topDown(_cf, outputItem->e());
-      
-      class OV2 : public ItemVisitor {
-      public:
-        EnvI& env;
-        OV2(EnvI& env0) : env(env0) {}
-        void vVarDeclI(VarDeclI* vdi) {
-          IdMap<int>::iterator idx = env.output_vo.idx.find(vdi->e()->id());
-          if (idx!=env.output_vo.idx.end())
-            return;
-          if (Expression* vd_e = env.cmap.find(vdi->e())) {
-            VarDecl* vd = vd_e->cast<VarDecl>();
-            VarDeclI* vdi_copy = copy(env,env.cmap,vdi)->cast<VarDeclI>();
-            
-            Type t = vdi_copy->e()->ti()->type();
-            t.ti(Type::TI_PAR);
-            vdi_copy->e()->ti()->domain(NULL);
-            vdi_copy->e()->flat(vdi->e()->flat());
-            vdi_copy->e()->ann().clear();
-            vdi_copy->e()->introduced(false);
-            IdMap<KeepAlive>::iterator it;
-            if (!vdi->e()->type().ispar()) {
-              if (vd->flat() == NULL && vdi->e()->e()!=NULL && vdi->e()->e()->type().ispar()) {
-                Expression* flate = eval_par(env, vdi->e()->e());
-                outputVarDecls(env,vdi_copy,flate);
-                vd->e(flate);
-              } else {
-                vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
-                VarDecl* reallyFlat = vd->flat();
-                
-                while (reallyFlat!=reallyFlat->flat())
-                  reallyFlat=reallyFlat->flat();
-                if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
-                  Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
-                  outputVarDecls(env,vdi_copy,flate);
-                  vd->e(flate);
-                } else if ( (it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
-                  Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
-                  {
-                    std::vector<Type> tv(rhs->args().size());
-                    for (unsigned int i=rhs->args().size(); i--;) {
-                      tv[i] = rhs->args()[i]->type();
-                      tv[i].ti(Type::TI_PAR);
-                    }
-                    FunctionI* decl = env.output->matchFn(env, rhs->id(), tv);
-                    if (decl==NULL) {
-                      FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
-                      if (origdecl == NULL) {
-                        throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
-                      }
-                      if (!origdecl->from_stdlib()) {
-                        decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-                        CollectOccurrencesE ce(env.output_vo,decl);
-                        topDown(ce, decl->e());
-                        topDown(ce, decl->ti());
-                        for (unsigned int i = decl->params().size(); i--;)
-                          topDown(ce, decl->params()[i]);
-                        env.output->registerFn(env, decl);
-                        env.output->addItem(decl);
-                      } else {
-                        decl = origdecl;
-                      }
-                    }
-                    rhs->decl(decl);
-                  }
-                  outputVarDecls(env,vdi_copy,rhs);
-                  vd->e(rhs);
-                } else if (cannotUseRHSForOutput(env,vd->e())) {
-                  // If the VarDecl does not have a usable right hand side, it needs to be
-                  // marked as output in the FlatZinc
-                  vd->e(NULL);
-                  assert(vd->flat());
-                  if (vd->type().dim() == 0) {
-                    vd->flat()->addAnnotation(constants().ann.output_var);
-                    checkRenameVar(env, vd);
-                  } else {
-                    bool needOutputAnn = true;
-                    if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
-                      ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
-                      for (unsigned int i=0; i<al->v().size(); i++) {
-                        if (Id* id = al->v()[i]->dyn_cast<Id>()) {
-                          if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
-                            needOutputAnn = false;
-                            break;
-                          }
-                        }
-                      }
-                      if (!needOutputAnn) {
-                        outputVarDecls(env, vdi_copy, al);
-                        vd->e(copy(env,env.cmap,al));
-                      }
-                    }
-                    if (needOutputAnn) {
-                      std::vector<Expression*> args(vdi->e()->type().dim());
-                      for (unsigned int i=0; i<args.size(); i++) {
-                        if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
-                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->flat()->ti()->ranges()[i]->domain()));
-                        } else {
-                          args[i] = new SetLit(Location().introduce(), eval_intset(env,vd->ti()->ranges()[i]->domain()));
-                        }
-                      }
-                      ArrayLit* al = new ArrayLit(Location().introduce(), args);
-                      args.resize(1);
-                      args[0] = al;
-                      vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
-                      checkRenameVar(env, vd);
-                    }
-                  }
-                }
-                if (env.output_vo.find(reallyFlat) == -1)
-                  env.output_vo.add(reallyFlat, env.output->size());
-              }
-            }
-            makePar(env,vdi_copy->e());
-            env.output_vo.add(vdi_copy, env.output->size());
-            CollectOccurrencesE ce(env.output_vo,vdi_copy);
-            topDown(ce, vdi_copy->e());
-            env.output->addItem(vdi_copy);
-          }
-        }
-      } _ov2(e);
-      iterItems(_ov2,e.orig);
-      
-      CollectOccurrencesE ce(e.output_vo,outputItem);
-      topDown(ce, outputItem->e());
-      
-      e.orig->mergeStdLib(e, e.output);
     }
-    
-    std::vector<VarDecl*> deletedVarDecls;
-    for (unsigned int i=0; i<e.output->size(); i++) {
-      if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
-        if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0) {
-          CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
-          topDown(cd, vdi->e()->e());
-          removeIsOutput(vdi->e()->flat());
-          if (e.output_vo.find(vdi->e())!=-1)
-            e.output_vo.remove(vdi->e());
-          vdi->remove();
-        }
-      }
-    }
-    while (!deletedVarDecls.empty()) {
-      VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-      if (e.output_vo.occurrences(cur) == 0) {
-        IdMap<int>::iterator cur_idx = e.output_vo.idx.find(cur->id());
-        if (cur_idx != e.output_vo.idx.end()) {
-          VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
-          if (!vdi->removed()) {
-            CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
-            topDown(cd,cur->e());
-            removeIsOutput(vdi->e()->flat());
-            if (e.output_vo.find(vdi->e())!=-1)
-              e.output_vo.remove(vdi->e());
-            vdi->remove();
-          }
-        }
-      }
-    }
-    
-    for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
-         it != e.output_vo._m.end(); ++it) {
-      std::vector<Item*> toRemove;
-      for (VarOccurrences::Items::iterator iit = it->second.begin();
-           iit != it->second.end(); ++iit) {
-        if ((*iit)->removed()) {
-          toRemove.push_back(*iit);
-        }
-      }
-      for (unsigned int i=0; i<toRemove.size(); i++) {
-        it->second.erase(toRemove[i]);
-      }
-    }
+    processDeletions(e, deletedFlatVarDecls);
   }
-  
 }

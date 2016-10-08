@@ -5152,42 +5152,6 @@ namespace MiniZinc {
   
 
   
-  void copyOutput(EnvI& e) {
-    struct CopyOutput : public EVisitor {
-      EnvI& env;
-      CopyOutput(EnvI& env0) : env(env0) {}
-      void vId(Id& _id) {
-        _id.decl(_id.decl()->flat());
-      }
-      void vCall(Call& c) {
-        std::vector<Type> tv(c.args().size());
-        for (unsigned int i=c.args().size(); i--;) {
-          tv[i] = c.args()[i]->type();
-          tv[i].ti(Type::TI_PAR);
-        }
-        FunctionI* decl = c.decl();
-        if (!decl->from_stdlib()) {
-          env.flat_addItem(decl);
-        }
-      }
-    };
-    
-    if (OutputI* oi = e.orig->outputItem()) {
-      GCLock lock;
-      OutputI* noi = copy(e,oi)->cast<OutputI>();
-      CopyOutput co(e);
-      topDown(co, noi->e());
-      e.flat_addItem(noi);
-    }
-  }
-  
-  void cleanupOutput(EnvI& env) {
-    for (unsigned int i=0; i<env.output->size(); i++) {
-      if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
-        vdi->e()->flat(NULL);
-      }
-    }
-  }
 
   bool checkParDomain(EnvI& env, Expression* e, Expression* domain) {
     if (e->type()==Type::parint()) {
@@ -5779,7 +5743,7 @@ namespace MiniZinc {
       }
 
       if (!opt.keepOutputInFzn) {
-        createOutput(env, deletedVarDecls);
+        finaliseOutput(env, deletedVarDecls);
       }
 
       while (!deletedVarDecls.empty()) {
