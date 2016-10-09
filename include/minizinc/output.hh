@@ -26,7 +26,8 @@ namespace MiniZinc {
   void outputVarDecls(EnvI& env, Item* ci, Expression* e);
   
   /// Create initial output model
-  void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls);
+  void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
+                    FlatteningOptions::OutputMode outputMode);
   /// Finalise output model after flattening is complete
   void finaliseOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls);
   

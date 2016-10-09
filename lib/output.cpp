@@ -408,19 +408,87 @@ namespace MiniZinc {
       }
     }
     OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    if (e.orig->outputItem()) {
+      e.orig->outputItem()->remove();
+    }
+    e.orig->addItem(newOutputItem);
+  }
+
+  void createJSONOutput(EnvI& e) {
+    std::vector<Expression*> outputVars;
+    outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
+    bool had_add_to_output = false;
+    bool first_var = true;
+    for (unsigned int i=0; i<e.orig->size(); i++) {
+      if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
+        VarDecl* vd = vdi->e();
+        bool process_var = false;
+        if (vd->ann().contains(constants().ann.add_to_output)) {
+          if (!had_add_to_output) {
+            outputVars.clear();
+            outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
+            first_var = true;
+          }
+          had_add_to_output = true;
+          process_var = true;
+        } else {
+          if (!had_add_to_output) {
+            process_var = vd->type().isvar() && vd->e()==NULL;
+          }
+        }
+        if (process_var) {
+          std::ostringstream s;
+          if (first_var) {
+            first_var = false;
+          } else {
+            s << ",\n";
+          }
+          s << "  \"" << vd->id()->str().str() << "\"" << " : ";
+          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          outputVars.push_back(sl);
+          
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = vd->id();
+          Call* show = new Call(Location().introduce(),"showJSON",showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = e.orig->matchFn(e, show);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+          if (vd->type().dim() > 0) {
+            StringLit* eol = new StringLit(Location().introduce(),")");
+            outputVars.push_back(eol);
+          }
+        }
+      }
+    }
+    outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
+    OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    if (e.orig->outputItem()) {
+      e.orig->outputItem()->remove();
+    }
     e.orig->addItem(newOutputItem);
   }
   
-  void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls) {
+  void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
+                    FlatteningOptions::OutputMode outputMode) {
     // Create new output model
     OutputI* outputItem = NULL;
     GCLock lock;
     
-    if (e.orig->outputItem()==NULL) {
-      // If model does not have an output item, create output item for all variables defined
-      // at toplevel in the MiniZinc source, or those that are annotated with add_to_output
-      createDznOutput(e);
+    switch (outputMode) {
+      case FlatteningOptions::OUTPUT_DZN:
+        createDznOutput(e);
+        break;
+      case FlatteningOptions::OUTPUT_JSON:
+        createJSONOutput(e);
+      default:
+        if (e.orig->outputItem()==NULL) {
+          createDznOutput(e);
+        }
+        break;
     }
+    
     // Copy output item from model into output model
     outputItem = copy(e,e.cmap, e.orig->outputItem())->cast<OutputI>();
     makePar(e,outputItem->e());

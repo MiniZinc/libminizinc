@@ -92,6 +92,7 @@ namespace MiniZinc {
     bool flag_instance_check_only = false;
     bool flag_model_check_only = false;
     bool flag_model_interface_only = false;
+    FlatteningOptions::OutputMode flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
     FlatteningOptions fopts;
 
     clock_t starttime01;

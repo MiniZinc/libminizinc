@@ -159,7 +159,7 @@ namespace MiniZinc {
     return ret;
   }
   
-  void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat=false) {
+  void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat) {
     std::ostringstream oss;
     if (fv.isFinite()) {
       if (hexFloat) {

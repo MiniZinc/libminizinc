@@ -1165,6 +1165,12 @@ function string: show3d(array[int,int,int] of var opt $T: x) =
    endif | i in 1..len1, j in 1..len2, k in 1..len3
   ]);
 
+/** @group builtins.string Convert \a x into JSON string */
+function string: showJSON(var opt $T: x);
+
+/** @group builtins.string Convert \a x into JSON string */
+function string: showJSON(array[$U] of var opt $T: x);
+
 /** @group builtins.string Return length of \a s */
 function int: string_length(string: s);
 

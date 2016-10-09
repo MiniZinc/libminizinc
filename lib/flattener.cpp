@@ -70,6 +70,7 @@ void Flattener::printHelp(ostream& os)
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+  << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -109,6 +110,16 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
+  } else if ( cop.getOption( "--output-mode", &buffer ) ) {
+    if (buffer == "dzn") {
+      flag_output_mode = FlatteningOptions::OUTPUT_DZN;
+    } else if (buffer == "json") {
+      flag_output_mode = FlatteningOptions::OUTPUT_JSON;
+    } else if (buffer == "item") {
+      flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
+    } else {
+      goto error;
+    }
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
@@ -327,6 +338,7 @@ void Flattener::flatten()
 
               try {
                 fopts.onlyRangeDomains = flag_only_range_domains;
+                fopts.outputMode = flag_output_mode;
                 ::flatten(env,fopts);
               } catch (LocationException& e) {
                 if (flag_verbose)

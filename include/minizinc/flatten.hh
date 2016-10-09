@@ -32,9 +32,14 @@ namespace MiniZinc {
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
     /// Only range domains for old linearization. Set from redefs to true if not here
-    bool onlyRangeDomains = false;
+    bool onlyRangeDomains;
+    /// Create JSON output
+    enum OutputMode {
+      OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
+    } outputMode;
     /// Default constructor
-    FlatteningOptions(void) : keepOutputInFzn(false) {}
+    FlatteningOptions(void)
+    : keepOutputInFzn(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM) {}
   };
   
   /// Flatten model \a m

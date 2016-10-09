@@ -1320,6 +1320,21 @@ namespace MiniZinc {
     return s.size();
   }
   
+  std::string quoted(const std::string& s) {
+    std::ostringstream oss;
+    oss << "\"";
+    size_t prev_quote = 0;
+    size_t next_quote = s.find('"');
+    while (next_quote != std::string::npos) {
+      oss << s.substr(prev_quote,next_quote) << "\\\"";
+      prev_quote = next_quote+1;
+      next_quote = s.find('"',prev_quote);
+    }
+    oss << s.substr(prev_quote,std::string::npos);
+    oss << "\"";
+    return oss.str();
+  }
+  
   std::string show(EnvI& env, Expression* exp) {
     std::ostringstream oss;
     GCLock lock;
@@ -1330,7 +1345,7 @@ namespace MiniZinc {
     } else {
       e = eval_par(env,e);
       if (StringLit* sl = e->dyn_cast<StringLit>()) {
-        return sl->v().str();
+        return quoted(sl->v().str());
       }
       Printer p(oss,0,false);
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
@@ -1350,6 +1365,90 @@ namespace MiniZinc {
   std::string b_show(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     return show(env,args[0]);
+  }
+  
+  std::string b_show_json_basic(EnvI& env, Expression* e) {
+    if (StringLit* sl = e->dyn_cast<StringLit>()) {
+      return quoted(sl->v().str());
+    }
+    std::ostringstream oss;
+    Printer p(oss,0,false);
+    if (SetLit* sl = e->dyn_cast<SetLit>()) {
+      oss << "{ \"set\" : [";
+      if (IntSetVal* isv = sl->isv()) {
+        bool first=true;
+        for (IntSetRanges isr(isv); isr(); ++isr) {
+          if (first) {
+            first=false;
+          } else {
+            oss << ",";
+          }
+          if (isr.min()==isr.max()) {
+            oss << isr.min();
+          } else {
+            oss << "[" << isr.min() << "," << isr.max() << "]";
+          }
+        }
+      } else if (FloatSetVal* fsv = sl->fsv()) {
+        bool first=true;
+        for (FloatSetRanges fsr(fsv); fsr(); ++fsr) {
+          if (first) {
+            first=false;
+          } else {
+            oss << ",";
+          }
+          if (fsr.min()==fsr.max()) {
+            ppFloatVal(oss, fsr.min());
+          } else {
+            oss << "[";
+            ppFloatVal(oss, fsr.min());
+            oss << ",";
+            ppFloatVal(oss, fsr.max());
+            oss << "]";
+          }
+        }
+      } else {
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          if (StringLit* strl = sl->v()[i]->dyn_cast<StringLit>()) {
+            oss << quoted(strl->v().str());
+          } else {
+            p.print(sl->v()[i]);
+          }
+          if (i<sl->v().size()-1)
+            oss << ",";
+        }
+      }
+      oss << "]}";
+    } else {
+      p.print(e);
+    }
+    return oss.str();
+  }
+  
+  std::string b_show_json(EnvI& env, Call* call) {
+    Expression* exp = call->args()[0];
+    GCLock lock;
+    Expression* e = eval_par(env,exp);
+    if (e->type().isvar()) {
+      std::ostringstream oss;
+      Printer p(oss,0,false);
+      p.print(e);
+      return oss.str();
+    } else {
+      if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+        std::ostringstream oss;
+        oss << "[";
+        for (unsigned int i=0; i<al->v().size(); i++) {
+          oss << b_show_json_basic(env, al->v()[i]);
+          if (i<al->v().size()-1)
+            oss << ", ";
+        }
+        oss << "]";
+        return oss.str();
+      } else {
+        return b_show_json_basic(env, e);
+      }
+    }
   }
   
   std::string b_format(EnvI& env, Call* call) {
@@ -2465,12 +2564,15 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::vartop();
       rb(env, m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("showJSON"), t, b_show_json);
       t[0] = Type::vartop();
       t[0].st(Type::ST_SET);
       t[0].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("showJSON"), t, b_show_json);
       t[0] = Type::vartop(-1);
       rb(env, m, ASTString("show"), t, b_show);
+      rb(env, m, ASTString("showJSON"), t, b_show_json);
     }
     {
       std::vector<Type> t(3);
