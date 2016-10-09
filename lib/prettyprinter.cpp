@@ -263,7 +263,9 @@ namespace MiniZinc {
             if (sl.fsv()->size()==0) {
               os << (_flatZinc ? "1.0..0.0" : "{}");
             } else if (sl.fsv()->size()==1) {
-              os << sl.fsv()->min(0) << ".." << sl.fsv()->max(0);
+              ppFloatVal(os, sl.fsv()->min(0));
+              os << "..";
+              ppFloatVal(os, sl.fsv()->max(0));
             } else {
               bool allSingleton = true;
               for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
