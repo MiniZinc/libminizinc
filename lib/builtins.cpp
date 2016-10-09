@@ -1320,34 +1320,15 @@ namespace MiniZinc {
     return s.size();
   }
   
-  std::string quoted(const std::string& s) {
-    std::ostringstream oss;
-    oss << "\"";
-    size_t prev_quote = 0;
-    size_t next_quote = s.find('"');
-    while (next_quote != std::string::npos) {
-      oss << s.substr(prev_quote,next_quote) << "\\\"";
-      prev_quote = next_quote+1;
-      next_quote = s.find('"',prev_quote);
-    }
-    oss << s.substr(prev_quote,std::string::npos);
-    oss << "\"";
-    return oss.str();
-  }
-  
   std::string show(EnvI& env, Expression* exp) {
     std::ostringstream oss;
     GCLock lock;
+    Printer p(oss,0,false);
     Expression* e = eval_par(env,exp);
     if (e->type().isvar()) {
-      Printer p(oss,0,false);
       p.print(e);
     } else {
       e = eval_par(env,e);
-      if (StringLit* sl = e->dyn_cast<StringLit>()) {
-        return quoted(sl->v().str());
-      }
-      Printer p(oss,0,false);
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
         oss << "[";
         for (unsigned int i=0; i<al->v().size(); i++) {
@@ -1368,9 +1349,6 @@ namespace MiniZinc {
   }
   
   std::string b_show_json_basic(EnvI& env, Expression* e) {
-    if (StringLit* sl = e->dyn_cast<StringLit>()) {
-      return quoted(sl->v().str());
-    }
     std::ostringstream oss;
     Printer p(oss,0,false);
     if (SetLit* sl = e->dyn_cast<SetLit>()) {
@@ -1409,11 +1387,7 @@ namespace MiniZinc {
         }
       } else {
         for (unsigned int i=0; i<sl->v().size(); i++) {
-          if (StringLit* strl = sl->v()[i]->dyn_cast<StringLit>()) {
-            oss << quoted(strl->v().str());
-          } else {
-            p.print(sl->v()[i]);
-          }
+          p.print(sl->v()[i]);
           if (i<sl->v().size()-1)
             oss << ",";
         }
