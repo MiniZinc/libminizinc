@@ -28,7 +28,7 @@
 
 #define MZN_MIPD__assert_soft( c, e ) \
   do { static int nn=0; \
- if ( !(c) ) if ( ++nn<=7 ) std::cerr << e << std::endl; } while (0)
+ if ( !(c) ) if ( ++nn<=1 ) std::cerr << e << std::endl; } while (0)
 #define MZN_MIPD__assert_hard( c ) MZN_ASSERT_HARD(	c )
 #define MZN_MIPD__assert_hard_msg( c, e ) MZN_ASSERT_HARD_MSG( c, e )
 struct MIPD_Infeasibility_Exception {

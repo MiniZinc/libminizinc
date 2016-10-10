@@ -8,7 +8,7 @@ ann: user_cut;
 ann: lazy_constraint;
 %%% comment away the assignments to have those as normal constraints  
 ann: MIP_cut = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
-ann: MIP_lazy; % = lazy_constraint;
+ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
 bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]

@@ -61,7 +61,7 @@ double MIP_solverinstance::exprToConst(Expression* e) {
     if (IntLit* il = e->dyn_cast<IntLit>()) {
       return ( il->v().toInt() );
     } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
-      return ( fl->v() );
+      return ( fl->v().toDouble() );
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
       return ( bl->v() );
     } else {
@@ -131,7 +131,7 @@ namespace SCIPConstraints {
       rhs = ires.toInt();
     } else if(args[2]->type().isfloat()) {
       fres = eval_float(_env.envi(), args[2]);
-      rhs = fres;
+      rhs = fres.toDouble();
     } else {
       throw InternalError("p_lin: rhs unknown type");
     }
@@ -441,8 +441,8 @@ void MIP_solverinstance::processFlatZinc(void) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           assert(fb.valid);
-          lb = fb.l;
-          ub = fb.u;
+          lb = fb.l.toDouble();
+          ub = fb.u.toDouble();
         } else if (MIP_wrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
           assert(ib.valid);

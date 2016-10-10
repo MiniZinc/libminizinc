@@ -459,8 +459,8 @@ namespace MiniZinc {
             double lb, ub;
             if (domain) {
               FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
-              lb = fb.l;
-              ub = fb.u;
+              lb = fb.l.toDouble();
+              ub = fb.u.toDouble();
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
@@ -479,7 +479,7 @@ namespace MiniZinc {
               _current_space->fv.push_back(var.floatVar(_current_space));
               insertVar(it->e()->id(), var);
             } else {
-              double il = init->cast<FloatLit>()->v();
+              double il = init->cast<FloatLit>()->v().toDouble();
               FloatVar floatVar(*this->_current_space, il, il);
               _current_space->fv.push_back(floatVar);
               insertVar(it->e()->id(), GecodeVariable(GecodeVariable::FLOAT_TYPE,
@@ -794,7 +794,7 @@ namespace MiniZinc {
     for (int i=offset; i--;)
         fa[i] = 0.0;
     for (int i=a->v().size(); i--;)
-        fa[i+offset] = a->v()[i]->cast<FloatLit>()->v();
+        fa[i+offset] = a->v()[i]->cast<FloatLit>()->v().toDouble();
     return fa;
   }
 
@@ -814,7 +814,7 @@ namespace MiniZinc {
           std::stringstream ssm; ssm << "Expected bool, int or float literal instead of: " << *e;
           throw InternalError(ssm.str());
         }
-        x0 = FloatVar(*this->_current_space, i, i);
+        x0 = FloatVar(*this->_current_space, i.toDouble(), i.toDouble());
     }
     return x0;
   }
@@ -837,7 +837,7 @@ namespace MiniZinc {
             fa[i+offset] = var.floatVar(_current_space);
         } else {
           if(FloatLit* fl = e->dyn_cast<FloatLit>()) {
-            double value = fl->v();
+            double value = fl->v().toDouble();
             FloatVar fv(*this->_current_space, value, value);
             fa[i+offset] = fv;
           } else {
