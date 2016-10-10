@@ -163,12 +163,8 @@ namespace MiniZinc {
     std::ostringstream oss;
     if (fv.isFinite()) {
       if (hexFloat) {
-#ifdef HAS_HEXFLOAT
-          std::hexfloat(oss);
-#else
-#pragma message "std::hexfloat not supported by the compiler"
-#warning "std::hexfloat not supported by the compiler"
-#endif
+        throw InternalError( "disabled due to hexfloat being not supported by g++ 4.9" );
+//          std::hexfloat(oss);
         oss << fv.toDouble();
         os << oss.str();
       } else {

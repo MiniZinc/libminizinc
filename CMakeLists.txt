@@ -152,8 +152,9 @@ int main (int argc, char* argv[]) {
   return 0;
 }" HAS_MEMCPY_S)
 
-check_cxx_source_compiles("#include <sstream>
-int main(void) { std::stringstream oss; std::hexfloat(oss); return 0; }" HAS_HEXFLOAT)
+#check_cxx_source_compiles("#include <sstream>
+##include <iomanip>
+#int main(void) { std::ostringstream oss; std::hexfloat(oss); return 0; }" HAS_HEXFLOAT)
 
 # -------------------------------------------------------------------------------------------------------------------
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
