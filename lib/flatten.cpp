@@ -4492,6 +4492,10 @@ namespace MiniZinc {
             if (call_body->args().size()==1 && Expression::equal(call_body->args()[0],decl->params()[0]->id())) {
               c->id(call_body->id());
               c->decl(call_body->decl());
+              decl = c->decl();
+              for (ExpressionSetIter esi = call_body->ann().begin(); esi != call_body->ann().end(); ++esi) {
+                c->addAnnotation(*esi);
+              }
             }
           }
         }
@@ -4560,10 +4564,16 @@ namespace MiniZinc {
             (void) flat_exp(env,nctx,al->v()[i],r,b);
           ret.r = bind(env,ctx,r,constants().lit_true);
         } else {
-          
           if (decl->e() && decl->params().size()==1 && decl->e()->isa<Id>() &&
               decl->params()[0]->ti()->domain()==NULL &&
               decl->e()->cast<Id>()->decl() == decl->params()[0]) {
+            Expression* arg = c->args()[0];
+            for (ExpressionSetIter esi = decl->e()->ann().begin(); esi != decl->e()->ann().end(); ++esi) {
+              arg->addAnnotation(*esi);
+            }
+            for (ExpressionSetIter esi = c->ann().begin(); esi != c->ann().end(); ++esi) {
+              arg->addAnnotation(*esi);
+            }
             ret = flat_exp(env, ctx, c->args()[0], r, b);
             break;
           }
