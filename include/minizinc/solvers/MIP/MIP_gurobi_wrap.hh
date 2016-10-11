@@ -52,6 +52,9 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         string rowName = "");
+    int nRows=0;    // to count rows in order tp notice lazy constraints
+    std::vector<int> nLazyIdx;
+    std::vector<int> nLazyValue;
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min

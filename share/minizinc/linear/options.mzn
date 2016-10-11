@@ -4,9 +4,17 @@
 */
 
 %-----------------------------------------------------------------------------%
+%---------- USER and LAZY CUTS -----------------------------------------------%
+/*
+ * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
+ * into the overall model and marked with the foll values of Lazy attribute:
+ *   ::MIP_lazy             1
+ *   ::MIP_cut ::MIP_lazy   2
+ *   ::MIP_cut              3
+ */
 ann: user_cut;
 ann: lazy_constraint;
-%%% comment away the assignments to have those as normal constraints  
+%%% comment away the below assignments (leaving, e.g., ann: MIP_cut;) to have them as normal constraints  
 ann: MIP_cut = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
 ann: MIP_lazy = lazy_constraint;
 
