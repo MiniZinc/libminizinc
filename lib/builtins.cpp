@@ -2114,6 +2114,10 @@ namespace MiniZinc {
     return IntSetVal::a(-IntVal::infinity(),IntVal::infinity());
   }
   
+  IntVal b_mzn_compiler_version(EnvI&, Call*) {
+    return atoi(MZN_VERSION_MAJOR)*10000+atoi(MZN_VERSION_MINOR)*1000+atoi(MZN_VERSION_PATCH);
+  }
+  
   void registerBuiltins(Env& e, Model* m) {
     EnvI& env = e.envi();
     
@@ -2799,6 +2803,9 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       rb(env, m, ASTString("enum_base_set"),t,b_enum_base_set);
+    }
+    {
+      rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
     }
   }
   
