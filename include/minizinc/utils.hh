@@ -18,6 +18,7 @@
 #include <ctime>
 #include <limits>
 #include <iomanip>
+#include <cassert>
 
 #include <minizinc/timer.hh>
 #include <minizinc/exception.hh>

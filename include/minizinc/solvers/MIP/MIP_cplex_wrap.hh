@@ -26,12 +26,32 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     std::vector<double> x;
 
   public:
-    MIP_cplex_wrapper() { openCPLEX(); }
+
+    class Options {
+    public:
+      int nThreads=1;
+      string sExportModel;
+      double nTimeout=-1;
+      double nWorkMemLimit=-1;
+      string sReadParams;
+      string sWriteParams;
+      bool flag_all_solutions = false;
+      
+      double absGap=0.99;
+      double relGap=1e-8;
+      double intTol=1e-6;
+      double objDiff=1.0;
+
+      bool processOption(int& i, int argc, const char** argv);
+      void printHelp(ostream& );
+    } options;
+
+  MIP_cplex_wrapper(const Options& opt) : options(opt) { openCPLEX(); }
     virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
-    
-    bool processOption(int& i, int argc, const char** argv);
-    void printVersion(std::ostream& );
-    void printHelp(std::ostream& );
+
+    static string getVersion(void);
+    static string getId(void);
+
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;

@@ -107,11 +107,14 @@ void MznSolver::addFlattener()
 
 void MznSolver::addSolverInterface()
 {
-  if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
-    cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
-    assert( 0 );
+  if (sf==NULL) {
+    if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
+      cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
+      assert( 0 );
+    }
+    sf = getGlobalSolverRegistry()->getSolverFactories().back();
   }
-  si = getGlobalSolverRegistry()->getSolverFactories().back()->createSI(*flt->getEnv());
+  si = sf->createSI(*flt->getEnv());
   assert(si);
   s2out.initFromEnv( flt->getEnv() );
   si->setSolns2Out( &s2out );
@@ -119,7 +122,7 @@ void MznSolver::addSolverInterface()
     cerr
 //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
-    << getGlobalSolverRegistry()->getSolverFactories().back()->getVersion() << endl;  
+    << sf->getVersion() << endl;
 }
 
 void MznSolver::addSolverInterface(SolverFactory* sf)
@@ -217,8 +220,6 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
     }
   }
   argc = j;
-  
-  SolverFactory* sf = NULL;
 
   if (!ifMzn2Fzn()) {
     if (solver.empty()) {
@@ -236,6 +237,8 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
         for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
              it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
           if ((*it)->getId()==solverId) {
+            std::cerr << "select " << solverId << "\n";
+            (*it)->printHelp(std::cerr);
             sf = *it;
             if (!sc.executable().empty()) {
               const char* additionalArgs[2];

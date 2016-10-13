@@ -88,6 +88,7 @@ namespace MiniZinc {
   private:
     Flattener* flt=0;
     SolverInstanceBase* si=0;
+    SolverFactory* sf=0;
     bool is_mzn2fzn;
 
     /// Solver configurations

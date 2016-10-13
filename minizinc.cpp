@@ -36,7 +36,12 @@ using namespace MiniZinc;
 
 #ifdef HAS_MIP
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
+#ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
+#endif
+#ifdef HAS_CPLEX
+#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+#endif
 #endif
 
 int main(int argc, const char** argv) {
@@ -57,7 +62,11 @@ int main(int argc, const char** argv) {
 #endif
 #ifdef HAS_GUROBI
   static unique_ptr<SolverFactory>
-    pFactoryMIP( new MIP_SolverFactory<MIP_gurobi_wrapper> );
+    pFactoryGurobi( new MIP_SolverFactory<MIP_gurobi_wrapper> );
+#endif
+#ifdef HAS_CPLEX
+  static unique_ptr<SolverFactory>
+  pFactoryCPLEX( new MIP_SolverFactory<MIP_cplex_wrapper> );
 #endif
 
   clock_t starttime = std::clock(), endTime;

@@ -332,7 +332,7 @@ if(HAS_GUROBI)  # Version 6.5
     solvers/MIP/MIP_solverinstance.cpp include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
     solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
 	)
-  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
+  include_directories("${GUROBI_HOME}/include")
 	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi minizinc.cpp)
@@ -371,13 +371,12 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 
 	add_library(minizinc_cplex
 		solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
                                )
-  target_include_directories(minizinc_cplex PRIVATE
-    "${CPLEX_STUDIO_DIR}/cplex/include"
-  )
+  include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
 	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
@@ -393,7 +392,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc_cplex ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -584,8 +583,17 @@ if(HAS_FZN)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable( minizinc-bin minizinc.cpp )
   set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
+  target_compile_definitions( minizinc-bin PRIVATE HAS_MIP )
   target_compile_definitions( minizinc-bin PRIVATE HAS_FZN )
 	target_link_libraries(minizinc-bin minizinc_fzn)
+  if(HAS_GUROBI)
+    target_link_libraries(minizinc-bin minizinc_gurobi)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
+  endif()
+  if(HAS_CPLEX)
+    target_link_libraries(minizinc-bin minizinc_cplex)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_CPLEX )
+  endif()
 	INSTALL(TARGETS minizinc_fzn minizinc-bin
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
