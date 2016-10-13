@@ -58,7 +58,7 @@ void Flattener::printHelp(ostream& os)
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
  #ifdef PRESOLVE
- << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
+  << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
  #endif
   << std::endl;
   os
@@ -72,6 +72,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
 #ifdef PRESOLVE
+  << "  --output-presolve-mzn\n    Print generated MiniZinc models to be presolved on standard output" << std::endl
   << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
 #endif
   << "  -Werror\n    Turn warnings into errors" << std::endl
@@ -113,6 +114,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
   } else if ( cop.getOption( "--no-presolve" ) ) {
     flag_no_presolve = true;
+  } else if ( cop.getOption( "--output-presolve-mzn" ) ) {
+    flag_print_presolve = true;
 #endif
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
@@ -328,6 +331,7 @@ void Flattener::flatten()
                 preOpts.stdLibDir = std_lib_dir;
                 preOpts.globalsDir = globals_dir;
                 preOpts.modelOutput = flag_output_presolved;
+                preOpts.printModels = flag_print_presolve;
                 preOpts.verbose = flag_verbose;
                 preOpts.newfzn = flag_newfzn;
                 preOpts.optimize = flag_optimize;

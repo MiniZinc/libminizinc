@@ -59,6 +59,8 @@ namespace MiniZinc {
     std::string globalsDir;
     std::string modelOutput;
 
+    bool printModels = false;
+
     bool verbose = false;
     bool newfzn = false;
     bool optimize = true;

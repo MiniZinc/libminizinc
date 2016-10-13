@@ -185,6 +185,13 @@ namespace MiniZinc {
 
     if(options.verbose)
       std::cerr << "\t\tPresolving problem ...";
+    if (options.printModels) {
+      std::cout << "% Presolve model `" << predicate->id().c_str() << "'" << std::endl;
+      Printer p(std::cout);
+      std::cout << std::endl;
+      p.print(e->model());
+      std::cout << std::endl;
+    }
     solveModel();
     if(options.verbose)
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
@@ -356,6 +363,13 @@ namespace MiniZinc {
 //      TODO: check if the current range has already been solved.
       if(options.verbose)
         std::cerr << "\t\tPresolving call " << i+1 << "  ...";
+      if (options.printModels) {
+        std::cout << "% Presolve model `" << predicate->id().c_str() << "' " << i+1 << std::endl;
+        Printer p(std::cout);
+        std::cout << std::endl;
+        p.print(e->model());
+        std::cout << std::endl;
+      }
       solveModel();
       if(options.verbose)
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
