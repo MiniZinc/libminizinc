@@ -23,8 +23,11 @@ namespace MiniZinc { namespace FileUtils {
   bool file_exists(const std::string& filename);
   /// Test if \a dirname exists and is a directory
   bool directory_exists(const std::string& dirname);
-  /// Return full path to file
-  std::string file_path(const std::string& filename);
+  /// Return full path to file. If \a basePath is not empty, also try resolving
+  /// relative paths with respect to \a basePath.
+  std::string file_path(const std::string& filename, const std::string& basePath=std::string());
+  /// Return directory name containing \a filename
+  std::string dir_name(const std::string& filename);
   /// Return list of files with extension \a ext in directory \a dir
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext=std::string("*"));

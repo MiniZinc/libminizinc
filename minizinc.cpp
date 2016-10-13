@@ -34,6 +34,10 @@
 using namespace std;
 using namespace MiniZinc;
 
+#ifdef HAS_MIP
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
+#include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
+#endif
 
 int main(int argc, const char** argv) {
 
@@ -51,9 +55,9 @@ int main(int argc, const char** argv) {
   static unique_ptr<SolverFactory>
     pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
 #endif
-#ifdef HAS_MIP
+#ifdef HAS_GUROBI
   static unique_ptr<SolverFactory>
-    pFactoryMIP( SolverFactory::createF_MIP() );
+    pFactoryMIP( new MIP_SolverFactory<MIP_gurobi_wrapper> );
 #endif
 
   clock_t starttime = std::clock(), endTime;
@@ -73,7 +77,7 @@ int main(int argc, const char** argv) {
     {
       fSuccess = true;
       if ( !slv.ifMzn2Fzn() ) {          // only then
-        GCLock lock;
+//        GCLock lock; // TODO: shouldn't lock during the whole solving process
         slv.addSolverInterface();
         slv.solve();
       }

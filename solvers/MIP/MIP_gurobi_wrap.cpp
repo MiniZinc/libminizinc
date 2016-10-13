@@ -28,12 +28,7 @@ using namespace std;
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 #include <minizinc/utils.hh>
 
-/// Linking this module provides these functions:
-MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
-  return new MIP_gurobi_wrapper;
-}
-
-string MIP_WrapperFactory::getVersion( ) {
+string MIP_gurobi_wrapper::getVersion( ) {
   ostringstream oss;
   oss << "  MIP wrapper for Gurobi library ";
   int major, minor, technical;
@@ -43,7 +38,11 @@ string MIP_WrapperFactory::getVersion( ) {
   return oss.str();
 }
 
-void MIP_WrapperFactory::printHelp(ostream& os) {
+string MIP_gurobi_wrapper::getId() {
+  return "gurobi";
+}
+
+void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   os
   << "GUROBI MIP wrapper options:" << std::endl
   // -s                  print statistics
@@ -72,21 +71,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
     return s.compare(0, t.length(), t)==0;
   }
 
-            /// SOLVER PARAMS ????
- static   int nThreads=1;
- static   string sExportModel;
- static   double nTimeout=-1;
- static   double nWorkMemLimit=-1;
- static   string sReadParams;
- static   string sWriteParams;
- static   bool flag_all_solutions = false;
 
- static   double absGap=0.99;
- static   double relGap=1e-8;
- static   double intTol=1e-6;
- static   double objDiff=1.0;
-
-bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
+bool MIP_gurobi_wrapper::Options::processOption(int& i, int argc, const char** argv) {
   MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
@@ -107,8 +93,6 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else
     return false;
   return true;
-error:
-  return false;
 }
 
 void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
@@ -396,8 +380,8 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    wrap_assert(!error, "  GUROBI Warning: Failure to switch screen indicator.", false);
 //    error =  GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
 //    error =  GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF);    // Access original model
-   if (sExportModel.size()) {
-     error = GRBwrite(model, sExportModel.c_str());
+   if (options.sExportModel.size()) {
+     error = GRBwrite(model, options.sExportModel.c_str());
      wrap_assert(!error, "Failed to write LP to disk.", false);
    }
 
@@ -407,16 +391,16 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //       _ilogurobi->use(SolutionCallback(_iloenv, lastObjVal, *this));
       // Turn off GUROBI logging
 
-   if (nThreads>0) {
-     error = GRBsetintparam(GRBgetenv(model), GRB_INT_PAR_THREADS, nThreads);
+   if (options.nThreads>0) {
+     error = GRBsetintparam(GRBgetenv(model), GRB_INT_PAR_THREADS, options.nThreads);
 //      int nn;    // THE SETTING FAILS TO WORK IN 6.0.5.
 //      error = GRBgetintparam(env, GRB_INT_PAR_THREADS, &nn);
 //      cerr << "Set " << nThreads << " threads, reported " << nn << endl;
      wrap_assert(!error, "Failed to set GRB_INT_PAR_THREADS.", false);
    }
 
-    if (nTimeout>0) {
-     error = GRBsetdblparam(GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, nTimeout);
+    if (options.nTimeout>0) {
+     error = GRBsetdblparam(GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, options.nTimeout);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -426,15 +410,15 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //     }
 
    if ( true ) {
-     error = GRBsetdblparam( GRBgetenv(model),  "MIPGapAbs", absGap );
+     error = GRBsetdblparam( GRBgetenv(model),  "MIPGapAbs", options.absGap );
      wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
    }
    if ( true ) {
-     error = GRBsetdblparam( GRBgetenv(model),  "MIPGap", relGap );
+     error = GRBsetdblparam( GRBgetenv(model),  "MIPGap", options.relGap );
      wrap_assert(!error, "Failed to set  MIPGap.", false);
    }
    if ( true ) {
-     error = GRBsetdblparam( GRBgetenv(model),  "IntFeasTol", intTol );
+     error = GRBsetdblparam( GRBgetenv(model),  "IntFeasTol", options.intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
    }
 
@@ -445,7 +429,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    output.x = &x[0];
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
-      if ( !flag_all_solutions )
+      if ( !options.flag_all_solutions )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {
         assert( cbui.cutMask & (MaskConsType_Usercut|MaskConsType_Lazy) );
@@ -469,13 +453,13 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    }
 
    /// after all modifs
-    if (sReadParams.size()) {
-     error = GRBreadparams (GRBgetenv(model), sReadParams.c_str());
+    if (options.sReadParams.size()) {
+     error = GRBreadparams (GRBgetenv(model), options.sReadParams.c_str());
      wrap_assert(!error, "Failed to read GUROBI parameters.", false);
     }
     
-    if (sWriteParams.size()) {
-     error = GRBwriteparams (GRBgetenv(model), sWriteParams.c_str());
+    if (options.sWriteParams.size()) {
+     error = GRBwriteparams (GRBgetenv(model), options.sWriteParams.c_str());
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
 

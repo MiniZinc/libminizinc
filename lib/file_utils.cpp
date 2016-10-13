@@ -32,6 +32,7 @@
 
 #ifndef _MSC_VER
 #include <dirent.h>
+#include <libgen.h>
 #endif
 
 namespace MiniZinc { namespace FileUtils {
@@ -110,7 +111,7 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
-  std::string file_path(const std::string& filename) {
+  std::string file_path(const std::string& filename, const std::string& basePath) {
 #ifdef _MSC_VER
     LPSTR lpBuffer, lpFilePart;
     DWORD nBufferLength = GetFullPathName(filename.c_str(), 0,0,&lpFilePart);
@@ -118,7 +119,10 @@ namespace MiniZinc { namespace FileUtils {
       return 0;
     std::string ret;
     if (!GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart)) {
-      ret = "";
+      if (basePath.empty())
+        ret = filename;
+      else
+        ret = file_path(basePath+"/"+filename);
     } else {
       ret = std::string(lpBuffer);
     }
@@ -126,12 +130,31 @@ namespace MiniZinc { namespace FileUtils {
     return ret;
 #else
     char* rp = realpath(filename.c_str(), NULL);
+    if (rp==NULL) {
+      if (basePath.empty())
+        return filename;
+      else
+        return file_path(basePath+"/"+filename);
+    }
     std::string rp_s(rp);
     free(rp);
     return rp_s;
 #endif
   }
-
+  
+  std::string dir_name(const std::string& filename) {
+#ifdef _MSC_VER
+    size_t pos = filename.find_last_of("\\/");
+    return (pos==std::string::npos) ? "" : filename.substr(0,pos);
+#else
+    char* fn = strdup(filename.c_str());
+    char* dn = dirname(fn);
+    std::string ret(dn);
+    free(fn);
+    return ret;
+#endif
+  }
+  
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext) {
     std::vector<std::string> entries;

@@ -54,7 +54,8 @@ namespace MiniZinc {
     SolverInstanceBase* doCreateSI(Env& env) {
       return new FZNSolverInstance(env, _options);
     }
-    string getVersion( );
+    string getVersion(void);
+    string getId(void);
     bool processOption(int& i, int argc, const char** argv);
     void printHelp(std::ostream& os);
   };
@@ -69,6 +70,11 @@ namespace MiniZinc {
     return v;
   }
 
+  string FZN_SolverFactory::getId()
+  {
+    return "org.minizinc.mzn-fzn";
+  }
+  
   void FZN_SolverFactory::printHelp(ostream& os)
   {
     os
@@ -397,23 +403,22 @@ namespace MiniZinc {
           close(pipes[2][0]);
 
           std::vector<char*> cmd_line;
-          for (auto& iCmdl: _fzncmd)
+          for (auto& iCmdl: _fzncmd) {
             cmd_line.push_back( strdup(iCmdl.c_str()) );
+          }
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
           char** argv = new char*[cmd_line.size() + 1];
           for (unsigned int i = 0; i < cmd_line.size(); i++)
             argv[i] = cmd_line[i];
           argv[cmd_line.size()] = 0;
-
           int status = execvp(argv[0], argv);
-          if (status == -1) {
-            std::stringstream ssm;
-            ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
-            throw InternalError(ssm.str());
-          }
+          assert(status == -1);
+          std::stringstream ssm;
+          ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
+          std::cerr << ssm.str() << "\n";
+          std::exit(EXIT_FAILURE);
         }
-        assert(false);
     }
 #endif
     };

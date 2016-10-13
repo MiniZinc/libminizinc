@@ -18,6 +18,7 @@
 #include <memory>
 
 #include <minizinc/flattener.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/exception.hh>
 
@@ -77,7 +78,8 @@ namespace MiniZinc {
     /// and it only needs 1 format
     virtual bool processOption(int& i, int argc, const char** argv) { return false; }
 
-    virtual std::string getVersion( ) { return "Abstract solver v0.-1"; }
+    virtual std::string getVersion(void) = 0;
+    virtual std::string getId(void) = 0;
     virtual void printHelp(std::ostream& ) { }
   };  // SolverFactory
   
@@ -88,6 +90,8 @@ namespace MiniZinc {
     SolverInstanceBase* si=0;
     bool is_mzn2fzn;
 
+    /// Solver configurations
+    SolverConfigs solver_configs;
   public:
     Solns2Out s2out;
     
@@ -98,17 +102,19 @@ namespace MiniZinc {
     /// solver options, not used    TODO
     Options options_solver;          // currently can create solver object only after flattening
                                      // so unflexible with solver cmdline options  TODO
+    
   public:
     MznSolver(bool ism2f = false);
     virtual ~MznSolver();
     virtual void addFlattener();
-    virtual bool processOptions(int argc, const char** argv);
+    virtual bool processOptions(int& argc, const char**& argv);
     virtual void printHelp();
     virtual void flatten();
     virtual size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.
     virtual bool ifMzn2Fzn();
     virtual void addSolverInterface();
+    virtual void addSolverInterface(SolverFactory* sf);
     virtual void solve();
     virtual void printStatistics();
     

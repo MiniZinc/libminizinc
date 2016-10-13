@@ -250,6 +250,7 @@ lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
 lib/solver.cpp
+lib/solver_config.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/type.cpp
@@ -295,6 +296,7 @@ include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
+include/minizinc/solver_config.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
 include/minizinc/statistics.hh
@@ -327,7 +329,8 @@ if(HAS_GUROBI)  # Version 6.5
   link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
+    solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
 	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
@@ -579,12 +582,11 @@ if(HAS_FZN)
 		solvers/fzn/fzn_solverinstance.cpp
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable( mzn-fzn minizinc.cpp )
-  target_compile_definitions( mzn-fzn PRIVATE HAS_FZN )
-	target_link_libraries(mzn-fzn minizinc_fzn)
-#  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp)#
-# target_link_libraries(mzn-fzn-test minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn #mzn-fzn-test
+	add_executable( minizinc-bin minizinc.cpp )
+  set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
+  target_compile_definitions( minizinc-bin PRIVATE HAS_FZN )
+	target_link_libraries(minizinc-bin minizinc_fzn)
+	INSTALL(TARGETS minizinc_fzn minizinc-bin
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

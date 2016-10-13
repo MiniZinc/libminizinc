@@ -82,7 +82,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
-MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f) { }
+MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f), solver_configs("") { }
 
 MznSolver::~MznSolver()
 {
@@ -122,22 +122,36 @@ void MznSolver::addSolverInterface()
     << getGlobalSolverRegistry()->getSolverFactories().back()->getVersion() << endl;  
 }
 
+void MznSolver::addSolverInterface(SolverFactory* sf)
+{
+  si = sf->createSI(*flt->getEnv());
+  assert(si);
+  s2out.initFromEnv( flt->getEnv() );
+  si->setSolns2Out( &s2out );
+  if (get_flag_verbose())
+    cerr
+    //     << "  ---------------------------------------------------------------------------\n"
+    << "      % SOLVING PHASE\n"
+    << sf->getVersion() << endl;
+}
+
 void MznSolver::printHelp()
 {
   if ( !ifMzn2Fzn() )
   cout
-    << "NICTA MiniZinc driver.\n"
+    << "MiniZinc driver.\n"
     << "Usage: <executable>"  //<< argv[0]
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
   else
   cout
-    << "NICTA MiniZinc to FlatZinc converter.\n"
+    << "MiniZinc to FlatZinc converter.\n"
     << "Usage: <executable>"  //<< argv[0]
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
   cout
     << "Options:" << std::endl
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
+    << "  --solvers\n    Print available solvers." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl;
 //   if ( getNSolvers() )
@@ -155,11 +169,12 @@ void MznSolver::printHelp()
   }
 }
 
-bool MznSolver::processOptions(int argc, const char** argv)
+bool MznSolver::processOptions(int& argc, const char**& argv)
 {
-  int i=1;
+  int i=1; int j=1;
   if (argc < 2)
     return false;
+  string solver;
   for (i=1; i<argc; ++i) {
     if (string(argv[i])=="-h" || string(argv[i])=="--help") {
       printHelp();
@@ -172,25 +187,116 @@ bool MznSolver::processOptions(int argc, const char** argv)
         cout << (*it)->getVersion() << endl;
       std::exit(EXIT_SUCCESS);
     }
-    //  moving --verbose here:
-    if ((argv[i])==string("-v") || (argv[i])==string("--verbose") || (argv[i])==string("-l")) {
+    if (string(argv[i])=="--solvers") {
+      cout << "MiniZinc driver.\nAvailable solver configurations:\n";
+      std::vector<std::string> solvers = solver_configs.solvers();
+      if (solvers.size()==0)
+        cout << "  none.\n";
+      for (unsigned int i=0; i<solvers.size(); i++) {
+        cout << "  " << solvers[i] << endl;
+      }
+      std::exit(EXIT_SUCCESS);
+    }
+    if (string(argv[i])=="--solver") {
+      ++i;
+      if (i==argc) {
+        cerr << "Argument required for --solver" << endl;
+        return false;
+      }
+      if (solver.size()>0) {
+        cerr << "Only one --solver option allowed" << endl;
+        return false;
+      }
+      solver = argv[i];
+    } else if ((argv[i])==string("-v") || (argv[i])==string("--verbose") || (argv[i])==string("-l")) {
       flag_verbose = true;
     } else if (string(argv[i])=="-s" || string(argv[i])=="--statistics") {
       flag_statistics = true;                  // is this Flattener's option?
-    } else if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
-    } else if (!getFlt()->processOption(i, argc, argv)) {
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
-           it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
-        if ((*it)->processOption(i, argc, argv))
-          goto Found;
-      goto NotFound;
+    } else {
+      argv[j++] = argv[i];
     }
-Found: { }
+  }
+  argc = j;
+  
+  SolverFactory* sf = NULL;
+
+  if (!ifMzn2Fzn()) {
+    if (solver.empty()) {
+      for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
+           it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
+        if ((*it)->getId()=="org.minizinc.mzn-fzn") {
+          sf = *it;
+        }
+      }
+    } else {
+
+      try {
+        const SolverConfig& sc = solver_configs.config(solver);
+        string solverId = sc.executable().empty() ? sc.id() : string("org.minizinc.mzn-fzn");
+        for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
+             it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
+          if ((*it)->getId()==solverId) {
+            sf = *it;
+            if (!sc.executable().empty()) {
+              const char* additionalArgs[2];
+              additionalArgs[0] = "-f";
+              std::string executable = sc.executable();
+              additionalArgs[1] = executable.c_str();
+              int i=0;
+              bool success = sf->processOption(i, 2, additionalArgs);
+              if (!success) {
+                cerr << "Solver backend " << solverId << " does not recognise option -f." << endl;
+                return false;
+              }
+            }
+            if (!sc.mznlib().empty()) {
+              if (sc.mznlib().substr(0,2)=="-G") {
+                const char* additionalArgs[1];
+                std::string mznlib = sc.mznlib();
+                additionalArgs[0] = mznlib.c_str();
+                int i=0;
+                if (!getFlt()->processOption(i, 1, additionalArgs)) {
+                  cerr << "Flattener does not recognise option " << sc.mznlib() << endl;
+                  return false;
+                }
+              } else {
+                const char* additionalArgs[2];
+                additionalArgs[0] = "-I";
+                std::string mznlib = sc.mznlib();
+                additionalArgs[1] = mznlib.c_str();
+                int i=0;
+                if (!getFlt()->processOption(i, 2, additionalArgs)) {
+                  cerr << "Flattener does not recognise option -I." << endl;
+                  return false;
+                }
+              }
+            }
+            break;
+          }
+        }
+        
+      } catch (ConfigException& e) {
+        cerr << "Config exception: " << e.what() << endl;
+        return false;
+      }
+    }
+    
+    if (sf==NULL) {
+      cerr << "Solver " << solver << " not found." << endl;
+      return false;
+    }
+  }
+  
+  for (i=1; i<argc; ++i) {
+    if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
+    } else if (getFlt()->processOption(i, argc, argv)) {
+    } else if (sf->processOption(i, argc, argv)) {
+    } else {
+      cerr << "  Unrecognized option or bad format: '" << argv[i] << "'" << endl;
+      return false;
+    }
   }
   return true;
-NotFound:
-  cerr << "  Unrecognized option or bad format: '" << argv[i] << "'" << endl;
-  return false;
 }
 
 void MznSolver::flatten()

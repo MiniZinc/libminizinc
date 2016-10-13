@@ -28,12 +28,33 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     vector<double> x;
 
   public:
-    MIP_gurobi_wrapper() { openGUROBI(); }
+  
+    class Options {
+    public:
+      /// SOLVER PARAMS ????
+      int nThreads=1;
+      string sExportModel;
+      double nTimeout=-1;
+      double nWorkMemLimit=-1;
+      string sReadParams;
+      string sWriteParams;
+      bool flag_all_solutions = false;
+      
+      double absGap=0.99;
+      double relGap=1e-8;
+      double intTol=1e-6;
+      double objDiff=1.0;
+      bool processOption(int& i, int argc, const char** argv);
+      void printHelp(ostream& );
+    } options;
+
+    MIP_gurobi_wrapper(const Options& opt) : options(opt) {
+      openGUROBI();
+    }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
-    
-    bool processOption(int& i, int argc, const char** argv);
-    void printVersion(ostream& );
-    void printHelp(ostream& );
+
+    static string getVersion(void);
+    static string getId(void);
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;
