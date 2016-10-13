@@ -80,20 +80,28 @@ namespace MiniZinc {
                  std::vector<VarDecl*>& vd0,
                  Item* item0)
     : vo(vo0), vd(vd0), item(item0) {}
+    
+    static bool varIsFree(VarDecl* vd) {
+      if (vd->e()==NULL || vd->ti()->domain()==NULL || vd->ti()->computedDomain()) {
+        return true;
+      } else {
+        /// TODO: test if id's domain is a superset of the right hand side
+        /// this currently only tests for equality, and for Boolean domains
+        if (Id* ident = vd->e()->dyn_cast<Id>()) {
+          if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
+            return true;
+          }
+        } else if (vd->e()==vd->ti()->domain()) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
     void vId(Id& id) {
       if (id.decl() && vo.remove(id.decl(),item) == 0) {
-        if (id.decl()->e()==NULL || id.decl()->ti()->domain()==NULL || id.decl()->ti()->computedDomain()) {
+        if (varIsFree(id.decl())) {
           vd.push_back(id.decl());
-        } else {
-          /// TODO: test if id's domain is a superset of the right hand side
-          /// this currently only tests for equality, and for Boolean domains
-          if (Id* ident = id.decl()->e()->dyn_cast<Id>()) {
-            if (Expression::equal(ident->decl()->ti()->domain(), id.decl()->ti()->domain())) {
-              vd.push_back(id.decl());
-            }
-          } else if (id.decl()->e()==id.decl()->ti()->domain()) {
-            vd.push_back(id.decl());
-          }
         }
       }
     }

@@ -36,6 +36,8 @@ namespace MiniZinc {
   IntSetVal* eval_intset(EnvI& env, Expression* e);
   /// Evaluate a par bool set \a e
   IntSetVal* eval_boolset(EnvI& env, Expression* e);
+  /// Evaluate a par float set \a e
+  FloatSetVal* eval_floatset(EnvI& env, Expression* e);
   /// Evaluate a par string \a e
   std::string eval_string(EnvI& env, Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal

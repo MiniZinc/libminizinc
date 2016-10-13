@@ -30,6 +30,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifndef _MSC_VER
+#include <dirent.h>
+#endif
+
 namespace MiniZinc { namespace FileUtils {
   
 #ifdef HAS_PIDPATH
@@ -126,6 +130,44 @@ namespace MiniZinc { namespace FileUtils {
     free(rp);
     return rp_s;
 #endif
+  }
+
+  std::vector<std::string> directory_list(const std::string& dir,
+                                          const std::string& ext) {
+    std::vector<std::string> entries;
+#ifdef _MSC_VER
+    WIN32_FIND_DATA findData;
+    HANDLE hFind = ::FindFirstFile( (dir+"/*."+ext).c_str(), &findData);
+    if (hFind != INVALID_HANDLE_VALUE) {
+      do {
+        if ( !(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ) {
+          entries.push_back(findData.cFileName);
+        }
+      } while(::FindNextFile(hFind, &findData));
+      ::FindClose(hFind);
+    }
+#else
+    DIR* dirp = opendir(dir.c_str());
+    if (dirp) {
+      struct dirent* dp;
+      while ((dp = readdir(dirp)) != NULL) {
+        std::string fileName(dp->d_name);
+        struct stat info;
+        if (stat( (dir+"/"+fileName).c_str(), &info)==0 && (info.st_mode & S_IFREG)) {
+          if (ext=="*") {
+            entries.push_back(fileName);
+          } else {
+            if (fileName.size() > ext.size()+2 &&
+                fileName.substr(fileName.size()-ext.size()-1)=="."+ext) {
+              entries.push_back(fileName);
+            }
+          }
+        }
+      }
+      closedir(dirp);
+    }
+#endif
+    return entries;
   }
   
 }}

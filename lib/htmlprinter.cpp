@@ -444,7 +444,7 @@ namespace MiniZinc {
         os << "</div></div>";
         GCLock lock;
         HtmlDocOutput::DocItem di(vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR: HtmlDocOutput::DocItem::T_VAR,
-                                  vdi->e()->type().toString()+" "+vdi->e()->id()->str().str(), os.str());
+                                  vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str(), os.str());
         HtmlDocOutput::addToGroup(_maingroup, group, di);
       }
     }

@@ -31,9 +31,15 @@ namespace MiniZinc {
     DeclMap idmap;
     /// Map from declarations to positions
     PosMap pos;
+    /// The model
+    Model* model;
+    
+    TopoSorter(Model* model0) : model(model0) {}
     
     /// Add a variable declaration
     void add(EnvI& env, VarDecl* vd, bool unique);
+    /// Add a variable declaration item
+    void add(EnvI& env, VarDeclI* vd, bool unique, bool handleEnums, std::vector<Item*>& enumItems);
     /// Remove a variable declaration
     void remove(EnvI& env, VarDecl* vd);
     /// Get variable declaration from identifier \a id
@@ -54,6 +60,9 @@ namespace MiniZinc {
 
   /// Typecheck FlatZinc variable declarations
   void typecheck_fzn(Env& env, Model* m);
+
+  /// Output description of parameters and output variables to \a os
+  void output_model_interface(Env& env, Model* m, std::ostream& os);
   
 }
 

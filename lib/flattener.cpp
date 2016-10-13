@@ -46,7 +46,9 @@ void Flattener::printHelp(ostream& os)
   << std::endl
   << "Flattener input options:" << std::endl
   << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
-  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do !\n    convert to FlatZinc." << std::endl
+  << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
+  << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do not\n    convert to FlatZinc." << std::endl
+  << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
   // \n    Currently does nothing (only available for compatibility with 1.6)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
@@ -75,6 +77,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-presolve-mzn\n    Print generated MiniZinc models to be presolved on standard output" << std::endl
   << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
 #endif
+  << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -92,6 +95,10 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_typecheck = false;
   } else if ( cop.getOption( "--instance-check-only") ) {
     flag_instance_check_only = true;
+  } else if ( cop.getOption( "-e --model-check-only") ) {
+    flag_model_check_only = true;
+  } else if ( cop.getOption( "--model-interface-only") ) {
+    flag_model_interface_only = true;
   } else if ( cop.getOption( "-v --verbose") ) {
     flag_verbose = true;
   } else if (string(argv[i])==string("--newfzn")) {
@@ -117,6 +124,16 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--output-presolve-mzn" ) ) {
     flag_print_presolve = true;
 #endif
+  } else if ( cop.getOption( "--output-mode", &buffer ) ) {
+    if (buffer == "dzn") {
+      flag_output_mode = FlatteningOptions::OUTPUT_DZN;
+    } else if (buffer == "json") {
+      flag_output_mode = FlatteningOptions::OUTPUT_JSON;
+    } else if (buffer == "item") {
+      flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
+    } else {
+      goto error;
+    }
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
@@ -148,7 +165,11 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 //       std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
       goto error;
     }
-    std::string extension = input_file.substr(input_file.length()-4,string::npos);
+    size_t last_dot = input_file.find_last_of('.');
+    if (last_dot == string::npos) {
+      goto error;
+    }
+    std::string extension = input_file.substr(last_dot,string::npos);
     if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn") {
       if ( extension == ".fzn" ) {
         is_flatzinc = true;
@@ -161,7 +182,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 //         std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
 //         goto error;
 //       }
-    } else if (extension == ".dzn") {
+    } else if (extension == ".dzn" || extension == ".json") {
       datafiles.push_back(input_file);
     } else {
       if ( fOutputByDefault )
@@ -280,6 +301,8 @@ void Flattener::flatten()
     std::stringstream errstream;
     try {
       Model* m;
+      pEnv.reset(new Env());
+      Env& env = *getEnv();
       if (flag_stdinInput) {
         if (flag_verbose)
           std::cerr << "Parsing standard input ..." << endl;
@@ -289,19 +312,18 @@ void Flattener::flatten()
       } else {
         if (flag_verbose)
           std::cerr << "Parsing '" << filenames[0] << "' ...";
-        m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       }
       if (m) {
+        env.model(m);
 //         pModel.reset(m);   // seems to be unnec
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)
             std::cerr << "Typechecking ...";
-          pEnv.reset(new Env(m));
-          Env& env = *getEnv();
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(env, m, typeErrors, false);
+          MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -315,7 +337,11 @@ void Flattener::flatten()
           if (flag_verbose)
             std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
-          if (!flag_instance_check_only) {
+          if (flag_model_interface_only) {
+            MiniZinc::output_model_interface(env, m, std::cout);
+          }
+          
+          if (!flag_instance_check_only && !flag_model_check_only && !flag_model_interface_only) {
             if (is_flatzinc) {
               GCLock lock;
               env.swap();
@@ -347,6 +373,7 @@ void Flattener::flatten()
 
               try {
                 fopts.onlyRangeDomains = flag_only_range_domains;
+                fopts.outputMode = flag_output_mode;
                 ::flatten(env,fopts);
               } catch (LocationException& e) {
                 if (flag_verbose)

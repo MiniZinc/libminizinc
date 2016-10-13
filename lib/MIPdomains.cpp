@@ -36,6 +36,7 @@
 
 
 /// TODOs
+/// TODO  Not going to work for float vars because of round-offs in the domain interval sorting...
 /// set_in etc. are ! propagated between views
 /// CLEANUP after work: ~destructor
 /// Also check initexpr of all vars?  DONE
@@ -43,10 +44,13 @@
 ///   - so better turn that off TODO
 /// CSE for lineq coefs     TODO
 
+#define INT_EPS 1e-5    // the absolute epsilon for integrality of integer vars.
+
+
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//   #define __MZN__DBGOUT__MIPDOMAINS__
+//    #define __MZN__DBGOUT__MIPDOMAINS__
 #ifdef __MZN__DBGOUT__MIPDOMAINS__
   #define DBGOUT_MIPD(s) std::cerr << s << std::endl
   #define DBGOUT_MIPD__(s) std::cerr << s << std::flush
@@ -935,36 +939,21 @@ namespace MiniZinc {
         // process domain info
         double lb=B, ub=A+B;  // projected bounds for bool
         if ( vd->ti()->domain() ) {
-          if ( vd->type().isint() ) {         // INT VAR
+          if ( vd->type().isint() || vd->type().isfloat() ) {         // INT VAR OR FLOAT VAR
             SetOfIntvReal sD1;
             convertIntSet( vd->ti()->domain(), sD1, cls.varRef1, A, B );
             sDomain.intersect(sD1);
             DBGOUT_MIPD( " Clique domain after proj of the init. domain "
-              << sD1 << " of varint "
+              << sD1 << " of " << (vd->type().isint() ? "varint" : "varfloat")
               << A << " * " << vd->id()->str() << " + " << B
               << ":  " << sDomain );
             auto bnds = sD1.getBounds();
             lb = bnds.left;
             ub = bnds.right;
-          }
-          else if ( vd->type().isfloat() ) {  // FLOAT VAR
-            BinOp* bo = follow_id_to_value(vd->ti()->domain())->cast<BinOp>();
-            FloatVal vmin0 = eval_float(mipd.getEnv()->envi(), bo->lhs());
-            FloatVal vmax0 = eval_float(mipd.getEnv()->envi(), bo->rhs());
-            if ( A < 0.0 )
-              std::swap( vmin0, vmax0 );
-            lb = rndUpIfInt( cls.varRef1, A * vmin0 + B );
-            ub = rndDownIfInt( cls.varRef1, A * vmax0 + B );
-            SetOfIntvReal intv = { IntvReal( lb, ub ) };
-            sDomain.intersect( intv );               // *A + B
-            DBGOUT_MIPD( " Clique domain after proj of the init. domain "
-              << intv << " of varfloat "
-              << A << " * " << vd->id()->str() << " + " << B
-              << ":  " << sDomain );
           } else {
             MZN_MIPD__assert_for_feas( 0, 
               "Variable " << vd->id()->str()
-              << " of type " << vd->type().toString()
+              << " of type " << vd->type().toString(mipd.__env->envi())
               << " has a domain." );
           }          
 //           /// Deleting var domain:
@@ -1036,7 +1025,7 @@ namespace MiniZinc {
                     break;
                   case CMPT_EQ:
                     if ( ! ( cls.varRef1->type().isint() &&    // skip if int target var
-                        std::fabs( rhs - rhsRnd ) > 1e-8 ) )     // && fract value
+                        std::fabs( rhs - rhsRnd ) > INT_EPS ) )     // && fract value
                       sDomain.cutDeltas( rhsRnd, rhsRnd, delta );
                     break;
                   default:
@@ -1050,7 +1039,7 @@ namespace MiniZinc {
                 const double rhs = A * mipd.expr2Const( pCall->args()[1] ) + B;
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                 bool fSkipNE = ( cls.varRef1->type().isint() &&
-                  std::fabs( rhs - rhsRnd ) > 1e-8 );
+                  std::fabs( rhs - rhsRnd ) > INT_EPS );
                 if ( ! fSkipNE ) {
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 2 );
                   sDomain.cutOut( { rhsRnd-delta, rhsRnd+delta } );
@@ -1082,11 +1071,17 @@ namespace MiniZinc {
       static double rndIfInt( VarDecl* vdTarget, double v ) {
         return vdTarget->type().isint() ? std::round( v ) : v;
       }
+      static double rndIfBothInt( VarDecl* vdTarget, double v ) {
+        if ( !vdTarget->type().isint() )
+          return v;
+        const double vRnd = std::round( v );
+        return (fabs( v-vRnd )<INT_EPS) ? vRnd : v;
+      }
       static double rndUpIfInt( VarDecl* vdTarget, double v ) {
-        return vdTarget->type().isint() ? std::ceil( v-1e-8 ) : v;
+        return vdTarget->type().isint() ? std::ceil( v-INT_EPS ) : v;
       }
       static double rndDownIfInt( VarDecl* vdTarget, double v ) {
-        return vdTarget->type().isint() ? std::floor( v+1e-8 ) : v;
+        return vdTarget->type().isint() ? std::floor( v+INT_EPS ) : v;
       }
       
       void makeRangeDomains() {
@@ -1109,9 +1104,40 @@ namespace MiniZinc {
       }
       
       /// tightens element bounds in the existing eq_encoding of varRef1
-      /// Can also back-check from there    TODO
+      /// necessary because if one exists, int_ne is not translated into it
+      /// Can also back-check from there?   TODO
       /// And further checks                TODO
       void syncWithEqEncoding() {
+        std::vector<Expression*> pp;
+        auto bnds = sDomain.getBounds();
+        const long long iMin = mipd.expr2ExprArray(
+          mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+        MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
+        MZN_MIPD__assert_hard( iMin<=bnds.left );
+        long long vEE = iMin;
+        DBGOUT_MIPD__( "   SYNC EQ_ENCODE( " << (*cls.varRef1)
+          << ",   bitflags: " << *(mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1])
+          << " ):  SETTING 0 FLAGS FOR VALUES: " );
+        for ( auto& intv : sDomain ) {
+          for ( ; vEE < intv.left; ++vEE ) {
+            if ( vEE >= (iMin+pp.size()) )
+              return;
+            if ( pp[ vEE-iMin ]->isa<Id>() )
+              if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+                DBGOUT_MIPD__( vEE << ", " );
+                setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+              }
+          }
+          vEE = intv.right+1;
+        }
+        for ( ; vEE < (iMin+pp.size()); ++vEE ) {
+          if ( pp[ vEE-iMin ]->isa<Id>() )
+            if ( pp[ vEE-iMin ]->dyn_cast<Id>()->decl()->type().isvar() ) {
+              DBGOUT_MIPD__( vEE << ", " );
+              setVarDomain( pp[ vEE-iMin ]->dyn_cast<Id>()->decl(), 0.0, 0.0 );
+            }
+        }
+        DBGOUT_MIPD( "" );
       }
       
       /// sync varRef1's eq_encoding with those of other variables
@@ -1188,7 +1214,7 @@ namespace MiniZinc {
                     : A * mipd.expr2Const( pCall->args()[1] ) + B;
                   const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
                   const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
-                  const double rhsRnd = rndIfInt( cls.varRef1, rhs );
+                  const double rhsRnd = rndIfBothInt( cls.varRef1, rhs );  // if the ref var is int, need to round almost-int values
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                   switch ( nCmpType_ADAPTED ) {
                     case CMPT_LE:
@@ -1204,8 +1230,8 @@ namespace MiniZinc {
                       relateReifFlag( pCall->args()[1],  { { rhsUp+delta, IntvReal::infPlus() } } );
                       break;
                     case CMPT_EQ:
-                      relateReifFlag( pCall->args()[2], { { rhs, rhs } } );
-                      break;
+                      relateReifFlag( pCall->args()[2], { { rhsRnd, rhsRnd } } );
+                      break;  // ... but if the value is sign. fractional for an int var, the flag is set=0
                     default:
                       break;
                   }
@@ -1238,14 +1264,14 @@ namespace MiniZinc {
                     switch ( nCmpType_ADAPTED ) {
                       case CMPT_EQ_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
-                        fUseDD = ( itLB->left==rhs && itLB->right==rhs );  // exactly
+                        auto itLB = sDomain.lower_bound(rhsRnd);
+                        fUseDD = ( itLB->left==rhsRnd && itLB->right==rhsRnd );  // exactly
                       }
                         break;
                       case CMPT_LT_0:
                       case CMPT_LE_0:
                       {
-                        auto itUB = sDomain.upper_bound(rhs);
+                        auto itUB = sDomain.upper_bound(rhsUp);
                         bool fInner = false;
                         if ( sDomain.begin() != itUB ) {
                           --itUB;
@@ -1258,7 +1284,7 @@ namespace MiniZinc {
                       case CMPT_GT_0:
                       case CMPT_GE_0:
                       {
-                        auto itLB = sDomain.lower_bound(rhs);
+                        auto itLB = sDomain.lower_bound(rhsDown);
                         bool fInner = false;
                         if ( sDomain.begin() != itLB ) {
                           --itLB;
@@ -1274,7 +1300,7 @@ namespace MiniZinc {
                   }
                   if ( fUseDD ) {               // use sDomain
                     if ( CMPT_EQ_0==nCmpType_ADAPTED ) {
-                      relateReifFlag( pCall->args()[1], { { rhs, rhs } }, RIT_Halfreif );
+                      relateReifFlag( pCall->args()[1], { { rhsRnd, rhsRnd } }, RIT_Halfreif );
                     } else if ( nCmpType_ADAPTED < 0 ) {
                       relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
                     } else {
@@ -1339,8 +1365,8 @@ namespace MiniZinc {
           MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
           MZN_MIPD__assert_hard( iMin<=bnds.left );
           for ( auto& intv : SS ) {
-            for ( long long vv = (long long)std::max( double(iMin), intv.left );
-                  vv <= (long long)std::min( double(iMin)+pp.size()-1, intv.right ); ++vv ) {
+            for ( long long vv = (long long)std::max( double(iMin), ceil(intv.left) );
+                  vv <= (long long)std::min( double(iMin)+pp.size()-1, floor(intv.right) ); ++vv ) {
               vIntvFlags.push_back( pp[vv-iMin] );
             }
           }
@@ -1504,22 +1530,40 @@ namespace MiniZinc {
       }
       
       /// domain / reif set of one variable into that for a!her
-      void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget, 
+      void convertIntSet( Expression* e, SetOfIntvReal& s, VarDecl* varTarget,
                           double A, double B ) {
         MZN_MIPD__assert_hard( A != 0.0 );
-        IntSetVal* S = eval_intset( mipd.getEnv()->envi(), e );
-        IntSetRanges domr(S);
-        for (; domr(); ++domr) {                          // * A + B
-          IntVal mmin = domr.min();
-          IntVal mmax = domr.max();
-          if ( A < 0.0 )
-            std:: swap( mmin, mmax );
-          s.insert( IntvReal(                   // * A + B
-            mmin.isFinite() ?
-              rndUpIfInt( varTarget, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
-            mmax.isFinite() ?
-              rndDownIfInt( varTarget, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
-          );
+        if (e->type().isintset()) {
+          IntSetVal* S = eval_intset( mipd.getEnv()->envi(), e );
+          IntSetRanges domr(S);
+          for (; domr(); ++domr) {                          // * A + B
+            IntVal mmin = domr.min();
+            IntVal mmax = domr.max();
+            if ( A < 0.0 )
+              std:: swap( mmin, mmax );
+            s.insert( IntvReal(                   // * A + B
+              mmin.isFinite() ?
+                rndUpIfInt( varTarget, (mmin.toInt() * A + B) ) : IntvReal::infMinus(),
+              mmax.isFinite() ?
+                rndDownIfInt( varTarget, (mmax.toInt() * A + B) ) : IntvReal::infPlus() )
+            );
+          }
+        } else {
+          assert(e->type().isfloatset());
+          FloatSetVal* S = eval_floatset( mipd.getEnv()->envi(), e );
+          FloatSetRanges domr(S);
+          for (; domr(); ++domr) {                          // * A + B
+            FloatVal mmin = domr.min();
+            FloatVal mmax = domr.max();
+            if ( A < 0.0 )
+              std:: swap( mmin, mmax );
+            s.insert( IntvReal(                   // * A + B
+                               mmin.isFinite() ?
+                               rndUpIfInt( varTarget, (mmin.toDouble() * A + B) ) : IntvReal::infMinus(),
+                               mmax.isFinite() ?
+                               rndDownIfInt( varTarget, (mmax.toDouble() * A + B) ) : IntvReal::infPlus() )
+                     );
+          }
         }
       }
       
@@ -1624,7 +1668,7 @@ namespace MiniZinc {
       if (IntLit* il = arg->dyn_cast<IntLit>()) {
         return ( il->v().toInt() );
       } else if (FloatLit* fl = arg->dyn_cast<FloatLit>()) {
-        return ( fl->v() );
+        return ( fl->v().toDouble() );
       } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
         return ( bl->v() );
       } else {

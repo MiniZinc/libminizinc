@@ -355,17 +355,16 @@ namespace MiniZinc{
     file.close();
 
     Model* table_model = nullptr;
+    Env table_env(table_model);
     if (exists) {
-      table_model = parse(std::vector<std::string>(1, options.stdLibDir + "/" + options.globalsDir + loc),
+      table_model = parse(table_env, std::vector<std::string>(1, options.stdLibDir + "/" + options.globalsDir + loc),
                           std::vector<std::string>(), options.includePaths, false, false,
                           false, std::cerr);
     } else {
-      table_model = parse(std::vector<std::string>(1, options.stdLibDir + "/std" + loc),
+      table_model = parse(table_env, std::vector<std::string>(1, options.stdLibDir + "/std" + loc),
                           std::vector<std::string>(), options.includePaths, false, false,
                           false, std::cerr);
     }
-
-    Env table_env(table_model);
 
     std::vector<TypeError> typeErrors;
     typecheck(table_env, table_model, typeErrors, false);

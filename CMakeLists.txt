@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 3.0.0)
 
 project (libminizinc CXX C)
 
@@ -31,7 +31,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 13)
+set (libminizinc_VERSION_PATCH 97)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -53,17 +53,11 @@ if (BUILD_STATIC_EXECUTABLE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if (USE_STDLIBCPP)
-  set(MZN_LIBCPP libstdc++)
-else()
-  set(MZN_LIBCPP libc++)
-endif()
 
-# -------------------------------------------------------------------------------------------------------------------
 if(APPLE)
-   SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++0x")
-   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "${MZN_LIBCPP}")
+  execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE OSX_SYSROOT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(CMAKE_OSX_SYSROOT ${OSX_SYSROOT})
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
 endif(APPLE)
 
 include(CheckCXXCompilerFlag)
@@ -75,19 +69,25 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
-check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
-if (HAS_STDCPP11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if ( (CMAKE_VERSION VERSION_GREATER 3.1.0) OR (CMAKE_VERSION VERSION_EQUAL 3.1.0) )
+  set (CMAKE_CXX_STANDARD 11)
 else()
-  check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
-  if (HAS_STDCPP0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
+  if (HAS_STDCPP11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  else()
+    check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
+    if (HAS_STDCPP0X)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    else()
+      message(SEND_ERROR "CMake >= 3.1.0 required to detect whether compiler supports C++11")
+    endif()
   endif()
 endif()
 
-check_cxx_compiler_flag(-stdlib=${MZN_LIBCPP} HAS_STDLIBLIBCPP)
-
-if (HAS_STDLIBLIBCPP)
+# -------------------------------------------------------------------------------------------------------------------
+if (USE_STDLIBCPP)
+  set(MZN_LIBCPP libstdc++)
   set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=${MZN_LIBCPP}")
   check_cxx_source_compiles("int main(void) {return 0;}" LINKS_STDLIBLIBCPP)
@@ -155,6 +155,10 @@ int main (int argc, char* argv[]) {
   (void) memcpy_s(NULL,0,NULL,0);
   return 0;
 }" HAS_MEMCPY_S)
+
+#check_cxx_source_compiles("#include <sstream>
+##include <iomanip>
+#int main(void) { std::ostringstream oss; std::hexfloat(oss); return 0; }" HAS_HEXFLOAT)
 
 # -------------------------------------------------------------------------------------------------------------------
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
@@ -244,6 +248,7 @@ lib/eval_par.cpp
 lib/file_utils.cpp
 lib/gc.cpp
 lib/htmlprinter.cpp
+lib/json_parser.cpp
 ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
@@ -251,6 +256,7 @@ lib/prettyprinter.cpp
 lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
+lib/type.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
 lib/flattener.cpp
@@ -258,6 +264,7 @@ lib/MIPdomains.cpp
 lib/optimize.cpp
 lib/options.cpp
 lib/optimize_constraints.cpp
+lib/output.cpp
 lib/parser.yxx
 lib/solns2out_class.cpp
 ${presolve_cpp}
@@ -284,10 +291,12 @@ include/minizinc/gc.hh
 include/minizinc/hash.hh
 include/minizinc/htmlprinter.hh
 include/minizinc/iter.hh
+include/minizinc/json_parser.hh
 include/minizinc/model.hh
 include/minizinc/optimize.hh
 include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
+include/minizinc/output.hh
 include/minizinc/parser.hh
 ${presolve_hh}
 include/minizinc/prettyprinter.hh

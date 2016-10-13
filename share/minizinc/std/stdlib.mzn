@@ -26,6 +26,10 @@ annotation promise_total;
 /** @group annotations.general Declare that expression may have undefined result (to avoid warnings) */
 annotation maybe_partial;
 
+/** @group annotations.general Declare that the annotated variable should be added to the output
+of the model. This annotation only has an effect when the model does not have an output item. */
+annotation add_to_output;
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
@@ -506,5 +510,10 @@ opt bool: mzn_opt_only_range_domains;
 test mzn_check_only_range_domains() =
   if absent(mzn_opt_only_range_domains) then false
   else deopt(mzn_opt_only_range_domains) endif;
+
+/*** @group options If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
+opt int: mzn_min_version_required;
+
+constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));
 
 include "builtins.mzn";

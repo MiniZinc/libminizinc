@@ -68,6 +68,8 @@ namespace MiniZinc {
     return os << s.str();
   }
 
+  void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat=false);
+  
 }
 
 void debugprint(MiniZinc::Expression* e);

@@ -318,10 +318,17 @@ function var int: abs(var int: x) :: promise_total =
 function float: abs(float: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var float: abs(var float: x) :: promise_total =
-  if has_bounds(x) /\ lb(x)>=0.0 then x else
-  let { var 0.0..max(-lb(x),ub(x)): m;
-        constraint float_abs(x,m);
-  } in m
+  if has_bounds(x) then
+    if lb(x) >= 0.0 then x else
+    let { var 0.0..max(-lb(x),ub(x)): m;
+          constraint float_abs(x,m);
+    } in m
+    endif
+  else
+    let { var float: m;
+          constraint m >= 0.0;
+          constraint float_abs(x,m);
+    } in m
   endif;
 
 /** @group builtins.arithmetic Return \(\sqrt{\a x}\) */
@@ -1158,6 +1165,12 @@ function string: show3d(array[int,int,int] of var opt $T: x) =
    endif | i in 1..len1, j in 1..len2, k in 1..len3
   ]);
 
+/** @group builtins.string Convert \a x into JSON string */
+function string: showJSON(var opt $T: x);
+
+/** @group builtins.string Convert \a x into JSON string */
+function string: showJSON(array[$U] of var opt $T: x);
+
 /** @group builtins.string Return length of \a s */
 function int: string_length(string: s);
 
@@ -1328,6 +1341,14 @@ function $T: assert(bool: b, string: msg, $T: x);
 function var $T: assert(bool: b, string: msg, var $T: x);
 /** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
 function var opt $T: assert(bool: b, string: msg, var opt $T: x);
+
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of $T: assert(bool: b, string: msg, array[$U] of $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of var $T: assert(bool: b, string: msg, array[$U] of var $T: x);
+/** @group builtins.debug If \a b is true, return \a x, otherwise abort with message \a msg. */
+function array[$U] of var opt $T: assert(bool: b, string: msg, array[$U] of var opt $T: x);
+
 /** @group builtins.debug If \a b is true, return true, otherwise abort with message \a msg. */
 function bool: assert(bool: b, string: msg);
 /** @group builtins.debug Return \a x, and print message \a msg. */
@@ -1350,6 +1371,35 @@ function bool: trace_stdout(string: msg);
 
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
+
+/***
+  @groupdef builtins.enum Functions for enums
+  
+*/
+
+/** @group builtins.enum Return set of values in enum of \a x  */
+function set of $$E: enum_base_set(var $$E: x);
+
+/** @group builtins.enum Return next greater enum value of \a x */
+function $$E: enum_next($$E: x);
+/** @group builtins.enum Return next greater enum value of \a x */
+function var $$E: enum_next(var $$E: x) =
+  let { constraint x < max(enum_base_set(x)) } in x+1;
+
+/** @group builtins.enum Return next smaller enum value of \a x */
+function $$E: enum_prev($$E: x);
+/** @group builtins.enum Return next smaller enum value of \a x */
+function var $$E: enum_prev(var $$E: x) =
+  let { constraint x > min(enum_base_set(x)) } in x-1;
+
+/** @group builtins.enum Convert \a x to enum type \a X */
+function $$E: to_enum(set of $$E: X, int: x);
+/** @group builtins.enum Convert \a x to enum type \a X */
+function var $$E: to_enum(set of $$E: X, var int: x) =
+  let { constraint x in X } in x;
+
+
+
 
 %-----------------------------------------------------------------------------%
 %
@@ -1986,7 +2036,22 @@ predicate redundant_constraint(var bool: b);
 /** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
+function set of int: anon_enum(int: n) = 1..n;
+
+/***
+  @groupdef builtins.language Language information
   
+  These functions return information about the MiniZinc system.
+*/  
+
+/** @group builtins.language Return MiniZinc version encoded as an integer (major*10000+minor*1000+patch). */
+function int: mzn_compiler_version();
+
+/** @group builtins.language Return string representation given an integer major*10000+minor*1000+patch
+*/
+function string: mzn_version_to_string(int: v) =
+  show(v div 10000)++"."++show((v div 100) mod 100)++"."++show(v mod 100);
+
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
@@ -1995,6 +2060,7 @@ predicate implied_constraint(var bool: b) = redundant_constraint(b);
 include "redefinitions.mzn";
 include "redefinitions-2.0.mzn";
 include "redefinitions-2.0.2.mzn";
+include "redefinitions-2.1.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

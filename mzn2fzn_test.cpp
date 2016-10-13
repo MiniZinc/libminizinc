@@ -93,6 +93,7 @@ int main(int argc, char** argv) {
       }
     }
     Model* m;
+    Env env;
     if (flag_stdinInput) {
       filename = "stdin";
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
@@ -100,13 +101,13 @@ int main(int argc, char** argv) {
       m = parseFromString(input, filename, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
     } else {
       vector<string> filenames {filename};
-      m = parse(filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
     }
     
     if (m) {
       try {
+        env.model(m);
         if (opts->getBoolParam(constants().opts.typecheck.str())) {
-          Env env(m);
           if (flag_verbose)
             std::cerr << "Done parsing (" << stoptime(lasttime) << ")" << std::endl;
           if (flag_verbose)

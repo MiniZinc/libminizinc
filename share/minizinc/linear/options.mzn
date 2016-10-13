@@ -4,11 +4,19 @@
 */
 
 %-----------------------------------------------------------------------------%
+%---------- USER and LAZY CUTS -----------------------------------------------%
+/*
+ * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
+ * into the overall model and marked with the foll values of Lazy attribute:
+ *   ::MIP_lazy             1
+ *   ::MIP_cut ::MIP_lazy   2
+ *   ::MIP_cut              3
+ */
 ann: user_cut;
 ann: lazy_constraint;
-%%% comment away the assignments to have those as normal constraints  
+%%% comment away the below assignments (leaving, e.g., ann: MIP_cut;) to have them as normal constraints  
 ann: MIP_cut = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
-ann: MIP_lazy; % = lazy_constraint;
+ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
 bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
@@ -20,17 +28,20 @@ bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only
   %%% The code in MIPdomains.cpp processes them and also non-contiguous domains
   %%% (only-range-domains is then standardly off). MIPdomains.cpp needs all the required
   %%% __POST predicates to be declared to kick in.
+opt bool: fMIPDomains;           %% unary decomposition constraints (...__POST) to FlatZinc
 opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains=false"
 bool: fPostprocessDomains =      %% True to pass all domain-related
-           if absent( fMIPdomains ) then true                         %% constraints (...__POST) to FlatZinc
-           else deopt( fMIPdomains ) endif;
+           if absent( fMIPdomains ) /\ absent( fMIPDomains ) then true     %% seems best for Gurobi & CBC
+           elseif not absent( fMIPdomains ) then deopt( fMIPdomains )
+           else deopt( fMIPDomains )
+           endif;
 opt bool: fMIPdomAux;
 bool: fPostproDom_AUX =          %% Specialized for aux_ constr
            if absent( fMIPdomAux ) then false
            else deopt( fMIPdomAux ) endif;
 opt bool: fMIPdomDiff;
 bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
-           if absent( fMIPdomDiff ) then true
+           if absent( fMIPdomDiff ) then false                             %% seems best for Gurobi, worse for CBC
            else deopt( fMIPdomDiff ) endif;
 
 mzn_opt_only_range_domains = not fPostprocessDomains;

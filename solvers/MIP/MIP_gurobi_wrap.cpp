@@ -202,17 +202,32 @@ void MIP_gurobi_wrapper::addRow
   (int nnz, int* rmatind, double* rmatval, MIP_wrapper::LinConType sense,
    double rhs, int mask, string rowName)
 {
+  //// Make sure:
+  ++ nRows;
   /// Convert var types:
   char ssense=getGRBSense(sense);
   const int ccnt=0;
   const int rcnt=1;
   const int rmatbeg[] = { 0 };
   const char * pRName = rowName.c_str();
-//   if (MaskConsType_Normal & mask) {
-  /// User cuts & lazy only by callback in Gurobi:
-    error = GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
-    wrap_assert( !error,  "Failed to add constraint." );
-//   }
+  error = GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
+  wrap_assert( !error,  "Failed to add constraint." );
+  int nLazyAttr=0;
+  const bool fUser = (MaskConsType_Usercut & mask);
+  const bool fLazy = (MaskConsType_Lazy & mask);
+  /// Gurobi 6.5.2 has lazyness 1-3.
+  if (fUser) {
+    if (fLazy)
+      nLazyAttr = 2;  // just active lazy
+    else
+      nLazyAttr = 3;  // even LP-active
+  } else
+    if (fLazy)
+      nLazyAttr = 1;  // very lazy
+  if (nLazyAttr) {
+    nLazyIdx.push_back( nRows-1 );
+    nLazyValue.push_back( nLazyAttr );
+  }
 }
 
 /// SolutionCallback ------------------------------------------------------------------------
@@ -355,6 +370,20 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    error = GRBupdatemodel(model);                  // for model export
    wrap_assert( !error,  "Failed to update model." );
+   
+   /// ADDING LAZY CONSTRAINTS IF ANY
+   if ( nLazyIdx.size() ) {
+     assert( nLazyIdx.size()==nLazyValue.size() );
+      if ( fVerbose )
+         cerr << "  MIP_gurobi_wrapper: marking "<<nLazyIdx.size()
+           <<" lazy cuts." << endl;
+      error = GRBsetintattrlist(model, "Lazy", nLazyIdx.size(), nLazyIdx.data(), nLazyValue.data());
+      wrap_assert( !error,  "Failed to set constraint attribute." );
+      nLazyIdx.clear();
+      nLazyValue.clear();
+      error = GRBupdatemodel(model);                  // for model export
+      wrap_assert( !error,  "Failed to update model after modifying some constraint attr." );
+   }
 
   /////////////// Last-minute solver options //////////////////
   /* Turn on output to file */

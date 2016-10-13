@@ -149,8 +149,11 @@ namespace MiniZinc {
         s = std::max(s,pageSize);
       HeapPage* newPage =
         static_cast<HeapPage*>(::malloc(sizeof(HeapPage)+s-1));
+      if (newPage==NULL) {
+        throw InternalError("out of memory");
+      }
 #ifndef NDEBUG
-        memset(newPage,255,sizeof(HeapPage)+s-1);
+      memset(newPage,255,sizeof(HeapPage)+s-1);
 #endif
       _alloced_mem += s;
       _max_alloced_mem = std::max(_max_alloced_mem, _alloced_mem);
