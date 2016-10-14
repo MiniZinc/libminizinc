@@ -431,7 +431,7 @@ function var int: sum(array[int] of var opt int: x) =
 
 /** @group optiontypes.int Return product of non-absent elements of \a x. */
 function var int: product(array[int] of var opt int: x) =
-  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
 
 /** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
