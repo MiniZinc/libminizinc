@@ -15,7 +15,9 @@
 ann: user_cut;
 ann: lazy_constraint;
 %%% comment away the below assignments (leaving, e.g., ann: MIP_cut;) to have them as normal constraints  
-ann: MIP_cut = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
+%%% In particular, they may be used by redundant_constraint() and symmetry_breaking_constraint(), see redefs-2.0.2.mzn
+ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are cut off
+                                 %% -- seems better on average but in CPLEX, wrong LB e.g. on carpet-cutting
 ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
