@@ -163,6 +163,9 @@ namespace MiniZinc{
         }
         return nullptr;
       }
+      case Type::BT_BOOL: {
+        return nullptr;
+      }
       default:
         throw InternalError("Presolver couldn't determine domain of expression");
     }
