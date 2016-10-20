@@ -4286,17 +4286,19 @@ namespace MiniZinc {
                 flatten_linexp_binop<FloatLit>(env,ctx,r,b,ret,le0,le1,bot,doubleNeg,ees,args,callid);
               }
             } else {
-              switch (bot) {
-                case BOT_GR:
-                  std::swap(e0,e1);
-                  bot = BOT_LE;
-                  break;
-                case BOT_GQ:
-                  std::swap(e0,e1);
-                  bot = BOT_LQ;
-                  break;
-                default:
-                  break;
+              if (bo->decl()==NULL) {
+                switch (bot) {
+                  case BOT_GR:
+                    std::swap(e0,e1);
+                    bot = BOT_LE;
+                    break;
+                  case BOT_GQ:
+                    std::swap(e0,e1);
+                    bot = BOT_LQ;
+                    break;
+                  default:
+                    break;
+                }
               }
               args.push_back(e0.r);
               args.push_back(e1.r);
