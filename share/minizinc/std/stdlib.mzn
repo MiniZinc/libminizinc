@@ -353,6 +353,19 @@ function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) 
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than the value of \a y. */
+function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than or equal to the value of \a y. */
+function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than the value of \a y. */
+function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than or equal to the value of \a y. */
+function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+
 /** @group optiontypes.int Return minimum of elements in \a x that are not absent, or
 absent if all elements in \a x are absent. */
 function var opt int: min(array[int] of var opt int: x) ::promise_total =
