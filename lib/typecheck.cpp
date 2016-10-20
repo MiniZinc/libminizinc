@@ -1483,7 +1483,17 @@ namespace MiniZinc {
         had_output = true;
       }
     }
-    os << "{\n  \"input\" : {\n" << oss_input.str() << "\n  },\n  \"output\" : {\n" << oss_output.str() << "\n  }\n}\n";
+    os << "{\n  \"input\" : {\n" << oss_input.str() << "\n  },\n  \"output\" : {\n" << oss_output.str() << "\n  }";
+    os << ",\n  \"method\": \"";
+    if (m->solveItem()) {
+      switch (m->solveItem()->st()) {
+        case SolveI::ST_MIN: os << "min"; break;
+        case SolveI::ST_MAX: os << "max"; break;
+        case SolveI::ST_SAT: os << "sat"; break;
+      }
+    }
+    os << "\"";
+    os << "\n}\n";
   }
   
 }
