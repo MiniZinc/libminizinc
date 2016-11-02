@@ -5,7 +5,7 @@
 predicate symmetry_breaking_constraint(var bool: b) = b;
 
 predicate redundant_constraint(var bool: b) = b;
-  % = true;
+
 
 %% Linearized element: just call without shifting
 predicate array_var_bool_element_nonshifted(var int: idx, array[int] of var bool: x, var bool: c) =
