@@ -209,7 +209,7 @@ namespace MiniZinc{
   bool Presolver::Solns2Vector::evalOutput() {
     GCLock lock;
 
-    std::unordered_map<std::string, Expression*>* solution = new std::unordered_map<std::string, Expression*>();
+    UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>* solution = new std::unordered_map<std::string, Expression*>();
     for (unsigned int i = 0; i < getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         Expression* cpi = copy(copyEnv, vdi->e()->e());
@@ -240,7 +240,7 @@ namespace MiniZinc{
     for (int i = 0; i < solns->getSolutions().size(); ++i) {
       auto sol = solns->getSolutions()[i];
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
-        Expression* exp = sol->at((*it)->id()->str().str());
+        Expression* exp = sol->find((*it)->id()->str().str())->second;
         exp->type(exp->type().bt() == Type::BT_BOOL ? Type::parbool((*it)->type().dim()) : Type::parint(
                 (*it)->type().dim()));
         addData(exp);

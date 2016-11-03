@@ -37,7 +37,7 @@ namespace MiniZinc {
     EnvI& copyEnv;
 
 //    TODO: using ASTStringMap don't work, ASTStrings don't compare correctly
-    std::vector< std::unordered_map<std::string, Expression*>* > solutions;
+    std::vector< UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>* > solutions;
 
     std::vector<KeepAlive> GCProhibitors;
   public:
@@ -46,7 +46,7 @@ namespace MiniZinc {
     /// Destructor
     virtual ~Solns2Vector() { for (int i = 0; i < solutions.size(); ++i) delete solutions[i]; }
     /// Getter for all gathered solutions
-    const std::vector< std::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
+    const std::vector< UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>* >& getSolutions() const { return solutions; }
 
   protected:
     /// Override of evalOutput, which stores a result in the solutions vector
