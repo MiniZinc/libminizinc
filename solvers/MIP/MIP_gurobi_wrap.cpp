@@ -131,7 +131,10 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 
 void MIP_gurobi_wrapper::openGUROBI()
 {
-  void* gurobi_dll = dlopen("libgurobi65.so", RTLD_NOW);
+  void* gurobi_dll = dlopen("libgurobi70.so", RTLD_NOW);
+  if (gurobi_dll==NULL) {
+    gurobi_dll = dlopen("libgurobi65.so", RTLD_NOW);
+  }
   
   *(void**)(&dll_GRBaddconstr) = dlsym(gurobi_dll, "GRBaddconstr");
   *(void**)(&dll_GRBaddvars) = dlsym(gurobi_dll, "GRBaddvars");
