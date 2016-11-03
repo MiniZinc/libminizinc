@@ -152,6 +152,7 @@ void MIP_gurobi_wrapper::openGUROBI()
   *(void**)(&dll_GRBsetcallbackfunc) = dlsym(gurobi_dll, "GRBsetcallbackfunc");
   *(void**)(&dll_GRBsetdblparam) = dlsym(gurobi_dll, "GRBsetdblparam");
   *(void**)(&dll_GRBsetintattr) = dlsym(gurobi_dll, "GRBsetintattr");
+  *(void**)(&dll_GRBsetintattrlist) = dlsym(gurobi_dll, "GRBsetintattrlist");
   *(void**)(&dll_GRBsetintparam) = dlsym(gurobi_dll, "GRBsetintparam");
   *(void**)(&dll_GRBsetstrparam) = dlsym(gurobi_dll, "GRBsetstrparam");
   *(void**)(&dll_GRBupdatemodel) = dlsym(gurobi_dll, "GRBupdatemodel");
@@ -410,11 +411,11 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       if ( fVerbose )
          cerr << "  MIP_gurobi_wrapper: marking "<<nLazyIdx.size()
            <<" lazy cuts." << endl;
-      error = GRBsetintattrlist(model, "Lazy", nLazyIdx.size(), nLazyIdx.data(), nLazyValue.data());
+      error = dll_GRBsetintattrlist(model, "Lazy", nLazyIdx.size(), nLazyIdx.data(), nLazyValue.data());
       wrap_assert( !error,  "Failed to set constraint attribute." );
       nLazyIdx.clear();
       nLazyValue.clear();
-      error = GRBupdatemodel(model);                  // for model export
+      error = dll_GRBupdatemodel(model);                  // for model export
       wrap_assert( !error,  "Failed to update model after modifying some constraint attr." );
    }
 

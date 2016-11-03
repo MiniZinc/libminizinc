@@ -79,6 +79,9 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
     int (*dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
 
+    int (*dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
+                    int len, int *ind, int *newvalues);
+
     int (*dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
 
     int (*dll_GRBupdatemodel) (GRBmodel *model);
@@ -124,12 +127,12 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual double getInfBound() { return GRB_INFINITY; }
                         
     virtual int getNCols() {
-      GRBupdatemodel(model);
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
+      dll_GRBupdatemodel(model);
+      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
     }
     virtual int getNRows() {
-      GRBupdatemodel(model);
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
+      dll_GRBupdatemodel(model);
+      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
     }
                         
 //     void setObjUB(double ub) { objUB = ub; }
