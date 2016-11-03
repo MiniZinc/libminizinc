@@ -28,6 +28,68 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     vector<double> x;
 
   public:
+    int (*dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
+                             char sense, double rhs, const char *constrname);
+
+    int (*dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
+                           int *vbeg, int *vind, double *vval,
+                           double *obj, double *lb, double *ub, char *vtype,
+                           char **varnames);
+
+    int (*dll_GRBcbcut) (void *cbdata, int cutlen, const int *cutind, const double *cutval,
+                         char cutsense, double cutrhs);
+
+    int (*dll_GRBcbget) (void *cbdata, int where, int what, void *resultP);
+
+    int (*dll_GRBcblazy) (void *cbdata, int lazylen, const int *lazyind,
+                          const double *lazyval, char lazysense, double lazyrhs);
+
+    void (*dll_GRBfreeenv) (GRBenv *env);
+
+    int (*dll_GRBfreemodel) (GRBmodel *model);
+
+    int (*dll_GRBgetdblattr) (GRBmodel *model, const char *attrname, double *valueP);
+
+    int (*dll_GRBgetdblattrarray) (GRBmodel *model, const char *attrname,
+                                   int first, int len, double *values);
+
+    GRBenv * (*dll_GRBgetenv) (GRBmodel *model);
+
+    const char * (*dll_GRBgeterrormsg) (GRBenv *env);
+
+    int (*dll_GRBgetintattr) (GRBmodel *model, const char *attrname, int *valueP);
+
+    int (*dll_GRBloadenv) (GRBenv **envP, const char *logfilename);
+
+    int (*dll_GRBnewmodel) (GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,
+                            double *obj, double *lb, double *ub, char *vtype,
+                            char **varnames);
+
+    int (*dll_GRBoptimize) (GRBmodel *model);
+
+    int (*dll_GRBreadparams) (GRBenv *env, const char *filename);
+
+    int (*dll_GRBsetcallbackfunc) (GRBmodel *model,
+                                   int (__stdcall *cb)(CB_ARGS),
+                                   void  *usrdata);
+
+    int (*dll_GRBsetdblparam) (GRBenv *env, const char *paramname, double value);
+
+    int (*dll_GRBsetintparam) (GRBenv *env, const char *paramname, int value);
+
+    int (*dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
+
+    int (*dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
+
+    int (*dll_GRBupdatemodel) (GRBmodel *model);
+
+    int (*dll_GRBwrite) (GRBmodel *model, const char *filename);
+
+    int (*dll_GRBwriteparams) (GRBenv *env, const char *filename);
+
+    int (*dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
+    
+  public:
     MIP_gurobi_wrapper() { openGUROBI(); }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
     
