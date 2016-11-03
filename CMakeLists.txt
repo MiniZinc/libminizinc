@@ -330,12 +330,12 @@ if(HAS_GUROBI)  # Version 6.5
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
 
 	add_executable(mzn-gurobi minizinc.cpp)
   target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi70 ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
