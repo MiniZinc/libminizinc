@@ -380,7 +380,33 @@ namespace MiniZinc {
     assert(i > 0 && i <= arrayEnumDecls.size());
     return arrayEnumDecls[i-1];
   }
-
+  bool EnvI::isSubtype(const Type& t1, const Type& t2) {
+    if (!t1.isSubtypeOf(t2))
+      return false;
+    if (t1.dim() > 0 && t1.enumId() != t2.enumId()) {
+      std::cerr << "check sybtyping for " << t1.toString(*this) << " " << t2.toString(*this) << "\n";
+      if (t1.enumId()==0)
+        return false;
+      if (t2.enumId()==0) {
+        const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
+        for (unsigned int i=0; i<t1enumIds.size()-1; i++) {
+          if (t1enumIds[i] != 0)
+            return false;
+        }
+      } else {
+        const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
+        const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
+        assert(t1enumIds.size() == t2enumIds.size());
+        for (unsigned int i=0; i<t1enumIds.size()-1; i++) {
+          if (t1enumIds[i] != t2enumIds[i])
+            return false;
+        }
+        if (t1enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
+          return false;
+      }
+    }
+    return true;
+  }
   
   void EnvI::collectVarDecls(bool b) {
     collect_vardecls = b;
@@ -3012,7 +3038,7 @@ namespace MiniZinc {
             throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
           }
           assert(fi);
-          assert(fi->rtype(env, args).isSubtypeOf(cc->type()));
+          assert(env.isSubtype(fi->rtype(env, args),cc->type()));
           cc->decl(fi);
           EE ee = flat_exp(env, Ctx(), cc, NULL, constants().var_true);
           ret.r = bind(env,Ctx(),r,ee.r());
@@ -3481,7 +3507,7 @@ namespace MiniZinc {
               throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
             }
             assert(fi);
-            assert(fi->rtype(env,args).isSubtypeOf(cc->type()));
+            assert(env.isSubtype(fi->rtype(env,args),cc->type()));
             cc->decl(fi);
             ka = cc;
           }

@@ -2096,12 +2096,22 @@ namespace MiniZinc {
   IntVal b_enum_next(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     IntVal v = eval_int(env, args[0]);
+    if (args[0]->type().enumId() != 0) {
+      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
+      if (!isv->contains(v+1))
+        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    }
     return v+1;
   }
 
   IntVal b_enum_prev(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     IntVal v = eval_int(env, args[0]);
+    if (args[0]->type().enumId() != 0) {
+      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
+      if (!isv->contains(v-1))
+        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    }
     return v-1;
   }
 

@@ -17,9 +17,23 @@ namespace MiniZinc {
   std::string Type::toString(EnvI& env) const {
     std::ostringstream oss;
     if (_dim>0) {
-      oss<<"array[int";
-      for (int i=1; i<_dim; i++)
-        oss << ",int";
+      oss<<"array[";
+      if (_enumId != 0) {
+        const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
+        for (unsigned int i=0; i<arrayEnumIds.size()-1; i++) {
+          if (i!=0)
+            oss << ",";
+          unsigned int enumId = arrayEnumIds[i];
+          if (enumId==0) {
+            oss<<"int";
+          } else {
+            oss << *env.getEnum(enumId)->e()->id();
+          }
+        }
+      } else {
+        for (int i=0; i<_dim; i++)
+          oss << (i==0 ? "" : ",") << "int";
+      }
       oss<<"] of ";
     }
     if (_dim<0)
@@ -33,10 +47,17 @@ namespace MiniZinc {
     switch (_bt) {
       case BT_INT:
         {
-          if (_enumId==0) {
+          unsigned int enumId;
+          if (_enumId != 0 && _dim > 0) {
+            const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
+            enumId = arrayEnumIds[arrayEnumIds.size()-1];
+          } else {
+            enumId = _enumId;
+          }
+          if (enumId==0) {
             oss<<"int";
           } else {
-            oss << *env.getEnum(_enumId)->e()->id();
+            oss << *env.getEnum(enumId)->e()->id();
           }
         }
         break;

@@ -159,10 +159,8 @@ namespace MiniZinc {
        
        */
 
-      Type argType = Type::parenum(ident->type().enumId());
-
       TIId* tiid = new TIId(Location().introduce(),"U");
-      TypeInst* ti_range = new TypeInst(Location().introduce(),argType,tiid);
+      TypeInst* ti_range = new TypeInst(Location().introduce(),Type::parint(),tiid);
       std::vector<TypeInst*> ranges(1);
       ranges[0] = ti_range;
 
@@ -170,10 +168,10 @@ namespace MiniZinc {
       VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
       vd_x->toplevel(false);
 
-      TypeInst* xx_range = new TypeInst(Location().introduce(),argType,NULL);
+      TypeInst* xx_range = new TypeInst(Location().introduce(),Type::parint(),NULL);
       std::vector<TypeInst*> xx_ranges(1);
       xx_ranges[0] = xx_range;
-      TypeInst* xx_ti = new TypeInst(Location().introduce(),argType,xx_ranges);
+      TypeInst* xx_ti = new TypeInst(Location().introduce(),Type::parint(1),xx_ranges);
       
       std::vector<Expression*> array1dArgs(1);
       array1dArgs[0] = vd_x->id();
@@ -305,7 +303,6 @@ namespace MiniZinc {
         VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,NULL);
         enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
       }
-
     }
     DeclMap::iterator vd_id = idmap.find(vd->id());
     if (vd_id == idmap.end()) {
@@ -769,6 +766,24 @@ namespace MiniZinc {
       if (aa.v()->type().dim() != aa.idx().size())
         throw TypeError(_env,aa.v()->loc(),"array dimensions do not match");
       Type tt = aa.v()->type();
+      if (tt.enumId() != 0) {
+        const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
+        
+        for (unsigned int i=0; i<arrayEnumIds.size()-1; i++) {
+          if (arrayEnumIds[i] != 0) {
+            if (aa.idx()[i]->type().enumId() != arrayEnumIds[i]) {
+              std::ostringstream oss;
+              oss << "array index ";
+              if (aa.idx().size() > 1) {
+                oss << (i+1) << " ";
+              }
+              oss << "must be `" << _env.getEnum(arrayEnumIds[i])->e()->id()->str().str() << "', but is `" << aa.idx()[i]->type().toString(_env) << "'";
+              throw TypeError(_env,aa.loc(),oss.str());
+            }
+          }
+        }
+        tt.enumId(arrayEnumIds[arrayEnumIds.size()-1]);
+      }
       tt.dim(0);
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
@@ -776,7 +791,7 @@ namespace MiniZinc {
           aai->type(Type::varint());
         }
         if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
-          throw TypeError(_env,aai->loc(),"array index must be `int', but is `"+aai->type().toString(_env)+"'");
+          throw TypeError(_env,aa.loc(),"array index must be `int', but is `"+aai->type().toString(_env)+"'");
         }
         aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
         if (aai->type().isopt()) {
@@ -932,8 +947,8 @@ namespace MiniZinc {
       std::vector<Expression*> args(2);
       args[0] = bop.lhs(); args[1] = bop.rhs();
       if (FunctionI* fi = _model->matchFn(_env,bop.opToString(),args)) {
-        bop.lhs(addCoercion(_env, _model,bop.lhs(),fi->argtype(args, 0))());
-        bop.rhs(addCoercion(_env, _model,bop.rhs(),fi->argtype(args, 1))());
+        bop.lhs(addCoercion(_env, _model,bop.lhs(),fi->argtype(_env,args, 0))());
+        bop.rhs(addCoercion(_env, _model,bop.rhs(),fi->argtype(_env,args, 1))());
         args[0] = bop.lhs(); args[1] = bop.rhs();
         Type ty = fi->rtype(_env,args);
         ty.cv(bop.lhs()->type().cv() || bop.rhs()->type().cv());
@@ -956,7 +971,7 @@ namespace MiniZinc {
       std::vector<Expression*> args(1);
       args[0] = uop.e();
       if (FunctionI* fi = _model->matchFn(_env,uop.opToString(),args)) {
-        uop.e(addCoercion(_env, _model,uop.e(),fi->argtype(args,0))());
+        uop.e(addCoercion(_env, _model,uop.e(),fi->argtype(_env,args,0))());
         args[0] = uop.e();
         Type ty = fi->rtype(_env,args);
         ty.cv(uop.e()->type().cv());
@@ -976,7 +991,7 @@ namespace MiniZinc {
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
-          args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(args,i))();
+          args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
           call.args()[i] = args[i];
           cv = cv || args[i]->type().cv();
         }
@@ -1027,7 +1042,7 @@ namespace MiniZinc {
       if (ignoreVarDecl) {
         assert(!vd.type().isunknown());
         if (vd.e()) {
-          if (! vd.e()->type().isSubtypeOf(vd.ti()->type())) {
+          if (! _env.isSubtype(vd.e()->type(),vd.ti()->type())) {
             _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
                                             vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
@@ -1043,6 +1058,7 @@ namespace MiniZinc {
     /// Visit type inst
     void vTypeInst(TypeInst& ti) {
       Type tt = ti.type();
+      bool foundEnum = ti.ranges().size()>0 && ti.domain() && ti.domain()->type().enumId() != 0;
       if (ti.ranges().size()>0) {
         bool foundTIId=false;
         for (unsigned int i=0; i<ti.ranges().size(); i++) {
@@ -1050,6 +1066,9 @@ namespace MiniZinc {
           assert(ri != NULL);
           if (ri->type().cv())
             tt.cv(true);
+          if (ri->type().enumId() != 0) {
+            foundEnum = true;
+          }
           if (ri->type() == Type::top()) {
 //            if (foundTIId) {
 //              throw TypeError(_env,ri->loc(),
@@ -1105,6 +1124,16 @@ namespace MiniZinc {
       } else {
 //        assert(ti.domain()==NULL || ti.domain()->isa<TIId>());
       }
+      if (foundEnum) {
+        std::vector<unsigned int> enumIds(ti.ranges().size()+1);
+        for (unsigned int i=0; i<ti.ranges().size(); i++) {
+          enumIds[i] = ti.ranges()[i]->type().enumId();
+        }
+        enumIds[ti.ranges().size()] = ti.domain() ? ti.domain()->type().enumId() : 0;
+        int arrayEnumId = _env.registerArrayEnum(enumIds);
+        tt.enumId(arrayEnumId);
+      }
+
       if (tt.st()==Type::ST_SET && tt.ti()==Type::TI_VAR && tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP)
         throw TypeError(_env,ti.loc(), "var set element types other than `int' not allowed");
       ti.type(tt);
@@ -1288,7 +1317,7 @@ namespace MiniZinc {
         }
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
-          if (!i->e()->type().isSubtypeOf(i->decl()->ti()->type())) {
+          if (!env.isSubtype(i->e()->type(),i->decl()->ti()->type())) {
             _typeErrors.push_back(TypeError(env, i->e()->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
@@ -1299,7 +1328,7 @@ namespace MiniZinc {
         }
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
-          if (!i->e()->type().isSubtypeOf(Type::varbool()))
+          if (!env.isSubtype(i->e()->type(),Type::varbool()))
             throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"
                             +Type::varbool().toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
@@ -1312,8 +1341,8 @@ namespace MiniZinc {
           bu_ty.run(i->e());
           if (i->e()) {
             Type et = i->e()->type();
-            if (! (et.isSubtypeOf(Type::varint()) || 
-                   et.isSubtypeOf(Type::varfloat())))
+            if (! (env.isSubtype(et,Type::varint()) ||
+                   env.isSubtype(et,Type::varfloat())))
               throw TypeError(env, i->e()->loc(),
                 "objective has invalid type, expected int or float, actual `"+et.toString(env)+"'");
           }
@@ -1332,7 +1361,7 @@ namespace MiniZinc {
           }
           bu_ty.run(i->ti());
           bu_ty.run(i->e());
-          if (i->e() && !i->e()->type().isSubtypeOf(i->ti()->type()))
+          if (i->e() && !env.isSubtype(i->e()->type(),i->ti()->type()))
             throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"
                             +i->ti()->type().toString(env)+
                             "', body type is `"+i->e()->type().toString(env)+"'");
@@ -1391,7 +1420,7 @@ namespace MiniZinc {
     if (!typeErrors.empty()) {
       throw typeErrors[0];
     }
-    if (!ai->e()->type().isSubtypeOf(ai->decl()->ti()->type())) {
+    if (!env.envi().isSubtype(ai->e()->type(),ai->decl()->ti()->type())) {
       throw TypeError(env.envi(), ai->e()->loc(),
                       "assignment value for `"+ai->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                       ai->decl()->ti()->type().toString(env.envi())+"', actual `"+ai->e()->type().toString(env.envi())+"'");

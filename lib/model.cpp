@@ -138,7 +138,7 @@ namespace MiniZinc {
       if (fi->params().size() == t.size()) {
         bool match=true;
         for (unsigned int j=0; j<t.size(); j++) {
-          if (!t[j].isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(t[j],fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
             std::cerr << t[j].toString(env) << " does not match "
             << fi->params()[j]->type().toString(env) << "\n";
@@ -219,7 +219,7 @@ namespace MiniZinc {
       if (fi->params().size() == args.size()) {
         bool match=true;
         for (unsigned int j=0; j<args.size(); j++) {
-          if (!args[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(args[j]->type(),fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
             std::cerr << args[j]->type().toString(env) << " does not match "
             << fi->params()[j]->type().toString(env) << "\n";
@@ -246,7 +246,7 @@ namespace MiniZinc {
     Type t = matched[0]->ti()->type();
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
-      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+      if (!env.isSubtype(t,matched[i]->ti()->type()))
         throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];
@@ -274,7 +274,7 @@ namespace MiniZinc {
       if (fi->params().size() == c->args().size()) {
         bool match=true;
         for (unsigned int j=0; j<c->args().size(); j++) {
-          if (!c->args()[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(c->args()[j]->type(),fi->params()[j]->type())) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
             std::cerr << c->args()[j]->type().toString(env) << " does not match "
             << fi->params()[j]->type().toString(env) << "\n";
@@ -302,7 +302,7 @@ namespace MiniZinc {
     Type t = matched[0]->ti()->type();
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
-      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+      if (!env.isSubtype(t,matched[i]->ti()->type()))
         throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];

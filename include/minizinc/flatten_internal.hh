@@ -113,6 +113,8 @@ namespace MiniZinc {
     VarDeclI* getEnum(unsigned int i) const;
     unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
     const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+    /// Check if \a t1 is a subtype of \a t2 (including enumerated types)
+    bool isSubtype(const Type& t1, const Type& t2);
     
     void flat_addItem(Item* i);
     void flat_removeItem(int i);

@@ -1235,7 +1235,7 @@ namespace MiniZinc {
     Type rtype(EnvI& env, const std::vector<Type>& ta);
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
-    Type argtype(const std::vector<Expression*>& ta, int n);
+    Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
     /// Return whether function is defined in the standard library
     bool from_stdlib(void) const { return _from_stdlib; };

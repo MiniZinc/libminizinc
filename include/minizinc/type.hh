@@ -239,10 +239,7 @@ namespace MiniZinc {
   public:
     /// Check if \a bt0 is a subtype of \a bt1
     static bool bt_subtype(const Type& t0, const Type& t1) {
-      // TODO: this should be
-      //      if (t0.bt() == t1.bt() && (t0.enumId() == t1.enumId() || t1.enumId()==0))
-      // But currently subtyping on enums does not work yet
-      if (t0.bt() == t1.bt())
+      if (t0.bt() == t1.bt() && (t0.enumId() == t1.enumId() || t1.enumId()==0))
         return true;
       switch (t0.bt()) {
         case BT_BOOL: return (t1.bt()==BT_INT || t1.bt()==BT_FLOAT);

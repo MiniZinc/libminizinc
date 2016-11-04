@@ -14,6 +14,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
+#include <minizinc/flatten_internal.hh>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -696,10 +697,10 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (tiit_par.isSubtypeOf(its_par)) {
+              if (env.isSubtype(tiit_par,its_par)) {
                 if (it->second.bt() == Type::BT_TOP)
                   it->second.bt(tiit.bt());
-              } else if (its_par.isSubtypeOf(tiit_par)) {
+              } else if (env.isSubtype(its_par,tiit_par)) {
                 it->second = tiit_par;
               } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
@@ -765,7 +766,7 @@ namespace MiniZinc {
   }
 
   Type
-  FunctionI::argtype(const std::vector<Expression *>& ta, int n) {
+  FunctionI::argtype(EnvI& env, const std::vector<Expression *>& ta, int n) {
     TypeInst* tii = params()[n]->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       Type ty = ta[n]->type();
@@ -779,14 +780,14 @@ namespace MiniZinc {
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
           if (toCheck != ty) {
-            if (ty.isSubtypeOf(toCheck)) {
+            if (env.isSubtype(ty,toCheck)) {
               ty = toCheck;
             } else {
               Type ty_par = ty;
               ty_par.ti(Type::TI_PAR);
               Type toCheck_par = toCheck;
               toCheck_par.ti(Type::TI_PAR);
-              if (ty_par.isSubtypeOf(toCheck_par)) {
+              if (env.isSubtype(ty_par,toCheck_par)) {
                 ty.bt(toCheck.bt());
               }
             }
