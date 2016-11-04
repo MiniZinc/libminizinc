@@ -61,7 +61,23 @@ namespace MiniZinc {
   Model::outputItem() {
     return _outputItem;
   }
-  
+
+  void
+  Model::addItem(Item* i) {
+    _items.push_back(i);
+    if (i->isa<SolveI>()) {
+      Model* m = this;
+      while (m->_parent)
+        m = m->_parent;
+      m->_solveItem = i->cast<SolveI>();
+    } else if (i->isa<OutputI>()) {
+      Model* m = this;
+      while (m->_parent)
+        m = m->_parent;
+      m->_outputItem = i->cast<OutputI>();
+    }
+  }
+
   void
   Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;

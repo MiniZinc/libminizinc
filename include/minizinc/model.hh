@@ -64,14 +64,7 @@ namespace MiniZinc {
     ~Model(void);
     
     /// Add \a i to the model
-    void addItem(Item* i) {
-      _items.push_back(i);
-      if (i->isa<SolveI>()) {
-        _solveItem = i->cast<SolveI>();
-      } else if (i->isa<OutputI>()) {
-        _outputItem = i->cast<OutputI>();
-      }
-    }
+    void addItem(Item* i);
     
     /// Get parent model
     Model* parent(void) const { return _parent; }
