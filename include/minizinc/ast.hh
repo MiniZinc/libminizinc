@@ -315,6 +315,8 @@ namespace MiniZinc {
     void rehash(void);
     /// Allocate literal
     static IntLit* a(IntVal v);
+    /// Allocate literal for enumerated type (only used internally for generators)
+    static IntLit* aEnum(IntVal v, unsigned int enumId);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {

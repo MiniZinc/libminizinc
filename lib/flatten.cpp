@@ -363,6 +363,7 @@ namespace MiniZinc {
   unsigned int EnvI::registerArrayEnum(const std::vector<unsigned int>& arrayEnum) {
     std::ostringstream oss;
     for (unsigned int i=0; i<arrayEnum.size(); i++) {
+      assert(arrayEnum[i] <= enumVarDecls.size());
       oss << arrayEnum[i] << ".";
     }
     ArrayEnumMap::iterator it = arrayEnumMap.find(oss.str());
@@ -384,24 +385,17 @@ namespace MiniZinc {
     if (!t1.isSubtypeOf(t2))
       return false;
     if (t1.dim() > 0 && t1.enumId() != t2.enumId()) {
-      std::cerr << "check sybtyping for " << t1.toString(*this) << " " << t2.toString(*this) << "\n";
       if (t1.enumId()==0)
         return false;
-      if (t2.enumId()==0) {
-        const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
-        for (unsigned int i=0; i<t1enumIds.size()-1; i++) {
-          if (t1enumIds[i] != 0)
-            return false;
-        }
-      } else {
+      if (t2.enumId()!=0) {
         const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
         const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
         assert(t1enumIds.size() == t2enumIds.size());
         for (unsigned int i=0; i<t1enumIds.size()-1; i++) {
-          if (t1enumIds[i] != t2enumIds[i])
+          if (t2enumIds[i] != 0 && t1enumIds[i] != t2enumIds[i])
             return false;
         }
-        if (t1enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
+        if (t2enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
           return false;
       }
     }

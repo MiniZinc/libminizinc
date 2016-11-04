@@ -80,13 +80,19 @@ namespace MiniZinc {
       sl = vd->e()->cast<SetLit>();
       for (unsigned int i=0; i<sl->v().size(); i++) {
         TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
-        VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),IntLit::a(i+1));
+        
+        std::vector<Expression*> toEnumArgs(2);
+        toEnumArgs[0] = vd->id();
+        toEnumArgs[1] = IntLit::a(i+1);
+        Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
+        toEnum->decl(env.orig->matchFn(env, toEnum));
+        VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
         enumItems.push_back(new VarDeclI(vd_id->loc(),vd_id));
       }
       SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
-      Type nslt = nsl->type();
-      nslt.enumId(enumId);
-      nsl->type(nslt);
+      Type tt = nsl->type();
+      tt.enumId(vd->type().enumId());
+      nsl->type(tt);
       vd->e(nsl);
     }
 
@@ -618,6 +624,7 @@ namespace MiniZinc {
       Type ty; ty.st(Type::ST_SET);
       if (sl.isv()) {
         ty.bt(Type::BT_INT);
+        ty.enumId(sl.type().enumId());
         sl.type(ty);
         return;
       }
@@ -866,7 +873,7 @@ namespace MiniZinc {
       for (int j=0; j<c.n_decls(gen_i); j++) {
         if (needIntLit) {
           GCLock lock;
-          c.decl(gen_i,j)->e(IntLit::a(0));
+          c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
         }
         c.decl(gen_i,j)->type(ty_id);
         c.decl(gen_i,j)->ti()->type(ty_id);

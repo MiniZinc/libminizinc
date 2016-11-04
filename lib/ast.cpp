@@ -655,6 +655,19 @@ namespace MiniZinc {
     const Location& getLoc(Expression* e, FunctionI*) { return e->loc(); }
     const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
+    bool isaTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return !t->v().beginsWith("$");
+      }
+      return false;
+    }
+    bool isaEnumTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return t->v().beginsWith("$");
+      }
+      return false;
+    }
+    
     template<class T>
     Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
       if (fi->id()==constants().var_redef->id())
@@ -665,7 +678,7 @@ namespace MiniZinc {
         dh = fi->ti()->domain()->cast<TIId>()->v();
       ASTString rh;
       if (fi->ti()->ranges().size()==1 &&
-          fi->ti()->ranges()[0]->domain() && fi->ti()->ranges()[0]->domain()->isa<TIId>())
+          isaTIId(fi->ti()->ranges()[0]->domain()))
         rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
       
       ASTStringMap<Type>::t tmap;
@@ -712,8 +725,7 @@ namespace MiniZinc {
           }
         }
         if (tii->ranges().size()==1 &&
-            tii->ranges()[0]->domain() &&
-            tii->ranges()[0]->domain()->isa<TIId>()) {
+            isaTIId(tii->ranges()[0]->domain())) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           if (getType(ta[i]).dim()==0) {
             throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
@@ -734,22 +746,77 @@ namespace MiniZinc {
                               it->second.toString(env)+")");
             }
           }
+        } else if (tii->ranges().size() > 0) {
+          for (unsigned int j=0; j<tii->ranges().size(); j++) {
+            if (isaEnumTIId(tii->ranges()[j]->domain())) {
+              ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
+              Type tiit = getType(ta[i]);
+              Type enumIdT;
+              if (tiit.enumId() != 0) {
+                unsigned int enumId = env.getArrayEnum(tiit.enumId())[j];
+                enumIdT = Type::parsetenum(enumId);
+              } else {
+                enumIdT = Type::parsetint();
+              }
+              ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+              // TODO: this may clash if the same enum TIId is used for different types
+              // but the same enum
+              if (it==tmap.end()) {
+                tmap.insert(std::pair<ASTString,Type>(enumTIId,enumIdT));
+              } else {
+                if (it->second.enumId() != enumIdT.enumId()) {
+                  throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
+                                  enumTIId.str()+" used for different enum types");
+                }
+              }
+            }
+          }
         }
       }
       if (dh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
-        ret.bt(it->second.bt());
-        ret.enumId(it->second.enumId());
-        if (ret.st()==Type::ST_PLAIN)
-          ret.st(it->second.st());
+        if (dh.beginsWith("$")) {
+          // this is an enum
+          ret.bt(Type::BT_INT);
+          ret.enumId(it->second.enumId());
+        } else {
+          ret.bt(it->second.bt());
+          ret.enumId(it->second.enumId());
+          if (ret.st()==Type::ST_PLAIN)
+            ret.st(it->second.st());
+        }
       }
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
+      } else if (fi->ti()->ranges().size() > 0) {
+        std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
+        bool hadRealEnum = false;
+        if (ret.enumId()==0) {
+          enumIds[enumIds.size()-1] = 0;
+        } else {
+          enumIds[enumIds.size()-1] = env.getArrayEnum(ret.enumId())[enumIds.size()-1];
+          hadRealEnum = true;
+        }
+        
+        for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+          if (isaEnumTIId(fi->ti()->ranges()[i]->domain())) {
+            ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
+            ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+            if (it==tmap.end())
+              throw TypeError(env, fi->loc(),"type-inst variable $"+enumTIId.str()+" used but not defined");
+            enumIds[i] = it->second.enumId();
+            hadRealEnum = (enumIds[i] != 0);
+          } else {
+            enumIds[i] = 0;
+          }
+        }
+        if (hadRealEnum)
+          ret.enumId(env.registerArrayEnum(enumIds));
       }
       return ret;
     }
