@@ -1744,8 +1744,8 @@ namespace MiniZinc {
   FloatVal b_normal_int_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]).toDouble();
-    const double stdv = double(eval_int(env,args[1]).toInt());
+    const double mean = double(eval_int(env,args[0]).toInt());
+    const double stdv = eval_float(env,args[1]).toDouble();
     std::normal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
     return distribution(rnd_generator());
