@@ -1415,6 +1415,12 @@ namespace MiniZinc {
       iterItems(_tsv3,m);
     }
 
+    try {
+      m->checkFnOverloading(env.envi());
+    } catch (TypeError& e) {
+      typeErrors.push_back(e);
+    }
+    
     for (unsigned int i=0; i<ts.decls.size(); i++) {
       if (ts.decls[i]->toplevel() &&
           ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {

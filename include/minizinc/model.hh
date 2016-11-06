@@ -90,6 +90,8 @@ namespace MiniZinc {
     void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
+    /// Check that registered functions do not clash wrt overloading
+    void checkFnOverloading(EnvI& env);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
                        const std::vector<Expression*>& args,

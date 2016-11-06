@@ -95,7 +95,11 @@ namespace MiniZinc {
         if (v[i]->params().size() == fi->params().size()) {
           bool alleq=true;
           for (unsigned int j=0; j<fi->params().size(); j++) {
-            if (v[i]->params()[j]->type() != fi->params()[j]->type()) {
+            Type t1 = v[i]->params()[j]->type();
+            Type t2 = fi->params()[j]->type();
+            t1.enumId(0);
+            t2.enumId(0);
+            if (t1 != t2) {
               alleq=false; break;
             }
           }
@@ -197,6 +201,38 @@ namespace MiniZinc {
     }
   }
 
+  void
+  Model::checkFnOverloading(EnvI& env) {
+    Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    for (FnMap::iterator it=m->fnmap.begin(); it!=m->fnmap.end(); ++it) {
+      std::vector<FunctionI*>& fs = it->second;
+      for (unsigned int i=0; i<fs.size()-1; i++) {
+        FunctionI* cur = fs[i];
+        for (unsigned int j=i+1; j<fs.size(); j++) {
+          FunctionI* cmp = fs[j];
+          if (cur->params().size() != cmp->params().size())
+            break;
+          bool allEqual = true;
+          for (unsigned int i=0; i<cur->params().size(); i++) {
+            Type t1 = cur->params()[i]->type();
+            Type t2 = cmp->params()[i]->type();
+            t1.enumId(0);
+            t2.enumId(0);
+            if (t1!=t2) {
+              allEqual = false;
+              break;
+            }
+          }
+          if (allEqual)
+            throw TypeError(env,cur->loc(),
+                            "unsupported type of overloading. \nFunction/predicate with equivalent signature defined in "+cmp->loc().toString());
+        }
+      }
+    }
+  }
+  
   FunctionI*
   Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Expression*>& args,
