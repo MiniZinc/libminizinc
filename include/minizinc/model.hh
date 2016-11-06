@@ -92,11 +92,13 @@ namespace MiniZinc {
     void sortFn(void);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
-                       const std::vector<Expression*>& args) const;
+                       const std::vector<Expression*>& args,
+                       bool strictEnums) const;
     /// Return function declaration for \a id matching types \a t
-    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                       bool strictEnums);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(EnvI& env, Call* c) const;
+    FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
     /// Merge all builtin functions into \a m
     void mergeStdLib(EnvI& env, Model* m) const;
 

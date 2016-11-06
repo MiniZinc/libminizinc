@@ -46,10 +46,10 @@ namespace MiniZinc {
           tv[i] = c.args()[i]->type();
           tv[i].ti(Type::TI_PAR);
         }
-        FunctionI* decl = env.output->matchFn(env,c.id(), tv);
+        FunctionI* decl = env.output->matchFn(env,c.id(), tv, false);
         Type t;
         if (decl==NULL) {
-          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
+          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv, false);
           if (origdecl == NULL) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
@@ -75,7 +75,7 @@ namespace MiniZinc {
           }
         }
         if (success) {
-          t = decl->rtype(env, tv);
+          t = decl->rtype(env, tv, false);
           if (!t.ispar())
             success = false;
         }
@@ -174,11 +174,9 @@ namespace MiniZinc {
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
         if (c.id()=="format" || c.id()=="show") {
-          int enumId;
-          if (c.args()[c.args().size()-1]->type().dim() == 0) {
-            enumId = c.args()[c.args().size()-1]->type().enumId();
-          } else {
-            const std::vector<unsigned int>& enumIds = env.getArrayEnum(c.args()[c.args().size()-1]->type().enumId());
+          int enumId = c.args()[c.args().size()-1]->type().enumId();
+          if (enumId != 0 && c.args()[c.args().size()-1]->type().dim() != 0) {
+            const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
             enumId = enumIds[enumIds.size()-1];
           }
           if (enumId > 0) {
@@ -199,7 +197,7 @@ namespace MiniZinc {
             c.args()[c.args().size()-1] = convertEnum;
           }
         }
-        c.decl(env.orig->matchFn(env,&c));
+        c.decl(env.orig->matchFn(env,&c,false));
       }
     } _decls(env);
     topDown(_decls, e);
@@ -258,10 +256,10 @@ namespace MiniZinc {
                 tv[i] = rhs->args()[i]->type();
                 tv[i].ti(Type::TI_PAR);
               }
-              FunctionI* decl = env.output->matchFn(env, rhs->id(), tv);
+              FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
               Type t;
               if (decl==NULL) {
-                FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
+                FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv, false);
                 if (origdecl == NULL) {
                   throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                 }
@@ -403,7 +401,7 @@ namespace MiniZinc {
           showArgs[0] = vd->id();
           Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
           show->type(Type::parstring());
-          FunctionI* fi = e.orig->matchFn(e, show);
+          FunctionI* fi = e.orig->matchFn(e, show, false);
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
@@ -458,7 +456,7 @@ namespace MiniZinc {
           showArgs[0] = vd->id();
           Call* show = new Call(Location().introduce(),"showJSON",showArgs);
           show->type(Type::parstring());
-          FunctionI* fi = e.orig->matchFn(e, show);
+          FunctionI* fi = e.orig->matchFn(e, show, false);
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
@@ -520,11 +518,11 @@ namespace MiniZinc {
           tv[i] = c.args()[i]->type();
           tv[i].ti(Type::TI_PAR);
         }
-        FunctionI* decl = env.output->matchFn(env, c.id(), tv);
+        FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
         Type t;
         if (decl==NULL) {
-          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv);
-          if (origdecl == NULL || !origdecl->rtype(env, tv).ispar()) {
+          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv, false);
+          if (origdecl == NULL || !origdecl->rtype(env, tv, false).ispar()) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
           if (!origdecl->from_stdlib()) {
@@ -600,9 +598,9 @@ namespace MiniZinc {
                     tv[i] = rhs->args()[i]->type();
                     tv[i].ti(Type::TI_PAR);
                   }
-                  FunctionI* decl = env.output->matchFn(env, rhs->id(), tv);
+                  FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
                   if (decl==NULL) {
-                    FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv);
+                    FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv, false);
                     if (origdecl == NULL) {
                       throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                     }
@@ -720,9 +718,9 @@ namespace MiniZinc {
                   tv[i] = rhs->args()[i]->type();
                   tv[i].ti(Type::TI_PAR);
                 }
-                FunctionI* decl = e.output->matchFn(e, rhs->id(), tv);
+                FunctionI* decl = e.output->matchFn(e, rhs->id(), tv, false);
                 if (decl==NULL) {
-                  FunctionI* origdecl = e.orig->matchFn(e, rhs->id(), tv);
+                  FunctionI* origdecl = e.orig->matchFn(e, rhs->id(), tv, false);
                   if (origdecl == NULL) {
                     throw FlatteningError(e,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                   }

@@ -669,7 +669,7 @@ namespace MiniZinc {
     }
     
     template<class T>
-    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
+    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
       if (fi->id()==constants().var_redef->id())
         return Type::varbool();
       Type ret = fi->ti()->type();
@@ -710,10 +710,10 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (env.isSubtype(tiit_par,its_par)) {
+              if (env.isSubtype(tiit_par,its_par,strictEnum)) {
                 if (it->second.bt() == Type::BT_TOP)
                   it->second.bt(tiit.bt());
-              } else if (env.isSubtype(its_par,tiit_par)) {
+              } else if (env.isSubtype(its_par,tiit_par,strictEnum)) {
                 it->second = tiit_par;
               } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
@@ -823,13 +823,13 @@ namespace MiniZinc {
   }
   
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
@@ -847,14 +847,14 @@ namespace MiniZinc {
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
           if (toCheck != ty) {
-            if (env.isSubtype(ty,toCheck)) {
+            if (env.isSubtype(ty,toCheck,true)) {
               ty = toCheck;
             } else {
               Type ty_par = ty;
               ty_par.ti(Type::TI_PAR);
               Type toCheck_par = toCheck;
               toCheck_par.ti(Type::TI_PAR);
-              if (env.isSubtype(ty_par,toCheck_par)) {
+              if (env.isSubtype(ty_par,toCheck_par,true)) {
                 ty.bt(toCheck.bt());
               }
             }

@@ -27,7 +27,7 @@ namespace MiniZinc {
   
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_e b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.e = b;
     } else {
@@ -36,7 +36,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_f b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.f = b;
     } else {
@@ -45,7 +45,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_i b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.i = b;
     } else {
@@ -54,7 +54,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_b b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.b = b;
     } else {
@@ -63,7 +63,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_s b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.s = b;
     } else {
@@ -72,7 +72,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_str b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.str = b;
     } else {

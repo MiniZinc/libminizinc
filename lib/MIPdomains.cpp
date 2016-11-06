@@ -133,17 +133,17 @@ namespace MiniZinc {
       EnvI& env = getEnv()->envi();
       GCLock lock;
       
-      int_lin_eq = env.orig->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t);
+      int_lin_eq = env.orig->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
       DBGOUT_MIPD ( "  int_lin_eq = " << int_lin_eq );
 //       MZN_MIPD__assert_hard(fi);
 //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
-      int_lin_le = env.orig->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t);
-      float_lin_eq = env.orig->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t);
-      float_lin_le = env.orig->matchFn(env, constants().ids.float_.lin_le, float_lin_eq_t);
-      int2float = env.orig->matchFn(env, constants().ids.int2float, t_VIVF);
+      int_lin_le = env.orig->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t, false);
+      float_lin_eq = env.orig->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
+      float_lin_le = env.orig->matchFn(env, constants().ids.float_.lin_le, float_lin_eq_t, false);
+      int2float = env.orig->matchFn(env, constants().ids.int2float, t_VIVF, false);
 
-      lin_exp_int = env.orig->matchFn(env, constants().ids.lin_exp, int_lin_eq_t);
-      lin_exp_float = env.orig->matchFn(env, constants().ids.lin_exp, float_lin_eq_t);
+      lin_exp_int = env.orig->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
+      lin_exp_float = env.orig->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
       
       if ( !(int_lin_eq&&int_lin_le&&float_lin_eq&&float_lin_le) ) {
         // say something...
@@ -256,7 +256,7 @@ namespace MiniZinc {
       /// Registering all declared & compatible __POST constraints
       /// (First, cleanup FunctionIs' payload:  -- ! doing now)
       for ( int i=0; i<aCT.size(); ++i ) {
-        FunctionI* fi = env.orig->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams);
+        FunctionI* fi = env.orig->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams, false);
         if (fi) {
           mCallTypes[fi] = aCT.data() + i;
           aCT[i].pfi = fi;
