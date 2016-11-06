@@ -760,6 +760,13 @@ namespace MiniZinc {
           al.v()[i] = addCoercion(_env, _model, al.v()[i], at)();
         }
       }
+      if (ty.enumId() != 0) {
+        std::vector<unsigned int> enumIds(ty.dim()+1);
+        for (unsigned int i=0; i<ty.dim(); i++)
+          enumIds[i] = 0;
+        enumIds[ty.dim()] = ty.enumId();
+        ty.enumId(_env.registerArrayEnum(enumIds));
+      }
       al.type(ty);
     }
     /// Visit array access
