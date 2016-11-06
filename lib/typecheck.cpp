@@ -1060,7 +1060,24 @@ namespace MiniZinc {
       if (ignoreVarDecl) {
         assert(!vd.type().isunknown());
         if (vd.e()) {
-          if (! _env.isSubtype(vd.e()->type(),vd.ti()->type(),true)) {
+          Type vdt = vd.ti()->type();
+          Type vet = vd.e()->type();
+          if (vdt.enumId() != 0 && vdt.dim() > 0 && (vd.e()->isa<ArrayLit>() || vd.e()->isa<Comprehension>())) {
+            // Special case: index sets of array literals and comprehensions automatically
+            // coerce to any enum index set
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vdt.enumId());
+            if (enumIds[enumIds.size()-1]==0) {
+              vdt.enumId(0);
+            } else {
+              std::vector<unsigned int> nEnumIds(enumIds.size());
+              for (unsigned int i=0; i<nEnumIds.size()-1; i++)
+                nEnumIds[i] = 0;
+              nEnumIds[nEnumIds.size()-1] = enumIds[enumIds.size()-1];
+              vdt.enumId(_env.registerArrayEnum(nEnumIds));
+            }
+          }
+          
+          if (! _env.isSubtype(vet,vdt,true)) {
             _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
                                             vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
