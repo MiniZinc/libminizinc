@@ -2047,7 +2047,7 @@ function set of int: anon_enum(int: n) = 1..n;
 /** @group builtins.language Return MiniZinc version encoded as an integer (major*10000+minor*1000+patch). */
 function int: mzn_compiler_version();
 
-/** @group builtins.language Return string representation given an integer major*10000+minor*1000+patch
+/** @group builtins.language Return string representation of \a v given an integer major*10000+minor*1000+patch
 */
 function string: mzn_version_to_string(int: v) =
   show(v div 10000)++"."++show((v div 100) mod 100)++"."++show(v mod 100);
