@@ -174,8 +174,15 @@ namespace MiniZinc {
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
         if (c.id()=="format" || c.id()=="show") {
-          if (c.args()[c.args().size()-1]->type().enumId() > 0) {
-            Id* ti_id = env.getEnum(c.args()[c.args().size()-1]->type().enumId())->e()->id();
+          int enumId;
+          if (c.args()[c.args().size()-1]->type().dim() == 0) {
+            enumId = c.args()[c.args().size()-1]->type().enumId();
+          } else {
+            const std::vector<unsigned int>& enumIds = env.getArrayEnum(c.args()[c.args().size()-1]->type().enumId());
+            enumId = enumIds[enumIds.size()-1];
+          }
+          if (enumId > 0) {
+            Id* ti_id = env.getEnum(enumId)->e()->id();
             GCLock lock;
             std::vector<Expression*> args(1);
             args[0] = c.args()[c.args().size()-1];
