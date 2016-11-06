@@ -3501,7 +3501,9 @@ namespace MiniZinc {
               throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
             }
             assert(fi);
-            assert(env.isSubtype(fi->rtype(env,args),cc->type()));
+            // The following is not true since enum types are not available during
+            // evaluation:
+            // assert(env.isSubtype(fi->rtype(env,args),cc->type()));
             cc->decl(fi);
             ka = cc;
           }
