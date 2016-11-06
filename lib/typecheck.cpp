@@ -628,6 +628,7 @@ namespace MiniZinc {
         sl.type(ty);
         return;
       }
+      unsigned int enumId = sl.v().size() > 0 ? sl.v()[0]->type().enumId() : 0;
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().dim() > 0)
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
@@ -635,6 +636,8 @@ namespace MiniZinc {
           ty.ti(Type::TI_VAR);
         if (sl.v()[i]->type().cv())
           ty.cv(true);
+        if (enumId != sl.v()[i]->type().enumId())
+          enumId = 0;
         if (!Type::bt_subtype(sl.v()[i]->type(), ty)) {
           if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty, sl.v()[i]->type())) {
             ty.bt(sl.v()[i]->type().bt());
@@ -643,6 +646,7 @@ namespace MiniZinc {
           }
         }
       }
+      ty.enumId(enumId);
       if (ty.bt() == Type::BT_UNKNOWN) {
         ty.bt(Type::BT_BOT);
       } else {
