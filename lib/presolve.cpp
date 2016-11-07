@@ -86,18 +86,13 @@ namespace MiniZinc {
           if(ann->eid() == Expression::E_CALL) {
             ASTExprVec<Expression> args = ann->cast<Call>()->args();
             Id* s_id = args[0]->cast<Id>();
-            std::string solver = "";
-            bool save;
-            if (args.size() > 1){
-              solver = args[1]->cast<StringLit>()->v().str();
-            }
 
             if ( s_id->v() == constants().presolve.calls->v() )
-              subproblems.push_back( new CallsSubproblem(model, env, i, flattener, solver) );
+              subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
             else if ( s_id->v() == constants().presolve.model->v() )
-              subproblems.push_back( new ModelSubproblem(model, env, i, flattener, solver) );
+              subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
             else if ( s_id->v() == constants().presolve.global->v() )
-              subproblems.push_back( new GlobalSubproblem(model, env, i, flattener, solver) );
+              subproblems.push_back( new GlobalSubproblem(model, env, i, flattener) );
             else
               throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
           } else {
@@ -142,9 +137,8 @@ namespace MiniZinc {
     iterItems(ci, model);
   }
 
-  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener,
-                                    std::string solver)
-          : origin(origin), origin_env(origin_env), predicate(predicate), flattener(flattener), solver(solver) {
+  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+          : origin(origin), origin_env(origin_env), predicate(predicate), flattener(flattener) {
     GCLock lock;
     m = new Model();
     e = new Env(m);
@@ -157,7 +151,7 @@ namespace MiniZinc {
     if(m) delete m;
     if(e) delete e;
     if(si){
-      if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
+      if (flattener->flag_fzn_solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
         getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
       } else {
         delete si;
@@ -209,7 +203,7 @@ namespace MiniZinc {
   void Presolver::Subproblem::solveModel() {
     GCLock lock;
     if (si != nullptr) {
-      if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
+      if (flattener->flag_fzn_solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
         getGlobalSolverRegistry()->getSolverFactories().front()->destroySI(si);
       } else {
         delete si;
@@ -221,13 +215,13 @@ namespace MiniZinc {
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
     ops.setBoolParam(constants().opts.statistics.str(), false);
 
-    if (solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
+    if (flattener->flag_fzn_solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
       si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
       si->setOptions(ops);
     } else {
       // TODO: Handle when GlobalsDir doesn't work for standard solver.
-      if (solver != "") {
-        ops.setStringParam(constants().opts.solver.fzn_solver.str(), solver);
+      if (flattener->flag_fzn_solver != "") {
+        ops.setStringParam(constants().opts.solver.fzn_solver.str(), flattener->flag_fzn_solver);
       }
       si = new FZNSolverInstance(*e, ops);
     }

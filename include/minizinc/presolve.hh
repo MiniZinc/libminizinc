@@ -21,7 +21,6 @@ namespace MiniZinc {
 
   class Presolver {
   public:
-    struct Options;
     class Solns2Vector; // presolve_utils.hh
     class TableBuilder; // presolve_utils.hh
   protected:
@@ -64,8 +63,6 @@ namespace MiniZinc {
     std::vector<Call*> calls;
     /// Flattener for compiling flag access.
     Flattener* flattener;
-    /// FZN solver to be used.
-    std::string solver;
 
     /// Constructed Model & Env to solve subproblem.
     Model* m = nullptr;
@@ -78,7 +75,7 @@ namespace MiniZinc {
 
   public:
     /// Constructor
-    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener, std::string solver="");
+    Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener);
     /// Destructor
     virtual ~Subproblem();
     /// Adds a reference to a call for the predicate to be presolved
@@ -100,8 +97,8 @@ namespace MiniZinc {
   class Presolver::GlobalSubproblem : public Presolver::Subproblem {
   public:
     /// Constructor
-    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener, std::string solver="") : Subproblem(
-            origin, origin_env, predicate, flattener, solver) { }
+    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+            : Subproblem(origin, origin_env, predicate, flattener) { }
 
   protected:
     /// Implements Subproblem pure virtual
@@ -113,8 +110,8 @@ namespace MiniZinc {
   class Presolver::ModelSubproblem : public Presolver::GlobalSubproblem {
   public:
     /// Constructor
-    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener, std::string solver="") : GlobalSubproblem(
-            origin, origin_env, predicate, flattener, solver) { }
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+            : GlobalSubproblem(origin, origin_env, predicate, flattener) { }
 
   protected:
     /// Implements Subproblem pure virtual
@@ -127,8 +124,8 @@ namespace MiniZinc {
 
   public:
     /// Constructor
-    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener, std::string solver="") : Subproblem(
-            origin, origin_env, predicate, flattener, solver) { }
+    CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+            : Subproblem(origin, origin_env, predicate, flattener) { }
     /// Override Subproblem solve
     virtual void solve();
 

@@ -193,12 +193,6 @@ annotation complete;
  @groupdef annotations.presolve Predicate presolve annotations
 */
 
-/** @group annotations.presolve Presolve every use of the predicate at compile time */
-annotation presolve(
-    ann: strategy,
-    string: fzn_solver
-);
-
 /** @group annotations.presolve Presolve using the default solver  */
 annotation presolve(
     ann: strategy
